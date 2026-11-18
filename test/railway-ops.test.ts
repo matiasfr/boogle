@@ -6,10 +6,11 @@
 // is for a deliberate rule change that bumps WORLD_NS; see the rule and its seed-data exception in
 // test/helpers/railway-golden.ts).
 //
-// Not run by any stage: rail.take, rail.rackTake, rail.axe (the route calls it before the forge is lit, so it is
-// always refused), rail.beamDrop, rail.call, rail.jump, rail.reject and an unknown op, and the entry points
-// railResume, railSupplyPulse, railBeamRelease, railBeamStood, railBeamPutDown, railBoilerStood, railBoilerPutDown and
-// railFootRelease (and railSession past a first epoch). Every other op and system a stage does run.
+// Not run by any stage: rail.take, rail.rackTake, rail.beamDrop, rail.call, rail.jump, rail.reject and an unknown op,
+// and the entry points railResume, railSupplyPulse, railBeamRelease, railBeamStood, railBeamPutDown, railBoilerStood,
+// railBoilerPutDown and railFootRelease (and railSession past a first epoch). Every other op and system a stage does
+// run. rail.axe is run by the route (taken as the forge lights, 18 November); the axe stream below still drives it
+// refused and accepted.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -116,13 +117,16 @@ scenario('opening', w1, (step) => {
   step('session epoch skipped', () => railSession(w1.w, 'a', 9));
 });
 
-// ---- the proper axe, once the forge is lit
-const w2 = from('q1-done');
+// ---- the proper axe, once the forge is lit: from the forge one log short (every later stage already holds the axe),
+// a's log lights it, then the axe
+const w2 = from('forge-lit-last');
 scenario('axe', w2, (step) => {
   const a =
     (op: string, f = {}) =>
     () =>
       act(w2, 'a', op, f);
+  step('axe before the last log', a('rail.axe'));
+  step('the last log lights the forge', a('rail.deposit', { station: 'F', n: 1, kind: 0 }));
   step('axe', a('rail.axe'));
   step('axe again', a('rail.axe'));
   const tree = () => RAILWAY_SOURCES[trees(w2.w).findIndex((n) => n.left > 0)]![0];

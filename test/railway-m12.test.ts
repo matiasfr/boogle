@@ -13,6 +13,8 @@
 // Re-recorded for the owner-approved fly-first rules, 15 November: early glider acceptance, Q4 sea pulls and the
 // glide-earned Q2 fixture deliberately change the trace (docs/plans/ability-order.md, save-preservation exception).
 // Re-recorded for terrain-clean step 5: twelve cleared harvest sources are removed from the v50 catalog (after heavy-load v49).
+// Re-recorded 18 November for seed data only (owner-calls.md#seed-goldens): the seeds take the proper axe at the lit
+// forge, so every stage from q1-done on moves (76 of 82 traces; fresh and awake unchanged; no trace length changes).
 // The value is the trace's FNV hash per client, with a checkpoint every 25 frames so a difference can be found.
 import test from 'node:test';
 import assert from 'node:assert/strict';

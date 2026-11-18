@@ -68,21 +68,21 @@ export function rails(s: Seed, pid: string, station: string, n: number) {
 function railwayAtForgeBill(): Seed {
   const w = createRailway();
   for (const pid of ['a', 'b']) railSession(w, pid, 1);
-  apply(w, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
+  need(apply(w, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0).accepted === 1, 'the wake');
   const s = { w, t: 40 };
   logs(s, 'a', 'T1', 24);
   advance(s, 300);
   for (let i = 0; i < 8;) {
     const n = act(s, 'b', 'rail.mine', { id: rocks(w).findIndex((r) => r.left > 0) });
+    need(n > 0, 'stone mined');
     need(act(s, 'b', 'rail.deposit', { station: 'T2', kind: 1, n }) === n, 'T2 took stone');
     i += n;
   }
   logs(s, 'a', 'T2', 32);
   advance(s, 300);
   logs(s, 'a', 'T3', LINE1_STATIONS[2]!.bill[0]);
-  act(s, 'a', 'rail.axe');
-  for (let i = 0; i < 12; i++) act(s, 'a', 'rail.beamChop');
-  act(s, 'a', 'rail.beamTake', { revision: beam(w).revision });
+  for (let i = 0; i < 12; i++) need(act(s, 'a', 'rail.beamChop') === 1, 'the great tree chopped');
+  need(act(s, 'a', 'rail.beamTake', { revision: beam(w).revision }) === 1, 'the beam taken');
   need(act(s, 'a', 'rail.beamDeposit', { revision: beam(w).revision, station: 'T3' }) === 1, 'T3 took the beam');
   advance(s, 600);
   return s;
@@ -102,6 +102,11 @@ export function railwayAtQ2(): Seed {
   const s = railwayAtForgeBill(),
     w = s.w;
   logs(s, 'a', 'F', LINE2_FORGE.logs);
+  // The proper axe is the lit forge's first made thing (railAxeAvailable, since the great beam pass, 7 November):
+  // taken at its pedestal as the forge lights, as a player meets it. Until 18 November the seeds asked for it at
+  // Station 3, refused, so every later seed lacked it; the works bot broke on that on 17 November, when the pedestal
+  // moved onto the breaker's and the axe's "Open" took the target there.
+  need(act(s, 'a', 'rail.axe') === 1, 'the proper axe taken at the lit forge');
   advance(s, LINE2_FORGE.turnTicks);
   logs(s, 'b', 'Q1', 16);
   rails(s, 'a', 'Q1', 6);
@@ -136,7 +141,7 @@ export function railwayAtQ4(): Seed {
   finish(s, 2);
   clear(s);
   while (rail(s.w).depot) {
-    act(s, 'a', 'rail.depotTake');
+    need(act(s, 'a', 'rail.depotTake') > 0, 'Q3 depot logs taken');
     clear(s);
   }
   need(invariant(s.w) === null, 'railwayAtQ4: invariant');

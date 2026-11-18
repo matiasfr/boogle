@@ -57,21 +57,23 @@ function host(stage?: SeedStage) {
 const HOST_READS = [
   ['fresh', 'asleep', 0, 56, -1, 0, false, 115, 0, 3790, 0, 40],
   ['awake', 'idle', 0, 56, -1, 0, false, 115, 0, 3790, 0, 40],
-  ['q1-done', 'done', 56, 0, 1, 1, false, 211, 6340, 3814, 33, 40],
-  ['q3-done', 'done', 56, 0, 3, 3, false, 211, 8900, 3814, 61, 40],
-  ['q4-done', 'done', 56, 0, 4, 4, true, 211, 10280, 3814, 77, 40],
-  ['q5-finishing', 'done', 56, 0, 4, 4, true, 211, 11600, 3814, 101, 40],
-  ['glide-earned', 'done', 56, 0, 2, 2, false, 211, 7680, 3814, 53, 40],
-  ['boiler', 'done', 56, 0, 5, 5, true, 211, 12100, 3814, 101, 40],
-  ['trains-on', 'done', 56, 0, 5, 5, true, 211, 12100, 3846, 101, 40],
-  ['q6-done', 'done', 56, 0, -1, 6, true, 211, 14360, 3846, 133, 40],
-  ['works-open', 'done', 56, 0, -1, 6, true, 211, 14360, 3846, 133, 40],
-  ['works-lit', 'done', 56, 0, -1, 6, true, 211, 14360, 3846, 133, 40],
-  ['crossing-finishing', 'done', 56, 0, -1, 6, true, 211, 14360, 3846, 141, 40],
-  ['crossing-done', 'done', 56, 0, 6, 6, true, 211, 14360, 3846, 141, 40],
-  ['deck-laid', 'done', 56, 0, -1, 7, true, 211, 15960, 3866, 161, 40],
+  // From q1-done the seeds hold the proper axe (taken at the lit forge): each tree its first stroke makes big adds 5
+  // logs to the total (18 November, seed data only).
+  ['q1-done', 'done', 56, 0, 1, 1, false, 211, 6340, 3824, 33, 40],
+  ['q3-done', 'done', 56, 0, 3, 3, false, 211, 8900, 3834, 61, 40],
+  ['q4-done', 'done', 56, 0, 4, 4, true, 211, 10280, 3844, 77, 40],
+  ['q5-finishing', 'done', 56, 0, 4, 4, true, 211, 11600, 3849, 101, 40],
+  ['glide-earned', 'done', 56, 0, 2, 2, false, 211, 7680, 3829, 53, 40],
+  ['boiler', 'done', 56, 0, 5, 5, true, 211, 12100, 3849, 101, 40],
+  ['trains-on', 'done', 56, 0, 5, 5, true, 211, 12100, 3881, 101, 40],
+  ['q6-done', 'done', 56, 0, -1, 6, true, 211, 14360, 3881, 133, 40],
+  ['works-open', 'done', 56, 0, -1, 6, true, 211, 14360, 3881, 133, 40],
+  ['works-lit', 'done', 56, 0, -1, 6, true, 211, 14360, 3886, 133, 40],
+  ['crossing-finishing', 'done', 56, 0, -1, 6, true, 211, 14360, 3886, 141, 40],
+  ['crossing-done', 'done', 56, 0, 6, 6, true, 211, 14360, 3886, 141, 40],
+  ['deck-laid', 'done', 56, 0, -1, 7, true, 211, 15960, 3906, 161, 40],
   // v46: the seed waits for the haul; no train has loaded the steel kit at this new fleet phase yet.
-  ['ring-joined', 'done', 56, 0, -1, 7, true, 211, 15960, 3866, 161, 40],
+  ['ring-joined', 'done', 56, 0, -1, 7, true, 211, 15960, 3906, 161, 40],
 ] as const;
 // Built at module scope, outside the 5 s test timeout (as the golden shards do); STAGES below is a subset.
 for (const [stage] of HOST_READS) if (stage !== 'fresh') seedOf(stage);
@@ -242,11 +244,11 @@ for (const stage of STAGES)
 // deleted M11 proof held the same reads equal to the read model's).
 const DAYS_AWAY = [
   ['awake', 0, 'idle', 0, 56, -1, 0, false, 115, 0, 3790, 0, 40],
-  ['q1-done', 0, 'done', 56, 0, 1, 1, false, 211, 6340, 3814, 37, 40],
-  ['q4-done', 0, 'done', 56, 0, 4, 4, true, 211, 10280, 3814, 77, 40],
-  ['q6-done', 0, 'done', 56, 0, -1, 6, true, 211, 14360, 3846, 133, 40],
-  ['works-lit', 0, 'done', 56, 0, -1, 6, true, 211, 14360, 3846, 133, 40],
-  ['ring-joined', 0, 'done', 56, 0, -1, 7, true, 211, 15960, 3866, 161, 40], // v46: no steel kit loaded, as above
+  ['q1-done', 0, 'done', 56, 0, 1, 1, false, 211, 6340, 3824, 37, 40],
+  ['q4-done', 0, 'done', 56, 0, 4, 4, true, 211, 10280, 3844, 77, 40],
+  ['q6-done', 0, 'done', 56, 0, -1, 6, true, 211, 14360, 3881, 133, 40],
+  ['works-lit', 0, 'done', 56, 0, -1, 6, true, 211, 14360, 3886, 133, 40],
+  ['ring-joined', 0, 'done', 56, 0, -1, 7, true, 211, 15960, 3906, 161, 40], // v46: no steel kit loaded, as above
 ] as const;
 test('M11 review: a room resumed after three days is capped, credited and read as recorded', () => {
   const days = 3 * 24 * 36000; // ticks of 100 ms

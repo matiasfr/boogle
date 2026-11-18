@@ -220,11 +220,12 @@ test('works host: logs to 16 with the pack and stone to 8, then 16 with the brea
       const [id, x, z] = RAILWAY_SOURCES[k]!;
       return { k, e: { op: 'rail.chop', id, yaw: 0, collapsed: false }, at: [x, 0, z] as At };
     };
-    for (let i = 0; i < 8; i++) {
+    // The seeds hold the proper axe from the lit forge on: 5 a stroke, the fourth topping the row up (5, 5, 5, 1).
+    for (let i = 0; i < 4; i++) {
       const c = chopAt();
       assert.equal(await r.action(c.e, c.at), 'accepted', `chop ${i}`);
     }
-    assert.equal(account(r.w, 'a')!.carry, 16, 'a full row of 16 logs at 2 a hit');
+    assert.equal(account(r.w, 'a')!.carry, 16, 'a full row of 16 logs with the proper axe');
     const c = chopAt();
     const left = trees(r.w)[c.k]!.left;
     assert.equal(await r.action(c.e, c.at), 'noop', 'logs full');

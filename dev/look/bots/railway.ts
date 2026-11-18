@@ -1008,20 +1008,34 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     : 0;
   // A station box (Q2-Q6) opens when you walk into it, and the route passes some. Its card holds you until you put it
   // away, as a player would: wait the card's readable time, then press E. The route's own cards keep dismiss().
-  let boxCardAt = 0;
+  // Through line two the friend idles while the leader finds things, and gets each find's card once free (cutscenes
+  // for everyone, step 1): from `friendCards` on, each friend's card handed over after the ones already put away is
+  // put away the same way (and nothing else), so the next one can come up.
+  let boxCardAt = 0,
+    friendCards = -1;
   setInterval(() => {
     const reward = inspectRailway()?.reward;
-    if (!reward?.stationBoxes.showing || !reward.showing) return void (boxCardAt = 0);
+    const cards = reward?.arrival.cards ?? [];
+    const what = reward?.stationBoxes.showing
+      ? `${reward.stationBoxes.showing} from a station box`
+      : friendCards >= 0 && cards.length > friendCards && `friend's ${cards.at(-1)} card`;
+    if (!what || !reward?.showing) return void (boxCardAt = 0);
     boxCardAt ||= performance.now();
     if (performance.now() - boxCardAt < 1600) return;
     boxCardAt = 0;
-    bot.note(`put away the ${reward.stationBoxes.showing} from a station box`);
+    if (!reward.stationBoxes.showing) friendCards = cards.length;
+    bot.note(`put away the ${what}`);
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
   }, 100);
   const logHashes = () =>
     console.log(`RAILWAY TICKHASH ${JSON.stringify({ player: player ?? 'solo', hashes: [...tickHashes] })}`);
+  // The friend's cards friendCard() put away: each must still have come up exactly once at every later beat.
+  const friendOnce: string[] = [];
   const mark = (name: string) => {
+    const cards = read().reward.arrival.cards;
+    for (const key of friendOnce)
+      require(cards.filter((k) => k === key).length === 1, `still one ${key} card for the friend at ${name}`);
     const state = read();
     // The facts are rows and queries on one world, taken once for the line.
     const w = R.rw();
@@ -1098,6 +1112,14 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
     await until(() => !read().reward.showing, `${name} dismissed with Interact`);
+  };
+  // Cutscenes for everyone (step 1): a friend online for a find gets their own "You got" card once free (on the
+  // ground, not seated or gliding), not a flourish; put it away as dismiss() does.
+  const friendCard = async (key: string, name: string) => {
+    await until(() => read().reward.arrival.cards.includes(key), `friend's ${name} card owed and shown`, 30000);
+    await dismiss(`friend's ${name} card`);
+    require(read().reward.arrival.cards.filter((k) => k === key).length === 1, `one ${name} card for the friend`);
+    friendOnce.push(key);
   };
   const settled = async () => {
     // Peer bumps need a landing wait. A sleeping solo body can have an expired coyote timer while supported.
@@ -1351,11 +1373,9 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await until(() => R.railPhase(R.rw()) === 'idle', 'accepted wake ready');
     require(read().prediction.corrected === 0, 'single wake tap was not refused');
     mark('awake');
-    // Option E: the card is the waker's alone; a friend gets the flourish as the wake ends, and is never held.
-    if (second) {
-      await until(() => read().reward.arrival.seen.includes('multi-axe'), "friend's multi-axe flourish played");
-      require(!read().reward.showing, 'no multi-axe card for a friend’s wake');
-    } else await dismiss('multi-axe reveal');
+    // The waker gets the card on the press; a friend who heard the wake gets their own as it ends, once free.
+    if (second) await friendCard('multi-axe', 'multi-axe');
+    else await dismiss('multi-axe reveal');
     mark('T1 multi-axe dismissed');
     if (second) await until(() => job(0).delivered === 16, 'friend supplied sixteen logs');
     await logs(0, coop ? (second ? 1 : 2) : 3);
@@ -1629,11 +1649,9 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       require(await bot.use(device.x, device.z, 'take the first jump device', /^Take it$/), 'jump device offered');
     }
     await until(() => R.rail(R.rw()).jump, 'shared optional jump accepted');
-    // Co-op abilities, option E: the card is the finder's alone; a friend gets a flourish that never stops them.
-    if (second) {
-      await until(() => read().reward.arrival.seen.includes('jump'), "friend's jump flourish played");
-      require(!read().reward.showing, 'no card for a friend’s find');
-    } else await dismiss('optional jump reveal');
+    // The finder gets the card on the press; a friend online gets their own once free.
+    if (second) await friendCard('jump', 'jump');
+    else await dismiss('optional jump reveal');
     mark('optional jump discovered');
     require(await bot.straight(ownSlot.x, ownSlot.z, 0.4, 6000), 'stood clear of the device for the jump');
     await until(() => me.coyote > 0 && me.body!.velocity.y <= 0, 'grounded before jump demonstration');
@@ -1686,18 +1704,21 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     if (second) {
       // The friend stays in the room through line two; the leader plays it. Both peers report hashes per beat.
       // The leader opens the pack (at the forge, or after the lever under botOrder=legacy): the friend's back carries
-      // 16 too, and they get the flourish, not the card.
+      // 16 too. Each of the leader's finds (the pack, the proper axe, the hook, the glider) brings the friend their own
+      // card once free, and `friendCards` puts each away; the keener edge has no card, only the flourish.
+      friendCards = read().reward.arrival.cards.length;
+      const shown = (key: string) => read().reward.arrival.cards.includes(key);
       const friendPack = async () => {
         await until(() => R.rail(R.rw()).pack, 'leader opens the pack', 1800000);
-        await bot.wait(1500);
+        await until(() => shown('pack') && !read().reward.showing, "friend's pack card shown and put away", 30000);
         require(R.capacityOf(R.rw(), R.LOGS) === 16, "the friend's back holds 16 logs");
-        require(read().reward.arrival.seen.includes('pack'), "friend's pack flourish played");
         await checkpoint('pack');
       };
       if (!legacy) await friendPack();
       await until(() => R.line2GateOpen(R.rw()), 'leader opens the quarry gate', 1800000);
       require(hookSeen.size >= 5, `friend saw ${hookSeen.size} distinct hook ring ids`);
       require(remoteCableSeen, 'friend saw a remote hook cable');
+      await until(() => shown('axe') && shown('hook'), "friend's proper axe and hook cards shown", 30000);
       await checkpoint('quarry gate open');
       if (legacy) await friendPack();
       await until(() => R.line2Station(3).completion === 1, 'leader lays Q4', LAYING_MS * 3);
@@ -1705,11 +1726,9 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       await until(() => R.line2Station(4).completion === 1, 'leader lays Q5', LAYING_MS * 3);
       await checkpoint('Q5 laid');
       if (!legacy) {
-        // The leader took the glider on the first climb: the friend gets the flourish wherever they stand, no card.
+        // The leader took the glider on the first climb: the friend gets its card once free.
         await until(() => R.rail(R.rw()).glide, 'leader takes the glider', LAYING_MS * 3);
-        await bot.wait(1500);
-        require(read().reward.arrival.seen.includes('glide'), "friend's glider flourish played");
-        require(!read().reward.showing, 'no glider card for a friend’s find');
+        await until(() => shown('glide') && !read().reward.showing, "friend's glider card shown and put away", 30000);
         require(read().glider.owned, 'the friend owns the glider too');
         await checkpoint('glider taken');
       }
@@ -1807,7 +1826,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     // A single press can be rejected before the host receives the settled Owner position.
     // Repeat ordinary input for a bounded window; acceptance remains the required beat.
     require(await bot.work(() => R.rail(R.rw()).axe, 5000, 380), 'proper axe accepted after bounded retries');
-    // Whoever opened it gets the card; a friend gets the flourish.
+    // Whoever opened it gets the card on the press (a friend online gets theirs once free).
     await bot.wait(1200);
     if (read().reward.showing || !coop) await dismiss('proper axe reveal');
     else require(read().reward.arrival.seen.includes('axe'), "friend's proper axe flourish played");
@@ -1933,7 +1952,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         require(hook.available, 'hook device available after Q2');
         require(await bot.use(hook.x, hook.z, 'take the hook device', /^Take it$/), 'hook device offered');
         require(await bot.work(() => R.rail(R.rw()).hook, 5000, 380), 'shared hook accepted after bounded retries');
-        // Whoever took it gets the card; a friend who got there second gets the flourish.
+        // Whoever took it gets the card on the press (a friend online gets theirs once free).
         await bot.wait(1200);
         if (read().reward.showing || !coop) await dismiss('hook reveal');
         else require(read().reward.arrival.seen.includes('hook'), "friend's hook flourish played");
@@ -2169,7 +2188,11 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       return;
     }
     document.documentElement.dataset.railwayProof = 'failed';
-    bot.never(`production line1 stopped: ${error instanceof Error ? error.message : String(error)}`);
+    const why = error instanceof Error ? error.message : String(error);
+    bot.never(`production line1 stopped: ${why}`);
+    // A look waiting on `--until window.__railStop` ends now rather than at its wall; the error this rethrows is a
+    // console error, so the capture's health check fails the verdict with it.
+    (window as Window & { __railStop?: string }).__railStop ||= `failed: ${why}`;
     console.log(
       `RAILWAY FAILURE ${JSON.stringify({
         ...inspectRailway(),

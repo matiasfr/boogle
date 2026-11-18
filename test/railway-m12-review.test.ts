@@ -237,8 +237,17 @@ test('review M12: across a disconnect, a split whole send on reconnect and play 
     let s = 7;
     return () => (s = (s * 1103515245 + 12345) >>> 0) / 2 ** 32;
   })();
+  // The seeds hold the proper axe from the forge on (5 logs a stroke), so a back of 16 fills in four accepted chops:
+  // put it down in the frames before the flood (up to 8 a pile, when the drop cadence allows; after the flood the pile
+  // ceiling refuses a drop), so chops are still accepted after the reconnect.
+  let playedAfter = 0;
   for (let k = 0; k < 120; k++) {
-    if (k % 3 === 0) r.adapter.chop(RAILWAY_SOURCES[Math.floor(rand() * RAILWAY_SOURCES.length)]![0], 0, false);
+    if (k % 3 === 0) {
+      const chopped = r.adapter.chop(RAILWAY_SOURCES[Math.floor(rand() * RAILWAY_SOURCES.length)]![0], 0, false);
+      if (chopped && k > 60) playedAfter++;
+    }
+    const back = account(r.rail.confirmed(), 'a')!.carry;
+    if (k >= 16 && k < 40 && back) r.adapter.drop(T1.x + k * 100, 3000, T1.z, Math.min(back, 8));
     if (k === 40) r.flood(600);
     if (k === 60) {
       for (const h of r.connection) h(false);
@@ -251,6 +260,7 @@ test('review M12: across a disconnect, a split whole send on reconnect and play 
     r.run(1);
   }
   for (let k = 0; k < 30; k++) r.run(1);
+  assert.ok(playedAfter > 0, 'chops accepted after the reconnect');
   assert.equal(r.adapter.read.ready(), true);
   assert.equal(r.adapter.read.pending(), 0);
   assert.equal(r.rail.confirmed().hash(), r.rail.world().hash(), 'the last published world is current');
