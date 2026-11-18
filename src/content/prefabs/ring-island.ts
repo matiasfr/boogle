@@ -1,4 +1,5 @@
-// Ring Island's things (src/entities/ring-island/): the greybox box its massing is drawn in, the folk, the fingerpost's
+// Ring Island's things (src/entities/ring-island/): the greybox box its massing is drawn in (solid, drawn only, or
+// solid and not drawn), the folk, the fingerpost's
 // arms, the low map table, the summit lookout's deck, the drop hammer's head and the RINGWORKS board's face. Their
 // builders are src/prefab/builders/ring-island.ts; src/content/levels/ring-island.ts places them. Colours are the
 // greybox's (the view's palette).
@@ -18,6 +19,13 @@ export const prefabs = [
     scope: 'place',
     visual: { builder: 'ring.box', params: {} },
     colliders: [],
+  }),
+  // The same, solid and not drawn (the foot crossing's slab, under its planks and bed).
+  definePrefab({
+    key: 'ring.box-solid',
+    scope: 'place',
+    visual: { none: true },
+    colliders: [{ shape: 'box', at: [0, 0, 0], half: [0.5, 0.5, 0.5] }],
   }),
   // One of the folk (a looker, never Rivet): origin under their feet. Nothing solid.
   definePrefab({

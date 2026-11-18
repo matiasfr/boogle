@@ -866,3 +866,69 @@ the footbridge (deck, trail and landing surface, parapets, abutments, bents) and
 island's own body. The leaf and its footings (kinematic), the pennant, the ground and its heightfield, and the hammer's
 lift and thump stay as they are. Left in step 13: the rest of Ring Island (that generated massing). Not tested on a
 device.
+
+### Step 13, eighth area as built: Ring Island's track, halt platforms, foot crossing, west ramp and crossover
+
+The next part of the island's generated massing is placements, generated on the sim catalog's rows as the seventh
+area's are: `src/content/levels/ring-island.ts` places 200 more things (247 → 447), in the old draw order. The Way's
+track has 120: per track, west then east, 20 beds in 10 m lengths over the deck's spans, each with its two rails
+(`track/`, drawn only; the track is now drawn between the deck spans and the truss posts as before, as records). The
+halt has 6: per platform, west then east, its deck, its landing and its ramp (`platform/`, solid). The foot crossing
+has 7: five planks and the bed in the flangeways (drawn only), then one solid slab that is not drawn (`crossing/`).
+Then the west platform's ramp off its north end to where the path starts (`west-ramp`, solid). The crossover on the
+Way has 66: a bed and two rails a metre at a time over RING_END.cross (`crossover/`, drawn only). One new record,
+`ring.box-solid` (the greybox box, solid with no visual, for the crossing's slab), and no new builder: records 316 →
+317, levels 26 → 26. The test lists' stub builders key builders, so they need no entry; the portability test imports
+the record and level arrays whole; `dev/ci/unit-select.ts` already selects `test/prefab-trees.test.ts` for the view
+and the level.
+
+The view resolves them with more anchors and two frames, not retyped numbers. The `line` frame has `track1`, `track2`
+(the tracks' lats). The `halt` frame has the platforms' laterals, middles and widths (`up-`, `down-`), `rail` (the rail
+tops), the formation's `left` and `right`, the foot crossing's `x-u0`, `x-u1`, `x-landing0`, `x-landing1`, `ramp-top`
+and `x-top` (RING_CROSSING) and `path-x`, `path-z` (summitPathFoot). A `plank` index gives the crossing's plank `k`
+laterals (state.ts's ringCrossingPlanks). A `crossover` frame gives metre `k`'s ends and the eased homeward lateral
+there (the view's old smoothstep, kept in `crossoverFrame`; it refuses a metre past RING_END.cross). A beam end may be a
+world (x, z) with `ground` under it. The greybox's `post`, `block` and `track` helpers had no callers left and went;
+`beam` stays for the path and the footbridge. Content may not import `src/sim` or `src/entities`, so the level holds
+the counts (2 tracks, 5 planks, 22 metres) and the view's `generatedCounts` holds them to the catalog. The count guard
+covers every piece this sitting moved: rows for `track/bed/`, `track/rail/`, `track/`, `platform/`, `crossing/plank/`,
+`crossing/`, `west-ramp` and `crossover/`. Removing any one placement of each kind refuses to load (tried below). The
+earlier areas' kerbs and handrail posts are still counted only through their golden
+(`docs/agents/orchestrator-leftovers.md`).
+
+8 solids moved from the island's one body into record bodies: the 2 platform decks, the 2 landings, the 2 crossing
+ramps, the crossing's slab and the west ramp. Each was already its own collider in the compound body, so a player
+walking a seam (landing to ramp to platform, landing to slab to the far landing, platform to the west ramp) meets the
+same boxes as before, now in separate fixed bodies. Nothing that rolls touches them: the track and the crossover are
+drawn only, trains run on the sim's line, and a train's rider stands on the train. They switch with the near view
+(`setMounted`) and join the mount clearance in the old order, through the same `clearanceShape` and `siteExit`.
+`dev/lint/prefab-debt.json` is unchanged: the view still calls `createBody` for the island's own body (the
+footbridge's solids and the rim rocks), the ground and the leaf.
+
+Proof: the massing golden (`test/fixtures/prefab-ring-massing.json`) already holds every piece this cut moves: every
+merged piece's full-precision matrix and colour in draw order, every world collider and the mount clearance's answer
+for a player standing in each fixed one. It was captured from the view before the sixth area (commit "Capture the Ring
+Island massing golden before the record conversion"), when all of this was still view code, and it was reused unchanged.
+Against the converted view it passes: 12,107 values, 55 not bit-identical, max deviation 1.8e-15 against the 1e-9
+tolerance. The furnishing's golden (`prefab-ring-island.json`) passes too (82 not bit-identical, max 1.1e-13). Its
+coverage, shown on scratch by editing the built level and capturing again (not committed): 0.1 mm on a track bed's y,
+a platform deck's top, a landing's start, a crossing ramp's depth, a plank's bottom, the crossing bed's lat, the
+slab's top (a collider only), the west ramp's foot and a crossover rail's y each fail both goldens; a lateral moves in
+whole centimetres (`at` rounds (u, lat) to the cm), so 0.1 mm on a track rail's or crossover bed's lat is the same
+world and passes, and 1 cm on a track rail's, a track bed's and a crossover bed's lat fails. A track rail recoloured,
+two pieces swapped in draw order (a plank and the bed; a crossover metre's two rails), a platform's deck and landing
+swapped (draw and clearance order together) and a platform ramp made drawn-only each fail. Removing a track rail, a
+track bed, a platform ramp, a plank, the slab, the west ramp or a crossover bed refuses to load. `npm run level-check`
+gives the same 21 reports as main, byte for byte apart from the source hash and timings. I opened before/after stills
+(main's build and this branch's, `--rail-seed ring-joined`, the same fixed camera over the east platform looking south,
+the player on that platform; the staging was a raw eval under `.look/`, not committed)
+([stills and their difference](../world/prefab-ring-island/), `halt-*.png`). The platforms' south ends and ramps, the
+crossing's planks, both tracks on the Way and the crossover's eased rails are pixel-identical; 0.96% of pixels differ:
+the animated sea, the rims of two of the folk's hats and specks on the far shore. Not photographed apart: the west
+platform's ramp at the halt's north end, the landings under the ramps, the crossing's slab (never drawn) and the track's
+south end by the hinge; the golden holds them.
+
+Left in this area: the summit path's beams, the footbridge (deck, trail and landing surface, parapets, abutments,
+bents) and the rim rocks stay view code over the island's own body. The leaf and its footings (kinematic), the pennant,
+the ground and its heightfield, and the hammer's lift and thump stay as they are. Left in step 13: the rest of Ring
+Island (that generated massing). Not tested on a device.

@@ -4,25 +4,33 @@
 // - `frame`: `halt` (the island halt), `brace` (the brace platform under the leaf's heel), `line` (the Way's own
 //   frame), `steps` (the steps up from the brace platform, src/sim/railway-ring-layout.ts's RING_STEPS), `summit` (the
 //   summit lookout), `map-table` (where src/entities/ring-island/state.ts's RING_MAP_TABLE stands), `pennant` (block
-//   `footing` of the pennant pole's footing, src/entities/ring-island-far/view.ts's pennantFooting, its one definition),
-//   or `flight` and `landing` (row `flight` or `landing` of RING_RAMPS[`ramp`], the sea ramps).
+//   `footing` of the pennant pole's footing, src/entities/ring-island-far/view.ts's pennantFooting, its one
+//   definition), `flight` and `landing` (row `flight` or `landing` of RING_RAMPS[`ramp`], the sea ramps), or
+//   `crossover` (metre `k` of RING_END.cross, the crossover on the Way).
 // - A value is a number (ring metres or metres up, as is), `{ deck: u }` (the Way's deck top at u) or `[from, ...add]`:
-//   `from` an anchor of the frame or a value, then each `add` summed in order. Anchors: halt `start` and `end` (u of the
-//   halt's south and north ends), `east` and `west` (lat of the east platform's east edge and the west platform's west
-//   edge), `deck` (the platforms' top); brace `u0`, `u1`, `l0`, `l1` (its seaward edge), `top`, `hinge` (u of the
-//   hinge edge), `right` (lat of the Way's east edge) and `strut-x`, `strut-z` (world x, z of RING_BRACE, the gold
-//   strut's foot); line `hinge`, `left`, `right`, `mid` (the formation's middle), `width`, `halt` (u of the halt's
-//   south end) and `end` (2 m past its north end, where the Way's deck stops); flight `u0`, `u1`, `lat`, `y0`, `y1`,
-//   `len`, `mid` and `mid-y` (u and top at its middle); landing `u0`, `u1`, `l0`, `l1`, `y`, `mid` and `lat-mid`; steps `u0`, `u1`, `lat`, `y0`, `top` (RING_STEPS) and `right`;
-//   summit `cx`, `cz` (the island's middle) and `top` (the deck's top, `lift` over the ground there). `ground` is the
-//   island's ground under the thing; `arch-u` and `arch-y` are the middle of tile `arch.k` of the mural's arch.
+//   `from` an anchor of the frame or a value, then each `add` summed in order. Anchors: halt `start` and `end` (u of
+//   the halt's south and north ends), `east` and `west` (lat of the east platform's east edge and the west platform's
+//   west edge), `deck` (the platforms' top), `up-l0`, `up-l1`, `up-mid`, `up-width` (the west platform's laterals,
+//   middle and width) and the same `down-` (the east's), `rail` (the rail tops' level), `left` and `right` (the
+//   formation's edges), `x-u0`, `x-u1`, `x-landing0`, `x-landing1`, `ramp-top` and `x-top` (the foot crossing,
+//   RING_CROSSING) and `path-x`, `path-z` (world x, z where the summit path starts); brace `u0`, `u1`, `l0`, `l1` (its
+//   seaward edge), `top`, `hinge` (u of the hinge edge), `right` (lat of the Way's east edge) and `strut-x`, `strut-z`
+//   (world x, z of RING_BRACE, the gold strut's foot); line `hinge`, `left`, `right`, `mid` (the formation's middle),
+//   `width`, `halt` (u of the halt's south end), `end` (2 m past its north end, where the Way's deck stops) and
+//   `track1`, `track2` (the tracks' lats); crossover `u0`, `u1`, `lat0`, `lat1` (the metre's ends and the eased
+//   homeward track's lat there); flight `u0`, `u1`, `lat`, `y0`, `y1`, `len`, `mid` and `mid-y` (u and top at its
+//   middle); landing `u0`, `u1`, `l0`, `l1`, `y`, `mid` and `lat-mid`; steps `u0`, `u1`, `lat`, `y0`, `top`
+//   (RING_STEPS) and `right`; summit `cx`, `cz` (the island's middle) and `top` (the deck's top, `lift` over the ground
+//   there). `ground` is the island's ground under the thing; `arch-u` and `arch-y` are the middle of tile `arch.k` of
+//   the mural's arch; `plank-l0`, `plank-l1` the laterals of the foot crossing's plank `plank` (state.ts's
+//   ringCrossingPlanks).
 // - `block` spans u, lat and y; `post` stands at (u, lat) or (x, z) from y0 to y1, w across the line and d along it;
-//   `beam` runs from a to b ((u, lat, y) on the line, or `d` out from the summit's middle `along` (x, z)), w wide and h
-//   deep, its top on the line between them; `slab` is a level deck over u and lat, its top at y, h deep; `stanchion` is
-//   post k of a handrail's n + 1 from a to b (one every 3 m), `rise` tall and w square; `tread` is tread k of a flight,
-//   from k pitches up it, `run` long, `lift` over its top, w wide and h deep; `at` is a point, turned by
-//   `turn` (`line`: along it; `west`: facing the tracks from the east platform; `toward` a world (x, z) from the halt's
-//   middle).
+//   `beam` runs from a to b ((u, lat, y) on the line, a world (x, z, y), or `d` out from the summit's middle `along`
+//   (x, z)), w wide and h deep, its top on the line between them; `slab` is a level deck over u and lat, its top at y,
+//   h deep; `stanchion` is post k of a handrail's n + 1 from a to b (one every 3 m), `rise` tall and w square; `tread`
+//   is tread k of a flight, from k pitches up it, `run` long, `lift` over its top, w wide and h deep; `at` is a point,
+//   turned by `turn` (`line`: along it; `west`: facing the tracks from the east platform; `toward` a world (x, z) from
+//   the halt's middle).
 import { defineLevel, type JsonObject, type Placement } from '../../prefab/types.ts';
 
 const TIMBER = '#8a6a48',
@@ -32,6 +40,7 @@ const TIMBER = '#8a6a48',
   STEEL_DARK = '#b8551e',
   GOLD = '#ffc83a',
   RAIL = '#3d3a38',
+  BED = '#5d5650',
   CONCRETE = '#a6a29a',
   TARP = '#4f6b8a',
   LAND = '#4a4d5c',
@@ -222,6 +231,148 @@ const way: Placement[] = [
     );
   }),
 ];
+/** The laid double track on the Way, drawn only: per track (`track1`, `track2` of the line frame, `tracks` of them), a
+ * bed and its two rails in 10 m lengths from the hinge edge to the Way's end (as many as the deck's spans). */
+const TRACK = { tracks: 2 } as const;
+const track: Placement[] = Array.from({ length: TRACK.tracks }, (_, t) =>
+  Array.from({ length: WAY.spans }, (_, k) => {
+    const u0: A = ['hinge', 10 * k],
+      u1: A = k === WAY.spans - 1 ? ['end'] : ['hinge', 10 * (k + 1)],
+      lat = `track${t + 1}`;
+    return [
+      box(
+        `track/bed/${t + 1}-${k + 1}`,
+        BED,
+        line({
+          beam: {
+            a: { u: u0, lat: [lat], y: [{ deck: u0 }, 0.08] },
+            b: { u: u1, lat: [lat], y: [{ deck: u1 }, 0.08] },
+            w: 2.4,
+            h: 0.1,
+          },
+        }),
+        true,
+      ),
+      ...[-0.5, 0.5].map((r, side) =>
+        box(
+          `track/rail/${t + 1}-${k + 1}-${side + 1}`,
+          RAIL,
+          line({
+            beam: {
+              a: { u: u0, lat: [lat, r], y: [{ deck: u0 }, 0.22] },
+              b: { u: u1, lat: [lat, r], y: [{ deck: u1 }, 0.22] },
+              w: 0.12,
+              h: 0.14,
+            },
+          }),
+          true,
+        ),
+      ),
+    ];
+  }).flat(),
+).flat();
+/** The island halt's massing (RING_HALT, src/entities/ring-island/state.ts's RING_CROSSING): its two platforms, west
+ * (`up`) then east (`down`), solid down to the fill, each from the foot crossing's ramp top to the halt's north end
+ * (`end`), with a landing at the rail tops carried on under the ramp as its fill, and the ramp the platform's full
+ * width; then the foot crossing between the landings (`plank` k of the crossing's `planks`, drawn only, over the bed
+ * in the flangeways and one solid slab, not drawn, its top the rail tops), and the west platform's ramp off its north
+ * end down onto the slope where the path starts (`path-x`, `path-z`). */
+const CROSSING = { planks: 5 } as const;
+const haltMassing: Placement[] = [
+  ...(['up', 'down'] as const).flatMap((side) => [
+    box(
+      `platform/${side}/deck`,
+      CONCRETE,
+      block([['ramp-top'], ['end']], [[`${side}-l0`], [`${side}-l1`]], [['rail', -0.8], ['deck']]),
+    ),
+    box(
+      `platform/${side}/landing`,
+      CONCRETE,
+      block([['x-landing0'], ['ramp-top']], [[`${side}-l0`], [`${side}-l1`]], [['rail', -0.8], ['x-top']]),
+    ),
+    box(
+      `platform/${side}/ramp`,
+      CONCRETE,
+      halt({
+        beam: {
+          a: { u: ['x-landing1'], lat: [`${side}-mid`], y: ['x-top'] },
+          b: { u: ['ramp-top'], lat: [`${side}-mid`], y: ['deck'] },
+          w: [`${side}-width`],
+          h: 0.75,
+        },
+      }),
+    ),
+  ]),
+  ...Array.from({ length: CROSSING.planks }, (_, k) =>
+    box(
+      `crossing/plank/${k + 1}`,
+      TIMBER,
+      {
+        ...block([['x-u0'], ['x-u1']], [['plank-l0'], ['plank-l1']], [['x-top', -0.12], ['x-top']]),
+        plank: k,
+      },
+      true,
+    ),
+  ),
+  box('crossing/bed', BED, block([['x-u0'], ['x-u1']], [['left'], ['right']], [['rail'], ['x-top', -0.12]]), true),
+  {
+    id: 'crossing/slab',
+    prefab: 'ring.box-solid',
+    pos: [0, 0, 0],
+    params: { place: block([['x-u0'], ['x-u1']], [['left'], ['right']], [['rail'], ['x-top']]) },
+  },
+  box(
+    'west-ramp',
+    CONCRETE,
+    halt({
+      beam: {
+        a: { u: ['end', -4], lat: ['west', 0.2], y: ['deck'] },
+        b: { x: ['path-x'], z: ['path-z'], y: ['ground', 0.15] },
+        w: 3,
+        h: 0.4,
+      },
+    }),
+  ),
+];
+/** The crossover's rails on the Way (RING_END.cross): the homeward track eased onto the original's lateral, a bed and a
+ * pair of rails a metre at a time (`k` of `metres`, the `crossover` frame's `u0`, `u1` and their laterals `lat0`,
+ * `lat1`), on the Way's grade. Drawn only. */
+const CROSSOVER = { metres: 22 } as const;
+const crossover: Placement[] = Array.from({ length: CROSSOVER.metres }, (_, k) => {
+  const at = { frame: 'crossover', k };
+  return [
+    box(
+      `crossover/bed/${k + 1}`,
+      BED,
+      {
+        ...at,
+        beam: {
+          a: { u: ['u0'], lat: ['lat0'], y: [{ deck: ['u0'] }, 0.08] },
+          b: { u: ['u1'], lat: ['lat1'], y: [{ deck: ['u1'] }, 0.08] },
+          w: 2.4,
+          h: 0.1,
+        },
+      },
+      true,
+    ),
+    ...[-0.5, 0.5].map((r, side) =>
+      box(
+        `crossover/rail/${k + 1}-${side + 1}`,
+        RAIL,
+        {
+          ...at,
+          beam: {
+            a: { u: ['u0'], lat: ['lat0', r], y: [{ deck: ['u0'] }, 0.22] },
+            b: { u: ['u1'], lat: ['lat1', r], y: [{ deck: ['u1'] }, 0.22] },
+            w: 0.12,
+            h: 0.14,
+          },
+        },
+        true,
+      ),
+    ),
+  ];
+}).flat();
 
 // The drop hammer stands 24 m up the halt, 11 m east of the line; the works wall's face is 15.2 m east, its south end
 // 12 m short of the halt's north end.
@@ -368,6 +519,10 @@ export const levels = [
       // ------------------------------------------------ the sea ramps and the Pilgrims' Way (generated on RING_*)
       ...RAMPS.flatMap((ramp, r) => seaRamp(r, ramp)),
       ...way,
+      // The Way's track, the halt's platforms and foot crossing, the west platform's ramp and the crossover's rails.
+      ...track,
+      ...haltMassing,
+      ...crossover,
       // ------------------------------------------------ the island halt
       // The RINGWORKS board on the east platform, its face to the tracks: the frame behind the face and two legs.
       box(

@@ -14,9 +14,10 @@
 // fingerpost, the map table and the summit lookout) and the hand-authored massing (the hinge pier, the pennant pole's
 // footing, the brace platform with its pier, handrail and gold strut, and the steps) are records
 // (content/prefabs/ring-island.ts), standing where content/levels/ring-island.ts puts them in the island's frames; their
-// solids come on and off with the near view. So are the sea ramps' flights and landings and the Pilgrims' Way's deck,
-// truss posts and rails and piers, placed on the catalog's rows (RING_RAMPS, RING_GAP, RING_HALT; generatedCounts
-// holds the level's counts to them).
+// solids come on and off with the near view. So are the sea ramps' flights and landings, the Pilgrims' Way's deck,
+// track, truss posts and rails and piers, the halt's platforms with their landings and ramps, the foot crossing (planks,
+// bed and slab), the west platform's ramp to the path and the crossover's rails, placed on the catalog's rows (RING_RAMPS,
+// RING_GAP, RING_HALT, RING_END, RING_CROSSING; generatedCounts holds the level's counts to them).
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { BODY, createBody, type Body, type Shape } from '../../physics/engine.ts';
@@ -76,6 +77,10 @@ const deckY = (u: number) => ringDeckY(Math.round(u * 100)) / 100;
 const HINGE_Y = deckY(HINGE),
   HALT_Y = RING_HALT.y / 100,
   PLATFORM_Y = HALT_Y + 0.9;
+/** The halt's platforms' laterals (RING_HALT): the west (offset, `up`) and east (down) platforms. */
+const [upL0, upL1] = RING_HALT.offsetLat.map((l) => l / 100) as [number, number];
+const [dnL0, dnL1] = RING_HALT.downLat.map((l) => l / 100) as [number, number];
+const X = RING_CROSSING;
 const BRACE = {
   u0: RING_BRACE_PLATFORM.u0 / 100,
   u1: RING_BRACE_PLATFORM.u1 / 100,
@@ -101,7 +106,6 @@ const TIMBER = '#8a6a48',
   STEEL_DARK = '#b8551e',
   GOLD = '#ffc83a',
   RAIL = '#3d3a38',
-  BED = '#5d5650',
   CONCRETE = '#a6a29a',
   SAND = '#d6c69c',
   PATH = '#c9b48a',
@@ -239,7 +243,6 @@ function ringSceneryExit(
 
 /** The greybox's builders on R1's numbers (src/proto/greybox/ring.ts), writing into `parts`. */
 function builders({ add, solid }: Parts) {
-  const tmp = new THREE.Matrix4();
   /** A box from a to b (its centreline, top surface at a.y and b.y), w wide and h deep. */
   function beam(color: string, a: THREE.Vector3Like, b: THREE.Vector3Like, w: number, h: number, isSolid = true) {
     const dx = b.x - a.x,
@@ -256,41 +259,7 @@ function builders({ add, solid }: Parts) {
     add(color, new THREE.BoxGeometry(w, h, full + 0.04), m);
     if (isSolid) solid(w, h, full + 0.04, m);
   }
-  /** An upright box, its top at `top`, yawed to the line: w across it, d along it. */
-  function post(color: string, x: number, z: number, bottom: number, top: number, w: number, d = w, isSolid = true) {
-    const m = new THREE.Matrix4().compose(
-      new THREE.Vector3(x, (bottom + top) / 2, z),
-      new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, YAW),
-      new THREE.Vector3(1, 1, 1),
-    );
-    add(color, new THREE.BoxGeometry(w, top - bottom, d), m);
-    if (isSolid) solid(w, top - bottom, d, m);
-  }
-  /** An upright box over (u0..u1, l0..l1), bottom to top. */
-  function block(
-    color: string,
-    u0: number,
-    u1: number,
-    l0: number,
-    l1: number,
-    bottom: number,
-    top: number,
-    isSolid = true,
-  ) {
-    const c = at((u0 + u1) / 2, (l0 + l1) / 2);
-    post(color, c.x, c.z, bottom, top, l1 - l0, u1 - u0, isSolid);
-  }
-  /** Rails and a bed on each track, visual only. */
-  function track(u0: number, u1: number, y: (u: number) => number, step = 10) {
-    for (const t of TRACKS)
-      for (let u = u0; u < u1 - 1e-6; u += step) {
-        const v = Math.min(u1, u + step);
-        beam(BED, p3(u, t, y(u) + 0.08), p3(v, t, y(v) + 0.08), 2.4, 0.1, false);
-        for (const r of [-0.5, 0.5])
-          beam(RAIL, p3(u, t + r, y(u) + 0.22), p3(v, t + r, y(v) + 0.22), 0.12, 0.14, false);
-      }
-  }
-  return { tmp, beam, post, block, track };
+  return { beam };
 }
 
 /** The leaf's local frame: +z along it from the heel toward the toe (toward Home when down), its top face at y 0. */
@@ -412,6 +381,18 @@ function rampFrame(place: JsonObject): Anchors {
   if (u1 - u0 > 50) throw new Error('ring island: a landing longer than one span');
   return { u0, u1, l0, l1, y: l.y / 100, mid: (u0 + u1) / 2, 'lat-mid': (l0 + l1) / 2 };
 }
+/** Metre `k` of the crossover (RING_END.cross): its ends `u0`, `u1` and the eased homeward track's lateral there,
+ * `lat0`, `lat1` (eased from its own, TRACKS[1], to the original track's 0, as place/layout.ts's crossLat). */
+function crossoverFrame(place: JsonObject): Anchors {
+  const [c0, c1] = [RING_END.cross.u0 / 100, RING_END.cross.u1 / 100];
+  const ease = (t: number) => t * t * (3 - 2 * t);
+  const lat = (u: number) => TRACKS[1]! * (1 - ease((u - c0) / (c1 - c0)));
+  const k = finite(place.k, 'crossover k');
+  if (!Number.isInteger(k) || k < 0 || !(c0 + k < c1 - 1e-6)) throw new Error('ring island: no such crossover metre');
+  const u0 = c0 + k,
+    u1 = Math.min(c1, u0 + 1);
+  return { u0, u1, lat0: lat(u0), lat1: lat(u1) };
+}
 /** How many of each generated piece the catalog asks for, by placement id prefix: the greybox's loops on RING_RAMPS,
  * RING_GAP and RING_HALT. The level authors its counts; one that no longer matches the catalog refuses to load. */
 function generatedCounts(): [string, number][] {
@@ -442,6 +423,15 @@ function generatedCounts(): [string, number][] {
   rows.push(['way/post/', 2 * count(HINGE + 3, HALT[0], 6, true)]);
   rows.push(['way/rail/', 2 * count(HINGE + 3, HALT[0], 10)]);
   rows.push(['way/pier/', count(HINGE + 40, HALT[0], 20)]);
+  // The track on the Way: per track a bed and two rails in 10 m lengths over the deck's spans.
+  const lengths = TRACKS.length * count(HINGE, WAY_END, 10);
+  rows.push(['track/bed/', lengths], ['track/rail/', 2 * lengths], ['track/', 3 * lengths]);
+  // The halt's two platforms (a deck, a landing and a ramp each), the foot crossing's planks, bed and slab, the west
+  // platform's ramp, and the crossover's bed and rails a metre at a time.
+  rows.push(['platform/', 3 * [RING_HALT.offsetLat, RING_HALT.downLat].length]);
+  rows.push(['crossing/plank/', ringCrossingPlanks().length], ['crossing/', ringCrossingPlanks().length + 2]);
+  rows.push(['west-ramp', 1]);
+  rows.push(['crossover/', 3 * count(RING_END.cross.u0 / 100, RING_END.cross.u1 / 100, 1)]);
   return rows;
 }
 /** World poses for a furnishing placement: its frame's operands resolved on the island as it stands. */
@@ -501,6 +491,7 @@ function resolvePlacement(
   }
   let anchors: Anchors;
   if (frame === 'flight' || frame === 'landing') anchors = rampFrame(place);
+  else if (frame === 'crossover') anchors = crossoverFrame(place);
   else if (frame === 'halt' || frame === 'brace' || frame === 'line' || frame === 'steps' || frame === 'summit')
     anchors = frames[frame];
   else throw new Error(`ring island: ${p.id} frame`);
@@ -515,6 +506,12 @@ function resolvePlacement(
       'arch-u': finite(arch.u, 'arch') + Math.cos(a) * finite(arch.ru, 'arch'),
       'arch-y': finite(arch.y, 'arch') + Math.sin(a) * finite(arch.ry, 'arch'),
     };
+  }
+  if (place.plank !== undefined) {
+    // Plank k of the foot crossing (state.ts's ringCrossingPlanks): its laterals.
+    const plank = ringCrossingPlanks()[finite(place.plank, 'plank')];
+    if (!plank) throw new Error(`ring island: ${p.id} plank`);
+    anchors = { ...anchors, 'plank-l0': plank[0], 'plank-l1': plank[1] };
   }
   /** (x, z) of a point: (u, lat) on the line, or (x, z) in the summit's frame. */
   const xz = (q: JsonObject) =>
@@ -563,10 +560,15 @@ function resolvePlacement(
   }
   if (place.beam !== undefined) {
     // A box from a to b (its centreline, its top at a.y and b.y), w wide and h deep: the greybox's beam. An end is a
-    // point (u, lat) on the line, or `d` metres out from the summit's middle along (x, z) `along`.
+    // point (u, lat) on the line, a world (x, z), or `d` metres out from the summit's middle along (x, z) `along`.
     const q = object(place.beam, 'beam');
     const end = (e: JsonObject) => {
       if (e.u !== undefined) return { ...at(value(e.u, anchors), value(e.lat, anchors)), y: value(e.y, anchors) };
+      if (e.x !== undefined) {
+        const x = value(e.x, anchors),
+          z = value(e.z, anchors);
+        return { x, y: value(e.y, { ...anchors, ground: ground(x, z) }), z };
+      }
       const along = e.along;
       if (!Array.isArray(along)) throw new Error('ring island: beam end');
       const ox = finite(along[0], 'along'),
@@ -651,8 +653,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   root.name = 'ring-island';
   const material = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.9, flatShading: true });
   const parts = createParts();
-  const b = builders(parts);
-  const { beam, block, track } = b;
+  const { beam } = builders(parts);
 
   // ---------------------------------------------------------------- the furnishing's records
   // Instantiated off (no bodies) until the near view mounts: setMounted turns their solids on with the island's own.
@@ -660,6 +661,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   const records: ReturnType<typeof instantiate>[] = [];
   /** A world direction (x, z) from the halt's middle toward a world (x, z): where the branch read points. */
   const haltMid = at((HALT[0] + HALT[1]) / 2, FORM.mid);
+  const pathFoot = summitPathFoot();
   const toward = (to: Json | undefined) => {
     if (!Array.isArray(to) || to.length !== 2) throw new Error('ring island: toward expected');
     const dx = finite(to[0], 'toward') - haltMid.x,
@@ -674,6 +676,27 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
       east: RING_HALT.downLat[1] / 100,
       west: RING_HALT.offsetLat[0] / 100,
       deck: PLATFORM_Y,
+      // The platforms' laterals, middles and widths, the rail tops' level (`rail`), the formation's edges, the foot
+      // crossing (RING_CROSSING) and where the path starts (`path-x`, `path-z`).
+      'up-l0': upL0,
+      'up-l1': upL1,
+      'down-l0': dnL0,
+      'down-l1': dnL1,
+      'up-mid': (upL0 + upL1) / 2,
+      'down-mid': (dnL0 + dnL1) / 2,
+      'up-width': upL1 - upL0,
+      'down-width': dnL1 - dnL0,
+      rail: HALT_Y,
+      left: FORM.left,
+      right: FORM.right,
+      'x-u0': X.u0,
+      'x-u1': X.u1,
+      'x-landing0': X.landing[0],
+      'x-landing1': X.landing[1],
+      'ramp-top': X.rampTop,
+      'x-top': X.top,
+      'path-x': pathFoot.x,
+      'path-z': pathFoot.z,
     },
     brace: {
       u0: BRACE.u0,
@@ -694,6 +717,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
       width: FORM.right - FORM.left,
       halt: HALT[0],
       end: WAY_END,
+      ...Object.fromEntries(TRACKS.map((t, k) => [`track${k + 1}`, t])),
     },
     steps: {
       u0: RING_STEPS.u0 / 100,
@@ -747,55 +771,23 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   furnish((p) => p.id.startsWith('ramp'));
 
   // ---------------------------------------------------------------- the Pilgrims' Way: their stub, laid double track
-  // The deck, the truss posts and top rails and the piers are records (content/levels/ring-island.ts, `way/`); the
-  // track between them is still drawn here.
+  // The deck, the truss posts and top rails and the piers are records (content/levels/ring-island.ts, `way/`), and so
+  // is the track between them (`track/`): beds and rails, drawn only.
   furnish((p) => p.id.startsWith('way/deck/'));
-  track(HINGE, WAY_END, deckY);
+  furnish((p) => p.id.startsWith('track/'));
   furnish((p) => p.id.startsWith('way/') && !p.id.startsWith('way/deck/'));
 
   // ---------------------------------------------------------------- the island halt
-  const [upL0, upL1] = RING_HALT.offsetLat.map((l) => l / 100) as [number, number];
-  const [dnL0, dnL1] = RING_HALT.downLat.map((l) => l / 100) as [number, number];
   // The platforms, solid down to the fill (ground.ts), so no gap shows under them. They start at the foot crossing's
-  // ramp tops (docs/plans/ring-island-crossing.md): their first 6.6 m are its landings and ramps.
-  const X = RING_CROSSING;
-  for (const [l0, l1] of [
-    [upL0, upL1],
-    [dnL0, dnL1],
-  ] as const) {
-    block(CONCRETE, X.rampTop, HALT[1], l0, l1, HALT_Y - 0.8, PLATFORM_Y);
-    // A landing at the rail tops, carried on under the ramp as its fill, and the ramp the platform's full width,
-    // deep enough that its underside stays inside the fill.
-    block(CONCRETE, X.landing[0], X.rampTop, l0, l1, HALT_Y - 0.8, X.top);
-    const mid = (l0 + l1) / 2;
-    beam(CONCRETE, p3(X.landing[1], mid, X.top), p3(X.rampTop, mid, PLATFORM_Y), l1 - l0, 0.75);
-  }
-  // The planks between the landings: five timber spans with a flangeway by each rail, drawn only, over one solid slab
-  // whose top is the rail tops (drawn a plank's depth lower, as the bed in the flangeways, so the rails show).
-  for (const [l0, l1] of ringCrossingPlanks()) block(TIMBER, X.u0, X.u1, l0, l1, X.top - 0.12, X.top, false);
-  block(BED, X.u0, X.u1, FORM.left, FORM.right, HALT_Y, X.top - 0.12, false);
-  {
-    const c = at((X.u0 + X.u1) / 2, (FORM.left + FORM.right) / 2);
-    parts.solid(
-      FORM.right - FORM.left,
-      X.top - HALT_Y,
-      X.u1 - X.u0,
-      new THREE.Matrix4().compose(
-        new THREE.Vector3(c.x, (HALT_Y + X.top) / 2, c.z),
-        new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, YAW),
-        new THREE.Vector3(1, 1, 1),
-      ),
-    );
-  }
-  // The west platform's ramp off its north end, down onto the slope where the path starts.
-  const pathFoot = summitPathFoot();
-  beam(
-    CONCRETE,
-    p3(HALT[1] - 4, upL0 + 0.2, PLATFORM_Y),
-    { ...pathFoot, y: g.islandH(pathFoot.x, pathFoot.z) + 0.15 },
-    3,
-    0.4,
-  );
+  // ramp tops (docs/plans/ring-island-crossing.md): their first 6.6 m are its landings and ramps (a landing at the rail
+  // tops, carried on under the ramp as its fill, and the ramp the platform's full width). Then the planks between the
+  // landings, five timber spans with a flangeway by each rail, drawn only, over one solid slab whose top is the rail
+  // tops (drawn a plank's depth lower, as the bed in the flangeways, so the rails show), and the west platform's ramp
+  // off its north end, down onto the slope where the path starts. Records (content/levels/ring-island.ts, `platform/`,
+  // `crossing/`, `west-ramp`).
+  furnish((p) => p.id.startsWith('platform/'));
+  furnish((p) => p.id.startsWith('crossing/'));
+  furnish((p) => p.id === 'west-ramp');
   // The halt's furnishing: the RINGWORKS board's frame and legs on the east platform (its face is below, with the
   // hammer's head), the works yard east of the halt with the steel waiting under a tarp (finding 5), the drop hammer,
   // the works wall with the prophecy mural on its face to the halt, and the branch read (ruling 4) beside the west
@@ -810,20 +802,10 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   // (here until the first section, then at each railhead). The cutting is ground.ts's.
 
   // ---------------------------------------------------------------- the crossover's rails on the Way (R2d)
-  {
-    // The offset track's lateral eased from its own (-4, TRACKS[1]: the homeward track since v45) to the original
-    // track's (0) over RING_END.cross, as place/layout.ts's crossLat does at Far Head: ballast and a pair of rails, a
-    // metre at a time, on the Way's grade. Rails only.
-    const [c0, c1] = [RING_END.cross.u0 / 100, RING_END.cross.u1 / 100];
-    const ease = (t: number) => t * t * (3 - 2 * t);
-    const lat = (u: number) => TRACKS[1]! * (1 - ease((u - c0) / (c1 - c0)));
-    for (let u = c0; u < c1 - 1e-6; u += 1) {
-      const v = Math.min(c1, u + 1);
-      beam(BED, p3(u, lat(u), deckY(u) + 0.08), p3(v, lat(v), deckY(v) + 0.08), 2.4, 0.1, false);
-      for (const r of [-0.5, 0.5])
-        beam(RAIL, p3(u, lat(u) + r, deckY(u) + 0.22), p3(v, lat(v) + r, deckY(v) + 0.22), 0.12, 0.14, false);
-    }
-  }
+  // The offset track's lateral eased from its own (-4, TRACKS[1]: the homeward track since v45) to the original track's
+  // (0) over RING_END.cross, as place/layout.ts's crossLat does at Far Head: ballast and a pair of rails, a metre at a
+  // time, on the Way's grade. Rails only; records (content/levels/ring-island.ts, `crossover/`, crossoverFrame).
+  furnish((p) => p.id.startsWith('crossover/'));
 
   // ---------------------------------------------------------------- the path up to the summit lookout
   const CX = centre.x,
