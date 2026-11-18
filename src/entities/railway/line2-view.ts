@@ -65,6 +65,7 @@ import { createRailwayFarHead } from './far-head-view.ts';
 import { createRailwayBoiler } from './boiler-view.ts';
 import { createRailwayPier } from './pier-view.ts';
 import { createForgeFinish } from './forge-finish.ts';
+import { furnaceMouthAtlas, furnaceMouthBox } from './furnace-mouth.ts';
 import { stockSign } from './stock-sign.ts';
 import { createCameraPullOut } from '../../render/camera-pull-out.ts';
 import { playSharedMoment } from './shared-moment.ts';
@@ -214,9 +215,12 @@ export async function createRailwayLine2(
   const chimneyTop = new THREE.Vector3(plan.smoke!.x, plan.smoke!.y + 0.2, plan.smoke!.z);
   const smokeCol = new THREE.Color(look.LOOK.light ? '#d9d5cc' : '#5d5a55');
   let smokeAcc = 0;
+  const fire = furnaceMouthAtlas();
   const mouth = mesh(
-    new THREE.BoxGeometry(2.8, 1.8, 0.1),
-    readableGlow(new THREE.MeshStandardNodeMaterial({ color: '#3a1a08', emissive: '#ff5a0a', emissiveIntensity: 1.3 })),
+    furnaceMouthBox(),
+    readableGlow(
+      new THREE.MeshStandardNodeMaterial({ color: '#160e0b', emissive: '#ffffff', emissiveMap: fire.atlas }),
+    ),
   );
   materials.push(mouth.material as THREE.Material);
   mouth.position.set(plans.X, plan.y + 1.5, plans.Z + plans.D / 2 - 0.5);
@@ -977,6 +981,7 @@ export async function createRailwayLine2(
     offReset();
     for (const g of geometries) g.dispose();
     for (const m of materials) m.dispose();
+    fire.atlas.dispose();
   });
 
   // ---------------------------------------------------------------- per frame
@@ -1060,6 +1065,7 @@ export async function createRailwayLine2(
       building.update(dt);
       finish.update(dt);
       mouth.visible = fg.lit >= 0;
+      if (mouth.visible && !reducedMotion) fire.advance(dt);
       if (litShown < 0 && fg.lit >= 0) {
         sounds.fanfare(true);
         whistle(plans.X, plans.Z);
