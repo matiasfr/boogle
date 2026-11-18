@@ -1,4 +1,5 @@
-// Replace-room authority and checkpoint contracts, through the real HTTP service.
+// Replace-room authority, checkpoint and announcement contracts, through the real HTTP service and sockets.
+// Admission budgets and the key-length boundary are replace-admission.test.ts; trusted addresses client-address.test.ts.
 import test from 'node:test';
 import { WebSocket } from './helpers/accounts.ts';
 import assert from 'node:assert/strict';
@@ -10,6 +11,7 @@ import { buildSeedDoc } from '../src/seeds/build.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import type { RailwayWorldHost } from '../src/host/world-host.ts';
 import { SeedValidationBusyError, validateSeedDoc } from '../src/seeds/validate.ts';
+import { jumpOf } from '../../src/world/railway-jump.ts';
 
 const KEY = 'replace-test-key-01234567890123456789';
 
@@ -58,53 +60,6 @@ test('replace: disabled, wrong key, report token, confirmation, room and stage g
     assert.deepEqual(
       (await fs.readdir(s.dataDir)).filter((f) => f.endsWith('.json')),
       [],
-    );
-  } finally {
-    await s.svc.close();
-  }
-  const off = await start({ advanceKey: '' });
-  try {
-    assert.equal((await off.post(body)).status, 404);
-  } finally {
-    await off.svc.close();
-  }
-});
-
-test('replace: rate limit runs before authentication', async () => {
-  const s = await start({ replaceRatePerMin: 1 });
-  try {
-    assert.equal((await s.post(body, 'wrong')).status, 401);
-    assert.equal((await s.post(body)).status, 429);
-  } finally {
-    await s.svc.close();
-  }
-});
-
-test('replace: aggregate authentication budget rejects a distributed burst before building seeds', async () => {
-  let builds = 0;
-  const s = await start({
-    replaceRatePerMin: 1,
-    jumpBuildDoc: async () => {
-      builds++;
-      throw new Error('unexpected build');
-    },
-  });
-  try {
-    const statuses: number[] = [];
-    for (let n = 1; n <= 32; n++) {
-      const response = await fetch(`${s.base}/admin/rooms/${railwayRoomId('testing')}/replace`, {
-        method: 'POST',
-        headers: { authorization: 'Bearer wrong', 'fly-client-ip': `192.0.2.${n}` },
-      });
-      statuses.push(response.status);
-      await response.text();
-    }
-    assert.ok(statuses.includes(429), 'aggregate budget rejects requests from distinct IPs');
-    assert.equal(builds, 0);
-    assert.equal(
-      (await s.post({ ...body, stage: 'unknown' })).status,
-      400,
-      'failed guesses cannot spend the operator budget',
     );
   } finally {
     await s.svc.close();
@@ -262,20 +217,43 @@ async function until(fn: () => boolean) {
   assert.fail('condition timed out');
 }
 
-test('replace: occupied override, two countdowns, busy, late join, and restart cancels pending work', async () => {
+test('replace: occupied override, server-only announcement, busy, late join, bye, and restart cancels pending work', async () => {
   const s = await start({ replaceCountdownMs: 5000 });
   const a = connect(s.base, 'testing', 'aaa');
   const b = connect(s.base, 'testing', 'bbb');
   try {
     await until(() => a.messages.some((m) => m.t === 'welcome') && b.messages.some((m) => m.t === 'welcome'));
+    // Hostile frames cannot announce or start a replacement; the heartbeat echo proves they were all processed.
+    for (const frame of [
+      { t: 'replace', stage: 'ring-joined' },
+      { t: 'replacing', label: 'forged', seconds: 10 },
+      { t: 'm', d: { t: 'replacing', label: 'forged', seconds: 10 } },
+      { t: 'm', d: { t: 'r:edit', e: { op: 'rail.replace', stage: 'ring-joined' } } },
+      { t: 'hb', at: 123 },
+    ])
+      a.ws.send(JSON.stringify(frame));
+    await until(() => a.messages.some((m) => m.t === 'hb' && m.at === 123));
+    const announced = (m: Record<string, unknown>) =>
+      m.t === 'replacing' || (m.d as Record<string, unknown> | undefined)?.t === 'replacing';
+    assert.equal(b.messages.some(announced), false);
+    assert.equal(s.svc.roomHost()!.room(railwayRoomId('testing'))!.status().players, 2);
     assert.equal((await s.post(body)).status, 409);
     const pending = s.post({ ...body, override: true });
     await until(() => a.messages.some((m) => m.t === 'replacing') && b.messages.some((m) => m.t === 'replacing'));
+    for (const client of [a, b])
+      assert.deepEqual(client.messages.find(announced), { t: 'replacing', label: jumpOf('awake')!.label, seconds: 10 });
     assert.equal((await s.post({ ...body, override: true })).status, 409);
     const c = connect(s.base, 'testing', 'ccc');
     await until(() => c.messages.some((m) => m.t === 'replacing'));
+    const born = (client: typeof a) => client.messages.find((m) => m.t === 'welcome')!.born;
+    assert.equal(born(c), born(a));
+    assert.ok(Number(c.messages.find((m) => m.t === 'replacing')!.seconds) <= 10);
     await s.svc.close();
     assert.equal((await pending).status, 503);
+    for (const client of [a, b, c]) {
+      const bye = client.messages.findIndex((m) => m.t === 'bye');
+      assert.ok(bye > client.messages.findIndex((m) => m.t === 'replacing'), 'the announcement precedes bye');
+    }
     const restarted = await start({}, s.dataDir);
     try {
       const status = (await (await fetch(`${restarted.base}/rooms/${railwayRoomId('testing')}/host`)).json()) as {
