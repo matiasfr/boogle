@@ -337,7 +337,7 @@ review** row (a fresh subagent, fable medium) on its one proof look. Step 2 and 
     table`; the top-down and the `awake` (stub only) stills go to the reviewer with it.
   - Record `npm run perf` at Home before and after in this plan.
 - [ ] **Checkpoint A: the owner and the designer see step 1's stills before the roll-out.** Nothing else waits on it.
-- [ ] **2. The whole list, and the level check reads it.** `junctions.ts`: J2 to J9. `test/turnout.test.ts`: the
+- [ ] **2. The whole list, and the level check reads it.** `junctions.ts`: J2 to J9. `test/turnout.test.ts` (retired in the test cleanup of 18 November 2026 as geometry a look shows; step 2 is looked at, or the suite comes back with it): the
   tangent, frog and hand cases for each (the table above, ± 0.1 m and ± 0.5°); "every line end the layout draws has a
   junction" against `RAIL_LINES[0..1].halts[].end`; "one timber per station in a cluster" (J3 with J4).
   `dev/level/track-continuity.ts`: replace the "turnouts and crossover" lines with one row per junction (toe, hand,
