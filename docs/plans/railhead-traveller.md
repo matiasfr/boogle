@@ -1,5 +1,4 @@
-> **Status:** Steps 1–2 shipped in #1841 as v46; Checkpoint A is verified below. Steps 3 and 4 are built on the implementation branch. Step 5 is blocked: the archived branch it ports from is gone
-(below). Design base:
+> **Status:** Steps 1–2 shipped in #1841 as v46; Checkpoint A is verified below. Steps 3 to 5 are built on the implementation branch (step 5 fresh: the archived branch is gone); Checkpoint B is next. Design base:
 > `origin/main` at `35e1c3431`. Replaces
 > steps 2 and 4 of [gap-readability](gap-readability.md) (the railhead's move), which were built on branch
 > `worktree-agent-af55e2f2172764ff8` (tag `archive/worktree/railhead-traveller`, tip `9b9845fbb`) and failed three
@@ -230,12 +229,26 @@ Rows are from `npm run models` (mode withCodex, 14 November).
       `test/platforms-carry.test.ts` now drives the deck through it from a real room's row at `gap-footed`. The walkway
       test also asserts, on every quarter tick of every haul, that the deck's end is never past a span the lagging tab
       draws. `test/prefab-halts.test.ts` injects the two new bindings; its catalog golden is unchanged.
-- [ ] **5. The apparatus and its cues. Blocked (18 November): the archived branch is gone. No
-      `archive/worktree/railhead-traveller` tag in any checkout, no remote ref, and `9b9845fbb` is not an object here
-      or on GitHub; no copy of `drawTraveller` survives on disk. Porting needs the source or a fresh design. Tier: view. Row: implementer agent, fable medium.** Port `drawTraveller`,
-      `guy`, `drawKit`, `fold` and the cue list into `railhead-view.ts`, driven by `haulPhase`; reduced motion keeps
-      the sounds and drops the blink. Port `dev/look/evals/railhead-move.ts`. Verify: the eval's motion sheet (told
-      before any movement, eased start, chock and flare at rest).
+- [x] **5. The apparatus and its cues. Tier: view. Row: implementer agent, fable medium. Built fresh, not ported**
+      (owner, 18 November: the archived branch is gone; no `archive/worktree/railhead-traveller` tag, remote ref or
+      object `9b9845fbb` survives). Design: [Step 5 design note](#step-5-design-note-18-november) and its
+      [review](#design-review-2026-11-18). Write `dev/look/evals/railhead-move.ts`. Verify: the eval's motion sheet
+      (told before any movement, eased start, chock and flare at rest).
+      As built (18 November), **fresh, not a port**: the design note's parts and timeline in `railhead-view.ts`
+      (`stepRig`, `drawTraveller`, the jib's fold in `drawKit`, `bollard` on each span), driven by `haulPhase` on
+      the view's rule clock; `inspect().railheadView.traveller` reports the rig. The only change from the note: the
+      wheels grew from r 0.35 to 0.42 m with a grey disc behind the spokes, because at 0.35 they read as brackets.
+      Cost: no new draw call (all in the existing `live` and static box batches); about 76 boxes at rest and 79 at
+      most while moving (about 950 triangles) in `live`, and 16 boxes (192 triangles) for the 8 bollards in the static
+      batch; the peak `live` count measured at `gap-footed` is 385 of 2,600. Evidence with `dev/look/evals/railhead-move.ts`
+      at `ring-set-3` (real input sets the pair's second footing): [motion sheet](../world/railhead-deck-car/traveller-motion.png)
+      (10 frames over 9 s: rest, told with the jib folding and a lamp lit, the eased start, travel, the stop's flare,
+      chocks down and lamps dark at rest), [mid-haul](../world/railhead-deck-car/traveller-mid.png),
+      [rest](../world/railhead-deck-car/traveller-rest.png) and step 4's [lever riding the deck](../world/railhead-deck-car/lever-mid.png),
+      all with the menu closed. The eval's log matched the timeline (told at phase 0, moving from phase 10, at u 160
+      by phase 60, settled at 70). Not seen: sounds, reduced motion, a second tab, and the bell's swing at sheet size.
+      Seen in passing (sim, not this step): a train runs to the new head's nose as soon as the pair is accepted, onto
+      the new span ahead of the still-chocked deck.
 - [ ] **Checkpoint B (steps 3 to 5, one ship, after A is live).** Proofs, once: real input standing on the platform
       through a haul (no fall, `carry.on` is the deck throughout); two tabs with `&railLag=400` on one, the friend
       drawn on the deck throughout and both `railheadView.shownU` within 0.1 m at the same wall time; a third tab
@@ -243,6 +256,75 @@ Rows are from `npm run models` (mode withCodex, 14 November).
       fresh subagent that did not build it (fable medium). Runner for the owed proofs: Codex gpt-6.1-sol medium.
       Then: `docs/game-design/place.md` (the railhead's section), [gap-readability](gap-readability.md)'s status
       block, an agent-calls row for the `HAUL` timings.
+
+## Step 5 design note (18 November)
+
+The owner's ask ([14 November](../decisions-rail.md#d-2026-11-14-gap-readability-answered)): the move reads as
+construction apparatus doing a job, "not just shifting like a bug". The railhead platform becomes a **traveller**: a
+wheeled carriage that unchocks, takes up a line to the new span's end and winches itself out, then chocks and locks in.
+All boxes in the railhead's existing `live` batch (one instanced draw, `works-box-view.ts`) and the spans' static
+batch, in the view's existing colours; no texture, no model, no collider, no string.
+
+**Parts** (on the platform, so they ride the deck):
+
+| Part | Where | At rest | Moving |
+| --- | --- | --- | --- |
+| Bogies | 4 (2 m and 8 m in from each end), a wheel pair on each long face at the walkway, a side frame between | still | spokes turn with the distance hauled (r 0.42 m) |
+| Chocks | an orange block at each bogie, each face (8) | down on the walkway against the wheels | lifted 0.5 m and tucked against the face |
+| Winch | a drum on two cheeks on the front corner, track side | still | the drum turns with the line taken in |
+| Haul line | winch to a bollard at the new span's end (lat 1.5, just off the platform's track side) | not shown | sags, goes taut over the told second, shortens as it hauls |
+| Bollards | one at each built span's end, in the span's static picture | where the line will run to | |
+| Lamps | an amber lamp on a post at each front corner | dark | blinking at 2 Hz from told until settled |
+| Bell | on a short post by the jib mast | still | swings for the told second |
+| Guys | two stays from the jib mast's top to the platform's back corners | taut | taut (they ride with it) |
+| Jib | the existing arm | out over the gap | folds up toward the mast for the move, out again at rest |
+| Flare | a gold glow at the winch and bollard as it seats | | fades over 0.6 s at the stop |
+
+**Timeline** against `haulPhase(row, ruleClock)` (`p`, rule ticks since told; `T = ceil(haulTravel(dist))`):
+
+| p | What a player sees and hears |
+| --- | --- |
+| -60 to 0 | Unchanged: the footing goes down, the bent rises, the span lands (forced by step 4 at p = -60 at the latest) |
+| 0 | Told. **Bell**, lamps start blinking, chocks lift over 0.3 s with a **clank**, the jib folds over 0.8 s, the haul line appears and takes up its slack over the second |
+| 10 | Eased start (`haulAlong`'s ramp). **Chuff** at the winch and a little dust at each bogie; wheels and drum turn |
+| 10 to 10 + T | Travel at up to 5 m/s; a **chuff** every 0.8 s from the winch |
+| 10 + T | Stopped at the new head. Chocks drop over 0.3 s, **thump** at each end, dust; the flare; the jib unfolds |
+| 10 + T + 9 | Settled (`haulEnd`): **bell** again, lamps dark, line gone; the prompts and the lever come back (step 4) |
+
+Sounds are the existing `machine-sfx` ones (`bell`, `clank`, `chuff`, `thump`). Cues fire with a latch on the
+highest phase seen for the pair (`seen < x <= p`), so a clock correction backward never repeats one; a tab that first
+sees a pair more than 0.2 s past a cue skips it (late join, reload, a backed-up peer). **Reduced motion** keeps every
+sound, the chocks, the fold, the wheels and the line (they are the mechanism), and drops the lamps' blink (steady on
+instead) and the bell's swing.
+
+## Design review (2026-11-18)
+
+Reviewed in the builder's context against DESIGN.md 7 (Telegraph everything), 10 (Slapstick over precision) and 11
+(Show, don't tell), the 14 November and 2 November rail decisions and `HAUL`.
+
+| Call | Kind | Source or recommendation |
+| --- | --- | --- |
+| The move is apparatus, riders carried, 1 s told and about 5 m/s | Decided | [14 November](../decisions-rail.md#d-2026-11-14-gap-readability-answered) |
+| The look is the builder's | Decided | Same entry: "How the apparatus looks is the builder's" |
+| A wheeled, self-winching traveller: the parts table above | Default | Reads as a job being done with no words (11); every part is cheap boxes and can be cut or retuned |
+| The cue timeline above (bell at told and settled, clank, chuffs, thumps) | Default | Telegraphs the move a full second before anything moves (7), with existing sounds only |
+| The lamps and line start at told, not earlier | Default | `HAUL.after`'s 6 s already shows the bent rising and the span landing; a longer warning is a `HAUL` retune, not view work |
+| Reduced motion drops the blink and the swing, keeps the rest | Default | The plan's rule; the wheels and line are the move itself |
+| Late tabs skip cues more than 0.2 s past | Default | The plan's rule; no bell for a haul you joined halfway |
+| The new props have no colliders | Default | Finding 1 |
+
+**Findings.**
+
+1. *What looks solid is solid* (2 November) covers track, trains and the track layer. The lamp posts, bell post and
+   winch would be walk-through props on a deck a player stands on; the jib mast and rack are already drawn only. They
+   are kept small (at most 0.3 m) and at the platform's edges and corners, away from the rack and the jib's working
+   spot. Making them car shapes is a physics change for a later step if a playtest shows a player walking through one.
+2. Co-op: every tab derives the same phase from the row, so a friend sees the same bell at the same moment, and the
+   solo player gets the same telegraph. A friend arriving mid-haul sees it moving with no bell (the skip rule).
+3. First meeting: the first haul is the first pair at the ring; the told second plus the line run out to the bollard
+   says where it is going before it goes.
+
+No owner questions; no new strings.
 
 ## Step 2 implementation notes (14 November)
 
