@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { browserVersion, differences, previousRun, sameHardware } from '../dev/device/compare.ts';
+import { browserVersion, differences, previousRun } from '../dev/device/compare.ts';
 import type { DeviceResult } from '../dev/device/read.ts';
 import { baselineSection, pasteLine, previousSection, report } from '../dev/device/report.ts';
 
@@ -29,15 +29,6 @@ test('the browser version is the full one from the user agent', () => {
   assert.match(pasteLine(later), /, Safari 27\.2, build/);
 });
 
-test('the 10 November pair lists every condition that differs', () => {
-  assert.equal(sameHardware(later, earlier), true);
-  assert.deepEqual(differences(later, earlier), [
-    'browser Safari 27.2 here, Safari 27.0 there',
-    'viewport 1128x730 here, 1489x974 there',
-    'refresh interval 21 ms here, 17 ms there',
-  ]);
-});
-
 test('DPR, graphics settings and cold or warm count; a refresh within 10% and an unrecorded field do not', () => {
   const other = clone(earlier, {
     ua: later.ua,
@@ -62,6 +53,7 @@ test('the same hardware under different conditions is not comparable: no frame-t
   assert.match(text, /> - browser Safari 27\.2 here, Safari 27\.0 there/);
   assert.match(text, /> - viewport 1128x730 here, 1489x974 there/);
   assert.match(text, /> - refresh interval 21 ms here, 17 ms there/);
+  assert.equal(text.match(/^> - /gm)?.length, 3);
   assert.doesNotMatch(text, /p50|p95|\dx \|/);
   assert.match(text, /\| spawn \| 790 \| 790 \| 0 \| 480000 \| 480000 \| 0 \|/);
   // The same pair as baseline and run says the same.

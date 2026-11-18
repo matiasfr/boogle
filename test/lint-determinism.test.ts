@@ -32,6 +32,49 @@ const converted = (code: string) =>
 const normalize = (rule: string) => (rule === 'no-unused-vars' ? '@typescript-eslint/no-unused-vars' : rule);
 const has = (diagnostics: Diagnostic[], rule: string) => diagnostics.some((d) => d.rule === rule);
 
+const restricted = (code: string, file: string) =>
+  lintSafety(code, file).some((d) => d.rule === 'no-restricted-imports' || d.rule === 'no-restricted-syntax');
+
+test('a view or src/world may not import the seed and test drivers (they run the rules and the load check)', () => {
+  const missed = [
+    ['src/entities/railway/zz-probe.ts', "import { check } from '../../sim/railway-drive.ts';\nvoid check;\n"],
+    [
+      'src/entities/railway/zz-probe.ts',
+      "import { buildSeedWorld } from '../../sim/railway-seeds.ts';\nvoid buildSeedWorld;\n",
+    ],
+    ['src/entities/railway/zz-probe.ts', "export const load = () => import('../../sim/railway-drive.ts');\n"],
+    ['src/world/zz-probe.ts', "import { check } from '../sim/railway-drive.ts';\nvoid check;\n"],
+    ['src/world/zz-probe.ts', "import { buildSeedWorld } from '../sim/railway-seeds.ts';\nvoid buildSeedWorld;\n"],
+    ['src/world/railway-zz.ts', "import { apply } from '../sim/railway-drive.ts';\nvoid apply;\n"],
+    ['src/adapters/zz-probe.ts', "import { apply } from '../sim/railway-drive.ts';\nvoid apply;\n"],
+  ].filter(([file, code]) => !restricted(code!, file!));
+  assert.deepEqual(missed, []);
+  // Types stay allowed: src/world/railway-jump.ts names SeedStage.
+  const typed = [
+    [
+      'src/world/zz-probe.ts',
+      "import type { SeedStage } from '../sim/railway-seeds.ts';\nexport type S = SeedStage;\n",
+    ],
+    [
+      'src/entities/railway/zz-probe.ts',
+      "import { type Seed } from '../../sim/railway-drive.ts';\nexport type S = Seed;\n",
+    ],
+  ].filter(([file, code]) => restricted(code!, file!));
+  assert.deepEqual(typed, []);
+});
+
+test("a view's import() of the check, drivers or systems is banned however the path is cast", () => {
+  const file = 'src/entities/railway/zz-probe.ts';
+  const missed = [
+    "export const load = () => import('/src/sim/railway-check.ts' as unknown as string);",
+    'export const load = () => import(`/src/sim/railway-check.ts` as string);',
+    "export const load = () => import(('/src/sim/railway-systems.ts') as string);",
+    'export const load = () => import(`/src/sim/railway-drive.ts` as unknown as string);',
+    "export const load = () => import((('/src/sim/railway-seeds.ts')) as string);",
+  ].filter((code) => !restricted(code, file));
+  assert.deepEqual(missed, []);
+});
+
 test('fixture assertions retain every ESLint catch and enforce current policy; JS language gate is preserved', () => {
   temporary((root) => {
     const files = new Map<string, string[]>();

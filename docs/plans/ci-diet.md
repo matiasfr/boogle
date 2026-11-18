@@ -201,16 +201,16 @@ run less than the full suite.
 - P1, loads the unit walk could not follow. A test's closure (`createWalker` in `dev/ci/unit-select.ts`) now follows
   repo-rooted path literals (an esbuild entry, a script run with `--check`, a source `dev/level/source.ts` evaluates, a
   `--import` hook), folder URLs (every file under the folder; one naming the root is a base, not a folder) including a
-  computed URL under a literal folder, and `import.meta.glob` patterns. The seven missed tests (`railway-r4c-leaf`,
-  `-m10a-views`, `sw-worker`, `place-coop-snapshot`, `rail-map`, `world-lines`, `railway-lint-review`) are selected;
-  `test/unit-select-review.test.ts` holds them. What no walk follows is in `UNFOLLOWED`, each with what it reaches
+  computed URL under a literal folder, and `import.meta.glob` patterns. The six missed tests (`railway-r4c-leaf`,
+  `-m10a-views`, `sw-worker`, `rail-map`, `world-lines`, `railway-migrate`) are selected;
+  `test/unit-select.test.ts` holds them. What no walk follows is in `UNFOLLOWED`, each with what it reaches
   (joined to the closure of every test reaching the file) and what covers it. The guard in `test/unit-select.test.ts`
   parses every file of every test's closure: a literal load target the walk did not find fails, and so does a computed
   import or URL, a worker, a child process running node or npm, an esbuild call, a `sourceFunction`/`sourceModule`, a
   computed glob or `registerHooks` that is not listed. Calls are recognised by what their callee was imported from, so
   `regex.exec` and an ECS `spawn` are not child processes. `dev/lint/policy.ts` names lint scopes, not loads
   (`NAMES_ONLY`); the guard still checks its load sites. Over-reach accepted: a test that names paths as data (the case
-  tables in core tests, `atlas`, `review-m3b`, `railway-lint-review` through `dev/lint/safety.ts`) is selected more
+  tables in core tests, `atlas`, `review-m3b` through `dev/lint/safety.ts`) is selected more
   often; a client change now selects about 21 to 28 files, against 15 before.
 - P2. `FULL_ON` holds `dev/ci/unit-select.ts`'s import closure, computed (`dev/review-stamp.ts`, `dev/server-build.ts`
   and `dev/ci/`).
