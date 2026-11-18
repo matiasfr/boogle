@@ -13,7 +13,7 @@ function harness() {
   const w = { awake: -1, trains: -1, boiler: 'none', jump: false, glide: false };
   const sounds: unknown[] = [];
   /** What holds a friend's card back: each read every frame. */
-  const hold = { glide: false, chair: false, vehicle: false, moment: false, busy: false, air: false };
+  const hold = { glide: false, chair: false, vehicle: false, moment: false, busy: false, air: false, talk: false };
   const cards: string[] = [];
   const marks: unknown[] = [];
   let phase = 'asleep';
@@ -36,6 +36,10 @@ function harness() {
         inputState: {
           get seated() {
             return hold.vehicle;
+          },
+          // Review: an open conversation (src/player/conversation.ts) holds input this way; it is not a modal.
+          get held() {
+            return hold.talk;
           },
         },
         momentBusy: () => hold.moment,
@@ -320,5 +324,20 @@ test('review: a solo page leaves no card mark and owes nothing', () => {
   take('rail.glide', 'a', 'glide');
   for (let i = 0; i < 5; i++) v.update(0.5);
   assert.deepEqual({ cards: h.cards, owed: v.inspect().owed, marks: h.marks.length }, { cards: [], owed: [], marks: 0 });
+  v.dispose();
+});
+
+test("review: a friend's card waits while they are talking to an NPC (conversation holds input)", () => {
+  const h = harness();
+  const { v, take } = h.mount('b');
+  v.update(0.1);
+  h.hold.talk = true;
+  take('rail.glide', 'a', 'glide');
+  for (let i = 0; i < 5; i++) v.update(0.5);
+  // The card would take the pad grab and, on put-away, clear inputState.held under the open talk.
+  assert.deepEqual(h.cards, []);
+  h.hold.talk = false;
+  v.update(0.016);
+  assert.deepEqual(h.cards, ['glide']);
   v.dispose();
 });
