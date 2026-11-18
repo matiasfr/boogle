@@ -42,6 +42,59 @@ test('the stack cutting bank beyond the four metre cap retains its existing grad
   const extraCut = g.stackCap(x, z) - g.islandH(x, z);
   assert.ok(Math.abs(extraCut) < 0.05, `bank at (${x}, ${z}) cut a further ${extraCut.toFixed(3)} m`);
 });
+test('the patch has a wall under every step along the landing’s edges, up to the deck’s end', () => {
+  // Re-review of f5d8c3ec: where the landing's uphill edge meets the deck's footprint (d = 0), the wall's outer height is
+  // read on the footprint line, where the deck's cap wins, so the last half metre of the lip wall twists down to the cap
+  // and leaves a hole in the drawn ground and the collider.
+  const ux = (b.x - a.x) / span,
+    uz = (b.z - a.z) / span;
+  const { vertices: v, ground, landing } = g.patch,
+    tris = [...ground, ...landing];
+  const point = (k: number) => [v[k * 3]!, v[k * 3 + 1]!, v[k * 3 + 2]!] as const;
+  /** Whether (x, y, z) lies on one of the patch's triangles (within 0.1 mm). */
+  const covered = (x: number, y: number, z: number) => {
+    for (let t = 0; t < tris.length; t += 3) {
+      const [A, B, C] = [point(tris[t]!), point(tris[t + 1]!), point(tris[t + 2]!)];
+      const ab = [B[0] - A[0], B[1] - A[1], B[2] - A[2]],
+        ac = [C[0] - A[0], C[1] - A[1], C[2] - A[2]],
+        ap = [x - A[0], y - A[1], z - A[2]];
+      const n = [
+        ab[1]! * ac[2]! - ab[2]! * ac[1]!,
+        ab[2]! * ac[0]! - ab[0]! * ac[2]!,
+        ab[0]! * ac[1]! - ab[1]! * ac[0]!,
+      ];
+      const nl = Math.hypot(n[0]!, n[1]!, n[2]!);
+      if (nl < 1e-12 || Math.abs(ap[0]! * n[0]! + ap[1]! * n[1]! + ap[2]! * n[2]!) / nl > 1e-4) continue;
+      const dot = (p: number[], q: number[]) => p[0]! * q[0]! + p[1]! * q[1]! + p[2]! * q[2]!;
+      const d00 = dot(ab, ab),
+        d01 = dot(ab, ac),
+        d11 = dot(ac, ac),
+        d20 = dot(ap, ab),
+        d21 = dot(ap, ac),
+        den = d00 * d11 - d01 * d01;
+      const s = (d11 * d20 - d01 * d21) / den,
+        r = (d00 * d21 - d01 * d20) / den;
+      if (s >= -1e-6 && r >= -1e-6 && s + r <= 1 + 1e-6) return true;
+    }
+    return false;
+  };
+  const holes: string[] = [];
+  for (const side of [-1, 1])
+    for (let k = 1; k < 80; k++) {
+      const d = -LANDING.length + (LANDING.length * k) / 80,
+        at = (s: number) => ({ x: a.x + ux * d - uz * s, z: a.z + uz * d + ux * s });
+      const edge = at(side * LANDING.half),
+        inner = at(side * (LANDING.half - 1e-5)),
+        outer = at(side * (LANDING.half + 1e-5));
+      const hin = g.islandH(inner.x, inner.z),
+        hout = g.islandH(outer.x, outer.z);
+      if (Math.abs(hin - hout) < 0.005) continue;
+      if (!covered(edge.x, (hin + hout) / 2, edge.z))
+        holes.push(`${side > 0 ? '+' : '-'} ${d.toFixed(2)} m: ${(hout - hin).toFixed(3)} m`);
+    }
+  assert.deepEqual(holes, [], `open steps beside the landing (side, metres from a, step): ${holes.join('; ')}`);
+});
+
 /** ringHeight takes Place's local metres (x less ORIGIN.x). */
 const cones = (x: number, z: number) => ringHeight(x - ORIGIN.x, z - ORIGIN.z);
 const w = (u: number, lat: number) => {
