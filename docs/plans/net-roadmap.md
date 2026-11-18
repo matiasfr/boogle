@@ -72,8 +72,9 @@ Account optionally saves a PIN (promotion keeps the pid), signs in, replaces the
 - Proved on 17 and 18 November ([Checkpoint A](accounts.md#step-5-runner-evidence-17-november-2026),
   [Checkpoint B run](accounts.md#checkpoint-b-run-18-november-2026)): admission cases and a fresh review, `net`
   237/237 with the two-store browser probe, before/after eight-player load, browser room isolation, storage
-  denial, expiry, a lost create reply and the Account page review. Not proved: crash durability on Windows,
-  any device (not tested on a device); three Account page notes are with the owner.
+  denial, expiry, a lost create reply and the Account page review. Crash durability: Linux CI runs the kept test;
+  on Windows it is skipped, and the 18 November review held it for an abrupt kill at three points on a scratch
+  copy only. Not tested on a device; three Account page notes are with the owner.
 
 ### 2. Storage: SQLite on the volume
 
