@@ -11,7 +11,6 @@ The one record of who is running what, and what the five-job limit is counted fr
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
 | The two stale bots (the two-player playthrough expects a friend’s card; the seed route takes the axe at the lit forge; a failed bot ends its look), then Checkpoint A’s two-player and works-bot proofs (`dev/look/bots/railway.ts`, `src/sim/railway-seed-route.ts`, seed-derived tests, `separate-capacities.md`) | Separate capacities (P2) | `claude/capacities-bot-fixes` | the heartbeat (HOTBOX), Claude Opus high delegate | 18 November 15:42 | the two-player proof passes; the seed fix is building under the seed-goldens owner call (the golden regenerated, an independent keyed review owed) (browser-heavy: the works bot) |
-| Prefab data step 13, fifth area: secrets (`src/entities/finds/`, `prefab-data.md`) | Prefab data (P2) | `claude/prefab-secrets` | the heartbeat (HOTBOX), Claude Opus medium delegate | 18 November 15:42 | built; in independent review |
 
 ## Where the work stands
 
