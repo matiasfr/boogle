@@ -1,4 +1,4 @@
-// Review fault injection: die inside a real SQLite transaction, without close/rollback handlers.
+// Fault injection for accounts.test.ts: die inside a real SQLite transaction, without close/rollback handlers.
 import { createAccountStore } from '../../src/account-store.ts';
 import { createAccounts } from '../../src/accounts.ts';
 

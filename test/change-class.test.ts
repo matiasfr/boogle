@@ -156,14 +156,6 @@ test('server jobs follow the real tuning panel and recorder behind per-tab impor
 const UNFOLLOWED: Record<string, string> = {
   'server/test/credential-evidence.test.ts: import':
     'imports the browser bootstrap bundle from the literal account.ts URL; that source and its imports are walked',
-  'server/test/seat-recording.test.ts: registerHooks':
-    'isolates the literal seat binder and mark URLs per tab; both targets and their imports remain in the server closure',
-  'server/test/seat-recording.test.ts: import':
-    'loads the two literal source URLs with per-tab query parameters; both targets and their imports are walked',
-  'server/test/roster-recording.test.ts: registerHooks':
-    'isolates identity per tab and stubs renderer entry points; its literal source URL and imports remain in the server closure',
-  'server/test/roster-recording.test.ts: import':
-    'loads the literal identity URL with per-tab query parameters; that target and its imports are walked',
   'dev/peer-test/harness.ts: esbuild.build': "bundles dev/peer-test/<entry>: every file there is one of net's roots",
   'dev/peer-test/worker-source.ts: registerHooks': 'redirects src/ to a worker tree; the same src files',
   'dev/peer-test/node-player.ts: import': 'imports the bundle node-player itself builds from dev/peer-test',

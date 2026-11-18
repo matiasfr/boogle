@@ -1,4 +1,5 @@
-// Ported from the review: real host, replica, identity subscription, recorder queue and mark limiter.
+// Real host, replica, identity's roster subscription, recorder queue and mark limiter: a remote peer records every
+// accepted rename and every change it missed while away, and rename or refill floods keep other telemetry.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -15,7 +16,7 @@ import {
   ROSTER_SNAPSHOT_MS,
 } from '../../src/proto/mark.ts';
 
-test('rename and refill floods preserve other telemetry and eventually record the complete final roster', async (t) => {
+test('a remote peer records renames and missed changes; floods keep other telemetry and the final roster', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const f = await fixture(t);
   for (let i = 0; i < 256; i++) {
@@ -58,6 +59,7 @@ test('rename and refill floods preserve other telemetry and eventually record th
   f.run(3);
   await f.settled();
   const ends = () => ctx.queue.filter((e) => e.k === 'roster.end').length;
+  const marks = () => ctx.queue.filter((e) => e.k === 'm' && e.n === 'roster.player').map((e) => [e.pid, e.name]);
   const complete = () => {
     const start = ctx.queue.findLastIndex((e) => e.k === 'roster.begin');
     const segment = ctx.queue.slice(start, start + 258);
@@ -83,7 +85,7 @@ test('rename and refill floods preserve other telemetry and eventually record th
   assert.ok(a.refused.every((e) => e.reason === 'refused'));
   assert.equal(f.host.status().ready, true);
   assert.equal(ends(), 1, 'renames do not synchronously emit full snapshots');
-  assert.equal(ctx.queue.filter((e) => e.k === 'm' && e.n === 'roster.player').length, 2);
+  assert.equal(marks().length, 2, 'one incremental mark per accepted rename');
   assert.equal(ctx.queue.length, 1260);
   assert.equal(ctx.dropped, 0);
 
@@ -98,6 +100,17 @@ test('rename and refill floods preserve other telemetry and eventually record th
   t.mock.timers.tick(1);
   assert.equal(ends(), 2);
   complete();
+  // A rename the peer missed while away is recorded as an incremental mark once its refill lands.
+  b.disconnect();
+  f.advanceTime(ROSTER_CHANGE_MS);
+  assert.ok(a.adapter.act('who.set', { n: 'Annie', c: 4 }));
+  f.run();
+  await f.settled();
+  const missed = marks().length;
+  b.reconnect();
+  f.run(3);
+  assert.deepEqual(marks().slice(missed), [['alice', 'Annie']]);
+  assert.equal(b.accepted.length, 0, 'the recording never depends on a local receipt');
   // Unchanged refills still produce complete recovery snapshots, but a refill flood shares one window.
   for (let i = 0; i < 20; i++) {
     b.disconnect();
@@ -108,7 +121,11 @@ test('rename and refill floods preserve other telemetry and eventually record th
   t.mock.timers.tick(ROSTER_SNAPSHOT_MS);
   assert.equal(ends(), 3);
   complete();
-  assert.equal(ctx.queue.length, 1777);
+  assert.equal(
+    ctx.queue.length,
+    1778,
+    'the earlier queue plus the missed-rename mark and one complete refill snapshot',
+  );
   assert.equal(ctx.queue.filter((e) => e === sentinel).length, 1000);
   assert.equal(ctx.dropped, 0);
   t.mock.timers.tick(ROSTER_SNAPSHOT_MS * 2);
