@@ -4,6 +4,7 @@ import { compiled, definitions } from '../src/prefab/catalogue.ts';
 import { prefabGolden, recordMatrices } from './helpers/prefab-golden.ts';
 // Owner-requested migration proof: execute the real draw boundary with recording physics, without a renderer.
 import test from 'node:test';
+import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import * as THREE from 'three/webgpu';
 import { sourceFunction, sourceModule } from '../dev/level/source.ts';
@@ -74,6 +75,16 @@ test('Gorge collider and placement values match the old massing', async (t) => {
     const colour = matrices.colour(mesh, i);
     return { matrix: matrix.toArray(), colour: colour.toArray() };
   });
+  // The goldens below read the returned batch, which Gorge hides: these are the two meshes the scene draws instead.
+  const drawn = (name: string) => owner.root.children.find((child) => child.name === name);
+  const untrimmed = drawn('gorge:untrimmed-surfaces');
+  const trimmed = drawn('gorge:trimmed-surfaces');
+  assert.ok(untrimmed instanceof THREE.InstancedMesh, 'the untrimmed boxes are attached');
+  assert.ok(trimmed instanceof THREE.Mesh, 'the trimmed slabs are attached');
+  assert.equal(mesh.visible, false, 'the source batch is not drawn twice');
+  const slabs = gorgeSurfaces(authored).size;
+  assert.ok(slabs > 0 && untrimmed.count > 0 && untrimmed.count <= mesh.count - slabs, 'every box is drawn once');
+  assert.ok(trimmed.geometry.getAttribute('position').count > 0, 'the trimmed slabs have geometry');
   t.diagnostic(
     `Gorge: ${authored.length} authored, ${mesh.count} visible, ${solids} bodies, ${owner.root.children.filter((child) => child instanceof THREE.InstancedMesh).length} batches`,
   );

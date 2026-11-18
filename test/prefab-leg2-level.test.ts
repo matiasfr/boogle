@@ -67,6 +67,14 @@ test('the current route passes the level checker', () => {
       .join('\n'),
   );
 });
+// A zero-failure count cannot see a check that stopped running or lost a target. The approved report pins which checks
+// and facts run and what each reaches; measurements are masked so retuning inside a threshold does not fail it.
+test('the level checker still runs every approved check and fact', () => {
+  const shape = (entries: readonly { kind: string; message: string }[]) =>
+    entries.map((entry) => `${entry.kind}: ${entry.message.replace(/-?\d+(?:\.\d+)?/g, '#')}`);
+  const approved = JSON.parse(fs.readFileSync('test/fixtures/prefab-leg2-report.json', 'utf8'));
+  assert.deepEqual(shape(report(bell).entries), shape(approved.entries));
+});
 for (const mutation of ['height', 'lower', 'rotate', 'scale'] as const)
   test(`${mutation} change to the placed Bell Rock fails rim coverage`, () => {
     const changed = { ...structuredClone(bell), placements: structuredClone([...bell.placements]) };

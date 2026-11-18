@@ -38,7 +38,7 @@ Main was explicitly fetched before rebasing; --no-fetch keeps this report agains
 > node dev/review-stamp.ts . --no-fetch
 
   review test/coast-regions.test.ts: assertion change (first: - texture: '3664f87252e673d66d37df00e5efe0284444a930861668de1ad19a0d5d4c9d3b',)
-  review former leg 2 report snapshot (since retired): the root and stop ground-height diagnostics changed
+  review test/fixtures/prefab-leg2-report.json: assertion change (first: - "message": "  ground under the root 3.0 m, under the stop 2.4 m, under the platf)
   review test/fixtures/prefab-rooms.json: assertion change (first: - "x": 686,)
   review test/path-field.test.ts: assertion change (first: - const side = pathAt(mx + TREAD_HALF.bold + 1, mz);)
   review test/prefab-furnishing.test.ts: assertion change (first: an import's module changed: + import { ROOM_FLOOR, ROOM_PLOTS } from '../src/place/layout.ts';)

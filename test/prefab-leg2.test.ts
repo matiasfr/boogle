@@ -146,6 +146,8 @@ for (const area of ['bell', 'west'] as const)
     const { mesh, solids } = await boxes.drawGreyBoxes(owner, massing[`${area}Massing`]!() as readonly Placement[]);
     await massing[`${area}Extras`]!(owner);
     owner.root.updateWorldMatrix(true, true);
+    // The goldens below read the returned batch; this is what proves the scene draws it.
+    assert.ok(owner.root.children.includes(mesh) && mesh.visible, 'the box batch is attached to its owner and visible');
     const placements = Array.from({ length: mesh.count }, (_, i) => {
       const matrix = matrices.get(mesh, i),
         colour = matrices.colour(mesh, i);
