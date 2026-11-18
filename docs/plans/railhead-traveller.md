@@ -294,7 +294,7 @@ batch, in the view's existing colours; no texture, no model, no collider, no str
 Sounds are the existing `machine-sfx` ones (`bell`, `clank`, `chuff`, `thump`). Cues fire with a latch on the
 highest phase seen for the pair (`seen < x <= p`), so a clock correction backward never repeats one; a cue more
 than 0.2 s behind the clock when the clock gets there is skipped, whether the pair is first seen late (late join,
-reload, a backed-up peer) or the clock jumps forward (a tab back from the background, a pause, a stall: Checkpoint B). **Reduced motion** keeps every
+reload, a backed-up peer) or the clock jumps forward (a tab back from the background, a pause, a stall: Checkpoint B). The window is 2.5 ticks: a 200 ms frame while the clock leans to catch up moves it up to 2.24, and a jump is a snap of more than 3 (Checkpoint B re-check). **Reduced motion** keeps every
 sound, the chocks, the fold, the wheels and the line (they are the mechanism), and drops the lamps' blink (steady on
 instead) and the bell's swing.
 

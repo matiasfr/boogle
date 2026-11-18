@@ -97,7 +97,9 @@ const BOGIES = [2, 8, PLATFORM.len - 8, PLATFORM.len - 2],
   WHEEL_R = 0.42,
   WINCH = { back: -0.14, lat: SIDE.lat0 + 0.5, drop: 0.4 },
   BOLLARD = { back: 0.3, lat: 1.5 },
-  FOLD = 1.25;
+  FOLD = 1.25,
+  /** Rule ticks behind the clock past which a traveller cue is skipped (stepRig). */
+  LATE = 2.5;
 
 type Piece = {
   /** -1: the walkway's first stretch (shown with the railhead); j: bent j's span and what stands on it. */
@@ -719,12 +721,14 @@ export function createRailwayRailhead(
     if (!live) return;
     // Cues more than 0.2 s behind the clock are skipped, whenever the clock gets there: a pair first seen late (a join,
     // a reload, a backed-up peer) or a forward jump (a tab back from the background, a pause, a stall). At most the
-    // current phase's state is shown, with no backlog of sounds; a clock that steps back repeats nothing.
+    // current phase's state is shown, with no backlog of sounds; a clock that steps back repeats nothing. The window is
+    // LATE ticks, not 2: leanClock's catch-up (at most 0.02 ticks a step) moves a 200 ms frame up to 2.24 ticks, and a
+    // real jump is a snap of more than 3, so anything between those two tells a slow frame from a missed stretch.
     if (a.set >> 1 !== cuePair) {
       cuePair = a.set >> 1;
       seen = -Infinity;
     }
-    seen = Math.max(seen, p - 2);
+    seen = Math.max(seen, p - LATE);
     if (p <= seen) return;
     const passed = (x: number) => seen < x && x <= p;
     const at = (back: number, lat: number) => (world(shownU - back, lat), q);

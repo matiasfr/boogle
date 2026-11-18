@@ -294,3 +294,27 @@ test('a tab drawing every frame through a haul hears each cue once, in order', a
   assert.ok(names.filter((n) => n === 'chuff').length >= 3, `the winch chuffs while it travels: ${names.join(', ')}`);
   assert.ok(heard[0]!.p >= 0 && heard[0]!.p < 0.5, 'the bell rings at told');
 });
+test('a slow frame (200 ms) while the rule clock leans to catch up still hears the told bell', async () => {
+  // leanClock adds up to 0.02 ticks a step while it trails tickNow (after dropped steps or a new server estimate), so a
+  // 200 ms frame (12 steps) moves the clock up to 2.24 ticks: past the 2-tick skip window, though no cue is 0.2 s late
+  // in wall time. Here tickNow steps 1 tick ahead just before told, then the tab draws every 12 steps.
+  const { leanClock } = await import('../src/entities/railway/railhead-shape.ts');
+  const missed: string[] = [];
+  for (let off = 0; off < 12; off++) {
+    const { row, heard, frame } = await railheadCues();
+    let target = row.moved,
+      clock = target,
+      k = off;
+    for (; target < row.moved + HAUL.after - 1.5; target += 1 / 6) frame((clock = leanClock(clock, target, 1 / 60)));
+    target += 1;
+    while (target <= haulEnd(row) + 5) {
+      target += 1 / 6;
+      clock = leanClock(clock, target, 1 / 60);
+      if (++k % 12 === 0) frame(clock);
+    }
+    const names = heard.map((h) => h.cue);
+    if (names[0] !== 'bell' || names.filter((n) => n === 'bell').length !== 2)
+      missed.push(`${off}: ${names.join(', ')}`);
+  }
+  assert.deepEqual(missed, [], 'frame alignments that lose a bell');
+});
