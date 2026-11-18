@@ -64,7 +64,7 @@ stop overlapping. World metres (x, z). Radii of the line turnouts are `npm run l
 | J3 | Leg off line 1, s 54 (body s 54 down to 42) | (952.3, −30.0) | left | 6.2 m, 12.7° (1:4.4) | 12.1 m | 15 m for 3.3 m, then straight | same | the cart |
 | J4 | Line 1 offset track, Home, s 36 to 56 | (948.3, −12.5) | left | 6.5 m, 14.8° (1:3.8) | 11.0 m | 9.5 m (on line 1's 18 m curve, same way) | `track.ts` | trains |
 | J5 | Line 1 offset track, Camp, s 182 down to 162 | (984.9, −147.4) | right | 6.5 m, 14.8° | 11.0 m | 11.1 m | `track.ts` | trains |
-| J6 | Line 2 offset track, Home, s 34 to 54 | (949.7, 2.9) | left | 6.5 m, 14.8° | 11.0 m | 20.6 m | `track.ts` | trains |
+| J6 | Line 2 offset track, Home, s 34 to 54 | (949.7, 2.9) | left | 6.5 m, 14.8° | 11.0 m | 20.6 m (on road 2's 18 m curve, leaving to its outside) | `track.ts` | trains |
 | J7 | Far Head crossover, offset-track end, s 490 | (1331.3, −150.8) | right | 7.2 m, 13.5° (1:4.2) | 12.1 m | 24.3 m | `track.ts` | trains |
 | J8 | Far Head crossover, down-track end, s 512 | (1351.8, −159.8) | right | 7.2 m, 13.5° | 12.1 m | 24.8 m | `track.ts` | trains |
 | J9 | Line 2 offset track, pier root, s 556 down to 536 | (1385.5, −187.4) | right | 6.5 m, 14.8° | 11.0 m | 15.4 m | `track.ts`; `retire()` removes it at Q7 | trains |
@@ -348,13 +348,18 @@ review** row (a fresh subagent, fable medium) on its one proof look. Step 2 and 
   junction" against `RAIL_LINES[0..1].halts[].end`; "one timber per station in a cluster" (J3 with J4).
   `dev/level/track-continuity.ts`: replace the "turnouts and crossover" lines with one row per junction (toe, hand,
   frog distance and angle, clear, tightest radius) and add the spur and leg, which the tool does not know today.
-  Verify:  prints the table above. No player-visible change.
+  Verify: `npm run level-check` prints the table above. No player-visible change.
   **Built 17 November 2026.** `junctions()` returns J1 to J9; only J1 is drawn (`home-yard.ts` picks it by id), so
-  nothing a player sees changes. J2 and J3 carry `when: 'leg'` and `kind: 'spur'`. Levers default to the side away
-  from the road that leaves; at the J3 and J4 cluster that puts each toward the other's zone, for step 3 to settle.
+  nothing a player sees changes. J2 and J3 carry `when: 'leg'` and `kind: 'spur'`. Levers stand on the side away
+  from the road that leaves (designer call 3; J3's on line 1's west, where Home's lever box at `LEG.from + 1.5`
+  already stands); at the J3 and J4 cluster that puts each toward the other's zone, for step 3 to settle.
   The level check's junction rows replace its "turnouts and crossover" lines, and their radius findings name the
-  junction (the spur and leg as `line2-spur`, `line1-leg`, `line2-leg`). Figures that moved: see "Remeasured at
-  step 2" above.
+  junction (the spur and leg as `line2-spur`, `line1-leg`, `line2-leg`); a finding's map marker now stands at the
+  junction's toe, not at its tightest point (the row gives that as `@d`). Figures that moved: see "Remeasured at
+  step 2" above. **Tests trimmed to the test diet** (review of step 2): `test/turnout.test.ts` keeps only what nothing
+  draws yet: "the list is J1 to J9", "every line end the layout draws has a junction", "one timber per station in a
+  cluster" and "the lever stands away from the road that leaves". The per-junction tangent, frog and hand cases are
+  the level check's table, and step 1's five part cases stay retired as geometry a look shows.
 - [ ] **3. Home's throat: J4, J6, then J2 and J3.** `track.ts` for both lines; the offset track's sleeper loop skips
   inside a zone; `span()` takes the union where zones overlap (J3 with J4). `home-station-view.ts`: the leg's sleepers
   start at `clearD` at both ends; its turnout pieces show with the leg (`legLaid()`). Proof look: `at=throat-top` (the
