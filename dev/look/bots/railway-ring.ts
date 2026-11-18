@@ -5,7 +5,7 @@
 // for the leaf to land, strike the rivet (the Meet), then ride from the Railhead to the island halt and step off.
 // Inspection observes; it never seeds a world or moves a player. A fall into the sea is a finding (no recovery).
 import type { Bot } from '../bot.ts';
-import { aperture, inspectRailway, rail, railAt, railBack, ringOpen, rw } from '../rail-read.ts';
+import { aperture, inspectRailway, rail, railAt, railBack, ringHead, ringOpen, rw } from '../rail-read.ts';
 import { me, cam } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
@@ -89,7 +89,9 @@ export async function ringIslandRoute({ bot, checkpoint }: RingRoute) {
     await checkpoint('gap footed');
   }
 
-  // 2. The gap: a sprint along the platform, a jump at its end, the glide to the brace platform.
+  // 2. The gap: a sprint along the platform, a jump at its end, the glide to the brace platform. `head()` is the trains'
+  // stop, which reaches the build head only when the last haul settles (v61): wait for it, or the run-up is a bent short.
+  await untilTicks(() => ringOpen(rw()).head === ringHead(rw()), 'the last haul settled at the build head', 400);
   const mid = RING_BRACE_PLATFORM.lat0 / 2 + RING_BRACE_PLATFORM.lat1 / 2;
   const landing = cm(ringAt((RING_BRACE_PLATFORM.u0 + RING_BRACE_PLATFORM.u1) / 2, mid));
   const lane = 400;
