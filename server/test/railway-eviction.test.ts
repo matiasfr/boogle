@@ -3,6 +3,7 @@
 import test from 'node:test';
 import { WebSocket } from './helpers/accounts.ts';
 import assert from 'node:assert/strict';
+import { EventEmitter, once } from 'node:events';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -29,12 +30,19 @@ async function until(predicate: () => boolean, label: string) {
 function connect(base: string, room: string, sid: string) {
   const ws = new WebSocket(`${base}/room/${room}?self=${sid}&pid=alice&key=alicekey000000000000&b=test`, ['boogle.1']);
   const messages: Obj[] = [];
-  ws.onmessage = (e) => messages.push(JSON.parse(String(e.data)) as Obj);
+  const arrivals = new EventEmitter();
+  ws.onmessage = (event) => {
+    messages.push(JSON.parse(String(event.data)) as Obj);
+    arrivals.emit('message');
+  };
+  const received = async (predicate: () => boolean) => {
+    while (!predicate()) await once(arrivals, 'message');
+  };
   const closed = new Promise<number>((resolve) => {
     ws.onclose = (e) => resolve(e.code);
   });
   const first = async () => {
-    await until(() => messages.length > 0, `${sid} first message`);
+    await received(() => messages.length > 0);
     return messages[0]!;
   };
   const world = (type: string) =>
@@ -42,18 +50,7 @@ function connect(base: string, room: string, sid: string) {
   // Railway acks ride on replication packets (src/world/replicate.ts): [epoch, request] applied.
   const acked = (request: number) => world('s').some((p) => Array.isArray(p.ack) && p.ack[1] >= request);
   const send = (m: Obj) => ws.send(JSON.stringify(m));
-  const request = async (message: Obj, done: () => boolean, label: string) => {
-    let next = 0;
-    await until(() => {
-      if (done()) return true;
-      if (performance.now() >= next) {
-        send({ t: 'm', d: message });
-        next = performance.now() + 50;
-      }
-      return false;
-    }, label);
-  };
-  return { ws, messages, closed, first, world, send, request, acked };
+  return { ws, messages, closed, first, world, send, received, acked };
 }
 async function manager(store: Store) {
   const logs: unknown[][] = [];
@@ -106,14 +103,11 @@ async function drain(room: HostedRoom, store: Store, id: string) {
 async function prepare(room: HostedRoom, client: ReturnType<typeof connect>, railway: boolean) {
   if (!railway) return;
   await railwayHost(room).whenReady();
-  // Like the real client, ask for a session until one is issued.
-  await client.request({ t: 'r:open' }, () => client.world('r:session').length > 0, 'session');
+  client.send({ t: 'm', d: { t: 'r:open' } });
+  await client.received(() => client.world('r:session').length > 0);
   client.send({ t: 'p', s: 1, d: { v: 1, p: [T1.x / 100, 0, T1.z / 100] } });
   client.send({ t: 'm', d: { t: 'r:edit', e: { op: 'rail.wake', epoch: 1, request: 1, at: [T1.x, 0, T1.z], ms: 0 } } });
-  await until(() => {
-    room.world.step(1 / 60);
-    return client.acked(1);
-  }, 'wake acknowledged');
+  await client.received(() => client.acked(1));
   const rules = railwayHost(room).rules;
   // updateWorld() is a silent no-op while a stamp or checkpoint is unpublished, so a fixed number of manual
   // steps can all be dropped behind a slow durable write. Drive the clock until the wake has really finished.

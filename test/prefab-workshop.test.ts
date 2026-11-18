@@ -182,6 +182,7 @@ export function captureWorkshop(positions: readonly (readonly [number, number, n
       readableGlow: (m: unknown) => m,
       flat: () => material,
       draw: () => {},
+      fitBoxBounds: () => {},
       makeSet: () => ({ mesh: new THREE.Mesh(new THREE.BoxGeometry(), material) }),
       ROOM_GROUP: 8,
       staticBody,

@@ -1,6 +1,7 @@
 // Execute the real yard collector and kit bake in Node, with rendering/physics beyond the capture door stubbed.
 import fs from 'node:fs';
 import * as THREE from 'three/webgpu';
+import { fitInstanceBounds } from '../../src/render/instance-bounds.ts';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'meshoptimizer';
 import * as home from '../../src/place/home-station.ts';
@@ -108,7 +109,7 @@ export async function collectTrackGeometry() {
       });
   const { createYardTrack } = capturedModule<typeof import('../../src/entities/railway/yard-track.ts')>(
     'src/entities/railway/yard-track.ts',
-    { THREE, ...shape },
+    { THREE, ...shape, fitInstanceBounds },
     {
       '../../place/look-kit.ts': {
         kitBatch(name: string, paint: Paint, count: number) {

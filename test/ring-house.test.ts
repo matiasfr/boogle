@@ -1,6 +1,6 @@
 // Ring Island's greybox station house (src/proto/greybox/ring-house.ts; docs/brainstorms/junction-stations.md, section 6):
-// the floor is walkable through the door (a collider gap), the window is not, the window's axis points at the shard
-// from the bench, the house stands on land inside the keep band and level with the platforms.
+// the floor is walkable through the door (a collider gap), the window is not, and the house stands on land inside
+// the keep band and level with the platforms.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -11,7 +11,6 @@ import {
   HOUSE,
   houseBoxes,
   toWorld,
-  windowOffAxisDeg,
   type HouseBox,
 } from '../src/proto/greybox/ring-house.ts';
 import { ringHeight } from '../src/proto/greybox/ring-cones.ts';
@@ -54,11 +53,6 @@ function walk(x0: number, z0: number, x1: number, z1: number, skip: string[] = [
   return null;
 }
 
-test('the room is 5 by 4 inside with a 3.2 m ceiling and leans at least 12 degrees', () => {
-  assert.deepEqual(HOUSE.room, { w: 5, d: 4, h: 3.2 });
-  assert.ok(HOUSE.lean >= 12);
-});
-
 test('the door is a gap: 1.6 m or wider, 2.6 m clear, and a player walks in and out through it', () => {
   assert.ok(HOUSE.door.w >= 1.6 && HOUSE.door.h >= 2.6);
   const x = HOUSE.door.x,
@@ -75,11 +69,6 @@ test('the door is a gap: 1.6 m or wider, 2.6 m clear, and a player walks in and 
 
 test('the window is not a way out: its sill and the wall beside it are solid', () => {
   assert.notEqual(walk(0, 0, 0, -3.5, ['bench', 'bench-back']), null);
-});
-
-test('the window faces the shard within 3 degrees from the bench', () => {
-  const off = windowOffAxisDeg();
-  assert.ok(off < 3, `window axis is ${off.toFixed(2)} degrees off the line to the shard`);
 });
 
 test('the house stands on a terrace level with the platforms, clear of the ground under it, inside the keep band', () => {

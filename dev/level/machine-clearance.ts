@@ -1,6 +1,7 @@
 // Source-linked swept clearance for the current production machine; no browser, physics or game state.
 import fs from 'node:fs';
 import * as THREE from 'three/webgpu';
+import { fitInstanceBounds } from '../../src/render/instance-bounds.ts';
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { dequantize } from '@gltf-transform/functions';
@@ -139,7 +140,7 @@ export async function checkMachineClearance() {
   );
   const treeModule = sourceModule<typeof import('../../src/render/place-tree-view.ts')>(
     fs.readFileSync('src/render/place-tree-view.ts', 'utf8'),
-    { THREE, createTreeRoots: roots.createTreeRoots },
+    { THREE, createTreeRoots: roots.createTreeRoots, fitInstanceBounds },
   );
   const treeGroup = new THREE.Group();
   const trees = TREE_SOURCES.map((t) => ({

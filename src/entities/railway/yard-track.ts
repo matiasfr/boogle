@@ -2,6 +2,7 @@
 // its gauge and heights, for track that is not a line: Home's buffer stubs, spur, stall roads and the cart's leg
 // (./home-station-view.ts). Static and drawn only: one batch a piece, no colliders, no drop. Local and cosmetic.
 import * as THREE from 'three/webgpu';
+import { fitInstanceBounds } from '../../render/instance-bounds.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Paint } from '../../place/look.ts';
 import { RAIL_HEAD, SHUNT } from './works-shape.ts';
@@ -212,6 +213,7 @@ export function createYardTrack(ground: (x: number, z: number) => number) {
         // As the line's: what lies flat on its bed is grounded by its contact blob, not a second shadow draw.
         mesh.castShadow = casts;
         mesh.count = list.length;
+        fitInstanceBounds(mesh);
         owner.add(mesh);
         return mesh;
       };
@@ -228,7 +230,10 @@ export function createYardTrack(ground: (x: number, z: number) => number) {
         showLater(on: boolean) {
           if (on === shown) return;
           shown = on;
-          meshes.forEach((mesh, k) => (mesh.count = on ? lists[k]!.length : cut[k]!));
+          meshes.forEach((mesh, k) => {
+            mesh.count = on ? lists[k]!.length : cut[k]!;
+            fitInstanceBounds(mesh);
+          });
           handles.slice(cut[4]).forEach((h, k) => {
             const b = blobs[cut[4]! + k]!;
             if (h < 0) return;

@@ -147,7 +147,10 @@ with the cameras of `dev/look/evals/terrain-draws.ts:17-20` (green: cam 909,24.4
   `src/entity/inspect.ts` exposes per-kind update time, the ten costliest kinds over 5 s. Prints `WORLD CENSUS {...}`.
   *Done:* it runs at green, head and ring and the builder pastes the three summaries into section 2 of this plan,
   replacing "could not measure". *Check:* the eval runs at all three poses. *Proof:* the baseline pose reading itself.
-- [ ] **1. Real bounds on static batches.** New `fitInstanceBounds(mesh, pad = 0.5)` in `src/render/instance-bounds.ts`
+- [x] **1. Real bounds on static batches.** Before → after (draws/triangles, main then shadow): green 252/728007 → 251/729199, 122/182370 → 141/188926; head 731/1237093 → 731/1237093, 106/163572 → 93/133532; ring 140/351107 → 92/240147, 119/163400 → 75/120820.
+  The four yard batches and the 720-instance town site batch no longer draw at Ring. The town site batch and workshop shadow proxy are separate; both now fit their bounds. No fitted batch drew outside its pass camera in the three sampled frames. Moving trains vary between frames at green.
+  [Before/after stills](../world/world-bounds/): no visible loss of static scenery at the edges. Mean frame interval, taken under load (20 s): head 18.384 → 19.476 ms; ring 25.053 → 16.681 ms. Use draw counts, not timing, as evidence.
+  New `fitInstanceBounds(mesh, pad = 0.5)` in `src/render/instance-bounds.ts`
   (bounding sphere over the instances actually set, `frustumCulled = true`; recall it after each instance write).
   Apply it to the tree part batches (`place-tree-view.ts:180-183`; after a felled tree's matrices change too), the yard
   track batches (`yard-track.ts:208-217`), the station rails and stones (`stations.ts:156`, `:217`, `:227`), the

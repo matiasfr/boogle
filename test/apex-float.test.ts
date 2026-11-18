@@ -30,12 +30,6 @@ function heldAirJump(air: (force: number) => number, seconds: number) {
   return { y, vy, top };
 }
 
-test('the old stacked floats hang weightless and climb for as long as Jump is held', () => {
-  const stacked = heldAirJump((f) => f + W * 0.5, 30);
-  assert.ok(stacked.vy > 0, 'still rising after 30 s');
-  assert.ok(stacked.top > 40, `climbed ${stacked.top.toFixed(1)} m`);
-});
-
 test('holding Jump after a double jump tops out and comes back down', () => {
   const fixed = heldAirJump((f) => airJumpApexForce(f, W), 30);
   assert.ok(fixed.vy < 0, 'falling again');

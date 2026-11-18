@@ -311,6 +311,17 @@ test('a commuter the camera loses and finds again is never seen to jump', () => 
   const sim = train(1, 20);
   const pathS = (u: number) => FROM + u * LEN;
   const dt = 1 / 60;
+  const traces = Array.from({ length: 600 }, (_, frame): TrainAhead[] => {
+    const at = Array.from({ length: 52 }, (_, k) => sim.along(frame * dt * 10 + k));
+    return [
+      (sec) => {
+        const f = sec * 10,
+          k = Math.min(50, Math.floor(f)),
+          a = at[k]! + (at[k + 1]! - at[k]!) * (f - k);
+        return { lo: a + LO, hi: a + HI };
+      },
+    ];
+  });
   // Each camera move, starting at each sixth of a second from 2 s to 5 s: before, during and after his step off.
   const cameras = Array.from({ length: 19 }, (_, k) => 120 + k * 10).flatMap(
     (from): [string, (f: number) => number][] => [
@@ -330,15 +341,7 @@ test('a commuter the camera loses and finds again is never seen to jump', () => 
         let slept = false,
           last: { x: number; z: number; frame: number } | null = null,
           worst = 0;
-        for (let frame = 0; frame < 600; frame++) {
-          const t = frame * dt;
-          const at = Array.from({ length: 52 }, (_, k) => sim.along(t * 10 + k));
-          const ahead: TrainAhead = (sec) => {
-            const f = sec * 10,
-              k = Math.min(50, Math.floor(f)),
-              a = at[k]! + (at[k + 1]! - at[k]!) * (f - k);
-            return { lo: a + LO, hi: a + HI };
-          };
+        for (let frame = 0; frame < traces.length; frame++) {
           const band = commuterBand(distance(frame));
           if (band === 'asleep') {
             slept = true;
@@ -348,7 +351,7 @@ test('a commuter the camera loses and finds again is never seen to jump', () => 
             len: LEN,
             speed: 1.7 * 1.3,
             across: 1.7,
-            due: (u) => trainDue(pathS(u), [ahead]),
+            due: (u) => trainDue(pathS(u), traces[frame]!),
             refuge: (u) => refuges.at(pathS(u)),
             go: (u) => refuges.go(pathS(u)),
           });
