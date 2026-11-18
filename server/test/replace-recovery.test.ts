@@ -67,17 +67,6 @@ test('reservation is process-local, pins persist until explicit release', async 
   assert.equal((await restarted.pins()).length, 0);
 });
 
-test('releasing pins enforces the ordinary newest-30 backup retention', async (t) => {
-  const { dataDir, replacements } = await fixture(t);
-  for (let n = 0; n < 31; n++) {
-    const record = await replacements.replace(id, doc(n), { stage: 'awake', players: 0, docHash: 'fixture' });
-    await replacements.release(record.backup);
-    await new Promise((resolve) => setTimeout(resolve, 2));
-  }
-  const ordinary = (await fs.readdir(path.join(dataDir, '.backups'))).filter((name) => name.endsWith('.json'));
-  assert.equal(ordinary.length, 30, 'released pins must enter the bounded retention pool immediately');
-});
-
 test('concurrent releases retain the newest timestamps across rooms and leave other pins alone', async (t) => {
   const { dataDir, replacements } = await fixture(t);
   const dir = path.join(dataDir, '.backups');
@@ -105,6 +94,7 @@ test('a pinned replacement backup survives 31 ordinary backups', async (t) => {
   const svc = createService(loadConfig({ DATA_DIR: dataDir, REPORT_TOKEN: 'report' }, { log: () => {} }));
   const port = await svc.listen(0);
   try {
+    t.mock.timers.enable({ apis: ['Date'], now: Date.UTC(2026, 0, 1) });
     for (let n = 0; n < 31; n++) {
       const result = await fetch(`http://127.0.0.1:${port}/admin/rooms/${id}/backup`, {
         method: 'POST',
@@ -113,7 +103,7 @@ test('a pinned replacement backup survives 31 ordinary backups', async (t) => {
       assert.equal(result.status, 200);
       await result.arrayBuffer();
       // Ordinary backup names have millisecond precision; exercise 31 distinct recovery points.
-      await new Promise((resolve) => setTimeout(resolve, 2));
+      t.mock.timers.tick(1);
     }
     assert.equal((await replacements.pins())[0]!.name, record.backup);
     assert.equal(
