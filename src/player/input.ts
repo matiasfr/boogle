@@ -92,8 +92,9 @@ export function initInput() {
   });
   document.addEventListener('pointerlockerror', lockRefused);
 
-  // Held keys (move, sprint) are tracked here; one-press keys bind through their
-  // action (registerAction's key) or onKey (src/player/controls.ts). Both skip key presses aimed at a text field.
+  // Held keys (move, sprint) are tracked here, and Space and R are pressed here by hand; other one-press keys bind
+  // through their action (registerAction's key) or onKey (src/player/controls.ts). Both skip key presses aimed at a
+  // text field. E binds through interact's key, so its wraps (the garage's Install hold, the town plot's hold) see it.
   addEventListener('keydown', (e) => {
     if (!me.entered || isTyping(e) || devInputBlocked()) return;
     input.keys.add(e.code);
@@ -103,7 +104,6 @@ export function initInput() {
     }
     if (e.code.startsWith('Arrow')) e.preventDefault();
     if (e.repeat) return;
-    if (e.code === 'KeyE') interactDown();
     if (e.code === 'KeyR') respawnBall();
   });
   addEventListener('keyup', (e) => {
@@ -112,7 +112,6 @@ export function initInput() {
     // macOS sends no keyup for other keys while Cmd is held, so they would stay pressed: release them all with Cmd.
     if (e.key === 'Meta') input.keys.clear();
     if (e.code === 'Space') releaseJump();
-    if (e.code === 'KeyE' && me.entered) interactUp();
   });
   let drag: { x: number; y: number; moved: boolean } | null = null;
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -302,7 +301,7 @@ export function initInput() {
   registerAction('interact', {
     pad: 'x',
     label: 'Talk, pick up, take',
-    keys: ['KeyE'],
+    key: 'KeyE',
     touch: 'Grab',
     group: 'hands',
     order: 0,

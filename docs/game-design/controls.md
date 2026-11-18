@@ -3,7 +3,7 @@
 The registry in [src/player/controls.ts](../../src/player/controls.ts) is the source of truth: `registerAction` binds a pad
 slot, handlers, its keyboard codes (`key`, one shared listener that skips repeats, Ctrl/Cmd/Alt and text fields) and,
 with `touch: { label, className }`, builds its own touch button; `describeControl` adds display-only rows; `onKey`
-binds a key with no pad action of its own. Held keys (move, sprint, Space) and E and R are still read by hand in [src/player/input.ts](../../src/player/input.ts). The pause view's controls page (its Gamepad tab as a drawn controller) is generated
+binds a key with no pad action of its own. Held keys (move, sprint, Space) and R are still read by hand in [src/player/input.ts](../../src/player/input.ts); E is the `interact` action's `key` (since 18 November: before, a hand-read E skipped every `wrapAction('interact')`, so the garage's Install hold, Skip and Hear a whistle and the town plot's let-go answered the pad's X but not the keyboard). The pause view's controls page (its Gamepad tab as a drawn controller) is generated
 from it ([src/player/guide.ts](../../src/player/guide.ts)), and [src/features/controls-check.ts](../../src/features/controls-check.ts) warns
 in dev about gaps. Registrations live in [src/player/input.ts](../../src/player/input.ts), [feel.ts](../../src/features/feel.ts),
 [held.ts](../../src/features/held.ts), [honk.ts](../../src/features/honk.ts),
