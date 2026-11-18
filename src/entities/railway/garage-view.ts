@@ -20,12 +20,17 @@ import { uiSound } from '../../ui/ui-sound.ts';
 import { createGarageSelection, type Focus } from './garage-selection.ts';
 import {
   BOILERS,
+  INSTALL_ID,
+  INSTALL_PART,
+  isInstall,
   MOMENT,
   SIZES,
   liftOf,
   partsOf,
   speedMs,
   type CatId,
+  type InstallId,
+  type Part,
   type PartId,
   type Phase,
   type RoomFacts,
@@ -33,7 +38,6 @@ import {
 import { garage, type GarageSnap } from './garage-state.ts';
 import { garageFlip, polarAt, STAND_LEGS, type GarageGeo } from './garage-geo.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
-import { INSTALL_PART, isInstall, type InstallId } from './garage-data.ts';
 import type { InstallPart } from '../../sim/railway-works-layout.ts';
 
 /** The table's centre and rail height, the post (the row's, placed by the caller), and the ground the post, jib, stand
@@ -464,7 +468,17 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     camSnap = true,
     camClock = 0;
   let momentPart: InstallId = 'long';
-  const readyPart = (id: PartId) => isInstall(id) && partsOf(facts).some((p) => p.id === id && p.standing === 'ready');
+  // `facts` is a fresh object each frame, so the part list is built once per frame, not once per question.
+  let partsFacts: RoomFacts | null = null,
+    partsList: Part[] = [];
+  const parts = () => {
+    if (partsFacts !== facts) {
+      partsList = partsOf(facts);
+      partsFacts = facts;
+    }
+    return partsList;
+  };
+  const readyPart = (id: PartId) => isInstall(id) && parts().some((p) => p.id === id && p.standing === 'ready');
   const offered = (): InstallId | null => {
     if (open && isInstall(sel) && readyPart(sel)) return sel;
     return (Object.keys(INSTALL_PART) as InstallId[]).find(readyPart) ?? null;
@@ -785,7 +799,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
    * from there. Only ever called from an accepted event. */
   function watch(short: boolean, part: InstallPart) {
     if (!shown) return;
-    momentPart = part === 1 ? 'blast' : part === 2 ? 'long' : part === 3 ? 'big' : 'cradle';
+    momentPart = INSTALL_ID[part];
     sel = momentPart;
     cat = part === 4 ? 'cargo' : 'engine';
     const hanging = phase === 'moment' && real && waiting;
@@ -1125,8 +1139,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   /** The chosen part's frame and, for a car the copy does not carry, its ghost. Only while the garage is open and
    * nothing is going on: a hold or a moment has the picture to itself. */
   function showSelection(dt: number) {
-    const standing =
-      open && phase === 'idle' ? partsOf(facts).find((p) => p.id === sel && p.cat === cat)?.standing : null;
+    const standing = open && phase === 'idle' ? parts().find((p) => p.id === sel && p.cat === cat)?.standing : null;
     // A replaced part is not on the train and has no place to go.
     const shown = standing && standing !== 'replaced';
     selection.show(

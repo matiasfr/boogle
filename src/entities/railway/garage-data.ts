@@ -3,7 +3,7 @@
 // railway's own leg maths (src/sim/railway-train.ts) so a number on the screen is the number the timetable gives.
 import { BOILER, trainLegTicks, TRAIN } from '../../sim/railway-train.ts';
 import { LINE2, RAIL_LINES } from '../../sim/railway-lines.ts';
-import { CRADLE_CAP, INSTALL_STEEL } from '../../sim/railway-works-layout.ts';
+import { CRADLE_CAP, INSTALL_STEEL, type InstallPart } from '../../sim/railway-works-layout.ts';
 import { TRADE } from '../../sim/railway-trade-layout.ts';
 import { LINE2_KIT } from '../../sim/railway-line2-layout.ts';
 import { prefabs as railwayPrefabs } from '../../content/prefabs/railway.ts';
@@ -86,6 +86,11 @@ export const LONG_NEEDS_STEEL = 1;
 export const INSTALL_PART = { blast: 1, long: 2, big: 3, cradle: 4 } as const;
 export type InstallId = keyof typeof INSTALL_PART;
 export const isInstall = (id: PartId): id is InstallId => Object.hasOwn(INSTALL_PART, id);
+/** `INSTALL_PART` the other way: the part an install number fits. */
+export const INSTALL_ID = Object.fromEntries(Object.entries(INSTALL_PART).map(([id, n]) => [n, id])) as Record<
+  InstallPart,
+  InstallId
+>;
 export type Part = {
   id: PartId;
   cat: CatId;
@@ -362,25 +367,22 @@ export function rowsFor(cat: CatId, chosen: PartId, boiler = 0, cradle = false):
       { id: 'seats', label: 'Seats', kind: 'number', now: playerSeats, then: playerSeats },
       { id: 'riders', label: 'Riders', kind: 'number', now: TRADE.riderPlaces, then: TRADE.riderPlaces },
     ];
-  if (cat === 'cargo')
+  if (cat === 'cargo') {
+    const capB = chosen === 'cradle' ? CRADLE_CAP[1] : cap,
+      run = runSeconds(cm, BOILER[boiler]!.speed);
     return [
-      {
-        id: 'footTrip',
-        label: 'Footings a trip',
-        kind: 'number',
-        now: cap,
-        then: chosen === 'cradle' ? CRADLE_CAP[1] : cap,
-      },
+      { id: 'footTrip', label: 'Footings a trip', kind: 'number', now: cap, then: capB },
       {
         id: 'footRate',
         label: 'Footings a minute',
         kind: 'number',
         digits: 1,
-        now: perMinute(cap, runSeconds(cm, BOILER[boiler]!.speed)),
-        then: perMinute(chosen === 'cradle' ? CRADLE_CAP[1] : cap, runSeconds(cm, BOILER[boiler]!.speed)),
+        now: perMinute(cap, run),
+        then: perMinute(capB, run),
       },
       { id: 'kitTrip', label: 'Rails a trip', kind: 'number', now: LINE2_KIT.rails, then: LINE2_KIT.rails },
     ];
+  }
   if (cat === 'looks')
     return [{ id: 'look', label: 'What it changes', kind: 'text', now: 0, then: 0, text: 'The look only' }];
   return [{ id: 'sound', label: 'Its sound', kind: 'text', now: 0, then: 0, text: 'Hear it' }];

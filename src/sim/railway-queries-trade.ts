@@ -25,7 +25,7 @@ import { LINE2, RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { CRADLE_CAP, WORKS } from './railway-works-layout.ts';
 import type { RailTrain } from './railway-train.ts';
 import { Line, Plot, Town, Train, Works, Yard } from './railway-components.ts';
-import { footingsOwed, kitOwed, stopsOf, wagonSlot, worksId, type Row } from './railway-queries.ts';
+import { footingsOwed, kitOwed, lineId, stopsOf, wagonSlot, worksId, type Row } from './railway-queries.ts';
 import { legKitWaiting } from './railway-queries-route.ts';
 
 export const yardId = (w: World, slot: number) => w.lookup(Yard, slot)!;
@@ -88,8 +88,6 @@ export function freightStop(w: World, slot: number, r: Readonly<RailTrain>, k: n
 }
 
 // ---------------------------------------------------------------- R3: riders, fares and the strongbox
-/** The route slot on `line` (one at most a line today), or -1. */
-// lineRoute is catalogue-only and lives in railway-trade-layout.ts.
 /** A route's far halt: its `b`, or for `b: 'end'` its line's current open end (the ruling of 12 November: the
  * riders' far end follows line 2's end as Q6, Q7 and the rivet move it on; a query, no state). */
 export function routeFar(w: World, route: number) {
@@ -145,7 +143,7 @@ export const loaderOn = (w: World, tick: number): boolean => loaderBuilt(w, tick
 /** One deck, one cargo. The coupled wagon has its own deck and leaves its train's kit car free. */
 export const deckHeld = (r: Readonly<RailTrain>): boolean => !r.wagon && r.foot > 0;
 export const footCap = (w: World, r: Readonly<Row<typeof Train>>): number =>
-  r.wagon ? CRADLE_CAP[w.get(Line, w.lookup(Line, LINE2)!)!.cradle]! : WORKS.loaderCap;
+  r.wagon ? CRADLE_CAP[w.get(Line, lineId(w, LINE2))!.cradle]! : WORKS.loaderCap;
 export const footCarrier = (w: World, r: Readonly<Row<typeof Train>>, tick: number): boolean =>
   r.wagon ||
   (RAIL_TRAINS[r.slot]!.line === LINE2 &&
