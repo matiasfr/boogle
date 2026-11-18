@@ -1,4 +1,4 @@
-> **Status: answered (2026-11-17); the owner answered every question the same day (below). Building.**
+> **Status: answered (2026-11-17); the owner answered every question the same day (below). Live (2026-11-18).**
 
 ## Pitch
 

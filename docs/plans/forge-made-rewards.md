@@ -1,4 +1,4 @@
-> **Status: building (2026-11-17); the owner answered its three questions the same day (below).** Brief: [forge-made-rewards](../brainstorms/forge-made-rewards.md).
+> **Status: built (2026-11-18), steps 1 to 5; the pack's spot moved to (922, -17.6), see "As built"; the owner answered its three questions the same day (below).** Brief: [forge-made-rewards](../brainstorms/forge-made-rewards.md).
 > Decision: [rewards, 17 November](../decisions-rewards.md#d-2026-11-17-forge-made-rewards). Base: `45e2fe2f`
 > (main `5cfe070d` plus the brief). Steps 1 to 3 only change what players see and can ship first. Step 4 moves the
 > axe's pickup (sim catalog, server reach). Step 5 is the cut, which needs step 4. **No `WORLD_NS` bump** (see Risks).
@@ -253,6 +253,8 @@ starting numbers put line 1's rail across the frame's foot and showed the head e
 steel toward red-orange, since an emissive alone washed out on near-white steel in daylight. The machine's crossing
 restore keeps an in-flight axe cut and the roof show's wait. `q1-done` leaves the pack unclaimed (the seed route claims
 it only in Q6), so its lit board shows both ready marks.
+
+**As built, second pass (18 November, after the orchestrator's visual review and the independent review):** the pack's spot `LINE2_PACK` moved to (922, -17.6), 5.6 m south of the forge frame, where the player faces after the 24th log (nowhere inside the old reach was both visible and clear of the forge wall); it stands on a chest-high shelf with amber-capped posts and a coral glimmer, scaled 2.4. The board's marks sit side by side under the title, each about twice its height. The axe is scaled 2.2 and cools yellow, orange, red, dark, steel. The roof show updates after the lit edge queues the cut, so it waits for it, and a crossing keeps an arrival already under way. Both reviews found no remaining defects.
 
 **Checkpoint (after step 5):** `npm run check`; `npm run loop -- run`; the railway bot's forge-to-hardwoods segment
 from `npm run checks-for`; and the brief's shared-claim look. With `--players 2`, vary who opens the pack and who
