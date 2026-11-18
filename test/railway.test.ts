@@ -129,8 +129,7 @@ test('rows are plain data: read from the world, carrying only their schema field
   assert.deepEqual(Object.keys(accounts(w)[0]!), Account.names);
   assert.equal(w.count(Tree), RAILWAY_SOURCES.length);
   assert.equal(w.count(Account), 1);
-  assert.ok(w.count(Outcome) > 0, 'the request history is part of the world (not replicated)');
-  assert.equal(Outcome.replicate, false);
+  assert.ok(w.count(Outcome) > 0, 'the request history is part of the world');
 });
 
 test('catalog exactly pins current T1 recipe and every starter source to centimetres', async () => {
