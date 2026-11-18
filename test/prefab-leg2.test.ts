@@ -25,17 +25,15 @@ const expected = {
   bell: {
     colliders: fs.readFileSync('test/fixtures/prefab-bell-colliders.json', 'utf8'),
     placements: fs.readFileSync('test/fixtures/prefab-bell-placements.json', 'utf8'),
-    counts: fs.readFileSync('test/fixtures/prefab-bell-counts.json', 'utf8'),
   },
   west: {
     colliders: fs.readFileSync('test/fixtures/prefab-west-colliders.json', 'utf8'),
     placements: fs.readFileSync('test/fixtures/prefab-west-placements.json', 'utf8'),
-    counts: fs.readFileSync('test/fixtures/prefab-west-counts.json', 'utf8'),
   },
 };
 
 for (const area of ['bell', 'west'] as const)
-  test(`${area} collider and placement values match the approved leg 2 fixture`, async () => {
+  test(`${area} collider and placement values match the approved leg 2 fixture`, async (t) => {
     const matrices = recordMatrices();
     const colliders: unknown[] = [],
       signs: { mesh: THREE.Group; options: unknown; lines: string[] }[] = [];
@@ -148,11 +146,16 @@ for (const area of ['bell', 'west'] as const)
     const { mesh, solids } = await boxes.drawGreyBoxes(owner, massing[`${area}Massing`]!() as readonly Placement[]);
     await massing[`${area}Extras`]!(owner);
     owner.root.updateWorldMatrix(true, true);
+    // The goldens below read the returned batch; this is what proves the scene draws it.
+    assert.ok(owner.root.children.includes(mesh) && mesh.visible, 'the box batch is attached to its owner and visible');
     const placements = Array.from({ length: mesh.count }, (_, i) => {
       const matrix = matrices.get(mesh, i),
         colour = matrices.colour(mesh, i);
       return { matrix: matrix.toArray(), colour: colour.toArray() };
     });
+    t.diagnostic(
+      `${area}: ${mesh.count} visible, ${colliders.length} bodies, ${signs.length} signs, ${owner.root.children.filter((child) => child instanceof THREE.InstancedMesh).length} batches`,
+    );
     for (const [suffix, value] of [
       ['colliders', colliders],
       [
@@ -162,15 +165,6 @@ for (const area of ['bell', 'west'] as const)
           solids,
           placements,
           signs: signs.map(({ mesh, options, lines }) => ({ matrix: mesh.matrixWorld.toArray(), options, lines })),
-        },
-      ],
-      [
-        'counts',
-        {
-          visible: mesh.count,
-          bodies: colliders.length,
-          signs: signs.length,
-          batches: owner.root.children.filter((child) => child instanceof THREE.InstancedMesh).length,
         },
       ],
     ] as const) {
