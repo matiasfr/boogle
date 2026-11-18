@@ -20,5 +20,5 @@ export function leg2Massing(value: unknown) {
 }
 export function leg2Extras(owner: OwnedView, value: unknown) {
   for (const p of compiled(value).placements.filter((p) => !batched(p.prefab)))
-    instantiate(p.prefab, p, { owner, texts: LEG2_TEXT }).setEnabled(true);
+    instantiate(p.prefab, p, { owner, texts: LEG2_TEXT, still: true }).setEnabled(true);
 }

@@ -12,6 +12,7 @@ import kitUrl from '../../assets/built/place-kit.glb?url';
 import { camera } from '../render/scene.ts';
 import { viewScale } from '../render/view-distance.ts';
 import { warmDraw } from '../render/precompile.ts';
+import { freezeInPlace } from '../render/instances.ts';
 import {
   FAR_KINDS,
   SHADOW_GATED,
@@ -336,6 +337,8 @@ export function lookTrack(set: DropSet, kinds: string[], owner: OwnedView, chunk
     }
     for (const q of list) {
       owner.add(q.mesh);
+      // Only instance matrices change (landing pieces) and geometry (level): the batch itself never moves.
+      freezeInPlace(q.mesh);
     }
     state.push(chunk);
     liveChunks.add(chunk);

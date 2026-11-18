@@ -28,7 +28,9 @@ export function createTownBlockout(owner: OwnedView) {
     const instance = instantiate(
       p.prefab,
       p,
-      boxed(p) ? { owner, batch: { target: batch, index: index++ } } : { owner, texts: STATUE_WORKS_COPY },
+      boxed(p)
+        ? { owner, batch: { target: batch, index: index++ }, still: true }
+        : { owner, texts: STATUE_WORKS_COPY, still: true },
     );
     instance.setEnabled(true);
     solids += instance.bodies.length;

@@ -66,6 +66,7 @@ export async function drawGreyBoxes(owner: OwnedView, placements: readonly Place
   for (const p of placements) {
     const instance = instantiate(p.prefab, p, {
       owner,
+      still: true, // the area's root stays at the origin; it mounts and unmounts whole
       ...(slots(p) ? { batch: { target: batch, index } } : {}),
     });
     index += slots(p);
