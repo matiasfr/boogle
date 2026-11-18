@@ -1,7 +1,7 @@
 # Plan: separate capacities, no heavy load, 1 a hit to start, squares on the back
 
-> **Status: steps 1–3 built on `claude/separate-capacities` (18 November 2026, world v60), not shipped; step 4's
-> flourish waits for the cutscenes job's `ability-arrival.ts` change; see "As built" under each step.** Owner calls:
+> **Status: steps 1–4 built on `claude/separate-capacities` (18 November 2026, world v60), not shipped; see "As
+> built" under each step.** Owner calls:
 > [separate wood and stone capacities](../decisions-core-loop.md#d-2026-11-17-separate-capacities) and
 > [the three answers](../decisions-core-loop.md#d-2026-11-17-separate-capacities-answers) (2 a hit once Station 3 is
 > funded, "maybe reduce logs from 40"; pack and breaker; rails 8, "own upgrade later"). The planner read the code at
@@ -280,13 +280,24 @@ squares). Each step leaves `node dev/ship-check.ts` green; the heavier proofs ar
     (`docs/reviews/separate-capacities/`): 3/8 logs, a full 8/8 logs row (cream outline) over 5/8 stone, the longest
     tag (16 + 16 + 8, 298 px) and Pause's static rows. Read each: the rows read by kind and the full row by its
     outline. Not seen: the empty tag, a boiler name, phone width, the pop and the shake (motion), a live refusal.
-- [ ] **4. The moments and the back.** *(Not built: `ability-arrival.ts` waits for the cutscenes job; only
-  `carry-models.ts` and the `line-cargo.ts` comment changed, in step 1, and the seating still was not taken.)* `ability-arrival.ts`: an `edge` entry (`has: keenEdge`, `atState: true`,
+- [x] **4. The moments and the back.** `ability-arrival.ts`: an `edge` entry (`has: keenEdge`, `atState: true`,
   `badge: true`, the multi-axe model, flourish for every player, the funder included); add `edge` to the seen-key list
   comment. `src/render/carry-models.ts`: `MAX_CARGO` and `cargoCapacity` from `RAILWAY_CAPACITY` (16 logs or stone, 8
   rails), drop `HEAVY_LOAD`; `line-cargo.ts` comment ("rails share capacity with logs") corrected. Verify:
   `node dev/ship-check.ts`; a `--rail-seed` still of Buddy from behind and the side with 16 logs, 16 stone and 8 rails
   at once (the three loads must not intersect the pack frame or each other; adjust seating offsets if they do).
+  - **As built (18 November, on the cutscenes step 1 change).** `edge` has no op: Station 3's funding is a deposit or
+    the beam's, nobody's find, so the funder is not marked as its finder and gets the same flourish as everyone when
+    next free (the multi-axe model, `tools.ts` `axeModel('edge')`); no card, no words. `test/ability-arrival.test.ts`
+    checks one flourish each for the funder and a friend, none mid-air, and no card. `carry-models.ts` changed in step
+    1. The seating still found the 16 stones through the 16-log bundle (`seat-three-before.png`); the stone heap is now
+    four across and two deep a tier, inside the rail banks, and rides on the bundle's top (`haul-bundle.ts`
+    `bundleTop`, `carry-models.ts` `stoneOn`, set in `line-cargo.ts`). A real back of 16 logs, 16 stone and 8 rails
+    (accepted chops, strikes and a forge take through `dev/look/evals/carry-seating.ts` on `works-open`) from behind,
+    beside and three-quarter (`docs/reviews/separate-capacities/seat-*.png`): no stone through the logs or the frame;
+    the heap stands above Buddy's head from behind and starts at the rails' tops from the side. Not seen: a remote
+    player's back, the flourish itself, and rails without the pack (by the code they lie crosswise in the logs' space, as
+    before this plan; not looked at).
 - [ ] **Checkpoint A (the batch).** *(18 November, on this machine: `ship-check origin/main HEAD` green, `npm run
   loop -- run` and `npm run checkpoints` green; the playthroughs, `world-inputs`, the works bot and the video not run.)* `npm run check`; `npm run loop -- run`; `npm run checkpoints`;
   `npm run playthrough -- --players 2 --to t2-funded` and `npm run scenario -- world-inputs` (a `src/sim` change);

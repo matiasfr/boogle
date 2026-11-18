@@ -10,7 +10,7 @@ import type { OwnedView } from '../src/render/owned-view.ts';
 
 function harness() {
   const storage = new Map<string, string>();
-  const w = { awake: -1, trains: -1, boiler: 'none', jump: false, glide: false };
+  const w = { awake: -1, trains: -1, boiler: 'none', jump: false, glide: false, edge: false };
   const sounds: unknown[] = [];
   /** What holds a friend's card back: each read every frame. */
   const hold = { glide: false, chair: false, vehicle: false, moment: false, busy: false, air: false, talk: false };
@@ -60,6 +60,7 @@ function harness() {
         rail: () => w,
         boilerRow: () => ({ state: w.boiler }),
         line2Trains: () => w.trains >= 0,
+        keenEdge: () => w.edge,
         railPhase: () => phase,
         localStorage: {
           getItem: (key: string) => storage.get(key) ?? null,
@@ -249,6 +250,25 @@ test("the multi-axe's friend card comes at the wake's end, not at the event", ()
   v.dispose();
 });
 
+test('the keener edge: no card and no finder; everyone, the funder too, gets its flourish once when free', () => {
+  const h = harness();
+  const funder = h.mount('a');
+  const friend = h.mount('b');
+  for (const m of [funder, friend]) m.v.update(0.1);
+  // Station 3 funded by a's last log: a deposit, not an ability op, so nobody is its finder.
+  h.w.edge = true;
+  funder.take('rail.deposit', 'a');
+  h.hold.air = true;
+  for (const m of [funder, friend]) m.v.update(1);
+  assert.deepEqual(h.sounds.length, 0, 'not mid-air');
+  h.hold.air = false;
+  for (const m of [funder, friend]) for (let i = 0; i < 4; i++) m.v.update(0.5);
+  for (const m of [funder, friend]) assert.deepEqual(m.v.inspect().keys, ['edge']);
+  assert.deepEqual(h.cards, [], 'no card');
+  assert.equal(h.sounds.length, 2, "one flourish each, the funder's too");
+  for (const m of [funder, friend]) m.v.dispose();
+});
+
 test('the finder gets nothing more from this file', () => {
   const h = harness();
   const { v, take } = h.mount('a');
@@ -323,7 +343,10 @@ test('review: a solo page leaves no card mark and owes nothing', () => {
   take('rail.jump', 'a', 'jump');
   take('rail.glide', 'a', 'glide');
   for (let i = 0; i < 5; i++) v.update(0.5);
-  assert.deepEqual({ cards: h.cards, owed: v.inspect().owed, marks: h.marks.length }, { cards: [], owed: [], marks: 0 });
+  assert.deepEqual(
+    { cards: h.cards, owed: v.inspect().owed, marks: h.marks.length },
+    { cards: [], owed: [], marks: 0 },
+  );
   v.dispose();
 });
 

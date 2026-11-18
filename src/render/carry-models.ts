@@ -11,6 +11,11 @@ import { makeProp } from './prop-kit.ts';
  * capacities, owner 17 November 2026). */
 const MAX_STONE = CAPACITY.stoneBreaker;
 const MAX_RAILS = CAPACITY.rails;
+/** The heap's lowest stones' centres on the back socket, and how far a stone sinks into what it rests on. */
+const STONE_BASE = 0.3;
+const STONE_REST = 0.1;
+/** The stone heap's lift for a log bundle whose top stands `top` m up its frame (0 for no logs, bundleTop). */
+export const stoneOn = (top: number) => (top > 0 ? Math.max(0, top + STONE_REST - STONE_BASE) : 0);
 
 export type CargoKind = 'logs' | 'rails' | 'stone' | 'beam' | 'boiler';
 export const cargoCapacity = (kind: CargoKind, frame: boolean): number =>
@@ -84,9 +89,15 @@ export function makeCarryModels() {
   stone.name = 'wear_carried_stone';
   stone.frustumCulled = false;
   stone.count = 0;
+  // A low heap, four across and two deep a tier (two tiers for 16): it stays inside the pack's rail banks
+  // (x +-0.38) and, lifted by `stoneOn`, rides on top of a log bundle rather than through it.
   for (let k = 0; k < MAX_STONE; k++) {
     worn.rotation.set(k, k * 2, 0);
-    worn.position.set((k % 3) * 0.2 - 0.2, 0.3 + Math.floor(k / 6) * 0.22, 0.42 + (Math.floor(k / 3) % 2) * 0.2);
+    worn.position.set(
+      (k % 4) * 0.14 - 0.21,
+      STONE_BASE + Math.floor(k / 8) * 0.2,
+      0.5 + (Math.floor(k / 4) % 2) * 0.18,
+    );
     worn.updateMatrix();
     stone.setMatrixAt(k, worn.matrix);
   }

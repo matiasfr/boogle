@@ -252,7 +252,8 @@ export async function createRailwayTools(
     /** A fresh model of an axe (or the pack frame) for a friend's flourish (materials are shared with the cards). */
     axeModel(key: string): THREE.Object3D | null {
       if (key === 'axe') return properModel.clone(true);
-      if (key === 'multi-axe') return new THREE.Mesh(multiPrize, material);
+      // The keener edge (Station 3 funded) is the same multi-axe, sharpened: its flourish shows that model.
+      if (key === 'multi-axe' || key === 'edge') return new THREE.Mesh(multiPrize, material);
       if (key === 'pack') return new THREE.Mesh(packPrize, material);
       return null;
     },

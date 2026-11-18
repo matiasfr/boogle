@@ -35,6 +35,13 @@ const q = new THREE.Quaternion(),
   e = new THREE.Euler(),
   v = new THREE.Vector3(),
   sc = new THREE.Vector3();
+/** How high the bundle of `n` logs stands on its frame (its top log's top): where a load riding on it sits. */
+export const bundleTop = (n: number, fit: BundleFit): number => {
+  const shown = Math.min(SHOWN, shownOf(n));
+  if (shown <= 0) return 0;
+  const [y] = EXTENTS.get(fit.round ? ROUND : TALL)![shown - 1]!;
+  return fit.floor + (2 * R + y) * (fit.radius ?? 1);
+};
 export const slotAt = (m: number, fit: BundleFit, out: THREE.Vector3): THREE.Vector3 => {
   const [y, z] = (fit.round ? ROUND : TALL)[m]!;
   const radius = fit.radius ?? 1;

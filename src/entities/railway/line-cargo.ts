@@ -11,6 +11,7 @@ import { RAIL_ROCKS } from '../../sim/railway-works-layout.ts';
 import { account, accounts, beam as beamRow, rail, rock as rockRow } from '../../sim/railway-rows.ts';
 import { railPhase } from '../../sim/railway-queries-line1.ts';
 import { GOLD_ROPE } from '../../render/gold-rope.ts';
+import { bundleTop, fitOf } from '../../render/haul-bundle.ts';
 import { emit } from '../../render/particles.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
 import { reducedMotion } from '../../constants.ts';
@@ -28,7 +29,7 @@ const frameOf = (avatar: THREE.Object3D | null) => {
 };
 
 export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView, mine: (id: number) => void) {
-  const [{ H, addStatic }, { ROCKS }, { flat }, { makeCarryModels, BEAM_CARRY_POSITION }, { sparkleAxe }] =
+  const [{ H, addStatic }, { ROCKS }, { flat }, { makeCarryModels, BEAM_CARRY_POSITION, stoneOn }, { sparkleAxe }] =
     await Promise.all([
       import('../../place/land.ts'),
       import('../../place/layout.ts'),
@@ -210,6 +211,8 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
       if (model.root.parent !== frame) frame.add(model.root);
       model.stone.count = account.stone;
       model.stone.visible = model.stone.count > 0;
+      // With logs on the back the stone rides on top of their bundle, not through it.
+      model.stone.position.y = stoneOn(account.carry > 0 && avatar ? bundleTop(account.carry, fitOf(avatar)) : 0);
       // Rails have their own capacity and their own mesh, with its own count and lifetime, including after logs unload.
       model.setRails(account.rails, rail(world()).pack);
       let drag = drags.get(account.pid);
