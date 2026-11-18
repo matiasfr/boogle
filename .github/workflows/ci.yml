@@ -1,7 +1,8 @@
 name: CI
 
 # Runs on PRs, on main, and on the ship/* branches `npm run ship` pushes (their checks count as the PR's required
-# checks: same commit). automerge.yml dispatches it on main after each merge, since a bot merge doesn't fire push.
+# checks: same commit). automerge.yml dispatches it on main after each merge that changes code, since a bot merge
+# doesn't fire push; a docs-only merge gets main-docs.yml, which comes back here on any doubt.
 # A ship/* PR's own pull_request runs do nothing: the push run is the one automerge counts (owner call "Fast ships").
 # Docs-only changes (dev/ci/change-class.ts) run only the docs job; code runs lint, build, unit and registry, and server
 # and net when their import closure changed (always on main).

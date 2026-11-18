@@ -218,14 +218,28 @@ jobs:
           PR: ${{ steps.pr.outputs.number }}
         run: |
           gh workflow run deploy.yml --ref main
-          gh workflow run ci.yml --ref main
           # The image's sources, one list (dev/server-build.ts SERVER_IMAGE_PATHS), from main's checkout above.
           # The files API, not `gh pr diff`: the diff refuses PRs over 300 files (HTTP 406), and #1992 skipped its
           # server deploy that way. If the listing fails, deploy anyway; a needless deploy is cheap, a missed one is not.
-          if ! files=$(gh api --paginate "repos/$GH_REPO/pulls/$PR/files" --jq '.[].filename'); then
+          # Both names of a rename: a file moving out of docs, or out of the image, is a change to where it was.
+          if ! files=$(gh api --paginate "repos/$GH_REPO/pulls/$PR/files" --jq '.[] | .filename, (.previous_filename // empty)'); then
             echo 'Could not list the PR files: deploying the server to be safe.'
             gh workflow run deploy-server.yml --ref main
-          elif node dev/server-build.ts --touches <<<"$files"; then
+            gh workflow run ci.yml --ref main
+            exit 0
+          fi
+          # CI on main, the combination check. A docs-only merge changes nothing the code jobs read, so it gets
+          # main-docs.yml: the docs checks, without cancelling main's running CI to start all of it again. That
+          # workflow reads the merge again from git and goes to the full CI on any doubt; so does this, when the
+          # merge commit is unknown or the dispatch fails.
+          merge=$(gh pr view "$PR" --json mergeCommit --jq '.mergeCommit.oid // empty') || merge=
+          if [ -n "$merge" ] && [ "$(node dev/ci/change-class.ts <<<"$files")" = docs ] &&
+             gh workflow run main-docs.yml --ref main -f merge="$merge"; then
+            echo "Docs-only merge $merge: main-docs.yml, not the full CI."
+          else
+            gh workflow run ci.yml --ref main
+          fi
+          if node dev/server-build.ts --touches <<<"$files"; then
             gh workflow run deploy-server.yml --ref main
           fi
           # No atlas dispatch: its citation report is advisory and the atlas is off (owner, 10 November); it runs on

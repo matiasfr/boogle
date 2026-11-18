@@ -225,3 +225,42 @@ test('relativeLoads reads every load form and keeps out directories and packages
   ].join('\n');
   assert.deepEqual(relativeLoads(src), ['./a.ts', '../b.ts', './c.ts', './d.ts', './e.ts', './f.ts', './g.html']);
 });
+
+// After a merge automerge.yml starts main's check. Only a merge whose every file is docs may get main-docs.yml in
+// place of CI, and every doubt there (not docs when read from git, main's CI red or without a verdict, a red docs
+// check) must end in the full CI: a quiet skip would leave a bad combination on main unseen.
+test('only a docs-only merge skips the full CI on main, and main-docs falls back to it', () => {
+  const read = (file: string) => fs.readFileSync(path.join(ROOT, '.github/workflows', file), 'utf8');
+  const automerge = read('automerge.yml');
+  assert.match(
+    automerge,
+    /\[ "\$\(node dev\/ci\/change-class\.ts <<<"\$files"\)" = docs \] &&\n\s+gh workflow run main-docs\.yml --ref main -f merge="\$merge"; then\n[^\n]+\n\s+else\n\s+gh workflow run ci\.yml --ref main\n/,
+    'automerge must run ci.yml on main unless the merge is docs-only and main-docs.yml was dispatched',
+  );
+  assert.match(automerge, /\.filename, \(\.previous_filename \/\/ empty\)/, 'a rename out of docs must count');
+  assert.match(
+    automerge,
+    /Could not list the PR files[\s\S]{0,160}gh workflow run ci\.yml --ref main/,
+    'a failed file listing must still run the full CI',
+  );
+  const docs = read('main-docs.yml');
+  assert.match(docs, /full\(\) \{\n[^\n]+\n\s+gh workflow run ci\.yml --ref main\n/);
+  assert.match(docs, /git diff --no-renames --name-only -z "\$MERGE\^1" "\$MERGE"/);
+  assert.match(docs, /\[ "\$class" = docs \] \|\| full /);
+  assert.match(
+    docs,
+    /running \| success\) ;;\n\s+\*\) full /,
+    "main's CI red or without a verdict must run the full CI",
+  );
+  assert.match(
+    docs,
+    /if: failure\(\)\n\s+run: gh workflow run ci\.yml --ref main/,
+    'a red docs check must run the full CI',
+  );
+  // The checks themselves are CI's docs job's.
+  const job = /\n {2}docs:\n[\s\S]*?\n\n/.exec(read('ci.yml'))?.[0] ?? '';
+  for (const step of ['run: npm run registry', 'run: node --test test/models.test.ts test/change-class.test.ts']) {
+    assert.ok(job.includes(step), `ci.yml's docs job no longer has "${step}"`);
+    assert.ok(docs.includes(step), `main-docs.yml lacks "${step}", which ci.yml's docs job runs`);
+  }
+});

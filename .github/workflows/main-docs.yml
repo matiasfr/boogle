@@ -1,0 +1,78 @@
+name: Main docs
+
+# Main's check after a docs-only merge. automerge.yml dispatches this in place of CI when every file the merged PR
+# changed is docs (dev/ci/change-class.ts): such a merge cannot change what lint, build, the unit suite, server or net
+# say about main, so it runs only what CI's `docs` job runs, and it leaves main's running CI alone where a second CI
+# run would have cancelled it and started all of it again.
+# Anything else is the full CI (it dispatches ci.yml on main, as automerge did after every merge):
+# - the merge is not docs-only when read again here from git, or cannot be read;
+# - main's latest CI run is neither green nor still running (red, or cancelled with nothing newer), so main's code has
+#   no verdict to keep and a docs fix may be what turns a red registry green;
+# - a docs check here fails: the full run goes red and takes the usual path (red-main issue, ci-autofix.yml).
+# So a CI run on main still means what it did, and the heartbeat, red-main and ci-autofix read only those.
+
+on:
+  workflow_dispatch:
+    inputs:
+      merge:
+        description: The docs-only merge commit on main
+        required: true
+
+permissions:
+  contents: read
+  actions: write # the fallback: dispatching ci.yml
+
+jobs:
+  docs:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      MERGE: ${{ inputs.merge }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Docs-only merge on a main that CI has judged or is judging?
+        id: light
+        run: |
+          full() {
+            echo "::notice::$1; running the full CI on main."
+            gh workflow run ci.yml --ref main
+            echo "light=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+          [[ "$MERGE" =~ ^[0-9a-f]{40}$ ]] && git merge-base --is-ancestor "$MERGE" HEAD ||
+            full "'$MERGE' is not a commit on main"
+          # What the merge brought to main: its first parent is main before it. Both sides of a rename, as ci.yml.
+          git diff --no-renames --name-only -z "$MERGE^1" "$MERGE" > "$RUNNER_TEMP/changed" ||
+            full "Could not diff $MERGE against its first parent"
+          class=$(node dev/ci/change-class.ts < "$RUNNER_TEMP/changed") || class=unknown
+          [ "$class" = docs ] || full "$MERGE is $class, not docs-only"
+          latest=$(gh run list --workflow ci.yml --branch main --limit 1 --json status,conclusion \
+            --jq '.[0] | if . == null then "missing" elif .status != "completed" then "running" else .conclusion end') ||
+            full "Could not read main's latest CI run"
+          case "$latest" in
+            running | success) ;;
+            *) full "Main's latest CI run is $latest" ;;
+          esac
+          echo "Docs-only merge and main's latest CI run is $latest: the docs checks only."
+          echo "light=true" >> "$GITHUB_OUTPUT"
+      # CI's docs job (ci.yml), on main's tip. No origin/main fetch: on main the checkout's origin/main is this commit.
+      - if: steps.light.outputs.light == 'true'
+        run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      - if: steps.light.outputs.light == 'true'
+        run: npm run registry
+      - if: steps.light.outputs.light == 'true'
+        run: node --test test/models.test.ts test/change-class.test.ts
+      - name: A red check here goes to the full CI
+        if: failure()
+        run: gh workflow run ci.yml --ref main
