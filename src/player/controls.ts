@@ -109,6 +109,7 @@ export type Action = {
 type Described = Omit<ControlRow, 'order'> & { order?: number; seq: number; guide?: boolean };
 type KeyLike = {
   code: string;
+  key?: string;
   type: string;
   repeat?: boolean;
   ctrlKey?: boolean;
@@ -220,16 +221,31 @@ export const isTyping = (e: { target?: EventTarget | null } | null | undefined) 
     'input, textarea, select, [contenteditable], [data-water-panel], [data-dev-ui]',
   );
 const keyBinds = new Map<string, { owner: string; down: Edge | null; up: Edge | null }>(); // code -> binding
+const keysDown = new Set<string>(); // bound codes whose down ran and whose up has not
 let listening = false;
+const isMeta = (e: KeyLike) => e.key === 'Meta' || e.code === 'MetaLeft' || e.code === 'MetaRight';
 
 // Dispatches a keydown/keyup to its binding; the window listener calls it, tests call it with plain objects.
+// macOS sends no keyup for other keys while Cmd is held, so Cmd's keyup lets go of every bound key still down (as
+// src/player/input.ts does for its held keys): a hold on one (the garage's Install, on E) cannot stay down by itself.
 export function keyEvent(e: KeyLike) {
+  if (e.type === 'keyup' && isMeta(e)) {
+    for (const code of [...keysDown]) {
+      const held = keyBinds.get(code);
+      keysDown.delete(code);
+      if (held && !(devInputBlocked() && held.owner !== 'dev-camera')) held.up?.();
+    }
+  }
   const b = keyBinds.get(e.code);
   if (!b) return false;
   if (devInputBlocked() && b.owner !== 'dev-camera') return false;
-  if (e.type === 'keyup') b.up?.();
-  else if (!e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey && !isTyping(e)) b.down?.();
-  else return false;
+  if (e.type === 'keyup') {
+    keysDown.delete(e.code);
+    b.up?.();
+  } else if (!e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey && !isTyping(e)) {
+    keysDown.add(e.code);
+    b.down?.();
+  } else return false;
   return true;
 }
 
@@ -253,7 +269,11 @@ export function onKey(
 }
 
 const unbindKeys = (owner: string) => {
-  for (const [code, b] of keyBinds) if (b.owner === owner) keyBinds.delete(code);
+  for (const [code, b] of keyBinds)
+    if (b.owner === owner) {
+      keyBinds.delete(code);
+      keysDown.delete(code);
+    }
 };
 
 // ---------------------------------------------------------------- menu keys

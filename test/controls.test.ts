@@ -296,14 +296,22 @@ test('controls: a wrapped action in src/ binds its guide keys through the action
   const wrapped = new Set(texts.flatMap(([, t]) => [...t.matchAll(/wrapAction\(\s*'([\w-]+)'/g)].map((m) => m[1]!)));
   assert.ok(wrapped.has('interact'), 'the garage wraps interact; did the pattern stop matching?');
   const missing: string[] = [];
+  const matched = new Set<string>();
   for (const [f, text] of texts)
     for (const [, id, body] of text.matchAll(/registerAction\(\s*'([\w-]+)',\s*\{((?:[^{}]|\{[^{}]*\})*?)\}\s*\)/g)) {
       if (!wrapped.has(id!)) continue;
+      matched.add(id!);
       const guide = body!.match(/\bkeys:\s*(\[[^\]]*\])/)?.[1] ?? '';
       const bound = body!.match(/\bkey:\s*('\w+'|\[[^\]]*\])/)?.[1] ?? '';
       for (const [, code] of guide.matchAll(/'(Key\w+|Digit\w+|Space|Escape|Enter|Tab)'/g))
         if (!bound.includes(`'${code}'`)) missing.push(`${f}:${id!} lists ${code} in keys but does not bind it (key:)`);
     }
+  // A body the pattern cannot read (braces nested two deep) would pass unchecked: every wrapped id must be read.
+  assert.deepEqual(
+    [...wrapped].filter((id) => !matched.has(id)),
+    [],
+    'a wrapped action whose registerAction the pattern did not match',
+  );
   assert.deepEqual(missing, []);
 });
 
