@@ -87,4 +87,15 @@ report prints a dash or "unavailable", never a zero.
 ## Limits
 
 A look-harness run on the pulling machine is not a device test: the look harness proves the flow, not a device. Timing under load is not
-evidence. Step 1 sends numbers only (no stills).
+evidence.
+
+## Stills
+
+After each scene's sample the page copies the next drawn frame into a 960 px wide JPEG (quality 0.7,
+`src/debug/device/still.ts`) and uploads it to `POST /device/runs/<id>/still/<scene>` (`server/src/device.ts`); the
+scene's `dev.scene.cost` event carries `still` (`ok`, `unavailable` for a blank or failed copy, `offline`,
+`refused <status>`, `failed`). The copy and upload run between scenes, outside the samples. `new` registers the run
+first (Bearer `REPORT_TOKEN`) and says plainly when the server refuses; the link still works for numbers. A
+self-minted `?device=new` run is registered by its first still. `pull` saves each still as `<scene>.jpg` beside
+`report.md`, whose "Stills" section links them. Caps: 400 kB a still, 12 a run, uploads for 7 days, 50 runs and
+20 MB in all, 30 writes a minute per address; the server keeps only the SHA-256 of the run id.

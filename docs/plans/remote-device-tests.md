@@ -108,7 +108,7 @@ and B cover. Each step leaves `node dev/ship-check.ts` green.
   CPUs, the quiet 6 is 12. Checked on HOTBOX: the heartbeat line, the gate decision and the quiet check (`npm run daily --
   perf --dry-run --local` prints it, "busy: load 14.0, quiet at most 12.0" once). Not run: a full `bench` under a bot
   and a look verdict under a bot (another job held the machine's browser).
-- [ ] **R4. Step 3 below: stills and registered runs.** Unchanged, `server/` tier with independent review. It gives
+- [x] **R4. Step 3 below: stills and registered runs.** Built 18 November (see step 3), not yet run on a device. Unchanged, `server/` tier with independent review. It gives
   A the Mac's and iPad's own pixels. Done as written.
 - [ ] **R5. Step 4 below: more seeds and the input run.** Unchanged.
 - [ ] **B1–B3, only on his word to question 1.** Remote-runner steps 1 to 3 with the roles swapped: config in
@@ -406,8 +406,16 @@ review stamp for the ship queue; the rest ships on one green run.
     quality rung is named, the paste line's wording).
   - **Done when** `npm run device -- new --wait` on the Mac prints a report with a baseline column after the owner
     runs the link on a second device.
-- [ ] **3. Registered runs and stills: a small endpoint.** Tier: **`server/`, independent review and review stamp
-  required**; run `npm run check:full`.
+- [x] **3. Registered runs and stills: a small endpoint.** Tier: **`server/`, independent review and review stamp
+  required**; run `npm run check:full`. **Built (18 November), not yet run on a device or in a browser.** What differs
+  from the text below: a run's folder is `DATA_DIR/device/<sha256(id)>/` and its stills `<slot>.jpg` by the server's own
+  number, with the scene names inside `run.json` (the Safety section's "keeps only its SHA-256"; neither an id nor a
+  scene is ever a path); a scene sent again replaces its still rather than counting twice; past a cap the endpoint
+  answers 507 and never evicts; the 30-a-minute limit is on the writes, and the token reads get their own 120 a minute
+  so a `pull --new` of several runs is not refused; `DEVICE_FREE_RESERVE` is a key beside `DEVICE_RATE_PER_MIN`,
+  `DEVICE_MAX_RUNS` and `DEVICE_MAX_BYTES`; the inventory measures `device/` as it does `playdata/`. The still is
+  copied after the sample (the next drawn frame), and the copy and upload run before the next scene, outside its
+  samples; the row's `still` field says what happened.
   - `server/src/device.ts` (new), wired in `server/src/server.ts` like `addPlaydata`:
     `POST /device/runs` (Bearer `REPORT_TOKEN`; body `{ id, suite, label }`; stores
     `DATA_DIR/device/<id>/run.json` with `sha256(id)`, `made` and `expires` = 7 days);
