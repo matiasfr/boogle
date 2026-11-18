@@ -82,6 +82,9 @@ export function instantiate(
     paintLabel?: Parameters<typeof makeGreyboxLabel>[2];
     makeLabel?: (attachment: Extract<Attach, { kind: 'label' }>, key: string) => THREE.Object3D;
     handlers?: Readonly<Record<string, (placement: Placement) => Interactable[]>>;
+    /** Static scenery: the caller never moves or re-parents the root, its visual or the owner's root, so their matrices
+     * are computed once here (as render/instances.ts freezeInPlace). Visibility and setEnabled still work. Not with a moving `parent`. */
+    still?: boolean;
   },
 ) {
   const owner = options.owner;
@@ -94,6 +97,7 @@ export function instantiate(
   if (parent && (!placement.parent || placement.parent !== parent.platform.id))
     throw new Error('prefabs: moving parent id mismatch');
   if (parent && def.colliders.length) throw new Error('prefabs: moving colliders await their conversion');
+  if (parent && options.still) throw new Error('prefabs: a still record cannot ride a moving parent');
   if (!parent && Object.values(def.attach ?? {}).some((a) => a.kind === 'seat' && a.anchorView))
     throw new Error('prefabs: anchored seat needs moving parent');
   // GLB records (step 12) are loaded and animated by their owning views; materials have no authored users yet.
@@ -292,7 +296,13 @@ export function instantiate(
   }
   owner.add(root);
   if (parent) parent.root.add(root);
-  root.updateWorldMatrix(true, true);
+  root.updateWorldMatrix(true, true, options.still === true);
+  // render/instances.ts freezeInPlace, inline: audit tests run this file with its imports bound by hand.
+  if (options.still)
+    root.traverse((o) => {
+      o.matrixAutoUpdate = false;
+      o.matrixWorldAutoUpdate = false;
+    });
   const bodies: Body[] = [],
     seats: Seat[] = [],
     unseats: (() => void)[] = [];

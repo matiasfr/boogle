@@ -3,6 +3,7 @@ import * as THREE from 'three/webgpu';
 import html from '../../../docs/world/map-prototypes.html?raw';
 import { layout, parseMapPage, type XZ } from '../../sickle/map-data.ts';
 import { addPart, mergeParts } from '../../render/geometry-parts.ts';
+import { freezeInPlace } from '../../render/instances.ts';
 
 // The map's Place-local origin. Ring Island and the Original Island already render in the live world.
 const ORIGIN_X = 1000;
@@ -147,5 +148,6 @@ export function createBackdrop() {
     }),
   );
   mesh.name = 'Sickle Isles horizon';
+  freezeInPlace(mesh); // world-space geometry, straight under the scene: never moves
   return mesh;
 }

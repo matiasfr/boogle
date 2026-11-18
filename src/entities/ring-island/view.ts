@@ -17,6 +17,7 @@ import { GROUP, groundMat } from '../../physics/physics.ts';
 import { getAudio } from '../../render/audio.ts';
 import { hearGain } from '../../render/hearing.ts';
 import { camera } from '../../render/scene.ts';
+import { freezeInPlace } from '../../render/instances.ts';
 import { PLAYER_R } from '../../constants.ts';
 import { siteExit } from '../../place/site-clearance.ts';
 import { outOf } from '../../place/sites.ts';
@@ -937,6 +938,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   })();
   const groundMesh = ground.mesh;
   root.add(groundMesh);
+  freezeInPlace(groundMesh); // the root stays at the world origin; the full mesh shows only with farGround off
   // Frustum-culled tiles in three levels of detail, as the main island's far ground (place/far-ground.ts).
   const disposeTiles = addFarGround(groundMesh, g.nx, g.nz, ground.mainEnd, ground.underwater);
   const groundBodies = g.collider().map((tile) =>

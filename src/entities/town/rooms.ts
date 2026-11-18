@@ -196,7 +196,7 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
       instance: instantiate(
         placement.prefab,
         { ...placement, params: { ...placement.params, x, y: y0, z: p.z, yaw: p.yaw } },
-        { owner: shellOwner },
+        { owner: shellOwner, still: true }, // shells only toggle (sites.ts); shellOwner's root is placed above
       ),
     }));
     const phase = (name: string) => records.filter(({ placement }) => placement.id.startsWith(`room-${id}-${name}-`));

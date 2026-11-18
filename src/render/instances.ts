@@ -9,6 +9,8 @@
 //   pool.end()                                         count, upload and bounds
 //
 //   freezeStatic(object)   decor that never moves: compute its matrices once and skip them every frame after
+//   freezeInPlace(object)  the same, for decor already in its final place under parents that never move: its world
+//                          matrices are kept too, so the scene's per-frame pass skips their multiply as well
 import * as THREE from 'three/webgpu';
 import { guardInstances } from './draw-count.ts';
 
@@ -135,6 +137,21 @@ export function createPool(geometry: THREE.BufferGeometry, material: THREE.Mater
       sphere.radius = Math.hypot(x1 - x0, y1 - y0, z1 - z0) / 2 + reach;
     },
   };
+}
+
+// Why two flags: the Scene keeps matrixAutoUpdate, so its own updateMatrix() marks it dirty every frame and
+// updateMatrixWorld then forces a world multiply on every node below it, whatever the node's own flags.
+// matrixAutoUpdate = false skips only the local compose; matrixWorldAutoUpdate = false skips that forced multiply. The
+// traversal itself still visits every node. Use only where nothing later moves or re-parents the object or any of its
+// ancestors: its world matrices are never recomputed. Children added later are fine (they multiply onto a kept world).
+// Forced, so a subtree under an already frozen root is rebuilt rather than skipped as clean (a node frozen before keeps
+// its matrices even forced). In dev, src/debug/frozen-audit.ts reports any frozen node that moved after this.
+export function freezeInPlace(object: THREE.Object3D) {
+  object.updateWorldMatrix(true, true, true);
+  object.traverse((o) => {
+    o.matrixAutoUpdate = false;
+    o.matrixWorldAutoUpdate = false;
+  });
 }
 
 export function freezeStatic(object: THREE.Object3D) {

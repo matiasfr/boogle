@@ -20,6 +20,7 @@ import { setViewGeometry, type OwnedView } from '../render/owned-view.ts';
 import { lodLevel } from '../render/lod-level.ts';
 import { viewScale } from '../render/view-distance.ts';
 import { tileIndex, type TileCells } from './far-ground-index.ts';
+import { freezeInPlace } from '../render/instances.ts';
 
 /** Cells per tile side (192 m). */
 export const GROUND_TILE = 96;
@@ -205,5 +206,7 @@ function build(
   // An owner takes its own copies of the geometries it sees (setViewGeometry copies the other levels once); `made` stays ours.
   if (owner) owner.add(group);
   else full.parent?.add(group);
+  // The tiles never move (a level change swaps only geometry, show() only visibility): no per-frame matrix work.
+  freezeInPlace(group);
   return { group, tiles };
 }
