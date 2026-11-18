@@ -45,14 +45,14 @@ Status: `todo`, `out` (dispatched, building), `review` (built, in review or merg
 | # | Area | Start: files / lines | Status | Result |
 | --- | --- | --- | --- | --- |
 | 1 | Dev tooling and CI tests (`test/` tests of `dev/**`, `scripts/**`) | 34 / 4,279 | done | #2062: 33 / 4,210 |
-| 2 | Prefab data and level (`test/prefab-*`, fixtures, helpers) | 20 / 5,077 | review | #2063 (CI green, merging): 18 files, net 90 lines lighter |
-| 3 | Review- and milestone-named sim tests | 36 / 6,191 | review | built: 34 / 5,691; independent review out |
-| 4 | Railway sim: trains, lines, routes, ring, steel, works | about 42 / 9,500 | out | |
-| 5a | Railway sim: trade, adapter, read session | 3 / about 2,900 | review | built: 260 lines lighter; independent review out |
+| 2 | Prefab data and level (`test/prefab-*`, fixtures, helpers) | 20 / 5,077 | done | #2063: 18 files, net 90 lines lighter |
+| 3 | Review- and milestone-named sim tests | 36 / 6,191 | review | #2066 (reviewed, merging): 34 / 5,691 |
+| 4 | Railway sim: trains, lines, routes, ring, steel, works | 43 / 10,063 | review | reviewed, in the ship queue: 33 files, about 1,000 lines lighter |
+| 5a | Railway sim: trade, adapter, read session | 3 / about 2,900 | done | #2070: 225 lines lighter |
 | 5b | Railway sim: supply, install, loader, replicate, goldens, tick order, ecs, world, room (the 43 files 5a did not check test by test) | about 43 / 8,200 | out | |
-| 6 | Server: accounts, rooms, saves, transport (`server/test/*` except area 7) | about 38 | out | Codex stopped twice at capacity; a Claude builder audits its commits and finishes |
-| 7 | Server: railway hosts (`server/test/railway-*`, `rail-tune*`, `seats-host`, `boogler-*`) | 26 / 7,513 | review | built: 24 / 7,292; independent review out |
-| 8 | Client and world logic (the rest of `test/`) | 94 / 10,828 | review | #2064 (CI green, merging): 89 files, about 690 lines lighter |
+| 6 | Server: accounts, rooms, saves, transport (`server/test/*` except area 7) | 38 / 6,928 | review | built (Codex, finished by Claude): 30 / 6,366; independent review out |
+| 7 | Server: railway hosts (`server/test/railway-*`, `rail-tune*`, `seats-host`, `boogler-*`) | 26 / 7,513 | done | #2068: 24 / 7,292 |
+| 8 | Client and world logic (the rest of `test/`) | 94 / 10,828 | done | #2064: 89 files, about 690 lines lighter |
 | 9 | Runtime-helper tests area 1 handed back (device-id, tune, namespace, sw-worker, zfight and others) | 21 / 1,617 | done | #2061: 21 / about 1,380 |
 
 Fixture kept on purpose: `test/fixtures/boogler-parked-copy.ts` is imported by no test since #2064. It is The Boogler's
@@ -87,6 +87,30 @@ mutation evidence, unresolved risks.
   -read, -report, -runs, models, bot-queue, verdict, asset-size-warnings, atlas, loop-graph, loop-trace, server-image,
   registry, wgsl-portability, chroma, clock-progress, knots, level-flood, ground-collider, rail-map (each a distinct
   gate or parser contract).
+- 2026-11-18, area 2, #2063 (prefab). `prefab-consolidation` folded into `prefab-portability`; `prefab-review-4` and
+  two real-project cases of `prefab-dynamic` folded into `prefab-lint`; duplicate quarter-turn and roundoff cases
+  removed in favour of the workshop round-trip table; the three `*-counts.json` goldens became diagnostics (owner call
+  "No limits ahead of a measured problem"). Review proved two lost guards by mutation, both restored: the counts were
+  the only check that the box meshes are attached to the scene (now asserted directly for Bell, West and Gorge), and
+  the report snapshot was the only check that a level check still runs (the fixture stays; kinds and messages are
+  compared with measurements masked). Untouched: edges, furnishing, halts, ordinary, records, scenery-review, seats,
+  specifiers, trees, validate.
+- 2026-11-18, area 8, #2064 (client and world logic). Deleted as presentation under the test diet: `crane-aim`,
+  `crossing-show`, `far-head-show`, `garage-data`, `swim-pose` (review confirmed none held a shared rule). Trimmed 17
+  suites of literals and self-checking transforms, each with a failing mutation for what stayed. Review found two
+  weakened assertions, both restored: per-stage map name counts (`island-labels`) and presence key order.
+- 2026-11-18, area 7, #2068 (server railway hosts). `railway-buy-review` and `railway-buy-review-ws` folded into
+  `railway-buy-host` (all five cases survive, the stale-epoch refusal now exact); the host's duplicate credit-curve
+  sweep removed (the unit test holds the arithmetic); four pairs of long scenarios merged (device takes, held Ring,
+  footing carrier, shared double jump). Flake repairs: `boogler-host`, `railway-eviction` and
+  `railway-supply-durability` wait on real events instead of polling or resending (18 of 18 review runs green).
+  Strengthened: no unit test catches a purchase of an unstaked plot; the host case now does. Untouched: actor-checks,
+  beam-absence, crash, host, ring-host, supply-order, tuning-budget, rail-tune, seats-host, boogler-authority, -land.
+- 2026-11-18, area 5a, #2070 (railway trade, adapter, read session). `railway-trade` 1,646 to about 1,450 lines:
+  duplicate seed-stage and played-sequence tests removed against named guards, two stale gate 3 tests removed (they
+  passed under their own mutation), literal pins replaced by relations. Review restored four things: the box cap is
+  worked out in the test, not with `boxCap`; the R2b twin run is back (a hidden-state mutant passed goldens 9 to 11 and
+  failed only it); the unplayed gate 2 worlds are world-checked; the price floor (`railPricePct` refuses 0) is tested.
 
 ## Findings worth keeping
 
@@ -97,6 +121,14 @@ mutation evidence, unresolved risks.
 - A deletion justified as "a count or snapshot only fails on legitimate edits" needs a mutation before it merges. Three
   of the first four reviews found a retired count or snapshot had been the only guard of a real defect (drawn meshes
   attached to the scene; a level check silently no longer running; a stop's name missing from the map).
+- A twin run and a golden guard different things. A golden compares one world with a recording; only two worlds
+  ticked in one process see state kept outside the world. `railway-trade`'s R1 and R2b twins and
+  `railway-steel-review`'s save twin are load-bearing; do not fold them into a golden.
+- When a pin is replaced by "the relation it stood for", the expected side must not call the function under test.
+  The box cap compared with `boxCap()` passed with the demand term zeroed.
+- `railway-train`'s "with no brake every leg is v26's, bit for bit" stays: flooring instead of rounding in
+  `trainLegAlong` passes everything else, two goldens included, because train rows store a leg's ends, not the
+  position along it.
 
 ## Unresolved risks
 
@@ -115,3 +147,14 @@ mutation evidence, unresolved risks.
   the first-menu thread prompts, the parked-copy counts, the arrival name wording, the garage pill strings.
 - Golden shards: `yard-built` is rebuilt in three processes (about 90 s of CI) and the twelve shards run from 15 s to
   181 s. Area 5b is looking at regrouping without touching a golden.
+- Server railway hosts (#2068), from its review: no host case checks the size of the away credit (a quarter of the
+  elapsed time passed to a correct credit function leaves all eight host cases green; on main before the campaign
+  too); the unstaked-plot rule has no unit guard (it belongs in `railway-trade`'s B1 test); the crash phase of
+  `railway-shared-unlock` follows an orderly save, so it passes without checkpoints; the new event waits rely on the
+  suite's 120 s test timeout.
+- Rail motion (area 4): the `track-wing` and `track-chunks` sweeps were retired as presentation though they cover
+  more poses than a look; route-rules gate 10 averages three laps, not eight; a comment in
+  `src/sim/railway-train.ts` (about line 157) still credits a retired `railway-lines` table test; the four
+  route-rules shard weights in `dev/ci/unit-weights.json` need re-measuring from a CI run.
+- Area 3: the till label's over-cap clamp (`src/entities/railway/till-view.ts`) has no test; the sim's cap does.
+  Moving the renamed contract tests into their owning suites was not done.
