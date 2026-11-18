@@ -235,8 +235,8 @@ export async function createRailwayLine2(
     owner,
   );
   // The rails rack the forge pours onto: posts come from the opening view; the steel is drawn here.
-  // Drawn where the yard's rack stands (layout.RACK, square to the station's axis); the sim's pinned point, 0.28 m
-  // off it, still decides who is in reach, so a press the view offers is one the server accepts.
+  // Drawn where the yard's rack stands (layout.RACK, square to the station's axis); the sim's pinned point is the same
+  // point and decides who is in reach, so a press the view offers is one the server accepts.
   const RX = layout.toWorld(layout.RACK.x),
     RZ = layout.RACK.z,
     RY = land.H(RX, RZ),

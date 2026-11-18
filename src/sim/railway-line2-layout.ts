@@ -12,8 +12,9 @@ export const LINE2_FORGE = {
   logs: 56,
   x: 92200,
   z: -1200,
-  rackX: 91547,
-  rackZ: 1005,
+  // The drawn rack's world centimetres (home-station's PROPS.rack, pinned by test/home-station.test.ts).
+  rackX: 91855,
+  rackZ: 1574,
   rackMax: 24,
   pourTicks: 5,
   turnTicks: 26,

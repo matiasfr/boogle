@@ -43,7 +43,7 @@ import {
   toAxis,
   type XZ,
 } from '../src/place/home-station.ts';
-import { CART, FORGE, LINES, ROOM_PLOTS, TOWN, lineAt, type Plot } from '../src/place/layout.ts';
+import { CART, FORGE, LINES, ORIGIN, ROOM_PLOTS, TOWN, lineAt, type Plot } from '../src/place/layout.ts';
 import {
   STEEL_CAR,
   TRAILER,
@@ -58,6 +58,7 @@ import { ENGINE, ENGINE_LONG_AHEAD } from '../src/entities/railway/engine.ts';
 import { LINE_HALTS, TRAIN_STOPS } from '../src/sim/railway-train.ts';
 import { WAGON_S } from '../src/sim/railway-works-layout.ts';
 import { CART_ROAD } from '../src/sim/railway-cart.ts';
+import { LINE2_FORGE } from '../src/sim/railway-line2-layout.ts';
 import { H } from '../src/place/terrain.ts';
 
 const bearingOf = (ux: number, uz: number) => ((((Math.atan2(ux, -uz) * 180) / Math.PI) % 360) + 360) % 360;
@@ -414,43 +415,54 @@ test('the hall: 1 m behind the buffers, centred on the island, five posts in fou
   assert.ok(HALL.endWall < 2.5 && HALL.endWall < HALL.height, 'low end walls, the roof on posts');
 });
 
-// docs/plans/home-flip.md, F1 (the spatial review's three, and the design review's call 13).
-test('the rack stands on the apron and leaves a lane along road 1; its posts clear the cart on road 2', () => {
-  const at = toAxis(PROPS.rack);
-  const half = ISLAND.width / 2;
-  assert.ok(at.a > ISLAND_A.buffers && at.a < ISLAND_A.apron, `on the apron along the axis: a ${at.a.toFixed(2)}`);
-  assert.ok(Math.abs(at.c - ISLAND_C) < half, `on the apron across: c ${at.c.toFixed(2)}`);
-  // Its four 0.2 m posts (opening-models.ts rackModel: ±1.25 along, ±1.2 across, turned by `yaw` square to the axis:
-  // owner playtest, 14 November, the unturned rack's south posts stood on road 2's sleeper ends).
+// The forge rack's footprint in axis coordinates: its four 0.2 m posts (opening-models.ts rackModel: ±1.25 along,
+// ±1.2 across, turned by `yaw` square to the axis) and the ends of its stacked 2.6 m rails (line2-view.ts rackSlot).
+function rackFootprint() {
   const cos = Math.cos(PROPS.rack.yaw),
     sin = Math.sin(PROPS.rack.yaw);
+  const at = (x: number, z: number) =>
+    toAxis({ x: PROPS.rack.x + x * cos + z * sin, z: PROPS.rack.z - x * sin + z * cos });
   const posts = [-1.25, 1.25].flatMap((dx) =>
-    [-1.2, 1.2].flatMap((dz) =>
-      [-0.1, 0.1].flatMap((ex) =>
-        [-0.1, 0.1].map((ez) => {
-          const x = dx + ex,
-            z = dz + ez;
-          return toAxis({ x: PROPS.rack.x + x * cos + z * sin, z: PROPS.rack.z - x * sin + z * cos });
-        }),
-      ),
-    ),
+    [-1.2, 1.2].flatMap((dz) => [-0.1, 0.1].flatMap((ex) => [-0.1, 0.1].map((ez) => at(dx + ex, dz + ez)))),
   );
-  assert.ok(Math.max(...posts.map((p) => p.a)) - Math.min(...posts.map((p) => p.a)) < 2.71, 'square to the axis');
-  const near = Math.min(...posts.map((p) => p.c)),
-    far = Math.max(...posts.map((p) => p.c));
-  // The lane from the hall's back bay to the head ramp: between road 1's sleeper ends (2.3 m sleepers) and the posts.
-  const lane = near - 1.15;
-  assert.ok(lane >= 1.9, `the lane beside road 1 is ${lane.toFixed(2)} m`);
-  assert.ok(near - (ISLAND_C - half) >= 1.4, 'and 1.4 m of it is on the apron itself');
-  assert.ok(far <= ISLAND_C + half, "inside the apron's road 2 edge");
-  assert.ok(
-    ROAD_GAP - 1.15 - far >= 0.5,
-    `the far posts are ${(ROAD_GAP - 1.15 - far).toFixed(2)} m off road 2's sleeper ends`,
-  );
-  assert.ok(
-    far <= ROAD_GAP - CART.hx - 0.2,
-    `the far posts are ${(ROAD_GAP - CART.hx - far).toFixed(2)} m off the cart`,
-  );
+  const railEnds = [-1 - 0.07, -1 + 7 * 0.285 + 0.07].flatMap((x) => [-1.3, 1.3].map((z) => at(x, z)));
+  const all = [...posts, ...railEnds];
+  return {
+    a0: Math.min(...all.map((p) => p.a)),
+    a1: Math.max(...all.map((p) => p.a)),
+    c0: Math.min(...all.map((p) => p.c)),
+    c1: Math.max(...all.map((p) => p.c)),
+  };
+}
+
+// docs/plans/forge-rack-move.md, step 1. The owner, 17 November: "Right now it's kind of in the middle of the station
+// and I don't think I like it there." Off the island, square to the axis; the forge's mouth, the cart and the rack lie
+// on one line across the station.
+test("the forge rack stands off the island on road 2's outer side, abeam the cart's forge stop and the forge's mouth", () => {
+  const at = toAxis(PROPS.rack);
+  const { a0, a1, c0 } = rackFootprint();
+  assert.ok(a1 - a0 < 2.71, 'square to the axis');
+  const sleepers = ROAD_GAP + 1.15;
+  assert.ok(c0 >= sleepers + 1.0, `${(c0 - sleepers).toFixed(2)} m off road 2's sleeper ends`);
+  assert.ok(c0 >= ROAD_GAP + CART.hx + 1.5, `${(c0 - ROAD_GAP - CART.hx).toFixed(2)} m off the cart at its stop`);
+  assert.ok(c0 > ISLAND_C + ISLAND.width / 2, 'nothing on the island');
+  const eave = HALL.a + HALL.d / 2 + 0.4;
+  assert.ok(a0 >= eave + 1.5, `a lane of ${(a0 - eave).toFixed(2)} m past the hall's eave`);
+  const boards = { a0: CROSSING.s - ROAD2_S - CROSSING.len / 2, a1: CROSSING.s - ROAD2_S + CROSSING.len / 2 };
+  const gap = Math.hypot(Math.max(boards.a0 - a1, a0 - boards.a1, 0), Math.max(c0 - CROSSING.c1, 0));
+  assert.ok(gap >= 0.8, `${gap.toFixed(2)} m from the board crossing`);
+  assert.ok(Math.abs(at.a - toAxis(roadAt(1, 0)).a) < 0.1, "abeam the cart's forge stop");
+  assert.ok(Math.abs(at.a - toAxis({ x: FORGE.x, z: FORGE.z + FORGE.d / 2 - 0.5 }).a) < 0.1, "abeam the forge's mouth");
+  const sim = { x: LINE2_FORGE.rackX / 100 - ORIGIN.x, z: LINE2_FORGE.rackZ / 100 - ORIGIN.z };
+  assert.ok(dist(sim, PROPS.rack) < 0.01, `the sim's point is ${dist(sim, PROPS.rack).toFixed(3)} m off the drawing`);
+});
+
+test('the island stays open: no yard prop stands on it', () => {
+  for (const [name, p] of Object.entries(PROPS)) {
+    const at = toAxis(p);
+    const on = at.a >= ISLAND_A.buffers && at.a <= ISLAND_A.foot && Math.abs(at.c - ISLAND_C) <= ISLAND.width / 2;
+    assert.ok(!on, `${name} stands on the island at a ${at.a.toFixed(2)}, c ${at.c.toFixed(2)}`);
+  }
 });
 
 test('the greeter stands in front of the hall, before a post and not in a bay, well off the curio pair', () => {
@@ -516,10 +528,15 @@ test('the board crossing over road 2: behind a standing train’s tail, off the 
   // runs on: it stays off the spur (it steps over the ruined 220° stall's dead road, between the rim and that ruin).
   const start = axisPoint(a, c1),
     door = stallFrame(STALLS.open).door;
+  const rack = rackFootprint();
   for (let k = 0; k <= 100; k++) {
     const p = { x: start.x + ((door.x - start.x) * k) / 100, z: start.z + ((door.z - start.z) * k) / 100 };
     assert.ok(dist(p, TABLE) > TABLE.r + 0.5, 'west of the table');
     for (const r of spurPoints()) assert.ok(dist(p, r) > 1.5, `clear of the spur at step ${k}`);
+    // And it heads away from the forge rack on road 2's outer side.
+    const q = toAxis(p),
+      off = Math.hypot(Math.max(rack.a0 - q.a, q.a - rack.a1, 0), Math.max(rack.c0 - q.c, q.c - rack.c1, 0));
+    assert.ok(off >= 1.5, `${off.toFixed(2)} m from the forge rack at step ${k}`);
   }
   assert.ok(
     dist(start, door) > 29 && dist(start, door) < 30,

@@ -39,11 +39,15 @@ export function rackModel() {
   const rackPosts = new THREE.Group();
   rackPosts.position.set(RX, RY, RZ);
   rackPosts.rotation.y = RACK.yaw;
+  const cos = Math.cos(RACK.yaw),
+    sin = Math.sin(RACK.yaw);
   for (const dz of [-1.2, 1.2])
     for (const dx of [-1.25, 1.25]) {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.8, 0.2), flat(WOOD2));
+      // Each post reaches its own ground: the ground falls under the rack, and the beams stay level at RY.
+      const drop = Math.max(0, RY - H(RX + dx * cos + dz * sin, RZ - dx * sin + dz * cos));
+      const m = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.8 + drop, 0.2), flat(WOOD2));
       m.name = 'rack/support-post';
-      m.position.set(dx, 0.9, dz);
+      m.position.set(dx, 0.9 - drop / 2, dz);
       m.castShadow = true;
       rackPosts.add(m);
     }
