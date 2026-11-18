@@ -1099,6 +1099,82 @@
         "none": true
       }
     },
+    "lookout.buoy": {
+      "attach": {
+        "top": {
+          "at": [
+            0,
+            1.45,
+            0
+          ],
+          "kind": "point"
+        }
+      },
+      "colliders": [],
+      "key": "lookout.buoy",
+      "scope": "place",
+      "visual": {
+        "batch": "lookout:buoys",
+        "builder": "lookout.buoy",
+        "params": {}
+      }
+    },
+    "lookout.buoy-top": {
+      "colliders": [],
+      "key": "lookout.buoy-top",
+      "scope": "place",
+      "visual": {
+        "batch": "lookout:buoy-tops",
+        "builder": "lookout.buoy-top",
+        "params": {}
+      }
+    },
+    "lookout.telescope": {
+      "attach": {
+        "eye": {
+          "at": [
+            0,
+            2.57,
+            0
+          ],
+          "kind": "point"
+        },
+        "eyepiece": {
+          "at": [
+            0,
+            2.4,
+            0
+          ],
+          "kind": "point"
+        }
+      },
+      "colliders": [
+        {
+          "at": [
+            0,
+            1.3,
+            0
+          ],
+          "h": 2.6,
+          "rBottom": 0.6,
+          "rTop": 0.6,
+          "segments": 6,
+          "shape": "cylinder"
+        }
+      ],
+      "interactions": [
+        {
+          "action": "lookout.look",
+          "at": "eyepiece"
+        }
+      ],
+      "key": "lookout.telescope",
+      "scope": "place",
+      "visual": {
+        "builder": "lookout.telescope",
+        "params": {}
+      }
+    },
     "poi.fence-post": {
       "colliders": [],
       "key": "poi.fence-post",

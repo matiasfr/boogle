@@ -74,20 +74,10 @@ export function lookoutBindings() {
   const me = { body: null as null | { position: THREE.Vector3 } };
   const lazy = {
     '../../place/layout.ts': () => import('../../src/place/layout.ts'),
-    '../../place/land.ts': async () => ({
-      H,
-      addStatic: (
-        shape: BodySpec['shapes'][number],
-        at: { x: number; y: number; z: number },
-        q: THREE.Quaternion | undefined,
-        group: number | undefined,
-        owner: { addBody(b: BodySpec): BodySpec },
-      ) => owner.addBody(staticBody(shape, at, q, group)),
-    }),
+    '../../place/terrain.ts': async () => ({ H }),
     '../../place/sites.ts': async () => ({
       addFoot: (x: number, z: number, yaw: number, hw: number, hd: number) => feet.push({ x, z, yaw, hw, hd }),
     }),
-    '../../render/flat.ts': async () => ({ flat }),
   };
   return {
     bodies,
@@ -174,9 +164,43 @@ export async function captureLookout(c: ReturnType<typeof lookoutBindings>, crea
   }
 }
 
-/** The pre-record view, run as it was (kept for the record: the fixture's source, at the commit that adds it). */
-export async function captureLookoutBefore() {
+/** The record view: the lookout over the real builders, catalogue and `instantiate`, with the same stand-ins. The
+ * fixture came from the pre-record view, run through these bindings as it was (`captureLookoutBefore` at f83eeafa). */
+export async function captureLookoutAfter() {
   const c = lookoutBindings();
-  const { createLookoutView } = sourceModule<{ createLookoutView(): Promise<View> }>(lookoutSource(), c.bindings);
+  const { compiled, definitions } = await import('../../src/prefab/catalogue.ts');
+  const validation = await import('../../src/prefab/validate.ts');
+  const { names } = await import('../../src/prefab/names.ts');
+  type Builder = import('../../src/prefab/builders.ts').Builder;
+  const builders = new Map<string, Builder>(names.builders.map((name) => [name, () => new THREE.Group()]));
+  const registerBuilder = (name: string, build: Builder) => {
+    builders.set(name, build);
+    return build;
+  };
+  sourceModule(fs.readFileSync('src/prefab/builders/lookout.ts', 'utf8'), { THREE, registerBuilder, flat }, []);
+  const json = (f: string) => JSON.parse(fs.readFileSync(f, 'utf8')) as unknown;
+  const runtime = sourceModule<typeof import('../../src/prefab/instantiate.ts')>(
+    fs.readFileSync('src/prefab/instantiate.ts', 'utf8'),
+    {
+      THREE,
+      compiled,
+      names,
+      builders,
+      ...validation,
+      workshop: json('content/built/levels/workshop.json'),
+      gorge: json('content/built/levels/gorge.json'),
+      ROOM_GROUP: 8,
+      CAVE_GROUP: GROUP.CAVE,
+      staticBody: c.staticBody,
+    },
+  );
+  const { createLookoutView } = sourceModule<{ createLookoutView(): Promise<View> }>(lookoutSource(), {
+    ...c.bindings,
+    instantiate: runtime.instantiate,
+    createPrefabBatch: runtime.createPrefabBatch,
+    definitions,
+    loadLevelArtifact: validation.loadLevelArtifact,
+    level: json('content/built/levels/lookout.json'),
+  });
   return captureLookout(c, createLookoutView);
 }

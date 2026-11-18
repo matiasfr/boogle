@@ -68,6 +68,9 @@ test('Gorge collider and placement values match the old massing', async (t) => {
   builders.set('poi.fence-rail', () => new THREE.Group());
   builders.set('poi.cave-parts', () => new THREE.Group());
   builders.set('poi.cave-water', () => new THREE.Group());
+  builders.set('lookout.telescope', () => new THREE.Group());
+  builders.set('lookout.buoy', () => new THREE.Group());
+  builders.set('lookout.buoy-top', () => new THREE.Group());
   const runtime = sourceModule<typeof import('../src/prefab/instantiate.ts')>(
     fs.readFileSync('src/prefab/instantiate.ts', 'utf8'),
     { THREE, artifact, compiled, definitions, workshop, gorge, names, ...validation, builders, staticBody: record },

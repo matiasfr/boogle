@@ -91,11 +91,6 @@
       "exports": ["createFindsView"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
-    "src/entities/lookout/view.ts": {
-      "count": 2,
-      "exports": ["createLookoutView"],
-      "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
-    },
     "src/entities/player/state.ts": {
       "count": 10,
       "exports": [

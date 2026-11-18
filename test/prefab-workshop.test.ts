@@ -136,6 +136,9 @@ export function captureWorkshop(positions: readonly (readonly [number, number, n
       ['poi.fence-rail', () => chair],
       ['poi.cave-parts', () => chair],
       ['poi.cave-water', () => chair],
+      ['lookout.telescope', () => chair],
+      ['lookout.buoy', () => chair],
+      ['lookout.buoy-top', () => chair],
       [
         'town.workshop-parts',
         (params) => workshopParts(params.piece as string, params.hw as number, params.hd as number),
@@ -349,6 +352,9 @@ function runtimeHarness(input?: { prefabs: PrefabArtifact; level: LevelArtifact 
         ['poi.fence-rail', () => new THREE.Group()],
         ['poi.cave-parts', () => new THREE.Group()],
         ['poi.cave-water', () => new THREE.Group()],
+        ['lookout.telescope', () => new THREE.Group()],
+        ['lookout.buoy', () => new THREE.Group()],
+        ['lookout.buoy-top', () => new THREE.Group()],
         [
           'seat.chair',
           () => {
