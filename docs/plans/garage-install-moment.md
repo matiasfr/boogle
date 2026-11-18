@@ -644,6 +644,15 @@ Stills: [docs/reports/garage-moment-checkpoint/](../reports/garage-moment-checkp
   `gmc-install-realtime.webm`); the 12 November captures on the Mac did not show it, probably because those pages
   never held the lock. Present since the garage's first build (8ff93170a). A real player would have to press Resume
   before using the garage.
+  **Fixed on `claude/garage-pause-modal` (18 November, not yet merged; the box above is the orchestrator's):** the open
+  garage is now the one modal (`openModal({ passKeys: true })` in `api.open()`, `closeModal()` in `close()`), marked
+  before the lock drops, so Pause's `pointerlockchange` listener leaves it alone. `passKeys` is a new `openModal`
+  option (src/player/modal.ts): the garage keeps reading its own keys and pad (Back, the arrows, the Install hold's
+  key-up) through src/features/garage.ts as before. Proof (`--real --size 1440x900 --rail-seed steel-home --hud`, eval
+  and action under `.look/gpm/`, verdict pass): locked before Interact; after it the garage open, modal on, lock
+  released, no pause menu; Esc closes the garage with no menu; a second Esc with the garage shut opens Pause, and its
+  close takes the lock back. Closing the garage leaves the lock released as before (a click takes it back). Stills:
+  `pause-fix-garage-open.png`, `pause-fix-garage-closed.png`. Not tested on a device.
 
 **Scripts changed.** `dev/look/evals/garage-two.ts`: the installer's hold waits for `Line.boiler` 2, not 1.
 `dev/look/evals/railway-install.ts`'s `installstep=hold` and `adopt` paths still wait for 1 and expect 1 (not run
