@@ -1,6 +1,6 @@
 # Ring Island: the summit path over the stack line's cutting
 
-> **Status, 18 November 2026:** Steps 1–3 done. Step 4's proofs all pass (see its two "As run" notes): the reload at the lookout restores in real time (the earlier false was the look's warped clock, not the game) and the ride under the bridge is staged and clears by 3.16 m at least. Step 4 stays open for the fresh visual review its row names, the orchestrator-state ticks and the ship. Not shipped.
+> **Status, 18 November 2026:** Steps 1–3 done. Step 4's proofs all pass (see its two "As run" notes): the reload at the lookout restores in real time (the earlier false was the look's warped clock, not the game) and the ride under the bridge is staged and clears by 3.16 m at least. Step 4 is closed (18 November): the orchestrator opened the checkpoint's stills and the ride-under still, the backlog row and the claim are removed, and this shipped with the proofs. Not shipped.
 **Goal.** The drawn path from Ring Island's west platform to the summit lookout walks straight off the rim of the
 stack line's cutting; put a footbridge there so the path the world draws can be walked again. Serves DESIGN 7
 (Telegraph everything: a drawn path is a promise) and 11 (Show, don't tell: the way up is seen, not explained). No
@@ -201,7 +201,7 @@ Model rows are from `npm run models` (mode withCodex, 14 November).
   eval's own), add `bridge` and `cut` to `VIEWS` and to the `ringview` branch, and add `bridge: { onDeck, y }` to the
   walk's log when the walker is between a and b. Verify: the eval file type-checks (`node dev/ship-check.ts`). *Row:
   implementation of an approved plan (Codex: gpt-6.1-sol medium); may ride with step 2's implementer.*
-- [ ] **4. Checkpoint: "summit path walks"** (the full check and the proofs are here, not in the steps). *Row:
+- [x] **4. Checkpoint: "summit path walks"** (the full check and the proofs are here, not in the steps). *Row:
   runner (Codex: gpt-6.1-sol medium) for the proofs; visual review by a fresh general-purpose subagent that did not
   build it (fable medium).* Its few proofs:
   1. `npm run level-check`: "The summit path" ok.
