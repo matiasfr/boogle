@@ -380,3 +380,40 @@ test("review: a friend's card waits while they are talking to an NPC (conversati
   assert.deepEqual(h.cards, ['glide']);
   v.dispose();
 });
+
+// Review (cutscenes-for-everyone step 2): the real forge-call.ts, driven the way boiler-view.ts drives it for the
+// boiler's show. On the trains edge the show is queued, holdForgeCall(BOILER_SHOW.hold = 30) claims the breaker's call
+// and boiler-view.ts cues it only on the cut, the hand-back or a dropped shot (`called && !shotLive()`). A shot that
+// waits longer than 30 s (a long glide, a talk box, a card left up) stays live, so nothing cues it before the hold
+// runs out: the call sounds on its own at 30 s, and the cut's cue then sounds it again.
+test("review: the boiler's show sounds the forge's call once when its shot waits past the 30 s hold", () => {
+  let ms = 0;
+  const forge = sourceModule<typeof import('../src/entities/railway/forge-call.ts')>(
+    fs.readFileSync('src/entities/railway/forge-call.ts', 'utf8'),
+    {
+      THREE,
+      material: () => new THREE.MeshBasicMaterial(),
+      whistle: () => {},
+      camera: { getWorldPosition: (v: THREE.Vector3) => v.set(0, 0, 0) },
+      emit: () => {},
+      readableIntensity: () => 1,
+      me: { body: null },
+      reducedMotion: true,
+      performance: { now: () => ms },
+    },
+  );
+  const breaker = forge.createForgeCall({ x: 0, y: 0, z: 0 }, { add() {} } as unknown as OwnedView, undefined, true);
+  const frame = (dt: number, waiting: boolean) => {
+    ms += dt * 1000;
+    breaker.update(dt, waiting);
+  };
+  frame(0.1, false);
+  // The trains edge: the breaker is cast; boiler-view.ts queues the show and holds the call for BOILER_SHOW.hold.
+  forge.holdForgeCall(30);
+  // The shot waits (still live, so boiler-view.ts does not cue) for 35 s, then plays: 4.5 s to the forge cut.
+  for (let t = 0; t < 39.5; t += 0.1) frame(0.1, true);
+  forge.soundForgeCall(); // the cut lands: boiler-view.ts's cue()
+  frame(0.1, true);
+  frame(0.1, true);
+  assert.equal(forge.forgeCue.count, 1);
+});
