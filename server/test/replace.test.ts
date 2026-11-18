@@ -233,6 +233,10 @@ test('replace: occupied override, server-only announcement, busy, late join, bye
     ])
       a.ws.send(JSON.stringify(frame));
     await until(() => a.messages.some((m) => m.t === 'hb' && m.at === 123));
+    // The sender's echo proves its frames were processed; the peer's own echo, sent after, proves anything relayed to
+    // the peer has arrived on its socket too.
+    b.ws.send(JSON.stringify({ t: 'hb', at: 124 }));
+    await until(() => b.messages.some((m) => m.t === 'hb' && m.at === 124));
     const announced = (m: Record<string, unknown>) =>
       m.t === 'replacing' || (m.d as Record<string, unknown> | undefined)?.t === 'replacing';
     assert.equal(b.messages.some(announced), false);
