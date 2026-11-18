@@ -351,24 +351,24 @@ squares). Each step leaves `node dev/ship-check.ts` green; the heavier proofs ar
       the stone and rails rows in motion, phone width, and reduced motion. Not tested on a device.
   - **Rerun on `claude/capacities-bot-fixes` (18 November, a test runner, Windows; logs under `.look/cbf/`).**
     - [x] `npm run playthrough -- --players 2 --to t2-funded --warp-speed 2`: **pass** at `b5e38915e` (load 1.7 to
-      2.0, `.look/playthrough/b5e38915e/verdict.json`), after the bot was taught a friend's own cards (`4cec5a5d3`; the run was on its pre-rebase twin).
+      2.0, `.look/playthrough/b5e38915e/verdict.json`), after the bot was taught a friend's own cards (`a200fdd70`; the run was on its pre-rebase twin).
       Player 2's multi-axe card came up as the wake ended and was put away at 96 s. T1: player 1 two log loads,
       player 2 one (8 a back, 24); T2: player 1 four log loads of 8 (32), player 2 one back of 8 stone; T2 funded at
       204.5 s on both pages; mirrored hashes agree at 261 server steps. The warp reported client clock drift (peak
       2.1 and 2.8 game s, caught up by the end).
-    - [ ] The works bot: **not passed on the branch.** As committed it still stops at 10 s on `take the breaker
-      offered` (the seed defect stands), but now ends there in 33 s with the failure named (`17c84aa67`;
-      `.look/cbf/worksA/hill-verdict.json`). The axe at T3 has been refused since the great beam pass (7f6974967,
-      7 November, WORLD_NS v16), not 17 November: that day's 07879a64b only moved its pedestal onto the breaker's.
-      Taking it at the lit forge in the seed moves `test/fixtures/railway-golden.json` (55 of its 56 stages, all
-      but `awake`), `test/fixtures/railway-m12-trace.json` (25 stages and the predicted press), the loader's
-      derived yard fixtures, M12 review's published-world count and two `railway-boiler.test.ts` expectations
-      (every stage still passes its world check), so it waits for the seed-data regeneration and its review (diff
-      kept in `.look/cbf/seed-axe-experiment.diff`). With that diff
-      applied, uncommitted, the same command with `railStop=cradle fitted` **passed** (load 17.9 to 20, under load;
-      `.look/cbf/worksB/hill-verdict.json`, `dirty: 1`): the breaker taken; one back of 16 logs into the kiln, then
-      16 stone from the bowl's two rocks, kiln at 16 + 16 and lit; two footings home by hand; 8 rails off the forge
-      rack in one take fitted the cradle, the back empty after. Timings under load are not evidence.
+    - [x] The works bot (`--rail-seed works-arrive`, with `railStop=cradle fitted`): **pass** on the committed,
+      clean tree at `c1a5b804` (load 3.8 to 0.95, not under load; `.look/cbf/worksD/hill-verdict.json`), after the
+      seeds take the proper axe at the lit forge (`c0ddb39d8`, seed data only under the seed-goldens call; the
+      golden regenerated in `c40b1753e`, the seed-derived expectations in `c1a5b8040`). The breaker taken at 4 s;
+      one back of 16 logs into the kiln, then 16 stone from the bowl's two rocks: kiln at 16 + 16 and lit; two
+      footings home by hand; 8 rails off the forge rack in one take fitted the cradle, the back empty after. The run
+      before it on the same tree (`.look/cbf/worksC/hill-verdict.json`) failed at 31 s: a coach dwelling at the
+      works halt held the walk to the stall slab up 9 times (the walker gives up after 8); the passing run met a coach
+      there too and replanned round it. A train-timing race in the bot, not chased. Before the fix the bot stopped at
+      10 s on `take the breaker offered`, and since `479cb30aa` a failed bot ends its look at once with the failure
+      named (`.look/cbf/worksA/hill-verdict.json`, 33 s). The axe at T3 had been refused since the great beam pass
+      (7f6974967, 7 November, WORLD_NS v16); the works bot broke on 17 November, when 07879a64b moved the axe's
+      pedestal onto the breaker's.
 - [ ] **5. Docs.** `docs/game-design/place.md`: rewrite "Carried-resource display" (heavy load, loose-cargo overflow and
   counts paragraphs replaced by this plan's rules and squares; keep "Pack steel", "Approach feedback", "Other amount
   surfaces"); the run's step 3 ("Your back holds 8 … 2 logs per full stroke", "Station 3, at the rim: 40 logs"), the pack
