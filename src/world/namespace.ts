@@ -126,7 +126,9 @@
 // v60 (2026-11-18): separate capacities: logs 8 (16 with the pack), stone 8 (16 with the breaker), rails 8; no heavy
 // load or drop reservations; a hit yields 1 until Station 3 is funded, then 2 (the proper axe 5); Station 3 takes 32
 // logs. No migration.
-export const WORLD_NS = 'v60';
+// v61 (2026-11-18): the railhead re-route (docs/plans/railhead-reroute.md): the Aperture row carries the trains'
+// Railhead bent (`stop`), which moves when the haul settles (rail.ringStop), not at the pair; no migration.
+export const WORLD_NS = 'v61';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

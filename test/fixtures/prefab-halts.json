@@ -11598,7 +11598,7 @@
           "y": 31.02,
           "z": -146.1,
           "up": true,
-          "calling": false,
+          "calling": true,
           "cue": false,
           "lever": [
             {
@@ -11754,8 +11754,8 @@
           "on": true,
           "chained": false,
           "over": false,
-          "u": 235.6,
-          "goal": 235.6,
+          "u": 235.60000000000002,
+          "goal": 235.60000000000002,
           "x": 1411.004668886533,
           "y": 17.92119853622232,
           "z": -607.2204147692836
@@ -12543,7 +12543,7 @@
           "y": 31.02,
           "z": -146.1,
           "up": true,
-          "calling": true,
+          "calling": false,
           "cue": false,
           "lever": [
             {
@@ -14495,7 +14495,7 @@
           "y": 19.02,
           "z": 3.7483001595777483,
           "up": true,
-          "calling": false,
+          "calling": true,
           "cue": false,
           "lever": [
             {

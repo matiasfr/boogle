@@ -37,6 +37,9 @@
 // v60 separate capacities: the rules change passed this trace unchanged at v59 (a byte-identical control); under v60
 // only 205 checkpoint namespaces/checksums and 2,683 snapBytes samples change. All 8,604 records keep their state,
 // hashes, inputs, results and replica packets (keyed audit before the writer regenerated it).
+// v61 railhead re-route: the trace never pairs a bent. 205 checkpoints append a zero Aperture.stop column and change
+// namespace/hash/checksum; 5,671 snapBytes samples follow. All 8,604 records keep every old column, input, result,
+// message and replica packet (keyed comparison with the v60 fixture; docs/plans/railhead-reroute.md, step 1 as built).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';

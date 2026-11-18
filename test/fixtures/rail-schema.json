@@ -1,5 +1,5 @@
 {
-  "worldNs": "v59",
+  "worldNs": "v61",
   "components": [
     {
       "kind": "rail",
@@ -461,7 +461,8 @@
         ["brace", "u8"],
         ["joined", "int"],
         ["moved", "int"],
-        ["from", "int"]
+        ["from", "int"],
+        ["stop", "u8"]
       ]
     },
     {
