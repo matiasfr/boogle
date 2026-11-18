@@ -4,8 +4,8 @@ name: CI
 # checks: same commit). automerge.yml dispatches it on main after each merge that changes code, since a bot merge
 # doesn't fire push; a docs-only merge gets main-docs.yml, which comes back here on any doubt.
 # A ship/* PR's own pull_request runs do nothing: the push run is the one automerge counts (owner call "Fast ships").
-# Docs-only changes (dev/ci/change-class.ts) run only the docs job; code runs lint, build, unit and registry, and server
-# and net when their import closure changed (always on main).
+# Docs-only changes (dev/ci/change-class.ts) run only the docs job; code runs lint, build, unit and registry, server
+# and net when their import closure changed and image when the server image's paths did (all three always on main).
 on:
   pull_request:
   push:
@@ -196,15 +196,16 @@ jobs:
       # Reads committed files only: needs neither Blender nor KTX-Software.
       - run: npm run assets -- --check
 
-  # Only when the server tests' import closure changed; the image build and boot only when the image's paths did
-  # (dev/ci/change-class.ts). Skipped, the job reports success. Main always runs both.
+  # Only when the server tests' import closure changed (dev/ci/change-class.ts). Skipped, the job reports success. Main
+  # always runs it. Its own job, beside `image`: in one job the two took 7 to 12 minutes in a row and were the last to
+  # finish in 53 of 63 green main runs (12 to 18 November), 100 s after the slowest unit shard.
   server:
     needs: changes
-    if: needs.changes.outputs.heavy == 'true' && (needs.changes.outputs.server == 'true' || needs.changes.outputs.image == 'true')
+    if: needs.changes.outputs.heavy == 'true' && needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
-    # As deploy-server.yml: on main the audited tests (5.5 min) plus the image build's rail-save seeding (4+ min) pass
-    # 10, and a timed-out job is "cancelled", which red-main and the heartbeat read as superseded (17 November, twice).
-    timeout-minutes: 20
+    # The audited tests take 4 to 5.5 min. A timed-out job is "cancelled", which red-main and the heartbeat read as
+    # superseded (17 November, twice, when this job also built the image inside 10 minutes).
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: server
@@ -215,20 +216,24 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: server/package-lock.json
-      - if: needs.changes.outputs.server == 'true'
-        run: npm ci
-      - if: needs.changes.outputs.server == 'true'
-        run: npm test
+      - run: npm ci
+      - run: npm test
         env:
           RAIL_AUDIT: '1' # the rail audit on, as the unit job's --ci (test/helpers/rail-no-audit.ts)
+
+  # The server image, built and booted: only when the image's paths changed (dev/ci/change-class.ts); main always.
+  # Docker is on the runner and the image installs its own packages, so no Node setup or npm ci here.
+  image:
+    needs: changes
+    if: needs.changes.outputs.heavy == 'true' && needs.changes.outputs.image == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15 # the build is 4 to 4.5 min, most of it the rail-save seeding
+    steps:
+      - uses: actions/checkout@v7
       - name: Build the image (from the repo root, as the deploy does)
-        if: needs.changes.outputs.image == 'true'
-        working-directory: .
         run: docker build -f server/Dockerfile --build-arg BOOGLE_BUILD=ci-boot -t boogle-server:ci .
       # Tests run from the full checkout; this runs what the image carries (a missing module crash-looped Fly once).
       - name: Boot the image
-        if: needs.changes.outputs.image == 'true'
-        working-directory: .
         run: scripts/server-boot-check.sh boogle-server:ci ci-boot
 
   # Only when the import closure of dev/peer-test changed (dev/ci/change-class.ts); main always runs it.
@@ -265,7 +270,7 @@ jobs:
   # ci-autofix.yml also has Claude open a claude/fix-main-* PR; this keeps one open `red-main` issue (GitHub notifies
   # the owner) and closes it when main is green again. `npm run heartbeat` leads with the same verdict.
   red-main:
-    needs: [changes, docs, lint, build, unit, registry, server, net]
+    needs: [changes, docs, lint, build, unit, registry, server, image, net]
     # Not in a cancelled (superseded) run: the newer run on main settles the verdict, so a cancelled one never opens,
     # comments on or closes the issue, even if a job had failed before it was cancelled.
     if: always() && !cancelled() && github.ref == 'refs/heads/main' && github.repository == 'matiasfr/boogle'
