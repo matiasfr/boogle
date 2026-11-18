@@ -12,6 +12,7 @@ import { inventorySaves, inventoryLine } from './save-inventory.ts';
 import { cleanupSaves, cleanupLine, type Cleanup } from './save-cleanup.ts';
 import { roomNamespaces } from './room-ids.ts';
 import { addPlaydata } from './playdata.ts';
+import { addDevice } from './device.ts';
 import { addReviews } from './reviews.ts';
 import { addAdmin } from './admin.ts';
 import { addJump, type JumpConfig } from './jump.ts';
@@ -91,6 +92,11 @@ export function loadConfig(
     playMaxSessionBytes: Number(env.PLAY_MAX_SESSION_BYTES) || 4 * 1024 * 1024,
     playMaxTotalBytes: Number(env.PLAY_MAX_TOTAL_BYTES) || 200 * 1024 * 1024,
     playMaxSessions: Number(env.PLAY_MAX_SESSIONS) || 2000,
+    // Device runs' stills (./device.ts): writes per IP, runs and bytes on disk, and the free volume kept.
+    deviceRatePerMin: Number(env.DEVICE_RATE_PER_MIN) || 30,
+    deviceMaxRuns: Number(env.DEVICE_MAX_RUNS) || 50,
+    deviceMaxBytes: Number(env.DEVICE_MAX_BYTES) || 20 * 1024 * 1024,
+    deviceFreeReserve: Number(env.DEVICE_FREE_RESERVE) || 128 * 1024 * 1024,
     // POST /jump (./jump.ts): per IP, per UTC day for everyone and per address, and where seeds come from (the image
     // sets JUMP_BUILD=prebuilt: production never builds).
     jumpRatePerMin: Number(env.JUMP_RATE_PER_MIN) || 6,
@@ -124,6 +130,11 @@ export type ServerConfig = ReplaceConfig & {
   playMaxSessionBytes: number;
   playMaxTotalBytes: number;
   playMaxSessions: number;
+  deviceRatePerMin: number;
+  deviceMaxRuns: number;
+  deviceMaxBytes: number;
+  deviceFreeReserve: number;
+  deviceNow?: () => number; // test seam: the device endpoint's clock
   jumpRatePerMin: number;
   jumpMaxPerDay: number;
   jumpMaxPerAddressDay: number;
@@ -419,6 +430,13 @@ export function createService(cfg: ServerConfig) {
   // ---- playtest data (./playdata.ts) ----
   addPlaydata(app, cfg, {
     limit: createRateLimiter({ perMinute: cfg.playRatePerMin, fromFly: cfg.replaceFlyProxy }),
+    authed,
+    withLock,
+  });
+  // ---- device runs' stills (./device.ts) ----
+  addDevice(app, cfg, {
+    limit: createRateLimiter({ perMinute: cfg.deviceRatePerMin, fromFly: cfg.replaceFlyProxy }),
+    readLimit: createRateLimiter({ perMinute: 120, fromFly: cfg.replaceFlyProxy }),
     authed,
     withLock,
   });

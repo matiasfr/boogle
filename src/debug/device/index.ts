@@ -14,6 +14,7 @@ import { launchHeadlines, markEvents } from './launch.ts';
 import { createPanel } from './panel.ts';
 import { measureScene, readHome } from './scene.ts';
 import { heatDrift, readyLine } from './stats.ts';
+import { sendStill } from './still.ts';
 import { SUITES } from './suites.ts';
 import { createUploader } from './upload.ts';
 import { sceneEvents, sessionEvent, type Fields } from './wire.ts';
@@ -136,6 +137,8 @@ export function startDeviceTest() {
         refreshMs: refresh,
         home,
       });
+      panel.running(i, suite.scenes.length, def.name, 'sending its still');
+      row.still = await sendStill(runId, def.name); // between scenes, so the copy and upload stay out of the samples
       rows.push(row);
       uploader.send(sceneEvents(clock(), row));
     }

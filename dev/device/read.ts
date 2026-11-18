@@ -36,6 +36,8 @@ export type SceneRow = {
   renderFps: number | null;
   /** The frame limit the page ran with: 30, 60, or 0 for the display's rate; null if the run did not say. */
   frameCap: number | null;
+  /** What the page said of this scene's still (`ok`, `unavailable`, `refused 507`, ...); absent before stills. */
+  still?: string;
 };
 export type DeviceResult = {
   id: string;
@@ -111,6 +113,7 @@ function sceneRow(e: Raw): SceneRow | null {
     heapMb: num(e.heap_mb),
     renderFps: num(e.rfps),
     frameCap: num(e.fcap),
+    ...(typeof e.still === 'string' && { still: str(e.still) }),
   };
 }
 
