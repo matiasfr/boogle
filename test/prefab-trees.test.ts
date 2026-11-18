@@ -23,6 +23,7 @@ import type { TreePose } from '../src/render/place-tree-view.ts';
 import type { Body } from '../src/physics/engine.ts';
 import { treeColliderCase } from './helpers/tree-collider-case.ts';
 import { capturePoisAfter, sameTurns } from './helpers/poi-golden.ts';
+import { captureLookoutBefore } from './helpers/lookout-golden.ts';
 import { prefabGolden } from './helpers/prefab-golden.ts';
 const { loadLevel } = await import('../dev/level/level.ts');
 
@@ -193,4 +194,12 @@ test('POI parts, poses, colliders and lights match the pre-record code', async (
   const lantern = JSON.parse(fs.readFileSync('content/built/levels/lighthouse.json', 'utf8')).placements[1];
   assert.ok('builder' in tower);
   assert.equal(lantern.pos[1], (tower.params.plinthH as number) + (tower.params.towerH as number));
+});
+
+// Step 13 (the lookout): captured on the pre-record code; GOLDEN=1 rewrites it. Runtime values use the shared tolerance.
+test('lookout meshes, buoys, colliders, footprint and view match the pre-record code', async () => {
+  const fixture = 'test/fixtures/prefab-lookout.json';
+  const actual = JSON.parse(JSON.stringify(await captureLookoutBefore()));
+  if (process.env.GOLDEN === '1') fs.writeFileSync(fixture, JSON.stringify(actual) + '\n');
+  prefabGolden(actual, JSON.parse(fs.readFileSync(fixture, 'utf8')), 'lookout');
 });
