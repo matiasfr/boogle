@@ -95,7 +95,8 @@ After each scene's sample the page copies the next drawn frame into a 960 px wid
 `src/debug/device/still.ts`) and uploads it to `POST /device/runs/<id>/still/<scene>` (`server/src/device.ts`); the
 scene's `dev.scene.cost` event carries `still` (`ok`, `unavailable` for a blank or failed copy, `offline`,
 `refused <status>`, `failed`). The copy and upload run between scenes, outside the samples. `new` registers the run
-first (Bearer `REPORT_TOKEN`) and says plainly when the server refuses; the link still works for numbers. A
-self-minted `?device=new` run is registered by its first still. `pull` saves each still as `<scene>.jpg` beside
+first (Bearer `REPORT_TOKEN`) and says plainly when the server refuses; the link still works for numbers. Only a
+registered run takes stills: a self-minted `?device=new` run sends its numbers and its scenes record `still: refused
+404` (deferred for this version: a public flood of self-minted runs could fill the caps for 30 days). `pull` saves each still as `<scene>.jpg` beside
 `report.md`, whose "Stills" section links them. Caps: 400 kB a still, 12 a run, uploads for 7 days, 50 runs and
-20 MB in all, 30 writes a minute per address; the server keeps only the SHA-256 of the run id.
+20 MB in all, 30 uploads a minute per address; the server keeps only the SHA-256 of the run id.

@@ -436,7 +436,7 @@ export function createService(cfg: ServerConfig) {
   // ---- device runs' stills (./device.ts) ----
   addDevice(app, cfg, {
     limit: createRateLimiter({ perMinute: cfg.deviceRatePerMin, fromFly: cfg.replaceFlyProxy }),
-    readLimit: createRateLimiter({ perMinute: 120, fromFly: cfg.replaceFlyProxy }),
+    tokenLimit: createRateLimiter({ perMinute: 120, fromFly: cfg.replaceFlyProxy }),
     authed,
     withLock,
   });

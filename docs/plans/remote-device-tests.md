@@ -411,8 +411,15 @@ review stamp for the ship queue; the rest ships on one green run.
   from the text below: a run's folder is `DATA_DIR/device/<sha256(id)>/` and its stills `<slot>.jpg` by the server's own
   number, with the scene names inside `run.json` (the Safety section's "keeps only its SHA-256"; neither an id nor a
   scene is ever a path); a scene sent again replaces its still rather than counting twice; past a cap the endpoint
-  answers 507 and never evicts; the 30-a-minute limit is on the writes, and the token reads get their own 120 a minute
-  so a `pull --new` of several runs is not refused; `DEVICE_FREE_RESERVE` is a key beside `DEVICE_RATE_PER_MIN`,
+  answers 507 and never evicts; the 30-a-minute limit is on the still uploads, and the token routes (register and the
+  reads) get their own 120 a minute so a `pull --new` of several runs is not refused; a still's body goes through a
+  small streaming reader (a declared length over 400 kB is 413 before a byte is read, a chunked body is cut off with
+  413 and `Connection: close` once past it, 408 after 30 s), and with no `REPORT_TOKEN` a still is 404 like the other
+  routes; **self-minted stills are deferred** (after the independent review, 18 November): an unseen id's still is 404
+  and writes nothing, because one address could fill the 20 MB or 50-run cap in about 40 s and nothing frees it until
+  the 30-day sweep (a per-address cap does not help: an IPv6 /64 has unlimited addresses), locking every registered
+  run out. A `?device=new` run still sends its numbers; its scenes record `still: refused 404` and the run goes on.
+  The owner's answer to question 4 ("not needed for initial version") allows it; `DEVICE_FREE_RESERVE` is a key beside `DEVICE_RATE_PER_MIN`,
   `DEVICE_MAX_RUNS` and `DEVICE_MAX_BYTES`; the inventory measures `device/` as it does `playdata/`. The still is
   copied after the sample (the next drawn frame), and the copy and upload run before the next scene, outside its
   samples; the row's `still` field says what happened.
@@ -522,6 +529,10 @@ room, at coordinates the bench already uses. `npm run level-check` was not run f
    mint.
    **Answer (owner, 10 November):** "Yes but not needed for initial version". Against the recommendation: step 3 lets a
    self-minted run upload stills too, under the same hard caps and the independent review; step 1 stays numbers only.
+   **Deferred (18 November, independent review of step 3):** built first as written, then dropped for this version,
+   which the answer's second half allows: a flood of self-minted runs could hold the shared caps for 30 days and lock
+   out the runs `new` registers. Self-minted runs send numbers only; their stills are 404. Reopen with a design that
+   cannot starve registered runs (a separate, evicting pool for self-minted stills, say).
 5. **Pass line: two refresh intervals at p95?** Recommended: **yes to start**, as a readable line on the card; it
    is one constant in `stats.ts`, and the first week of runs on the iPad and a phone should set the real one.
    **Answer (owner, 10 November):** "Yes".
