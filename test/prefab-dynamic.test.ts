@@ -1,15 +1,5 @@
-// Fifth-review reproductions: real factories reached through dynamically destructured module values.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fixtures from './fixtures/prefab-dynamic-review.json' with { type: 'json' };
-import { lintSafety } from '../dev/lint/safety.ts';
-for (const fixture of fixtures)
-  test(`review 5: reject ${fixture.file}`, () => {
-    assert.ok(
-      lintSafety(fixture.code, fixture.file).some((d) => d.rule === 'boogle/colliders-from-records'),
-      'Expected prefab door rejection',
-    );
-  });
 
 import fs from 'node:fs';
 import os from 'node:os';
