@@ -10,7 +10,6 @@ The one record of who is running what, and what the five-job limit is counted fr
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Prefab data step 13, Ring Island's massing, third sitting: the Way's track, the halt's platforms, landings and ramps, the foot crossing, the west ramp, the crossover's rails (`src/entities/ring-island/`, the Ring Island records, builders, level and golden, `prefab-data.md`) | Prefab data (P2) | `claude/prefab-ring-massing-3` | the heartbeat (HOTBOX), Claude Opus medium builder | 18 November 18:48 | running |
 
 ## Where the work stands
 
