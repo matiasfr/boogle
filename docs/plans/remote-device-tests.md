@@ -84,21 +84,30 @@ hit run ... pull data automatically") with what is already built, needs two taps
 given. B reuses the runner plan reversed and waits for his setup. C adds a public trigger path for a convenience A
 and B cover. Each step leaves `node dev/ship-check.ts` green.
 
-- [ ] **R1. Re-point the pull side at the host it runs on.** Tooling. `dev/device/report.ts` (the strings at 105,
+- [x] **R1. Re-point the pull side at the host it runs on.** Tooling. `dev/device/report.ts` (the strings at 105,
   181, 188, 220, 224, 364, 467–468: "the Mac" becomes "the baseline machine", named from the baseline run's own device
   line, or "this machine"; the bench-counts line names the machine and is left out when that history is absent),
   `dev/device/baseline.ts` and `cli.ts` header comments, `dev/device/README.md` "Baseline". Check:
   `UNIT_ONLY=test/device-report.test.ts npm run test:unit` with its wording cases updated; on HOTBOX `npm run device -- waiting`
   prints a count, not "unknown". Done when a report pulled on HOTBOX names no machine it was not made on.
+  *Built 18 November:* reports name the pulling machine by hostname ("this machine (HOTBOX)") and the baseline by its
+  own run's device line; the baseline stays in that machine's `~/.boogle/device/baseline/`; the bench line appears only
+  where a daily perf history exists. On HOTBOX `waiting` printed `0`, and `REPORT_TOKEN` is found in the main
+  checkout's `.env.local`.
 - [ ] **R2. Owner step: the Mac and iPad runs.** He opens the board link in Chrome on the Mac (quiet, plugged in),
   then on the iPad, and taps Run. An agent runs `npm run device -- pull --new` and `baseline <Mac run code>`. Done when
   the iPad's `report.md` has an "Against the baseline" section beside the Mac's run.
-- [ ] **R3. A real load reading on Windows.** Tooling, hotspot files. `dev/look/machine-load.ts` (new):
+- [x] **R3. A real load reading on Windows.** Tooling, hotspot files. `dev/look/machine-load.ts` (new):
   `machineLoad()` returns `os.loadavg()[0]` off Windows and, on `win32`, a load equivalent from two `os.cpus()`
   samples 1 s apart (busy fraction times cores), labelled `cpu`. Use it at each `os.loadavg()` call named in
   section 1; the Mac's readings do not change. No new unit test (the [test diet](../agents/tests.md#tests)). Check: on
   HOTBOX, a look's verdict taken while a bot runs shows a non-zero load. Done when a `bench` on HOTBOX under a running
   bot says not measured, busy.
+  *Built 18 November:* Windows reads busy logical CPUs from `os.cpus()` (smoothed over 60 s within a process), and
+  `loadLimit()` scales the 10-core thresholds per core, capped at 90% busy: the gate's 30 is 18 on HOTBOX's 20 logical
+  CPUs, the quiet 6 is 12. Checked on HOTBOX: the heartbeat line, the gate decision and the quiet check (`npm run daily --
+  perf --dry-run --local` prints it, "busy: load 14.0, quiet at most 12.0" once). Not run: a full `bench` under a bot
+  and a look verdict under a bot (another job held the machine's browser).
 - [ ] **R4. Step 3 below: stills and registered runs.** Unchanged, `server/` tier with independent review. It gives
   A the Mac's and iPad's own pixels. Done as written.
 - [ ] **R5. Step 4 below: more seeds and the input run.** Unchanged.
