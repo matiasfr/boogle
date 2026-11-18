@@ -49,8 +49,8 @@ Status: `todo`, `out` (dispatched, building), `review` (built, in review or merg
 | 3 | Review- and milestone-named sim tests | 36 / 6,191 | done | #2075 (the commits of #2066, rebased): 34 / 5,691 |
 | 4 | Railway sim: trains, lines, routes, ring, steel, works | 43 / 10,063 | done | #2073: 33 files, about 1,000 lines lighter |
 | 5a | Railway sim: trade, adapter, read session | 3 / about 2,900 | done | #2070: 225 lines lighter |
-| 5b | Railway sim: supply, install, loader, replicate, goldens, tick order, cart, check, schema, boiler, opening | about 36 / 6,000 | review | reviewed, in the ship queue: about 310 lines lighter and one fixture deleted |
-| 5c | The eight files 5b only skimmed: replicate, replicate-budget, ecs, world-replay, world-reset, world-sync, room-clock, the bad-worlds fixture | 8 / about 1,650 | out | a third builder judges every test by name |
+| 5b | Railway sim: supply, install, loader, replicate, goldens, tick order, cart, check, schema, boiler, opening | about 36 / 6,000 | done | #2084: about 310 lines lighter and one fixture deleted |
+| 5c | The eight files 5b only skimmed: replicate, replicate-budget, ecs, world-replay, world-reset, world-sync, room-clock, the bad-worlds fixture | 8 / about 1,650 | done | #2094: every test judged by name; 33 lines lighter, five files unchanged |
 | 6 | Server: accounts, rooms, saves, transport (`server/test/*` except area 7) | 38 / 6,928 | done | #2076: 30 / 6,366 |
 | 7 | Server: railway hosts (`server/test/railway-*`, `rail-tune*`, `seats-host`, `boogler-*`) | 26 / 7,513 | done | #2068: 24 / 7,292 |
 | 8 | Client and world logic (the rest of `test/`) | 94 / 10,828 | done | #2064: 89 files, about 690 lines lighter |
@@ -58,6 +58,16 @@ Status: `todo`, `out` (dispatched, building), `review` (built, in review or merg
 
 Fixture kept on purpose: `test/fixtures/boogler-parked-copy.ts` is imported by no test since #2064. It is The Boogler's
 parked copy, kept for the owner's narrative pass (docs/reviews/boogler-narrative-followup.md); rule 2 does not apply to it.
+
+## Closed (18 November 2026)
+
+Every area is checked, reviewed by a fresh reviewer and merged. Main went from 349 test files and 59,614 lines to 320
+files and 56,297 lines (other work added files meanwhile), in eleven cleanup PRs and one follow-up PR. No game or server
+code changed except three comment lines. What the numbers do not show: every merged deletion names a retained guard,
+nearly all with a recorded mutation, and the independent reviews restored twelve guards that builders had removed
+or weakened and that only a mutation exposed. CI time saved is not measured: `dev/ci/unit-weights.json` (total 5,465 s
+against 5,484 s at the start) still holds pre-campaign timings for every suite that changed, so a refresh from a full
+CI run (`node dev/ci/unit-weights.ts <shard logs>`) is the first follow-up.
 
 ## Log
 
@@ -139,6 +149,24 @@ mutation evidence, unresolved risks.
   forged-announcement check now waits for the receiving peer's echo. Untouched: server-ops, save-cleanup,
   save-inventory, room-ids, world-host, world-host-trace, loader-save, room-clock-host, step-meter,
   credential-evidence, account-admission, seat-replication, client-address.
+- 2026-11-18, area 5b, #2084 (railway persistence and replication). `railway-replicate`: seed-room and predictor
+  setup shared, three count pins removed against named guards. `railway-install`: three malformed-input sweeps merged
+  (one validation line serves every part), tuning rows deleted, the braking-distance pin rewritten as three functions
+  agreeing. `railway-tick-order`: nine default-hold rows and their fixture deleted (a conversion proof against a tick
+  that no longer exists; system order is still checked every tick). `railway-cart`: the cut call-cart op's test and a
+  v24 save-shape test deleted (old save shapes are unsupported by owner call), its extra-column refusal moved to
+  `ecs`. `ecs-budget`: the pre-ECS comparison model removed. `railway-loader` builds `yard-built` once; a new test
+  ties its derived fixtures to the golden's hashes. One golden stage moved between shards; no golden regenerated.
+- 2026-11-18, area 5c, #2094 (replicate, ecs, world replay, reset, sync, room clock). Judged test by test. Removed: the
+  four-client prediction run (two and six stay: review showed two catches a confirm that waits for a first refusal,
+  six does not), the `STEP_HZ` and `RULE_STEPS` literal pins (five behaviour tests fail for any change, a consistent
+  12 steps at 120 Hz included), four reset tests merged into one table. Unchanged with a live mutation each:
+  `replicate-budget`, `ecs`, `world-replay`, `world-sync`, the bad-worlds fixture (98 entries, one per rejection).
+- 2026-11-18, follow-ups, #2095. Seven guards the reviews proved missing, each failing under its mutation: a funded
+  buy of an unstaked plot is refused (`railway-trade`); a five-second absence credits exactly the documented amount
+  (`railway-away` host case); the shared-unlock crash phase runs before the orderly restart, so it needs a checkpoint;
+  the Gorge's two drawn meshes are visible and the untrimmed count exact; the unit-budget helper exits by itself after
+  30 s; two comments corrected.
 
 ## Findings worth keeping
 
@@ -160,39 +188,37 @@ mutation evidence, unresolved risks.
 
 ## Unresolved risks
 
-- The account crash child test (now in `server/test/accounts.test.ts`, expecting `child.signal === 'SIGKILL'`) is red
-  on Windows, as it was before the campaign; CI is Linux and green. Two other server tests skip on Windows.
-- unit-budget (#2062): on Windows the detached fixture helper can outlive a run whose runner is killed during the two
-  seconds before the budget kill; it is an idle process. A self-exit timer in `test/fixtures/unit-budget/interval.ts`
-  would bound it.
-- Prefab (#2063): the Gorge test does not assert its two drawn meshes are visible or placed, and its count bound is an
-  upper limit; nothing pins the 3 m rim threshold in `dev/level/route-leg2.ts`; the comment on the new check-list test
-  overstates its masking (a 0.25 to 1 m sideways nudge of Bell Rock changes the report's shape). The first two predate
-  the campaign; a follow-up fixes the comment and adds the two cheap assertions.
-- Client (#2064): `path-refuge` does not catch a snap on wake in any band (not caught on main either). The roughly 70
-  suites the area left unchanged were judged by each file's main contract, not assertion by assertion.
-- Copy-pinning assertions removed in #2064, for the owner to see (no authored line changed): "Hey! No free rides!",
-  the first-menu thread prompts, the parked-copy counts, the arrival name wording, the garage pill strings.
-- Golden shards: `yard-built` is rebuilt in three processes (about 90 s of CI) and the twelve shards run from 15 s to
-  181 s. Area 5b is looking at regrouping without touching a golden.
-- Server railway hosts (#2068), from its review: no host case checks the size of the away credit (a quarter of the
-  elapsed time passed to a correct credit function leaves all eight host cases green; on main before the campaign
-  too); the unstaked-plot rule has no unit guard (it belongs in `railway-trade`'s B1 test); the crash phase of
-  `railway-shared-unlock` follows an orderly save, so it passes without checkpoints; the new event waits rely on the
-  suite's 120 s test timeout.
-- Rail motion (area 4): the `track-wing` and `track-chunks` sweeps were retired as presentation though they cover
-  more poses than a look; route-rules gate 10 averages three laps, not eight; a comment in
-  `src/sim/railway-train.ts` (about line 157) still credits a retired `railway-lines` table test; the four
-  route-rules shard weights in `dev/ci/unit-weights.json` need re-measuring from a CI run.
-- Area 3: the till label's over-cap clamp (`src/entities/railway/till-view.ts`) has no test; the sim's cap does.
-  Moving the renamed contract tests into their owning suites was not done.
-- Server (#2076): `host.test` "one player, two tabs" timed out once in five review runs under load on an unchanged
-  2 s wait (green alone); a late joiner's first snapshot of an occupied seat table and the actor's own recording are
-  no longer asserted directly (same code path as asserted cases); `loadHomeLand`, `HOME_LAND` and the `HomeLand` type
-  in `server/src/host/land.ts` are dead code left for the server's owner.
-- Area 5b: the retired tick-order rows hashed every tick on q1-done, q2-arriving, q4-arriving, works-lit and deck-laid
-  and at the default hold; those are now hashed by the golden every 1,200 ticks (system order is still checked every
-  tick). The larger golden duplication (yard and gorge stages each replaying from an earlier seed) needs chained
-  seed caches in `src/sim`, not a test change. The ECS budget catches "touch every entity" only by time (5.5 ms
-  against 4 ms); a rows-sent assertion would be sturdier. Weights for golden shards 6 to 8, railway-loader,
-  railway-tick-order and ecs-budget need re-measuring.
+Coverage that is missing (found by mutation during the campaign; none was removed by it):
+
+- Replication: a predictor whose `invalidate()` does nothing, a mirror refill that ignores partial field changes and a
+  mirror that drops despawns in replay each pass every test. A confirm that is inert unless the window is full passes
+  too. The ECS budget catches "touch every entity" only by time (5.5 ms against a 4 ms limit).
+- `path-refuge` does not catch a snap on wake in any band. Nothing pins the 3 m rim threshold in
+  `dev/level/route-leg2.ts`. `prefab-gorge` checks the untrimmed mesh's slot count, not that each slot was written.
+- The till label's over-cap clamp (`src/entities/railway/till-view.ts`) and the town reader's cache key have no test;
+  both are cosmetic. A late joiner's first snapshot of an occupied seat table and the actor's own recording are
+  asserted only through the shared code path.
+
+Judgement calls for the owner:
+
+- Retired as presentation though they sweep more poses than a look: `track-wing`, `track-chunks`. Kept though
+  client-side, as requested regressions: `railway-arrival`, `train-car-clearance`, `train-wheel-capacity`,
+  `train-wheel-rail`, `railway-hook-path`, `railway-marks`.
+- Copy-pinning assertions removed (no authored line changed): "Hey! No free rides!", the first-menu thread prompts,
+  the parked-copy counts, the arrival name wording, the garage pill strings.
+- Area 8 left about 70 client suites unchanged after judging each file's main contract, not every assertion.
+- Route-rules gate 10 averages three laps, not eight. The retired tick-order rows hashed every tick on five stages
+  and at the default hold; the golden hashes them every 1,200 ticks.
+
+Left for later work:
+
+- Refresh `dev/ci/unit-weights.json` from a full CI run, then rebalance: the route-rules shards, golden shards 6 to
+  8, railway-loader, railway-tick-order and ecs-budget changed most. The larger golden duplication (yard and gorge
+  stages each replaying from an earlier seed) needs chained seed caches in `src/sim`.
+- Move the renamed contract tests of area 3 (`railway-whole-state-latch`, `railway-frame-tick`,
+  `railway-footing-replication`, `town-late-join`, `town-plot-projection`) into their owning suites.
+- Dead code: `loadHomeLand`, `HOME_LAND` and the `HomeLand` type in `server/src/host/land.ts`.
+- Windows only: the account crash child test (`server/test/accounts.test.ts`, expecting `SIGKILL`) is red, as before
+  the campaign; `host.test` "one player, two tabs" timed out once in five runs under load; the new event waits in
+  the server railway suites rely on the 120 s test timeout.
+- `railway-away`'s new assertion should also require `rails > 0`; its message hardcodes today's numbers.
