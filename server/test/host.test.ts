@@ -8,7 +8,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { createService, loadConfig } from './helpers/accounts.ts';
 import { worldRoomId } from '../../src/world/namespace.ts';
-import { railwayRoomId } from '../../src/world/railway-namespace.ts';
+import { plot, till } from '../../src/sim/railway-rows.ts';
+import { townPlotBoard } from '../../src/place/town-plan.ts';
+import { RAILWAY_PLAY_NS, railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { HALF } from '../../src/world/grid.ts';
 import type { RailwayWorldHost } from '../src/host/world-host.ts';
 import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
@@ -64,6 +66,65 @@ function connect(base: string, room: string, self: string, pid = self + 'pid', k
 const is = (t: string) => (m: Msg) => m.t === t;
 const isWorld = (t: string) => (m: Msg) => m.t === 'm' && m.d?.t === t;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+test('a buy 3.21 m from the board is refused and spends nothing; 3.19 m (any height) is accepted once', async () => {
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-b2-reach-'));
+  const svc = createService(
+    loadConfig({ DATA_DIR: dataDir, SERVER_ROOMS: '*' }, { log: () => {}, jumpBuild: 'any', housekeepMs: 50 }),
+  );
+  const port = await svc.listen(0);
+  try {
+    const r = await fetch(`http://127.0.0.1:${port}/jump`, {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain' },
+      body: JSON.stringify({ stage: 'house-ready', ns: RAILWAY_PLAY_NS }),
+    });
+    assert.equal(r.status, 200);
+    const id = railwayRoomId(((await r.json()) as { room: string }).room);
+    const client = connect(`ws://127.0.0.1:${port}`, id, 'carol');
+    await client.next(is('welcome'));
+    const world = svc.roomHost()!.room(id)!.world as RailwayWorldHost;
+    await world.whenReady();
+    client.send({ t: 'm', d: { t: 'r:open' } });
+    const session = (await client.next(isWorld('r:session'))).d;
+    let request = Number(session.next) - 1;
+    const epoch = Number(session.epoch);
+    const w = () => world.rules.railway.world();
+    const status = (req: number) => world.rules.railway.outcome('carolpid', epoch, req)?.status;
+    // The board as the view draws it and the prompt measures it: Place-local + 1000, in centimetres.
+    const b = townPlotBoard(0);
+    const bx = (b.x + 1000) * 100,
+      bz = b.z * 100;
+    // Along the line from the board to plot 1's door side and diagonally, as a client's rounded position.
+    const at = (cm: number, angle: number, y = 1845) => [
+      Math.round(bx + cm * Math.cos(angle)),
+      y,
+      Math.round(bz + cm * Math.sin(angle)),
+    ];
+    const buy = (fields: Msg) => {
+      const e = { op: 'rail.buy', id: 0, ...fields, epoch, request: ++request, ms: 1000 * request };
+      client.send({ t: 'm', d: { t: 'r:edit', e } });
+      return e.request;
+    };
+    const before = { ...till(w()) };
+    const outside = [buy({ at: at(321, Math.PI) }), buy({ at: at(321, 0.7) }), buy({})];
+    const receipt = (q: number) => client.next((m) => isWorld('s')(m) && m.d.ack?.[0] === epoch && m.d.ack[1] >= q);
+    await receipt(request);
+    for (const q of outside) assert.equal(status(q), 'rejected', `request ${q} from outside or with no position`);
+    assert.deepEqual({ ...till(w()) }, before, 'refused buys spend nothing');
+    assert.equal(plot(w(), 0).at, -1);
+    // From 3.19 m and 30 m up: the rule is horizontal only (the plan's claim), so a rooftop buyer is in reach.
+    const inside = buy({ at: at(319, 0.7, 1845 + 3000) });
+    await receipt(inside);
+    assert.equal(status(inside), 'accepted', 'just inside the reach');
+    assert.equal(till(w()).spent, 150);
+    assert.ok(plot(w(), 0).at >= 0);
+    client.ws.close();
+  } finally {
+    await svc.close();
+    await fs.rm(dataDir, { recursive: true, force: true });
+  }
+});
 
 test('a server seat stays occupied throughout the 1.5 second reconnect grace', async () => {
   const room = railwayRoomId('review-grace');
