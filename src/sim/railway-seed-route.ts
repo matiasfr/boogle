@@ -68,21 +68,25 @@ export function rails(s: Seed, pid: string, station: string, n: number) {
 function railwayAtForgeBill(): Seed {
   const w = createRailway();
   for (const pid of ['a', 'b']) railSession(w, pid, 1);
-  apply(w, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
+  need(apply(w, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0).accepted === 1, 'the wake');
   const s = { w, t: 40 };
   logs(s, 'a', 'T1', 24);
   advance(s, 300);
   for (let i = 0; i < 8;) {
     const n = act(s, 'b', 'rail.mine', { id: rocks(w).findIndex((r) => r.left > 0) });
+    need(n > 0, 'stone mined');
     need(act(s, 'b', 'rail.deposit', { station: 'T2', kind: 1, n }) === n, 'T2 took stone');
     i += n;
   }
   logs(s, 'a', 'T2', 32);
   advance(s, 300);
   logs(s, 'a', 'T3', LINE1_STATIONS[2]!.bill[0]);
-  act(s, 'a', 'rail.axe');
-  for (let i = 0; i < 12; i++) act(s, 'a', 'rail.beamChop');
-  act(s, 'a', 'rail.beamTake', { revision: beam(w).revision });
+  // Refused, a no-op kept only for the pinned hashes: the proper axe has waited on the lit forge since the great beam
+  // pass (7 November), so no later seed has it. Taking it at the forge moves test/fixtures/railway-golden.json and the
+  // M12 trace (docs/plans/separate-capacities.md, Checkpoint A), which needs the seed-data review first.
+  need(act(s, 'a', 'rail.axe') === 0, 'the proper axe still waits on the lit forge');
+  for (let i = 0; i < 12; i++) need(act(s, 'a', 'rail.beamChop') === 1, 'the great tree chopped');
+  need(act(s, 'a', 'rail.beamTake', { revision: beam(w).revision }) === 1, 'the beam taken');
   need(act(s, 'a', 'rail.beamDeposit', { revision: beam(w).revision, station: 'T3' }) === 1, 'T3 took the beam');
   advance(s, 600);
   return s;
@@ -136,7 +140,7 @@ export function railwayAtQ4(): Seed {
   finish(s, 2);
   clear(s);
   while (rail(s.w).depot) {
-    act(s, 'a', 'rail.depotTake');
+    need(act(s, 'a', 'rail.depotTake') > 0, 'Q3 depot logs taken');
     clear(s);
   }
   need(invariant(s.w) === null, 'railwayAtQ4: invariant');
