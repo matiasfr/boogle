@@ -116,6 +116,7 @@ for (const area of ['bell', 'west'] as const)
     builders.set('lookout.buoy', () => new THREE.Group());
     builders.set('lookout.buoy-top', () => new THREE.Group());
     builders.set('ring.box', () => new THREE.Group());
+    builders.set('ring.rim-rock', () => new THREE.Group());
     builders.set('ring.folk', () => new THREE.Group());
     builders.set('ring.fingerpost-arm', () => new THREE.Group());
     builders.set('ring.map-table', () => new THREE.Group());

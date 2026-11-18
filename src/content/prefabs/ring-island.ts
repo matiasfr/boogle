@@ -1,5 +1,5 @@
 // Ring Island's things (src/entities/ring-island/): the greybox box its massing is drawn in (solid, drawn only, or
-// solid and not drawn), the folk, the fingerpost's
+// solid and not drawn), a rim rock, the folk, the fingerpost's
 // arms, the low map table, the summit lookout's deck, the drop hammer's head and the RINGWORKS board's face. Their
 // builders are src/prefab/builders/ring-island.ts; src/content/levels/ring-island.ts places them. Colours are the
 // greybox's (the view's palette).
@@ -26,6 +26,15 @@ export const prefabs = [
     scope: 'place',
     visual: { none: true },
     colliders: [{ shape: 'box', at: [0, 0, 0], half: [0.5, 0.5, 0.5] }],
+  }),
+  // A marker rock on the summit-side rim of the stack line's cutting: a dodecahedron of `radius` (the island's
+  // summitRimRockShape, src/entities/ring-island/path.ts, which the view holds it to), scaled by the placement. Drawn
+  // only: its solid is a ring.box-solid inscribed in it, placed after it.
+  definePrefab({
+    key: 'ring.rim-rock',
+    scope: 'place',
+    visual: { builder: 'ring.rim-rock', params: { radius: 0.62, color: '#c4beb0' } },
+    colliders: [],
   }),
   // One of the folk (a looker, never Rivet): origin under their feet. Nothing solid.
   definePrefab({

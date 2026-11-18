@@ -5,8 +5,10 @@
 //   frame), `steps` (the steps up from the brace platform, src/sim/railway-ring-layout.ts's RING_STEPS), `summit` (the
 //   summit lookout), `map-table` (where src/entities/ring-island/state.ts's RING_MAP_TABLE stands), `pennant` (block
 //   `footing` of the pennant pole's footing, src/entities/ring-island-far/view.ts's pennantFooting, its one
-//   definition), `flight` and `landing` (row `flight` or `landing` of RING_RAMPS[`ramp`], the sea ramps), or
-//   `crossover` (metre `k` of RING_END.cross, the crossover on the Way).
+//   definition), `flight` and `landing` (row `flight` or `landing` of RING_RAMPS[`ramp`], the sea ramps),
+//   `crossover` (metre `k` of RING_END.cross, the crossover on the Way), `path` (length `k` of leg `leg` of the summit
+//   path, src/entities/ring-island/path.ts's summitPath), `bridge` (its footbridge, summitBridge; with `bent`, that
+//   bent of SUMMIT_BRIDGE.bents) or `rim` (rock `k` of summitRimRocks, as its `stone` or its `box`).
 // - A value is a number (ring metres or metres up, as is), `{ deck: u }` (the Way's deck top at u) or `[from, ...add]`:
 //   `from` an anchor of the frame or a value, then each `add` summed in order. Anchors: halt `start` and `end` (u of
 //   the halt's south and north ends), `east` and `west` (lat of the east platform's east edge and the west platform's
@@ -21,12 +23,17 @@
 //   homeward track's lat there); flight `u0`, `u1`, `lat`, `y0`, `y1`, `len`, `mid` and `mid-y` (u and top at its
 //   middle); landing `u0`, `u1`, `l0`, `l1`, `y`, `mid` and `lat-mid`; steps `u0`, `u1`, `lat`, `y0`, `top`
 //   (RING_STEPS) and `right`; summit `cx`, `cz` (the island's middle) and `top` (the deck's top, `lift` over the ground
-//   there). `ground` is the island's ground under the thing; `arch-u` and `arch-y` are the middle of tile `arch.k` of
+//   there); path `x0`, `z0`, `x1`, `z1` (the length's ends, world x and z); bridge `a-x`, `a-y`, `a-z` and the
+//   same `b-` (the deck's top at its ends), `span`, `width`, `thick`, `under` (its underside from its top, negative),
+//   `parapet` (the parapets' height), `parapet-l`, `parapet-r` (their sides), `yaw` (along the deck), and with `bent`
+//   `bent-d` (that bent along the deck) and `bent-under` (the deck's underside there). `ground` is the island's ground
+//   under the thing; `arch-u` and `arch-y` are the middle of tile `arch.k` of
 //   the mural's arch; `plank-l0`, `plank-l1` the laterals of the foot crossing's plank `plank` (state.ts's
 //   ringCrossingPlanks).
 // - `block` spans u, lat and y; `post` stands at (u, lat) or (x, z) from y0 to y1, w across the line and d along it;
-//   `beam` runs from a to b ((u, lat, y) on the line, a world (x, z, y), or `d` out from the summit's middle `along`
-//   (x, z)), w wide and h deep, its top on the line between them; `slab` is a level deck over u and lat, its top at y,
+//   on the footbridge it stands `on` the deck (`d` along it from a, `side` to its right) and turns by `yaw`; `beam`
+//   runs from a to b ((u, lat, y) on the line, a world (x, z, y), `on` the deck (`d`, `side` and `dy` over its top),
+//   or `d` out from the summit's middle `along` (x, z)), w wide and h deep, its top on the line between them; `slab` is a level deck over u and lat, its top at y,
 //   h deep; `stanchion` is post k of a handrail's n + 1 from a to b (one every 3 m), `rise` tall and w square; `tread`
 //   is tread k of a flight, from k pitches up it, `run` long, `lift` over its top, w wide and h deep; `at` is a point,
 //   turned by `turn` (`line`: along it; `west`: facing the tracks from the east platform; `toward` a world (x, z) from
@@ -42,6 +49,7 @@ const TIMBER = '#8a6a48',
   RAIL = '#3d3a38',
   BED = '#5d5650',
   CONCRETE = '#a6a29a',
+  PATH = '#c9b48a',
   TARP = '#4f6b8a',
   LAND = '#4a4d5c',
   LAND2 = '#3b3e4c',
@@ -374,6 +382,122 @@ const crossover: Placement[] = Array.from({ length: CROSSOVER.metres }, (_, k) =
   ];
 }).flat();
 
+/** The path up to the summit lookout, its footbridge over the stack line's cutting and the cutting's marker rocks
+ * (src/entities/ring-island/path.ts, which content may not import: the view resolves every number from it and refuses
+ * a level whose counts no longer match). The path is drawn only, 6 m lengths a leg (`path` frame, `leg` and `k`; the
+ * trail is the ground under it): `PATH_LEGS` is the count per leg of summitPath's way, none on the approach's last leg
+ * or on the deck. The footbridge's pieces are solid (`bridge` frame; the approach's trail and the landing are the
+ * ground, drawn by the view between the deck and the parapets). Each rim rock is its stone, drawn, then its box, solid
+ * (`rim` frame, rock `k` of summitRimRocks). */
+const PATH_LEGS = [4, 5, 0, 0, 7, 10, 11, 9, 7];
+const BRIDGE_BENTS = 2,
+  RIM_ROCKS = 19;
+const SUMMIT_MASSING: Placement[] = [
+  ...PATH_LEGS.flatMap((n, leg) =>
+    Array.from({ length: n }, (_, k) =>
+      box(
+        `path/leg${leg + 1}/${k + 1}`,
+        PATH,
+        {
+          frame: 'path',
+          leg,
+          k,
+          beam: {
+            a: { x: ['x0'], z: ['z0'], y: ['ground', 0.12] },
+            b: { x: ['x1'], z: ['z1'], y: ['ground', 0.12] },
+            w: 2.6,
+            h: 0.3,
+          },
+        },
+        true,
+      ),
+    ),
+  ),
+  // The deck from rim to rim, then two parapets low enough to hop, a concrete abutment under each end and two dark
+  // steel bents standing just outside the cutting's flat floor (a crossbeam under the deck, then its two legs).
+  box('bridge/deck', TIMBER, {
+    frame: 'bridge',
+    beam: {
+      a: { x: ['a-x'], z: ['a-z'], y: ['a-y'] },
+      b: { x: ['b-x'], z: ['b-z'], y: ['b-y'] },
+      w: ['width'],
+      h: ['thick'],
+    },
+  }),
+  ...(['parapet-l', 'parapet-r'] as const).map((side, k) =>
+    box(`bridge/parapet${k + 1}`, STEEL, {
+      frame: 'bridge',
+      beam: {
+        a: { on: { d: 0, side: [side], dy: ['parapet'] } },
+        b: { on: { d: ['span'], side: [side], dy: ['parapet'] } },
+        w: 0.12,
+        h: ['parapet'],
+      },
+    }),
+  ),
+  ...(
+    [
+      [-1.5, 0.5],
+      [
+        ['span', -0.5],
+        ['span', 1.5],
+      ],
+    ] as const
+  ).map(([d0, d1], k) =>
+    box(`bridge/abutment${k + 1}`, CONCRETE, {
+      frame: 'bridge',
+      beam: {
+        a: { on: { d: d0, side: 0, dy: ['under'] } },
+        b: { on: { d: d1, side: 0, dy: ['under'] } },
+        w: 3.4,
+        h: 1.2,
+      },
+    }),
+  ),
+  ...Array.from({ length: BRIDGE_BENTS }, (_, bent) => [
+    box(`bridge/bent${bent + 1}/beam`, STEEL_DARK, {
+      frame: 'bridge',
+      bent,
+      beam: {
+        a: { on: { d: ['bent-d'], side: -1.7, dy: ['under'] } },
+        b: { on: { d: ['bent-d'], side: 1.7, dy: ['under'] } },
+        w: 0.5,
+        h: 0.4,
+      },
+    }),
+    ...[-1.2, 1.2].map((side, k) =>
+      box(`bridge/bent${bent + 1}/leg${k + 1}`, STEEL_DARK, {
+        frame: 'bridge',
+        bent,
+        post: {
+          on: { d: ['bent-d'], side },
+          y: [
+            ['ground', -0.5],
+            ['bent-under', -0.4],
+          ],
+          w: 0.5,
+          d: 0.5,
+          yaw: ['yaw'],
+        },
+      }),
+    ),
+  ]).flat(),
+  ...Array.from({ length: RIM_ROCKS }, (_, k) => [
+    {
+      id: `rim/stone${k + 1}`,
+      prefab: 'ring.rim-rock' as const,
+      pos: [0, 0, 0] as const,
+      params: { place: { frame: 'rim', k, rock: 'stone' } },
+    },
+    {
+      id: `rim/box${k + 1}`,
+      prefab: 'ring.box-solid' as const,
+      pos: [0, 0, 0] as const,
+      params: { place: { frame: 'rim', k, rock: 'box' } },
+    },
+  ]).flat(),
+];
+
 // The drop hammer stands 24 m up the halt, 11 m east of the line; the works wall's face is 15.2 m east, its south end
 // 12 m short of the halt's north end.
 /** The arch: `tiles` tiles at angles PI * (from + span * k / steps), centred (u, y) on the mural, radii ru and ry. */
@@ -693,6 +817,8 @@ export const levels = [
         pos: [0, 0, 0],
         params: { place: { frame: 'map-table', ...TOWARD } },
       },
+      // ------------------------------------------------ the path up to the summit, its footbridge, the rim rocks
+      ...SUMMIT_MASSING,
       // ------------------------------------------------ the summit lookout
       {
         id: 'summit/deck',

@@ -83,6 +83,7 @@ export const names: NameRegistry = {
     'secrets.column',
     'secrets.clue',
     'ring.box',
+    'ring.rim-rock',
     'ring.folk',
     'ring.fingerpost-arm',
     'ring.map-table',
