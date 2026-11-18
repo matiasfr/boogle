@@ -9,7 +9,7 @@ Applied the owner’s supplied [review-page](https://claude.ai/artifact/FdpKhie8
 ## Entries written
 
 - [batch-3 calls confirmed as logged](../decisions-core-loop.md#d-2026-11-17-batch3-confirmed)
-- [heavy-load tuning with bounded local drop recovery](../decisions-core-loop.md#d-2026-11-17-heavy-load-pile-rule-as-shipped)
+- [heavy-load tuning with bounded local drop recovery](../decisions-archive.md#d-2026-11-17-heavy-load-pile-rule-as-shipped)
 - [retire the Glide-glyph first-fall teach](../decisions-core-loop.md#d-2026-11-17-retire-4)
 - [retire the production-bot route call](../decisions-core-loop.md#d-2026-11-17-retire-5)
 - [batch-3 calls confirmed as logged](../decisions-rail.md#d-2026-11-17-batch3-confirmed)
