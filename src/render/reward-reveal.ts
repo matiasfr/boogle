@@ -22,6 +22,8 @@ export type Got = {
   /** As it reads after "You got": "the multi-axe", "a pack frame". */
   name: string;
   line?: string;
+  /** One more line under it, followed by the Pause control's glyph: the first wearable's "where" (G22). */
+  hint?: string;
   rarity?: string;
   color?: string;
   model: THREE.Object3D;
@@ -31,6 +33,25 @@ export type Got = {
   handoff?: boolean;
   done?: () => void;
 };
+
+/** G22: the first wearable's card says where to change what you wear. Draft UI copy, the owner's to reword. */
+export const WEAR_HINT = 'Change what you wear in Pause';
+/** Its seen-once record: a createSeen store (../entities/railway/ability-arrival.ts), per railway room and player. */
+export const WEAR_HINT_SEEN = 'boogle.wear-hint.v0';
+/** A youGot for wearables: the first one this player gets, from any source, carries WEAR_HINT. `seen` is read fresh
+ * on each card (more than one view keeps the record) and remembers the hint once a queue took its card. */
+export function withWearHint(
+  youGot: (g: Got) => boolean,
+  seen: () => { has: (key: string) => boolean; add: (key: string) => void },
+) {
+  return (g: Got) => {
+    const record = seen();
+    const first = !record.has('wear-hint');
+    const queued = youGot(first ? { ...g, hint: WEAR_HINT } : g);
+    if (queued && first) record.add('wear-hint');
+    return queued;
+  };
+}
 
 export type RewardGlow = { mat: THREE.MeshBasicNodeMaterial; strength: { value: number } };
 /** The original reward card, owned by its caller rather than by a module import. */
@@ -80,10 +101,11 @@ export function createRewardReveal({
   box.className = 'place-got';
   box.hidden = true;
   box.innerHTML =
-    '<div class="place-got-text"><b></b><small></small><span></span></div><div class="place-got-hint"></div>';
+    '<div class="place-got-text"><b></b><small></small><span></span><span class="place-got-tip"></span></div><div class="place-got-hint"></div>';
   const title = box.querySelector('b')!,
     rarity = box.querySelector('small')!,
     sub = box.querySelector('span')!,
+    tip = box.querySelector<HTMLElement>('.place-got-tip')!,
     hint = box.querySelector<HTMLElement>('.place-got-hint')!;
   (document.querySelector('.hud') ?? document.body).append(box);
 
@@ -129,6 +151,10 @@ export function createRewardReveal({
     title.style.color = g.color ?? '';
     sub.textContent = g.line ?? '';
     sub.hidden = !g.line;
+    // The glyph is the input in use as the card comes up (none on touch, where Pause is the corner button).
+    tip.textContent = g.hint ?? '';
+    if (g.hint) tip.insertAdjacentHTML('beforeend', ` ${glyph('pause')}`);
+    tip.hidden = !g.hint;
     rarity.textContent = g.rarity ?? '';
     rarity.hidden = !g.rarity;
     hint.innerHTML = '';
