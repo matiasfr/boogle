@@ -4,10 +4,11 @@ What the architecture reviewer ([skill](../../.claude/skills/architecture-review
 [source](../research/engine-architecture.md)) has found and what became of it, so a rejected finding doesn't come back.
 Entries are never deleted.
 
-**Last reviewed:** `5fa88131` (2026-11-17; window `aa7861150..5fa88131`). First run: 2026-11-12,
-`305e0ce45..add1b4264`. Scenario 3 walked on this run; no new findings. Next scenario: 4.
-[17 November report](../reports/tidy-2026-11-17.md). Existing AR-2 remains open; no revisit trigger was established
-for rejected/deferred entries. Refutation was performed locally because this review sub-agent did not spawn children.
+**Last reviewed:** `2b28093ae` (2026-11-18; window `5fa88131..2b28093ae`). First run: 2026-11-12,
+`305e0ce45..add1b4264`. Scenario 4 walked on this run; no new findings. Next scenario: 5.
+[18 November report](../reports/tidy-2026-11-18.md); [17 November](../reports/tidy-2026-11-17.md). Existing AR-2 remains
+open; no revisit trigger was established for rejected/deferred entries. Refutation was performed locally because this
+review sub-agent did not spawn children.
 
 - **Fingerprint:** check, path and symbol, never a line number.
 - **Status:** `open`, `fixed`, `rejected`, `deferred` or `superseded`.

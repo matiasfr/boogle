@@ -1,4 +1,4 @@
-> **Status:** Steps 1–2 shipped in #1841 as v46; Checkpoint A is verified below. Steps 3 to 5 are built on the implementation branch (step 5 fresh: the archived branch is gone); Checkpoint B is next. Design base:
+> **Status:** Steps 1–2 shipped in #1841 as v46; Checkpoint A is verified below. Steps 3 to 5 are on main (#2104, 18 November; step 5 built fresh: the archived branch is gone); Checkpoint B is next (reconciled by the 18 November tidy). Design base:
 > `origin/main` at `35e1c3431`. Replaces
 > steps 2 and 4 of [gap-readability](gap-readability.md) (the railhead's move), which were built on branch
 > `worktree-agent-af55e2f2172764ff8` (tag `archive/worktree/railhead-traveller`, tip `9b9845fbb`) and failed three

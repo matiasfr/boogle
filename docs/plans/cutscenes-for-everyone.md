@@ -1,4 +1,4 @@
-> **Status: planned (2026-11-18), not built.** Decision: [cutscenes for everyone, 17 November](../decisions-rewards.md#d-2026-11-17-cutscenes-for-everyone)
+> **Status: steps 1 and 2 built (2026-11-18): step 1 in #2145, step 2 in #2167; step 3 waits for the owner's answer to open question 2 (reconciled by the 18 November tidy).** Planned 18 November. Decision: [cutscenes for everyone, 17 November](../decisions-rewards.md#d-2026-11-17-cutscenes-for-everyone)
 > (the orchestrator's reading is still marked to confirm; open question 1). Backlog rows: "Cutscenes for everyone" and
 > "The boiler-fitted cinematic" ([round-4-notes](round-4-notes.md) O18-5), folded in here. Base: `origin/main` at
 > `ea3bc52a`. **No `WORLD_NS` bump**: no wire shape, op, catalog entry, saved room state or presence key changes

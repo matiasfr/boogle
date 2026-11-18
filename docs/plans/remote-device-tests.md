@@ -1,6 +1,6 @@
 > **Status: re-planned (2026-11-18), a proposal waiting on the owner's word.** Read
 > [Re-plan, 18 November: HOTBOX orchestrates](#re-plan-18-november-hotbox-orchestrates) first; it replaces the order of
-> work below and [remote-runner](remote-runner.md)'s. Steps 1 and 2 below are built; 3 to 5 are not.
+> work below and [remote-runner](remote-runner.md)'s. Steps 1 and 2 below are built, and step 3 as R4 (#2112, 18 November); 4 and 5 are not. R1 and R3 of the re-plan are on main too; R2 is his step, and B1 to B3 wait for his word on question 1 (reconciled by the 18 November tidy).
 
 # Remote device tests
 
