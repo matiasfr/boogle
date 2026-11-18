@@ -31,9 +31,11 @@ const before = path.join(root, '.look/before', sha);
 if (!fs.existsSync(path.join(before, 'package.json'))) {
   fs.mkdirSync(before, { recursive: true });
   const tar = execFileSync('git', ['archive', sha], { cwd: root, maxBuffer: 1 << 30 });
-  execFileSync('tar', ['-x', '-C', before], { input: tar, maxBuffer: 1 << 30 });
+  // Extract from inside the folder: GNU tar reads the colon of a Windows path given to -C as a remote host.
+  execFileSync('tar', ['-x'], { cwd: before, input: tar, maxBuffer: 1 << 30 });
   // The same packages as this checkout, read-only: nothing installs through this link.
-  fs.symlinkSync(path.join(root, 'node_modules'), path.join(before, 'node_modules'));
+  // A junction on Windows, where a plain directory symlink needs elevation; ignored elsewhere.
+  fs.symlinkSync(path.join(root, 'node_modules'), path.join(before, 'node_modules'), 'junction');
 }
 const look = (checkout: string | null, label: string, extra: string[]) => {
   const r = spawnSync(
