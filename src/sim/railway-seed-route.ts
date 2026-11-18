@@ -61,8 +61,8 @@ export function rails(s: Seed, pid: string, station: string, n: number) {
     n -= moved;
   }
 }
-/** Players `a` and `b`, at Q2 with nothing delivered there yet. */
-export function railwayAtQ2(): Seed {
+/** Players `a` and `b`, line one laid to the forge with nothing in its bill yet. */
+function railwayAtForgeBill(): Seed {
   const w = createRailway();
   for (const pid of ['a', 'b']) railSession(w, pid, 1);
   apply(w, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
@@ -82,6 +82,22 @@ export function railwayAtQ2(): Seed {
   act(s, 'a', 'rail.beamTake', { revision: beam(w).revision });
   need(act(s, 'a', 'rail.beamDeposit', { revision: beam(w).revision, station: 'T3' }) === 1, 'T3 took the beam');
   advance(s, 600);
+  return s;
+}
+/** Look only: the forge one log short of a bill, `a` carrying the log that pays it (`frame`: 23/24 of the frame's;
+ * `lit`: 55/56, with the pack claimed off the frame's bill), so a look's deposit plays the live edge. */
+export function railwayAtForgeLast(last: 'frame' | 'lit'): Seed {
+  const s = railwayAtForgeBill();
+  logs(s, 'a', 'F', (last === 'frame' ? LINE2_FORGE.bills[0] : LINE2_FORGE.logs) - 1);
+  if (last === 'lit') need(act(s, 'a', 'rail.pack') === 1, 'the pack');
+  need(account(s.w, 'a')!.carry > 0, 'a log on the back');
+  need(invariant(s.w) === null, `railwayAtForgeLast ${last}: invariant`);
+  return s;
+}
+/** Players `a` and `b`, at Q2 with nothing delivered there yet. */
+export function railwayAtQ2(): Seed {
+  const s = railwayAtForgeBill(),
+    w = s.w;
   logs(s, 'a', 'F', LINE2_FORGE.logs);
   advance(s, LINE2_FORGE.turnTicks);
   logs(s, 'b', 'Q1', 16);
