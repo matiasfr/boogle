@@ -237,6 +237,19 @@ test('leaving the west entrance sideways restores the workshop exterior', () => 
   assert.deepEqual(exits, []);
   assert.deepEqual(cutaway, [true, true, false]);
 });
+test('small sideways nudges at the west doorway band do not alternate the cutaway', () => {
+  const { cutaway, exits } = captureWorkshop([
+    [-4, PLAYER_R, 0],
+    [-5.7, PLAYER_R, 0],
+    [-5.7, PLAYER_R, 1.89],
+    [-5.7, PLAYER_R, 1.91],
+    [-5.7, PLAYER_R, 1.89],
+    [-5.7, PLAYER_R, 3],
+  ]);
+  assert.deepEqual(exits, []);
+  assert.equal(cutaway.at(-1), false);
+  assert.notDeepEqual(cutaway.slice(2, 5), [true, false, true]);
+});
 test('workshop collider and placement values match the pre-conversion code', () => {
   const actual = captureWorkshop();
   for (const [file, value] of [
