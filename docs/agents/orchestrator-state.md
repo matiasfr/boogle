@@ -10,7 +10,6 @@ The one record of who is running what, and what the five-job limit is counted fr
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| World streaming step 2: one residency decision, telescope-aware (`resident()`, `viewDistance()`), the three loops moved onto it with their numbers unchanged | Chunk, cull and stream the world (P2) | `claude/world-residency` | the owner's live orchestrator session (HOTBOX), Claude Opus medium delegate | 18 November 09:45 | building |
 | Prefab data step 12: GLB things (every built model gets a `registerAsset` id; the engine, passenger car, track machine and carts name `visual.asset`; animation code stays) | Prefab data (P2) | `claude/prefab-glb` | the owner's live orchestrator session (HOTBOX), Claude Opus medium delegate | 18 November 12:20 | building |
 | Forge-made rewards: step 3 (a little guy builds the pack beside the forge) and on | The forge's rewards are its own products (P2) | `claude/forge-made-rewards` | the owner's thread "Clarify Pack Frame Unlock" (HOTBOX), Claude Opus delegate; row added by the heartbeat, which found it running unclaimed | 18 November 04:09 (true UTC) | building |
 | The forge's rail rack moved off Home's island to road 2's outer side | The forge's rail rack off Home's island (P3) | `claude/forge-rack-move` | the owner's thread "Improve Deposited Rails Position" (HOTBOX), Claude Opus; row added by the heartbeat, which found it running unclaimed | 18 November about 05:00 (true UTC) | building |
