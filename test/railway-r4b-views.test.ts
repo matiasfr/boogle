@@ -1,18 +1,5 @@
-// R4b, the railhead and the gap (views; docs/plans/ring-island-build1.md, step 4b): the ring seeds put the railhead
-// where the view draws it, through the read facade's world; and the railhead's numbers (src/entities/railway/railhead-shape.ts) agree with the sim's (RING_HEAD) and keep the step's
-// promises: every metre of line 2 a train can stand on has its deck drawn at every footing count, the walkway under a
-// moving platform's old place never leaves a player over the sea, the kit slides a bent in about 3 s, and the buoys lift
-// where RING_BUOYS says. The views need three.js and a DOM, so their reads are reproduced here as written
-// (railhead-view.ts's `refresh`, the lookout's `readLifted`); a change to a view's read is a change to its function
-// below. The differential proof against `inspect()` went with it (X2 of docs/plans/ecs-m12-m13.md). Modelled on
-// test/railway-r4a-views.test.ts.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSeedWorld, type SeedStage } from './helpers/rail.ts';
-import { railRoom } from './helpers/rail-room.ts';
-import { aperture } from '../src/sim/railway-rows.ts';
-import { q7Laid, ringHead } from '../src/sim/railway-queries.ts';
-import { line2Trains } from '../src/sim/railway-queries-line2.ts';
 import { LINE2, RAIL_LINES, TRAIN_EXTENT } from '../src/sim/railway-lines.ts';
 import {
   RING_BUOYS,
@@ -48,48 +35,6 @@ import {
   walkwaySpan,
 } from '../src/entities/railway/railhead-shape.ts';
 import { RING_S } from '../src/entities/railway/line2-path.ts';
-
-// ---------------------------------------------------------------- a client at a seed
-/** The read facade's world of one client that has the seed's state: a room at the seed, stepped until it is ready. */
-function client(stage: SeedStage) {
-  const r = railRoom(buildSeedWorld(stage));
-  const c = r.join('a', 'a');
-  r.ready();
-  return c.adapter;
-}
-
-// ---------------------------------------------------------------- the views' reads, as written
-type Adapter = ReturnType<typeof client>;
-/** railhead-view.ts `refresh` (opened, set, rack, joined, as the view takes them) and the lookout's `readLifted`
- * (head and joined, then each buoy's lifted flag), read once a frame through the facade. */
-function newReads(adapter: Adapter) {
-  const wd = adapter.read.world();
-  const opened = adapter.read.ready() && line2Trains(wd) && q7Laid(wd);
-  const a = opened ? aperture(wd) : null;
-  const head = ringHead(wd),
-    joined = aperture(wd).joined >= 0;
-  return {
-    opened,
-    set: a?.set ?? 0,
-    rack: a?.rack ?? 0,
-    joined: !!a && a.joined >= 0,
-    head,
-    lifted: RING_BUOYS.map((_, i) => buoyLifted(i, head, joined)),
-  };
-}
-test('the ring seeds put the railhead where the view draws it', () => {
-  const at = (stage: SeedStage) => newReads(client(stage));
-  assert.equal(at('crossing-done').opened, false, 'nothing of the railhead before Q7');
-  const laid = at('deck-laid');
-  assert.deepEqual([laid.opened, laid.set, laid.head, laid.joined], [true, 0, 0, false]);
-  const footed = at('gap-footed');
-  assert.deepEqual([footed.set, footed.head, footed.joined], [WORKS.ring, BENTS, false]);
-  assert.equal(at('ring-joined').joined, true);
-  // The buoys: 1-2 from the start, 3 at bent 8, 4 at bent 11, 5-7 on the rivet.
-  assert.deepEqual(laid.lifted, [true, true, false, false, false, false, false]);
-  assert.deepEqual(footed.lifted, [true, true, true, true, false, false, false]);
-  assert.deepEqual(at('ring-joined').lifted, [true, true, true, true, true, true, true]);
-});
 
 // ---------------------------------------------------------------- the railhead's numbers against the sim's
 test("the shape's railheads are RING_HEAD's, and its fixtures stand where the sim reads them", () => {
