@@ -1,5 +1,5 @@
 // The voice signal relay (server/src/host/hosted-room.ts, src/net/rtc-wire.ts) against hostile clients, over real
-// sockets: from the independent review of voice chat (9 November). host.test.ts has the plain relay case.
+// sockets: the clean copy reaches only the tab it names, from its sender, within the signal budget.
 import test from 'node:test';
 import { WebSocket, fixtureAdmission } from './helpers/accounts.ts';
 import assert from 'node:assert/strict';
@@ -80,7 +80,7 @@ for (const kind of ['railway', 'world'] as const)
         '}}';
       const hostile: (Msg | string)[] = [
         deep,
-        '{"t":"m","d":{"t":"rtc","to":"bbb","k":"offer","n":1,"sdp":"' + 'x'.repeat(15000) + '"}}',
+        '{"t":"m","d":{"t":"rtc","to":"bbb","k":"offer","n":1,"sdp":"' + 'x'.repeat(12001) + '"}}', // one past RTC_SDP_MAX
         ('{"t":"m","d":{"t":"rtc","to":"bbb","k":"offer","n":1,"sdp":"' + 'x'.repeat(70000) + '"}}').slice(0, 60000),
         { t: 'm', d: { t: 'rtc' } },
         { t: 'm', d: { t: 'rtc', to: 123, k: 'bye', n: 1 } },
@@ -120,7 +120,7 @@ for (const kind of ['railway', 'world'] as const)
       for (let i = 0; i < 90; i++) a.send({ t: 'm', d: { t: 'honk', v: 1 } });
       await settle([a, c], [b]);
       const relayed = b.msgs.filter(isRtc).length - 2;
-      assert.ok(relayed > 0 && relayed <= 2 * 60 + 2 * 20, 'relayed ' + relayed);
+      assert.ok(relayed > 40 && relayed <= 2 * 60 + 2 * 20, 'relayed ' + relayed); // each sender's burst, bounded
       const honks = b.msgs.filter((m) => m.t === 'm' && m.d?.t === 'honk').length;
       assert.equal(honks, 90, 'game messages after an rtc flood: ' + honks + '/90');
       for (const s of [a, b, c, x]) s.ws.close();

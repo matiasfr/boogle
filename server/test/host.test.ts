@@ -66,6 +66,19 @@ function connect(base: string, room: string, self: string, pid = self + 'pid', k
 const is = (t: string) => (m: Msg) => m.t === t;
 const isWorld = (t: string) => (m: Msg) => m.t === 'm' && m.d?.t === t;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+let beat = 0;
+// The room answers a heartbeat only after every earlier frame on that socket, and writes to each socket in order:
+// settling the senders, then the receivers, proves every relay those frames caused has arrived.
+async function settle(senders: ReturnType<typeof connect>[], receivers: ReturnType<typeof connect>[] = []) {
+  for (const group of [senders, receivers])
+    await Promise.all(
+      group.map((c) => {
+        const at = ++beat;
+        c.send({ t: 'hb', at });
+        return c.next((m) => m.t === 'hb' && m.at === at, 5000);
+      }),
+    );
+}
 
 test('a buy 3.21 m from the board is refused and spends nothing; 3.19 m (any height) is accepted once', async () => {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-b2-reach-'));
@@ -588,13 +601,14 @@ test('production railway relays bounded social cues without opening material or 
   }
 });
 
-test('production railway relays a bag of mushrooms, clean and bounded', async () => {
+test('production railway relays a bag of mushrooms clean, on the island and bounded; hostile frames never crash it', async () => {
   const { svc, base } = await start({ SERVER_ROOMS: '*' });
   try {
     const roomId = railwayRoomId('mush');
     const a = connect(base, roomId, 'aaa');
     const b = connect(base, roomId, 'bbb');
-    await Promise.all([a.next(is('list')), b.next(is('list'))]);
+    const c = connect(base, roomId, 'ccc');
+    await Promise.all([a.next(is('list')), b.next(is('list')), c.next(is('list'))]);
     const isMush = isWorld('mush');
     for (const s of [
       [], // nothing
@@ -607,31 +621,6 @@ test('production railway relays a bag of mushrooms, clean and bounded', async ()
     ])
       a.send({ t: 'm', d: { t: 'mush', s } });
     a.send({ t: 'm', d: { t: 'mush' } });
-    a.send({ t: 'm', d: { t: 'mush', s: [1.23, -4.56, 7, 8], material: { n: 8 } } });
-    assert.deepEqual(await b.next(isMush), { t: 'm', from: 'aaa', d: { t: 'mush', s: [1.2, -4.6, 7, 8] } });
-    await sleep(100);
-    assert.equal(b.msgs.filter(isMush).length, 1, 'only the well-formed bag was relayed');
-    assert.ok(!a.msgs.some(isMush), 'nothing echoes to the sender');
-    // A flood is cut at the room's message burst, like any other game message.
-    for (let i = 0; i < 300; i++) a.send({ t: 'm', d: { t: 'mush', s: [i % 50, 0] } });
-    await sleep(300);
-    const relayed = b.msgs.filter(isMush).length - 1;
-    assert.ok(relayed >= 90 && relayed <= 130, `relayed ${relayed} of 300`);
-    a.ws.close();
-    b.ws.close();
-  } finally {
-    await svc.close({ save: false });
-  }
-});
-
-test('review: hostile mush frames never crash the room and nothing relayed is off the island', async () => {
-  const { svc, base } = await start({ SERVER_ROOMS: '*' });
-  try {
-    const roomId = railwayRoomId('mush-hostile');
-    const a = connect(base, roomId, 'aaa');
-    const b = connect(base, roomId, 'bbb');
-    await Promise.all([a.next(is('list')), b.next(is('list'))]);
-    const isMush = isWorld('mush');
     // Raw frames JSON.stringify could not produce: Infinity, -0, huge exponents, prototype keys, array-likes.
     for (const raw of [
       '{"t":"m","d":{"t":"mush","s":[1e999,0]}}',
@@ -649,60 +638,29 @@ test('review: hostile mush frames never crash the room and nothing relayed is of
     ])
       a.ws.send(raw);
     a.ws.send('{"t":"m","d":{"t":"mush","s":[-0,3],"__proto__":{"evil":1},"constructor":{"x":1}}}');
-    const got = await b.next(isMush);
-    assert.deepEqual(JSON.parse(JSON.stringify(got.d)), { t: 'mush', s: [0, 3] }, 'only the clean copy is relayed');
+    a.send({ t: 'm', d: { t: 'mush', s: [1.23, -4.56, 7, 8], material: { n: 8 } } });
+    await settle([a], [a, b]);
+    assert.deepEqual(
+      JSON.parse(JSON.stringify(b.msgs.filter(isMush))),
+      [
+        { t: 'm', from: 'aaa', d: { t: 'mush', s: [0, 3] } },
+        { t: 'm', from: 'aaa', d: { t: 'mush', s: [1.2, -4.6, 7, 8] } },
+      ],
+      'only the clean copies of the well-formed bags are relayed',
+    );
+    assert.ok(!a.msgs.some(isMush), 'nothing echoes to the sender');
     // A value just under HALF passes the bound but rounds onto it: receivers (|v| < HALF) would reject the relay.
     a.send({ t: 'm', d: { t: 'mush', s: [HALF - 0.04, 0] } });
     a.send({ t: 'm', d: { t: 'mush', s: [-(HALF - 0.04), 0] } });
-    await sleep(150);
+    await settle([a], [b]);
     for (const m of b.msgs.filter(isMush))
       for (const v of m.d.s) assert.ok(Math.abs(v) < HALF, `relayed ${v} is off the island after rounding`);
-    // The room is still up for everyone.
-    a.send({ t: 'm', d: { t: 'mush', s: [5, 5] } });
-    await b.next((m) => isMush(m) && m.d.s[0] === 5);
-    a.ws.close();
-    b.ws.close();
-  } finally {
-    await svc.close({ save: false });
-  }
-});
-
-test('voice signals go only to the tab they name, bounded, and never into the world', async () => {
-  const { svc, base } = await start({ SERVER_ROOMS: '*' });
-  try {
-    const roomId = railwayRoomId('voice');
-    const a = connect(base, roomId, 'aaa');
-    const b = connect(base, roomId, 'bbb');
-    const c = connect(base, roomId, 'ccc');
-    await Promise.all([a.next(is('list')), b.next(is('list')), c.next(is('list'))]);
-    for (const s of [a, b, c]) s.send({ t: 'p', s: 1, d: { v: 1, t: 1, vc: 1 } }); // all three pressed Join voice
-    const heardFrom = (id: string) => (m: Msg) => m.t === 'p' && m.id === id;
-    await Promise.all([a.next(heardFrom('bbb')), a.next(heardFrom('ccc')), b.next(heardFrom('aaa'))]);
-    const isRtc = (m: Msg) => m.t === 'm' && m.d?.t === 'rtc';
-    a.send({ t: 'm', d: { t: 'rtc', to: 'nobody', k: 'bye', n: 1 } }); // no such tab
-    a.send({ t: 'm', d: { t: 'rtc', to: 'aaa', k: 'bye', n: 1 } }); // itself
-    a.send({ t: 'm', d: { t: 'rtc', to: 'bbb', k: 'offer', n: 1, sdp: 'x'.repeat(12001) } }); // oversized sdp
-    a.send({ t: 'm', d: { t: 'rtc', to: 'bbb', k: 'shout', n: 1 } }); // unknown kind
-    a.send({ t: 'm', d: { t: 'rtc', to: 'server', k: 'bye', n: 1 } });
-    a.send({ t: 'm', d: { t: 'rtc', to: 'bbb', k: 'offer', n: 2, sdp: 'v=0', w: { op: 'tune.set' } } });
-    assert.deepEqual(await b.next(isRtc), {
-      t: 'm',
-      from: 'aaa',
-      d: { t: 'rtc', to: 'bbb', k: 'offer', n: 2, sdp: 'v=0' },
-    });
-    // A flood is cut at the burst, and game messages still pass after it.
-    for (let i = 0; i < 200; i++)
-      a.send({
-        t: 'm',
-        d: { t: 'rtc', to: 'bbb', k: 'ice', n: 2, c: { candidate: 'c' + i, sdpMid: '0', sdpMLineIndex: 0 } },
-      });
-    a.send({ t: 'm', d: { t: 'honk', v: 1 } });
-    await b.next(isWorld('honk'));
-    await c.next(isWorld('honk'));
-    const got = b.msgs.filter(isRtc).length;
-    assert.ok(got > 40 && got <= 62, `relayed ${got}`);
-    assert.ok(!c.msgs.some(isRtc), 'the third tab heard none of it');
-    assert.ok(!a.msgs.some(isRtc), 'nothing echoes to the sender');
+    // A flood from a fresh tab is cut at the room's message burst, like any other game message.
+    const before = b.msgs.filter(isMush).length;
+    for (let i = 0; i < 300; i++) c.send({ t: 'm', d: { t: 'mush', s: [i % 50, 0] } });
+    await settle([c], [b]);
+    const relayed = b.msgs.filter(isMush).length - before;
+    assert.ok(relayed >= 90 && relayed <= 130, `relayed ${relayed} of 300`);
     a.ws.close();
     b.ws.close();
     c.ws.close();
