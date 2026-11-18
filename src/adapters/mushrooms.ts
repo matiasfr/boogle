@@ -1,27 +1,23 @@
-// Mushrooms in the game: the stand where you take a bag of seeds, and the short-lived bouncy mushrooms a bag sprouts.
+// Mushrooms in the game: the short-lived bouncy mushrooms a bag of seeds sprouts (the stall that hands out the bags is
+// src/adapters/mushroom-stall.ts).
 // Using the bag (src/player/hands.ts calls sprout) picks open spots ahead of you and sends them as a one-off room
 // message { t:'mush', s: [x, z, ...] }, validated and rate limited on receipt. Every tab then pops up its own mushrooms
 // for LIFE_MS: each is an entity with its mesh, and a second one for its collider while it is solid. Local after the
 // message: no shared state, nothing saved, and someone joining a moment later misses that cluster.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { HALF, REACH, SEA, PLAYER_R, HEAD_OFFSET, reducedMotion } from '../constants.ts';
+import { HALF, SEA, PLAYER_R, HEAD_OFFSET, reducedMotion } from '../constants.ts';
 import { groundHeight } from '../island/terrain.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
-import { obstacles } from '../entities/props/state.ts';
-import { groundMat, GROUP } from '../physics/physics.ts';
+import { GROUP } from '../physics/physics.ts';
 import { material, createBody, forEachContact } from '../physics/engine.ts';
 import { me } from '../player/state.ts';
 import { net, onRoomReady } from '../netplay/net.ts';
 import { waterField } from '../physics/water-field.ts';
 import { dropPoint } from '../physics/flight.ts';
 import { splash } from '../render/splash.ts';
-import { itemModel } from '../player/item-models.ts';
-import { take, heldId } from '../player/inventory.ts';
 import { createLimiter } from '../sim/social.ts';
 import type { Body } from '../physics/engine.ts';
-import type { Interactable } from '../player/hands.ts';
-import { NO_TARGETS } from '../sim/interact-pick.ts';
 
 /** One mushroom: its entity, and its collider's while it is solid. */
 type Shroom = {
@@ -53,7 +49,6 @@ const STEM_TOP_R = 0.32;
 const STEM_BASE_R = 0.42;
 const CAP_R = 1.9;
 const CAP_T = 0.35;
-export const STALL = { x: 15.2, z: 13.4, yaw: 3.0 };
 
 // ---------------------------------------------------------------- physics
 const mushroomMat = material('mushroom', { friction: 0.5, restitution: 1.73 }); // x ball: 0.3, 0.95
@@ -264,104 +259,4 @@ export function listenForSprouts() {
       for (let k = 0; k < s.length; k += 2) addShroom(s[k], s[k + 1]);
     });
   });
-}
-
-// ---------------------------------------------------------------- stall
-const wood = new THREE.MeshStandardMaterial({ color: '#b07a45', roughness: 0.9, flatShading: true });
-const woodDk = new THREE.MeshStandardMaterial({ color: '#7d5230', roughness: 0.9, flatShading: true });
-
-function stripedAwning() {
-  const c = document.createElement('canvas');
-  c.width = 128;
-  c.height = 8;
-  const g = c.getContext('2d')!;
-  for (let k = 0; k < 8; k++) {
-    g.fillStyle = k % 2 ? '#fffaf0' : '#e5483b';
-    g.fillRect(k * 16, 0, 16, 8);
-  }
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  return new THREE.MeshStandardMaterial({ map: t, roughness: 0.8, side: THREE.DoubleSide });
-}
-
-const stall = new THREE.Group();
-const pickup = { local: new THREE.Vector3(0, 1.2, 0), world: null as THREE.Vector3 | null };
-{
-  const box = (w: number, h: number, d: number, mat: THREE.Material, x: number, y: number, z: number) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-    m.position.set(x, y, z);
-    m.castShadow = m.receiveShadow = true;
-    stall.add(m);
-    return m;
-  };
-  box(2.8, 0.9, 0.9, wood, 0, 0.45, 0);
-  box(2.9, 0.08, 1.0, woodDk, 0, 0.92, 0);
-  for (const sx of [-1.35, 1.35]) box(0.12, 2.4, 0.12, woodDk, sx, 1.2, 0.35);
-  const awning = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 1.4), stripedAwning());
-  awning.position.set(0, 2.35, -0.05);
-  awning.rotation.x = -Math.PI / 2 + 0.45;
-  awning.castShadow = true;
-  stall.add(awning);
-  box(1.5, 0.3, 0.6, woodDk, 0, 1.11, 0);
-  for (let k = 0; k < 5; k++) {
-    const bag = itemModel('seeds');
-    bag.position.set(-0.56 + k * 0.28, 1.2, (k % 2) * 0.12 - 0.05);
-    stall.add(bag);
-  }
-
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.38), signMaterial());
-  sign.position.set(0, 1.95, -0.48);
-  sign.rotation.y = Math.PI;
-  stall.add(sign);
-}
-
-function signMaterial() {
-  const c = document.createElement('canvas');
-  c.width = 256;
-  c.height = 64;
-  const g = c.getContext('2d')!;
-  g.fillStyle = '#7d5230';
-  g.fillRect(0, 0, 256, 64);
-  g.fillStyle = '#fffaf0';
-  g.font = '400 36px "Lilita One", system-ui, sans-serif';
-  g.textAlign = 'center';
-  g.textBaseline = 'middle';
-  g.fillText('Mushroom seeds', 128, 34, 240);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  return new THREE.MeshStandardMaterial({ map: t, roughness: 0.9 });
-}
-
-defineKind('mushroom-stall', {}); // no methods: it just stands there
-export function createStall() {
-  const y = groundHeight(STALL.x, STALL.z) - 0.05;
-  stall.position.set(STALL.x, y, STALL.z);
-  stall.rotation.y = STALL.yaw;
-  const body = createBody({
-    material: groundMat,
-    group: GROUP.SCENERY,
-    position: { x: STALL.x, y, z: STALL.z },
-    rotation: { x: 0, y: Math.sin(STALL.yaw / 2), z: 0, w: Math.cos(STALL.yaw / 2) },
-    shapes: [{ kind: 'box', hx: 1.4, hy: 0.5, hz: 0.45, offset: { x: 0, y: 0.5, z: 0 } }],
-  });
-  spawn({ kind: 'mushroom-stall', mesh: stall, bodies: [body] });
-  stall.updateMatrixWorld(true);
-  pickup.world = stall.localToWorld(pickup.local.clone());
-
-  obstacles.push({ x: STALL.x, z: STALL.z, r: 1.5 });
-}
-
-// ---------------------------------------------------------------- the stand
-// What interacting at the stand can do (see interactTarget in src/player/hands.ts): take a bag, unless you carry one.
-export function stallTargets() {
-  const w = pickup.world;
-  if (!me.entered || !me.body || !w || heldId() === 'seeds') return NO_TARGETS;
-  const p = me.body.interpolatedPosition;
-  const dx = w.x - p.x,
-    dz = w.z - p.z;
-  if (dx * dx + dz * dz >= (REACH + 0.6) * (REACH + 0.6)) return NO_TARGETS;
-  const out: Interactable[] = [
-    { id: 'stall-seeds', verb: 'Take', at: w.clone().setY(w.y + 0.35), run: () => take('seeds') },
-  ];
-  return out;
 }

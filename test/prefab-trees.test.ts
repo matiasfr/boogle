@@ -25,6 +25,7 @@ import { treeColliderCase } from './helpers/tree-collider-case.ts';
 import { capturePoisAfter, sameTurns } from './helpers/poi-golden.ts';
 import { captureLookoutAfter } from './helpers/lookout-golden.ts';
 import { captureRingAfter } from './helpers/ring-island-golden.ts';
+import { captureStallAfter } from './helpers/mushroom-stall-golden.ts';
 import { prefabGolden } from './helpers/prefab-golden.ts';
 const { loadLevel } = await import('../dev/level/level.ts');
 
@@ -220,4 +221,12 @@ test('Ring Island pieces, poses, colliders, clearance and frames match the pre-r
     [table.params.w, table.params.d, table.params.legs],
     [RING_MAP_TABLE.w, RING_MAP_TABLE.d, +(RING_MAP_TABLE.top - (RING_HALT.y / 100 + 0.9)).toFixed(9)],
   );
+});
+
+// Step 13 (the mushroom stall): the fixture was captured on the pre-record code (captureStallBefore, in the commit
+// "Capture the mushroom stall world golden before the record conversion") and is never rewritten. Runtime values use the
+// shared tolerance.
+test('mushroom stall meshes, canvases, collider, footprint and Take target match the pre-record code', async () => {
+  const actual = JSON.parse(JSON.stringify(await captureStallAfter()));
+  prefabGolden(actual, JSON.parse(fs.readFileSync('test/fixtures/prefab-mushroom-stall.json', 'utf8')), 'stall');
 });

@@ -1175,6 +1175,46 @@
         "params": {}
       }
     },
+    "mushrooms.stall": {
+      "attach": {
+        "pickup": {
+          "at": [
+            0,
+            1.2,
+            0
+          ],
+          "kind": "point"
+        }
+      },
+      "colliders": [
+        {
+          "at": [
+            0,
+            0.5,
+            0
+          ],
+          "half": [
+            1.4,
+            0.5,
+            0.45
+          ],
+          "shape": "box"
+        }
+      ],
+      "footprint": 1.5,
+      "interactions": [
+        {
+          "action": "mushrooms.take-seeds",
+          "at": "pickup"
+        }
+      ],
+      "key": "mushrooms.stall",
+      "scope": "place",
+      "visual": {
+        "builder": "mushrooms.stall",
+        "params": {}
+      }
+    },
     "poi.fence-post": {
       "colliders": [],
       "key": "poi.fence-post",

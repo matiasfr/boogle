@@ -2,8 +2,8 @@
   "version": 7,
   "colliders": {
     "src/adapters/mushrooms.ts": {
-      "count": 9,
-      "exports": ["STALL", "bounceOffCaps", "createStall", "listenForSprouts", "spotsAhead", "sprout", "stallTargets"],
+      "count": 7,
+      "exports": ["bounceOffCaps", "listenForSprouts", "spotsAhead", "sprout"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/boogler/boogler.ts": {
@@ -811,7 +811,6 @@
   "legacy": {
     "src/adapters/mushrooms.ts#sprout": 1,
     "src/adapters/mushrooms.ts#listenForSprouts": 1,
-    "src/adapters/mushrooms.ts#createStall": 1,
     "src/boogler/boogler.ts#createBoogler": 1,
     "src/boogler/play.ts#loadTalk": 1,
     "src/boogler/play.ts#booglerTalk": 0,

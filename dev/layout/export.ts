@@ -113,6 +113,12 @@ const physics = fs.readFileSync(path.join(root, 'src/entities/player/state.ts'),
 const sp = physics.match(/me\.sprint \? ([\d.]+) : ([\d.]+)\) \* \(me\.swimming \? ([\d.]+)/);
 if (!sp) throw new Error('run speeds not found in src/entities/player/state.ts');
 
+// The mushroom stall stands where its level places it.
+const stallLevel = JSON.parse(fs.readFileSync(path.join(root, 'content/built/levels/mushrooms.json'), 'utf8')) as {
+  placements: { prefab: string; pos: [number, number, number] }[];
+};
+const stallAt = stallLevel.placements.find((p) => p.prefab === 'mushrooms.stall')!;
+
 const json = {
   version: 1,
   name: 'as-built',
@@ -125,7 +131,7 @@ const json = {
     spawn: SPAWN,
     ball: BALL_SPAWN,
     court: COURT,
-    stall: { x: 15.2, z: 13.4 }, // src/adapters/mushrooms.ts STALL
+    stall: { x: stallAt.pos[0], z: stallAt.pos[2] }, // content/levels/mushrooms.ts
   },
   route: ROUTE.map((r) => ({ age: r.age, x: r.x, z: r.z, to: [...r.to] })),
   ring: RING_R,
