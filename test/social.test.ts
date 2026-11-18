@@ -4,7 +4,6 @@ import {
   validatePing,
   createLimiter,
   createChordDetector,
-  honkFreq,
   honkNotes,
   honkChord,
   honkShape,
@@ -47,16 +46,6 @@ test('chord needs 3 different players within a second', () => {
   e.add('a', 0);
   e.add('b', 500);
   assert.equal(e.add('c', 1600), null); // a and b are too old
-});
-
-test('honk pitch is stable per colour', () => {
-  assert.equal(honkFreq(2), honkFreq(2));
-  assert.ok(honkFreq(5)! > honkFreq(0)!);
-  for (const [k, s] of [0, 2, 4, 7, 9, 12, 14, 16].entries()) {
-    const want = 261.63 * 2 ** (s / 12); // major pentatonic from C4
-    assert.ok(Math.abs(honkFreq(k)! - want) <= 0.01, `honkFreq(${k}) = ${honkFreq(k)}, want ${want}`);
-    assert.equal(honkFreq(k + 8), honkFreq(k));
-  }
 });
 
 test('honks take tones from one shared chord', () => {

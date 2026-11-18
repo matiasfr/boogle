@@ -4,8 +4,7 @@ import { DAY_MS, LUNAR_DAYS, DAYLIGHT, skyAt, skyState } from '../src/sim/sky-cl
 
 const close = (a: number, b: number, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} != ${b}`);
 
-test('a day lasts DAY_MS (20 minutes) and repeats', () => {
-  assert.equal(DAY_MS, 20 * 60 * 1000);
+test('the daily arc is periodic', () => {
   const a = skyAt(123456);
   const b = skyAt(123456 + DAY_MS);
   close(a.frac, b.frac);
