@@ -15,10 +15,86 @@ import {
 } from '../src/sim/railway-ring-layout.ts';
 import { CONCOURSE } from '../src/proto/greybox/ring-house.ts';
 import { line2World, line2Y } from '../src/entities/railway/line2-path.ts';
-import { createIslandGround, ISLAND_BED, ISLAND_FILL, ringUL } from '../src/entities/ring-island/ground.ts';
+import { createIslandGround, ISLAND_BED, ISLAND_FILL, LANDING, ringUL } from '../src/entities/ring-island/ground.ts';
+import { summitBridge } from '../src/entities/ring-island/path.ts';
 
 const centre = { x: FAR.x + ORIGIN.x, z: FAR.z + ORIGIN.z };
 const g = createIslandGround(RING_CONES, centre);
+const { a, b } = summitBridge(g);
+const span = Math.hypot(b.x - a.x, b.z - a.z);
+/** Under the deck's capped first 4 m and shoulders, or the landing before it (terrain-clean step 7). */
+function underFootbridge(x: number, z: number) {
+  const along = ((x - a.x) * (b.x - a.x) + (z - a.z) * (b.z - a.z)) / span;
+  const side = ((z - a.z) * (b.x - a.x) - (x - a.x) * (b.z - a.z)) / span;
+  return along >= -LANDING.length && along <= 4 && Math.abs(side) <= (along < 0 ? LANDING.half : 2);
+}
+
+test('the hillside beyond the capped shoulder still follows the original cone', () => {
+  const x = 1380,
+    z = -880;
+  const cut = g.cone(x, z) - g.islandH(x, z);
+  assert.ok(cut < 0.05, `3.415 m off the deck axis: ${cut.toFixed(3)} m cut`);
+});
+
+test('the stack cutting bank beyond the four metre cap retains its existing grade', () => {
+  const x = 1384,
+    z = -880;
+  const extraCut = g.stackCap(x, z) - g.islandH(x, z);
+  assert.ok(Math.abs(extraCut) < 0.05, `bank at (${x}, ${z}) cut a further ${extraCut.toFixed(3)} m`);
+});
+test('the patch has a wall under every step along the landing’s edges, up to the deck’s end', () => {
+  // Re-review of f5d8c3ec: where the landing's uphill edge meets the deck's footprint (d = 0), the wall's outer height is
+  // read on the footprint line, where the deck's cap wins, so the last half metre of the lip wall twists down to the cap
+  // and leaves a hole in the drawn ground and the collider.
+  const ux = (b.x - a.x) / span,
+    uz = (b.z - a.z) / span;
+  const { vertices: v, ground, landing } = g.patch,
+    tris = [...ground, ...landing];
+  const point = (k: number) => [v[k * 3]!, v[k * 3 + 1]!, v[k * 3 + 2]!] as const;
+  /** Whether (x, y, z) lies on one of the patch's triangles (within 0.1 mm). */
+  const covered = (x: number, y: number, z: number) => {
+    for (let t = 0; t < tris.length; t += 3) {
+      const [A, B, C] = [point(tris[t]!), point(tris[t + 1]!), point(tris[t + 2]!)];
+      const ab = [B[0] - A[0], B[1] - A[1], B[2] - A[2]],
+        ac = [C[0] - A[0], C[1] - A[1], C[2] - A[2]],
+        ap = [x - A[0], y - A[1], z - A[2]];
+      const n = [
+        ab[1]! * ac[2]! - ab[2]! * ac[1]!,
+        ab[2]! * ac[0]! - ab[0]! * ac[2]!,
+        ab[0]! * ac[1]! - ab[1]! * ac[0]!,
+      ];
+      const nl = Math.hypot(n[0]!, n[1]!, n[2]!);
+      if (nl < 1e-12 || Math.abs(ap[0]! * n[0]! + ap[1]! * n[1]! + ap[2]! * n[2]!) / nl > 1e-4) continue;
+      const dot = (p: number[], q: number[]) => p[0]! * q[0]! + p[1]! * q[1]! + p[2]! * q[2]!;
+      const d00 = dot(ab, ab),
+        d01 = dot(ab, ac),
+        d11 = dot(ac, ac),
+        d20 = dot(ap, ab),
+        d21 = dot(ap, ac),
+        den = d00 * d11 - d01 * d01;
+      const s = (d11 * d20 - d01 * d21) / den,
+        r = (d00 * d21 - d01 * d20) / den;
+      if (s >= -1e-6 && r >= -1e-6 && s + r <= 1 + 1e-6) return true;
+    }
+    return false;
+  };
+  const holes: string[] = [];
+  for (const side of [-1, 1])
+    for (let k = 1; k < 80; k++) {
+      const d = -LANDING.length + (LANDING.length * k) / 80,
+        at = (s: number) => ({ x: a.x + ux * d - uz * s, z: a.z + uz * d + ux * s });
+      const edge = at(side * LANDING.half),
+        inner = at(side * (LANDING.half - 1e-5)),
+        outer = at(side * (LANDING.half + 1e-5));
+      const hin = g.islandH(inner.x, inner.z),
+        hout = g.islandH(outer.x, outer.z);
+      if (Math.abs(hin - hout) < 0.005) continue;
+      if (!covered(edge.x, (hin + hout) / 2, edge.z))
+        holes.push(`${side > 0 ? '+' : '-'} ${d.toFixed(2)} m: ${(hout - hin).toFixed(3)} m`);
+    }
+  assert.deepEqual(holes, [], `open steps beside the landing (side, metres from a, step): ${holes.join('; ')}`);
+});
+
 /** ringHeight takes Place's local metres (x less ORIGIN.x). */
 const cones = (x: number, z: number) => ringHeight(x - ORIGIN.x, z - ORIGIN.z);
 const w = (u: number, lat: number) => {
@@ -28,6 +104,7 @@ const w = (u: number, lat: number) => {
 /** Off the fills: well clear of the halt's fill and the run-off bed's cutting, and of their embankments' reach, and
  * not in the stack line's cutting (the greybox route, leg 1 step 4: `stackCap` is under the cones only there). */
 const offFills = (x: number, z: number) =>
+  !underFootbridge(x, z) &&
   g.fillOut(x, z) > 25 &&
   g.bedOut(x, z) > 25 &&
   // within a cell either way, so no triangle the point lies on has a cut node
@@ -56,7 +133,7 @@ test('off the fills the ground is the cones within 5 cm, at every node and on th
         want = cones(x, z);
       if (!offFills(x, z) || !(want > ISLAND_BED)) continue;
       nodes++;
-      assert.ok(Math.abs(g.at(i, j) - want) <= 0.05, `node (${x}, ${z}): ${g.at(i, j)} against ${want}`);
+      assert.ok(Math.abs(g.islandH(x, z) - want) <= 0.05, `node (${x}, ${z}): ${g.islandH(x, z)} against ${want}`);
     }
   // Between nodes the triangles stand within 5 cm of a cone's surface wherever one cone's straight slope spans the
   // cell: far enough from its apex (15 m, 25 m per unit of slope: a 2 m triangle across a cone sags about slope / d) and from where another cone stands higher (the ridges, where a 2 m triangle
@@ -162,7 +239,8 @@ test('the cutting is at most 2 m deep and its banks stop short of the station ho
       if (u < bed.u0 / 100 || g.fillOut(x, z) === 0) continue;
       // The stack line's cutting (the greybox route) is deeper and wider than the run-off's notch: its own test, below.
       if (g.stackCap(x, z) < g.cone(x, z)) continue;
-      const cut = g.cone(x, z) - g.at(i, j);
+      if (underFootbridge(x, z)) continue;
+      const cut = g.cone(x, z) - g.islandH(x, z);
       if (cut > 1e-3) {
         deepest = Math.max(deepest, cut);
         reach = Math.min(reach, lat);

@@ -73,6 +73,14 @@ if (productionRailway && query.get('ring') !== 'greybox' && query.get('blockout'
     return ringIslandNear.keep || d < (near ? MOUNT.far : MOUNT.near);
   };
   const mount = (v: RingIslandView) => {
+    if (me.body) {
+      const exit = v.clearPosition(me.body.position);
+      if (exit) {
+        me.body.position.set(exit.x, exit.y, exit.z);
+        me.body.interpolatedPosition.set(exit.x, exit.y, exit.z);
+        me.body.velocity.set(0, 0, 0);
+      }
+    }
     near = spawn({ kind: 'ring-island-near', mesh: v.root, bodies: v.bodies, update: (ctx) => v.update(ctx) });
     ringIslandNear.mounted = true;
     // The near ground is the hills now, cuttings and all: Place's cones (no cuttings, nothing solid) stand down.
