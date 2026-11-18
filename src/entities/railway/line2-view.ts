@@ -67,6 +67,7 @@ import { createRailwayFarHead } from './far-head-view.ts';
 import { createRailwayBoiler } from './boiler-view.ts';
 import { createRailwayPier } from './pier-view.ts';
 import { createForgeFinish } from './forge-finish.ts';
+import type { RewardMark } from './stations.ts';
 import { furnaceMouthAtlas, furnaceMouthBox } from './furnace-mouth.ts';
 import { stockSign } from './stock-sign.ts';
 import { createCameraPullOut } from '../../render/camera-pull-out.ts';
@@ -1136,8 +1137,21 @@ export async function createRailwayLine2(
       forgeFrame.have.logs = forgeStage ? fg.used - F1 : fg.used;
       forgeFrame.drawStock({ logs: 0, rails: 0, stone: 0, beam: 0 });
       const pathOpen = line1Job(w, 2).completion === 1;
+      // The bill shows what it grants (forge-made rewards, step 2): the pack on the frame's bill, then the pack ready
+      // and the axe on the walls'. Once lit it shows only what still waits, and goes when both are claimed.
+      const marks: RewardMark[] = [];
+      if (fg.lit < 0 && fg.used < F1) marks.push({ kind: 'pack', ready: false });
+      else {
+        if (!stock.pack) marks.push({ kind: 'pack', ready: true });
+        if (!stock.axe) marks.push({ kind: 'axe', ready: fg.lit >= 0 });
+      }
       // railPhase is not cheap: asked only when the other two conditions hold.
-      forgeFrame.setTag(pathOpen && fg.lit < 0 && railPhase(w, tick, tick) === 'done');
+      forgeFrame.setTag(
+        (pathOpen && fg.lit < 0 && railPhase(w, tick, tick) === 'done') || (fg.lit >= 0 && marks.length > 0),
+        undefined,
+        marks,
+        fg.lit < 0,
+      );
       // The machine crosses once the forge is lit.
       const now = working();
       if (now && !wasWorking) {
