@@ -41,6 +41,7 @@ import { legKitLoad } from '../src/sim/railway-sys-route-kit.ts';
 import { townHas, townRead } from '../src/sim/town-facts.ts';
 import { railwayAtWorks } from '../src/sim/railway-seed-works.ts';
 import { railwayAtRing } from '../src/sim/railway-seed-ring.ts';
+import golden from './fixtures/railway-golden.json' with { type: 'json' };
 
 // Keep accepted fixture construction outside the individual unit-test budget, as golden shards do. yard-wagon and
 // yard-deck are built here as buildSeedWorld builds them (src/sim/railway-seeds.ts), on one yard-built world instead of
@@ -72,6 +73,13 @@ function buyYard(s: Seed) {
   b.poured += cost;
   assert.equal(act(s, 'a', 'rail.buy', { id: 1 }), 1);
 }
+
+// YARD and DECK are derived here from one yard-built world, to build it once. This ties them to the seeds: if
+// buildSeedWorld's recipe for either stage changes, the hash recorded in the golden for that stage no longer matches.
+test('the derived yard fixtures are the yard-wagon and yard-deck seeds the golden records', () => {
+  assert.equal(YARD.w.hash(), golden.stages['yard-wagon'].stage, 'yard-wagon');
+  assert.equal(DECK.w.hash(), golden.stages['yard-deck'].stage, 'yard-deck');
+});
 
 test('L1: yard completion needs the wagon; yard first adds no neighbours, demand or fares', () => {
   const s = buildSeedWorld('fares-running');

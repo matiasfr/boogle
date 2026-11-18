@@ -328,8 +328,8 @@ Command per cell: `node --import ./test/helpers/rail-no-audit.ts test/spacing/pr
   All 277 hashes change with initial shed rows. Four call results change: aboard slots 2/3 cannot ask from the shed,
   and two repeated outbound calls remain pending under the slower single-train schedule. Other results and labels
   are unchanged.
-- `railway-tick-order.json` and `railway-tick-order-heads.json`:
-  `TICK_ORDER=1 TICK_ORDER_HEADS=1 node --import ./test/helpers/rail-no-audit.ts --test test/railway-tick-order.test.ts`.
+- `railway-tick-order-heads.json` (`railway-tick-order.json` and `TICK_ORDER=1` were retired in the test cleanup of 18 November 2026; only the heads fixture is recorded now):
+  `TICK_ORDER_HEADS=1 node --import ./test/helpers/rail-no-audit.ts --test test/railway-tick-order.test.ts`.
   Only hashes and five/nine later seed start ticks change; system ordering is unchanged.
 - `railway-m12-trace.json`: `M12_RECORD=1 node --import ./test/helpers/rail-no-audit.ts --test test/railway-m12.test.ts`.
   The existing two-player, refill, reconnect and late-join scripts now record the new fleet rows and slower schedules.

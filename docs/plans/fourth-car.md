@@ -100,7 +100,7 @@ question. Cars stay 3.2 m at a 3.7 m pitch; nothing here goes through a gate it 
 a saved train standing at the Village has `from` 1700 and the load check wants `st[0]` (`railway-trains.ts:546`), and
 both moved constants move the pinned fixtures (rule 14). Fixtures regenerated: `test/fixtures/railway-golden.json`
 (every stage: an idle line 2 row holds the stop), `railway-ops-golden.json`, `railway-m12-trace.json`,
-`railway-tick-order.json` and `-heads.json` if they move, and the rail map (`dev/level/rail-map.ts`). Mixed builds: dev
+`railway-tick-order-heads.json` if it moves (`railway-tick-order.json` and `TICK_ORDER=1` were retired in the test cleanup of 18 November 2026; only the heads fixture is recorded now), and the rail map (`dev/level/rail-map.ts`). Mixed builds: dev
 phase, no fence; a v32 tab is in another namespace.
 
 ### Where train length is assumed, and what changes
