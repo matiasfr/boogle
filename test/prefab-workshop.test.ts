@@ -225,6 +225,8 @@ export function captureWorkshop(positions: readonly (readonly [number, number, n
 }
 test('opening the workshop leaves a player resting on its foundation at the upper tread', () => {
   assert.deepEqual(captureWorkshop([[-5.65, PLAYER_R, 0]]).exits, []);
+  assert.deepEqual(captureWorkshop([[-5.65, PLAYER_R - 0.005, 0]]).exits, []);
+  assert.equal(captureWorkshop([[-5, PLAYER_R, 3]]).exits.length, 1);
 });
 test('leaving the west entrance sideways restores the workshop exterior', () => {
   const { cutaway, exits } = captureWorkshop([

@@ -34,6 +34,8 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
   const floor = y + 0.5,
     high = 4.6;
   const door = WORKSHOP_DOOR;
+  // Rapier allows 5 mm of penetration; leave room for settling after the 0.2 m drop onto a tread.
+  const contactTolerance = 0.02;
   const g = new THREE.Group();
   g.position.set(x, floor, z);
   g.visible = false;
@@ -157,7 +159,7 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
               ],
               outOf,
               undefined,
-              1e-6,
+              contactTolerance,
             );
           if (exit && me.body) {
             teleport(me.body, exit.x, H(exit.x, exit.z) + PLAYER_R + 0.2, exit.z);
