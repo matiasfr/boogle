@@ -1,7 +1,7 @@
 // The railhead and the gap (docs/plans/ring-island-build1.md, R4b), live from accepted state: once Q7 is laid, line 2
 // runs on from the pier head over bents 7-13. Each footing the jib sets drops into one of the next bent's two sockets;
 // the second stands the bent up, the prefabricated span (planks, stringers, both tracks' rails, the side walkway) comes
-// down on its caps, and the railhead platform, rack, jib and buffers slide out along it in about 3 s. The platform's 25 m
+// down on its caps, and the railhead car carries its riders, rack, jib and buffers along it. The platform's 25 m
 // stay behind as the side walkway (RING_WALK), so a player on it is never left over the sea; the rack's and the jib's
 // prompts wait for the slide. Beyond the railhead the gap reads as unbuilt: the deck ends on a striped beam, stakes
 // mark the bents to come and the next bent's two sockets glow. With bent 13 come the hook pile and its gold pad, the
@@ -16,12 +16,15 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
 import { remotes } from '../../netplay/net.ts';
-import { clank, thump } from '../../render/machine-sfx.ts';
+import { bell, chuff, clank, thump } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { splash } from '../../render/splash.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
 import { dustRing } from '../../render/particle-effects.ts';
 import { SEA, reducedMotion } from '../../constants.ts';
+import { HAUL, haulPhase, haulSettled, haulTarget, haulTravel } from '../../sim/railway-ring-haul.ts';
+import { driveDeck, railheadDrawn, railheadEnd, type RailheadDeck } from './railhead-state.ts';
+import { outOf } from '../../place/sites.ts';
 import { H, slab } from '../../place/land.ts';
 import { OFFSET_LAT } from '../../place/layout.ts';
 import { CROSSING_FOOT_OFF, WORKS } from '../../sim/railway-works-layout.ts';
@@ -46,8 +49,8 @@ import {
   crossoverSpan,
   headOf,
   headU,
-  slide,
   spanFrom,
+  spansDue,
   spanTo,
   walkwaySpan,
 } from './railhead-shape.ts';
@@ -87,6 +90,16 @@ const RACK_PITCH = 1.3,
   BEARER = 0.16;
 const MAST = 9,
   ARM = [8.5, 7.5] as const;
+/** The traveller (step 5, the plan's design note): bogies (m in from the platform's back end), wheel radius, the winch
+ * slung on the platform's front face below its top (off the walking surface, clear of the jib's working spot), the
+ * bollard its line runs to, and how high the jib folds (rad over level). */
+const BOGIES = [2, 8, PLATFORM.len - 8, PLATFORM.len - 2],
+  WHEEL_R = 0.42,
+  WINCH = { back: -0.14, lat: SIDE.lat0 + 0.5, drop: 0.4 },
+  BOLLARD = { back: 0.3, lat: 1.5 },
+  FOLD = 1.25,
+  /** Rule ticks behind the clock past which a traveller cue is skipped (stepRig). */
+  LATE = 2.5;
 
 type Piece = {
   /** -1: the walkway's first stretch (shown with the railhead); j: bent j's span and what stands on it. */
@@ -108,7 +121,7 @@ type Lowering = { slot: number; from: THREE.Vector3; t: number };
 export function createRailwayRailhead(
   adapter: RailwayAdapter,
   owner: OwnedView,
-  deps: { toRing: () => number; hookRing: (on: boolean) => void },
+  deps: { deck: RailheadDeck; toRing: () => number; hookRing: (on: boolean) => void },
 ) {
   const P = { x: 0, z: 0, ux: 0, uz: 1 },
     q = { x: 0, z: 0 },
@@ -171,6 +184,15 @@ export function createRailwayRailhead(
   }
   const sideMid = (SIDE.lat0 + SIDE.lat1) / 2,
     sideW = SIDE.lat1 - SIDE.lat0;
+  let ruleClock = -1;
+  deps.deck.drive(() => {
+    ruleClock = driveDeck(deps.deck, adapter.read, ruleClock, outOf);
+  });
+  /** The traveller's bollard at a span's end `u` (step 5): an iron post and cap just off the platform's track side. */
+  function bollard(group: number, u: number) {
+    put(group, u - BOLLARD.back, BOLLARD.lat, 0.34, 0.26, 0.6, 0.26, COLOURS.iron);
+    put(group, u - BOLLARD.back, BOLLARD.lat, 0.68, 0.38, 0.08, 0.38, COLOURS.black);
+  }
   /** The side walkway from `u0` to `u1`: planks, bearers out from the deck's edge, piles at its outer edge. */
   function walkway(group: number, u0: number, u1: number) {
     for (let u = u0; u < u1 - 1e-6; u++) put(group, u + 0.5, sideMid, -0.02, sideW, 0.12, 0.84, COLOURS.walk);
@@ -184,6 +206,7 @@ export function createRailwayRailhead(
     }
   }
   walkway(-1, walkwaySpan(0)[0], spanFrom(0));
+  bollard(-1, spanFrom(0));
   for (let j = 0; j < BENTS; j++) {
     const a = spanFrom(j),
       b = spanTo(j);
@@ -191,6 +214,7 @@ export function createRailwayRailhead(
       put(j, u + 0.5, DECK.mid, -0.02, DECK.lat1 - DECK.lat0, 0.12, 0.84, COLOURS.plank);
     for (const lat of [-5, -3, -1, 1]) put(j, (a + b) / 2, lat, -0.42, 0.8, 0.5, b - a + 0.1, COLOURS.stringer);
     walkway(j, a, b);
+    bollard(j, b);
   }
   // The joint's west platform and its plank crossing, with bent 13 (group 6): lat -9.6 to -5.8, u 235-260, 0.9 m up on
   // bearers and piles; the crossing is a strip of boards over both tracks at u 240.
@@ -295,8 +319,15 @@ export function createRailwayRailhead(
   };
   const inSea = () => Math.max(0, started - lowering.length);
   const simHead = () => headOf(set);
-  /** The kit is where the sim has it: the railhead has caught up with the bents and nothing is sliding. */
-  const settled = () => stood() === simHead() && Math.abs(shownU - headU(stood())) < 0.05;
+  /** The haul is over on the game clock every tab shares (the row's `moved` and `from`), not this tab's animation. */
+  const settled = () => opened && ruleClock >= 0 && haulSettled(aperture(wd), ruleClock);
+  /** The deck as drawn, for this view and the Railhead lever (halts-view.ts reads `railheadEnd`). */
+  function drawn() {
+    railheadDrawn.live = ruleClock >= 0;
+    railheadDrawn.u = railheadDrawn.live ? railheadEnd() : headU(0);
+    railheadDrawn.settled = !opened || settled();
+    return railheadDrawn.u;
+  }
 
   // ---------------------------------------------------------------- the rack's tag
   // An empty rack with work still owed says where its next load is (gap-readability, step 7; 55 s idle at an empty
@@ -381,13 +412,6 @@ export function createRailwayRailhead(
       const body = slab(pile.x, pile.z - 0.01, pile.x, pile.z + 0.01, pileTop + 0.3, pileTop + 0.3, 1.8, owner, 0.8);
       return body;
     });
-    // The platform stands as a solid only while it is where the sim has it; moving, it is a picture, and whoever is on
-    // it drops to the walkway under it (its 25 m are inside the walkway: platformSpan <= walkwaySpan).
-    const k = stood();
-    const key = `plat${k}`;
-    for (const have of [...bodies.keys()])
-      if (have.startsWith('plat') && have !== key) wantSolid(have, false, () => null as never);
-    wantSolid(key, baseOn && settled(), () => strip(shownU - PLATFORM.len, shownU, sideMid, sideW, PLATFORM.up + 0.08));
   }
 
   // ---------------------------------------------------------------- drawing
@@ -646,20 +670,188 @@ export function createRailwayRailhead(
     live.box(jibFoot.x, jibFoot.y + MAST / 2, jibFoot.z, 0.35, MAST, 0.35, COLOURS.iron);
     live.box(jibFoot.x, jibFoot.y + 0.15, jibFoot.z, 1.6, 0.3, 1.6, COLOURS.iron);
     const top = new THREE.Vector3(jibFoot.x, jibFoot.y + ARM[0], jibFoot.z);
-    const dx = jibHead.x - top.x,
-      dz = jibHead.z - top.z,
-      run = Math.hypot(dx, dz);
-    live.box(
-      (top.x + jibHead.x) / 2,
-      (top.y + jibHead.y) / 2,
-      (top.z + jibHead.z) / 2,
-      0.25,
-      0.25,
-      Math.hypot(run, jibHead.y - top.y),
-      COLOURS.stake,
-      Math.atan2(dx, dz),
-      -Math.atan2(jibHead.y - top.y, run),
+    // Folded up toward the mast while the traveller moves (rig.fold), out over the gap at rest.
+    const ox = jibHead.x - top.x,
+      oz = jibHead.z - top.z,
+      out = Math.hypot(ox, oz),
+      arm = Math.hypot(out, jibHead.y - top.y);
+    const lift = Math.atan2(jibHead.y - top.y, out),
+      e = lift + (FOLD - lift) * rig.fold;
+    const head = p.set(
+      top.x + (ox / out) * arm * Math.cos(e),
+      top.y + arm * Math.sin(e),
+      top.z + (oz / out) * arm * Math.cos(e),
     );
+    bar(top.x, top.y, top.z, head.x, head.y, head.z, 0.25, COLOURS.stake);
+  }
+  // ---------------------------------------------------------------- the traveller (step 5)
+  // Everything here follows `haulPhase` on the shared rule clock, so every tab shows the same part at the same moment.
+  const rig = {
+    lift: 0,
+    fold: 0,
+    line: false,
+    taut: 0,
+    lamps: false,
+    swing: 0,
+    flare: 0,
+    from: headU(0),
+    to: headU(0),
+  };
+  let cuePair = -1,
+    seen = -Infinity;
+  const ramp = (x: number, a: number, b: number) => Math.min(1, Math.max(0, (x - a) / (b - a)));
+  const smooth = (k: number) => k * k * (3 - 2 * k);
+  function stepRig() {
+    const a = aperture(wd);
+    const live = opened && a.moved >= 0 && ruleClock >= 0;
+    const p = live ? haulPhase(a, ruleClock) : Infinity;
+    const end = HAUL.ready + Math.ceil(haulTravel(haulTarget(a) - a.from)),
+      done = end + HAUL.settle,
+      on = p >= 0 && p < done;
+    rig.from = a.moved >= 0 ? a.from / 100 : headU(0);
+    rig.to = haulTarget(a) / 100;
+    rig.lift = on ? Math.min(ramp(p, 0, 3), 1 - ramp(p, end, end + 3)) : 0;
+    rig.fold = on ? smooth(Math.min(ramp(p, 0, 8), 1 - ramp(p, end, end + 8))) : 0;
+    rig.line = on;
+    rig.taut = ramp(p, 0, HAUL.ready);
+    // Reduced motion: the lamps burn steady and the bell hangs still; every sound and the mechanism stay.
+    rig.lamps = on && (reducedMotion || Math.floor(clock * 4) % 2 === 0);
+    rig.swing = on && !reducedMotion && p < HAUL.ready ? Math.sin(p * 2.4) * 0.6 * (1 - p / HAUL.ready) : 0;
+    rig.flare = p >= end && p < end + 6 ? 1 - (p - end) / 6 : 0;
+    if (!live) return;
+    // Cues more than 0.2 s behind the clock are skipped, whenever the clock gets there: a pair first seen late (a join,
+    // a reload, a backed-up peer) or a forward jump (a tab back from the background, a pause, a stall). At most the
+    // current phase's state is shown, with no backlog of sounds; a clock that steps back repeats nothing. The window is
+    // LATE ticks, not 2: leanClock's catch-up (at most 0.02 ticks a step) moves a 200 ms frame up to 2.24 ticks, and a
+    // real jump is a snap of more than 3, so anything between those two tells a slow frame from a missed stretch.
+    if (a.set >> 1 !== cuePair) {
+      cuePair = a.set >> 1;
+      seen = -Infinity;
+    }
+    seen = Math.max(seen, p - LATE);
+    if (p <= seen) return;
+    const passed = (x: number) => seen < x && x <= p;
+    const at = (back: number, lat: number) => (world(shownU - back, lat), q);
+    const w = at(WINCH.back, WINCH.lat);
+    const wx = w.x,
+      wz = w.z;
+    if (passed(0)) {
+      bell(wx, wz);
+      clank(wx, wz);
+    }
+    if (passed(HAUL.ready)) {
+      chuff(wx, wz, 1);
+      for (const off of BOGIES) {
+        const b = at(PLATFORM.len - off, sideMid);
+        dustRing(b.x, yAt(shownU - PLATFORM.len + off) + 0.1, b.z, 5, 1, 0.2);
+      }
+    }
+    for (let x = HAUL.ready + 8; x < end; x += 8) if (passed(x)) chuff(wx, wz, 0.4);
+    if (passed(end + 3))
+      for (const off of [BOGIES[0]!, BOGIES[3]!]) {
+        const b = at(PLATFORM.len - off, sideMid);
+        thump(b.x, b.z);
+        dustRing(b.x, yAt(shownU - PLATFORM.len + off) + 0.1, b.z, 6, 1.2, 0.2);
+      }
+    if (passed(done)) bell(wx, wz);
+    seen = p;
+  }
+  function drawTraveller(u: number) {
+    const u0 = u - PLATFORM.len;
+    // Bogies: a side frame and two turning wheels on each long face, a chock at the front wheel.
+    const turn = (u - headU(0)) / WHEEL_R;
+    for (const off of BOGIES) {
+      const ub = u0 + off,
+        ya = yawAt(ub),
+        pa = pitchAt(ub),
+        y = yAt(ub) + 0.04 + WHEEL_R;
+      for (const [lat, out] of [
+        [SIDE.lat1 + 0.06, 1],
+        [SIDE.lat0 - 0.06, -1],
+      ] as const) {
+        world(ub, lat + out * 0.04);
+        live.box(q.x, y, q.z, 0.06, 0.18, 1.9, COLOURS.iron, ya, pa);
+        for (const du of [-0.62, 0.62]) {
+          world(ub + du, lat + out * 0.03);
+          live.box(q.x, y, q.z, 0.05, WHEEL_R * 1.5, WHEEL_R * 1.5, COLOURS.rail, ya, turn + Math.PI / 4);
+          live.box(q.x, y, q.z, 0.08, WHEEL_R * 2, 0.12, COLOURS.black, ya, turn);
+          live.box(q.x, y, q.z, 0.08, WHEEL_R * 2, 0.12, COLOURS.black, ya, turn + Math.PI / 2);
+        }
+        world(ub + 0.6 + WHEEL_R + 0.14, lat + out * (0.16 - 0.14 * rig.lift));
+        live.box(q.x, yAt(ub) + 0.16 + rig.lift * 0.5, q.z, 0.2, 0.24, 0.26, COLOURS.stake, ya, pa);
+      }
+    }
+    // The winch, slung on the front face below the deck's top (no part over 0.3 m): two cheeks and a drum that turns
+    // with the line taken in.
+    const uw = u - WINCH.back,
+      yw = platY(uw) - WINCH.drop,
+      yaw = yawAt(uw);
+    for (const d of [-0.16, 0.16]) {
+      world(uw, WINCH.lat + d);
+      live.box(q.x, yw, q.z, 0.04, 0.3, 0.26, COLOURS.iron, yaw);
+    }
+    world(uw, WINCH.lat);
+    const wx = q.x,
+      wz = q.z,
+      drum = (u - rig.from) / 0.11;
+    live.box(wx, yw, wz, 0.28, 0.2, 0.2, COLOURS.cap, yaw, drum);
+    live.box(wx, yw, wz, 0.28, 0.2, 0.2, COLOURS.cap, yaw, drum + Math.PI / 4);
+    // The haul line: from the drum to the bollard at the new span's end, its slack taken up over the told second.
+    if (rig.line) {
+      world(rig.to - BOLLARD.back, BOLLARD.lat);
+      const bx = q.x,
+        by = yAt(rig.to - BOLLARD.back) + 0.66,
+        bz = q.z,
+        sx = wx,
+        sy = yw + 0.1,
+        sz = wz;
+      const sag = (1 - rig.taut) * Math.min(1.2, Math.hypot(bx - sx, bz - sz) * 0.08);
+      const mx = (sx + bx) / 2,
+        my = (sy + by) / 2 - sag,
+        mz = (sz + bz) / 2;
+      bar(sx, sy, sz, mx, my, mz, 0.05, COLOURS.rope);
+      bar(mx, my, mz, bx, by, bz, 0.05, COLOURS.rope);
+    }
+    if (rig.flare > 0) {
+      const s = 0.3 + 0.25 * rig.flare;
+      live.box(wx, yw, wz, s, s, s, COLOURS.glow, yaw);
+    }
+    // Amber lamps on the front corners: blinking while it moves (steady with reduced motion), dark at rest.
+    for (const lat of [SIDE.lat0 + 0.15, SIDE.lat1 - 0.15]) {
+      world(u - 0.25, lat);
+      const yl = platY(u - 0.25) + 0.04;
+      live.box(q.x, yl + 0.45, q.z, 0.08, 0.9, 0.08, COLOURS.iron, yaw);
+      live.box(q.x, yl + 0.98, q.z, 0.22, 0.2, 0.22, rig.lamps ? COLOURS.glow : COLOURS.cap, yaw);
+    }
+    // The bell on a bracket off the jib mast, swinging for the told second.
+    world(u - JIB_BACK, 4.1);
+    const py = jibFoot.y + 2.6;
+    live.box((q.x + jibFoot.x) / 2, py, (q.z + jibFoot.z) / 2, 0.08, 0.08, 0.5, COLOURS.iron, yaw + Math.PI / 2);
+    // A bell's flare from four stacked boxes (crown, shoulder, waist, lip), swinging together about the bracket.
+    for (const [down, w, h] of [
+      [0.05, 0.08, 0.06],
+      [0.13, 0.16, 0.1],
+      [0.23, 0.22, 0.1],
+      [0.31, 0.32, 0.06],
+    ] as const) {
+      const fwd = Math.sin(rig.swing) * down;
+      live.box(
+        q.x + Math.sin(yaw) * fwd,
+        py - Math.cos(rig.swing) * down,
+        q.z + Math.cos(yaw) * fwd,
+        w,
+        h,
+        w,
+        COLOURS.gold,
+        yaw,
+        rig.swing,
+      );
+    }
+    // Guys from the mast's top to the platform's back corners.
+    for (const lat of [SIDE.lat0 + 0.2, SIDE.lat1 - 0.2]) {
+      world(u0 + 0.3, lat);
+      bar(jibFoot.x, jibFoot.y + MAST, jibFoot.z, q.x, platY(u0 + 0.3) + 0.1, q.z, 0.04, COLOURS.rope);
+    }
   }
   /** Which way is forward (gap-readability, section 4): the glide is the crossing and cloth means glide. A take-off
    * board juts 2 m off the platform's end toward the folk's brace platform, through a gap in an end rail; a windsock
@@ -793,6 +985,7 @@ export function createRailwayRailhead(
       drawEnd(shownU, joined && k === BENTS);
       drawPlatform(shownU);
       drawKit();
+      drawTraveller(shownU);
       drawGap(Math.min(k, BENTS - 1));
       if (k === BENTS) {
         // The take-off rail along the platform's last 5 m and the gold land pad (RING_HOOK.pad), on the sea edge.
@@ -848,7 +1041,7 @@ export function createRailwayRailhead(
       decked[j] = j < pairs;
     }
     baseOn = opened;
-    shownU = headU(pairs);
+    shownU = drawn();
     for (const pc of pieces) pc.born = -Infinity;
     for (const key of [...bodies.keys()]) wantSolid(key, false, () => null as never);
     placeJib();
@@ -896,6 +1089,16 @@ export function createRailwayRailhead(
           placeSound('shoulder', bentAt[j]!.x, bentAt[j]!.z);
         }
       }
+      // From `moved + after` the haul's spans are drawn, snapped if this tab's animation is behind the game clock.
+      const due = ruleClock < 0 ? 0 : spansDue(aperture(wd), ruleClock);
+      for (let j = 0; j < due; j++) {
+        if (rise[j]! < RISE_S) rise[j] = RISE_S;
+        if (decked[j]) continue;
+        decked[j] = true;
+        changed = true;
+        for (const pc of pieces) if (pc.group === j) pc.born = -Infinity;
+      }
+      for (let i = lowering.length - 1; i >= 0; i--) if (lowering[i]!.slot >> 1 < due) lowering.splice(i, 1);
       if (baseOn !== opened) {
         baseOn = opened;
         changed = true;
@@ -904,8 +1107,8 @@ export function createRailwayRailhead(
         animating = DROP_S + 1.2;
         solids();
       }
-      const goal = headU(stood());
-      shownU = slide(shownU, goal, dt);
+      shownU = drawn();
+      stepRig();
       placeJib();
       if (animating > 0) {
         animating -= dt;
@@ -992,6 +1195,7 @@ export function createRailwayRailhead(
         decked: decked.filter(Boolean).length,
         shownU,
         settled: settled(),
+        traveller: { lift: rig.lift, fold: rig.fold, line: rig.line, lamps: rig.lamps, flare: rig.flare },
         rackTag: tagOn ? RACK_TAG : null,
         lowering: lowering.length,
         inSea: inSea(),

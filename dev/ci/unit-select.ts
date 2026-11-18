@@ -66,6 +66,10 @@ export const UNFOLLOWED: Record<string, { reaches: readonly string[]; why: strin
     reaches: ['src/pois/'],
     why: 'the level loader imports discovered site files in folder order',
   },
+  'test/railway-r4b-views.test.ts: import': {
+    reaches: ['src/entities/railway/', 'src/sim/', 'src/render/', 'src/place/', 'src/physics/', 'src/constants.ts'],
+    why: "builds railhead-view.ts from its source (the traveller's cue tests), importing each of its non-browser imports by the path the view names",
+  },
   'test/meadow-on.test.ts: import': {
     reaches: ['src/place/meadow-flags.ts'],
     why: 'evaluates the flags module again under a query string, once for each address it must read; the same file is also imported plainly',

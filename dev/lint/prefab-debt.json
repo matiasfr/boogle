@@ -861,7 +861,7 @@
     "src/entities/railway/sources.ts#createRailwaySources": 1,
     "src/entities/railway/stations.ts#buildStation": 2,
     "src/entities/railway/tools.ts#createRailwayTools": 1,
-    "src/entities/railway/track-machine.ts#buildMachine": 3,
+    "src/entities/railway/track-machine.ts#buildMachine": 2,
     "src/entities/railway/track.ts#buildTrack": 3,
     "src/entities/railway/train-load.ts#solidTrainLoad": 1,
     "src/entities/railway/train-view.ts#createRailwayTrains": 1,

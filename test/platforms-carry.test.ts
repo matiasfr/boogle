@@ -5,7 +5,15 @@
 import '../dev/sim/hooks.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PLAYER_R } from '../src/constants.ts';
+import { FIXED, PLAYER_R } from '../src/constants.ts';
+const { createOwnedView } = await import('../src/render/owned-view.ts');
+const { createRailheadDeck, deckU, placeDeck } = await import('../src/entities/railway/railhead-state.ts');
+const { haulU } = await import('../src/sim/railway-ring-haul.ts');
+const physics = await import('../src/physics/engine.ts');
+const { makePlayerBody } = await import('../src/physics/physics.ts');
+const { fromPlatform, toPlatform } = await import('../src/physics/platforms.ts');
+const { me: player } = await import('../src/player/state.ts');
+const { steerPlayer, shapeJump, groundPlayer, softWall } = await import('../src/entities/player/state.ts');
 import { carry, carryStep, CARRY, registerPlatform, type Platform } from '../src/physics/platforms.ts';
 import type { Body } from '../src/physics/engine.ts';
 
@@ -30,6 +38,283 @@ const deck = (id: string, x: number, z: number, hx: number, hz: number): Platfor
 });
 const riderAt = (x: number, z: number) => body(x, 1 + PLAYER_R, z);
 const me = { coyote: 0.1, swimming: false };
+
+let driveRider = false;
+physics.onPreStep(
+  () => {
+    if (driveRider) shapeJump();
+  },
+  { order: 30 },
+);
+physics.onPostStep(() => {
+  if (driveRider) groundPlayer();
+});
+physics.onPreStep(
+  () => {
+    if (driveRider) steerPlayer();
+  },
+  { order: 40 },
+);
+async function traveller() {
+  await physics.physicsReady;
+  const wall = softWall.at;
+  softWall.at = Infinity;
+  const owner = createOwnedView();
+  let goal = 120,
+    opening = true;
+  const deck = createRailheadDeck(owner),
+    { car } = deck;
+  deck.drive(() => {
+    placeDeck(deck, goal, opening, player.body, player.coyote, () => {
+      throw Error('unexpected initial overlap');
+    });
+    opening = false;
+  });
+  const rider = makePlayerBody(false);
+  owner.addBody(rider);
+  const point = (z: number, y: number, drawn = false) =>
+    fromPlatform(car.platform, { x: 0, y, z, yaw: 0 }, drawn, { x: 0, y: 0, z: 0, yaw: 0 });
+  return {
+    car,
+    rider,
+    point,
+    goal(u: number) {
+      goal = u;
+    },
+    board(z = 0, down = 0) {
+      const pos = point(z, car.platform.topAt!(0, z, 0) + PLAYER_R - down);
+      physics.teleport(rider, pos.x, pos.y, pos.z);
+      rider.velocity.set(0, 0, 0);
+      player.body = rider;
+      player.coyote = 0.1;
+      driveRider = true;
+    },
+    close() {
+      driveRider = false;
+      softWall.at = wall;
+      player.body = null;
+      carry.x = carry.y = carry.z = 0;
+      owner.dispose();
+    },
+    local() {
+      return toPlatform(car.platform, rider.position, 0, { x: 0, y: 0, z: 0, yaw: 0 });
+    },
+  };
+}
+test('a rider keeps their place within 1 mm for the 20 m railhead haul', async () => {
+  const run = await traveller();
+  try {
+    physics.stepFixed();
+    run.board();
+    for (let frame = 0; frame < 60; frame++) physics.stepFixed();
+    const at = run.local();
+    let worst = 0;
+    for (let frame = 0; frame <= 300; frame++) {
+      run.goal(haulU({ set: 2, from: 12000, moved: 0 }, 70 + frame / 6) / 100);
+      physics.stepFixed();
+      const here = run.local();
+      worst = Math.max(worst, Math.hypot(here.x - at.x, here.y - at.y, here.z - at.z));
+      assert.ok(carry.on === run.car.platform, 'rider lost railhead');
+    }
+    assert.ok(Math.abs(deckU(run.car.body.position) - 140) < 0.001);
+    assert.ok(
+      worst < 0.001,
+      `maximum rider drift ${worst} m; start ${JSON.stringify(at)}, end ${JSON.stringify(run.local())}`,
+    );
+  } finally {
+    run.close();
+  }
+});
+test('drawn railhead agrees with a remote rider between fixed steps', async () => {
+  const run = await traveller();
+  try {
+    physics.stepFixed();
+    run.goal(120.08);
+    physics.stepFixed();
+    for (const alpha of [0.25, 0.5, 0.75]) {
+      physics.setPhysicsClock({ time: physics.physicsTime(), acc: 0 });
+      physics.stepPhysics(alpha * FIXED);
+      const u = deckU(run.car.body.interpolatedPosition);
+      assert.ok(Math.abs(u - 120 - 0.08 * alpha) < 0.001);
+      assert.ok(Math.abs(deckU(run.point(3, 1, true)) - u - 3) < 0.001);
+    }
+  } finally {
+    run.close();
+  }
+});
+test('Q7 first-step interpolation never shows the parked deck or its old heading', async () => {
+  const run = await traveller();
+  try {
+    physics.stepFixed();
+    physics.setPhysicsClock({ time: physics.physicsTime(), acc: 0 });
+    physics.stepPhysics(FIXED / 4);
+    assert.ok(Math.abs(deckU(run.point(3, 1, true)) - 123) < 0.001);
+    assert.ok(run.car.body.interpolatedPosition.y > 0);
+  } finally {
+    run.close();
+  }
+});
+test('a standing player ahead of the railhead is lifted onto the deck', async () => {
+  const run = await traveller();
+  try {
+    physics.stepFixed();
+    run.board(13, 0.9);
+    run.goal(120.08);
+    physics.stepFixed();
+    assert.ok(carry.on === run.car.platform, 'rider lost railhead');
+    assert.ok(run.local().z < 12.5);
+    assert.ok(run.local().y > 0.45);
+  } finally {
+    run.close();
+  }
+});
+test('a correction beyond the railhead speed limit relocates the rider with it', async () => {
+  const run = await traveller();
+  try {
+    physics.stepFixed();
+    run.board(3);
+    for (let frame = 0; frame < 40; frame++) physics.stepFixed();
+    const before = run.local();
+    run.goal(160);
+    physics.stepFixed();
+    const after = run.local();
+    assert.ok(carry.on === run.car.platform, 'rider lost railhead');
+    assert.ok(Math.abs(deckU(run.car.body.position) - 160) < 0.001);
+    assert.ok(Math.hypot(after.x - before.x, after.z - before.z) < 0.001);
+  } finally {
+    run.close();
+  }
+});
+// Review (railhead-deck-car): placeDeck's mount clearance hands the deck's footprint to siteExit, whose nearest edge
+// is a long side for anyone more than 2.9 m from either end. On the sea half of the walkway that edge is the sea:
+// a player standing there when the deck mounts (a reload or late join where the deck now stands) lands at lat 6.95,
+// past the walkway's outer edge (SIDE.lat1 6.3), in the water. Only the track side, an end or the deck top is safe.
+test('a player on the sea half of the walkway when the railhead mounts is never moved over the sea', async () => {
+  await physics.physicsReady;
+  const { sourceFunction } = await import('../dev/level/source.ts');
+  const outOf = sourceFunction<typeof import('../src/place/sites.ts').outOf>('src/place/sites.ts', 'outOf', {});
+  const { RING_S, line2World, line2Y } = await import('../src/entities/railway/line2-path.ts');
+  const { SIDE } = await import('../src/entities/railway/railhead-shape.ts');
+  const owner = createOwnedView();
+  try {
+    const deck = createRailheadDeck(owner);
+    const rider = makePlayerBody(false);
+    owner.addBody(rider);
+    const sideMid = (SIDE.lat0 + SIDE.lat1) / 2;
+    const at = line2World(RING_S + 110, 5.5, { x: 0, z: 0 });
+    physics.teleport(rider, at.x, line2Y(RING_S + 110) + PLAYER_R + 0.01, at.z);
+    placeDeck(deck, 120, true, rider, 0.1, outOf);
+    // The deck's local -x is the sea side (lat 6.3 is local x -2.25).
+    const lat = sideMid - toPlatform(deck.car.platform, rider.position, 0, { x: 0, y: 0, z: 0, yaw: 0 }).x;
+    assert.ok(lat <= SIDE.lat1, `moved from lat 5.5 to lat ${lat.toFixed(2)}: over the sea`);
+  } finally {
+    owner.dispose();
+  }
+});
+// The ends: only the back one leads onto built walkway; ahead of the face is the open gap.
+test('nobody standing anywhere under the mounting railhead is cleared past the walkway edge or the face', async () => {
+  await physics.physicsReady;
+  const { sourceFunction } = await import('../dev/level/source.ts');
+  const outOf = sourceFunction<typeof import('../src/place/sites.ts').outOf>('src/place/sites.ts', 'outOf', {});
+  const { RING_S, line2World, line2Y } = await import('../src/entities/railway/line2-path.ts');
+  const { SIDE } = await import('../src/entities/railway/railhead-shape.ts');
+  const sideMid = (SIDE.lat0 + SIDE.lat1) / 2;
+  const owner = createOwnedView();
+  try {
+    const deck = createRailheadDeck(owner);
+    const rider = makePlayerBody(false);
+    owner.addBody(rider);
+    const bad: string[] = [];
+    for (let u = 100; u <= 118; u += 2)
+      for (let lat = 2.2; lat <= 6.0 + 1e-9; lat += 0.2) {
+        const at = line2World(RING_S + u, lat, { x: 0, z: 0 });
+        physics.teleport(rider, at.x, line2Y(RING_S + u) + PLAYER_R + 0.01, at.z);
+        placeDeck(deck, 120, true, rider, 0.1, outOf);
+        const local = toPlatform(deck.car.platform, rider.position, 0, { x: 0, y: 0, z: 0, yaw: 0 });
+        const inside = Math.abs(local.x) < deck.car.platform.hx && Math.abs(local.z) < deck.car.platform.hz;
+        if (sideMid - local.x > SIDE.lat1 || local.z > deck.car.platform.hz || inside)
+          bad.push(
+            `u ${u} lat ${lat.toFixed(1)} -> lat ${(sideMid - local.x).toFixed(2)} local z ${local.z.toFixed(2)}`,
+          );
+      }
+    assert.deepEqual(bad, []);
+  } finally {
+    owner.dispose();
+  }
+});
+
+// The view's own driver (railhead-view.ts hands driveDeck the adapter's read): a real room at `gap-footed`, whose last
+// pair stamped the haul from railhead 6 to 7, with the rule clock set back to the stamp and run forward through the
+// haul at the game's rate. The deck follows the row, not a target the test sets. An idle rider is held by placeDeck's
+// pin (the 1 mm case above); this one proves the driver carries them on the deck from rest to rest.
+test("the view's driver hauls the deck and its rider from the row and the clock", async () => {
+  await physics.physicsReady;
+  const { buildSeedWorld } = await import('./helpers/rail.ts');
+  const { railRoom } = await import('./helpers/rail-room.ts');
+  const { aperture } = await import('../src/sim/railway-rows.ts');
+  const { haulEnd, HAUL } = await import('../src/sim/railway-ring-haul.ts');
+  const { driveDeck } = await import('../src/entities/railway/railhead-state.ts');
+  const room = railRoom(buildSeedWorld('gap-footed'));
+  const read = room.join('a', 'a').adapter.read;
+  room.ready();
+  const row = aperture(read.world());
+  assert.ok(row.moved >= 0 && haulU(row, row.moved + 1000) - row.from >= 2000, 'the seed stamped a 20 m haul');
+  const wall = softWall.at;
+  softWall.at = Infinity;
+  const owner = createOwnedView();
+  try {
+    const deck = createRailheadDeck(owner);
+    let tick = row.moved,
+      clock = -1;
+    const clocked = { world: () => read.world(), whole: () => read.whole(), tickNow: () => tick };
+    deck.drive(() => {
+      clock = driveDeck(deck, clocked, clock, () => false);
+    });
+    const rider = makePlayerBody(false);
+    owner.addBody(rider);
+    physics.stepFixed();
+    const from = row.from / 100;
+    assert.ok(Math.abs(deckU(deck.car.body.position) - from) < 0.001, 'the deck waits where the haul starts');
+    const board = fromPlatform(
+      deck.car.platform,
+      { x: 0, y: deck.car.platform.topAt!(0, 0, 0) + PLAYER_R, z: 0, yaw: 0 },
+      false,
+      { x: 0, y: 0, z: 0, yaw: 0 },
+    );
+    physics.teleport(rider, board.x, board.y, board.z);
+    rider.velocity.set(0, 0, 0);
+    player.body = rider;
+    player.coyote = 0.1;
+    driveRider = true;
+    for (let frame = 0; frame < 30; frame++) physics.stepFixed();
+    const at = toPlatform(deck.car.platform, rider.position, 0, { x: 0, y: 0, z: 0, yaw: 0 });
+    let moved = false;
+    while (tick < haulEnd(row) + 10) {
+      tick += FIXED * 10;
+      physics.stepFixed();
+      moved ||= deckU(deck.car.body.position) > from + 0.01;
+      assert.ok(carry.on === deck.car.platform, `rider lost the railhead at tick ${tick.toFixed(2)}`);
+      if (clock <= row.moved + HAUL.after + HAUL.ready)
+        assert.ok(
+          Math.abs(deckU(deck.car.body.position) - from) < 0.001,
+          `still while the span goes down and it is told: u ${deckU(deck.car.body.position)} at clock ${clock - row.moved}`,
+        );
+    }
+    const here = toPlatform(deck.car.platform, rider.position, 0, { x: 0, y: 0, z: 0, yaw: 0 });
+    assert.ok(moved, 'the deck hauled');
+    assert.ok(Math.abs(deckU(deck.car.body.position) - haulU(row, tick) / 100) < 0.001, 'at rest at the new head');
+    assert.ok(
+      Math.hypot(here.x - at.x, here.y - at.y, here.z - at.z) < 0.01,
+      `rider drifted ${JSON.stringify([at, here])}`,
+    );
+  } finally {
+    driveRider = false;
+    softWall.at = wall;
+    player.body = null;
+    carry.x = carry.y = carry.z = 0;
+    owner.dispose();
+  }
+});
 
 test('a rider carried by a moving deck stays on it over a stationary deck registered before it', () => {
   const flatbed = deck('flatbed', 0, 0, 1.3, 2.4);

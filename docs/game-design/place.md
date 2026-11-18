@@ -1120,11 +1120,11 @@ its deck and rails drawn. The next bent's two sockets glow on the sea floor and 
 stakes at the bents after it are a line of small orange posts running on toward the island. Each footing the jib sets
 goes up on its rope, out over the stakes and down into a socket with a splash; the second stands the bent (posts, braces,
 cap), the span (planks, stringers, both tracks' rails, the side walkway) drops onto it from the old end outward, and
-the railhead's **platform, rack, jib and buffers slide out** along it in about 3 s. The platform is 25 m long, 0.9 m
+the railhead's **platform, rack, jib and buffers travel together** along the new span. The platform is 25 m long, 0.9 m
 over the deck, east of the down track (lat +1.8 to +6.3) with a yellow safe line; **its 25 m stay behind as the side
-walkway** (deck height, 4.5 m wide, from u 95), so nobody on the platform is ever left over the sea: while it moves
-it has no collider and whoever is on it drops 0.9 m onto the walkway, and the rack's and the jib's prompts wait for
-the slide. The deck ends on a yellow and black striped beam and buffers on both tracks (a pair of points 50 to 30 m
+walkway** (deck height, 4.5 m wide, from u 95). A rider stays aboard the pitched car through the haul; someone standing
+on the span just ahead steps up onto it. The drawn boards follow the same interpolated body as a remote rider.
+The deck ends on a yellow and black striped beam and buffers on both tracks (a pair of points 50 to 30 m
 short of the end puts the offset track on the down track; the offset track runs on to its own buffer, so nothing has to appear
 when the rivet makes the line a through one: the buffers and the stripes go then). The wagon's loads hop to the rack
 (three layers of six), a footing is shouldered at the rack and set at the jib with the pier's prompts ("Shoulder a

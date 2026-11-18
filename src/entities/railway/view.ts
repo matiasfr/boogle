@@ -136,6 +136,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   const works = worksPreview()
     ? await import('./works-live.ts').then((m) =>
         m.createRailwayWorksLive(adapter, owner, {
+          deck: line2.railheadDeck,
           busy: () => reward.inspect().busy,
           toPier: () => trains.footFlying().toPier,
           toRing: () => trains.footFlying().toRing,

@@ -28,7 +28,16 @@ import {
   type ReadWorld,
 } from '../../sim/railway-rows.ts';
 import { RING_S_HEAD } from '../../sim/railway-ring-layout.ts';
-import { LEVER_PLACE, RING_LEVER_OFF, leverAskTaken, leverPlatform, leverYield, railheadLever } from './lever-place.ts';
+import {
+  LEVER_PLACE,
+  RING_LEVER_OFF,
+  leverAskTaken,
+  leverPlatform,
+  leverYield,
+  railheadLever,
+  railheadLeverOn,
+} from './lever-place.ts';
+import { railheadDrawn, railheadEnd } from './railhead-state.ts';
 import { line2World, line2Y, RING_S } from './line2-path.ts';
 import { createRequestLever, type RequestLever } from './request-lever.ts';
 import { LINE2_GLIDE, pierLaid } from '../../sim/railway-line2-layout.ts';
@@ -355,7 +364,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     lever: ReturnType<typeof createRequestLever>;
     up: boolean;
     west: boolean;
-    ring?: { lat: number; u: () => number; shown: number; need: () => boolean };
+    ring?: { lat: number; u: () => number; shown: number; need: () => boolean; still?: () => boolean };
     slide?: { z0: number; goal: () => number; shown: number };
   };
   const HOME = () => -1 as const;
@@ -402,6 +411,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     need: () => boolean,
     way: () => -1 | 1,
     west = false,
+    still?: () => boolean,
   ): Spot => {
     // The plaque faces away from the rails, onto the platform: the rails lie toward the centre line from `lat` (a stack
     // head's outward lever stands on the east platform too, so the side is the platform's, not the way's).
@@ -416,7 +426,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       lever,
       up,
       west,
-      ring: { lat, u, shown: u(), need },
+      ring: { lat, u, shown: u(), need, still },
     };
   };
   const wd0 = () => adapter.read.world();
@@ -428,9 +438,12 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       RAILHEAD,
       false,
       railheadLever(0).lat,
-      () => railheadLever(ringHead(wd0()), mainWay(LINE2, RAILHEAD)).u,
+      // On the deck as drawn: it rides the haul with the platform, and offers nothing until the haul has settled.
+      () => railheadLeverOn(railheadEnd(), mainWay(LINE2, RAILHEAD)),
       () => true,
       () => mainWay(LINE2, RAILHEAD),
+      false,
+      () => railheadDrawn.settled,
     ),
     // The joint's west platform (u 235 to 260) stands at bent 13 (footing 14); its lever is chained until the rivet,
     // and calls the train home from 9.5 m toward home of the platform's middle (u 247.5), beside the plank crossing.
@@ -544,7 +557,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     if (!x) return [];
     if (!standing(x) || chained(x)) return [];
     // A lever offers nothing while it slides: the railhead's out with the head, any being restood.
-    if (x.ring && Math.abs(x.ring.u() - x.ring.shown) > 0.05) return [];
+    if (x.ring && (Math.abs(x.ring.u() - x.ring.shown) > 0.05 || x.ring.still?.() === false)) return [];
     if (x.slide && Math.abs(x.slide.goal() - x.slide.shown) > 0.05) return [];
     const at = x.lever.knob(0, new THREE.Vector3());
     if (Math.hypot(p.x - at.x, p.z - at.z) > LEVER_REACH || Math.abs(p.y - at.y) > 1.6) return [];

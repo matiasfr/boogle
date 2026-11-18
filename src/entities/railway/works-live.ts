@@ -11,6 +11,7 @@ import { createRailwayRoundhouse } from './roundhouse-view.ts';
 import { createRailwayFootings } from './footing-view.ts';
 import { createRailwayCrossing } from './crossing-view.ts';
 import { createRailwayRailhead } from './railhead-view.ts';
+import type { RailheadDeck } from './railhead-state.ts';
 import { createRailwayLeaf } from './leaf-view.ts';
 import { createBoilerInstall } from './boiler-install-view.ts';
 import { createRingMeet } from '../ring-meet/view.ts';
@@ -22,6 +23,7 @@ export async function createRailwayWorksLive(
   adapter: RailwayAdapter,
   owner: OwnedView,
   deps: {
+    deck: RailheadDeck;
     busy: () => boolean;
     toPier: () => number;
     toRing: () => number;

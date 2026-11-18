@@ -2,6 +2,7 @@
 // pier head (`u`, src/sim/railway-ring-layout.ts) and metres east of the down track (`lat`). No three.js, no rows: the
 // view (./railhead-view.ts), the lookout's buoys and the tests read the same functions.
 import { RING_BUOYS, RING_HEAD, RING_WALK } from '../../sim/railway-ring-layout.ts';
+import { HAUL, type RailheadHaul } from '../../sim/railway-ring-haul.ts';
 
 /** Bents 7..13 (index 0..6) stand at u 140, 160 ... 260; bent index j carries the deck from u 120 + 20 j to 140 + 20 j. */
 export const BENTS = 7;
@@ -17,6 +18,32 @@ export const DECK = { lat0: -5.8, lat1: 1.8, mid: -2 } as const;
 export const SIDE = { lat0: 1.8, lat1: 6.3 } as const;
 /** The railhead platform: 25 m behind the end, 0.9 m over the deck. */
 export const PLATFORM = { len: 25, up: 0.9 } as const;
+export function deckProfile() {
+  const hx = (SIDE.lat1 - SIDE.lat0) / 2,
+    hz = PLATFORM.len / 2;
+  const grade = 0.04,
+    pitch = Math.atan(grade),
+    hy = 0.05;
+  const centre = grade * hz + hy + 0.01;
+  return {
+    spec: { hx, hz, top: 0.5 },
+    surface: {
+      kind: 'box' as const,
+      hx,
+      hy,
+      hz: hz / Math.cos(pitch),
+      offset: { x: 0, y: centre, z: 0 },
+      rotation: { x: Math.sin(pitch / 2), y: 0, z: 0, w: Math.cos(pitch / 2) },
+    },
+    topAt: (_x: number, z: number) => centre + hy / Math.cos(pitch) - grade * z,
+  };
+}
+/** How many bents' spans must be drawn now: from `moved + after`, every one the haul is heading for, stood and decked
+ * at once. The bent and span animation runs from this tab's own receipt, which can be a second or more behind the
+ * game clock the haul runs on; forcing them before the deck's 1 s told and travel means it never rolls onto a span this
+ * tab has not drawn. */
+export const spansDue = (a: RailheadHaul, clock: number) =>
+  a.moved >= 0 && clock >= a.moved + HAUL.after ? Math.min(BENTS, a.set >> 1) : 0;
 /** Where the platform stands with the railhead at `u`, and what is walkway behind it. */
 export const platformSpan = (u: number) => [u - PLATFORM.len, u] as const;
 export const walkwaySpan = (u: number) => [RING_WALK(0).u0 / 100, u] as const;
@@ -28,12 +55,9 @@ export const RACK_BACK = 18,
   MERGE_BACK = 30,
   CROSS_LEN = 20;
 export const crossoverSpan = (u: number) => [u - MERGE_BACK - CROSS_LEN, u - MERGE_BACK] as const;
-/** How fast the railhead's kit follows a new railhead (m/s): a bent in about 3 s, as the lever's and the trains' merge. */
-export const SLIDE = 7;
-/** One frame of the slide: `shown` moves toward `goal` at most SLIDE m/s; a long way (a restore, a rewind) snaps. */
-export function slide(shown: number, goal: number, dt: number) {
-  if (Math.abs(goal - shown) > 25) return goal;
-  return shown + Math.max(-SLIDE * dt, Math.min(SLIDE * dt, goal - shown));
+export function leanClock(clock: number, target: number, dt: number) {
+  if (clock < 0 || Math.abs(target - clock) > 3) return target;
+  return clock + dt * 10 + Math.max(-0.02, Math.min(0.02, (target - clock) * 0.05));
 }
 /** How far the drawn deck reaches with `stood` bents standing (0..7): Q7's deck ends at u 120. */
 export const deckEnd = (stood: number) => (stood > 0 ? spanTo(stood - 1) : 120);
