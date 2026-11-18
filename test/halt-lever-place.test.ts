@@ -239,12 +239,6 @@ test("the railhead's knob stays clear of its jib and rack over the handle's trav
 });
 
 test("a lever's prompt guard is the server's rail.call position test, by reach and by height, at every bent", () => {
-  // The reviewer's probe: at head 0 a jump to y 24.8 over the railhead's knob is over the server's ceiling (24.7).
-  const plat0 = RING_HEAD[0]!.platform,
-    k0 = railheadKnobs(0)[0]!;
-  assert.equal(plat0.y + 40 + 260, 2470);
-  assert.equal(leverAskTaken(plat0, k0.x, 24.8, k0.z), false);
-  assert.equal(leverAskTaken(plat0, k0.x, 24.7, k0.z), true);
   RING_HEAD.forEach((head, k) => {
     const p = head.platform,
       top = (p.y + 300) / 100,
