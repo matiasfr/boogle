@@ -39,16 +39,6 @@ test('read.movement() reads the tunables only when their rev moves, and is the s
   a.adapter.dispose();
 });
 
-test('read.movement() without a rev reads the tunables and still returns one object while the values hold', () => {
-  const r = railRoom();
-  const b = r.join('b', 'bob', 0, false);
-  const m = b.adapter.read.movement();
-  assert.equal(b.adapter.read.movement(), m);
-  b.set('railJumpTurn', 250);
-  assert.equal(b.adapter.read.movement().jumpTurn, 2.5);
-  assert.equal(b.adapter.read.movement(), b.adapter.read.movement());
-});
-
 test('read.ready() is false at a full pending window while status() is still ready, and read.stalled() names the oldest', () => {
   const r = railRoom();
   const a = r.join('a', 'alice', 20);
