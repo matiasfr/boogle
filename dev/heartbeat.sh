@@ -44,8 +44,8 @@ echo "main checkout: $(git -C "$main" rev-parse --abbrev-ref HEAD), $(git -C "$m
 say "Open pull requests"
 gh pr list --json number,title,headRefName,mergeStateStatus,isDraft \
   -q '.[] | "#\(.number) \(.mergeStateStatus)\(if .isDraft then " draft" else "" end) \(.headRefName): \(.title)"' 2>/dev/null | cut -c1-150
-# The claims every session counts the three-job limit from; read from origin/main so a stale checkout still sees them.
-say "Jobs in flight (claimed in docs/agents/orchestrator-state.md on origin/main; limit three across all sessions)"
+# The claims every session counts the five-job limit from; read from origin/main so a stale checkout still sees them.
+say "Jobs in flight (claimed in docs/agents/orchestrator-state.md on origin/main; limit five across all sessions)"
 claims=$(git show origin/main:docs/agents/orchestrator-state.md 2>/dev/null | awk '
   /^## Jobs in flight/ { on = 1; next }
   /^## / { on = 0 }

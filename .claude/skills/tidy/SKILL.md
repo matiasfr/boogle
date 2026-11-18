@@ -10,8 +10,8 @@ rule: small fixes ship, judgment calls go in `docs/agent-calls.md`, and only dir
 waits for the owner.
 
 A scheduled run works from its own worktree at `origin/main` (`../boogle-tidy`), never the project root, which is a
-stale launcher ([automations](../../../docs/agents/automations.md)). Its delegates count toward the three jobs in
-flight: read the state file's "Jobs in flight" table first, start none past three, and give each delegate a row.
+stale launcher ([automations](../../../docs/agents/automations.md)). Its delegates count toward the five jobs in
+flight: read the state file's "Jobs in flight" table first, start none past five, and give each delegate a row.
 
 With an argument, run only that part. Without one, run all five in order, skipping a part that ran within the last day
 (the state file's "Tidy" line records each part's last run and end commit).

@@ -25,7 +25,7 @@ they can be turned back on there with `enabled: true` (and the Windows ones paus
 3. **Create:** open the new orchestrator thread in the Boogle project and create both tasks from it with
    `schedule_task`, using the prompt, schedule and settings below. That binds them to the thread.
 4. **Turn off the old ones:** do not run both machines at once. Two heartbeats would break the
-   [one-heartbeat rule](../decisions-process.md#d-2026-11-16-one-heartbeat) and double-count the three-job limit.
+   [one-heartbeat rule](../decisions-process.md#d-2026-11-16-one-heartbeat) and double-count the job limit.
 5. **Claude memory** is per machine. Copy `~/.claude/projects/<encoded clone path>/memory/` across; everything
    binding is already in the repo ([decision log](../decisions.md)).
 6. **Local-only state:** archive tags and unpushed branches exist only on the machine that made them; push what the
@@ -77,7 +77,7 @@ Read `AGENTS.md` and `.claude/skills/orchestrate-boogle/SKILL.md` from that work
   - A STALLED test or check process: find its test file, rerun that file alone with a timeout, kill the stuck run and tell its agent.
   - Idle browser or MCP processes left by finished jobs: kill them, but never one that belongs to a running delegate.
   - Bot-queue waits, slow CI: do whatever unblocks the most work.
-- If no job is running on a P1 backlog row and fewer than three jobs are in flight (owner, 16 November), start exactly one next step as section 9 allows. Start nothing the owner hasn't approved, and nothing section 9 leaves for him.
+- Fill the free job slots as section 9 allows, up to its limit (owner, 18 November). Start nothing the owner hasn't approved, and nothing section 9 leaves for him.
 
 If nothing needed action, reply with one line: "heartbeat: all clear", the bottleneck and the hour's biggest loss in a few words, and a count of running jobs and open PRs. Otherwise report what you found and did in a few lines, always including the bottleneck and the workflow review's one line, and end with three lines: shipped, started, waiting on the owner.
 ```

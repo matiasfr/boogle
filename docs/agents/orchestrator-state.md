@@ -6,7 +6,7 @@ The living status for whoever is orchestrating, Claude or Codex: read it first, 
 
 ## Jobs in flight
 
-The one record of who is running what, and what the three-job limit is counted from ([decision](../decisions-process.md#d-2026-11-16-three-jobs-in-flight)). Add a row and ship it in the turn that starts a job, before its first commit; change its state when it reports, blocks or goes to review; delete the row when its branch merges or is dropped. A session never starts a backlog row that has a row here. `npm run heartbeat` prints this table from `origin/main`. Keep these column headers.
+The one record of who is running what, and what the five-job limit is counted from ([decision](../decisions-process.md#d-2026-11-18-five-jobs-fewer-bookkeeping-ships)). Add a row and ship it in the turn that starts a job, before its first commit; delete the row when its branch merges or is dropped. One docs-only ship per turn carries all of that turn's claims and removals; states in between are not shipped, and a work branch never edits this file. A session never starts a backlog row that has a row here. `npm run heartbeat` prints this table from `origin/main`. Keep these column headers.
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
