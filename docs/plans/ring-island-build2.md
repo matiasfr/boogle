@@ -1,4 +1,4 @@
-> **Status, 18 November 2026 against origin/main 2a875bf53 (world v60):** R1–R5 and V1–V3 are on main (#1672), with later garage/fourth-car follow-ups (#1681, #1711). Checkpoints reconciled and run on HOTBOX on 18 November ([checkpoint run](#checkpoint-run-18-november-2026)). **Checkpoint B ticked** (check, perf at the island halt and the Roundhouse, the V1 and V3 looks; not tested on a device). **Checkpoint A not ticked:** check, `loop -- run` and the steel bot from `ring-joined` to `boiler-long` pass on main, but `test:net` has no case with a carrier leaving mid-carry (never written); its "ship v28" no longer applies. Next: the orchestrator's or the owner's call on that net case (write it, or rule it covered), then T (held for the owner's word on question 1). Ring Island
+> **Status, 18 November 2026 against origin/main 2a875bf53 (world v60):** R1–R5 and V1–V3 are on main (#1672), with later garage/fourth-car follow-ups (#1681, #1711). Checkpoints reconciled and run on HOTBOX on 18 November ([checkpoint run](#checkpoint-run-18-november-2026)). **Checkpoint B ticked** (check, perf at the island halt and the Roundhouse, the V1 and V3 looks; not tested on a device). **Checkpoint A ticked** (later on 18 November): check, `loop -- run` and the steel bot from `ring-joined` to `boiler-long` pass on main, and `test:net` now has the steel-yard carrier leaving mid-carry (`railwayCarrierLeaves`, 31 checks, pass, no defect); its "ship v28" no longer applies. Next: T (held for the owner's word on question 1). Ring Island
 > build 2 as a systems-first greybox, `WORLD_NS` v31 (main took v28 for slice 5; v29 is the Quarry stone stop's and v30 is the riders step's). Its owner questions were answered on 12 November (UTC) ([below](#owner-questions)); steps
 > R1 to R5 do not wait for them. **Designer's review, 11 November: cleared to build;
 > [its rulings](#design-review-designer-2026-11-11) A to F are what gets built where a step below differs** (no footings
@@ -388,11 +388,16 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       headless page's warp speeds the page, not the server). Read waits in server ticks.
       After the carry fix lands: rebase, one full `npm run playthrough -- --from ring-joined --to boiler-long --stall
       6000 --wall 2700`, then tick this.
-- [ ] **Checkpoint A (rules).** Proofs, and only these: `npm run check`; `npm run loop -- run`; **the bot from
+- [x] **Checkpoint A (rules).** Proofs, and only these: `npm run check`; `npm run loop -- run`; **the bot from
       `--rail-seed ring-joined` to the `boiler-long` state**, logging minutes per beat; `test:net`'s reconnect pair
       once with a carrier leaving mid-carry. Then ship v28 under the mid-session hold.
       Run on 18 November ([below](#checkpoint-run-18-november-2026)): check, the loop and the bot pass on main
       2a875bf53; the net case with a carrier leaving mid-carry was never written; "ship v28" no longer applies (v60).
+      _Net case written later on 18 November_ (branch claude/ring-carrier-leaves): `railwayCarrierLeaves` in
+      `dev/peer-test/ws-railway.ts`, a host-only section of `test:net` (31 checks; the run 268 of 268). It passes and
+      shows no defect: a yard carrier who loses their socket keeps the kit through the reconnect grace and feeds it on
+      return; past the grace the kit stays on the departed account (no carry grace covers the yard's kit), conserved,
+      and the bill's need still owes it, so no stall. Ticked on that.
 - [x] **V1. The works on the island (M, Mac).** Create `src/entities/ring-steel/{index,view}.ts`. Greybox boxes only:
       yard stacks drawn from `yardLogs`, `yardRails`, `yardFoot`; a bill sign over the works (the frame sign's
       have/need per material, `stock-sign.ts`'s pattern); the rack's steel blocks; a box jib for the loader between
@@ -518,7 +523,7 @@ committed). Stills: [docs/reports/ring-build2-checkpoints/](../reports/ring-buil
 | A, B: `npm run check` | Garage moment checkpoint, exit 0 on `7b1cf4028` (main `12c244db4`); prefab data, pass on `83e398bfb` | Stale: since `83e398bfb` main changed `garage-view.ts`, `player/modal.ts`, `glide-device-view.ts`, `reward-data.ts` and `gear-models.ts`, which lint, typecheck and the build cover. **Rerun: pass** |
 | A: `npm run loop -- run` | R5, 12 November, on ring2/rules (v31 era): 1–4 players, rivet to install 4:06–4:40 | Stale: world v31 to v60, the route and the railhead changed since. **Rerun: pass** |
 | A: the bot, `ring-joined` to `boiler-long` | 12 November, rebase 3 tip `9d63d738` (v31 era): pass, 28 min of game in 4 min. The garage checkpoint (18 November, `12c244db4`) ran only `steel-home` to `boiler-long` | Stale: the bot's last phase moved to the garage and to `Line.boiler` 2 (b5bc4e0cb); Ring Island's last massing sitting (#2203) re-bodied the island; the garage became a modal (#2210). The garage run predates both and skips the island. **Rerun: pass** |
-| A: `test:net` reconnect pair, a carrier leaving mid-carry | Never run | **Never written.** `dev/peer-test/ws-railway.ts` holds a reconnect pair (a same-pid takeover, then an orderly restart, about lines 272–292), but the takeover is by a player carrying nothing; the one carrying (RB) never leaves, and carry is checked only as a room total across the restart. No net case closes a page mid-carry. The server unit test `server/test/railway-steel-host.test.ts:339` covers a leaver's leg-rack rails through the grace (the greybox route, not the steel yard's takes). Not written here |
+| A: `test:net` reconnect pair, a carrier leaving mid-carry | Never run | **Never written** at this run: `dev/peer-test/ws-railway.ts` held a reconnect pair (a same-pid takeover, then an orderly restart), but the takeover is by a player carrying nothing; the one carrying (RB) never leaves, and carry is checked only as a room total across the restart. The server unit test `server/test/railway-steel-host.test.ts:339` covers a leaver's leg-rack rails through the grace (the greybox route, not the steel yard's takes). **Written later the same day: pass** (`railwayCarrierLeaves`, 31 checks, three tabs at 0/100/200 ms on `steel-kit`): logs taken off the yard, the socket dropped without `bye` for 1.2 s inside the 1.5 s grace, server and peers keep the back, reconnect, the logs fed into the bill; rails taken, the socket away 8 s, the room departs the carrier (peers hear `left`), the rails stay on the departed account (not returned, dropped or lost; room totals conserved; `steelNeed` still owes them), the carrier returns and feeds them. No defect |
 | A: "Then ship v28 under the mid-session hold" | — | **No longer applies:** the world is v60 and build 2 shipped as #1672 |
 | B: `npm run perf` at the island halt and the Roundhouse, before and after | Island: never. Roundhouse: garage checkpoint, 18 November, `12c244db4`, at the table (412 calls, 946,365 triangles) | **Run here** with the look-based readings |
 | B: V1's look, `--rail-seed steel-kit` at the yard, phone and desktop | 12 November on the Mac, desktop only (`.look/v1-works-cold-still.png`, not kept on HOTBOX); no phone shot | Stale (the island re-bodied, #2203). **Retaken, both widths** |
@@ -566,7 +571,8 @@ committed). Stills: [docs/reports/ring-build2-checkpoints/](../reports/ring-buil
   The whole steel loop's objective line read "Build the line to High Gorge: section 1 of 4…" (below).
   `.look/playthrough/rb2-steel/` (verdict.json, report.txt, bot.txt, summary.txt).
 - **`test:net`, the reconnect pair with a carrier leaving mid-carry: never written** (see the table); not run and not
-  written here. **Checkpoint A stays unticked** on this one proof.
+  written here. **Checkpoint A stays unticked** on this one proof. _Later on 18 November:_ written as
+  `railwayCarrierLeaves` and passed (`test:net` 268 of 268); see the table row.
 
 **Checkpoint B.**
 
@@ -626,7 +632,8 @@ committed). Stills: [docs/reports/ring-build2-checkpoints/](../reports/ring-buil
 - **Device:** not tested on a device.
 
 **Checkpoint B is ticked:** every proof it names passed on main `2a875bf53`, perf is reported (not a gate), and none
-waits on the owner. **Checkpoint A is not ticked:** the net case with a carrier leaving mid-carry was never written.
+waits on the owner. **Checkpoint A was not ticked at this run:** the net case with a carrier leaving mid-carry was never written (it was
+written and passed later the same day, and Checkpoint A is now ticked; see the table row).
 Writing it is test work in `dev/peer-test/` (a sync contract, so allowed by the test diet); ruling it covered by
 the server's leaver tests is a call for the orchestrator or the owner. Its other proofs pass on main today.
 
@@ -649,7 +656,7 @@ the 20 m/s fit since b5bc4e0cb; it now wants 2. The steel bot already does both.
 - Timing, not a defect: lit to steel home took 142 s of server time against 117.5 s on 12 November (the world, the
   speed rows and the line have changed since).
 
-**Unverified:** a carrier leaving mid-carry over the network; the Village train's long boiler in a frame on both pages
+**Unverified:** a carrier leaving mid-carry over the network (since proven by `railwayCarrierLeaves`); the Village train's long boiler in a frame on both pages
 at once; real-time feel (only the garage checkpoint's capture covers it); quiet-GPU frame times; touch input. Not
 tested on a device.
 
