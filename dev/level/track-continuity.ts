@@ -22,53 +22,65 @@
 // spacing), a reversed or zero chord, a kink over KINK_HARD. Planned (v27) and tentative tracks report the same
 // measures; their would-be failures are listed as "planned, would fail" and do not fail the check, because no train
 // runs there yet and their data is a greybox draft (they become enforced as each line moves into RAIL_LINES).
-import { LIVE, beside, deg, joins, tracks, wrap, type Join, type Pt, type Track } from './rail-network.ts';
-import { HALTS, OFFSET_HALTS, crossLat, offsetLat } from '../../src/place/layout.ts';
+import { LIVE, deg, joins, tracks, wrap, type Join, type Pt, type Track } from './rail-network.ts';
+import { HALTS, OFFSET_HALTS, TURNOUT, offsetLat } from '../../src/place/layout.ts';
+import { junctions } from '../../src/place/junctions.ts';
+import { turnout } from '../../src/place/turnout.ts';
 
 /** A car's half width and a platform's (src/entities/railway/halts-view.ts: 2.5 m decks). */
 const CAR_HX = 1.1,
   PLATFORM_HX = 1.25;
-/** The offset track's turnouts and Far Head's crossover: how steeply each leaves today's track and its tightest radius
- * (3-point, 2 m arms, 0.5 m steps), so the eased lateral shift's ends are measured, not assumed. */
+/** Every junction in src/place/junctions.ts (docs/plans/turnouts.md, "Every place two tracks meet"): its toe, hand,
+ * frog and clear distance from src/place/turnout.ts, and the diverging road's tightest radius over the 20 m a stub
+ * turnout eases in (3-point, 2 m arms, 0.5 m steps), so each is measured from the centrelines the game draws. */
 function turnouts() {
-  const out: { line: string; what: string; s0: number; s1: number; diverge: number; minRadius: number; at: number }[] =
-    [];
-  for (const L of LIVE) {
-    const zones: [string, number, number, (s: number) => number | null][] = [
-      [`stub turnout at s ${L.f.from}`, L.f.from, L.f.from + 20, (s) => offsetLat(L.f, s)],
-      [`stub turnout at s ${L.f.to}`, L.f.to - 20, L.f.to, (s) => offsetLat(L.f, s)],
-    ];
-    const c = 'crossover' in L.f ? L.f.crossover : undefined;
-    if (c) zones.push([`crossover s ${c[0]}-${c[1]}`, c[0], c[1], (s) => crossLat(L.f, s)]);
-    for (const [what, s0, s1, lat] of zones) {
-      let diverge = 0,
-        minRadius = Infinity,
-        at = s0;
-      for (let s = s0 - 2; s <= s1 + 2; s += 0.5) {
-        const l = (x: number) => lat(Math.max(s0, Math.min(s1, x))) ?? 0;
-        const a = beside(L.line, s - 2, l(s - 2)),
-          b = beside(L.line, s, l(s)),
-          d = beside(L.line, s + 2, l(s + 2));
-        const t0 = beside(L.line, s - 0.25, 0),
-          t1 = beside(L.line, s + 0.25, 0);
-        const u0 = beside(L.line, s - 0.25, l(s - 0.25)),
-          u1 = beside(L.line, s + 0.25, l(s + 0.25));
-        diverge = Math.max(
-          diverge,
-          Math.abs(deg(wrap(Math.atan2(u1.x - u0.x, u1.z - u0.z) - Math.atan2(t1.x - t0.x, t1.z - t0.z)))),
-        );
-        const ab = Math.hypot(b.x - a.x, b.z - a.z),
-          bc = Math.hypot(d.x - b.x, d.z - b.z),
-          ca = Math.hypot(a.x - d.x, a.z - d.z);
-        const cr = Math.abs((b.x - a.x) * (d.z - a.z) - (b.z - a.z) * (d.x - a.x));
-        const R = cr < 1e-9 ? Infinity : (ab * bc * ca) / (2 * cr);
-        if (R < minRadius) {
-          minRadius = R;
-          at = s;
-        }
+  const out: {
+    id: string;
+    line: string;
+    kind: string;
+    s: number;
+    toe: { x: number; z: number };
+    hand: 1 | -1;
+    frogD: number;
+    frogAngle: number;
+    clearD: number;
+    minRadius: number;
+    at: number;
+  }[] = [];
+  const LEAD = TURNOUT;
+  for (const j of junctions()) {
+    const t = turnout(j.through, j.diverging, j.lever),
+      toe = j.through(0);
+    let minRadius = Infinity,
+      at = 0;
+    for (let d = 0; d <= LEAD + 1e-6; d += 0.5) {
+      const a = j.diverging(d - 2),
+        b = j.diverging(d),
+        c = j.diverging(d + 2);
+      const ab = Math.hypot(b.x - a.x, b.z - a.z),
+        bc = Math.hypot(c.x - b.x, c.z - b.z),
+        ca = Math.hypot(a.x - c.x, a.z - c.z);
+      const cr = Math.abs((b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x));
+      const R = cr < 1e-9 ? Infinity : (ab * bc * ca) / (2 * cr);
+      if (R < minRadius) {
+        minRadius = R;
+        at = d;
       }
-      out.push({ line: L.id, what, s0, s1, diverge, minRadius, at });
     }
+    const line = j.line === 'timber' ? 'line1' : 'line2';
+    out.push({
+      id: j.id,
+      line,
+      kind: j.kind,
+      s: j.s,
+      toe,
+      hand: t.hand,
+      frogD: t.frogD,
+      frogAngle: t.frogAngle,
+      clearD: t.clearD,
+      minRadius,
+      at,
+    });
   }
   return out;
 }
@@ -426,19 +438,18 @@ export function checkContinuity() {
   const foul = fouling(all);
   const turns = turnouts();
   for (const t of turns) {
-    const L = LIVE.find((l) => l.id === t.line)!;
-    const p = beside(L.line, t.at, 0);
+    // The lines' turnouts and crossover lead onto or off the offset track; the spur and the leg are Home's yard.
     findings.push({
-      track: `${t.line}-up`,
+      track: t.kind === 'spur' ? `${t.line}-${t.id === 'J1' ? 'spur' : 'leg'}` : `${t.line}-up`,
       status: 'v26',
       kind: 'radius',
-      s: t.at,
-      x: p.x,
-      z: p.z,
+      s: t.s,
+      x: t.toe.x,
+      z: t.toe.z,
       value: t.minRadius,
       severity: LIMITS.radius / t.minRadius,
       gross: false,
-      text: `the ${t.what}'s eased shift: radius ${t.minRadius.toFixed(1)} m, leaving at ${t.diverge.toFixed(1)}° (a 1:8 turnout leaves at 7°)`,
+      text: `${t.id} (${t.kind} at s ${t.s}): its diverging road turns at radius ${t.minRadius.toFixed(1)} m, frog ${t.frogAngle.toFixed(1)}° (a 1:8 frog is 7.2°)`,
     });
   }
   const clear = platforms();
@@ -459,7 +470,7 @@ export function checkContinuity() {
   const unique = findings;
   const ranked = unique.filter((x) => x.kind !== 'chord').sort((a, b) => b.severity - a.severity);
   const drawn = new Set(all.filter((t) => t.pose !== 'none').map((t) => t.id));
-  const isTrack = (x: Finding) => x.kind === 'join' || drawn.has(x.track) || x.track.endsWith('-up');
+  const isTrack = (x: Finding) => x.kind === 'join' || drawn.has(x.track) || /-(up|spur|leg)$/.test(x.track);
   const worst = (status: (s: Track['status']) => boolean) =>
     ranked.filter((x) => status(x.status) && isTrack(x)).slice(0, 10);
   const failures = unique.filter((x) => x.gross).length;
@@ -497,10 +508,12 @@ export function printContinuity(r: ContinuityReport) {
   for (const x of r.foul) console.log(`    ${x.track}: ${x.text}`);
   const line = (x: Finding) =>
     `    ${x.gross ? 'FAIL ' : ''}${x.track} [${x.status}] s ${x.s.toFixed(0)} (${x.x.toFixed(1)}, ${x.z.toFixed(1)}): ${x.text}`;
-  console.log("  turnouts and crossover (divergence from today's track, tightest radius of the eased shift):");
+  console.log(
+    '  junctions (src/place/junctions.ts): toe x, z | hand | frog m from the toe, angle ° | clear m | tightest diverging radius m @d:',
+  );
   for (const t of r.turns)
     console.log(
-      `    ${t.line} ${t.what}: leaves at up to ${t.diverge.toFixed(1)}°, radius ${t.minRadius.toFixed(1)} m at s ${t.at}`,
+      `    ${t.id} ${t.line} ${t.kind} s ${t.s} | (${t.toe.x.toFixed(1)}, ${t.toe.z.toFixed(1)}) | ${t.hand > 0 ? 'right' : 'left'} | ${t.frogD.toFixed(1)}, ${t.frogAngle.toFixed(1)}° (1:${(1 / Math.tan((t.frogAngle * Math.PI) / 180)).toFixed(1)}) | ${t.clearD.toFixed(1)} | ${f1(t.minRadius)} @${t.at.toFixed(1)}`,
     );
   console.log('  platform edges against both tracks (car side to platform edge, closest point):');
   for (const p of r.clear) console.log(`    ${p.name} / ${p.track}: ${p.clearance.toFixed(2)} m at s ${p.at}`);
