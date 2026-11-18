@@ -13,4 +13,9 @@ Checkpoint stills for [the summit path plan](../../plans/ring-summit-path.md), s
   does not show. The path leaves b along the rim.
 - [deck](deck.png): on the deck 5 m from the halt-side end, looking toward b.
 
-No ride under the bridge was staged. Not tested on a device.
+- [ride-under](ride-under.png): the ride under the deck (seed `stack-laid-1`, `dev/look/evals/ring-bridge-train.ts`,
+  `bridgetrain=ride`, `--real --video`), taken on ad7405c3 in a second sitting: end-on from behind the train at the
+  gap's height, the rider standing on a car under the deck between the two bents. A frame of the 960 x 600 video at
+  5.4 s, scaled to 1200 x 750. Least clearance 3.16 m, a car to a bent post; 5.83 m overhead.
+
+Not tested on a device.

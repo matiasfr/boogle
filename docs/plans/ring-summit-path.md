@@ -1,6 +1,6 @@
 # Ring Island: the summit path over the stack line's cutting
 
-> **Status, 18 November 2026:** Steps 1–3 done (step 3 finished on `claude/ring-summit-checkpoint`). Step 4 run (see its "As run" note): the level check, the walk over the deck and the proof stills pass; open are `reload.restored` false (as in step 2) and the ride under the bridge, not staged. Not shipped by this branch.
+> **Status, 18 November 2026:** Steps 1–3 done. Step 4's proofs all pass (see its two "As run" notes): the reload at the lookout restores in real time (the earlier false was the look's warped clock, not the game) and the ride under the bridge is staged and clears by 3.16 m at least. Step 4 is closed (18 November): the orchestrator opened the checkpoint's stills and the ride-under still, the backlog row and the claim are removed, and this shipped with the proofs. Not tested on a device.
 **Goal.** The drawn path from Ring Island's west platform to the summit lookout walks straight off the rim of the
 stack line's cutting; put a footbridge there so the path the world draws can be walked again. Serves DESIGN 7
 (Telegraph everything: a drawn path is a promise) and 11 (Show, don't tell: the way up is seen, not explained). No
@@ -201,11 +201,11 @@ Model rows are from `npm run models` (mode withCodex, 14 November).
   eval's own), add `bridge` and `cut` to `VIEWS` and to the `ringview` branch, and add `bridge: { onDeck, y }` to the
   walk's log when the walker is between a and b. Verify: the eval file type-checks (`node dev/ship-check.ts`). *Row:
   implementation of an approved plan (Codex: gpt-6.1-sol medium); may ride with step 2's implementer.*
-- [ ] **4. Checkpoint: "summit path walks"** (the full check and the proofs are here, not in the steps). *Row:
+- [x] **4. Checkpoint: "summit path walks"** (the full check and the proofs are here, not in the steps). *Row:
   runner (Codex: gpt-6.1-sol medium) for the proofs; visual review by a fresh general-purpose subagent that did not
   build it (fable medium).* Its few proofs:
   1. `npm run level-check`: "The summit path" ok.
-  2. The walk, by real input: `npm run look -- --rail-seed crossing-done --eval dev/look/evals/ring-island-walk.ts
+  2. The walk, by real input: `npm run look -- --real --rail-seed crossing-done --eval dev/look/evals/ring-island-walk.ts
      --until "window.__ringIslandDone ?? (import('/dev/look/evals/ring-island-walk.ts'), false)"`: `walk.ok` and
      `onLookout` true, `swamFrames` 0, `longestAirS` under 0.3 (today 0.7), the walker on the deck between a and b,
      `reload.restored` true. Build 1's run was 378 m in 70 s; expect about 390 m.
@@ -251,6 +251,39 @@ Model rows are from `npm run models` (mode withCodex, 14 November).
   *Not done:* the ride under the bridge (design review finding 7, Level finding 6). No eval stages it, and step 2
   could not stage it either. The step is not ticked because `reload.restored` is false and the ride-under was not
   taken. Not tested on a device.
+
+  **As run, second sitting, 18 November 2026** (branch `claude/ring-summit-reload` on origin/main ad7405c3; builder).
+  *The reload was the harness, not the game.* A warped look (`dev/look/warp.ts`) runs the page's `Date` ahead of the
+  wall; the reloaded page's `Date` starts again at the wall. The pose saved on `pagehide` therefore carries an `at` in
+  the new page's future, `readReturnSpot` refuses any record with `now - at < 0` (`src/place/return-spot.ts:39`), the
+  arrival reads no pose but a record (`src/entities/railway/arrival.ts:343`, `hadRecord` true) and falls to `atSpawn()`
+  (`arrival.ts:395`), which is Home: `SPAWN` (-97, 14) plus `ORIGIN.x` is (903, 14). The suspect named above was
+  wrong: `--rail-seed` writes the server save before the room opens, so a reload finds the same `born` and is no
+  replacement (`src/features/room-reset.ts:20`); `replacedStage` stays empty. The same walk with `--real`: `walk.ok`
+  and `onLookout` true, 392.76 m in 72.7 s, `bridge.onDeck` true (60 of 60 mid-span samples grounded), pose saved at
+  (1323.0, 64.25, -1115.1), and the reloaded page stood at (1322.99, 64.7, -1115.09): `reload.restored` true,
+  `onIsland` true, near view mounted; Get unstuck's three cases land home, dry and standing. Repeated warped on the
+  same tree it printed `reload.measured: false`, "the pose was saved 49.01 s in this page's future", and stood at
+  (903, 18.66, 14.05) as before. A player's clock does not jump ahead between pages, so a player reloading beside the
+  lookout comes back beside the lookout. No game code changed. The eval now says it needs `--real` and reports a
+  warped reload as unmeasured instead of failed; proof 2's command above now carries `--real`. Both runs in a quiet
+  machine (load 2.3 to 3.1 of 20 in the verdict).
+  *The ride under the bridge* (design review finding 7): `bridgetrain=ride` in `dev/look/evals/ring-bridge-train.ts`,
+  `npm run look -- --real --rail-seed stack-laid-1 --query bridgetrain=ride --eval dev/look/evals/ring-bridge-train.ts
+  --until window.__bridgeTrain --video --seconds 40`. The rider stands on the car of a train standing at the island
+  halt whose top is highest (`railway:train1-2`, 10.05 m), rides it out of the halt and under the deck: aboard in all
+  113 samples within 20 m of the deck. Measured every frame against the bridge's solids built from `SUMMIT_BRIDGE` as
+  view.ts builds them (the deck in 1 m slices, both bents' caps and posts, both abutments), from every car's drawn
+  envelope and the rider's drawn figure: nothing intersects. Least gaps: cars to a bent post 3.16 m (sideways), to
+  the deck 5.83 m, to a bent cap 6.86 m, to an abutment 11.68 m; the rider to a bent post 3.77 m, to the deck 6.13 m,
+  to a bent cap 7.22 m. A ray straight up from the top of the rider's figure meets the real colliders 6.29 m up. So
+  the least clearance is **3.16 m**, sideways from a car to a bent post, and 5.83 m overhead. Two runs agree within
+  0.03 m. Still: [ride-under](../world/ring-summit-path/ride-under.png), end-on from behind the train at the gap's
+  height, the rider under the deck between the bents (a frame of the 960-wide video at 5.4 s, scaled to 1200).
+  The jump from the deck onto a train was tried once in step 2 (thrown aside, no ride) and not again. *Not checked:*
+  the follow camera under the deck (the still is a fixed camera), and a seated rider (inside a car, so within the
+  cars' envelope). *Still open in this step:* the fresh visual review the row names (both sittings were the builder
+  or runner), the two ticks in `docs/agents/orchestrator-state.md`, and the ship. Not tested on a device.
 
 ## Level findings
 

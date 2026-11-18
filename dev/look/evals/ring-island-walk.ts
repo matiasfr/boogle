@@ -4,9 +4,12 @@
 // island); then Get unstuck from the brace platform's edge, from the island halt, and from the sea beside the shore, each
 // landing dry on our side (before v27: the Pier halt's deck, call 31). Staging teleports only; every measured move is the
 // controller's. Prints `RINGWALK ...` lines and writes `window.__ringIslandResult`; the run ends on the halt still.
-//   npm run look -- --rail-seed crossing-done --eval dev/look/evals/ring-island-walk.ts \
+//   npm run look -- --real --rail-seed crossing-done --eval dev/look/evals/ring-island-walk.ts \
 //     --until "window.__ringIslandDone ?? (import('/dev/look/evals/ring-island-walk.ts'), false)"
-// The reload half runs only through --until (look re-imports this file in the reloaded page). Stills alone:
+// The reload half runs only through --until (look re-imports this file in the reloaded page). It needs --real: warped
+// (dev/look/warp.ts), the page's Date runs ahead of the wall, the reloaded page's starts again at the wall, so the pose
+// is saved in the new page's future and the game refuses it (src/place/return-spot.ts, readReturnSpot) and lands you at
+// Home. A warped run then reports `reload.measured: false` instead of a restore that no player could get. Stills alone:
 //   ringview=halt   the island halt's west platform toward the shard and the ring
 //   ringview=step   an eye stepping off a standing train's tail door onto the west platform, toward the footbridge
 //   ringview=ramp   an eye at the top of the west platform's ramp, where the summit path starts, toward the footbridge
@@ -364,6 +367,9 @@ if (view || reloaded || first) {
     // ---------------------------------------------------------------- after the reload: the pose, then Get unstuck
     sessionStorage.removeItem(KEY);
     const before = result.before as { x: number; y: number; z: number } | undefined;
+    // A pose saved by a warped page carries that page's clock, ahead of this one's: no player's save is from the future.
+    const savedAt = (result.saved as { at?: number } | null)?.at;
+    const aheadS = typeof savedAt === 'number' ? f2((savedAt - Date.now()) / 1000) : null;
     const restored = await until(
       () => before && Math.hypot(b.position.x - before.x, b.position.z - before.z) < 3 && me.coyote > 0,
       'restored',
@@ -373,6 +379,10 @@ if (view || reloaded || first) {
       () => false,
     );
     result.reload = {
+      measured: aheadS !== null && aheadS <= 0,
+      ...(aheadS !== null && aheadS > 0
+        ? { why: `the pose was saved ${aheadS} s in this page's future: run --real` }
+        : {}),
       restored,
       at: where(),
       onIsland: g.onIsland(b.position.x, b.position.z),
