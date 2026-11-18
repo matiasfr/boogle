@@ -25,9 +25,8 @@ import {
   trains,
   type Seed,
 } from '../../test/helpers/rail.ts';
-import { Train } from '../../src/sim/railway-components.ts';
 import { LINE2 } from '../../src/sim/railway-lines.ts';
-import { TRAIN_PHASE } from '../../src/sim/railway-train.ts';
+import { TRAIN_PHASE, trainAlong } from '../../src/sim/railway-train.ts';
 import { legOpen } from '../../src/sim/railway-queries-route.ts';
 import { RAIL_LEGS, legFrame } from '../../src/sim/railway-route.ts';
 import { HAUL, haulEnd, haulSettled, haulTarget, haulU } from '../../src/sim/railway-ring-haul.ts';
@@ -322,15 +321,27 @@ test('reload and late join mid-haul: the checkpoint round-trips moved and from',
 });
 
 // ---------------------------------------------------------------- the railhead re-route (railhead-reroute, step 2)
-/** pairFixture with the train standing at the Railhead (the wagon, its footings just off) kept there through the haul:
- * an ask restarted its dwell, so the settle, not its own departure, is what moves it. Its slot. */
-function standingFixture(): { s: Seed; slot: number } {
+/** pairFixture run on by accepted ticks only until a line 2 train is running up to the Railhead 400 m or more short of
+ * it, so it is still on its way when the haul settles (20 m/s, the haul about 12.7 s) and the settle replans it. A
+ * train standing at the Railhead through a whole haul is not a state ordinary ops reach: the pair comes no earlier than
+ * the wagon's arrival (its footings), and its 50-tick dwell, even restarted once by a lever ask, ends before the haul's
+ * at least 127; only the balanced hold keeps one there, by the fleet's phase. So the standing re-route stays the rule
+ * tests' (test/railway-ring.test.ts, by placement), and these drive a running one. Its slot. */
+function runningFixture(): { s: Seed; slot: number } {
   const s = pairFixture();
-  const slot = trains(s.w).findIndex((r) => r.phase === TRAIN_PHASE.STAND && r.at === 4);
-  assert.ok(slot >= 0, 'a train stands at the Railhead');
-  Object.assign(s.w.mut(Train, s.w.lookup(Train, slot)!)!, { depart: s.t + 250 });
-  assert.equal(invariant(s.w), null);
-  return { s, slot };
+  const far = () =>
+    trains(s.w).findIndex(
+      (r) =>
+        r.phase === TRAIN_PHASE.RUN &&
+        r.to === 4 &&
+        r.track === 0 &&
+        stopsOf(s.w, LINE2)[4]! - trainAlong(r, LINE2, s.t) >= 40000,
+    );
+  for (let guard = 0; far() < 0; guard++) {
+    assert.ok(guard < 6000, 'a train on its way up to the Railhead');
+    advanceWorks(s, 1);
+  }
+  return { s, slot: far() };
 }
 const ringStop = (w: World) => ({
   stop: aperture(w).stop,
@@ -339,7 +350,7 @@ const ringStop = (w: World) => ({
 });
 
 test('re-route: mirrors hold the old stop through the haul, then the new stop and re-routed trains in one packet set', async () => {
-  const { s, slot } = standingFixture();
+  const { s, slot } = runningFixture();
   const r = await host('reroute-mirrors', s, setters);
   try {
     const a = r.connect('s'),
@@ -355,7 +366,7 @@ test('re-route: mirrors hold the old stop through the haul, then the new stop an
       for (const m of [a, b]) {
         assert.deepEqual(ringStop(m.confirmed()), old, `a mirror holds the old stop (tick ${r.tick})`);
         const t = trains(m.confirmed())[slot]!;
-        assert.deepEqual([t.phase, t.at], [TRAIN_PHASE.STAND, 4], 'and the train stands at the old head');
+        assert.deepEqual([t.phase, t.to, t.dest], [TRAIN_PHASE.RUN, 4, RING_HEAD[0]!.s], 'bound for the old head');
       }
     }
     // One step: the settle's tick and its flush.
@@ -363,7 +374,8 @@ test('re-route: mirrors hold the old stop through the haul, then the new stop an
     assert.equal(r.tick, end);
     const now = { stop: 1, head: 1, railhead: RING_HEAD[1]!.s };
     assert.deepEqual(ringStop(r.w), now, 'the server moved the stop at haulEnd');
-    assert.notEqual(trains(r.w)[slot]!.at, 4, 'and re-routed the standing train');
+    const t = trains(r.w)[slot]!;
+    assert.deepEqual([t.phase, t.to, t.dest], [TRAIN_PHASE.RUN, 4, RING_HEAD[1]!.s], 'and replanned the train to it');
     for (const m of [a, b]) {
       assert.deepEqual(ringStop(m.confirmed()), now, 'the mirror has the new stop');
       assert.deepEqual(trains(m.confirmed()), trains(r.w), 'and the re-routed trains, in the same packet set');
@@ -374,7 +386,7 @@ test('re-route: mirrors hold the old stop through the haul, then the new stop an
 });
 
 test('re-route: a checkpoint mid-haul round-trips stop and re-routes once after reload', async () => {
-  const { s, slot } = standingFixture();
+  const { s, slot } = runningFixture();
   const r = await host('reroute-reload', s, setters);
   try {
     await setPair(r);
@@ -385,23 +397,24 @@ test('re-route: a checkpoint mid-haul round-trips stop and re-routes once after 
     assert.equal(stamp.stop, 0, 'mid-haul, the old stop');
     await r.restart();
     assert.deepEqual(aperture(r.w), stamp, 'the verified checkpoint keeps stop with the haul');
-    assert.deepEqual(trains(r.w), rows, 'and the train still at the old head');
+    assert.deepEqual(trains(r.w), rows, 'and the train still bound for the old head');
     const a = r.connect('s');
     r.flush();
     assert.equal(aperture(a.confirmed()).stop, 0);
     const moves: number[] = [],
       reroutes: number[] = [];
     let was = aperture(r.w).stop,
-      at = trains(r.w)[slot]!.at;
+      dest = trains(r.w)[slot]!.dest;
     while (r.tick < end + 50) {
       await r.ticks(1);
       if (aperture(r.w).stop !== was) moves.push(r.tick);
-      if (at === 4 && trains(r.w)[slot]!.at !== 4) reroutes.push(r.tick);
+      if (trains(r.w)[slot]!.dest !== dest) reroutes.push(r.tick);
       was = aperture(r.w).stop;
-      at = trains(r.w)[slot]!.at;
+      dest = trains(r.w)[slot]!.dest;
     }
     assert.deepEqual(moves, [end], 'the stop moves once, at the settle, after the reload');
-    assert.deepEqual(reroutes, [end], 'the train is re-routed once, then');
+    assert.deepEqual(reroutes, [end], 'the train is replanned once, then');
+    assert.equal(dest, RING_HEAD[1]!.s, 'to the new head');
     assert.deepEqual(ringStop(a.confirmed()), ringStop(r.w));
   } finally {
     await r.done();
