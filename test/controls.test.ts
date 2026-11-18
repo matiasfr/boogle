@@ -306,3 +306,25 @@ test('controls: a wrapped action in src/ binds its guide keys through the action
     }
   assert.deepEqual(missing, []);
 });
+
+// macOS sends no keyup for other keys while Cmd is held (src/player/input.ts clears its held keys on Cmd's keyup for
+// this). A bound key's action must be let go the same way: E is interact's key now, and the garage's Install hold
+// (wrapAction('interact') in src/features/garage.ts) commits on its own if interact's up never comes. Review of
+// claude/garage-keyboard-install: E down, Cmd down, E let go (no keyup), Cmd up.
+test('controls: Cmd let go releases a bound key held down, since macOS drops its keyup', () => {
+  const [pad] = freeSlots();
+  const log: string[] = [];
+  quiet(() =>
+    registerAction('meta-hold-test', {
+      pad: pad!,
+      key: 'KeyE',
+      label: 'Meta hold test',
+      group: 'hands',
+      down: () => log.push('down'),
+      up: () => log.push('up'),
+    }),
+  );
+  assert.ok(keyEvent({ type: 'keydown', code: 'KeyE' }));
+  keyEvent({ type: 'keyup', code: 'MetaLeft', metaKey: false });
+  assert.deepEqual(log, ['down', 'up'], 'the hold is still down after Cmd went up with no keyup for E');
+});
