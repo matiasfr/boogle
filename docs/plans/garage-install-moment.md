@@ -1,7 +1,7 @@
 > **14 November 2026: there is no try-on.** The owner's call replaces every "Try it" below (call 3, the tables and
 > the as-built notes, which are kept as the record): [no try-on](#no-try-on-14-november-2026).
 >
-> **Status, reconciled 16 November 2026 against main 3720b4c3b:** G1–G2 (#1679) and G3–G5 (#1681) are on main; direct install/selection follow-ups shipped in #1794. Built, not shipped: none verified. Next: reconcile the garage checkpoint. Proof files exist in /Users/matiasfranco/Developer/boogle/.look/codex/v45-rebase/evidence/ (final-garage-open real-time capture and final-garage-two verdict), with later install/bystander/perf records in roundhouse-rotunda Checkpoint B (#1889); full original bot/check/before-after perf coverage and device proof are not verified here. G2's stand does not fit as the review placed it: [G2 as built](#g2-as-built-12-november-2026). The next Ring
+> **Status, 18 November 2026, against origin/main 12c244db4:** G1–G2 (#1679), G3–G5 (#1681) and the install/selection follow-ups (#1794) are on main, since joined by the rotunda, the Home flip and garage choices steps 1 to 3 (the 20 m/s install is `Line.boiler` 1, the longer boiler 2). The checkpoint ran on HOTBOX on 18 November: the steel bot, the two-player look with the banner, the real-time capture (press-to-drop 1377 to 1384 ms), perf at the Roundhouse and `npm run check` (exit 0 on 7b1cf4028) all pass; not tested on a device. **Not ticked:** on desktop, opening the garage opens the pause menu over it ([checkpoint run](#checkpoint-run-18-november-2026), Defects). Next: that fix, then the owner's word on the box. G2's stand does not fit as the review placed it: [G2 as built](#g2-as-built-12-november-2026). The next Ring
 > Island item after greybox leg 1 step 3 (owner, 12 November: "yes, plain for now", "but prioritize the garage
 > moment"). View only: no sim, wire or save change, no `WORLD_NS` bump.
 
@@ -574,6 +574,80 @@ the live install working. One proof look each; the full check, the bot and the t
       of the whole install at desktop width for the owner (motion is judged in motion); `npm run perf` at the
       Roundhouse before and after, reported; one device run or the line "not tested on a device". Then ship; no bump,
       so no mid-session hold.
+      Run on 18 November: [below](#checkpoint-run-18-november-2026).
+
+<a id="checkpoint-run-18-november-2026"></a>
+
+### Checkpoint run, 18 November 2026
+
+**Not ticked:** every proof ran and passed except one as a player would see it: on desktop the pause menu opens over the garage (Defects below), so the capture for the owner needed the menu shut by hand. The box waits on that fix or the owner's word.
+
+On HOTBOX (Windows, 20 logical CPUs, NVIDIA Ampere, Playwright's full Chromium), branch
+`claude/garage-moment-checkpoint` from origin/main `12c244db4` (#2189 in). Game and server code are origin/main's; the
+branch adds one eval fix (below) and the stills. Load is `npm run heartbeat`'s "CPUs busy of 20"; the bench's quiet line
+is 12. Raw output: `.look/garage-moment-checkpoint/` and the `.look/gmc-*` captures on that machine (not committed).
+Stills: [docs/reports/garage-moment-checkpoint/](../reports/garage-moment-checkpoint/).
+
+- **The steel bot through the garage: proved.** `npm run playthrough -- --from steel-home --to boiler-long --name
+  gmc-steel` (unchanged since 12 November; `railway-steel-bot.ts` with `bots/railway-steel.ts`, which holds until
+  `Line.boiler` is 2 since the 20 m/s row, b5bc4e0cb): pass on `12c244db`, load 3.0, 18.9 game s. The bot walked to the
+  post, opened the garage on the Longer boiler ready, held Install to `Line.boiler` 2, waited the moment out and closed
+  the garage; "boiler installed" at 18.9 s, no recovery. `.look/playthrough/gmc-steel/` (verdict.json, bot.txt,
+  report.txt).
+- **G4's two-player look: proved after an eval fix.** The first run (`gmc-two`) installed nothing: `garage-two.ts` held
+  until `Line.boiler` was 1, which a `steel-home` seed already is (the 20 m/s row), so the hold let go at once and the
+  installer's garage still read "Ready". A stale script, not the game: the steel bot moved to 2 in b5bc4e0cb and this
+  eval did not. Fixed in its own commit (`< 1` to `< 2`, one comment). Rerun `gmc-two2` (`--players 2 --real
+  --rail-seed steel-home --hud --eval dev/look/evals/garage-two.ts --until window.__twoDone --action
+  dev/look/evals/garage-act.ts --query garage=enter --seconds 12 --frames 24 --video`): pass, load 4.3 to 3.6. The
+  installer's moment was `mine`, `Line.boiler` 2; the bystander 12 m east saw the moment as not `mine` with the garage
+  shut, and its position, camera and input hold read the same before and after. Seen in `gmc-two2-motion.png` and the
+  video: the barrel on its stand until the commit, gone from it by about 5.5 s, steam at the table, the engine turning
+  once round from about 8 to 10 s; then the bigger cradle's orange frame appears on the stand (garage choices G-c, as
+  designed). **The banner:** a second run with the bystander at 40 m (a copy of the eval under `.look/`, the tracked
+  script unchanged, `gmc-two-far`): "Longer boiler installed / Line 2’s trains take it at the Village" shown from
+  about 5.2 to 9.9 s. In that staging the far player stood on line 2's track and a train passed over them; staging,
+  not the moment.
+- **The real-time capture at desktop width: proved, with a defect found.** `--real --size 1440x900 --rail-seed
+  steel-home --hud --eval dev/look/evals/railway-install.ts --until window.__installDone --action
+  dev/look/evals/railway-install-act.ts --video --seconds 9`. **Press-to-drop 1377 ms** (`gmc-install`, load 10.4 at
+  start, 2.9 at the end) and **1384 ms** (`gmc-install2`, load 3.4 to 1.1): commit 1207 to 1213, accept 34 to 36 ms
+  later, hit 1512 to 1518. Designed 1380 (1200 hold, 180 quiet), so that is well over 400 ms, by design; a local
+  server, so no real round trip. **No touch hold**: the press is the interact action (keyboard path). **Defect:** the
+  first capture has the pause menu open over the garage's left third the whole time (the stand and the lift are under
+  it); see Defects. `gmc-install2` closes the pause menu first (a copy of the action under `.look/` calls
+  `closePause()`; it printed "pause was open true, now false, garage open true") and is the one for the owner:
+  `.look/gmc-install2-realtime.webm`. Seen there: "Keep holding" with the yellow ghost of the long boiler over the
+  engine; the barrel coming in from the left close to the camera and down onto the engine about 1.1 to 1.5 s in;
+  "Installed" on the tile and the button, the fitted long boiler with its dome; top speed counting 24 then 25 m/s,
+  cars 5; smoke at about 3.2 s; the engine turning once round from 3.7 to 5.8 s and back at its pose; the button gone
+  by 6.4 s. Sound not heard (a capture has none). The prompt at the post still reads "Look at the engine".
+- **Perf at the Roundhouse: reported, quiet.** `npm run perf -- --hardware --view summit --seconds 10` (the view over
+  Home that the rotunda checkpoints used; perf has no rail seed or Roundhouse view): load 1.7 to 2.4; 370 calls, 220
+  shadow calls, 1,074,557 triangles, 232 programs; 552 frames, CPU 9.59 avg / 12.15 p95 ms, GPU render 3.94 avg /
+  6.61 p95 ms; 960×600, DPR 1, MSAA 4. At the table itself, seeded at `steel-home` (the rotunda's frame sample: `look
+  --real --rail-seed steel-home --cam 952,27,4 --look 943,19.5,26 --action dev/look/evals/railway-works-at.ts --query
+  'worksat=table&worksperf=1&prof=1' --warm 20`): load 4.5 to 1.0; 412 calls, 946,365 triangles; 276 frames, CPU
+  10.27 avg / 11.60 p95 ms, GPU render 4.14 avg / 4.19 p95 ms, none missing. No before figure (five merges since the
+  plan's). `.look/garage-moment-checkpoint/perf.log`, `perf-verdict.json`, `perf-table.log`.
+- **`npm run check`: exit 0 on `7b1cf4028`** (origin/main `12c244db4` plus the eval fix and the stills; game, server and tests are origin/main's), under `timeout 2700`: lint, typecheck, unit tests (2,166: 2,165 pass, 0 fail, 1 todo), level, assets, prefabs and the production build. `.look/garage-moment-checkpoint/check.log`, `check.exit`.
+- **Device:** not tested on a device.
+
+**Defects (not fixed here).**
+
+- **Opening the garage on desktop opens the pause menu over it.** `garage-view.ts` `api.open()` calls
+  `document.exitPointerLock()` (src/entities/railway/garage-view.ts:1183) without taking the modal; pause's
+  `pointerlockchange` listener (src/features/pause.ts:658-674) opens the menu on any lost lock unless a modal, a talk,
+  a tuning visit, a free dev cursor or touch is up, and the garage is none of those. Smallest reproduction: a desktop
+  page with the pointer locked, Interact at the garage post: the garage opens and the pause menu opens over it. Seen in
+  every capture here where a page opened the garage (the steel bot's end still, `p2-gmc-two2-still.png`,
+  `gmc-install-realtime.webm`); the 12 November captures on the Mac did not show it, probably because those pages
+  never held the lock. Present since the garage's first build (8ff93170a). A real player would have to press Resume
+  before using the garage.
+
+**Scripts changed.** `dev/look/evals/garage-two.ts`: the installer's hold waits for `Line.boiler` 2, not 1.
+`dev/look/evals/railway-install.ts`'s `installstep=hold` and `adopt` paths still wait for 1 and expect 1 (not run
+here; the default `prompt` step used above is unaffected).
 
 **At the Home flip (home-station step 6, not this plan):** `SHED_TABLE` moves with the flip's own bump; delete
 `GARAGE_GEO.a`, the `installHere` fallback and what is left of `boiler-install-view.ts`'s post and prompt (its pallet
