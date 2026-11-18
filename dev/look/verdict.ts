@@ -11,7 +11,7 @@ import { loadLimit, machineLoad } from './machine-load.ts';
 
 export const KILLED_EXIT = 3;
 /** The load a run is judged against when the gate is off (BOOGLE_BOT_MAX_LOAD=0): turning it off isn't evidence.
- * Written for 10 cores; finishRun passes it through loadLimit. */
+ * finishRun passes it through loadLimit (unchanged off Windows, 18 busy CPUs on HOTBOX). */
 const EVIDENCE_LOAD = 30;
 const CLOSED =
   /Target page, context or browser has been closed|Target closed|Browser has been closed|browser has disconnected/i;

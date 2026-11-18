@@ -14,11 +14,12 @@
 // process are smoothed with a 60 s time constant, so a gate that polls sees a 1-minute average as on the Mac; a single
 // reading is a one-shot sample of a second or more.
 //
-// Thresholds are written for the Mac's 10 cores (the bot gate's 30, the bench's quiet 6). loadLimit() turns one into
-// this machine's units through load per core: 30 on 10 cores is 3 per core, 6 is 0.6. Off Windows that is per core
-// times this machine's cores (the Mac reads 30 and 6 as before). On Windows a per-core limit above SATURATED, which
-// only the invisible queue could reach, caps at SATURATED: on HOTBOX's 20 logical CPUs the bot gate holds above 18
-// busy (90%) and the quiet check wants at most 12 busy (60%).
+// Thresholds are written for the Mac's 10 cores (the bot gate's 30, the bench's quiet 6). Off Windows loadLimit()
+// returns them unchanged on any core count, so the Mac, a 4-vCPU CI runner and a 64-core box keep 30 and 6 (scaling
+// them would hold a small runner's nightly job for the gate's 20 minutes and turn the gate off on a big box). On
+// Windows it turns one into busy CPUs through load per core: 30 on 10 cores is 3 per core, 6 is 0.6, and a per-core
+// limit above SATURATED, which only the invisible queue could reach, caps at SATURATED: on HOTBOX's 20 logical CPUs the
+// bot gate holds above 18 busy (90%) and the quiet check wants at most 12 busy (60%).
 import os from 'node:os';
 
 const windows = process.platform === 'win32';
@@ -77,8 +78,9 @@ export function loadAverages(): number[] {
   return windows ? [busyCpus()] : os.loadavg();
 }
 
-/** A threshold written for REFERENCE_CORES cores, in this machine's units (0 stays 0: a gate turned off). */
+/** A threshold written for REFERENCE_CORES cores, in this machine's units: unchanged off Windows, busy CPUs on Windows
+ * (0 stays 0: a gate turned off). */
 export function loadLimit(onReferenceCores: number, cores = os.cpus().length, win = windows): number {
-  const perCore = onReferenceCores / REFERENCE_CORES;
-  return (win ? Math.min(perCore, SATURATED) : perCore) * cores;
+  if (!win) return onReferenceCores;
+  return Math.min(onReferenceCores / REFERENCE_CORES, SATURATED) * cores;
 }

@@ -28,7 +28,7 @@ export const PERF_POLICY = {
   /** Absolute budgets: asset-pipeline.md (owner, 6 November) and one 120 Hz frame on the Mac. */
   budget: { firstLoadMB: 25, totalMB: 100, assetMB: 4, frameMs: 8.33 },
   /** Measure only with the bot slot held, no other harness browser and the 1-minute load at most `maxLoad` (written for
-   * 10 cores; loadLimit in dev/look/machine-load.ts scales it per core, 12 busy logical CPUs of HOTBOX's 20);
+   * 10 cores; kept as is off Windows; on Windows loadLimit in dev/look/machine-load.ts makes it 12 busy logical CPUs of HOTBOX's 20);
    * wait up to `waitMinutes` for that, then skip the night rather than record a busy machine. */
   quiet: { maxLoad: 6, waitMinutes: 30 },
 };

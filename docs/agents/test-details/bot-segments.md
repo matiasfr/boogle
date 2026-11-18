@@ -55,7 +55,7 @@ after acquisition, and the slot lasts until browser/child cleanup. A timeout wit
 with a note; missing beats, health errors and co-op convergence/clock failures still fail. Timeouts are reported separately.
 
 The queue also waits for the machine: a free slot is not granted while the machine's load is above
-`BOOGLE_BOT_MAX_LOAD` (default 30, written for 10 cores and scaled per core; `0` turns the gate off). The load is the 1-minute
+`BOOGLE_BOT_MAX_LOAD` (default 30, the same on any macOS or Linux machine; `0` turns the gate off). The load is the 1-minute
 load average, or busy logical CPUs on Windows, which has none (`dev/look/machine-load.ts`: 18 of HOTBOX's 20), and queue progress says so ("waiting for load 41 → 30").
 After `BOOGLE_BOT_LOAD_WAIT_MS` (default 20 minutes) at the front of the queue the run goes ahead and is marked under
 load. The gate is on acquisition only: a running job's own load never stops it, and the load wait comes before the
@@ -68,7 +68,7 @@ Every playthrough, look and scenario writes a verdict (`.look/playthrough/<name>
 not a pass. The final verdict is stamped with `commit` (HEAD), `tree` (HEAD^{tree}), `dirty` (uncommitted file count),
 `loadAtStart`, `loadAtEnd`, `underLoad`, `queueWaitMs`, `startedAt`, `endedAt` and `command` (the exact command line,
 with any `BOOGLE_BOT_*`, `BOOGLE_QUERY` and `LOOK_*` settings), and the same in one line of `report.txt`. `underLoad`
-is true when either load is above the limit (30 on 10 cores, scaled per core, when the gate is off) or the gate gave up waiting; a pass under load
+is true when either load is above the limit (30, or 18 on HOTBOX, when the gate is off) or the gate gave up waiting; a pass under load
 says "passed under load: not evidence of timing or feel". A run stopped from outside (SIGTERM, SIGINT or SIGHUP, or its
 browser, context or page closed under it) is `"killed"` with a `reason` (and the `outcome` its caller saw), exit code 3;
 a game failure stays a failure, exit 1. Rerun a killed run; it says nothing about the game. A brokered harness stamps

@@ -477,7 +477,7 @@ if (dry && job === 'perf') {
           return { execution, waited };
         });
         const log = output(execution);
-        const header = `daily: bot slot after ${Math.round(waited / 1000)} s queued; 1-minute load ${machineLoad().toFixed(1)} at the end\n`;
+        const header = `daily: bot slot after ${Math.round(waited / 1000)} s queued; ${loadKind} ${machineLoad().toFixed(1)} at the end\n`;
         fs.writeFileSync(path.join(dir, `${name}.log`), header + log);
         if (execution.status !== 0) {
           const lines = log.split('\n').filter((line) => /\bFAIL\b/i.test(line));

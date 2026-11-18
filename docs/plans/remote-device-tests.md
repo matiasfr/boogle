@@ -104,7 +104,7 @@ and B cover. Each step leaves `node dev/ship-check.ts` green.
   HOTBOX, a look's verdict taken while a bot runs shows a non-zero load. Done when a `bench` on HOTBOX under a running
   bot says not measured, busy.
   *Built 18 November:* Windows reads busy logical CPUs from `os.cpus()` (smoothed over 60 s within a process), and
-  `loadLimit()` scales the 10-core thresholds per core, capped at 90% busy: the gate's 30 is 18 on HOTBOX's 20 logical
+  `loadLimit()` keeps the thresholds unchanged off Windows and on Windows scales them per core, capped at 90% busy: the gate's 30 is 18 on HOTBOX's 20 logical
   CPUs, the quiet 6 is 12. Checked on HOTBOX: the heartbeat line, the gate decision and the quiet check (`npm run daily --
   perf --dry-run --local` prints it, "busy: load 14.0, quiet at most 12.0" once). Not run: a full `bench` under a bot
   and a look verdict under a bot (another job held the machine's browser).

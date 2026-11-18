@@ -9,7 +9,7 @@
 // Among runs of the same length, a lower BOOGLE_BOT_RANK (1–3, default 2) goes first, then first come, first served;
 // a run that has waited BOOGLE_BOT_RANK_WAIT_MS (30 minutes) counts as rank 1, so a P3 is never starved.
 // The load gate: a slot is not granted while the machine's load (machine-load.ts: the 1-minute load average, busy CPUs on
-// Windows) is above BOOGLE_BOT_MAX_LOAD (30 on 10 cores, scaled per core to this machine by loadLimit; 0 disables),
+// Windows) is above BOOGLE_BOT_MAX_LOAD (30; on Windows loadLimit makes it busy CPUs, 18 of HOTBOX's 20; 0 disables),
 // for up to BOOGLE_BOT_LOAD_WAIT_MS (20 minutes), after which the run goes ahead and its verdict says "under load".
 // It gates acquisition only: a running job's own load never stops it.
 import fs from 'node:fs';
