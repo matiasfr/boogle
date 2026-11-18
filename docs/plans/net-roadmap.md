@@ -41,28 +41,39 @@ PeerJS, TURN, browser hosting, host migration and snapshot PUTs are deleted. Don
 
 ### 1. Stable player identity (done 2026-10-31)
 
-As built on 15 November 2026 (#1868, #1871, #1873, #1875), durable server-issued principals replace
-browser-selected pid/key admission. `src/player/account.ts` resolves the saved device credential before identity
-and identity-keyed caches initialize. A new guest can play immediately; Pause → Options → Account optionally
-promotes that guest with a generated five-digit PIN or signs into an existing account. Promotion preserves pid.
+The 31 October pid seam stays; since 15 November (#1868, #1871, #1873, #1875, review fixes #2153) the server
+issues it. A principal is a server-generated 10-hex pid in `server/src/account-store.ts`; a device holds a
+256-bit session token for it, and an account is that same pid plus a server-generated five-digit PIN (leading
+zeroes kept, spaces and hyphens accepted). `src/player/account.ts` resolves the saved credential in boot, before
+`identity.ts` publishes the pid or identity-keyed caches load. A new guest plays at once; Pause → Options →
+Account optionally saves a PIN (promotion keeps the pid), signs in, replaces the PIN or signs out.
 
-- The socket URL carries the connection ID, never a credential. A bounded first authentication frame resolves
-  the device session to pid on the server before room admission. Unknown, expired or revoked sessions cannot join;
-  malformed frames are refused and timeout/storage outages remain retryable.
-- Separate device tokens may resolve to the same pid. In one room the newer connection wins, the older receives
-  `elsewhere` and stops reconnecting, and its retired connection cannot take the room back. Same-connection
-  reconnect and grace cleanup remain. Another principal cannot reuse that connection ID.
-- Session and PIN digests persist in `accounts.sqlite`, separately from room saves and namespace cleanup.
-  PIN replacement revokes other device sessions and closes their sockets across rooms; sign-out revokes its own
-  session. Operator tuning still needs its separate capability.
-- Switching people closes the old room and reloads before publishing the new identity; identity-sensitive visit
-  memory is cleared. Offline or unreadable credentials are retained with explicit status; blocked storage can
-  support this visit only. The development cutover bumped `WORLD_NS` once to v48, without importing old pids.
-- Accounts carry identity only. Wallets, rails, upgrades, cargo and saves stay per room; cosmetics and settings
-  remain local. No room-storage SQLite conversion is implied. See [account checkpoints](accounts.md#checkpoint-b-complete-player-flow-and-room-isolation)
-  for the evidence. On 17 November the admission cases and the two-store browser flow passed through the trusted
-  broker; the eight-player load, browser room isolation, the Account visual review and an independent review are
-  still pending, so checkpoint closure is pending.
+- `accounts.sqlite` on the data volume keeps principals, accounts and sessions as SHA-256 digests only. Sessions
+  last 90 days, renewed on each verified use (HTTP or room admission). Replacing the PIN revokes the account's
+  other sessions; sign-out revokes the caller's; revoked rows stay, so a known token never registers again. Both
+  close the matching sockets in every room after the transaction commits. Sign-in is limited to 10 requests a
+  minute per address, other account requests to 60.
+- The socket URL carries the connection ID only. The first frame (`src/net/account-wire.ts`, 1 KiB, five
+  seconds) carries the token and, separately, an optional operator tuning key; `server/src/host/rooms.ts`
+  resolves the pid before anything is admitted. Unknown, expired or revoked sessions and a pid in the URL are
+  refused; malformed frames close as bad; a timeout or storage failure closes retryably.
+- `hosted-room.ts` binds every command and presence frame to the verified pid: it writes that pid over whatever
+  pid a presence frame claims, for the relay, a late joiner's list and a resumed socket. In one room the newer
+  connection of a pid wins, the older gets `elsewhere` and is retired; same-connection reconnect and grace stay,
+  and another principal cannot reuse the connection ID (`taken`).
+- The browser stores one versioned record under `boogle.account` (token, pid, account ID, expiry), never the PIN.
+  If localStorage is denied it falls back to the tab store, then memory, and says "this visit only". Offline,
+  expired or unreadable credentials are kept with an explicit status; a tab still verifying never writes over a
+  newer sign-in from another tab. Switching people closes the room, clears the person's visit memory and reloads.
+- Room resets and namespace cleanup do not touch `accounts.sqlite`. Accounts carry identity only: wallets, rails,
+  upgrades, cargo and saves stay per room; name, colour, wardrobe, finds and settings stay on the device. The
+  cutover bumped `WORLD_NS` once to v48, importing no old pid. Left out: email or recovery (a lost PIN with no
+  signed-in device means a new account), chosen PINs or login names, cloud cosmetics, room ownership.
+- Proved on 17 and 18 November ([Checkpoint A](accounts.md#step-5-runner-evidence-17-november-2026),
+  [Checkpoint B run](accounts.md#checkpoint-b-run-18-november-2026)): admission cases and a fresh review, `net`
+  237/237 with the two-store browser probe, before/after eight-player load, browser room isolation, storage
+  denial, expiry, a lost create reply and the Account page review. Not proved: crash durability on Windows,
+  any device (not tested on a device); three Account page notes are with the owner.
 
 ### 2. Storage: SQLite on the volume
 
