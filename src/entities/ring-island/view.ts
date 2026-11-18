@@ -17,6 +17,9 @@ import { GROUP, groundMat } from '../../physics/physics.ts';
 import { getAudio } from '../../render/audio.ts';
 import { hearGain } from '../../render/hearing.ts';
 import { camera } from '../../render/scene.ts';
+import { PLAYER_R } from '../../constants.ts';
+import { siteExit } from '../../place/site-clearance.ts';
+import { outOf } from '../../place/sites.ts';
 import type { FrameCtx } from '../../loop.ts';
 import {
   RING_BRACE,
@@ -140,6 +143,78 @@ function createParts() {
   return { add, solid, shapes, merged };
 }
 type Parts = ReturnType<typeof createParts>;
+
+function clearanceShape(shape: Shape, parent = new THREE.Matrix4()) {
+  if (shape.kind !== 'box' && shape.kind !== 'cylinder') throw new Error('Unexpected ring scenery shape');
+  const offset = new THREE.Vector3().copy(shape.offset ?? { x: 0, y: 0, z: 0 });
+  const rotation = new THREE.Quaternion().copy(shape.rotation ?? { x: 0, y: 0, z: 0, w: 1 });
+  const matrix = parent.clone().multiply(new THREE.Matrix4().compose(offset, rotation, new THREE.Vector3(1, 1, 1)));
+  const inverse = matrix.clone().invert();
+  const extent =
+    shape.kind === 'box'
+      ? new THREE.Vector3(shape.hx, shape.hy, shape.hz)
+      : new THREE.Vector3(shape.rBottom, shape.h / 2, shape.rBottom);
+  const local = new THREE.Box3(extent.clone().negate(), extent);
+  const bounds = local.clone().applyMatrix4(matrix);
+  const centre = bounds.getCenter(new THREE.Vector3()),
+    size = bounds.getSize(new THREE.Vector3());
+  const foot = { x: centre.x, z: centre.z, c: 1, s: 0, hw: size.x / 2, hd: size.z / 2 };
+  const faces: THREE.Triangle[] = [];
+  if (shape.kind === 'cylinder') {
+    const mesh = new THREE.CylinderGeometry(
+      shape.rTop,
+      shape.rBottom,
+      shape.h,
+      shape.segments,
+      1,
+      false,
+      Math.PI / 2,
+    ).toNonIndexed();
+    const pos = mesh.getAttribute('position');
+    const point = (index: number) => new THREE.Vector3().fromBufferAttribute(pos, index);
+    for (let index = 0; index < pos.count; index += 3) {
+      const face = new THREE.Triangle(point(index), point(index + 1), point(index + 2));
+      if (face.getArea() > 0) faces.push(face);
+    }
+    mesh.dispose();
+  }
+  const point = new THREE.Vector3(),
+    nearest = new THREE.Vector3();
+  const distance = (position: THREE.Vector3Like) => {
+    point.copy(position).applyMatrix4(inverse);
+    if (!faces.length) return local.distanceToPoint(point);
+    if (faces.every((face) => face.getNormal(nearest).dot(point) <= nearest.dot(face.a))) return 0;
+    return Math.min(...faces.map((face) => face.closestPointToPoint(point, nearest).distanceTo(point)));
+  };
+  return {
+    top: bounds.max.y,
+    exit(position: THREE.Vector3Like) {
+      if (Math.abs(position.x - foot.x) > foot.hw + PLAYER_R || Math.abs(position.z - foot.z) > foot.hd + PLAYER_R)
+        return null;
+      return siteExit(position, foot, centre.y, [], outOf, undefined, 0.02, distance);
+    },
+  };
+}
+
+function ringSceneryExit(
+  position: THREE.Vector3Like,
+  solids: ReturnType<typeof clearanceShape>[],
+  height: (x: number, z: number) => number,
+) {
+  const result = new THREE.Vector3().copy(position);
+  const floor = height(result.x, result.z) + PLAYER_R;
+  if (result.y < floor - 0.02) result.y = floor;
+  for (;;) {
+    const hit = solids.find((solid) => solid.exit(result));
+    if (!hit) break;
+    const exit = hit.exit(result)!;
+    const ground = height(exit.x, exit.z) + PLAYER_R;
+    const destination = { ...exit, y: Math.max(result.y, ground) };
+    if (Math.abs(ground - result.y) < 0.5 && !solids.some((solid) => solid.exit(destination))) return destination;
+    result.y = hit.top + PLAYER_R + 0.02;
+  }
+  return result.y === position.y ? null : result;
+}
 
 /** The greybox's builders on R1's numbers (src/proto/greybox/ring.ts), writing into `parts`. */
 function builders({ add, solid }: Parts) {
@@ -335,6 +410,11 @@ function boardTexture() {
 }
 
 export type RingIslandView = ReturnType<typeof createRingIslandView>;
+function bridgeWalkSurfaces(beam: ReturnType<typeof builders>['beam'], g: IslandGround) {
+  const { landingStart, a, b } = summitBridge(g);
+  beam(PATH, landingStart, a, 2.6, 0.3);
+  beam(TIMBER, a, b, SUMMIT_BRIDGE.width, SUMMIT_BRIDGE.thick);
+}
 export function createRingIslandView(g: IslandGround, cones: readonly Cone[], centre: { x: number; z: number }) {
   const root = new THREE.Group();
   root.name = 'ring-island';
@@ -625,6 +705,9 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
         [bx, bz] = way[i + 1]!;
       const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 6));
       for (let k = 0; k < n; k++) {
+        if (i === bridgeLeg - 1 && k === n - 1) {
+          continue;
+        }
         const x0 = ax + ((bx - ax) * k) / n,
           z0 = az + ((bz - az) * k) / n,
           x1 = ax + ((bx - ax) * (k + 1)) / n,
@@ -655,7 +738,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
       y: a.y + ((b.y - a.y) * d) / span + dy,
       z: a.z + az * d + ax * side,
     });
-    beam(TIMBER, a, b, B.width, B.thick);
+    bridgeWalkSurfaces(beam, g);
     for (const s of [-1, 1]) {
       const side = s * (B.width / 2 - 0.06);
       beam(STEEL, on(0, side, B.parapet), on(span, side, B.parapet), 0.12, B.parapet);
@@ -847,6 +930,19 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
     leafBody.quaternion.set(q.x, q.y, q.z, q.w);
   }
   poseLeaf();
+  const fixedClearance = parts.shapes.map((shape) => clearanceShape(shape));
+  function clearPosition(position: THREE.Vector3Like) {
+    poseLeaf();
+    leaf.updateMatrix();
+    const solids = [
+      ...fixedClearance,
+      clearanceShape(
+        { kind: 'box', hx: leafParts.W / 2, hy: 0.4, hz: GAP / 2, offset: { x: 0, y: -0.4, z: GAP / 2 } },
+        leaf.matrix,
+      ),
+    ];
+    return ringSceneryExit(position, solids, g.islandH);
+  }
 
   // The pennant on its own fixed pole beside the hinge pier (the owner, 11 November), the far leaf's own: one definition
   // (PENNANT_POLE), so the handover at the mount distance matches. It does not turn with the leaf and stays up after the
@@ -925,6 +1021,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   return {
     root,
     bodies: [solids, groundBody, leafBody] as readonly Body[],
+    clearPosition,
     update(ctx: FrameCtx) {
       poseLeaf();
       const phase = ctx.elapsed % HAMMER.cycle;

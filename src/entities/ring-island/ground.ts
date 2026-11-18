@@ -6,6 +6,7 @@
 // and the saved pose read `islandH`, the same triangles the collider has. World metres.
 import { RING_END, RING_ORIGIN } from '../../sim/railway-ring-layout.ts';
 import { ROW_SHIFT, rowPoint } from '../../sim/railway-route.ts';
+import { SUMMIT_BRIDGE, summitBridge } from './path.ts';
 
 /** dx, dz, radius, height from the island's centre, as RING_CONES. */
 export type Cone = readonly [number, number, number, number];
@@ -134,7 +135,7 @@ export function createIslandGround(cones: readonly Cone[], centre: { x: number; 
     x >= bounds.minX && x <= bounds.maxX && z >= bounds.minZ && z <= bounds.maxZ;
   /** The ground's height at a world point, on the collider's triangles (Place's anti-diagonal split, as
    * src/place/terrain.ts's triangleHeight); -Infinity off the grid. */
-  function islandH(x: number, z: number) {
+  function triangleH(x: number, z: number, read: typeof at) {
     if (!onIsland(x, z)) return -Infinity;
     const fx = (x - x0) / ISLAND_CELL,
       fz = (z - z0) / ISLAND_CELL;
@@ -142,11 +143,54 @@ export function createIslandGround(cones: readonly Cone[], centre: { x: number; 
       j = Math.min(nz - 2, Math.floor(fz));
     const u = fx - i,
       v = fz - j;
-    const a = at(i, j),
-      b = at(i + 1, j),
-      c = at(i, j + 1),
-      d = at(i + 1, j + 1);
+    const a = read(i, j),
+      b = read(i + 1, j),
+      c = read(i, j + 1),
+      d = read(i + 1, j + 1);
     return u + v <= 1 ? a + (b - a) * u + (c - a) * v : d + (c - d) * (1 - u) + (b - d) * (1 - v);
+  }
+  const islandH = (x: number, z: number) => triangleH(x, z, at);
+  const original = new Map<number, number>();
+  const uncappedH = (x: number, z: number) => triangleH(x, z, (i, j) => original.get(i + j * nx) ?? at(i, j));
+  const { a, b } = summitBridge({ uncappedH });
+  const span = Math.hypot(b.x - a.x, b.z - a.z),
+    ux = (b.x - a.x) / span,
+    uz = (b.z - a.z) / span;
+  const half = SUMMIT_BRIDGE.width / 2 + 0.5,
+    length = 4;
+  const reach = Math.hypot(length, half) + ISLAND_CELL * Math.SQRT2;
+  const support = (x: number, z: number) => ISLAND_CELL * Math.max(Math.abs(x), Math.abs(z), Math.abs(x - z));
+  for (
+    let j = Math.max(0, Math.ceil((a.z - z0 - reach) / ISLAND_CELL));
+    j < nz && z0 + j * ISLAND_CELL <= a.z + reach;
+    j++
+  ) {
+    for (
+      let i = Math.max(0, Math.ceil((a.x - x0 - reach) / ISLAND_CELL));
+      i < nx && x0 + i * ISLAND_CELL <= a.x + reach;
+      i++
+    ) {
+      const dx = x0 + i * ISLAND_CELL - a.x,
+        dz = z0 + j * ISLAND_CELL - a.z;
+      const along = dx * ux + dz * uz,
+        across = dz * ux - dx * uz;
+      if (along < -support(ux, uz) || along > length + support(ux, uz) || Math.abs(across) > half + support(-uz, ux))
+        continue;
+      const cx = dx - (ux * length) / 2,
+        cz = dz - (uz * length) / 2;
+      if (
+        Math.abs(cx) > (Math.abs(ux) * length) / 2 + Math.abs(uz) * half + ISLAND_CELL ||
+        Math.abs(cz) > (Math.abs(uz) * length) / 2 + Math.abs(ux) * half + ISLAND_CELL ||
+        Math.abs(cx + cz) > (Math.abs(ux + uz) * length) / 2 + Math.abs(ux - uz) * half + ISLAND_CELL
+      )
+        continue;
+      const grade = (b.y - a.y) / span;
+      const cap = a.y + grade * along - (SUMMIT_BRIDGE.thick / 2) * (1 + Math.hypot(1, grade)) - 0.100001;
+      if (at(i, j) > cap) {
+        original.set(i + nx * j, at(i, j));
+        heights[i + nx * j] = cap;
+      }
+    }
   }
   /** The grid as a heightfield shape's rows (src/physics/engine.ts: heights[i][j], i along +x, j along -z from the
    * body's position at the grid's (minX, maxZ) corner), as Place's terrainCollisionTiles lays its tiles. */
@@ -165,6 +209,7 @@ export function createIslandGround(cones: readonly Cone[], centre: { x: number; 
     bounds,
     at,
     islandH,
+    uncappedH,
     onIsland,
     cone,
     fillOut,

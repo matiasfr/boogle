@@ -14,6 +14,11 @@ import {
 } from '../src/entities/ring-island/path.ts';
 import { DodecahedronGeometry } from 'three';
 import { MOVER } from '../dev/level/mover.ts';
+import * as THREE from 'three';
+import { PLAYER_R } from '../src/constants.ts';
+import { sourceFunction } from '../dev/level/source.ts';
+import { siteExit } from '../src/place/site-clearance.ts';
+import { SUMMIT_BRIDGE } from '../src/entities/ring-island/path.ts';
 
 const centre = { x: FAR.x + ORIGIN.x, z: FAR.z + ORIGIN.z };
 const g = createIslandGround(RING_CONES, centre);
@@ -27,7 +32,7 @@ test('the summit path starts at the west platform ramp foot', () => {
   near(foot.z, -836.3);
 });
 
-test('the summit bridge clears the railway and stands on uncut ground', () => {
+test('the summit bridge stays at its surveyed elevation and clears the railway', () => {
   const { a, b, middle, approach } = summitBridge(g);
   near(a.x, 1381.2);
   near(a.y, 14.93);
@@ -40,7 +45,8 @@ test('the summit bridge clears the railway and stands on uncut ground', () => {
   near(facts.bridge.span, 28);
   assert.ok(facts.bridge.grade < 0.08);
   assert.ok(facts.bridge.clearance > 8);
-  assert.ok(facts.bridge.abutmentCut < 0.1);
+  assert.ok(Math.abs(a.y - 14.932) <= 0.001);
+  assert.ok(facts.bridge.abutmentCut > 0.28);
   near(approach.x, 1374.5);
   near(approach.z, -872.3);
   near(Math.hypot(approach.x - a.x, approach.z - a.z), 8);
@@ -49,6 +55,84 @@ test('the summit bridge clears the railway and stands on uncut ground', () => {
   assert.ok(Math.abs(cross) < 1e-8);
   assert.ok((a.x - approach.x) * (b.x - a.x) + (a.z - approach.z) * (b.z - a.z) > 0);
   assert.ok(g.cone(approach.x, approach.z) - g.islandH(approach.x, approach.z) < 0.1);
+});
+
+test('the first four metres clear the timber underside across the deck and its half-metre shoulders', () => {
+  const { a, b } = summitBridge(g),
+    span = Math.hypot(b.x - a.x, b.z - a.z);
+  const ux = (b.x - a.x) / span,
+    uz = (b.z - a.z) / span;
+  for (let along = 0; along <= 4; along += 0.0625) {
+    const pitch = Math.atan2(b.y - a.y, span);
+    const cap = a.y + Math.tan(pitch) * along - (SUMMIT_BRIDGE.thick / 2) * (1 + 1 / Math.cos(pitch)) - 0.1;
+    for (let side = -2; side <= 2; side += 0.0625)
+      assert.ok(g.islandH(a.x + ux * along - uz * side, a.z + uz * along + ux * side) <= cap, `${along}, ${side}`);
+  }
+});
+
+test('the real solid landing meets the deck, clears an overlapping player and leaves resting contact alone', () => {
+  type Beam = (colour: string, a: THREE.Vector3Like, b: THREE.Vector3Like, width: number, depth: number) => void;
+  type Box = { kind: 'box'; hx: number; hy: number; hz: number; offset: THREE.Vector3; rotation: THREE.Quaternion };
+  const boxes: Box[] = [];
+  const build = sourceFunction<(parts: object) => { beam: Beam }>('src/entities/ring-island/view.ts', 'builders', {
+    THREE,
+  });
+  const { beam } = build({
+    add() {},
+    solid(width: number, height: number, depth: number, matrix: THREE.Matrix4) {
+      const offset = new THREE.Vector3(),
+        rotation = new THREE.Quaternion();
+      matrix.decompose(offset, rotation, new THREE.Vector3());
+      boxes.push({ kind: 'box', hx: width / 2, hy: height / 2, hz: depth / 2, offset, rotation });
+    },
+  });
+  sourceFunction<(beam: Beam, ground: typeof g) => void>('src/entities/ring-island/view.ts', 'bridgeWalkSurfaces', {
+    summitBridge,
+    SUMMIT_BRIDGE,
+    PATH: 'path',
+    TIMBER: 'timber',
+  })(beam, g);
+  assert.equal(boxes.length, 2);
+  const { a } = summitBridge(g);
+  const top = (box: Box) => {
+    const direction = new THREE.Vector3(0, 1, 0).applyQuaternion(box.rotation);
+    const y =
+      box.offset.y + (box.hy - direction.x * (a.x - box.offset.x) - direction.z * (a.z - box.offset.z)) / direction.y;
+    const local = new THREE.Vector3(a.x, y, a.z).sub(box.offset).applyQuaternion(box.rotation.clone().invert());
+    assert.ok(Math.abs(local.x) <= box.hx && Math.abs(local.z) <= box.hz);
+    return y;
+  };
+  assert.ok(Math.abs(top(boxes[0]!) - top(boxes[1]!)) <= 0.1);
+  assert.ok(Math.abs(top(boxes[1]!) - 14.932) <= 0.001);
+  const outOf = sourceFunction('src/place/sites.ts', 'outOf', {});
+  const make = sourceFunction<(shape: Box) => { exit(position: THREE.Vector3Like): unknown }>(
+    'src/entities/ring-island/view.ts',
+    'clearanceShape',
+    {
+      THREE,
+      PLAYER_R,
+      siteExit,
+      outOf,
+    },
+  );
+  const landing = boxes[0]!,
+    clearance = make(landing);
+  const resolve = sourceFunction<
+    (position: THREE.Vector3Like, solids: unknown[], height: typeof g.islandH) => THREE.Vector3Like | null
+  >('src/entities/ring-island/view.ts', 'ringSceneryExit', { THREE, PLAYER_R });
+  const solids = boxes.map((box) => make(box));
+  const exit = resolve(landing.offset, solids, g.islandH);
+  assert.ok(exit && exit.y >= landing.offset.y && solids.every((solid) => !solid.exit(exit)));
+  const beside = new THREE.Vector3(landing.hx + PLAYER_R + 0.01, 0, 0)
+    .applyQuaternion(landing.rotation)
+    .add(landing.offset);
+  beside.y = g.islandH(beside.x, beside.z) + PLAYER_R;
+  assert.equal(clearance.exit(beside), null);
+  assert.equal(resolve(beside, solids, g.islandH), null);
+  const resting = new THREE.Vector3(0, landing.hy + PLAYER_R - 0.01, 0)
+    .applyQuaternion(landing.rotation)
+    .add(landing.offset);
+  assert.equal(clearance.exit(resting), null);
 });
 
 test('off the bridge the path is never within 1.3 m of cut ground (under 0.2 m)', () => {

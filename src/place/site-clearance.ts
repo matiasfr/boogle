@@ -10,6 +10,7 @@ export function siteExit(
   outOf: typeof moveOutside,
   keepOut?: Hull,
   contactTolerance = 0,
+  distanceToSolid?: (point: typeof position) => number,
 ) {
   const { x, z, c: cos, s: sin } = foot;
   // Standing in the plot when the walls go up: you're moved to the nearest edge.
@@ -24,14 +25,16 @@ export function siteExit(
     const lx = (pos.x - x) * cos - (pos.z - z) * sin,
       lz = (pos.x - x) * sin + (pos.z - z) * cos;
     const radius = PLAYER_R - contactTolerance;
-    const overlaps = solids.some((h) => {
-      const dx = Math.max(0, Math.abs(lx - h.dx) - h.hx),
-        dz = Math.max(0, Math.abs(lz - h.dz) - h.hz);
-      return [0, HEAD_OFFSET].some((up) => {
-        const dy = Math.max(0, Math.abs(position.y + up - y - h.dy) - h.hy);
-        return dx * dx + dy * dy + dz * dz < radius * radius;
-      });
-    });
+    const overlaps = distanceToSolid
+      ? [0, HEAD_OFFSET].some((up) => distanceToSolid({ ...position, y: position.y + up }) < radius)
+      : solids.some((h) => {
+          const dx = Math.max(0, Math.abs(lx - h.dx) - h.hx),
+            dz = Math.max(0, Math.abs(lz - h.dz) - h.hz);
+          return [0, HEAD_OFFSET].some((up) => {
+            const dy = Math.max(0, Math.abs(position.y + up - y - h.dy) - h.hy);
+            return dx * dx + dy * dy + dz * dz < radius * radius;
+          });
+        });
     if (overlaps)
       moved = outOf(
         {

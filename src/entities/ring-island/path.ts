@@ -30,17 +30,18 @@ function formation(sCm: number) {
   return { middle: { x: p.x / 100 + nx * 2, z: p.z / 100 + nz * 2 }, nx, nz, rail: p.y / 100 };
 }
 
-export function summitBridge(g: IslandGround) {
+export function summitBridge(g: { uncappedH(x: number, z: number): number }) {
   const { middle, nx, nz, rail } = formation(SUMMIT_BRIDGE.sCm);
   const at = (off: number) => {
     const x = middle.x + nx * off,
       z = middle.z + nz * off;
-    return { x, y: g.islandH(x, z) + 0.12, z };
+    return { x, y: g.uncappedH(x, z) + 0.12, z };
   };
   return {
     a: at(SUMMIT_BRIDGE.off),
     b: at(-SUMMIT_BRIDGE.off),
     approach: at(SUMMIT_BRIDGE.off + SUMMIT_BRIDGE.approach),
+    landingStart: at(SUMMIT_BRIDGE.off + SUMMIT_BRIDGE.approach / 2),
     middle,
     rail,
   };
@@ -139,8 +140,9 @@ export function summitPathFacts(g: IslandGround, centre: { x: number; z: number 
       let previous = g.islandH(ax, az),
         previousD = 0;
       for (let k = 0; k <= Math.ceil(span / 0.5); k++) {
-        const d = Math.min(k * 0.5, span),
-          x = ax + (dx * d) / span,
+        const d = Math.min(k * 0.5, span);
+        if (i === bridgeLeg - 1 && d >= span - SUMMIT_BRIDGE.approach / 2 - 1e-8) break;
+        const x = ax + (dx * d) / span,
           z = az + (dz * d) / span,
           h = g.islandH(x, z);
         if (d > previousD) {

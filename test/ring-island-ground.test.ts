@@ -28,6 +28,7 @@ const w = (u: number, lat: number) => {
 /** Off the fills: well clear of the halt's fill and the run-off bed's cutting, and of their embankments' reach, and
  * not in the stack line's cutting (the greybox route, leg 1 step 4: `stackCap` is under the cones only there). */
 const offFills = (x: number, z: number) =>
+  Math.hypot(x - 1381.199, z + 876.705) > 10 &&
   g.fillOut(x, z) > 25 &&
   g.bedOut(x, z) > 25 &&
   // within a cell either way, so no triangle the point lies on has a cut node
@@ -162,7 +163,7 @@ test('the cutting is at most 2 m deep and its banks stop short of the station ho
       if (u < bed.u0 / 100 || g.fillOut(x, z) === 0) continue;
       // The stack line's cutting (the greybox route) is deeper and wider than the run-off's notch: its own test, below.
       if (g.stackCap(x, z) < g.cone(x, z)) continue;
-      const cut = g.cone(x, z) - g.at(i, j);
+      const cut = g.cone(x, z) - g.uncappedH(x, z);
       if (cut > 1e-3) {
         deepest = Math.max(deepest, cut);
         reach = Math.min(reach, lat);
