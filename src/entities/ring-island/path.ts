@@ -41,7 +41,6 @@ export function summitBridge(g: { uncappedH(x: number, z: number): number }) {
     a: at(SUMMIT_BRIDGE.off),
     b: at(-SUMMIT_BRIDGE.off),
     approach: at(SUMMIT_BRIDGE.off + SUMMIT_BRIDGE.approach),
-    landingStart: at(SUMMIT_BRIDGE.off + SUMMIT_BRIDGE.approach / 2),
     middle,
     rail,
   };

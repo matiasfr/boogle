@@ -15,10 +15,19 @@ import {
 } from '../src/sim/railway-ring-layout.ts';
 import { CONCOURSE } from '../src/proto/greybox/ring-house.ts';
 import { line2World, line2Y } from '../src/entities/railway/line2-path.ts';
-import { createIslandGround, ISLAND_BED, ISLAND_FILL, ringUL } from '../src/entities/ring-island/ground.ts';
+import { createIslandGround, ISLAND_BED, ISLAND_FILL, LANDING, ringUL } from '../src/entities/ring-island/ground.ts';
+import { summitBridge } from '../src/entities/ring-island/path.ts';
 
 const centre = { x: FAR.x + ORIGIN.x, z: FAR.z + ORIGIN.z };
 const g = createIslandGround(RING_CONES, centre);
+const { a, b } = summitBridge(g);
+const span = Math.hypot(b.x - a.x, b.z - a.z);
+/** Under the deck's capped first 4 m and shoulders, or the landing before it (terrain-clean step 7). */
+function underFootbridge(x: number, z: number) {
+  const along = ((x - a.x) * (b.x - a.x) + (z - a.z) * (b.z - a.z)) / span;
+  const side = ((z - a.z) * (b.x - a.x) - (x - a.x) * (b.z - a.z)) / span;
+  return along >= -LANDING.length && along <= 4 && Math.abs(side) <= (along < 0 ? LANDING.half : 2);
+}
 
 test('the hillside beyond the capped shoulder still follows the original cone', () => {
   const x = 1380,
@@ -42,7 +51,7 @@ const w = (u: number, lat: number) => {
 /** Off the fills: well clear of the halt's fill and the run-off bed's cutting, and of their embankments' reach, and
  * not in the stack line's cutting (the greybox route, leg 1 step 4: `stackCap` is under the cones only there). */
 const offFills = (x: number, z: number) =>
-  Math.hypot(x - 1381.199, z + 876.705) > 10 &&
+  !underFootbridge(x, z) &&
   g.fillOut(x, z) > 25 &&
   g.bedOut(x, z) > 25 &&
   // within a cell either way, so no triangle the point lies on has a cut node
@@ -71,7 +80,7 @@ test('off the fills the ground is the cones within 5 cm, at every node and on th
         want = cones(x, z);
       if (!offFills(x, z) || !(want > ISLAND_BED)) continue;
       nodes++;
-      assert.ok(Math.abs(g.at(i, j) - want) <= 0.05, `node (${x}, ${z}): ${g.at(i, j)} against ${want}`);
+      assert.ok(Math.abs(g.islandH(x, z) - want) <= 0.05, `node (${x}, ${z}): ${g.islandH(x, z)} against ${want}`);
     }
   // Between nodes the triangles stand within 5 cm of a cone's surface wherever one cone's straight slope spans the
   // cell: far enough from its apex (15 m, 25 m per unit of slope: a 2 m triangle across a cone sags about slope / d) and from where another cone stands higher (the ridges, where a 2 m triangle
@@ -177,7 +186,8 @@ test('the cutting is at most 2 m deep and its banks stop short of the station ho
       if (u < bed.u0 / 100 || g.fillOut(x, z) === 0) continue;
       // The stack line's cutting (the greybox route) is deeper and wider than the run-off's notch: its own test, below.
       if (g.stackCap(x, z) < g.cone(x, z)) continue;
-      const cut = g.cone(x, z) - g.uncappedH(x, z);
+      if (underFootbridge(x, z)) continue;
+      const cut = g.cone(x, z) - g.islandH(x, z);
       if (cut > 1e-3) {
         deepest = Math.max(deepest, cut);
         reach = Math.min(reach, lat);

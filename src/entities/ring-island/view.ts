@@ -35,7 +35,7 @@ import {
   type RingFlight,
   type RingLanding,
 } from '../../sim/railway-ring-layout.ts';
-import type { Cone, IslandGround } from './ground.ts';
+import { LANDING, type Cone, type IslandGround } from './ground.ts';
 import { SUMMIT_BRIDGE, summitBridge, summitPath, summitPathFoot, summitRimRockShape, summitRimRocks } from './path.ts';
 import { RING_CROSSING, RING_MAP_TABLE, ringCrossingPlanks, ringIslandPose } from './state.ts';
 import { addFarGround } from '../../place/far-ground.ts';
@@ -153,7 +153,7 @@ function clearanceShape(shape: Shape, parent = new THREE.Matrix4()) {
   const extent =
     shape.kind === 'box'
       ? new THREE.Vector3(shape.hx, shape.hy, shape.hz)
-      : new THREE.Vector3(shape.rBottom, shape.h / 2, shape.rBottom);
+      : new THREE.Vector3(Math.max(shape.rBottom, shape.rTop), shape.h / 2, Math.max(shape.rBottom, shape.rTop));
   const local = new THREE.Box3(extent.clone().negate(), extent);
   const bounds = local.clone().applyMatrix4(matrix);
   const centre = bounds.getCenter(new THREE.Vector3()),
@@ -202,13 +202,24 @@ function ringSceneryExit(
   height: (x: number, z: number) => number,
 ) {
   const result = new THREE.Vector3().copy(position);
-  const floor = height(result.x, result.z) + PLAYER_R;
-  if (result.y < floor - 0.02) result.y = floor;
+  function floorAt(x: number, z: number, radius: number) {
+    let floor = height(x, z) + radius;
+    for (let ring = 1; ring <= 8; ring++) {
+      const r = (radius * ring) / 8,
+        rise = Math.sqrt(Math.max(0, radius * radius - r * r));
+      for (let k = 0; k < 32; k++) {
+        const angle = (k * Math.PI) / 16;
+        floor = Math.max(floor, height(x + r * Math.cos(angle), z + r * Math.sin(angle)) + rise);
+      }
+    }
+    return floor;
+  }
+  if (result.y < floorAt(result.x, result.z, PLAYER_R - 0.02)) result.y = floorAt(result.x, result.z, PLAYER_R) + 0.005;
   for (;;) {
     const hit = solids.find((solid) => solid.exit(result));
     if (!hit) break;
     const exit = hit.exit(result)!;
-    const ground = height(exit.x, exit.z) + PLAYER_R;
+    const ground = floorAt(exit.x, exit.z, PLAYER_R) + 0.005;
     const destination = { ...exit, y: Math.max(result.y, ground) };
     if (Math.abs(ground - result.y) < 0.5 && !solids.some((solid) => solid.exit(destination))) return destination;
     result.y = hit.top + PLAYER_R + 0.02;
@@ -410,9 +421,9 @@ function boardTexture() {
 }
 
 export type RingIslandView = ReturnType<typeof createRingIslandView>;
+/** The deck: the walk surface from a to b. The landing before a is the ground itself (ground.ts LANDING). */
 function bridgeWalkSurfaces(beam: ReturnType<typeof builders>['beam'], g: IslandGround) {
-  const { landingStart, a, b } = summitBridge(g);
-  beam(PATH, landingStart, a, 2.6, 0.3);
+  const { a, b } = summitBridge(g);
   beam(TIMBER, a, b, SUMMIT_BRIDGE.width, SUMMIT_BRIDGE.thick);
 }
 export function createRingIslandView(g: IslandGround, cones: readonly Cone[], centre: { x: number; z: number }) {
@@ -700,14 +711,11 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   {
     const { way, bridgeLeg } = summitPath(g, centre);
     for (let i = 0; i < way.length - 1; i++) {
-      if (i === bridgeLeg) continue; // the deck, below: no ground path draped into the cutting
+      if (i === bridgeLeg || i === bridgeLeg - 1) continue;
       const [ax, az] = way[i]!,
         [bx, bz] = way[i + 1]!;
       const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 6));
       for (let k = 0; k < n; k++) {
-        if (i === bridgeLeg - 1 && k === n - 1) {
-          continue;
-        }
         const x0 = ax + ((bx - ax) * k) / n,
           z0 = az + ((bz - az) * k) / n,
           x1 = ax + ((bx - ax) * (k + 1)) / n,
@@ -739,6 +747,46 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
       z: a.z + az * d + ax * side,
     });
     bridgeWalkSurfaces(beam, g);
+    // The approach's first half, drawn only (the trail is the ground under it, as under the path's beams): from the
+    // beams' level 0.12 m at the turn to 4 cm over the ground's own cross-fall, where it meets the landing's top. The
+    // landing is the ground (ground.ts LANDING): its top and the sides it stands above the hillside by, drawn as path.
+    const surface: number[] = [];
+    const face = (points: THREE.Vector3[], toward: THREE.Vector3) => {
+      const [p0, p1, p2, p3] = points as [THREE.Vector3, THREE.Vector3, THREE.Vector3, THREE.Vector3];
+      const n = new THREE.Vector3().subVectors(p1, p0).cross(new THREE.Vector3().subVectors(p2, p0));
+      for (const p of n.dot(toward) < 0 ? [p0, p2, p1, p0, p3, p2] : [p0, p1, p2, p0, p2, p3])
+        surface.push(p.x, p.y, p.z);
+    };
+    const from = -B.approach,
+      to = -LANDING.length,
+      half = LANDING.half;
+    function trail(d: number, side: number) {
+      const p = on(d, side),
+        c = on(d, 0);
+      const follow = g.islandH(p.x, p.z) + 0.04,
+        level = g.islandH(c.x, c.z) + 0.12;
+      const y = Math.max(follow, level + (follow - level) * THREE.MathUtils.smoothstep(d, from, from + 3));
+      return new THREE.Vector3(p.x, y, p.z);
+    }
+    const up = new THREE.Vector3(0, 1, 0),
+      right = new THREE.Vector3(-az, 0, ax);
+    for (let d = from; d < to - 1e-9; d += 0.5) {
+      for (let side = -half; side < half - 1e-9; side += 0.65)
+        face([trail(d, side), trail(d, side + 0.65), trail(d + 0.5, side + 0.65), trail(d + 0.5, side)], up);
+      for (const side of [-half, half]) {
+        const top0 = trail(d, side),
+          top1 = trail(d + 0.5, side);
+        const foot = (p: THREE.Vector3) => new THREE.Vector3(p.x, g.islandH(p.x, p.z) - 0.1, p.z);
+        face([top0, top1, foot(top1), foot(top0)], right.clone().multiplyScalar(Math.sign(side)));
+      }
+    }
+    const lift = 0.03; // the ground's own (below)
+    const { vertices: v } = g.patch;
+    for (const k of g.patch.landing) surface.push(v[k * 3]!, v[k * 3 + 1]! + lift, v[k * 3 + 2]!);
+    const trailGeo = new THREE.BufferGeometry();
+    trailGeo.setAttribute('position', new THREE.Float32BufferAttribute(surface, 3));
+    trailGeo.computeVertexNormals();
+    parts.add(PATH, trailGeo);
     for (const s of [-1, 1]) {
       const side = s * (B.width / 2 - 0.06);
       beam(STEEL, on(0, side, B.parapet), on(span, side, B.parapet), 0.12, B.parapet);
@@ -827,43 +875,42 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   // ---------------------------------------------------------------- the ground: the grid as one mesh and one heightfield
   const ground = (() => {
     const { nx, nz, x0, z0, cell } = g;
-    const pos = new Float32Array(nx * nz * 3),
-      col = new Float32Array(nx * nz * 3);
+    const pos = new Float32Array(nx * nz * 3 + g.patch.vertices.length),
+      col = new Float32Array(pos.length);
     const land = new THREE.Color(LAND),
       land2 = new THREE.Color(LAND2),
       sand = new THREE.Color(SAND),
       rock = new THREE.Color(ROCK),
       c = new THREE.Color();
+    function vertex(k: number, x: number, h: number, z: number) {
+      // A hair over buildFar's faceted cones, which hide while this view is mounted (src/place/far-hills.ts).
+      pos.set([x, h + 0.03, z], k * 3);
+      // buildFar's colour of whichever cone stands highest here, sand along the shore and on the halt's fill.
+      let best = -Infinity,
+        which = 0;
+      cones.forEach(([dx, dz, r, hh], n) => {
+        const y = hh - 4 - (hh * Math.hypot(x - centre.x - dx, z - centre.z - dz)) / r;
+        if (y > best) {
+          best = y;
+          which = n;
+        }
+      });
+      c.copy(which === 1 || which === 2 ? land2 : land);
+      const shore = 1 - THREE.MathUtils.smoothstep(h, 1.6, 2.6);
+      const fill = g.fillOut(x, z) < 12 && h > g.cone(x, z) + 0.2 ? 1 : 0;
+      c.lerp(sand, Math.max(shore, fill * 0.85));
+      // Cut rock where the railway's cuttings took the hillside away (the run-off's notch and the stack line's
+      // walls and floor): paler than the hill's skin, so a cutting reads as cut from the track and from above.
+      c.lerp(rock, THREE.MathUtils.smoothstep(g.cone(x, z) - h, 0.3, 1.5));
+      col.set([c.r, c.g, c.b], k * 3);
+    }
     for (let j = 0; j < nz; j++)
-      for (let i = 0; i < nx; i++) {
-        const k = i + j * nx,
-          x = x0 + i * cell,
-          z = z0 + j * cell,
-          h = g.at(i, j);
-        // A hair over buildFar's faceted cones, which hide while this view is mounted (src/place/far-hills.ts).
-        pos.set([x, h + 0.03, z], k * 3);
-        // buildFar's colour of whichever cone stands highest here, sand along the shore and on the halt's fill.
-        let best = -Infinity,
-          which = 0;
-        cones.forEach(([dx, dz, r, hh], n) => {
-          const y = hh - 4 - (hh * Math.hypot(x - centre.x - dx, z - centre.z - dz)) / r;
-          if (y > best) {
-            best = y;
-            which = n;
-          }
-        });
-        c.copy(which === 1 || which === 2 ? land2 : land);
-        const shore = 1 - THREE.MathUtils.smoothstep(h, 1.6, 2.6);
-        const fill = g.fillOut(x, z) < 12 && h > g.cone(x, z) + 0.2 ? 1 : 0;
-        c.lerp(sand, Math.max(shore, fill * 0.85));
-        // Cut rock where the railway's cuttings took the hillside away (the run-off's notch and the stack line's
-        // walls and floor): paler than the hill's skin, so a cutting reads as cut from the track and from above.
-        c.lerp(rock, THREE.MathUtils.smoothstep(g.cone(x, z) - h, 0.3, 1.5));
-        col.set([c.r, c.g, c.b], k * 3);
-      }
+      for (let i = 0; i < nx; i++) vertex(i + j * nx, x0 + i * cell, g.at(i, j), z0 + j * cell);
+    const patch = g.patch.vertices;
+    for (let k = 0; k < patch.length; k += 3) vertex(nx * nz + k / 3, patch[k]!, patch[k + 1]!, patch[k + 2]!);
     // Cells entirely under the sea are left out of the mesh (and so out of its tiles).
     const underwater = (i: number, j: number) =>
-      Math.max(g.at(i, j), g.at(i + 1, j), g.at(i, j + 1), g.at(i + 1, j + 1)) < -6.5;
+      g.inPatch(i, j) || Math.max(g.at(i, j), g.at(i + 1, j), g.at(i, j + 1), g.at(i + 1, j + 1)) < -6.5;
     const index: number[] = [];
     for (let j = 0; j < nz - 1; j++)
       for (let i = 0; i < nx - 1; i++) {
@@ -875,6 +922,8 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
         // The collider's anti-diagonal split (ground.ts islandH): (a, b, c) and (d, c, b), both facing up.
         index.push(a, cc, bb, d, bb, cc);
       }
+    const mainEnd = index.length;
+    for (const k of g.patch.ground) index.push(nx * nz + k);
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
@@ -883,19 +932,19 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
     const mesh = new THREE.Mesh(geo, new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.95 }));
     mesh.receiveShadow = true;
     mesh.name = 'ring-island-ground';
-    return { mesh, underwater, mainEnd: index.length };
+    return { mesh, underwater, mainEnd };
   })();
   const groundMesh = ground.mesh;
   root.add(groundMesh);
   // Frustum-culled tiles in three levels of detail, as the main island's far ground (place/far-ground.ts).
   const disposeTiles = addFarGround(groundMesh, g.nx, g.nz, ground.mainEnd, ground.underwater);
-  const hf = g.collider();
-  const groundBody = createBody({
-    material: groundMat,
-    group: GROUP.SCENERY,
-    position: hf.position,
-    shapes: [{ kind: 'heightfield', heights: hf.heights, cell: hf.cell }],
-  });
+  const groundBodies = g.collider().map((tile) =>
+    createBody({
+      material: groundMat,
+      group: GROUP.SCENERY,
+      ...tile,
+    }),
+  );
 
   // ---------------------------------------------------------------- the raised leaf: a pivot at the heel
   const hinge = p3(HINGE, FORM.mid, HINGE_Y);
@@ -1020,7 +1069,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
 
   return {
     root,
-    bodies: [solids, groundBody, leafBody] as readonly Body[],
+    bodies: [solids, ...groundBodies, leafBody] as readonly Body[],
     clearPosition,
     update(ctx: FrameCtx) {
       poseLeaf();

@@ -1,6 +1,6 @@
 # Terrain clean: no cliff ledges, clean walkable ground, then custom meshes
 
-> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Part 1 and Checkpoint A are on main (#1821, #1839); Part 2a step 1 and wall-foot repairs (#1840), and Part 2b steps 5–6/seam repairs (#1846, #1882) are on main. Part 2a steps 2–3 trials were rejected (#1852). Built, not shipped: Part 2b step 7 on `codex/ring-footbridge-cap` (abutment cut 0.664 m; exposed-trail cut 0.02 m; ring check passes). Next: Part 2a step 2, an accepted tread-edge treatment; Part 3 remains unverified/unbuilt.
+> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Part 1 and Checkpoint A are on main (#1821, #1839); Part 2a step 1 and wall-foot repairs (#1840), and Part 2b steps 5–6/seam repairs (#1846, #1882) are on main. Part 2a steps 2–3 trials were rejected (#1852). Built, not shipped: Part 2b step 7 on `codex/ring-footbridge-cap` with its review fixes (abutment cut 0.692 m; exposed-trail cut 0.02 m; worst walk-on step 0.014 m; ring check passes). Next: Part 2a step 2, an accepted tread-edge treatment; Part 3 remains unverified/unbuilt.
 _Plan, 14 November 2026. Part 1 implemented and checkpoint A recorded; Part 2a partially implemented, with its wall-foot regression repaired; Parts 2b and 3 not started. Original survey measured on main at `b2157fb6b`; every survey still was taken under load
 (1-minute load 16 to 34), so stills are evidence of shape and colour only, not of timing, shimmer or motion. Not tested
 on a device._
@@ -422,6 +422,16 @@ which also edit `terrain.ts`.
   wall under the deck's end. Verify: `test/ring-island-ground.test.ts`, the ring report in `npm run level-check`
   (today: `abutment cut 0.045 m`, `ring (planned): ok`; the cut figure will rise by the cap's depth, and the report's
   0.1 m threshold in the summit-path test needs the designer's word), `ringview=bridge` and `ringview=deck` stills.
+  **Built on `codex/ring-footbridge-cap`, review fixes 18 November:** the cap and the landing are one exact patch of
+  the grid's triangles (`ground.ts`, a trimesh in place of those cells; heightfield tiles round it). The cap stays in
+  the deck's footprint plus 0.5 m for its first 4 m. The landing (17 November call) is the ground itself over the path's
+  last 4 m and 2.6 m: it starts 1 cm over the trail across its width and twists to the deck's level top at a (14.932
+  m), cut into the uphill side by up to 0.21 m under it and drawn as path. Worst step underfoot from 7 m before a to
+  1 m past it, at 0 and ±1.2/±1.3 m: 0.014 m. Mount clearance lifts a player clear of the slope as well as the solids.
+  The tapered cylinder bound uses the larger radius. Level-check: path 330.1 m, span 28.0 m, grade 6.4 %, clearance 9.5
+  m, abutment cut 0.692 m (the cap and the landing's cut), off-bridge cut 0.02 m, `ring (planned): ok`. Walk look by
+  real input, lanes 0 and ±1.2 m: all three reach 1 m past b with no stall; the parapets hold the outer lanes at ±0.93 m
+  on the deck. Stills: `docs/world/ring-footbridge-cap/walk-*.png`. Not tested on a device.
 
 **Checkpoint C (end of 2b):** level-check, the census, `ring-island-walk` once, one proof look per step, one ship per
 step or one for all three if they are ready together.
