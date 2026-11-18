@@ -18,59 +18,44 @@ const broken = (entry: (typeof BAD_WORLDS)[number]) => {
   return w;
 };
 
-test('the bad worlds are built on stages the world check accepts', () => {
-  for (const [stage, w] of bases) assert.equal(worldVerdict(w), null, stage);
-});
+// Each base stage's own acceptance is the golden shards' ("seed stage X: the world check accepts it").
 for (const entry of BAD_WORLDS)
   test(`bad world ${entry.site}: refused with "${entry.message}" by the world check`, () => {
     assert.equal(worldVerdict(broken(entry)), entry.message);
   });
 
-// The world check's messages, read from its source: every `bad('…')` in the check files, and the message literals of
-// trainRowBroken, which checkTrains throws (railway-check-trains.ts). Ring Island's are in test/railway-check-ring.test.ts.
-function said() {
+// The world check's throw sites, read from its source: every `bad('…')` in the check files, counted with repeats, and
+// the message literals of trainRowBroken, which checkTrains throws (railway-check-trains.ts). Ring Island's are in
+// test/railway-check-ring.test.ts. Sites are counted, not only messages (review of M12b-1): 'job bounds' and 'line2
+// job bounds' have three sites each, and with two worlds for each the start/completion range site had none (dropping
+// `!railInt(j.completion, 1)` passed every test); each line now has a `completion: 2` world for it.
+function sites() {
   const files = [
     'railway-check.ts',
     'railway-check-line1.ts',
     'railway-check-line2.ts',
     'railway-check-trains.ts',
     'railway-check-steel.ts',
+    'railway-check-works.ts',
   ];
-  const text = [...files, 'railway-check-works.ts']
-    .map((f) => readFileSync(new URL(`../src/sim/${f}`, import.meta.url), 'utf8'))
-    .join('\n');
-  const out = new Set([...text.matchAll(/bad\('([^']+)'\)/g)].map((m) => `railway: ${m[1]!}`));
+  const out = new Map<string, number>();
+  const add = (m: string) => out.set(m, (out.get(m) ?? 0) + 1);
+  for (const f of files)
+    for (const m of readFileSync(new URL(`../src/sim/${f}`, import.meta.url), 'utf8').matchAll(/bad\('([^']+)'\)/g))
+      add(`railway: ${m[1]!}`);
   const trains = readFileSync(new URL('../src/sim/railway-trains.ts', import.meta.url), 'utf8');
   const start = trains.indexOf('export function trainRowBroken(');
   const body = trains.slice(start, trains.indexOf('\n}\n', start));
-  for (const m of body.matchAll(/'(railway: [^']+)'/g)) out.add(m[1]!);
+  for (const m of body.matchAll(/'(railway: [^']+)'/g)) if (!out.has(m[1]!)) add(m[1]!);
   return out;
 }
-test('every message the world check throws is a bad world, unreachable or dominated, and nothing else is listed', () => {
-  const listed = new Set([...BAD_WORLDS, ...UNREACHABLE, ...DOMINATED].map((e) => e.message));
-  assert.deepEqual([...listed].sort(), [...said()].sort());
-});
-
-// Review of M12b-1: the set above counts messages, not sites. The world check splits 'job bounds' and 'line2 job
-// bounds' into three sites each (railway-check-line1.ts, railway-check-line2.ts); the corpus had two worlds for each,
-// so the start/completion range site had none (dropping `!railInt(j.completion, 1)` passed every test). Each line now
-// has a `completion: 2` world for it.
-test('review M12b-1: each bad() site of the world check has its own entry (sites counted with repeats)', () => {
-  const files = [
-    'railway-check.ts',
-    'railway-check-line1.ts',
-    'railway-check-line2.ts',
-    'railway-check-works.ts',
-    'railway-check-steel.ts',
-  ];
-  const sites = new Map<string, number>();
-  for (const f of [...files, 'railway-check-trains.ts'])
-    for (const m of readFileSync(new URL(`../src/sim/${f}`, import.meta.url), 'utf8').matchAll(/bad\('([^']+)'\)/g))
-      sites.set(`railway: ${m[1]!}`, (sites.get(`railway: ${m[1]!}`) ?? 0) + 1);
+test('every throw site of the world check has its own bad world, unreachable or dominated entry, and nothing else is listed', () => {
+  const said = sites();
   const entries = new Map<string, number>();
   for (const e of [...BAD_WORLDS, ...UNREACHABLE, ...DOMINATED])
     entries.set(e.message, (entries.get(e.message) ?? 0) + 1);
-  const short = [...sites].filter(([m, n]) => (entries.get(m) ?? 0) < n).map(([m, n]) => `${m}: ${n} sites`);
+  assert.deepEqual([...entries.keys()].sort(), [...said.keys()].sort());
+  const short = [...said].filter(([m, n]) => (entries.get(m) ?? 0) < n).map(([m, n]) => `${m}: ${n} sites`);
   assert.deepEqual(short, []);
 });
 
