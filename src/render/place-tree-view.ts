@@ -196,25 +196,22 @@ export function createTreeView(
     OLD_STUMP = new THREE.Color('#c9a06a'),
     RENEWED_STUMP = new THREE.Color('#dec89f');
   const slotSphere = new THREE.Sphere();
-  const occupancy = new Map(batches.map((mesh) => [mesh, { slots: new Uint8Array(mesh.count), count: 0 }]));
   let fitted = false;
   function write(mesh: (typeof batches)[number], slot: number, matrix: THREE.Matrix4, grow: boolean) {
     mesh.setMatrixAt(slot, matrix);
-    const live = occupancy.get(mesh)!;
-    const shown = Number(matrix !== ZERO);
-    live.count += shown - live.slots[slot]!;
-    live.slots[slot] = shown;
     if (!grow) return;
     mesh.instanceMatrix.needsUpdate = true;
-    mesh.visible = live.count > 0;
-    if (shown) {
-      slotSphere.copy(mesh.geometry.boundingSphere!).applyMatrix4(matrix);
-      slotSphere.radius += 0.5;
+    // A pose can only show a batch here, never hide one: emptying a batch waits for the next full refit.
+    if (matrix === ZERO) return;
+    mesh.visible = true;
+    slotSphere.copy(mesh.geometry.boundingSphere!).applyMatrix4(matrix);
+    slotSphere.radius += 0.5;
+    if (Number.isFinite(slotSphere.radius) && Number.isFinite(slotSphere.center.lengthSq()))
       mesh.boundingSphere!.union(slotSphere);
-    }
   }
   function writePose(t: Tree, now: number, grow: boolean) {
-    const put = (mesh: (typeof batches)[number], slot: number, matrix: THREE.Matrix4) => write(mesh, slot, matrix, grow);
+    const put = (mesh: (typeof batches)[number], slot: number, matrix: THREE.Matrix4) =>
+      write(mesh, slot, matrix, grow);
     const hardwoodIndex = hardwoodIndices.get(t.index);
     if (t.cleared) {
       for (const mesh of [parts.trunk, parts.crown, parts.crown2, parts.stump, parts.notch]) put(mesh, t.index, ZERO);
@@ -322,6 +319,10 @@ export function createTreeView(
     for (const mesh of batches) {
       mesh.instanceMatrix.needsUpdate = true;
       fitInstanceBounds(mesh);
+      // The forest is never frustum culled (owner playtest, 18 November: felling one tree near the quarry hid every
+      // other tree once the fitted bounds of world-streaming step 1 culled these batches). The fitted sphere still
+      // serves raycasts, and an empty batch still skips its draw.
+      mesh.frustumCulled = false;
       mesh.visible = !mesh.boundingSphere!.isEmpty();
     }
   }
