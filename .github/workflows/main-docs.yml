@@ -55,8 +55,9 @@ jobs:
             full "Could not diff $MERGE against its first parent"
           class=$(node dev/ci/change-class.ts < "$RUNNER_TEMP/changed") || class=unknown
           [ "$class" = docs ] || full "$MERGE is $class, not docs-only"
-          latest=$(gh run list --workflow ci.yml --branch main --limit 1 --json status,conclusion \
-            --jq '.[0] | if . == null then "missing" elif .status != "completed" then "running" else .conclusion end') ||
+          # Not CI's daily run: it has its own group, and may be running on an older commit while main is red.
+          latest=$(gh run list --workflow ci.yml --branch main --limit 10 --json status,conclusion,event \
+            --jq '[.[] | select(.event != "schedule")][0] | if . == null then "missing" elif .status != "completed" then "running" else .conclusion end') ||
             full "Could not read main's latest CI run"
           case "$latest" in
             running | success) ;;

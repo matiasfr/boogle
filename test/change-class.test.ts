@@ -264,3 +264,23 @@ test('only a docs-only merge skips the full CI on main, and main-docs falls back
     assert.ok(docs.includes(step), `main-docs.yml lacks "${step}", which ci.yml's docs job runs`);
   }
 });
+
+// Main scopes server, image and net by what changed since its last green run (owner, 18 November). The scope is sound
+// only from a green verdict on an ancestor; everything else must leave the empty-diff result (every job) in place.
+test('main scopes its jobs only from a green verdict, and the daily run and `full` never scope', () => {
+  const ci = fs.readFileSync(path.join(ROOT, '.github/workflows/ci.yml'), 'utf8');
+  assert.ok(ci.includes('if [ "$REF" = main ] && [ "$EVENT" != schedule ] && [ "$FULL" != true ]; then'));
+  assert.ok(
+    ci.includes('[.[] | select(.conclusion != "cancelled" and .conclusion != "skipped")][0] // empty'),
+    'the scope must start from the newest verdict, not the newest success',
+  );
+  assert.match(
+    ci,
+    /if \[\[ "\$last" == "success "\* \]\] && git merge-base --is-ancestor "\$green" HEAD &&\n\s+git diff --no-renames --name-only -z "\$green" HEAD > "\$RUNNER_TEMP\/changed" && \[ -s "\$RUNNER_TEMP\/changed" \]; then\n[^\n]+\n\s+jobs=\$\(node dev\/ci\/change-class\.ts --jobs < "\$RUNNER_TEMP\/changed"\)\n\s+else\n/,
+  );
+  // The unit suite on main is never scoped: it is what proves a ship's selected tests were enough.
+  const scoped = /if \[ "\$REF" = main \] && \[ "\$EVENT" != schedule \][\s\S]*?\n {10}else\n/.exec(ci)?.[0] ?? '';
+  assert.ok(scoped.length > 0 && !scoped.includes('unit-select'), "main's unit run must stay the full suite");
+  assert.match(ci, /\n {2}schedule:\n\s+- cron: /, 'the daily run of every job is gone');
+  assert.match(ci, /GREEN: .*github\.event_name != 'schedule'/, 'the daily run must not close red-main');
+});
