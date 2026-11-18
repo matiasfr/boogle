@@ -4,7 +4,7 @@ import type * as Three from 'three/webgpu';
 const sceneUrl = '/src/render/scene.ts';
 const threeUrl = /from\s+"([^"]*three_webgpu[^"]*)"/.exec(await (await fetch(sceneUrl)).text())?.[1];
 if (!threeUrl) throw new Error('three module URL missing');
-const { Frustum, Matrix4, Sphere } = (await import(threeUrl)) as typeof Three;
+const { Frustum, Matrix4, Sphere, Vector3 } = (await import(threeUrl)) as typeof Three;
 const { renderer, scene, camera } = (await import(sceneUrl)) as typeof import('../../../src/render/scene.ts');
 const { currentFrame, prof } = (await import('/src/loop.ts' as string)) as typeof import('../../../src/loop.ts');
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -99,23 +99,69 @@ function ownerPath(object: Three.Object3D) {
   for (let parent = object.parent; parent; parent = parent.parent) parents.push(label(parent));
   return parents.reverse().join('/');
 }
+// Unnamed rows share a path across unrelated owners, so each group also splits by the parent its meshes hang
+// from, and each part says what its meshes are (geometry, vertices, material, colour) and the horizontal box
+// (x0, z0, x1, z1) they span: enough to grep for the owner.
+type Tally = Counts & { objects: number; kinds: Map<string, number>; box: [number, number, number, number] };
+const tally = (): Tally => ({ objects: 0, draws: 0, tris: 0, kinds: new Map(), box: [Infinity, Infinity, -Infinity, -Infinity] });
+const at = new Vector3();
+function kindOf(object: Three.Object3D) {
+  const mesh = object as Three.Mesh;
+  const geometry = mesh.geometry;
+  const material = (Array.isArray(mesh.material) ? mesh.material[0] : mesh.material) as
+    | (Three.Material & { color?: Three.Color })
+    | undefined;
+  const verts = geometry?.getAttribute('position')?.count ?? 0;
+  const colour = material?.color ? ` #${material.color.getHexString()}` : '';
+  return `${geometry?.type ?? '?'} ${verts}v ${material?.type ?? '?'}${material?.name ? ':' + material.name : ''}${colour}`;
+}
+function add(into: Tally, row: DrawRow, kind: string) {
+  into.objects++;
+  into.draws += row.draws;
+  into.tris += row.tris;
+  into.kinds.set(kind, (into.kinds.get(kind) ?? 0) + 1);
+  row.object.getWorldPosition(at);
+  const box = into.box;
+  into.box = [Math.min(box[0], at.x), Math.min(box[1], at.z), Math.max(box[2], at.x), Math.max(box[3], at.z)];
+}
+const show = ({ kinds, box, ...counts }: Tally) => ({
+  ...counts,
+  kinds: [...kinds].sort((left, right) => right[1] - left[1]).slice(0, 6),
+  box: box.map(Math.round),
+});
 function summarize(shadow: boolean) {
   const total = { draws: 0, tris: 0 };
-  const groups = new Map<string, Counts & { name: string; ownerPath: string; objects: number }>();
+  const groups = new Map<string, Tally & { name: string; ownerPath: string; parents: Map<number, Tally> }>();
   for (const row of rows.values()) {
     if (row.shadow !== shadow) continue;
     const name = label(row.object);
     const path = ownerPath(row.object);
     const key = JSON.stringify([name, path]);
-    const group = groups.get(key) ?? { name, ownerPath: path, objects: 0, draws: 0, tris: 0 };
-    group.objects++;
-    group.draws += row.draws;
-    group.tris += row.tris;
+    const group = groups.get(key) ?? { name, ownerPath: path, parents: new Map(), ...tally() };
+    const kind = kindOf(row.object);
+    add(group, row, kind);
+    const parent = row.object.parent?.id ?? -1;
+    const part = group.parents.get(parent) ?? tally();
+    add(part, row, kind);
+    group.parents.set(parent, part);
     total.draws += row.draws;
     total.tris += row.tris;
     groups.set(key, group);
   }
-  return { ...total, groups: [...groups.values()].sort((left, right) => right.draws - left.draws) };
+  return {
+    ...total,
+    groups: [...groups.values()]
+      .sort((left, right) => right.draws - left.draws)
+      .map(({ name, ownerPath, parents, ...group }) => ({
+        name,
+        ownerPath,
+        ...show(group),
+        parents: [...parents.values()]
+          .sort((left, right) => right.draws - left.draws)
+          .slice(0, 8)
+          .map(show),
+      })),
+  };
 }
 
 const frustum = new Frustum().setFromProjectionMatrix(
