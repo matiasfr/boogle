@@ -1,4 +1,4 @@
-> **Status: planned (2026-11-17), not started.** Brief: [forge-made-rewards](../brainstorms/forge-made-rewards.md).
+> **Status: building (2026-11-17); the owner answered its three questions the same day (below).** Brief: [forge-made-rewards](../brainstorms/forge-made-rewards.md).
 > Decision: [rewards, 17 November](../decisions-rewards.md#d-2026-11-17-forge-made-rewards). Base: `45e2fe2f`
 > (main `5cfe070d` plus the brief). Steps 1 to 3 only change what players see and can ship first. Step 4 moves the
 > axe's pickup (sim catalog, server reach). Step 5 is the cut, which needs step 4. **No `WORLD_NS` bump** (see Risks).
@@ -119,19 +119,19 @@ On the live lit edge (`litShown < 0 && fg.lit >= 0`, `line2-view.ts:1069`), in t
 
 1. The existing fanfare and dust play as now. The whistle gains `FORGE_CALL_HEAR` (900 m), so a friend chopping far
    off hears the forge light.
-2. **The cut**, for a player on foot within `cutNear` (40 m) of the pedestal: `switchCamera.play(pos, pos, at,
+2. **The cut**, for every player in the room (owner, 17 November; was: on foot within 40 m): `switchCamera.play(pos, pos, at,
    FORGE_CUT.seconds, 0.01, { cutIn: true, back: FORGE_CUT.back, end: { pos, to, at }, onCut: rewards.axeArrives,
    onHome: faceForge })`, with `switchKind = 'forgeAxe'` (add it to the union at `line2-view.ts:127`). It reuses the
    pull-out's existing rules: it queues behind a reward card, waits while gliding, plays for a bench rider but not in
    a vehicle seat, plays nothing under reduced motion, and can be skipped with Interact after 0.8 s. `faceForge` hands
    the camera back looking toward the pedestal. No forge-call plume, no repeat calls and no crane: steam and the
    crane stay the heavy parts' language.
-3. If `play` returns false, or the player is farther than 40 m, `rewards.axeArrives()` runs at once. It runs at most
+3. If `play` returns false, `rewards.axeArrives()` runs at once. It runs at most
    once per edge. If the queued cut has not landed `roofHoldMax` s after the edge, it runs anyway, so a cut dropped
    from the queue never leaves the axe glowing.
 4. **The roof show waits for the cut:** `createForgeFinish(…, { hold: () => switchKind === 'forgeAxe' &&
    (switchCamera.inspect().active || switchCamera.inspect().pending) })`. The beams drop in as the camera comes home.
-   For everyone without a cut, `hold` is false and the show starts as now.
+   For anyone whose cut does not play (reduced motion, a vehicle seat), `hold` is false and the show starts as now.
 
 Never on a reload, late join or resync: `restore()` sets `litShown`, the axe is shown cool, and `forge-finish`
 snaps done, as now.
@@ -310,17 +310,17 @@ and its review, home-flow row 8, the 14 November playtest note on the shared ped
 | 10 | The errand's timings: 1.4 s hammering, 6 s a leg, 12 s cap, self-assembly after 1.5 s with no villager | Default | Tunables in `FORGE_REWARDS` |
 | 11 | Wooden knock (`thump`) for the pack; hammer ring (`clank`) and ~12 sparks for the axe | Default | Brief suggestion 2 |
 | 12 | The pedestal stands from the forge's lighting | Default | Follows from call 4: it was hidden until Q5 |
-| 13 | The axe holds the plinth; a cast part never waits on it; with a part waiting, the axe leans against the plinth, reach unchanged | New, recommended | Finding 2; principle 3 (an optional pickup never gates the route) |
+| 13 | The axe holds the plinth; a cast part never waits on it; with a part waiting, the axe leans against the plinth, reach unchanged | Decided (owner, 17 Nov, as recommended) | Finding 2; principle 3 (an optional pickup never gates the route) |
 | 14 | The axe stands upright, edge toward hardwood 232; scaled 1.4 | Default | Finding 1 |
-| 15 | The axe arrives forge-hot and cools over 3 s | New, recommended | "The forge creates it" (owner's words), shown with no little guy competing with the roof crew |
-| 16 | Who sees the cut: on foot within 40 m of the pedestal, on the live edge only; existing pull-out rules otherwise | New, recommended | The brief review's recommendation |
+| 15 | The axe arrives forge-hot and cools over 3 s | Decided (owner, 17 Nov, as recommended) | "The forge creates it" (owner's words), shown with no little guy competing with the roof crew |
+| 16 | Who sees the cut: every player in the room, on the live edge only; existing pull-out rules otherwise | Decided | Owner, 17 Nov ([cutscenes for everyone](../decisions-rewards.md#d-2026-11-17-cutscenes-for-everyone)); was 40 m on foot |
 | 17 | The cut: 2.5 s, cut in and out, skippable after 0.8 s, home facing the pedestal; `AXE_VIEW` framing | Default | `FORGE_CUT`; the existing pull-out |
 | 18 | The roof show's beams wait for the cut (at most 5 s) | New, recommended | One show on one edge (brief review) |
 | 19 | The lit whistle carries 900 m | Default | The forge call's range; reaches friends away from the forge |
 | 20 | No plume, repeat calls or crane for the axe | Default | Brief suggestion 3 (steam and crane stay the heavy handoff's) |
 | 21 | The old stand and its meadow clearing are removed | Default | Follows from call 4 |
 
-Counts: 5 Decided, 12 Default, 4 New.
+Counts: 8 Decided, 12 Default, 1 New (after the owner's answers).
 
 **Findings.**
 
@@ -354,6 +354,6 @@ Counts: 5 Decided, 12 Default, 4 New.
    hammer ring, in the cut. The alternative, a little guy carrying it out, would compete with the roof crew that
    starts at the same moment.
 
-**Rows for [docs/agent-calls.md](../agent-calls.md)** (rewards topic, status `open`): calls 6 to 21 above, one row
-each, citing this section. This commit carries only the plan file, so the orchestrator adds the rows when it merges
-the plan.
+**Owner answers (17 November 2026):** 1, as recommended ("I think that's a fine recommendation"). 2, changed: "I think it should be everybody. And maybe we should make this a standard that cutscenes should be visible by everyone, including for getting items. That way, the shared progression is really earned if you're online." The cut plays for every player in the room on the live edge, wherever they are, under the pull-out's existing rules (it queues behind a reward card, waits while gliding, plays nothing under reduced motion, never on a reload, late join or resync); the 40 m `cutNear` is dropped. The wider standard is the [cutscenes decision](../decisions-rewards.md#d-2026-11-17-cutscenes-for-everyone); applying it to the other item reveals is outside this plan. 3, as recommended ("I like your recommendation for number three").
+
+**Rows for [docs/agent-calls.md](../agent-calls.md)** (rewards topic, status `open`): calls 6 to 21 above that are still Default or New, one row each, citing this section (added with the owner's answers).

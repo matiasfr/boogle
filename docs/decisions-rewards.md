@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-17 · Cutscenes for shared progression play for everyone online, item gets included; the forge's axe cut first ([entry](#d-2026-11-17-cutscenes-for-everyone))
 - 2026-11-17 · The forge's rewards are its products: a little guy builds the pack frame, the axe waits on the pedestal with a short cut; stations that grant upgrades foreshadow them ([entry](#d-2026-11-17-forge-made-rewards))
 - 2026-11-17 · confirm the build-errand freight-stop rule ([entry](#d-2026-11-17-build-errand-freight-stop))
 
@@ -49,6 +50,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · Kept from SETTLED:  _("every system is ignorable": replaced for the rail loop by the audit picks ("Skipping the rail"))_ ([entry](#d-undated-kept-from-settled))
 
 ## Decided
+
+- <a id="d-2026-11-17-cutscenes-for-everyone"></a>**2026-11-17, cutscenes play for everyone online, item gets included** (owner, 17 November 2026, answering who sees the forge's axe cut in the [forge-made-rewards plan](plans/forge-made-rewards.md): "I think it should be everybody. And maybe we should make this a standard that cutscenes should be visible by everyone, including for getting items. That way, the shared progression is really earned if you're online"; on the same plan's other two questions: "that's a fine recommendation", "I like your recommendation for number three"). A show or camera cut for a shared progression edge plays for every player in the room, wherever they stand, including the reveal of a shared item. The forge's axe cut is the first use. Orchestrator's reading, to confirm: his "maybe" makes it a standing direction rather than a retrofit order; it changes the [co-op abilities option E](brainstorms/coop-abilities.md) split, where only the finder gets the show and friends a flourish that never holds input; existing reveals move to it as a separate piece of work; the existing safety rules (queued behind a card, never while gliding, none under reduced motion, never on a reload or late join) still apply.
 
 - <a id="d-2026-11-17-forge-made-rewards"></a>**2026-11-17, the forge's rewards are its own products, and upgrade-granting stations foreshadow them** (owner, 17 November 2026, mid-playthrough: "it's really not obvious that the pack frame exists. It's just a gift that sort of appears subtly out of nowhere"; "Same with the proper axe ... make that more clear that it's a direct reward of building the forge? Maybe the forge creates it as opposed to just a random gift off to the side"; answering the [brief](brainstorms/forge-made-rewards.md)'s questions: "A little guy builds it", "Foreshadowing is a nice motivator when stations grant upgrades", "Pedestal plus a short cut"). A little guy builds the pack frame from the forge frame's last timber when its 24-log bill is in. A station that grants an upgrade shows what it grants on its board before the bill is done; the forge's first bill shows the pack. The proper axe waits on the forge's pedestal (where the boiler and breaker wait later), with a short camera cut as the forge lights. The co-op claim is unchanged.
 
