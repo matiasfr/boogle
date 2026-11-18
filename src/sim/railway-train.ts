@@ -154,9 +154,9 @@ export const TRAIN_HOME: readonly number[] = RAIL_TRAINS.map((t) => t.home);
 export const TRAIN_HOME_TRACK: readonly number[] = RAIL_TRAINS.map((t) => t.track);
 type LineHalt = { name: string; line: number; stop: number; x: number; z: number; y: number; reach: number };
 /** Every halt with v25's original-side platform (v45's outbound side): the id is the index (rail.call's `id`). Typed as
- * v27's eight-halt tuple (v25's six, then the Railhead and Ring Island), which test/railway-lines.test.ts holds the
- * catalog to; the type goes when callers read RAIL_HALTS (v26 step 4b). The Railhead's here is its first head's
- * (haltPlatform reads the current one). */
+ * v27's eight-halt tuple (v25's six, then the Railhead and Ring Island); test/railway-train.test.ts ("halts and stops
+ * match the pinned Place layout") holds it to the catalog. The type goes when callers read RAIL_HALTS (v26 step 4b).
+ * The Railhead's here is its first head's (haltPlatform reads the current one). */
 export const LINE_HALTS = RAIL_HALTS.map(({ name, line, stop, platforms: [p] }) => ({
   name,
   line,
