@@ -195,7 +195,35 @@ with the cameras of `dev/look/evals/terrain-draws.ts:17-20` (green: cam 909,24.4
   | head | 16.316 | 17.748 (21.415) | 0.914 | 1.55 (0.75) |
   | far | 11.418 | 12.146 (17.018) | not read | 1.21 (0.80) |
 
-- [ ] **4. Place-bound railway views sleep.** From step 0's per-kind costs, take at most the three costliest sub-views
+- [x] **4. Place-bound railway views sleep.** Built 18 November as a redraw sleep, not an update sleep. `--cpu-prof`
+  at spawn, far and head put the railway update at about 1.8 ms a frame. Its costliest place-bound sub-views all sit
+  in `works-live.ts`: the railhead (`drawLive`, about 0.27 ms a frame), the roundhouse (0.16), the crossing's `draw`
+  (0.11) and the Works (0.05-0.09). `line2-view.ts` (0.25-0.33) is another job's, as are the Works (`works-view.ts`,
+  edited by the forge's rack move) and the halts' levers, which are spread along the line. Every candidate's `update`
+  drives something else as well. The railhead's sets the hook ring (`deps.hookRing`), Ring Island's near-view
+  residency (`ringIslandNear.keep`), its colliders and the traveller's cues on the shared clock. The crossing's plays
+  the finale every page must see (banner, rockets, camera pull-out). So only the box-batch rebuild sleeps, through
+  `createRedrawSleep` (new `src/render/view-sleep.ts`: `resident(viewDistance(centre), ...)` at 250 / 300 m past the
+  place's own reach). Everything else runs every frame. Asleep, the batch is still redrawn while a bent rises, a
+  footing goes down or the traveller runs, or when what the draw reads changes. A wake therefore has nothing to catch
+  up on, and its first redraw is a plain draw of the current state: the `snap()` this step asked for is needed by no
+  view slept here. Held still while asleep: the railhead windsock's flutter and the glow of the next bent's sockets,
+  under a pixel at that distance. Railhead and crossing are slept. The roundhouse is left: its shunt runs on the rule
+  clock and its garage view reads the deck's rest, so it needs its own idle test. *Proof*, quiet (Windows, 20 s; load
+  2.55 → 2.41 before and 5.67 → 1.72 after, of 20; two runs that reached 20 of 20 were discarded):
+
+  | Pose | CPU avg / p95 ms | GPU avg ms | railway update ms/frame | `works-live` update ms/s |
+  | --- | ---: | ---: | ---: | ---: |
+  | spawn | 15.389 / 19.385 → 14.205 / 16.320 | 15.693 → 15.084 | 2.058 → 1.656 | 34.95 → 14.65 |
+  | far | 12.189 / 15.375 → 11.473 / 14.525 | 12.633 → 12.430 | 1.873 → 1.617 | 33.36 → 16.13 |
+  | head | 16.612 / 21.255 → 16.184 / 20.390 | 17.919 → 17.644 | 1.905 → 1.557 | 43.61 → 25.79 |
+
+  The railhead's `drawLive` reads 0 ms at all three poses. The crossing's `draw` reads 0 at spawn and far; at head it
+  stays awake (253 m from its centre, inside 250 m plus its 69 m reach) and in view. Calls and triangles are unchanged.
+  [Wake stills](../world/world-view-sleep/): after a minute asleep at spawn (`asleep: true` for both), a teleport
+  beside each. The railhead stands whole at rest (7 bents stood and decked, `lowering` 0, traveller still, windsock
+  moving again), and so does the crossing (6 bents, 0 rising, no finale replayed). Not tested on a device.
+  Plan as written: from step 0's per-kind costs, take at most the three costliest sub-views
   in `view.ts:565-627` whose work belongs to one place (likely candidates: the works, Far Head's posts and glows, the
   hook course, the sea gate; not the cart, trains, freight, arrival, reward or path, which follow the player or the
   shared state). Each gets a centre and a `resident()` gate, and a `snap()` that sets its visuals from the replica on

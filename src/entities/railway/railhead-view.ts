@@ -1196,6 +1196,7 @@ export function createRailwayRailhead(
     inspect: () => ({
       railheadView: {
         opened,
+        asleep: !sleep.awake(),
         set,
         started,
         sim: simHead(),

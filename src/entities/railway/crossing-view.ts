@@ -711,6 +711,7 @@ export async function createRailwayCrossing(
     inspect: () => ({
       crossingView: {
         sockets: sockets.length,
+        asleep: !sleep.awake(),
         inSea: inSea(),
         lowering: lowering.length,
         bents: rise.filter((t) => t >= RISE_S).length,
