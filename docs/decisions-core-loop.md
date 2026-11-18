@@ -4,13 +4,15 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
-- 2026-11-17 · the first line has no fork ([entry](#d-2026-11-17-first-line-no-fork))
+- 2026-11-17 · separate capacities answers: 2 a hit once Station 3 is funded (its 40 logs may come down), pack raises logs and the breaker stone, rails start at 8 with their own later upgrade ([entry](#d-2026-11-17-separate-capacities-answers))
+
+- 2026-11-17 · separate wood and stone capacities, no heavy load, 1 per chop to start, squares on the back ([entry](#d-2026-11-17-separate-capacities))
+
+- 2026-11-17 · the first line has no fork ([entry](#d-2026-11-17-first-line-no-fork)) _Its "heavy load is the per-trip choice" is superseded by the later 17 November [separate capacities](#d-2026-11-17-separate-capacities)._
 
 - 2026-11-17 · retire the production-bot route call ([entry](#d-2026-11-17-retire-5))
 
 - 2026-11-17 · retire the Glide-glyph first-fall teach ([entry](#d-2026-11-17-retire-4))
-
-- 2026-11-17 · heavy-load tuning with bounded local drop recovery ([entry](#d-2026-11-17-heavy-load-pile-rule-as-shipped))
 
 - 2026-11-17 · batch-3 calls confirmed as logged ([entry](#d-2026-11-17-batch3-confirmed))
 
@@ -122,13 +124,15 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 
 ## Decided
 
+- <a id="d-2026-11-17-separate-capacities-answers"></a>**2026-11-17, separate capacities: the three open questions** (owner, 17 November 2026, answering the three questions of [separate-capacities](plans/separate-capacities.md)). (1) When a hit becomes 2: "3 but maybe reduce logs from 40" — the yield doubles for the room once Station 3 is funded, and Station 3's 40-log bill may come down (the amount is proposed by the plan, measured, and logged). (2) What upgrades each capacity: "Pack + breaker (Recommended)" — the pack chest raises logs 8 → 16 where it stands today; taking the breaker raises stone 8 → 16; both shared, no new chests. (3) Rails: "8, own upgrade later" — rails start at 8, with their own upgrade designed later; line 2 is heavier until it exists.
+
+- <a id="d-2026-11-17-separate-capacities"></a>**2026-11-17, separate wood and stone capacities, no heavy load, 1 per chop to start, squares on the back** (owner, 17 November 2026, after testing: "I accidentally always get over-encumbered because I'm used to just tapping the mining button really quickly"; then "yes let's try that. and also i dont like the encumbrance system as it is. we should have different storage capacities for differen resources. for example stone and wood start at 8. and they can be upgraded independently. no hold to overfill. also, i liked the little squares for inventory as it made it feel more physical than icons, which also feel in the way as current UI stands"). (1) The heavy load goes: no overfill, no slowdown, no hold-to-overfill. A full kind refuses further pickups of that kind. (2) Each resource has its own capacity; wood and stone start at 8, and each is upgraded independently. (3) "Try that": a hit yields 1 at first instead of 2, and going to 2 is an upgrade (Grant's G6, [round-4 notes](plans/round-4-notes.md)). (4) The carried amount shows as little squares again, which feel physical; the icons are in the way. Supersedes the 17 November heavy-load tuning entry in full (archived) and the [counts everywhere](agents/owner-calls.md#counts-everywhere) call for the carried display. Rails' capacity, what grants each upgrade and where, when the yield doubles, and whether early bills change are open and are proposed in a plan before building.
+
 - <a id="d-2026-11-17-first-line-no-fork"></a>**2026-11-17, the first line has no fork** (owner, 17 November 2026, review page: "the others I accept all"). Take the recommendation: no first-line fork and no new crossing terrain. Heavy load is the per-trip choice; the first real choice is the garage’s steel installs (the first town asks no choice between its plots, [16 November](decisions-rewards.md#d-2026-11-16-first-town-lesson-answers)). Stage 1 found no crossing that makes double jump versus carry a real choice, so stage 2 is not built. This closes the owner scope question in [D2](brainstorms/first-line-decisions.md) and the [crossing probe](research/first-line-crossing-probe.md); do not start the rejected prototype.
 
 - <a id="d-2026-11-17-retire-5"></a>**2026-11-17, retire the production-bot route call** (owner, 17 November 2026, review page: "the others I accept all"). A test-bot route, not a game rule.
 
 - <a id="d-2026-11-17-retire-4"></a>**2026-11-17, retire the Glide-glyph first-fall teach** (owner, 17 November 2026, review page: "the others I accept all"). Conflicts with the confirmed Jump-in-air canopy control.
-
-- <a id="d-2026-11-17-heavy-load-pile-rule-as-shipped"></a>**2026-11-17, heavy-load tuning with bounded local drop recovery** (owner, 17 November 2026, review page: "the others I accept all"). Confirm comfort 8/16, maximum 12/24, the 45% linear speed floor and the rack moves as logged. Replace only "Remove the 128-pile ceiling" with the shipped rule: `LOOSE_PILE_CAPACITY = 128`, eight pieces per pile; heavy excess reserves drop slots, pickups are bounded by spare slots, and a whole-pile take may reclaim its source slot. Drops top up same-position piles and use unreserved slots or release their own excess. See [final integration](archive/plans/heavy-load-final.md), `src/sim/railway-supply.ts`, `railway-queries.ts` and `railway-sys-line1.ts`. The ceiling was not removed; no code change is authorized here.
 
 - <a id="d-2026-11-17-batch3-confirmed"></a>**2026-11-17, batch-3 calls confirmed as logged** (owner, 17 November 2026, review page: "the others I accept all"). The confirmed rows in this topic in the [batch-3 archive](decisions-archive.md#batch3-core-loop) are confirmed word for word, subject to later explicit owner decisions. Proposed work is not claimed built. The "Kiln" fingerpost remains a stand-in until the owner words it; his character copy is unchanged.
 
