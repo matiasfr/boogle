@@ -298,7 +298,26 @@ with the cameras of `dev/look/evals/terrain-draws.ts:17-20` (green: cam 909,24.4
   one area and make each one instanced or merged batch per area with real bounds (research recommendation 8). One
   small job per row; name the row and its before and after count in the commit. *Done:* head's main draws fall by what
   the three rows held. *Check:* head stills unchanged. *Proof:* pose reading at head.
-- [ ] **7. Cull the sea behind the camera (geometry only).** In `src/render/water/surface.ts`, order the grid's indices
+- **7. Cull the sea behind the camera: measured, skipped (18 November).** The ceiling was read before any edit. The
+  sea's grid is 18,528 triangles (9,313 vertices), 1.7 to 3.7 % of the frame's, drawn once a frame by the main camera
+  only: over 1.5 s at pier, a `backend.draw` wrapper saw no shadow-pass draw and no second camera. The ceiling used the
+  existing Sea detail rung (`?dev=1&graphics=seaDetail:low`: 48 spokes, about 4,848 triangles), which cuts three
+  quarters of the grid with the same coverage, more than an azimuth cull would remove. Quiet (Windows, 20 s,
+  `--no-load`, at `ea3bc52a`; load 1.32 → 0.77 for the baseline and 1.58 → 1.38 for low, of 20), dev=1 baseline →
+  seaDetail low:
+
+  | Pose | tris | CPU avg ms | GPU avg ms (p95) |
+  | --- | ---: | ---: | ---: |
+  | far | 1,089,289 → 1,075,609 | 11.574 → 11.258 | 12.391 (17.456) → 12.243 (17.119) |
+  | bay | 888,977 → 867,277 | 10.857 → 11.191 | 11.086 (16.086) → 11.236 (16.465) |
+  | pier | 501,607 → 487,927 | 9.253 → 9.691 | 10.876 (13.430) → 11.110 (13.761) |
+
+  GPU saves 0.15 ms at far and nothing at bay or pier (+0.15, +0.23). CPU moves −0.32, +0.33 and +0.44 ms, inside the
+  spread of plain baselines on the same commit (pier 9.628, 9.190 and 9.253 ms); a draw range removes no main-thread
+  work and would add an azimuth computation. As an outer bound, not drawing the sea at all (draw range 0, which also
+  drops its pixels, which this step would keep) read far −0.48 ms GPU and −0.47 ms CPU, bay +1.92 / +0.02 and pier
+  −0.24 / +0.24 against a plain baseline (load 1.68 → 1.18 and 1.47 → 1.21). Not built; `surface.ts` is unchanged.
+  Plan as written: in `src/render/water/surface.ts`, order the grid's indices
   by azimuth (`buildGrid`, `:116`) and set a draw range each frame to the azimuths the camera can see plus a margin for
   displacement and wide fields of view; give the mesh no other change (its fragment graph is untouched). *Done:* the sea's
   triangles roughly halve at every pose. *Check:* stills at far, bay and pier, looking straight down, and turning
