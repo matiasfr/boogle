@@ -132,6 +132,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   });
   line2.holdDepot(flying);
   line2.riderIs(seats.seated);
+  reward.riderIs(seats.seated);
   shelf.holdRails(flying);
   const works = worksPreview()
     ? await import('./works-live.ts').then((m) =>

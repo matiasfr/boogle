@@ -3,7 +3,7 @@
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
-import type { createRewardReveal } from '../../render/reward-reveal.ts';
+import type { createRewardReveal, Got } from '../../render/reward-reveal.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
 import { backSeam } from '../../player/haul-back.ts';
@@ -164,13 +164,13 @@ export async function createRailwayTools(
     second = false,
     knew = false,
     disposed = false;
-  // Only the finder gets the card (docs/brainstorms/coop-abilities.md, option E); everyone else's flourish is
-  // ability-arrival.ts. The shared card owns the finder's bounded particle moment.
+  // The finder's card on the press; friends' cards (cardFor, below) and late flourishes are ability-arrival.ts
+  // (decisions-rewards.md, 17 November). The shared card owns the finder's bounded particle moment.
   const mine = (event: { pid: string }) => event.pid === adapter.read.pid;
   const offAccepted = adapter.onAccepted((event) => {
     if (event.accepted <= 0) return;
     if (event.op === 'rail.axe') {
-      // The opener gets the card; everyone else's flourish is ability-arrival.ts.
+      // The opener's card; a friend's comes from ability-arrival.ts.
       if (!mine(event)) return;
       if (reveal.youGot({ key: 'axe', ...AXE_REWARD, model: properModel.clone(true), from: axeTarget().clone() }))
         axeReveals++;
@@ -234,6 +234,21 @@ export async function createRailwayTools(
     if (frame.parent !== back) back.add(frame);
   };
   const api = {
+    /** A friend's card for one of these (ability-arrival.ts): the finder's name, line and model, without the rise
+     * from the device or chest, or the camp resident's handoff. */
+    cardFor(key: string): Got | null {
+      if (key === 'jump') return { key, ...JUMP_REWARD, model: new THREE.Mesh(jumpPrize, material) };
+      if (key === 'axe') return { key, ...AXE_REWARD, model: properModel.clone(true) };
+      if (key === 'pack') return { key, ...PACK_REWARD, model: new THREE.Mesh(packPrize, material) };
+      if (key === 'multi-axe')
+        return {
+          key: MULTI_AXE_REWARD.key,
+          name: MULTI_AXE_REWARD.name,
+          line: MULTI_AXE_REWARD.line,
+          model: new THREE.Mesh(multiPrize, material),
+        };
+      return null;
+    },
     /** A fresh model of an axe (or the pack frame) for a friend's flourish (materials are shared with the cards). */
     axeModel(key: string): THREE.Object3D | null {
       if (key === 'axe') return properModel.clone(true);

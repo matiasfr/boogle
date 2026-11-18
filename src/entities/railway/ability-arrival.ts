@@ -1,19 +1,23 @@
-// Co-op abilities, option E (docs/brainstorms/coop-abilities.md): an ability is the room's the moment anyone finds it
-// (one accepted railway fact), and each player is shown it their own way. The finder gets the full "You got" card
-// (tools.ts, line2-view.ts); everyone else gets a small flourish where they stand that never holds input: a teal puff
-// at the ankles, the pickup's two notes and the charge mark lit by Buddy's feet. A friend who wasn't there gets that
-// flourish once on their first landing. All Local: what this player has been shown lives in this browser only.
+// Co-op abilities, option E (docs/brainstorms/coop-abilities.md), with cutscenes for everyone (decisions-rewards.md,
+// 17 November): an ability is the room's the moment anyone finds it (one accepted railway fact). The finder gets the
+// "You got" card on the press (tools.ts, line2-view.ts, glide-device-view.ts, reward.ts). A friend online when the
+// server accepts it gets the same card, owed from that receipt and held up only once they are free (grounded, not
+// gliding, not seated, no card, shot or other full-screen moment on screen): it never stops them mid-flight or
+// mid-ride. A friend who wasn't there (offline, a later join, a reload before the card came up) gets a small flourish
+// instead, once, on their first free landing: a teal puff at the ankles, the pickup's two notes and the charge mark lit
+// by Buddy's feet. All Local: owed cards live in memory only; what this player has been shown lives in this browser.
 //
 //   seen(key) / remember(key)   this player's record per railway room: 'jump', 'hook', 'glide', 'multi-axe', 'axe',
 //                               'pack', 'boiler', 'jump-taught', 'glide-taught', 'plinth:jump'
 //
 // The axes follow the same rule. The multi-axe is the machine's wake: the player who pressed wake gets the card (once
-// the server has accepted it, reward.ts); everyone else gets the flourish as the wake finishes. The proper axe is
-// the chest's: the opener gets the card, everyone else the flourish. An axe has no charge ring: a small model of it
-// pops up over Buddy and settles away. The pack frame (the forge's chest, a back of 16 for everyone) works the same,
-// and so does the boiler (fitted on the old train, trains for everyone): the fitter has the wake, the rest a small
-// boiler over Buddy (boiler-first-choice plan, step 9).
-//   update(dt)                  late flourishes, the charge mark, the first-jump teach and the first-fall glide teach
+// the server has accepted it, reward.ts); a friend who heard the wake accepted gets theirs as the wake finishes. The
+// proper axe is the chest's, and the pack frame (the forge's chest, a back of 16 for everyone) works the same. A late
+// flourish for an axe has no charge ring: a small model of it pops up over Buddy and settles away. The boiler has no
+// card (boiler-view.ts's BOILER_CARD): the fitter has the wake, everyone else the flourish with a small boiler over
+// Buddy (boiler-first-choice plan, step 9).
+//   update(dt)                  owed cards, late flourishes, the charge mark, the first-jump teach and the first-fall
+//                               glide teach
 //
 // The glider's teach is everyone's, the finder's too (its device teaches nothing): the first time you fall fast with the
 // glider and the canopy shut, Jump's glyph pulses at Buddy's back. Jump spends the air jump first, then opens or closes
@@ -24,6 +28,9 @@ import type { RailwayAccepted } from '../../adapters/railway-effects.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { me } from '../../player/player.ts';
 import { inputState } from '../../player/input-state.ts';
+import { momentBusy } from '../../render/buddy-frame.ts';
+import type { Got } from '../../render/reward-reveal.ts';
+import { playMark } from '../../proto/mark.ts';
 import { glyph } from '../../player/glyphs.ts';
 import { fallArrival } from '../../fall/arrival.ts';
 import { localJumpCount } from '../player/state.ts';
@@ -54,13 +61,27 @@ const ABILITIES: {
   badge?: boolean;
   /** Shown when the state turns (the wake's end), not when the event arrives. */
   atState?: boolean;
+  /** A state-edge ability's state has begun turning (the wake is under way): a heard event whose state stops having
+   * begun for the reset grace was undone by a fresh start, and owes nothing. */
+  begun?: (l: Look) => boolean;
+  /** A friend online gets its "You got" card (reward.ts builds it). The boiler has none (boiler-view.ts's BOILER_CARD). */
+  card?: boolean;
 }[] = [
-  { key: 'jump', op: 'rail.jump', cue: 'pickupJump', has: ({ w }) => rail(w).jump },
-  { key: 'hook', op: 'rail.hook', cue: 'pickupHook', has: ({ w }) => rail(w).hook },
-  { key: 'glide', op: 'rail.glide', cue: 'pickupGlider', has: ({ w }) => rail(w).glide, badge: true },
-  { key: 'multi-axe', op: 'rail.wake', cue: 'pickupHook', has: AWAKE, badge: true, atState: true },
-  { key: 'axe', op: 'rail.axe', cue: 'pickupHook', has: ({ w }) => rail(w).axe, badge: true },
-  { key: 'pack', op: 'rail.pack', cue: 'pickupHook', has: ({ w }) => rail(w).pack, badge: true },
+  { key: 'jump', op: 'rail.jump', cue: 'pickupJump', has: ({ w }) => rail(w).jump, card: true },
+  { key: 'hook', op: 'rail.hook', cue: 'pickupHook', has: ({ w }) => rail(w).hook, card: true },
+  { key: 'glide', op: 'rail.glide', cue: 'pickupGlider', has: ({ w }) => rail(w).glide, badge: true, card: true },
+  {
+    key: 'multi-axe',
+    op: 'rail.wake',
+    cue: 'pickupHook',
+    has: AWAKE,
+    begun: ({ w }) => rail(w).awake >= 0,
+    badge: true,
+    atState: true,
+    card: true,
+  },
+  { key: 'axe', op: 'rail.axe', cue: 'pickupHook', has: ({ w }) => rail(w).axe, badge: true, card: true },
+  { key: 'pack', op: 'rail.pack', cue: 'pickupHook', has: ({ w }) => rail(w).pack, badge: true, card: true },
   {
     key: 'boiler',
     op: 'rail.boilerFit',
@@ -118,8 +139,14 @@ export function createAbilityArrival(
   adapter: RailwayAdapter,
   owner: OwnedView,
   env: {
-    /** A "You got" card is up or waiting (the finder's own). */
+    /** A "You got" card is up or waiting. */
     busy: () => boolean;
+    /** A friend's card for an ability: the finder's name, line and model (no rise point, no demo); null for none. */
+    card: (key: string) => Got | null;
+    /** Sitting in a railway chair or bench (view.ts's seats, through reward.ts): the card would turn and hold Buddy. */
+    seated: () => boolean;
+    /** Queues a card on the shared reveal (reward-reveal.ts); false when its key was already shown. */
+    youGot: (g: Got) => boolean;
     /** The second jump's charge (tools.ts fixedPre): whether one is left, and whether it is being spent now. */
     jump: () => { charge: boolean; second: boolean };
     /** A fresh model of each axe for its flourish (shared materials; this file never disposes them). */
@@ -127,11 +154,21 @@ export function createAbilityArrival(
   },
 ) {
   const seen = createSeen();
-  const stats = { flourishes: 0, late: 0, teaches: 0, fills: 0, keys: [] as string[] };
+  const stats = { flourishes: 0, late: 0, teaches: 0, fills: 0, keys: [] as string[], cards: [] as string[] };
   /** Seconds each ability has been missing from a ready world: a fresh start, once it lasts (a resync's frozen view
    * can briefly show an older state). */
   const missing = new Map<string, number>();
   const watched = new Set<string>();
+  /** Cards owed to this player for a friend's find heard live, in order (Local, in memory: a reload drops them and the
+   * late flourish stands in). `heard` holds the state-edge ones (the wake) until their state turns: the world is
+   * missing them until then, so the fresh-start forgetting below leaves it alone; it is dropped instead when the state
+   * stops having begun for the reset grace (a fresh start mid-wake), counted in seconds here. */
+  const owed: string[] = [];
+  const heard = new Map<string, number>();
+  const owe = (key: string) => {
+    const ability = ABILITIES.find((a) => a.key === key);
+    if (ability?.card && !seen.has(key) && !owed.includes(key)) owed.push(key);
+  };
 
   // The charge mark: a filled teal ring under Buddy's feet, lit only by a flourish (hollow when its unlock arrived
   // mid-flight, filling on landing) and by the one-time first-jump teach. An ordinary jump draws nothing under you.
@@ -254,8 +291,10 @@ export function createAbilityArrival(
       if (ability.key === 'jump') seen.add('jump-taught');
       return;
     }
-    if (ability.atState) return; // the wake's flourish comes as it ends (update)
-    if (!seen.has(ability.key)) flourish(ability.key, false);
+    // A state-edge card (the wake's) is owed as the state turns (update); the boiler has no card and keeps its
+    // flourish there.
+    if (ability.atState) return void heard.set(ability.key, 0);
+    owe(ability.key);
   });
   // A wake you pressed was predicted: if the server refuses it, there is no card, and nothing is marked as shown.
   const offCorrected = adapter.onCorrected((c) => {
@@ -269,6 +308,8 @@ export function createAbilityArrival(
     inspect: () => ({
       ...stats,
       keys: [...stats.keys],
+      cards: [...stats.cards],
+      owed: [...owed],
       mark: mark.visible ? (fill.visible ? 'filled' : 'hollow') : 'off',
       teaching: pulse > 0,
       glideTeaching: glidePulse > 0,
@@ -290,18 +331,61 @@ export function createAbilityArrival(
       const look: Look = { w, tick, phase: railPhase(w, tick, tick) };
       const row = rail(look.w);
       for (const a of ABILITIES) {
+        const undone = heard.get(a.key);
+        if (undone !== undefined && a.begun) {
+          const next = a.begun(look) ? 0 : undone + dt;
+          if (next > 3) heard.delete(a.key);
+          else heard.set(a.key, next);
+        }
         const gone = (a.present ?? a.has)(look) ? 0 : (missing.get(a.key) ?? 0) + dt;
         // Seen going from missing to there in this session: its flourish is the live one, not a late one.
-        if (!gone && (missing.get(a.key) ?? 0) > 0) watched.add(a.key);
+        if (!gone && (missing.get(a.key) ?? 0) > 0) {
+          watched.add(a.key);
+          // A friend's wake heard live: its card is owed as the wake ends.
+          if (a.atState && a.has(look) && heard.delete(a.key)) owe(a.key);
+        }
         missing.set(a.key, gone);
-        if (gone > 3) seen.forget(a.key);
+        if (gone > 3) {
+          seen.forget(a.key);
+          const i = owed.indexOf(a.key);
+          if (i >= 0) owed.splice(i, 1);
+        }
       }
       const grounded = me.coyote > 0 && !me.swimming;
-      const free = !fallArrival.active && !inputState.seated && !env.busy();
+      // Free: nothing a card would freeze or cover. Owed cards and late flourishes both wait for it, without a limit.
+      const free =
+        grounded &&
+        !fallArrival.active &&
+        !inputState.seated &&
+        !inputState.held && // a talk box, the garage panel or the fall already holds input (and a card would free it)
+        !env.seated() &&
+        !railwayGlideOpen() &&
+        !env.busy() &&
+        !momentBusy();
+      // A friend's card: one per free frame (the reveal's own queue makes the next wait for this one's dismissal).
+      const due = free ? owed.shift() : undefined;
+      const got = due ? env.card(due) : null;
+      // The reveal refuses a key it has already shown this session (a fresh start since): the flourish stands in.
+      if (due && !(got && env.youGot(got))) {
+        flourish(due, false);
+        lateWait = 1.2;
+      } else if (due) {
+        seen.add(due);
+        if (due === 'jump') seen.add('jump-taught'); // the card teaches it, as the finder's does
+        stats.cards.push(due);
+        const ability = ABILITIES.find((a) => a.key === due)!;
+        playMark('moment played', {
+          moment: `${due} card`,
+          mine: false,
+          shot: false,
+          authority: 'local',
+          edge: ability.atState ? 'state' : 'server',
+        });
+      }
       // Late: one flourish per ability gained while away, on the first landing, one after another.
       lateWait = Math.max(0, lateWait - dt);
-      if (grounded && free && !lateWait) {
-        const missed = ABILITIES.find((a) => a.has(look) && !seen.has(a.key));
+      if (free && !due && !lateWait) {
+        const missed = ABILITIES.find((a) => a.has(look) && !seen.has(a.key) && !owed.includes(a.key));
         if (missed) {
           flourish(missed.key, !(missed.atState && watched.has(missed.key)));
           lateWait = 1.2;
@@ -334,6 +418,7 @@ export function createAbilityArrival(
         charge &&
         !second &&
         !seen.has('jump-taught') &&
+        !owed.includes('jump') &&
         lastVy > 0.3 &&
         vy <= 0.3 &&
         !env.busy()
