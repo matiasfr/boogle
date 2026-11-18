@@ -60,6 +60,8 @@ async function start(env: Record<string, string> = {}, overrides: Partial<Server
     still,
     get,
     files,
+    /** The service's HTTP server, to see its sockets from the server side. */
+    http: svc.server,
     async stop() {
       await svc.close();
       await fs.rm(dataDir, { recursive: true, force: true });
@@ -398,6 +400,11 @@ test('device (review): a chunked body past 400 kB is cut off while it streams, a
   const s = await start();
   try {
     await s.make(runId());
+    // What the server read off the wire, from its own side of the socket: `sent` below is what the client wrote into
+    // its socket, which on Linux includes megabytes of loopback buffers the server never read.
+    const BODY = 32 * 1024 * 1024;
+    const accepted: net.Socket[] = [];
+    s.http.on('connection', (sock: net.Socket) => accepted.push(sock));
     let sent = 0;
     const status = await rawRequest(
       s.port,
@@ -406,9 +413,9 @@ test('device (review): a chunked body past 400 kB is cut off while it streams, a
         const chunk = Buffer.alloc(64 * 1024, 1);
         chunk[0] = 0xff;
         const pump = () => {
-          // 8 MB, then the end of the body. On 91019279 the server reads (and drops) all 8 MB before its 413, and a
+          // 32 MB, then the end of the body. On 91019279 the server reads (and drops) all of it before its 413, and a
           // body that never ends gets no answer at all: body-parser reads off the whole request after the limit.
-          while (sent < 8 * 1024 * 1024 && !sock.destroyed) {
+          while (sent < BODY && !sock.destroyed) {
             sent += chunk.length;
             const a = sock.write(`${chunk.length.toString(16)}\r\n`);
             const b = sock.write(chunk);
@@ -422,7 +429,16 @@ test('device (review): a chunked body past 400 kB is cut off while it streams, a
     );
     // A 413, or a reset that the 413 rode on while the client was still writing: either way well short of the body.
     assert.ok(status === '' || /^HTTP\/1\.1 413/.test(status), status);
-    assert.ok(sent < 1024 * 1024, `cut off after ${sent} bytes`);
+    assert.equal(accepted.length, 1);
+    const conn = accepted[0]!;
+    if (!conn.destroyed) await new Promise((r) => conn.once('close', r));
+    // The bound that matters, from the server's side: the reader stops at 400 kB, and the HTTP layer may have pulled
+    // a socket read or two (64 kB each) past it, plus the head and chunk framing. Measured on Windows: 458,941 bytes.
+    const read = conn.bytesRead;
+    assert.ok(read <= 400 * 1024 + 2 * 64 * 1024 + 4096, `the server read ${read} bytes`);
+    // A loose check from the client's side: what it wrote includes the OS's loopback buffers (2.6 MB on Linux CI), so
+    // only "well short of the body" is asserted.
+    assert.ok(sent < BODY / 2, `the client was stopped well short of the 32 MB body (wrote ${sent})`);
     assert.equal((await s.still(runId(), 'spawn')).status, 204, 'the server is still up');
     assert.deepEqual(
       (await s.files()).filter((f) => f.endsWith('.jpg')),
