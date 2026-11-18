@@ -162,11 +162,13 @@ beanie, parts on the head bone hidden until worn, each one more draw call or two
 
 The earned railway conductor hat retains its blue-and-gold outer shape at 0.86 scale, with a hollow brim and
 crown so it fits around the head instead of cutting through it or floating above it. Its brim origin sits at
-Head-local y=0.43 m and follows that bone rigidly, so idle, walk, run, jump and chop cannot slide the head through
+Head-local y=0.38 m and follows that bone rigidly, so idle, walk, run, jump and chop cannot slide the head through
 it. All eight player colours share this geometry and fit. The capsule fallback seats the same hollow hat at
 y=1.20 m on its animated inner group, preserving clearance during bob, lean and squash. Local players,
 partners and legacy Place use the same fitting function; the character stage's **Earned conductor hat** option
 inspects that production geometry and fit, distinct from the separate cap trial.
+
+Other hats use their own wardrobe seat rather than a common minimum brim height. Round glasses sit forward of the face so both rims remain visible.
 
 The rest of the game fits this body. A haul bundle rides its spine,
 lower, deeper and a little shorter than on the capsule, so its head shows over the top from the follow camera. It leans

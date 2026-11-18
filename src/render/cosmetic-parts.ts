@@ -492,7 +492,7 @@ export const WEAR: Partial<Record<GiftId, { bone: string; y: number; z: number; 
   beanie: { bone: 'Head', y: 0.3, z: 0, scale: 0.92 },
   teacup: { bone: 'Head', y: 0.42, z: 0, scale: 0.85 },
   scarf: { bone: 'neck_01', y: -0.2, z: 0, scale: 0.62 },
-  glasses: { bone: 'Head', y: 0.03, z: 0.01, scale: 0.92 },
+  glasses: { bone: 'Head', y: 0.08, z: -0.05, scale: 0.92 },
   headphones: { bone: 'Head', y: 0.08, z: 0, scale: 1 },
   overalls: { bone: 'spine_02', y: 0, z: 0, scale: 1 },
   raincoat: { bone: 'spine_02', y: 0, z: 0, scale: 1 },
@@ -502,7 +502,7 @@ export const WEAR: Partial<Record<GiftId, { bone: string; y: number; z: number; 
   mossscarf: { bone: 'neck_01', y: -0.2, z: 0, scale: 0.62 },
   whistle: { bone: 'neck_01', y: -0.2, z: 0, scale: 0.62 },
   goggles: { bone: 'Head', y: 0.1, z: 0.01, scale: 0.92 },
-  bucket: { bone: 'Head', y: 0.3, z: 0, scale: 0.9 },
+  bucket: { bone: 'Head', y: 0.37, z: 0, scale: 0.9 },
   pennant: { bone: 'spine_02', y: 0.1, z: 0, scale: 1 },
   hardhat: { bone: 'Head', y: 0.32, z: 0, scale: 0.92 },
   aviator: { bone: 'Head', y: 0.3, z: 0, scale: 0.92 },
@@ -510,7 +510,7 @@ export const WEAR: Partial<Record<GiftId, { bone: string; y: number; z: number; 
   paperhat: { bone: 'Head', y: 0.36, z: 0, scale: 0.92 },
   bigbutton: { bone: 'spine_02', y: 0, z: 0, scale: 1 },
   sandwich: { bone: 'spine_02', y: 0, z: 0, scale: 1 },
-  tallhat: { bone: 'Head', y: 0.33, z: 0, scale: 0.86 },
+  tallhat: { bone: 'Head', y: 0.41, z: 0, scale: 0.86 },
   stationwhistle: { bone: 'neck_01', y: -0.22, z: 0, scale: 0.62 },
 };
 

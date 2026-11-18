@@ -111,10 +111,11 @@ export function updateBooglerHud() {
 
   const close = !!promptShown || dist < (near ? NAME_FAR : NAME_NEAR);
   if (close !== near) d.tag.classList.toggle('near', (near = close));
-  d.tag.hidden = !s.onScreen;
+  const withinEarshot = !!me.body && dist < 24;
+  d.tag.hidden = !s.onScreen || !withinEarshot;
   if (s.onScreen) d.tag.style.transform = `translate(${s.labelX.toFixed(1)}px, ${s.labelY.toFixed(1)}px)`;
   const onIsland = !!me.body && onBooglerIsland(me.body.position.x, me.body.position.z);
-  const talking = s.onScreen && onIsland && performance.now() < bubble.until;
+  const talking = s.onScreen && onIsland && withinEarshot && performance.now() < bubble.until;
   if (d.say.hidden === talking) d.say.hidden = !talking;
   if (talking && bubble.shown !== bubble.text) {
     d.sayText.textContent = bubble.shown = bubble.text;
