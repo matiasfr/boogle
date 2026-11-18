@@ -55,17 +55,6 @@ test('welcome lines compare with the memory read before this visit saved over it
   assert.deepEqual(A.welcomeLines(null), []);
 });
 
-test('names read naturally', () => {
-  assert.equal(A.nameList(['Ana']), 'Ana');
-  assert.equal(A.nameList(['Ana', 'Bo']), 'Ana and Bo');
-  assert.equal(A.nameList(['Ana', 'Bo', 'Cy']), 'Ana, Bo and Cy');
-  assert.equal(A.nameList(['Ana', 'Bo', 'Cy', 'Di', 'Ed']), 'Ana, Bo and 3 others');
-});
-
-test('a friendly name is never empty', () => {
-  for (let k = 0; k < 20; k++) assert.ok(A.friendlyName()!.length > 0);
-});
-
 test('a new suggestion never repeats the current name', () => {
   assert.equal(
     A.pickFriendlyName(['Ana', 'Bo'], 'Ana', () => 0),

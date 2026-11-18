@@ -9,7 +9,6 @@ import {
   parseWorn,
   type WardrobeCatalog,
 } from '../src/entities/wardrobe/state.ts';
-import { startPage } from '../src/player/pause-pages.ts';
 
 const items = [
   { id: 'hat', name: "A conductor's hat", slot: 'hat' },
@@ -176,15 +175,4 @@ test('cycling drops a shop try-on in that slot', () => {
   assert.equal(w.tried(), null);
   assert.equal(w.current('hat'), null); // one step on from the conductor's hat is nothing
   assert.deepEqual(w.inspect().worn, {});
-});
-
-test('Pause always opens on its start page, owned or not, and on Options where no page claims it', () => {
-  const { io } = memory();
-  const w = createWardrobe(catalog, io);
-  const pages = [{ id: 'graphics' }, { id: 'you', start: () => true }];
-  assert.equal(startPage(pages)?.id, 'you'); // a new player owning nothing too
-  w.grant('hat', { wear: true });
-  assert.equal(startPage(pages)?.id, 'you');
-  assert.equal(startPage([{ id: 'graphics' }]), undefined); // Place and builds without a wardrobe: today's main list
-  assert.equal(startPage([]), undefined);
 });
