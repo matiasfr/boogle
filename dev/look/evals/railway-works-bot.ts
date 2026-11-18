@@ -69,6 +69,8 @@ background(
   })().catch((error: unknown) => {
     bot.never(`Split-rock seeded ${from}: ${error instanceof Error ? error.message : String(error)}`);
     shot.__placeDone = true;
+    // Its look waits on __railStop: end it now (the rethrown error fails the capture's health check, named).
+    shot.__railStop ||= `failed: ${error instanceof Error ? error.message : String(error)}`;
     throw error;
   }),
   'Split-rock seeded real-input route',

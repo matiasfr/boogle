@@ -2179,7 +2179,11 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       return;
     }
     document.documentElement.dataset.railwayProof = 'failed';
-    bot.never(`production line1 stopped: ${error instanceof Error ? error.message : String(error)}`);
+    const why = error instanceof Error ? error.message : String(error);
+    bot.never(`production line1 stopped: ${why}`);
+    // A look waiting on `--until window.__railStop` ends now rather than at its wall; the error this rethrows is a
+    // console error, so the capture's health check fails the verdict with it.
+    (window as Window & { __railStop?: string }).__railStop ||= `failed: ${why}`;
     console.log(
       `RAILWAY FAILURE ${JSON.stringify({
         ...inspectRailway(),
