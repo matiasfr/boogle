@@ -11,6 +11,7 @@ import type { World } from '../src/ecs/index.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { Forge, Shed, Steel, SteelClock, Train } from '../src/sim/railway-components.ts';
 import { STEEL } from '../src/sim/railway-ring-layout.ts';
+import { RAILS } from '../src/sim/railway-line2-layout.ts';
 import { LINE2, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 import { fuzzSeeds } from './helpers/fuzz.ts';
@@ -20,7 +21,8 @@ import {
   account,
   act,
   advance,
-  carryMax,
+  capacityOf,
+  LOGS,
   forge,
   invariant,
   pilesWithIds,
@@ -89,11 +91,13 @@ test('after the rivet: an empty yard, a bad kind, an empty or full back and a li
   landKit(s);
   assert.deepEqual(steelNeed(s.w), { logs: 0, rails: 0 }, 'the yard holds the bill');
   for (const kind of [2, -1, 0.5, undefined]) assert.equal(act(s, 'a', 'rail.steelTake', { kind }), 0, `kind ${kind}`);
-  // A full back takes no more: fill it with rails, then ask for logs.
-  const max = carryMax(s.w);
+  // A full row takes no more of its kind, and the other kind still fits: fill the rails row, then ask for both.
+  const max = capacityOf(s.w, RAILS);
   assert.equal(act(s, 'a', 'rail.steelTake', { kind: 1 }), Math.min(max, STEEL.rails));
-  if (max <= STEEL.rails) assert.equal(act(s, 'a', 'rail.steelTake', { kind: 0 }), 0, 'a full back');
-  assert.equal(act(s, 'a', 'rail.steel'), Math.min(max, STEEL.rails), 'the rails fed');
+  if (max <= STEEL.rails) assert.equal(act(s, 'a', 'rail.steelTake', { kind: 1 }), 0, 'a full rails row');
+  const logsHeld = act(s, 'a', 'rail.steelTake', { kind: 0 });
+  assert.ok(logsHeld > 0, 'logs still fit beside full rails');
+  assert.equal(act(s, 'a', 'rail.steel'), Math.min(max, STEEL.rails) + logsHeld, 'both fed');
   feedAll(s, 'a');
   assert.ok(steel(s.w).lit >= 0, 'lit');
   // Lit: the bill takes nothing more, whatever is on the back.
@@ -118,7 +122,7 @@ test('the bill lights on its last item, whichever kind brings it, and casts its 
     const a = account(s.w, 'a')!,
       held = last ? a.rails : a.carry,
       owed = last ? STEEL.rails : STEEL.logs;
-    assert.equal(held, Math.min(owed, carryMax(s.w)));
+    assert.equal(held, Math.min(owed, capacityOf(s.w, last ? RAILS : LOGS)));
     feedAll(s, 'a', [last]);
     assert.equal(steel(s.w).lit, s.t, `lit on the ${last ? 'rails' : 'logs'}' op`);
     assert.deepEqual(

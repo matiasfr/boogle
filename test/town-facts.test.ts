@@ -35,7 +35,7 @@ function railwayAtPath(): World {
   }
   logs(s, 'a', 'T2', 32);
   advance(s, 300);
-  logs(s, 'a', 'T3', 40);
+  logs(s, 'a', 'T3', 32);
   act(s, 'a', 'rail.axe');
   for (let i = 0; i < 12; i++) act(s, 'a', 'rail.beamChop');
   act(s, 'a', 'rail.beamTake', { revision: beam(w).revision });

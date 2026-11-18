@@ -7,9 +7,10 @@ import type { RailAction } from './railway.ts';
 import { apply, check, createRailway, invariant, need, restore } from './railway-drive.ts';
 import { railTick } from './railway-systems.ts';
 import { railSession } from './railway-sys-core.ts';
-import { carried, scheduleOf } from './railway-queries.ts';
+import { scheduleOf } from './railway-queries.ts';
 import { account, beam, boiler, cart, forge, qjob, rail, rocks, trains, trees } from './railway-rows.ts';
-import { RAILWAY_SOURCES } from './railway-layout.ts';
+import { RAILWAY_CAPACITY, RAILWAY_SOURCES } from './railway-layout.ts';
+import { LINE1_STATIONS } from './railway-line-layout.ts';
 import { LINE2_FORGE, LINE2_STATIONS } from './railway-line2-layout.ts';
 import { CART_PHASE, cartCycleTicks } from './railway-cart.ts';
 
@@ -36,7 +37,9 @@ function clear(s: Seed) {
     }
 }
 function chop(s: Seed, pid: string) {
-  while (carried(account(s.w, pid)!) < 8) {
+  // Until a starting back's row of logs (8), pack or not; the last chop can overshoot it (2 a hit after Station 3, the
+  // proper axe's 5 to 10); `logs` deposits only what the bill takes, so any over stays on the back.
+  while (account(s.w, pid)!.carry < RAILWAY_CAPACITY.logs) {
     const k = trees(s.w).findIndex((t) => t.left > 0);
     need(k >= 0, 'a standing source');
     act(s, pid, 'rail.chop', { id: RAILWAY_SOURCES[k]![0], yaw: 0, collapsed: false });
@@ -76,7 +79,7 @@ function railwayAtForgeBill(): Seed {
   }
   logs(s, 'a', 'T2', 32);
   advance(s, 300);
-  logs(s, 'a', 'T3', 40);
+  logs(s, 'a', 'T3', LINE1_STATIONS[2]!.bill[0]);
   act(s, 'a', 'rail.axe');
   for (let i = 0; i < 12; i++) act(s, 'a', 'rail.beamChop');
   act(s, 'a', 'rail.beamTake', { revision: beam(w).revision });
@@ -229,6 +232,20 @@ export function railwayAtTrains(stage: TrainStage): Seed {
   need(broken === null, `railwayAtTrains ${stage}: ${broken}`);
   return s;
 }
+/** The pack opened, then Q6's kit from its depot into its frame: logs 16 a back with the pack, rails 8, a and b taking
+ * turns until the depot is empty. */
+export function stockQ6(s: Seed) {
+  const w = s.w;
+  need(act(s, 'a', 'rail.pack') === 1, 'the pack');
+  for (const kind of [0, 2])
+    for (let guard = 0; kind ? rail(w).depotRails : rail(w).depot; guard++) {
+      need(guard < 8, 'Q6 depot emptied');
+      const pid = guard % 2 ? 'b' : 'a';
+      const n = act(s, pid, kind ? 'rail.depotRailTake' : 'rail.depotTake');
+      need(n > 0, 'Q6 depot taken');
+      need(act(s, pid, 'rail.deposit', { station: 'Q6', kind, n }) === n, 'Q6 took materials');
+    }
+}
 /** The accepted Q6 kit sequence, also used by a town-first route before it enters the Works. */
 export function finishQ6(s: Seed, stage: 'q6-stocked' | 'q6-finishing' | 'q6-done' = 'q6-done') {
   const w = s.w;
@@ -241,12 +258,7 @@ export function finishQ6(s: Seed, stage: 'q6-stocked' | 'q6-finishing' | 'q6-don
     need(broken === null, `rails conserved: ${broken}`);
   }
   if (stage !== 'q6-stocked') {
-    need(act(s, 'a', 'rail.pack') === 1, 'the pack');
-    for (const kind of [0, 2])
-      for (const pid of ['a', 'b']) {
-        need(act(s, pid, kind ? 'rail.depotRailTake' : 'rail.depotTake') === 16, 'Q6 depot taken');
-        need(act(s, pid, 'rail.deposit', { station: 'Q6', kind, n: 16 }) === 16, 'Q6 took materials');
-      }
+    stockQ6(s);
     const total = layTicks(w, 5);
     advance(s, stage === 'q6-done' ? total : total - 450);
   }

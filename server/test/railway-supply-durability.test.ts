@@ -11,6 +11,7 @@ import { createRoomHost } from './helpers/accounts.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
 import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
+import { RECOVERY_RACK } from '../../src/sim/railway-supply.ts';
 import { railCounts } from '../../src/sim/railway-queries-line2.ts';
 import { invariant, trees } from '../../test/helpers/rail.ts';
 import { setImmediate } from 'node:timers/promises';
@@ -214,6 +215,27 @@ test('accepted rack and each young-growth stage survive durable restart without 
       await f.restart();
       assertSupply(f.host, stage);
     }
+  } finally {
+    await f.host.close({ save: false });
+  }
+});
+
+test('rail.rackTake through r:edit fills only the logs row: 8 of the rack 10, then a full row refuses', async (t) => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-supply-rack-take-'));
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  const f = await supplyFixture(dir, railwayRoomId('supply-rack-take'));
+  try {
+    f.stand(RECOVERY_RACK.x / 100, RECOVERY_RACK.z / 100);
+    const take = await f.send({ op: 'rail.rackTake' });
+    assert.deepEqual([take?.status, take?.accepted], ['accepted', 8], 'a row of 8 logs');
+    const full = await f.send({ op: 'rail.rackTake' });
+    assert.deepEqual([full?.status, full?.accepted], ['noop', 0], 'logs full');
+    assert.equal(railCounts(f.host.rules.railway.world()).rack, 2);
+    assert.equal(f.host.rules.railway.account('supplier')!.carry, 8);
+    await f.restart();
+    assert.equal(railCounts(f.host.rules.railway.world()).rack, 2);
+    assert.equal(f.host.rules.railway.account('supplier')!.carry, 8);
+    assert.equal(invariant(f.host.rules.railway.world()), null);
   } finally {
     await f.host.close({ save: false });
   }

@@ -334,12 +334,13 @@ test('line host keeps a departed carrier the beam through its grace, then ground
     await logs(0, 24);
     await ticks(railMaxDuration(world()) + 3);
     await logs(1, 32);
-    for (let i = 0; i < 4; i++) {
+    // A hit gives 1 until Station 3 is funded: eight strikes for the 8 stone.
+    for (let i = 0; i < 8; i++) {
       pose('a', LINE1_ROCKS[0].x, LINE1_ROCKS[0].z);
       await edit('a', { op: 'rail.mine', id: 0 });
       if (i === 0) {
         const rock = LINE1_ROCKS[0];
-        await edit('a', { op: 'rail.drop', kind: 1, n: 2, x: rock.x, y: 100, z: rock.z });
+        await edit('a', { op: 'rail.drop', kind: 1, n: 1, x: rock.x, y: 100, z: rock.z });
         const pileIds = (kind?: number) => {
           const ids: number[] = [];
           world().each([Pile], (id, p) => {
@@ -351,7 +352,7 @@ test('line host keeps a departed carrier the beam through its grace, then ground
         assert.ok(pile !== undefined, 'the dropped stone lies as a pile');
         assert.equal(host.rules.railway.account('alice')!.stone, 0);
         await edit('a', { op: 'rail.take', kind: 1, id: pile });
-        assert.equal(host.rules.railway.account('alice')!.stone, 2);
+        assert.equal(host.rules.railway.account('alice')!.stone, 1);
         assert.ok(!pileIds().includes(pile));
       }
     }
@@ -371,7 +372,7 @@ test('line host keeps a departed carrier the beam through its grace, then ground
     assert.equal(job(world(), 2).start, -1);
     await ticks(4);
     await open('a');
-    await logs(2, 40);
+    await logs(2, LINE1_STATIONS[2]!.bill[0]);
     pose('a', LINE1_STATIONS[2]!.x, LINE1_STATIONS[2]!.z);
     for (let i = 0; i < 12; i++) {
       pose('a', LINE1_GREAT_TREE.x, LINE1_GREAT_TREE.z);
@@ -508,12 +509,25 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     const far = await edit('s1', { op: 'rail.depotRailTake' }, [LINE2_FORGE.x, 0, LINE2_FORGE.z]);
     assert.equal(far.status, 'rejected');
     const take = await edit('s1', { op: 'rail.depotRailTake' }, [q4.x, 0, q4.z]);
-    assert.equal(take.accepted, LINE2_STATIONS[3]!.bill[1], 'a back of 16 takes them all');
+    assert.equal(take.accepted, 8, 'a row of 8 rails: half the shelf');
+    // Separate capacities: a full rails row refuses rails, at the shelf and at the forge rack, and logs still fit.
+    const full = await edit('s1', { op: 'rail.depotRailTake' }, [q4.x, 0, q4.z]);
+    assert.deepEqual([full.status, full.accepted], ['noop', 0], 'a full rails row takes no more rails');
+    assert.ok(forge(world()).rack > 0, 'the forge rack holds rails');
+    const forgeFull = await edit('s1', { op: 'rail.forgeTake' }, [LINE2_FORGE.rackX, 0, LINE2_FORGE.rackZ]);
+    assert.deepEqual([forgeFull.status, forgeFull.accepted], ['noop', 0], 'nor from the forge rack');
+    assert.ok(rail(world()).depot > 0, 'the cart left logs on the rack');
+    const logsBeside = await edit('s1', { op: 'rail.depotTake' }, [q4.x, 0, q4.z]);
+    assert.equal(logsBeside.status, 'accepted', 'logs fit beside a full rails row');
+    assert.equal(host.rules.railway.account('a')!.carry, logsBeside.accepted);
+    assert.equal(host.rules.railway.account('a')!.rails, 8);
     // The quarry gate is up: deliveries stock the frame without starting it.
     const shut = await edit('s1', { op: 'rail.deposit', station: 'Q4', n: 8, kind: 2 }, [q4.x, 0, q4.z]);
     assert.equal(shut.status, 'accepted');
     assert.equal(qjob(world(), 3).railStock, 8);
     assert.equal(qjob(world(), 3).start, -1);
+    const again = await edit('s1', { op: 'rail.depotRailTake' }, [q4.x, 0, q4.z]);
+    assert.equal(again.accepted, 8, 'an emptied row takes the shelf rest');
     const rails = railCounts(world()).rails!;
     assert.equal(rails.total, rails.poured);
     // A restart keeps the pack, the shelf and the rails on the back.
@@ -521,7 +535,7 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     host = create();
     await host.whenReady();
     assert.equal(rail(world()).pack, true);
-    assert.equal(host.rules.railway.account('a')!.rails, LINE2_STATIONS[3]!.bill[1] - 8);
+    assert.equal(host.rules.railway.account('a')!.rails, 8);
     assert.equal(qjob(world(), 3).railStock, 8);
     assert.equal(rail(world()).lever, false);
     assert.equal(railCounts(world()).rails!.total, rails.total);

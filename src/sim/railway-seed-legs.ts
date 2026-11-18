@@ -11,7 +11,8 @@ import { act, advance, type Seed } from './railway-seed-route.ts';
 import { invariant, need, restore } from './railway-drive.ts';
 import { railwayAtRing } from './railway-seed-ring.ts';
 import { account, rail, trains } from './railway-rows.ts';
-import { carried, carryComfort } from './railway-queries.ts';
+import { LOGS, roomOf } from './railway-queries.ts';
+import { RAILS } from './railway-line2-layout.ts';
 import { legRow } from './railway-queries-route.ts';
 import { RAIL_LEGS } from './railway-route.ts';
 
@@ -41,8 +42,11 @@ export function laySection(s: Seed) {
     need(guard < 8000, `section ${k + 1} fed`);
     for (const pid of ['a', 'b']) {
       // Travel loads stay comfortable; mixed overfill has its own deliberate regression workload.
-      for (const op of ['rail.depotTake', 'rail.depotRailTake'])
-        if (carried(account(s.w, pid)!) < carryComfort(s.w)) act(s, pid, op);
+      for (const [op, kind] of [
+        ['rail.depotTake', LOGS],
+        ['rail.depotRailTake', RAILS],
+      ] as const)
+        if (roomOf(s.w, account(s.w, pid)!, kind) > 0) act(s, pid, op);
       act(s, pid, 'rail.legStock', { leg: LEG });
     }
     if (legRow(s.w, LEG).start < 0) advance(s, 1);

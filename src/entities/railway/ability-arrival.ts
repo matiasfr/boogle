@@ -7,15 +7,17 @@
 // instead, once, on their first free landing: a teal puff at the ankles, the pickup's two notes and the charge mark lit
 // by Buddy's feet. All Local: owed cards live in memory only; what this player has been shown lives in this browser.
 //
-//   seen(key) / remember(key)   this player's record per railway room: 'jump', 'hook', 'glide', 'multi-axe', 'axe',
-//                               'pack', 'boiler', 'jump-taught', 'glide-taught', 'plinth:jump'
+//   seen(key) / remember(key)   this player's record per railway room: 'jump', 'hook', 'glide', 'multi-axe', 'edge',
+//                               'axe', 'pack', 'boiler', 'jump-taught', 'glide-taught', 'plinth:jump'
 //
 // The axes follow the same rule. The multi-axe is the machine's wake: the player who pressed wake gets the card (once
 // the server has accepted it, reward.ts); a friend who heard the wake accepted gets theirs as the wake finishes. The
 // proper axe is the chest's, and the pack frame (the forge's chest, a back of 16 for everyone) works the same. A late
 // flourish for an axe has no charge ring: a small model of it pops up over Buddy and settles away. The boiler has no
 // card (boiler-view.ts's BOILER_CARD): the fitter has the wake, everyone else the flourish with a small boiler over
-// Buddy (boiler-first-choice plan, step 9).
+// Buddy (boiler-first-choice plan, step 9). The keener edge (separate capacities, step 4: a hit gives 2 once Station 3 is
+// funded) has no card, no words and no finder: everyone, the funder included, gets the multi-axe's flourish when they
+// are next free, as the machine starts the trestle (or on a later first landing).
 //   update(dt)                  owed cards, late flourishes, the charge mark, the first-jump teach and the first-fall
 //                               glide teach
 //
@@ -46,13 +48,15 @@ import { railwayGlideOpen } from './glide.ts';
 import { boiler as boilerRow, rail, type ReadWorld } from '../../sim/railway-rows.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { railPhase } from '../../sim/railway-queries-line1.ts';
+import { keenEdge } from '../../sim/railway-queries.ts';
 
 /** What an ability's `has` reads: the rows now, and the estimated tick the line-one phase is judged at. */
 type Look = { w: ReadWorld; tick: number; phase: ReturnType<typeof railPhase> };
 const AWAKE = ({ w, phase }: Look) => rail(w).awake >= 0 && phase !== 'asleep' && phase !== 'waking';
 const ABILITIES: {
   key: string;
-  op: RailwayAccepted['op'];
+  /** The accepted op that is someone's find; none for a state edge everyone meets alike (the keener edge). */
+  op?: RailwayAccepted['op'];
   cue: PlaceCue;
   has: (l: Look) => boolean;
   /** Progress that retains attribution while its presentation waits for a later state edge. */
@@ -80,6 +84,8 @@ const ABILITIES: {
     atState: true,
     card: true,
   },
+  // Station 3 funded (its logs and the great beam, in either order): a hit gives 2. No op, so no finder and no card.
+  { key: 'edge', cue: 'pickupHook', has: ({ w }) => keenEdge(w), badge: true, atState: true },
   { key: 'axe', op: 'rail.axe', cue: 'pickupHook', has: ({ w }) => rail(w).axe, badge: true, card: true },
   { key: 'pack', op: 'rail.pack', cue: 'pickupHook', has: ({ w }) => rail(w).pack, badge: true, card: true },
   {

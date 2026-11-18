@@ -24,10 +24,11 @@ function handoff(w: World) {
   assert.equal(act(w, 'b', 'rail.wake', {}, 1).result.accepted, 0, 'one shared handoff, even with two visitors');
 }
 function logs(w: World, pid: string, source: number) {
-  for (let k = 0; k < 4; k++)
+  // A hit gives 1 until Station 3 is funded: eight strokes fill the row of 8 logs.
+  for (let k = 0; k < 8; k++)
     assert.equal(
       act(w, pid, 'rail.chop', { id: RAILWAY_SOURCES[source]![0], yaw: 0, collapsed: false }).result.accepted,
-      2,
+      1,
     );
 }
 function first23(w: World) {

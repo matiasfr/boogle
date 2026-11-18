@@ -244,18 +244,18 @@ export async function railwayChecks(c: Ctx) {
   await act(RB, { ...chopA, epoch: epochB, request: 1 }, 'source');
   railCheck(
     'each harvest shows in both mirrors',
-    (await waitFor(async () => (await Promise.all([RA, RB].map(rail))).every((s) => s.counts.carry === 4))) >= 0,
+    (await waitFor(async () => (await Promise.all([RA, RB].map(rail))).every((s) => s.counts.carry === 2))) >= 0,
   );
   // A resend of an applied request is acknowledged again and changes nothing.
   await act(RA, chopA, 'source');
   await sleep(300);
-  railCheck('a duplicate request does not harvest twice', (await rail(RB)).counts.carry === 4);
-  await act(RA, { op: 'rail.deposit', epoch: epochA, request: 3, station: 'T1', n: 2 }, 'station');
+  railCheck('a duplicate request does not harvest twice', (await rail(RB)).counts.carry === 2);
+  await act(RA, { op: 'rail.deposit', epoch: epochA, request: 3, station: 'T1', n: 1 }, 'station');
   railCheck(
     'two mirrors agree on conserved balances',
     (await waitFor(async () =>
       (await Promise.all([RA, RB].map(rail))).every(
-        (s) => s.counts.stock === 2 && s.counts.carry === 2 && s.counts.total === INITIAL + s.counts.produced,
+        (s) => s.counts.stock === 1 && s.counts.carry === 1 && s.counts.total === INITIAL + s.counts.produced,
       ),
     )) >= 0,
   );
@@ -266,7 +266,7 @@ export async function railwayChecks(c: Ctx) {
     'a late joiner mirrors exact stock and carry',
     (await waitFor(async () => {
       const s = await rail(RC);
-      return s.counts.stock === 2 && s.counts.carry === 2 && s.counts.total === INITIAL + s.counts.produced;
+      return s.counts.stock === 1 && s.counts.carry === 1 && s.counts.total === INITIAL + s.counts.produced;
     })) >= 0,
   );
   const RA2 = await openRail('RA2', 'raila');
@@ -285,7 +285,7 @@ export async function railwayChecks(c: Ctx) {
   railCheck(
     'restored progress and carry are exact',
     (await Promise.all([RA2, RB, RC].map(rail))).every(
-      (s) => s.counts.stock === 2 && s.counts.carry === 2 && s.counts.total === INITIAL + s.counts.produced,
+      (s) => s.counts.stock === 1 && s.counts.carry === 1 && s.counts.total === INITIAL + s.counts.produced,
     ),
   );
   const epochRestored = await session(RA2);
@@ -453,27 +453,25 @@ export async function railwayChecks(c: Ctx) {
     RAILWAY_SOURCES[0]![0],
   );
   railCheck('a stroke sooner than the swing cadence is not sent', burst[0] === true && burst[1] === false);
-  // A tree holds ten logs: move to a fresh tree after the burst stroke, then test the full back
-  // against another unspent tree so refusal proves the carry bound, not source exhaustion.
+  // A tree holds ten logs and a hit gives 1 before the keener edge: seven more strokes on a fresh tree fill the row of
+  // 8 logs, then test the full row against another unspent tree so refusal proves the carry bound, not exhaustion.
   await pose(AA, 'source', RAILWAY_SOURCES[1]![0]);
   const incoming = await ev(
     AA.page,
     async ({ id, spare, every }: { id: number; spare: number; every: number }) => {
       const queued: boolean[] = [];
-      for (let n = 0; n < 7; n++) {
+      for (let n = 0; n < 9; n++) {
         await new Promise((r) => setTimeout(r, every));
-        if (n === 5) window.T.railPose('source', spare);
-        queued.push(window.T.railIntent({ op: 'rail.chop', id: n < 5 ? id : spare, yaw: 0, collapsed: false }));
+        if (n === 7) window.T.railPose('source', spare);
+        queued.push(window.T.railIntent({ op: 'rail.chop', id: n < 7 ? id : spare, yaw: 0, collapsed: false }));
       }
       return { queued, probe: window.T.railAdapter() };
     },
     { id: RAILWAY_SOURCES[1]![0], spare: RAILWAY_SOURCES[2]![0], every: RAILWAY_T1.swingMs + 10 },
   );
   railCheck(
-    'predicted strokes cannot offer more than twelve carry slots',
-    incoming.queued.filter(Boolean).length === 5 &&
-      backOf(incoming.probe) === 12 &&
-      incoming.probe.rows.freeCarry === 0,
+    'predicted strokes cannot offer more than the eight log squares',
+    incoming.queued.filter(Boolean).length === 7 && backOf(incoming.probe) === 8 && incoming.probe.rows.freeCarry === 0,
     JSON.stringify({ queued: incoming.queued, carry: backOf(incoming.probe), free: incoming.probe.rows.freeCarry }),
   );
   railCheck(
@@ -492,7 +490,7 @@ export async function railwayChecks(c: Ctx) {
     })) >= 0,
   );
   await pose(AA, 'source');
-  while (backOf(await adapter(AA)) < 12) {
+  while (backOf(await adapter(AA)) < 8) {
     await sleep(RAILWAY_T1.swingMs);
     const before = backOf(await adapter(AA));
     await ev(
@@ -507,7 +505,7 @@ export async function railwayChecks(c: Ctx) {
     AA.page,
     async (every: number) => {
       const queued: boolean[] = [];
-      for (let n = 0; n < 13; n++) {
+      for (let n = 0; n < 9; n++) {
         await new Promise((r) => setTimeout(r, every));
         queued.push(window.T.railIntent({ op: 'rail.deposit', station: 'T1', n: 1 }));
       }
@@ -516,10 +514,10 @@ export async function railwayChecks(c: Ctx) {
     RAILWAY_T1.unloadMs + 10,
   );
   railCheck(
-    'twelve predicted deposits show at once and prevent a thirteenth spend',
-    outgoing.queued.filter(Boolean).length === 12 &&
+    'eight predicted deposits show at once and prevent a ninth spend',
+    outgoing.queued.filter(Boolean).length === 8 &&
       backOf(outgoing.probe) === 0 &&
-      outgoing.probe.rows.jobs[0]!.job.stock === 12,
+      outgoing.probe.rows.jobs[0]!.job.stock === 8,
   );
   railCheck(
     'every deposit retires and only accepted logs leave carry, in both mirrors',
@@ -532,7 +530,7 @@ export async function railwayChecks(c: Ctx) {
         states.every(
           (p) =>
             p.rows.counts.stock === s.counts.stock &&
-            p.rows.counts.carry === 12 - s.counts.stock &&
+            p.rows.counts.carry === 8 - s.counts.stock &&
             p.rows.counts.total === INITIAL + p.rows.counts.produced,
         )
       );

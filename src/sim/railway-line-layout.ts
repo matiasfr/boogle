@@ -24,7 +24,7 @@ export type LineStation = {
 export const LINE1_STATIONS: readonly LineStation[] = [
   { id: 'T1', bill: [24, 0], beam: 0, fromCm: 19100, toCm: 15000, x: 99562, z: -14189, panels: 3, crate: true },
   { id: 'T2', bill: [32, 8], beam: 0, fromCm: 15000, toCm: 11600, x: 97997, z: -12553, panels: 3, crate: true },
-  { id: 'T3', bill: [40, 0], beam: 1, fromCm: 11600, toCm: 3000, x: 97744, z: -8873, panels: 6, crate: false },
+  { id: 'T3', bill: [32, 0], beam: 1, fromCm: 11600, toCm: 3000, x: 97744, z: -8873, panels: 6, crate: false },
 ];
 // Rocks have their own typed ID domain: rock 0 must never be treated as ordinary tree 0.
 export const LINE1_ROCKS = [

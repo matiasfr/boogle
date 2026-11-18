@@ -4,7 +4,7 @@ import { fitInstanceBounds } from '../../render/instance-bounds.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../sim/railway-layout.ts';
-import { RECOVERY_RACK, LOOSE_PIECE_CAPACITY } from '../../sim/railway-supply.ts';
+import { RECOVERY_RACK, LOOSE_PIECE_CAPACITY, LOOSE_PILE_MAX } from '../../sim/railway-supply.ts';
 import {
   createTreeView,
   createTreeSolids,
@@ -39,9 +39,10 @@ import {
   rail as railRow,
   tree as treeRow,
 } from '../../sim/railway-rows.ts';
-import { activeStation, carryMax, carryComfort, carrySpeed } from '../../sim/railway-queries.ts';
+import { activeStation, capacityOf, LOGS, STONE } from '../../sim/railway-queries.ts';
+import { RAILS } from '../../sim/railway-line2-layout.ts';
 import { Pile } from '../../sim/railway-components.ts';
-import { freeCarryIgnoringBig, railBeamChoppable, railPhase, treeGrowth } from '../../sim/railway-queries-line1.ts';
+import { roomIgnoringBig, railBeamChoppable, railPhase, treeGrowth } from '../../sim/railway-queries-line1.ts';
 import { insideSplitRock } from './works-shape.ts';
 
 /** Why the great tree's Chop is greyed until Station 3 opens. Draft UI copy for the owner. */
@@ -91,7 +92,9 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   });
   const root = new THREE.Group();
   owner.root.add(root);
-  const freeCarry = () => freeCarryIgnoringBig(world(), adapter.read.pid);
+  const freeCarry = (kind: number) => roomIgnoringBig(world(), adapter.read.pid, kind);
+  // A full kind refuses only that kind (separate capacities). Draft UI copy, not The Boogler's.
+  const KIND_FULL = ['Logs full', 'Stone full', 'Rails full'];
   const world = () => adapter.read.world();
   // One tick and one phase for a whole frame (update, targets): the facade's tick is live, and railPhase is not cheap.
   let framePhase: ReturnType<typeof railPhase> | null = null;
@@ -171,6 +174,8 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     rock: null as number | null,
     hit: true,
     response: 'bite' as 'bite' | 'full' | 'rebound',
+    /** The kind whose full row refused this swing (the squares shake), or null. */
+    refused: null as 'logs' | 'stone' | null,
     contact: new THREE.Vector3(), // world bark/rock point the floating axe aims at
   };
   // The cut's own radius and height (place-tree-view's notch), facing whoever swings.
@@ -248,6 +253,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     swing.rock = id;
     swing.hit = false;
     swing.response = 'bite';
+    swing.refused = null;
     const rock = cargo.rocks.find((row) => row.id === id)!;
     me.yaw = Math.atan2(-(rock.x - me.body.position.x), -(rock.z - me.body.position.z));
     rockContact(rock.at, me.body.position, swing.contact);
@@ -417,6 +423,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     swing.rock = null;
     swing.hit = false;
     swing.response = 'bite';
+    swing.refused = null;
     me.yaw = Math.atan2(-(tree.x - me.body.position.x), -(tree.z - me.body.position.z));
     barkContact(tree, me.body.position, swing.contact);
   }
@@ -661,10 +668,14 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       rails: mine?.rails ?? 0,
       stone: mine?.stone ?? 0,
       big: heldBeam() ? ('beam' as const) : mine?.foot ? ('footing' as const) : null,
-      capacity: carryMax(world()),
-      comfortable: carryComfort(world()),
+      capacity: {
+        logs: capacityOf(world(), LOGS),
+        stone: capacityOf(world(), STONE),
+        rails: capacityOf(world(), RAILS),
+      },
       flyingLogs: Math.min(logs, harvestFlights.length),
       attention: swing.response === 'full' && swing.t < 0.55,
+      refused: swing.response === 'full' && swing.t < 0.55 ? swing.refused : null,
     };
   };
   const offAccepted = adapter.onAccepted(accepted);
@@ -719,7 +730,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     const pile = listPiles().find(
       (pile) =>
         pile.kind === kind &&
-        pile.n < RAILWAY_T1.carry &&
+        pile.n < LOOSE_PILE_MAX &&
         Math.hypot(pile.x / 100 - x, pile.z / 100 - z) < 2.2 &&
         Math.abs(pileHeight(pile) - y) < 1,
     );
@@ -787,13 +798,17 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     if (!swing.hit && swing.t >= c) {
       swing.hit = true;
       if (swing.rock !== null) {
-        if (!adapter.mine(swing.rock)) swing.response = 'full';
+        if (!adapter.mine(swing.rock)) {
+          swing.response = 'full';
+          if (freeCarry(STONE) === 0) swing.refused = 'stone';
+        }
       } else if (swing.target && swing.target.fall < 0) {
         if (swing.target.great) {
           if (!adapter.beamChop()) bounceOff(swing.target);
         } else if (swing.target.hardwood && !railRow(world()).axe) bounceOff(swing.target);
-        else if (freeCarry() === 0) {
+        else if (freeCarry(LOGS) === 0) {
           swing.response = 'full';
+          swing.refused = 'logs';
           if (me.body) placeSound('bagFull', me.body.position.x, me.body.position.z);
         } else if (me.body) {
           const tree = swing.target,
@@ -873,13 +888,13 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
         continue;
       const point = new THREE.Vector3(pile.x / 100, pileHeight(pile) + 1.4, pile.z / 100);
       result.push(
-        freeCarry() <= 0
+        freeCarry(pile.kind) <= 0
           ? {
               id: `place-pile${pile.id}`,
               verb: 'Pick up',
               note: `${pile.n} ${pile.kind === 1 ? 'stone' : pile.kind === 2 ? 'rails' : 'logs'}`,
               at: point,
-              blocked: 'Your back is full',
+              blocked: KIND_FULL[pile.kind] ?? KIND_FULL[LOGS]!,
             }
           : {
               id: `place-pile${pile.id}`,
@@ -894,13 +909,13 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     }
     if (railRow(world()).rack > 0 && Math.hypot(p.x - rackAt.x, p.z - rackAt.z) <= 2.8)
       result.push(
-        freeCarry() <= 0
+        freeCarry(LOGS) <= 0
           ? {
               id: 'railway-recovery-rack',
               verb: 'Pick up',
               note: `${railRow(world()).rack} logs`,
               at: rack.logBase,
-              blocked: 'Your back is full',
+              blocked: KIND_FULL[LOGS]!,
             }
           : {
               id: 'railway-recovery-rack',
@@ -919,7 +934,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
         note: `${railRow(world()).stoneRack} stone`,
         at: rack.stoneAt,
         run: () => void adapter.rackTake(1),
-        ...(freeCarry() <= 0 ? { blocked: 'Your back is full' } : {}),
+        ...(freeCarry(STONE) <= 0 ? { blocked: KIND_FULL[STONE]! } : {}),
       });
     result.push(...cargo.targets());
     return result;
@@ -950,10 +965,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   return {
     update,
     lateUpdate: cargo.lateUpdate,
-    prePhysics() {
-      cargo.prePhysics();
-      me.wish.multiplyScalar(carrySpeed(world(), adapter.read.pid));
-    },
+    prePhysics: () => cargo.prePhysics(),
     targets,
     dispose,
     bundleOrigin,

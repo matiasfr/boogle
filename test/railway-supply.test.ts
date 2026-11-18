@@ -170,6 +170,7 @@ test('fresh drops reset the merged pile timer and withheld recovery ids retain a
   s.mut(Rail, s.single(Rail))!.awake = 0;
   railSupplyPulse(s, { marker: 100, grow: watched, recover: [] });
   action(s, 'a', { op: 'rail.chop', id: RAILWAY_SOURCES[0]![0], yaw: 0, collapsed: false });
+  action(s, 'a', { op: 'rail.chop', id: RAILWAY_SOURCES[0]![0], yaw: 0, collapsed: false });
   action(s, 'a', { op: 'rail.drop', x: 0, y: 3000, z: 0, n: 1 });
   railSupplyPulse(s, { marker: 121, grow: watched, recover: [] });
   assert.equal(piles(s)[0]!.n, 1);
@@ -212,8 +213,8 @@ test('renewal alone completes an exhausted run while every old resource remains 
     .slice(0, 3)
     .map(([id]) => id);
   for (const id of ids) {
-    for (let stroke = 0; stroke < 4; stroke++)
-      assert.equal(action(s, 'visitor', { op: 'rail.chop', id, yaw: 0, collapsed: false }).accepted, 2);
+    for (let stroke = 0; stroke < 8; stroke++)
+      assert.equal(action(s, 'visitor', { op: 'rail.chop', id, yaw: 0, collapsed: false }).accepted, 1);
     assert.equal(action(s, 'visitor', { op: 'rail.deposit', station: 'T1', kind: 0, n: 8 }).accepted, 8);
     restore(s);
   }

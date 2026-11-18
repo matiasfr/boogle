@@ -26,7 +26,8 @@ import {
   depotOffset,
 } from '../../src/sim/railway-line2-layout.ts';
 import { line2Active } from '../../src/sim/railway-queries-line2.ts';
-import { carryComfort, carrySpeed } from '../../src/sim/railway-queries.ts';
+import { capacityOf, LOGS, STONE } from '../../src/sim/railway-queries.ts';
+import { RAILS } from '../../src/sim/railway-line2-layout.ts';
 import {
   account,
   aperture,
@@ -168,13 +169,14 @@ function* dropBig(g: Game, pl: Player): Policy {
     yield* press('rail.beamDrop', { revision: beamRow.revision, ...at });
   if (g.acct(pl.pid).foot) yield* press('rail.drop', { ...at, n: 1, kind: 3 });
 }
-const free = (g: Game, pid: string) => {
+/** Room on a back for one kind (separate capacities: each kind its own row). */
+const free = (g: Game, pid: string, kind: number) => {
   const a = g.acct(pid);
-  return carryComfort(g.w) - a.carry - (a.stone ?? 0) - (a.rails ?? 0);
+  return capacityOf(g.w, kind) - (kind === STONE ? (a.stone ?? 0) : kind === RAILS ? (a.rails ?? 0) : a.carry);
 };
 /** Chop the nearest standing tree (or hardwood, with the proper axe) until `want` logs are on the back. */
 function* chopTo(g: Game, pl: Player, want: number): Policy {
-  for (let guard = 0; g.acct(pl.pid).carry < want && free(g, pl.pid) > 0 && guard < 200; guard++) {
+  for (let guard = 0; g.acct(pl.pid).carry < want && free(g, pl.pid, LOGS) > 0 && guard < 200; guard++) {
     const w = g.w;
     let best: { id: number; at: Point } | null = null;
     let bd = Infinity;
@@ -204,7 +206,7 @@ function* mineTo(
   rocks: readonly { id: number; x: number; z: number; y?: number }[],
   want: number,
 ) {
-  for (let guard = 0; (g.acct(pl.pid).stone ?? 0) < want && free(g, pl.pid) > 0 && guard < 200; guard++) {
+  for (let guard = 0; (g.acct(pl.pid).stone ?? 0) < want && free(g, pl.pid, STONE) > 0 && guard < 200; guard++) {
     const left = rocks.filter((r) => (rocksOf(g.w)[r.id]?.left ?? 0) > 0);
     if (!left.length) return;
     const r = left.reduce((a, b) => (cm(pl.at, a) <= cm(pl.at, b) ? a : b));
@@ -214,7 +216,7 @@ function* mineTo(
 }
 function* forgeRails(g: Game, pl: Player, want: number) {
   yield* walk({ x: LINE2_FORGE.rackX, z: LINE2_FORGE.rackZ });
-  for (let guard = 0; (g.acct(pl.pid).rails ?? 0) < want && free(g, pl.pid) > 0 && guard < 2000; guard++) {
+  for (let guard = 0; (g.acct(pl.pid).rails ?? 0) < want && free(g, pl.pid, RAILS) > 0 && guard < 2000; guard++) {
     if (forgeOf(g.w).rack > 0 && (yield* press('rail.forgeTake')) > 0) continue;
     yield { wait: 10 };
   }
@@ -235,13 +237,10 @@ function* carry(
     for (let guard = 0; guard < 200; guard++) {
       const left = need.left() - g.others(need.key, pl.pid);
       if (left <= 0 && have() === 0) return;
-      if (have() < Math.min(left, carryComfort(g.w))) {
+      if (have() < Math.min(left, capacityOf(g.w, need.kind))) {
         if (left <= 0) return;
-        // Anything else on the back goes down first, so the whole carry is this material.
-        const a = g.acct(pl.pid),
-          other = a.carry + (a.stone ?? 0) + (a.rails ?? 0) - have();
-        if (other > 0) yield* clearBack(g, pl, need.kind);
-        const want = Math.min(left, carryComfort(g.w));
+        // Each kind has its own row, so other cargo on the back stays where it is.
+        const want = Math.min(left, capacityOf(g.w, need.kind));
         g.bringing.set(mark, want);
         yield* fetch(want);
       }
@@ -730,7 +729,7 @@ function step(r: Run, pl: Player, t: Tally, log: string[]) {
       pl.at = { ...cmd.walk };
       pl.walked += d / 100;
       t.walked += d / 100;
-      pl.busy = g.h.tick() + Math.ceil((d / (WALK_MPS * carrySpeed(g.w, pl.pid) * 100)) * 10);
+      pl.busy = g.h.tick() + Math.ceil((d / (WALK_MPS * 100)) * 10);
     } else if ('wait' in cmd) pl.busy = g.h.tick() + cmd.wait;
     else {
       const fields = { ...cmd.fields };
@@ -765,7 +764,7 @@ function probePolicy(r: Run, pl: Player, id: NodeId): Policy | null {
     return (function* () {
       yield* dropBig(g, pl);
       yield* clearBack(g, pl, 0);
-      yield* chopTo(g, pl, T1.carry);
+      yield* chopTo(g, pl, capacityOf(g.w, LOGS));
       yield* walk(id === 'forge' ? LINE2_FORGE : id === 'kiln' ? WORKS_KILN : station!);
       yield* press(id === 'kiln' ? 'rail.kiln' : 'rail.deposit', {
         station: id === 'forge' ? 'F' : id,

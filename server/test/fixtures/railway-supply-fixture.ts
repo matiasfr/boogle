@@ -45,14 +45,18 @@ export async function supplyFixture(
     assert.equal(invariant(host.rules.railway.world()), null);
   }
   let request = 0;
-  async function action(fields: Record<string, unknown>) {
+  /** A real r:edit from where the supplier stands; resolves to its recorded outcome. */
+  async function send(fields: Record<string, unknown>) {
     position.at = clock;
     // A client action carries where its actor stands (cm) and its action clock (ms).
     const at = [Math.round(position.x * 100), 0, Math.round(position.z * 100)];
     const ms = clock - 1793906400000;
     host.deliver({ t: 'r:edit', e: { ...fields, epoch: 1, request: ++request, at, ms } }, 'supplysession');
     await ticks(3); // the cadence is judged on the action clock: swings 300 ms apart
-    const result = host.rules.railway.outcome('supplier', 1, request);
+    return host.rules.railway.outcome('supplier', 1, request);
+  }
+  async function action(fields: Record<string, unknown>) {
+    const result = await send(fields);
     assert.equal(result?.status, 'accepted', `${fields.op}: ${JSON.stringify(result)}`);
   }
   host.deliver({ t: 'r:open' }, 'supplysession');
@@ -62,10 +66,11 @@ export async function supplyFixture(
   await ticks(T1.wakeTicks);
   const source = RAILWAY_SOURCES[SUPPLY_SOURCE]!;
   position = { x: source[1] / 100, z: source[2] / 100, at: clock };
-  for (let k = 0; k < 5; k++) {
+  // A hit gives 1 until Station 3 is funded: ten strokes fell the tree, each log put down where it fell.
+  for (let k = 0; k < 10; k++) {
     await action({ op: 'rail.chop', id: source[0], yaw: 0.5, collapsed: false });
     // This headless fixture sends its actor at y=0; drop at its feet, not thirty metres above it.
-    await action({ op: 'rail.drop', x: source[1], z: source[2], y: 0, n: 2 });
+    await action({ op: 'rail.drop', x: source[1], z: source[2], y: 0, n: 1 });
   }
   assert.equal(trees(host.rules.railway.world())[SUPPLY_SOURCE]!.left, 0);
   assert.equal(railCounts(host.rules.railway.world()).loose, 10);
@@ -93,6 +98,11 @@ export async function supplyFixture(
     store,
     ticks,
     advance,
+    send,
+    /** Where the supplier stands, in metres. */
+    stand(x: number, z: number) {
+      position = { x, z, at: clock };
+    },
     stage,
     toStage,
     now: () => clock,

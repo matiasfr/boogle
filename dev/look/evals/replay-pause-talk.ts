@@ -65,16 +65,15 @@ const stats = document.querySelector('.place-nums')!;
 check(stats.children.length === 1 && !!stats.querySelector('.place-money'), 'only money in permanent stats');
 // Exercise the Local display seam; these are diagnostic carry readouts, not a cargo/drop gameplay proof.
 const originalCarry = backSeam.carry!;
-const load = { ...originalCarry(), logs: 0, rails: 0, stone: 0, big: null, incoming: 0, reserved: 0, flyingLogs: 0 };
+const load = { ...originalCarry(), logs: 0, rails: 0, stone: 0, big: null, flyingLogs: 0 };
 backSeam.carry = () => load;
 try {
   for (const state of [
-    { logs: 0, incoming: 0, reserved: 0, big: null, visible: false },
-    { logs: 3, incoming: 0, reserved: 0, big: null, visible: true },
-    { logs: 0, incoming: 0, reserved: 0, big: 'beam', visible: true },
-    { logs: 0, incoming: 1, reserved: 0, big: null, visible: true },
-    { logs: 0, incoming: 0, reserved: 1, big: null, visible: true },
-    { logs: 0, incoming: 0, reserved: 0, big: null, visible: false },
+    { logs: 0, stone: 0, big: null, visible: false },
+    { logs: 3, stone: 0, big: null, visible: true },
+    { logs: 0, stone: 0, big: 'beam', visible: true },
+    { logs: 0, stone: 2, big: null, visible: true },
+    { logs: 0, stone: 0, big: null, visible: false },
   ] as const) {
     Object.assign(load, state);
     await wait();

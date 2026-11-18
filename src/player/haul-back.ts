@@ -3,21 +3,20 @@
 import * as THREE from 'three/webgpu';
 import { me } from './player.ts';
 import { SHOWN, shownOf, frameOf, fitOf, slotAt } from '../render/haul-bundle.ts';
+/** The kinds a back holds in rows of its own (separate capacities). */
+export type CarryKind = 'logs' | 'stone' | 'rails';
 /** Place's Local readout. Counts retain their owner's acceptance/landing semantics. */
 export type CarryReadout = {
   logs: number;
   rails: number;
   stone: number;
   big: 'beam' | 'boiler' | 'footing' | null;
-  capacity: number;
-  /** Above this count movement is heavy; omitted for owners without overfill. */
-  comfortable?: number;
-  /** Pieces in the air on their way here, and slots held for unconfirmed actions. An owner that predicts its own
-   * actions (the railway) already shows them in its counts and leaves these out. */
-  incoming?: number;
-  reserved?: number;
+  /** Each kind's row on the back: logs 8 or 16, stone 8 or 16, rails 8. */
+  capacity: Record<CarryKind, number>;
   flyingLogs: number;
   attention: boolean;
+  /** The kind a swing or a take just refused because its row is full. */
+  refused?: CarryKind | null;
 };
 
 // The railway supplies accepted counts for the Local bundle and carry HUD.

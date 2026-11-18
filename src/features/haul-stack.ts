@@ -1,5 +1,5 @@
 // Railway carry presentation: accepted counts enter through backSeam; the bundle and HUD are Local.
-import { backSeam, type CarryReadout } from '../player/haul-back.ts';
+import { backSeam, type CarryKind, type CarryReadout } from '../player/haul-back.ts';
 export { backSeam } from '../player/haul-back.ts';
 import '../ui/ui-kit.css';
 import './haul-stack.css';
@@ -11,7 +11,7 @@ import { okPid } from '../sim/roster.ts';
 import { pieceMesh, pieceColor, commitPieces } from '../render/haul-pieces.ts';
 import { SHOWN, shownOf, lenOf, frameOf, fitOf, pieceAt, bandAt, makeBundleBands } from '../render/haul-bundle.ts';
 import { camera, toScreen } from '../render/scene.ts';
-import { PLAYER_R } from '../constants.ts';
+import { PLAYER_R, reducedMotion } from '../constants.ts';
 import { pauseSections } from '../player/pause-pages.ts';
 import { padModal } from '../player/controls.ts';
 
@@ -70,63 +70,95 @@ spawn({
   },
 });
 
-// One temporary tag; landed resource counts match the stock boards. Pause retains exact accepted inventory.
+// One temporary tag: what you carry, as little squares, one row a kind (separate capacities, owner 17 November 2026:
+// "i liked the little squares for inventory"). No numbers on the tag; its aria-label and Pause keep the exact counts.
 const carryLane = document.createElement('div');
 carryLane.className = 'carry-lane';
 const tag = document.createElement('div');
 tag.className = 'carry-tag';
 carryLane.append(tag);
 document.body.append(carryLane);
-const contents = document.createElement('div');
-contents.className = 'carry-contents';
-const total = document.createElement('div');
-total.className = 'carry-total';
-const capacity = document.createElement('div');
-capacity.className = 'carry-capacity';
-tag.append(contents, total, capacity);
+const bigLabel = document.createElement('div');
+bigLabel.className = 'carry-big';
+const rowsEl = document.createElement('div');
+rowsEl.className = 'carry-rows';
+tag.append(bigLabel, rowsEl);
 const pauseCarry = document.createElement('div');
 pauseCarry.className = 'carry-pause';
-const icons = {
-  logs: '<rect x="2" y="7" width="18" height="10" rx="5"/><ellipse cx="19" cy="12" rx="3" ry="5"/><ellipse cx="19" cy="12" rx="1" ry="2"/>',
-  rails: '<path d="M4 3h16v4h-6v10h6v4H4v-4h6V7H4z"/>',
-  stone: '<path d="m3 16 3-10 10-3 6 10-6 8H7z"/><path d="m6 6 7 6 9 1m-9-1 3 9"/>',
-  beam: '<path d="m2 7 15-4 5 4v10L7 21l-5-4zM2 7l5 4 15-4M7 11v10"/>',
-  footing: '<path d="m3 8 9-5 9 5v10l-9 4-9-4zM3 8l9 5 9-5M12 13v9"/>',
-  boiler: '<rect x="3" y="7" width="18" height="14" rx="6"/><path d="M9 7V2h6v5M11 7v14"/>',
-};
-const item = (kind: keyof typeof icons, text: string) =>
-  `<span class="carry-item"><svg class="carry-${kind}" viewBox="0 0 24 24" aria-hidden="true">${icons[kind]}</svg>${text}</span>`;
+const pauseTitle = document.createElement('div');
+pauseTitle.textContent = 'Carrying';
+const pauseBig = document.createElement('div');
+pauseBig.className = 'carry-big';
+const pauseRows = document.createElement('div');
+pauseRows.className = 'carry-rows';
+pauseCarry.append(pauseTitle, pauseBig, pauseRows);
+// Logs, then stone, then rails, each a row as long as that kind's capacity.
+const kinds = ['logs', 'stone', 'rails'] as const satisfies readonly CarryKind[];
+type Row = { el: HTMLElement; squares: HTMLElement[]; filled: number };
+function makeRow(kind: CarryKind, parent: HTMLElement): Row {
+  const el = document.createElement('div');
+  el.className = 'carry-row';
+  el.dataset.kind = kind;
+  el.hidden = true;
+  parent.append(el);
+  return { el, squares: [], filled: 0 };
+}
+const tagRows = Object.fromEntries(kinds.map((k) => [k, makeRow(k, rowsEl)])) as Record<CarryKind, Row>;
+const pauseRowsBy = Object.fromEntries(kinds.map((k) => [k, makeRow(k, pauseRows)])) as Record<CarryKind, Row>;
+/** Draws `filled` of `capacity` squares into a row; newly filled ones pop when `pop` (the tag, not Pause). */
+function fillRow(row: Row, capacity: number, filled: number, pop: boolean) {
+  while (row.squares.length < capacity) {
+    const sq = document.createElement('span');
+    sq.className = 'carry-sq';
+    row.el.append(sq);
+    row.squares.push(sq);
+  }
+  while (row.squares.length > capacity) row.squares.pop()!.remove();
+  const n = Math.min(filled, capacity);
+  row.squares.forEach((sq, k) => {
+    const on = k < n;
+    if (sq.dataset.filled === String(on)) return;
+    sq.dataset.filled = String(on);
+    // Each piece pops into its square as it lands (transform only); reduced motion: no pop.
+    if (on && pop && k >= row.filled && !reducedMotion)
+      sq.animate([{ transform: 'scale(1.45)' }, { transform: 'scale(0.92)' }, { transform: 'scale(1)' }], {
+        duration: 200,
+        easing: 'ease-out',
+      });
+  });
+  row.filled = n;
+  if (n >= capacity) row.el.dataset.full = '';
+  else delete row.el.dataset.full;
+}
+/** A refused pickup of a full kind: its row shakes (transform only); reduced motion flashes it instead. */
+function shake(row: Row) {
+  if (reducedMotion) {
+    row.el.animate([{ opacity: 0.35 }, { opacity: 1 }], { duration: 180, iterations: 2 });
+    return;
+  }
+  row.el.animate(
+    [
+      { transform: 'translateX(0)' },
+      { transform: 'translateX(-5px)' },
+      { transform: 'translateX(5px)' },
+      { transform: 'translateX(-3px)' },
+      { transform: 'translateX(0)' },
+    ],
+    { duration: 180, easing: 'ease-in-out' },
+  );
+}
 let carryKey = '',
   carryUntil = 0,
   carryStarted = false,
-  carrySide = 1;
+  carrySide = 1,
+  lastRefused: CarryKind | null = null;
 const carryPoint = new THREE.Vector3();
 const carryScreen = { x: 0, y: 0, behind: false };
-const materials = ['logs', 'rails', 'stone'] as const;
-let countsKey = '';
+// A row stays up for the tag's 2 s hold after its kind is refused or its capacity grows, even with nothing in it.
+const rowUntil: Record<CarryKind, number> = { logs: 0, stone: 0, rails: 0 };
+const lastCapacity: Record<CarryKind, number> = { logs: 0, stone: 0, rails: 0 };
 const bigName = (kind: NonNullable<CarryReadout['big']>) =>
   kind === 'beam' ? 'Great beam' : kind === 'boiler' ? 'Boiler' : 'Footing';
-function fillCounts(load: CarryReadout) {
-  const logs = Math.max(0, load.logs - load.flyingLogs);
-  const landed = logs + load.rails + load.stone;
-  const comfort = load.comfortable ?? load.capacity;
-  const heavy = load.logs + load.rails + load.stone > comfort;
-  const key = `${logs}/${load.rails}/${load.stone}/${load.big}/${comfort}/${load.capacity}/${heavy}`;
-  if (key === countsKey) return;
-  countsKey = key;
-  contents.innerHTML = load.big
-    ? item(load.big, `1 ${bigName(load.big)}`)
-    : materials.map((kind) => item(kind, String(kind === 'logs' ? logs : load[kind]))).join('');
-  total.hidden = capacity.hidden = !!load.big;
-  total.textContent = `${landed}/${comfort}`;
-  tag.dataset.heavy = String(heavy);
-  capacity.textContent = heavy
-    ? 'Heavy · no jump, hook or glide. Drop to lighten.'
-    : landed >= comfort && comfort < load.capacity
-      ? 'Comfortable limit · extra cargo is heavy'
-      : 'Full';
-  capacity.style.visibility = heavy || landed >= comfort ? 'visible' : 'hidden';
-}
 const overlaps = (x: number, y: number, w: number, h: number, r: DOMRect) =>
   r.width > 0 && r.height > 0 && x < r.right + 12 && x + w > r.left - 12 && y < r.bottom + 12 && y + h > r.top - 12;
 
@@ -136,32 +168,53 @@ function tickCarry(load: CarryReadout, now: number) {
     pauseSections.push(pauseCarry);
   }
   const held = load.logs + load.rails + load.stone;
-  const incoming = load.incoming ?? 0;
-  const reserved = load.reserved ?? 0;
-  const pending = incoming + reserved;
-  const full = !load.big && held + pending >= load.capacity;
-  const key = `${load.logs}/${load.rails}/${load.stone}/${load.big}/${load.capacity}/${load.comfortable}/${incoming}/${reserved}`;
+  // Logs in flight do not fill their squares until they land.
+  const landed: Record<CarryKind, number> = {
+    logs: Math.max(0, load.logs - load.flyingLogs),
+    stone: load.stone,
+    rails: load.rails,
+  };
+  for (const k of kinds) {
+    if (lastCapacity[k] && load.capacity[k] > lastCapacity[k]) {
+      rowUntil[k] = now + 2000;
+      carryUntil = now + 2000;
+    }
+    lastCapacity[k] = load.capacity[k];
+  }
+  const refused = load.refused ?? null;
+  if (refused && refused !== lastRefused) {
+    rowUntil[refused] = now + 2000;
+    carryUntil = now + 2000;
+    if (!load.big) shake(tagRows[refused]);
+  }
+  lastRefused = refused;
+  const key = `${load.logs}/${load.rails}/${load.stone}/${load.big}/${kinds.map((k) => load.capacity[k]).join(',')}`;
   if (key !== carryKey) {
-    if (carryKey || held || pending || load.big) carryUntil = now + 2000;
+    if (carryKey || held || load.big) carryUntil = now + 2000;
     carryKey = key;
-
-    const fraction = `${held + pending}/${load.capacity}${full ? ' · Full' : ''}${load.comfortable !== undefined ? ` · ${load.comfortable} comfortable` : ''}`;
     const exact = load.big
-      ? `1 ${bigName(load.big)}`
-      : `${
-          (['logs', 'rails', 'stone'] as const)
-            .filter((k) => load[k])
-            .map((k) => `${load[k]} ${k}`)
-            .join(' · ') || 'Empty'
-        } — ${fraction}` +
-        (load.incoming ? ` · ${load.incoming} incoming` : '') +
-        (load.reserved ? ` · ${load.reserved} reserved` : '');
-    pauseCarry.textContent = `Carrying: ${exact}`;
-    pauseCarry.hidden = !load.big && !held && !pending;
+      ? bigName(load.big)
+      : kinds
+          .filter((k) => load[k])
+          .map((k) => `${load[k]} of ${load.capacity[k]} ${k}`)
+          .join(', ') || 'Empty';
+    pauseBig.textContent = load.big ? bigName(load.big) : '';
+    pauseBig.hidden = !load.big;
+    for (const k of kinds) {
+      pauseRowsBy[k].el.hidden = !!load.big || !load[k];
+      fillRow(pauseRowsBy[k], load.capacity[k], load[k], false);
+    }
+    pauseCarry.hidden = !load.big && !held;
     tag.setAttribute('aria-label', exact);
   }
-  fillCounts(load);
-  if (load.attention || (!load.big && held > (load.comfortable ?? load.capacity))) carryUntil = now + 2000;
+  // Big things show their name only; otherwise a row for each kind carried, or just refused or grown.
+  bigLabel.textContent = load.big ? bigName(load.big) : '';
+  bigLabel.hidden = !load.big;
+  for (const k of kinds) {
+    tagRows[k].el.hidden = !!load.big || (!load[k] && now >= rowUntil[k]);
+    fillRow(tagRows[k], load.capacity[k], landed[k], true);
+  }
+  if (load.attention) carryUntil = Math.max(carryUntil, now + 2000);
   // Retain the tag's hold and fade as counts change.
   const opacity = me.entered && !padModal() ? Math.min(1, Math.max(0, (carryUntil + 200 - now) / 200)) : 0;
   tag.style.opacity = String(opacity);

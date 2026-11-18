@@ -2,9 +2,9 @@
 // `(world)` or `(world, tick)` that the systems share. Queries never write. Each fact lives here or in its domain's
 // file (railway-queries-line1.ts, -line2.ts, -trains.ts, -works.ts).
 import type { RowOf, World } from '../ecs/index.ts';
-import { RAILWAY_T1 as T1, HEAVY_LOAD } from './railway-layout.ts';
+import { RAILWAY_CAPACITY as CAPACITY, RAILWAY_T1 as T1, RAILWAY_YIELD } from './railway-layout.ts';
 import { LINE1_STATIONS } from './railway-line-layout.ts';
-import { LINE2_PACK as PACK, LINE2_STATIONS, Q7, type Line2Station } from './railway-line2-layout.ts';
+import { LINE2_STATIONS, Q7, RAILS, type Line2Station } from './railway-line2-layout.ts';
 import { layProgress, lineSchedule, type LineTiming } from './railway-line-schedule.ts';
 import { CART } from './railway-cart.ts';
 import { trainStopsOf, type RailTrain, type RingOpen } from './railway-train.ts';
@@ -73,49 +73,42 @@ export type AccountRow = Row<typeof Account>;
 /** A big thing fills your back: the great beam, the boiler or a footing. */
 export const heldBig = (w: World, a: Readonly<AccountRow>) => held(w, a.pid) || boilerHeld(w, a.pid) || a.foot > 0;
 export const carried = (a: Readonly<AccountRow>) => a.carry + a.stone + a.rails;
-/** Comfortable cargo: the pack is shared progression, like the axe. */
-export const carryComfort = (w: World) => (w.get(Rail, railId(w))!.pack ? PACK.carry : T1.carry);
-/** Hard ceiling including the optional heavy load. All source transfers and save validation use this. */
-export const carryMax = (w: World) => carryComfort(w) + Math.floor(carryComfort(w) * HEAVY_LOAD.extra);
-/** Derived only: no new row, clock, prediction state or saved flag. */
-export const heavyLoad = (w: World, pid: string) => {
-  const a = w.get(Account, w.lookup(Account, pid) ?? -1);
-  return !!a && carried(a) > carryComfort(w);
-};
-export const carrySpeed = (w: World, pid: string) => {
-  const a = w.get(Account, w.lookup(Account, pid) ?? -1);
-  const extra = Math.max(0, (a ? carried(a) : 0) - carryComfort(w));
-  const fraction = Math.min(1, extra / (carryMax(w) - carryComfort(w)));
-  return 1 - fraction + fraction * HEAVY_LOAD.minSpeed;
-};
-/** One slot per excess piece lets every heavy player drop in any kind/order/location, even after reload. */
-export function reservedDropSlots(w: World) {
-  const comfort = carryComfort(w);
-  let reserved = 0;
-  w.each([Account], (_id, a) => {
-    reserved += Math.max(0, carried(a) - comfort);
-  });
-  return reserved;
-}
-/** Ordinary drops and new heavy pickups cannot consume another carrier's escape space. */
-export const spareDropSlots = (w: World) => LOOSE_PILE_CAPACITY - w.ids(Pile).length - reservedDropSlots(w);
-/** One take stops at comfort first; another deliberate take opts into the reserved heavy allowance.
- * A source pile frees one slot only when this take can consume every piece. */
-export const free = (w: World, a: Readonly<AccountRow>, pilePieces = 0) => {
-  const n = carried(a);
-  const target = n < carryComfort(w) ? carryComfort(w) : carryMax(w);
-  const room = Math.max(0, target - n);
-  if (heldBig(w, a)) return 0;
-  if (n < carryComfort(w)) return room;
-  const spare = spareDropSlots(w);
-  const freed = Number(pilePieces > 0 && pilePieces <= room && pilePieces <= spare + 1);
-  return Math.max(0, Math.min(room, spare + freed));
-};
-/** Pile kinds: 0 logs, 1 stone, 2 rails, 3 a footing (one to a pile, one to a back). */
+/** Pile and back kinds: 0 logs, 1 stone, 2 rails (RAILS), 3 a footing (one to a pile, one to a back). */
+export const LOGS = 0;
+export const STONE = 1;
 export const FOOT = 3;
-/** What a back can take of a kind: a footing only onto an empty back. */
-export const roomFor = (w: World, a: Readonly<AccountRow>, kind: number, pilePieces = 0) =>
-  kind === FOOT ? Number(!heldBig(w, a) && carried(a) === 0) : free(w, a, pilePieces);
+/** What a back holds of `kind`. */
+export const balanceOf = (a: Readonly<AccountRow>, kind: number) =>
+  kind === STONE ? a.stone : kind === RAILS ? a.rails : kind === FOOT ? a.foot : a.carry;
+/** The most a back ever holds of one kind (logs with the pack, stone with the breaker): the wire's bound on a count. */
+export const MAX_KIND_CAPACITY = Math.max(CAPACITY.logsPack, CAPACITY.stoneBreaker, CAPACITY.rails);
+/** The most one action ever moves: every kind a back holds at once (`rail.kiln` takes logs and stone together, up to
+ * 32, and `rail.steel` logs and rails), the bound on an outcome's and an event's accepted count. */
+export const MAX_ACCEPTED = 3 * MAX_KIND_CAPACITY;
+/** What a back holds of `kind` (separate capacities, owner 17 November 2026): logs 8, 16 once the pack chest is open;
+ * stone 8, 16 once the breaker is taken; rails 8; one footing. The room's, so late joiners have it too. */
+export function capacityOf(w: World, kind: number) {
+  if (kind === FOOT) return 1;
+  if (kind === RAILS) return CAPACITY.rails;
+  if (kind === STONE) return w.get(Works, worksId(w))!.breaker === 2 ? CAPACITY.stoneBreaker : CAPACITY.stone;
+  return w.get(Rail, railId(w))!.pack ? CAPACITY.logsPack : CAPACITY.logs;
+}
+/** The keener edge: Station 3 is funded (its 32 logs and the great beam are in), so a hit gives 2. */
+export const keenEdge = (w: World) => {
+  const j = w.get(Job, jobId(w, 2))!;
+  return j.start >= 0 || !!j.completion;
+};
+/** Pieces a chop or a strike gives, the proper axe's trees aside: 1, then 2 with the keener edge. */
+export const hitYield = (w: World) => (keenEdge(w) ? RAILWAY_YIELD.edge : RAILWAY_YIELD.first);
+/** What a back can take of `kind`: nothing while it holds a big thing; a footing only onto an empty back; otherwise
+ * that kind's capacity less what it holds. A full kind refuses only that kind. */
+export function roomOf(w: World, a: Readonly<AccountRow>, kind: number) {
+  if (heldBig(w, a)) return 0;
+  if (kind === FOOT) return carried(a) === 0 ? 1 : 0;
+  return Math.max(0, capacityOf(w, kind) - balanceOf(a, kind));
+}
+/** Room for new loose piles: at the ceiling a new pile is refused (an exact-position top-up still lands). */
+export const freePileSlots = (w: World) => LOOSE_PILE_CAPACITY - w.ids(Pile).length;
 export const qCompleted = (w: World) => LINE2_STATIONS.filter((_s, k) => w.get(QJob, qjobId(w, k))!.completion).length;
 export const apertureId = (w: World) => w.single(Aperture);
 /** The railhead: bents footed past bent 6 (0-7), two footings a bent (ring-island-build1, R3). */
@@ -297,8 +290,6 @@ export const railAccount = (w: World, pid: string) => {
   const id = w.lookup(Account, pid);
   return id === undefined ? undefined : w.get(Account, id)!;
 };
-/** What a back carries (carryMax). */
-export const railCarryMax = carryMax;
 
 /** Footings the pier still needs that are neither set, racked there, nor aboard the wagon (`aboard`). */
 export function pierOwed(w: World, aboard: number) {

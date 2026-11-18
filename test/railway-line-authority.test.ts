@@ -57,6 +57,8 @@ function fresh(pids = ['a', 'b']) {
   apply(s, pids[0]!, { op: 'rail.wake', epoch: 1, request: 1 }, 0);
   return s;
 }
+/** Station 3's log bill (32 since separate capacities). */
+const T3_LOGS = LINE1_STATIONS[2]!.bill[0];
 function logs(s: World, pid: string, n: number, station: string = LINE1_STATIONS[railActiveStation(s)]!.id) {
   while (n > 0) {
     while (account(s, pid)!.carry === 0) {
@@ -108,7 +110,7 @@ function giveBeam(s: World, pid = 'a') {
 /** Station 3 done and the forge lit (56 logs): the proper axe waits on its stand. */
 function toForge() {
   const s = toT3();
-  logs(s, 'a', 40);
+  logs(s, 'a', T3_LOGS);
   giveBeam(s);
   finish(s);
   logs(s, 'a', 56, 'F');
@@ -124,7 +126,7 @@ test('the great tree rebounds before Station 3, then the first axe fells it and 
   assert.equal(railBeamChoppable(early), false);
   assert.equal(act(early, 'a', 'rail.beamChop').r.accepted, 0);
   assert.equal(beam(early).work, 0);
-  // Beam first: laid on the empty frame, the job waits for the 40th log and starts on it.
+  // Beam first: laid on the empty frame, the job waits for the last log and starts on it.
   let s = toT3();
   assert.equal(railBeamChoppable(s), true);
   assert.equal(rail(s).axe, false);
@@ -133,26 +135,26 @@ test('the great tree rebounds before Station 3, then the first axe fells it and 
   assert.equal(beam(s).state, 'allocated');
   assert.equal(railCurrentJob(s).job.start, -1);
   s = restore(s);
-  logs(s, 'a', 39);
+  logs(s, 'a', T3_LOGS - 1);
   assert.equal(railCurrentJob(s).job.start, -1);
   s = restore(s);
   logs(s, 'a', 1);
-  assert.ok(railCurrentJob(s).job.start >= 0, 'the 40th log starts the feed');
+  assert.ok(railCurrentJob(s).job.start >= 0, 'the last log starts the feed');
   finish(s);
   assert.equal(beam(s).state, 'used');
   // Logs part way, then the beam, then the rest: also fine.
   s = toT3();
-  logs(s, 'a', 20);
+  logs(s, 'a', T3_LOGS / 2);
   giveBeam(s, 'b');
-  logs(s, 'a', 20);
+  logs(s, 'a', T3_LOGS / 2);
   assert.ok(railCurrentJob(s).job.start >= 0);
   restore(s);
 });
 
 test('the proper axe is the lit forge first made thing, not Station 3', () => {
   let s = toT3();
-  logs(s, 'a', 40);
-  assert.equal(railAxeAvailable(s), false, 'the 40th log no longer offers the axe');
+  logs(s, 'a', T3_LOGS);
+  assert.equal(railAxeAvailable(s), false, 'the last log no longer offers the axe');
   assert.equal(act(s, 'a', 'rail.axe').r.accepted, 0);
   giveBeam(s);
   finish(s);
@@ -174,7 +176,7 @@ test('the proper axe is the lit forge first made thing, not Station 3', () => {
 test('line-one bills, unique beam and funded completion survive every stage restore', () => {
   let s = toT3();
   assert.equal(act(s, 'a', 'rail.axe').r.accepted, 0);
-  logs(s, 'a', 40);
+  logs(s, 'a', T3_LOGS);
   assert.equal(railCurrentJob(s).job.start, -1);
   assert.equal(railAxeAvailable(s), false);
   s = restore(s);
@@ -207,7 +209,7 @@ test('line-one bills, unique beam and funded completion survive every stage rest
   s = restore(s);
   finish(s);
   s = restore(s);
-  assert.equal(railCounts(s).used, 96);
+  assert.equal(railCounts(s).used, 24 + 32 + T3_LOGS);
   assert.equal(railCounts(s).stone!.used, 8);
   assert.equal(beam(s).state, 'used');
   assert.equal(railCounts(s).completion, 3);
@@ -219,14 +221,15 @@ test('mixed back, final deposit races and exact station identity cannot overflow
   const s = fresh();
   logs(s, 'a', 24);
   finish(s);
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 6; i++) {
     const k = trees(s).findIndex((t) => t.left > 0);
     act(s, 'a', 'rail.chop', { id: RAILWAY_SOURCES[k]![0], yaw: 0, collapsed: false });
   }
   act(s, 'a', 'rail.mine', { id: 0 });
-  assert.equal(account(s, 'a')!.carry + account(s, 'a')!.stone!, 8);
-  assert.equal(act(s, 'a', 'rail.mine', { id: 0 }).r.accepted, 2, 'a second take opts into heavy cargo');
-  assert.equal(act(s, 'a', 'rail.drop', { n: 2, kind: 1, x: 0, y: 0, z: 0 }).r.accepted, 2);
+  act(s, 'a', 'rail.mine', { id: 0 });
+  assert.deepEqual([account(s, 'a')!.carry, account(s, 'a')!.stone], [6, 2], 'a hit gives 1 before Station 3');
+  assert.equal(act(s, 'a', 'rail.mine', { id: 0 }).r.accepted, 1, 'stone has its own row beside the logs');
+  assert.equal(act(s, 'a', 'rail.drop', { n: 1, kind: 1, x: 0, y: 0, z: 0 }).r.accepted, 1);
   assert.equal(act(s, 'a', 'rail.deposit', { station: 'T1', n: 8 }).r.accepted, 0);
   act(s, 'a', 'rail.deposit', { station: 'T2', n: 6 });
   act(s, 'a', 'rail.deposit', { station: 'T2', kind: 1, n: 2 });
@@ -235,7 +238,7 @@ test('mixed back, final deposit races and exact station identity cannot overflow
   assert.ok(job(s, 1).start >= 0);
   assert.equal(act(s, 'b', 'rail.deposit', { station: 'T2', kind: 1, n: 8 }).r.accepted, 0);
   finish(s);
-  logs(s, 'a', 39);
+  logs(s, 'a', T3_LOGS - 1);
   // Two deposits each request four; only the missing log is accepted, never a second chest/unlock.
   for (const pid of ['a', 'b'])
     while (account(s, pid)!.carry < 4) {
@@ -335,7 +338,7 @@ test('proper axe improvement is counted once, clipped source output remains, ren
 
 test('beam departure is epoch/revision fenced and reconnect cannot duplicate its location', () => {
   const s = toT3();
-  logs(s, 'a', 40);
+  logs(s, 'a', T3_LOGS);
   for (let i = 0; i < 12; i++) act(s, 'a', 'rail.beamChop');
   act(s, 'a', 'rail.beamTake', { revision: beam(s).revision });
   const old = beam(s).revision;
@@ -350,7 +353,7 @@ test('beam departure is epoch/revision fenced and reconnect cannot duplicate its
 
 test('safe loose beam keeps its identity; recovery is slow, explicit, revision-fenced and never steals a held beam', () => {
   const s = toT3();
-  logs(s, 'a', 40);
+  logs(s, 'a', T3_LOGS);
   for (let i = 0; i < 12; i++) act(s, 'a', 'rail.beamChop');
   act(s, 'a', 'rail.beamTake', { revision: beam(s).revision });
   act(s, 'a', 'rail.beamDrop', { revision: beam(s).revision, x: 99650, y: 3000, z: -13800 });
@@ -382,7 +385,7 @@ test('safe loose beam keeps its identity; recovery is slow, explicit, revision-f
 
 test("a beam drop's point is checked: never -0, never out of range, and the room still saves", () => {
   const s = toT3();
-  logs(s, 'a', 40);
+  logs(s, 'a', T3_LOGS);
   for (let i = 0; i < 12; i++) act(s, 'a', 'rail.beamChop');
   for (const [x, y, z] of [
     [99650, 3000, -0],

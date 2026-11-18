@@ -12,11 +12,11 @@ import { MAX_PLAYERS, okPid } from './roster.ts';
 import { RAILWAY_SOURCES, RAILWAY_SUPPLY } from './railway-layout.ts';
 import { LINE1_STATIONS } from './railway-line-layout.ts';
 import { RAIL_ROCKS } from './railway-works-layout.ts';
-import { LINE2_STATIONS } from './railway-line2-layout.ts';
+import { LINE2_STATIONS, RAILS } from './railway-line2-layout.ts';
 import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { TRADE, TRADE_TOWNS } from './railway-trade-layout.ts';
 import { RAIL_LEGS, RAIL_YARDS, railPos } from './railway-route.ts';
-import { RECOVERY_MINUTES, LOOSE_PILE_MAX } from './railway-supply.ts';
+import { RECOVERY_MINUTES, LOOSE_PILE_CAPACITY, LOOSE_PILE_MAX } from './railway-supply.ts';
 import { railInt, railYaw, RAILWAY_MAX_INT, RAILWAY_OUTCOMES } from './railway.ts';
 import {
   Account,
@@ -72,7 +72,7 @@ import {
   rocks,
   trees,
 } from './railway-rows.ts';
-import { carryMax, spareDropSlots } from './railway-queries.ts';
+import { capacityOf, LOGS, MAX_ACCEPTED, STONE } from './railway-queries.ts';
 import { railCounts as worldCounts } from './railway-queries-line2.ts';
 import { checkLine1 } from './railway-check-line1.ts';
 import { checkLine2 } from './railway-check-line2.ts';
@@ -166,17 +166,16 @@ function checkRailway(w: World, tick: number) {
     clock = railClock(w);
   if (ts.some((t) => !railInt(t.left, 15))) bad('catalog');
   if (ts.some((t) => !railYaw(t.yaw) || (t.left !== 0 && (t.yaw !== 0 || t.fell)))) bad('fall state');
-  const cm = carryMax(w);
+  const [logCap, stoneCap, railCap] = [capacityOf(w, LOGS), capacityOf(w, STONE), capacityOf(w, RAILS)];
   const as = accounts(w);
   if (
     new Set(as.map((a) => a.pid)).size !== as.length ||
     as.some(
       (a) =>
         !okPid(a.pid) ||
-        !railInt(a.carry, cm) ||
-        !railInt(a.stone, cm) ||
-        !railInt(a.rails, cm) ||
-        a.carry + a.stone + a.rails > cm ||
+        !railInt(a.carry, logCap) ||
+        !railInt(a.stone, stoneCap) ||
+        !railInt(a.rails, railCap) ||
         !railInt(a.epoch, RAILWAY_MAX_INT, 1) ||
         !railInt(a.request),
     )
@@ -196,7 +195,7 @@ function checkRailway(w: World, tick: number) {
         !railInt(p.age, RECOVERY_MINUTES)
       );
     }) ||
-    spareDropSlots(w) < 0
+    w.ids(Pile).length > LOOSE_PILE_CAPACITY
   )
     bad('piles');
   if (!railInt(r0.awake, RAILWAY_MAX_INT, -1)) bad('tick');
@@ -211,7 +210,7 @@ function checkRailway(w: World, tick: number) {
         !railInt(o.epoch, a.epoch, 1) ||
         !railInt(o.request, RAILWAY_MAX_INT, 1) ||
         (o.epoch === a.epoch && o.request > a.request) ||
-        !railInt(o.accepted, cm) ||
+        !railInt(o.accepted, MAX_ACCEPTED) ||
         RAIL_STATUS[o.status] === undefined ||
         (o.status === RAIL_STATUS.indexOf('accepted')) !== o.accepted > 0
       );

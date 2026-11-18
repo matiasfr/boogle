@@ -1,6 +1,7 @@
 # Plan: separate capacities, no heavy load, 1 a hit to start, squares on the back
 
-> **Status: planned (17 November 2026), not built; the owner's three questions are answered.** Owner calls:
+> **Status: steps 1–4 built on `claude/separate-capacities` (18 November 2026, world v60), not shipped; see "As
+> built" under each step.** Owner calls:
 > [separate wood and stone capacities](../decisions-core-loop.md#d-2026-11-17-separate-capacities) and
 > [the three answers](../decisions-core-loop.md#d-2026-11-17-separate-capacities-answers) (2 a hit once Station 3 is
 > funded, "maybe reduce logs from 40"; pack and breaker; rails 8, "own upgrade later"). The planner read the code at
@@ -173,7 +174,7 @@ order (rails, then stone, then logs). No pad slot is needed (`freeSlots()` not c
 Steps 1–4 ship as **one batch** (one `WORLD_NS` bump, one sim/net review, no live build with the rules but not the
 squares). Each step leaves `node dev/ship-check.ts` green; the heavier proofs are the checkpoint's.
 
-- [ ] **1. The rules.** Files: `src/sim/railway-layout.ts`, `railway-line-layout.ts`, `railway-queries.ts`,
+- [x] **1. The rules.** Files: `src/sim/railway-layout.ts`, `railway-line-layout.ts`, `railway-queries.ts`,
   `railway-queries-line1.ts`, `railway-sys-line1.ts`, `railway-sys-line2.ts`, `railway-sys-steel.ts`, `railway-check.ts`,
   `railway-check-line1.ts`, `railway-seed-route.ts`, `railway-seed-legs.ts`, `src/place/layout.ts`,
   `src/world/railway-server.ts`, `src/world/namespace.ts`, `src/adapters/railway-intents.ts`,
@@ -231,7 +232,22 @@ squares). Each step leaves `node dev/ship-check.ts` green; the heavier proofs ar
     `town-facts.test.ts`, `test/helpers/railway-route-rules.ts`, `server/test/railway-steel-host.test.ts`. Regenerate the
     golden fixture with the bump: `GOLDEN=1 node --test --test-concurrency=1 'test/railway-golden-*.test.ts'`.
   - Verify: `node dev/ship-check.ts`; `npm run loop -- run` (rail rules changed); `npm run checkpoints`.
-- [ ] **2. Tools and bots.** `dev/loop/graph.ts` `carryOf(material, packed)` → `carryOf(material, { pack, breaker })`
+  - **As built (18 November).** As written, with these differences. `MAX_ACCEPTED` (48, every row at once) bounds
+    both the client's `accepted()` and the save check's outcome count, which also held a shared-back bound (24) the
+    plan did not name; a kiln feed of 32 needed both. `LINE2_PACK.carry` reads `RAILWAY_CAPACITY.logsPack` (the other
+    direction would be an import cycle). `RAILS` stays in `railway-line2-layout.ts` (the census forbids re-exports from
+    `railway-queries.ts`). The seed's `chop()` fills 8 logs (the starting row), not `capacityOf`, so a seeded bill
+    leaves nothing on the back after the pack; a shared `stockQ6` seed helper replaces three copies of a 16-rails
+    loop. The loop runner no longer clears other kinds before a carry. `src/render/carry-models.ts` (step 4's file
+    list) changed here, because it imported `HEAVY_LOAD`; its seating was not looked at (step 4). The dead
+    `LONG_REVIEWS` flag went with the deleted arrival review (its train-offset sweep and 2,048-drop pile test went
+    with it; the pile ceiling is now in the new test). Host tests send every changed op as a real `r:edit` in its
+    existing server file: chop, mine, drop, take and the deposit bound (`railway-host`), `rackTake`
+    (`railway-supply-durability`), `depotTake`, `depotRailTake` and `forgeTake` (`railway-line-host`), `steelTake`
+    (`railway-steel-host`) and the kiln's 32 through a save and restart (`railway-works-host`). The one new unit file
+    is the plan's `test/railway-capacity.test.ts`. Fixtures re-pinned in the bump commit with their own writers
+    (seed and op goldens, tick-order heads, M12 trace, server host trace: namespace/checksum/snapBytes only).
+- [x] **2. Tools and bots.** `dev/loop/graph.ts` `carryOf(material, packed)` → `carryOf(material, { pack, breaker })`
   from `RAILWAY_CAPACITY` (the canonical order has the breaker before the kiln); `dev/loop/run.ts` drops `carrySpeed`
   (walk at `WALK_MPS`) and fills per kind; delete `dev/loop/heavy-load.ts`; `dev/level/first-line-crossing-probe.ts` drops
   its heavy-load speed term (the probe's decision is closed). Bots: `dev/look/bots/railway.ts` (`carryComfort === 16`
@@ -240,7 +256,11 @@ squares). Each step leaves `node dev/ship-check.ts` green; the heavier proofs ar
   (`fillLogs` per kind; stone fill to 16 after the breaker; the cradle's 8 rails in one carry). Delete
   `dev/look/evals/review-heavy-load.ts` and `review-heavy-load-integration.ts`; update `dev/peer-test/ws-page.ts`.
   Verify: `node dev/ship-check.ts`; `npm run loop` shows the table above (T3 4×45; Q2 rails 2×46, Q3 rails 2×114).
-- [ ] **3. The squares.** `src/player/haul-back.ts` `CarryReadout`: `capacity: { logs; stone; rails }` (from
+  - **As built (18 November).** As written. `npm run loop` shows T3 5×45 → 4×45, Q2 rails 1×44 → 2×44, Q3 rails
+    1×110 → 2×110 (the graph read 44 and 110 before the change too; the plan's 46 and 114 differ from it), Q4
+    to Q7 and the steel works one more rail carry each. Also updated: `dev/peer-test/ws-railway.ts` (1 a hit, rows of
+    8) and the server crash, eviction and supply fixtures. Not run: the bots in a browser (checkpoint A).
+- [x] **3. The squares.** `src/player/haul-back.ts` `CarryReadout`: `capacity: { logs; stone; rails }` (from
   `capacityOf`), drop `comfortable`; add `refused?: 'logs' | 'stone' | 'rails'` (from the swing's `full` response or a
   refused take). `src/features/haul-stack.ts`: replace `fillCounts` and the icon set with `fillRows(load)`: per kind a
   row element holding `capacity[kind]` square spans, filled by the landed count, `data-full` on a full row, a pop
@@ -254,13 +274,32 @@ squares). Each step leaves `node dev/ship-check.ts` green; the heavier proofs ar
   `logs, stone, rails` and capacities) and update `replay-pause-talk.ts`'s readout. Verify: `node dev/ship-check.ts`;
   stills at 960×600 and 390×844 through the eval: empty, 3/8 logs, full 8/8 logs (outline), 8 logs + 5 stone, 16 logs
   + 16 stone + 8 rails (the longest tag), a boiler name, Pause; read each still.
-- [ ] **4. The moments and the back.** `ability-arrival.ts`: an `edge` entry (`has: keenEdge`, `atState: true`,
+  - **As built (18 November).** As written; `incoming`/`reserved` left the readout too (no owner set them). The
+    refusal shake follows a swing's `full` response (logs on a chop, stone on a strike); a blocked pile or rack prompt
+    is not pressed, so a refused take shows its prompt, not a shake. One proof look at 1200×750 through the eval
+    (`docs/reviews/separate-capacities/`): 3/8 logs, a full 8/8 logs row (cream outline) over 5/8 stone, the longest
+    tag (16 + 16 + 8, 298 px) and Pause's static rows. Read each: the rows read by kind and the full row by its
+    outline. Not seen: the empty tag, a boiler name, phone width, the pop and the shake (motion), a live refusal.
+- [x] **4. The moments and the back.** `ability-arrival.ts`: an `edge` entry (`has: keenEdge`, `atState: true`,
   `badge: true`, the multi-axe model, flourish for every player, the funder included); add `edge` to the seen-key list
   comment. `src/render/carry-models.ts`: `MAX_CARGO` and `cargoCapacity` from `RAILWAY_CAPACITY` (16 logs or stone, 8
   rails), drop `HEAVY_LOAD`; `line-cargo.ts` comment ("rails share capacity with logs") corrected. Verify:
   `node dev/ship-check.ts`; a `--rail-seed` still of Buddy from behind and the side with 16 logs, 16 stone and 8 rails
   at once (the three loads must not intersect the pack frame or each other; adjust seating offsets if they do).
-- [ ] **Checkpoint A (the batch).** `npm run check`; `npm run loop -- run`; `npm run checkpoints`;
+  - **As built (18 November, on the cutscenes step 1 change).** `edge` has no op: Station 3's funding is a deposit or
+    the beam's, nobody's find, so the funder is not marked as its finder and gets the same flourish as everyone when
+    next free (the multi-axe model, `tools.ts` `axeModel('edge')`); no card, no words. `test/ability-arrival.test.ts`
+    checks one flourish each for the funder and a friend, none mid-air, and no card. `carry-models.ts` changed in step
+    1. The seating still found the 16 stones through the 16-log bundle (`seat-three-before.png`); the stone heap is now
+    four across and two deep a tier, inside the rail banks, and rides on the bundle's top (`haul-bundle.ts`
+    `bundleTop`, `carry-models.ts` `stoneOn`, set in `line-cargo.ts`). A real back of 16 logs, 16 stone and 8 rails
+    (accepted chops, strikes and a forge take through `dev/look/evals/carry-seating.ts` on `works-open`) from behind,
+    beside and three-quarter (`docs/reviews/separate-capacities/seat-*.png`): no stone through the logs or the frame;
+    the heap stands above Buddy's head from behind and starts at the rails' tops from the side. Not seen: a remote
+    player's back, the flourish itself, and rails without the pack (by the code they lie crosswise in the logs' space, as
+    before this plan; not looked at).
+- [ ] **Checkpoint A (the batch).** *(18 November, on this machine: `ship-check origin/main HEAD` green, `npm run
+  loop -- run` and `npm run checkpoints` green; the playthroughs, `world-inputs`, the works bot and the video not run.)* `npm run check`; `npm run loop -- run`; `npm run checkpoints`;
   `npm run playthrough -- --players 2 --to t2-funded` and `npm run scenario -- world-inputs` (a `src/sim` change);
   `npm run playthrough -- --to Q3` (Station 3 at 32 and the edge, the pack's log row, the doubled rail hauls); the works
   bot through the kiln

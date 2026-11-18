@@ -26,7 +26,7 @@ import { RAIL_STOPS } from '../segments.ts';
 import { RAIL_STONE, WORKS_BREAKER } from '../../../src/sim/railway-works-layout.ts';
 import { splitRockToCrossing } from './railway-works.ts';
 export { splitRockToCrossing };
-import { LINE2_BOILER } from '../../../src/sim/railway-line2-layout.ts';
+import { LINE2_BOILER, RAILS } from '../../../src/sim/railway-line2-layout.ts';
 import { ISLAND_C, axisPoint } from '../../../src/place/home-station.ts';
 import { toWorld } from '../../../src/place/layout.ts';
 
@@ -337,7 +337,7 @@ export async function seaToFarHead(
       check(await bot.use(depot[0]!, depot[2]!, 'take Q5 depot logs', /^Pick up$/), 'Q5 depot rack offered');
       check(await bot.work(() => R.railBack().carry > 0 || job().stock > before, 5000, 380), 'Q5 depot logs accepted');
       await until(() => read().pending === 0, 'Q5 depot logs settle');
-      await deliver(); // Logs and rails share the same back capacity.
+      await deliver(); // Logs first, then the rails row.
     }
     if (R.rail(R.rw()).depotRails > 0 && job().railStock < 24) {
       const shelf = view().shelf!;
@@ -691,7 +691,7 @@ export async function boilerToPier(
     'Q6 train unloads all 32 logs and 32 rails',
   );
   await checkpoint('Q6 stocked');
-  check(R.carryComfort(R.rw()) === 16, 'Q6 comfortable load is sixteen');
+  check(R.capacityOf(R.rw(), R.LOGS) === 16, 'Q6: sixteen logs a back');
   const job = () => R.line2Station(5);
   const frame = view().frames[5]!;
   const deliver = async () => {
@@ -703,7 +703,7 @@ export async function boilerToPier(
     );
   };
   for (let trip = 0; job().start < 0; trip++) {
-    check(trip < 4, 'Q6 funds in bounded sixteen-unit carries');
+    check(trip < 6, 'Q6 funds in bounded carries (16 logs, 8 rails a back)');
     if (job().stock < 32) {
       const depot = view().depot!;
       check(await bot.use(depot[0]!, depot[2]!, 'take Q6 depot logs', /^Pick up$/), 'Q6 depot offered');
@@ -1401,7 +1401,10 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       await walk(rock.x / 100, rock.z / 100, 2.6);
       face(rock.x / 100, rock.z / 100);
       await until(() => interactTarget()?.id === `railway-rock${rock.id}`, 'the chosen rock is targeted', 5000);
-      require(await bot.work(() => R.railBack().stone === 8, 30000), 'four productive rock strokes fill stone back');
+      require(await bot.work(
+        () => R.railBack().stone === 8,
+        30000,
+      ), 'eight productive rock strokes (1 a hit) fill the stone row');
       await until(() => read().pending === 0, 'stone requests settle');
       mark('T2 stone carried');
       await walk(read().station.x, read().station.z, 3);
@@ -1419,14 +1422,15 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await until(() => R.railActiveStation(R.rw()) === 2, 'T3 opens after T2');
     require(!R.rail(R.rw()).axe, 'proper axe not granted by T2 completion');
     require(!read().reward.axeChest.available, 'Station 3 offers no proper axe (it is the forge’s)');
-    // The great beam pass: logs and beam fund T3 in either order. Solo lays the beam first (the 40th log starts the
-    // feed); a pair brings the logs first (the beam starts it).
+    // The great beam pass: logs and beam fund T3 in either order. Solo lays the beam first (the last log starts the
+    // feed); a pair brings the logs first (the beam starts it). Station 3 takes 32 logs: four loads of 8.
+    const t3Bill = LINE1_STATIONS[2]!.bill[0];
     const beamFirst = !coop;
     const laid = () => R.beam(R.rw()).state === 'allocated' || R.beam(R.rw()).state === 'used';
     const t3Logs = async () => {
       if (second) await until(() => job(2).delivered === 24, 'friend supplies the first 24 T3 logs');
-      await logs(2, coop ? (second ? 2 : 3) : 5);
-      await until(() => job(2).stock === 40 || job(2).start >= 0, 'T3 has 40 accepted logs');
+      await logs(2, coop ? (second ? 1 : 3) : 4);
+      await until(() => job(2).stock === t3Bill || job(2).start >= 0, `T3 has ${t3Bill} accepted logs`);
     };
     if (!beamFirst) {
       await t3Logs();
@@ -1542,12 +1546,12 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       await checkpoint('T3 beam seated');
       await t3Logs();
     }
-    await until(() => job(2).start >= 0, beamFirst ? 'the 40th log starts the feed' : 'the beam starts the feed');
+    await until(() => job(2).start >= 0, beamFirst ? 'the last log starts the feed' : 'the beam starts the feed');
     await checkpoint('T3 funded');
     await ride(2);
     await until(() => job(2).completion === 1, 'T3 laid once', LAYING_MS);
     panels(3);
-    require(R.beam(R.rw()).state === 'used' && job(2).used === 40, 'single beam and 40 logs embodied');
+    require(R.beam(R.rw()).state === 'used' && job(2).used === t3Bill, `single beam and ${t3Bill} logs embodied`);
     require(read().reward.claims === 2, 'only T1 and T2 personal boxes earned');
     const counts = R.railCounts(R.rw());
     require(counts.total === LINE1_INITIAL[0] + counts.produced, 'counted logs conserve initial supply and renewal');
@@ -1686,7 +1690,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       const friendPack = async () => {
         await until(() => R.rail(R.rw()).pack, 'leader opens the pack', 1800000);
         await bot.wait(1500);
-        require(R.carryComfort(R.rw()) === 16, "the friend's comfortable load is 16");
+        require(R.capacityOf(R.rw(), R.LOGS) === 16, "the friend's back holds 16 logs");
         require(read().reward.arrival.seen.includes('pack'), "friend's pack flourish played");
         await checkpoint('pack');
       };
@@ -1731,7 +1735,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await walkTrack(92, 30);
     await walkBypass(bypass.slice(1));
     mark('line two started');
-    const fill = async (max: number = R.carryComfort(R.rw())) => {
+    const fill = async (max: number = R.capacityOf(R.rw(), R.LOGS)) => {
       let attempts = 0;
       while (R.railBack().carry < max) {
         require(++attempts <= 24, 'found enough reachable logs for line two');
@@ -1763,7 +1767,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       }
     };
     const forge = v2().forgeFrame;
-    // The pack frame: its chest waits by the forge from the forge's first bill. Open it (a back of 16 for everyone).
+    // The pack frame: its chest waits by the forge from the forge's first bill. Open it (16 logs a back for everyone).
     const openPack = async () => {
       const packChest = read().reward.tools.packChest;
       require(packChest.available, 'the pack chest waits by the forge');
@@ -1773,14 +1777,14 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       require(await bot.work(() => R.rail(R.rw()).pack, 5000, 380), 'pack accepted after bounded retries');
       await bot.wait(1200);
       if (read().reward.showing || !coop) await dismiss('pack reveal');
-      require(R.carryComfort(R.rw()) === 16, 'every back comfortably carries 16 with the pack');
+      require(R.capacityOf(R.rw(), R.LOGS) === 16, 'every back holds 16 logs with the pack');
       await checkpoint('pack');
     };
     for (let load = 0; R.forge(R.rw()).used < 56; load++) {
       require(load < 12, 'forge bills fill in bounded loads');
       // A player opens the pack as soon as its chest appears, beside the forge they are filling.
       if (!legacy && R.forge(R.rw()).used >= 24 && !R.rail(R.rw()).pack) await openPack();
-      await fill(Math.min(R.carryComfort(R.rw()), 56 - R.forge(R.rw()).used));
+      await fill(Math.min(R.capacityOf(R.rw(), R.LOGS), 56 - R.forge(R.rw()).used));
       await walk(forge.x, forge.z, 2.4);
       await until(() => R.railBack().carry === 0 && read().pending === 0, 'forge frame unloads automatically', 20000);
       mark(`forge load ${load + 1} (${R.forge(R.rw()).used}/56)`);
@@ -1823,7 +1827,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     const rack = v2().forgeRack;
     const takeRails = async (n: number) => {
       await until(
-        () => R.forge(R.rw()).rack >= Math.min(n, R.carryComfort(R.rw())),
+        () => R.forge(R.rw()).rack >= Math.min(n, R.capacityOf(R.rw(), RAILS)),
         'forge has poured enough rails',
         60000,
       );
@@ -1844,7 +1848,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     // Q1, by hand beside the turntable: 16 logs and 6 rails.
     const q1 = v2().frames[0]!;
     while (R.line2Station(0).start < 0 && R.line2Station(0).stock < 16) {
-      await fill(Math.min(R.carryComfort(R.rw()), 16 - R.line2Station(0).stock));
+      await fill(Math.min(R.capacityOf(R.rw(), R.LOGS), 16 - R.line2Station(0).stock));
       await deliver(0, q1);
     }
     await takeRails(6);

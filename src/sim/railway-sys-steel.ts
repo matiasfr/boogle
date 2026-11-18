@@ -17,7 +17,7 @@
 import { defineSystem, type World } from '../ecs/index.ts';
 import { deckHeld } from './railway-queries-trade.ts';
 import { STEEL } from './railway-ring-layout.ts';
-import { LINE2_KIT } from './railway-line2-layout.ts';
+import { LINE2_KIT, RAILS } from './railway-line2-layout.ts';
 import { railInt } from './railway.ts';
 import { LINE2 } from './railway-lines.ts';
 import { BOILER_MAX } from './railway-train.ts';
@@ -40,8 +40,9 @@ import {
 } from './railway-components.ts';
 import {
   forgeId,
-  free,
+  LOGS,
   lineId,
+  roomOf,
   railId,
   ringJoined,
   shedId,
@@ -62,7 +63,7 @@ export const steelTake = defineSystem(
     if (!railInt(e.kind, 1) || !ringJoined(w)) return 0;
     const id = steelId(w),
       s = w.get(Steel, id)!;
-    const n = Math.min(free(w, w.get(Account, aid)!), e.kind ? s.yardRails : s.yardLogs);
+    const n = Math.min(roomOf(w, w.get(Account, aid)!, e.kind ? RAILS : LOGS), e.kind ? s.yardRails : s.yardLogs);
     if (n <= 0) return 0;
     const am = w.mut(Account, aid)!,
       sm = w.mut(Steel, id)!;

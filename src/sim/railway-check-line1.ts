@@ -100,11 +100,11 @@ export function checkLine1(w: World) {
     const a = account(w, b.holder);
     if (!a || b.epoch < 1 || b.epoch > a.epoch || carried(a) !== 0) bad('beam holder');
   } else if (b.holder || b.epoch) bad('beam orphan identity');
-  // The beam may be laid before the 40 logs: allocated with the job unfunded, never with its bill already full.
+  // The beam may be laid before the logs: allocated with the job unfunded, never with its bill already full.
   const laid = b.state === 'allocated' || b.state === 'used';
   if (
     (t3.start >= 0 && !laid) ||
-    (t3.start < 0 && (b.state === 'used' || (laid && t3.stock === 40))) ||
+    (t3.start < 0 && (b.state === 'used' || (laid && t3.stock === LINE1_STATIONS[2]!.bill[0]))) ||
     (b.state === 'used') !== !!t3.completion
   )
     bad('beam allocation');

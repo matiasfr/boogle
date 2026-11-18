@@ -110,17 +110,19 @@ test('wake accepts the whole machine prompt circle, including the side away from
 test('a fall keeps its exact direction, and collapse only on the accepted final output', () => {
   const { state, action } = sourceFixture();
   const yaw = 1.2345678901234567;
-  for (let k = 0; k < 4; k++) action({ op: 'rail.chop', id: 0, yaw, collapsed: true });
+  // A hit gives 1 until Station 3 is funded: eight strokes fill the row of 8 logs.
+  for (let k = 0; k < 8; k++) action({ op: 'rail.chop', id: 0, yaw, collapsed: true });
   assert.equal(account(state, 'alice')!.carry, 8);
   assert.equal(tree(state, 0).yaw, 0);
   action({ op: 'rail.drop', x: 100000, y: 3201, z: -14000, n: 1 });
   action({ op: 'rail.chop', id: 0, yaw, collapsed: true });
-  assert.equal(tree(state, 0).work, 15);
+  assert.equal(tree(state, 0).work, 13, 'the notch tracks the pieces taken');
   assert.equal(tree(state, 0).left, 1);
-  assert.equal(tree(state, 0).yaw, 0, 'a clipped fifth hit is not a felled tree');
+  assert.equal(tree(state, 0).yaw, 0, 'a ninth hit that leaves a log is not a felled tree');
   action({ op: 'rail.drop', x: 100000, y: 3201, z: -14000, n: 1 });
   action({ op: 'rail.chop', id: 0, yaw, collapsed: true });
   assert.equal(tree(state, 0).left, 0);
+  assert.equal(tree(state, 0).work, 15, 'the felling hit cuts it through');
   assert.equal(tree(state, 0).yaw, yaw);
   assert.equal(tree(state, 0).fell, true);
   assert.equal(invariant(state), null);
@@ -131,6 +133,7 @@ test('a fall keeps its exact direction, and collapse only on the accepted final 
 
 test('the same horizontal position on two heights keeps distinct accepted piles through restore', () => {
   const { state, action } = sourceFixture();
+  action({ op: 'rail.chop', id: 0, yaw: 0, collapsed: false });
   action({ op: 'rail.chop', id: 0, yaw: 0, collapsed: false });
   action({ op: 'rail.drop', x: 100000, y: 3201, z: -14000, n: 1 });
   action({ op: 'rail.drop', x: 100000, y: 2801, z: -14000, n: 1 });

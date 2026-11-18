@@ -34,12 +34,12 @@ test('line 1 preserves source identity, exact bills and the one twelve-panel all
     [
       ['T1', 24, 0, 0, true],
       ['T2', 32, 8, 0, true],
-      ['T3', 40, 0, 1, false],
+      ['T3', 32, 0, 1, false],
     ],
   );
   assert.equal(
     LINE1_STATIONS.reduce((n, s) => n + s.bill[0], 0),
-    96,
+    88,
   );
   assert.equal(
     LINE1_STATIONS.reduce((n, s) => n + s.bill[1], 0),
@@ -119,12 +119,12 @@ test('mixed feeds finish after every flight, with explicit tick rounding rather 
     [
       [4, 22, 89],
       [4, 33, 75],
-      [4, 34, 179],
+      [4, 28, 179],
     ],
   );
   assert.deepEqual(
     schedules.map((s) => s.feedRoundingMs),
-    [40, 20, 50],
+    [40, 20, 10],
   );
   assert.ok(schedules.every((s) => s.depositRoundingMs === 80));
   const t2 = lineFeed(LINE1_STATIONS[1]!, timing);
@@ -198,11 +198,11 @@ test('rock slots: line one three, the Works two; stone conserved across both', a
   apply(s, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
   // A Works rock mines like line one's (the bowl is walkable early; its stone only matters once the kiln is open).
   const r = apply(s, 'a', { op: 'rail.mine', epoch: 1, request: 2, id: 3 }, 100);
-  assert.equal(r.accepted, 2);
+  assert.equal(r.accepted, 1, 'a hit gives 1 before Station 3 is funded');
   assert.equal(apply(s, 'a', { op: 'rail.mine', epoch: 1, request: 3, id: 5 }, 101).accepted, 0);
   assert.deepEqual(
     rocks(s).map((r) => r.left),
-    [8, 8, 8, 6, 8],
+    [8, 8, 8, 7, 8],
   );
   assert.equal(railCounts(s).stone!.total, RAIL_STONE);
   assert.equal(invariant(s), null);

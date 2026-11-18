@@ -31,7 +31,8 @@ function prepared(logs: 0 | 8 | 23 | 24): Seed {
   // The unchanged handoff requires 31 ticks before harvesting.
   for (let t = 101; t <= 140; t++) railTick(w, t);
   for (let source = 0; source < Math.ceil(logs / 8); source++) {
-    for (let chop = 0; chop < 4; chop++) {
+    // A hit gives 1 until Station 3 is funded: eight strokes a row of 8 logs.
+    for (let chop = 0; chop < 8; chop++) {
       const a = account(w, 'a')!;
       assert.equal(
         apply(
@@ -47,7 +48,7 @@ function prepared(logs: 0 | 8 | 23 | 24): Seed {
           },
           140,
         ).accepted,
-        2,
+        1,
       );
     }
     assert.equal(

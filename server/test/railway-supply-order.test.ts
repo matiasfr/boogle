@@ -54,18 +54,21 @@ test('a fresh drop applies after the missed maintenance and starts at age zero',
     await ticks(3 + RAILWAY_T1.wakeTicks);
     const source = RAILWAY_SOURCES[0]!;
     position = { x: source[1] / 100, z: source[2] / 100 };
-    send({ op: 'rail.chop', request: 2, id: source[0], yaw: 0, collapsed: false });
-    await ticks(3);
+    // A hit gives 1 until Station 3 is funded: two strokes for the two logs.
+    for (const request of [2, 3]) {
+      send({ op: 'rail.chop', request, id: source[0], yaw: 0, collapsed: false });
+      await ticks(3);
+    }
     assert.equal(account(host.rules.railway.world(), 'supplier')!.carry, 2);
     const marker = railClock(host.rules.railway.world()).supplyMarker;
     now += 21 * 60000;
-    const drop = { op: 'rail.drop', request: 3, x: source[1], z: source[2], y: 0, n: 2 };
+    const drop = { op: 'rail.drop', request: 4, x: source[1], z: source[2], y: 0, n: 2 };
     // Arrival before the next host step, with a genuinely fresh pose: the missed maintenance applies first (it is
     // a direct server rule now, not a stamp waiting for a tick), then the drop.
     send(drop);
     assert.deepEqual(refusals(), []);
     assert.ok(railClock(host.rules.railway.world()).supplyMarker >= marker + 21);
-    assert.equal(host.rules.railway.outcome('supplier', 1, 3)?.status, 'accepted');
+    assert.equal(host.rules.railway.outcome('supplier', 1, 4)?.status, 'accepted');
     assert.equal(piles(host.rules.railway.world())[0]!.age, 0);
     assert.equal(railCounts(host.rules.railway.world()).rack, 0);
     assert.equal(railCounts(host.rules.railway.world()).loose, 2);

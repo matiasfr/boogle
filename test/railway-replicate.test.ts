@@ -22,7 +22,8 @@ import {
   advance as seedAdvance,
   beam,
   boiler,
-  carryMax,
+  capacityOf,
+  LOGS,
   cart,
   check,
   cloneWorld,
@@ -411,7 +412,7 @@ test('a scripted run through line one, the pack and line two to Q6 replicates ex
   }
   logs('a', 'T2', 32);
   advance(300);
-  logs('a', 'T3', 40);
+  logs('a', 'T3', 32);
   act('a', 'rail.axe');
   for (let i = 0; i < 12; i++) act('a', 'rail.beamChop');
   act('a', 'rail.beamTake', { revision: beam(w()).revision });
@@ -420,17 +421,17 @@ test('a scripted run through line one, the pack and line two to Q6 replicates ex
   assert.equal(job(w(), 1).completion, 1);
   assert.equal(act('a', 'rail.pack'), 0, 'no pack chest before the forge bill');
   logs('a', 'F', 24);
-  // The pack, predicted on a's own copy of its mirror with the server's very system: one open, every back comfortable at 16 and permitting 24.
+  // The pack, predicted on a's own copy of its mirror with the server's very system: one open, every back holds 16 logs.
   const mirror = r.mirrors.get('a')!;
   const predicted = shownOf(mirror.confirmed());
   const press = railPredict(predicted, 'a', { op: 'rail.pack', epoch: 1, request: (req.get('a') ?? 0) + 1 }, 0);
   assert.equal(press.n, 1, 'the press is shown at once');
   assert.equal(rail(predicted).pack, true);
-  assert.equal(carryMax(predicted), 24);
+  assert.equal(capacityOf(predicted, LOGS), 16);
   assert.equal(rail(mirror.confirmed()).pack, false, 'the confirmed mirror waits for the server');
   assert.equal(act('a', 'rail.pack'), 1);
   assert.equal(act('b', 'rail.pack'), 0, 'one pack for two openers');
-  assert.equal(carryMax(mirror.confirmed()), 24, 'the mirror permits 24 once confirmed');
+  assert.equal(capacityOf(mirror.confirmed(), LOGS), 16, 'the mirror permits 16 logs once confirmed');
   logs('b', 'F', 32);
   assert.ok(forge(w()).lit >= 0, 'the forge is lit');
   /** a's predicting adapter on its own mirror session `name`, standing at `pose`, for a one-flag take race. */
@@ -561,7 +562,7 @@ test('a scripted run through line one, the pack and line two to Q6 replicates ex
   assert.equal(rail(joined).sea, true, 'a late joiner gets the sea switch');
   assert.equal(rail(joined).pack, true, 'a late joiner gets the pack');
   assert.equal(rail(joined).glide, true, 'a late joiner sees the glider taken');
-  assert.equal(carryMax(joined), 24);
+  assert.equal(capacityOf(joined, LOGS), 16);
   const counts = railCounts(joined, r.sync.world.tick); // a client's world is read at the server's tick
   assert.equal(counts.rails.total, counts.rails.poured, 'no rail minted');
   assert.equal(counts.total, RAILWAY_SUPPLY + 30 + counts.produced);
@@ -629,21 +630,22 @@ test('Q6 prediction keeps train rails aboard until funding is confirmed', () => 
   assert.equal(train(w.w, 1).rails, 32);
   seedAct(w, 'a', 'rail.pack');
   seedLogs(w, 'a', 'Q6', 32);
-  seedRails(w, 'b', 'Q6', 16);
+  // Rails are 8 a back: all but the last row's worth by hand, then the last 8 that fund it.
+  seedRails(w, 'b', 'Q6', 24);
   seedAdvance(w, 80);
   assert.ok(seedAct(w, 'b', 'rail.forgeTake') > 0);
-  assert.equal(account(w.w, 'b')!.rails, 16);
+  assert.equal(account(w.w, 'b')!.rails, 8);
   const shown = shownOf(w.w),
     beforeRack = forge(shown).rack,
     beforeTrains = structuredClone(trains(shown));
   const a = account(w.w, 'b')!;
-  const e = { op: 'rail.deposit', epoch: a.epoch, request: a.request + 1, station: 'Q6', kind: 2, n: 16 };
-  assert.equal(railPredict(shown, 'b', e, w.t).n, 16);
+  const e = { op: 'rail.deposit', epoch: a.epoch, request: a.request + 1, station: 'Q6', kind: 2, n: 8 };
+  assert.equal(railPredict(shown, 'b', e, w.t).n, 8);
   assert.equal(qjob(shown, 5).start, -1);
   assert.deepEqual(trains(shown), beforeTrains);
   assert.equal(forge(shown).rack, beforeRack);
   assert.equal(railCounts(shown).rails.total, railCounts(shown).rails.poured);
-  assert.equal(seedAct(w, 'b', 'rail.deposit', { station: 'Q6', kind: 2, n: 16 }), 16);
+  assert.equal(seedAct(w, 'b', 'rail.deposit', { station: 'Q6', kind: 2, n: 8 }), 8);
   assert.equal(train(w.w, 1).rails, 0);
   assert.equal(train(w.w, 1).logs, 32, 'logs already minted stay aboard');
   seedAdvance(w, 500);

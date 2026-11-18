@@ -32,7 +32,5 @@ export const SAVE_TICKS = count('SAVE_TICKS', 500);
 export const FUZZ_LIGHT = process.env.FUZZ_LIGHT === '1';
 export const fuzzTrains = (own: number) => count('FUZZ_TRAINS', own);
 export const ROUTE_GATES = process.env.ROUTE_GATES === '1';
-/** The long run's (dev/test-env.ts) full review sweeps, too long for CI's unit shards. */
-export const LONG_REVIEWS = process.env.LONG_REVIEWS === '1';
 /** A route gate fuzz's length: 20,000 ticks under ROUTE_GATES=1 (the long run), else 3,000; FUZZ_TICKS still wins. */
 export const routeTicks = () => count('FUZZ_TICKS', ROUTE_GATES ? 20000 : 3000);

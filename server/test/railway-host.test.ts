@@ -14,13 +14,13 @@ import { worldRoomId } from '../../src/world/namespace.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
 import { railMaxDuration } from '../../src/sim/railway-queries-line1.ts';
 import { accounts, invariant, job, jobRun, rail, railClock, trees } from '../../test/helpers/rail.ts';
-import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
+import { LINE1_INITIAL, LINE1_ROCKS } from '../../src/sim/railway-line-layout.ts';
 import { ROSTER_CHANGE_MS } from '../../src/world/rules/roster.ts';
 import { MAX_PLAYERS } from '../../src/sim/roster.ts';
 import type { ServerPacket } from '../../src/world/replicate.ts';
 
 import { buildSeedWorld } from '../../src/sim/railway-seeds.ts';
-import { Train, Town } from '../../src/sim/railway-components.ts';
+import { Pile, Train, Town } from '../../src/sim/railway-components.ts';
 import { railTick } from '../../src/sim/railway-systems.ts';
 import { trains, town } from '../../src/sim/railway-rows.ts';
 import { TRADE } from '../../src/sim/railway-trade-layout.ts';
@@ -292,6 +292,51 @@ test('the last-piece race between two players in one step transfers one log; it 
     await f.restart();
     assert.equal(job(f.world(), 0).completion, 1);
     assert.equal(f.host.rules.railway.counts().total, LINE1_INITIAL[0]);
+  } finally {
+    await f.close();
+  }
+});
+
+test('separate capacities through r:edit: 1 a hit, a full log row refuses logs only, a take stops at its row', async () => {
+  const f = await fixture();
+  try {
+    await f.open('a');
+    await f.wake();
+    const api = f.host.rules.railway;
+    await f.harvest('a', 8);
+    assert.equal(api.account('alice')!.carry, 8);
+    assert.equal(api.world().ids(Pile).length, 0);
+    // The row of 8 logs is full: a chop is acknowledged and gives nothing, and spends no tree.
+    const k = trees(f.world()).findIndex((t) => t.left > 0);
+    const source = RAILWAY_SOURCES[k]!;
+    const left = trees(f.world())[k]!.left;
+    f.pose('a', source[1], source[2]);
+    const full = await f.edit('a', { op: 'rail.chop', id: source[0], yaw: 0, collapsed: false });
+    assert.deepEqual([full.status, full.accepted], ['noop', 0], 'logs full');
+    assert.equal(trees(f.world())[k]!.left, left);
+    // Stone has its own row: a strike still gives one, at 1 a hit.
+    const rock = LINE1_ROCKS[0]!;
+    f.pose('a', rock.x, rock.z);
+    const mined = await f.edit('a', { op: 'rail.mine', id: rock.id });
+    assert.deepEqual([mined.status, mined.accepted], ['accepted', 1], 'stone fits beside a full row of logs');
+    // Three logs down as a pile; two more chopped; the take stops at the one the logs row has room for.
+    f.pose('a', T1.x, T1.z);
+    assert.equal((await f.edit('a', { op: 'rail.drop', x: T1.x, y: 0, z: T1.z, n: 3 })).accepted, 3);
+    await f.harvest('a', 2);
+    const pile = api.world().ids(Pile)[0]!;
+    f.pose('a', T1.x, T1.z);
+    const take = await f.edit('a', { op: 'rail.take', id: pile, kind: 0 });
+    assert.deepEqual([take.status, take.accepted], ['accepted', 1], 'one log of the pile of three');
+    assert.equal(api.account('alice')!.carry, 8);
+    assert.equal(api.world().get(Pile, pile)!.n, 2);
+    // A moved count is bounded by the largest row (16): 17 is refused on the wire, 8 is the rule's.
+    assert.equal((await f.edit('a', { op: 'rail.drop', x: T1.x, y: 0, z: T1.z, n: 17 })).status, 'rejected');
+    assert.equal((await f.deposit('a', 17)).status, 'rejected');
+    assert.equal((await f.deposit('a', 16)).accepted, 8);
+    assert.equal(invariant(api.world()), null);
+    await f.restart();
+    assert.equal(f.host.rules.railway.account('alice')!.stone, 1);
+    assert.equal(job(f.world(), 0).stock, 8);
   } finally {
     await f.close();
   }

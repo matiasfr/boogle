@@ -238,11 +238,7 @@ const itineraries = hauls.map((haul) => {
       metres = 0,
       seconds = 0;
     const trips: { stops: { id: number; take: number }[]; metres: number; seconds: number }[] = [];
-    const speed = (load: number) =>
-      WALK_MPS *
-      (1 -
-        ((1 - railLayout.HEAVY_LOAD.minSpeed) * Math.max(0, load - comfort)) /
-          Math.floor(comfort * railLayout.HEAVY_LOAD.extra));
+    // No cargo slows a walker since separate capacities (owner, 17 November 2026); the probe's decision is closed.
     while (left > 0) {
       let pos: Point = haul.frame,
         walked = 0,
@@ -254,7 +250,7 @@ const itineraries = hauls.map((haul) => {
         // These four sources and their inter-tree segments occupy the same continuous plateau.
         const distance = Math.hypot(pos.x - p.x, pos.z - p.z);
         walked += distance;
-        elapsed += distance / speed(load);
+        elapsed += distance / WALK_MPS;
         const take = Math.min(cap - load, stock, left);
         left -= take;
         stock -= take;
@@ -268,7 +264,7 @@ const itineraries = hauls.map((haul) => {
       }
       const distance = Math.hypot(pos.x - haul.frame.x, pos.z - haul.frame.z);
       walked += distance;
-      elapsed += distance / speed(load);
+      elapsed += distance / WALK_MPS;
       metres += walked;
       seconds += elapsed;
       trips.push({ stops, metres: walked, seconds: elapsed });

@@ -2,15 +2,16 @@
 // the view groups read once they left inspect(). `read.movement()` is one frozen object until a movement tunable
 // changes, and reads the tunables again only when the tune rev moves; `read.tick()` holds one value for a frame;
 // `read.ready()` is false at a full pending window while `status()` is still 'ready'; `read.stalled()` names the oldest
-// action left unanswered. `treeGrowth` and `freeCarryIgnoringBig` are asserted against literals on seeded worlds.
+// action left unanswered. `treeGrowth` and `roomIgnoringBig` are asserted against literals on seeded worlds.
 // The differential proofs (each member against `inspect()`'s field along a random stream) went with `inspect()`.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { RAILWAY_WINDOW } from '../src/sim/railway.ts';
 import { Account, Boiler, Rail, Tree } from '../src/sim/railway-components.ts';
-import { boilerId, free, railAccount, railId } from '../src/sim/railway-queries.ts';
-import { freeCarryIgnoringBig, railPhase, treeGrowth } from '../src/sim/railway-queries-line1.ts';
+import { boilerId, LOGS, railAccount, railId, roomOf, STONE } from '../src/sim/railway-queries.ts';
+import { RAILS } from '../src/sim/railway-line2-layout.ts';
+import { roomIgnoringBig, railPhase, treeGrowth } from '../src/sim/railway-queries-line1.ts';
 import { buildSeedWorld } from '../src/sim/railway-seeds.ts';
 import { railRoom } from './helpers/rail-room.ts';
 
@@ -131,31 +132,38 @@ test('treeGrowth is the minutes a felled tree is past regrowth (31), 0 for a sta
   }
 });
 
-test('freeCarryIgnoringBig is the back less its load by count alone (12, 24 with the pack), whatever is held', () => {
+test('roomIgnoringBig is a kind row less its load by count alone (8 each, 16 logs with the pack), whatever is held', () => {
   const [, w] = SEEDED[1]!;
   const pid = 'a';
   const row = () => railAccount(w, pid)!;
   const set = (load: Partial<{ carry: number; stone: number; rails: number; foot: number }>) =>
     Object.assign(w.mut(Account, w.lookup(Account, pid)!)!, { carry: 0, stone: 0, rails: 0, foot: 0 }, load);
   set({});
-  assert.equal(freeCarryIgnoringBig(w, pid), 12, 'an empty back');
-  assert.equal(freeCarryIgnoringBig(w, 'nobody'), 12, 'no account: the whole back');
+  for (const kind of [LOGS, STONE, RAILS]) assert.equal(roomIgnoringBig(w, pid, kind), 8, `an empty ${kind} row`);
+  assert.equal(roomIgnoringBig(w, 'nobody', LOGS), 8, 'no account: the whole row');
   set({ carry: 3, stone: 2, rails: 1 });
-  assert.equal(freeCarryIgnoringBig(w, pid), 6);
-  assert.equal(free(w, row()), 2, 'a take first stops at comfort');
+  assert.deepEqual(
+    [LOGS, STONE, RAILS].map((kind) => roomIgnoringBig(w, pid, kind)),
+    [5, 6, 7],
+  );
+  assert.equal(roomOf(w, row(), LOGS), 5, 'each kind its own room');
   set({ carry: 8 });
-  assert.equal(freeCarryIgnoringBig(w, pid), 4, 'comfort leaves the heavy allowance');
-  // A big load makes free 0 and leaves the count alone: the boiler held, then a footing worn.
+  assert.equal(roomOf(w, row(), LOGS), 0, 'a full row of logs');
+  assert.equal(roomOf(w, row(), STONE), 8, 'leaves stone its whole row');
+  // A big load makes the room 0 and leaves the count alone: the boiler held, then a footing worn.
   set({ carry: 3 });
   Object.assign(w.mut(Boiler, boilerId(w))!, { state: 'held', holder: pid });
-  assert.equal(free(w, row()), 0, 'the boiler held: no room');
-  assert.equal(freeCarryIgnoringBig(w, pid), 9, 'by count, nine');
+  assert.equal(roomOf(w, row(), LOGS), 0, 'the boiler held: no room');
+  assert.equal(roomIgnoringBig(w, pid, LOGS), 5, 'by count, five');
   Object.assign(w.mut(Boiler, boilerId(w))!, { state: 'stood', holder: '' });
   set({ foot: 1 });
-  assert.equal(free(w, row()), 0, 'a footing worn: no room');
-  assert.equal(freeCarryIgnoringBig(w, pid), 12, 'by count, the whole back');
-  // The pack doubles the back.
+  assert.equal(roomOf(w, row(), LOGS), 0, 'a footing worn: no room');
+  assert.equal(roomIgnoringBig(w, pid, LOGS), 8, 'by count, the whole row');
+  // The pack doubles the logs row only.
   Object.assign(w.mut(Rail, railId(w))!, { pack: true });
   set({ carry: 3, stone: 2, rails: 1 });
-  assert.equal(freeCarryIgnoringBig(w, pid), 18);
+  assert.deepEqual(
+    [LOGS, STONE, RAILS].map((kind) => roomIgnoringBig(w, pid, kind)),
+    [13, 6, 7],
+  );
 });

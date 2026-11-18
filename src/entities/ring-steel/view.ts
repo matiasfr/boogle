@@ -15,7 +15,8 @@ import { me } from '../../player/player.ts';
 import { paintTwoLines, signBoard } from '../../render/sign-board.ts';
 import { RING_STEEL_WORKS, RING_STEEL_YARD, STEEL, ringAt } from '../../sim/railway-ring-layout.ts';
 import { account, aperture, steel } from '../../sim/railway-rows.ts';
-import { free, heldBig } from '../../sim/railway-queries.ts';
+import { heldBig, LOGS, roomOf } from '../../sim/railway-queries.ts';
+import { RAILS } from '../../sim/railway-line2-layout.ts';
 import { createBoxBatch, drawWorksBoxes } from '../railway/works-box-view.ts';
 import { STEEL_MARK, paintPlate } from '../railway/kit-board.ts';
 import type { WorksBox } from '../railway/works-shape.ts';
@@ -28,7 +29,8 @@ const TAKE_LOGS = 'Take logs',
   BRING_LOGS = 'Bring logs',
   BRING_RAILS = 'Bring rails',
   BRING_BOTH = 'Bring logs or rails',
-  BACK_FULL = 'Your back is full',
+  LOGS_FULL = 'Logs full',
+  RAILS_FULL = 'Rails full',
   HANDS_FULL = 'Hands full',
   SIGN_TITLE = 'STEEL WORKS',
   KIT_PLATE = 'STEEL KIT';
@@ -215,14 +217,15 @@ export async function createRingSteel(adapter: RailwayAdapter, owner: OwnedView)
         mine = account(wd, adapter.read.pid),
         out: Interactable[] = [];
       if (within(p, YARD, RING_STEEL_YARD.reach)) {
-        const full = mine && free(wd, mine) <= 0 ? { blocked: heldBig(wd, mine) ? HANDS_FULL : BACK_FULL } : {};
+        const full = (kind: number, word: string) =>
+          mine && roomOf(wd, mine, kind) <= 0 ? { blocked: heldBig(wd, mine) ? HANDS_FULL : word } : {};
         if (s.yardLogs > 0)
           out.push({
             id: 'railway-steel-take-logs',
             verb: TAKE_LOGS,
             at: v(LOGS_AT.u, LOGS_AT.lat, 1.3),
             run: () => void adapter.steelTake(0),
-            ...full,
+            ...full(LOGS, LOGS_FULL),
           });
         if (s.yardRails > 0)
           out.push({
@@ -230,7 +233,7 @@ export async function createRingSteel(adapter: RailwayAdapter, owner: OwnedView)
             verb: TAKE_RAILS,
             at: v(RAILS_AT.u, RAILS_AT.lat, 1.3),
             run: () => void adapter.steelTake(1),
-            ...full,
+            ...full(RAILS, RAILS_FULL),
           });
       }
       if (s.lit < 0 && within(p, WORKS_AT, RING_STEEL_WORKS.reach)) {

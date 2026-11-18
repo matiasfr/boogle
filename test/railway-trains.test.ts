@@ -18,6 +18,8 @@ import {
   TRAIN,
   TRAIN_PHASE,
   TRAIN_STOPS,
+  reqOnly,
+  trainArrives,
   reqAdd,
   reqHas,
   trainAlong,
@@ -62,6 +64,7 @@ import {
   railwayAtWorks,
   restore,
   shed as shedRow,
+  stockQ6,
   stopsOf,
   train,
   trainId,
@@ -163,12 +166,7 @@ const WAIT_BOUND = 1050;
 const FUZZ_TICKS = fuzzTicks(3000);
 /** Q6's kit off the train and its logs and rails into the frame, so the pier opens a few hundred ticks on. */
 function fundQ6(w: Seed) {
-  assert.equal(act(w, 'a', 'rail.pack'), 1);
-  for (const kind of [0, 2])
-    for (const pid of ['a', 'b']) {
-      assert.equal(act(w, pid, kind ? 'rail.depotRailTake' : 'rail.depotTake'), 16);
-      assert.equal(act(w, pid, 'rail.deposit', { station: 'Q6', kind, n: 16 }), 16);
-    }
+  stockQ6(w);
 }
 // The same fuzz from the stages after the pier's twelfth footing (slice 5 R2b's gate: the Quarry stone stop is on), so
 // the worst wait there is judged the WAIT_BOUND way too; its diagnostics give the per-stage figures. leaf-raised's world
@@ -1139,3 +1137,71 @@ test('six-hold: the errand list (holdOff): footings owed, a kit aboard that can 
   for (const k of slots) Object.assign(owed.mut(Train, owed.lookup(Train, k)!)!, { logs: 0, rails: 0, legKit: false });
   assert.equal(holdOff(owed, LINE2, empty), true, 'owed a kit');
 });
+
+// Review of separate-capacities (18 November 2026): the stub-extension sweep that guarded e9125afc's train fix (a
+// stub that opens ahead while a loaded train arrives is a through stop: `runsOn` in trainStepLine) lived in the
+// deleted test/review-heavy-load-arrival.test.ts. The fix has nothing to do with the heavy load and stays, so its
+// sweep comes back here: offsets by 16 (the deleted file's local step).
+for (const count of [1, 2]) {
+  test(`${count} trains, a stub extended at every 16th offset -80..80 of a loaded arrival: the train runs on to the new head`, () => {
+    const line = { ...RAIL_LINES[LINE2]!, id: `stub-run-on-${count}`, trains: count, fleet: undefined };
+    for (const stop of [6, 7, 8]) {
+      const before = line.halts.slice(0, stop + 1).map((h) => h.s);
+      const after = line.halts.slice(0, stop + 2).map((h) => h.s);
+      const initial = new FixtureLine(before, 0, 0, line);
+      initial.rows = Array.from({ length: count }, (_, k) => standingAt(before, 0, 0, -10000 - k * 100));
+      initial.rows[0] = {
+        ...standingAt(before, stop - 1, 0),
+        phase: TRAIN_PHASE.RUN,
+        to: stop,
+        from: before[stop - 1]!,
+        dest: before[stop]!,
+        depart: 0,
+        logs: 20,
+        rails: 20,
+      };
+      const arrival = trainArrives(initial.rows[0]!, line);
+      for (let offset = -80; offset <= 80; offset += 16) {
+        const f = new FixtureLine(before, 0, 0, line);
+        f.rows = structuredClone(initial.rows);
+        if (count === 2)
+          f.rows[1] = {
+            ...standingAt(before, stop - 1, 0, 0),
+            at: -1,
+            to: -1,
+            from: before[stop - 1]! - 10000,
+            dest: before[stop - 1]! - 10000,
+            logs: 20,
+            rails: 20,
+          };
+        let extended = false,
+          reached = false;
+        for (let tick = 1; tick < arrival + 2 * cycleTicks(line, after); tick++) {
+          if (tick === arrival + offset) {
+            f.stops = after;
+            endMoved(f.io(), line, stop, tick);
+            for (const r of f.rows)
+              if (r.phase === TRAIN_PHASE.STAND && r.at === stop && r.track === 1)
+                Object.assign(r, { track: 0, origin: 0, depart: tick, req: reqOnly(r.req, after.length, 1) });
+            extended = true;
+          }
+          if (tick === arrival - 1 || tick === arrival || tick === arrival + 1) f.restore();
+          trainStepLine(f.io(), line, tick);
+          assert.equal(f.broken(), null, `${count}/${stop}/${offset} at ${tick}`);
+          assert.equal(
+            lineSpacing((k) => f.rows[k]!, line, f.stops, tick),
+            null,
+            `${count}/${stop}/${offset} spacing`,
+          );
+          if (extended && f.rows[0]!.phase === TRAIN_PHASE.STAND && f.rows[0]!.at === stop + 1) {
+            reached = true;
+            break;
+          }
+          if (extended && offset <= TRAIN.dwellTicks)
+            assert.equal(f.rows[0]!.track, 0, `${count}/${stop}/${offset}: no homeward detour before the new head`);
+        }
+        assert.ok(reached, `${count}/${stop}/${offset}: the loaded train reaches the new head`);
+      }
+    }
+  });
+}

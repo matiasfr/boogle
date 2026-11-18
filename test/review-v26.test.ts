@@ -11,19 +11,24 @@ import { LINE_SLOTS, trainSpacing } from '../src/sim/railway-trains.ts';
 import { line2Completed } from '../src/sim/railway-queries-line2.ts';
 import { trainStops } from '../src/sim/railway-queries-trains.ts';
 import { Line, Train } from '../src/sim/railway-components.ts';
-import { act, invariant, railTick, railwayAtTrains, train, trains, unaudited, type Seed } from './helpers/rail.ts';
+import {
+  act,
+  invariant,
+  railTick,
+  railwayAtTrains,
+  stockQ6,
+  train,
+  trains,
+  unaudited,
+  type Seed,
+} from './helpers/rail.ts';
 import { SAVE_TICKS } from './helpers/fuzz.ts';
 
 const LINE2 = 1;
 const [A, B] = LINE_SLOTS[LINE2] as [number, number];
 const haltId = (line: number, stop: number) => RAIL_HALTS.findIndex((h) => h.line === line && h.stop === stop);
 function fundQ6(w: Seed) {
-  assert.equal(act(w, 'a', 'rail.pack'), 1);
-  for (const kind of [0, 2])
-    for (const pid of ['a', 'b']) {
-      assert.equal(act(w, pid, kind ? 'rail.depotRailTake' : 'rail.depotTake'), 16);
-      assert.equal(act(w, pid, 'rail.deposit', { station: 'Q6', kind, n: 16 }), 16);
-    }
+  stockQ6(w);
 }
 
 // Every tick's save must load: the snapshot through railwayCheck, every tick, under heavy asks, at the hold's extremes.

@@ -32,7 +32,8 @@ import { TRAIN_PHASE } from '../../sim/railway-train.ts';
 import { RING_S_HEAD } from '../../sim/railway-ring-layout.ts';
 import { LEG_TUNE, RAIL_LEGS, legFrame, legRack, legS } from '../../sim/railway-route.ts';
 import { account, aperture, rail, train } from '../../sim/railway-rows.ts';
-import { free, heldBig } from '../../sim/railway-queries.ts';
+import { heldBig, LOGS, roomOf } from '../../sim/railway-queries.ts';
+import { RAILS } from '../../sim/railway-line2-layout.ts';
 import { gateLeg, legDone, legOpen, legReached, legRow, routeRow } from '../../sim/railway-queries-route.ts';
 import { createBoxBatch } from '../railway/works-box-view.ts';
 import { legKitFlight, paintPlate } from '../railway/kit-board.ts';
@@ -48,7 +49,8 @@ const FEED = 'Feed the frame',
   BRING_LOGS = 'Bring logs',
   BRING_RAILS = 'Bring rails',
   BRING_BOTH = 'Bring logs or rails',
-  BACK_FULL = 'Your back is full',
+  LOGS_FULL = 'Logs full',
+  RAILS_FULL = 'Rails full',
   HANDS_FULL = 'Hands full',
   TAKE_PICK = 'Take the powered pick',
   NOT_YET = 'Not yet',
@@ -595,15 +597,22 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         }
         if (within(p, k, legRack(STACK, laid).reach)) {
           // A blocked prompt carries its reason and no `run`.
-          const full = mine && free(wd, mine) <= 0 ? (heldBig(wd, mine) ? HANDS_FULL : BACK_FULL) : null;
-          const take = (id: string, verb: string, along: number, run: () => void): Interactable => {
+          const take = (id: string, verb: string, kind: number, along: number, run: () => void): Interactable => {
             const target = { id, verb, at: v3(local(k, along, 0), k.y + 1.3) };
+            const full =
+              mine && roomOf(wd, mine, kind) <= 0
+                ? heldBig(wd, mine)
+                  ? HANDS_FULL
+                  : kind === RAILS
+                    ? RAILS_FULL
+                    : LOGS_FULL
+                : null;
             return full ? { ...target, blocked: full } : { ...target, run };
           };
           if (r.rack.logs > 0)
-            out.push(take('railway-leg-take-logs', TAKE_LOGS, -0.6, () => void adapter.depotTake()));
+            out.push(take('railway-leg-take-logs', TAKE_LOGS, LOGS, -0.6, () => void adapter.depotTake()));
           if (r.rack.rails > 0)
-            out.push(take('railway-leg-take-rails', TAKE_RAILS, 0.6, () => void adapter.depotRailTake()));
+            out.push(take('railway-leg-take-rails', TAKE_RAILS, RAILS, 0.6, () => void adapter.depotRailTake()));
         }
       }
       // The pickup refuses until the fourth section is laid ("Not yet": call 28); the barrier until the room holds

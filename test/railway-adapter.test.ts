@@ -291,16 +291,17 @@ test('a chop shows its logs at once at 200 ms; the ack adopts the same result wi
   w.awake(a);
   const before = a.effects.length;
   assert.equal(a.adapter.chop(TREE, 0, false), true);
-  assert.equal(carryOf(a), 2, 'carry shows the stroke at once');
-  assert.equal(leftOf(a, 0), T1.sourceYield - 2);
+  // A hit gives 1 until Station 3 is funded.
+  assert.equal(carryOf(a), 1, 'carry shows the stroke at once');
+  assert.equal(leftOf(a, 0), T1.sourceYield - 1);
   const effect = a.effects.at(-1)!;
   assert.equal(a.effects.length, before + 1);
-  assert.deepEqual([effect.op, effect.accepted, effect.carried, effect.predicted], ['rail.chop', 2, 2, true]);
+  assert.deepEqual([effect.op, effect.accepted, effect.carried, effect.predicted], ['rail.chop', 1, 1, true]);
   // Every frame until the ack shows the same values; so does every frame after it.
   for (let k = 0; k < 20; k++) {
     w.run();
-    assert.equal(carryOf(a), 2, `carry at step ${k}`);
-    assert.equal(leftOf(a, 0), T1.sourceYield - 2, `tree at step ${k}`);
+    assert.equal(carryOf(a), 1, `carry at step ${k}`);
+    assert.equal(leftOf(a, 0), T1.sourceYield - 1, `tree at step ${k}`);
   }
   // TODO(M12c): assert read.debug().prediction.confirmed === 2 (wake and chop confirmed as shown), dropped with inspect().
   assert.equal(a.effects.length, before + 1, 'the server event for it plays nothing');
@@ -345,13 +346,19 @@ test('a refused chop gives its logs back to the tree and leaves the tree standin
   const a = w.join('a', 'alice', 6);
   w.ready();
   w.awake(a);
-  for (let k = 0; k < 4; k++) {
+  // Nine strokes at 1 a hit leave the tree one log (a row of 8, put down, and one more).
+  for (let k = 0; k < 9; k++) {
+    if (k === 8) {
+      w.quiet(20);
+      assert.equal(carryOf(a), 8);
+      assert.equal(a.adapter.drop(T1.x, 3000, T1.z, 8), true);
+      w.quiet(20);
+    }
     assert.equal(a.adapter.chop(TREE, 0, false), true);
     w.run(15);
   }
   w.quiet(20);
-  assert.equal(carryOf(a), 8);
-  assert.equal(a.adapter.drop(T1.x, 3000, T1.z, 8), true);
+  assert.equal(a.adapter.drop(T1.x, 3000, T1.z, 1), true);
   w.quiet(20);
   // The last stroke fells the tree locally; the server refuses it.
   allow = false;
@@ -359,12 +366,12 @@ test('a refused chop gives its logs back to the tree and leaves the tree standin
   assert.equal(leftOf(a, 0), 0, 'predicted: the tree is down');
   assert.equal(tree(worldOf(a), 0).fell, true);
   w.quiet(20);
-  assert.equal(leftOf(a, 0), 2, 'the tree is back up');
+  assert.equal(leftOf(a, 0), 1, 'the tree is back up');
   assert.equal(tree(worldOf(a), 0).fell, false);
   assert.equal(carryOf(a), 0);
   assert.deepEqual(
     a.corrections.map((c) => [c.event.op, c.lost, c.reason]),
-    [['rail.chop', 2, 'refused']],
+    [['rail.chop', 1, 'refused']],
   );
   agrees(w, a);
 });
@@ -384,11 +391,11 @@ test('two actors race for the last log: one keeps it, the other sees it fly to t
   // Both press at once; bob is closer to the server, so his take lands first.
   assert.equal(a.adapter.take(pile.id), true);
   assert.equal(b.adapter.take(pile.id), true);
-  assert.equal(carryOf(a), 2, 'alice is shown the log');
+  assert.equal(carryOf(a), 1, 'alice is shown the log');
   assert.equal(carryOf(b), 1, 'so is bob');
   w.quiet(30);
   assert.equal(w.api.account('bob')!.carry, 1, 'bob got it');
-  assert.equal(w.api.account('alice')!.carry, 1);
+  assert.equal(w.api.account('alice')!.carry, 0);
   assert.deepEqual(
     a.corrections.map((c) => [c.event.op, c.lost, c.winner]),
     [['rail.take', 1, 'bob']],
@@ -406,7 +413,10 @@ test('a drop shows its pile at once under a temporary id, re-keyed when the serv
   const a = w.join('a', 'alice', 6);
   w.ready();
   w.awake(a);
-  assert.equal(a.adapter.chop(TREE, 0, false), true);
+  for (let k = 0; k < 2; k++) {
+    assert.equal(a.adapter.chop(TREE, 0, false), true);
+    w.run(15);
+  }
   w.quiet(20);
   assert.equal(a.adapter.drop(T1.x, 3000, T1.z, 2), true);
   assert.equal(carryOf(a), 0);
@@ -432,12 +442,14 @@ test('each effect carries what its own action left, so two drops in one packet b
   const c = w.join('c', 'carol');
   w.ready();
   w.awake(a);
-  for (let k = 0; k < 2; k++) {
+  for (let k = 0; k < 4; k++) {
     assert.equal(a.adapter.chop(TREE, 0, false), true);
     w.run(15);
   }
-  assert.equal(b.adapter.chop(TREE, 0, false), true);
-  w.run(15);
+  for (let k = 0; k < 2; k++) {
+    assert.equal(b.adapter.chop(TREE, 0, false), true);
+    w.run(15);
+  }
   assert.equal(carryOf(a), 4);
   // Two drops, two piles, applied in one step and so carried by one packet to the observer.
   assert.equal(a.adapter.drop(T1.x, 3000, T1.z, 2), true);
@@ -477,7 +489,7 @@ test('a chop pressed before the wake is ready is not sent ("not yet"); the first
   // TODO(M12c): assert read.debug().prediction.notYet > 0 (the held-back press counted), dropped with inspect().
   w.quiet(30);
   assert.equal(a.corrections.length, 0, 'the server accepts what the prediction accepted at the boundary');
-  assert.equal(w.api.account('alice')!.carry, 2);
+  assert.equal(w.api.account('alice')!.carry, 1);
 });
 
 test('a deposit that completes a bill shows it full, and the job starts only when the server confirms it', () => {
@@ -613,13 +625,13 @@ test('a swing sooner than the server allows is "not yet": never sent, shown or r
   w.run(5); // 85 ms: inside the 240 ms swing cadence
   assert.equal(a.adapter.chop(TREE, 0, false), false);
   assert.equal(a.edits.length, sent + 1, 'nothing sent for it');
-  assert.equal(carryOf(a), 2);
+  assert.equal(carryOf(a), 1);
   w.run(10); // 255 ms since the first
   assert.equal(a.adapter.chop(TREE, 0, false), true);
   assert.equal(a.edits.at(-1)!.request, first + 1, 'request numbers stay consecutive after a withdrawn press');
   w.quiet(30);
   assert.equal(a.corrections.length, 0);
-  assert.equal(w.api.account('alice')!.carry, 4);
+  assert.equal(w.api.account('alice')!.carry, 2);
   agrees(w, a);
 });
 
@@ -656,7 +668,7 @@ test('a resync while predictions are out returns nothing: the refill is read onl
   w.quiet(40);
   assert.equal(a.adapter.read.ready(), true);
   assert.equal(a.corrections.length, 0, 'no chunk of the refill reads as the chop losing');
-  assert.equal(carryOf(a), 2);
+  assert.equal(carryOf(a), 1);
   agrees(w, a);
 });
 
@@ -681,7 +693,10 @@ test('a take that the newer mirror makes bigger plays the extra pieces', () => {
   const b = w.join('b', 'bob', 0);
   w.ready();
   w.awake(a);
-  for (const c of [a, b]) assert.equal(c.adapter.chop(TREE, 0, false), true);
+  for (let k = 0; k < 2; k++) {
+    for (const c of [a, b]) assert.equal(c.adapter.chop(TREE, 0, false), true);
+    w.run(15);
+  }
   w.quiet(30);
   assert.equal(a.adapter.drop(T1.x, 3000, T1.z, 1), true);
   w.quiet(30);
@@ -707,7 +722,10 @@ test('a drop shown merging into a pile the server no longer has is re-keyed to t
   const b = w.join('b', 'bob', 0);
   w.ready();
   w.awake(a);
-  assert.equal(a.adapter.chop(TREE, 0, false), true);
+  for (let k = 0; k < 2; k++) {
+    assert.equal(a.adapter.chop(TREE, 0, false), true);
+    w.run(15);
+  }
   w.quiet(30);
   assert.equal(a.adapter.drop(T1.x, 3000, T1.z, 1), true);
   w.quiet(30);
@@ -736,7 +754,7 @@ test('a tab hidden for 30 s while carrying, a stroke still out, comes back with 
   }
   assert.equal(a.adapter.chop(TREE, 0, false), true);
   const shown = carryOf(a);
-  assert.equal(shown, 6);
+  assert.equal(shown, 3);
   w.hide('a', true);
   // Thirty seconds of everyone else working: hundreds of events (past MAX_EVENTS) and a catch-up big enough to split.
   for (let step = 0; step < 1800; step++) {
@@ -758,7 +776,7 @@ test('a tab hidden for 30 s while carrying, a stroke still out, comes back with 
   agrees(w, a);
 });
 
-/** Chop and deliver T1's whole bill through the adapter, then chop two more to carry while it lays. */
+/** Chop and deliver T1's whole bill through the adapter, then chop one more to carry while it lays. */
 function fundT1(w: World, a: Client) {
   w.awake(a);
   let slot = 0;
@@ -776,7 +794,7 @@ function fundT1(w: World, a: Client) {
   chop();
   w.quiet(20);
   assert.ok(jobOf(a, 0).job.start >= 0, 'T1 is laying');
-  assert.equal(carryOf(a), 2);
+  assert.equal(carryOf(a), 1);
 }
 
 for (const how of ['a lost connection', 'a resync'] as const)
@@ -811,7 +829,7 @@ for (const how of ['a lost connection', 'a resync'] as const)
       const [was, now] = [frames[k - 1]!, frames[k]!];
       assert.ok(now.elapsed >= was.elapsed, `frame ${k}: laying never steps back (${was.elapsed} -> ${now.elapsed})`);
       assert.ok(now.tick >= was.tick, `frame ${k}: the tick never goes back`);
-      assert.equal(now.carry, 2, `frame ${k}: the carried logs never blink`);
+      assert.equal(now.carry, 1, `frame ${k}: the carried logs never blink`);
       assert.ok(now.accounts > 0, `frame ${k}: the accounts never empty`);
     }
     assert.ok(frames.at(-1)!.elapsed > frames[0]!.elapsed);
@@ -1032,16 +1050,16 @@ test('a tick, a tunable change, a press, an ack, a lost connection and a refill 
   const [before, carry] = [read.world(), carryOf(a)];
   assert.equal(a.adapter.chop(TREE, 0, false), true);
   assert.notEqual(read.world(), before, 'the press publishes the prediction');
-  assert.equal(carryOf(a), carry + 2);
+  assert.equal(carryOf(a), carry + 1);
   // Its ack and the packets after it.
   w.run(40);
   assert.equal(read.pending(), 0);
-  assert.equal(carryOf(a), carry + 2);
+  assert.equal(carryOf(a), carry + 1);
   agrees(w, a);
   // The socket drops: what was shown stays shown, with no new action out.
   a.disconnect();
   assert.equal(read.ready(), false);
-  assert.equal(carryOf(a), carry + 2, 'the last shown world stays while the socket is gone');
+  assert.equal(carryOf(a), carry + 1, 'the last shown world stays while the socket is gone');
   // It comes back and the whole state arrives again.
   a.reconnect();
   assert.equal(a.mirror.synced(), false, 'the whole state is asked for again');
@@ -1068,7 +1086,7 @@ test('a world held across frames stays what it was: the next frame gives another
   assert.notEqual(worldOf(a), held);
   assert.equal(JSON.stringify(held.snapshot()), frozen, 'the confirmed world it replaced is untouched');
   assert.equal(JSON.stringify(predicted.snapshot()), predictedFrozen, 'so is the prediction it replaced');
-  assert.equal(carryOf(a), 2);
+  assert.equal(carryOf(a), 1);
 });
 
 // A disposed adapter is not ready, in the frame it was disposed in and in every later one (the frame memo once kept

@@ -8,6 +8,7 @@ import { rail, qjob, trains, beam, rocks } from '../../src/sim/railway-rows.ts';
 import { buildSeedWorld } from '../../src/sim/railway-seeds.ts';
 import { railSession } from '../../src/sim/railway-sys-core.ts';
 import { Q7, LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';
+import { LINE1_STATIONS } from '../../src/sim/railway-line-layout.ts';
 import { retainedEndBlock } from '../../src/sim/railway-trains.ts';
 import { seedDoc } from './ring-mid-seed.ts';
 
@@ -42,7 +43,7 @@ function buildForgeDoc() {
   }
   logs(s, 'a', 'T2', 32);
   advance(s, 300);
-  logs(s, 'a', 'T3', 40);
+  logs(s, 'a', 'T3', LINE1_STATIONS[2]!.bill[0]);
   for (let i = 0; i < 12; i++) act(s, 'a', 'rail.beamChop');
   act(s, 'a', 'rail.beamTake', { revision: beam(s.w).revision });
   need(act(s, 'a', 'rail.beamDeposit', { revision: beam(s.w).revision, station: 'T3' }) === 1, 'forge look: beam');
