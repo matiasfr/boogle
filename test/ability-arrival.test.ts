@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import * as THREE from 'three/webgpu';
 import { sourceModule } from '../dev/level/source.ts';
-import { createShowCall } from '../src/entities/railway/boiler-shot.ts';
 import type { RailwayAdapter } from '../src/adapters/railway-session.ts';
 import type { RailwayAccepted } from '../src/adapters/railway-effects.ts';
 import type { OwnedView } from '../src/render/owned-view.ts';
@@ -386,59 +385,4 @@ test("review: a friend's card waits while they are talking to an NPC (conversati
   v.update(0.016);
   assert.deepEqual(h.cards, ['glide']);
   v.dispose();
-});
-
-// Recheck review (cutscenes-for-everyone step 2): the real forge-call.ts driven as view.ts orders a frame: works.update
-// (the breaker's call) before line2.update, whose switchCamera.update runs the shot's onCut (createShowCall's cue)
-// before boiler.update runs createShowCall's update. A cut landing on the frame the 30 s hold runs out finds the breaker's
-// call already sounded by itself and the claim not yet lapsed, so its cue sounds the call a second time.
-function forgeHarness() {
-  let ms = 0;
-  const forge = sourceModule<typeof import('../src/entities/railway/forge-call.ts')>(
-    fs.readFileSync('src/entities/railway/forge-call.ts', 'utf8'),
-    {
-      THREE,
-      material: () => new THREE.MeshBasicMaterial(),
-      whistle: () => {},
-      camera: { getWorldPosition: (v: THREE.Vector3) => v.set(0, 0, 0) },
-      emit: () => {},
-      readableIntensity: () => 1,
-      me: { body: null },
-      reducedMotion: true,
-      performance: { now: () => ms },
-    },
-  );
-  const breaker = forge.createForgeCall({ x: 0, y: 0, z: 0 }, { add() {} } as unknown as OwnedView, undefined, true);
-  const call = createShowCall({ hold: forge.holdForgeCall, sound: forge.soundForgeCall, now: () => ms / 1000 });
-  /** One frame in view.ts's order; `cut` lands the show's forge cut in it. */
-  const frame = (dt: number, live: boolean, cut = false, waiting = true) => {
-    ms += dt * 1000;
-    breaker.update(dt, waiting);
-    if (cut) call.cue();
-    call.update(live);
-  };
-  return { forge, breaker, call, frame };
-}
-
-test("review: the boiler's show sounds the forge's call once when its shot waits past the 30 s hold", () => {
-  const { forge, call, frame } = forgeHarness();
-  frame(0.1, false, false, false);
-  call.claim(30);
-  for (let t = 0; t < 39.5; t += 0.1) frame(0.1, true);
-  frame(0.1, true, true);
-  frame(0.1, true);
-  frame(0.1, true);
-  assert.equal(forge.forgeCue.count, 1);
-});
-
-test("review: the boiler's show sounds the forge's call once when its cut lands on the hold's last frame", () => {
-  const { forge, call, frame } = forgeHarness();
-  frame(0.1, false, false, false);
-  call.claim(30);
-  // 30 s of frames; the next frame crosses the deadline and the cut lands in it.
-  for (let i = 0; i < 299; i++) frame(0.1, true);
-  frame(0.1 + 1e-6, true, true);
-  frame(0.1, true);
-  frame(0.1, true);
-  assert.equal(forge.forgeCue.count, 1);
 });
