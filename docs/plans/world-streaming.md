@@ -1,6 +1,6 @@
 # Plan: chunk, cull and stream the world
 
-> **Status: planned (17 November 2026); step 0 complete (`codex/world-census`).** Backlog row "Chunk, cull and stream the world" (P2, building). Owner, 10
+> **Status, reconciled 18 November 2026 (tidy):** steps 0, 1, 2, 4 (#2121), 5 (#2128) and 6 (#2133) are on main; step 3 was dropped and step 7 measured and skipped (18 November, see each step); checkpoints A and B and the owner's call on question 5 are left. Planned 17 November 2026. Backlog row "Chunk, cull and stream the world" (P2, building). Owner, 10
 > November: "Treat as urgent and re-order the queue" ([decision](../decisions-process.md#d-2026-11-10-priority-call-migrate-the-game-out)).
 > The planner worked from `d2abaf31` without a browser run (another job held the GPU). Section 2 distinguishes earlier
 > [performance research](../research/performance.md) from the builder's new captures. Not tested on a device.

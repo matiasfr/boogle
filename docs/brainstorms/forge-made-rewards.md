@@ -39,7 +39,7 @@ Use a disposable production room. For the first two looks, use `--rail-seed awak
 
 ## Parked
 
-- A little guy straightens the pack after it lands, deadpan like a villager reacting in *Untitled Goose Game* ([comedy notes](../research/comedy-in-games.md#untitled-goose-game-villagers-as-props-and-pianist-as-commentator)); don't make the reaction necessary to read the reward.
+- A little guy straightens the pack after it lands, deadpan like a villager reacting in *Untitled Goose Game* ([comedy notes](../research/comedy-in-games.md#untitled-goose-game-villagers-as-props-and-pianist-as-commentator-verified)); don't make the reaction necessary to read the reward.
 - One stand for all forge products, coordinated with the rail-rack move and crane clearance. A `/codex` previz from the unload approach could compare stands if placement is reopened.
 - **Copy watch:** no suspect line identified for The Boogler; leave his copy alone. The approved Sleeves lines and the rail-rack label are for the heavy handoff, not these rewards.
 
