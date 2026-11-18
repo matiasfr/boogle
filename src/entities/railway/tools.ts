@@ -83,13 +83,10 @@ export async function createRailwayTools(
   chest.position.copy(chestAt);
   chest.visible = false;
   const chestTarget = chestAt.clone().add(new THREE.Vector3(0, 1.3, 0));
-  // The pack frame's chest stands beside the forge once its first bill is in (Place's ladder rung 2): the same chest,
-  // on the ground, and whoever opens it opens it for everyone.
+  // The pack frame stands beside the forge once its first bill is in, built there by a little guy (forge-rewards.ts
+  // draws it): whoever opens it opens it for everyone. Its prompt and card start at the frame's head.
   const packAt = new THREE.Vector3(LINE2_PACK.x / 100, 0, LINE2_PACK.z / 100);
   packAt.y = land.H(packAt.x, packAt.z);
-  const packChest = mesh(shapes.merged(T1_CRATE_PARTS), material);
-  packChest.position.copy(packAt);
-  packChest.visible = false;
   const packTarget = packAt.clone().add(new THREE.Vector3(0, 1.3, 0));
   const packPrize = shapes.merged(gear.packParts());
   geometries.push(packPrize);
@@ -185,7 +182,12 @@ export async function createRailwayTools(
     if (event.op === 'rail.pack') {
       if (!mine(event)) return;
       if (
-        reveal.youGot({ key: 'pack', ...PACK_REWARD, model: new THREE.Mesh(packPrize, material), from: packAt.clone() })
+        reveal.youGot({
+          key: 'pack',
+          ...PACK_REWARD,
+          model: new THREE.Mesh(packPrize, material),
+          from: packTarget.clone(),
+        })
       )
         packReveals++;
     }
@@ -316,8 +318,6 @@ export async function createRailwayTools(
       }
       chest.visible = axeAvailable();
       if (chest.visible) chest.position.copy(chestAt).y += Math.max(0, Math.sin(now * 0.004)) * 0.06;
-      packChest.visible = packAvailable();
-      if (packChest.visible) packChest.position.copy(packAt).y += Math.max(0, Math.sin(now * 0.004 + 1.3)) * 0.06;
       const packOn = backSeam.pack?.() ?? false;
       wearPack(me.entered ? me.avatar : null, packOn);
       for (const r of remotes.values()) wearPack(r.visible && r.entered ? r.avatar : null, packOn);
