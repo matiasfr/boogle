@@ -228,10 +228,27 @@ if (view || reloaded || first) {
       air = 0,
       longestAir = 0,
       travelled = 0;
+    // Over the cutting (the middle 60 % of the span, within the deck's width): every sample grounded at the deck's
+    // own height, so the walk is proved to cross on the deck between a and b, not only to arrive at b (on ground).
+    const span = summitBridge(g),
+      sx = span.b.x - span.a.x,
+      sz = span.b.z - span.a.z,
+      sLen = Math.hypot(sx, sz);
+    const mid = { samples: 0, grounded: 0, worstDy: 0 };
     const watch = setInterval(() => {
       if (me.swimming) swam++;
       if (me.coyote > 0) air = 0;
       else longestAir = Math.max(longestAir, (air += 0.05));
+      const rx = b.position.x - span.a.x,
+        rz = b.position.z - span.a.z,
+        t = (rx * sx + rz * sz) / (sLen * sLen),
+        side = Math.abs(rx * sz - rz * sx) / sLen;
+      if (t > 0.2 && t < 0.8 && side < 1.5) {
+        const dy = b.position.y - PLAYER_R - (span.a.y + (span.b.y - span.a.y) * t);
+        mid.samples++;
+        if (me.coyote > 0 && Math.abs(dy) < 0.4) mid.grounded++;
+        if (Math.abs(dy) > Math.abs(mid.worstDy)) mid.worstDy = f2(dy);
+      }
     }, 50);
     async function walkTo(x: number, z: number, tol: number, ms: number) {
       input.keys.add('KeyW');
@@ -293,12 +310,14 @@ if (view || reloaded || first) {
       for (const [k, p] of [at(464, -8.6), ...way].entries()) {
         const hit = await walkTo(p.x, p.z, k === way.length ? 1 : 1.6, 60000);
         log.push({ leg: `path ${k}`, ok: hit, at: where(), swimming: me.swimming });
-        // Arrived at the bridge's far end: was it the deck that carried you there?
+        // Arrived at the bridge's far end: did the deck carry you over the cutting (every sample mid-span)?
         if (p.x === bridge.b.x && p.z === bridge.b.z)
           log.push({
             bridge: {
-              onDeck: hit && me.coyote > 0 && Math.abs(b.position.y - PLAYER_R - bridge.b.y) < 0.4,
+              onDeck: hit && mid.samples > 0 && mid.grounded === mid.samples,
               y: f2(b.position.y),
+              atB: me.coyote > 0 && Math.abs(b.position.y - PLAYER_R - bridge.b.y) < 0.4,
+              mid,
             },
           });
         if (!hit) {

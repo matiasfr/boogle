@@ -1,6 +1,6 @@
 # Ring Island: the summit path over the stack line's cutting
 
-> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Steps 1–2 are on main (#1811, #1814), including the bridge and shared path; the walk witness was pointed at that path in #1814 (step 3 partly built). Built, not shipped: none verified. Next: finish step 3 witness/stills and step 4 proof closure; a complete checkpoint is unverified.
+> **Status, 18 November 2026:** Steps 1–3 done (step 3 finished on `claude/ring-summit-checkpoint`). Step 4 run (see its "As run" note): the level check, the walk over the deck and the proof stills pass; open are `reload.restored` false (as in step 2) and the ride under the bridge, not staged. Not shipped by this branch.
 **Goal.** The drawn path from Ring Island's west platform to the summit lookout walks straight off the rim of the
 stack line's cutting; put a footbridge there so the path the world draws can be walked again. Serves DESIGN 7
 (Telegraph everything: a drawn path is a promise) and 11 (Show, don't tell: the way up is seen, not explained). No
@@ -196,7 +196,7 @@ Model rows are from `npm run models` (mode withCodex, 14 November).
   0.4 m sweep, so a saved pose at its centre was accepted. The rocks are now 0.70 to 0.85 m high (were 0.55 to 0.85),
   every box top at least 0.46 m over its ground; a test holds 0.45 m, and `test/ring-island-rim-pose.test.ts` runs
   `createPosePolicy.safe()` on the real colliders and refuses all 19 centres. Rim still retaken: unchanged read.
-- [ ] **3. The witness and the stills.** In `dev/look/evals/ring-island-walk.ts` import `summitPath` from
+- [x] **3. The witness and the stills.** In `dev/look/evals/ring-island-walk.ts` import `summitPath` from
   `/src/entities/ring-island/path.ts` for `way` (its last two points, the lookout ramp's foot and the deck, stay the
   eval's own), add `bridge` and `cut` to `VIEWS` and to the `ringview` branch, and add `bridge: { onDeck, y }` to the
   walk's log when the walker is between a and b. Verify: the eval file type-checks (`node dev/ship-check.ts`). *Row:
@@ -216,6 +216,41 @@ Model rows are from `npm run models` (mode withCodex, 14 November).
   4. Cost, reported not gated: `--query ringview=perf` before and after (draw calls with the near view, its CPU rows).
   Then tick round-4 note 27's follow-up and the "walk to the lookout fails" line in
   `docs/agents/orchestrator-state.md`, and ship with `npm run ship`. Not tested on a device unless the owner asks.
+
+  **As run, 18 November 2026** (branch `claude/ring-summit-checkpoint` on origin/main 4c0c05cc; runner, not the
+  fresh visual reviewer the row names). *Step 3:* already done with step 2 were the `summitPath` import with the eval's
+  own last two points, `bridge` and `cut` in `VIEWS` and the `ringview` branch, and the `bridge: { onDeck, y }` entry.
+  That entry was logged only on arrival at b, which stands on ground, so it could not show that the deck carried the
+  walker. It now samples the middle 60 % of the span every 50 ms: `onDeck` is true only if every sample is grounded
+  at the deck's own height (`mid: { samples, grounded, worstDy }`, with the old arrival test kept as `atB`).
+  `node dev/ship-check.ts origin/main HEAD` green.
+  *Proof 1 passes:* `npm run level-check` exits 0. "The summit path": 330.1 m, span 28.0 m, grade 6.4 %, clearance
+  9.5 m, cut 0.02 m at 329.6 m, steepest off the deck 21.0 % at 327.6 m, both ok. It now prints abutment cut 0.692 m
+  (step 1 measured 0.045 m); `test/ring-island-path.test.ts` asserts that cut is over 0.28 m, so this is by design.
+  *Proof 2 passes except the reload:* `walk.ok` and `onLookout` true, `swamFrames` 0, `longestAirS` 0.15,
+  392.98 m in 72.98 s. Bridge entry: `onDeck` true, `y` 17.07, `atB` true, `mid` 61 of 61 samples grounded,
+  `worstDy` 0. `reload.restored` is **false**: the pose was saved beside the lookout at (1322.9, 64.2, -1115.1) and
+  the reloaded page stood at (903, 18.66, 14.05) on Home, off the island, near view not mounted. This is the same as
+  step 2's "Found, not fixed"; its cause was not found. A suspect, not checked: the look's `--rail-seed` reload
+  arrives as a room replaced by a stage, which `arrivalPlan` always lands at the stage's landing. The Get unstuck
+  half passes (brace edge, island halt and sea each land home, dry and standing). `verdict.json`: pass, tree
+  clean, but load 4.7 to 20 (under load), so the time is not evidence.
+  *Proof 3 passes:* `ringview=bridge` and `--rail-seed stack-laid-1 ringview=cut`, plus the design review's
+  `ringview=halt` and the `rim` still from 15 m uphill, and `deck`, all opened. The deck meets the path at a with no
+  step or gap. At b, from the rim and deck stills, the path leaves the deck's end along the rim, and no step shows at
+  that distance. No path beam hangs down either wall. Both bents stand on the foot of the cut walls, clear of both
+  tracks. The orange deck reads against the pale cut rock. From the halt it reads as an orange bar with its bents,
+  the fingerpost to its left. From the rim the rocks mark the edge and the drop does not show, as the follow-up said.
+  PR 1788's `.look/cut-eye-after-still.png` is not in this worktree, so no side-by-side was made. Stills (1200 x 750)
+  in [docs/world/ring-summit-path](../world/ring-summit-path/README.md).
+  *Proof 4, reported:* `ringview=perf` (960 x 600) now reads draw calls with the near view min 0, max 223, and
+  without it min 0, max 193. So the near view adds about 30 at the max, not the logged `added` 223, which subtracts
+  the without-view min from the with-view max. The minimum of 0 means some sampled frames drew nothing. CPU rows:
+  `ring-island`, `ring-island-near` and `ring-island-far` updates all 0 ms avg, p95 and max. No before was taken.
+  The run was under load (4.1 to 20).
+  *Not done:* the ride under the bridge (design review finding 7, Level finding 6). No eval stages it, and step 2
+  could not stage it either. The step is not ticked because `reload.restored` is false and the ride-under was not
+  taken. Not tested on a device.
 
 ## Level findings
 
