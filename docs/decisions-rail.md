@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-17 · A funded frame shuts its intake while it works; Q7 stows in place; the halt yard is its own bay with a pointer only at a confusing turn ([entry](#d-2026-11-17-finished-deposits-read))
 - 2026-11-16 · The riders' coach ships first as a plain blockout ("acceptable as a v1") and is then modelled from the candidate A reference sheets at its real 2.90 by 1.60 m: arc roof, red upper body, honey panels, four unglazed windows a side with the outer bays as doors and fold-down steps ([entry](#d-2026-11-16-coach-a-sheets-approved))
 - 2026-11-17 · retire the completed passenger-car previz call ([entry](#d-2026-11-17-retire-14))
 
@@ -159,6 +160,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · The rail spike comes first, and its job is to prove that riding feels good. ([entry](#d-undated-the-rail-spike-comes-first))
 
 ## Decided
+
+- <a id="d-2026-11-17-finished-deposits-read"></a>**2026-11-17, a deposit point shows when it stops taking** (owner, 17 November 2026, mid-playthrough: "it's not really clear sometimes if they accept resources or not because they stay the same. So we should take a design pass on that as well"; answering the [brief](brainstorms/finished-deposits.md)'s three questions as recommended). A frame whose bill is funded shuts its intake on the last accepted piece while its feeder keeps working, and a full frame waiting on a gate points at the gate; the laid fold stays as built. Q7's retained frame on the pier stows its intake in place, with no flag or yard there. The decided halt yard is its own bay, distinct from a bill, with a small pointer only where a confusing turn separates an old frame from it; ordinary finished sites stay bare.
 
 - <a id="d-2026-11-16-coach-a-sheets-approved"></a>**2026-11-16, the coach's blockout ships as a v1, and its art is built from the candidate A sheets** (owner, shown stills of the blockout coach: "It's acceptable as a v1, but curious why it doesn't look more like a coach?", with the [candidate A previz image](world/rider-coach.html) pasted; told the blockout was the fit-proving stage and that the art follows, and asked to confirm it ships once reviewed: "Yeah agreed"; then shown the [reference page](world/rider-coach-a.html) with the coach drawn at its real size, the read test at play size and the changes from the earlier picture (shorter and narrower, the outer window bays as doors with fold-down steps, unglazed windows; four near faces read, eight cannot be counted from one side), and told the model would be built from it unless he wanted something changed: "Go ahead"). The measured layout on that page governs the model where the painted sheet differs.
 - <a id="d-2026-11-17-retire-14"></a>**2026-11-17, retire the completed passenger-car previz call** (owner, 17 November 2026, review page: "the others I accept all"). Completed: the owner picked [coach A](decisions-rail.md#d-2026-11-16-rider-coach-a-and-rework).
