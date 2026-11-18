@@ -19,6 +19,20 @@ import { createIslandGround, ISLAND_BED, ISLAND_FILL, ringUL } from '../src/enti
 
 const centre = { x: FAR.x + ORIGIN.x, z: FAR.z + ORIGIN.z };
 const g = createIslandGround(RING_CONES, centre);
+
+test('the hillside beyond the capped shoulder still follows the original cone', () => {
+  const x = 1380,
+    z = -880;
+  const cut = g.cone(x, z) - g.islandH(x, z);
+  assert.ok(cut < 0.05, `3.415 m off the deck axis: ${cut.toFixed(3)} m cut`);
+});
+
+test('the stack cutting bank beyond the four metre cap retains its existing grade', () => {
+  const x = 1384,
+    z = -880;
+  const extraCut = g.stackCap(x, z) - g.islandH(x, z);
+  assert.ok(Math.abs(extraCut) < 0.05, `bank at (${x}, ${z}) cut a further ${extraCut.toFixed(3)} m`);
+});
 /** ringHeight takes Place's local metres (x less ORIGIN.x). */
 const cones = (x: number, z: number) => ringHeight(x - ORIGIN.x, z - ORIGIN.z);
 const w = (u: number, lat: number) => {

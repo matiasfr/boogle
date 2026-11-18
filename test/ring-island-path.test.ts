@@ -139,6 +139,64 @@ test('off the bridge the path is never within 1.3 m of cut ground (under 0.2 m)'
   assert.ok(facts.cut.depth < 0.2, `${facts.cut.depth} m cut at ${facts.cut.at} m`);
 });
 
+test('the unaffected abutment b still stands on uncut ground around its full margin', () => {
+  const { b } = summitBridge(g);
+  for (let radius = 0; radius <= 2; radius += 0.5) {
+    for (let sample = 0; sample < 32; sample++) {
+      const angle = (sample * Math.PI) / 16,
+        x = b.x + radius * Math.cos(angle),
+        z = b.z + radius * Math.sin(angle);
+      assert.ok(g.cone(x, z) - g.islandH(x, z) < 0.1);
+    }
+  }
+});
+
+test('the low walking lane has at most a 10 cm step from trail ground onto the solid landing', () => {
+  type Point = { x: number; y: number; z: number };
+  type Beam = (colour: string, start: Point, end: Point, width: number, depth: number) => void;
+  const rises: number[] = [];
+  const measure: Beam = (colour, start, end, width, depth) => {
+    if (colour !== 'path' || width / 2 < 1.16) return;
+    const length = Math.hypot(end.x - start.x, end.z - start.z),
+      ux = (end.x - start.x) / length,
+      uz = (end.z - start.z) / length,
+      grade = (end.y - start.y) / length;
+    const top = start.y + (depth / 2) * (Math.hypot(1, grade) - 1);
+    rises.push(top - g.islandH(start.x - uz * 1.16, start.z + ux * 1.16));
+  };
+  sourceFunction<(beam: Beam, ground: typeof g) => void>('src/entities/ring-island/view.ts', 'bridgeWalkSurfaces', {
+    summitBridge,
+    SUMMIT_BRIDGE,
+    PATH: 'path',
+    TIMBER: 'timber',
+  })(measure, g);
+  assert.ok(rises.length && rises.every((rise) => rise <= 0.1), `walk-on rise: ${rises} m`);
+});
+
+test('a mount correction clears the lower sphere against the sloping ground beside the landing', () => {
+  const resolve = sourceFunction<
+    (position: THREE.Vector3Like, solids: never[], height: typeof g.islandH) => THREE.Vector3Like | null
+  >('src/entities/ring-island/view.ts', 'ringSceneryExit', { THREE, PLAYER_R });
+  const x = 1379.69,
+    z = -878.461;
+  const exit = resolve({ x, y: g.islandH(x, z), z }, [], g.islandH);
+  assert.ok(exit);
+  const uphill = new THREE.Vector3(exit.x - 0.14, g.islandH(exit.x - 0.14, exit.z), exit.z);
+  const distance = uphill.distanceTo(exit);
+  assert.ok(distance >= PLAYER_R - 0.02, `ground is ${(PLAYER_R - distance).toFixed(3)} m inside the sphere`);
+});
+
+test('taper clearance includes the wider upper rim when the top radius exceeds the base', () => {
+  const outOf = sourceFunction('src/place/sites.ts', 'outOf', {});
+  const make = sourceFunction<(shape: object) => { exit(position: THREE.Vector3Like): unknown }>(
+    'src/entities/ring-island/view.ts',
+    'clearanceShape',
+    { THREE, PLAYER_R, siteExit, outOf },
+  );
+  const taper = make({ kind: 'cylinder', rTop: 2, rBottom: 1, h: 2, segments: 7 });
+  assert.ok(taper.exit({ x: 2.1, y: 1, z: 0 }), 'body sphere overlaps the top vertex at (2, 1, 0)');
+});
+
 test('off the bridge the path is never steeper than MOVER.walkSlope', () => {
   assert.ok(facts.steepest.grade <= MOVER.walkSlope, `${facts.steepest.grade} at ${facts.steepest.at} m`);
   assert.ok(facts.steepest.grade < 0.25, `${facts.steepest.grade} at ${facts.steepest.at} m`);
