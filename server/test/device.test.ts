@@ -275,3 +275,190 @@ test('device: config keys fall back on malformed values', () => {
   assert.equal(c.deviceRatePerMin, 30);
   assert.equal(c.deviceFreeReserve, 128 * 1024 * 1024);
 });
+
+// ---- Independent review (R4): attacks on the endpoint. Three fail on 91019279 and name a defect each (the self-mint
+// lockout, a still with no REPORT_TOKEN, the chunked body read off whole); the rest pass and pin what the review
+// checked. ----
+
+test('device (review): self-minted stills cannot lock a registered run out of the caps', async () => {
+  // Scaled down from production: 20 MB / 400 kB is 51 uploads and 50 runs is 50 uploads, both reached from one address
+  // in about 40 s at 30 a minute (a full bucket of 30 at once, then one every 2 s), and held for 30 days.
+  const s = await start({
+    DEVICE_MAX_RUNS: '10',
+    DEVICE_MAX_BYTES: String(4 * 400 * 1024),
+    DEVICE_RATE_PER_MIN: '1000',
+  });
+  try {
+    const big = jpeg(400 * 1024 - 6);
+    for (let i = 0; i < 4; i++)
+      assert.equal((await s.still(runId(String.fromCharCode(97 + i)), 'spawn', big)).status, 204);
+    for (let i = 4; i < 10; i++) await s.still(runId(String.fromCharCode(97 + i)), 'spawn');
+    const owner = runId('z');
+    assert.equal(
+      (await s.register({ id: owner, suite: 'quick', label: 'iphone' })).status,
+      201,
+      'register after a self-mint flood',
+    );
+    assert.equal((await s.still(owner, 'spawn')).status, 204, 'a registered still after a self-mint flood');
+  } finally {
+    await s.stop();
+  }
+});
+
+test('device (review): with no REPORT_TOKEN a still upload is 404 too (nobody could ever read it)', async () => {
+  const s = await start({ REPORT_TOKEN: '' });
+  try {
+    assert.equal((await s.still(runId(), 'spawn')).status, 404);
+    assert.deepEqual(await s.files(), []);
+  } finally {
+    await s.stop();
+  }
+});
+
+test('device (review): parallel uploads cannot pass the run or byte cap', async () => {
+  const s = await start({
+    DEVICE_MAX_RUNS: '5',
+    DEVICE_MAX_BYTES: String(8 * 1024 * 1024),
+    DEVICE_RATE_PER_MIN: '1000',
+  });
+  try {
+    const ids = Array.from({ length: 20 }, (_, i) => `dv-${String(i).padStart(2, '0')}${'p'.repeat(24)}`);
+    const codes = await Promise.all(ids.map((id) => s.still(id, 'spawn').then((r) => r.status)));
+    assert.equal(codes.filter((c) => c === 204).length, 5);
+    assert.equal(codes.filter((c) => c === 507).length, 15);
+    assert.equal((await s.files()).filter((f) => !f.includes('/')).length, 5);
+    const one = ids[codes.indexOf(204)]!;
+    const big = await Promise.all(
+      Array.from({ length: 12 }, (_, i) => s.still(one, `b${i}`, jpeg(400 * 1024 - 6, i)).then((r) => r.status)),
+    );
+    let bytes = 0;
+    for (const f of await s.files())
+      if (f.includes('/')) bytes += (await fs.stat(path.join(s.dataDir, 'device', f))).size;
+    assert.ok(bytes <= 8 * 1024 * 1024, `${bytes} bytes on disk`);
+    assert.ok(big.includes(507) && big.includes(204), big.join(' '));
+    assert.ok(!(await s.files()).some((f) => f.endsWith('.tmp')), 'no temp file left');
+  } finally {
+    await s.stop();
+  }
+});
+
+/** Sends a raw HTTP request on a socket; resolves with the status line, '' if the server cut it, or 'timeout' after 5 s. */
+function rawRequest(port: number, head: string, write: (sock: net.Socket) => void): Promise<string> {
+  return new Promise((resolve) => {
+    const sock = net.connect(port, '127.0.0.1', () => {
+      sock.write(head);
+      write(sock);
+    });
+    let got = '';
+    sock.on('data', (d) => {
+      got += String(d);
+      if (got.includes('\r\n')) sock.destroy();
+    });
+    sock.on('close', () => resolve(got.split('\r\n')[0] ?? ''));
+    sock.on('error', () => resolve(got.split('\r\n')[0] ?? ''));
+    setTimeout(() => {
+      resolve('timeout');
+      sock.destroy();
+    }, 5000).unref();
+  });
+}
+
+test('device (review): a chunked body past 400 kB is cut off while it streams, and stores nothing', async () => {
+  const s = await start();
+  try {
+    let sent = 0;
+    const status = await rawRequest(
+      s.port,
+      `POST /device/runs/${runId()}/still/spawn HTTP/1.1\r\nHost: x\r\nContent-Type: image/jpeg\r\nTransfer-Encoding: chunked\r\n\r\n`,
+      (sock) => {
+        const chunk = Buffer.alloc(64 * 1024, 1);
+        chunk[0] = 0xff;
+        const pump = () => {
+          // 8 MB, then the end of the body. On 91019279 the server reads (and drops) all 8 MB before its 413, and a
+          // body that never ends gets no answer at all: body-parser reads off the whole request after the limit.
+          while (sent < 8 * 1024 * 1024 && !sock.destroyed) {
+            sent += chunk.length;
+            const a = sock.write(`${chunk.length.toString(16)}\r\n`);
+            const b = sock.write(chunk);
+            const c = sock.write('\r\n');
+            if (!(a && b && c)) return void sock.once('drain', pump);
+          }
+          if (!sock.destroyed) sock.write('0\r\n\r\n');
+        };
+        pump();
+      },
+    );
+    // A 413, or a reset that the 413 rode on while the client was still writing: either way well short of the body.
+    assert.ok(status === '' || /^HTTP\/1\.1 413/.test(status), status);
+    assert.ok(sent < 1024 * 1024, `cut off after ${sent} bytes`);
+    assert.equal((await s.still(runId(), 'spawn')).status, 204, 'the server is still up');
+    assert.deepEqual(
+      (await s.files()).filter((f) => f.endsWith('.jpg')),
+      [`${hash(runId())}/0.jpg`],
+    );
+  } finally {
+    await s.stop();
+  }
+});
+
+test('device (review): a slow upload holds no lock; another still lands meanwhile', async () => {
+  const s = await start();
+  let slow: net.Socket | undefined;
+  try {
+    slow = net.connect(s.port, '127.0.0.1');
+    await new Promise((r) => slow!.once('connect', r));
+    slow.write(
+      `POST /device/runs/${runId('s')}/still/spawn HTTP/1.1\r\nHost: x\r\nContent-Type: image/jpeg\r\nContent-Length: 300000\r\n\r\n`,
+    );
+    slow.write(Buffer.from([0xff, 0xd8, 0xff]));
+    const t = Date.now();
+    assert.equal((await s.still(runId('f'), 'spawn')).status, 204);
+    assert.ok(Date.now() - t < 2000);
+    assert.deepEqual(
+      (await s.files()).filter((f) => !f.includes('/')),
+      [hash(runId('f'))],
+    );
+  } finally {
+    slow?.destroy();
+    await s.stop();
+  }
+});
+
+test('device (review): the JPEG preflight answers the allowed origin only, never *', async () => {
+  const s = await start({ ALLOWED_ORIGINS: 'https://boogle.club' });
+  try {
+    const pre = (origin: string) =>
+      fetch(`${s.base}/device/runs/${runId()}/still/spawn`, {
+        method: 'OPTIONS',
+        headers: { origin, 'access-control-request-method': 'POST', 'access-control-request-headers': 'content-type' },
+      });
+    const ok = await pre('https://boogle.club');
+    assert.equal(ok.status, 204);
+    assert.equal(ok.headers.get('access-control-allow-origin'), 'https://boogle.club');
+    assert.match(ok.headers.get('access-control-allow-methods') ?? '', /POST/);
+    assert.match(ok.headers.get('access-control-allow-headers') ?? '', /content-type/i);
+    const evil = await pre('https://evil.example');
+    assert.equal(evil.headers.get('access-control-allow-origin'), null);
+  } finally {
+    await s.stop();
+  }
+});
+
+test('device (review): the write limit is keyed on Fly-Client-IP behind Fly, never on X-Forwarded-For', async () => {
+  const s = await start({ DEVICE_RATE_PER_MIN: '2', REPLACE_FLY_PROXY: '1' });
+  try {
+    const send = (headers: Record<string, string>, c: string) =>
+      fetch(`${s.base}/device/runs/${runId(c)}/still/spawn`, {
+        method: 'POST',
+        headers: { 'content-type': 'image/jpeg', ...headers },
+        body: new Uint8Array(jpeg()),
+      }).then((r) => r.status);
+    const a = { 'fly-client-ip': '203.0.113.1' };
+    assert.deepEqual([await send(a, 'a'), await send(a, 'b'), await send(a, 'c')], [204, 204, 429]);
+    // A spoofed X-Forwarded-For buys no new bucket; another edge address does.
+    assert.equal(await send({ ...a, 'x-forwarded-for': '198.51.100.9' }, 'd'), 429);
+    assert.equal(await send({ 'fly-client-ip': '203.0.113.2' }, 'e'), 204);
+  } finally {
+    await s.stop();
+  }
+});
