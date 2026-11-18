@@ -1,3 +1,4 @@
+// dev/migrate guards: the test census does not count skipped or todo tests, and the kill table runs without GOLDEN.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -6,7 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 test('the census does not count a skipped or todo test as a test', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'review-m3c-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'railway-migrate-'));
   try {
     const file = path.join(dir, 'probe.test.ts');
     fs.writeFileSync(
@@ -32,7 +33,7 @@ test('the census does not count a skipped or todo test as a test', () => {
 });
 
 test('the kill table runs its tests without GOLDEN', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'review-m3c-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'railway-migrate-'));
   try {
     const file = path.join(dir, 'probe.test.ts');
     fs.writeFileSync(

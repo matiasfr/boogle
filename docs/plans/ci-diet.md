@@ -201,7 +201,7 @@ run less than the full suite.
 - P1, loads the unit walk could not follow. A test's closure (`createWalker` in `dev/ci/unit-select.ts`) now follows
   repo-rooted path literals (an esbuild entry, a script run with `--check`, a source `dev/level/source.ts` evaluates, a
   `--import` hook), folder URLs (every file under the folder; one naming the root is a base, not a folder) including a
-  computed URL under a literal folder, and `import.meta.glob` patterns. The seven missed tests (`railway-r4c-leaf`,
+  computed URL under a literal folder, and `import.meta.glob` patterns. The six missed tests (`railway-r4c-leaf`,
   `-m10a-views`, `sw-worker`, `rail-map`, `world-lines`, `railway-migrate`) are selected;
   `test/unit-select.test.ts` holds them. What no walk follows is in `UNFOLLOWED`, each with what it reaches
   (joined to the closure of every test reaching the file) and what covers it. The guard in `test/unit-select.test.ts`
