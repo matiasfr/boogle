@@ -14,6 +14,7 @@ import { housePlan, towerPlan, blockPlan } from '../src/place/building-plans.ts'
 import kitLevel from '../content/built/levels/workshop-kit.json' with { type: 'json' };
 import { merged } from '../src/render/part-geometry.ts';
 import { PLAYER_R } from '../src/constants.ts';
+import { siteExit } from '../src/place/site-clearance.ts';
 import type { Body, Shape } from '../src/physics/engine.ts';
 import type { Seat } from '../src/entities/railway/seat.ts';
 import type { Plan } from '../src/place/building-plans.ts';
@@ -59,8 +60,11 @@ const { workshopParts } = sourceModule<typeof import('../src/prefab/builders/wor
   fs.readFileSync('src/prefab/builders/workshop-parts.ts', 'utf8'),
   { registerBuilder() {} },
 );
-export function captureWorkshop() {
+export function captureWorkshop(positions: readonly (readonly [number, number, number])[] = []) {
   const plan = opening.forgePlan();
+  const me: { body?: { position: THREE.Vector3; interpolatedPosition: THREE.Vector3; velocity: THREE.Vector3 } } = {};
+  const cutaway: boolean[] = [];
+  const exits: number[][] = [];
   const colliders: unknown[] = [],
     seats: unknown[] = [];
   const scene = new THREE.Group();
@@ -167,7 +171,12 @@ export function captureWorkshop() {
       removeBody: () => {},
       makeCameraArm: () => ({ solve() {} }),
       camConstraints: [],
-      me: {},
+      me,
+      siteExit,
+      outOf: sourceFunction('src/place/sites.ts', 'outOf', {}),
+      H,
+      PLAYER_R,
+      teleport: (_body: unknown, ...xyz: number[]) => exits.push(xyz),
       camera: new THREE.PerspectiveCamera(),
       scene,
       readableGlow: (m: unknown) => m,
@@ -176,7 +185,7 @@ export function captureWorkshop() {
       makeSet: () => ({ mesh: new THREE.Mesh(new THREE.BoxGeometry(), material) }),
       ROOM_GROUP: 8,
       staticBody,
-      ROOM_CAM: { enter: 1 },
+      ROOM_CAM: sourceFunction('src/entities/town/rooms.ts', 'ROOM_CAM', {}),
       WORKSHOP_DOOR: { z: 0, w: 2.8, rows: 3 },
       kitMaterial: material,
       registerSeat,
@@ -187,7 +196,10 @@ export function captureWorkshop() {
       merged,
       // The fire is cosmetic (flames, sparks, light): its drawn firebox adds no collider or seat.
       fireboxParts: () => [['b', 0, 0, 0, 1, 1, 1, '#ffffff']],
-      makeForgeFire: () => ({ update() {}, dispose() {} }),
+      makeForgeFire: () => ({
+        update: (_dt: number, _open: boolean, inside: boolean) => cutaway.push(inside),
+        dispose() {},
+      }),
     },
   );
   const view = makeWorkshop(
@@ -195,7 +207,12 @@ export function captureWorkshop() {
     { snap() {}, lift() {} } as unknown as Parameters<typeof makeWorkshop>[1],
     () => true,
   );
-  view.update(0);
+  if (!positions.length) view.update(0);
+  for (const [dx, aboveFloor, dz] of positions) {
+    const position = new THREE.Vector3(plan.x + dx, plan.y + 0.5 + aboveFloor, plan.z + dz);
+    me.body = { position, interpolatedPosition: position, velocity: new THREE.Vector3() };
+    view.update(0);
+  }
   scene.updateMatrixWorld(true);
   const placement = {
     id: 'forge-workshop',
@@ -204,8 +221,20 @@ export function captureWorkshop() {
     seats,
   };
   view.dispose();
-  return { colliders, placement };
+  return { colliders, placement, cutaway, exits };
 }
+test('opening the workshop leaves a player resting on its foundation at the upper tread', () => {
+  assert.deepEqual(captureWorkshop([[-5.65, PLAYER_R, 0]]).exits, []);
+});
+test('leaving the west entrance sideways restores the workshop exterior', () => {
+  const { cutaway, exits } = captureWorkshop([
+    [-4, 0.5, 0],
+    [-5.7, 0.5, 0],
+    [-5.7, 0.5, 3],
+  ]);
+  assert.deepEqual(exits, []);
+  assert.deepEqual(cutaway, [true, true, false]);
+});
 test('workshop collider and placement values match the pre-conversion code', () => {
   const actual = captureWorkshop();
   for (const [file, value] of [
