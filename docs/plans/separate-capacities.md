@@ -1,7 +1,8 @@
 # Plan: separate capacities, no heavy load, 1 a hit to start, squares on the back
 
-> **Status: steps 1–4 built on `claude/separate-capacities` (18 November 2026, world v60), not shipped; see "As
-> built" under each step.** Owner calls:
+> **Status: done. Steps 1–4 on main in #2152 (18 November 2026, world v60; two independent reviews); Checkpoint A
+> passed, its last two proofs after the bot fixes in #2189; step 5's docs written 18 November. See "As built" under
+> each step.** Owner calls:
 > [separate wood and stone capacities](../decisions-core-loop.md#d-2026-11-17-separate-capacities) and
 > [the three answers](../decisions-core-loop.md#d-2026-11-17-separate-capacities-answers) (2 a hit once Station 3 is
 > funded, "maybe reduce logs from 40"; pack and breaker; rails 8, "own upgrade later"). The planner read the code at
@@ -298,8 +299,9 @@ squares). Each step leaves `node dev/ship-check.ts` green; the heavier proofs ar
     the heap stands above Buddy's head from behind and starts at the rails' tops from the side. Not seen: a remote
     player's back, the flourish itself, and rails without the pack (by the code they lie crosswise in the logs' space, as
     before this plan; not looked at).
-- [ ] **Checkpoint A (the batch).** *(18 November, on this machine: `ship-check origin/main HEAD` green, `npm run
-  loop -- run` and `npm run checkpoints` green; the playthroughs, `world-inputs`, the works bot and the video not run.)* `npm run check`; `npm run loop -- run`; `npm run checkpoints`;
+- [x] **Checkpoint A (the batch).** *(18 November, before the ship: `ship-check origin/main HEAD`, `npm run loop --
+  run` and `npm run checkpoints` green. Every proof below passed on main or on the bot fixes (#2189); the sim/net
+  review: two independent reviews before #2152 merged, recorded in the orchestrator's state.)* `npm run check`; `npm run loop -- run`; `npm run checkpoints`;
   `npm run playthrough -- --players 2 --to t2-funded` and `npm run scenario -- world-inputs` (a `src/sim` change);
   `npm run playthrough -- --to Q3` (Station 3 at 32 and the edge, the pack's log row, the doubled rail hauls); the works
   bot through the kiln
@@ -308,7 +310,8 @@ squares). Each step leaves `node dev/ship-check.ts` green; the heavier proofs ar
   Re-read the playthrough's beat times for place.md's timing table. The independent sim/net review reads the diff before
   it reaches main. Ship outside an owner session (no `WORLD_NS` bump mid-session).
   - **Run on main at `248a76dc` (18 November, a test runner, Windows, load 1 to 8 except the first works run, which started at 17.8; raw logs and clips
-    under `.look/cpa/`).** Not ticked: two proofs are blocked by stale bots, not by this plan.
+    under `.look/cpa/`).** Two proofs were blocked here by stale bots, not by this plan; both passed in the rerun
+    below.
     - [x] `npm run check`: green (2,163 tests, 0 failed).
     - [x] `npm run scenario -- world-inputs`: pass, 9/9 (the catalog reads T3 `[32, 0]`).
     - [x] `npm run playthrough -- --to Q3`: pass with `--wall 1500` (33 game min in 343 s). The default 300 s wall
@@ -369,7 +372,7 @@ squares). Each step leaves `node dev/ship-check.ts` green; the heavier proofs ar
       named (`.look/cbf/worksA/hill-verdict.json`, 33 s). The axe at T3 had been refused since the great beam pass
       (7f6974967, 7 November, WORLD_NS v16); the works bot broke on 17 November, when 07879a64b moved the axe's
       pedestal onto the breaker's.
-- [ ] **5. Docs.** `docs/game-design/place.md`: rewrite "Carried-resource display" (heavy load, loose-cargo overflow and
+- [x] **5. Docs.** `docs/game-design/place.md`: rewrite "Carried-resource display" (heavy load, loose-cargo overflow and
   counts paragraphs replaced by this plan's rules and squares; keep "Pack steel", "Approach feedback", "Other amount
   surfaces"); the run's step 3 ("Your back holds 8 … 2 logs per full stroke", "Station 3, at the rim: 40 logs"), the pack
   line ("16 on your back" → "16 logs"), the 5 November note at line 675 and the timing table from checkpoint A;
@@ -377,6 +380,16 @@ squares). Each step leaves `node dev/ship-check.ts` green; the heavier proofs ar
   partly superseded, link the decision); `docs/backlog.md` Dropped line ("The shipped heavy-load choice remains" → gone,
   link the decision); `docs/plans/round-4-notes.md` G6 and G14 status; `docs/direction.md` only where it names the heavy
   load. Verify: `npm run decisions`, `npm run owner-calls`.
+  - **As built (18 November).** place.md's "Carried-resource display" now holds separate capacities, a hit's yield,
+    drop and piles, and the squares, with "Pack steel", "Approach feedback", "Other amount surfaces" and the tag's
+    placement kept; the run's step 3 (8 logs and 8 stone, 1 a hit then 2, rocks of 8 stone, Station 3's 32 logs and
+    the keener edge), the pack line (16 logs), the 5 November note (a dated supersession line, its record kept) and a
+    new beat table from this checkpoint's Q3 run above the round-4 table, which stays as history. Drop's tap order is
+    written as the code has it (logs, then stone, then rails), not this plan's "rails, stone, logs", and piles as
+    anyone's to pick up (`rail.take` checks no owner), where place.md had "Your own, not shared in co-op". hud.md's tag
+    line, agent-calls' Controls header (partly superseded, linked) and round-4-notes' G6 and G14 statuses (on main, not
+    closed by the owner) follow. direction.md already read "separate capacities replaced the heavy load (#2152, v60)";
+    unchanged. The backlog's Dropped line is the orchestrator's edit.
 
 ## 3. Level findings
 
