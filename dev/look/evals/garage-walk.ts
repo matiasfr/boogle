@@ -30,7 +30,7 @@ background(
     // Where a player stands to use the post: 0.6 m south of it, inside the prompt's reach.
     const goal = polarAt(centre, { bearing: 98, r: 5.4 });
     // Outside the forge's door (railway-forge-walk.ts's "out the door").
-    teleport(me.body, X - 2.9, 19.5, Z + 8);
+    teleport(me.body, X - 9, 19.5, Z);
     await wait(2500);
     const here = () => ({ x: me.body!.position.x, y: me.body!.position.y, z: me.body!.position.z });
     const start = here();

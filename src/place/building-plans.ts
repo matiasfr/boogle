@@ -82,6 +82,7 @@ export type HouseSpec = {
   wallPalette?: Box['palette'];
   postPalette?: Box['palette'];
   /** A gap in the +z wall. */
+  westDoor?: { z: number; w: number; rows: number };
   door?: { w: number; rows: number; x?: number };
   /** The forge's stands open. */
   closed?: boolean;
@@ -118,8 +119,14 @@ export function housePlan(s: HouseSpec, ground: number): Plan {
     for (const sx of [-1, 1])
       pieces.push(part((s.door.x ?? 0) + (sx * s.door.w) / 2 + sx * 0.2, floor, d / 2, 0.42, high - floor, 0.42, post));
   for (let k = 1; k < postsX; k++)
-    for (const sx of [-1, 1])
-      pieces.push(part((sx * w) / 2, floor, -d / 2 + (k * d) / postsX, 0.42, high - floor, 0.42, post));
+    for (const sx of [-1, 1]) {
+      const pz = -d / 2 + (k * d) / postsX;
+      if (sx > 0 || !s.westDoor || Math.abs(pz - s.westDoor.z) > s.westDoor.w / 2)
+        pieces.push(part((sx * w) / 2, floor, pz, 0.42, high - floor, 0.42, post));
+    }
+  if (s.westDoor)
+    for (const side of [-1, 1])
+      pieces.push(part(-w / 2, floor, s.westDoor.z + side * (s.westDoor.w / 2 + 0.2), 0.42, high - floor, 0.42, post));
   for (const sz of [-1, 1]) pieces.push(part(0, high, (sz * d) / 2, w + 0.5, 0.36, 0.42, post));
   for (const sx of [-1, 1]) pieces.push(part((sx * w) / 2, high, 0, 0.42, 0.36, d + 0.4, post));
   const FRAME = pieces.length;
@@ -140,7 +147,20 @@ export function housePlan(s: HouseSpec, ground: number): Plan {
     }
     for (let k = 0; k < boardsD; k++) {
       const bd = d / boardsD;
-      for (const sx of [-1, 1]) pieces.push(wallPart((sx * w) / 2, yy, -d / 2 + (k + 0.5) * bd, 0.18, h, bd, wall));
+      for (const sx of [-1, 1]) {
+        let start = -d / 2 + k * bd;
+        const end = start + bd;
+        if (sx < 0 && s.westDoor && row < s.westDoor.rows) {
+          const left = s.westDoor.z - s.westDoor.w / 2,
+            right = left + s.westDoor.w;
+          if (start < left)
+            pieces.push(
+              wallPart(-w / 2, yy, (start + Math.min(left, end)) / 2, 0.18, h, Math.min(left, end) - start, wall),
+            );
+          start = Math.max(start, right);
+        }
+        if (end > start) pieces.push(wallPart((sx * w) / 2, yy, (start + end) / 2, 0.18, h, end - start, wall));
+      }
     }
     const gap = s.door && row < s.door.rows ? s.door.w : 0;
     if (gap) {

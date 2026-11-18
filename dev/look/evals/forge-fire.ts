@@ -21,7 +21,7 @@ const floor = forgePlan().y + 0.5;
 // camera (x, y, z), target (x, y, z), fov
 const VIEWS: Record<string, [number[], number[], number]> = {
   seat: [[3.6, 2.0, -1.6], [0.6, 1.0, 2.6], 60],
-  door: [[-3.6, 1.7, 1.0], [0, 1.1, 2.9], 60],
+  door: [[-4.1, 1.7, 0], [0, 1.1, 2.9], 60],
   close: [[0.5, 2.0, 1.0], [0, 1.1, 3.1], 55],
 };
 const [cam, look, fov] = VIEWS[view]!;

@@ -321,9 +321,7 @@ function buildMesh(owner: OwnedView) {
   buildCove();
 }
 
-/** Walls and roofs of buildings you can walk into: solid to you (your mask has every bit), and the indoor camera leaves this
- * bit out of its arm, so the wall it's cut away doesn't push the lens into your back (docs/research/town-interiors.md). */
-export const ROOM_GROUP = 8;
+export { ROOM_GROUP } from '../constants.ts';
 export function staticBody(
   shape: Shape,
   position: { x: number; y: number; z: number },

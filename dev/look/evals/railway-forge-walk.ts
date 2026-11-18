@@ -17,17 +17,17 @@ background(
   (async () => {
     if (!(await railReady())) throw new Error('railway-forge-walk: the railway never became ready');
     while (!me.body) await new Promise((r) => setTimeout(r, 100));
-    teleport(me.body!, X - 2.9, floor + 3, Z + 10);
+    teleport(me.body!, X - 10, floor + 3, Z);
     await new Promise((r) => setTimeout(r, 1500));
     const bot = makeBot();
     const legs: [string, number, number][] = [
-      ['door', -2.9, 3.2],
+      ['door', -3.6, 0],
       ['furnace mouth', 0, 1.9],
       ['stool exit', 2.7, 1.4],
       ['bench', 1, -2.3],
       ['rails corner', -3.8, 1.7],
       ['chimney hearth', -3.6, -1.3],
-      ['out the door', -2.9, 8],
+      ['out the door', -9, 0],
     ];
     let failed = 0;
     for (const [name, x, z] of legs) {

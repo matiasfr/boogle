@@ -1,3 +1,4 @@
+import { siteExit } from '../src/place/site-clearance.ts';
 import { compiled, definitions } from '../src/prefab/catalogue.ts';
 import assert from 'node:assert/strict';
 import { merged } from '../src/render/part-geometry.ts';
@@ -39,6 +40,7 @@ test('workshop furnishing matches the old authored parts, solids and glass', () 
     fs.readFileSync('src/entities/town/workshop-kit.ts', 'utf8'),
     {
       merged: (parts: Part[]) => parts,
+      workshopChair: workshop.placements[0],
       artifact,
       compiled,
       definitions,
@@ -1085,7 +1087,7 @@ test('site body records retain the old construction, ejection, snap and teardown
     const sites = sourceModule<typeof import('../src/place/sites.ts')>(fs.readFileSync('src/place/sites.ts', 'utf8'), {
       THREE,
       PLAYER_R: 0.45,
-      HEAD_OFFSET: 0.8,
+      siteExit,
       ROOM_GROUP: 8,
       me: { body: player },
       H: ground,

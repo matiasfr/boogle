@@ -25,9 +25,9 @@ import '../../src/prefab/builders/room-shell.ts';
 import '../../src/prefab/builders/boogler-statue.ts';
 import '../../src/prefab/builders/statue-scaffold.ts';
 import '../../src/prefab/builders/town-green-kerb.ts';
-import { TOWN_CENTRE } from '../../src/place/town-plan.ts';
+import { TOWN_CENTRE, TOWN_PROPS } from '../../src/place/town-plan.ts';
 import { haltFrame } from '../../src/prefab/halt-deck.ts';
-import { forgePlan, openingBuildings, openForgeMouth } from '../../src/place/opening-plans.ts';
+import { forgePlan, openingBuildings } from '../../src/place/opening-plans.ts';
 import { openingStops } from '../../src/place/opening-stops.ts';
 import { standBlockout } from '../../src/place/town-blockout.ts';
 import type { LevelArtifact, Placement, Transform } from '../../src/prefab/types.ts';
@@ -121,7 +121,7 @@ export async function collectDrawnGeometry() {
     });
   };
   for (const { id, boxes } of openingBuildings()) boxes.forEach((b, i) => addBox(b, `${id}/${i}`));
-  const forge = openForgeMouth(forgePlan());
+  const forge = forgePlan();
   [...forge.scaffold.slice(0, 1), ...forge.pieces].forEach((b, i) => addBox(b, `forge/shell-${i}`));
   const workshopFrame = new THREE.Matrix4().makeTranslation(forge.x, forge.y + 0.5, forge.z);
   // Run the actual workshop function through its steps/guards; stop at its first effect/furnishing call.
@@ -132,7 +132,10 @@ export async function collectDrawnGeometry() {
     scene,
     flat,
     merged,
-    WORKSHOP_DOOR: sourceFunction('src/entities/town/workshop.ts', 'WORKSHOP_DOOR', {}),
+    WORKSHOP_DOOR: sourceFunction('src/entities/town/workshop.ts', 'WORKSHOP_DOOR', {
+      TOWN_PROPS,
+      FORGE: layout.FORGE,
+    }),
     fireboxParts: () => {
       throw stopped;
     },

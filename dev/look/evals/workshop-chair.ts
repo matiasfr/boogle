@@ -66,7 +66,7 @@ background(
     if (!(await railReady())) throw new Error('workshop-chair: the railway never became ready');
     while (!me.body) await wait(100);
     // Without &sit the player waits by the door, out of the frame; with it, on the chair's exit spot.
-    const at = sit ? [2.7, 1.7] : [-2.9, 3.7];
+    const at = sit ? [2.7, 1.7] : [-4.6, 0];
     teleport(me.body!, X + at[0]!, floor + 0.6, Z + at[1]!);
     me.body!.velocity.set(0, 0, 0);
     await wait(1800);

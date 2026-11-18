@@ -21,6 +21,6 @@ export const prefabs = [
   piece('bellows', [box(2.6, 0.35, 3.1, 1.2, 0.7, 0.6)]),
   piece('bench', [box(1, 0.45, -3.35, 3.2, 0.9, 0.9)]),
   piece('logs', [box(4.3, 0.5, -2.82, 1, 1, 1.92)]),
-  piece('rails', [box(-4.45, 1, 1.65, 0.7, 2, 1.8)]),
+  piece('rails', [box(-4.45, 1, 2.55, 0.7, 2, 1.8)]),
   piece('lanterns'),
 ];

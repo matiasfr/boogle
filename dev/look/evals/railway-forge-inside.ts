@@ -1,5 +1,5 @@
 // Inside the finished forge's workshop (town-layout step 4a, furnished 10 November): put the player in the room and frame
-// one view of it, chosen by `--query view=...` (door | furnace | back | top | walk). From `--rail-seed q1-done` (forge lit,
+// one view of it, chosen by `--query view=...` (door | south | furnace | back | top | walk). From `--rail-seed q1-done` (forge lit,
 // so finished). Positions are local to the forge's centre (x right, z toward the front wall, y up from the floor).
 // npm run look -- --rail-seed q1-done --eval dev/look/evals/railway-forge-inside.ts --query view=door --name forge-door
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -15,7 +15,8 @@ const view = new URLSearchParams(location.search).get('view') ?? 'furnace';
 const floor = forgePlan().y + 0.5;
 // player (x, z), camera (x, y, z), target (x, y, z), fov
 const VIEWS: Record<string, [number[], number[], number[], number]> = {
-  door: [[-2.9, 3.7], [-3.0, 1.9, 8.2], [0.2, 0.8, 0.4], 62],
+  door: [[-8, 0], [-11, 2.25, 1.3], [-4, 1, 0], 64],
+  south: [[-3, 8], [-7.8, 3.4, 7.8], [-2.4, 1.5, 4], 64],
   furnace: [[-2.9, 1.5], [-4.2, 2.1, -1.0], [1.0, 0.7, 2.4], 70],
   back: [[2.0, 1.2], [3.8, 2.2, 3.0], [-1.5, 0.9, -2.8], 70],
   top: [[0.5, 1.5], [0.5, 10.5, 7.5], [0, 0, 0.2], 55],
@@ -29,6 +30,9 @@ background(
     teleport(me.body!, X + at![0]!, floor + 0.6, Z + at![1]!);
     me.body!.velocity.set(0, 0, 0);
     await new Promise((r) => setTimeout(r, 1800));
+    const captureStyle = document.createElement('style');
+    captureStyle.textContent = 'dialog.pause, dialog.pause::backdrop { visibility: hidden !important; }';
+    document.head.append(captureStyle);
     window.__debugCam?.set(
       [X + cam![0]!, floor + cam![1]!, Z + cam![2]!],
       [X + look![0]!, floor + look![1]!, Z + look![2]!],

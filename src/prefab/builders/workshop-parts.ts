@@ -142,7 +142,7 @@ export function workshopParts(kind: string, hw: number, hd: number) {
   if (kind === 'rails') {
     // Finished rails leaning on the left wall by the door: this forge makes the railway's iron.
     for (let i = 0; i < 6; i++) {
-      const z = 0.9 + i * 0.3;
+      const z = 1.8 + i * 0.3;
       parts.push(['b', -iw + 0.28, 1.14, z, 0.05, 2.3, 0.16, '#4c5058', 0, 0.16]);
       parts.push(['b', -iw + 0.28 - 0.05, 1.14, z, 0.1, 2.3, 0.08, '#7e8288', 0, 0.16]);
     }

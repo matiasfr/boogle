@@ -4,7 +4,6 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { sourceFunction } from './source.ts';
 import { PLOT_BLOCKS } from '../../src/place/town-blockout.ts';
 import {
   FORGE,
@@ -104,7 +103,6 @@ const names: Record<TownId, string> = {
   plot8: 'Plot 8',
 };
 const color = { arrival: '#39705a', free: '#386da0', bought: '#a46b20', today: '#81878b' };
-const workshopDoor = sourceFunction<{ x: number; w: number }>('src/entities/town/workshop.ts', 'WORKSHOP_DOOR', {});
 const hall: Building = { ...HALL, id: 'hall', name: 'Hall', when: 'arrival', face: HALL.yaw + Math.PI };
 const forge: Building = {
   ...FORGE,
@@ -112,8 +110,8 @@ const forge: Building = {
   id: 'forge',
   name: 'Forge',
   when: 'free',
-  // forgePlan's existing south opening, not the centre of the south wall.
-  door: { x: FORGE.x + workshopDoor.x, z: FORGE.z + FORGE.d / 2 },
+  door: TOWN_PROPS.forgeDoor,
+  face: -Math.PI / 2,
 };
 /** The Roundhouse's rotunda (src/place/rotunda.ts): every bay of Home's row as its wedge, with the stage it stands
  * from (1: the stall's footings; 2: steel home; 3: held), and the painted bays past each end. */
@@ -190,7 +188,7 @@ const measures = [
 ];
 const missing = [
   'Plot prices and stake/board sites are not in town-plan.ts.',
-  'Forge west steps have no geometry in town-plan.ts; only its door is specified.',
+  'The forge door marker is the west threshold; its two treads are not drawn to scale.',
 ];
 const notes = [
   'All panels use the same scale; north = −z. Footprints are outside walls, not roofs.',
