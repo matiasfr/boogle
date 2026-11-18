@@ -12,7 +12,6 @@ The one record of who is running what, and what the five-job limit is counted fr
 | --- | --- | --- | --- | --- | --- |
 | Separate capacities: Checkpoint A's owed proofs (the two playthroughs, `world-inputs`, the works bot, the chopping video); no game code | Separate capacities (P2) | `claude/capacities-checkpoint-a` | the heartbeat (HOTBOX), Claude Opus medium delegate | 18 November 14:50 | running (browser-heavy); step 5, the docs, follows the boiler's show, since both edit `place.md` |
 | Cutscenes for everyone step 2: the boiler's show (`boiler-shot.ts`, `boiler-view.ts`, `line2-view.ts`, `view.ts`, `ability-arrival.ts`, `place.md`) | Cutscenes for everyone and the boiler-fitted cinematic (P2) | `claude/cutscenes-boiler-show` | the heartbeat (HOTBOX), Claude Opus medium delegate | 18 November 14:50 | building (browser-heavy: a two-player look) |
-| Prefab data step 13, fourth area: the mushroom stall (`src/adapters/mushrooms.ts`, `dev/level/level.ts`, prefab records) | Prefab data (P2) | `claude/prefab-mushroom-stall` | the heartbeat (HOTBOX), Claude Opus medium delegate | 18 November 14:50 | building (browser: one look) |
 
 ## Where the work stands
 
