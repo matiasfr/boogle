@@ -18,6 +18,7 @@ import { dustRing } from '../../render/particle-effects.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { reducedMotion } from '../../constants.ts';
 import { packDrawn, packLoaded, packSolid, packStep, type PackState } from './frame-pack.ts';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { kitBatch, stationKit } from '../../place/look-kit.ts';
 import { GOODS, noStock, type Goods, type Station, type Stock } from '../../place/layout.ts';
 import { RAIL_SIZE, logStackMesh, setStackLog, stackSlot } from '../../place/pieces.ts';
@@ -85,6 +86,32 @@ function saddles(g: THREE.Group) {
       for (const r of loose) r.visible = !on;
     },
   };
+}
+/** Seconds the intake's gate takes to swing shut, and its plane just outside the walk-up board (frame space). */
+const SHUT_S = 0.45,
+  GATE_X = FRAME_D / 2 + 0.3;
+/** One leaf of the intake's gate: a plank frame with an X brace, hinged at its post (the group's origin) and reaching
+ * `-side` along the frame's width to the middle. Merged into one mesh. */
+function gateLeaf(side: number, wood: THREE.Material) {
+  const leaf = FRAME_W / 2 - 0.04,
+    lo = 0.22,
+    hi = 1.18,
+    t = 0.08;
+  const parts: THREE.BufferGeometry[] = [];
+  const board = (h: number, d: number, y: number, z: number, tilt = 0) =>
+    parts.push(new THREE.BoxGeometry(t, h, d).rotateX(tilt).translate(0, y, -side * z));
+  board(0.14, leaf, lo, leaf / 2);
+  board(0.14, leaf, hi, leaf / 2);
+  board(hi - lo + 0.14, 0.12, (lo + hi) / 2, 0.06);
+  board(hi - lo + 0.14, 0.12, (lo + hi) / 2, leaf - 0.06);
+  const dz = leaf - 0.12,
+    dy = hi - lo,
+    tilt = Math.atan2(dy, dz);
+  for (const sign of [-1, 1]) board(0.11, Math.hypot(dz, dy), (lo + hi) / 2, leaf / 2, sign * side * tilt);
+  const mesh = new THREE.Mesh(mergeGeometries(parts)!, wood);
+  for (const p of parts) p.dispose();
+  mesh.castShadow = true;
+  return mesh;
 }
 export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
   const { x, z, yaw, lx, lz } = place;
@@ -164,6 +191,19 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
     }
     g.add(feeder);
   }
+  // The intake's gate (finished-deposits, decisions-rail 2026-11-17): two X-braced plank leaves across the walk-up
+  // face, over the board and its log, once the frame stops taking. Hidden while it takes; it swings shut from folded
+  // back against the frame's flanks, and its shut pose is the read (the X across the opening, no colour or motion
+  // needed). It is part of the frame, so it folds with it. No collider.
+  const gateWood = flat('#6e4a28');
+  const leaves = [-1, 1].map((side) => {
+    const hinge = new THREE.Group();
+    hinge.position.set(away * GATE_X, 0, (side * FRAME_W) / 2);
+    hinge.add(gateLeaf(side, gateWood));
+    hinge.visible = false;
+    g.add(hinge);
+    return { hinge, open: side * away * (Math.PI / 2) };
+  });
   owner.add(g);
   // The empty frame is low rails and four posts, not a head-high solid block. In particular, T3 must not
   // trap the player or collapse the camera just as the first path opens. Stock gets its own body below.
@@ -296,6 +336,10 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
     laidAt = 0,
     loadedLaid = false,
     sawWork = false;
+  // The intake's gate (shut, below): the pose last asked for, whether one was, and when its swing started (-1 none).
+  let gateShut = false,
+    shutSeen = false,
+    gateAt = -1;
   /** The frame, its feeder and the bearers pressed toward the ground: 1 standing, 0 not drawn. */
   const stand = (height: number) => {
     foldKit?.(height);
@@ -452,6 +496,29 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
     /** Whether a point (a player's body) is on or in the frame, its feeder or its bearers: the fold waits for it. */
     holds(p: { x: number; y: number; z: number }) {
       return p.y > y - 0.6 && p.y < y + 3 && Math.hypot(p.x - x, p.z - z) < PACK_CLEAR;
+    },
+    /** Called every frame with whether the frame has stopped taking, from accepted state only (its bill funded or
+     * laid, or full behind a gate as the confirmed world has it): its gate swings shut, or opens away. The first call,
+     * a reload or reduced motion shows the pose at once. Local. */
+    shut(on: boolean) {
+      const now = performance.now();
+      if (shutSeen && on === gateShut) {
+        if (gateAt < 0) return;
+        const u = Math.min(1, (now - gateAt) / (SHUT_S * 1000));
+        // Out-back: the leaves swing past closed by a touch and settle on their stops.
+        const e = 1 + 2.2 * (u - 1) ** 3 + 1.2 * (u - 1) ** 2;
+        for (const leaf of leaves) leaf.hinge.rotation.y = leaf.open * (1 - e);
+        if (u >= 1) gateAt = -1;
+        return;
+      }
+      const animate = shutSeen && on && !reducedMotion;
+      shutSeen = true;
+      gateShut = on;
+      gateAt = animate ? now : -1;
+      for (const leaf of leaves) {
+        leaf.hinge.visible = on;
+        leaf.hinge.rotation.y = animate ? leaf.open : 0;
+      }
     },
     packed: () => pack === 'gone',
     need: (kind: Goods) => run.spec[kind] ?? 0,
