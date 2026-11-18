@@ -1138,6 +1138,9 @@ function credit(w: World, n: number) {
 test('B1: unstaked, short and bought plots reject; duplicates and two players in one tick spend once', () => {
   assert.equal(sendBuy(copy(ASLEEP.w), ASLEEP.t, 0).status, 'rejected');
   assert.equal(sendBuy(copy(FREIGHT.w), FREIGHT.t, 0).status, 'rejected');
+  const funded = copy(READY.w);
+  credit(funded, plotPrice(funded, 0, 2, 50));
+  assert.equal(sendBuy(funded, READY.t, 2).status, 'rejected', 'funded, but the third plot is not staked');
   const w = copy(READY.w),
     before = { ...tillRow(w) },
     price = plotPrice(w, 0, 0, 50);

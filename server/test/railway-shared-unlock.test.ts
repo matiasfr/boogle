@@ -1,7 +1,8 @@
 // Co-op abilities, option E (docs/brainstorms/coop-abilities.md): an ability one player finds belongs to the whole
 // world at once. The railway host (Server kind) accepts one player's claim; every connected client's mirror shows it
-// on the same step, a client that reconnects or joins late rebuilds it from the whole state, and it survives an
-// orderly restart (the save) and a crash after the checkpoint. Only presentation differs per player, and that is Local.
+// on the same step, a client that reconnects or joins late rebuilds it from the whole state, and it survives a
+// crash after a periodic checkpoint and an orderly restart (the save). Only presentation differs per player, and
+// that is Local.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -110,7 +111,7 @@ async function fixture() {
   };
 }
 
-test("one player's double jump reaches every connected player at once, a reconnect and a late joiner, and survives restart and crash", async () => {
+test("one player's double jump reaches every connected player at once, a reconnect and a late joiner, and survives a crash and a restart", async () => {
   const f = await fixture();
   try {
     f.connect('a');
@@ -138,17 +139,17 @@ test("one player's double jump reaches every connected player at once, a reconne
     // A second claim is a no-op, not a second unlock.
     const again = await f.claimJump('b', f.open('b'));
     assert.notEqual(again?.status, 'accepted');
-    await f.restart();
-    await f.step(3);
-    assert.equal(rail(f.host.rules.railway.world()).jump, true, 'restored from the save');
-    assert.equal(f.jump('a'), true);
-    assert.equal(f.jump('b'), true);
-    // Past a periodic checkpoint, a crash keeps it too.
+    // Past a periodic checkpoint, a crash keeps it: no orderly save has been written since the claim.
     const saves = f.host.sync.worldStatus().saves;
     while (f.host.sync.worldStatus().saves === saves) await f.step(1);
     await f.crash();
     await f.step(3);
     assert.equal(rail(f.host.rules.railway.world()).jump, true, 'restored from the checkpoint');
+    assert.equal(f.jump('b'), true);
+    await f.restart();
+    await f.step(3);
+    assert.equal(rail(f.host.rules.railway.world()).jump, true, 'restored from the save');
+    assert.equal(f.jump('a'), true);
     assert.equal(f.jump('b'), true);
   } finally {
     await f.close();
