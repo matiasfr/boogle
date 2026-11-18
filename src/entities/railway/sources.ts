@@ -1,5 +1,6 @@
 // The owned Local source/carry view. Only the adapter can request a transfer; poses and flights never spend material.
 import * as THREE from 'three/webgpu';
+import { fitInstanceBounds } from '../../render/instance-bounds.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../sim/railway-layout.ts';
@@ -256,9 +257,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     flat('#b0ab9d'),
     LOOSE_PIECE_CAPACITY,
   );
-  // Like the log and rail piles: never culled. Its bounds were computed once, at the first frame with no stones, and a
-  // pile then showed only while the world origin was in view (6 November playtest).
-  stonePiles.frustumCulled = false;
+  stonePiles.count = 0;
   owner.add(stonePiles);
   // Loose rails lie flat, side by side.
   const railPiles = new THREE.InstancedMesh(
@@ -267,7 +266,6 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     LOOSE_PIECE_CAPACITY,
   );
   railPiles.castShadow = true;
-  railPiles.frustumCulled = false;
   railPiles.count = 0;
   owner.add(railPiles);
   const stoneMatrix = new THREE.Object3D();
@@ -353,14 +351,26 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     stonePiles.instanceMatrix.needsUpdate = true;
     railPiles.count = railCount;
     railPiles.instanceMatrix.needsUpdate = true;
+    fitInstanceBounds(piles);
+    fitInstanceBounds(stonePiles);
+    fitInstanceBounds(railPiles);
     rack.setStock(rackLogs, stoneRack);
   }
 
+  const treePoses = new Map<TreePose, number>();
+  let refitTrees = false;
+  function flushTreePoses() {
+    for (const [tree, now] of treePoses) models.pose(tree, now, !refitTrees);
+    if (refitTrees) models.upload();
+    treePoses.clear();
+    refitTrees = false;
+  }
   function reconstruct() {
     harvestFlights = [];
     pileFlights.length = 0;
     swing.t = 99;
     for (const tree of trees) fromState(tree);
+    flushTreePoses();
     drawPiles();
   }
   // The prow cannot support the old fixed eastward fall. Use the same authored-ground search on chop and reload.
@@ -395,7 +405,8 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       greatFallPose(tree);
     }
     tree.shake = 0;
-    models.pose(tree, 0);
+    refitTrees = true;
+    treePoses.set(tree, 0);
     solid(tree);
   }
 
@@ -511,7 +522,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
         tree.fall = 0;
         greatFallPose(tree);
       }
-      models.pose(tree, tree.hitAt);
+      treePoses.set(tree, tree.hitAt);
       solid(tree);
       return;
     }
@@ -567,7 +578,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       thump(tree.x, tree.z);
       landed = 0;
     }
-    models.pose(tree, tree.hitAt);
+    treePoses.set(tree, tree.hitAt);
   }
 
   // A predicted action that gave pieces back (replication R1b; Local presentation): they lift off your back and arc to
@@ -591,7 +602,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       fromState(tree);
       tree.shake = 1;
       tree.hitAt = performance.now();
-      models.pose(tree, tree.hitAt);
+      treePoses.set(tree, tree.hitAt);
       home = homeAt.set(tree.x, tree.y + 1.1, tree.z);
     } else if (e.op === 'rail.mine') home = cargo.rocks.find((row) => row.id === e.id)?.at ?? null;
     else if (e.op === 'rail.rackTake') home = kind === 'stone' ? rack.stoneAt : rack.logBase;
@@ -677,6 +688,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
         k !== undefined ? treeRow(world(), k).left : h !== undefined ? hardwoodRow(world(), h).left : undefined;
       if (left !== undefined && tree.issued !== tree.ceiling - left) fromState(tree);
     }
+    flushTreePoses();
     drawPiles();
   });
   reconstruct();
@@ -744,7 +756,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     pieces.dustRing(x, y - 0.5, z, 5, 0.7, 0.16);
     tree.shake = 0.35;
     tree.hitAt = performance.now();
-    models.pose(tree, tree.hitAt);
+    treePoses.set(tree, tree.hitAt);
   }
   function update(dt: number, now: number) {
     beginFrame();
@@ -761,7 +773,8 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       tree.fallYaw = row.yaw;
       tree.collapsed = row.fell;
       tree.shake = 0;
-      models.pose(tree, now);
+      refitTrees = true;
+      treePoses.set(tree, now);
       solid(tree);
     }
     cargo.update();
@@ -806,7 +819,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     for (const tree of trees) {
       if (tree.shake > 0) {
         tree.shake = Math.max(0, tree.shake - dt * 3.2);
-        models.pose(tree, now);
+        treePoses.set(tree, now);
       }
       if (tree.fall >= 0 && tree.fall < 0.8) {
         tree.fall += dt;
@@ -824,9 +837,10 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
           solid(tree);
           shedTreeCrown(tree);
         }
-        models.pose(tree, now);
+        treePoses.set(tree, now);
       }
     }
+    flushTreePoses();
   }
 
   function targets(): Interactable[] {

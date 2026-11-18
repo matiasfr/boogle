@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import * as THREE from 'three/webgpu';
+import { fitInstanceBounds } from '../src/render/instance-bounds.ts';
 import { sourceFunction, sourceModule } from '../dev/level/source.ts';
 import { compiled } from '../src/prefab/catalogue.ts';
 import { names } from '../src/prefab/names.ts';
@@ -11,7 +12,7 @@ import { collidersOf } from '../src/prefab/scenery.ts';
 import type { Placement } from '../src/prefab/types.ts';
 import type { Builder } from '../src/prefab/builders.ts';
 import type { Body, Shape } from '../src/physics/engine.ts';
-import { TREE_PLACEMENTS } from '../src/place/tree-sources.ts';
+import { TREE_PLACEMENTS, TREE_SOURCES } from '../src/place/tree-sources.ts';
 import { H } from '../src/place/terrain.ts';
 import { createTreeRoots } from '../src/render/tree-roots.ts';
 import { flat } from '../src/render/flat.ts';
@@ -27,7 +28,7 @@ const createOwnedView = sourceFunction<typeof import('../src/render/owned-view.t
 const createTreeView = sourceFunction<typeof import('../src/render/place-tree-view.ts').createTreeView>(
   'src/render/place-tree-view.ts',
   'createTreeView',
-  { THREE, createTreeRoots },
+  { THREE, createTreeRoots, fitInstanceBounds },
 );
 function runtime(record: (shape: Shape, at: THREE.Vector3) => void = () => {}) {
   const builders = new Map<string, Builder>(names.builders.map((name) => [name, () => new THREE.Group()]));
@@ -126,4 +127,116 @@ test('review: instantiated hardwood branch retains its terrain-grounded height',
     }
   }
   assert.deepEqual(differences, [], 'use the branch ground sample, not the trunk seat height');
+});
+
+function poseOf(source: (typeof TREE_SOURCES)[number]) {
+  return {
+    ...source,
+    work: 0,
+    issued: 0,
+    ceiling: 10,
+    revision: 0,
+    collapsed: false,
+    scuff: false,
+    hitAt: 0,
+    cutYaw: 0,
+    strokes: 0,
+    shake: 0,
+    fall: -1,
+    fallYaw: 0,
+    at: new THREE.Vector3(),
+    body: null,
+    stump: null,
+  };
+}
+
+test('review: the last fallen crown comes back inside its fitted sphere on renewal', () => {
+  const root = new THREE.Group();
+  const source = TREE_SOURCES.find((tree) => !tree.cleared && !tree.hardwood)!;
+  const tree = { ...poseOf(source), index: 0, fall: 1, growth: 0 };
+  const view = createTreeView([tree], root, H, { flat, tree: (color) => flat(color).clone() }, () => false, 10);
+  try {
+    const crowns = root.children.filter(
+      (mesh): mesh is THREE.InstancedMesh =>
+        mesh instanceof THREE.InstancedMesh && mesh.geometry instanceof THREE.ConeGeometry,
+    );
+    assert.equal(crowns.length, 2);
+    view.pose(tree, 0);
+    assert.ok(crowns.every((mesh) => !mesh.visible && mesh.boundingSphere!.isEmpty()));
+    tree.fall = -1;
+    tree.growth = 1;
+    view.pose(tree, 0);
+    for (const mesh of crowns) {
+      assert.ok(mesh.visible);
+      const transform = new THREE.Matrix4();
+      mesh.getMatrixAt(0, transform);
+      const positions = mesh.geometry.getAttribute('position');
+      for (let vertex = 0; vertex < positions.count; vertex++) {
+        assert.ok(
+          mesh.boundingSphere!.containsPoint(
+            new THREE.Vector3().fromBufferAttribute(positions, vertex).applyMatrix4(transform),
+          ),
+        );
+      }
+    }
+  } finally {
+    view.dispose();
+  }
+});
+
+test('review: shaking one standing tree does not reread the entire forest', () => {
+  const root = new THREE.Group();
+  const trees = TREE_SOURCES.map(poseOf);
+  const view = createTreeView(trees, root, H, { flat, tree: (color) => flat(color).clone() }, () => false, 10);
+  try {
+    for (const tree of trees) view.pose(tree, 0, false);
+    view.upload();
+    let reads = 0;
+    root.traverse((part) => {
+      if (!(part instanceof THREE.InstancedMesh)) return;
+      const read = part.getMatrixAt.bind(part);
+      part.getMatrixAt = (slot, target) => {
+        reads++;
+        return read(slot, target);
+      };
+    });
+    const hit = trees.find((tree) => !tree.cleared && !tree.hardwood)!;
+    hit.shake = 1;
+    view.pose(hit, 100);
+    assert.ok(reads < trees.length, `one shake pose read ${reads} matrices for ${trees.length} trees`);
+  } finally {
+    view.dispose();
+  }
+});
+
+test('review: a previously empty fitted caster can be raycast and culled independently by each camera', () => {
+  const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial(), 1);
+  try {
+    mesh.count = 0;
+    fitInstanceBounds(mesh);
+    assert.ok(mesh.boundingSphere!.isEmpty());
+    mesh.count = 1;
+    mesh.setMatrixAt(0, new THREE.Matrix4().makeTranslation(10, 0, 0));
+    mesh.position.x = 20;
+    mesh.updateMatrixWorld();
+    mesh.computeBoundingSphere();
+    const camera = new THREE.OrthographicCamera(-2, 2, 2, -2, 0.1, 25);
+    const seesCaster = (x: number) => {
+      camera.position.set(x, 0, 10);
+      camera.updateMatrixWorld();
+      return mesh.intersectsFrustum(
+        new THREE.Frustum().setFromProjectionMatrix(
+          new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
+        ),
+      );
+    };
+    assert.equal(seesCaster(0), false);
+    assert.equal(seesCaster(30), true);
+    const ray = new THREE.Raycaster(new THREE.Vector3(30, 0, 10), new THREE.Vector3(0, 0, -1));
+    assert.equal(ray.intersectObject(mesh)[0]?.instanceId, 0);
+  } finally {
+    mesh.dispose();
+    mesh.material.dispose();
+    mesh.geometry.dispose();
+  }
 });

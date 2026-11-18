@@ -1,6 +1,7 @@
 // Local tree geometry, fall poses and colliders for the railway entity.
 // No material account, save, co-op or progression owner lives here.
 import * as THREE from 'three/webgpu';
+import { fitInstanceBounds } from './instance-bounds.ts';
 import { createTreeRoots, type TreeRoot } from './tree-roots.ts';
 import { emit } from './particles.ts';
 import { removeBody, teleport, sweepSphere, type Body, type Shape } from '../physics/engine.ts';
@@ -177,9 +178,9 @@ export function createTreeView(
     ),
   ];
   root.add(...roots);
-  for (const m of Object.values(parts)) {
+  const batches = Object.values(parts);
+  for (const m of batches) {
     m.castShadow = true;
-    m.frustumCulled = false;
     root.add(m);
   }
   const base = new THREE.Matrix4(),
@@ -194,13 +195,36 @@ export function createTreeView(
     P1 = new THREE.Vector3(),
     OLD_STUMP = new THREE.Color('#c9a06a'),
     RENEWED_STUMP = new THREE.Color('#dec89f');
-  function pose(t: Tree, now: number) {
+  const slotSphere = new THREE.Sphere();
+  const occupancy = new Map(batches.map((mesh) => [mesh, { slots: new Uint8Array(mesh.count), count: 0 }]));
+  let fitted = false;
+  function write(mesh: (typeof batches)[number], slot: number, matrix: THREE.Matrix4, grow: boolean) {
+    mesh.setMatrixAt(slot, matrix);
+    const live = occupancy.get(mesh)!;
+    const shown = Number(matrix !== ZERO);
+    live.count += shown - live.slots[slot]!;
+    live.slots[slot] = shown;
+    if (!grow) return;
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.visible = live.count > 0;
+    if (shown) {
+      slotSphere.copy(mesh.geometry.boundingSphere!).applyMatrix4(matrix);
+      slotSphere.radius += 0.5;
+      mesh.boundingSphere!.union(slotSphere);
+    }
+  }
+  function writePose(t: Tree, now: number, grow: boolean) {
+    const put = (mesh: (typeof batches)[number], slot: number, matrix: THREE.Matrix4) => write(mesh, slot, matrix, grow);
+    const hardwoodIndex = hardwoodIndices.get(t.index);
     if (t.cleared) {
-      for (const m of [parts.trunk, parts.crown, parts.crown2, parts.stump, parts.notch]) m.setMatrixAt(t.index, ZERO);
-      for (const m of Object.values(parts)) m.instanceMatrix.needsUpdate = true;
+      for (const mesh of [parts.trunk, parts.crown, parts.crown2, parts.stump, parts.notch]) put(mesh, t.index, ZERO);
+      if (hardwoodIndex !== undefined) {
+        for (const mesh of [parts.hardwood, parts.branch, parts.cutEnd]) put(mesh, hardwoodIndex, ZERO);
+        for (let slot = 0; slot < 2; slot++) put(parts.forks, hardwoodIndex * 2 + slot, ZERO);
+        for (let slot = 0; slot < 3; slot++) put(parts.broad, hardwoodIndex * 3 + slot, ZERO);
+      }
       return;
     }
-    const hardwoodIndex = hardwoodIndices.get(t.index);
     const growth = t.growth ?? 0;
     const size = t.size * (growth === 1 ? 0.07 : growth === 2 ? 0.18 : growth === 3 ? 0.42 : 1);
     const fallen = t.fall >= 0 && growth === 0;
@@ -227,19 +251,19 @@ export function createTreeView(
     const taken = t.great && trunkTaken();
     const bare = fallen && t.fall >= 0.75;
     const compact = bare && t.collapsed;
-    parts.trunk.setMatrixAt(t.index, taken || t.hardwood || compact ? ZERO : at(2.5));
-    if (hardwoodIndex !== undefined) parts.hardwood.setMatrixAt(hardwoodIndex, taken || compact ? ZERO : at(2.5));
+    put(parts.trunk, t.index, taken || t.hardwood || compact ? ZERO : at(2.5));
+    if (hardwoodIndex !== undefined) put(parts.hardwood, hardwoodIndex, taken || compact ? ZERO : at(2.5));
     // A crown follows the trunk's contact by 80 ms rather than twitching as one rigid stick.
     if (t.fall < 0 && t.shake > 0 && now - t.hitAt < 80) base.makeTranslation(t.x, t.y, t.z);
-    parts.crown.setMatrixAt(t.index, bare || t.hardwood ? ZERO : at(7.2));
-    parts.crown2.setMatrixAt(t.index, bare || t.hardwood ? ZERO : at(10));
+    put(parts.crown, t.index, bare || t.hardwood ? ZERO : at(7.2));
+    put(parts.crown2, t.index, bare || t.hardwood ? ZERO : at(10));
     for (let k = 0; hardwoodIndex !== undefined && k < 2; k++) {
       out4
         .copy(base)
         .multiply(local.makeTranslation((k ? 1 : -1) * 0.7 * t.size, 4.5 * t.size, 0))
         .multiply(turn.makeRotationZ((k ? -1 : 1) * 0.45))
         .scale(sv);
-      parts.forks.setMatrixAt(hardwoodIndex * 2 + k, !bare ? out4 : ZERO);
+      put(parts.forks, hardwoodIndex * 2 + k, !bare ? out4 : ZERO);
     }
     for (let k = 0; hardwoodIndex !== undefined && k < 3; k++) {
       const dx = (k - 1) * 2.1;
@@ -247,7 +271,7 @@ export function createTreeView(
         .copy(base)
         .multiply(local.makeTranslation(dx * t.size, (k === 1 ? 7.2 : 6.3) * t.size, (k === 1 ? 0.8 : 0) * t.size))
         .scale(S1.set(2.8 * t.size, 2.3 * t.size, 2.6 * t.size));
-      parts.broad.setMatrixAt(hardwoodIndex * 3 + k, !bare ? out4 : ZERO);
+      put(parts.broad, hardwoodIndex * 3 + k, !bare ? out4 : ZERO);
     }
     // The notch gets wider only with accepted work; refusal leaves one shallow scuff.
     const cut = t.work / (t.great ? greatStrokes : 15);
@@ -261,8 +285,9 @@ export function createTreeView(
       Q0.setFromAxisAngle(AXIS_Y, cutYaw),
       S1.set(t.size * (t.scuff && !cut ? 0.35 : 0.5 + cut), t.scuff && !cut ? 0.2 : 0.5 + cut, 1),
     );
-    parts.notch.setMatrixAt(t.index, t.fall >= 0 || (!cut && !t.scuff) ? ZERO : local);
-    parts.stump.setMatrixAt(
+    put(parts.notch, t.index, t.fall >= 0 || (!cut && !t.scuff) ? ZERO : local);
+    put(
+      parts.stump,
       t.index,
       t.fall >= 0 || growth > 0
         ? local.compose(
@@ -283,19 +308,31 @@ export function createTreeView(
         Q0.setFromEuler(e.set(Math.PI / 2, 0, -0.6)),
         S1.setScalar(1),
       );
-      parts.branch.setMatrixAt(hardwoodIndex, local);
+      put(parts.branch, hardwoodIndex, local);
       local.compose(
         P1.set(branchX + Math.sin(0.6) * 0.755, H(branchX, branchZ) + 0.22, branchZ + Math.cos(0.6) * 0.755),
         Q0.setFromAxisAngle(AXIS_Y, 0.6),
         S1.setScalar(1),
       );
-      parts.cutEnd.setMatrixAt(hardwoodIndex, local);
+      put(parts.cutEnd, hardwoodIndex, local);
     }
-    for (const m of Object.values(parts)) m.instanceMatrix.needsUpdate = true;
+  }
+  function upload() {
+    fitted = true;
+    for (const mesh of batches) {
+      mesh.instanceMatrix.needsUpdate = true;
+      fitInstanceBounds(mesh);
+      mesh.visible = !mesh.boundingSphere!.isEmpty();
+    }
   }
 
   return {
-    pose,
+    upload,
+    pose(t: Tree, now: number, uploadNow = true) {
+      const grow = fitted && uploadNow && !t.cleared;
+      writePose(t, now, grow);
+      if (uploadNow && !grow) upload();
+    },
     dispose() {
       for (const mesh of roots) {
         mesh.removeFromParent();

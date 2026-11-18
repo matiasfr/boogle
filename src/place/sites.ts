@@ -10,7 +10,7 @@ import { siteExit } from './site-clearance.ts';
 import { PLAYER_R } from '../constants.ts';
 import { me } from '../player/player.ts';
 import { teleport, type Body } from '../physics/engine.ts';
-import type { Box } from '../render/boxes.ts';
+import { fitBoxBounds, type Box } from '../render/boxes.ts';
 import { H, ROOM_GROUP, addStatic } from './land.ts';
 import { paintSite } from './look.ts';
 import { dropSet, dustRing, type DropSet } from './pieces.ts';
@@ -193,7 +193,14 @@ function pushOut(site: Site) {
 /** Call once, after every addSite. With an owner, its mesh and bodies are the owner's, and disposing it (or calling the
  * returned disposer) forgets every site added since the last call. */
 export function buildSites(owner: OwnedView) {
-  set = dropSet(boxes, onLand, owner);
+  const batch = dropSet(boxes, onLand, owner);
+  set = batch;
+  let fittedVersion = -1;
+  const fitBounds = () => {
+    if (fittedVersion === batch.mesh.instanceMatrix.version) return;
+    fitBoxBounds(batch);
+    fittedVersion = batch.mesh.instanceMatrix.version;
+  };
   paintSite(set.mesh, boxes);
   owned = owner;
   const from = built;
@@ -215,7 +222,7 @@ export function buildSites(owner: OwnedView) {
     owned = undefined;
   };
   owner.cleanup(dispose);
-  return dispose;
+  return Object.assign(dispose, { fitBounds });
 }
 /** The pieces fall in order, starting after `delay` s. */
 export function startSite(site: Site, delay = 0, onDone?: () => void) {

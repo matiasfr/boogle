@@ -3,6 +3,7 @@
 // in it piece by piece; when the frame has what it needs, those same logs roll into the machine's cradle
 // (.look/previz/visible-materials/board.md, shots 1-3). Local.
 import * as THREE from 'three/webgpu';
+import { fitInstanceBounds } from '../../render/instance-bounds.ts';
 import { guardInstances } from '../../render/draw-count.ts';
 import { material } from '../../render/materials.ts';
 import { type Body } from '../../physics/engine.ts';
@@ -153,7 +154,7 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
       o.updateMatrix();
       rollers.setMatrixAt(k, o.matrix);
     }
-    rollers.frustumCulled = false;
+    fitInstanceBounds(rollers);
     feeder.add(rollers);
     feeder.position.set(-away * (FRAME_D / 2 + SPAN / 2), 0, 0);
     for (const dx of [-SPAN / 2 + 0.2, SPAN / 2 - 0.2]) {
@@ -214,7 +215,6 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
         Math.max(1, spec0.rails),
       );
   rails.castShadow = true;
-  rails.frustumCulled = false;
   rails.count = 0;
   owner.add(rails);
   // Stone in a low heap beside the frame; the great beam, when it comes, across the frame's top.
@@ -224,7 +224,6 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
   if (stones) guardInstances(stones, `station ${spec0.id} stone`);
   if (stones) {
     stones.castShadow = true;
-    stones.frustumCulled = false;
     stones.count = 0;
     owner.add(stones);
   }
@@ -361,11 +360,13 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
         drawnRails = rails.count;
         for (let k = 0; k < rails.count; k++) rails.setMatrixAt(k, railM.compose(railSlot(k), railQ, one));
         rails.instanceMatrix.needsUpdate = true;
+        fitInstanceBounds(rails);
       }
       if (stones && stones.count !== drawnStones) {
         drawnStones = stones.count;
         for (let k = 0; k < stones.count; k++) stones.setMatrixAt(k, railM.compose(stoneAt(k), railQ, one));
         stones.instanceMatrix.needsUpdate = true;
+        fitInstanceBounds(stones);
       }
       if (beam) beam.visible = n.beam > 0;
       lashings?.tie(n.beam > 0);

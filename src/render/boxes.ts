@@ -1,6 +1,7 @@
 // Greybox boxes for ?proto=net: the shape of src/proto/era/blocks.ts drawn in one instanced mesh per set, each box grown
 // from the ground by a fraction. Pure transforms/drawing are shared with the era swap through box-plan.ts.
 import * as THREE from 'three/webgpu';
+import { fitInstanceBounds } from './instance-bounds.ts';
 import { groundHeight } from '../island/terrain.ts';
 // boogle-disable-next-line no-restricted-imports -- moves out of proto with M5/M6 (ecs-migration-railway)
 import type { Block } from '../proto/era/blocks.ts';
@@ -56,6 +57,11 @@ export function blockBoxes(b: Block, smokes: Smoke[]): Box[] {
 
 const mat = new THREE.MeshStandardNodeMaterial({ roughness: 0.85, flatShading: true });
 export type BoxSet = { boxes: Box[]; mesh: THREE.InstancedMesh };
+export function fitBoxBounds(set: BoxSet) {
+  set.mesh.traverse((part) => {
+    if (part instanceof THREE.InstancedMesh) fitInstanceBounds(part);
+  });
+}
 /** The set's mesh is not in any scene: the caller adds it to its owner (or, for a prototype, the scene). */
 export function makeSet(boxes: Box[]): BoxSet {
   const mesh = partMesh(boxes, mat);
