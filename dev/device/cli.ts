@@ -2,7 +2,8 @@
 // uploaded and turns one into a report. The device does the measuring; this reads a few kilobytes of JSON.
 //
 //   npm run device -- new [--suite quick] [--label "iphone 15"] [--query 'terrain=1'] [--site <origin>]
-//       prints the link to open on the device; writes .look/device/<id>/run.json (the id is the upload token)
+//       prints the link to open on the device; writes .look/device/<id>/run.json (the id is the upload token) and
+//       registers the run with the server's stills endpoint (POST /device/runs, server/src/device.ts)
 //   npm run device -- list
 //       the device runs on the server, newest first: code, label, device, build, state, pulled or not
 //   npm run device -- pull <run id or its last six characters>      one run -> .look/device/<id>/
@@ -11,17 +12,20 @@
 //   npm run device -- new ... --wait      also blocks until that run finishes (up to 30 minutes), then pulls and prints it
 //   npm run device -- baseline <code>     marks a pulled run as this machine's baseline for its suite (~/.boogle/device/baseline/)
 //   npm run device -- waiting             one line for npm run heartbeat: device runs on the server not yet pulled
-//   The board link `https://boogle.club/?device=new` needs no command: the page makes its own id (self-minted).
+//   The board link `https://boogle.club/?device=new` needs no command: the page makes its own id (self-minted); such a
+//   run sends numbers only, since the server takes stills only for a run `new` registered.
 //
 // Reads need REPORT_TOKEN (scripts/report-token.ts), like `npm run playtest`; the device never has it. Server:
-// BOOGLE_SERVER if set, else production. A pull writes session.jsonl, result.json (typed) and report.md.
+// BOOGLE_SERVER if set, else production. A pull writes session.jsonl, result.json (typed), report.md and one
+// <scene>.jpg per still the run uploaded (GET /device/runs/<id>/stills).
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { cleanText } from '../../server/src/clean-text.ts';
-import { ROOT } from '../../scripts/report-token.ts';
+import { ROOT, reportToken } from '../../scripts/report-token.ts';
 import { cleanLabel, makeRunId, SUITE_NAMES, shortCode } from '../../src/debug/device/id.ts';
-import { OUT as PLAYTEST_OUT, playdata, resolveSession } from '../playtest/fetch.ts';
+import { NO_TOKEN, OUT as PLAYTEST_OUT, SERVER, playdata, resolveSession } from '../playtest/fetch.ts';
+import type { DeviceStills } from '../../server/src/device.ts';
 import { parseSession, str } from '../playtest/read.ts';
 import { loadBaseline, loadBenchHistory, saveBaseline } from './baseline.ts';
 import { previousRun, type Pulled } from './compare.ts';
@@ -80,14 +84,68 @@ function pulledRuns(): Pulled[] {
     }
   });
 }
+// A scene name the server accepts; anything else from the server is never a file name here either.
+const SCENE_RE = /^[a-z0-9-]{1,24}$/;
+const stillsOnDisk = (id: string) =>
+  fs.existsSync(dirOf(id))
+    ? fs
+        .readdirSync(dirOf(id))
+        .filter((f) => f.endsWith('.jpg') && SCENE_RE.test(f.slice(0, -4)))
+        .map((f) => f.slice(0, -4))
+    : [];
 const context = (result: DeviceResult) => ({
   baseline: loadBaseline(result.suite),
   bench: loadBenchHistory(),
   host: os.hostname(),
   previous: previousRun(result, pulledAt(result.id), pulledRuns()),
+  stills: stillsOnDisk(result.id),
 });
 
-function makeLink(): string {
+const authHeader = () => {
+  const token = reportToken();
+  if (!token) throw new Error(NO_TOKEN);
+  return { authorization: `Bearer ${token}` };
+};
+
+/** Tells the server about a run made here, so its stills are expected. Says plainly when it cannot. */
+async function registerRun(id: string, suite: string, label: string) {
+  try {
+    const r = await fetch(`${SERVER}/device/runs`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ id, suite, label }),
+    });
+    if (r.status === 201 || r.status === 200)
+      return console.log('Registered with the server: it takes stills for 7 days.');
+    console.log(
+      `The server refused to register the run (${r.status}${r.status === 507 ? ': its device storage is full' : ''}). The link still works for numbers; the stills may be refused.`,
+    );
+  } catch (e) {
+    console.log(
+      `Could not register the run (${cleanText(e instanceof Error ? e.message : String(e)).slice(0, 120)}). The link still works for numbers.`,
+    );
+  }
+}
+
+/** Saves the run's stills as <scene>.jpg beside the report; returns how many. A server without stills is no error. */
+async function pullStills(id: string): Promise<number> {
+  const headers = authHeader();
+  const r = await fetch(`${SERVER}/device/runs/${id}/stills`, { headers });
+  if (r.status === 404) return 0; // no stills arrived, or a server from before the endpoint
+  if (!r.ok) throw new Error(`GET /device/runs/<id>/stills: ${r.status}`);
+  const list = (await r.json()) as DeviceStills;
+  let n = 0;
+  for (const s of Array.isArray(list.stills) ? list.stills : []) {
+    if (typeof s.scene !== 'string' || !SCENE_RE.test(s.scene)) continue;
+    const one = await fetch(`${SERVER}/device/runs/${id}/still/${s.scene}`, { headers });
+    if (!one.ok) throw new Error(`GET still ${s.scene}: ${one.status}`);
+    fs.writeFileSync(path.join(dirOf(id), `${s.scene}.jpg`), Buffer.from(await one.arrayBuffer()));
+    n++;
+  }
+  return n;
+}
+
+async function makeLink(): Promise<string> {
   const suite = option('--suite') ?? 'quick';
   if (!(SUITE_NAMES as readonly string[]).includes(suite)) throw new Error(`suite is one of ${SUITE_NAMES.join(', ')}`);
   const label = cleanLabel(option('--label'));
@@ -107,6 +165,7 @@ function makeLink(): string {
     JSON.stringify({ id, suite, label, query, made: new Date().toISOString() }, null, 2) + '\n',
   );
   console.log(url);
+  await registerRun(id, suite, label);
   if (cold)
     console.log(
       "Cold run asked for: the page clears its service worker and caches and reloads once. The browser's HTTP cache stays, so for a true first visit open the link in a private tab instead; the report says Cold launch only if no worker or cache served the first page.",
@@ -147,6 +206,13 @@ async function pullOne(server: ReturnType<typeof playdata>, row: Row) {
   fs.mkdirSync(dirOf(row.id), { recursive: true });
   fs.copyFileSync(raw, path.join(dirOf(row.id), 'session.jsonl'));
   fs.rmSync(raw, { force: true });
+  let stillNote = '';
+  try {
+    const n = await pullStills(row.id);
+    if (n) stillNote = `  ${n} still${n === 1 ? '' : 's'} saved beside it`;
+  } catch (e) {
+    stillNote = `  stills not pulled: ${cleanText(e instanceof Error ? e.message : String(e)).slice(0, 120)}`;
+  }
   const result = readDevice(
     parseSession(row.id, fs.readFileSync(path.join(dirOf(row.id), 'session.jsonl'), 'utf8')),
     minted(row.id),
@@ -155,6 +221,7 @@ async function pullOne(server: ReturnType<typeof playdata>, row: Row) {
   fs.writeFileSync(path.join(dirOf(row.id), 'report.md'), report(result, context(result)));
   console.log(pasteLine(result));
   console.log(`  ${path.relative(ROOT, path.join(dirOf(row.id), 'report.md'))}`);
+  if (stillNote) console.log(stillNote);
   return result;
 }
 
@@ -253,7 +320,7 @@ try {
     // Fail before making a link nobody will wait for when this machine cannot read the server.
     const server = wantWait ? playdata() : null;
     flag('--wait');
-    const id = makeLink();
+    const id = await makeLink();
     if (server) await wait(server, id);
   } else if (cmd === 'baseline') baseline();
   else if (cmd === 'waiting') await waiting();

@@ -80,9 +80,35 @@ function limits(r: DeviceResult) {
 }
 
 /** What a report compares against; any may be missing. `previous` is this device's newest earlier pulled run. */
-/** `host`: the name of the machine pulling the run (os.hostname()), where the bench history and minted ids live. */
-export type Context = { baseline?: Baseline | null; bench?: BenchEntry[]; previous?: DeviceResult | null; host?: string };
+export type Context = {
+  baseline?: Baseline | null;
+  bench?: BenchEntry[];
+  previous?: DeviceResult | null;
+  /** Scenes whose still `pull` saved beside the report as `<scene>.jpg`. */
+  stills?: string[];
+  /** The name of the machine pulling the run (os.hostname()), where the bench history and minted ids live. */
+  host?: string;
+};
 const here = (host?: string) => (host ? `this machine (${host})` : 'this machine');
+
+/** One still per scene, linked beside the report; a scene without one says what the page reported. */
+export function stillsSection(r: DeviceResult, ctx: Context): string[] {
+  const saved = new Set(ctx.stills ?? []);
+  if (!saved.size && !r.scenes.some((s) => s.still !== undefined)) return [];
+  const lines = r.scenes.map((s) =>
+    saved.has(s.name)
+      ? `- **${s.name}**: ![${s.name}](${s.name}.jpg)`
+      : `- **${s.name}**: no still (${s.still ? `the page said: ${s.still}` : 'the page sent none'})`,
+  );
+  return [
+    '## Stills',
+    '',
+    'What the device drew at the end of each sample, 960 px wide JPEG, as the page sent it (untrusted).',
+    '',
+    ...lines,
+    '',
+  ];
+}
 
 /** `this / base` as "1.84x"; a dash when either is missing or the base is zero. */
 export function ratio(v: number | null, base: number | null): string {
@@ -455,6 +481,7 @@ export function report(r: DeviceResult, ctx: Context = {}): string {
     );
   const d = drift(r);
   out.push(
+    ...stillsSection(r, ctx),
     ...baselineSection(r, ctx),
     ...previousSection(r, ctx),
     ...benchBlock(r, ctx),
@@ -472,7 +499,7 @@ export function report(r: DeviceResult, ctx: Context = {}): string {
     gpuLimit(r),
     '- Timers are coarse (cross-origin isolation headers are not available to a page on the live site): CPU ms are in 0.1 ms steps, 1 ms on Safari. Frame percentiles are unaffected.',
     longTaskLimit(r),
-    '- The railway bot cannot run on a device; this suite plays no route and sends no input. No stills: numbers only.',
+    '- The railway bot cannot run on a device; this suite plays no route and sends no input. A still is one frame after each sample, not a judged look.',
     '- One 5 s sample per scene on a phone that may be warm, charging or backgrounded varies widely.',
     '',
   );
