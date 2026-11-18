@@ -31,24 +31,6 @@ test('review fix3: the real-host loop can clear its back and finish T2', () => {
   assert.ok(result.nodes.some((n) => n.id === 'T2'));
 });
 
-test('review fix3: taking a whole one-piece pile can reserve the slot that pickup frees', () => {
-  const { w, ids } = fixture(128);
-  const id = ids[0]!;
-  const e = { op: 'rail.take', epoch: 1, request: 1, id, kind: 0 };
-  assert.equal(spareDropSlots(w), 0);
-  assert.equal(railValid(w, e, { reach: () => true, height: () => true, cadence: () => true }), true);
-  // Independently validate the expected transfer: 127 piles + one excess piece is legal and reloadable.
-  const legal = restore(w);
-  legal.despawn(id);
-  legal.mut(Account, legal.lookup(Account, 'reviewa')!)!.carry++;
-  assert.equal(reservedDropSlots(legal), 1);
-  assert.equal(spareDropSlots(legal), 0);
-  assert.equal(invariant(legal), null);
-  assert.equal(restore(legal).hash(), legal.hash());
-  const accepted = apply(w, 'reviewa', e, 100000).accepted;
-  assert.equal(accepted, 1, 'emptying the source pile guarantees the one required escape slot');
-});
-
 test('review fix3: only one of two predictions gets the last reservation; renewal and reload retain cargo', () => {
   let { w } = fixture(127);
   const e = { op: 'rail.rackTake', epoch: 1, request: 1, kind: 0 };
@@ -82,6 +64,7 @@ test('review fix3: only one of two predictions gets the last reservation; renewa
 
 test('final: only whole-pile takes reclaim a slot, in prediction and after reload', () => {
   for (const [count, pieces, carry, accepted] of [
+    [128, 1, 8, 1],
     [128, 2, 8, 0], // One freed slot cannot reserve two excess pieces.
     [127, 2, 8, 2], // One spare plus one reclaimed slot fits the whole pile.
     [127, 3, 8, 1], // A partial take may use only the pre-existing spare slot.
@@ -95,13 +78,15 @@ test('final: only whole-pile takes reclaim a slot, in prediction and after reloa
     w.mut(Rail, w.single(Rail))!.rack -= pieces - 1 + carry - 8;
     assert.equal(invariant(w), null);
     const e = { op: 'rail.take', epoch: 1, request: 1, id, kind: 0 };
+    assert.equal(railValid(w, e, { reach: () => true, height: () => true, cadence: () => true }), true);
     const predicted = restore(w);
     assert.equal(railPredict(predicted, 'reviewa', e, 100000).n, accepted);
     assert.equal(apply(w, 'reviewa', e, 100000).accepted, accepted);
     assert.equal(account(w, 'reviewa')!.carry, carry + accepted);
     assert.equal(w.get(Pile, id)?.n ?? 0, pieces - accepted);
     assert.equal(w.ids(Pile).length, count - Number(pieces === accepted));
-    assert.ok(spareDropSlots(w) >= 0);
+    assert.equal(reservedDropSlots(w), Math.max(0, carry + accepted - 8));
+    assert.equal(spareDropSlots(w), 128 - w.ids(Pile).length - reservedDropSlots(w));
     assert.equal(invariant(w), null);
     assert.equal(restore(w).hash(), w.hash());
     assert.equal(account(predicted, 'reviewa')!.carry, account(w, 'reviewa')!.carry);
