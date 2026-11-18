@@ -15,8 +15,10 @@ import { merged } from '../../render/part-geometry.ts';
 import { flat } from '../../render/flat.ts';
 import { H } from '../../place/terrain.ts';
 import { packParts } from '../../render/gear-models.ts';
-import { LINE2_FORGE, LINE2_PACK } from '../../sim/railway-line2-layout.ts';
-import { rail } from '../../sim/railway-rows.ts';
+import { makeAxeModel } from '../../render/axe-models.ts';
+import { LINE2_AXE, LINE2_BOILER, LINE2_FORGE, LINE2_PACK } from '../../sim/railway-line2-layout.ts';
+import { LINE1_HARDWOODS } from '../../sim/railway-line-layout.ts';
+import { boiler, forge, rail, works, type ReadWorld } from '../../sim/railway-rows.ts';
 import { line2PackReady } from '../../sim/railway-queries-line2.ts';
 
 /** The errand's timings, in seconds: the hammering at the pack, a leg that counts as arrived (the walk to the offcut
@@ -30,7 +32,42 @@ export const FORGE_REWARDS = {
   packSelf: 1.5,
   near: 30,
   packShow: 1.5,
+  axeShow: 1.4,
 } as const;
+/** The plinth's top above the pedestal's foot (boiler-view.ts), and the lean: how far out from the pedestal's centre
+ * the axe's foot stands and how far it tips toward the plinth, its head clear over the plinth's edge. */
+const PLINTH = 0.6,
+  LEAN = { out: 1.55, tilt: 0.38, toward: 0.5 };
+/** A cast part (the boiler, then the breaker) waits on the pedestal: the axe leans against the plinth instead, so a
+ * cast never waits for the optional axe (owner, 17 November, as recommended). Accepted state, read every frame. */
+export const axeLeans = (w: ReadWorld) => boiler(w).state === 'pedestal' || works(w).breaker === 1;
+const foot = new THREE.Vector3(LINE2_BOILER.x / 100, LINE2_BOILER.y / 100, LINE2_BOILER.z / 100);
+/** The axe's reach point: the pedestal's centre at the plinth's top. The server judges `rail.axe` from the same point
+ * (LINE2_AXE), whichever way the model stands. */
+export const AXE_AT: Readonly<THREE.Vector3> = new THREE.Vector3(LINE2_AXE.x / 100, foot.y + PLINTH, LINE2_AXE.z / 100);
+const hardwood = LINE1_HARDWOODS.find(([id]) => id === 232)!;
+/** Stands `o` (the axe's holder) in its pose: upright in the block on the plinth, the blade (local -Z) toward hardwood
+ * 232; or off the plinth's north side, a little east of the hoist's lookers, tipped onto it with the blade outward. */
+function poseAxe(o: THREE.Object3D, lean: boolean) {
+  if (!lean) {
+    o.position.copy(AXE_AT).y += 0.1;
+    o.rotation.set(0, Math.atan2(AXE_AT.x - hardwood[1] / 100, AXE_AT.z - hardwood[2] / 100), 0, 'YXZ');
+  } else {
+    const x = foot.x + Math.sin(Math.PI - LEAN.toward) * LEAN.out,
+      z = foot.z + Math.cos(Math.PI - LEAN.toward) * LEAN.out;
+    o.position.set(x, H(x, z), z);
+    o.rotation.set(LEAN.tilt, Math.atan2(foot.x - x, foot.z - z), 0, 'YXZ');
+  }
+  o.updateMatrixWorld(true);
+}
+const scratch = new THREE.Object3D(),
+  /** The head's middle in the holder's space (axe-models.ts: the head sits at 0.86 of the proper axe's 0.8 m). */
+  HEAD_Y = 0.86 * 0.8;
+/** The axe's head in `lean`'s pose: where its prompt points and its card starts (tools.ts). */
+export function axeHeadAt(lean: boolean, out: THREE.Vector3) {
+  poseAxe(scratch, lean);
+  return out.set(0, HEAD_Y * FORGE_REWARDS.axeShow, 0).applyMatrix4(scratch.matrixWorld);
+}
 const BLOCK = { w: 1.05, h: 0.22, d: 0.85 },
   OFFCUT = 1.2;
 type Errand = 'done' | 'fetch' | 'carry' | 'hammer' | 'self';
@@ -75,6 +112,21 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
   owner.add(pack);
   /** Where the card flies from and the prompt points: the pack's head. */
   const head = at.clone().add(new THREE.Vector3(0, BLOCK.h + 0.7 * FORGE_REWARDS.packShow, 0));
+
+  // The proper axe on the forge's pedestal, offered once the forge is lit: upright in a small timber block on the
+  // plinth, its edge turned toward hardwood 232 (in sight 44 m north), or leaning on the plinth's north side while a
+  // cast part waits. Reach is measured from the pedestal's centre on both sides (AXE_AT); only the prompt's point and the
+  // card's start follow the model. Its materials are this model's own (makeAxeModel clones them).
+  const axe = new THREE.Group(),
+    axeModel = makeAxeModel('proper');
+  axeModel.scale.setScalar(FORGE_REWARDS.axeShow);
+  axe.add(axeModel);
+  const socket = new THREE.Mesh(keep(new THREE.BoxGeometry(0.34, 0.16, 0.34)), flat('#8a6236', 0.9));
+  socket.castShadow = socket.receiveShadow = true;
+  socket.position.copy(AXE_AT).y += 0.08;
+  axe.visible = socket.visible = false;
+  owner.add(axe, socket);
+  let leaning: boolean | null = null;
 
   // The offcut: one timber left over from the frame, lying at the frame's foot on the pack's side.
   const toPack = new THREE.Vector2(at.x - LINE2_FORGE.x / 100, at.z - LINE2_FORGE.z / 100).normalize();
@@ -155,6 +207,9 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
     packTarget: () => head,
     update(dt: number) {
       const w = rd.world();
+      axe.visible = forge(w).lit >= 0 && !rail(w).axe;
+      if (axe.visible && axeLeans(w) !== leaning) poseAxe(axe, (leaning = axeLeans(w)));
+      socket.visible = axe.visible && !leaning;
       const ready = line2PackReady(w),
         claimed = rail(w).pack;
       pack.visible = ready && !claimed;
@@ -202,6 +257,7 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
       }
     },
     inspect: () => ({
+      axe: { shown: axe.visible, leaning: !!leaning },
       pack: { x: at.x, y: at.y, z: at.z, shown: pack.visible, strapped: strapped.visible },
       errand,
       errands,

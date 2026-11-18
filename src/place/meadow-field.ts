@@ -40,7 +40,6 @@ import {
   stallFrame,
 } from './home-station.ts';
 import {
-  AXE_STAND,
   BANK_CART,
   FORGE,
   FORGE_FRAME,
@@ -266,7 +265,6 @@ export function* bakeMeadowKeep(): Generator<void, Uint8Array> {
   box(FORGE, 3);
   for (const [p, r] of [
     [FORGE_FRAME, 4.5],
-    [AXE_STAND, 3],
     [HEAP, 4],
     [PROPS.rack, 3.5],
     [PROPS.greeter, 2.5],
