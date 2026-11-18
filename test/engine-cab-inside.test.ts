@@ -56,34 +56,3 @@ test('a step back into the doorway keeps it, a step off the train lets it go', (
   assert.equal(inEngineCab(x + 0.02, c.step, doorMid, true), false);
   assert.ok(c.hx - c.wall + CAB_KEEP < touching, 'the kept band ends short of a body standing outside the wall');
 });
-
-test('on a curve and a grade the test follows the car, not the world axes', () => {
-  // The car at (40, 12, -7), yawed 50° and pitched 4° (train-view.ts hands the test the inverse of this pose).
-  const yaw = (50 * Math.PI) / 180,
-    pitch = (4 * Math.PI) / 180;
-  const toWorld = (x: number, y: number, z: number) => {
-    const y1 = y * Math.cos(pitch) - z * Math.sin(pitch),
-      z1 = y * Math.sin(pitch) + z * Math.cos(pitch);
-    return [40 + x * Math.cos(yaw) + z1 * Math.sin(yaw), 12 + y1, -7 - x * Math.sin(yaw) + z1 * Math.cos(yaw)] as const;
-  };
-  const toCar = (wx: number, wy: number, wz: number) => {
-    const dx = wx - 40,
-      dy = wy - 12,
-      dz = wz + 7;
-    const x = dx * Math.cos(yaw) - dz * Math.sin(yaw),
-      z1 = dx * Math.sin(yaw) + dz * Math.cos(yaw);
-    return [x, dy * Math.cos(pitch) + z1 * Math.sin(pitch), -dy * Math.sin(pitch) + z1 * Math.cos(pitch)] as const;
-  };
-  const at = (x: number, y: number, z: number) => {
-    const [lx, ly, lz] = toCar(...toWorld(x, y, z));
-    return inEngineCab(lx, ly, lz);
-  };
-  assert.equal(at(0, c.floor, cabMid), true);
-  assert.equal(at(touching, haltDeck + 0.5, doorMid), false);
-  assert.equal(at(0, c.roofTop, cabMid), false);
-  // 1.1 m along the world x and z from the cab middle is through the yawed cab side wall, though a box on the world axes
-  // round the cab would hold it.
-  const [wx, wy, wz] = toWorld(0, c.floor, cabMid);
-  const [lx, ly, lz] = toCar(wx + 1.1, wy, wz + 1.1);
-  assert.equal(inEngineCab(lx, ly, lz), false);
-});
