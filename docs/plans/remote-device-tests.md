@@ -1,8 +1,138 @@
-> **Status: planned (2026-11-10).** Five steps, each ships alone. Step 1 is client and tooling only (no `server/`
-> change) and is the one the owner can use on his phone the day it lands. Base: `origin/main` at `bd34b181` or later.
-> No `WORLD_NS` bump, no new service or account.
+> **Status: re-planned (2026-11-18), a proposal waiting on the owner's word.** Read
+> [Re-plan, 18 November: HOTBOX orchestrates](#re-plan-18-november-hotbox-orchestrates) first; it replaces the order of
+> work below and [remote-runner](remote-runner.md)'s. Steps 1 and 2 below are built; 3 to 5 are not.
 
 # Remote device tests
+
+## Re-plan, 18 November: HOTBOX orchestrates
+
+**Why.** Both plans were written on 10 November with the MacBook as the orchestrating host and HOTBOX (the Windows
+desktop) as a future ssh runner. Since 17 November HOTBOX orchestrates and the MacBook's scheduled runs are paused
+([automations](../agents/automations.md), [state](../agents/orchestrator-state.md#where-the-work-stands)). The "busy
+host system" the owner wanted to spare is now HOTBOX. The owner call [HOTBOX shares the load](../agents/owner-calls.md#hotbox)
+still reads "the Mac orchestrates"; this re-plan follows the machines as they are and asks him to restate it (question
+2). No gameplay calls, so no design review. Nothing here was run on another machine.
+
+### 1. What each plan assumed, and what still holds
+
+**This plan (device link).** The device side never depended on which machine orchestrates: a device opens a link,
+measures itself and uploads to boogle.club's `POST /playdata`; whichever machine holds `REPORT_TOKEN` pulls. Built on
+main and unchanged by the move:
+
+- The page: `src/boot/device-entry.ts`, `src/features/device-test.ts`, `src/debug/device/` (suite, scenes, cold
+  launch, upload), `src/debug/perf-poses.ts`. The pull: `dev/device/cli.ts` (`new`, `list`, `pull`, `pull --new`,
+  `--wait`, `--cold`, `baseline`, `waiting`), `read.ts`, `report.ts`, `compare.ts`, `runs.ts`, `baseline.ts`; seven
+  `test/device-*.test.ts`. The heartbeat's line: `dev/heartbeat.sh:67` (works on Windows since #1998). The check-in's
+  `pull --new`: `.claude/skills/orchestrate-boogle/SKILL.md`. The report rule: owner call [Mac and mobile](../agents/owner-calls.md#mac-mobile).
+- Steps 3 (stills and registered runs), 4 (more seeds, an input run) and 5 (branch previews, deferred on open question
+  1) hold unchanged: none names a host.
+
+Assumed the Mac, now wrong: the baseline is "the Mac's Chrome, pulled on the Mac" (`dev/device/baseline.ts:1`, the
+hint at `report.ts:188`, README "Baseline"), stored in the pulling machine's `~/.boogle/device/baseline/`, so HOTBOX
+has none; the bench-counts line reads `~/.boogle/daily/perf/history.jsonl` (`report.ts:224`), which exists only on the
+Mac; the self-minted note says "made ... on this Mac" (`report.ts:364`). Words and one file location, not design.
+
+**[Remote runner](remote-runner.md) (ssh lane).** It assumed the Mac pushes commits to HOTBOX over ssh and pulls
+`.look/` back. Still sound in any direction: the git-ref transport with snapshot commits, a credential-free runner
+account, `tar` pull into the same `.look/` paths, the additive verdict fields (`machine`, `gpu`, `timingGrade`,
+`fellBack`), one history per machine, the quiet rule, `LISTEN_HOST`, the lanes table. Overtaken: its whole Windows
+port, since HOTBOX now runs the harness itself. Done on main: real-GPU ANGLE on Windows (`gpuAngle`,
+`dev/look/lib.ts:146`, also used by `dev/cold-launch.ts:228`); full Chromium headless (`browserChannel`,
+`lib.ts:154`); the scenario import as a file URL (`dev/scenarios/run.ts:106`); heartbeat, ship queue, glob paths, lint
+file ids and the budget kill on Windows (#1998, #2002, #1997, #2003, #2028, #2062). Not done: `dev/remote/` and
+`dev/look/gpu-args.ts` do not exist; the game server still listens on every interface (`server/src/server.ts:490`);
+and **every load reading is zero on Windows** (`os.loadavg()` in `dev/look/bot-queue.ts:125,205,238`,
+`dev/look/verdict.ts:157`, `dev/look/bench.ts:565`, `dev/cold-launch.ts:520`, `dev/daily/run.ts:133`), so on HOTBOX
+the queue's load gate never holds and a busy timing run is stamped quiet. Its step 0 is in effect done: the owner
+call [frame-time-60](../agents/owner-calls.md#frame-time-60) records a first reading on HOTBOX's RTX 3080.
+
+### 2. Options: which machine does what
+
+**A. HOTBOX runs the harness; every other machine is a device.** HOTBOX orchestrates and runs looks, bots and
+scenarios locally, as today. The MacBook, the iPad and phones open `https://boogle.club/?device=new` and tap Run; HOTBOX
+pulls. The Mac's baseline becomes a device run made on the Mac.
+- Owner, once: open the link on the Mac in Chrome when it is quiet and tap Run (about two minutes); the same once on
+  the iPad. Nothing else: `REPORT_TOKEN` was copied to HOTBOX's clone with the move (automations step 1; R1 checks it).
+- Unblocks: device numbers for the Mac, the iPad and phones this week, with no ssh, keys or new accounts.
+- Risks: every Mac or iPad run needs his tap, so no agent can get a Mac-GPU number alone. No Mac-screen stills
+  until step 3. HOTBOX timing is not evidence until R3 fixes its load reading.
+
+**B. A, plus the Mac as an ssh runner for HOTBOX.** The remote-runner plan with the roles swapped: HOTBOX pushes a
+commit to the Mac, which runs `bench`, `perf`, `cold-launch`, Metal looks and Safari checks (`dev/live-boot.ts`) and
+sends `.look/` back. The Mac needs no port: the harness was built there and its perf history already lives there.
+- Owner, once (about 20 minutes): on the Mac, Remote Login on (System Settings, General, Sharing) for one user only,
+  never sleep on power, and a fixed address in the router. On HOTBOX, a key for this purpose only, its public line in
+  that Mac user's `~/.ssh/authorized_keys`, a `Host boogle-mac` entry in `~/.ssh/config`, and `ssh boogle-mac true`
+  once to accept the host key. Then leave the Mac on, plugged in and signed in at its screen.
+- Unblocks: Mac-GPU timing and Metal stills on agents' demand, the Mac's quiet bench, Safari boot times.
+- Risks: it is his laptop: closed, asleep or away means "unreachable", and jobs fall back to HOTBOX with that said.
+  A browser started over ssh may get no Metal adapter unless the user is signed in at the console (unconfirmed; the
+  doctor finds out). Agents load the machine he works on.
+
+**C. A, plus a standing runner page.** The Mac or iPad keeps `?device=listen` open, polls the server for a run
+HOTBOX registered, and starts it without a tap. Needs step 3's endpoint, a queue on the server and a pairing token
+in the page's address.
+- Owner, once: open the page on each machine, keep the tab in front and the display awake, plugged in.
+- Unblocks: agent-triggered Mac and iPad numbers with no ssh.
+- Risks: a public path that starts work on his device; hidden tabs are throttled and iPad Safari drops background
+  pages; a run can start while he is using the machine, which is the bogging-down he wanted to avoid.
+
+### 3. Recommendation and next steps
+
+**A now; B when he wants Mac-GPU numbers without tapping a link; C not now.** A meets his words ("load on a machine,
+hit run ... pull data automatically") with what is already built, needs two taps from him and no access he has not
+given. B reuses the runner plan reversed and waits for his setup. C adds a public trigger path for a convenience A
+and B cover. Each step leaves `node dev/ship-check.ts` green.
+
+- [ ] **R1. Re-point the pull side at the host it runs on.** Tooling. `dev/device/report.ts` (the strings at 105,
+  181, 188, 220, 224, 364, 467–468: "the Mac" becomes "the baseline machine", named from the baseline run's own device
+  line, or "this machine"; the bench-counts line names the machine and is left out when that history is absent),
+  `dev/device/baseline.ts` and `cli.ts` header comments, `dev/device/README.md` "Baseline". Check:
+  `UNIT_ONLY=test/device-report.test.ts npm run test:unit` with its wording cases updated; on HOTBOX `npm run device -- waiting`
+  prints a count, not "unknown". Done when a report pulled on HOTBOX names no machine it was not made on.
+- [ ] **R2. Owner step: the Mac and iPad runs.** He opens the board link in Chrome on the Mac (quiet, plugged in),
+  then on the iPad, and taps Run. An agent runs `npm run device -- pull --new` and `baseline <Mac run code>`. Done when
+  the iPad's `report.md` has an "Against the baseline" section beside the Mac's run.
+- [ ] **R3. A real load reading on Windows.** Tooling, hotspot files. `dev/look/machine-load.ts` (new):
+  `machineLoad()` returns `os.loadavg()[0]` off Windows and, on `win32`, a load equivalent from two `os.cpus()`
+  samples 1 s apart (busy fraction times cores), labelled `cpu`. Use it at each `os.loadavg()` call named in
+  section 1; the Mac's readings do not change. No new unit test (the [test diet](../agents/tests.md#tests)). Check: on
+  HOTBOX, a look's verdict taken while a bot runs shows a non-zero load. Done when a `bench` on HOTBOX under a running
+  bot says not measured, busy.
+- [ ] **R4. Step 3 below: stills and registered runs.** Unchanged, `server/` tier with independent review. It gives
+  A the Mac's and iPad's own pixels. Done as written.
+- [ ] **R5. Step 4 below: more seeds and the input run.** Unchanged.
+- [ ] **B1–B3, only on his word to question 1.** Remote-runner steps 1 to 3 with the roles swapped: config in
+  HOTBOX's `~/.boogle/remote.json` (`"os": "macos"`); `job.ts` runs on macOS unchanged; `classifyAdapter` accepts
+  Apple's Metal adapter instead of NVIDIA; the doctor's first line answers whether ssh gets Metal. Its step 5 shrinks
+  to pulling the Mac's own weekly-job logs. `LISTEN_HOST` (its step 2) is due either way. Each step's check and done
+  line are the runner plan's.
+- Step 5 below (branch previews) stays deferred on open question 1, as before.
+
+### 4. Owner questions (each proceeds on its recommendation except 1)
+
+1. **Should the Mac become an ssh runner for HOTBOX (option B)?** Recommended: **not yet.** Ship R1 to R3 and his two
+   taps first; say yes when a Mac-GPU number is needed and a tap is too slow. B waits for this answer and his setup.
+2. **Restate "HOTBOX shares the load; the Mac orchestrates" now that HOTBOX orchestrates?** Recommended: **"HOTBOX
+   orchestrates and runs the harness; the Mac, the iPad and phones are devices measured by device runs."**
+3. **"The Mac and mobile are the targets" says judge looks and budgets on the Mac the agents run on; agents now run
+   on HOTBOX. How should that read?** Recommended: frame time and counts against the target come from device runs on
+   the Mac and iPad; HOTBOX stills prove behaviour with the machine named; lighting and colour stay his call on his own
+   screens.
+4. **Do the Mac's launchd weekly jobs (`dev/daily`, scenarios at 03:30 on Sundays) still run?** They are the only
+   rendered two-player checks, and the paused T3 schedules did not cover them. Recommended: leave them installed while
+   the Mac stays plugged in: the job reports to the scenarios issue on GitHub, which HOTBOX already reads with `gh`.
+   If the Mac is often closed, say so: agents then try `npm run daily -- scenarios --only smoke` on HOTBOX (untried on
+   Windows: the job uses `caffeinate` and `ps -A`) and run the list on command there.
+5. **Option C, a standing runner page?** Recommended: **no for now**; reopen if taps on the iPad become the wait.
+
+---
+
+> **Superseded where it names the Mac as the host** (18 November): the re-plan above. Read "the machine that pulls"
+> (HOTBOX now) for "the Mac" in the pull, baseline and heartbeat text; the baseline is a device run made on the Mac.
+> Earlier status (2026-11-10): planned. Five steps, each ships alone. Step 1 is client and tooling only (no
+> `server/` change) and is the one the owner can use on his phone the day it lands. Base: `origin/main` at
+> `bd34b181` or later. No `WORLD_NS` bump, no new service or account.
 
 ## Goal
 
