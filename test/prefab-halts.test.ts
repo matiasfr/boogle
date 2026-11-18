@@ -196,6 +196,9 @@ test('halt kit placements, colliders, lever plaques and ordered prompts match th
       ...path,
       ...haltMap,
       ...leverPlace,
+      // The deck as drawn, at rest at the seed's head (railhead-state.ts; the haul is railhead-view.ts's).
+      railheadDrawn: { u: 0, settled: true, live: true },
+      railheadEnd: () => ring.RING_HEAD[queries.ringHead(seed.w)]!.u / 100,
       account: rows.account,
       aperture: rows.aperture,
       lineRow: rows.line,

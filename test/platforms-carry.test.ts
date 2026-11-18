@@ -233,10 +233,85 @@ test('nobody standing anywhere under the mounting railhead is cleared past the w
         const local = toPlatform(deck.car.platform, rider.position, 0, { x: 0, y: 0, z: 0, yaw: 0 });
         const inside = Math.abs(local.x) < deck.car.platform.hx && Math.abs(local.z) < deck.car.platform.hz;
         if (sideMid - local.x > SIDE.lat1 || local.z > deck.car.platform.hz || inside)
-          bad.push(`u ${u} lat ${lat.toFixed(1)} -> lat ${(sideMid - local.x).toFixed(2)} local z ${local.z.toFixed(2)}`);
+          bad.push(
+            `u ${u} lat ${lat.toFixed(1)} -> lat ${(sideMid - local.x).toFixed(2)} local z ${local.z.toFixed(2)}`,
+          );
       }
     assert.deepEqual(bad, []);
   } finally {
+    owner.dispose();
+  }
+});
+
+// The view's own driver (railhead-view.ts hands driveDeck the adapter's read): a real room at `gap-footed`, whose last
+// pair stamped the haul from railhead 6 to 7, with the rule clock set back to the stamp and run forward through the
+// haul at the game's rate. The deck follows the row, not a target the test sets. An idle rider is held by placeDeck's
+// pin (the 1 mm case above); this one proves the driver carries them on the deck from rest to rest.
+test("the view's driver hauls the deck and its rider from the row and the clock", async () => {
+  await physics.physicsReady;
+  const { buildSeedWorld } = await import('./helpers/rail.ts');
+  const { railRoom } = await import('./helpers/rail-room.ts');
+  const { aperture } = await import('../src/sim/railway-rows.ts');
+  const { haulEnd, HAUL } = await import('../src/sim/railway-ring-haul.ts');
+  const { driveDeck } = await import('../src/entities/railway/railhead-state.ts');
+  const room = railRoom(buildSeedWorld('gap-footed'));
+  const read = room.join('a', 'a').adapter.read;
+  room.ready();
+  const row = aperture(read.world());
+  assert.ok(row.moved >= 0 && haulU(row, row.moved + 1000) - row.from >= 2000, 'the seed stamped a 20 m haul');
+  const wall = softWall.at;
+  softWall.at = Infinity;
+  const owner = createOwnedView();
+  try {
+    const deck = createRailheadDeck(owner);
+    let tick = row.moved,
+      clock = -1;
+    const clocked = { world: () => read.world(), whole: () => read.whole(), tickNow: () => tick };
+    deck.drive(() => {
+      clock = driveDeck(deck, clocked, clock, () => false);
+    });
+    const rider = makePlayerBody(false);
+    owner.addBody(rider);
+    physics.stepFixed();
+    const from = row.from / 100;
+    assert.ok(Math.abs(deckU(deck.car.body.position) - from) < 0.001, 'the deck waits where the haul starts');
+    const board = fromPlatform(
+      deck.car.platform,
+      { x: 0, y: deck.car.platform.topAt!(0, 0, 0) + PLAYER_R, z: 0, yaw: 0 },
+      false,
+      { x: 0, y: 0, z: 0, yaw: 0 },
+    );
+    physics.teleport(rider, board.x, board.y, board.z);
+    rider.velocity.set(0, 0, 0);
+    player.body = rider;
+    player.coyote = 0.1;
+    driveRider = true;
+    for (let frame = 0; frame < 30; frame++) physics.stepFixed();
+    const at = toPlatform(deck.car.platform, rider.position, 0, { x: 0, y: 0, z: 0, yaw: 0 });
+    let moved = false;
+    while (tick < haulEnd(row) + 10) {
+      tick += FIXED * 10;
+      physics.stepFixed();
+      moved ||= deckU(deck.car.body.position) > from + 0.01;
+      assert.ok(carry.on === deck.car.platform, `rider lost the railhead at tick ${tick.toFixed(2)}`);
+      if (clock <= row.moved + HAUL.after + HAUL.ready)
+        assert.ok(
+          Math.abs(deckU(deck.car.body.position) - from) < 0.001,
+          `still while the span goes down and it is told: u ${deckU(deck.car.body.position)} at clock ${clock - row.moved}`,
+        );
+    }
+    const here = toPlatform(deck.car.platform, rider.position, 0, { x: 0, y: 0, z: 0, yaw: 0 });
+    assert.ok(moved, 'the deck hauled');
+    assert.ok(Math.abs(deckU(deck.car.body.position) - haulU(row, tick) / 100) < 0.001, 'at rest at the new head');
+    assert.ok(
+      Math.hypot(here.x - at.x, here.y - at.y, here.z - at.z) < 0.01,
+      `rider drifted ${JSON.stringify([at, here])}`,
+    );
+  } finally {
+    driveRider = false;
+    softWall.at = wall;
+    player.body = null;
+    carry.x = carry.y = carry.z = 0;
     owner.dispose();
   }
 });

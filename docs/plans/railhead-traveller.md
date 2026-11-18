@@ -1,4 +1,5 @@
-> **Status:** Steps 1–2 shipped in #1841 as v46; Checkpoint A is verified below. Step 3 is built on the implementation branch; independent review is pending. Steps 4–5 are outstanding. Design base:
+> **Status:** Steps 1–2 shipped in #1841 as v46; Checkpoint A is verified below. Steps 3 and 4 are built on the implementation branch. Step 5 is blocked: the archived branch it ports from is gone
+(below). Design base:
 > `origin/main` at `35e1c3431`. Replaces
 > steps 2 and 4 of [gap-readability](gap-readability.md) (the railhead's move), which were built on branch
 > `worktree-agent-af55e2f2172764ff8` (tag `archive/worktree/railhead-traveller`, tip `9b9845fbb`) and failed three
@@ -213,12 +214,25 @@ Rows are from `npm run models` (mode withCodex, 14 November).
       Verify: the test; `npm run lint` and `npm run registry` (the `car.ts#makeCar` importer count stays 5: measured
       on this base with the call added in `line2-view.ts`); a `/look` still at ring stage `deck-laid` (`railwayAtRing`), standing on the platform at rest.
       As built: Line 2 and the carry test both use `createRailheadDeck` in `railhead-state.ts`. Line 2 no longer acquires the entire rail kit; `makeCar` stays at five importers, and `buildMachine` falls from three to two. All five carry cases passed. Menu-closed WebGPU stills with the rider aboard: [rest](../world/railhead-deck-car/rest.png) (u 120.00 m) and [haul](../world/railhead-deck-car/haul.png) (u 127.17 m).
-- [ ] **4. Prompts, spans and the lever follow the row. Tier: view. Row: implementer agent, fable medium.**
+- [x] **4. Prompts, spans and the lever follow the row. Tier: view. Row: implementer agent, fable medium.**
       `railhead-view.ts`: `settled()` is `haulSettled(row, clock)`; spans forced at `moved + after`; `halts-view.ts`
       `placeRing` reads `railheadDrawn.u`. Tests in `test/railway-r4b-views.test.ts`: `prompts wait until the haul has
       settled`; `the lever stands on the drawn deck`; `the walkway behind a moving railhead holds the old platform's
       whole place`. Verify: the tests (no ring scenario exists; the ring bot, `dev/look/bots/railway-ring.ts`, is the checkpoint's).
-- [ ] **5. The apparatus and its cues. Tier: view. Row: implementer agent, fable medium.** Port `drawTraveller`,
+      As built (18 November): `settled()` is `haulSettled(row, ruleClock)` and is written to `railheadDrawn.settled`,
+      which the Railhead lever's prompt also waits for. The spans are forced, not the deck held: `spansDue(row, clock)`
+      (`railhead-shape.ts`) stands and decks every bent below the haul's head from `moved + after`, snapped, and drops
+      any of their footings still on the rope, so a tab whose bent animation runs a second or more behind the game clock
+      has the span before the deck's told second and travel. The lever's u is `railheadLeverOn(railheadEnd())`
+      (`lever-place.ts`, `railhead-state.ts`): the deck's end read off the car's interpolated pose, so it rides the deck
+      instead of easing ahead to the next head, and is not a frame behind although `halts-view.ts` updates before the
+      works. The view's driver moved into `railhead-state.ts` as `driveDeck` (the view calls it unchanged), so
+      `test/platforms-carry.test.ts` now drives the deck through it from a real room's row at `gap-footed`. The walkway
+      test also asserts, on every quarter tick of every haul, that the deck's end is never past a span the lagging tab
+      draws. `test/prefab-halts.test.ts` injects the two new bindings; its catalog golden is unchanged.
+- [ ] **5. The apparatus and its cues. Blocked (18 November): the archived branch is gone. No
+      `archive/worktree/railhead-traveller` tag in any checkout, no remote ref, and `9b9845fbb` is not an object here
+      or on GitHub; no copy of `drawTraveller` survives on disk. Porting needs the source or a fresh design. Tier: view. Row: implementer agent, fable medium.** Port `drawTraveller`,
       `guy`, `drawKit`, `fold` and the cue list into `railhead-view.ts`, driven by `haulPhase`; reduced motion keeps
       the sounds and drops the blink. Port `dev/look/evals/railhead-move.ts`. Verify: the eval's motion sheet (told
       before any movement, eased start, chock and flare at rest).

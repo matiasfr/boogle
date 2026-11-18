@@ -7,7 +7,11 @@ import type { Body } from '../../physics/engine.ts';
 import { siteExit } from '../../place/site-clearance.ts';
 import type { outOf as moveOutside } from '../../place/sites.ts';
 import { RING_S, line2World, line2Y } from './line2-path.ts';
-import { BENTS, deckProfile, headU, PLATFORM, SIDE } from './railhead-shape.ts';
+import { BENTS, deckProfile, headU, leanClock, PLATFORM, SIDE } from './railhead-shape.ts';
+import { haulU } from '../../sim/railway-ring-haul.ts';
+import { aperture, type ReadWorld } from '../../sim/railway-rows.ts';
+import { line2Trains } from '../../sim/railway-queries-line2.ts';
+import { q7Laid } from '../../sim/railway-queries.ts';
 import { makeCar, snapCar, type Car } from './car.ts';
 
 export type RailheadDeck = { car: Car; snap(): void; drive(fn: () => void): void };
@@ -20,7 +24,14 @@ const sin = (end.x - start.x) / length,
   cos = (end.z - start.z) / length;
 export const deckU = (pos: { x: number; z: number }) => initialU + (pos.x - start.x) * sin + (pos.z - start.z) * cos;
 const startY = line2Y(RING_S + initialU - PLATFORM.len / 2);
-export const railheadDrawn = { u: initialU };
+/** What every tab draws of the railhead, written once a frame by railhead-view.ts: the deck's end (m out), whether the
+ * haul has settled (the railhead's prompts and the Railhead lever wait for it), and `live` once Q7 has opened it. */
+export const railheadDrawn = { u: initialU, settled: true, live: false };
+let drawnCar: Car | null = null;
+/** The deck's end as drawn now, read off the car's interpolated pose, so a view updated before railhead-view.ts in the
+ * frame (halts-view.ts's lever) is not a frame behind the deck. */
+export const railheadEnd = () =>
+  railheadDrawn.live && drawnCar ? deckU(drawnCar.body.interpolatedPosition) : railheadDrawn.u;
 const deckYaw = Math.atan2(sin, cos);
 export function createRailheadDeck(owner: OwnedView): RailheadDeck {
   let drive: (() => void) | undefined;
@@ -32,6 +43,7 @@ export function createRailheadDeck(owner: OwnedView): RailheadDeck {
   car.speedLimit = 7.5;
   car.yaw = deckYaw;
   snapCar(car);
+  drawnCar = car;
   return {
     car,
     snap: () => snapCar(car),
@@ -39,6 +51,24 @@ export function createRailheadDeck(owner: OwnedView): RailheadDeck {
       drive = fn;
     },
   };
+}
+/** The deck's driver, its platform's `move` every fixed step (railhead-view.ts hands it the adapter's read): before Q7
+ * opens it waits under the sea; after, the rule clock leans on `tickNow` and the deck goes where the row's haul has it.
+ * Returns the new rule clock, -1 while it waits. */
+export function driveDeck(
+  deck: RailheadDeck,
+  read: { world(): ReadWorld; whole(): boolean; tickNow(): number },
+  clock: number,
+  outOf: typeof moveOutside,
+) {
+  const state = read.world();
+  if (!read.whole() || !line2Trains(state) || !q7Laid(state)) {
+    deck.car.y = -60;
+    return -1;
+  }
+  const next = leanClock(clock, read.tickNow(), FIXED);
+  placeDeck(deck, haulU(aperture(state), next) / 100, clock < 0, me.body, me.coyote, outOf);
+  return next;
 }
 const idleOffsets = new WeakMap<Car, { body: Body; x: number; z: number }>();
 // The deck's local -x side is the walkway's outer edge, over the sea, and its +z end is the railhead face, with only

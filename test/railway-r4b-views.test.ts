@@ -30,10 +30,25 @@ import {
   platformSpan,
   leanClock,
   spanFrom,
+  spansDue,
   spanTo,
   walkwaySpan,
 } from '../src/entities/railway/railhead-shape.ts';
 import { RING_S } from '../src/entities/railway/line2-path.ts';
+import { HAUL, haulEnd, haulSettled, haulU, type RailheadHaul } from '../src/sim/railway-ring-haul.ts';
+import { railheadLever, railheadLeverOn } from '../src/entities/railway/lever-place.ts';
+
+/** The haul to railhead k (its pair accepted at tick 1000, from where railhead k - 1 stood), and its ticks in quarters
+ * from the accept to a second past the end: railhead-view.ts's `ruleClock` between fixed steps. */
+const MOVED = 1000;
+const hauls = Array.from({ length: BENTS }, (_, i): RailheadHaul => ({
+  set: 2 * (i + 1),
+  moved: MOVED,
+  from: RING_HEAD[i]!.u,
+}));
+function* ticks(a: RailheadHaul) {
+  for (let t = a.moved; t <= haulEnd(a) + 10; t += 0.25) yield t;
+}
 
 // ---------------------------------------------------------------- the railhead's numbers against the sim's
 test("the shape's railheads are RING_HEAD's, and its fixtures stand where the sim reads them", () => {
@@ -95,6 +110,55 @@ test("the walkway behind a moving railhead holds the old platform's whole place,
     // And the new railhead's platform lies over it for its back 5 m, with 20 m of new deck for the rest.
     const [n0] = platformSpan(headU(k + 1));
     assert.ok(n0 >= w0 && n0 < p1, 'the new platform starts over the old one');
+  }
+  // While it hauls, everything under and behind the deck's end is walkway this tab draws (railhead-view.ts `walkway`:
+  // the base to u 120, then each decked span's 20 m), on a tab whose own bent and span animation has not yet decked the
+  // new span at all: `spansDue` forces it before the deck moves.
+  for (const a of hauls) {
+    const behind = (a.set >> 1) - 1;
+    for (const t of ticks(a)) {
+      const decked = Math.max(behind, spansDue(a, t)),
+        drawnTo = decked ? spanTo(decked - 1) : spanFrom(0);
+      const u = haulU(a, t) / 100;
+      assert.ok(
+        u <= drawnTo + 1e-9,
+        `haul to ${a.set >> 1} at tick ${t}: the deck's end at u ${u} is over an undrawn span`,
+      );
+    }
+    assert.equal(spansDue(a, a.moved + HAUL.after - 0.25), 0, 'nothing is forced while the footing goes down');
+    assert.equal(haulU(a, a.moved + HAUL.after + HAUL.ready), a.from, 'the deck waits out the told second');
+  }
+});
+test('prompts wait until the haul has settled', () => {
+  // railhead-view.ts `settled` (its rack and jib prompts) and the Railhead lever (`railheadDrawn.settled`).
+  for (const a of hauls) {
+    let lastMove = -1;
+    for (const t of ticks(a)) {
+      if (t > a.moved && haulU(a, t) !== haulU(a, t - 0.25)) lastMove = t;
+      assert.equal(haulSettled(a, t), t >= haulEnd(a), `haul to ${a.set >> 1} at tick ${t}`);
+    }
+    assert.ok(lastMove > 0 && lastMove + HAUL.settle <= haulEnd(a), 'the deck is chocked a while before the prompts');
+    assert.equal(haulU(a, haulEnd(a)), RING_HEAD[a.set >> 1]!.u, 'settled at the new head');
+  }
+  assert.ok(haulSettled({ set: 1, moved: -1, from: 0 }, 0), 'before any pair the railhead is at rest');
+});
+test('the lever stands on the drawn deck', () => {
+  // halts-view.ts's Railhead lever: `railheadLeverOn(railheadEnd())`, the deck's end as drawn.
+  for (let k = 0; k <= BENTS; k++)
+    for (const way of [-1, 1] as const)
+      assert.ok(Math.abs(railheadLeverOn(headU(k), way) - railheadLever(k, way).u) < 1e-9, `head ${k} way ${way}`);
+  for (const a of hauls) {
+    const offset = headU(0) - railheadLever(0).u;
+    let was = railheadLeverOn(haulU(a, a.moved) / 100);
+    for (const t of ticks(a)) {
+      const end = haulU(a, t) / 100,
+        u = railheadLeverOn(end);
+      const [p0, p1] = platformSpan(end);
+      assert.ok(u > p0 && u < p1, `haul to ${a.set >> 1} at tick ${t}: the lever at u ${u} is off the deck`);
+      assert.ok(Math.abs(end - u - offset) < 1e-9, 'it keeps its place on the platform');
+      assert.ok(Math.abs(u - was) <= (HAUL.speed / 100) * 0.25 + 1e-9, `no jump at tick ${t}: ${was} to ${u}`);
+      was = u;
+    }
   }
 });
 test('the railhead clock advances in rule ticks and snaps to a restored clock', () => {

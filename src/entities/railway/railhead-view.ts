@@ -21,9 +21,9 @@ import { placeSound } from '../../render/place-sfx.ts';
 import { splash } from '../../render/splash.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
 import { dustRing } from '../../render/particle-effects.ts';
-import { FIXED, SEA, reducedMotion } from '../../constants.ts';
-import { haulU } from '../../sim/railway-ring-haul.ts';
-import { deckU, placeDeck, railheadDrawn, type RailheadDeck } from './railhead-state.ts';
+import { SEA, reducedMotion } from '../../constants.ts';
+import { haulSettled } from '../../sim/railway-ring-haul.ts';
+import { driveDeck, railheadDrawn, railheadEnd, type RailheadDeck } from './railhead-state.ts';
 import { outOf } from '../../place/sites.ts';
 import { H, slab } from '../../place/land.ts';
 import { OFFSET_LAT } from '../../place/layout.ts';
@@ -49,8 +49,8 @@ import {
   crossoverSpan,
   headOf,
   headU,
-  leanClock,
   spanFrom,
+  spansDue,
   spanTo,
   walkwaySpan,
 } from './railhead-shape.ts';
@@ -174,19 +174,9 @@ export function createRailwayRailhead(
   }
   const sideMid = (SIDE.lat0 + SIDE.lat1) / 2,
     sideW = SIDE.lat1 - SIDE.lat0;
-  const car = deps.deck.car;
   let ruleClock = -1;
   deps.deck.drive(() => {
-    const state = adapter.read.world();
-    if (!adapter.read.whole() || !line2Trains(state) || !q7Laid(state)) {
-      ruleClock = -1;
-      car.y = -60;
-      return;
-    }
-    const opening = ruleClock < 0;
-    ruleClock = leanClock(ruleClock, adapter.read.tickNow(), FIXED);
-    const u = haulU(aperture(state), ruleClock) / 100;
-    placeDeck(deps.deck, u, opening, me.body, me.coyote, outOf);
+    ruleClock = driveDeck(deps.deck, adapter.read, ruleClock, outOf);
   });
   /** The side walkway from `u0` to `u1`: planks, bearers out from the deck's edge, piles at its outer edge. */
   function walkway(group: number, u0: number, u1: number) {
@@ -312,8 +302,15 @@ export function createRailwayRailhead(
   };
   const inSea = () => Math.max(0, started - lowering.length);
   const simHead = () => headOf(set);
-  /** The kit is where the sim has it: the railhead has caught up with the bents and nothing is sliding. */
-  const settled = () => stood() === simHead() && Math.abs(shownU - headU(stood())) < 0.05;
+  /** The haul is over on the game clock every tab shares (the row's `moved` and `from`), not this tab's animation. */
+  const settled = () => opened && ruleClock >= 0 && haulSettled(aperture(wd), ruleClock);
+  /** The deck as drawn, for this view and the Railhead lever (halts-view.ts reads `railheadEnd`). */
+  function drawn() {
+    railheadDrawn.live = ruleClock >= 0;
+    railheadDrawn.u = railheadDrawn.live ? railheadEnd() : headU(0);
+    railheadDrawn.settled = !opened || settled();
+    return railheadDrawn.u;
+  }
 
   // ---------------------------------------------------------------- the rack's tag
   // An empty rack with work still owed says where its next load is (gap-readability, step 7; 55 s idle at an empty
@@ -858,7 +855,7 @@ export function createRailwayRailhead(
       decked[j] = j < pairs;
     }
     baseOn = opened;
-    shownU = railheadDrawn.u = ruleClock < 0 ? headU(0) : deckU(car.body.interpolatedPosition);
+    shownU = drawn();
     for (const pc of pieces) pc.born = -Infinity;
     for (const key of [...bodies.keys()]) wantSolid(key, false, () => null as never);
     placeJib();
@@ -906,6 +903,16 @@ export function createRailwayRailhead(
           placeSound('shoulder', bentAt[j]!.x, bentAt[j]!.z);
         }
       }
+      // From `moved + after` the haul's spans are drawn, snapped if this tab's animation is behind the game clock.
+      const due = ruleClock < 0 ? 0 : spansDue(aperture(wd), ruleClock);
+      for (let j = 0; j < due; j++) {
+        if (rise[j]! < RISE_S) rise[j] = RISE_S;
+        if (decked[j]) continue;
+        decked[j] = true;
+        changed = true;
+        for (const pc of pieces) if (pc.group === j) pc.born = -Infinity;
+      }
+      for (let i = lowering.length - 1; i >= 0; i--) if (lowering[i]!.slot >> 1 < due) lowering.splice(i, 1);
       if (baseOn !== opened) {
         baseOn = opened;
         changed = true;
@@ -914,7 +921,7 @@ export function createRailwayRailhead(
         animating = DROP_S + 1.2;
         solids();
       }
-      shownU = railheadDrawn.u = ruleClock < 0 ? headU(0) : deckU(car.body.interpolatedPosition);
+      shownU = drawn();
       placeJib();
       if (animating > 0) {
         animating -= dt;

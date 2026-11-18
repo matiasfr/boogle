@@ -2,6 +2,7 @@
 // pier head (`u`, src/sim/railway-ring-layout.ts) and metres east of the down track (`lat`). No three.js, no rows: the
 // view (./railhead-view.ts), the lookout's buoys and the tests read the same functions.
 import { RING_BUOYS, RING_HEAD, RING_WALK } from '../../sim/railway-ring-layout.ts';
+import { HAUL, type RailheadHaul } from '../../sim/railway-ring-haul.ts';
 
 /** Bents 7..13 (index 0..6) stand at u 140, 160 ... 260; bent index j carries the deck from u 120 + 20 j to 140 + 20 j. */
 export const BENTS = 7;
@@ -37,6 +38,12 @@ export function deckProfile() {
     topAt: (_x: number, z: number) => centre + hy / Math.cos(pitch) - grade * z,
   };
 }
+/** How many bents' spans must be drawn now: from `moved + after`, every one the haul is heading for, stood and decked
+ * at once. The bent and span animation runs from this tab's own receipt, which can be a second or more behind the
+ * game clock the haul runs on; forcing them before the deck's 1 s told and travel means it never rolls onto a span this
+ * tab has not drawn. */
+export const spansDue = (a: RailheadHaul, clock: number) =>
+  a.moved >= 0 && clock >= a.moved + HAUL.after ? Math.min(BENTS, a.set >> 1) : 0;
 /** Where the platform stands with the railhead at `u`, and what is walkway behind it. */
 export const platformSpan = (u: number) => [u - PLATFORM.len, u] as const;
 export const walkwaySpan = (u: number) => [RING_WALK(0).u0 / 100, u] as const;
