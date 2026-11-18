@@ -46,11 +46,12 @@ Status: `todo`, `out` (dispatched, building), `review` (built, in review or merg
 | --- | --- | --- | --- | --- |
 | 1 | Dev tooling and CI tests (`test/` tests of `dev/**`, `scripts/**`) | 34 / 4,279 | done | #2062: 33 / 4,210 |
 | 2 | Prefab data and level (`test/prefab-*`, fixtures, helpers) | 20 / 5,077 | done | #2063: 18 files, net 90 lines lighter |
-| 3 | Review- and milestone-named sim tests | 36 / 6,191 | review | #2066 (reviewed, merging): 34 / 5,691 |
-| 4 | Railway sim: trains, lines, routes, ring, steel, works | 43 / 10,063 | review | reviewed, in the ship queue: 33 files, about 1,000 lines lighter |
+| 3 | Review- and milestone-named sim tests | 36 / 6,191 | done | #2075 (the commits of #2066, rebased): 34 / 5,691 |
+| 4 | Railway sim: trains, lines, routes, ring, steel, works | 43 / 10,063 | done | #2073: 33 files, about 1,000 lines lighter |
 | 5a | Railway sim: trade, adapter, read session | 3 / about 2,900 | done | #2070: 225 lines lighter |
-| 5b | Railway sim: supply, install, loader, replicate, goldens, tick order, ecs, world, room (the 43 files 5a did not check test by test) | about 43 / 8,200 | out | |
-| 6 | Server: accounts, rooms, saves, transport (`server/test/*` except area 7) | 38 / 6,928 | review | built (Codex, finished by Claude): 30 / 6,366; independent review out |
+| 5b | Railway sim: supply, install, loader, replicate, goldens, tick order, cart, check, schema, boiler, opening | about 36 / 6,000 | review | reviewed, in the ship queue: about 310 lines lighter and one fixture deleted |
+| 5c | The eight files 5b only skimmed: replicate, replicate-budget, ecs, world-replay, world-reset, world-sync, room-clock, the bad-worlds fixture | 8 / about 1,650 | out | a third builder judges every test by name |
+| 6 | Server: accounts, rooms, saves, transport (`server/test/*` except area 7) | 38 / 6,928 | done | #2076: 30 / 6,366 |
 | 7 | Server: railway hosts (`server/test/railway-*`, `rail-tune*`, `seats-host`, `boogler-*`) | 26 / 7,513 | done | #2068: 24 / 7,292 |
 | 8 | Client and world logic (the rest of `test/`) | 94 / 10,828 | done | #2064: 89 files, about 690 lines lighter |
 | 9 | Runtime-helper tests area 1 handed back (device-id, tune, namespace, sw-worker, zfight and others) | 21 / 1,617 | done | #2061: 21 / about 1,380 |
@@ -111,6 +112,33 @@ mutation evidence, unresolved risks.
   passed under their own mutation), literal pins replaced by relations. Review restored four things: the box cap is
   worked out in the test, not with `boxCap`; the R2b twin run is back (a hidden-state mutant passed goldens 9 to 11 and
   failed only it); the unplayed gate 2 worlds are world-checked; the price floor (`railPricePct` refuses 0) is tested.
+- 2026-11-18, area 4, #2073 (railway trains, lines, routes). Deleted under the test diet as client feel or render code
+  the sim never imports: the three `railway-glide-*` files, `rail-top`, `consist`, `consist-cache`, `track-chunks`,
+  `track-wing`, `turnout`, `railway-end-path` (its contract is held by `platform-transition` and `retained-blocks`,
+  shown by mutation). Trimmed eight suites: literal coordinate and tuning pins, version-named cases rewritten as
+  relations, five six-hold clause tests merged into one 13-row table. Review restored `train-wheel-rail`: it was the
+  only guard that wheels stay on the drawn rails at every pose. Cost: `railway-running-side` builds a lighter seed
+  (40 s to 5 s locally); route-rules gate 10 uses the three-lap helper. Ten mutations recorded, each caught.
+- 2026-11-18, area 3, #2075 (review- and milestone-named sim tests). Late-join cases of `m10a-views`, `m10d`, `m10e`
+  merged into one all-rows comparison at the served step; R3b2's last-held-tick fixture folded into R3b1's worst case;
+  R4a and R4b view copies replaced by one joined-client table; `review-heavy-load-fix3` folded into the whole-pile
+  case. Deleted with no replacement, confirmed presentation by review: `review-town-a3`, `review-town-b2-build`, an
+  M10a catalog snapshot, M10f's build counter. Renamed after their contracts: `railway-whole-state-latch`,
+  `railway-frame-tick`, `railway-footing-replication`, `town-late-join`, `town-plot-projection`. Review: ship as is, six
+  mutations caught. Kept whole and why: first-five, m10c, m11, m12, m12-review, r3a-adversarial, r4c-leaf,
+  ring-reach, route-review, gorge-seams, the four heavy-load reviews, m12c, m3b, town-b2, town-buy, v25, v26,
+  garage-upgrade (each holds a distinct authority, ordering, save or late-join case).
+- 2026-11-18, area 6, #2076 (server: accounts, rooms, saves, transport). Deleted or folded: `seat-recording` and
+  `roster-recording` into their flood suites, `accounts-review` into `accounts`, `replace-proxy` into
+  `client-address` and `replace-admission`, `replace-wire` into `replace`, `review-shutdown-drain` into `room-close`,
+  `review-town-b2-reach-ws` into the socket host suite, `land` (its subject, `loadHomeLand` in
+  `server/src/host/land.ts`, has no caller). Eight departure orders became four that still hold every pairwise
+  order. Flake repairs: fixed sleeps replaced by heartbeat echoes in `voice-relay`, `malformed-messages` and host
+  tests, the replication flush asserted on the next room step, the jump sweep on a mocked clock, playdata retention
+  on a controlled clock. Review broke seven replace-admission contracts on purpose and each was caught; the
+  forged-announcement check now waits for the receiving peer's echo. Untouched: server-ops, save-cleanup,
+  save-inventory, room-ids, world-host, world-host-trace, loader-save, room-clock-host, step-meter,
+  credential-evidence, account-admission, seat-replication, client-address.
 
 ## Findings worth keeping
 
@@ -132,8 +160,8 @@ mutation evidence, unresolved risks.
 
 ## Unresolved risks
 
-- `server/test/accounts-review.test.ts:37` (an account crash child expecting `SIGKILL`) is red on Windows before any
-  campaign edit; CI is Linux and green. Two other server tests skip on Windows. Area 6 owns the file.
+- The account crash child test (now in `server/test/accounts.test.ts`, expecting `child.signal === 'SIGKILL'`) is red
+  on Windows, as it was before the campaign; CI is Linux and green. Two other server tests skip on Windows.
 - unit-budget (#2062): on Windows the detached fixture helper can outlive a run whose runner is killed during the two
   seconds before the budget kill; it is an idle process. A self-exit timer in `test/fixtures/unit-budget/interval.ts`
   would bound it.
@@ -158,3 +186,13 @@ mutation evidence, unresolved risks.
   route-rules shard weights in `dev/ci/unit-weights.json` need re-measuring from a CI run.
 - Area 3: the till label's over-cap clamp (`src/entities/railway/till-view.ts`) has no test; the sim's cap does.
   Moving the renamed contract tests into their owning suites was not done.
+- Server (#2076): `host.test` "one player, two tabs" timed out once in five review runs under load on an unchanged
+  2 s wait (green alone); a late joiner's first snapshot of an occupied seat table and the actor's own recording are
+  no longer asserted directly (same code path as asserted cases); `loadHomeLand`, `HOME_LAND` and the `HomeLand` type
+  in `server/src/host/land.ts` are dead code left for the server's owner.
+- Area 5b: the retired tick-order rows hashed every tick on q1-done, q2-arriving, q4-arriving, works-lit and deck-laid
+  and at the default hold; those are now hashed by the golden every 1,200 ticks (system order is still checked every
+  tick). The larger golden duplication (yard and gorge stages each replaying from an earlier seed) needs chained
+  seed caches in `src/sim`, not a test change. The ECS budget catches "touch every entity" only by time (5.5 ms
+  against 4 ms); a rows-sent assertion would be sturdier. Weights for golden shards 6 to 8, railway-loader,
+  railway-tick-order and ecs-budget need re-measuring.
