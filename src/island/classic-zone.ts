@@ -4,6 +4,7 @@
 // update callbacks. The only per-frame work is one distance check shared by every critter. Serves DESIGN.md 9.
 import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
 import { me } from '../player/state.ts';
+import { resident } from '../render/lod-level.ts';
 
 // The fish stay within 80 m of a home 35 to 70 m out (150 m at most); the gulls within about 90 m. Entering at 160 m puts
 // them there before you reach the island's shore; leaving at 190 m keeps the edge from flickering.
@@ -24,11 +25,12 @@ export function whileNearClassicIsland(make: () => GameEntity) {
     update() {
       const p = me.body?.position;
       if (!p) return;
-      const d2 = p.x * p.x + p.z * p.z;
+      const d = Math.hypot(p.x, p.z);
       for (let k = 0; k < watches.length; k++) {
         const w = watches[k]!;
-        if (!w.entity && d2 < ENTER * ENTER) w.entity = w.make();
-        else if (w.entity && d2 > LEAVE * LEAVE) {
+        const want = resident(d, !!w.entity, ENTER, LEAVE);
+        if (want && !w.entity) w.entity = w.make();
+        else if (!want && w.entity) {
           despawn(w.entity);
           w.entity = null;
         }
