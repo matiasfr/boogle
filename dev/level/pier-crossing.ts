@@ -78,14 +78,27 @@ export function pierCrossingReport(assertion: (pass: boolean, text: string) => v
     rise = yb! - ya!;
   const degrees = (Math.atan2(rise, run) * 180) / Math.PI;
   pin('ramp physical horizontal run', run, 9.369222);
-  pin('ramp rise', rise, 0.67);
-  pin('ramp slope surface length', Math.hypot(run, rise), 9.393147);
+  // The ramp starts at the planks' top, not 0.17 m below them (pier-plank-step): rise 0.67 → 0.50.
+  pin('ramp rise', rise, 0.5);
+  pin('ramp slope surface length', Math.hypot(run, rise), 9.382554);
   assertion(
     degrees <= 15 && run / Math.hypot(run, rise) >= WALKABLE_NY,
     `Pier ramp ${degrees.toFixed(6)}° ≤15° and walkable (ring.ts ramp rule; WALKABLE_NY ${WALKABLE_NY})`,
   );
-  assertion(Math.abs(degrees - 4.090301) <= 0.01, `ramp slope: ${degrees.toFixed(6)}°; pin 4.090301 ±0.01°`);
+  assertion(Math.abs(degrees - 3.054762) <= 0.01, `ramp slope: ${degrees.toFixed(6)}°; pin 3.054762 ±0.01°`);
   assertion(Math.abs(end - (h.s0 - (h.headRamp ?? 6))) < 1e-9, 'crossing meets the ramp foot exactly in s');
+  // Every up halt whose planks end at its start ramp's foot (the Pier and the Quarry): one walking surface there.
+  for (const [r, u] of OFFSET_HALTS.entries()) {
+    if (Math.abs(u.crossS + CROSSING_WIDTH / 2 - (u.s0 - (u.headRamp ?? 6))) > 1e-6) continue;
+    const foot = (
+      haltRamps('join', { row: r, up: true }).find((p) => p.params?.piece === 'ramp')!.params!.support as number[]
+    )[4]!;
+    const top = (haltCrossing('join', { row: r, up: true })[1]!.params!.support as number[])[4]!;
+    assertion(
+      Math.abs(top - foot) <= 0.03,
+      `${u.name}: planks' top ${top.toFixed(3)} m meets the start ramp's foot ${foot.toFixed(3)} m within 0.03 m (step ${(top - foot).toFixed(3)} m)`,
+    );
+  }
   const phases = pierPhases();
   assertion(
     !phases.failures.length,
