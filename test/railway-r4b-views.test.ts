@@ -190,3 +190,107 @@ test("line 2's last halt is the Railhead with `heads`, so its drawn end follows 
     RING_HEAD.map((h) => h.s),
   );
 });
+
+// ---------------------------------------------------------------- the traveller's cues (Checkpoint B review)
+// railhead-view.ts built from its own source with every import real except the sounds (counted), the dust and the
+// deck's driver (`driveDeck` returns the rule clock the test sets, as the platform's `move` would). The row is a real
+// room's at `gap-footed`, whose last pair stamped the haul from railhead 6 to 7.
+async function railheadCues() {
+  await import('../dev/sim/hooks.ts');
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { pathToFileURL } = await import('node:url');
+  const { sourceModule } = await import('../dev/level/source.ts');
+  const { buildSeedWorld } = await import('./helpers/rail.ts');
+  const { aperture } = await import('../src/sim/railway-rows.ts');
+  const { haulU: at } = await import('../src/sim/railway-ring-haul.ts');
+  const { createOwnedView } = await import('../src/render/owned-view.ts');
+  await (
+    await import('../src/physics/engine.ts')
+  ).physicsReady;
+  const file = 'src/entities/railway/railhead-view.ts';
+  const source = fs.readFileSync(file, 'utf8');
+  const bindings: Record<string, unknown> = {};
+  // Browser-only modules (the player, the net, sounds and effects) are given below instead.
+  const browser =
+    /player\/player|netplay\/net|machine-sfx|place-sfx|render\/splash|particle-effects|prefab\/instantiate|place\/sites|place\/land/;
+  for (const m of source.matchAll(/^import\s+(\*\s+as\s+(\w+)|\{([^}]*)\})\s+from\s+'([^']+)';/gm)) {
+    if (m[0].startsWith('import type')) continue;
+    const spec = m[4]!;
+    if (browser.test(spec)) continue;
+    const url = spec.startsWith('.') ? pathToFileURL(path.resolve(path.dirname(file), spec)).href : spec;
+    const mod = (await import(url)) as Record<string, unknown>;
+    if (m[2]) bindings[m[2]] = mod;
+    for (const name of (m[3] ?? '').split(',').map((s) => s.trim())) {
+      if (!name || name.startsWith('type ')) continue;
+      const [from, as = from] = name.split(/\s+as\s+/);
+      bindings[as!] = mod[from!];
+    }
+  }
+  const { railRoom } = await import('./helpers/rail-room.ts');
+  const room = railRoom(buildSeedWorld('gap-footed'));
+  const read = room.join('a', 'a').adapter.read;
+  room.ready();
+  const world = read.world();
+  const row = aperture(world);
+  const heard: { cue: string; p: number }[] = [];
+  let clock = -1;
+  const phaseNow = () => clock - row.moved - HAUL.after;
+  const cue = (name: string) => () => heard.push({ cue: name, p: phaseNow() });
+  Object.assign(bindings, {
+    bell: cue('bell'),
+    chuff: cue('chuff'),
+    clank: cue('clank'),
+    thump: cue('thump'),
+    placeSound() {},
+    dustRing() {},
+    splash() {},
+    instantiate: () => ({ root: new (bindings.THREE as typeof import('three/webgpu')).Group(), dispose() {} }),
+    me: { body: null, coyote: 0 },
+    outOf: () => false,
+    H: () => -10,
+    slab: () => ({}),
+    remotes: new Map(),
+    driveDeck: () => clock,
+    railheadEnd: () => at(row, Math.max(clock, 0)) / 100,
+  });
+  const { createRailwayRailhead } = sourceModule<typeof import('../src/entities/railway/railhead-view.ts')>(
+    source,
+    bindings,
+  );
+  let drive = () => {};
+  const adapter = { read: { world: () => world, whole: () => true, pid: 'a', tickNow: () => clock } };
+  const view = createRailwayRailhead(adapter as never, createOwnedView(), {
+    deck: { car: null as never, snap() {}, drive: (fn: () => void) => void (drive = fn) },
+    toRing: () => 0,
+    hookRing() {},
+  });
+  /** One frame with the rule clock at `tick`. */
+  const frame = (tick: number) => {
+    clock = tick;
+    drive();
+    view.update(1 / 60);
+    return (view.inspect() as { railheadView: { traveller: { lamps: boolean } } }).railheadView.traveller;
+  };
+  return { row, heard, frame };
+}
+test('a tab whose clock jumps forward (hidden, paused or stalled mid-haul) does not play the missed cues at once', async () => {
+  // leanClock snaps the rule clock to tickNow when it is more than 3 ticks out, so a tab that comes back from the
+  // background or a long stall reaches the present in one frame. Every cue between its last frame and now then passes
+  // the `seen < x <= p` latch together: the told chuff, each travel chuff, both thumps and the settled bell in one frame.
+  const { row, heard, frame } = await railheadCues();
+  for (let t = row.moved; t <= row.moved + HAUL.after + 2; t += 1 / 6) frame(t);
+  const before = heard.length;
+  frame(haulEnd(row) + 5);
+  const burst = heard.slice(before);
+  assert.ok(burst.length <= 1, `${burst.length} cues in one frame: ${burst.map((h) => h.cue).join(', ')}`);
+});
+test('a tab drawing every frame through a haul hears each cue once, in order', async () => {
+  const { row, heard, frame } = await railheadCues();
+  for (let t = row.moved; t <= haulEnd(row) + 5; t += 1 / 6) frame(t);
+  const names = heard.map((h) => h.cue);
+  assert.deepEqual(names.slice(0, 3), ['bell', 'clank', 'chuff'], 'told, then the start');
+  assert.deepEqual(names.slice(-3), ['thump', 'thump', 'bell'], 'chocked, then settled');
+  assert.ok(names.filter((n) => n === 'chuff').length >= 3, `the winch chuffs while it travels: ${names.join(', ')}`);
+  assert.ok(heard[0]!.p >= 0 && heard[0]!.p < 0.5, 'the bell rings at told');
+});

@@ -238,15 +238,15 @@ Rows are from `npm run models` (mode withCodex, 14 November).
       (`stepRig`, `drawTraveller`, the jib's fold in `drawKit`, `bollard` on each span), driven by `haulPhase` on
       the view's rule clock; `inspect().railheadView.traveller` reports the rig. The only change from the note: the
       wheels grew from r 0.35 to 0.42 m with a grey disc behind the spokes, because at 0.35 they read as brackets.
-      Cost: no new draw call (all in the existing `live` and static box batches); about 76 boxes at rest and 79 at
-      most while moving (about 950 triangles) in `live`, and 16 boxes (192 triangles) for the 8 bollards in the static
+      Cost: no new draw call (all in the existing `live` and static box batches); about 79 boxes at rest and 82 at
+      most while moving (about 980 triangles; the bell became four boxes at Checkpoint B) in `live`, and 16 boxes (192 triangles) for the 8 bollards in the static
       batch; the peak `live` count measured at `gap-footed` is 385 of 2,600. Evidence with `dev/look/evals/railhead-move.ts`
       at `ring-set-3` (real input sets the pair's second footing): [motion sheet](../world/railhead-deck-car/traveller-motion.png)
       (10 frames over 9 s: rest, told with the jib folding and a lamp lit, the eased start, travel, the stop's flare,
-      chocks down and lamps dark at rest), [mid-haul](../world/railhead-deck-car/traveller-mid.png),
+      chocks down and lamps dark at rest), [mid-haul, the winch slung on the front face and the four-box bell after Checkpoint B](../world/railhead-deck-car/traveller-kit.png),
       [rest](../world/railhead-deck-car/traveller-rest.png) and step 4's [lever riding the deck](../world/railhead-deck-car/lever-mid.png),
       all with the menu closed. The eval's log matched the timeline (told at phase 0, moving from phase 10, at u 160
-      by phase 60, settled at 70). Not seen: sounds, reduced motion, a second tab, and the bell's swing at sheet size.
+      by phase 60, settled at 70). The motion sheet and rest still predate Checkpoint B's winch and bell. Not seen: sounds, reduced motion, a second tab, and the bell's swing at sheet size.
       Seen in passing (sim, not this step): a train runs to the new head's nose as soon as the pair is accepted, onto
       the new span ahead of the still-chocked deck.
 - [ ] **Checkpoint B (steps 3 to 5, one ship, after A is live).** Proofs, once: real input standing on the platform
@@ -271,11 +271,11 @@ batch, in the view's existing colours; no texture, no model, no collider, no str
 | --- | --- | --- | --- |
 | Bogies | 4 (2 m and 8 m in from each end), a wheel pair on each long face at the walkway, a side frame between | still | spokes turn with the distance hauled (r 0.42 m) |
 | Chocks | an orange block at each bogie, each face (8) | down on the walkway against the wheels | lifted 0.5 m and tucked against the face |
-| Winch | a drum on two cheeks on the front corner, track side | still | the drum turns with the line taken in |
+| Winch | a drum on two cheeks slung on the front face below the deck top, track side (Checkpoint B: moved off the walking surface, no part over 0.3 m) | still | the drum turns with the line taken in |
 | Haul line | winch to a bollard at the new span's end (lat 1.5, just off the platform's track side) | not shown | sags, goes taut over the told second, shortens as it hauls |
 | Bollards | one at each built span's end, in the span's static picture | where the line will run to | |
 | Lamps | an amber lamp on a post at each front corner | dark | blinking at 2 Hz from told until settled |
-| Bell | on a short post by the jib mast | still | swings for the told second |
+| Bell | on a bracket off the jib mast, a flared bell of four stacked boxes | still | swings for the told second |
 | Guys | two stays from the jib mast's top to the platform's back corners | taut | taut (they ride with it) |
 | Jib | the existing arm | out over the gap | folds up toward the mast for the move, out again at rest |
 | Flare | a gold glow at the winch and bollard as it seats | | fades over 0.6 s at the stop |
@@ -292,8 +292,9 @@ batch, in the view's existing colours; no texture, no model, no collider, no str
 | 10 + T + 9 | Settled (`haulEnd`): **bell** again, lamps dark, line gone; the prompts and the lever come back (step 4) |
 
 Sounds are the existing `machine-sfx` ones (`bell`, `clank`, `chuff`, `thump`). Cues fire with a latch on the
-highest phase seen for the pair (`seen < x <= p`), so a clock correction backward never repeats one; a tab that first
-sees a pair more than 0.2 s past a cue skips it (late join, reload, a backed-up peer). **Reduced motion** keeps every
+highest phase seen for the pair (`seen < x <= p`), so a clock correction backward never repeats one; a cue more
+than 0.2 s behind the clock when the clock gets there is skipped, whether the pair is first seen late (late join,
+reload, a backed-up peer) or the clock jumps forward (a tab back from the background, a pause, a stall: Checkpoint B). **Reduced motion** keeps every
 sound, the chocks, the fold, the wheels and the line (they are the mechanism), and drops the lamps' blink (steady on
 instead) and the bell's swing.
 

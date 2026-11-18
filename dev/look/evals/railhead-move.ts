@@ -6,7 +6,7 @@
 //   npm run look -- --real --rail-seed ring-set-3 --query debugcam=1 --eval dev/look/evals/railhead-move.ts
 //     --until window.__railheadMove --warm 120 --frames 10 --seconds 9 --name railhead-move
 // `&still=mid` instead flags mid-travel and `&still=rest` the settled deck, for single stills (--frames 2), and
-// `&cam=lever` frames the Railhead lever riding the deck. Prints `RAILHEAD MOVE ...` lines with the haul's phase.
+// `&cam=lever` frames the Railhead lever riding the deck, `&cam=kit` the platform's front (winch and bell) close up. Prints `RAILHEAD MOVE ...` lines with the haul's phase.
 const R = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
@@ -25,7 +25,8 @@ const { line2World, line2Y, RING_S } = (await import(
 const page = window as unknown as Window & { __railheadMove?: boolean };
 const query = new URLSearchParams(location.search);
 const still = query.get('still'),
-  lever = query.get('cam') === 'lever';
+  lever = query.get('cam') === 'lever',
+  kit = query.get('cam') === 'kit';
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const say = (text: string) => console.log(`RAILHEAD MOVE ${text}`);
 type Railhead = { opened: boolean; settled: boolean; shownU: number; traveller: Record<string, unknown> };
@@ -71,7 +72,13 @@ setInterval(() => {
   if (resume?.getClientRects().length) resume.click();
   const u = view()!.shownU;
   const s = RING_S + u;
-  if (lever) {
+  if (kit) {
+    line2World(s + 4.5, 7.5, p);
+    const cx = p.x,
+      cz = p.z;
+    line2World(s - 1.5, 3.2, p);
+    window.__debugCam?.set([cx, line2Y(s) + 3.4, cz], [p.x, line2Y(s - 1.5) + 1.6, p.z], 55);
+  } else if (lever) {
     line2World(s - 12, 12, p);
     const cx = p.x,
       cz = p.z;

@@ -91,10 +91,11 @@ const RACK_PITCH = 1.3,
 const MAST = 9,
   ARM = [8.5, 7.5] as const;
 /** The traveller (step 5, the plan's design note): bogies (m in from the platform's back end), wheel radius, the winch
- * on the front track-side corner, the bollard its line runs to, and how high the jib folds (rad over level). */
+ * slung on the platform's front face below its top (off the walking surface, clear of the jib's working spot), the
+ * bollard its line runs to, and how high the jib folds (rad over level). */
 const BOGIES = [2, 8, PLATFORM.len - 8, PLATFORM.len - 2],
   WHEEL_R = 0.42,
-  WINCH = { back: 1.3, lat: SIDE.lat0 + 0.35 },
+  WINCH = { back: -0.14, lat: SIDE.lat0 + 0.5, drop: 0.4 },
   BOLLARD = { back: 0.3, lat: 1.5 },
   FOLD = 1.25;
 
@@ -716,11 +717,14 @@ export function createRailwayRailhead(
     rig.swing = on && !reducedMotion && p < HAUL.ready ? Math.sin(p * 2.4) * 0.6 * (1 - p / HAUL.ready) : 0;
     rig.flare = p >= end && p < end + 6 ? 1 - (p - end) / 6 : 0;
     if (!live) return;
-    // A pair this tab first sees more than 0.2 s past a cue skips it; a clock that steps back repeats nothing.
+    // Cues more than 0.2 s behind the clock are skipped, whenever the clock gets there: a pair first seen late (a join,
+    // a reload, a backed-up peer) or a forward jump (a tab back from the background, a pause, a stall). At most the
+    // current phase's state is shown, with no backlog of sounds; a clock that steps back repeats nothing.
     if (a.set >> 1 !== cuePair) {
       cuePair = a.set >> 1;
-      seen = p - 2;
+      seen = -Infinity;
     }
+    seen = Math.max(seen, p - 2);
     if (p <= seen) return;
     const passed = (x: number) => seen < x && x <= p;
     const at = (back: number, lat: number) => (world(shownU - back, lat), q);
@@ -773,20 +777,21 @@ export function createRailwayRailhead(
         live.box(q.x, yAt(ub) + 0.16 + rig.lift * 0.5, q.z, 0.2, 0.24, 0.26, COLOURS.stake, ya, pa);
       }
     }
-    // The winch: two cheeks and a drum that turns with the line taken in.
+    // The winch, slung on the front face below the deck's top (no part over 0.3 m): two cheeks and a drum that turns
+    // with the line taken in.
     const uw = u - WINCH.back,
-      yw = platY(uw) + 0.04,
+      yw = platY(uw) - WINCH.drop,
       yaw = yawAt(uw);
-    for (const d of [-0.22, 0.22]) {
+    for (const d of [-0.16, 0.16]) {
       world(uw, WINCH.lat + d);
-      live.box(q.x, yw + 0.25, q.z, 0.06, 0.5, 0.42, COLOURS.iron, yaw);
+      live.box(q.x, yw, q.z, 0.04, 0.3, 0.26, COLOURS.iron, yaw);
     }
     world(uw, WINCH.lat);
     const wx = q.x,
       wz = q.z,
-      drum = (u - rig.from) / 0.16;
-    live.box(wx, yw + 0.3, wz, 0.38, 0.3, 0.3, COLOURS.cap, yaw, drum);
-    live.box(wx, yw + 0.3, wz, 0.38, 0.3, 0.3, COLOURS.cap, yaw, drum + Math.PI / 4);
+      drum = (u - rig.from) / 0.11;
+    live.box(wx, yw, wz, 0.28, 0.2, 0.2, COLOURS.cap, yaw, drum);
+    live.box(wx, yw, wz, 0.28, 0.2, 0.2, COLOURS.cap, yaw, drum + Math.PI / 4);
     // The haul line: from the drum to the bollard at the new span's end, its slack taken up over the told second.
     if (rig.line) {
       world(rig.to - BOLLARD.back, BOLLARD.lat);
@@ -794,7 +799,7 @@ export function createRailwayRailhead(
         by = yAt(rig.to - BOLLARD.back) + 0.66,
         bz = q.z,
         sx = wx,
-        sy = yw + 0.45,
+        sy = yw + 0.1,
         sz = wz;
       const sag = (1 - rig.taut) * Math.min(1.2, Math.hypot(bx - sx, bz - sz) * 0.08);
       const mx = (sx + bx) / 2,
@@ -804,8 +809,8 @@ export function createRailwayRailhead(
       bar(mx, my, mz, bx, by, bz, 0.05, COLOURS.rope);
     }
     if (rig.flare > 0) {
-      const s = 0.45 + 0.35 * rig.flare;
-      live.box(wx, yw + 0.3, wz, s, s, s, COLOURS.glow, yaw);
+      const s = 0.3 + 0.25 * rig.flare;
+      live.box(wx, yw, wz, s, s, s, COLOURS.glow, yaw);
     }
     // Amber lamps on the front corners: blinking while it moves (steady with reduced motion), dark at rest.
     for (const lat of [SIDE.lat0 + 0.15, SIDE.lat1 - 0.15]) {
@@ -818,18 +823,26 @@ export function createRailwayRailhead(
     world(u - JIB_BACK, 4.1);
     const py = jibFoot.y + 2.6;
     live.box((q.x + jibFoot.x) / 2, py, (q.z + jibFoot.z) / 2, 0.08, 0.08, 0.5, COLOURS.iron, yaw + Math.PI / 2);
-    const fwd = Math.sin(rig.swing) * 0.22;
-    live.box(
-      q.x + Math.sin(yaw) * fwd,
-      py - Math.cos(rig.swing) * 0.22,
-      q.z + Math.cos(yaw) * fwd,
-      0.26,
-      0.28,
-      0.26,
-      COLOURS.gold,
-      yaw,
-      rig.swing,
-    );
+    // A bell's flare from four stacked boxes (crown, shoulder, waist, lip), swinging together about the bracket.
+    for (const [down, w, h] of [
+      [0.05, 0.08, 0.06],
+      [0.13, 0.16, 0.1],
+      [0.23, 0.22, 0.1],
+      [0.31, 0.32, 0.06],
+    ] as const) {
+      const fwd = Math.sin(rig.swing) * down;
+      live.box(
+        q.x + Math.sin(yaw) * fwd,
+        py - Math.cos(rig.swing) * down,
+        q.z + Math.cos(yaw) * fwd,
+        w,
+        h,
+        w,
+        COLOURS.gold,
+        yaw,
+        rig.swing,
+      );
+    }
     // Guys from the mast's top to the platform's back corners.
     for (const lat of [SIDE.lat0 + 0.2, SIDE.lat1 - 0.2]) {
       world(u0 + 0.3, lat);
