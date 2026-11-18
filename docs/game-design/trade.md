@@ -78,8 +78,9 @@ Sources: [away system](../../src/sim/railway-sys-away.ts), [curve](../../src/sim
 a tied coin sack stands beside the column on the counter. The board shows the box balance and `Sack <count>`;
 within 3 m, one Interact press on `Empty` sends the existing sack intent. The sack, its count and the prompt
 disappear only when the row reports the pour, and the column rises with the accepted balance. An empty sack
-offers nothing; a joining player draws the waiting sack from the same row. The sack has no collider. The box's
-existing balance display and column remain capped at its mark, even if a pour takes the actual balance above it.
+offers nothing; a joining player draws the waiting sack from the same row. The sack has no collider. The column
+stays capped at the box's mark, even if a pour takes the actual balance above it; the board shows the true balance
+(18 November 2026).
 The waiting sack's count is not clamped to the box cap.
 `Empty` and `Sack <count>` are placeholders for the owner. No Boogler copy changed.
 Sources: [till view and interaction](../../src/entities/railway/till-view.ts),
