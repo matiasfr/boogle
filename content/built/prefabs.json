@@ -2724,6 +2724,28 @@
         "params": {}
       }
     },
+    "ring.box-solid": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "half": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "ring.box-solid",
+      "scope": "place",
+      "visual": {
+        "none": true
+      }
+    },
     "ring.fingerpost-arm": {
       "colliders": [],
       "key": "ring.fingerpost-arm",
