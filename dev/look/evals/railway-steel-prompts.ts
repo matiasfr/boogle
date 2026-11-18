@@ -1,6 +1,6 @@
 // npm run look -- --rail-seed steel-kit --hud --eval dev/look/evals/railway-steel-prompts.ts --query steelstep=take --name steel-take
 //  (steelstep=feed goes on to feed the logs and ends at the doorway with an empty back, the prompt blocked again;
-//   steelstep=light goes on to take the rails and feed them, and ends with the works lit and no prompt)
+//   steelstep=light goes on to take the rails and feed them, a back at a time, and ends with the works lit and no prompt)
 // The steel works' three prompts, pressed (docs/plans/ring-island-build2.md, V1): at the doorway with an empty back
 // "Feed the works" is offered blocked with "Bring logs or rails"; at the yard "Take logs" is pressed and the back holds
 // logs while the yard's count falls; at the doorway "Feed the works" is pressed and the bill's logs rise; the same for
@@ -99,20 +99,26 @@ if (step !== 'take') {
   say(`empty back again: blocked "${again.blocked ?? ''}"`);
 }
 if (step === 'light') {
-  const fed = facts();
-  atYard('rails');
-  await press('railway-steel-take-rails', 'Take rails');
-  const rails = facts();
-  say(`after Take rails ${JSON.stringify(rails)}`);
-  if (rails.backRails <= 0 || rails.yardRails !== fed.yardRails - rails.backRails)
-    throw new Error('steel prompts: Take rails moved nothing from the yard to the back');
-  atDoor();
-  await press('railway-steel-feed', 'Feed the works');
-  const end = facts();
-  say(`after Feed the works (rails) ${JSON.stringify(end)}`);
-  if (end.rails !== rails.rails + rails.backRails || end.backRails !== 0)
-    throw new Error('steel prompts: Feed the works did not move the rails into the bill');
+  // A back holds fewer than the bill's 12 rails, so take and feed until the yard has none left.
+  for (let trip = 0; facts().yardRails > 0; trip++) {
+    if (trip >= 4) throw new Error('steel prompts: the yard still holds rails after four trips');
+    const fed = facts();
+    atYard('rails');
+    await press('railway-steel-take-rails', 'Take rails');
+    const rails = facts();
+    say(`after Take rails ${JSON.stringify(rails)}`);
+    if (rails.backRails <= 0 || rails.yardRails !== fed.yardRails - rails.backRails)
+      throw new Error('steel prompts: Take rails moved nothing from the yard to the back');
+    atDoor();
+    await press('railway-steel-feed', 'Feed the works');
+    const after = facts();
+    say(`after Feed the works (rails) ${JSON.stringify(after)}`);
+    if (after.rails !== rails.rails + rails.backRails || after.backRails !== 0)
+      throw new Error('steel prompts: Feed the works did not move the rails into the bill');
+  }
   await wait(1500);
+  const end = facts();
+  say(`end ${JSON.stringify(end)}`);
   if (end.lit < 0 || interactTarget()?.id === 'railway-steel-feed')
     throw new Error('steel prompts: a full bill did not light the works, or the feed is still offered');
 }
