@@ -67,6 +67,7 @@ import { createRailwayFarHead } from './far-head-view.ts';
 import { createRailwayBoiler } from './boiler-view.ts';
 import { createRailwayPier } from './pier-view.ts';
 import { createForgeFinish } from './forge-finish.ts';
+import { createForgeRewards } from './forge-rewards.ts';
 import type { RewardMark } from './stations.ts';
 import { furnaceMouthAtlas, furnaceMouthBox } from './furnace-mouth.ts';
 import { stockSign } from './stock-sign.ts';
@@ -636,6 +637,9 @@ export async function createRailwayLine2(
     },
   });
 
+  // The forge's own products: the pack, built by a little guy on the frame's bill (forge-made rewards).
+  const rewards = await createForgeRewards(adapter, owner);
+
   // ---------------------------------------------------------------- the machine on line two
   const TURN_HEAD = layout.STUB.east;
   let visualHead = TURN_HEAD,
@@ -793,6 +797,7 @@ export async function createRailwayLine2(
     forgePieces.forEach((_, k) => building.snap(k, false));
     for (let n = 0; n < shownPieces; n++) building.snap(ORDER[n]!, true);
     finish.restore(); // after the pieces: it snaps the roof back on once the crossing is done
+    rewards.restore();
     drawnDepot = '';
   }
 
@@ -1069,6 +1074,7 @@ export async function createRailwayLine2(
       while (shownPieces < wantPieces) building.drop(ORDER[shownPieces++]!, 3.2, 0.3);
       building.update(dt);
       finish.update(dt);
+      rewards.update(dt);
       mouth.visible = fg.lit >= 0;
       if (mouth.visible && !reducedMotion) fire.advance(dt);
       if (litShown < 0 && fg.lit >= 0) {
@@ -1444,6 +1450,7 @@ export async function createRailwayLine2(
         panelCursor: track.cursor,
         forgePieces: shownPieces,
         forgeFinish: finish.inspect(),
+        forgeRewards: rewards.inspect(),
         forgeLit: mouth.visible,
         rackShown: racked.count,
         depotShown: depotLogs.count,
