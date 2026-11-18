@@ -2,7 +2,7 @@
 # Ship one finished job branch from its worktree: rebase onto origin/main, keep both sides of docs-only conflicts,
 # then enqueue with `npm run ship`. Add --wait to wait for main explicitly.
 # Cancelled CI runs are rerun automatically (twice at most). Exit codes: 2 code conflict (nothing shipped, rebase aborted), 3 a commit became empty on rebase (aborted, check it
-# isn't already on main), otherwise ship's own status. Queued is not merged; --wait reports ancestry on main.
+# isn't already on main), 4 conflict markers survived the docs union (aborted), otherwise ship's own status. Queued is not merged; --wait reports ancestry on main.
 set -uo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 cd "${1:?worktree path}" || exit 1
@@ -22,10 +22,15 @@ while [ -d "$(git rev-parse --git-path rebase-merge)" ]; do
   fi
   while IFS= read -r f; do
     [ -n "$f" ] || continue
-    python3 -I -c '
-import re, sys
-p = sys.argv[1]; s = open(p).read()
-open(p, "w").write(re.sub(r"<<<<<<< [^\n]*\n(.*?)=======\n(.*?)>>>>>>> [^\n]*\n", r"\1\2", s, flags=re.S))' "$f"
+    # Node, not python3: HOTBOX has no python3, and the silent failure committed the markers (18 November, #2054).
+    node -e '
+const fs = require("fs"), p = process.argv[1];
+fs.writeFileSync(p, fs.readFileSync(p, "utf8").replace(/<<<<<<< [^\n]*\n([\s\S]*?)=======\n([\s\S]*?)>>>>>>> [^\n]*\n/g, "$1$2"));' "$f"
+    if grep -qE '^(<<<<<<< |=======$|>>>>>>> )' "$f"; then
+      echo "MARKERS LEFT in $f after the docs union: nothing shipped, rebase aborted"
+      git rebase --abort
+      exit 4
+    fi
     git add "$f"
     echo "union: $f"
   done <<<"$conflicted"
