@@ -653,6 +653,19 @@ Stills: [docs/reports/garage-moment-checkpoint/](../reports/garage-moment-checkp
   released, no pause menu; Esc closes the garage with no menu; a second Esc with the garage shut opens Pause, and its
   close takes the lock back. Closing the garage leaves the lock released as before (a click takes it back). Stills:
   `pause-fix-garage-open.png`, `pause-fix-garage-closed.png`. Not tested on a device.
+- **Keyboard E never reached the garage** (found by the review of the pause fix, 18 November). `src/player/input.ts`
+  read E by hand and called the plain `interactDown()`/`interactUp()`, so `wrapAction('interact')` in
+  src/features/garage.ts never saw a key: with the garage open, E did not start the Install hold, Skip or Hear a
+  whistle; the pad's X and the on-screen button did. Every garage eval above pressed through `triggerAction`, which is
+  why no capture showed it. **Fixed on `claude/garage-keyboard-install` (not yet merged):** E is now the `interact`
+  action's own `key`, so its wraps see it (the reviewer's test in test/controls.test.ts holds every wrapped action to
+  this). Proof: `dev/look/evals/garage-key.ts` with `garage-key-act.ts` (`--real --size 1440x900 --rail-seed
+  steel-home --hud --video`), keyboard events only: E at the post opens the garage; a tap installs nothing; E let go
+  600 ms into the hold installs nothing; E held (with key repeats) commits after 1223 ms and Line 2's boiler goes 1 to
+  2; E once the moment may be skipped skips it; ArrowDown to Whistle and E hears a whistle; Esc leaves; with Pause open
+  E at the post does nothing, with it shut E opens the garage again. The same eval on origin/main's input.ts: the hold
+  never starts, the boiler stays 1. Stills: `keyboard-e-holding.png`, `keyboard-e-drop.png`,
+  `keyboard-e-skipped-installed.png`, `keyboard-e-pause-swallows.png`. Not tested on a device.
 
 **Scripts changed.** `dev/look/evals/garage-two.ts`: the installer's hold waits for `Line.boiler` 2, not 1.
 `dev/look/evals/railway-install.ts`'s `installstep=hold` and `adopt` paths still wait for 1 and expect 1 (not run
