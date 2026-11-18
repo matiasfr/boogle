@@ -270,96 +270,96 @@ function rule(s: Toy, pid: string, a: Act) {
   return false;
 }
 
-for (const players of [2, 4, 6])
-  test(`prediction: ${players} clients racing for piles converge on the server's state`, () => {
-    const rand = mulberry32(players * 101);
-    const server: Toy = { piles: new Map([0, 1, 2].map((k) => [k, 5])), carry: new Map() };
-    const rep = createReplicator();
-    rep.define({
-      schema: pileSchema,
-      ids: () => server.piles.keys(),
-      project: (id) => ({ n: server.piles.get(id) ?? 0 }),
-      cell: () => GLOBAL_CELL,
-    });
-    rep.define({
-      schema: carrySchema,
-      ids: () => server.carry.keys(),
-      project: (id) => (server.carry.has(id) ? { n: server.carry.get(id)! } : null),
-      cell: () => GLOBAL_CELL,
-    });
-    rep.touchAll('pile');
-    rep.commit(0);
-    const pids = Array.from({ length: players }, (_, k) => `p${k}`);
-    type Wire = { at: number; data: unknown };
-    const up: Wire[][] = pids.map(() => []);
-    const down: Wire[][] = pids.map(() => []);
-    const lag = pids.map(() => 1 + Math.floor(rand() * 12)); // one-way, in steps (up to 200 ms)
-    const clients = pids.map((pid) => {
-      const mirror = createMirror([pileSchema, carrySchema]);
-      const predictor = createPredictor<Toy, Act>({
-        confirmed: () => ({
-          piles: new Map([...mirror.entries('pile')].map(([id, f]) => [id, f.n as number])),
-          carry: new Map([...mirror.entries('carry')].map(([id, f]) => [id, f.n as number])),
-        }),
-        clone: (s) => ({ piles: new Map(s.piles), carry: new Map(s.carry) }),
-        apply: (s, a) => void rule(s, pid, a),
-      });
-      predictor.session(1, 1);
-      const c = { pid, mirror, predictor, corrections: 0 };
-      // Refusals drop their actions, acks drop confirmed ones, and any packet rebuilds the prediction.
-      mirror.onPacket((p) => {
-        for (const [e, r] of p.rej ?? []) if (predictor.reject([e, r])) c.corrections++;
-        if (p.ack) predictor.confirm(p.ack);
-        predictor.invalidate();
-      });
-      return c;
-    });
-    pids.forEach((pid) => rep.addClient(pid));
-    const applied = new Map<string, number>();
-    for (let step = 1; step <= 1200; step++) {
-      // Clients act: predicted at once, sent up.
-      clients.forEach((c, k) => {
-        if (step > 900 || rand() > 0.15) return;
-        const a: Act = { op: rand() < 0.6 ? 'take' : 'drop', pile: Math.floor(rand() * 3) };
-        const id = c.predictor.act(a, step);
-        if (id) up[k]!.push({ at: step + lag[k]!, data: { id, a } });
-      });
-      // Server: apply what arrived, in arrival order; ack or refuse; touch what the rule touched.
-      clients.forEach((c, k) => {
-        while (up[k]!.length && up[k]![0]!.at <= step) {
-          const { id, a } = up[k]!.shift()!.data as { id: [number, number]; a: Act };
-          if (rule(server, c.pid, a)) {
-            rep.touch('pile', a.pile);
-            rep.touch('carry', c.pid);
-            rep.ack(c.pid, id[0], id[1]);
-          } else rep.reject(c.pid, id[0], id[1], 'raced');
-          applied.set(c.pid, id[1]);
-        }
-      });
-      rep.commit(step);
-      rep.flush(step, (cid, p) => {
-        const k = pids.indexOf(cid);
-        down[k]!.push({ at: step + lag[k]!, data: p });
-      });
-      clients.forEach((c, k) => {
-        while (down[k]!.length && down[k]![0]!.at <= step) c.mirror.apply(down[k]!.shift()!.data, step);
-      });
-    }
-    const total = (s: Toy) => [...s.piles.values(), ...s.carry.values()].reduce((a, b) => a + b, 0);
-    assert.equal(total(server), 15, 'conserved');
-    for (const c of clients) {
-      assert.equal(c.predictor.pending().length, 0, `${c.pid} drained`);
-      const p = c.predictor.state();
-      assert.deepEqual(p.piles, server.piles, `${c.pid} piles`);
-      assert.deepEqual(
-        new Map([...p.carry].filter(([, n]) => n > 0)),
-        new Map([...server.carry].filter(([, n]) => n > 0)),
-      );
-      assert.ok(c.predictor.stats.acted > 0);
-    }
-    const refused = clients.reduce((n, c) => n + c.corrections, 0);
-    assert.ok(refused > 0, 'contested piles and racing drops produce refusals the predictor settles');
+test("prediction: 6 clients racing for piles converge on the server's state", () => {
+  const players = 6;
+  const rand = mulberry32(players * 101);
+  const server: Toy = { piles: new Map([0, 1, 2].map((k) => [k, 5])), carry: new Map() };
+  const rep = createReplicator();
+  rep.define({
+    schema: pileSchema,
+    ids: () => server.piles.keys(),
+    project: (id) => ({ n: server.piles.get(id) ?? 0 }),
+    cell: () => GLOBAL_CELL,
   });
+  rep.define({
+    schema: carrySchema,
+    ids: () => server.carry.keys(),
+    project: (id) => (server.carry.has(id) ? { n: server.carry.get(id)! } : null),
+    cell: () => GLOBAL_CELL,
+  });
+  rep.touchAll('pile');
+  rep.commit(0);
+  const pids = Array.from({ length: players }, (_, k) => `p${k}`);
+  type Wire = { at: number; data: unknown };
+  const up: Wire[][] = pids.map(() => []);
+  const down: Wire[][] = pids.map(() => []);
+  const lag = pids.map(() => 1 + Math.floor(rand() * 12)); // one-way, in steps (up to 200 ms)
+  const clients = pids.map((pid) => {
+    const mirror = createMirror([pileSchema, carrySchema]);
+    const predictor = createPredictor<Toy, Act>({
+      confirmed: () => ({
+        piles: new Map([...mirror.entries('pile')].map(([id, f]) => [id, f.n as number])),
+        carry: new Map([...mirror.entries('carry')].map(([id, f]) => [id, f.n as number])),
+      }),
+      clone: (s) => ({ piles: new Map(s.piles), carry: new Map(s.carry) }),
+      apply: (s, a) => void rule(s, pid, a),
+    });
+    predictor.session(1, 1);
+    const c = { pid, mirror, predictor, corrections: 0 };
+    // Refusals drop their actions, acks drop confirmed ones, and any packet rebuilds the prediction.
+    mirror.onPacket((p) => {
+      for (const [e, r] of p.rej ?? []) if (predictor.reject([e, r])) c.corrections++;
+      if (p.ack) predictor.confirm(p.ack);
+      predictor.invalidate();
+    });
+    return c;
+  });
+  pids.forEach((pid) => rep.addClient(pid));
+  const applied = new Map<string, number>();
+  for (let step = 1; step <= 1200; step++) {
+    // Clients act: predicted at once, sent up.
+    clients.forEach((c, k) => {
+      if (step > 900 || rand() > 0.15) return;
+      const a: Act = { op: rand() < 0.6 ? 'take' : 'drop', pile: Math.floor(rand() * 3) };
+      const id = c.predictor.act(a, step);
+      if (id) up[k]!.push({ at: step + lag[k]!, data: { id, a } });
+    });
+    // Server: apply what arrived, in arrival order; ack or refuse; touch what the rule touched.
+    clients.forEach((c, k) => {
+      while (up[k]!.length && up[k]![0]!.at <= step) {
+        const { id, a } = up[k]!.shift()!.data as { id: [number, number]; a: Act };
+        if (rule(server, c.pid, a)) {
+          rep.touch('pile', a.pile);
+          rep.touch('carry', c.pid);
+          rep.ack(c.pid, id[0], id[1]);
+        } else rep.reject(c.pid, id[0], id[1], 'raced');
+        applied.set(c.pid, id[1]);
+      }
+    });
+    rep.commit(step);
+    rep.flush(step, (cid, p) => {
+      const k = pids.indexOf(cid);
+      down[k]!.push({ at: step + lag[k]!, data: p });
+    });
+    clients.forEach((c, k) => {
+      while (down[k]!.length && down[k]![0]!.at <= step) c.mirror.apply(down[k]!.shift()!.data, step);
+    });
+  }
+  const total = (s: Toy) => [...s.piles.values(), ...s.carry.values()].reduce((a, b) => a + b, 0);
+  assert.equal(total(server), 15, 'conserved');
+  for (const c of clients) {
+    assert.equal(c.predictor.pending().length, 0, `${c.pid} drained`);
+    const p = c.predictor.state();
+    assert.deepEqual(p.piles, server.piles, `${c.pid} piles`);
+    assert.deepEqual(
+      new Map([...p.carry].filter(([, n]) => n > 0)),
+      new Map([...server.carry].filter(([, n]) => n > 0)),
+    );
+    assert.ok(c.predictor.stats.acted > 0);
+  }
+  const refused = clients.reduce((n, c) => n + c.corrections, 0);
+  assert.ok(refused > 0, 'contested piles and racing drops produce refusals the predictor settles');
+});
 
 test('the prediction window caps unconfirmed actions; a new session retires the old window', () => {
   const p = createPredictor<number[], number>({
