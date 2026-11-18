@@ -249,7 +249,10 @@ export function createHostedRoom({
       if (!Number.isSafeInteger(m.s) || (m.s as number) <= c.s) return;
       if (!take(c.pres, PRESENCE_RATE, PRESENCE_RATE, now)) return void c.dropped++;
       c.s = m.s as number;
-      c.d = m.d;
+      // Peers find avatars by presence `pid`: name the verified principal, never the one the sender wrote. Every stored
+      // copy (relay, a late joiner's list, a resumed socket) comes from here.
+      const d = m.d;
+      c.d = d && typeof d === 'object' && !Array.isArray(d) ? { ...d, pid: c.pid } : d;
       if (railway) poseAt.set(c.id, Date.now());
       c.hiddenSince = visible(c) ? 0 : c.hiddenSince || now;
       const out = encode({ t: 'p', id: c.id, s: c.s, d: c.d });

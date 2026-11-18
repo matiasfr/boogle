@@ -169,3 +169,39 @@ for (const fallback of [false, true]) {
     assert.equal(oldReloaded.api.accountPid(), 'bbbbbbbbbb');
   });
 }
+
+// Review of Checkpoint A (transactions, client side): boot reads the credential, awaits the server, then saves what it
+// read. If another tab signs in (or signs out) while that request is in flight, the late save puts the former person
+// back over the newer record, so the sign-in silently reverts in every tab.
+test('a tab still verifying its session never writes over a newer sign-in from another tab', async () => {
+  const local = new Store();
+  local.setItem(key, JSON.stringify(credentialA));
+  let answer = (_response: Response) => {};
+  const booting = tab(
+    local,
+    new Store(),
+    () =>
+      new Promise<Response>((resolve) => {
+        answer = resolve;
+      }),
+  );
+  const verifying = booting.api.prepareAccount();
+  const signedIn = 'cccccccccc';
+  const other = tab(local, new Store(), async (_input, init) =>
+    String(new Headers(init?.headers).get('authorization')).endsWith(credentialA.token)
+      ? reply(credentialA.pid)
+      : reply(signedIn),
+  );
+  await other.api.prepareAccount();
+  await other.api.signInAccount('12345');
+  assert.equal(JSON.parse(local.getItem(key)!).pid, signedIn, 'the other tab installed its sign-in');
+  booting.changed();
+  assert.equal(booting.reloads(), 1, 'the verifying tab is switching to the new person');
+  answer(reply(credentialA.pid));
+  await verifying;
+  assert.equal(
+    JSON.parse(local.getItem(key)!).pid,
+    signedIn,
+    "the late boot save restored the former person's sign-in",
+  );
+});

@@ -386,9 +386,9 @@ test('join: welcome then list, presence relays with ids, and no tab is special a
     await settle([a]);
     const b = connect(base, 'beach', 'bbb');
     const list = await b.next(is('list'));
-    assert.deepEqual(list.peers, [{ id: 'aaa', s: 1, d: { v: 1, x: 3 } }]);
+    assert.deepEqual(list.peers, [{ id: 'aaa', s: 1, d: { v: 1, x: 3, pid: 'aaapid' } }]);
     b.send({ t: 'p', s: 1, d: { v: 1, x: 4 } });
-    assert.deepEqual(await a.next(is('p')), { t: 'p', id: 'bbb', s: 1, d: { v: 1, x: 4 } });
+    assert.deepEqual(await a.next(is('p')), { t: 'p', id: 'bbb', s: 1, d: { v: 1, x: 4, pid: 'bbbpid' } });
     a.send({ t: 'hb', at: 42 });
     assert.equal((await a.next((m) => m.t === 'hb' && m.at === 42)).at, 42);
     a.ws.close();
