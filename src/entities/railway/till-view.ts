@@ -95,10 +95,13 @@ export function createTill(adapter: RailwayAdapter, owner: OwnedView) {
       }
       const limit = boxCap(w, adapter.read.trade()),
         cap = Number.isFinite(limit) ? Math.max(0, limit) : 0,
-        n = Number.isFinite(row.boogles) ? Math.max(0, Math.min(cap, row.boogles)) : 0,
+        // The sign tells the box's true count; only the column stops at the cap's mark (a pour or a lowered cap
+        // can leave the box above it, docs/game-design/trade.md).
+        n = Number.isFinite(row.boogles) ? Math.max(0, row.boogles) : 0,
+        piled = Math.min(cap, n),
         waiting = Number.isFinite(row.sack) ? Math.max(0, row.sack) : 0;
-      coins.root.visible = n > 0 && cap > 0;
-      coins.root.scale.y = cap > 0 ? n / cap : 0;
+      coins.root.visible = piled > 0 && cap > 0;
+      coins.root.scale.y = cap > 0 ? piled / cap : 0;
       if (waiting !== drawnSack) sack.setEnabled(waiting > 0);
       if (n !== drawn || waiting !== drawnSack) {
         drawn = n;
