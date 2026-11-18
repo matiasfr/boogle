@@ -180,7 +180,8 @@ export async function checkPropGrounding() {
     paletteMaterial: (source: THREE.Material) => source,
     spireRock: (s: string) => s,
     addStatic: () => {},
-    plank: (
+    // The landing's deck boards are mounted, so only their underside is read; its posts reach `addMerged` whole.
+    plankPiece: (
       _ax: number,
       _az: number,
       _bx: number,
@@ -192,6 +193,9 @@ export async function checkPropGrounding() {
       thick: number,
     ) => {
       coveUnderside = Math.min(coveUnderside, top - thick);
+    },
+    addMerged: (_owner: OwnedView, pieces: (THREE.Mesh | undefined)[]) => {
+      for (const piece of pieces) if (piece) shore.push(piece);
     },
     buildMesh: () => {},
     buildSpire: () => {},
@@ -290,7 +294,8 @@ export async function checkPropGrounding() {
     TIMBER: () => mat,
     GROUP: { SCENERY: 2 },
     addStatic: () => {},
-    plank: (
+    addMerged: () => {},
+    plankPiece: (
       ax: number,
       az: number,
       bx: number,

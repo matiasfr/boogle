@@ -3,8 +3,10 @@
 // around 1, so the palette stays the colour authority. Owner's pick after the timber proof (6 November): the live
 // grain's look, baked, kept subtle; knots scattered by a seeded jittered pattern and every board offset from the next.
 import * as THREE from 'three/webgpu';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import {
   abs,
+  attribute,
   vertexColor,
   float,
   instanceIndex,
@@ -20,6 +22,7 @@ import {
   texture,
   vec2,
   vec3,
+  vertexStage,
 } from 'three/tsl';
 import { bakedTile, tileBytes } from './baked-tile.ts';
 import { scalar } from './water/live.ts';
@@ -34,6 +37,8 @@ const SIZE = 512;
 const TAU = Math.PI * 2;
 /** Stored as multiplier − 0.5, so 0.5–1.5 fits a byte at 1/255 steps. */
 const BIAS = 0.5;
+/** What `mergeTimber` writes for each piece, so `woodGrain(..., 'merged')` sees it as a separate mesh would. */
+const GRAIN = { position: 'grainPosition', normal: 'grainNormal', origin: 'grainOrigin' } as const;
 export const woodTileBytes = tileBytes(SIZE);
 export const woodBake = { ms: 0 };
 
@@ -134,18 +139,27 @@ const hash = (n: N, k: number): N => sin(n.mul(k)).mul(43758.5453).fract();
  */
 export function woodGrain(
   axis: GrainAxis,
-  vary: 'instance' | 'position',
+  vary: 'instance' | 'position' | 'merged',
   scale: readonly [number, number, number] = [1, 1, 1],
   sides: 'grain' | 'plain' = 'grain',
   level = 1,
   /** Added to the instance index: a batch cut from a longer one keeps every piece's grain (the track's chunks). */
   idBase?: N,
 ) {
-  const p: N = positionGeometry.mul(vec3(...scale));
-  const n: N = abs(normalGeometry);
+  // A merged batch (`mergeTimber`) carries each piece's own geometry space and its origin (x, z) as attributes, so
+  // it shades exactly as its separate meshes did.
+  const merged = vary === 'merged';
+  const p: N = (merged ? attribute(GRAIN.position, 'vec3') : positionGeometry).mul(vec3(...scale));
+  const n: N = abs(merged ? attribute(GRAIN.normal, 'vec3') : normalGeometry);
+  const origin: N = merged ? attribute(GRAIN.origin, 'vec2') : modelPosition.xz;
   const id: N =
-    vary === 'instance' ? (idBase ? float(instanceIndex).add(idBase) : float(instanceIndex)).add(1) : modelPosition.x.mul(0.37).add(modelPosition.z.mul(0.61));
-  const offset: N = vec2(hash(id, 12.9898), hash(id, 78.233));
+    vary === 'instance'
+      ? (idBase ? float(instanceIndex).add(idBase) : float(instanceIndex)).add(1)
+      : origin.x.mul(0.37).add(origin.y.mul(0.61));
+  // A merged piece's origin is a per-vertex constant. Hashed in the fragment stage, its interpolation error would
+  // be multiplied into per-pixel noise, so the vertex stage hashes it; the offset it passes on is constant.
+  const hashed: N = vec2(hash(id, 12.9898), hash(id, 78.233));
+  const offset: N = merged ? vertexStage(hashed) : hashed;
   const [a, b] = (axis === 'x' ? ['y', 'z'] : axis === 'y' ? ['x', 'z'] : ['x', 'y']) as [GrainAxis, GrainAxis];
   // Across the grain on whichever long face is showing.
   const across: N = select(n[a].greaterThan(0.5), p[b], p[a]);
@@ -170,17 +184,58 @@ export function woodGrain(
 
 const made = new Map<string, THREE.MeshStandardNodeMaterial>();
 /** A static timber mesh's material: `base` (a shared flat colour) with grain, varied by world position. Cached and
- * shared like `base`: clone before tinting or patching, and never dispose it. */
-export function woodMaterial(base: THREE.MeshStandardNodeMaterial, axis: GrainAxis) {
-  const key = `${base.uuid} ${axis}`;
+ * shared like `base`: clone before tinting or patching, and never dispose it. `merged`: the same look for pieces
+ * that `mergeTimber` will join into one draw; it reads attributes only that merge writes. */
+export function woodMaterial(base: THREE.MeshStandardNodeMaterial, axis: GrainAxis, merged = false) {
+  const key = `${base.uuid} ${axis}${merged ? ' merged' : ''}`;
   let m = made.get(key);
   if (!m) {
     m = base.clone();
-    m.colorNode = materialColor.mul(woodGrain(axis, 'position'));
+    m.colorNode = materialColor.mul(woodGrain(axis, merged ? 'merged' : 'position'));
     m.name = `wood-${axis}`;
     made.set(key, m);
   }
   return m;
+}
+
+/**
+ * Joins static pieces built in one place (a footbridge, a landing) into one draw per material and shadow setting,
+ * baked into the frame of the pieces' parent. Each piece keeps its own grain: its geometry-space position and
+ * normal and its origin travel as attributes for `woodMaterial(..., true)`. Pieces must not move afterwards
+ * and must share a parent at the world origin (that frame is where their ids were measured). The pieces' geometries are
+ * disposed; the returned meshes have real bounds and stay frustum culled.
+ */
+export function mergeTimber(pieces: readonly THREE.Mesh[]) {
+  const groups = new Map<string, THREE.Mesh[]>();
+  for (const piece of pieces) {
+    const material = piece.material as THREE.Material;
+    const key = `${material.uuid} ${piece.castShadow} ${piece.receiveShadow}`;
+    groups.set(key, [...(groups.get(key) ?? []), piece]);
+  }
+  return [...groups.values()].map((group) => {
+    const parts = group.map((piece) => {
+      piece.updateMatrix();
+      const geometry = piece.geometry.clone();
+      geometry.setAttribute(GRAIN.position, geometry.getAttribute('position').clone());
+      geometry.setAttribute(GRAIN.normal, geometry.getAttribute('normal').clone());
+      // What `woodGrain` reads from `modelPosition` for a separate mesh, at the same float precision.
+      const origin = new Float32Array(geometry.getAttribute('position').count * 2);
+      for (let i = 0; i < origin.length; i += 2) {
+        origin[i] = piece.position.x;
+        origin[i + 1] = piece.position.z;
+      }
+      geometry.setAttribute(GRAIN.origin, new THREE.BufferAttribute(origin, 2));
+      geometry.applyMatrix4(piece.matrix);
+      piece.geometry.dispose();
+      return geometry;
+    });
+    const first = group[0]!;
+    const mesh = new THREE.Mesh(mergeGeometries(parts)!, first.material);
+    for (const part of parts) part.dispose();
+    mesh.castShadow = first.castShadow;
+    mesh.receiveShadow = first.receiveShadow;
+    return mesh;
+  });
 }
 
 /** For a vertex-coloured mesh that merges timber with other parts (a stored track panel's sleeper slab and its

@@ -3,7 +3,7 @@
 import * as THREE from 'three/webgpu';
 import { flat } from '../render/flat.ts';
 import { paletteMaterial } from '../render/material-palette.ts';
-import { woodMaterial, type GrainAxis } from '../render/wood.ts';
+import { mergeTimber, woodMaterial, type GrainAxis } from '../render/wood.ts';
 import { LOOK, groundMaterial, spireRock } from './look.ts';
 import { readableGlow } from '../render/readable-unlit.ts';
 import { shoreApronHeight } from '../render/water/shore-providers.ts';
@@ -57,8 +57,10 @@ const greenCells: TileCells = [
 
 // ---------------------------------------------------------------- the mesh and the heightfield
 const FLAT = (color: string) => flat(color);
-/** Timber with the look's materials on: the shared wood grain along `axis`, each piece offset from its neighbours. */
-const TIMBER = (color: string, axis: GrainAxis) => (LOOK.mats ? woodMaterial(flat(color), axis) : flat(color));
+/** Timber with the look's materials on: the shared wood grain along `axis`, each piece offset from its neighbours.
+ * `merged`: for pieces joined by `mergeTimber` into one draw. */
+const TIMBER = (color: string, axis: GrainAxis, merged = false) =>
+  LOOK.mats ? woodMaterial(flat(color), axis, merged) : flat(color);
 
 /** Finished soil only: H also includes cliff-kit tops, which must not steer ground coverage. */
 function soilHeight(x: number, z: number) {
@@ -392,6 +394,24 @@ export function plank(
   thick = 0.3,
   owner: OwnedView,
 ) {
+  const m = plankPiece(ax, az, bx, bz, topA, topB, width, color, thick, owner, false);
+  owner.add(m);
+  return m;
+}
+/** `plank`'s collider and its mesh, not yet added: `merged` gives it the material `mergeTimber` joins. */
+function plankPiece(
+  ax: number,
+  az: number,
+  bx: number,
+  bz: number,
+  topA: number,
+  topB: number,
+  width: number,
+  color: string,
+  thick: number,
+  owner: OwnedView,
+  merged: boolean,
+) {
   const mx = (ax + bx) / 2,
     mz = (az + bz) / 2,
     dx = bx - ax,
@@ -407,13 +427,20 @@ export function plank(
   );
   const m = new THREE.Mesh(
     new THREE.BoxGeometry(width, thick, full),
-    paletteMaterial(TIMBER(color, width > full ? 'x' : 'z'), 'timber', owner),
+    paletteMaterial(TIMBER(color, width > full ? 'x' : 'z', merged), 'timber', owner),
   );
   m.position.set(c.x, c.y, c.z);
   m.quaternion.copy(q);
   m.castShadow = m.receiveShadow = true;
-  owner.add(m);
   return m;
+}
+/** One draw per material for a structure's static timbers (world census, Far Head: each piece was its own). */
+function addMerged(owner: OwnedView, pieces: THREE.Mesh[]) {
+  for (const mesh of mergeTimber(pieces)) {
+    const source = mesh.geometry;
+    owner.add(mesh); // the owner draws its own copy
+    source.dispose();
+  }
 }
 
 // ---------------------------------------------------------------- the spire: Needle Bell, 105 m, the address of the place
@@ -462,11 +489,12 @@ function buildSpire(owner: OwnedView) {
 // each side, with a low arch and open ends you can step off sideways. The path's points (and so the terrain) are unchanged.
 const BRIDGE = { landing: 1.25, level: 0.3, width: 3.4, crown: 0.3, railIn: 1.7, railH: 1, ramp: 0.25 };
 function buildBridges(owner: OwnedView) {
-  const add = (...m: THREE.Object3D[]) => owner.add(...m);
-  const post = TIMBER('#7f5630', 'y'),
-    rail = TIMBER('#7f5630', 'z'),
-    edge = TIMBER('#8d5e33', 'z');
+  const post = TIMBER('#7f5630', 'y', true),
+    rail = TIMBER('#7f5630', 'z', true),
+    edge = TIMBER('#8d5e33', 'z', true);
   for (const p of PATHS) {
+    const pieces: THREE.Mesh[] = [];
+    const add = (...m: THREE.Mesh[]) => pieces.push(...m);
     const a = p.pts[p.bridgeAt]!,
       b = p.pts[p.bridgeAt + 1]!;
     const ax = a[0] + ORIGIN.x,
@@ -513,7 +541,7 @@ function buildBridges(owner: OwnedView) {
     for (let k = 0; k < knots.length - 1; k++) {
       const sa = knots[k]!,
         sb = knots[k + 1]!;
-      plank(X(sa), Z(sa), X(sb), Z(sb), top(sa), top(sb), BRIDGE.width, '#c08a4c', 0.35, owner);
+      add(plankPiece(X(sa), Z(sa), X(sb), Z(sb), top(sa), top(sb), BRIDGE.width, '#c08a4c', 0.35, owner, true));
       // A thicker edge beam under each side of the deck, so it reads as built and not a board on the water.
       for (const side of [-1, 1])
         add(
@@ -576,6 +604,7 @@ function buildBridges(owner: OwnedView) {
         );
       }
     }
+    addMerged(owner, pieces);
   }
 }
 
@@ -645,21 +674,23 @@ export function buildLand(owner: OwnedView) {
     // unchanged dry pad, so arrival and saved-position ground checks still use the terrain.
     const dx = SHORE_LANDING.x + ORIGIN.x,
       dz = SHORE_LANDING.z;
+    const pieces: THREE.Mesh[] = [];
     for (let i = 0; i < 12; i++)
-      plank(dx - 19 + i * 2, dz, dx - 17.02 + i * 2, dz, 3.08, 3.08, 7, '#8a6238', 0.35, owner);
+      pieces.push(plankPiece(dx - 19 + i * 2, dz, dx - 17.02 + i * 2, dz, 3.08, 3.08, 7, '#8a6238', 0.35, owner, true));
     for (const x of [dx - 18, dx - 12])
       for (const z of [dz - 3.2, dz + 3.2]) {
         const base = sampleFootprint(boxFootprint(x, z, 0.4, 0.4)).low - 0.02,
           height = 4 - base;
         const post = new THREE.Mesh(
           new THREE.BoxGeometry(0.4, height, 0.4),
-          paletteMaterial(TIMBER('#7f5630', 'y'), 'timber', owner),
+          paletteMaterial(TIMBER('#7f5630', 'y', true), 'timber', owner),
         );
         post.position.set(x, base + height / 2, z);
         post.castShadow = post.receiveShadow = true;
-        owner.add(post);
+        pieces.push(post);
         addStatic({ kind: 'box', hx: 0.2, hy: height / 2, hz: 0.2 }, post.position, undefined, undefined, owner);
       }
+    addMerged(owner, pieces);
     // Keep the existing low rock as a shoulder detail, clear of the ordinary walk into town.
     const { x, height, top, bottom } = SHORE_HOP;
     const z = SHORE_HOP.z + 7,
