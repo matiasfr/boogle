@@ -81,7 +81,6 @@ function railwayAtForgeBill(): Seed {
   logs(s, 'a', 'T2', 32);
   advance(s, 300);
   logs(s, 'a', 'T3', LINE1_STATIONS[2]!.bill[0]);
-
   for (let i = 0; i < 12; i++) need(act(s, 'a', 'rail.beamChop') === 1, 'the great tree chopped');
   need(act(s, 'a', 'rail.beamTake', { revision: beam(w).revision }) === 1, 'the beam taken');
   need(act(s, 'a', 'rail.beamDeposit', { revision: beam(w).revision, station: 'T3' }) === 1, 'T3 took the beam');

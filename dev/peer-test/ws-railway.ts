@@ -1196,6 +1196,8 @@ export async function railwayJumpIn(c: Ctx) {
   const epoch = Number((await rail(J0)).messages.findLast((m) => m.t === 'r:session')!.epoch);
   const request = ((await rail(J0)).accounts.find((a) => a.pid === 'jump0')?.request ?? 0) + 1;
   const source = (await rail(J1)).sources.find((s) => s.remaining > 0)!;
+  const jumpBack = (s: RailwayProbe) => s.accounts.find((a) => a.pid === 'jump0')?.carry ?? 0;
+  const backBefore = jumpBack(await rail(J1));
   await ev(J0.page, (sid: number) => window.T.railPose('source', sid), source.id);
   await ev(J0.page, (e: RailAction) => window.T.railEdit(e), {
     op: 'rail.chop',
@@ -1205,16 +1207,19 @@ export async function railwayJumpIn(c: Ctx) {
     yaw: 0,
     collapsed: false,
   });
-  // A chop takes its whole yield from the source (several logs), so the count drops by that, not by one.
-  const left = (s: RailwayProbe) => s.sources.find((x) => x.id === source.id)!.remaining;
-  const lowered = (s: RailwayProbe) => left(s) < source.remaining;
+  // A chop deepens the source's notch and loads the chopper's back. Its count need not drop: the seeds hold the proper
+  // axe from the lit forge on, and its first stroke on a tree grows it by the 5 it takes (10 -> 15 -> 10).
+  const at = (s: RailwayProbe) => s.sources.find((x) => x.id === source.id)!;
+  const left = (s: RailwayProbe) => at(s).remaining;
+  const lowered = (s: RailwayProbe) => at(s).work > source.work && jumpBack(s) > backBefore;
   const chopped = await both(lowered);
   const [s0, s1] = await Promise.all([J0, J1].map(rail));
   const reply = s0!.messages.findLast((m) => (m.t === 'ack' || m.t === 'rej') && m.epoch === epoch);
   jumpCheck(
     "one player's chop shows in the other's mirror",
     chopped,
-    `source ${source.id}: ${source.remaining} -> ${left(s0!)} / ${left(s1!)}; ${JSON.stringify(reply)}`,
+    `source ${source.id}: ${source.remaining} -> ${left(s0!)} / ${left(s1!)}, notch ${source.work} -> ` +
+      `${at(s0!).work} / ${at(s1!).work}, back ${backBefore} -> ${jumpBack(s0!)} / ${jumpBack(s1!)}; ${JSON.stringify(reply)}`,
   );
   jumpCheck('the two mirrors agree', await agreeOn([J0, J1]));
   await c.restart();
@@ -1322,7 +1327,7 @@ export async function railwayJumpIn(c: Ctx) {
   await reloadPeers();
   jumpCheck(
     'replace: both peers reload into the unplayed Q3 seed',
-    await both((s) => s.line2[2] === 1 && left(s) === source.remaining, 15000),
+    await both((s) => s.line2[2] === 1 && left(s) === source.remaining && at(s).work === source.work, 15000),
   );
   jumpCheck('replace: both mirrors agree in the replaced world', await agreeOn([J0, J1]));
   jumpCheck(
