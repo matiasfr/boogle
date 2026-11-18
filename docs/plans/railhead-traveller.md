@@ -192,7 +192,7 @@ Rows are from `npm run models` (mode withCodex, 14 November).
       - `test/world-replay.test.ts` stays green; if a pinned result changes, name the changed input (the two fields)
         in the commit.
       Verify: those files; `node dev/ship-check.ts`. The view still slides as today (it ignores the fields).
-- [ ] **Checkpoint A (step 2 ships on the shared v46, between sessions, never mid-session).** Proofs, once:
+- [x] **Checkpoint A (step 2 shipped on the shared v46 in #1841).** Verified on `d2abaf31`: the loop passed for 1–4 players (14 footings each, wagon supply, 14 × 15 m to carry; rack and jib advance a bent each pair). The network suite passed 208/208. The exclusive `deck-laid` to `gap-footed` ring bot shouldered and set all 14 without recovery, ending at head 7 with 4 racked, no graphics errors. Proofs, once:
       `npm run loop -- run` (the `bents` beat: bill, supply and cue unchanged); `npm run test:net`; the ring bot
       (`dev/look/evals/railway-ring-bot.ts` with `--rail-seed deck-laid`: its route sets the fourteen bent footings and
       waits out each haul). Independent review before merge (sim, world, server): a fresh Codex
