@@ -53,7 +53,8 @@ import {
 } from '../../sim/railway-rows.ts';
 import { worksPreview } from './works-flag.ts';
 import { railwayGlideOpen } from './glide.ts';
-import { yawToForge } from './forge-cut.ts';
+import { FORGE_CUT, forgeCut, yawToForge } from './forge-cut.ts';
+import { FORGE_CALL_HEAR } from './forge-call.ts';
 import { RING_Q7_FRAME } from '../../sim/railway-ring-layout.ts';
 import { Q7_DECK_UP, depotPieceVisible, q7Spot } from './q7-site.ts';
 import { lineFeed, lineLayDistance, linePanelCount } from '../../sim/railway-line-schedule.ts';
@@ -67,7 +68,7 @@ import { createRailwayFarHead } from './far-head-view.ts';
 import { createRailwayBoiler } from './boiler-view.ts';
 import { createRailwayPier } from './pier-view.ts';
 import { createForgeFinish } from './forge-finish.ts';
-import { createForgeRewards } from './forge-rewards.ts';
+import { FORGE_REWARDS, createForgeRewards } from './forge-rewards.ts';
 import type { RewardMark } from './stations.ts';
 import { furnaceMouthAtlas, furnaceMouthBox } from './furnace-mouth.ts';
 import { stockSign } from './stock-sign.ts';
@@ -127,7 +128,7 @@ export async function createRailwayLine2(
   // The same pull-out as Place's glider reveal, now owned by this view and queued behind its reward cards.
   const switchCamera = createCameraPullOut(rewardBusy, true);
   owner.cleanup(() => switchCamera.dispose());
-  let switchKind: 'sea' | 'quarry' | 'seaInstall' | 'farHead' | 'pier' | null = null;
+  let switchKind: 'sea' | 'quarry' | 'seaInstall' | 'farHead' | 'pier' | 'forgeAxe' | null = null;
   // The hand-back from a forge cut (far-head-view.ts, pier-view.ts): a player on foot whose camera the shot took comes
   // home looking toward the forge (design review call 5). Not a rider, a glider in the air or someone hauling: their
   // camera has a job already. Reduced motion plays no shot, so it never gets here.
@@ -630,6 +631,14 @@ export async function createRailwayLine2(
   const finish = await createForgeFinish(adapter, owner, {
     plan,
     building,
+    // The beams drop in as the axe's cut comes home (forge-made rewards, step 5).
+    hold: {
+      while: () => {
+        const camera = switchCamera.inspect();
+        return switchKind === 'forgeAxe' && (camera.active || camera.pending);
+      },
+      max: FORGE_REWARDS.roofHoldMax,
+    },
     unseal: () => {
       if (!wallsBody) return;
       owner.removeBody(wallsBody);
@@ -748,10 +757,15 @@ export async function createRailwayLine2(
   let pouredShown = forgeRow(rd.world()).poured,
     pouring = 0,
     pourGeneration = 0;
-  function restore() {
+  /** `crossing`: the machine's crossing a few seconds after the forge lights; the axe's cut, if it is still queued or
+   * playing, carries on (and the roof show keeps waiting for it). */
+  function restore(crossing = false) {
     ensureQ7Frame();
-    switchCamera.reset();
-    switchKind = null;
+    const keepCut = crossing && switchKind === 'forgeAxe';
+    if (!keepCut) {
+      switchCamera.reset();
+      switchKind = null;
+    }
     deposits = [];
     const w = rd.world(),
       f = forgeRow(w),
@@ -797,7 +811,7 @@ export async function createRailwayLine2(
     forgePieces.forEach((_, k) => building.snap(k, false));
     for (let n = 0; n < shownPieces; n++) building.snap(ORDER[n]!, true);
     finish.restore(); // after the pieces: it snaps the roof back on once the crossing is done
-    rewards.restore();
+    rewards.restore(keepCut);
     drawnDepot = '';
   }
 
@@ -1079,8 +1093,24 @@ export async function createRailwayLine2(
       if (mouth.visible && !reducedMotion) fire.advance(dt);
       if (litShown < 0 && fg.lit >= 0) {
         sounds.fanfare(true);
-        whistle(plans.X, plans.Z);
+        // Heard island-wide, as the forge's call is: a friend chopping far off hears it light.
+        whistle(plans.X, plans.Z, FORGE_CALL_HEAR);
         pieces.dustRing(plans.X, plan.y + 0.4, plans.Z, 16, 3.2, 0.5);
+        // The forge makes the proper axe (owner, 17 November): a cut to the pedestal for everyone in the room on the
+        // live edge, under the pull-out's rules (queued behind a reward card, waiting while gliding, none in a vehicle
+        // seat or under reduced motion), never on a reload, late join or resync (restore() sets litShown).
+        rewards.axeHot();
+        const { pos, to, at } = forgeCut('axe');
+        const v = (q: { x: number; y: number; z: number }) => new THREE.Vector3(q.x, q.y, q.z);
+        const queued = switchCamera.play(v(pos), v(pos), v(at), FORGE_CUT.seconds, 0.01, {
+          cutIn: true,
+          back: FORGE_CUT.back,
+          end: { pos: v(pos), to: v(to), at: v(at) },
+          onCut: rewards.axeArrives,
+          onHome: faceForge,
+        });
+        if (queued) switchKind = 'forgeAxe';
+        else rewards.axeArrives();
       }
       litShown = fg.lit;
       if (fg.lit >= 0) {
@@ -1164,7 +1194,7 @@ export async function createRailwayLine2(
       const now = working();
       if (now && !wasWorking) {
         whistle(machine.flatbed.x, machine.flatbed.z);
-        restore();
+        restore(true);
       }
       wasWorking = now;
       // Q frames: stock, feed flights into the machine, tags.
