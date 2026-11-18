@@ -701,6 +701,23 @@
         }
       }
     },
+    "railway.depot-cart": {
+      "colliders": [],
+      "key": "railway.depot-cart",
+      "scope": "owner",
+      "visual": {
+        "asset": "boiler-cart",
+        "node": "cart"
+      }
+    },
+    "railway.engine": {
+      "colliders": [],
+      "key": "railway.engine",
+      "scope": "owner",
+      "visual": {
+        "asset": "engine"
+      }
+    },
     "railway.footings-bill": {
       "attach": {
         "sign": {
@@ -957,6 +974,22 @@
       "scope": "owner",
       "visual": {
         "none": true
+      }
+    },
+    "railway.machine-wing": {
+      "colliders": [],
+      "key": "railway.machine-wing",
+      "scope": "owner",
+      "visual": {
+        "asset": "track-wing"
+      }
+    },
+    "railway.passenger-car": {
+      "colliders": [],
+      "key": "railway.passenger-car",
+      "scope": "owner",
+      "visual": {
+        "asset": "passenger-car"
       }
     },
     "railway.rack-tag": {
@@ -1844,6 +1877,14 @@
         "params": {
           "kind": "sack"
         }
+      }
+    },
+    "railway.track-machine": {
+      "colliders": [],
+      "key": "railway.track-machine",
+      "scope": "owner",
+      "visual": {
+        "asset": "track-layer"
       }
     },
     "railway.waiting-board": {

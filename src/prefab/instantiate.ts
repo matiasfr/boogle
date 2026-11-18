@@ -96,7 +96,8 @@ export function instantiate(
   if (parent && def.colliders.length) throw new Error('prefabs: moving colliders await their conversion');
   if (!parent && Object.values(def.attach ?? {}).some((a) => a.kind === 'seat' && a.anchorView))
     throw new Error('prefabs: anchored seat needs moving parent');
-  // These fields have no authored users yet. Fail closed until their conversion step provides the implementation.
+  // GLB records (step 12) are loaded and animated by their owning views; materials have no authored users yet.
+  // Both fail closed here until a conversion step mounts them.
   if ('asset' in def.visual || def.material)
     throw new Error('prefabs: asset and material implementations await their conversion steps');
   const batch = options.batch;

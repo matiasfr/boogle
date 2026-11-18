@@ -1,10 +1,25 @@
-// Seat anchors inside the existing vehicle GLBs. Visuals and bodies stay with the vehicles until step 12.
+// The railway's built vehicles (step 12): each GLB record names its model; the owning view loads it, keeps its moving
+// body and runs its animation. Seat anchors inside those vehicles are records of their own.
 // The railhead rack's tag (docs/plans/gap-readability.md, step 7): a standing plate in the rack's empty bed; the view
 // (src/entities/railway/railhead-view.ts) owns its text, where it stands and when it shows.
 import { definePrefab } from '../../prefab/types.ts';
 import { PLAYER_R } from '../../constants.ts';
 
 export const prefabs = [
+  // The engine (assets/src/engine.py), baked per node by src/entities/railway/engine-kit.ts; its collider is the car's.
+  definePrefab({ key: 'railway.engine', visual: { asset: 'engine' }, colliders: [], scope: 'owner' }),
+  // The knifeboard fittings on the flatbed (assets/src/passenger-car.py, src/entities/railway/car-kit.ts).
+  definePrefab({ key: 'railway.passenger-car', visual: { asset: 'passenger-car' }, colliders: [], scope: 'owner' }),
+  // The track machine's body and the up track's second hand (src/entities/railway/track-machine.ts).
+  definePrefab({ key: 'railway.track-machine', visual: { asset: 'track-layer' }, colliders: [], scope: 'owner' }),
+  definePrefab({ key: 'railway.machine-wing', visual: { asset: 'track-wing' }, colliders: [], scope: 'owner' }),
+  // Line 2's depot cart (src/entities/railway/cart-view.ts): one node of the boiler-cart kit.
+  definePrefab({
+    key: 'railway.depot-cart',
+    visual: { asset: 'boiler-cart', node: 'cart' },
+    colliders: [],
+    scope: 'owner',
+  }),
   // R2b blockout: rail-local coordinates, four window openings per side; door gaps at both ends.
   // The train's existing makeCar owns its one moving envelope collider.
   definePrefab({

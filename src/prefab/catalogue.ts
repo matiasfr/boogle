@@ -6,3 +6,10 @@ export const compiled = loadPrefabArtifact(artifact);
 export const definitions = compiled.prefabs;
 
 export const haltKitPlacements = loadLevelArtifact(haltKit, definitions).placements;
+
+/** A GLB record's model: its asset id (registered by the view that loads it) and node, if it names one. */
+export function prefabAsset(key: string) {
+  const visual = definitions[key]?.visual;
+  if (!visual || !('asset' in visual)) throw new Error(`prefabs: ${key} names no asset`);
+  return visual;
+}

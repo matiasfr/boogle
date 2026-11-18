@@ -9,6 +9,8 @@ import { FIXED, reducedMotion } from '../../constants.ts';
 import { background } from '../../async.ts';
 import machineUrl from '../../../assets/built/track-layer.glb?url';
 import wingUrl from '../../../assets/built/track-wing.glb?url';
+import { assetUrl, registerAsset } from '../../render/asset-manifest.ts';
+import { prefabAsset } from '../../prefab/catalogue.ts';
 import { stepAlpha } from '../../physics/engine.ts';
 import { type Platform } from '../../physics/platforms.ts';
 import { wagonLook, LOCO, TRAILER } from '../../render/wagon-look.ts';
@@ -24,6 +26,10 @@ import { instantiate } from '../../prefab/instantiate.ts';
 import { MAX_PANEL_LENGTH } from './track-panels.ts';
 import { FIRST_SEATED, WING, WING_BEAM_LENGTH, wingSide, type UpSeat } from './machine-panels.ts';
 import { buildWing } from './machine-wing.ts';
+
+registerAsset({ id: 'track-layer', url: machineUrl, kind: 'model', priority: 'first' });
+// The second hand is behind ?layer=wing: loaded only on demand.
+registerAsset({ id: 'track-wing', url: wingUrl, kind: 'model', priority: 'later' });
 
 // ---------------------------------------------------------------- the machine
 /** What the machine carries, drawn in the flatbed's frame: its rack of rails down each side, its cradle of logs. */
@@ -57,7 +63,7 @@ export function buildMachine(owner: OwnedView, mode: 'panels' | 'continuous' = '
   if (model)
     background(
       import('../../render/assets.ts').then(async ({ loadAsset }) =>
-        model.install((await loadAsset(machineUrl)).gltf.scene),
+        model.install((await loadAsset(assetUrl(prefabAsset('railway.track-machine').asset))).gltf.scene),
       ),
       'track-layer model',
     );
@@ -140,7 +146,7 @@ export function buildMachine(owner: OwnedView, mode: 'panels' | 'continuous' = '
       wing.group.position.y = rig.root.position.y;
       background(
         import('../../render/assets.ts').then(async ({ loadAsset }) =>
-          built.install((await loadAsset(wingUrl)).gltf.scene),
+          built.install((await loadAsset(assetUrl(prefabAsset('railway.machine-wing').asset))).gltf.scene),
         ),
         'track-wing model',
       );

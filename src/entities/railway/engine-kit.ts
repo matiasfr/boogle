@@ -6,10 +6,15 @@ import * as THREE from 'three/webgpu';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import url from '../../../assets/built/engine.glb?url';
+import { assetUrl, registerAsset } from '../../render/asset-manifest.ts';
+import { prefabAsset } from '../../prefab/catalogue.ts';
 import { paint } from '../../place/look.ts';
 import { ENGINE_CAB } from './engine.ts';
 
-const kit = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url);
+registerAsset({ id: 'engine', url, kind: 'model', priority: 'first' });
+const kit = await new GLTFLoader()
+  .setMeshoptDecoder(MeshoptDecoder)
+  .loadAsync(assetUrl(prefabAsset('railway.engine').asset));
 kit.scene.updateMatrixWorld(true);
 export type EnginePart =
   | 'engine_body'

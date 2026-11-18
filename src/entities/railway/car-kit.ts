@@ -6,10 +6,15 @@ import * as THREE from 'three/webgpu';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import url from '../../../assets/built/passenger-car.glb?url';
+import { assetUrl, registerAsset } from '../../render/asset-manifest.ts';
+import { prefabAsset } from '../../prefab/catalogue.ts';
 import { paint } from '../../place/look.ts';
 import { FLAT_RACK } from './cars.ts';
 
-const kit = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url);
+registerAsset({ id: 'passenger-car', url, kind: 'model', priority: 'first' });
+const kit = await new GLTFLoader()
+  .setMeshoptDecoder(MeshoptDecoder)
+  .loadAsync(assetUrl(prefabAsset('railway.passenger-car').asset));
 kit.scene.updateMatrixWorld(true);
 
 /** The flatbed's deck top over the rail line (src/entities/railway/cars.ts TRAILER.top): the recipe's origin is the rail line. */
