@@ -1,3 +1,4 @@
+// driven by: npm run session -- start --rail-seed awake --eval dev/look/evals/carry-squares.ts --size 960x600
 // The carried squares (docs/plans/separate-capacities.md, step 3): stages the read-only carry seam, not accepted
 // inventory or a played route. Stills at 960x600 and 390x844:
 //   npm run session -- start --rail-seed awake --eval dev/look/evals/carry-squares.ts --size 960x600
