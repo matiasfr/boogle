@@ -1,6 +1,8 @@
-// The host's baseline for a suite: one pulled device run of that suite, run on the Mac in the owner's own browser when
-// it is quiet (docs/plans/remote-device-tests.md). One file per suite in ~/.boogle/device/baseline/<suite>.json, beside
-// the daily perf history, so every worktree on the Mac reads the same one. BOOGLE_DEVICE_DIR moves the directory.
+// The baseline for a suite: one pulled device run of that suite, made in the owner's own browser on the machine to
+// compare against when it is quiet (docs/plans/remote-device-tests.md). The run names its own device, so the file says
+// nothing about the machine that pulled it. One file per suite in the pulling machine's ~/.boogle/device/baseline/
+// <suite>.json (any OS), outside every worktree, so all worktrees on that machine read the same one; another machine
+// that pulls makes its own with `npm run device -- baseline <code>`. BOOGLE_DEVICE_DIR moves the directory.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -42,7 +44,8 @@ export function loadBaseline(suite: string): Baseline | null {
   }
 }
 
-/** The Mac bench's history (dev/daily/perf.ts), oldest first; empty when the file is missing. Bad lines are skipped. */
+/** This machine's daily bench history (dev/daily/perf.ts), oldest first. Only a machine that runs the daily perf job
+ * has one; elsewhere the file is missing and this is empty, so no bench line prints. Bad lines are skipped. */
 export function loadBenchHistory(): BenchEntry[] {
   const file = path.join(
     process.env.BOOGLE_DAILY_DIR || path.join(os.homedir(), '.boogle', 'daily'),

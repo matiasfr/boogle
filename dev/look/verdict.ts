@@ -4,13 +4,14 @@
 // browser/page closed under it) ends `killed` with the reason and exits KILLED_EXIT; a game failure stays exit 1.
 // Best effort: nothing here can be written once the machine is already gone. No game/runtime imports.
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { maxLoad, slotRecord, wasShared, type Slot } from './bot-queue.ts';
+import { loadLimit, machineLoad } from './machine-load.ts';
 
 export const KILLED_EXIT = 3;
-/** The load a run is judged against when the gate is off (BOOGLE_BOT_MAX_LOAD=0): turning it off isn't evidence. */
+/** The load a run is judged against when the gate is off (BOOGLE_BOT_MAX_LOAD=0): turning it off isn't evidence.
+ * Written for 10 cores; finishRun passes it through loadLimit. */
 const EVIDENCE_LOAD = 30;
 const CLOSED =
   /Target page, context or browser has been closed|Target closed|Browser has been closed|browser has disconnected/i;
@@ -154,8 +155,8 @@ export function finishRun(body: Body, report = true) {
     git: run.git,
     slot: slotRecord(),
     shared: wasShared(),
-    loadAtEnd: os.loadavg()[0]!,
-    limit: maxLoad(),
+    loadAtEnd: machineLoad(),
+    limit: maxLoad() || loadLimit(EVIDENCE_LOAD),
     startedAt: run.startedAt,
     endedAt: Date.now(),
     command: run.command,

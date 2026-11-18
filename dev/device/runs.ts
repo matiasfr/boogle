@@ -1,4 +1,4 @@
-// The Mac's side of waiting for and collecting device runs. Pure: the clock, the sleep and the server's list are
+// The pulling machine's side of waiting for and collecting device runs. Pure: the clock, the sleep and the server's list are
 // passed in, so the logic runs under a fake clock in test/device-runs.test.ts.
 import type { PlaySession } from '../../server/src/playdata.ts';
 
@@ -66,7 +66,7 @@ export type WaitResult =
 
 /**
  * Polls the server until the run `id` is done. Ends early when the run began and then went quiet for STALE_MS, so a
- * closed tab does not hold the Mac for the whole wait; ends on repeated list failures.
+ * closed tab does not hold this machine for the whole wait; ends on repeated list failures.
  */
 export async function waitForRun(id: string, env: WaitEnv, pollMs = POLL_MS, limitMs = WAIT_MS): Promise<WaitResult> {
   const start = env.now();

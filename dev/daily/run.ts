@@ -1,11 +1,11 @@
 // Foreground launchd job. A crash deliberately leaves the lock for inspection: children may still be running.
 import '../node-version.ts'; // first: re-runs under the pinned Node
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync, spawnSync, type SpawnSyncReturns } from 'node:child_process';
 import { acquireBotSlot } from '../look/bot-queue.ts';
+import { loadKind, loadLimit, machineLoad } from '../look/machine-load.ts';
 import { jobs, jobName, longArgs, prompt, reviewPrompt, stateDir, scenarios, liveScenarios as LIVE } from './jobs.ts';
 import { longReport } from './long.ts';
 import { PERF_POLICY, compare, invalid, report, type Bench, type Entry } from './perf.ts';
@@ -125,16 +125,25 @@ function busiest(n = 8) {
     .slice(0, n);
 }
 
+/** The quiet limit in this machine's units: PERF_POLICY.quiet.maxLoad is written for 10 cores (machine-load.ts). */
+const quietLimit = () => loadLimit(PERF_POLICY.quiet.maxLoad);
+
+/** The quiet check, once: this machine's load against the quiet limit, and other harness browsers. */
+function quietCheck() {
+  const load = machineLoad();
+  const browsers = harnessBrowsers();
+  const limit = quietLimit();
+  const text = `load ${load.toFixed(1)}, quiet at most ${limit.toFixed(1)}${browsers ? `; ${browsers} other harness browser${browsers > 1 ? 's' : ''}` : ''}`;
+  return { quiet: load <= limit && !browsers, text };
+}
+
 /** Waits, bounded, for a quiet machine. Returns '' once quiet, or the reason it gave up. */
 async function waitForQuiet() {
-  const { maxLoad, waitMinutes } = PERF_POLICY.quiet;
-  const until = Date.now() + waitMinutes * 60_000;
+  const until = Date.now() + PERF_POLICY.quiet.waitMinutes * 60_000;
   for (;;) {
-    const load = os.loadavg()[0]!;
-    const browsers = harnessBrowsers();
-    if (load <= maxLoad && !browsers) return '';
-    if (Date.now() > until)
-      return `skipped: machine busy (load ${load.toFixed(1)}${browsers ? `; ${browsers} other harness browser${browsers > 1 ? 's' : ''}` : ''})`;
+    const { quiet, text } = quietCheck();
+    if (quiet) return '';
+    if (Date.now() > until) return `skipped: machine busy (${text})`;
     await new Promise((resolve) => setTimeout(resolve, 15_000));
   }
 }
@@ -189,13 +198,14 @@ if (dry && job === 'perf') {
         lock: path.join(stateDir, 'active'),
         time: '02:50 local',
         history: perfHistory,
+        quietNow: (({ quiet, text }) => `${quiet ? 'quiet' : 'busy'}: ${text}`)(quietCheck()),
         steps: [
           'acquire shared lock',
           ...(local
             ? ['use current worktree and installed dependencies; do not contact GitHub or write history']
             : ['fetch origin/main and create a fresh, locked worktree', 'npm ci', 'install Playwright Chromium']),
           'take the machine bot slot and hold it until the benchmark ends',
-          `wait up to ${PERF_POLICY.quiet.waitMinutes} min for 1-minute load <= ${PERF_POLICY.quiet.maxLoad} and no other harness browser; else "skipped: machine busy (load N)"`,
+          `wait up to ${PERF_POLICY.quiet.waitMinutes} min for ${loadKind} <= ${quietLimit().toFixed(1)} (${PERF_POLICY.quiet.maxLoad} on 10 cores) and no other harness browser; else "skipped: machine busy (load N, quiet at most M)"`,
           'caffeinate -dimu node dev/look/bench.ts --out <run>/bench.json (visible Chromium on the Mac GPU, in the held slot)',
           'compare with the median of the last valid runs; flag regressions, budgets and the commit range',
           ...(local ? [] : ['append a valid run to history', 'comment on the Performance issue (created once)']),
@@ -359,7 +369,7 @@ if (dry && job === 'perf') {
       const measured = await holding(`daily perf ${id}`, false, async (leased) => {
         const busy = await waitForQuiet();
         if (busy) return { busy };
-        const before = os.loadavg()[0]!;
+        const before = machineLoad();
         const busyBefore = busiest();
         // A visible browser: keep the display awake for the run (a sleeping display stops animation frames).
         const execution = spawnSync(
@@ -369,7 +379,7 @@ if (dry && job === 'perf') {
         );
         return {
           execution,
-          load: [before, os.loadavg()[0]!] as [number, number],
+          load: [before, machineLoad()] as [number, number],
           busiest: { before: busyBefore, after: busiest() },
         };
       });
@@ -381,7 +391,7 @@ if (dry && job === 'perf') {
         fs.writeFileSync(
           file,
           `Daily benchmark of ${base.slice(0, 8)}: ${measured.busy}. Waited ${PERF_POLICY.quiet.waitMinutes} min with ` +
-            `the bot slot held for a 1-minute load of at most ${PERF_POLICY.quiet.maxLoad} and no other harness ` +
+            `the bot slot held for a load of at most ${quietLimit().toFixed(1)} (${loadKind}) and no other harness ` +
             `browser; nothing was measured.\n\nMac run: ${dir}\n`,
         );
         console.log(measured.busy);
@@ -467,7 +477,7 @@ if (dry && job === 'perf') {
           return { execution, waited };
         });
         const log = output(execution);
-        const header = `daily: bot slot after ${Math.round(waited / 1000)} s queued; 1-minute load ${os.loadavg()[0]!.toFixed(1)} at the end\n`;
+        const header = `daily: bot slot after ${Math.round(waited / 1000)} s queued; 1-minute load ${machineLoad().toFixed(1)} at the end\n`;
         fs.writeFileSync(path.join(dir, `${name}.log`), header + log);
         if (execution.status !== 0) {
           const lines = log.split('\n').filter((line) => /\bFAIL\b/i.test(line));

@@ -130,8 +130,8 @@ test('a different quality rung is named, and different builds are flagged', () =
 
 test('no baseline says how to make one; the baseline run itself says so', () => {
   assert.match(
-    baselineSection(run('dv-x', [row('spawn')]), {}).join('\n'),
-    /No baseline for suite quick yet.*npm run device -- baseline <code>/,
+    baselineSection(run('dv-x', [row('spawn')]), { host: 'HOTBOX' }).join('\n'),
+    /No baseline for suite quick on this machine \(HOTBOX\) yet.*npm run device -- baseline <code>/,
   );
   assert.match(baselineSection(MAC, { baseline: base }).join('\n'), /This run is the baseline for suite quick/);
 });
@@ -143,7 +143,8 @@ test('the report carries the baseline section and the paste line keeps its wordi
     'Tested on a device: tablet (Apple GPU), Safari 26.0, build bd34b181, suite quick, 1/1 scenes pass, run dv-devicedevicedevicedevice12 (.look/device/dv-devicedevicedevicedevice12/report.md)',
   );
   assert.match(report(r, { baseline: base }), /## Against the baseline/);
-  assert.match(report(r), /No baseline for suite quick yet/);
+  assert.match(report(r), /No baseline for suite quick on this machine yet/);
+  assert.doesNotMatch(report(r, { host: 'HOTBOX' }), /\b(the|this) Mac\b/);
 });
 
 test('the bench line compares exact counts at the same commit, and is absent otherwise', () => {
@@ -153,9 +154,9 @@ test('the bench line compares exact counts at the same commit, and is absent oth
     { date: '2026-11-09T03:00:00Z', base: 'bd34b181ffff', metrics: { 'spawn.calls': 800, 'spawn.tris': 499_000 } },
     { date: '2026-11-09T04:00:00Z', base: 'ccccccccc', metrics: { 'spawn.calls': 1, 'spawn.tris': 1 } },
   ];
-  const line = benchLine(r, history)!;
-  assert.match(line, /bd34b181, the Mac's daily perf run of 2026-11-09/);
-  assert.match(line, /spawn 800 calls \/ 499000 tris on the Mac, 812 \/ 500000 here \(\+12 \/ \+1000\)/);
+  const line = benchLine(r, history, 'HOTBOX')!;
+  assert.match(line, /bd34b181, the daily perf run of 2026-11-09 on this machine \(HOTBOX\)/);
+  assert.match(line, /spawn 800 calls \/ 499000 tris in the bench, 812 \/ 500000 here \(\+12 \/ \+1000\)/);
   assert.doesNotMatch(line, /pier/);
   assert.equal(benchLine(run('dv-x', [row('spawn')], { build: 'zzzzzzzz' }), history), null);
   assert.equal(benchLine(r, []), null);

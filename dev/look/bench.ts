@@ -23,6 +23,7 @@ import { pathToFileURL } from 'node:url';
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import type { Browser } from 'playwright';
 import { Game, freePort, launch, root as harnessRoot, sleep, type Stack } from './lib.ts';
+import { loadAverages } from './machine-load.ts';
 import { OPT_IN, POSES, type PoseName } from '../../src/debug/perf-poses.ts';
 
 const argv = process.argv.slice(2);
@@ -562,10 +563,11 @@ try {
   }
   stack = await devStack(server.url);
   browser = await launch({ hardware: true });
-  result.loadBefore = os.loadavg().map((l) => +l.toFixed(2)); // 1, 5 and 15 min: above ~6 the times aren't evidence
+  // 1, 5 and 15 min (one busy-CPU reading on Windows, machine-load.ts): above loadLimit(6) the times aren't evidence
+  result.loadBefore = loadAverages().map((l) => +l.toFixed(2));
   if (scaler) result.scaler = await watchScaler(browser, stack, server.dataDir, scaler);
   else result.poses = await measure(browser, stack, server.dataDir);
-  result.loadAfter = os.loadavg().map((l) => +l.toFixed(2));
+  result.loadAfter = loadAverages().map((l) => +l.toFixed(2));
   if (!noLoad) {
     const port = await freePort();
     preview = vite(['preview', '--outDir', dist, '--port', String(port), '--strictPort', '--host', '127.0.0.1'], {});

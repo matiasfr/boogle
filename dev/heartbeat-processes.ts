@@ -2,6 +2,10 @@
 // processes through PowerShell, samples each matching process tree's CPU over two seconds and prints the same lines
 // dev/heartbeat.sh prints on macOS. `node dev/heartbeat-processes.ts load` prints the load line instead.
 import { execFileSync } from 'node:child_process';
+import os from 'node:os';
+import { maxLoad } from './look/bot-queue.ts';
+import { loadLimit, machineLoad } from './look/machine-load.ts';
+import { PERF_POLICY } from './daily/perf.ts';
 
 interface Proc {
   ProcessId: number;
@@ -19,8 +23,11 @@ const powershell = (script: string) =>
   });
 
 if (process.argv[2] === 'load') {
-  const cpu = powershell('(Get-CimInstance Win32_Processor | Measure-Object LoadPercentage -Average).Average').trim();
-  console.log(`load: CPU ${cpu}% busy (Windows has no load average)`);
+  // The tooling's own reading (dev/look/machine-load.ts) and the limits the bot gate and the bench's quiet check use.
+  const gate = maxLoad();
+  console.log(
+    `load: ${machineLoad().toFixed(1)} of ${os.cpus().length} logical CPUs busy (Windows has no load average); bot gate ${gate ? `holds above ${gate.toFixed(1)}` : 'off'}, bench quiet at most ${loadLimit(PERF_POLICY.quiet.maxLoad).toFixed(1)}`,
+  );
   process.exit(0);
 }
 

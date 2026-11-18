@@ -114,7 +114,7 @@ function sceneRow(e: Raw): SceneRow | null {
   };
 }
 
-/** `minted`: whether `npm run device -- new` made this id on this Mac (its run.json exists). */
+/** `minted`: whether `npm run device -- new` made this id on this machine (its run.json exists). */
 export function readDevice(session: Session, minted = false): DeviceResult {
   const out: DeviceResult = {
     id: session.id,
