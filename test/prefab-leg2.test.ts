@@ -121,6 +121,7 @@ for (const area of ['bell', 'west'] as const)
     builders.set('ring.map-table', () => new THREE.Group());
     builders.set('ring.summit-deck', () => new THREE.Group());
     builders.set('ring.hammer-head', () => new THREE.Group());
+    builders.set('mushrooms.stall', () => new THREE.Group());
     const { makeGreyboxLabel } = sourceModule<typeof import('../src/prefab/builders/greybox-label.ts')>(
       fs.readFileSync('src/prefab/builders/greybox-label.ts', 'utf8'),
       { signBoard },

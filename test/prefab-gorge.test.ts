@@ -77,6 +77,7 @@ test('Gorge collider and placement values match the old massing', async (t) => {
   builders.set('ring.map-table', () => new THREE.Group());
   builders.set('ring.summit-deck', () => new THREE.Group());
   builders.set('ring.hammer-head', () => new THREE.Group());
+  builders.set('mushrooms.stall', () => new THREE.Group());
   const runtime = sourceModule<typeof import('../src/prefab/instantiate.ts')>(
     fs.readFileSync('src/prefab/instantiate.ts', 'utf8'),
     { THREE, artifact, compiled, definitions, workshop, gorge, names, ...validation, builders, staticBody: record },

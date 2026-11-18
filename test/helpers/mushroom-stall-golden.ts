@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { sourceModule } from '../../dev/level/source.ts';
+import { sourceFunction, sourceModule } from '../../dev/level/source.ts';
 import { HALF, REACH, SEA, PLAYER_R, HEAD_OFFSET } from '../../src/constants.ts';
 import { worldColliders, worldMeshes } from './poi-golden.ts';
 const { GROUP } = await import('../../src/physics/physics.ts');
@@ -148,9 +148,59 @@ export function captureStall(c: ReturnType<typeof stallBindings>, module: Stall)
   };
 }
 
-/** The unconverted stall, its module run as it is. */
-export function captureStallBefore() {
+/** The record stall: the adapter over the real builder, catalogue, level and `instantiate`, with the same stand-ins. The
+ * fixture came from the unconverted adapter, run through these bindings as it was (`captureStallBefore`, in the commit
+ * "Capture the mushroom stall world golden before the record conversion"). */
+export async function captureStallAfter() {
   const c = stallBindings();
-  const module = sourceModule<Stall>(fs.readFileSync('src/adapters/mushrooms.ts', 'utf8'), c.bindings);
+  const { compiled, definitions } = await import('../../src/prefab/catalogue.ts');
+  const validation = await import('../../src/prefab/validate.ts');
+  const { names } = await import('../../src/prefab/names.ts');
+  type Builder = import('../../src/prefab/builders.ts').Builder;
+  const builders = new Map<string, Builder>(names.builders.map((name) => [name, () => new THREE.Group()]));
+  const registerBuilder = (name: string, build: Builder) => {
+    builders.set(name, build);
+    return build;
+  };
+  sourceModule(
+    fs.readFileSync('src/prefab/builders/mushrooms.ts', 'utf8'),
+    { THREE, registerBuilder, itemModel: c.bindings.itemModel, document: c.bindings.document },
+    [],
+  );
+  const json = (f: string) => JSON.parse(fs.readFileSync(f, 'utf8')) as unknown;
+  // The game's own staticBody (src/place/land.ts) over the recording createBody, so the collider's material is read.
+  const staticBody = sourceFunction('src/place/land.ts', 'staticBody', {
+    createBody: c.createBody,
+    groundMat: c.bindings.groundMat,
+    GROUP,
+  });
+  const runtime = sourceModule<typeof import('../../src/prefab/instantiate.ts')>(
+    fs.readFileSync('src/prefab/instantiate.ts', 'utf8'),
+    {
+      THREE,
+      compiled,
+      names,
+      builders,
+      ...validation,
+      workshop: json('content/built/levels/workshop.json'),
+      gorge: json('content/built/levels/gorge.json'),
+      ROOM_GROUP: 8,
+      CAVE_GROUP: GROUP.CAVE,
+      staticBody,
+    },
+  );
+  const createOwnedView = sourceFunction<typeof import('../../src/render/owned-view.ts').createOwnedView>(
+    'src/render/owned-view.ts',
+    'createOwnedView',
+    { THREE, owners: new WeakMap(), addBody() {}, removeBody() {} },
+  );
+  const module = sourceModule<Stall>(fs.readFileSync('src/adapters/mushrooms.ts', 'utf8'), {
+    ...c.bindings,
+    createOwnedView,
+    instantiate: runtime.instantiate,
+    definitions,
+    loadLevelArtifact: validation.loadLevelArtifact,
+    level: json('content/built/levels/mushrooms.json'),
+  });
   return captureStall(c, module);
 }

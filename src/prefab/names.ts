@@ -11,6 +11,7 @@ export interface InteractionNames {
   'town.plot-buy': true;
   'town.shop-rail': true;
   'lookout.look': true;
+  'mushrooms.take-seeds': true;
 }
 export interface GateNames {
   open: true;
@@ -83,6 +84,7 @@ export const names: NameRegistry = {
     'ring.map-table',
     'ring.summit-deck',
     'ring.hammer-head',
+    'mushrooms.stall',
   ],
   interactions: [
     'railway.request-stop',
@@ -92,6 +94,7 @@ export const names: NameRegistry = {
     'town.plot-buy',
     'town.shop-rail',
     'lookout.look',
+    'mushrooms.take-seeds',
   ],
   gates: ['open'],
   materials: [],

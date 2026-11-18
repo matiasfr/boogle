@@ -11,9 +11,15 @@ import { createIsland, siteFrame } from '../../src/island/stamps.ts';
 import { clamp } from '../../src/math-pure.ts';
 import { baseSites, type IdSite } from './sites.ts';
 import { ROUTE, TRACK, HELPER, ringAt } from '../../src/sim/route.ts';
+import stallLevel from '../../content/built/levels/mushrooms.json' with { type: 'json' };
+import { definitions } from '../../src/prefab/catalogue.ts';
+import { loadLevelArtifact } from '../../src/prefab/validate.ts';
 
 export const root = path.join(import.meta.dirname, '../..');
-const STALL = { x: 15.2, z: 13.4 }; // src/adapters/mushrooms.ts, which draws: not loadable here
+// The mushroom stall's placement and footprint, as src/adapters/mushrooms.ts reads them.
+const stallAt = loadLevelArtifact(stallLevel, definitions).placements.find((p) => p.prefab === 'mushrooms.stall')!;
+const STALL = { x: stallAt.pos[0], z: stallAt.pos[2], r: definitions[stallAt.prefab]!.footprint! };
+const STALL_FILE = 'src/content/levels/mushrooms.ts';
 
 export type Target = { name: string; x: number; z: number; file: string };
 export type Disc = { name: string; owner: string; x: number; z: number; r: number; file: string };
@@ -72,11 +78,11 @@ export function loadLevel(layoutFile: string | null): Level {
     { name: 'spawn', ...SPAWN, file: 'src/constants.ts' },
     { name: 'the ball', ...BALL_SPAWN, file: 'src/constants.ts' },
     { name: 'the court', x: COURT.x, z: COURT.z, file: 'src/world/grid.ts' },
-    { name: 'the stall', ...STALL, file: 'src/adapters/mushrooms.ts' },
+    { name: 'the stall', x: STALL.x, z: STALL.z, file: STALL_FILE },
   ];
   const discs: Disc[] = [
     { name: 'the court', owner: 'court', x: COURT.x, z: COURT.z, r: COURT.r, file: 'src/world/grid.ts' },
-    { name: 'the stall', owner: 'stall', ...STALL, r: 1.5, file: 'src/adapters/mushrooms.ts' },
+    { name: 'the stall', owner: 'stall', ...STALL, file: STALL_FILE },
   ];
   for (const s of sites) {
     const frame = siteFrame(s);

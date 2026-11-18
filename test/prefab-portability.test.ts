@@ -39,6 +39,8 @@ import { prefabs as lookout } from '../src/content/prefabs/lookout.ts';
 import { levels as lookoutLevels } from '../src/content/levels/lookout.ts';
 import { prefabs as ringIsland } from '../src/content/prefabs/ring-island.ts';
 import { levels as ringIslandLevels } from '../src/content/levels/ring-island.ts';
+import { prefabs as mushrooms } from '../src/content/prefabs/mushrooms.ts';
+import { levels as mushroomLevels } from '../src/content/levels/mushrooms.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -163,6 +165,7 @@ test('artifact serialization is independent of runtime native transcendental res
           ...caves,
           ...lookout,
           ...ringIsland,
+          ...mushrooms,
           ...haltKitContent().prefabs,
         ],
         [
@@ -182,6 +185,7 @@ test('artifact serialization is independent of runtime native transcendental res
           ...poiLevels,
           ...lookoutLevels,
           ...ringIslandLevels,
+          ...mushroomLevels,
           ...haltKitContent().levels,
           ...rotundaContent().levels,
         ],

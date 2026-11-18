@@ -1,0 +1,11 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "place": "mushrooms",
+  "placements": [
+    {"id":"stall","pos":[15.2,-0.05,13.4],"prefab":"mushrooms.stall","rot":[3,0,0]}
+  ],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}
