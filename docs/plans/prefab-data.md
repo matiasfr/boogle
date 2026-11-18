@@ -733,8 +733,7 @@ awning's and sign's canvases, the collider with its material, the footprint, the
 from five spots around the stall, carrying a bag and before entering). `npm run level-check` gives the same 21
 reports, byte for byte apart from the source hash; none is about the stall, before or after. Opened before/after
 stills of the stall match ([stills](../world/prefab-mushroom-stall/)): zero differing pixels in the stall's box; the
-8,283 elsewhere are the moving player and animated scenery. The after still predates the move to its own module,
-which changed no line of the stall; the golden was rerun after it.
+10,637 elsewhere are the moving player and animated scenery. The after still is of the final tree.
 
 Left in this area: nothing of the stall. The bouncing mushrooms (bodies, `mushroom` material and restitution, growth,
 squish and the `mush` room message) stay as they were: they are short-lived, owner-made things, not placed ones, so
