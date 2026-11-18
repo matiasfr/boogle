@@ -41,6 +41,10 @@ async function start(env: Record<string, string> = {}, overrides: Partial<Server
     });
   const get = (p: string, token: string | null = 'sesame') =>
     fetch(`${base}${p}`, { headers: token === null ? {} : auth(token) });
+  /** Registers runs as `npm run device -- new` does; stills are taken only for these. */
+  const make = async (...ids: string[]) => {
+    for (const id of ids) assert.equal((await register({ id, suite: 'quick', label: '' })).status, 201, id);
+  };
   /** Every file under DATA_DIR/device, relative. */
   const files = async () =>
     (await fs.readdir(path.join(dataDir, 'device'), { recursive: true }).catch((): string[] => [])).map((f) =>
@@ -52,6 +56,7 @@ async function start(env: Record<string, string> = {}, overrides: Partial<Server
     dataDir,
     clock,
     register,
+    make,
     still,
     get,
     files,
@@ -85,7 +90,7 @@ test('device: register needs the token; the reads too; only sha256(id) is kept',
     const body = await list.json();
     assert.equal(body.suite, 'quick');
     assert.equal(body.label, 'ipad');
-    assert.equal(body.self, false);
+    assert.equal(Date.parse(body.expires) - Date.parse(body.made), 7 * DAY);
     assert.deepEqual(
       body.stills.map((x: { scene: string; bytes: number }) => [x.scene, x.bytes]),
       [['spawn', 106]],
@@ -102,11 +107,12 @@ test('device: register needs the token; the reads too; only sha256(id) is kept',
   }
 });
 
-test('device: with no REPORT_TOKEN, register and the reads are 404', async () => {
+test('device: with no REPORT_TOKEN, register, stills and the reads are 404', async () => {
   const s = await start({ REPORT_TOKEN: '' });
   try {
     assert.equal((await s.register({ id: runId(), suite: 'quick', label: '' })).status, 404);
-    assert.equal((await s.still(runId(), 'spawn')).status, 204); // a self-minted still still lands
+    assert.equal((await s.still(runId(), 'spawn')).status, 404);
+    assert.deepEqual(await s.files(), []);
     assert.equal((await s.get(`/device/runs/${runId()}/stills`)).status, 404);
     assert.equal((await s.get(`/device/runs/${runId()}/still/spawn`)).status, 404);
   } finally {
@@ -138,9 +144,13 @@ test('device: malformed register bodies answer 400 without a throw and write not
   }
 });
 
-test('device: an unseen id registers on its first still; a bad id, scene or body is 400 and writes nothing', async () => {
+test('device: an unseen id is 404; a bad id, scene or body is 400; none writes anything', async () => {
   const s = await start();
   try {
+    assert.equal((await s.still(runId(), 'spawn')).status, 404, 'a self-minted run takes no stills');
+    assert.deepEqual(await s.files(), []);
+    await s.make(runId());
+    const before = (await s.files()).sort();
     for (const [id, scene] of [
       ['dv-short', 'spawn'],
       [runId().toUpperCase(), 'spawn'],
@@ -153,19 +163,14 @@ test('device: an unseen id registers on its first still; a bad id, scene or body
       [`${runId()}%00`, 'spawn'],
     ])
       assert.ok([400, 404].includes((await s.still(id!, scene!)).status), `${id} ${scene}`);
-    assert.deepEqual(await s.files(), []);
+    assert.deepEqual((await s.files()).sort(), before);
     // not a JPEG, a truncated one (no end marker), the wrong content type, an empty body
     assert.equal((await s.still(runId(), 'spawn', Buffer.from('GIF89a....'))).status, 400);
     assert.equal((await s.still(runId(), 'spawn', jpeg().subarray(0, 40))).status, 400);
     assert.equal((await s.still(runId(), 'spawn', jpeg(), 'text/plain')).status, 400);
     assert.equal((await s.still(runId(), 'spawn', Buffer.alloc(0))).status, 400);
-    assert.deepEqual(await s.files(), []);
-
+    assert.deepEqual((await s.files()).sort(), before);
     assert.equal((await s.still(runId(), 'spawn')).status, 204);
-    const body = await (await s.get(`/device/runs/${runId()}/stills`)).json();
-    assert.equal(body.self, true);
-    assert.equal(body.suite, '');
-    assert.equal(Date.parse(body.expires) - Date.parse(body.made), 7 * DAY);
   } finally {
     await s.stop();
   }
@@ -174,6 +179,7 @@ test('device: an unseen id registers on its first still; a bad id, scene or body
 test('device: a body cut off mid-upload answers without a throw and stores nothing', async () => {
   const s = await start();
   try {
+    await s.make(runId());
     const status = await new Promise<string>((resolve) => {
       const sock = net.connect(s.port, '127.0.0.1', () => {
         sock.write(
@@ -187,7 +193,7 @@ test('device: a body cut off mid-upload answers without a throw and stores nothi
       sock.on('error', () => resolve(''));
     });
     assert.ok(status === '' || /^HTTP\/1\.1 4\d\d/.test(status), status);
-    assert.deepEqual(await s.files(), []);
+    assert.equal((await s.files()).filter((f) => f.endsWith('.jpg')).length, 0);
     assert.equal((await s.still(runId(), 'spawn')).status, 204, 'the server is still up');
   } finally {
     await s.stop();
@@ -198,8 +204,21 @@ test('device: an oversized still is 413; the thirteenth is 507; a retry of a sce
   const s = await start();
   try {
     const id = runId();
-    assert.equal((await s.still(id, 'big', jpeg(400 * 1024))).status, 413);
-    assert.deepEqual(await s.files(), []);
+    await s.make(id);
+    // Refused on its Content-Length before a byte is read: a 413, or the reset it rides on when the client is still
+    // writing as the server closes the connection.
+    const big = await s.still(id, 'big', jpeg(400 * 1024)).then(
+      (r) => r.status,
+      () => 'reset',
+    );
+    assert.ok(big === 413 || big === 'reset', String(big));
+    const head = await rawRequest(
+      s.port,
+      `POST /device/runs/${id}/still/big HTTP/1.1\r\nHost: x\r\nContent-Type: image/jpeg\r\nContent-Length: ${400 * 1024 + 1}\r\n\r\n`,
+      () => {}, // sends no body at all: the answer comes from the header alone
+    );
+    assert.match(head, /^HTTP\/1\.1 413/);
+    assert.equal((await s.files()).filter((f) => f.endsWith('.jpg')).length, 0);
     for (let i = 0; i < 12; i++) assert.equal((await s.still(id, `s${i}`, jpeg(10, i))).status, 204);
     assert.equal((await s.still(id, 's12')).status, 507);
     assert.equal((await s.still(id, 's3', jpeg(20, 99))).status, 204, 'a scene sent again replaces its still');
@@ -221,8 +240,13 @@ test('device: an expired run is 404 and writes nothing; runs past 30 days go on 
     assert.equal((await s.still(old, 'spawn')).status, 404);
     assert.equal((await s.files()).filter((f) => f.endsWith('.jpg')).length, 0);
     assert.equal((await s.get(`/device/runs/${old}/stills`)).status, 200, 'still readable until the sweep');
+    // a temp file a crash left behind in a live run goes with the same sweep
+    await s.make(runId('n'));
+    const stray = path.join(s.dataDir, 'device', hash(runId('n')), 'run.json.crashed.tmp');
+    await fs.writeFile(stray, 'x');
     s.clock.t += 24 * DAY;
-    assert.equal((await s.still(runId('n'), 'spawn')).status, 204);
+    assert.equal((await s.still(runId('n'), 'spawn')).status, 404, 'n is past its 7 days too');
+    assert.ok(!(await s.files()).some((f) => f.endsWith('.tmp')), 'the sweep removed the stray temp file');
     assert.equal((await s.get(`/device/runs/${old}/stills`)).status, 404);
     assert.deepEqual(
       (await s.files()).filter((f) => !f.includes('/')),
@@ -233,13 +257,13 @@ test('device: an expired run is 404 and writes nothing; runs past 30 days go on 
   }
 });
 
-test('device: the run cap and the byte cap hold, for self-minted runs too', async () => {
+test('device: the run cap and the byte cap hold', async () => {
   const s = await start({ DEVICE_MAX_RUNS: '2', DEVICE_MAX_BYTES: String(12 * 1024) });
   try {
+    await s.make(runId('a'), runId('b'));
     assert.equal((await s.still(runId('a'), 'spawn')).status, 204);
-    assert.equal((await s.register({ id: runId('b'), suite: 'quick', label: '' })).status, 201);
-    assert.equal((await s.still(runId('c'), 'spawn')).status, 507);
     assert.equal((await s.register({ id: runId('c'), suite: 'quick', label: '' })).status, 507);
+    assert.equal((await s.still(runId('c'), 'spawn')).status, 404);
     // bytes: 12 kB in all, the run files counted
     assert.equal((await s.still(runId('a'), 'town', jpeg(1000))).status, 204);
     assert.equal((await s.still(runId('a'), 'pier', jpeg(11_500))).status, 507);
@@ -249,20 +273,20 @@ test('device: the run cap and the byte cap hold, for self-minted runs too', asyn
   }
   const r = await start({ DEVICE_FREE_RESERVE: String(2 ** 60) }); // no volume has this free
   try {
-    assert.equal((await r.still(runId(), 'spawn')).status, 507);
     assert.equal((await r.register({ id: runId(), suite: 'quick', label: '' })).status, 507);
   } finally {
     await r.stop();
   }
 });
 
-test('device: writes are rate limited per IP', async () => {
+test('device: still uploads are rate limited per IP; register keeps the token routes own limit', async () => {
   const s = await start({ DEVICE_RATE_PER_MIN: '3' });
   try {
+    await s.make(runId());
     const codes = [];
     for (let i = 0; i < 5; i++) codes.push((await s.still(runId(), `s${i}`)).status);
     assert.deepEqual(codes, [204, 204, 204, 429, 429]);
-    assert.equal((await s.register({ id: runId('b'), suite: 'quick', label: '' })).status, 429);
+    assert.equal((await s.register({ id: runId('b'), suite: 'quick', label: '' })).status, 201);
   } finally {
     await s.stop();
   }
@@ -289,10 +313,13 @@ test('device (review): self-minted stills cannot lock a registered run out of th
     DEVICE_RATE_PER_MIN: '1000',
   });
   try {
+    // Adapted to the fix (self-registration dropped for this version): an unseen id's still is 404 and writes nothing,
+    // so a flood of self-minted ids fills nothing.
     const big = jpeg(400 * 1024 - 6);
     for (let i = 0; i < 4; i++)
-      assert.equal((await s.still(runId(String.fromCharCode(97 + i)), 'spawn', big)).status, 204);
-    for (let i = 4; i < 10; i++) await s.still(runId(String.fromCharCode(97 + i)), 'spawn');
+      assert.equal((await s.still(runId(String.fromCharCode(97 + i)), 'spawn', big)).status, 404);
+    for (let i = 4; i < 10; i++) assert.equal((await s.still(runId(String.fromCharCode(97 + i)), 'spawn')).status, 404);
+    assert.deepEqual(await s.files(), []);
     const owner = runId('z');
     assert.equal(
       (await s.register({ id: owner, suite: 'quick', label: 'iphone' })).status,
@@ -322,12 +349,16 @@ test('device (review): parallel uploads cannot pass the run or byte cap', async 
     DEVICE_RATE_PER_MIN: '1000',
   });
   try {
+    // Adapted to the fix: runs are made by register now, so the race is twenty registrations at once.
     const ids = Array.from({ length: 20 }, (_, i) => `dv-${String(i).padStart(2, '0')}${'p'.repeat(24)}`);
-    const codes = await Promise.all(ids.map((id) => s.still(id, 'spawn').then((r) => r.status)));
-    assert.equal(codes.filter((c) => c === 204).length, 5);
+    const codes = await Promise.all(
+      ids.map((id) => s.register({ id, suite: 'quick', label: '' }).then((r) => r.status)),
+    );
+    assert.equal(codes.filter((c) => c === 201).length, 5);
     assert.equal(codes.filter((c) => c === 507).length, 15);
     assert.equal((await s.files()).filter((f) => !f.includes('/')).length, 5);
-    const one = ids[codes.indexOf(204)]!;
+    const one = ids[codes.indexOf(201)]!;
+    assert.equal((await s.still(one, 'spawn')).status, 204); // its first still, so twelve more make a thirteenth
     const big = await Promise.all(
       Array.from({ length: 12 }, (_, i) => s.still(one, `b${i}`, jpeg(400 * 1024 - 6, i)).then((r) => r.status)),
     );
@@ -366,6 +397,7 @@ function rawRequest(port: number, head: string, write: (sock: net.Socket) => voi
 test('device (review): a chunked body past 400 kB is cut off while it streams, and stores nothing', async () => {
   const s = await start();
   try {
+    await s.make(runId());
     let sent = 0;
     const status = await rawRequest(
       s.port,
@@ -405,6 +437,7 @@ test('device (review): a slow upload holds no lock; another still lands meanwhil
   const s = await start();
   let slow: net.Socket | undefined;
   try {
+    await s.make(runId('s'), runId('f'));
     slow = net.connect(s.port, '127.0.0.1');
     await new Promise((r) => slow!.once('connect', r));
     slow.write(
@@ -415,8 +448,8 @@ test('device (review): a slow upload holds no lock; another still lands meanwhil
     assert.equal((await s.still(runId('f'), 'spawn')).status, 204);
     assert.ok(Date.now() - t < 2000);
     assert.deepEqual(
-      (await s.files()).filter((f) => !f.includes('/')),
-      [hash(runId('f'))],
+      (await s.files()).filter((f) => f.endsWith('.jpg')),
+      [`${hash(runId('f'))}/0.jpg`],
     );
   } finally {
     slow?.destroy();
@@ -447,6 +480,7 @@ test('device (review): the JPEG preflight answers the allowed origin only, never
 test('device (review): the write limit is keyed on Fly-Client-IP behind Fly, never on X-Forwarded-For', async () => {
   const s = await start({ DEVICE_RATE_PER_MIN: '2', REPLACE_FLY_PROXY: '1' });
   try {
+    await s.make(...['a', 'b', 'c', 'd', 'e'].map((c) => runId(c))); // register has the token routes' own limit
     const send = (headers: Record<string, string>, c: string) =>
       fetch(`${s.base}/device/runs/${runId(c)}/still/spawn`, {
         method: 'POST',

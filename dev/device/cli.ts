@@ -12,7 +12,8 @@
 //   npm run device -- new ... --wait      also blocks until that run finishes (up to 30 minutes), then pulls and prints it
 //   npm run device -- baseline <code>     marks a pulled run as this machine's baseline for its suite (~/.boogle/device/baseline/)
 //   npm run device -- waiting             one line for npm run heartbeat: device runs on the server not yet pulled
-//   The board link `https://boogle.club/?device=new` needs no command: the page makes its own id (self-minted).
+//   The board link `https://boogle.club/?device=new` needs no command: the page makes its own id (self-minted); such a
+//   run sends numbers only, since the server takes stills only for a run `new` registered.
 //
 // Reads need REPORT_TOKEN (scripts/report-token.ts), like `npm run playtest`; the device never has it. Server:
 // BOOGLE_SERVER if set, else production. A pull writes session.jsonl, result.json (typed), report.md and one
