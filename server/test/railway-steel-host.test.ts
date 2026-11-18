@@ -751,30 +751,8 @@ async function leaves(r: Awaited<ReturnType<typeof host>>, k: number) {
   return train(r.w, k).depart;
 }
 
-test("hold host: a train held at Ring Island stands in a late joiner's snapshot, then leaves on its cap", async () => {
+test("hold host: a train held at Ring Island survives restart, stands in a late joiner's snapshot, then leaves on its cap", async () => {
   const r = await host('hold-join', legLaid());
-  try {
-    r.tune('railTrainHoldCap', 100);
-    const k = await heldAtRing(r);
-    const arrived = train(r.w, k).arrived;
-    const joiner = r.connect('late');
-    await r.ticks(3);
-    assert.ok(joiner(), "the joiner's snapshot is whole");
-    const seen = train(joiner()!, k);
-    assert.deepEqual([seen.phase, seen.at, seen.arrived], [TRAIN_PHASE.STAND, RING, arrived], 'it stands there');
-    assert.ok(r.tick > arrived + TRAIN.dwellTicks, 'past its dwell');
-    for (const q of LINE_SLOTS[LINE2]!)
-      assert.deepEqual(train(joiner()!, q), train(r.w, q), `train ${q}: the joiner's row is the host's`);
-    assert.equal(await leaves(r, k), arrived + TRAIN.dwellTicks + 100, 'it leaves on the cap');
-    await r.ticks(2);
-    assert.equal(train(joiner()!, k).phase, TRAIN_PHASE.RUN, 'the joiner sees it leave');
-  } finally {
-    await r.done();
-  }
-});
-
-test('hold host: a held train stands through a restart, then leaves on its cap from its arrival', async () => {
-  const r = await host('hold-restart', legLaid());
   try {
     r.tune('railTrainHoldCap', 100);
     const k = await heldAtRing(r);
@@ -786,7 +764,17 @@ test('hold host: a held train stands through a restart, then leaves on its cap f
       'restored standing at Ring Island',
     );
     assert.equal(r.tuned('railTrainHoldCap'), 100, 'the cap came back from the save');
+    const joiner = r.connect('late');
+    await r.ticks(3);
+    assert.ok(joiner(), "the joiner's snapshot is whole");
+    const seen = train(joiner()!, k);
+    assert.deepEqual([seen.phase, seen.at, seen.arrived], [TRAIN_PHASE.STAND, RING, arrived], 'it stands there');
+    assert.ok(r.tick > arrived + TRAIN.dwellTicks, 'past its dwell');
+    for (const q of LINE_SLOTS[LINE2]!)
+      assert.deepEqual(train(joiner()!, q), train(r.w, q), `train ${q}: the joiner's row is the host's`);
     assert.equal(await leaves(r, k), arrived + TRAIN.dwellTicks + 100, 'it leaves on the cap');
+    await r.ticks(2);
+    assert.equal(train(joiner()!, k).phase, TRAIN_PHASE.RUN, 'the joiner sees it leave');
   } finally {
     await r.done();
   }
