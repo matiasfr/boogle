@@ -189,7 +189,8 @@ export function makeWorkshop(plan: Plan, set: DropSet, ready: () => boolean) {
       }
       const p = me.body?.interpolatedPosition;
       const inBounds = !!p && p.y < y + high && p.x > x - hw - ROOM_CAM.enter && p.x < x + hw && Math.abs(p.z - z) < hd;
-      const atDoor = !!p && Math.abs(p.z - z - door.z) < door.w / 2 + 0.5;
+      const doorBand = door.w / 2 + 0.5 + (inside ? ROOM_CAM.lateralExitMargin : 0);
+      const atDoor = !!p && Math.abs(p.z - z - door.z) < doorBand;
       inside = open && inBounds && (atDoor || p!.x > x - hw);
       flames.update(dt, open, inside);
       if (!open) {

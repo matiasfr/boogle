@@ -51,6 +51,7 @@ const shellLevels = { house: houseShell, shop: shopShell, museum: museumShell, g
 
 export const ROOM_CAM = {
   enter: 0.75, // m outside the door where the show starts, and past which it can end
+  lateralExitMargin: 0.15,
   reveal: 0.24, // s for a wall or the roof to get out of the way
   nearWall: 0.8, // m inside a wall: a camera this close to it, or past it, has it cut away
   farWall: 1.5, // and it comes back only this far inside: no flicker at the line
