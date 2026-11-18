@@ -2,6 +2,7 @@
 // the town's own state is derived from the shared railway (src/sim/town-facts.ts) and Local presentation.
 import type { TownFact } from '../../sim/town-facts.ts';
 import type { CurioShelf } from './curio-shelf.ts';
+import type { RoomId } from '../../place/layout.ts';
 /** A town fact or the Works' (src/entities/town/town-lines.ts): what the residents can remember telling you. */
 type SaidFact = TownFact | 'breaker';
 
@@ -12,7 +13,7 @@ export type TownInspection = {
   newest: TownFact | null;
   level: number;
   population: number;
-  rooms: { house: TownRoomInspection; shop: TownRoomInspection; museum: TownRoomInspection; gate: TownRoomInspection };
+  rooms: Record<RoomId, TownRoomInspection>;
   /** The room whose cutaway is on for this tab, and the one you're over the threshold of. */
   indoors: { room: string | null; inside: string | null };
   /** The house desk's stage: how many of its facts are true. */

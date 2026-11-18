@@ -3,6 +3,7 @@
 // engine spur, the cart's leg at both ends, and the lines' offset-track turnouts and Far Head's crossover. Only J1 is
 // drawn so far (home-yard.ts picks it by id); the rest are measured by the level check and test/turnout.test.ts. The
 // sea junctions (railhead, Ring Island, the greybox stack) are step 7's. Local, no three.js.
+import { clamp, lerp } from '../math.ts';
 import { LEG, SPUR, march, roadAt } from './home-station.ts';
 import {
   FORMATION,
@@ -62,8 +63,8 @@ const leg = (at: number) => {
   const p = march(LEG.start, LEG.segs, at),
     from = railY(LINES.north, LEG.from),
     to = railY(LINES.east, LEG.to),
-    t = Math.max(0, Math.min(1, at / LEG.len));
-  return { x: toWorld(p.x), z: p.z, y: from + (to - from) * t };
+    t = clamp(at / LEG.len, 0, 1);
+  return { x: toWorld(p.x), z: p.z, y: lerp(from, to, t) };
 };
 
 export function junctions(): Junction[] {

@@ -685,7 +685,7 @@ export async function createRailwayTrains(
       // The fitted brass cradle: two seats, eight arms and the top rails that hold the stacks upright.
       const big = lineRow(adapter.read.world(), LINE2).cradle > 0,
         height = big ? 1.8 : 1.1,
-        colour = big ? '#e8742c' : BRASS;
+        colour = big ? STEEL_BLOCK : BRASS;
       for (const z of [-0.8, 0.8]) batch.part(frame, 0, 0.55, z, 1.5, 0.16, 1.3, colour);
       for (let r = 0; r < 8; r++)
         batch.part(
