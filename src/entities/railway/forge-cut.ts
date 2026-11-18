@@ -16,6 +16,11 @@ const VIEW = { from: [1.9, 3.7, 9.3], to: [1.5, 3.4, 8.3], at: [-1.2, 2.9, -1.8]
  * (looked at, 15 November: the playtester quit at the pier not knowing a hammer waited). It stands clear of the
  * halt's roof and post, which the boiler's view starts under. */
 const BREAKER_VIEW = { from: [0.8, 1.3, 5], to: [0.6, 1.2, 4.4], at: [-0.1, 3.0, 0] } as const;
+/** The proper axe's arrival as the forge lights (forge-made rewards, step 5): low and near, from the plinth's south-east
+ * between it and line 1's track, so the axe stands broadside in the foreground with its gold edge pointing at
+ * hardwood 232 behind it, and the forge on the left. The plan's first numbers (5 m south, looking north) put line 1's
+ * rail across the frame's foot and showed the head edge-on (looked at, 17 November: .look/axe-view-*-still.png). */
+const AXE_VIEW = { from: [3.4, 1.6, 2.0], to: [3.1, 1.55, 1.8], at: [-0.8, 1.1, -1.6] } as const;
 
 const foot = (): Point => ({ x: LINE2_BOILER.x / 100, y: LINE2_BOILER.y / 100, z: LINE2_BOILER.z / 100 });
 const off = (o: readonly [number, number, number]): Point => {
@@ -23,8 +28,8 @@ const off = (o: readonly [number, number, number]): Point => {
   return { x: p.x + o[0], y: p.y + o[1], z: p.z + o[2] };
 };
 /** The cut as `createCameraPullOut`'s `end` takes it. */
-export const forgeCut = (part: 'boiler' | 'breaker' = 'boiler'): { pos: Point; to: Point; at: Point } => {
-  const view = part === 'breaker' ? BREAKER_VIEW : VIEW;
+export const forgeCut = (part: 'boiler' | 'breaker' | 'axe' = 'boiler'): { pos: Point; to: Point; at: Point } => {
+  const view = part === 'breaker' ? BREAKER_VIEW : part === 'axe' ? AXE_VIEW : VIEW;
   return { pos: off(view.from), to: off(view.to), at: off(view.at) };
 };
 /** The follow camera's yaw that looks from (x, z) toward the pedestal (camera yaw: behind a Buddy facing that way). */

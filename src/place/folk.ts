@@ -1121,11 +1121,14 @@ let crew: {
   face: { x: number; z: number };
 } | null = null;
 /** Take up to `n` village guys: the two hammering on the forge's scaffold first (they climb down), then the strollers
- * nearest (x, z); returns how many came. */
-export function crewStart(x: number, z: number, n = 2) {
+ * nearest (x, z); returns how many came. `scaffold: false` leaves the scaffold pair hammering and takes the nearest of
+ * the forge frame's two haulers and the strollers (the pack's builder, src/entities/railway/forge-rewards.ts); a hauler
+ * goes back to his logs at crewEnd. */
+export function crewStart(x: number, z: number, n = 2, scaffold = true) {
   const rank = (g: Guy) => (g.job === 'scaffold' ? -1e6 : Math.hypot(g.x - x, g.z - z));
+  const ground = (g: Guy) => (g.job === 'stroll' || (!scaffold && g.job === 'hauler')) && g.fy === null;
   const near = guys
-    .filter((g) => g.on && (g.job === 'scaffold' || (g.job === 'stroll' && g.fy === null)))
+    .filter((g) => g.on && ((scaffold && g.job === 'scaffold') || ground(g)))
     .sort((a, b) => rank(a) - rank(b))
     .slice(0, n);
   for (const g of near) {

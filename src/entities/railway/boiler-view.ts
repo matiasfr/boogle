@@ -28,7 +28,7 @@ import { createBeamDrag, restGrip, type DragShape } from './beam-drag.ts';
 import { createHelpCarry, type HelpCarry } from './help-carry.ts';
 import { onlyALoadIn, setDownThen } from './back-down.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
-import { account, beam as beamRow, boiler as boilerRow } from '../../sim/railway-rows.ts';
+import { account, beam as beamRow, boiler as boilerRow, forge as forgeRow } from '../../sim/railway-rows.ts';
 
 // One Owner value per tab: the holder's pid while you help haul the boiler (null otherwise, so the key is left out).
 let help: HelpCarry | null = null;
@@ -430,8 +430,10 @@ export function createRailwayBoiler(
     last = now;
     const b = boilerRow(w);
     const cast = b.state !== 'none';
-    pedestal.visible = cast;
-    if (cast && !body)
+    // The pedestal stands from the forge's lighting: the proper axe waits on it (forge-made rewards, step 4).
+    const standing = cast || forgeRow(w).lit >= 0;
+    pedestal.visible = standing;
+    if (standing && !body)
       body = land.addStatic(
         { kind: 'cylinder', rTop: 1.15, rBottom: 1.3, h: 0.6, segments: 8 },
         pedestal.position,
@@ -439,7 +441,7 @@ export function createRailwayBoiler(
         undefined,
         owner,
       );
-    else if (!cast && body) {
+    else if (!standing && body) {
       owner.removeBody(body);
       body = null;
     }

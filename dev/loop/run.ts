@@ -10,12 +10,12 @@ import {
   LINE1_STATIONS,
   LINE1_ROCKS,
   LINE1_GREAT_TREE,
-  LINE1_AXE_STAND,
   LINE1_JUMP_DEVICE,
   LINE1_HARDWOODS,
 } from '../../src/sim/railway-line-layout.ts';
 import {
   LINE2_STATIONS,
+  LINE2_AXE,
   LINE2_FORGE,
   LINE2_PACK,
   LINE2_LEVER,
@@ -603,7 +603,7 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
     T3: (pl) => lineOne(g, pl, 'T3'),
     jump: (pl) => device(g, pl, LINE1_JUMP_DEVICE, 'rail.jump', () => true),
     forge: (pl) => forge(g, pl),
-    axe: (pl) => device(g, pl, LINE1_AXE_STAND, 'rail.axe', ready('axe')),
+    axe: (pl) => device(g, pl, LINE2_AXE, 'rail.axe', ready('axe')),
     pack: (pl) => device(g, pl, LINE2_PACK, 'rail.pack', () => forgeOf(w()).used >= LINE2_FORGE.bills[0]),
     Q1: (pl) => quarry(g, pl, 0),
     Q2: (pl) => quarry(g, pl, 1, byHand.has('Q2')),

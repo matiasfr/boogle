@@ -8,7 +8,6 @@ import { dequantize } from '@gltf-transform/functions';
 import { MeshoptDecoder } from 'meshoptimizer';
 import { sourceModule, sourceFunction } from './source.ts';
 import {
-  AXE_STAND,
   CRANE,
   FORMATION,
   LINKS,
@@ -27,7 +26,8 @@ import { openingBuildings, openingStops, forgePlan, WOOD2 } from '../../src/plac
 import { frameBesideLine, stationColliders, stationStockCollider, OUT } from '../../src/place/spatial-station.ts';
 import { chunkOf } from '../../src/entities/railway/track-chunks.ts';
 import { RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
-import { LINE1_STATIONS, LINE1_AXE_STAND, LINE1_JUMP_DEVICE } from '../../src/sim/railway-line-layout.ts';
+import { LINE1_STATIONS, LINE1_JUMP_DEVICE } from '../../src/sim/railway-line-layout.ts';
+import { LINE2_BOILER } from '../../src/sim/railway-line2-layout.ts';
 import { H } from '../../src/place/terrain.ts';
 import {
   panelPose,
@@ -278,13 +278,14 @@ export async function checkMachineClearance() {
   }
   if (RAILWAY_T1.x !== LINE1_STATIONS[0]!.x || RAILWAY_T1.z !== LINE1_STATIONS[0]!.z)
     throw new Error('T1 authority anchors disagree');
-  const axeX = AXE_STAND.x + ORIGIN.x,
-    axeZ = AXE_STAND.z;
-  if (LINE1_AXE_STAND.x !== Math.round(axeX * 100) || LINE1_AXE_STAND.z !== Math.round(axeZ * 100))
-    throw new Error('Axe authority anchor disagrees with the stand');
+  // The forge's pedestal (boiler-view.ts: a plinth of radius 1.15 to 1.3 m, 0.6 m high) is solid from the forge's
+  // lighting, where the proper axe waits (forge-made rewards, step 4). Checked as standing for the whole route, the
+  // bounding box of its cylinder: stricter than from the lighting on.
   obstacle(
-    'axe-stand',
-    new THREE.Matrix4().makeTranslation(axeX, H(axeX, axeZ), axeZ).scale(new THREE.Vector3(2.2, 0.7, 2.2)),
+    'forge-pedestal',
+    new THREE.Matrix4()
+      .makeTranslation(LINE2_BOILER.x / 100, LINE2_BOILER.y / 100, LINE2_BOILER.z / 100)
+      .scale(new THREE.Vector3(2.6, 0.6, 2.6)),
   );
   const seatPoint = { x: 0, z: 0, ux: 0, uz: 1 };
   const besideLine = sourceFunction<typeof import('../../src/entities/railway/rail-kit.ts').besideLine>(

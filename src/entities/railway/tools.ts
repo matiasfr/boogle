@@ -12,11 +12,12 @@ import { remotes } from '../../netplay/net.ts';
 import { inputState } from '../../player/input-state.ts';
 import { fallArrival } from '../../fall/arrival.ts';
 import { GRAVITY, PLAYER_MASS, PLAYER_R, FIXED, reducedMotion } from '../../constants.ts';
-import { T1_CRATE_PARTS, MULTI_AXE_REWARD } from '../../render/t1-reward-parts.ts';
+import { MULTI_AXE_REWARD } from '../../render/t1-reward-parts.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { readableUnlit, readableIntensity } from '../../render/readable-unlit.ts';
 import { emit } from '../../render/particles.ts';
 import { AXE_REWARD, JUMP_REWARD, PACK_REWARD } from './reward-data.ts';
+import { AXE_AT, PACK_HEAD_Y, axeHeadAt, axeLeans } from './forge-rewards.ts';
 import { airJumpApexForce } from '../player/apex-float.ts';
 import { heavyLoad } from '../../sim/railway-queries.ts';
 import { linePanels } from '../../sim/railway-line-layout.ts';
@@ -73,24 +74,16 @@ export async function createRailwayTools(
     root.add(m);
     return m;
   }
-  // The proper axe waits by the forge, the lit forge's first made thing (owner, 7 November).
-  const chestAt = new THREE.Vector3(layout.toWorld(layout.AXE_STAND.x), 0, layout.AXE_STAND.z);
-  chestAt.y = land.H(chestAt.x, chestAt.z) + 0.7;
-  const stand = mesh(new THREE.BoxGeometry(2.2, 0.7, 2.2), flat.flat('#c3ae83'));
-  stand.position.copy(chestAt).y -= 0.35;
-  land.addStatic({ kind: 'box', hx: 1.1, hy: 0.35, hz: 1.1 }, stand.position, undefined, undefined, owner);
-  const chest = mesh(shapes.merged(T1_CRATE_PARTS), material);
-  chest.position.copy(chestAt);
-  chest.visible = false;
-  const chestTarget = chestAt.clone().add(new THREE.Vector3(0, 1.3, 0));
-  // The pack frame's chest stands beside the forge once its first bill is in (Place's ladder rung 2): the same chest,
-  // on the ground, and whoever opens it opens it for everyone.
+  // The proper axe waits on the forge's pedestal, the lit forge's first made thing (forge-rewards.ts draws it): in reach
+  // from the pedestal's centre, as the server judges it; the prompt and the card start at the axe's head, upright or
+  // leaning while a cast part waits.
+  const axeHead = new THREE.Vector3();
+  const axeTarget = () => axeHeadAt(axeLeans(adapter.read.world()), axeHead);
+  // The pack frame stands beside the forge once its first bill is in, built there by a little guy (forge-rewards.ts
+  // draws it): whoever opens it opens it for everyone. Its prompt and card start at the frame's head.
   const packAt = new THREE.Vector3(LINE2_PACK.x / 100, 0, LINE2_PACK.z / 100);
   packAt.y = land.H(packAt.x, packAt.z);
-  const packChest = mesh(shapes.merged(T1_CRATE_PARTS), material);
-  packChest.position.copy(packAt);
-  packChest.visible = false;
-  const packTarget = packAt.clone().add(new THREE.Vector3(0, 1.3, 0));
+  const packTarget = packAt.clone().add(new THREE.Vector3(0, PACK_HEAD_Y, 0));
   const packPrize = shapes.merged(gear.packParts());
   geometries.push(packPrize);
 
@@ -179,13 +172,18 @@ export async function createRailwayTools(
     if (event.op === 'rail.axe') {
       // The opener gets the card; everyone else's flourish is ability-arrival.ts.
       if (!mine(event)) return;
-      if (reveal.youGot({ key: 'axe', ...AXE_REWARD, model: properModel.clone(true), from: chestAt.clone() }))
+      if (reveal.youGot({ key: 'axe', ...AXE_REWARD, model: properModel.clone(true), from: axeTarget().clone() }))
         axeReveals++;
     }
     if (event.op === 'rail.pack') {
       if (!mine(event)) return;
       if (
-        reveal.youGot({ key: 'pack', ...PACK_REWARD, model: new THREE.Mesh(packPrize, material), from: packAt.clone() })
+        reveal.youGot({
+          key: 'pack',
+          ...PACK_REWARD,
+          model: new THREE.Mesh(packPrize, material),
+          from: packTarget.clone(),
+        })
       )
         packReveals++;
     }
@@ -244,7 +242,7 @@ export async function createRailwayTools(
       return null;
     },
     inspect: () => ({
-      axeChest: { x: chestAt.x, y: chestAt.y, z: chestAt.z, available: axeAvailable() },
+      axeChest: { x: AXE_AT.x, y: AXE_AT.y, z: AXE_AT.z, available: axeAvailable() },
       packChest: { x: packAt.x, y: packAt.y, z: packAt.z, available: packAvailable() },
       packReveals,
       packFramesWorn: [...frames.values()].filter((f) => f.parent).length,
@@ -264,11 +262,11 @@ export async function createRailwayTools(
       const p = me.body?.position;
       if (!adapter.read.ready() || !p) return [];
       const targets: Interactable[] = [];
-      if (axeAvailable() && inReach(chestAt))
+      if (axeAvailable() && inReach(AXE_AT))
         targets.push({
           id: 'railway-axe-chest',
           verb: 'Open',
-          at: chestTarget,
+          at: axeTarget(),
           r: 3.4,
           run: () => void adapter.openAxe(),
         });
@@ -314,10 +312,6 @@ export async function createRailwayTools(
           lipBody = null;
         }
       }
-      chest.visible = axeAvailable();
-      if (chest.visible) chest.position.copy(chestAt).y += Math.max(0, Math.sin(now * 0.004)) * 0.06;
-      packChest.visible = packAvailable();
-      if (packChest.visible) packChest.position.copy(packAt).y += Math.max(0, Math.sin(now * 0.004 + 1.3)) * 0.06;
       const packOn = backSeam.pack?.() ?? false;
       wearPack(me.entered ? me.avatar : null, packOn);
       for (const r of remotes.values()) wearPack(r.visible && r.entered ? r.avatar : null, packOn);

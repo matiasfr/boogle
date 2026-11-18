@@ -1,4 +1,4 @@
-> **Status: building (2026-11-17); the owner answered its three questions the same day (below).** Brief: [forge-made-rewards](../brainstorms/forge-made-rewards.md).
+> **Status: built (2026-11-18), steps 1 to 5; the pack's spot moved to (922, -17.6), see "As built"; the owner answered its three questions the same day (below).** Brief: [forge-made-rewards](../brainstorms/forge-made-rewards.md).
 > Decision: [rewards, 17 November](../decisions-rewards.md#d-2026-11-17-forge-made-rewards). Base: `45e2fe2f`
 > (main `5cfe070d` plus the brief). Steps 1 to 3 only change what players see and can ship first. Step 4 moves the
 > axe's pickup (sim catalog, server reach). Step 5 is the cut, which needs step 4. **No `WORLD_NS` bump** (see Risks).
@@ -180,7 +180,7 @@ Each step leaves `node dev/ship-check.ts` green, updates `docs/game-design/place
 (`:180`, `:403`, and the pack's) for what it changes, and attaches its inspected still (`scripts/pr-shot.sh`). Looks
 use a disposable production room.
 
-- [ ] **1. Look seeds (dev data only).** In `src/sim/railway-seeds.ts`, add stages `forge-frame-last` (the forge at
+- [x] **1. Look seeds (dev data only).** In `src/sim/railway-seeds.ts`, add stages `forge-frame-last` (the forge at
   23/24, the player with a log on their back next to the unload point) and `forge-lit-last` (55/56, the pack
   claimed, carrying a log), built from accepted ops through the existing route helpers (`railway-seed-route.ts`).
   Do not add them to `JUMPS`. Run `npm run checkpoints -- forge-frame-last forge-lit-last`, then regenerate goldens
@@ -189,13 +189,13 @@ use a disposable production room.
   forge-frame-last --cam <unload approach>`: the board reads 23/24.
   *Risk: low. Independent review: the keyed golden comparison only (owner call, seed goldens).*
 
-- [ ] **2. The boards foreshadow.** Add `reward-glyph.ts`, `stations.ts`'s `marks`, and `line2-view.ts`'s table
+- [x] **2. The boards foreshadow.** Add `reward-glyph.ts`, `stations.ts`'s `marks`, and `line2-view.ts`'s table
   above. **Check:** ship-check. **Look:** three stills of the board from the unload approach at follow height:
   `forge-frame-last` (pack outline beside "logs 23/24"); `forge-frame-last` plus one `--action` deposit (32-log
   board, gold-ringed pack and outlined axe); `q1-done` (lit board, axe ready only; the seed route has claimed the
   pack). Each glyph must read at 8 m. *Risk: low. Self-review.*
 
-- [ ] **3. The pack, as the pack, built by a little guy.** Add `forge-rewards.ts` with the pack half only: display,
+- [x] **3. The pack, as the pack, built by a little guy.** Add `forge-rewards.ts` with the pack half only: display,
   errand, restore. Add `folk.ts`'s `scaffold` flag. Point `tools.ts`'s pack target and reveal at it and delete
   `packChest`. **Check:** ship-check; the railway bot segment that claims the pack (`npm run checks-for` names it)
   still finds `reward.tools.packChest` (`dev/look/bots/railway.ts:1759`). **Look:** `forge-frame-last`, `--action` makes the 24th deposit, `--video
@@ -206,7 +206,7 @@ use a disposable production room.
 
   Steps 1 to 3 can ship before step 4.
 
-- [ ] **4. The axe waits on the pedestal (pickup move).**
+- [x] **4. The axe waits on the pedestal (pickup move).**
   - Authority: `LINE2_AXE` in `railway-line2-layout.ts`; `railway-server.ts`'s `rail.axe` case; delete
     `LINE1_AXE_STAND` and `AXE_STAND`; repoint `dev/loop/graph.ts:432`, `dev/loop/run.ts:606`,
     `dev/scenarios/world-inputs.ts:107,127`, `dev/level/home-station-page.ts:95` and `dev/level/rail-map.ts:900`
@@ -232,7 +232,7 @@ use a disposable production room.
     **Independent review required** before ship, against room-safety "Don't", mixed-builds and the lever
     disjointness test.*
 
-- [ ] **5. The forge makes the axe: hot arrival and the cut.** Add `forge-cut.ts`'s `'axe'` view; `forge-rewards`'s
+- [x] **5. The forge makes the axe: hot arrival and the cut.** Add `forge-cut.ts`'s `'axe'` view; `forge-rewards`'s
   `axeArrives()` and its fallback timer; `line2-view.ts`'s edge sequence (whistle range, the near test, the
   `forgeAxe` shot, `faceForge` on home); `forge-finish.ts`'s `hold`. **Check:** ship-check. **Look:**
   `forge-lit-last` with `--action` making the 56th deposit at the unload point. One `--video --seconds 8` at 1×: the
@@ -243,6 +243,18 @@ use a disposable production room.
   point and one 60 m off at the hardwoods: only the near one gets the cut; the far one hears the whistle; each sees
   one arrival. *Risk: medium (a camera takeover on a co-op live edge, and the roof show's timing). **Independent
   review required**, against the pull-out's rules and the forge call's live-edge rule.*
+
+**As built (17 November, branch `claude/forge-made-rewards`):** steps 1 to 5 as written, except: the pack's builder is
+the nearest of the forge frame's two log haulers or a stroller (a stroller alone was often too far to reach the offcut
+in time; a hauler goes back to his logs), nobody within 30 m means the pack finishes itself, the walk to the offcut
+counts as arrived after 10 s and the errand stops at 16 s; a timed-out walk leaves the offcut lying rather than popping
+it onto his shoulder. `AXE_VIEW` moved to the plinth's south-east (`[3.4, 1.6, 2.0]` to `[-0.8, 1.1, -1.6]`): the
+starting numbers put line 1's rail across the frame's foot and showed the head edge-on. The hot axe also tints its
+steel toward red-orange, since an emissive alone washed out on near-white steel in daylight. The machine's crossing
+restore keeps an in-flight axe cut and the roof show's wait. `q1-done` leaves the pack unclaimed (the seed route claims
+it only in Q6), so its lit board shows both ready marks.
+
+**As built, second pass (18 November, after the orchestrator's visual review and the independent review):** the pack's spot `LINE2_PACK` moved to (922, -17.6), 5.6 m south of the forge frame, where the player faces after the 24th log (nowhere inside the old reach was both visible and clear of the forge wall); it stands on a chest-high shelf with amber-capped posts and a coral glimmer, scaled 2.4. The board's marks sit side by side under the title, each about twice its height. The axe is scaled 2.2 and cools yellow, orange, red, dark, steel. The roof show updates after the lit edge queues the cut, so it waits for it, and a crossing keeps an arrival already under way. Both reviews found no remaining defects.
 
 **Checkpoint (after step 5):** `npm run check`; `npm run loop -- run`; the railway bot's forge-to-hardwoods segment
 from `npm run checks-for`; and the brief's shared-claim look. With `--players 2`, vary who opens the pack and who

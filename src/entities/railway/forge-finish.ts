@@ -44,6 +44,9 @@ export async function createForgeFinish(
     building: DropSet;
     /** The forge's walls stop being one sealed box (the workshop's hollow walls take over). */
     unseal: () => void;
+    /** The roof show waits while this holds (the proper axe's cut as the forge lights, forge-made rewards step 5), for
+     * at most `max` seconds after the lit edge, so the beams drop in as the camera comes home. */
+    hold?: { while: () => boolean; max: number };
   },
 ) {
   const [layout, folk, { makeWorkshop }, { H }] = await Promise.all([
@@ -67,7 +70,9 @@ export async function createForgeFinish(
     wait = 0,
     trips = 0,
     /** Seconds since the crew was last sent: a walk that takes longer than LEG_S counts as arrived. */
-    leg = 0;
+    leg = 0,
+    /** Seconds the lit show has waited on `hold`. */
+    held = 0;
   const beams: Beam[] = Array.from({ length: BEAMS }, () => ({
     at: 'hidden',
     guy: -1,
@@ -191,6 +196,7 @@ export async function createForgeFinish(
   }
   function reset() {
     stage = 'idle';
+    held = 0;
     folk.crewEnd();
     beams.forEach((beam) => {
       beam.at = 'hidden';
@@ -208,6 +214,8 @@ export async function createForgeFinish(
   }
   /** The forge is lit: its last hand-fed bill is in. */
   const lit = () => forgeRow(adapter.read.world()).lit >= 0;
+  /** The lit show still waits for the axe's cut (a restore as the machine crosses must not snap it finished). */
+  const holding = () => !!o.hold && held <= o.hold.max && o.hold.while();
   function restore() {
     // A restore in the middle of the show (the machine's crossing begins a few seconds after the forge lights) must
     // not cut it short: the view's pieces were just cleared, so put back the boards of the trusses already up.
@@ -216,8 +224,8 @@ export async function createForgeFinish(
         if (beams[2 * t]!.at === 'roof' && beams[2 * t + 1]!.at === 'roof')
           for (let n = Math.round((t / 4) * roof.length); n < Math.round(((t + 1) / 4) * roof.length); n++)
             building.snap(roof[n]!, true);
-    } else if (lit()) snapDone();
-    else reset();
+    } else if (lit() && !(stage === 'idle' && holding())) snapDone();
+    else if (!lit()) reset();
   }
   restore();
 
@@ -282,6 +290,10 @@ export async function createForgeFinish(
       switch (stage) {
         case 'idle':
           if (!isLit) break;
+          if (holding()) {
+            held += dt;
+            break;
+          }
           // A stack past the village platform, on the forge's side; the beams drop in onto it.
           carPose(car);
           {

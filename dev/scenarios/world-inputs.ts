@@ -8,7 +8,7 @@ import { createSync } from '../../src/world/sync.ts';
 import * as line from '../../src/sim/railway-line-layout.ts';
 import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
 import { RAIL_LINES } from '../../src/sim/railway-lines.ts';
-import { LINE2_FORGE, LINE2_BOILER, LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';
+import { LINE2_AXE, LINE2_FORGE, LINE2_BOILER, LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';
 import { SHED_TABLE, SHED_STALL, WORKS_BREAKER, WORKS_SEAMS, WORKS } from '../../src/sim/railway-works-layout.ts';
 import { CART_ROAD } from '../../src/sim/railway-cart.ts';
 import type { BooglerLandBake } from '../../src/world/boogler-land.ts';
@@ -96,7 +96,7 @@ export default {
       const line = await import('/src/sim/railway-line-layout.ts');
       const { RAILWAY_SOURCES } = await import('/src/sim/railway-layout.ts');
       const { RAIL_LINES } = await import('/src/sim/railway-lines.ts');
-      const { LINE2_FORGE, LINE2_BOILER, LINE2_STATIONS } = await import('/src/sim/railway-line2-layout.ts');
+      const { LINE2_AXE, LINE2_FORGE, LINE2_BOILER, LINE2_STATIONS } = await import('/src/sim/railway-line2-layout.ts');
       const { SHED_TABLE, SHED_STALL, WORKS_BREAKER, WORKS_SEAMS, WORKS } = await import('/src/sim/railway-works-layout.ts');
       const { CART_ROAD } = await import('/src/sim/railway-cart.ts');
       return {
@@ -104,7 +104,7 @@ export default {
         installed: !!railwayMirror?.confirmed(),
         catalog: {
           version: line.LINE1_CATALOG, stations: line.LINE1_STATIONS, rocks: line.LINE1_ROCKS,
-          greatTree: line.LINE1_GREAT_TREE, axe: line.LINE1_AXE_STAND, jump: line.LINE1_JUMP_DEVICE,
+          greatTree: line.LINE1_GREAT_TREE, axe: LINE2_AXE, jump: line.LINE1_JUMP_DEVICE,
           hardwoods: line.LINE1_HARDWOODS, initial: line.LINE1_INITIAL, sources: RAILWAY_SOURCES,
           panels: line.linePanels(),
           home: {
@@ -124,7 +124,7 @@ export default {
       stations: line.LINE1_STATIONS,
       rocks: line.LINE1_ROCKS,
       greatTree: line.LINE1_GREAT_TREE,
-      axe: line.LINE1_AXE_STAND,
+      axe: LINE2_AXE,
       jump: line.LINE1_JUMP_DEVICE,
       hardwoods: line.LINE1_HARDWOODS,
       initial: line.LINE1_INITIAL,
