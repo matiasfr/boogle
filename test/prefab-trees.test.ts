@@ -229,7 +229,8 @@ test('Ring Island pieces, poses, colliders, clearance and frames match the pre-r
 // Step 13 (Ring Island's massing): captured on the view before its hand-authored massing (the hinge pier, the pennant
 // pole's footing, the brace platform with its pier, handrail and gold strut, and the steps) became placements, in the
 // commit "Capture the Ring Island massing golden before the record conversion", and never rewritten. Same capture and
-// tolerance as above; it pins the furnished island as it stood on main, piece by piece and in draw order.
+// tolerance as above; it pins the furnished island as it stood on main, piece by piece and in draw order. It holds the
+// later sittings' cuts too (the sea ramps and the Pilgrims' Way became placements against it, unchanged).
 test('Ring Island massing pieces, colliders and clearance match the pre-placement code', async () => {
   prefabGolden(
     await ringAfter(),
