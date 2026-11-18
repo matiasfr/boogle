@@ -191,3 +191,63 @@ test('the real room client reauthenticates a healthy voice-presence reconnect wi
     await fs.rm(dataDir, { recursive: true, force: true });
   }
 });
+
+// Review of Checkpoint A (identity binding): the server binds commands to the verified principal, but relays a
+// presence frame's `pid` as the sender wrote it. Peers find avatars by that pid (haul stacks, boiler and crossing
+// views, The Boogler's gaze), so a modified client can present as another principal in everyone else's view.
+test('relayed presence never names a principal other than the verified sender', async () => {
+  const { randomBytes } = await import('node:crypto');
+  const { worldRoomId } = await import('../../src/world/namespace.ts');
+  const { roomUrl, encode, decode, WS_PROTOCOL } = await import('../../src/net/ws-wire.ts');
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-account-presence-'));
+  const svc = createService(loadConfig({ DATA_DIR: dataDir, SERVER_ROOMS: '*' }, { log: () => {} }));
+  const port = await svc.listen(0);
+  const base = `http://127.0.0.1:${port}`;
+  const room = worldRoomId('presence' + randomBytes(3).toString('hex'));
+  const sockets: WebSocket[] = [];
+  const guest = async (token: string) => {
+    const response = await fetch(base + '/account/guest', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    assert.equal(response.status, 200);
+    return ((await response.json()) as { pid: string }).pid;
+  };
+  const join = (self: string, token: string) => {
+    const ws = new WebSocket(roomUrl(base, room, { self, b: 'presence-review' }), WS_PROTOCOL);
+    sockets.push(ws);
+    const frames: Record<string, unknown>[] = [];
+    ws.onmessage = (event) => {
+      const m = decode(event.data);
+      if (m) frames.push(m as Record<string, unknown>);
+    };
+    ws.onopen = () => ws.send(encode({ t: 'auth', token }));
+    return { ws, frames };
+  };
+  const until = async (predicate: () => unknown) => {
+    const end = performance.now() + 3000;
+    while (!predicate()) {
+      if (performance.now() > end) throw new Error('presence review timed out');
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+  };
+  try {
+    const victimToken = randomBytes(32).toString('hex'),
+      senderToken = randomBytes(32).toString('hex');
+    const victimPid = await guest(victimToken);
+    const senderPid = await guest(senderToken);
+    const victim = join('victimtab', victimToken);
+    const sender = join('sendertab', senderToken);
+    await until(() => victim.frames.some((m) => m.t === 'list') && sender.frames.some((m) => m.t === 'list'));
+    sender.ws.send(encode({ t: 'p', s: 1, d: { pid: victimPid } }));
+    await until(() => victim.frames.some((m) => m.t === 'p' && m.id === 'sendertab'));
+    const relayed = victim.frames.find((m) => m.t === 'p' && m.id === 'sendertab')!;
+    const named = (relayed.d as { pid?: unknown } | null)?.pid;
+    assert.notEqual(named, victimPid, `sender ${senderPid} was relayed to others as ${victimPid}`);
+  } finally {
+    for (const ws of sockets) ws.close();
+    await svc.close({ save: false });
+    await fs.rm(dataDir, { recursive: true, force: true });
+  }
+});
