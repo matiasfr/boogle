@@ -35,6 +35,8 @@ import { prefabs as kit } from '../src/content/prefabs/workshop-kit.ts';
 import { prefabs as pois } from '../src/content/prefabs/pois.ts';
 import { prefabs as caves } from '../src/content/prefabs/caves.ts';
 import { levels as poiLevels } from '../src/content/levels/pois.ts';
+import { prefabs as lookout } from '../src/content/prefabs/lookout.ts';
+import { levels as lookoutLevels } from '../src/content/levels/lookout.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -157,6 +159,7 @@ test('artifact serialization is independent of runtime native transcendental res
           ...greenKerb,
           ...pois,
           ...caves,
+          ...lookout,
           ...haltKitContent().prefabs,
         ],
         [
@@ -174,6 +177,7 @@ test('artifact serialization is independent of runtime native transcendental res
           ...sceneryLevels,
           ...greenKerbLevels,
           ...poiLevels,
+          ...lookoutLevels,
           ...haltKitContent().levels,
           ...rotundaContent().levels,
         ],

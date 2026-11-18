@@ -1,0 +1,18 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "place": "lookout",
+  "placements": [
+    {"id":"place-scope","pos":[-15,0,-207],"prefab":"lookout.telescope"},
+    {"id":"buoy1","params":{"gap":62,"gaps":0.6},"pos":[0,0.7,0],"prefab":"lookout.buoy"},
+    {"id":"buoy2","params":{"gap":62,"gaps":1.6},"pos":[0,0.7,0],"prefab":"lookout.buoy"},
+    {"id":"buoy3","params":{"gap":62,"gaps":2.6},"pos":[0,0.7,0],"prefab":"lookout.buoy"},
+    {"id":"buoy4","params":{"gap":62,"gaps":3.6},"pos":[0,0.7,0],"prefab":"lookout.buoy"},
+    {"id":"buoy5","params":{"gap":62,"gaps":4.6},"pos":[0,0.7,0],"prefab":"lookout.buoy"},
+    {"id":"buoy6","params":{"gap":62,"gaps":5.6},"pos":[0,0.7,0],"prefab":"lookout.buoy"},
+    {"id":"buoy7","params":{"gap":62,"gaps":6.6},"pos":[0,0.7,0],"prefab":"lookout.buoy"}
+  ],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}

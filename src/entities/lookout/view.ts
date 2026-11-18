@@ -1,5 +1,6 @@
 // The lookout: the brass telescope on the ridge and the line of orange buoys out from the pier, both pointing across the
 // sea at Ring Island. Local: no state, no sync. Ported from Place's props.ts and telescope.ts, fixed view only (6 November).
+// Every thing is a record (content/prefabs/lookout.ts), standing where content/levels/lookout.ts puts it.
 import * as THREE from 'three/webgpu';
 import { createOwnedView } from '../../render/owned-view.ts';
 import { camera } from '../../render/scene.ts';
@@ -13,14 +14,13 @@ import { ringOpen } from '../../sim/railway-queries.ts';
 import { buoyLifted } from '../railway/railhead-shape.ts';
 import { splash } from '../../render/splash.ts';
 import { SEA } from '../../constants.ts';
+import { createPrefabBatch, instantiate } from '../../prefab/instantiate.ts';
+import { definitions } from '../../prefab/catalogue.ts';
+import { loadLevelArtifact } from '../../prefab/validate.ts';
+import type { Placement, Vec3 } from '../../prefab/types.ts';
+import level from '../../../content/built/levels/lookout.json' with { type: 'json' };
 import './telescope.css';
 
-/** Place's 12 buoys, cut to 7: the last five stood inside Ring Island's hills (land.ts buildFar, 340 m round the shard). The
- * seventh floats about 20 m off its waterline, so the line runs right up to the island. */
-const BUOYS = { n: 7, gap: 62 };
-/** Place's SCOPE (-30, -205) stood among the ridge-top pines, two of them within 5 m, and one 15 m off blocked the view.
- * Moved 15 m east, still on the ridge's top (about 49 m), where the slope north-east is open down to the sea. */
-const SCOPE = { x: -15, z: -207 };
 /** The fixed view, from the eyepiece to `target` (world metres, degrees). It never pans; only the zoom changes. `ahead`
  * starts the view just past the barrel's end. */
 const telescopeTuning = {
@@ -32,61 +32,51 @@ const telescopeTuning = {
   maxZoom: 2,
 };
 const NONE: Interactable[] = [];
+const point = (key: 'lookout.telescope' | 'lookout.buoy', name: string): Vec3 => {
+  const a = definitions[key]?.attach?.[name];
+  if (a?.kind !== 'point') throw new Error(`lookout: ${key} has no point ${name}`);
+  return a.at;
+};
 
 export type LookoutView = Awaited<ReturnType<typeof createLookoutView>>;
 
 export async function createLookoutView() {
   const owner = createOwnedView();
-  const [layout, land, sites, { flat }] = await Promise.all([
+  const [layout, terrain, sites] = await Promise.all([
     import('../../place/layout.ts'),
-    import('../../place/land.ts'),
+    import('../../place/terrain.ts'),
     import('../../place/sites.ts'),
-    import('../../render/flat.ts'),
   ]);
   const { ORIGIN, FAR, LINES } = layout;
   const ring = { x: FAR.x + ORIGIN.x, z: FAR.z + ORIGIN.z };
+  const placements = loadLevelArtifact(level, definitions).placements;
 
   // ---------------------------------------------------------------- the telescope on the ridge's top
-  const SX = SCOPE.x + ORIGIN.x,
-    SZ = SCOPE.z,
-    SY = land.H(SX, SZ);
-  const eye = new THREE.Vector3(SX, SY + 2.57, SZ);
+  const scope = placements.find((p) => p.prefab === 'lookout.telescope');
+  if (!scope) throw new Error('lookout: no telescope placed');
+  const SX = scope.pos[0] + ORIGIN.x,
+    SZ = scope.pos[2],
+    SY = terrain.H(SX, SZ) + scope.pos[1];
+  const eyeAt = point('lookout.telescope', 'eye');
+  const eye = new THREE.Vector3(SX + eyeAt[0], SY + eyeAt[1], SZ + eyeAt[2]);
   const aim = new THREE.Vector3().subVectors(telescopeTuning.target, eye);
-  {
-    const g = new THREE.Group();
-    g.position.set(SX, SY, SZ);
-    const brass = flat('#d9a23a', 0.3);
-    const leg = flat('#7f5630');
-    for (const a of [0, 2.1, 4.2]) {
-      const l = new THREE.Mesh(new THREE.BoxGeometry(0.14, 2.6, 0.14), leg);
-      l.position.set(Math.sin(a) * 0.55, 1.15, Math.cos(a) * 0.55);
-      l.rotation.set(Math.cos(a) * -0.42, 0, Math.sin(a) * 0.42);
-      l.castShadow = true;
-      g.add(l);
-    }
-    const tube = new THREE.Group();
-    tube.position.y = 2.45;
-    // The barrel points where the view looks, so what you see is what it's aimed at.
-    tube.rotation.y = Math.atan2(aim.x, aim.z);
-    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 2.8, 12).rotateX(Math.PI / 2), brass);
-    barrel.rotation.x = -0.12;
-    barrel.position.z = 0.5;
-    barrel.castShadow = true;
-    const eye = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.5, 10).rotateX(Math.PI / 2), flat('#3a3d44'));
-    eye.position.set(0, 0.12, -1);
-    tube.add(barrel, eye);
-    g.add(tube);
-    owner.add(g);
-    land.addStatic(
-      { kind: 'cylinder', rTop: 0.6, rBottom: 0.6, h: 2.6, segments: 6 },
-      { x: SX, y: SY + 1.3, z: SZ },
-      undefined,
-      undefined,
+  const telescope = instantiate(
+    scope.prefab,
+    { ...scope, pos: [SX, SY, SZ], params: { aim: Math.atan2(aim.x, aim.z) } },
+    {
       owner,
-    );
-    sites.addFoot(SX, SZ, 0, 0.8, 0.8, owner);
-  }
-  const scopeAt = new THREE.Vector3(SX, SY + 2.4, SZ);
+      handlers: {
+        'lookout.look': () => {
+          const b = me.body;
+          if (!b || open) return NONE;
+          return Math.hypot(b.position.x - scopeAt.x, b.position.z - scopeAt.z) < 3.4 ? target : NONE;
+        },
+      },
+    },
+  );
+  telescope.setEnabled(true);
+  sites.addFoot(SX, SZ, 0, 0.8, 0.8, owner);
+  const scopeAt = telescope.attach('eyepiece').at;
   // ---------------------------------------------------------------- the view through it
   let open = false,
     zoom = 1,
@@ -178,12 +168,14 @@ export async function createLookoutView() {
 
   // ---------------------------------------------------------------- the buoys
   // A line of orange buoys out from the end of the pier, bobbing, straight at Ring Island. Plain as a pointing finger.
-  const buoys = new THREE.InstancedMesh(new THREE.ConeGeometry(0.9, 2.4, 7), flat('#ff7a1a', 0.5), BUOYS.n);
-  const buoyTops = new THREE.InstancedMesh(new THREE.SphereGeometry(0.34, 8, 6), flat('#fff0c9', 0.5), BUOYS.n);
-  buoys.castShadow = true;
-  buoys.frustumCulled = buoyTops.frustumCulled = false;
-  owner.add(buoys, buoyTops);
-  const buoyAt: { x: number; z: number }[] = [];
+  // Each is a slot in two instanced draws (the cones, the white tops); the lookout bobs them every frame.
+  const moorings = placements.filter((p) => p.prefab === 'lookout.buoy');
+  const cones = createPrefabBatch('lookout.buoy', moorings.length, owner),
+    tops = createPrefabBatch('lookout.buoy-top', moorings.length, owner);
+  const buoys = cones.mesh,
+    buoyTops = tops.mesh;
+  const topUp = point('lookout.buoy', 'top')[1];
+  const buoyAt: { x: number; y: number; z: number }[] = [];
   {
     const end = layout.lineAt(LINES.east, LINES.east.len, { x: 0, z: 0, ux: 0, uz: 1 });
     const x0 = end.x + ORIGIN.x,
@@ -191,10 +183,17 @@ export async function createLookoutView() {
       dx = ring.x - x0,
       dz = ring.z - z0,
       d = Math.hypot(dx, dz);
-    for (let k = 0; k < BUOYS.n; k++) {
-      const u = (k + 0.6) * BUOYS.gap;
-      buoyAt.push({ x: x0 + (dx / d) * u, z: z0 + (dz / d) * u });
-    }
+    moorings.forEach((p, k) => {
+      const { gaps, gap } = p.params ?? {};
+      if (typeof gaps !== 'number' || typeof gap !== 'number') throw new Error(`lookout: ${p.id} has no mooring`);
+      const u = gaps * gap;
+      const q = { x: x0 + (dx / d) * u, y: p.pos[1], z: z0 + (dz / d) * u };
+      buoyAt.push(q);
+      const at: Placement = { id: p.id, prefab: p.prefab, pos: [q.x, q.y, q.z] };
+      const top: Placement = { id: `${p.id}/top`, prefab: 'lookout.buoy-top', pos: [q.x, q.y + topUp, q.z] };
+      instantiate(p.prefab, at, { owner, batch: { target: cones, index: k } }).setEnabled(true);
+      instantiate(top.prefab, top, { owner, batch: { target: tops, index: k } }).setEnabled(true);
+    });
   }
   const bo = new THREE.Object3D();
   /** Per buoy: 0 afloat, 1 lifted out and gone (ring-island-build1, R4b; RING_BUOYS): the bents stand where the first
@@ -227,11 +226,11 @@ export async function createLookoutView() {
       if (lift[k]! >= 1) return;
       const up = Math.sin(now * 0.0012 + k * 1.3) * 0.25;
       const raised = lift[k]! * lift[k]! * 14;
-      bo.position.set(q.x, 0.7 + up + raised, q.z);
+      bo.position.set(q.x, q.y + up + raised, q.z);
       bo.rotation.set(Math.sin(now * 0.0009 + k) * 0.08, 0, Math.cos(now * 0.0011 + k) * 0.08 + lift[k]! * 0.9);
       bo.updateMatrix();
       buoys.setMatrixAt(n, bo.matrix);
-      bo.position.y += 1.45;
+      bo.position.y += topUp;
       bo.updateMatrix();
       buoyTops.setMatrixAt(n++, bo.matrix);
     });
@@ -242,11 +241,7 @@ export async function createLookoutView() {
 
   return {
     root: owner.root,
-    targets() {
-      const b = me.body;
-      if (!b || open) return NONE;
-      return Math.hypot(b.position.x - scopeAt.x, b.position.z - scopeAt.z) < 3.4 ? target : NONE;
-    },
+    targets: () => telescope.targets(),
     update(ctx: FrameCtx) {
       updateBuoys(ctx.now, ctx.dt);
     },

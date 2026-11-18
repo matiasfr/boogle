@@ -10,6 +10,7 @@ export interface InteractionNames {
   'town.shop-stock': true;
   'town.plot-buy': true;
   'town.shop-rail': true;
+  'lookout.look': true;
 }
 export interface GateNames {
   open: true;
@@ -73,6 +74,9 @@ export const names: NameRegistry = {
     'poi.fence-rail',
     'poi.cave-parts',
     'poi.cave-water',
+    'lookout.telescope',
+    'lookout.buoy',
+    'lookout.buoy-top',
   ],
   interactions: [
     'railway.request-stop',
@@ -81,6 +85,7 @@ export const names: NameRegistry = {
     'town.shop-stock',
     'town.plot-buy',
     'town.shop-rail',
+    'lookout.look',
   ],
   gates: ['open'],
   materials: [],
