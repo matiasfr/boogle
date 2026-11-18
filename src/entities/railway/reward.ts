@@ -16,7 +16,7 @@ import { T1_CRATE_PARTS, T1_REWARD, MULTI_AXE_REWARD } from '../../render/t1-rew
 import { confettiBurst, rewardDust, rewardSparkles } from '../../render/reward-particles.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { thump } from '../../render/machine-sfx.ts';
-import { GLIDE_REWARD, T2_REWARD } from './reward-data.ts';
+import { GLIDE_REWARD, HOOK_REWARD, T2_REWARD } from './reward-data.ts';
 import { railwayRoomId } from '../../world/railway-namespace.ts';
 import { claimCountsIn } from '../../world/railway-jump.ts';
 import { createRailwayTools, inReach } from './tools.ts';
@@ -45,14 +45,18 @@ export async function createRailwayReward(
   // The personal boxes after the scarf (Q2–Q6), through the same reveal queue.
   const boxes = await createStationBoxes(adapter, owner, reveal.youGot, rewardSeat, machineFrom);
   const tools = await createRailwayTools(adapter, owner, reveal, machineFrom);
-  // Shared abilities: the finder's card above; everyone's own arrival and Home's trophy (co-op abilities, option E).
-  // The glider's flourish badge: the folded wing from its card (reward-data.ts), on a material of its own.
+  // Shared abilities: the finder's card above; a friend's own card or late flourish, and Home's trophy (co-op
+  // abilities, option E; cutscenes for everyone, 17 November). The glider's and the hook's friend cards (their finders'
+  // are line2-view.ts's) and the glider's flourish badge: the shapes from their cards (reward-data.ts), on a material
+  // of their own.
   const glidePrize = shapes.merged(GLIDE_REWARD.parts);
+  const hookPrize = shapes.merged(HOOK_REWARD.parts);
   const glideMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.75, flatShading: true });
   // The boiler's: one copy of the engine's boiler (makeProp owns its geometry and materials), reused by each flourish.
   const boilerBadge = props.makeProp('boiler');
   owner.cleanup(() => {
     glidePrize.dispose();
+    hookPrize.dispose();
     glideMat.dispose();
     boilerBadge.removeFromParent();
     boilerBadge.traverse((o) => {
@@ -61,8 +65,17 @@ export async function createRailwayReward(
       for (const m of [o.material].flat()) m.dispose();
     });
   });
+  let riderSeated = () => false; // view.ts's seats (riderIs)
   const arrival = createAbilityArrival(adapter, owner, {
     busy: reveal.gettingItem,
+    seated: () => riderSeated(),
+    youGot: reveal.youGot,
+    card: (key) =>
+      key === 'glide'
+        ? { key, name: GLIDE_REWARD.name, line: GLIDE_REWARD.line, model: new THREE.Mesh(glidePrize, glideMat) }
+        : key === 'hook'
+          ? { key, name: HOOK_REWARD.name, line: HOOK_REWARD.line, model: new THREE.Mesh(hookPrize, glideMat) }
+          : tools.cardFor(key),
     jump: () => tools.inspect(),
     axeModel: (key) =>
       key === 'glide' ? new THREE.Mesh(glidePrize, glideMat) : key === 'boiler' ? boilerBadge : tools.axeModel(key),
@@ -93,6 +106,10 @@ export async function createRailwayReward(
     targets: () => [...first.targets(), ...second.targets(), ...boxes.targets(), ...tools.targets()],
     youGot: reveal.youGot,
     gettingItem: reveal.gettingItem,
+    /** Whether this player sits in a railway chair or bench: a friend's card waits until they stand. */
+    riderIs(fn: () => boolean) {
+      riderSeated = fn;
+    },
     update(dt: number, now: number) {
       first.update(dt, now);
       second.update(dt, now);
@@ -254,7 +271,7 @@ async function createStationReward(
   let previous = -1;
   let liveWake = false;
   let multiReveals = 0;
-  // The camp resident's handoff card belongs to the recipient; a friend's flourish is ability-arrival.ts.
+  // The camp resident's handoff card belongs to the recipient; a friend's card is ability-arrival.ts.
   // Historical rail.wake still activates the shared tool. Wait for acceptance, never show a refused handoff.
   const offAccepted = adapter.onAccepted((event) => {
     if (stationIndex === 0 && event.op === 'rail.wake' && event.accepted > 0 && event.pid === adapter.read.pid)

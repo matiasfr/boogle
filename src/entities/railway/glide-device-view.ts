@@ -89,8 +89,8 @@ export function createRailwayGlideDevice(adapter: RailwayAdapter, owner: OwnedVi
   }
   return {
     accepted(e: RailwayAccepted) {
-      // A shared moment whose card stays with the finder; everyone else's flourish is ability-arrival.ts (co-op
-      // abilities, option E). No camera shot either way.
+      // A shared moment: the finder's card on the press; friends' cards from ability-arrival.ts (cutscenes for
+      // everyone, 17 November). No camera shot either way.
       if (e.op !== 'rail.glide' || e.accepted <= 0) return;
       playSharedMoment('glider', e, adapter.read.pid, (mine) => {
         if (!mine) return false;
