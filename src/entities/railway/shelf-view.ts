@@ -9,12 +9,12 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { me } from '../../player/player.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
-import { LINE2_STATIONS, Q7, depotOffset, depotShelfSide } from '../../sim/railway-line2-layout.ts';
+import { LINE2_STATIONS, Q7, RAILS, depotOffset, depotShelfSide } from '../../sim/railway-line2-layout.ts';
 import { depotPieceVisible, q7Spot } from './q7-site.ts';
 import { stockSign } from './stock-sign.ts';
 import { waitsForTrain } from './forge-offer.ts';
 import { line2Active } from '../../sim/railway-queries-line2.ts';
-import { freeCarryIgnoringBig } from '../../sim/railway-queries-line1.ts';
+import { roomIgnoringBig } from '../../sim/railway-queries-line1.ts';
 import { account, qjob, rail } from '../../sim/railway-rows.ts';
 import { goldMote } from './breaker-view.ts';
 import { reducedMotion } from '../../constants.ts';
@@ -253,7 +253,8 @@ export async function createRailwayShelf(
           verb: 'Take rails',
           at: at.clone().setY(at.y + 1.4),
           run: () => void adapter.depotRailTake(),
-          ...(freeCarryIgnoringBig(w, adapter.read.pid) <= 0 ? { blocked: 'Your back is full' } : {}),
+          // Draft UI copy (separate-capacities step 3), not The Boogler's.
+          ...(roomIgnoringBig(w, adapter.read.pid, RAILS) <= 0 ? { blocked: 'Rails full' } : {}),
         },
       ];
     },

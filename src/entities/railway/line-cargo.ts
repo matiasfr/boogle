@@ -210,7 +210,7 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
       if (model.root.parent !== frame) frame.add(model.root);
       model.stone.count = account.stone;
       model.stone.visible = model.stone.count > 0;
-      // Rails share capacity with logs, but their mesh has its own count and lifetime, including after logs unload.
+      // Rails have their own capacity and their own mesh, with its own count and lifetime, including after logs unload.
       model.setRails(account.rails, rail(world()).pack);
       let drag = drags.get(account.pid);
       if (!beamHeld || !avatar) {

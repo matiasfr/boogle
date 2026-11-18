@@ -19,54 +19,58 @@
   font-variant-numeric: tabular-nums;
   opacity: 0;
 }
-.carry-contents {
+/* One row of squares a kind, as long as that kind's capacity (separate capacities, 17 November 2026): logs, stone,
+ * rails in the 4 November slot palette. An empty square is its kind's colour at 30%, so an empty row still says
+ * which kind it is. 16 px squares, 2 px gaps and 4 px more after every fourth: a row of 16 is 298 px. */
+.carry-rows {
   display: flex;
-  flex-wrap: wrap;
-  gap: 2px 10px;
+  flex-direction: column;
+  gap: 5px;
 }
-.carry-total {
-  margin-top: 3px;
-  font-size: 18px;
+.carry-row {
+  --kind: #c98a4b;
+  display: flex;
+  gap: 2px;
 }
-.carry-total[hidden],
-.carry-capacity[hidden] {
+.carry-row[data-kind='stone'] {
+  --kind: #a49bad;
+}
+.carry-row[data-kind='rails'] {
+  --kind: #579fbc;
+}
+.carry-row[hidden],
+.carry-big[hidden] {
   display: none;
 }
-.carry-tag[data-heavy='true'] .carry-total {
-  color: #ffc66b;
+.carry-sq {
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border: 2px solid #301f14;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--kind) 30%, transparent);
 }
-.carry-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  white-space: nowrap;
+.carry-sq:nth-child(4n):not(:last-child) {
+  margin-right: 4px;
 }
-.carry-item svg {
-  width: 22px;
-  height: 22px;
-  fill: #c98a4b;
-  stroke: #301f14;
-  stroke-width: 1.4;
+.carry-sq[data-filled='true'] {
+  background: var(--kind);
 }
-.carry-item .carry-rails {
-  fill: #acbdc6;
-}
-.carry-item .carry-stone {
-  fill: #c5c4b6;
-}
-.carry-item .carry-boiler {
-  fill: #e37a57;
-}
-.carry-capacity {
-  max-width: 245px;
-  font-size: 16px;
-  white-space: normal;
-  text-align: left;
-  margin-top: 3px;
+/* A full row takes the cream outline; no "Full" word. */
+.carry-row[data-full] .carry-sq {
+  border-color: #fff3e0;
+  box-shadow: 0 0 0 1px #301f14;
 }
 
 .carry-pause {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   margin: 12px 0;
   color: var(--ink);
   font: 700 18px/1.4 var(--font-body);
+}
+.carry-pause[hidden] {
+  display: none;
 }

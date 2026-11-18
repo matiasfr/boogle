@@ -20,17 +20,7 @@ import {
   WorksClock,
 } from './railway-components.ts';
 import { legKitPut } from './railway-sys-route-kit.ts';
-import {
-  aboard,
-  boilerHeld,
-  FOOT,
-  lineId,
-  qCompleted,
-  roomFor,
-  shedId,
-  wagonSlot,
-  worksId,
-} from './railway-queries.ts';
+import { aboard, boilerHeld, FOOT, lineId, qCompleted, roomOf, shedId, wagonSlot, worksId } from './railway-queries.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 
 // ---------------------------------------------------------------- the Works and the Roundhouse (./railway-works.ts)
@@ -97,7 +87,7 @@ export const footTake = defineSystem(
   (w, { a: aid, e }: Act) => {
     const a = w.get(Account, aid)!,
       works = w.get(Works, worksId(w))!;
-    if (!railInt(e.rack, 1) || roomFor(w, a, FOOT) < 1) return 0;
+    if (!railInt(e.rack, 1) || roomOf(w, a, FOOT) < 1) return 0;
     const key = e.rack ? 'pierRack' : 'rack';
     if (works[key] <= 0) return 0;
     w.mut(Works, worksId(w))![key]--;

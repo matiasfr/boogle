@@ -10,7 +10,6 @@
 //   long    ci plus the reviews' long save checks and their five fuzz seeds: `npm run test:long`, nightly. Its tests
 //           may take over the 5 s a unit test gets, so it gets 10 minutes a test. ROUTE_GATES=1 runs the greybox
 //           route's gate fuzzes at full length (20,000 ticks on their four ruled seeds; test/railway-route-rules.test.ts).
-//           LONG_REVIEWS=1 runs the reviews' full sweeps (test/review-heavy-load-arrival.test.ts).
 export type TestMode = 'local' | 'ci' | 'ship' | 'long';
 const MODES: Record<TestMode, NodeJS.ProcessEnv> = {
   local: {},
@@ -22,7 +21,6 @@ const MODES: Record<TestMode, NodeJS.ProcessEnv> = {
     SAVE_TICKS: '2500',
     FUZZ_SEEDS: 'c0ffee,777,15a4d,5eed,bee',
     ROUTE_GATES: '1',
-    LONG_REVIEWS: '1',
   },
 };
 /** Every variable a mode sets, for a test that must see a mode alone and not the caller's run (test/unit-modes.test.ts). */

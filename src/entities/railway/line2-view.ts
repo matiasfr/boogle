@@ -24,6 +24,7 @@ import {
   LINE2_FORGE,
   LINE2_STATIONS,
   Q7,
+  RAILS,
   depotOffset,
   line2Panels,
   line2Routes,
@@ -38,7 +39,7 @@ import {
   farHeadLaid,
 } from '../../sim/railway-queries-line2.ts';
 import { aboard, line2Jobs, q7Laid, type QJobRead } from '../../sim/railway-queries.ts';
-import { freeCarryIgnoringBig, railPhase } from '../../sim/railway-queries-line1.ts';
+import { roomIgnoringBig, railPhase } from '../../sim/railway-queries-line1.ts';
 import {
   account,
   beam as beamRow,
@@ -1402,7 +1403,8 @@ export async function createRailwayLine2(
         Math.hypot(p.x - LINE2_FORGE.rackX / 100, p.z - LINE2_FORGE.rackZ / 100) <= 3
       )
         out.push({ id: 'railway-forge-rails', verb: 'Take rails', at: rackFrom, blocked: RACK_WAIT_REASON });
-      const full = freeCarryIgnoringBig(w, rd.pid) <= 0 ? { blocked: 'Your back is full' } : {};
+      // Draft UI copy (separate-capacities step 3), not The Boogler's.
+      const full = roomIgnoringBig(w, rd.pid, RAILS) <= 0 ? { blocked: 'Rails full' } : {};
       if (
         forgeRow(w).rack > 0 &&
         forgeRailsOffered(active, line2Trains(w), shedRow(w).cradleRails, account(w, rd.pid)?.rails ?? 0) &&

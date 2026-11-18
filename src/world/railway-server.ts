@@ -8,7 +8,8 @@
 import { townPlotBoard, TOWN_BOARD } from '../place/town-plan.ts';
 import { HALL, TILL } from '../place/home-station.ts';
 import { railInt, railYaw, railSource, RAILWAY_MAX_INT, type RailAction, type RailResult } from '../sim/railway.ts';
-import { HEAVY_LOAD, RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../sim/railway-layout.ts';
+import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../sim/railway-layout.ts';
+import { MAX_KIND_CAPACITY } from '../sim/railway-queries.ts';
 import { LINE1_STATIONS, LINE1_GREAT_TREE, LINE1_HARDWOODS, LINE1_JUMP_DEVICE } from '../sim/railway-line-layout.ts';
 import { LINE_TIMING } from '../sim/railway-line.ts';
 import {
@@ -186,16 +187,11 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
         LINE1_STATIONS.find((row) => row.id === e.station) ??
         LINE2_STATIONS.find((row) => row.id === e.station) ??
         (e.station === 'F' ? LINE2_FORGE : undefined);
-      return (
-        !!station &&
-        kind &&
-        railInt(e.n, LINE2_PACK.carry * (1 + HEAVY_LOAD.extra), 1) &&
-        near(station.x, station.z, T1.reach)
-      );
+      return !!station && kind && railInt(e.n, MAX_KIND_CAPACITY, 1) && near(station.x, station.z, T1.reach);
     }
     case 'rail.drop':
       return (
-        railInt(e.n, LINE2_PACK.carry * (1 + HEAVY_LOAD.extra), 1) &&
+        railInt(e.n, MAX_KIND_CAPACITY, 1) &&
         pileKind &&
         railPos(e.x) &&
         railPos(e.z) &&

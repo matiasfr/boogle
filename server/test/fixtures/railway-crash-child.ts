@@ -55,12 +55,13 @@ async function action(e: Record<string, unknown>) {
 }
 await action({ op: 'rail.wake' });
 await ticks(RAILWAY_T1.wakeTicks);
-for (let stroke = 0; stroke < 12; stroke++) {
-  const source = RAILWAY_SOURCES[Math.floor(stroke / 5)]!;
+// A hit gives 1 until Station 3 is funded: ten strokes fell a tree, the first 22 logs go in one at a time.
+for (let stroke = 0; stroke < 24; stroke++) {
+  const source = RAILWAY_SOURCES[Math.floor(stroke / 10)]!;
   position = { x: source[1] / 100, z: source[2] / 100 };
   await action({ op: 'rail.chop', id: source[0], yaw: 0.5, collapsed: false });
   position = { x: RAILWAY_T1.x / 100, z: RAILWAY_T1.z / 100 };
-  if (stroke < 11) await action({ op: 'rail.deposit', station: 'T1', n: 2 });
+  if (stroke < 22) await action({ op: 'rail.deposit', station: 'T1', n: 1 });
 }
 assert.equal(host.rules.railway.counts().stock, 22);
 assert.equal(host.rules.railway.counts().carry, 2);

@@ -3,14 +3,15 @@
 // Original tree IDs survive: great tree 28 and hardwoods 209/232 are not T1 logs.
 // Terrain-clean step 5 removes twelve ordinary trees cleared by the widened benches; survivors keep their IDs.
 export const RAILWAY_CATALOG = 1;
-/** Heavy-load prototype: extra fraction of comfortable cargo and speed at that maximum. */
-export const HEAVY_LOAD = { extra: 0.5, minSpeed: 0.45 } as const;
+/** What a back holds of each kind (separate capacities, owner 17 November 2026): logs 8, 16 once the pack chest is
+ * open; stone 8, 16 once the breaker is taken; rails 8. A full kind refuses only that kind. */
+export const RAILWAY_CAPACITY = { logs: 8, logsPack: 16, stone: 8, stoneBreaker: 16, rails: 8 } as const;
+/** Pieces a hit gives: 1 at first, 2 once Station 3 is funded (the keener edge), 5 from trees with the proper axe. */
+export const RAILWAY_YIELD = { first: 1, edge: 2, axe: 5 } as const;
 export const RAILWAY_T1 = {
   id: 'T1',
   bill: 24,
-  carry: 8,
   sourceYield: 10,
-  strokeYield: 2,
   swingMs: 240,
   unloadMs: 90,
   wakeTicks: 31,

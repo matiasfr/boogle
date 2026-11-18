@@ -47,7 +47,8 @@ import { LINE_SLOTS, trainServes } from '../../src/sim/railway-trains.ts';
 import { TRAIN, TRAIN_PHASE, trainAlong } from '../../src/sim/railway-train.ts';
 import { railLinePoint } from '../../src/sim/railway-line-path.ts';
 import { LINE2, RAIL_HALTS, RAIL_LINES, haltPlatform, trainPassesBy } from '../../src/sim/railway-lines.ts';
-import { carried, carryComfort, ringHead, stopsOf } from '../../src/sim/railway-queries.ts';
+import { LOGS, ringHead, roomOf, stopsOf } from '../../src/sim/railway-queries.ts';
+import { RAILS } from '../../src/sim/railway-line2-layout.ts';
 import { ringRivetSequence } from '../../test/helpers/railway-rivet-sequence.ts';
 import { setTune, type TuneKey } from '../../src/sim/tune.ts';
 import { TRADE_PCT } from '../../src/sim/railway-trade-layout.ts';
@@ -315,6 +316,11 @@ test('steel host: the yard take at the yard, the feed at the works, each refused
     assert.equal(await r.action({ op: 'rail.steelTake', kind: 1 }, away(RING_STEEL_YARD)), 'rejected');
     assert.equal(await r.action({ op: 'rail.steelTake', kind: 1 }, spot(RING_STEEL_YARD)), 'accepted');
     assert.ok(steel(r.w).yardRails < STEEL.rails, 'rails off the yard');
+    // Separate capacities: the rails row is full at 8, so more rails are refused and logs still fit beside them.
+    assert.equal(steel(r.w).yardRails, STEEL.rails - 8, 'a row of 8 rails');
+    assert.equal(await r.action({ op: 'rail.steelTake', kind: 1 }, spot(RING_STEEL_YARD)), 'noop', 'rails full');
+    assert.equal(await r.action({ op: 'rail.steelTake', kind: 0 }, spot(RING_STEEL_YARD)), 'accepted');
+    assert.equal(steel(r.w).yardLogs, 0, 'all eight logs beside the rails');
     assert.equal(await r.action({ op: 'rail.steel' }, spot(RING_STEEL_YARD)), 'rejected', 'not at the works');
     assert.equal(await r.action({ op: 'rail.steel' }, away(RING_STEEL_WORKS)), 'rejected');
     assert.equal(await r.action({ op: 'rail.steel' }, spot(RING_STEEL_WORKS)), 'accepted');
@@ -600,7 +606,7 @@ function legDone(): Seed {
         ['rail.legStock', { leg: STACK }],
       ] as const) {
         const a = s.w.get(Account, s.w.lookup(Account, pid)!)!;
-        if (op !== 'rail.legStock' && carried(a) >= carryComfort(s.w)) continue;
+        if (op !== 'rail.legStock' && roomOf(s.w, a, op === 'rail.depotTake' ? LOGS : RAILS) <= 0) continue;
         apply(s.w, pid, { op, epoch: a.epoch, request: a.request + 1, ...f }, s.t);
       }
     railTick(s.w, ++s.t);

@@ -16,7 +16,7 @@ import {
   invariant,
   qjob,
   rail,
-  railCarryMax,
+  capacityOf,
   railFootRelease,
   railResume,
   railSupplyPulse,
@@ -31,6 +31,7 @@ import {
   trees,
   works,
   worksClock,
+  stockQ6,
   TRAIN_STAGES,
   WORKS_STAGES,
   type Seed,
@@ -47,7 +48,7 @@ import { footingTotal, pierNeed, worksStage } from '../src/sim/railway-queries-w
 import { forgeRailsOffered, trainOwed } from '../src/entities/railway/forge-offer.ts';
 import { CART_PHASE, cartAlong } from '../src/sim/railway-cart.ts';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
-import { LINE2_BOILER, LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
+import { LINE2_BOILER, LINE2_STATIONS, RAILS } from '../src/sim/railway-line2-layout.ts';
 import { RAIL_ROCKS, RAIL_STONE, WORKS, WORKS_BREAKER, WORKS_ROCKS } from '../src/sim/railway-works-layout.ts';
 import { Account, Pile, Train, Works, createRailwayWorld } from '../src/sim/railway-components.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
@@ -109,12 +110,7 @@ test('a cast breaker means trains run: station 6 cannot be laid by hand before t
     assert.ok(ticks < 4000, 'the kit unloads at Far Head');
     advance(s, 1);
   }
-  assert.equal(act(s, 'a', 'rail.pack'), 1);
-  for (const kind of [0, 2])
-    for (const pid of ['a', 'b']) {
-      assert.equal(act(s, pid, kind ? 'rail.depotRailTake' : 'rail.depotTake'), 16);
-      assert.equal(act(s, pid, 'rail.deposit', { station: 'Q6', kind, n: 16 }), 16);
-    }
+  stockQ6(s);
   for (let ticks = 0; line2Completed(w) < 6; ticks++) {
     assert.ok(ticks < 20000, 'Q6 is laid');
     advance(s, 1);
@@ -341,14 +337,14 @@ test('after the cradle is fitted the forge rack gives nothing', () => {
 });
 test('"Take rails" is offered exactly where the forge rack gives some, from Q5 to the crossing', () => {
   // The view's offer (forge-offer.ts) against rail.forgeTake, for a back with room and no beam, boiler or footing
-  // (those it does not judge: a full back is "Your back is full").
+  // (those it does not judge: a full rails row is "Rails full").
   const seen = { offered: 0, hidden: 0, owed: 0 };
   const check = (name: string, s: Seed) => {
     const w = s.w;
     for (const pid of ['a', 'b']) {
       const a = account(w, pid)!;
       const holding = held(w, pid) || boilerHeld(w, pid);
-      const room = railCarryMax(w) - a.carry - a.stone - a.rails;
+      const room = capacityOf(w, RAILS) - a.rails;
       if (holding || a.foot > 0 || room <= 0 || !forge(w).rack) continue;
       const offered = forgeRailsOffered(line2Active(w), line2Trains(w), shed(w).cradleRails, a.rails);
       seen[offered ? 'offered' : 'hidden']++;

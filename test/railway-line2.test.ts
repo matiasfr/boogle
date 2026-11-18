@@ -20,7 +20,8 @@ import {
   qjob,
   qjobRun,
   rail,
-  railCarryMax,
+  capacityOf,
+  LOGS,
   railResume,
   railSession,
   railSupplyPulse,
@@ -43,9 +44,9 @@ import {
   railCounts,
 } from '../src/sim/railway-queries-line2.ts';
 import type { RailAction } from '../src/sim/railway.ts';
-import { LINE2_FORGE, LINE2_STATIONS, line2Routes } from '../src/sim/railway-line2-layout.ts';
+import { LINE2_FORGE, LINE2_STATIONS, RAILS, line2Routes } from '../src/sim/railway-line2-layout.ts';
 import { CART, CART_PHASE, cartCycleTicks } from '../src/sim/railway-cart.ts';
-import { RAILWAY_T1 } from '../src/sim/railway-layout.ts';
+import { LINE1_STATIONS } from '../src/sim/railway-line-layout.ts';
 import type { World as Rows } from '../src/ecs/index.ts';
 
 type World = Seed;
@@ -114,7 +115,7 @@ function finishLine1(w: World) {
   }
   logs(w, 'a', 'T2', 32);
   advance(w, 300);
-  logs(w, 'a', 'T3', 40);
+  logs(w, 'a', 'T3', LINE1_STATIONS[2]!.bill[0]);
   for (let i = 0; i < 12; i++) act(w, 'a', 'rail.beamChop');
   act(w, 'a', 'rail.beamTake', { revision: beam(w.w).revision });
   assert.equal(act(w, 'a', 'rail.beamDeposit', { revision: beam(w.w).revision, station: 'T3' }), 1);
@@ -218,7 +219,7 @@ test('Q1-Q3 fund atomically from logs and rails; depot, hook and lever follow ac
   restoreIn(w);
 });
 
-test('rails share the back and loose piles; final-rail race funds once; abandoned rails return to the forge', () => {
+test('rails have their own row and share loose piles; final-rail race funds once; abandoned rails return to the forge', () => {
   const w = pathOpen();
   logs(w, 'a', 'F', 56);
   advance(w, LINE2_FORGE.pourTicks * 30);
@@ -236,9 +237,10 @@ test('rails share the back and loose piles; final-rail race funds once; abandone
   });
   const before = account(w.w, 'b')!.carry;
   assert.ok(before > 0);
-  assert.equal(act(w, 'b', 'rail.forgeTake'), 8 - before, 'one back for all materials');
+  assert.equal(act(w, 'b', 'rail.forgeTake'), 8, 'rails have their own row beside the logs');
+  assert.equal(account(w.w, 'b')!.carry, before);
   assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q1', n: 5, kind: 2 }), 5);
-  assert.equal(act(w, 'b', 'rail.deposit', { station: 'Q1', n: 8 - before, kind: 2 }), 1, 'final rail clipped');
+  assert.equal(act(w, 'b', 'rail.deposit', { station: 'Q1', n: 8, kind: 2 }), 1, 'final rail clipped');
   assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q1', n: 1, kind: 2 }), 0);
   assert.equal(act(w, 'a', 'rail.drop', { x: 92600, y: 1830, z: 1000, n: 3, kind: 2 }), 3);
   let pile: { id: number; n: number } | undefined;
@@ -437,20 +439,21 @@ test('the pack: no chest before the forge bill, one pack for two openers, every 
   assert.throws(() => w.w.load(early, railwayCheck), /pack before the forge bill/);
   logs(w, 'a', 'F', 8);
   assert.equal(forge(w.w).used, LINE2_FORGE.bills[0]);
-  assert.equal(railCarryMax(w.w), 12);
-  assert.equal(chopTo(w, 'b', 99), 12, 'twelve on a back before the pack');
+  assert.equal(capacityOf(w.w, LOGS), 8);
+  assert.equal(chopTo(w, 'b', 99), 8, 'eight logs on a back before the pack');
   assert.equal(act(w, 'a', 'rail.pack'), 1);
   assert.equal(act(w, 'b', 'rail.pack'), 0, 'one pack for two openers');
-  assert.equal(railCarryMax(w.w), 24);
-  assert.equal(chopTo(w, 'b', 99), 24, 'and twenty-four with it, for the one who did not open it');
-  assert.equal(chopTo(w, 'b', 99), 24, 'never more');
-  // Twenty-four on a back survives a save and load, and a player who joins later carries twenty-four too.
+  assert.equal(capacityOf(w.w, LOGS), 16);
+  assert.equal(capacityOf(w.w, RAILS), 8, 'the pack lifts logs only');
+  assert.equal(chopTo(w, 'b', 99), 16, 'and sixteen with it, for the one who did not open it');
+  assert.equal(chopTo(w, 'b', 99), 16, 'never more');
+  // Sixteen logs on a back survive a save and load, and a player who joins later carries sixteen too.
   restoreIn(w);
   assert.equal(rail(w.w).pack, true);
-  assert.equal(account(w.w, 'b')!.carry, 24);
+  assert.equal(account(w.w, 'b')!.carry, 16);
   railSession(w.w, 'c', 1);
-  assert.equal(chopTo(w, 'c', 99), 24, 'a late joiner carries twenty-four');
-  assert.equal(act(w, 'b', 'rail.deposit', { station: 'F', n: 24 }), 24, 'a whole back unloads at once');
+  assert.equal(chopTo(w, 'c', 99), 16, 'a late joiner carries sixteen');
+  assert.equal(act(w, 'b', 'rail.deposit', { station: 'F', n: 16 }), 16, 'a whole back unloads at once');
   assert.equal(railCounts(w.w).total, 3790 + railCounts(w.w).produced);
 });
 
@@ -475,15 +478,13 @@ test('Q4: behind the quarry gate; its cart brings logs and moves rails off the f
   restoreIn(w);
   assert.equal(act(w, 'a', 'rail.lever'), 1);
   assert.equal(line2GateOpen(w.w), true);
-  // Taking from the shelf: the back's room clips it.
-  const room = RAILWAY_T1.carry - account(w.w, 'a')!.carry;
-  assert.equal(act(w, 'a', 'rail.depotRailTake'), room);
+  // Taking from the shelf: the rails row's room clips it, beside the logs already on the back.
+  const room = capacityOf(w.w, RAILS) - account(w.w, 'a')!.rails;
+  assert.equal(act(w, 'a', 'rail.depotRailTake'), room, 'a full row of rails, no more');
   assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: 3 }), 3, 'logs go in with the gate down');
-  assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: room, kind: 2 }), room);
-  assert.equal(act(w, 'b', 'rail.depotRailTake'), RAILWAY_T1.carry, 'a full back of rails, no more');
   advance(w, cartCycleTicks(3));
-  assert.equal(rail(w.w).depotRails, LINE2_STATIONS[3]!.bill[1] - room - 8, 'rails on backs are not brought again');
-  assert.equal(act(w, 'b', 'rail.deposit', { station: 'Q4', n: 8, kind: 2 }), 8);
+  assert.equal(rail(w.w).depotRails, LINE2_STATIONS[3]!.bill[1] - room, 'rails on a back are not brought again');
+  assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: room, kind: 2 }), room);
   railsHeld(w);
   // Rails carried from the forge by hand fill the bill first, so the shelf's rest is left over when Q4 funds: it goes
   // back to the forge rack, in that one deposit. Meanwhile the cart owes the shelf nothing more.

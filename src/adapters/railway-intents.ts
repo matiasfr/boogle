@@ -1,11 +1,12 @@
 // The railway's actions as a client asks for them (docs/plans/ecs-m12-m13.md, M12f): the intent shapes, an event's
 // intent read back off the wire, the sets the session's submit and settle judge by, and the adapter's action methods.
 // Nothing here sends, predicts or plays: that is railway-session.ts.
-import { HEAVY_LOAD, RAILWAY_SOURCES } from '../sim/railway-layout.ts';
+import { RAILWAY_SOURCES } from '../sim/railway-layout.ts';
+import { MAX_KIND_CAPACITY } from '../sim/railway-queries.ts';
 import { railInt, railYaw } from '../sim/railway.ts';
 import { railPos } from '../sim/railway-route.ts';
 import { LINE1_STATIONS, LINE1_HARDWOODS, type RailMaterial, type LineStationId } from '../sim/railway-line-layout.ts';
-import { LINE2_PACK, type Line2StationId } from '../sim/railway-line2-layout.ts';
+import type { Line2StationId } from '../sim/railway-line2-layout.ts';
 import { BOILER_MAX, LINE_HALTS } from '../sim/railway-train.ts';
 import { LINE2, RAIL_TRAINS } from '../sim/railway-lines.ts';
 import { RAIL_ROCKS, installPart, type InstallPart } from '../sim/railway-works-layout.ts';
@@ -59,8 +60,9 @@ export type RailwayIntent =
   | { op: 'rail.deposit'; station: LineStationId | Line2StationId | 'F'; n: number; kind?: RailMaterial | 2 }
   | { op: 'rail.drop'; x: number; y?: number; z: number; n: number; kind?: RailMaterial | 2 | 3 };
 
-/** The most a back ever carries (with the pack): the wire's bound on a moved count; the rule clips to today's back. */
-export const CARRY_MAX = LINE2_PACK.carry * (1 + HEAVY_LOAD.extra);
+/** The most a back ever carries of one kind (logs with the pack, stone with the breaker): the wire's bound on a moved
+ * count; the rule clips to today's back. */
+export const CARRY_MAX = MAX_KIND_CAPACITY;
 export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   if (e.op === 'rail.buy' && pricedPlot(e.id)) return { op: e.op, id: e.id };
   if (e.op === 'rail.wake') return { op: e.op };

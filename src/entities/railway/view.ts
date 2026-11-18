@@ -11,8 +11,7 @@ import {
   job as jobRow,
   works as worksRow,
 } from '../../sim/railway-rows.ts';
-import { activeStation, railJobs, timingOf, heavyLoad } from '../../sim/railway-queries.ts';
-import { notify } from '../../ui/notify.ts';
+import { activeStation, railJobs, timingOf } from '../../sim/railway-queries.ts';
 import { railEngineStart, railPanelCount, railPanelStock, railPhase } from '../../sim/railway-queries-line1.ts';
 import { railCounts } from '../../sim/railway-queries-line2.ts';
 import { lineFeed, lineSchedule, lineLayDistance, type LineTiming } from '../../sim/railway-line-schedule.ts';
@@ -444,13 +443,6 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     },
     /** Railway-glide fixedPre (23), before the controller. */
     noteVelocity() {
-      // The railway's pre-controller step gates ground jumps as well as the later air moves.
-      // Swimming ascent stays available, including the stroke needed to leave the water.
-      if (!me.swimming && me.jumpQueued > 0 && heavyLoad(adapter.read.world(), adapter.read.pid)) {
-        // Draft UI copy for the owner; one notice per press, never every held frame.
-        notify('Too heavy to jump. Drop cargo to travel light.', { kind: 'deny', key: 'heavy-load', ttl: 2500 });
-        me.jumpQueued = 0;
-      }
       glide.noteVelocity();
     },
     update(ctx: FrameCtx) {

@@ -4,7 +4,7 @@
 // each with its source. Encodes today's Home (not the proposed layout B). Read-only over src/: no runtime import.
 import fs from 'node:fs';
 import path from 'node:path';
-import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../src/sim/railway-layout.ts';
+import { RAILWAY_CAPACITY, RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../../src/sim/railway-layout.ts';
 import { insideSplitRock } from '../../src/entities/railway/works-shape.ts';
 import { LINE1_STATIONS, LINE1_ROCKS, LINE1_GREAT_TREE, LINE1_JUMP_DEVICE } from '../../src/sim/railway-line-layout.ts';
 import {
@@ -1018,11 +1018,16 @@ export const cm = (a: Point, b: Point) =>
 export const hasCue = (n: LoopNode) =>
   n.cue.some((c) => c.kind === 'world' && (c.state === 'on-main' || c.state === 'observed'));
 
-/** Units one carry holds: a back before the pack, a pack after it (canonical order puts the pack right after the
- * forge); one beam, boiler or footing fills a back. */
-export function carryOf(material: Material, packed: boolean) {
+/** The room's capacity steps a node is reached with (canonical order: the pack right after the forge, the breaker
+ * before the throat and the kiln). */
+export type Upgrades = { pack: boolean; breaker: boolean };
+/** Units one carry holds of a material (separate capacities): logs 8, 16 with the pack; stone 8, 16 with the breaker;
+ * rails 8; one beam, boiler or footing fills a back. */
+export function carryOf(material: Material, { pack, breaker }: Upgrades) {
   if (material === 'beam' || material === 'boiler' || material === 'footings') return 1;
-  return packed ? LINE2_PACK.carry : T1.carry;
+  if (material === 'rails') return RAILWAY_CAPACITY.rails;
+  if (material === 'stone') return breaker ? RAILWAY_CAPACITY.stoneBreaker : RAILWAY_CAPACITY.stone;
+  return pack ? RAILWAY_CAPACITY.logsPack : RAILWAY_CAPACITY.logs;
 }
 /** Straight-line one-way metres a carry of `material` walks to the node: from the nearest sources that hold its
  * bill (trees yield `sourceYield` each, rocks their initial stone), or from the rack beside the frame. */
@@ -1046,12 +1051,12 @@ export type Grind = {
   by: Supply['by'];
   foot?: string;
 };
-export function grindOf(n: LoopNode, packed: boolean): Grind[] {
+export function grindOf(n: LoopNode, upgrades: Upgrades): Grind[] {
   return (Object.keys(n.supply) as Material[]).map((material) => {
     const s = n.supply[material]!;
     return {
       material,
-      carries: Math.ceil((n.bill[material] ?? 0) / carryOf(material, packed)),
+      carries: Math.ceil((n.bill[material] ?? 0) / carryOf(material, upgrades)),
       metres: carryMetres(n, material),
       handMetres: carryMetres(n, material, true),
       by: s.by,

@@ -66,7 +66,7 @@ function opening(): Seed {
   }
   logs(w, 'a', 'T2', 32);
   advance(w, 300);
-  logs(w, 'a', 'T3', 40);
+  logs(w, 'a', 'T3', 32);
   return w;
 }
 const w1 = opening();

@@ -16,7 +16,7 @@ import { endMoved, stopMoved } from './railway-trains.ts';
 import { railInt } from './railway.ts';
 import { haulU } from './railway-ring-haul.ts';
 import { Account, Aperture, Beam, Boiler, Leg, QJob, Train, Works } from './railway-components.ts';
-import { apertureId, boilerHeld, FOOT, q7Laid, roomFor, worksId } from './railway-queries.ts';
+import { apertureId, boilerHeld, FOOT, q7Laid, roomOf, worksId } from './railway-queries.ts';
 import { trainMoveIO } from './railway-sys-trains.ts';
 import type { Act } from './railway-sys-core.ts';
 
@@ -31,7 +31,7 @@ export const ringFootTake = defineSystem(
   'rail.ringFootTake',
   { reads: [Beam, Boiler], writes: [Aperture, Account], phase: 'act', order: 50 },
   (w, { a: aid, e }: Act) => {
-    if (e.rack !== 2 || roomFor(w, w.get(Account, aid)!, FOOT) < 1) return 0;
+    if (e.rack !== 2 || roomOf(w, w.get(Account, aid)!, FOOT) < 1) return 0;
     const id = apertureId(w);
     if (w.get(Aperture, id)!.rack <= 0) return 0;
     w.mut(Aperture, id)!.rack--;

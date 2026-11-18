@@ -14,7 +14,7 @@ import { SERVER_ID } from '../../src/net/ids.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import type { RailAction, RailAccount } from '../../src/sim/railway.ts';
 import { railActiveStation, railId, railJobs } from '../../src/sim/railway-queries.ts';
-import { freeCarryIgnoringBig, railMaxDuration, railPhase } from '../../src/sim/railway-queries-line1.ts';
+import { roomIgnoringBig, railMaxDuration, railPhase } from '../../src/sim/railway-queries-line1.ts';
 import { railCounts } from '../../src/sim/railway-queries-line2.ts';
 import { account, accounts, aperture, cart, lines, qjobs, train, trains, tree } from '../../src/sim/railway-rows.ts';
 import { Pile, Rail } from '../../src/sim/railway-components.ts';
@@ -402,7 +402,7 @@ function startWorld(room: Room) {
         session: railwaySession(read),
         rows: {
           account: account(w, PID),
-          freeCarry: freeCarryIgnoringBig(w, PID),
+          freeCarry: roomIgnoringBig(w, PID, 0),
           phase: railPhase(w, at, at),
           counts: railCounts(w, at),
           jobs: railJobs(w, at),

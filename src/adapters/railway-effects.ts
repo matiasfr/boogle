@@ -2,6 +2,7 @@
 // accepted action (yours predicted, or anyone's from the server) and a correction of one, plus the wire reads that
 // build them. The session's settle and submit play them; nothing here does.
 import { railInt, RAILWAY_MAX_INT } from '../sim/railway.ts';
+import { MAX_ACCEPTED } from '../sim/railway-queries.ts';
 import { railPos } from '../sim/railway-route.ts';
 import { RAIL_TRAINS } from '../sim/railway-lines.ts';
 import { line2Trains as line2TrainsIn } from '../sim/railway-queries-line2.ts';
@@ -68,8 +69,10 @@ export const effectOf = (v: Record<string, unknown>) => {
   for (const k of ['px', 'py', 'pz'] as const) if (railPos(v[k])) out[k] = v[k];
   return out;
 };
+/** An accepted count is bounded by every kind a back holds at once (MAX_ACCEPTED), not one kind's: `rail.kiln` takes
+ * logs and stone together (up to 32), so a per-kind bound would silently drop that effect. */
 export const accepted = (v: Record<string, unknown>) =>
-  typeof v.pid === 'string' && railInt(v.request, RAILWAY_MAX_INT, 1) && railInt(v.accepted, CARRY_MAX, 1);
+  typeof v.pid === 'string' && railInt(v.request, RAILWAY_MAX_INT, 1) && railInt(v.accepted, MAX_ACCEPTED, 1);
 /** Two actions competed for the same pieces: the same tree, rock, pile or rack. */
 export function sameTarget(a: RailwayAccepted, b: RailwayAccepted) {
   if (a.op !== b.op) return false;

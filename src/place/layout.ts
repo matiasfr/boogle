@@ -23,9 +23,9 @@ export const toWorld = (x: number) => x + ORIGIN.x;
 
 // Round 4's numbers are hypotheses, set with dev/economy/model.ts (`node dev/economy/model.ts round4`) until played.
 export const TUNE = {
-  carry: 8, // pieces on your back at first; the pack frame makes it PACK.carry
-  strokes: 5, // chops to fell a tree with the first axe
-  logsPerStroke: 2,
+  carry: 8, // logs on your back at first (RAILWAY_CAPACITY.logs); the pack frame makes it PACK.carry
+  strokes: 10, // chops to fell a tree with the first axe, before the keener edge (Station 3 funded) makes it 5
+  logsPerStroke: 1,
   swingS: CHOP_RESTART, // s before the next chop can start
   contactS: CHOP_CONTACT, // s from the press to the axe meeting the bark
   flyS: 0.26, // s a log takes from the bark to your back

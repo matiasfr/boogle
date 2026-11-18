@@ -1,7 +1,7 @@
 // Line one's systems (docs/plans/ecs-migration-railway.md, section 2): its ops (chop, mine, the bills, piles, the
 // racks, the axe, the jump and the great beam), its laying tick, and the beam's absent-carrier paths.
 import { defineSystem, type World } from '../ecs/index.ts';
-import { RAILWAY_SOURCES } from './railway-layout.ts';
+import { RAILWAY_SOURCES, RAILWAY_T1, RAILWAY_YIELD } from './railway-layout.ts';
 import { LINE1_GREAT_TREE, LINE1_STATIONS, lineBeamGround } from './railway-line-layout.ts';
 import { RAILS } from './railway-line2-layout.ts';
 import { layProgress, type LineTiming } from './railway-line-schedule.ts';
@@ -23,24 +23,27 @@ import {
   Rail,
   Rock,
   Tree,
+  Works,
 } from './railway-components.ts';
 import { legKitPut } from './railway-sys-route-kit.ts';
 import {
   activeStation,
+  balanceOf,
   beamId,
   boilerHeld,
   carried,
-  carryComfort,
   FOOT,
   forgeId,
-  free,
+  freePileSlots,
   held,
+  hitYield,
   jobId,
+  LOGS,
   railId,
   ready,
-  roomFor,
+  roomOf,
   scheduleOf,
-  spareDropSlots,
+  STONE,
   timingOf,
   type AccountRow,
 } from './railway-queries.ts';
@@ -50,21 +53,19 @@ const pileKind = (kind: unknown) => (kind === 1 || kind === RAILS || kind === FO
 const pileCap = (kind: number) => (kind === FOOT ? 1 : LOOSE_PILE_MAX);
 // Confirmed ids precede temporary -request ids; ties at the same point follow creation order on both peers.
 const pileOrder = (id: number) => (id < 0 ? RAILWAY_MAX_INT - id : id);
-const balanceOf = (a: Readonly<AccountRow>, kind: number) =>
-  kind === 1 ? a.stone : kind === RAILS ? a.rails : kind === FOOT ? a.foot : a.carry;
 function credit(a: AccountRow, kind: number, n: number) {
-  if (kind === 1) a.stone += n;
+  if (kind === STONE) a.stone += n;
   else if (kind === RAILS) a.rails += n;
   else if (kind === FOOT) a.foot += n;
   else a.carry += n;
 }
 export const chop = defineSystem(
   'rail.chop',
-  { reads: [Boiler, Beam, Pile], writes: [Rail, Tree, Hardwood, Account], phase: 'act', order: 2 },
+  { reads: [Boiler, Beam, Pile, Job], writes: [Rail, Tree, Hardwood, Account], phase: 'act', order: 2 },
   (w, { a: aid, e, tick }: Act) => {
     if (!ready(w, tick)) return 0;
     const a = w.mut(Account, aid)!;
-    const room = free(w, a);
+    const room = roomOf(w, a, LOGS);
     if (room <= 0) return 0;
     const rail = w.get(Rail, railId(w))!;
     let n = 0;
@@ -78,9 +79,10 @@ export const chop = defineSystem(
         w.mut(Rail, railId(w))!.produced += 5;
         t.big = true;
       }
-      n = Math.min(rail.axe ? 5 : 2, t.left, room);
+      n = Math.min(rail.axe ? RAILWAY_YIELD.axe : hitYield(w), t.left, room);
       t.left -= n;
-      t.work = Math.min(15, t.work + (rail.axe ? 5 : 3));
+      // The notch tracks pieces taken, so a tree's felling hit cuts it through (15) at any yield.
+      t.work = rail.axe ? Math.min(15, t.work + 5) : Math.min(15, (3 * (RAILWAY_T1.sourceYield - t.left)) >> 1);
       a.carry += n;
       if (t.left === 0) {
         t.age = 0;
@@ -91,7 +93,7 @@ export const chop = defineSystem(
     const h = [209, 232].indexOf(e.id!);
     if (h >= 0 && rail.axe) {
       const hw = w.mut(Hardwood, w.lookup(Hardwood, h)!)!;
-      n = Math.min(5, hw.left, room);
+      n = Math.min(RAILWAY_YIELD.axe, hw.left, room);
       hw.left -= n;
       if (n) hw.work = Math.min(15, hw.work + 5);
       a.carry += n;
@@ -101,15 +103,17 @@ export const chop = defineSystem(
 );
 export const mine = defineSystem(
   'rail.mine',
-  { reads: [Boiler, Rail, Beam, Pile], writes: [Rock, Account], phase: 'act', order: 3 },
+  { reads: [Boiler, Rail, Beam, Pile, Job, Works], writes: [Rock, Account], phase: 'act', order: 3 },
   (w, { a: aid, e, tick }: Act) => {
     const a = w.get(Account, aid)!;
-    if (!ready(w, tick) || free(w, a) <= 0 || !railInt(e.id, RAIL_ROCKS.length - 1)) return 0;
+    const room = roomOf(w, a, STONE);
+    if (!ready(w, tick) || room <= 0 || !railInt(e.id, RAIL_ROCKS.length - 1)) return 0;
     const rock = w.mut(Rock, w.lookup(Rock, e.id!)!)!;
-    const n = Math.min(2, rock.left, free(w, a));
+    const n = Math.min(hitYield(w), rock.left, room);
     rock.left -= n;
     if (n) {
-      rock.work = Math.min(4, rock.work + 1);
+      // The crack tracks stone taken: two pieces a stage, so the breaking hit shows it broken (4) at any yield.
+      rock.work = Math.min(4, (RAIL_ROCKS[e.id!]!.initial - rock.left + 1) >> 1);
       w.mut(Account, aid)!.stone += n;
       if (!rock.left) rock.age = 0;
     }
@@ -194,8 +198,7 @@ export const drop = defineSystem(
     const n = Math.min(e.n!, carry, at === undefined ? cap : cap - w.get(Pile, at)!.n);
     if (n <= 0) return 0;
     if (at === undefined) {
-      const released = kind === FOOT ? 0 : Math.min(n, Math.max(0, carried(a) - carryComfort(w)));
-      if (spareDropSlots(w) + released < 1 || w.nextId() >= RAILWAY_MAX_INT) return 0;
+      if (freePileSlots(w) < 1 || w.nextId() >= RAILWAY_MAX_INT) return 0;
       w.spawn([Pile, { x: e.x!, y: e.y!, z: e.z!, n, kind, age: 0 }]);
       credit(a, kind, -n);
       putDown(w, aid, kind, n);
@@ -211,13 +214,13 @@ export const drop = defineSystem(
 );
 export const take = defineSystem(
   'rail.take',
-  { reads: [Boiler, Rail, Beam], writes: [Pile, Account], phase: 'act', order: 6 },
+  { reads: [Boiler, Rail, Beam, Works], writes: [Pile, Account], phase: 'act', order: 6 },
   (w, { a: aid, e }: Act) => {
     const a = w.mut(Account, aid)!;
     const kind = pileKind(e.kind);
     const p = railInt(e.id, RAILWAY_MAX_INT, -RAILWAY_MAX_INT) ? w.mut(Pile, e.id) : undefined;
     if (!p || kind !== p.kind) return 0;
-    const room = roomFor(w, a, kind, p.n);
+    const room = roomOf(w, a, kind);
     const n = Math.min(p.n, room);
     p.n -= n;
     credit(a, kind, n);
@@ -227,11 +230,12 @@ export const take = defineSystem(
 );
 export const rackTake = defineSystem(
   'rail.rackTake',
-  { reads: [Boiler, Beam, Pile], writes: [Rail, Account], phase: 'act', order: 7 },
+  { reads: [Boiler, Beam, Pile, Works], writes: [Rail, Account], phase: 'act', order: 7 },
   (w, { a: aid, e }: Act) => {
     const a = w.mut(Account, aid)!;
-    const room = free(w, a);
-    if (room <= 0 || e.kind === 2) return 0;
+    if (e.kind === 2) return 0;
+    const room = roomOf(w, a, e.kind === 1 ? STONE : LOGS);
+    if (room <= 0) return 0;
     const rail = w.mut(Rail, railId(w))!;
     if (e.kind === 1) {
       const n = Math.min(rail.stoneRack, room);

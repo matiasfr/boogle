@@ -16,6 +16,7 @@ import {
   WORKS_BREAKER,
   WORKS_KILN,
   WORKS_RACK,
+  WORKS_ROCKS,
   WORKS_SEAMS,
 } from '../../src/sim/railway-works-layout.ts';
 import { footingTotal } from '../../src/sim/railway-queries-works.ts';
@@ -27,6 +28,7 @@ import {
   apply,
   beam,
   boiler,
+  chopTo,
   createRailway,
   invariant,
   logs,
@@ -178,6 +180,27 @@ test('works host: strikes, the kiln and the table judged where their actor stand
     );
   } finally {
     await s.done();
+  }
+});
+
+test('works host: one kiln feed of 16 logs and 16 stone is one accepted action of 32 that saves and restarts', async () => {
+  // Separate capacities: 16 logs with the pack and 16 stone with the breaker ride one back together.
+  const s = fixture('works-open');
+  chopTo(s, 'a', WORKS.kilnLogs);
+  for (const spot of WORKS_ROCKS)
+    while (rocks(s.w)[spot.id]!.left > 0) assert.ok(act(s, 'a', 'rail.mine', { id: spot.id }) > 0);
+  assert.deepEqual([account(s.w, 'a')!.carry, account(s.w, 'a')!.stone], [WORKS.kilnLogs, WORKS.kilnStone]);
+  const r = await host('kiln-both', s);
+  try {
+    assert.equal(await r.action({ op: 'rail.kiln' }, spot(WORKS_KILN)), 'accepted');
+    assert.deepEqual([works(r.w).logs, works(r.w).stone], [WORKS.kilnLogs, WORKS.kilnStone]);
+    assert.ok(works(r.w).lit >= 0, 'lit by the one feed');
+    assert.deepEqual([account(r.w, 'a')!.carry, account(r.w, 'a')!.stone], [0, 0]);
+    // The outcome (accepted 32) is in the checkpoint: it saves and loads under the outcome bound.
+    await r.restart();
+    assert.ok(works(r.w).lit >= 0);
+  } finally {
+    await r.done();
   }
 });
 

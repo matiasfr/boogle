@@ -5,7 +5,7 @@
 //   railPanelCount, railPanelStock         rail pairs laid on line one, and still on the machine's stack
 //   railBeamChoppable, railAxeAvailable    a stroke at the great tree bites; the forge's axe is there to take
 //   railPhase(w, tick?, at?)               asleep, waking, idle, deposit, feeding, laying or done
-//   treeGrowth, freeCarryIgnoringBig       a felled tree's growth stage; room on a back, a big load aside (M10)
+//   treeGrowth, roomIgnoringBig            a felled tree's growth stage; room for a kind on a back, a big load aside (M10)
 import type { World } from '../ecs/index.ts';
 import { RAILWAY_T1 as T1 } from './railway-layout.ts';
 import { LINE1_RAIL_PAIRS, LINE1_STATIONS } from './railway-line-layout.ts';
@@ -14,9 +14,9 @@ import { REGROW_MINUTES } from './railway-supply.ts';
 import { Beam, Forge, Job, Rail, Tree } from './railway-components.ts';
 import {
   activeStation,
+  balanceOf,
   beamId,
-  carried,
-  carryMax,
+  capacityOf,
   forgeId,
   jobId,
   railAccount,
@@ -74,10 +74,10 @@ export function treeGrowth(w: World, slot: number) {
   const id = w.lookup(Tree, slot);
   return id === undefined ? 0 : Math.max(0, w.get(Tree, id)!.age - REGROW_MINUTES);
 }
-/** What `pid`'s back has room for by count alone: carryMax less what it carries (the whole back for no account).
- * Unlike `free` (./railway-queries.ts), it ignores the big-load rule, so it is not 0 while a beam, the boiler or a
- * footing is held: the "Your back is full" prompt tells those apart. */
-export function freeCarryIgnoringBig(w: World, pid: string) {
+/** What `pid`'s back has room for of `kind` by count alone: that kind's capacity less what it holds (the whole row
+ * for no account). Unlike `roomOf` (./railway-queries.ts), it ignores the big-load rule, so it is not 0 while a beam,
+ * the boiler or a footing is held: the "Logs full" and "Hands full" prompts tell those apart. */
+export function roomIgnoringBig(w: World, pid: string, kind: number) {
   const a = railAccount(w, pid);
-  return Math.max(0, carryMax(w) - (a ? carried(a) : 0));
+  return Math.max(0, capacityOf(w, kind) - (a ? balanceOf(a, kind) : 0));
 }

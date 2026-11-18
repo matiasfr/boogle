@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { RAILWAY_OUTCOMES, type RailAction } from '../src/sim/railway.ts';
-import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
+import { RAILWAY_CAPACITY, RAILWAY_SOURCES, RAILWAY_T1 as T1, RAILWAY_YIELD } from '../src/sim/railway-layout.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { Account, Beam, Outcome, Tree, createRailwayWorld, RAIL_COMPONENTS } from '../src/sim/railway-components.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
@@ -165,8 +165,8 @@ test('catalog exactly pins current T1 recipe and every starter source to centime
     at = frameBesideLine(station, link.line, link.dir);
   assert.equal(T1.bill, station.logs);
   assert.equal(station.rails, 0);
-  assert.equal(T1.carry, layout.TUNE.carry);
-  assert.equal(T1.strokeYield, layout.TUNE.logsPerStroke);
+  assert.equal(RAILWAY_CAPACITY.logs, layout.TUNE.carry);
+  assert.equal(RAILWAY_YIELD.first, layout.TUNE.logsPerStroke);
   assert.equal(T1.sourceYield, layout.TUNE.strokes * layout.TUNE.logsPerStroke);
   assert.equal(T1.fromCm, Math.round(station.s * 100));
   assert.equal(T1.toCm, Math.round(station.to * 100));

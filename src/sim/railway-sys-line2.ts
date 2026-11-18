@@ -50,7 +50,6 @@ import {
   cartWants,
   depotNeed,
   forgeId,
-  free,
   gateDown,
   held,
   jobId,
@@ -59,6 +58,8 @@ import {
   qCompleted,
   qjobId,
   railId,
+  roomOf,
+  LOGS,
   scheduleOf,
   shedId,
   stopsOf,
@@ -252,7 +253,7 @@ export const forgeTake = defineSystem(
   (w, { a: aid }: Act) => {
     if (trainOwed(w)) return 0;
     const a = w.mut(Account, aid)!;
-    let room = free(w, a);
+    let room = roomOf(w, a, RAILS);
     // Once no Q station takes rails, the cradle is the rack's only use: take just what it still needs, so a full
     // back of spare rails never stands between you and the footings (which need an empty back). Once the cradle is
     // fitted nothing uses rails, so the rack gives none.
@@ -271,7 +272,7 @@ export const depotTake = defineSystem(
   { reads: [Boiler, Beam, Aperture, Pile], writes: [Rail, Account, Leg], phase: 'act', order: 22 },
   (w, { a: aid }: Act) => {
     const a = w.mut(Account, aid)!;
-    const room = free(w, a);
+    const room = roomOf(w, a, LOGS);
     if (room <= 0) return 0;
     const rail = w.mut(Rail, railId(w))!;
     const n = Math.min(rail.depot, room);
@@ -288,7 +289,7 @@ export const depotRailTake = defineSystem(
   { reads: [Boiler, Beam, Aperture, Pile], writes: [Rail, Account, Leg], phase: 'act', order: 25 },
   (w, { a: aid }: Act) => {
     const a = w.mut(Account, aid)!;
-    const room = free(w, a);
+    const room = roomOf(w, a, RAILS);
     if (room <= 0) return 0;
     const rail = w.mut(Rail, railId(w))!;
     const n = Math.min(rail.depotRails, room);
@@ -298,7 +299,7 @@ export const depotRailTake = defineSystem(
     return n;
   },
 );
-/** The pack chest: there once the forge has its first bill; one open gives every back LINE2_PACK.carry. */
+/** The pack chest: there once the forge has its first bill; one open gives every back LINE2_PACK.carry logs. */
 export const pack = defineSystem('rail.pack', { reads: [Forge], writes: [Rail], phase: 'act', order: 26 }, (w) => {
   if (w.get(Forge, forgeId(w))!.used < FORGE.bills[0] || w.get(Rail, railId(w))!.pack) return 0;
   w.mut(Rail, railId(w))!.pack = true;

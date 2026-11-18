@@ -62,6 +62,7 @@ import {
   railwayAtWorks,
   restore,
   shed as shedRow,
+  stockQ6,
   stopsOf,
   train,
   trainId,
@@ -163,12 +164,7 @@ const WAIT_BOUND = 1050;
 const FUZZ_TICKS = fuzzTicks(3000);
 /** Q6's kit off the train and its logs and rails into the frame, so the pier opens a few hundred ticks on. */
 function fundQ6(w: Seed) {
-  assert.equal(act(w, 'a', 'rail.pack'), 1);
-  for (const kind of [0, 2])
-    for (const pid of ['a', 'b']) {
-      assert.equal(act(w, pid, kind ? 'rail.depotRailTake' : 'rail.depotTake'), 16);
-      assert.equal(act(w, pid, 'rail.deposit', { station: 'Q6', kind, n: 16 }), 16);
-    }
+  stockQ6(w);
 }
 // The same fuzz from the stages after the pier's twelfth footing (slice 5 R2b's gate: the Quarry stone stop is on), so
 // the worst wait there is judged the WAIT_BOUND way too; its diagnostics give the per-stage figures. leaf-raised's world

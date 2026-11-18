@@ -55,7 +55,8 @@ import {
 import { LINE_SLOTS, cycleTicks, servingSlots, trainServes, trainSpacing } from '../../src/sim/railway-trains.ts';
 import { railTick } from '../../src/sim/railway-systems.ts';
 import { line, rail, train, trains } from '../../src/sim/railway-rows.ts';
-import { carried, carryComfort, stopsOf } from '../../src/sim/railway-queries.ts';
+import { LOGS, roomOf, stopsOf } from '../../src/sim/railway-queries.ts';
+import { RAILS } from '../../src/sim/railway-line2-layout.ts';
 import { legKitNeed, legKitWaiting, legOpen, legRow, legsLaid, routeRow } from '../../src/sim/railway-queries-route.ts';
 import { freightStop } from '../../src/sim/railway-queries-trade.ts';
 import { footingsOwed, kitOwed, steelNeed } from '../../src/sim/railway-queries.ts';
@@ -118,8 +119,8 @@ export function routeRulesShard(shard: number) {
         ['rail.legStock', { leg: k }],
       ] as const) {
         const a = s.w.get(Account, s.w.lookup(Account, pid)!)!;
-        // Transport pacing uses comfortable loads; deliberate overfill has its own sim tests.
-        if (o !== 'rail.legStock' && carried(a) >= carryComfort(s.w)) continue;
+        // Each take fills only its own kind's row.
+        if (o !== 'rail.legStock' && roomOf(s.w, a, o === 'rail.depotTake' ? LOGS : RAILS) <= 0) continue;
         const r = apply(s.w, pid, { op: o, epoch: a.epoch, request: a.request + 1, ...f } as never, s.t);
         if (o === 'rail.legStock' && r.accepted) stocked++;
       }

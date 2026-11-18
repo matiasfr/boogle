@@ -1,5 +1,5 @@
 // Exercise the real room manager's idle eviction/rejoin boundary, sockets and store lock.
-// Keep T1's expected carry at two: every published chop must survive authority replacement.
+// Keep T1's expected carry at one (a hit gives 1 before Station 3): every published chop must survive authority replacement.
 import test from 'node:test';
 import { WebSocket } from './helpers/accounts.ts';
 import assert from 'node:assert/strict';
@@ -197,7 +197,7 @@ for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, railwayRoomId('evic
         },
       });
       // Applied on arrival and replicated; its durability is the close's save (the store lock holds it back).
-      await until(() => material(old) === 2, 'chop applied');
+      await until(() => material(old) === 1, 'chop applied');
       published = true;
     } else {
       old.world.step(0.2);
@@ -242,7 +242,7 @@ for (const id of [`${WORLD_NS}-boogle`, `${WORLD_NS}-beach`, railwayRoomId('evic
       published,
       overlapping,
       changedAuthority,
-      expected: railway ? 2 : old.world.sync.world.tick,
+      expected: railway ? 1 : old.world.sync.world.tick,
       restored,
       receipt: railway ? railwayHost(replacement).rules.railway.outcome('alice', 1, 2) : null,
       saved: store.readSync(id),
@@ -311,7 +311,7 @@ for (const [id, failure] of [
         },
       });
     } else room.world.step(0.2);
-    await until(() => (railway ? material(room) === 2 : material(room) >= 2), 'saved accepted state or clock');
+    await until(() => (railway ? material(room) === 1 : material(room) >= 2), 'saved accepted state or clock');
     await drain(room, store, id);
     const expected = material(room);
     const file = path.join(dataDir, `${id}.json`);

@@ -8,7 +8,8 @@ import { garage } from '../../../src/entities/railway/garage-state.ts';
 import { garageRow, polarAt } from '../../../src/entities/railway/garage-geo.ts';
 import type { Bot } from '../bot.ts';
 import {
-  carryComfort,
+  capacityOf,
+  LOGS,
   railBack,
   forge,
   inspectRailway,
@@ -132,7 +133,7 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
     await until(() => works().seams & 1, 'stall slab struck', 30000);
     await checkpoint('stall open');
     // 3. Sixteen logs, then line 2 to the quarry and the throat.
-    await fillLogs(Math.min(carryComfort(rw()), WORKS.kilnLogs));
+    await fillLogs(Math.min(capacityOf(rw(), LOGS), WORKS.kilnLogs));
     check(carry() === WORKS.kilnLogs, 'a back of sixteen logs for the kiln');
     await ride(HALT.village2, 1);
     await use(seam(1), /^Strike the seam$/, 'strike the throat');
