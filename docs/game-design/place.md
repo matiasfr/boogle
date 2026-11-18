@@ -1004,8 +1004,9 @@ platform, s 719–741 at lateral -6.95, on piles. The platform and its plank cro
 east terminal platform still serves the train home. After Q7 and any retained departure clears, the east lever
 chains and its signal stays up; the west lever offers the existing **Request stop: to Village**. Its 9.4 m start ramp
 meets a plank crossing centred at s 708.4 (s 707.2–709.6), beside Q7's work deck. The planks clear today's longest
-stopped train by 4.20 m and the planned coach train by 0.80 m; the ramp rises 0.67 m at about 4.1°, with no ramp to
-the seabed or off the far end. Q7's rack and shelf are absent whenever the crossing is walkable; the frame
+stopped train by 4.20 m and the planned coach train by 0.80 m; the ramp starts level with the planks' top (it began
+0.17 m below them until 18 November, a step that bumped and slowed a walker) and rises 0.50 m at about 3.1°, with no
+ramp to the seabed or off the far end. Q7's rack and shelf are absent whenever the crossing is walkable; the frame
 stays on its piled deck after completion, and each player's unopened personal box stays there too, clear of the
 planks. Level-check checks the shared completion gate, simultaneous-piece clearances, the clear walk to the east
 ramp and the maximum jump/glide from the west roof against the railhead gap.
@@ -1081,7 +1082,8 @@ each panel in one trip: the gantry lifts the top two pairs off its stack, seats 
 unchanged; the beam is 7.0 m). Quarry and Far Head each get an offset platform outside the new track (Quarry's s 154–174.5,
 clear of the Q4 frame, with no ramp off that end) and a plank crossing over both tracks: at Far Head by today's
 platform's end ramp, at the Quarry (whose two platforms overlap along the line) just before the offset platform's start
-ramp, its planks running on to a pad at that ramp's foot so you step straight onto it; they drop in with the original halt and have their homeward lever and signal, without a second board. To make room the hook pillar p2 and its
+ramp, its planks running on to a pad at that ramp's foot so you step straight onto it (the ramp starts level with the planks'
+top since 18 November, not 0.26 m below them on the ground; it rises 0.50 m at about 5°); they drop in with the original halt and have their homeward lever and signal, without a second board. To make room the hook pillar p2 and its
 walk stand 11 m out at s 89.5 (the hook device moved with it, accepted there by the server; the walk rises round
 the pillar's far side from t0, so t0 still needs the hook), p1's lip ends at the
 wider deck's edge, both line-2 gates span both tracks (slab 10.4 m, centred 2 m left) and the ridge trestle's left

@@ -41,6 +41,7 @@ import { frameBesideLine, stationColliders, stationStockCollider } from '../../s
 import type { Box } from '../../src/render/box-plan.ts';
 import { H } from '../../src/place/terrain.ts';
 import { ISLAND } from '../../src/place/home-station.ts';
+import { crossingFootY } from '../../src/prefab/halt-crossing.ts';
 
 export type Deck = { id: string; owner: string; center: THREE.Vector3; axes: THREE.Vector3[]; half: number[] };
 
@@ -322,7 +323,7 @@ export function timberDecks(): Deck[] {
       rz = c.z - -sign * 0.4 * sn + shelter * cs;
     if (island) decks.push(standing(`${name}/roof`, file, c.x, low + 4.6, c.z, width + 1.3, 0.3, half * 2 + 0.3, yaw));
     else decks.push(standing(`${name}/roof`, file, rx, low + 3.2, rz, 2.7, 0.3, 8.4, yaw));
-    const ramp = (id: string, from: { x: number; z: number }, to: { x: number; z: number }) =>
+    const ramp = (id: string, from: { x: number; z: number }, to: { x: number; z: number }, foot?: number | null) =>
       decks.push(
         between(
           `${name}/${id}`,
@@ -331,7 +332,7 @@ export function timberDecks(): Deck[] {
           from.z,
           to.x,
           to.z,
-          piles ? railY(line, s0 - head) + 0.05 : H(from.x, from.z) + 0.05,
+          foot ?? (piles ? railY(line, s0 - head) + 0.05 : H(from.x, from.z) + 0.05),
           low,
           width,
           0.4,
@@ -339,7 +340,10 @@ export function timberDecks(): Deck[] {
       );
     const head = island ? ISLAND.headRamp : (('headRamp' in rest ? rest.headRamp : undefined) ?? 6),
       end = island ? ISLAND.endRamp : 6;
-    ramp('ramp-start', lateral(line, s0 - head, lat), lateral(line, s0, lat));
+    // A start ramp the plank crossing meets starts at the planks' top (src/prefab/halt-ramps.ts).
+    const upRow = OFFSET_HALTS.findIndex((u) => u.name === name),
+      planks = upRow < 0 ? null : crossingFootY(upRow, head);
+    ramp('ramp-start', lateral(line, s0 - head, lat), lateral(line, s0, lat), planks);
     if (endRamp && !piles) ramp('ramp-end', lateral(line, s1 + end, lat), lateral(line, s1, lat));
     if (!island && !piles) ramp('ramp-back', lateral(line, mid, lat + sign * 7), lateral(line, mid, lat + sign * 1.25));
   }

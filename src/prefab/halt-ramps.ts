@@ -4,6 +4,7 @@ import { ISLAND } from '../place/home-station.ts';
 import { H } from '../place/terrain.ts';
 import { SEA } from '../constants.ts';
 import { haltFrame } from './halt-deck.ts';
+import { crossingFootY } from './halt-crossing.ts';
 import type { JsonObject, Placement } from './types.ts';
 
 export function haltRamps(id: string, params: JsonObject): Placement[] {
@@ -50,7 +51,9 @@ export function haltRamps(id: string, params: JsonObject): Placement[] {
   };
   const head = island ? ISLAND.headRamp : (('headRamp' in h ? h.headRamp : undefined) ?? 6),
     end = island ? ISLAND.endRamp : 6;
-  ramp(at(h.s0, h.lat), at(h.s0 - head, h.lat), water ? railY(line, h.s0 - head) + 0.05 : undefined);
+  // Where the plank crossing meets the start ramp's foot, the ramp starts at the planks' top: no step at the join.
+  const planks = up ? crossingFootY(params.row as number, head) : null;
+  ramp(at(h.s0, h.lat), at(h.s0 - head, h.lat), planks ?? (water ? railY(line, h.s0 - head) + 0.05 : undefined));
   if (!water && (!up || ('endRamp' in h && h.endRamp))) ramp(at(h.s1, h.lat), at(h.s1 + end, h.lat));
   if (!water && !island) ramp(at(mid, h.lat + Math.sign(h.lat) * 1.25), at(mid, h.lat + Math.sign(h.lat) * 7));
   return placements;
