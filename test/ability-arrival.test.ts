@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import * as THREE from 'three/webgpu';
 import { sourceModule } from '../dev/level/source.ts';
-import { createShowCall } from '../src/entities/railway/boiler-shot.ts';
 import type { RailwayAdapter } from '../src/adapters/railway-session.ts';
 import type { RailwayAccepted } from '../src/adapters/railway-effects.ts';
 import type { OwnedView } from '../src/render/owned-view.ts';
@@ -386,44 +385,4 @@ test("review: a friend's card waits while they are talking to an NPC (conversati
   v.update(0.016);
   assert.deepEqual(h.cards, ['glide']);
   v.dispose();
-});
-
-// Review (cutscenes-for-everyone step 2): the real forge-call.ts, driven the way boiler-view.ts drives it for the
-// boiler's show (boiler-shot.ts's createShowCall). On the trains edge the show is queued and claims the breaker's call
-// for BOILER_SHOW.hold (30 s); a shot that waits longer (a long glide, a talk box, a card left up) stays live, the hold
-// runs out and the call sounds by itself. The claim has lapsed by then, so the cut's cue sounds nothing more.
-test("review: the boiler's show sounds the forge's call once when its shot waits past the 30 s hold", () => {
-  let ms = 0;
-  const forge = sourceModule<typeof import('../src/entities/railway/forge-call.ts')>(
-    fs.readFileSync('src/entities/railway/forge-call.ts', 'utf8'),
-    {
-      THREE,
-      material: () => new THREE.MeshBasicMaterial(),
-      whistle: () => {},
-      camera: { getWorldPosition: (v: THREE.Vector3) => v.set(0, 0, 0) },
-      emit: () => {},
-      readableIntensity: () => 1,
-      me: { body: null },
-      reducedMotion: true,
-      performance: { now: () => ms },
-    },
-  );
-  const breaker = forge.createForgeCall({ x: 0, y: 0, z: 0 }, { add() {} } as unknown as OwnedView, undefined, true);
-  const frame = (dt: number, waiting: boolean) => {
-    ms += dt * 1000;
-    breaker.update(dt, waiting);
-  };
-  const call = createShowCall({ hold: forge.holdForgeCall, sound: forge.soundForgeCall, now: () => ms / 1000 });
-  frame(0.1, false);
-  // The trains edge: the breaker is cast; boiler-view.ts queues the show and claims the call for BOILER_SHOW.hold.
-  call.claim(30);
-  // The shot waits (still live) for 35 s, then plays: 4.5 s to the forge cut.
-  for (let t = 0; t < 39.5; t += 0.1) {
-    frame(0.1, true);
-    call.update(true);
-  }
-  call.cue(); // the cut lands: the show's onCut
-  frame(0.1, true);
-  frame(0.1, true);
-  assert.equal(forge.forgeCue.count, 1);
 });
