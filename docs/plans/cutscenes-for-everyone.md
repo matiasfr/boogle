@@ -216,7 +216,7 @@ Each step leaves `node dev/ship-check.ts` green, updates its `place.md` lines, a
   cards on a friend's page (same code path, unit test covers the glider); the jump card after the multi-axe card in
   the seated run (the capture ended with the first card up); anything on a device.
 
-- [ ] **2. The boiler's show, for everyone.** Files: `boiler-shot.ts` (new), `boiler-view.ts`, `line2-view.ts`,
+- [x] **2. The boiler's show, for everyone.** Files: `boiler-shot.ts` (new), `boiler-view.ts`, `line2-view.ts`,
   `view.ts`, `ability-arrival.ts` (`markShown`), `place.md:408`, `:857`. As in "The boiler's show" above. The pull-out
   brings the existing rules (card queue, glide wait, vehicle seat, reduced motion, the 0.8 s Interact skip). Never on
   restore: `boiler-view.ts`'s `restore()` already sets `wasAwake`.
@@ -229,6 +229,65 @@ Each step leaves `node dev/ship-check.ts` green, updates its `place.md` lines, a
   Also a still of the first frame of the cut, and one solo run under `?reducedMotion` (no shot; the forge call at its
   old time). The eval's existing PASS line for "one boiler flourish" changes to "no flourish, the show played".
   *Risk: medium (line2-view.ts hotspot, forge-call timing). Independent review: yes.*
+  **Built (2026-11-18):** as written, with four changes. (a) The shot cuts in and cuts home (`back` 0.001 s), also when
+  no breaker waits: a friend may be a kilometre off and a blend that far is a smear. (b) The numbers moved off the plan's
+  first guess. The camera stands on the track's north (hill) side, not the south: from the south it stood on the halt's
+  platform, and the halt dropping in on the same edge put its roof slab, sign and signal post across the foreground
+  (looked at). Settled, in metres from the loco's middle (3.7 m east of `LINE2_OLD_TRAIN`; x along the track, z beside
+  it, y over the ground under the loco): from (6, 2.6, -8), drifting to (9, 4.2, -11) over the 4.5 s leg, looking at
+  (1.5, 2.6, 0), and never less than 1.6 m over the ground under the camera. The breaker's cut is `forgeCut('breaker')`
+  unchanged; 7 s in all with it, 4.5 s without. (c) A resync (view.ts's soft rebuild) did not reach `boiler.restore()`,
+  so a reconnect after the edge would have played the show: `line2.resynced()` now sets `wasAwake` there. (d)
+  `reward.ts` forwards `arrival.markShown` (one line; it was in the Files table but not in this step's brief). If the
+  queued shot is later dropped (a vehicle's seat taken while it waits or plays), the forge's call sounds at once (see
+  the review note below for the flourish). The pull-out already waits while `inputState.held` is set and
+  never writes it, so the show neither comes up over a talk box, the garage panel or the fall nor frees input under them.
+  The eval's friend now checks the show (queued on the edge, past 4.6 s, home facing the forge, no card or hold, no
+  flourish) and both pages log `BOILER SHOW HERE` (shot, when the call sounded). One new test in
+  `test/ability-arrival.test.ts`.
+  **Seen** (two players, `--warp-speed 2`): the friend's page cuts from the village to the loco (first frame:
+  [train](cutscenes-for-everyone/boiler-show-train.png), the red loco three-quarters front, the first wisp over the
+  chimney), the wake's dark coughs rise in a column, the halt's roof drops in behind the train and the little guys run
+  in; 4.47 s later it cuts to the breaker lying on the pedestal under the crane's hook
+  ([forge](cutscenes-for-everyone/boiler-show-forge.png)), and 2.5 s later home behind Buddy. The eval: longest 6.98 s,
+  one forge turn, no flourish, `boiler` marked seen. Solo under `--reduced-motion`: no shot, the call 3.0 s after the
+  trains edge, no camera cut in the clip. The fitter's "two little guys at the saddle before the wake ends" check fails
+  on this branch and on `origin/main` alike (same command, 20 s capture), so it is not this step's (see below).
+  **Not seen:** the show on a page with a card up or gliding at the edge (the pull-out's existing waits); a seat taken
+  mid-show; the hand-back's turn toward the forge as a picture (the eval counts it); sound from the shot's camera (the
+  clip is silent); a reload after the edge (restore sets `wasAwake`, read in code only); anything on a device.
+  **After the independent review (2026-11-18):** (P2) a show that waited past its 30 s hold sounded the forge's call
+  twice: once by itself as the hold ran out, again on the cut. The claim is now `createShowCall` (`boiler-shot.ts`):
+  held for 30 s, cued once on the cut, the hand-back or a dropped shot, and at its deadline it lapses *without* a cue,
+  because forge-call.ts sounds a held call by itself then and sounds it again on every later cue (the pier's
+  reminder), so the review's "cue at the deadline" would still have sounded it twice (its test said 2 calls; 1 with the
+  lapse). That test passed against the fix and was then dropped: docs/agents/tests.md keeps unit tests to lockstep code.
+  (P3) The boiler's moment is no longer marked shown when the show is queued: `ability-arrival.ts` `showing(key,
+  state)` holds the flourish back in memory while it is queued, spends it (`seen`) once the shot is on screen, and lets
+  it come if the show is dropped unseen (a seat taken, another shot on the camera, a fresh start, a refused fit); a
+  reload while queued forgets the hold, so the late flourish comes. (P3) A refused `rail.boilerFit` (the fitter's
+  prediction) cancels a queued or playing boiler show and drops its claim; the real fit's edge plays it again. (P3) The
+  eval asserts the forge's call sounds exactly once, at 4.5 s with a shot and 3.1 s without (0.6 s either way), on
+  each page it runs, and traces the camp's little guys from the fit. Rerun (two players, `--warp-speed 2`): every
+  friend check passed; the call sounded once, at 4.49 s on the friend's page and 4.55 s on the fitter's; the show ran
+  6.91 s and came home facing the forge; no flourish.
+  **The little guys' check is stale, not a defect of the show.** `train-view.ts` calls `folk.boltAt` from the
+  accepted `rail.boilerFit`, at the fit; the bolt lasts 5 s (at least 2 after they arrive). The eval waits for
+  `line2Trains` before checking, and that edge now comes once the depot cart rests: about 12 s after the press in
+  every run (press frame 859, trains 1616; 855 and 1660 earlier). Solo, at the trains edge and 300 ms after it, three of
+  camp 0's little guys were on 7 to 11 m from the saddle and `bolting()` was null: the bolt had come and gone.
+  **After the re-check (2026-11-18):** a cut landing on the very frame the 30 s hold ran out still sounded the call twice
+  (the breaker's call sounds in works.update before line 2's update runs the shot's onCut): `createShowCall`'s cue now
+  sounds nothing on or past its deadline, and the deadline is taken before the hold; the unused `held` went. The
+  re-check's test failed (2 calls) before the fix and passed after; it and the earlier one were dropped (test diet).
+  The eval's little-guys check now samples the most of them at the saddle from the press and needs 2 before the trains
+  start (it still fails if they never come). Rerun, two players, `--warp-speed 2`: verdict pass
+  (`.look/boiler-show-4-verdict.json`, commit 58530118, clean tree), every check on both pages reached. The fitter: 2
+  little guys at the saddle before the trains came (7.2 s after the press), the call once at 4.55 s, no flourish. The friend: the cut to the
+  loco, 4.5 s later the breaker cut, 2.5 s later home (6.98 s), the call once at 4.55 s, no card, hold or flourish.
+  **Known, left as they are:** the forge leg is decided when the show is queued, not at the cut, so a breaker taken
+  while the show waits still gets its cut (review P3-3); and every show shares one camera slot (`switchCamera` keeps
+  one pending shot, so a later show replaces a queued one), which is older than this branch (review P3-4).
 
 - [ ] **3. (Only if the owner says yes to open question 2.) The "Steam" card after the show, for every page.** File:
   `boiler-view.ts`: `BOILER_CARD = true`. The card is owed from the trains edge to every page (not only `fittedByMe`)

@@ -106,6 +106,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     reward.youGot,
     () => demo(),
     reward.gettingItem,
+    reward.showing,
   );
   const hook = await createRailwayHook(adapter, owner);
   demo = hook.demo;
@@ -464,6 +465,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       if (hard) snapshot();
       else if (rebuild === 'soft' && Math.abs(head() - visualHead) > 12) restoreMotion();
       if (rebuild === 'soft') {
+        line2.resynced();
         trains.restore();
         halts.restore();
         hoist?.restore();

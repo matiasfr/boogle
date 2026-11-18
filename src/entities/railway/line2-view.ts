@@ -76,6 +76,7 @@ import { stockSign } from './stock-sign.ts';
 import { createCameraPullOut } from '../../render/camera-pull-out.ts';
 import { playSharedMoment } from './shared-moment.ts';
 import { seaInstallShot } from './sea-gate-shot.ts';
+import { boilerShot } from './boiler-shot.ts';
 import { uiSound } from '../../ui/ui-sound.ts';
 
 /** Rail pairs each stretch lays, one per commit. */
@@ -107,6 +108,9 @@ export async function createRailwayLine2(
   youGot: (got: Got) => boolean,
   hookShown?: () => void,
   rewardBusy: () => boolean = () => false,
+  /** A show of a moment on this page (ability-arrival.ts): a page that played the boiler's show gets no boiler
+   * flourish; one whose show was dropped unseen does. */
+  showing: (key: string, state: 'queued' | 'played' | 'dropped') => void = () => {},
 ) {
   const [layout, stations, pieces, land, plans, tech, shapes, flatMod, sounds, look, kit, props, carry] =
     await Promise.all([
@@ -129,7 +133,7 @@ export async function createRailwayLine2(
   // The same pull-out as Place's glider reveal, now owned by this view and queued behind its reward cards.
   const switchCamera = createCameraPullOut(rewardBusy, true);
   owner.cleanup(() => switchCamera.dispose());
-  let switchKind: 'sea' | 'quarry' | 'seaInstall' | 'farHead' | 'pier' | 'forgeAxe' | null = null;
+  let switchKind: 'sea' | 'quarry' | 'seaInstall' | 'farHead' | 'pier' | 'forgeAxe' | 'boiler' | null = null;
   // The hand-back from a forge cut (far-head-view.ts, pier-view.ts): a player on foot whose camera the shot took comes
   // home looking toward the forge (design review call 5). Not a rider, a glider in the air or someone hauling: their
   // camera has a job already. Reduced motion plays no shot, so it never gets here.
@@ -615,7 +619,42 @@ export async function createRailwayLine2(
   const boiler = createRailwayBoiler(
     adapter,
     owner,
-    { land, props, carry, engine: await import('./engine-kit.ts'), sounds, pieces, flat, youGot },
+    {
+      land,
+      props,
+      carry,
+      engine: await import('./engine-kit.ts'),
+      sounds,
+      pieces,
+      flat,
+      youGot,
+      // The boiler's show (boiler-shot.ts): the old train waking, then the breaker at the forge when it waits there.
+      shot: (cue) => {
+        const breaker = worksPreview() && worksRow(rd.world()).breaker === 1;
+        const s = boilerShot(land.H, breaker);
+        const queued = switchCamera.play(point(s.from), point(s.to), point(s.at), s.seconds, s.drift, {
+          cutIn: true,
+          back: s.back,
+          end: s.end ? { pos: point(s.end.pos), to: point(s.end.to), at: point(s.end.at) } : undefined,
+          onCut: cue,
+          onHome: () => {
+            cue();
+            if (breaker) faceForge();
+          },
+        });
+        if (queued) switchKind = 'boiler';
+        return queued;
+      },
+      shotState: () => {
+        if (switchKind !== 'boiler') return 'none';
+        const camera = switchCamera.inspect();
+        return camera.active ? 'playing' : camera.pending ? 'queued' : 'none';
+      },
+      cancelShot: () => {
+        if (switchKind === 'boiler') switchCamera.cancel();
+      },
+      showing: (state) => showing('boiler', state),
+    },
     chimneyTop,
   );
   const pier = createRailwayPier(owner, {
@@ -1072,6 +1111,8 @@ export async function createRailwayLine2(
       restore();
       wasWorking = working();
     },
+    /** A resync (view.ts's soft rebuild): nothing that happened meanwhile plays its show. */
+    resynced: () => boiler.resync(),
     update(dt: number) {
       switchCamera.update(dt);
       // The frame's rows: the world is read once, here, and so is the tick; nothing below holds a row across a call

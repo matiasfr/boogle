@@ -146,6 +146,28 @@ test('a peer still gets the boiler flourish once, at the wake', () => {
   v.dispose();
 });
 
+test("a peer whose page played the boiler's show gets no flourish; one whose show was dropped unseen gets it", () => {
+  for (const end of ['played', 'dropped'] as const) {
+    const h = harness();
+    const { v, fit } = h.mount('b');
+    v.update(4);
+    fit('a');
+    v.update(30);
+    // boiler-view.ts queues the show on the trains edge, before this file's update in the same frame (view.ts's order).
+    h.w.trains = 3376;
+    v.showing('boiler', 'queued');
+    v.update(0.1);
+    v.update(4);
+    assert.deepEqual(v.inspect().keys, [], 'no flourish while the show is queued');
+    v.showing('boiler', end);
+    v.update(0.1);
+    v.update(4);
+    assert.deepEqual(v.inspect().keys, end === 'played' ? [] : ['boiler'], end);
+    assert.equal(v.seen.has('boiler'), true);
+    v.dispose();
+  }
+});
+
 test('a fitter reloading during the wait retains attribution in local storage', () => {
   const h = harness();
   const first = h.mount('a');

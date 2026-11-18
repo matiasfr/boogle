@@ -14,8 +14,10 @@
 // the server has accepted it, reward.ts); a friend who heard the wake accepted gets theirs as the wake finishes. The
 // proper axe is the chest's, and the pack frame (the forge's chest, a back of 16 for everyone) works the same. A late
 // flourish for an axe has no charge ring: a small model of it pops up over Buddy and settles away. The boiler has no
-// card (boiler-view.ts's BOILER_CARD): the fitter has the wake, everyone else the flourish with a small boiler over
-// Buddy (boiler-first-choice plan, step 9). The keener edge (separate capacities, step 4: a hit gives 2 once Station 3 is
+// card (boiler-view.ts's BOILER_CARD): every page whose camera played the boiler's show (boiler-shot.ts) has had its
+// moment (`showing`: held back while it is queued, seen once it is on screen, released if it is dropped unseen); a page
+// with no shot (reduced motion, a vehicle's seat, a dropped one) gets the flourish with a small boiler over Buddy
+// (boiler-first-choice plan, step 9), as does one that wasn't there. The keener edge (separate capacities, step 4: a hit gives 2 once Station 3 is
 // funded) has no card, no words and no finder: everyone, the funder included, gets the multi-axe's flourish when they
 // are next free, as the machine starts the trestle (or on a later first landing).
 //   update(dt)                  owed cards, late flourishes, the charge mark, the first-jump teach and the first-fall
@@ -170,6 +172,9 @@ export function createAbilityArrival(
    * missing them until then, so the fresh-start forgetting below leaves it alone; it is dropped instead when the state
    * stops having begun for the reset grace (a fresh start mid-wake), counted in seconds here. */
   const owed: string[] = [];
+  /** Moments a show on this page has queued (Local, in memory): their flourish waits while it is, and a reload forgets
+   * it, so a show that never reached the screen leaves the late flourish. */
+  const showing = new Set<string>();
   const heard = new Map<string, number>();
   const owe = (key: string) => {
     const ability = ABILITIES.find((a) => a.key === key);
@@ -311,6 +316,13 @@ export function createAbilityArrival(
 
   const api = {
     seen,
+    /** A show of this moment on this page (the boiler's): `queued` holds its flourish back, `played` (on screen) has
+     * shown it, `dropped` (never on screen: a seat taken, another shot, a refused fit) lets the flourish come. */
+    showing(key: string, state: 'queued' | 'played' | 'dropped') {
+      if (state === 'queued') showing.add(key);
+      else showing.delete(key);
+      if (state === 'played') seen.add(key);
+    },
     inspect: () => ({
       ...stats,
       keys: [...stats.keys],
@@ -391,7 +403,9 @@ export function createAbilityArrival(
       // Late: one flourish per ability gained while away, on the first landing, one after another.
       lateWait = Math.max(0, lateWait - dt);
       if (free && !due && !lateWait) {
-        const missed = ABILITIES.find((a) => a.has(look) && !seen.has(a.key) && !owed.includes(a.key));
+        const missed = ABILITIES.find(
+          (a) => a.has(look) && !seen.has(a.key) && !owed.includes(a.key) && !showing.has(a.key),
+        );
         if (missed) {
           flourish(missed.key, !(missed.atState && watched.has(missed.key)));
           lateWait = 1.2;

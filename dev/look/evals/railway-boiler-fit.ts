@@ -6,8 +6,10 @@
 // presses "Fit the boiler" once the friend has moved, so the press falls inside the capture.
 // npm run look -- --rail-seed boiler-camp --players 2 --eval dev/look/evals/railway-boiler-fit.ts
 //   --until window.__boilerShot --seconds 10 --video
-//   --question "Does the friend get one boiler flourish where they stand, and keep walking through it?"
-// BOILER lines: the friend's `reward.arrival` before the fit, after it and as a trace every 100 ms; PASS/FAIL checks.
+//   --warp-speed 2
+//   --question "Does the friend's page cut to the old train waking, then to the breaker at the forge, and come home facing it?"
+// BOILER lines: the friend's `reward.arrival` and line 2's switch camera before the fit, after it and as a trace every
+// 100 ms; PASS/FAIL checks. The boiler's show (cutscenes-for-everyone plan, step 2) replaces the friend's flourish.
 // Solo (no `--players`, step 8's press as an `--action`): take it, walk to the saddle and fit it, watched side-on;
 // BOILER PRESS logs the view frame of the press, the frame the boiler first moved and the frame trains were accepted.
 // npm run look -- --rail-seed boiler-camp --action dev/look/evals/railway-boiler-fit.ts --video --seconds 14
@@ -30,6 +32,9 @@ const { teleport } = (await import(
 )) as typeof import('../../../src/physics/engine.ts');
 const { INTERP_MS } = (await import('/src/constants.ts' as string)) as typeof import('../../../src/constants.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
+const { forgeCue } = (await import(
+  '/src/entities/railway/forge-call.ts' as string
+)) as typeof import('../../../src/entities/railway/forge-call.ts');
 
 type P = { x: number; y: number; z: number };
 type BoilerView = P & {
@@ -48,6 +53,10 @@ const read = () => inspectRailway()!;
 const trainsOn = () => line2Trains(rw());
 const boiler = () => (read().line2View as unknown as { boiler: BoilerView }).boiler;
 const arrival = () => read().reward.arrival;
+type SwitchCamera = { active: boolean; pending: boolean; seconds: number; kind: string | null; forgeTurns: number };
+const camera = () => (read().line2View as unknown as { switchCamera: SwitchCamera }).switchCamera;
+const guys = () =>
+  (read().line2View as unknown as { bolting: { left: number; guys: number; here: number } | null }).bolting;
 function check(ok: unknown, label: string) {
   console.log(`BOILER ${ok ? 'PASS' : 'FAIL'} ${label}`);
   if (!ok) throw new Error(`BOILER FAIL ${label}`);
@@ -70,6 +79,37 @@ const landed = () => !!me.body && me.coyote > 0 && !me.swimming && !!railRead()?
 const near = (p: { x: number; z: number } | null, q: { x: number; z: number }, r: number) =>
   !!p && Math.hypot(p.x - q.x, p.z - q.z) < r;
 const bot = makeBot({ doneFlag: '__boilerDone' });
+
+/** This page's side of the boiler's show for 8 s from the trains edge (`from`, performance ms): whether a shot came
+ * up, and the forge's call, which sounds exactly once: as the show's forge cut lands (4.5 s in) or, with no shot
+ * (--reduced-motion, a vehicle's seat), at the wake's end (3.1 s, its time before the show). Reported on its own, so a
+ * later check failing first does not hide it. */
+function watchCall(from: number, label: string) {
+  const cues = forgeCue.count;
+  let shot = false,
+    calledAt = -1;
+  const watching = new Promise<void>((resolve) => {
+    const tick = setInterval(() => {
+      const c = camera();
+      shot ||= c.kind === 'boiler' && (c.active || c.pending);
+      if (calledAt < 0 && forgeCue.count > cues) calledAt = (performance.now() - from) / 1000;
+      if (performance.now() - from < 8000) return;
+      clearInterval(tick);
+      resolve();
+    }, 20);
+  });
+  background(
+    watching.then(() => {
+      const calls = forgeCue.count - cues,
+        due = shot ? 4.5 : 3.1;
+      console.log(
+        `BOILER SHOW HERE ${JSON.stringify({ label, shot, calls, calledAt: +calledAt.toFixed(2), due, flourish: arrival().keys.includes('boiler') })}`,
+      );
+      check(calls === 1 && Math.abs(calledAt - due) <= 0.6, `${label}: the forge's call sounds once, at ${due} s`);
+    }),
+    `boiler call ${label}`,
+  );
+}
 
 async function fit() {
   if (!solo) w.__boilerShot = true; // the friend's page times the capture; this page must not hold the warm-up
@@ -97,14 +137,36 @@ async function fit() {
   await wait(1500);
   let acceptedFrame = -1;
   const watch = setInterval(() => {
-    if (acceptedFrame < 0 && trainsOn()) acceptedFrame = boiler().frame;
+    if (acceptedFrame >= 0 || !trainsOn()) return;
+    acceptedFrame = boiler().frame;
+    watchCall(performance.now(), solo ? 'solo' : 'fitter');
   }, 0);
+  // The camp's little guys answer the fit itself (train-view.ts calls folk.ts boltAt on the accepted rail.boilerFit,
+  // for about 5 s), and the trains start only once the depot cart rests, seconds later. So the most of them at the
+  // saddle is sampled from the press and must reach 2 before the trains start; the trace logs each change.
+  let mostHere = 0,
+    hereAtTrains = -1,
+    lastBolt = '';
+  const bolts: unknown[] = [];
+  const boltFrom = performance.now();
+  const boltWatch = setInterval(() => {
+    if (hereAtTrains >= 0) return;
+    const g = guys();
+    mostHere = Math.max(mostHere, g?.here ?? 0);
+    const row = JSON.stringify(g ?? null);
+    if (row !== lastBolt) bolts.push({ t: Math.round(performance.now() - boltFrom), ...(g ?? { none: true }) });
+    lastBolt = row;
+    if (trainsOn()) hereAtTrains = mostHere;
+  }, 20);
   check(await bot.use(saddle.x, saddle.z, 'fit the boiler', /^Fit the boiler$/), 'boiler fit offered');
   // Read synchronously after the press, before any server message can be handled.
   const flying = boiler().fitting,
     atPress = { phase: flying?.phase ?? null, trains: trainsOn() };
   check(await bot.work(() => trainsOn(), 30000, 380), 'boiler fitted');
   clearInterval(watch);
+  clearInterval(boltWatch);
+  if (hereAtTrains < 0) hereAtTrains = mostHere;
+  console.log(`BOILER BOLT TRACE ${JSON.stringify({ hereAtTrains, trains: Math.round(performance.now() - boltFrom), bolts })}`);
   await bot.until(() => !boiler().fitting, 3000, 'landed');
   const f = boiler().lastFit;
   console.log(
@@ -112,12 +174,7 @@ async function fit() {
   );
   check(atPress.phase === 'fly' && !atPress.trains, 'the flight starts on the press, before any answer');
   check(f && f.movedFrame === f.pressFrame, 'the boiler leaves the rope on the press frame');
-  const guys = () => (read().line2View as unknown as { bolting: { guys: number; here: number } | null }).bolting;
-  check(
-    await bot.until(() => (guys()?.here ?? 0) >= 2, 3100, 'bolting'),
-    'two little guys at the saddle before the wake ends',
-  );
-  console.log(`BOILER BOLTING ${JSON.stringify(guys())}`);
+  check(hereAtTrains >= 2, 'two little guys at the saddle before the trains start');
   if (solo) {
     await wait(4000);
     const lashed = (read().line2View as unknown as { trains: { lashed: boolean }[] }).trains.map((t) => t.lashed);
@@ -162,28 +219,40 @@ async function friend() {
       card: read().reward.showing,
       badge: a.badge?.map((n) => +n.toFixed(2)),
       keys: a.keys.join(),
+      shot: camera().kind === 'boiler' && camera().active ? +camera().seconds.toFixed(2) : null,
+      turns: camera().forgeTurns,
     });
   }, 100);
   // Walk to and fro by the village while it happens: a held input would stop Buddy.
   const p = me.body!.position;
   const home = { x: p.x, z: p.z };
   const walking = (async () => {
-    for (let k = 0; k < 4 && !(trainsOn() && arrival().keys.includes('boiler')); k++)
+    for (let k = 0; k < 4 && !(trainsOn() && camera().kind === 'boiler' && !camera().active); k++)
       await bot.walk(home.x + (k % 2 ? 0 : 6), home.z + 3, 1, { limit: 6000 });
   })();
   await until(() => trainsOn(), 'friend sees trains on', 120000);
-  await until(() => arrival().keys.includes('boiler'), 'friend boiler flourish played', 10000);
-  check(!read().reward.showing && !inputState.held, 'no card and no hold at the boiler flourish');
+  watchCall(performance.now(), 'friend');
+  const turns = camera().forgeTurns;
+  await until(() => camera().kind === 'boiler' && camera().active, 'the boiler show is queued on the trains edge', 1000);
+  let longest = 0;
+  while (camera().kind === 'boiler' && camera().active) {
+    longest = Math.max(longest, camera().seconds);
+    await wait(50);
+  }
+  console.log(`BOILER SHOW ${JSON.stringify({ longest: +longest.toFixed(2), turns: camera().forgeTurns - turns })}`);
+  check(longest > 4.6, 'the show played on past the train into the forge cut');
+  check(camera().forgeTurns === turns + 1, 'the camera came home facing the forge');
+  check(!read().reward.showing && !inputState.held, 'no card and no hold after the show');
   const moving = { x: me.body!.position.x, z: me.body!.position.z };
   await walking;
   await bot.walk(home.x - 4, home.z - 3, 1, { limit: 6000 });
-  check(!near(me.body!.position, moving, 1), 'the friend kept moving after the flourish');
+  check(!near(me.body!.position, moving, 1), 'the friend kept moving after the show');
   await wait(1500);
   clearInterval(trace);
   console.log(`BOILER TRACE ${JSON.stringify(rows)}`);
   const a = arrival();
   console.log(`BOILER AFTER ${JSON.stringify({ flourishes: a.flourishes, late: a.late, keys: a.keys, seen: a.seen })}`);
-  check(a.keys.filter((k) => k === 'boiler').length === 1 && a.late === before.late, 'one live boiler flourish');
+  check(!a.keys.includes('boiler') && a.seen.includes('boiler') && a.late === before.late, 'no flourish, the show played');
 }
 
 background(fitter ? fit() : friend(), `boiler fit ${fitter ? 'fitter' : 'friend'}`);
