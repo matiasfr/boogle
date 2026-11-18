@@ -264,7 +264,12 @@ with the cameras of `dev/look/evals/terrain-draws.ts:17-20` (green: cam 909,24.4
   pixels differ at head and ring, 1.68 % at the green, all walking folk, smoke, the forge fire and the crate pile.
   In 4 s at each pose no moving node sits under a frozen one and no frozen node's world matrix changes; four engines run
   62-80 m over the frozen track, one on Ring Island's side. The railhead traveller is at rest in `ring-joined` (gap
-  closed), and town doors are open doorways with nothing to swing. Not tested on a device.
+  closed), and town doors are open doorways with nothing to swing.
+  Since the gain is small, a frozen node that a later change moves must fail loudly (independent review, 18
+  November): on the dev server `src/debug/frozen-audit.ts` rebuilds every frozen node's matrices from its and its
+  parents' position, rotation and scale every 30 frames and names any mismatch in a `console.error`, which looks and
+  scenarios count as a failure. Clean at spawn (672 frozen, 0 reported); lifting the far-ground tiles 2 m in a look
+  reported the group and its tiles and failed the run. Production builds drop it. Not tested on a device.
   Plan as written: set `matrixAutoUpdate = false` (one `updateMatrix()` after placing),
   as `src/render/instances.ts:143` does, on the far-ground tile group (`far-ground.ts:128`), the track chunk batches
   (`lookTrack`), the sickle backdrop root, Ring Island's ground and static prefab placements under

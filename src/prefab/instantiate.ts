@@ -296,7 +296,7 @@ export function instantiate(
   }
   owner.add(root);
   if (parent) parent.root.add(root);
-  root.updateWorldMatrix(true, true);
+  root.updateWorldMatrix(true, true, options.still === true);
   // render/instances.ts freezeInPlace, inline: audit tests run this file with its imports bound by hand.
   if (options.still)
     root.traverse((o) => {
