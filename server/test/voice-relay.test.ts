@@ -12,6 +12,7 @@ import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { worldRoomId } from '../../src/world/namespace.ts';
 
 type Msg = Record<string, any>;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const FAST = { reconnectGraceMs: 200, housekeepMs: 50, log: () => {} };
 async function start() {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-voice-relay-'));
@@ -21,14 +22,40 @@ async function start() {
 }
 const roomUrl = (base: string, room: string, self: string) =>
   `${base}/room/${room}?self=${self}&pid=${self}pid&key=${self}pidkey0000000000&b=test`;
+let beat = 0;
+const answered = (echo: Promise<void>, self: string) =>
+  Promise.race([
+    echo,
+    new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error(`${self}: no heartbeat echo, the room is not answering`)), 5000).unref();
+    }),
+  ]);
 function connect(base: string, room: string, self: string) {
   const ws = new WebSocket(roomUrl(base, room, self), ['boogle.1']);
   const msgs: Msg[] = [];
-  ws.onmessage = (e) => msgs.push(JSON.parse(String(e.data)));
+  const echoes = new Map<number, () => void>();
+  ws.onmessage = (e) => {
+    const m = JSON.parse(String(e.data)) as Msg;
+    msgs.push(m);
+    if (m.t === 'hb') echoes.get(m.at)?.();
+  };
   const opened = new Promise<void>((r) => (ws.onopen = () => r()));
-  return { ws, msgs, opened, send: (m: Msg | string) => ws.send(typeof m === 'string' ? m : JSON.stringify(m)) };
+  const send = (m: Msg | string) => ws.send(typeof m === 'string' ? m : JSON.stringify(m));
+  /** The room answers a heartbeat only after every frame sent before it on this socket. */
+  const echo = () => {
+    const at = ++beat;
+    send({ t: 'hb', at });
+    return answered(new Promise<void>((r) => echoes.set(at, r)), self);
+  };
+  return { ws, msgs, opened, send, echo };
 }
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+type Client = ReturnType<typeof connect>;
+// The server writes to each socket in order: once the senders' frames are processed, a receiver's own echo arrives
+// after every relay they caused, so absence and counts are checked without guessing a delay.
+async function settle(senders: Client[], receivers: Client[] = []) {
+  await Promise.all(senders.map((c) => c.echo()));
+  await Promise.all(receivers.map((c) => c.echo()));
+}
 const isRtc = (m: Msg) => m.t === 'm' && m.d?.t === 'rtc';
 const inVoice = { t: 'p', s: 1, d: { v: 1, t: 1, vc: 1 } };
 
@@ -44,7 +71,7 @@ for (const kind of ['railway', 'world'] as const)
         x = connect(base, other, 'bbb');
       await Promise.all([a.opened, b.opened, c.opened, x.opened]);
       for (const s of [a, b, c, x]) s.send(inVoice);
-      await sleep(150);
+      await settle([a, b, c, x]);
       const deep =
         '{"t":"m","d":{"t":"rtc","to":"bbb","k":"ice","n":1,"c":' +
         '{"c":'.repeat(2500) +
@@ -74,7 +101,7 @@ for (const kind of ['railway', 'world'] as const)
         d: { t: 'rtc', to: 'bbb', k: 'bye', n: 7, e: { op: 'tune.set' }, w: 1, from: 'ccc' },
         from: 'ccc',
       });
-      await sleep(200);
+      await settle([a], [a, b, c, x]);
       const got = b.msgs.filter(isRtc);
       assert.deepEqual(
         got.map((m) => m.d),
@@ -91,17 +118,11 @@ for (const kind of ['railway', 'world'] as const)
         c.send({ t: 'm', d: { t: 'rtc', to: 'bbb', k: 'ice', n: 1, c: { candidate: 'c' + i } } });
       }
       for (let i = 0; i < 90; i++) a.send({ t: 'm', d: { t: 'honk', v: 1 } });
-      await sleep(400);
+      await settle([a, c], [b]);
       const relayed = b.msgs.filter(isRtc).length - 2;
       assert.ok(relayed > 0 && relayed <= 2 * 60 + 2 * 20, 'relayed ' + relayed);
       const honks = b.msgs.filter((m) => m.t === 'm' && m.d?.t === 'honk').length;
       assert.equal(honks, 90, 'game messages after an rtc flood: ' + honks + '/90');
-      a.send({ t: 'hb', at: 42 });
-      await sleep(100);
-      assert.ok(
-        a.msgs.some((m) => m.t === 'hb' && m.at === 42),
-        'room alive',
-      );
       for (const s of [a, b, c, x]) s.ws.close();
     } finally {
       await svc.close({ save: false });
@@ -115,25 +136,24 @@ test('CONSENT: the server relays a voice signal only between tabs whose presence
     const a = connect(base, id, 'aaa'),
       b = connect(base, id, 'bbb');
     await Promise.all([a.opened, b.opened]);
-    await sleep(100);
     const offer = { t: 'm', d: { t: 'rtc', to: 'bbb', k: 'offer', n: 1, sdp: "v=0 (carries aaa's addresses)" } };
     b.send({ t: 'p', s: 1, d: { v: 1, t: 1 } }); // in the room, never pressed Join voice
     a.send({ t: 'p', s: 1, d: { v: 1, t: 1 } }); // the sender is not in voice either
-    await sleep(100);
+    await settle([a, b]);
     a.send(offer);
-    await sleep(100);
+    await settle([a], [b]);
     assert.equal(b.msgs.filter(isRtc).length, 0, 'neither in voice');
     a.send({ ...inVoice, s: 2 }); // only the sender in voice: a hidden listener's offer would look like this
-    await sleep(100);
+    await settle([a]);
     a.send(offer);
     b.send({ t: 'm', d: { t: 'rtc', to: 'aaa', k: 'offer', n: 1, sdp: 'v=0' } }); // the listener calling in
-    await sleep(100);
+    await settle([a, b], [a, b]);
     assert.equal(b.msgs.filter(isRtc).length, 0, 'the target is not in voice');
     assert.equal(a.msgs.filter(isRtc).length, 0, 'the sender is not in voice');
     b.send({ ...inVoice, s: 2 });
-    await sleep(100);
+    await settle([b]);
     a.send(offer);
-    await sleep(100);
+    await settle([a], [b]);
     assert.equal(b.msgs.filter(isRtc).length, 1, 'both in voice');
     a.ws.close();
     b.ws.close();
@@ -159,27 +179,41 @@ test('BACKPRESSURE: voice signals are not queued without bound onto a socket tha
       ws.once('open', () => ws.send(fixture.auth));
       return ws;
     };
+    // Each socket's presence is processed before the room answers its heartbeat (see connect's echo).
+    const inVoiceNow = (ws: WsSocket, self: string) => {
+      const at = ++beat;
+      const echoed = new Promise<void>((resolve) => {
+        const listen = (data: unknown) => {
+          const m = JSON.parse(String(data)) as Msg;
+          if (m.t !== 'hb' || m.at !== at) return;
+          ws.off('message', listen);
+          resolve();
+        };
+        ws.on('message', listen);
+      });
+      ws.send(JSON.stringify(inVoice));
+      ws.send(JSON.stringify({ t: 'hb', at }));
+      return answered(echoed, self);
+    };
     const victim = open('vvv');
     sockets.push(victim);
     await new Promise((r) => victim.once('open', r));
-    victim.send(JSON.stringify(inVoice));
-    await sleep(100);
+    await inVoiceNow(victim, 'vvv');
     (victim as unknown as { _socket: { pause(): void } })._socket.pause(); // a client that stops reading
     const senders: WsSocket[] = [];
     for (let i = 0; i < 6; i++) {
       const s = open('snd' + i);
       sockets.push(s);
       await new Promise((r) => s.once('open', r));
-      s.send(JSON.stringify(inVoice));
       senders.push(s);
     }
-    await sleep(100);
+    await Promise.all(senders.map((s, i) => inVoiceNow(s, 'snd' + i)));
     const sdp = 'x'.repeat(12000);
     for (let round = 0; round < 12; round++) {
       for (const s of senders)
         for (let i = 0; i < 60; i++)
           s.send(JSON.stringify({ t: 'm', d: { t: 'rtc', to: 'vvv', k: 'offer', n: 1, sdp } }));
-      await sleep(250);
+      await sleep(250); // the flood is sustained: the per-sender signal budget refills between rounds
     }
     assert.ok(maxBuffered > 0, 'the senders were relayed at all');
     assert.ok(
