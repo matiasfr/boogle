@@ -10,7 +10,6 @@ The one record of who is running what, and what the five-job limit is counted fr
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Prefab data step 13, third area: Ring Island (`src/entities/ring-island/`, prefab records and builders) | Prefab data (P2) | `claude/prefab-ring-island` | the heartbeat (HOTBOX), Claude Opus medium delegate | 18 November 13:36 | building (browser: one look) |
 
 ## Where the work stands
 
