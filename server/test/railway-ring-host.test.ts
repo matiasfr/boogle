@@ -1,6 +1,8 @@
 // Ring Island's gap on the real host (docs/plans/ring-island-build1.md, R3b, v27): each ring op judged where its actor
 // stands against where the railhead stands now (its rack, its jib and its lever's platform move out bent by bent), the
-// brace at the gold strut, the rivet over the joint; malformed fields and a stale brace refused without a throw.
+// brace at the gold strut, the rivet over the joint; malformed fields and a stale brace refused without a throw. The
+// railhead re-route (docs/plans/railhead-reroute.md, step 2): the trains' Railhead (`Aperture.stop`) holds at the old
+// head through a haul and moves, with its re-routed trains, at the settle, through a reload and to a late joiner.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -11,9 +13,21 @@ import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
 import { RAIL_HALTS } from '../../src/sim/railway-lines.ts';
-import { RING_BRACE, RING_HEAD, RING_RIVET } from '../../src/sim/railway-ring-layout.ts';
+import { RING_BRACE, RING_HEAD, RING_RIVET, ringAt, ringDeckY } from '../../src/sim/railway-ring-layout.ts';
+import { railheadLever, railheadLeverUp } from '../../src/entities/railway/lever-place.ts';
 import { railwayAtRing, type RingStage } from '../../src/sim/railway-seed-ring.ts';
-import { aperture, buildSeedWorld, chopTo, invariant, type Seed } from '../../test/helpers/rail.ts';
+import {
+  aperture,
+  buildSeedWorld,
+  chopTo,
+  invariant,
+  ringOpen,
+  stopsOf,
+  trains,
+  type Seed,
+} from '../../test/helpers/rail.ts';
+import { LINE2 } from '../../src/sim/railway-lines.ts';
+import { TRAIN_PHASE, trainAlong } from '../../src/sim/railway-train.ts';
 import { legOpen } from '../../src/sim/railway-queries-route.ts';
 import { RAIL_LEGS, legFrame } from '../../src/sim/railway-route.ts';
 import { HAUL, haulEnd, haulSettled, haulTarget, haulU } from '../../src/sim/railway-ring-haul.ts';
@@ -302,6 +316,166 @@ test('reload and late join mid-haul: the checkpoint round-trips moved and from',
       assert.deepEqual(aperture(m.confirmed()), stamp);
       assert.equal(haulU(aperture(m.confirmed()), tick), u, 'resume does not restart the haul');
     }
+  } finally {
+    await r.done();
+  }
+});
+
+// ---------------------------------------------------------------- the railhead re-route (railhead-reroute, step 2)
+/** pairFixture run on by accepted ticks only until a line 2 train is running up to the Railhead 400 m or more short of
+ * it, so it is still on its way when the haul settles (20 m/s, the haul about 12.7 s) and the settle replans it. A
+ * train standing at the Railhead through a whole haul is not a state ordinary ops reach: the pair comes no earlier than
+ * the wagon's arrival (its footings), and its 50-tick dwell, even restarted once by a lever ask, ends before the haul's
+ * at least 127; only the balanced hold keeps one there, by the fleet's phase. So the standing re-route stays the rule
+ * tests' (test/railway-ring.test.ts, by placement), and these drive a running one. Its slot. */
+function runningFixture(): { s: Seed; slot: number } {
+  const s = pairFixture();
+  const far = () =>
+    trains(s.w).findIndex(
+      (r) =>
+        r.phase === TRAIN_PHASE.RUN &&
+        r.to === 4 &&
+        r.track === 0 &&
+        stopsOf(s.w, LINE2)[4]! - trainAlong(r, LINE2, s.t) >= 40000,
+    );
+  for (let guard = 0; far() < 0; guard++) {
+    assert.ok(guard < 6000, 'a train on its way up to the Railhead');
+    advanceWorks(s, 1);
+  }
+  return { s, slot: far() };
+}
+const ringStop = (w: World) => ({
+  stop: aperture(w).stop,
+  head: ringOpen(w).head,
+  railhead: stopsOf(w, LINE2)[4],
+});
+
+test('re-route: mirrors hold the old stop through the haul, then the new stop and re-routed trains in one packet set', async () => {
+  const { s, slot } = runningFixture();
+  const r = await host('reroute-mirrors', s, setters);
+  try {
+    const a = r.connect('s'),
+      b = r.connect('t');
+    r.flush();
+    await setPair(r);
+    const end = haulEnd(aperture(r.w)),
+      old = { stop: 0, head: 0, railhead: RING_HEAD[0]!.s };
+    assert.ok(end - r.tick > 100, 'a whole haul to watch');
+    while (r.tick < end - 1) {
+      await r.ticks(1);
+      assert.deepEqual(ringStop(r.w), old, `the server holds the old stop (tick ${r.tick})`);
+      for (const m of [a, b]) {
+        assert.deepEqual(ringStop(m.confirmed()), old, `a mirror holds the old stop (tick ${r.tick})`);
+        const t = trains(m.confirmed())[slot]!;
+        assert.deepEqual([t.phase, t.to, t.dest], [TRAIN_PHASE.RUN, 4, RING_HEAD[0]!.s], 'bound for the old head');
+      }
+    }
+    // One step: the settle's tick and its flush.
+    await r.ticks(1);
+    assert.equal(r.tick, end);
+    const now = { stop: 1, head: 1, railhead: RING_HEAD[1]!.s };
+    assert.deepEqual(ringStop(r.w), now, 'the server moved the stop at haulEnd');
+    const t = trains(r.w)[slot]!;
+    assert.deepEqual([t.phase, t.to, t.dest], [TRAIN_PHASE.RUN, 4, RING_HEAD[1]!.s], 'and replanned the train to it');
+    for (const m of [a, b]) {
+      assert.deepEqual(ringStop(m.confirmed()), now, 'the mirror has the new stop');
+      assert.deepEqual(trains(m.confirmed()), trains(r.w), 'and the re-routed trains, in the same packet set');
+    }
+  } finally {
+    await r.done();
+  }
+});
+
+test('re-route: a checkpoint mid-haul round-trips stop and re-routes once after reload', async () => {
+  const { s, slot } = runningFixture();
+  const r = await host('reroute-reload', s, setters);
+  try {
+    await setPair(r);
+    const end = haulEnd(aperture(r.w));
+    await r.ticks(60);
+    const stamp = { ...aperture(r.w) },
+      rows = trains(r.w).map((t) => ({ ...t }));
+    assert.equal(stamp.stop, 0, 'mid-haul, the old stop');
+    await r.restart();
+    assert.deepEqual(aperture(r.w), stamp, 'the verified checkpoint keeps stop with the haul');
+    assert.deepEqual(trains(r.w), rows, 'and the train still bound for the old head');
+    const a = r.connect('s');
+    r.flush();
+    assert.equal(aperture(a.confirmed()).stop, 0);
+    const moves: number[] = [],
+      reroutes: number[] = [];
+    let was = aperture(r.w).stop,
+      dest = trains(r.w)[slot]!.dest;
+    while (r.tick < end + 50) {
+      await r.ticks(1);
+      if (aperture(r.w).stop !== was) moves.push(r.tick);
+      if (trains(r.w)[slot]!.dest !== dest) reroutes.push(r.tick);
+      was = aperture(r.w).stop;
+      dest = trains(r.w)[slot]!.dest;
+    }
+    assert.deepEqual(moves, [end], 'the stop moves once, at the settle, after the reload');
+    assert.deepEqual(reroutes, [end], 'the train is replanned once, then');
+    assert.equal(dest, RING_HEAD[1]!.s, 'to the new head');
+    assert.deepEqual(ringStop(a.confirmed()), ringStop(r.w));
+  } finally {
+    await r.done();
+  }
+});
+
+// The re-check of step 3 (halts-view.ts): the Railhead lever stands at the trains' stop through a haul, stepped down to
+// the walkway once the deck leaves it. A player standing at its foot, where the view draws it, asks through the real
+// r:edit at every rule tick of the haul and a little past the settle; the server never refuses the ask for where they
+// stand (railCallPlatform, rail.call's reach and height), and refuses it 15 m homeward. After the settle the lever
+// stands at the new head.
+test('re-route: the lever as drawn through a haul is where the server takes its ask, every tick', async () => {
+  const r = await host('reroute-lever', pairFixture(), setters);
+  try {
+    await setPair(r);
+    const end = haulEnd(aperture(r.w)),
+      call = { op: 'rail.call', id: RAILHEAD, dir: -1 },
+      refused: string[] = [];
+    let down = 0,
+      far = '';
+    while (r.tick <= end + 5) {
+      const stop = aperture(r.w).stop,
+        { u, lat } = railheadLever(stop),
+        up = railheadLeverUp(u, haulU(aperture(r.w), r.tick) / 100),
+        ucm = Math.round(u * 100),
+        latcm = Math.round(lat * 100),
+        y = ringDeckY(ucm) + Math.round(up * 100);
+      if (!up) down++;
+      const foot = ringAt(ucm, latcm);
+      if ((await r.action(call, [foot.x, y, foot.z])) === 'rejected')
+        refused.push(`tick ${r.tick} (stop ${stop}, ${up ? 'deck' : 'walkway'})`);
+      if (!far && !up) {
+        const off = ringAt(ucm - 1500, latcm);
+        far = (await r.action(call, [off.x, y, off.z])) ?? 'none';
+      }
+      await r.ticks(1);
+    }
+    assert.equal(far, 'rejected', 'the reach is judged: 15 m homeward of the lever is refused');
+    assert.ok(down >= 20, 'the lever stood on the walkway through the travel');
+    assert.deepEqual(refused, [], 'the ask is taken at the lever as drawn');
+  } finally {
+    await r.done();
+  }
+});
+
+test('re-route: a mirror joining mid-haul sees the old head, then the new one at the settle', async () => {
+  const r = await host('reroute-late', pairFixture(), setters);
+  try {
+    await setPair(r);
+    const end = haulEnd(aperture(r.w));
+    await r.ticks(HAUL.after + HAUL.ready + 10);
+    assert.ok(r.tick < end && !haulSettled(aperture(r.w), r.tick), 'mid-haul');
+    const late = r.connect('late');
+    r.flush();
+    assert.deepEqual(ringStop(late.confirmed()), { stop: 0, head: 0, railhead: RING_HEAD[0]!.s }, 'the old head');
+    assert.deepEqual(aperture(late.confirmed()), aperture(r.w));
+    assert.ok(haulU(aperture(late.confirmed()), r.tick) > RING_HEAD[0]!.u, 'with the deck already under way');
+    await r.ticks(end - r.tick);
+    assert.deepEqual(ringStop(late.confirmed()), { stop: 1, head: 1, railhead: RING_HEAD[1]!.s }, 'the new head');
+    assert.deepEqual(trains(late.confirmed()), trains(r.w));
   } finally {
     await r.done();
   }

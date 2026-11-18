@@ -24,9 +24,12 @@ export const railheadLever = (head: number, way: -1 | 1 = -1) => ({
   u: (RING_HEAD[head]!.u - (way < 0 ? RING_PLATFORM_LAT.len - LEVER_PLACE.railheadEnd : LEVER_PLACE.railheadOn)) / 100,
   lat: (RING_PLATFORM_LAT.lat0 + LEVER_PLACE.edge) / 100,
 });
-/** The Railhead lever's u on the deck as drawn (`end`, the deck's end in m out: railhead-state.ts `railheadEnd`): the
- * same place on the platform as `railheadLever`, so it rides the hauling deck instead of running ahead to the next head. */
-export const railheadLeverOn = (end: number, way: -1 | 1 = -1) => railheadLever(0, way).u + end - RING_HEAD[0]!.u / 100;
+/** How far the Railhead lever's foot stands over the bow's rails at `u` m with the drawn deck's end at `end` m: on the
+ * deck's platform (its last 25 m) the dais's 0.9 m, behind it the walkway's 0. Through a haul the lever stays at the
+ * trains' stop (docs/plans/railhead-reroute.md, step 3), so once the deck has moved off it the lever stands on the
+ * walkway the old platform left, until the haul settles and it slides out to the new head. */
+export const railheadLeverUp = (u: number, end: number) =>
+  u > end - RING_PLATFORM_LAT.len / 100 && u <= end ? 0.9 : 0;
 /** How far (m) from its platform's middle a lever stands on the joint's and Ring Island's platforms, toward the end
  * its train leaves by: the platforms are 25 and 40 m long and the server takes an ask within 12.6 m of the middle
  * (rail.call), so the very end is out of reach; 9.5 m leaves the prompt's own 1.8 m reach inside it all round. */

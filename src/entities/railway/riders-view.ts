@@ -9,10 +9,18 @@ import { TRADE } from '../../sim/railway-trade-layout.ts';
 import { Town } from '../../sim/railway-components.ts';
 import { routeFar } from '../../sim/railway-queries-trade.ts';
 import { railCallPlatform, trainStops } from '../../sim/railway-queries-trains.ts';
+import { ringHead, ringOpen } from '../../sim/railway-queries.ts';
+import { RING_HEAD } from '../../sim/railway-ring-layout.ts';
+import type { RailPlatform } from '../../sim/railway-lines.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { LINE_HALTS } from '../../sim/railway-train.ts';
 import { line2At } from './line2-path.ts';
 import { folk } from '../../place/folk.ts';
+import { deckPlatform } from './railhead-shape.ts';
+import { railheadEnd } from './railhead-state.ts';
+
+/** Line 2's Railhead halt (its stop): its waiting crowd rides the deck out while the trains' stop waits for the haul. */
+const RAILHEAD = 4;
 
 export function createRiders(adapter: RailwayAdapter, owner: OwnedView) {
   const boards = loadLevelArtifact(kit, compiled.prefabs)
@@ -28,7 +36,7 @@ export function createRiders(adapter: RailwayAdapter, owner: OwnedView) {
     const crowd = {
       count: -1,
       stop: -1,
-      platform: null as ReturnType<typeof railCallPlatform> | null,
+      platform: null as RailPlatform | null,
       tangent: { x: 0, z: 0, ux: 0, uz: 1 },
       at(k: number) {
         const { ux, uz } = crowd.tangent,
@@ -68,16 +76,23 @@ export function createRiders(adapter: RailwayAdapter, owner: OwnedView) {
       const crowd = crowds[end]!;
       const stop = end ? routeFar(w, 0) : route.a;
       const halt = halts.get(stop)!;
-      const platform = railCallPlatform(w, halt, end ? -1 : 1, adapter.read.tickNow());
+      // While the deck hauls out and the trains' stop is still the old head (docs/plans/railhead-reroute.md), the
+      // Railhead's crowd rides the drawn deck's platform, so at the settle it stands on the new one: no 20 m jump. They
+      // still board a train at the old head, as the sim has it (the plan's accepted gap: at most 20 m for about 6 s).
+      const riding = end === 1 && stop === RAILHEAD && ringHead(w) !== ringOpen(w).head;
+      const deckEnd = riding ? railheadEnd() : 0;
+      const platform = riding ? deckPlatform(deckEnd) : railCallPlatform(w, halt, end ? -1 : 1, adapter.read.tickNow());
       const raw = end ? row.wait1 : row.wait0;
       const n = Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;
       // Counts can stay fixed while the route grows or its boarding side changes. Repose on either edge.
-      const moved = stop !== crowd.stop || platform !== crowd.platform;
+      const was = crowd.platform;
+      const moved = stop !== crowd.stop || !was || was.x !== platform.x || was.y !== platform.y || was.z !== platform.z;
       if (n === crowd.count && !moved) continue;
       if (moved) {
         crowd.stop = stop;
         crowd.platform = platform;
-        line2At(stops[stop]! / 100, crowd.tangent);
+        const s = stops[stop]! + (riding ? Math.round(deckEnd * 100) - RING_HEAD[ringOpen(w).head]!.u : 0);
+        line2At(s / 100, crowd.tangent);
       }
       const { ux, uz } = crowd.tangent;
       const facing = end ? -1 : 1;

@@ -78,7 +78,7 @@ import { checkLine1 } from './railway-check-line1.ts';
 import { checkLine2 } from './railway-check-line2.ts';
 import { checkTrains } from './railway-check-trains.ts';
 import { checkWorks } from './railway-check-works.ts';
-import { checkRing } from './railway-check-ring.ts';
+import { checkRing, checkRingStop } from './railway-check-ring.ts';
 import { checkTrade } from './railway-check-trade.ts';
 import { checkSteel } from './railway-check-steel.ts';
 import { checkRoute } from './railway-check-route.ts';
@@ -261,6 +261,8 @@ function checkRailway(w: World, tick: number) {
   for (const j of [...jobs(w), ...qjobs(w)]) if (TIMING_KEYS.some((k) => !railInt(j[k], 60000))) bad('timing');
   checkLine1(w);
   checkLine2(w);
+  // The trains' Railhead first: the trains' check reads it (stopsOf).
+  checkRingStop(w, tick);
   checkTrains(w);
   checkWorks(w);
   checkRing(w);

@@ -148,12 +148,14 @@ export const Train = defineComponent(
  * past bent 6 (0-14; the railhead is at bent 6 + floor(set / 2)), `rack` footings on the railhead rack, `cw`
  * counterweight footings hung on the jib (0-4), `brace` the raised leaf's pawl (1 raised on it, 2 braced, 0 down), and
  * `joined` the tick the rivet was struck (-1 not yet). `moved` is the last pair's accepted rule tick (-1 before any
- * pair), and `from` the traveller end's integer u in cm at that tick (0 before any pair; v46).
+ * pair), and `from` the traveller end's integer u in cm at that tick (0 before any pair; v46). `stop` is the bent the
+ * trains' Railhead stands at (0-7): it follows the head only once the last pair's haul has settled (ringStopTick;
+ * docs/plans/railhead-reroute.md), so the platform goes first and the trains follow.
  * Defined here with the other components (not beside its systems)
  * so the schema has one module and no import cycle. */
 export const Aperture = defineComponent(
   'aperture',
-  { set: 'int', rack: 'int', cw: 'u8', brace: 'u8', joined: 'int', moved: 'int', from: 'int' },
+  { set: 'int', rack: 'int', cw: 'u8', brace: 'u8', joined: 'int', moved: 'int', from: 'int', stop: 'u8' },
   { defaults: { brace: 1, joined: -1, moved: -1 } },
 );
 /** Ring Island's steel works (docs/plans/ring-island-build2.md, R1; rules in ./railway-sys-steel.ts): the kit lying in

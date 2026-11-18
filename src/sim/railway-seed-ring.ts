@@ -16,7 +16,7 @@ import { account, aperture, qjob, rail, trains, works } from './railway-rows.ts'
 import { LINE2_STATIONS, Q7 } from './railway-line2-layout.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { TRAIN_PHASE } from './railway-train.ts';
-import { haulSettled } from './railway-ring-haul.ts';
+import { haulHead, haulSettled } from './railway-ring-haul.ts';
 
 export type RingStage = 'deck-laid' | 'gap-footed' | 'leaf-raised' | 'ring-joined';
 export const RING_STAGES: readonly RingStage[] = ['deck-laid', 'gap-footed', 'leaf-raised', 'ring-joined'];
@@ -61,9 +61,11 @@ function setFootings(s: Seed, more: () => boolean, what: string) {
   }
   settleHaul(s);
 }
-/** Every seed opens at rest; stamps still come solely from accepted footing ops. */
+/** Every seed opens at rest, the trains' Railhead at the build head (ringStopTick); stamps still come solely from
+ * accepted footing ops. */
 function settleHaul(s: Seed) {
   until(s, () => haulSettled(aperture(s.w), s.t), 1000, 'the railhead haul settled');
+  need(aperture(s.w).stop === haulHead(aperture(s.w)), 'the trains follow the settled haul');
 }
 
 function build(s: Seed, stage: RingStage, townFirst = false): Seed {

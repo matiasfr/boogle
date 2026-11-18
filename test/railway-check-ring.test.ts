@@ -1,9 +1,10 @@
-// The load check's ring part (src/sim/railway-check-ring.ts, checkRing): the Aperture row's bounds and order are
-// refused, each with its message. Ported from the review of M8b (archive/review/m8b), whose fuzz found these refusals
-// only in the world check; no other test breaks the Aperture row and asks for a refusal (test/fixtures/
-// railway-bad-worlds.ts lists the old validators' sites, which predate it). A corrupt or hostile save must not load
-// with a leaf down without its weights, or a rivet before the leaf. The set, rack and cw bounds are caught first by
-// footing conservation (those fields are footings), so only brace and joined reach 'ring bounds' here.
+// The load check's ring part (src/sim/railway-check-ring.ts, checkRing and checkRingStop): the Aperture row's bounds
+// and order are refused, each with its message, and the trains' Railhead stop's three invariants. Ported from the
+// review of M8b (archive/review/m8b), whose fuzz found these refusals only in the world check; no other test breaks the
+// Aperture row and asks for a refusal (test/fixtures/railway-bad-worlds.ts lists the old validators' sites, which
+// predate it). A corrupt or hostile save must not load with a leaf down without its weights, or a rivet before the
+// leaf. The set, rack and cw bounds are caught first by footing conservation (those fields are footings), so only
+// brace, joined and stop reach 'ring bounds' here.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { World } from '../src/ecs/index.ts';
@@ -12,15 +13,17 @@ import { stageWorld, worldVerdict } from './helpers/railway-check.ts';
 import type { SeedStage } from '../src/sim/railway-seeds.ts';
 import { RAILWAY_MAX_INT } from '../src/sim/railway.ts';
 import { RING_HEAD } from '../src/sim/railway-ring-layout.ts';
+import { haulEnd } from '../src/sim/railway-ring-haul.ts';
+import { checkRingStop } from '../src/sim/railway-check-ring.ts';
 
 const STAGES = ['deck-laid', 'gap-footed', 'ring-joined'] as const;
-type Fields = Partial<Record<'set' | 'rack' | 'cw' | 'brace' | 'joined' | 'moved' | 'from', number>>;
+type Fields = Partial<Record<'set' | 'rack' | 'cw' | 'brace' | 'joined' | 'moved' | 'from' | 'stop', number>>;
 // Built at module scope, outside the 5 s test timeout (as the golden shards do).
 const bases = new Map<SeedStage, World>(STAGES.map((s) => [s, stageWorld(s)]));
-const verdict = (stage: SeedStage, fields: Fields) => {
+const verdict = (stage: SeedStage, fields: Fields, tick?: number) => {
   const w = bases.get(stage)!.clone();
   Object.assign(w.mut(Aperture, w.ids(Aperture)[0]!)!, fields);
-  return worldVerdict(w);
+  return worldVerdict(w, tick);
 };
 
 // The ring stages' own acceptance is the golden shards' ("seed stage X: the world check accepts it").
@@ -65,4 +68,42 @@ test('haul origin is zero before any pair, otherwise between the first head and 
   assert.equal(verdict('gap-footed', { from: RING_HEAD[0]!.u - 1 }), 'railway: ring haul origin');
   assert.equal(verdict('gap-footed', { from: RING_HEAD[7]!.u + 1 }), 'railway: ring haul origin');
   for (const from of [RING_HEAD[0]!.u, RING_HEAD[7]!.u]) assert.equal(verdict('gap-footed', { from }), null);
+});
+
+// The trains' Railhead (docs/plans/railhead-reroute.md): `stop` follows the build head once the haul has settled.
+// Refusals go through the whole check (the stop's comes before the trains', which read it); an accepted stop that
+// moves a standing train's stop by hand would then fail the trains' check, so acceptance asks checkRingStop alone.
+const stopVerdict = (stage: SeedStage, fields: Fields, tick?: number) => {
+  const w = bases.get(stage)!.clone();
+  Object.assign(w.mut(Aperture, w.ids(Aperture)[0]!)!, fields);
+  try {
+    checkRingStop(w, tick);
+    return null;
+  } catch (e) {
+    return (e as Error).message;
+  }
+};
+
+test("the trains' stop past the build head, or out of its bents, is refused", () => {
+  assert.equal(verdict('deck-laid', { stop: 1 }), 'railway: ring stop past the head');
+  assert.equal(verdict('gap-footed', { stop: 8 }), 'railway: ring bounds');
+  assert.equal(verdict('gap-footed', { stop: -1 }), 'railway: ring bounds');
+  assert.equal(verdict('gap-footed', { stop: 1.5 }), 'railway: ring bounds');
+  assert.equal(verdict('gap-footed', { stop: 7 }), null, 'at the head (the seed as built)');
+});
+
+test("the trains' stop ahead of the deck is refused at the world's tick", () => {
+  // A haul from head 5 told at tick 1000 (set 14, target head 7): until the deck moves it stands at head 5.
+  const haul = { moved: 1000, from: RING_HEAD[5]!.u };
+  assert.equal(verdict('gap-footed', { ...haul, stop: 6 }, 1000), 'railway: ring stop ahead of the deck');
+  assert.equal(stopVerdict('gap-footed', { ...haul, stop: 5 }, 1000), null, 'the stop with the deck');
+  assert.equal(stopVerdict('gap-footed', { ...haul, stop: 6 }), null, 'no tick: the pose is unknown, not refused');
+});
+
+test("the trains' stop behind a settled haul is refused at the world's tick", () => {
+  const haul = { moved: 1000, from: RING_HEAD[6]!.u },
+    end = haulEnd({ set: 14, ...haul });
+  assert.equal(stopVerdict('gap-footed', { ...haul, stop: 6 }, end - 1), null, 'chocking: the stop still behind');
+  assert.equal(verdict('gap-footed', { ...haul, stop: 6 }, end), 'railway: ring stop behind a settled haul');
+  assert.equal(stopVerdict('gap-footed', { ...haul, stop: 7 }, end), null);
 });

@@ -1,6 +1,7 @@
 // Ring Island's gap on the world (docs/plans/ring-island-build1.md, R3b, v27): the ops' gates (the jib before Q7, the
 // brace and counterweight before the gap is footed, the rivet before the leaf is down), brace and weights in either
-// order, repeats that move nothing, the railhead moving out with trains at and running to it, the island opening on
+// order, repeats that move nothing, the trains' Railhead holding at the old head through a haul and moving at its
+// settle with trains at and running to it (docs/plans/railhead-reroute.md), the island opening on
 // the rivet with a train in each of endMoved's cases, Q7's kit at the Pier (call 62), the wagon's ring footings only
 // after Q7 (call 65), footing conservation and an empty pier rack under random ops, a leaver, and the world check on each
 // seed stage. Every `act` checks the whole world (railwayCheck) after its op.
@@ -12,8 +13,9 @@ import { Aperture, Line, Train } from '../src/sim/railway-components.ts';
 import { LINE2_STATIONS, Q7 } from '../src/sim/railway-line2-layout.ts';
 import { RAIL_HALTS } from '../src/sim/railway-lines.ts';
 import { RING_HEAD, RING_END } from '../src/sim/railway-ring-layout.ts';
-import { HAUL, haulSettled, haulTarget, haulU } from '../src/sim/railway-ring-haul.ts';
-import { TRAIN_PHASE, trainAlong, type RailTrain } from '../src/sim/railway-train.ts';
+import { HAUL, haulEnd, haulSettled, haulTarget, haulU } from '../src/sim/railway-ring-haul.ts';
+import { TRAIN, TRAIN_PHASE, trainAlong, type RailTrain } from '../src/sim/railway-train.ts';
+import { railwayCheck } from '../src/sim/railway-check.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 import { WORKS } from '../src/sim/railway-works-layout.ts';
 import { footingTotal } from '../src/sim/railway-queries-works.ts';
@@ -29,6 +31,8 @@ import {
   railwayAtWorks,
   rail,
   restore,
+  ringHead,
+  ringOpen,
   stopsOf,
   train,
   trains,
@@ -138,34 +142,132 @@ function placeAt(s: Seed, k: number, row: Partial<RailTrain>) {
   if (placed !== null) assert.fail(`the placement (tick ${s.t}): ${placed}`);
 }
 
-test("the railhead moves out on each bent's second footing, a train standing at it or running to it", () => {
-  // The end block holds one train, so the two cases take turns, bent by bent; the check runs on the op's own tick.
+/** The world check at the rule tick the world stands at (the haul's invariants need it). */
+const checkAt = (s: Seed, what: string) => assert.doesNotThrow(() => railwayCheck(s.w, s.t), `${what} (tick ${s.t})`);
+/** Carry the next pair (two footings) once the rack holds them: the tick of the second, the haul's end. */
+function pair(s: Seed) {
+  until(s, () => aperture(s.w).rack >= 2 - (aperture(s.w).set % 2));
+  if (aperture(s.w).set % 2 === 0) assert.equal(carry(s), 1);
+  assert.equal(carry(s, 'b'), 1);
+  assert.equal(aperture(s.w).set % 2, 0, 'a pair');
+  return { at: s.t, end: haulEnd(aperture(s.w)) };
+}
+
+test("a pair leaves the trains' Railhead at the old head until the haul settles", () => {
+  const s = seed(railwayAtRing('deck-laid'));
+  assert.equal(aperture(s.w).stop, 0);
+  const { at, end } = pair(s);
+  assert.equal(end - at, HAUL.after + HAUL.ready + 48 + HAUL.settle, 'a 20 m haul settles 12.7 s after the pair');
+  assert.equal(ringHead(s.w), 1, 'the rack and the jib are a bent on from the pair');
+  for (; s.t < end; advanceWorks(s, 1)) {
+    assert.equal(aperture(s.w).stop, 0, `the stop holds through the haul (tick ${s.t})`);
+    assert.equal(ringOpen(s.w).head, 0);
+    assert.equal(stopsOf(s.w, LINE2)[4], RING_HEAD[0]!.s, 'the Railhead stop at the old head');
+    checkAt(s, 'mid-haul');
+  }
+  assert.equal(s.t, end);
+  assert.equal(aperture(s.w).stop, 1, 'at haulEnd the stop follows the deck');
+  assert.equal(stopsOf(s.w, LINE2)[4], RING_HEAD[1]!.s);
+  checkAt(s, 'settled');
+});
+
+test('at haulEnd a train standing at the old head leaves homeward; one running replans with no jump', () => {
+  // The end block holds one train, so the two cases take turns, bent by bent. Each train is placed on the tick before
+  // the haul settles: the re-route is the settle's, not the pair's.
   const s = seed(railwayAtRing('deck-laid'));
   const cases: [number, number] = [0, 0];
-  for (let guard = 0; aperture(s.w).set < WORKS.ring; guard++) {
-    assert.ok(guard < 30000);
-    if (aperture(s.w).rack === 0) {
-      advanceWorks(s, 1);
-      continue;
-    }
-    const second = aperture(s.w).set % 2 === 1,
-      standingCase = Math.floor(aperture(s.w).set / 2) % 2 === 0,
-      stops = stopsOf(s.w, LINE2);
-    if (second) placeAt(s, A, standingCase ? standingAt(stops, 4, 1, s.t) : running(stops[3]!, 4, stops[4]!, s.t - 20));
-    const along = trainAlong(train(s.w, A), LINE2, s.t);
-    assert.equal(carry(s), 1); // act checks the world on the same tick
-    if (!second) continue;
-    const head = Math.floor(aperture(s.w).set / 2),
-      a = train(s.w, A);
-    assert.equal(stopsOf(s.w, LINE2)[4], RING_HEAD[head]!.s, 'the Railhead stop moved out a bent');
-    if (standingCase) assert.deepEqual([a.at, a.to], [-1, -1], 'the one standing there now stands at a signal');
-    else assert.equal(a.dest, RING_HEAD[head]!.s, 'the one running to it is replanned to the new stop');
+  while (aperture(s.w).set < WORKS.ring) {
+    const { end } = pair(s);
+    const old = aperture(s.w).stop,
+      head = ringHead(s.w),
+      standingCase = head % 2 === 1;
+    advanceWorks(s, end - 1 - s.t);
+    assert.equal(aperture(s.w).stop, old, 'still the old head the tick before');
+    const stops = stopsOf(s.w, LINE2);
+    assert.equal(stops[4], RING_HEAD[old]!.s);
+    placeAt(s, A, standingCase ? standingAt(stops, 4, 1, s.t) : running(stops[3]!, 4, stops[4]!, s.t - 20));
+    const along = trainAlong(train(s.w, A), LINE2, end);
+    advanceWorks(s, 1);
+    assert.equal(s.t, end);
+    assert.equal(aperture(s.w).stop, head, 'the stop moved at haulEnd');
+    assert.equal(stopsOf(s.w, LINE2)[4], RING_HEAD[head]!.s, 'the Railhead stop a bent on');
+    const a = train(s.w, A);
     assert.equal(trainAlong(a, LINE2, s.t), along, 'from where it was, no jump');
+    if (standingCase) {
+      assert.notEqual(a.at, 4, 'no longer standing at the Railhead');
+      assert.ok(a.phase === TRAIN_PHASE.RUN ? a.track === 1 : a.at === -1 && a.to === -1, 'a signal stand');
+      until(s, () => train(s.w, A).phase === TRAIN_PHASE.RUN, 600);
+      assert.equal(train(s.w, A).track, 1, 'it leaves homeward');
+    } else {
+      assert.equal(a.dest, RING_HEAD[head]!.s, 'the one running to it is replanned to the new stop');
+      assert.equal(a.to, 4);
+    }
     cases[standingCase ? 0 : 1]++;
-    for (let t = 0; t < 3; t++) advanceWorks(s, 1);
+    checkAt(s, 'settled');
   }
   assert.deepEqual(cases, [4, 3], 'seven moves: four with a train standing, three with one running');
   assert.equal(stopsOf(s.w, LINE2).length, 5, 'the island still shut');
+});
+
+test('a train arriving mid-haul stands its dwell at the old head', () => {
+  const s = seed(railwayAtRing('deck-laid'));
+  const { end } = pair(s);
+  const stops = stopsOf(s.w, LINE2);
+  placeAt(s, A, running(stops[4]! - 3000, 4, stops[4]!, s.t));
+  until(s, () => train(s.w, A).phase === TRAIN_PHASE.STAND, 200);
+  const arrived = s.t;
+  assert.ok(arrived + TRAIN.dwellTicks < end, `it arrives (tick ${arrived}) with its dwell inside the haul (${end})`);
+  assert.deepEqual([train(s.w, A).at, train(s.w, A).from], [4, RING_HEAD[0]!.s], 'standing at the old head');
+  for (; s.t < arrived + TRAIN.dwellTicks; advanceWorks(s, 1)) {
+    assert.deepEqual([train(s.w, A).phase, train(s.w, A).at], [TRAIN_PHASE.STAND, 4], `its dwell (tick ${s.t})`);
+    checkAt(s, 'mid-haul');
+  }
+  assert.equal(aperture(s.w).stop, 0, 'the haul still running');
+});
+
+test("a pair inside the last haul's chock moves the stop once, at its own settle", () => {
+  const s = seed(railwayAtRing('deck-laid'));
+  until(s, () => aperture(s.w).rack >= 4);
+  const first = pair(s);
+  // Into the chock: travel done, not yet settled.
+  advanceWorks(s, first.end - 4 - s.t);
+  assert.equal(haulU(aperture(s.w), s.t), RING_HEAD[1]!.u, 'the deck at the new head, chocking');
+  assert.ok(!haulSettled(aperture(s.w), s.t));
+  const second = pair(s);
+  assert.equal(second.at, first.end - 4, 'the second pair inside the chock');
+  const moves: number[] = [];
+  let was = aperture(s.w).stop;
+  while (s.t < second.end + 20) {
+    advanceWorks(s, 1);
+    checkAt(s, 'two hauls');
+    if (aperture(s.w).stop !== was) moves.push(s.t);
+    was = aperture(s.w).stop;
+  }
+  assert.deepEqual(moves, [second.end], "once, at the second haul's settle, never at the first's");
+  assert.equal(aperture(s.w).stop, 2);
+});
+
+test('a rivet struck before the last haul settles: the island opens at once, the Railhead follows at the settle', () => {
+  const s = seed(railwayAtRing('deck-laid'));
+  while (aperture(s.w).set < WORKS.ring - 1) {
+    until(s, () => aperture(s.w).rack > 0, 12000);
+    assert.equal(carry(s), 1);
+  }
+  // The fourteenth, the brace, the four weights and the rivet, all on one tick.
+  until(s, () => aperture(s.w).rack >= 1 + WORKS.counterweight, 12000);
+  until(s, () => haulSettled(aperture(s.w), s.t));
+  assert.equal(carry(s), 1);
+  const end = haulEnd(aperture(s.w));
+  assert.equal(act(s, 'a', 'rail.brace', { revision: 1 }), 1);
+  for (let k = 0; k < WORKS.counterweight; k++) assert.equal(carry(s), 1);
+  assert.equal(act(s, 'a', 'rail.strike', { id: 2 }), 1, 'the rivet, mid-haul');
+  assert.ok(s.t < end);
+  assert.deepEqual(stopsOf(s.w, LINE2).slice(4), [RING_HEAD[6]!.s, RING_END.s], 'the island open, the stop at 6');
+  for (; s.t < end; advanceWorks(s, 1)) assert.equal(aperture(s.w).stop, 6, `the stop holds (tick ${s.t})`);
+  assert.equal(aperture(s.w).stop, 7);
+  assert.deepEqual(stopsOf(s.w, LINE2).slice(4), [RING_HEAD[7]!.s, RING_END.s], 'the Railhead a middle halt at 7');
+  checkAt(s, 'settled');
+  advanceWorks(s, 1500);
 });
 
 test("Ring Island opens on the rivet and only then, with a train in each of endMoved's cases", () => {
@@ -274,6 +376,9 @@ test('5,000 random ring ops keep the haul invariants, conserve footings and leav
     assert.ok(Number.isInteger(a.moved) && Number.isInteger(a.from));
     if (a.moved < 0) assert.equal(a.from, 0);
     else assert.ok(a.from >= RING_HEAD[0]!.u && a.from <= haulTarget(a));
+    // The trains' stop: at most the build head, never ahead of the deck, at the head once settled (railwayCheck).
+    checkAt(s, `the stop at op ${k}`);
+    if (haulSettled(a, s.t)) assert.equal(a.stop, ringHead(s.w), `settled at op ${k}`);
     if (rand() < 0.002) s = seed(s);
   }
   assert.ok(accepted > 20, `${accepted} accepted`);
@@ -296,6 +401,8 @@ test('each ring seed stage is settled and passes the world check', () => {
     const s = railwayAtRing(stage);
     assert.ok(haulSettled(aperture(s.w), s.t), `${stage}: settled`);
     assert.equal(haulU(aperture(s.w), s.t), haulTarget(aperture(s.w)), `${stage}: at target`);
+    assert.equal(aperture(s.w).stop, ringHead(s.w), `${stage}: the trains' Railhead at the head`);
+    assert.doesNotThrow(() => railwayCheck(s.w, s.t), `${stage}: the check at its tick`);
     const w = stageWorld(stage);
     assert.ok(w.single(Aperture) >= 0, stage);
     assert.equal(worldVerdict(w), null, `${stage}: the world check`);

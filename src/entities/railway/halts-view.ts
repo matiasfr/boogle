@@ -17,7 +17,7 @@ import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS } from '../../sim/railway-li
 import { railCallReady, railPlatformEnd, railTrainHeld, trainStops } from '../../sim/railway-queries-trains.ts';
 import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
 import { LINE_SLOTS } from '../../sim/railway-trains.ts';
-import { ringHead } from '../../sim/railway-queries.ts';
+import { ringHead, ringOpen } from '../../sim/railway-queries.ts';
 import {
   account,
   aperture,
@@ -35,9 +35,9 @@ import {
   leverPlatform,
   leverYield,
   railheadLever,
-  railheadLeverOn,
+  railheadLeverUp,
 } from './lever-place.ts';
-import { railheadDrawn, railheadEnd } from './railhead-state.ts';
+import { railheadEnd } from './railhead-state.ts';
 import { line2World, line2Y, RING_S } from './line2-path.ts';
 import { createRequestLever, type RequestLever } from './request-lever.ts';
 import { LINE2_GLIDE, pierLaid } from '../../sim/railway-line2-layout.ts';
@@ -52,7 +52,7 @@ import { uiSound } from '../../ui/ui-sound.ts';
 import { me } from '../../player/player.ts';
 import { createIslandBoards } from './island-boards.ts';
 import { createUpPlatforms } from './up-platforms.ts';
-import { displayYaw, haltDisplays, haltMap, haltRows, stackDisplays } from './halt-map.ts';
+import { displayYaw, haltDisplays, haltMap, haltRows, mapStageOf, stackDisplays } from './halt-map.ts';
 import { createBoxBatch } from './works-box-view.ts';
 import { createRingMapTable } from './ring-map-table.ts';
 import { footingMark } from './footing-cues.ts';
@@ -364,7 +364,16 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     lever: ReturnType<typeof createRequestLever>;
     up: boolean;
     west: boolean;
-    ring?: { lat: number; u: () => number; shown: number; need: () => boolean; still?: () => boolean };
+    ring?: {
+      lat: number;
+      u: () => number;
+      shown: number;
+      need: () => boolean;
+      still?: () => boolean;
+      /** Metres its foot stands over the bow's rails at u (0.9, a platform's deck, when left out). */
+      floor?: (u: number) => number;
+      lift: number;
+    };
     slide?: { z0: number; goal: () => number; shown: number };
   };
   const HOME = () => -1 as const;
@@ -412,6 +421,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     way: () => -1 | 1,
     west = false,
     still?: () => boolean,
+    floor?: (u: number) => number,
   ): Spot => {
     // The plaque faces away from the rails, onto the platform: the rails lie toward the centre line from `lat` (a stack
     // head's outward lever stands on the east platform too, so the side is the platform's, not the way's).
@@ -426,24 +436,27 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       lever,
       up,
       west,
-      ring: { lat, u, shown: u(), need, still },
+      ring: { lat, u, shown: u(), need, still, floor, lift: floor ? floor(u()) : 0.9 },
     };
   };
   const wd0 = () => adapter.read.world();
   spots.push(
-    // The railhead's east platform moves with `head` and its lever rides with it: at the platform's home end while the
-    // railhead is the end, clear of the jib and the rack (lever-place.ts); once the rivet makes the line a through
-    // one, 6 m short of its far end, for the train on to Ring Island (no footing is worked at the jib by then).
+    // The railhead's east lever stands where the trains' Railhead is (ringOpen's head, `Aperture.stop`): at the
+    // platform's home end while the railhead is the end, clear of the jib and the rack (lever-place.ts); once the rivet
+    // makes the line a through one, 6 m short of its far end, for the train on to Ring Island (no footing is worked at
+    // the jib by then). Through a haul the trains still stop at the old head, and so does the lever, where the server
+    // judges its ask (railCallPlatform): the deck slides off it and it stands on the walkway, its prompt offered, and at
+    // the settle it slides out to the new head (docs/plans/railhead-reroute.md, step 3).
     ringSpot(
       RAILHEAD,
       false,
       railheadLever(0).lat,
-      // On the deck as drawn: it rides the haul with the platform, and offers nothing until the haul has settled.
-      () => railheadLeverOn(railheadEnd(), mainWay(LINE2, RAILHEAD)),
+      () => railheadLever(ringOpen(wd0()).head, mainWay(LINE2, RAILHEAD)).u,
       () => true,
       () => mainWay(LINE2, RAILHEAD),
       false,
-      () => railheadDrawn.settled,
+      undefined,
+      (u) => railheadLeverUp(u, railheadEnd()),
     ),
     // The joint's west platform (u 235 to 260) stands at bent 13 (footing 14); its lever is chained until the rivet,
     // and calls the train home from 9.5 m toward home of the platform's middle (u 247.5), beside the plank crossing.
@@ -650,10 +663,13 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       goal = r.u(),
       step = 7 * dt;
     r.shown = snap || Math.abs(goal - r.shown) > 25 ? goal : r.shown + Math.max(-step, Math.min(step, goal - r.shown));
+    // Every ring platform's deck is the bow's rail height plus 90 cm (RING_HEAD, RING_JOINT_UP, RING_HALT); the
+    // Railhead's lever steps down to the walkway, and back up onto the deck, at 3 m/s.
+    const lift = r.floor ? r.floor(r.shown) : 0.9;
+    r.lift = snap ? lift : r.lift + Math.max(-3 * dt, Math.min(3 * dt, lift - r.lift));
     const s = RING_S + r.shown,
       p = line2World(s, r.lat, leverAt);
-    // Every ring platform's deck is the bow's rail height plus 90 cm (RING_HEAD, RING_JOINT_UP, RING_HALT).
-    x.lever.group.position.set(p.x, line2Y(s) + 0.9, p.z);
+    x.lever.group.position.set(p.x, line2Y(s) + r.lift, p.z);
     const ahead = line2World(s + 1, r.lat, leverAhead);
     x.lever.group.rotation.y = Math.atan2(ahead.x - p.x, ahead.z - p.z);
     x.lever.group.updateMatrixWorld(true);
@@ -722,10 +738,9 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   function maps(dt: number) {
     const w = adapter.read.world(),
       tick = adapter.read.tickNow();
-    // The map follows line 2's stops (halt-map.ts): a redraw when the Pier is laid, Q7 is, the railhead moves out a
-    // bent or the rivet is struck, and none in between.
-    const open = trainStops(w, 1).length,
-      head = open >= 5 ? ringHead(w) : 0;
+    // The map follows line 2's stops (halt-map.ts): a redraw when the Pier is laid, Q7 is, the trains' Railhead moves out
+    // (at a haul's settle: ringOpen's head, docs/plans/railhead-reroute.md) or the rivet is struck, and none in between.
+    const { open, head } = mapStageOf(w);
     if (mapStage !== `${open}:${head}`) {
       mapStage = `${open}:${head}`;
       const next = haltMap(layout, { open, head });

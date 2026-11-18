@@ -5,6 +5,8 @@ import { LINE_HALTS, TRAIN_STOPS } from '../../sim/railway-train.ts';
 import { MAP_SEA_SCALE, simplify, type MapLine } from '../../render/island-map.ts';
 import { line2At, line2World, line2Y } from './line2-path.ts';
 import { LINE2, RAIL_LINES, type RailHalt } from '../../sim/railway-lines.ts';
+import { trainStops } from '../../sim/railway-queries-trains.ts';
+import { ringOpen } from '../../sim/railway-queries.ts';
 
 type Layout = typeof import('../../place/layout.ts');
 type LinePoint = import('../../place/layout.ts').LinePoint;
@@ -14,9 +16,15 @@ export const LINE_MARK = ['#ffd23f', '#2ec4b6'] as const;
 
 /** How far line 2 has got, as the map shows it: `open` is how many of its stops trains serve (trainStops' length: 3
  * before the Pier is laid, 4 the Pier laid, 5 with Q7 laid so the Railhead stands, 6 once the rivet is struck, then
- * one more for each section of the stack line laid: 10 with High Gorge open) and `head` the railhead's bent
- * (ringHead; read only from 5 stops). */
+ * one more for each section of the stack line laid: 10 with High Gorge open) and `head` the trains' Railhead bent
+ * (ringOpen's head, `Aperture.stop`: it moves when a haul settles, docs/plans/railhead-reroute.md; read only from 5
+ * stops). */
 export type MapStage = { open: number; head: number };
+/** The stage the map shows for the world now (halts-view.ts redraws when it changes). */
+export function mapStageOf(w: Parameters<typeof ringOpen>[0]): MapStage {
+  const open = trainStops(w, LINE2).length;
+  return { open, head: open >= 5 ? ringOpen(w).head : 0 };
+}
 
 /** The stack line on the map (docs/plans/greybox-route.md, leg 1 step 4b; the step 4 design review's answer l). Past
  * Ring Island the track is drawn short, about the island's stop: `drawX` of its true run west and `drawZ` of its run

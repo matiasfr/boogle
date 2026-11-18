@@ -11598,7 +11598,7 @@
           "y": 31.02,
           "z": -146.1,
           "up": true,
-          "calling": false,
+          "calling": true,
           "cue": false,
           "lever": [
             {
@@ -12543,7 +12543,7 @@
           "y": 31.02,
           "z": -146.1,
           "up": true,
-          "calling": true,
+          "calling": false,
           "cue": false,
           "lever": [
             {
@@ -14495,7 +14495,7 @@
           "y": 19.02,
           "z": 3.7483001595777483,
           "up": true,
-          "calling": false,
+          "calling": true,
           "cue": false,
           "lever": [
             {

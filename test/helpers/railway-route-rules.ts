@@ -829,8 +829,8 @@ export function routeRulesShard(shard: number) {
 
   // The wake leaves the fleet rows in the shed (rail.boilerFit places the first stage's trains only), and the tick the
   // fourth train joins it stands at the Village on the up track with a fresh dwell. Gate 12: every extra train runs within
-  // 1,050 ticks of the first section laying, and no running train is held for a join (the join writes no other row). Six
-  // trains from short-turn's ruling (call 5): the sixth joins as the fourth and fifth do, within the same 1,050.
+  // 1,800 ticks of the first section laying, and no running train is held for a join (the join writes no other row). Six
+  // trains from short-turn's ruling (call 5): the sixth joins as the fourth and fifth do, within the same 1,800.
   test('a joining train stands at the Village going up, its dwell from the join, clear of the end block', () => {
     const s = copy(JOINED);
     feedSectionStart(s);
@@ -847,9 +847,14 @@ export function routeRulesShard(shard: number) {
     advance(s, TRAIN.dwellTicks + 2000);
     assert.equal(invariant(s.w), null);
   });
-  test('gate 12: the three extra trains join within 1,050 ticks of the first section laying, each into a gap', () => {
+  test('gate 12: the three extra trains join within 1,800 ticks of the first section laying, each into a gap', () => {
     // fleetJoin writes only the joiner's row (./railway-trains.ts) and only when every running train is a block's gap from
     // the Village and none is in or bound for its end block: no running train is held for a join.
+    // The bound was 1,050 over v60's last join at +653 (joins +18, +371, +653): a 397-tick margin. Re-pinned at v61
+    // (docs/plans/railhead-reroute.md, the railhead re-route): the wagon now stands its dwell at the old head until each
+    // haul settles, so ringRivetSequence strikes the rivet 147 ticks later and the fleet meets the leg at another phase.
+    // The joins measure +733, +1,121, +1,403, and the bound keeps the margin, 1,403 + 397. v60's rules started from v61's
+    // rivet world give the same joins, so this is the phase, not the re-route; the joins move with the rivet's tick.
     const s = unaudited(copy(JOINED));
     feedSectionStart(s);
     while (legRow(s.w, STACK).laid === 0) advance(s, 1);
@@ -857,7 +862,7 @@ export function routeRulesShard(shard: number) {
     const extra = LINE_SLOTS[LINE2]!.slice(3);
     assert.equal(extra.length, 3, 'three rows wait in the shed');
     while (extra.some((k) => train(s.w, k).phase === TRAIN_PHASE.SHED)) {
-      assert.ok(s.t - laidAt <= 1050, 'all joined within 1,050 ticks of the first section laying');
+      assert.ok(s.t - laidAt <= 1800, 'all joined within 1,800 ticks of the first section laying');
       advance(s, 1);
       assert.equal(
         trainSpacing(
@@ -1204,12 +1209,19 @@ export function routeRulesShard(shard: number) {
     });
   });
 
-  test('gate 14: fed every tick from the rivet, the Gorge within 3,700 ticks; the first frame idle at most 1,200, the others 600', (t) => {
+  // Gate 14's Gorge and later-frame bounds are re-pinned at v61 (docs/plans/railhead-reroute.md, the railhead
+  // re-route): the wagon now stands its dwell at the old head until each haul settles, so ringRivetSequence strikes the
+  // rivet 147 ticks later and the fleet meets the leg at another phase. v60 measured 3,623 to the Gorge (bound
+  // 3,700: a 77-tick margin) and later frames idle at most 565 (bound 600: 35); v61 measures 3,919 and 712, so the bounds
+  // keep the margins: 3,919 + 77 and 712 + 35. The first frame measures 1,127 (v60 1,128) and keeps its 1,200. v60's rules
+  // started from v61's rivet world give the same figures: the phase, not the re-route. These figures follow the rivet's
+  // tick closely: on v60's rules alone a rivet 127 ticks later gives the Gorge at 5,372.
+  test('gate 14: fed every tick from the rivet, the Gorge within 3,996 ticks; the first frame idle at most 1,200, the others 747', (t) => {
     const f = fedLeg();
     t.diagnostic(`rivet to Gorge ${f.toGorge}; idle per frame ${f.idle.join(', ')}`);
-    assert.ok(f.toGorge >= 0 && f.toGorge <= 3700, 'the Gorge within 3,700 ticks');
+    assert.ok(f.toGorge >= 0 && f.toGorge <= 3996, 'the Gorge within 3,996 ticks');
     assert.ok(f.idle[0]! <= 1200, 'the first frame');
-    for (const v of f.idle.slice(1)) assert.ok(v <= 600, `a later frame idle ${v}`);
+    for (const v of f.idle.slice(1)) assert.ok(v <= 747, `a later frame idle ${v}`);
   });
 
   // ---------------------------------------------------------------- call 88: riding on from an old head
@@ -1432,38 +1444,72 @@ export function routeRulesShard(shard: number) {
     assert.ok(guard < 3000, 'a kit aboard before the third section');
     advance(HEAD2_LAY, 1);
   }
+  const HEAD2_PRE = unaudited(HEAD2_LAY);
   feedSection(HEAD2_LAY);
+  // The redirect's own fixture: section 3 laid on a tick a train stands at the old head (Stack head 1, the end), which
+  // the lay sends on up. HEAD2_LAY's lay had one there at v60 (slot 4) and has none at v61. Re-pinned at v61
+  // (docs/plans/railhead-reroute.md, the railhead re-route): the wagon now stands its dwell at the old head until each
+  // haul settles, so ringRivetSequence strikes the rivet 147 ticks later and the fleet meets the leg at another phase.
+  // So the frame is filled LEG_TUNE.layTicks before the fifth tick of an end stand, found by running the fleet with the
+  // frame unfed, and each candidate is checked on the lay itself.
+  const REDIRECT = (() => {
+    const from = HEAD + 1,
+      probe = unaudited(HEAD2_PRE);
+    for (let k = 0; k < 3000; k++) {
+      advance(probe, 1);
+      // Standing at the end it has turned for home (track 1); the lay sends it on up (track 0) with a fresh dwell.
+      const end = trains(probe.w).find((x) => x.phase === TRAIN_PHASE.STAND && x.at === from && x.track === 1);
+      const fill = probe.t - LEG_TUNE.layTicks;
+      if (!end || probe.t !== end.depart + 5 || fill < HEAD2_PRE.t) continue;
+      const s = unaudited(HEAD2_PRE);
+      advance(s, fill - s.t);
+      feedSectionStart(s);
+      while (legRow(s.w, STACK).laid < 3) advance(s, 1);
+      const n = stopsOf(s.w, LINE2).length,
+        slot = trainServes((j) => train(s.w, j), LINE2, stopsOf(s.w, LINE2), from, 1, s.t),
+        r = slot >= 0 ? train(s.w, slot) : null;
+      if (r && r.phase === TRAIN_PHASE.STAND && r.at === from && r.track === 0 && r.depart === s.t && r.arrived < s.t)
+        if (reqHas(line(s.w, LINE2).req, from, 1, n)) return { seed: s, slot, delay: fill - HEAD2_PRE.t };
+    }
+    throw new Error('no lay landed on a train standing at the old head');
+  })();
   test('lost ask: a rider arriving one second after section 3 lays gets an outward train within 1,200 ticks', (t) => {
     const result = headWait(HEAD2_LAY, [10], false, 1201);
     t.diagnostic(`lay=${HEAD2_LAY.t}; arrival=+10; waits=${JSON.stringify(result.waits)}`);
     assert.ok(result.waits[0] !== null && result.waits[0]! <= 1200, 'no outward boarding window within 1,200 ticks');
   });
 
-  test('a redirected train gets 50 dwell ticks; pending platform repeats cannot prolong that stand', () => {
-    const s = unaudited(copy(HEAD2_LAY)),
+  // The premise is unchanged by v61 (the lay's redirect is the leg's rule); only which train stands there moved, so the
+  // test takes the slot its fixture found (REDIRECT, above) instead of v60's slot 4.
+  test('a redirected train gets 50 dwell ticks; pending platform repeats cannot prolong that stand', (t) => {
+    const s = unaudited(copy(REDIRECT.seed)),
+      { slot } = REDIRECT,
       from = HEAD + 1,
       n = stopsOf(s.w, LINE2).length;
+    t.diagnostic(
+      `section 3 filled ${REDIRECT.delay} ticks after its kit was aboard; slot ${slot} stands at the old head`,
+    );
     assert.equal(
       trainServes((k) => train(s.w, k), LINE2, stopsOf(s.w, LINE2), from, 1, s.t),
-      4,
+      slot,
     );
-    assert.equal(train(s.w, 4).at, from);
-    assert.equal(train(s.w, 4).track, 0);
-    assert.equal(train(s.w, 4).depart, s.t, 'the lay restarts its dwell');
-    const arrived = train(s.w, 4).arrived;
+    assert.equal(train(s.w, slot).at, from);
+    assert.equal(train(s.w, slot).track, 0);
+    assert.equal(train(s.w, slot).depart, s.t, 'the lay restarts its dwell');
+    const arrived = train(s.w, slot).arrived;
     assert.ok(arrived < s.t, 'arrival still anchors hold caps');
     assert.ok(reqHas(line(s.w, LINE2).req, from, 1, n));
     for (let k = 0; k < 49; k++) {
       railTick(s.w, ++s.t, 75);
-      assert.equal(train(s.w, 4).phase, TRAIN_PHASE.STAND, 'full lay dwell');
+      assert.equal(train(s.w, slot).phase, TRAIN_PHASE.STAND, 'full lay dwell');
     }
     assert.ok(!ask(s, { id: haltId(LINE2, from), dir: 1 }), 'the lay already extended this stand');
-    assert.equal(train(s.w, 4).depart, HEAD2_LAY.t, 'the repeat does not move departure');
-    assert.equal(train(s.w, 4).arrived, arrived, 'no hold-cap reset');
+    assert.equal(train(s.w, slot).depart, REDIRECT.seed.t, 'the repeat does not move departure');
+    assert.equal(train(s.w, slot).arrived, arrived, 'no hold-cap reset');
     railTick(s.w, ++s.t, 75);
-    assert.equal(train(s.w, 4).phase, TRAIN_PHASE.RUN);
+    assert.equal(train(s.w, slot).phase, TRAIN_PHASE.RUN);
     assert.ok(!reqHas(line(s.w, LINE2).req, from, 1, n), 'leaving clears the lay ask');
-    const recovered = headWait(HEAD2_LAY, [10], true, 1200).waits[0];
+    const recovered = headWait(REDIRECT.seed, [10], true, 1200).waits[0];
     assert.ok(recovered !== null && recovered! <= 1200, 'the same fleet serves a fresh ask');
   });
 
@@ -1625,7 +1671,14 @@ export function routeRulesShard(shard: number) {
 
   // Build 2 alone (origin/main 4e769acd, v31), the same script from `ring-joined`: the kit in the yard, the works fed
   // the tick it lands, the install pressed the tick the first steel is home. Measured with the leg's rules absent.
-  const BUILD2 = { yard: 650, home: 1824 } as const;
+  // `yard` is re-pinned at v61 (docs/plans/railhead-reroute.md, the railhead re-route): the wagon now stands its dwell
+  // at the old head until each haul settles, so ringRivetSequence strikes the rivet 147 ticks later and the fleet meets
+  // the leg at another phase. The kit lands at +588 with the leg idle and fed alike (v60: 650 both, equal to build 2
+  // alone's), and the gate is an equality, so its margin is 0. The leg-absent build cannot be re-run, so
+  // the idle-leg figure stands for it, as it matched it exactly at v60. `home` keeps v31's 1,824: v61's first steel home
+  // and install measure +1,820 idle and fed (v60 1,822 idle, 2,392 fed), inside home + 1,050. v60's rules started from
+  // v61's rivet world give the same figures: the phase, not the re-route.
+  const BUILD2 = { yard: 588, home: 1824 } as const;
   function gate15(fed: boolean) {
     const s = unaudited(copy(JOINED)),
       t0 = s.t;

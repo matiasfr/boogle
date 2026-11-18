@@ -11,7 +11,7 @@ import { Line, Rail, Train } from './railway-components.ts';
 import { RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, haltPlatform } from './railway-lines.ts';
 import { TRAIN, TRAIN_PHASE, reqHas, trainCanBrake, trainWakeAt } from './railway-train.ts';
 import { LINE_SLOTS, atEnd, retainedEndBlock, trainPose, trainServes } from './railway-trains.ts';
-import { railId, ringHead, stopsOf, trainId } from './railway-queries.ts';
+import { railId, ringOpen, stopsOf, trainId } from './railway-queries.ts';
 import { haltHead } from './railway-queries-route.ts';
 
 export const railTrainsOf = (w: World, line: number) => LINE_SLOTS[line]!.map((k) => w.get(Train, trainId(w, k))!);
@@ -87,7 +87,7 @@ export function railPlatformEnd(
 /** The accepted platform used by both the lever view and server reach validation. */
 export function railCallPlatform(w: World, halt: number, way: number, tick: number) {
   const h = RAIL_HALTS[halt]!;
-  return haltPlatform(h, way, haltHead(w, halt, ringHead(w)), railPlatformEnd(w, h.line, h.stop, tick));
+  return haltPlatform(h, way, haltHead(w, halt, ringOpen(w).head), railPlatformEnd(w, h.line, h.stop, tick));
 }
 
 /** During a retained departure, only its still-boardable train can answer the old-side lever. Once it leaves,

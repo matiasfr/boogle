@@ -33,8 +33,10 @@ export function haulAlong(dist: number, t: number) {
   return speed * (t - ramp / 2);
 }
 
+/** The last completed pair's bent (0-7): the build head the rack and jib stand at. */
+export const haulHead = (a: Pick<RailheadHaul, 'set'>) => Math.min(7, Math.floor(a.set / 2));
 /** The last completed pair's head; later island footings leave it at head 7. */
-export const haulTarget = (a: Pick<RailheadHaul, 'set'>) => RING_HEAD[Math.min(7, Math.floor(a.set / 2))]!.u;
+export const haulTarget = (a: Pick<RailheadHaul, 'set'>) => RING_HEAD[haulHead(a)]!.u;
 
 /** Ticks since told (negative during construction). Callers skip cues when moved < 0. */
 export const haulPhase = (a: RailheadHaul, tick: number) => tick - a.moved - HAUL.after;

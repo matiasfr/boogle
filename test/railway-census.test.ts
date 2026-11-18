@@ -83,6 +83,8 @@ test('the tick runs in the declared order the hand-coded tick used', () => {
       ['rail.cartTick', 'tick', 2],
       // Slice 5's yards, between the cart and the trains.
       ['rail.yardTick', 'tick', 2.5],
+      // The trains' Railhead follows a settled haul, before the trains (docs/plans/railhead-reroute.md).
+      ['rail.ringStop', 'tick', 2.75],
       ['rail.trainTick', 'tick', 3],
       // Slice 5 R3's riders, after the trains.
       ['rail.tradeTick', 'tick', 3.5],
