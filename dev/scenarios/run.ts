@@ -16,6 +16,7 @@
 //   t.page(pathname, { size, colorScheme })    a plain page of the stack (not the game), e.g. the atlas at 'atlas/';
 //                                              its uncaught errors fail the scenario like a player's
 //   t.sleep(ms), t.VIEWS, t.out                helpers and the image directory (.look/scenarios/<name>/)
+//   t.dataDir                                  the local stack's server data directory (unset with --url)
 // A scenario that cannot pass in the current game sets `stale: '<why, and what a port needs>'`: every run prints that
 // line as SKIP and runs the rest (it is never a pass); `--stale` runs it anyway.
 // Players are closed for you. A scenario that throws, or runs past its `timeout` (ms, default 120 s), fails; on a
@@ -35,6 +36,8 @@ import type { GameOpts, Stack } from '../look/lib.ts';
 /** What a scenario's `run(t)` gets (described above). */
 export type T = {
   out: string;
+  /** The local stack's server data directory (its saves and accounts.sqlite); undefined with `--url`. */
+  dataDir?: string;
   page: (pathname: string, o?: { size?: number[]; colorScheme?: 'light' | 'dark' }) => Promise<Page>;
   VIEWS: typeof VIEWS;
   sleep: typeof sleep;
@@ -131,6 +134,7 @@ try {
     let bads = 0;
     const t: T = {
       out,
+      dataDir: st.dataDir,
       async page(pathname, { size = [1280, 900], colorScheme = 'light' } = {}) {
         const page = await br.newPage({ viewport: { width: size[0]!, height: size[1]! }, colorScheme });
         const errors: string[] = [];
