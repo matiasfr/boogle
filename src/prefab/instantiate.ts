@@ -37,6 +37,7 @@ import './builders/poi-lighthouse.ts';
 import './builders/poi-windmills.ts';
 import './builders/poi-caves.ts';
 import './builders/lookout.ts';
+import './builders/ring-island.ts';
 import type { Interactable } from '../player/hands.ts';
 import type { Part } from '../render/part-geometry.ts';
 import { builders, type ConstructionBuild, type Piece } from './builders.ts';
@@ -391,6 +392,13 @@ export function instantiate(
     glass,
     targets: () => (enabled && !disposed ? handlers.flatMap((handler) => handler()) : []),
     bodies,
+    /** The world solids this record makes while enabled, in order, as shapes with their world offset and rotation
+     * (an owner's mount clearance reads them before the bodies exist). */
+    solids: recipes.map((r): Shape => ({
+      ...r.shape,
+      offset: { x: r.at.x, y: r.at.y, z: r.at.z },
+      ...(r.q ? { rotation: { x: r.q.x, y: r.q.y, z: r.q.z, w: r.q.w } } : {}),
+    })),
     seats,
     attach(name: string): { definition: Attach; at: THREE.Vector3 } {
       const a = def.attach?.[name];

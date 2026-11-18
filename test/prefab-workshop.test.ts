@@ -139,6 +139,12 @@ export function captureWorkshop(positions: readonly (readonly [number, number, n
       ['lookout.telescope', () => chair],
       ['lookout.buoy', () => chair],
       ['lookout.buoy-top', () => chair],
+      ['ring.box', () => chair],
+      ['ring.folk', () => chair],
+      ['ring.fingerpost-arm', () => chair],
+      ['ring.map-table', () => chair],
+      ['ring.summit-deck', () => chair],
+      ['ring.hammer-head', () => chair],
       [
         'town.workshop-parts',
         (params) => workshopParts(params.piece as string, params.hw as number, params.hd as number),
@@ -355,6 +361,12 @@ function runtimeHarness(input?: { prefabs: PrefabArtifact; level: LevelArtifact 
         ['lookout.telescope', () => new THREE.Group()],
         ['lookout.buoy', () => new THREE.Group()],
         ['lookout.buoy-top', () => new THREE.Group()],
+        ['ring.box', () => new THREE.Group()],
+        ['ring.folk', () => new THREE.Group()],
+        ['ring.fingerpost-arm', () => new THREE.Group()],
+        ['ring.map-table', () => new THREE.Group()],
+        ['ring.summit-deck', () => new THREE.Group()],
+        ['ring.hammer-head', () => new THREE.Group()],
         [
           'seat.chair',
           () => {

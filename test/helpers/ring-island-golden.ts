@@ -48,7 +48,10 @@ function geometryPrint(g: THREE.BufferGeometry) {
     y += pos.getY(i);
     z += pos.getZ(i);
   }
-  return { type: g.type, ...scalars, count: pos.count, index: g.index?.count ?? 0, sum: [x, y, z] };
+  return { type: g.type, ...scalars, count: pos.count, index: g.index?.count ?? 0, sum: [x, y, z] } as Record<
+    string,
+    unknown
+  > & { type: string };
 }
 
 /** Patch the prototypes while the view builds: each geometry remembers its print before its first transform and the
@@ -168,7 +171,7 @@ type View = {
   clearPosition(p: V3): V3 | null;
   update(ctx: { elapsed: number }): void;
   inspect(): unknown;
-  mount?(): void;
+  setMounted?(on: boolean): void;
 };
 
 /** Bindings the view module reads, its imports stood in by hand. */
@@ -266,7 +269,7 @@ export function captureRing(
   const recorded = recordPieces();
   try {
     const view = create(recorded.merge as typeof mergeGeometries, g);
-    view.mount?.();
+    view.setMounted?.(true);
     // One frame first: the hammer's head takes its pose in update() (before it, the old head stood at the origin).
     view.update({ elapsed: 0 });
     view.root.updateMatrixWorld(true);
@@ -322,8 +325,11 @@ export function captureRing(
       }
       c.setNow(elapsed);
       view.update({ elapsed });
-      if (k === 0) c.camera.position.set(headMesh.position.x + 20, 10, headMesh.position.z);
-      headMesh.updateMatrixWorld(true);
+      if (k === 0) {
+        const at = headMesh.getWorldPosition(new THREE.Vector3());
+        c.camera.position.set(at.x + 20, 10, at.z);
+      }
+      headMesh.updateWorldMatrix(true, false);
       let leaf: unknown = null;
       view.root.traverse((o) => {
         if (o.name === 'ring-island-leaf') {
@@ -352,6 +358,60 @@ export function captureRingBefore() {
     const { createRingIslandView } = sourceModule<{
       createRingIslandView(g: unknown, cones: unknown, centre: V3 | { x: number; z: number }): View;
     }>(fs.readFileSync('src/entities/ring-island/view.ts', 'utf8'), { ...c.bindings, mergeGeometries: merge });
+    return createRingIslandView(g, RING_CONES, ringCentre);
+  });
+}
+
+/** The record view: the island over the real builders, catalogue and `instantiate`, with the same recorders. */
+export async function captureRingAfter() {
+  const c = ringBindings();
+  const { compiled, definitions } = await import('../../src/prefab/catalogue.ts');
+  const validation = await import('../../src/prefab/validate.ts');
+  const { names } = await import('../../src/prefab/names.ts');
+  const read = (f: string) => fs.readFileSync(f, 'utf8');
+  const json = (f: string) => JSON.parse(read(f)) as unknown;
+  const builders = new Map<string, import('../../src/prefab/builders.ts').Builder>(
+    names.builders.map((name) => [name, () => new THREE.Group()]),
+  );
+  const registerBuilder = (name: string, build: import('../../src/prefab/builders.ts').Builder) => {
+    builders.set(name, build);
+    return build;
+  };
+  sourceModule(read('src/prefab/builders/ring-island.ts'), { THREE, registerBuilder }, []);
+  const createOwnedView = sourceFunction<typeof import('../../src/render/owned-view.ts').createOwnedView>(
+    'src/render/owned-view.ts',
+    'createOwnedView',
+    { THREE, owners: new WeakMap(), addBody: (b: BodySpec) => c.bodies.push(b), removeBody() {} },
+  );
+  const runtime = sourceModule<typeof import('../../src/prefab/instantiate.ts')>(read('src/prefab/instantiate.ts'), {
+    THREE,
+    compiled,
+    names,
+    builders,
+    ...validation,
+    workshop: json('content/built/levels/workshop.json'),
+    gorge: json('content/built/levels/gorge.json'),
+    ROOM_GROUP: 8,
+    CAVE_GROUP: GROUP.CAVE,
+    staticBody: (shape: ShapeSpec, at: V3, q?: Q, group = GROUP.SCENERY): BodySpec => ({
+      group,
+      position: { x: at.x, y: at.y, z: at.z },
+      ...(q ? { rotation: { x: q.x, y: q.y, z: q.z, w: q.w } } : {}),
+      shapes: [shape],
+    }),
+  });
+  return captureRing(c, (merge, g) => {
+    const { createRingIslandView } = sourceModule<{
+      createRingIslandView(g: unknown, cones: unknown, centre: { x: number; z: number }): View;
+    }>(read('src/entities/ring-island/view.ts'), {
+      ...c.bindings,
+      mergeGeometries: merge,
+      createOwnedView,
+      instantiate: runtime.instantiate,
+      definitions,
+      loadLevelArtifact: validation.loadLevelArtifact,
+      level: json('content/built/levels/ring-island.json'),
+    });
     return createRingIslandView(g, RING_CONES, ringCentre);
   });
 }
