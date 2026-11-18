@@ -1,4 +1,4 @@
-> **Status:** Steps 1–2 shipped in #1841 as v46; Checkpoint A is verified below. Step 3 is not ready to ship: the production car handoff stays inside the five-importer budget, but constructing another car directly in the carry test makes six. The registry also forbids extending the public API of `car.ts`. Steps 4–5 are outstanding. Design base:
+> **Status:** Steps 1–2 shipped in #1841 as v46; Checkpoint A is verified below. Step 3 is built on the implementation branch; independent review is pending. Steps 4–5 are outstanding. Design base:
 > `origin/main` at `35e1c3431`. Replaces
 > steps 2 and 4 of [gap-readability](gap-readability.md) (the railhead's move), which were built on branch
 > `worktree-agent-af55e2f2172764ff8` (tag `archive/worktree/railhead-traveller`, tip `9b9845fbb`) and failed three
@@ -198,7 +198,7 @@ Rows are from `npm run models` (mode withCodex, 14 November).
       waits out each haul). Independent review before merge (sim, world, server): a fresh Codex
       review job, gpt-6-astra, a failing test per suspected defect. Code review before shipping: Codex review job on
       the committed branch, gpt-6-astra high.
-- [ ] **3. The deck is a car. Tier: view (physics, Owner). Row: player-visible implementation, implementer agent,
+- [x] **3. The deck is a car. Tier: view (physics, Owner). Row: player-visible implementation, implementer agent,
       fable medium.** Edit `line2-view.ts` (build and return `railheadDeck`), `view.ts`, `works-live.ts`,
       `railhead-view.ts` (take the deck; `drive`; delete `plat{k}` and `slide`), `railhead-shape.ts` (drop `SLIDE`,
       `slide`; add `leanClock`), new `railhead-state.ts`. Lower `railhead-view.ts`'s count in
@@ -212,6 +212,7 @@ Rows are from `npm run models` (mode withCodex, 14 November).
       - `a correction past the speed limit relocates deck and rider together`
       Verify: the test; `npm run lint` and `npm run registry` (the `car.ts#makeCar` importer count stays 5: measured
       on this base with the call added in `line2-view.ts`); a `/look` still at ring stage `deck-laid` (`railwayAtRing`), standing on the platform at rest.
+      As built: Line 2 and the carry test both use `createRailheadDeck` in `railhead-state.ts`. Line 2 no longer acquires the entire rail kit; `makeCar` stays at five importers, and `buildMachine` falls from three to two. All five carry cases passed. Menu-closed WebGPU stills with the rider aboard: [rest](../world/railhead-deck-car/rest.png) (u 120.00 m) and [haul](../world/railhead-deck-car/haul.png) (u 127.17 m).
 - [ ] **4. Prompts, spans and the lever follow the row. Tier: view. Row: implementer agent, fable medium.**
       `railhead-view.ts`: `settled()` is `haulSettled(row, clock)`; spans forced at `moved + after`; `halts-view.ts`
       `placeRing` reads `railheadDrawn.u`. Tests in `test/railway-r4b-views.test.ts`: `prompts wait until the haul has

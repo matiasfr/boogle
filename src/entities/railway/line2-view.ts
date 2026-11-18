@@ -2,8 +2,8 @@
 // Q1-Q6 frames, depot racks, route-v2 decks, both gates, the summit switch, Far Head, the boiler and the pier show.
 // Geometry and colliders are rebuilt from accepted construction state; nothing here transfers material.
 import * as THREE from 'three/webgpu';
-import { deckYaw } from './railhead-state.ts';
-import { deckProfile } from './railhead-shape.ts';
+import { createRailheadDeck } from './railhead-state.ts';
+import { besideLine, buildTrack, thud } from './rail-kit.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -104,10 +104,9 @@ export async function createRailwayLine2(
   hookShown?: () => void,
   rewardBusy: () => boolean = () => false,
 ) {
-  const [layout, rail, stations, pieces, land, plans, tech, shapes, flatMod, sounds, look, kit, props, carry] =
+  const [layout, stations, pieces, land, plans, tech, shapes, flatMod, sounds, look, kit, props, carry] =
     await Promise.all([
       import('../../place/layout.ts'),
-      import('./rail-kit.ts'),
       import('./stations.ts'),
       import('../../place/pieces.ts'),
       import('../../place/land.ts'),
@@ -284,7 +283,7 @@ export async function createRailwayLine2(
   }
 
   // ---------------------------------------------------------------- the quarry line, its frames and the depot rack
-  const track = rail.buildTrack(quarry, (_k, kind, x, y, z) => rail.thud(machine, kind, x, y, z), owner, 'panels');
+  const track = buildTrack(quarry, (_k, kind, x, y, z) => thud(machine, kind, x, y, z), owner, 'panels');
   const frames = quarry.stations
     .slice(0, LINE2_STATIONS.length)
     .map((spec) => stations.buildStation(spec, stations.frameBesideLine(spec, quarry.line, quarry.dir), owner));
@@ -357,7 +356,7 @@ export async function createRailwayLine2(
       return out.set(d.x, d.y + 0.16, d.z);
     }
     if (LINE2_STATIONS[k]!.feed === 'train') {
-      const p = rail.besideLine(quarry.line, LINE2_STATIONS[k]!.fromCm / 100 - 8, quarry.stations[k]!.side * 7.5);
+      const p = besideLine(quarry.line, LINE2_STATIONS[k]!.fromCm / 100 - 8, quarry.stations[k]!.side * 7.5);
       out.set(p.x, 0, p.z);
     }
     out.y = land.H(out.x, out.z) + 0.16; // the bearer tops, shared by unload flights and pickup targets
@@ -594,7 +593,7 @@ export async function createRailwayLine2(
   const glideDevice = createRailwayGlideDevice(adapter, owner, { land, shapes, partMat, glow, youGot });
   const farHead = createRailwayFarHead(owner, {
     layout,
-    rail,
+    rail: { besideLine },
     land,
     flat,
     sounds,
@@ -613,7 +612,7 @@ export async function createRailwayLine2(
   );
   const pier = createRailwayPier(owner, {
     layout,
-    rail,
+    rail: { besideLine },
     sounds,
     adapter,
     track,
@@ -709,7 +708,7 @@ export async function createRailwayLine2(
     panelState,
     () => visualHead,
     (end, unit) => {
-      const p = rail.besideLine(quarry.line, end, 0);
+      const p = besideLine(quarry.line, end, 0);
       clank(p.x, p.z);
       // Contact dust once per stock unit, as before the pairs: smaller commits add no smoke.
       if (unit) pieces.dustRing(p.x, layout.railY(quarry.line, end) + 0.1, p.z, 4, 0.5, 0.12);
@@ -1028,23 +1027,8 @@ export async function createRailwayLine2(
     }
     if (slabT < 0) slab.position.y = down ? slabDown : slabUp;
   }
-  let deckDrive: (() => void) | undefined;
-  const profile = deckProfile();
-  const car = rail.makeCar(profile.spec, new THREE.Group(), () => deckDrive?.(), { shapes: [profile.surface] }, owner);
-  car.platform.id = 'railway:railhead';
-  car.platform.shared = true;
-  car.platform.topAt = profile.topAt;
-  car.yaw = deckYaw;
-  rail.snapCar(car);
-  car.speedLimit = 7.5;
   const api = {
-    railheadDeck: {
-      car,
-      snap: () => rail.snapCar(car),
-      drive(fn: () => void) {
-        deckDrive = fn;
-      },
-    },
+    railheadDeck: createRailheadDeck(owner),
     /** Line two owns the machine once the forge is lit and the turn has played. */
     working,
     /** The boiler's haul pace (before the controller) and its rope (after Buddy's final pose). */

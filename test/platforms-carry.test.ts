@@ -6,11 +6,8 @@ import '../dev/sim/hooks.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { FIXED, PLAYER_R } from '../src/constants.ts';
-const { Group } = await import('three/webgpu');
 const { createOwnedView } = await import('../src/render/owned-view.ts');
-const { makeCar, snapCar } = await import('../src/entities/railway/car.ts');
-const { deckProfile } = await import('../src/entities/railway/railhead-shape.ts');
-const { deckU, deckYaw, placeDeck } = await import('../src/entities/railway/railhead-state.ts');
+const { createRailheadDeck, deckU, placeDeck } = await import('../src/entities/railway/railhead-state.ts');
 const { haulU } = await import('../src/sim/railway-ring-haul.ts');
 const physics = await import('../src/physics/engine.ts');
 const { makePlayerBody } = await import('../src/physics/physics.ts');
@@ -62,27 +59,17 @@ async function traveller() {
   await physics.physicsReady;
   const wall = softWall.at;
   softWall.at = Infinity;
-  const owner = createOwnedView(),
-    profile = deckProfile();
+  const owner = createOwnedView();
   let goal = 120,
     opening = true;
-  const car = makeCar(
-    profile.spec,
-    new Group(),
-    () => {
-      placeDeck(deck, goal, opening, player.body, player.coyote, () => {
-        throw Error('unexpected initial overlap');
-      });
-      opening = false;
-    },
-    { shapes: [profile.surface] },
-    owner,
-  );
-  const deck = { car, snap: () => snapCar(car), drive: () => {} };
-  car.platform.topAt = profile.topAt;
-  car.speedLimit = 7.5;
-  car.yaw = deckYaw;
-  deck.snap();
+  const deck = createRailheadDeck(owner),
+    { car } = deck;
+  deck.drive(() => {
+    placeDeck(deck, goal, opening, player.body, player.coyote, () => {
+      throw Error('unexpected initial overlap');
+    });
+    opening = false;
+  });
   const rider = makePlayerBody(false);
   owner.addBody(rider);
   const point = (z: number, y: number, drawn = false) =>
@@ -95,7 +82,7 @@ async function traveller() {
       goal = u;
     },
     board(z = 0, down = 0) {
-      const pos = point(z, profile.topAt(0, z) + PLAYER_R - down);
+      const pos = point(z, car.platform.topAt!(0, z, 0) + PLAYER_R - down);
       physics.teleport(rider, pos.x, pos.y, pos.z);
       rider.velocity.set(0, 0, 0);
       player.body = rider;

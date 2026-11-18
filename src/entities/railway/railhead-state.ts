@@ -1,3 +1,5 @@
+import { Group } from 'three/webgpu';
+import type { OwnedView } from '../../render/owned-view.ts';
 import { FIXED, PLAYER_R } from '../../constants.ts';
 import { carry } from '../../physics/platforms.ts';
 import { me } from '../../player/state.ts';
@@ -5,8 +7,8 @@ import type { Body } from '../../physics/engine.ts';
 import { siteExit } from '../../place/site-clearance.ts';
 import type { outOf as moveOutside } from '../../place/sites.ts';
 import { RING_S, line2World, line2Y } from './line2-path.ts';
-import { BENTS, headU, PLATFORM, SIDE } from './railhead-shape.ts';
-import type { Car } from './car.ts';
+import { BENTS, deckProfile, headU, PLATFORM, SIDE } from './railhead-shape.ts';
+import { makeCar, snapCar, type Car } from './car.ts';
 
 export type RailheadDeck = { car: Car; snap(): void; drive(fn: () => void): void };
 const sideMid = (SIDE.lat0 + SIDE.lat1) / 2;
@@ -19,7 +21,25 @@ const sin = (end.x - start.x) / length,
 export const deckU = (pos: { x: number; z: number }) => initialU + (pos.x - start.x) * sin + (pos.z - start.z) * cos;
 const startY = line2Y(RING_S + initialU - PLATFORM.len / 2);
 export const railheadDrawn = { u: initialU };
-export const deckYaw = Math.atan2(sin, cos);
+const deckYaw = Math.atan2(sin, cos);
+export function createRailheadDeck(owner: OwnedView): RailheadDeck {
+  let drive: (() => void) | undefined;
+  const profile = deckProfile();
+  const car = makeCar(profile.spec, new Group(), () => drive?.(), { shapes: [profile.surface] }, owner);
+  car.platform.id = 'railway:railhead';
+  car.platform.shared = true;
+  car.platform.topAt = profile.topAt;
+  car.speedLimit = 7.5;
+  car.yaw = deckYaw;
+  snapCar(car);
+  return {
+    car,
+    snap: () => snapCar(car),
+    drive(fn) {
+      drive = fn;
+    },
+  };
+}
 const idleOffsets = new WeakMap<Car, { body: Body; x: number; z: number }>();
 export function placeDeck(
   deck: RailheadDeck,

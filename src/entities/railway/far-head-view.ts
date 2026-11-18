@@ -18,7 +18,7 @@ const CALL = { hold: 30, bare: 3 } as const;
 
 type Deps = {
   layout: typeof import('../../place/layout.ts');
-  rail: typeof import('./rail-kit.ts');
+  rail: Pick<typeof import('./rail-kit.ts'), 'besideLine'>;
   land: typeof import('../../place/land.ts');
   flat: (typeof import('../../render/flat.ts'))['flat'];
   sounds: typeof import('../../render/fanfare.ts');

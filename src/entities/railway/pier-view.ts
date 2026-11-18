@@ -20,7 +20,7 @@ export const PIER_CUT = { at: 3.5, hold: 30, bare: 3 } as const;
 
 type Deps = {
   layout: typeof import('../../place/layout.ts');
-  rail: typeof import('./rail-kit.ts');
+  rail: Pick<typeof import('./rail-kit.ts'), 'besideLine'>;
   sounds: typeof import('../../render/fanfare.ts');
   adapter: RailwayAdapter;
   /** Line 2's track, whose old merge the relay retires. */
