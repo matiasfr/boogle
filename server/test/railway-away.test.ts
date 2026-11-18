@@ -145,9 +145,16 @@ test('a paused room stands still, and the next join applies one capped credit to
     const tick = f.host.sync.world.tick;
     const paused = yards(f.w);
     assert.ok(paused.rack < LINE2_FORGE.rackMax && paused.depot < LINE2_STATIONS[1]!.bill[0], 'the yards have room');
-    await f.ticks(600); // a minute of wall time with nobody here: nothing moves
+    await f.ticks(50); // five seconds of wall time with nobody here: nothing moves
     assert.equal(f.host.sync.world.tick, tick, 'an empty room does not tick');
     assert.deepEqual(yards(f.w), paused, 'nor produce');
+    // Those five seconds, short of every cap: floor(H × (1 − e^(−away/H))) production ticks, one rail per pour.
+    const h = RAIL_AWAY.hours * 36000;
+    const rails = Math.floor(Math.floor(h * (1 - Math.exp(-50 / h))) / LINE2_FORGE.pourTicks);
+    assert.ok(paused.rack + rails < LINE2_FORGE.rackMax, 'the rack has room for them');
+    f.host.wake();
+    assert.equal(forge(f.w).rack, paused.rack + rails, 'fifty ticks away credit 49 production ticks: 9 rails');
+    f.host.pause();
 
     // Eight hours away: one credit of ~1 h 58 min, capped by the rack (24) and Q2's need (its bill).
     f.clock.now += 8 * HOUR;
