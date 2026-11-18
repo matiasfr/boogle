@@ -623,3 +623,28 @@ Not registered: `place-kit` (its only loader, `src/place/look-kit.ts`, was anoth
 would add a URL import with no game consumer. Prefab totals: 251 records / 316,848 bytes before, 256 / 317,746 after
 (20 levels). No wire or persistence catalog, namespace or pinned fixture changes. Stills (`docs/world/prefab-glb/`): `engine.png` and `passenger-car.png` from the garage showroom's tiles, `track-machine.png`
 parked at the Pier (`q6-done`), `depot-cart.png` on its road (`boiler`); after-only, each drawn whole. Not tested on a device.
+
+### Step 13, first area as built: src/pois/ (lighthouse, windmill farm, caves)
+
+Every POI is now an entity over one owned view, and its things are records (`src/content/prefabs/pois.ts`,
+`caves.ts`; builders `src/prefab/builders/poi-*.ts`): the lighthouse tower and lantern; a windmill, its rotor, hay
+bale, fence post and rail; and 28 cave furnishing records (lanterns, mouth frames and boards, signpost, mine track and
+supports, minecart and ore, crates, pond water and crystals, rowboat, cellar racks, shelf, cask, table, stools).
+Builders return pieces with their solids beside them in the record; the POI merges pieces into the old draws
+(`PieceBuild`), so draw calls are unchanged. Mills and the lighthouse are placed by `src/content/levels/pois.ts` in
+their sites' frames (a layout that moves a site moves them); hay bales, fence and cave furnishing are the POIs' own
+seeded scatter and cave probing, emitting placements in the old order. Derived solids (the stair helix, cellar bays)
+resolve on load from authored dimensions (`src/prefab/lighthouse.ts`, `cellar.ts`); artifacts hold authored operands.
+New in the prefab core: a tapered `cylinder` collider (Rapier's hull, as the towers always used) and the `cave` group.
+All 20 `use-an-entity` suppressions are gone (`lint-suppressions.json` is empty); collider debt drops (decor and
+lighthouse leave, windmills 12 → 7, caves 13 → 12). Records 256 → 291, levels 20 → 22.
+
+Proof: `test/fixtures/prefab-pois.json` was captured from the unconverted code (093f8029) and passes unchanged:
+~27,300 values (every merged part's full-precision world matrix and colour, other meshes' poses and materials, 276
+world colliders, 17 lights), max deviation 1.4e-14 m against the 1e-9 tolerance. Opened before/after stills of each
+area match ([after stills](../world/prefab-pois/)); the lighthouse climb and caves scenarios pass.
+
+Left in this area: the cave rock and its collars stay generated (marching cubes from the SDF, a trimesh collider, like
+terrain) under the caves' owner, not records; the moving sail bodies stay owner-made like step 12's vehicles; the
+bale and fence scatter and the cave probing are code generators, not named level generators. Left in step 13: Ring
+Island, the mushroom stall, the lookout, secrets. Not tested on a device.
