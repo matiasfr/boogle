@@ -52,6 +52,13 @@ test('griefing, worst case: one ask on the last held tick adds its dwell, and no
   });
   assert.equal(accepted, 1);
   assert.equal(t, last + TRAIN.dwellTicks, `held ${t} ticks: dwell + cap + one asker's dwell`);
+  const exempt = bunched();
+  exempt.rows[0] = { ...exempt.rows[0]!, depart: last };
+  assert.equal(balancedHold(exempt.io(), V, exempt.stops, 0, 0, last + 1), false, 'from arrival: the cap has run out');
+  for (let tick = last + 1; tick < last + TRAIN.dwellTicks; tick++) {
+    trainStepLine({ ...exempt.io(), headExempt: () => true }, V, tick);
+    assert.equal(exempt.rows[0]!.phase, TRAIN_PHASE.STAND, `the asker's dwell holds it at ${tick} with no hold at all`);
+  }
 });
 
 test('a second end-platform call cannot extend the stand again near the original hold cap', () => {
