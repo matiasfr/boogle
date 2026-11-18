@@ -1129,7 +1129,7 @@ export function createRailwayRailhead(
       // the draw reads changes; the windsock's flutter and the sockets' pulse hold still, under a pixel that far.
       const moving =
         lowering.length > 0 || rig.line || rig.flare > 0 || rise.some((t) => t >= 0 && t < RISE_S);
-      const drawKey = `${opened}|${stood()}|${shownU}|${joined}|${set}|${inSea()}|${rack - deps.toRing()}|${jibHead.x}|${jibHead.z}|${rig.fold}|${rig.lift}`;
+      const drawKey = `${opened}|${stood()}|${shownU}|${joined}|${set}|${inSea()}|${rack - deps.toRing()}|${jibHead.x}|${jibHead.z}|${rig.fold}|${rig.lift}|${rig.line}|${rig.lamps}`;
       if (sleep.redraw(moving, drawKey)) drawLive();
     },
     accepted(e: RailwayAccepted) {

@@ -205,7 +205,9 @@ with the cameras of `dev/look/evals/terrain-draws.ts:17-20` (green: cam 909,24.4
   the finale every page must see (banner, rockets, camera pull-out). So only the box-batch rebuild sleeps, through
   `createRedrawSleep` (new `src/render/view-sleep.ts`: `resident(viewDistance(centre), ...)` at 250 / 300 m past the
   place's own reach). Everything else runs every frame. Asleep, the batch is still redrawn while a bent rises, a
-  footing goes down or the traveller runs, or when what the draw reads changes. A wake therefore has nothing to catch
+  footing goes down or the traveller runs, once more on the frame that movement stops (so a key that misses something
+  a motion leaves behind, such as the haul's line and lamps, never strands its last moving frame; independent review,
+  18 November), and when what the draw reads changes. A wake therefore has nothing to catch
   up on, and its first redraw is a plain draw of the current state: the `snap()` this step asked for is needed by no
   view slept here. Held still while asleep: the railhead windsock's flutter and the glow of the next bent's sockets,
   under a pixel at that distance. Railhead and crossing are slept. The roundhouse is left: its shunt runs on the rule
@@ -218,8 +220,11 @@ with the cameras of `dev/look/evals/terrain-draws.ts:17-20` (green: cam 909,24.4
   | far | 12.189 / 15.375 → 11.473 / 14.525 | 12.633 → 12.430 | 1.873 → 1.617 | 33.36 → 16.13 |
   | head | 16.612 / 21.255 → 16.184 / 20.390 | 17.919 → 17.644 | 1.905 → 1.557 | 43.61 → 25.79 |
 
-  The railhead's `drawLive` reads 0 ms at all three poses. The crossing's `draw` reads 0 at spawn and far; at head it
-  stays awake (253 m from its centre, inside 250 m plus its 69 m reach) and in view. Calls and triangles are unchanged.
+  The `far` row is a camera pose (`cam`): `__debugCam` places the camera in lateUpdate, after the views, so the gate
+  there read the player's camera at spawn, not the pose. Read `far` as a second spawn reading of the gate, not as the
+  gate measured at Far Head. `head` puts the player there, so the gate reads Far Head. The railhead's `drawLive` reads
+  0 ms at all three poses. The crossing's `draw` reads 0 at spawn and far; at head it stays awake (253 m from its
+  centre, inside 250 m plus its 69 m reach) and in view. Calls and triangles are unchanged.
   [Wake stills](../world/world-view-sleep/): after a minute asleep at spawn (`asleep: true` for both), a teleport
   beside each. The railhead stands whole at rest (7 bents stood and decked, `lowering` 0, traveller still, windsock
   moving again), and so does the crossing (6 bents, 0 rising, no finale replayed). Not tested on a device.

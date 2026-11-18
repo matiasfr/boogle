@@ -17,12 +17,17 @@ export function createRedrawSleep(points: readonly { x: number; z: number }[]) {
     cz = points.reduce((s, p) => s + p.z, 0) / n;
   const reach = points.reduce((r, p) => Math.max(r, Math.hypot(p.x - cx, p.z - cz)), 0);
   let awake = true,
+    wasMoving = false,
     drawn: string | null = null;
   return {
-    /** Whether to rebuild this frame: near (resident), something is `moving`, or `key` (what the draw reads) changed. */
+    /** Whether to rebuild this frame: near (resident), something is `moving` or stopped moving this frame, or `key`
+     * (what the draw reads) changed. The frame movement stops is always drawn, so a key that misses something a
+     * motion leaves behind (a line, a lamp) never strands the last moving frame. */
     redraw(moving: boolean, key: string) {
       awake = resident(viewDistance(cx, cz), awake, SLEEP.near + reach, SLEEP.far + reach);
-      if (!awake && !moving && key === drawn) return false;
+      const stopped = wasMoving && !moving;
+      wasMoving = moving;
+      if (!awake && !moving && !stopped && key === drawn) return false;
       drawn = key;
       return true;
     },
