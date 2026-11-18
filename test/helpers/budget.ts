@@ -9,11 +9,11 @@
 // scale is always 1 on HOTBOX.
 import os from 'node:os';
 
-export const RUNS = Number(process.env.BUDGET_RUNS) || 5;
+const RUNS = Number(process.env.BUDGET_RUNS) || 5;
 const MAX_SCALE = 4;
 
 /** 1 on an idle machine; the 1-minute load average over cores when busier, capped at MAX_SCALE. */
-export function loadScale(): number {
+function loadScale(): number {
   if (process.env.BUDGET_LOAD_SCALE === 'off') return 1;
   const s = os.loadavg()[0]! / os.availableParallelism();
   return Math.min(MAX_SCALE, Math.max(1, s));
@@ -78,7 +78,7 @@ export function hardLimitFailure(name: string, best: Metrics, hard: Metrics, sca
 }
 
 /** The metrics over their limits as one message, or '' when all are within their limits. */
-export function overBudget(best: Metrics, limits: Metrics, scale: number, runs: number): string {
+function overBudget(best: Metrics, limits: Metrics, scale: number, runs: number): string {
   return Object.keys(limits)
     .filter((k) => !(best[k]! < limits[k]!))
     .map(
