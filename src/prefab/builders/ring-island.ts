@@ -1,4 +1,4 @@
-// Ring Island's records (src/entities/ring-island/): the greybox box its massing is drawn in, the folk, a fingerpost arm,
+// Ring Island's records (src/entities/ring-island/): the greybox box its massing is drawn in, a rim rock, the folk, a fingerpost arm,
 // the low map table, the summit deck and the drop hammer's head. Static things are vertex-coloured pieces the island
 // merges into its one draw; the head is its own mesh, which the island lifts and drops every frame.
 import * as THREE from 'three/webgpu';
@@ -7,6 +7,7 @@ import type { JsonObject } from '../types.ts';
 declare module '../names.ts' {
   interface BuilderNames {
     'ring.box': true;
+    'ring.rim-rock': true;
     'ring.folk': true;
     'ring.fingerpost-arm': true;
     'ring.map-table': true;
@@ -52,6 +53,17 @@ const upright = (color: string, w: number, h: number, d: number, x: number, y: n
 registerBuilder('ring.box', (params) => ({
   pieces: [
     { geometry: new THREE.BoxGeometry(1, 1, 1), matrix: new THREE.Matrix4(), color: colour(params.color, 'box') },
+  ],
+}));
+
+// A rim rock: a dodecahedron of `radius` in one colour; the placement's scale makes it uneven.
+registerBuilder('ring.rim-rock', (params) => ({
+  pieces: [
+    {
+      geometry: new THREE.DodecahedronGeometry(finite(params.radius, 'rock radius')),
+      matrix: new THREE.Matrix4(),
+      color: colour(params.color, 'rock'),
+    },
   ],
 }));
 

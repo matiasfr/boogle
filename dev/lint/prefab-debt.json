@@ -334,7 +334,7 @@
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/ring-island/view.ts": {
-      "count": 9,
+      "count": 8,
       "exports": ["createRingIslandView"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },

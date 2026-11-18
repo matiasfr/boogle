@@ -362,6 +362,36 @@ export function captureRingBefore() {
   });
 }
 
+/** The level's placements under `prefix` on the ground's frames (path, bridge, rim), as the view resolves them: the
+ * built level through the view's own resolvePlacement and summitFrames, with each placement's record. */
+export async function ringGroundPlacements(g: ReturnType<typeof createIslandGround>, prefix: string) {
+  const c = ringBindings();
+  const { definitions } = await import('../../src/prefab/catalogue.ts');
+  const { loadLevelArtifact } = await import('../../src/prefab/validate.ts');
+  type Placement = import('../../src/prefab/types.ts').Placement;
+  const view = sourceModule<{
+    furnishing: Placement[];
+    summitFrames(g: unknown, centre: { x: number; z: number }): unknown;
+    resolvePlacement(p: Placement, frames: object, ground: unknown, toward: unknown, summit: unknown): Placement;
+  }>(
+    fs.readFileSync('src/entities/ring-island/view.ts', 'utf8'),
+    {
+      ...c.bindings,
+      definitions,
+      loadLevelArtifact,
+      level: JSON.parse(fs.readFileSync('content/built/levels/ring-island.json', 'utf8')),
+    },
+    ['furnishing', 'summitFrames', 'resolvePlacement'],
+  );
+  const at = view.summitFrames(g, ringCentre);
+  const toward = () => {
+    throw new Error('ring golden: no toward on the ground frames');
+  };
+  return view.furnishing
+    .filter((p) => p.id.startsWith(prefix))
+    .map((p) => ({ placement: view.resolvePlacement(p, {}, g.islandH, toward, at), record: definitions[p.prefab]! }));
+}
+
 /** The record view: the island over the real builders, catalogue and `instantiate`, with the same recorders. */
 export async function captureRingAfter() {
   const c = ringBindings();

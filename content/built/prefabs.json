@@ -2805,6 +2805,18 @@
         }
       }
     },
+    "ring.rim-rock": {
+      "colliders": [],
+      "key": "ring.rim-rock",
+      "scope": "place",
+      "visual": {
+        "builder": "ring.rim-rock",
+        "params": {
+          "color": "#c4beb0",
+          "radius": 0.62
+        }
+      }
+    },
     "ring.summit-deck": {
       "colliders": [
         {

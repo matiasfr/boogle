@@ -1,4 +1,5 @@
 // Owner-requested pure place checks (docs/plans/ring-summit-path.md).
+import '../dev/sim/hooks.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { FAR, ORIGIN } from '../src/place/layout.ts';
@@ -19,10 +20,45 @@ import { PLAYER_R } from '../src/constants.ts';
 import { sourceFunction } from '../dev/level/source.ts';
 import { siteExit } from '../src/place/site-clearance.ts';
 import { SUMMIT_BRIDGE } from '../src/entities/ring-island/path.ts';
+import { ringGroundPlacements } from './helpers/ring-island-golden.ts';
 
 const centre = { x: FAR.x + ORIGIN.x, z: FAR.z + ORIGIN.z };
 const g = createIslandGround(RING_CONES, centre);
 const facts = summitPathFacts(g, centre);
+type Box = { kind: 'box'; hx: number; hy: number; hz: number; offset: THREE.Vector3; rotation: THREE.Quaternion };
+/** The footbridge's solids as the level places them (content/levels/ring-island.ts, `bridge/`, resolved by the view):
+ * each placement's record colliders, in world space. */
+async function bridgeSolids() {
+  return (await ringGroundPlacements(g, 'bridge/')).flatMap(({ placement: p, record }) =>
+    record.colliders.map((c): Box & { id: string } => {
+      assert.equal(c.shape, 'box');
+      if (c.shape !== 'box') throw new Error('box');
+      const [sx, sy, sz] = p.scale ?? [1, 1, 1],
+        [yaw, pitch, roll] = p.rot ?? [0, 0, 0];
+      const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch, yaw, roll, 'YXZ'));
+      return {
+        id: p.id,
+        kind: 'box',
+        hx: c.half[0] * sx,
+        hy: c.half[1] * sy,
+        hz: c.half[2] * sz,
+        offset: new THREE.Vector3(...c.at)
+          .multiply(new THREE.Vector3(sx, sy, sz))
+          .applyQuaternion(rotation)
+          .add(new THREE.Vector3(...p.pos)),
+        rotation,
+      };
+    }),
+  );
+}
+/** The height of a box's top face over the world (x, z), which must lie over that face. */
+function topAt(box: Box, x: number, z: number) {
+  const direction = new THREE.Vector3(0, 1, 0).applyQuaternion(box.rotation);
+  const y = box.offset.y + (box.hy - direction.x * (x - box.offset.x) - direction.z * (z - box.offset.z)) / direction.y;
+  const local = new THREE.Vector3(x, y, z).sub(box.offset).applyQuaternion(box.rotation.clone().invert());
+  assert.ok(Math.abs(local.x) <= box.hx && Math.abs(local.z) <= box.hz);
+  return y;
+}
 const near = (actual: number, expected: number) =>
   assert.ok(Math.abs(actual - expected) < 0.1, `${actual} vs ${expected}`);
 
@@ -70,40 +106,14 @@ test('the first four metres clear the timber underside across the deck and its h
   }
 });
 
-test('the deck meets the landing, clears an overlapping player and leaves resting contact alone', () => {
-  type Beam = (colour: string, a: THREE.Vector3Like, b: THREE.Vector3Like, width: number, depth: number) => void;
-  type Box = { kind: 'box'; hx: number; hy: number; hz: number; offset: THREE.Vector3; rotation: THREE.Quaternion };
-  const boxes: Box[] = [];
-  const build = sourceFunction<(parts: object) => { beam: Beam }>('src/entities/ring-island/view.ts', 'builders', {
-    THREE,
-  });
-  const { beam } = build({
-    add() {},
-    solid(width: number, height: number, depth: number, matrix: THREE.Matrix4) {
-      const offset = new THREE.Vector3(),
-        rotation = new THREE.Quaternion();
-      matrix.decompose(offset, rotation, new THREE.Vector3());
-      boxes.push({ kind: 'box', hx: width / 2, hy: height / 2, hz: depth / 2, offset, rotation });
-    },
-  });
-  sourceFunction<(beam: Beam, ground: typeof g) => void>('src/entities/ring-island/view.ts', 'bridgeWalkSurfaces', {
-    summitBridge,
-    SUMMIT_BRIDGE,
-    TIMBER: 'timber',
-  })(beam, g);
-  // The deck alone: the landing before it is the ground (ground.ts LANDING).
-  assert.equal(boxes.length, 1);
+test('the deck meets the landing, clears an overlapping player and leaves resting contact alone', async () => {
+  // The deck is the one walk surface: the landing before it is the ground (ground.ts LANDING).
   const { a, b } = summitBridge(g);
-  const top = (box: Box) => {
-    const direction = new THREE.Vector3(0, 1, 0).applyQuaternion(box.rotation);
-    const y =
-      box.offset.y + (box.hy - direction.x * (a.x - box.offset.x) - direction.z * (a.z - box.offset.z)) / direction.y;
-    const local = new THREE.Vector3(a.x, y, a.z).sub(box.offset).applyQuaternion(box.rotation.clone().invert());
-    assert.ok(Math.abs(local.x) <= box.hx && Math.abs(local.z) <= box.hz);
-    return y;
-  };
-  const deck = boxes[0]!;
-  assert.ok(Math.abs(top(deck) - 14.932) <= 0.001);
+  const solids_ = await bridgeSolids();
+  const decks = solids_.filter((box) => box.id === 'bridge/deck');
+  assert.equal(decks.length, 1);
+  const deck = decks[0]!;
+  assert.ok(Math.abs(topAt(deck, a.x, a.z) - 14.932) <= 0.001);
   const outOf = sourceFunction('src/place/sites.ts', 'outOf', {});
   const make = sourceFunction<(shape: Box) => { exit(position: THREE.Vector3Like): unknown }>(
     'src/entities/ring-island/view.ts',
@@ -134,6 +144,16 @@ test('the deck meets the landing, clears an overlapping player and leaves restin
       const x = a.x + ux * d - uz * side,
         z = a.z + uz * d + ux * side;
       assert.equal(resolve({ x, y: g.islandH(x, z) + PLAYER_R, z }, solids, g.islandH), null, `${d}, ${side}`);
+      // Nor does any other solid of the footbridge (the parapets, abutments and bents) move them.
+      assert.equal(
+        resolve(
+          { x, y: g.islandH(x, z) + PLAYER_R, z },
+          solids_.map((box) => make(box)),
+          g.islandH,
+        ),
+        null,
+        `${d}, ${side} with the footbridge's solids`,
+      );
     }
   const resting = new THREE.Vector3(0, deck.hy + PLAYER_R - 0.01, 0).applyQuaternion(deck.rotation).add(deck.offset);
   assert.equal(clearance.exit(resting), null);
@@ -155,26 +175,23 @@ test('the unaffected abutment b still stands on uncut ground around its full mar
   }
 });
 
-test('the walk from the trail over the landing onto the deck steps at most 10 cm, on the axis and both edges', () => {
-  type Point = { x: number; y: number; z: number };
-  const decks: [Point, Point][] = [];
-  sourceFunction<(beam: (colour: string, start: Point, end: Point) => void, ground: typeof g) => void>(
-    'src/entities/ring-island/view.ts',
-    'bridgeWalkSurfaces',
-    { summitBridge, SUMMIT_BRIDGE, TIMBER: 'timber' },
-  )((colour, start, end) => void (colour === 'timber' && decks.push([start, end])), g);
+test('the walk from the trail over the landing onto the deck steps at most 10 cm, on the axis and both edges', async () => {
+  const decks = (await bridgeSolids()).filter((box) => box.id === 'bridge/deck');
   assert.equal(decks.length, 1);
-  const [a, b] = decks[0]!,
+  const deck = decks[0]!,
+    { a, b } = summitBridge(g),
     span = Math.hypot(b.x - a.x, b.z - a.z),
     ux = (b.x - a.x) / span,
     uz = (b.z - a.z) / span;
-  // Underfoot from 7 m before a to 1 m past it: the finished ground, then the deck's top (3 m wide, no roll).
+  // Underfoot from 7 m before a to 1 m past it: the finished ground, then the deck collider's top (3 m wide, no roll).
   for (const side of [-1.3, -1.2, 0, 1.2, 1.3]) {
     let previous = NaN,
       worst = { step: 0, at: 0 };
     for (let k = -140; k <= 20; k++) {
       const d = k * 0.05,
-        y = d >= 0 ? a.y + ((b.y - a.y) * d) / span : g.islandH(a.x + ux * d - uz * side, a.z + uz * d + ux * side);
+        x = a.x + ux * d - uz * side,
+        z = a.z + uz * d + ux * side,
+        y = d >= 0 ? topAt(deck, x, z) : g.islandH(x, z);
       if (Math.abs(y - previous) > worst.step) worst = { step: Math.abs(y - previous), at: d };
       previous = y;
     }

@@ -8,7 +8,8 @@
 // solid blocks: docs/plans/ring-summit-path.md) and a line of marker rocks on the cutting's summit-side rim, and the
 // ground with its sand band. Nothing here does
 // anything yet and nothing prompts (call 22). Static geometry merged into one vertex-coloured mesh; the leaf, its bracket, the hammer's head and the board's
-// face are their own. Colliders: the ground's heightfield, the decks, ramps, platforms and yard, the leaf (kinematic).
+// face are their own. Colliders: the ground's heightfield and the leaf (kinematic) are the view's; every other solid is a
+// record's.
 // Local: no state, no sync. Positions in world metres from (u, lat) metres via ringAt.
 // The furnishing (the folk, the RINGWORKS board, the works yard, the drop hammer, the works wall and mural, the
 // fingerpost, the map table and the summit lookout) and the hand-authored massing (the hinge pier, the pennant pole's
@@ -17,7 +18,10 @@
 // solids come on and off with the near view. So are the sea ramps' flights and landings, the Pilgrims' Way's deck,
 // track, truss posts and rails and piers, the halt's platforms with their landings and ramps, the foot crossing (planks,
 // bed and slab), the west platform's ramp to the path and the crossover's rails, placed on the catalog's rows (RING_RAMPS,
-// RING_GAP, RING_HALT, RING_END, RING_CROSSING; generatedCounts holds the level's counts to them).
+// RING_GAP, RING_HALT, RING_END, RING_CROSSING; generatedCounts holds the level's counts to them), and the summit
+// path's lengths, its footbridge and the rim rocks, placed on the ground (path.ts; summitFrames holds their counts).
+// What stays view code: the ground and its heightfield, the approach's trail and the landing (the ground's own), the
+// leaf and its footings, the pennant, and the hammer's lift and thump.
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { BODY, createBody, type Body, type Shape } from '../../physics/engine.ts';
@@ -101,8 +105,7 @@ const HAMMER = { cycle: 2.4, lift: 0.6, hold: 0.25, drop: 0.18, rise: 2.6, hear:
 
 // ---------------------------------------------------------------- colours (the greybox's; the furnishing's records
 // carry their own, the same palette)
-const TIMBER = '#8a6a48',
-  STEEL = '#e8742c', // the folk's orange steel
+const STEEL = '#e8742c', // the folk's orange steel
   STEEL_DARK = '#b8551e',
   GOLD = '#ffc83a',
   RAIL = '#3d3a38',
@@ -111,15 +114,13 @@ const TIMBER = '#8a6a48',
   PATH = '#c9b48a',
   LAND = '#4a4d5c', // buildFar's cones
   LAND2 = '#3b3e4c',
-  ROCK = '#7d7a78', // the cuttings' faces
-  STONE = '#c4beb0'; // the rim's marker rocks, paler than the cut rock behind them
+  ROCK = '#7d7a78'; // the cuttings' faces
 
-/** Geometry merged into one vertex-coloured mesh, and the solids beside it: `shapes` the island's own body's, `clearance`
- * every fixed solid in build order, records' included (the mount clearance's order). */
+/** Geometry merged into one vertex-coloured mesh, and `clearance`: every fixed solid in build order, all of them the
+ * records' (the mount clearance's order). */
 function createParts() {
   const list: THREE.BufferGeometry[] = [];
-  const shapes: Shape[] = [],
-    clearance: Shape[] = [];
+  const clearance: Shape[] = [];
   const colour = new THREE.Color();
   function add(color: string, geo: THREE.BufferGeometry, m?: THREE.Matrix4) {
     if (m) geo.applyMatrix4(m);
@@ -132,31 +133,14 @@ function createParts() {
     g.setAttribute('color', new THREE.BufferAttribute(c, 3));
     list.push(g);
   }
-  function solid(w: number, h: number, d: number, m: THREE.Matrix4) {
-    const p = new THREE.Vector3(),
-      q = new THREE.Quaternion(),
-      s = new THREE.Vector3();
-    m.decompose(p, q, s);
-    const shape: Shape = {
-      kind: 'box',
-      hx: w / 2,
-      hy: h / 2,
-      hz: d / 2,
-      offset: { x: p.x, y: p.y, z: p.z },
-      rotation: { x: q.x, y: q.y, z: q.z, w: q.w },
-    };
-    shapes.push(shape);
-    clearance.push(shape);
-  }
   const merged = () => {
     const geo = mergeGeometries(list);
     for (const g of list) g.dispose();
     list.length = 0;
     return geo;
   };
-  return { add, solid, shapes, clearance, merged };
+  return { add, clearance, merged };
 }
-type Parts = ReturnType<typeof createParts>;
 
 function clearanceShape(shape: Shape, parent = new THREE.Matrix4()) {
   if (shape.kind !== 'box' && shape.kind !== 'cylinder') throw new Error('Unexpected ring scenery shape');
@@ -239,27 +223,6 @@ function ringSceneryExit(
     result.y = hit.top + PLAYER_R + 0.02;
   }
   return result.y === position.y ? null : result;
-}
-
-/** The greybox's builders on R1's numbers (src/proto/greybox/ring.ts), writing into `parts`. */
-function builders({ add, solid }: Parts) {
-  /** A box from a to b (its centreline, top surface at a.y and b.y), w wide and h deep. */
-  function beam(color: string, a: THREE.Vector3Like, b: THREE.Vector3Like, w: number, h: number, isSolid = true) {
-    const dx = b.x - a.x,
-      dy = b.y - a.y,
-      dz = b.z - a.z,
-      len = Math.hypot(dx, dz),
-      full = Math.hypot(len, dy);
-    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.atan2(dy, len), Math.atan2(dx, dz), 0, 'YXZ'));
-    const m = new THREE.Matrix4().compose(
-      new THREE.Vector3((a.x + b.x) / 2, (a.y + b.y) / 2 - h / 2, (a.z + b.z) / 2),
-      q,
-      new THREE.Vector3(1, 1, 1),
-    );
-    add(color, new THREE.BoxGeometry(w, h, full + 0.04), m);
-    if (isSolid) solid(w, h, full + 0.04, m);
-  }
-  return { beam };
 }
 
 /** The leaf's local frame: +z along it from the heel toward the toe (toward Home when down), its top face at y 0. */
@@ -434,16 +397,119 @@ function generatedCounts(): [string, number][] {
   rows.push(['crossover/', 3 * count(RING_END.cross.u0 / 100, RING_END.cross.u1 / 100, 1)]);
   return rows;
 }
+/** The frames on the ground (path.ts): the summit path's legs (`path`: leg `leg`'s piece `k` of its 6 m lengths, from
+ * `x0`, `z0` to `x1`, `z1`), the footbridge (`bridge`: its deck's ends `a-` and `b-` x, y, z, `span`, `width`, `thick`,
+ * `under` (its underside, from the top), `parapet` (the parapets' height), `parapet-l` and `parapet-r` (their sides),
+ * `yaw` (along the deck), and with `bent` that bent's `bent-d` (along the deck) and `bent-under` (the underside there);
+ * `on` is a point `d` along the deck from a, `side` to its right and `dy` over its top) and the rim rocks (`rim`,
+ * rock `k`). `counts` are the placements the ground asks for, by id prefix. */
+function summitFrames(g: IslandGround, centre: { x: number; z: number }) {
+  const { way, bridgeLeg } = summitPath(g, centre),
+    { a, b } = summitBridge(g),
+    B = SUMMIT_BRIDGE,
+    rocks = summitRimRocks(g, centre);
+  const span = Math.hypot(b.x - a.x, b.z - a.z),
+    ax = (b.x - a.x) / span,
+    az = (b.z - a.z) / span;
+  const on = (d: number, side: number, dy: number) => ({
+    x: a.x + ax * d - az * side,
+    y: a.y + ((b.y - a.y) * d) / span + dy,
+    z: a.z + az * d + ax * side,
+  });
+  // The path's beams: 6 m lengths a leg, none on the approach's last leg (the trail and the landing) or the deck.
+  const legs = way
+    .slice(0, -1)
+    .map(([ax, az], i) =>
+      i === bridgeLeg || i === bridgeLeg - 1
+        ? 0
+        : Math.max(1, Math.ceil(Math.hypot(way[i + 1]![0] - ax, way[i + 1]![1] - az) / 6)),
+    );
+  const side = B.width / 2 - 0.06;
+  const bridge: Anchors = {
+    'a-x': a.x,
+    'a-y': a.y,
+    'a-z': a.z,
+    'b-x': b.x,
+    'b-y': b.y,
+    'b-z': b.z,
+    span,
+    width: B.width,
+    thick: B.thick,
+    under: -B.thick,
+    parapet: B.parapet,
+    'parapet-l': -1 * side,
+    'parapet-r': 1 * side,
+    yaw: Math.atan2(ax, az),
+  };
+  const counts: [string, number][] = [
+    ...legs.map((n, i): [string, number] => [`path/leg${i + 1}/`, n]),
+    [`path/leg${legs.length + 1}/`, 0],
+    ['path/', legs.reduce((s, n) => s + n, 0)],
+    ['bridge/deck', 1],
+    ['bridge/parapet', 2],
+    ['bridge/abutment', 2],
+    ...B.bents.map((_, k): [string, number] => [`bridge/bent${k + 1}/`, 3]),
+    [`bridge/bent${B.bents.length + 1}/`, 0],
+    ['bridge/', 5 + 3 * B.bents.length],
+    ['rim/stone', rocks.length],
+    ['rim/box', rocks.length],
+    ['rim/', 2 * rocks.length],
+  ];
+  return {
+    on,
+    rocks,
+    counts,
+    path(place: JsonObject): Anchors {
+      const i = finite(place.leg, 'leg'),
+        k = finite(place.k, 'leg k'),
+        n = legs[i];
+      if (!n || !Number.isInteger(k) || k < 0 || k >= n) throw new Error('ring island: no such path length');
+      const [ax, az] = way[i]!,
+        [bx, bz] = way[i + 1]!;
+      return {
+        x0: ax + ((bx - ax) * k) / n,
+        z0: az + ((bz - az) * k) / n,
+        x1: ax + ((bx - ax) * (k + 1)) / n,
+        z1: az + ((bz - az) * (k + 1)) / n,
+      };
+    },
+    bridge(place: JsonObject): Anchors {
+      if (place.bent === undefined) return bridge;
+      const d = B.bents[finite(place.bent, 'bent')];
+      if (d === undefined) throw new Error('ring island: no such bent');
+      return { ...bridge, 'bent-d': d, 'bent-under': on(d, 0, -B.thick).y };
+    },
+  };
+}
+type SummitFrames = ReturnType<typeof summitFrames>;
 /** World poses for a furnishing placement: its frame's operands resolved on the island as it stands. */
 function resolvePlacement(
   p: Placement,
   frames: Readonly<Record<'halt' | 'brace' | 'line' | 'steps' | 'summit', Anchors>>,
   ground: (x: number, z: number) => number,
   toward: (to: Json | undefined) => { x: number; z: number },
+  summitAt: SummitFrames,
 ): Placement {
   const { place: authored, ...params } = p.params ?? {};
   const place = object(authored, `${p.id} place`);
   const frame = place.frame;
+  if (frame === 'rim') {
+    // Rim rock k (path.ts's summitRimRocks): its stone as drawn, or its box (inscribed in the stone), both centred
+    // `lift` over its ground point and sharing its yaw.
+    const r = summitAt.rocks[finite(place.k, 'rock')];
+    if (!r) throw new Error(`ring island: ${p.id} rock`);
+    const { lift, drawn, box } = summitRimRockShape(r),
+      size = place.rock === 'stone' ? drawn : place.rock === 'box' ? box : undefined;
+    if (!size) throw new Error(`ring island: ${p.id} rock`);
+    return {
+      id: p.id,
+      prefab: p.prefab,
+      pos: [r.x, r.y + lift, r.z],
+      rot: [r.yaw, 0, 0],
+      scale: [size.x, size.y, size.z],
+      ...(Object.keys(params).length ? { params } : {}),
+    };
+  }
   if (frame === 'map-table') {
     const mc = RING_MAP_TABLE,
       gorge = toward(place.gorge),
@@ -455,12 +521,19 @@ function resolvePlacement(
       params: { ...params, yaw: YAW, gorge: [gorge.x, gorge.z], canopy: [canopy.x, canopy.z] },
     };
   }
-  /** An upright box turned to the line, from bottom to top: the greybox's post. */
-  const upright = (c: { x: number; z: number }, bottom: number, top: number, w: number, d: number): Placement => ({
+  /** An upright box turned to the line (or `yaw`), from bottom to top: the greybox's post. */
+  const upright = (
+    c: { x: number; z: number },
+    bottom: number,
+    top: number,
+    w: number,
+    d: number,
+    yaw = YAW,
+  ): Placement => ({
     id: p.id,
     prefab: p.prefab,
     pos: [c.x, (bottom + top) / 2, c.z],
-    rot: [YAW, 0, 0],
+    rot: [yaw, 0, 0],
     scale: [w, top - bottom, d],
     params,
   });
@@ -492,6 +565,8 @@ function resolvePlacement(
   let anchors: Anchors;
   if (frame === 'flight' || frame === 'landing') anchors = rampFrame(place);
   else if (frame === 'crossover') anchors = crossoverFrame(place);
+  else if (frame === 'path') anchors = summitAt.path(place);
+  else if (frame === 'bridge') anchors = summitAt.bridge(place);
   else if (frame === 'halt' || frame === 'brace' || frame === 'line' || frame === 'steps' || frame === 'summit')
     anchors = frames[frame];
   else throw new Error(`ring island: ${p.id} frame`);
@@ -513,11 +588,19 @@ function resolvePlacement(
     if (!plank) throw new Error(`ring island: ${p.id} plank`);
     anchors = { ...anchors, 'plank-l0': plank[0], 'plank-l1': plank[1] };
   }
-  /** (x, z) of a point: (u, lat) on the line, or (x, z) in the summit's frame. */
+  /** A point on the footbridge's deck (`d` along it, `side` to its right, `dy` over its top). */
+  const onDeck = (v: Json | undefined, dy: boolean) => {
+    if (frame !== 'bridge') throw new Error(`ring island: ${p.id} on`);
+    const o = object(v, 'on');
+    return summitAt.on(value(o.d, anchors), value(o.side, anchors), dy ? value(o.dy, anchors) : 0);
+  };
+  /** (x, z) of a point: (u, lat) on the line, (x, z) in the summit's frame, or on the footbridge's deck. */
   const xz = (q: JsonObject) =>
     q.u !== undefined
       ? at(value(q.u, anchors), value(q.lat, anchors))
-      : { x: value(q.x, anchors), z: value(q.z, anchors) };
+      : q.on !== undefined
+        ? onDeck(q.on, false)
+        : { x: value(q.x, anchors), z: value(q.z, anchors) };
   const span = (v: Json | undefined, ground?: number) => {
     if (!Array.isArray(v) || v.length !== 2) throw new Error(`ring island: ${p.id} span`);
     const with_ = ground === undefined ? anchors : { ...anchors, ground };
@@ -556,14 +639,17 @@ function resolvePlacement(
     const q = object(place.post, 'post'),
       c = xz(q);
     const [bottom, top] = span(q.y, ground(c.x, c.z));
-    return upright(c, bottom, top, finite(q.w, 'post width'), finite(q.d, 'post depth'));
+    const yaw = q.yaw === undefined ? YAW : value(q.yaw, anchors);
+    return upright(c, bottom, top, finite(q.w, 'post width'), finite(q.d, 'post depth'), yaw);
   }
   if (place.beam !== undefined) {
     // A box from a to b (its centreline, its top at a.y and b.y), w wide and h deep: the greybox's beam. An end is a
-    // point (u, lat) on the line, a world (x, z), or `d` metres out from the summit's middle along (x, z) `along`.
+    // point (u, lat) on the line, a world (x, z), on the footbridge's deck, or `d` metres out from the summit's middle
+    // along (x, z) `along`.
     const q = object(place.beam, 'beam');
     const end = (e: JsonObject) => {
       if (e.u !== undefined) return { ...at(value(e.u, anchors), value(e.lat, anchors)), y: value(e.y, anchors) };
+      if (e.on !== undefined) return onDeck(e.on, true);
       if (e.x !== undefined) {
         const x = value(e.x, anchors),
           z = value(e.z, anchors);
@@ -579,7 +665,7 @@ function resolvePlacement(
         z = anchors.cz! + (oz / n) * d;
       return { x, y: value(e.y, { ...anchors, ground: ground(x, z) }), z };
     };
-    return beam(end(object(q.a, 'beam a')), end(object(q.b, 'beam b')), value(q.w, anchors), finite(q.h, 'beam depth'));
+    return beam(end(object(q.a, 'beam a')), end(object(q.b, 'beam b')), value(q.w, anchors), value(q.h, anchors));
   }
   if (place.tread !== undefined) {
     // Tread k of a flight: from k pitches up it, `run` long, `lift` over the ramp's top, w wide and h deep. The last
@@ -643,17 +729,11 @@ function resolvePlacement(
 }
 
 export type RingIslandView = ReturnType<typeof createRingIslandView>;
-/** The deck: the walk surface from a to b. The landing before a is the ground itself (ground.ts LANDING). */
-function bridgeWalkSurfaces(beam: ReturnType<typeof builders>['beam'], g: IslandGround) {
-  const { a, b } = summitBridge(g);
-  beam(TIMBER, a, b, SUMMIT_BRIDGE.width, SUMMIT_BRIDGE.thick);
-}
 export function createRingIslandView(g: IslandGround, cones: readonly Cone[], centre: { x: number; z: number }) {
   const root = new THREE.Group();
   root.name = 'ring-island';
   const material = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.9, flatShading: true });
   const parts = createParts();
-  const { beam } = builders(parts);
 
   // ---------------------------------------------------------------- the furnishing's records
   // Instantiated off (no bodies) until the near view mounts: setMounted turns their solids on with the island's own.
@@ -662,6 +742,15 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   /** A world direction (x, z) from the halt's middle toward a world (x, z): where the branch read points. */
   const haltMid = at((HALT[0] + HALT[1]) / 2, FORM.mid);
   const pathFoot = summitPathFoot();
+  // The path, the footbridge and the rim rocks stand on the ground: a level whose counts no longer match it refuses to
+  // load, as generatedCounts' do for the catalog's rows; and the rocks' stones are summitRimRockShape's.
+  const summitAt = summitFrames(g, centre);
+  for (const [prefix, n] of summitAt.counts)
+    if (furnishing.filter((p) => p.id.startsWith(prefix)).length !== n)
+      throw new Error(`ring island: ${prefix} is not placed as the ground lays it out (${n})`);
+  const rock = definitions['ring.rim-rock']?.visual;
+  if (!rock || !('builder' in rock) || summitAt.rocks.some((r) => summitRimRockShape(r).radius !== rock.params.radius))
+    throw new Error('ring island: the rim rock is not summitRimRockShape');
   const toward = (to: Json | undefined) => {
     if (!Array.isArray(to) || to.length !== 2) throw new Error('ring island: toward expected');
     const dx = finite(to[0], 'toward') - haltMid.x,
@@ -741,7 +830,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
    * beside its own in the mount clearance's order. */
   function furnish(which: (p: Placement) => boolean) {
     const made = furnishing.filter(which).map((p) => {
-      const record = instantiate(p.prefab, resolvePlacement(p, frames, g.islandH, toward), {
+      const record = instantiate(p.prefab, resolvePlacement(p, frames, g.islandH, toward, summitAt), {
         owner,
         // The hammer's head moves every frame; everything else stands still.
         still: p.prefab !== 'ring.hammer-head',
@@ -808,34 +897,18 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   furnish((p) => p.id.startsWith('crossover/'));
 
   // ---------------------------------------------------------------- the path up to the summit lookout
+  // Records (content/levels/ring-island.ts, `path/`, `bridge/`, `rim/`, in this order), on the ground's frames
+  // (summitFrames): the path's 6 m lengths a leg, drawn only (the trail is the ground under them); the footbridge over
+  // the stack line's cutting, blocked out at true size (docs/plans/ring-summit-path.md): a timber deck flush with the
+  // path at both rims, two orange parapets low enough to hop, a concrete abutment under each end and two dark steel
+  // bents standing just outside the cutting's flat floor, all solid; and the cutting's summit-side rim, marked: a sparse
+  // line of pale rocks 1.5 m behind the edge where the path runs near it, because from uphill the rim is a convex edge
+  // that hides the drop, each a stone and a box inscribed in it (test/ring-island-path.test.ts), low enough to step
+  // round or hop. The approach's trail and the landing are the ground's, drawn here between the deck and the parapets.
   const CX = centre.x,
     CZ = centre.z;
-  {
-    const { way, bridgeLeg } = summitPath(g, centre);
-    for (let i = 0; i < way.length - 1; i++) {
-      if (i === bridgeLeg || i === bridgeLeg - 1) continue;
-      const [ax, az] = way[i]!,
-        [bx, bz] = way[i + 1]!;
-      const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 6));
-      for (let k = 0; k < n; k++) {
-        const x0 = ax + ((bx - ax) * k) / n,
-          z0 = az + ((bz - az) * k) / n,
-          x1 = ax + ((bx - ax) * (k + 1)) / n,
-          z1 = az + ((bz - az) * (k + 1)) / n;
-        beam(
-          PATH,
-          { x: x0, y: g.islandH(x0, z0) + 0.12, z: z0 },
-          { x: x1, y: g.islandH(x1, z1) + 0.12, z: z1 },
-          2.6,
-          0.3,
-          false,
-        );
-      }
-    }
-  }
-  // The footbridge over the stack line's cutting, blocked out at true size (docs/plans/ring-summit-path.md): a timber
-  // deck flush with the path at both rims, two orange parapets low enough to hop, a concrete abutment under each end
-  // and two dark steel bents standing just outside the cutting's flat floor. Everything here is solid.
+  furnish((p) => p.id.startsWith('path/'));
+  furnish((p) => p.id === 'bridge/deck');
   {
     const { a, b } = summitBridge(g),
       B = SUMMIT_BRIDGE;
@@ -848,7 +921,6 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
       y: a.y + ((b.y - a.y) * d) / span + dy,
       z: a.z + az * d + ax * side,
     });
-    bridgeWalkSurfaces(beam, g);
     // The approach's first half, drawn only (the trail is the ground under it, as under the path's beams): from the
     // beams' level 0.12 m at the turn to 4 cm over the ground's own cross-fall, where it meets the landing's top. The
     // landing is the ground (ground.ts LANDING): its top and the sides it stands above the hillside by, drawn as path.
@@ -890,47 +962,9 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
     trailGeo.setAttribute('position', new THREE.Float32BufferAttribute(surface, 3));
     trailGeo.computeVertexNormals();
     parts.add(PATH, trailGeo);
-    for (const s of [-1, 1]) {
-      const side = s * (B.width / 2 - 0.06);
-      beam(STEEL, on(0, side, B.parapet), on(span, side, B.parapet), 0.12, B.parapet);
-    }
-    for (const [d0, d1] of [
-      [-1.5, 0.5],
-      [span - 0.5, span + 1.5],
-    ] as const)
-      beam(CONCRETE, on(d0, 0, -B.thick), on(d1, 0, -B.thick), 3.4, 1.2);
-    const yaw = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, Math.atan2(ax, az));
-    for (const d of B.bents) {
-      const under = on(d, 0, -B.thick).y;
-      beam(STEEL_DARK, on(d, -1.7, -B.thick), on(d, 1.7, -B.thick), 0.5, 0.4);
-      for (const side of [-1.2, 1.2]) {
-        const c = on(d, side),
-          bottom = g.islandH(c.x, c.z) - 0.5,
-          top = under - 0.4;
-        const m = new THREE.Matrix4().compose(
-          new THREE.Vector3(c.x, (bottom + top) / 2, c.z),
-          yaw,
-          new THREE.Vector3(1, 1, 1),
-        );
-        parts.add(STEEL_DARK, new THREE.BoxGeometry(0.5, top - bottom, 0.5), m);
-        parts.solid(0.5, top - bottom, 0.5, m);
-      }
-    }
   }
-  // The cutting's summit-side rim, marked: a sparse line of pale rocks 1.5 m behind the edge where the path runs near
-  // it, because from uphill the rim is a convex edge that hides the drop. Low enough to step round or hop, and solid.
-  for (const r of summitRimRocks(g, centre)) {
-    const { radius, lift, drawn, box } = summitRimRockShape(r),
-      q = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, r.yaw),
-      c = new THREE.Vector3(r.x, r.y + lift, r.z);
-    parts.add(
-      STONE,
-      new THREE.DodecahedronGeometry(radius),
-      new THREE.Matrix4().compose(c, q, new THREE.Vector3(drawn.x, drawn.y, drawn.z)),
-    );
-    // The box is inscribed in the drawn stone (test/ring-island-path.test.ts): nothing solid stands outside it.
-    parts.solid(box.x, box.y, box.z, new THREE.Matrix4().compose(c, q, new THREE.Vector3(1, 1, 1)));
-  }
+  furnish((p) => p.id.startsWith('bridge/') && p.id !== 'bridge/deck');
+  furnish((p) => p.id.startsWith('rim/'));
   // The summit lookout: its deck, rail posts and one of the folk, and a short ramp from the path's end up onto the deck,
   // whose rim stands about 1.5 m over the slope. The deck's top is `lift` over the ground at the island's middle.
   const summitDeck = furnishing.find((p) => p.prefab === 'ring.summit-deck');
@@ -941,12 +975,6 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   const shell = new THREE.Mesh(parts.merged(), material);
   shell.castShadow = shell.receiveShadow = true;
   root.add(shell);
-  const solids = createBody({
-    material: groundMat,
-    group: GROUP.SCENERY,
-    position: { x: 0, y: 0, z: 0 },
-    shapes: parts.shapes,
-  });
 
   // ---------------------------------------------------------------- the ground: the grid as one mesh and one heightfield
   const ground = (() => {
@@ -1133,7 +1161,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
 
   return {
     root,
-    bodies: [solids, ...groundBodies, leafBody] as readonly Body[],
+    bodies: [...groundBodies, leafBody] as readonly Body[],
     clearPosition,
     /** The furnishing's solids come and go with the near view's own bodies (its meshes ride `root`). */
     setMounted(on: boolean) {
