@@ -5,11 +5,12 @@ import { createWaterMesh } from '../render/water-render.ts';
 import { receiverBaseColor } from '../render/water/receivers.ts';
 import { bind } from '../render/water/live.ts';
 import { VIEW_SPECS } from '../render/view-tuning.ts';
+import { background } from '../async.ts';
 
 type Surface = Material & Partial<Pick<NodeMaterial, 'lights' | 'colorNode'>> & { color?: Color };
 const query = new URLSearchParams(location.search);
 const settings: Record<string, number> = {
-  'view.mode': query.get('view') === 'raw' ? 2 : query.get('view') === 'unlit' ? 1 : 0,
+  'view.mode': ({ unlit: 1, raw: 2, overlap: 3 } as Record<string, number>)[query.get('view') ?? ''] ?? 0,
   'view.sky': query.get('viewSky') === 'off' ? 0 : 1,
   'view.water': query.get('viewWater') === 'off' ? 0 : 1,
 };
@@ -109,19 +110,44 @@ function render() {
     scene.backgroundNode = backgroundNode;
   }
 }
-function apply() {
-  if (settings['view.mode'] !== 2) restoreOutput();
-  const active = settings['view.mode'] !== 0 || !settings['view.sky'] || !settings['view.water'];
-  if (active === installed) return;
-  installed = active;
-  if (active) {
-    originalDraw = renderer.getRenderObjectFunction();
-    renderer.setRenderObjectFunction(draw);
-    pipeline.render = render;
-  } else {
-    renderer.setRenderObjectFunction(originalDraw);
-    pipeline.render = originalRender;
+// Mode 3 (overlap) owns the draw and render hooks itself; its module loads on first use only.
+let overlap: typeof import('./overlap-view.ts') | null = null;
+let overlapInstalled = false;
+function setOverlap() {
+  const want = settings['view.mode'] === 3;
+  if (want === overlapInstalled) return;
+  if (!want || overlap) {
+    overlapInstalled = want;
+    if (want) overlap!.installOverlap();
+    else overlap!.removeOverlap();
+    return;
   }
+  background(
+    import('./overlap-view.ts').then((module) => {
+      overlap = module;
+      setOverlap();
+    }),
+    'overlap view',
+  );
+}
+function apply() {
+  const mode = settings['view.mode'];
+  // Remove one override before the other installs, so neither captures the other's hooks as "original".
+  if (mode !== 3) setOverlap();
+  if (mode !== 2) restoreOutput();
+  const active = mode !== 3 && (mode !== 0 || !settings['view.sky'] || !settings['view.water']);
+  if (active !== installed) {
+    installed = active;
+    if (active) {
+      originalDraw = renderer.getRenderObjectFunction();
+      renderer.setRenderObjectFunction(draw);
+      pipeline.render = render;
+    } else {
+      renderer.setRenderObjectFunction(originalDraw);
+      pipeline.render = originalRender;
+    }
+  }
+  if (mode === 3) setOverlap();
 }
 for (const spec of VIEW_SPECS) {
   bind(

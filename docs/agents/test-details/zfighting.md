@@ -15,6 +15,10 @@ occluders and downward terrain prisms just outside both faces, aggregates triang
 then sorts by area. Opposite-facing joints and edge-only contact do not qualify. The coordinates are area-weighted
 centroids, which can fall between fragments if an occluder cuts a hole. Separation is the worst vertex-plane distance.
 
+To see contacts in the world, use the overlap view (`?view=overlap`, Dev → Z-fighting → Overlap view; see
+[graphics](../../game-design/graphics.md), "Overlap view"). It shows only what the camera sees between different
+draws or instances. Many census pieces exist only after building: look with `--rail-seed house-built`.
+
 ## Classes and grouping
 
 The 14 November classified snapshot has **a 205, b 61, c 545 grouped findings** and **0 new since baseline**.

@@ -58,4 +58,5 @@ export const devEnabled = enabled;
 // Explicit Dev off wins even if the original address also requested tuning.
 const query = new URLSearchParams(location.search);
 export const tuningVisit =
-  explicit !== '0' && (devEnabled || query.get('tune') === '1' || ['unlit', 'raw'].includes(query.get('view') ?? ''));
+  explicit !== '0' &&
+  (devEnabled || query.get('tune') === '1' || ['unlit', 'raw', 'overlap'].includes(query.get('view') ?? ''));
