@@ -40,6 +40,7 @@ import { assertAuthoredNumbers } from '../dev/prefab/authored.ts';
 import { canonical, compile, writeArtifacts } from '../dev/prefab/compiler.ts';
 import type { JsonObject } from '../src/prefab/types.ts';
 import { metadata } from '../src/prefab/types.ts';
+import { expandOperands } from '../src/prefab/operands.ts';
 import * as validation from '../src/prefab/validate.ts';
 import { prefabGolden } from './helpers/prefab-golden.ts';
 import artifact from '../content/built/prefabs.json' with { type: 'json' };
@@ -352,4 +353,40 @@ test('room hull operands fail closed before runtime geometry', () => {
   ];
   for (const patch of patches) assert.throws(() => load({ ...base, layout: { ...base.layout, ...patch } }), /prefabs:/);
   assert.throws(() => load({ ...base, colliders: [{ shape: 'box', at: [0, 0, 0], half: [1, 1, 1] }] }), /recipe-only/);
+});
+
+test('shared level operands round-trip without moving or dropping geometry', () => {
+  const outputs = compile(greybox, gorge);
+  const definitions = validation.loadPrefabArtifact(JSON.parse(outputs.get('prefabs.json')!)).prefabs;
+  const actual = validation.loadLevelArtifact(JSON.parse(outputs.get('levels/gorge.json')!), definitions);
+  const expected = validation.loadLevelArtifact({ ...metadata, format: 'boogle-level', ...gorge[0] }, definitions);
+  assert.deepEqual(actual, expected);
+});
+
+test('shared operand references reject unknown, coercible, recursive and ambiguous values', () => {
+  const definitions = [{ x: 1, z: 2 }];
+  for (const operand of [-1, 1, 0.5, '0', null, true])
+    assert.throws(() => expandOperands({ operands: definitions, frame: { operand } }), /shared operand/);
+  const invalid: JsonObject[] = [
+    { operands: {}, frame: { operand: 0 } },
+    { operands: [{ operand: 0 }], frame: { operand: 0 } },
+    { operands: definitions, frame: { operand: 0, x: 10 } },
+  ];
+  for (const layout of invalid) assert.throws(() => expandOperands(layout), /prefabs:/);
+});
+
+test('serialized room hulls preserve authored dimensions and reject invalid shell references', () => {
+  const raw = { ...metadata, format: 'boogle-prefabs', prefabs: Object.fromEntries(rooms.map((p) => [p.key, p])) };
+  const expected = validation.loadPrefabArtifact(raw);
+  const artifact = JSON.parse(compile(rooms, []).get('prefabs.json')!);
+  assert.deepEqual(validation.loadPrefabArtifact(artifact), expected);
+  const hull = artifact.prefabs['town.room-house-hulls-0'];
+  for (const source of ['missing.shell', hull.key, 'town.room-plot-board', null]) {
+    const bad = structuredClone(artifact);
+    bad.prefabs[hull.key].layout.source = source;
+    assert.throws(() => validation.loadPrefabArtifact(bad), /dimension source/);
+  }
+  const ambiguous = structuredClone(artifact);
+  ambiguous.prefabs[hull.key].layout.w = 7.4;
+  assert.throws(() => validation.loadPrefabArtifact(ambiguous), /dimension source/);
 });
