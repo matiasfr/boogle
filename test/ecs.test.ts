@@ -193,6 +193,7 @@ test('load is all or nothing and refuses malformed snapshots', () => {
     for (const col of j.c.age!) col.length = 0;
   }, /requires age/);
   bad((j) => j.c.pile!.pop(), /pile columns/);
+  bad((j) => j.c.pile!.push(j.c.pile![0]!.map(() => 0)), /pile columns/); // a column the schema no longer has
   assert.throws(() => b.load(good, () => assert.fail('the domain says no')), /the domain says no/);
   assert.equal(b.hash(), before);
   b.load(good);
