@@ -12,8 +12,11 @@ type Point = { x: number; y: number; z: number };
 export const BOILER_SHOW = { train: 4.5, hold: 30 } as const;
 /** Metres from the old loco's middle (the camp track runs straight east, the loco 3.7 m east of the train's mark):
  * where the camera stands as the wake starts, where it has drifted to by the leg's end, and what it looks at (the
- * chimney's top, where the wake's steam bursts). x is along the track (east, the loco's front), z beside it. */
-export const BOILER_VIEW = { from: [5.5, 3, 7], to: [8, 5, 10], at: [1.5, 3, 0] } as const;
+ * chimney's top, where the wake's steam bursts). x is along the track (east, the loco's front), z beside it: north,
+ * the hill's side, so the halt dropping in on the same edge stands behind the train. The plan's first numbers stood the
+ * camera on the halt's platform (south), and its roof, sign and signal post dropped in across the foreground (looked
+ * at, 18 November). The camera keeps `clear` m over the ground under it, the hill rising there. */
+export const BOILER_VIEW = { from: [6, 2.6, -8], to: [9, 4.2, -11], at: [1.5, 2.6, 0], clear: 1.6 } as const;
 const LOCO_X = 3.7;
 
 /** The shot as `createCameraPullOut.play` takes it: from, drifting to, looking at over `drift` seconds; with `breaker`
@@ -24,9 +27,13 @@ export function boilerShot(ground: (x: number, z: number) => number, breaker: bo
     z = LINE2_OLD_TRAIN.z / 100,
     y = ground(x, z);
   const off = (o: readonly [number, number, number]): Point => ({ x: x + o[0], y: y + o[1], z: z + o[2] });
+  const stand = (o: readonly [number, number, number]): Point => {
+    const p = off(o);
+    return { ...p, y: Math.max(p.y, ground(p.x, p.z) + BOILER_VIEW.clear) };
+  };
   return {
-    from: off(BOILER_VIEW.from),
-    to: off(BOILER_VIEW.to),
+    from: stand(BOILER_VIEW.from),
+    to: stand(BOILER_VIEW.to),
     at: off(BOILER_VIEW.at),
     drift: BOILER_SHOW.train,
     seconds: BOILER_SHOW.train + (breaker ? FORGE_CUT.seconds : 0),
