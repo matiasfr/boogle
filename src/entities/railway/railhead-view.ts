@@ -33,6 +33,7 @@ import { account, aperture, beam, boiler, type ReadWorld } from '../../sim/railw
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { q7Laid } from '../../sim/railway-queries.ts';
 import { ringIslandNear } from '../ring-island/state.ts';
+import { createRedrawSleep } from '../../render/view-sleep.ts';
 import { onlyALoadIn, setDownThen } from './back-down.ts';
 import { jibOffered, jibVerb } from './leaf-shape.ts';
 import { createBoxBatch, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
@@ -162,6 +163,8 @@ export function createRailwayRailhead(
     world(bentU(j), DECK.mid);
     return { x: q.x, z: q.z, deck: yAt(bentU(j)), yaw: yawAt(bentU(j)) };
   });
+  // The live batch sleeps far from the gap (render/view-sleep.ts): the bents and the platform's first place.
+  const sleep = createRedrawSleep([...bentAt, (world(headU(0) - PLATFORM.len, DECK.mid), { ...q })]);
 
   // ---------------------------------------------------------------- the spans: planks, stringers, the walkway
   const pieces: Piece[] = [];
@@ -1122,7 +1125,12 @@ export function createRailwayRailhead(
       deps.hookRing(opened && decked[BENTS - 1]! && set >= WORKS.ring);
       writeLeaf();
       placeTag();
-      drawLive();
+      // Asleep, the batch stands as last drawn unless a bent rises, a footing goes down, the traveller runs or what
+      // the draw reads changes; the windsock's flutter and the sockets' pulse hold still, under a pixel that far.
+      const moving =
+        lowering.length > 0 || rig.line || rig.flare > 0 || rise.some((t) => t >= 0 && t < RISE_S);
+      const drawKey = `${opened}|${stood()}|${shownU}|${joined}|${set}|${inSea()}|${rack - deps.toRing()}|${jibHead.x}|${jibHead.z}|${rig.fold}|${rig.lift}`;
+      if (sleep.redraw(moving, drawKey)) drawLive();
     },
     accepted(e: RailwayAccepted) {
       if (e.op === 'rail.footSet' && e.site === 3) actor = e.pid;

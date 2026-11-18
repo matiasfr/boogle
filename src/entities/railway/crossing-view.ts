@@ -18,6 +18,7 @@ import { splash } from '../../render/splash.ts';
 import { emit } from '../../render/particles.ts';
 import { dustRing } from '../../render/particle-effects.ts';
 import { readableIntensity } from '../../render/readable-unlit.ts';
+import { createRedrawSleep } from '../../render/view-sleep.ts';
 import { camera } from '../../render/scene.ts';
 import { createCameraPullOut } from '../../render/camera-pull-out.ts';
 import { createGhostOutlines } from '../../render/ghost-outline.ts';
@@ -246,6 +247,8 @@ export async function createRailwayCrossing(
     finger.mesh.visible = false;
   }
   const frame = { x: PIER_FRAME.x / 100, z: PIER_FRAME.z / 100 };
+  // The batch sleeps far from the crossing (render/view-sleep.ts): its bents, the pier rack and the jib's frame.
+  const sleep = createRedrawSleep([...bents, rack, frame]);
   const jibYaw = Math.atan2(first.x / 100 - frame.x, first.z / 100 - frame.z);
   const jibHead = new THREE.Vector3(frame.x + Math.sin(jibYaw) * 3.2, deckY + 4.6, frame.z + Math.cos(jibYaw) * 3.2);
   // The pier's bill (footings-signalling A4): how many footings the crossing has of its twelve and how they come, a
@@ -633,7 +636,10 @@ export async function createRailwayCrossing(
       shownCrossing = worksRow(wd).crossing;
       stepShow(dt);
       finaleCamera.update(dt);
-      draw();
+      // Asleep, the batch stands as last drawn unless a bent rises, a footing goes down or what the draw reads changes.
+      const moving = lowering.length > 0 || rise.some((t) => t >= 0 && t < RISE_S);
+      const drawKey = `${open()}|${inSea()}|${worksRow(wd).pierRack - deps.toPier()}|${rise.filter((t) => t >= RISE_S).length}`;
+      if (sleep.redraw(moving, drawKey)) draw();
     },
     accepted(e: RailwayAccepted) {
       // A published world is never written (M12), so the one held from the last update is from before this packet.

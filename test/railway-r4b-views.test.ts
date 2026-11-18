@@ -211,9 +211,9 @@ async function railheadCues() {
   const file = 'src/entities/railway/railhead-view.ts';
   const source = fs.readFileSync(file, 'utf8');
   const bindings: Record<string, unknown> = {};
-  // Browser-only modules (the player, the net, sounds and effects) are given below instead.
+  // Browser-only modules (the player, the net, sounds and effects, the camera's redraw gate) are given below instead.
   const browser =
-    /player\/player|netplay\/net|machine-sfx|place-sfx|render\/splash|particle-effects|prefab\/instantiate|place\/sites|place\/land/;
+    /player\/player|netplay\/net|machine-sfx|place-sfx|render\/splash|particle-effects|prefab\/instantiate|place\/sites|place\/land|render\/view-sleep/;
   for (const m of source.matchAll(/^import\s+(\*\s+as\s+(\w+)|\{([^}]*)\})\s+from\s+'([^']+)';/gm)) {
     if (m[0].startsWith('import type')) continue;
     const spec = m[4]!;
@@ -253,6 +253,7 @@ async function railheadCues() {
     remotes: new Map(),
     driveDeck: () => clock,
     railheadEnd: () => at(row, Math.max(clock, 0)) / 100,
+    createRedrawSleep: () => ({ redraw: () => true, awake: () => true }),
   });
   const { createRailwayRailhead } = sourceModule<typeof import('../src/entities/railway/railhead-view.ts')>(
     source,
