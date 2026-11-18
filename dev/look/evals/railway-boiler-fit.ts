@@ -32,6 +32,9 @@ const { teleport } = (await import(
 )) as typeof import('../../../src/physics/engine.ts');
 const { INTERP_MS } = (await import('/src/constants.ts' as string)) as typeof import('../../../src/constants.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
+const { forgeCue } = (await import(
+  '/src/entities/railway/forge-call.ts' as string
+)) as typeof import('../../../src/entities/railway/forge-call.ts');
 
 type P = { x: number; y: number; z: number };
 type BoilerView = P & {
@@ -109,6 +112,20 @@ async function fit() {
     atPress = { phase: flying?.phase ?? null, trains: trainsOn() };
   check(await bot.work(() => trainsOn(), 30000, 380), 'boiler fitted');
   clearInterval(watch);
+  // This page's side of the boiler's show for 8 s: whether a shot came up, and when the forge's call sounded (under
+  // --reduced-motion: no shot, and the call at the wake's end, 3.1 s, as before the show).
+  const showFrom = performance.now(),
+    cues = forgeCue.count;
+  let shotSeen = false,
+    calledAt = -1;
+  const show = setInterval(() => {
+    const c = camera();
+    shotSeen ||= c.kind === 'boiler' && (c.active || c.pending);
+    if (calledAt < 0 && forgeCue.count > cues) calledAt = (performance.now() - showFrom) / 1000;
+    if (performance.now() - showFrom < 8000) return;
+    clearInterval(show);
+    console.log(`BOILER SHOW HERE ${JSON.stringify({ shot: shotSeen, calledAt: +calledAt.toFixed(2), flourish: arrival().keys.includes('boiler') })}`);
+  }, 50);
   await bot.until(() => !boiler().fitting, 3000, 'landed');
   const f = boiler().lastFit;
   console.log(
