@@ -11,7 +11,7 @@ import { me } from '../../player/player.ts';
 import { wardrobe } from '../wardrobe/state.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
-import { createRewardReveal } from '../../render/reward-reveal.ts';
+import { createRewardReveal, WEAR_HINT_SEEN, withWearHint, type Got } from '../../render/reward-reveal.ts';
 import { T1_CRATE_PARTS, T1_REWARD, MULTI_AXE_REWARD } from '../../render/t1-reward-parts.ts';
 import { confettiBurst, rewardDust, rewardSparkles } from '../../render/reward-particles.ts';
 import { placeSound } from '../../render/place-sfx.ts';
@@ -20,7 +20,7 @@ import { GLIDE_REWARD, HOOK_REWARD, T2_REWARD } from './reward-data.ts';
 import { railwayRoomId } from '../../world/railway-namespace.ts';
 import { claimCountsIn } from '../../world/railway-jump.ts';
 import { createRailwayTools, inReach } from './tools.ts';
-import { createAbilityArrival } from './ability-arrival.ts';
+import { createAbilityArrival, createSeen } from './ability-arrival.ts';
 import { createTrophyPlinth } from './trophy-plinth.ts';
 import { createStationBoxes } from './crates-view.ts';
 import { job } from '../../sim/railway-rows.ts';
@@ -40,10 +40,12 @@ export async function createRailwayReward(
   // One reveal queue owns input/camera holding for both personal boxes and shared tools.
   const reveal = createRewardReveal({ parent: owner.root, fanfare, pop, softGlow });
   owner.cleanup(() => reveal.dispose());
-  const first = await createStationReward(adapter, owner, reveal, 0, machineFrom, starterFrom);
-  const second = await createStationReward(adapter, owner, reveal, 1, machineFrom);
+  // Wearables' cards (the hat, the scarf, the station boxes'): the first names Pause (G22).
+  const youGotWearable = withWearHint(reveal.youGot, () => createSeen(WEAR_HINT_SEEN));
+  const first = await createStationReward(adapter, owner, reveal, youGotWearable, 0, machineFrom, starterFrom);
+  const second = await createStationReward(adapter, owner, reveal, youGotWearable, 1, machineFrom);
   // The personal boxes after the scarf (Q2–Q6), through the same reveal queue.
-  const boxes = await createStationBoxes(adapter, owner, reveal.youGot, rewardSeat, machineFrom);
+  const boxes = await createStationBoxes(adapter, owner, youGotWearable, rewardSeat, machineFrom);
   const tools = await createRailwayTools(adapter, owner, reveal, machineFrom);
   // Shared abilities: the finder's card above; a friend's own card or late flourish, and Home's trophy (co-op
   // abilities, option E; cutscenes for everyone, 17 November). The glider's and the hook's friend cards (their finders'
@@ -104,7 +106,9 @@ export async function createRailwayReward(
       };
     },
     targets: () => [...first.targets(), ...second.targets(), ...boxes.targets(), ...tools.targets()],
-    youGot: reveal.youGot,
+    /** The railway's queue for other views (railwayYouGot). A box's card (crate-show's, with its tier's rarity mark:
+     * the secret boxes', ../finds/secrets-view.ts) is always a wearable, so it can carry the first one's hint too. */
+    youGot: (g: Got) => (g.rarity ? youGotWearable(g) : reveal.youGot(g)),
     gettingItem: reveal.gettingItem,
     /** A show of a moment on this page (the boiler's): its flourish waits for it, and stands in if it is dropped. */
     showing: arrival.showing,
@@ -194,6 +198,7 @@ async function createStationReward(
   adapter: RailwayAdapter,
   owner: OwnedView,
   reveal: ReturnType<typeof createRewardReveal>,
+  youGotWearable: (g: Got) => boolean,
   stationIndex: 0 | 1,
   machineFrom?: (out: THREE.Vector3) => void,
   starterFrom?: (out: THREE.Vector3) => void,
@@ -345,7 +350,7 @@ async function createStationReward(
     sparks(34, 6);
     rewardDust(at.x, at.y + 0.1, at.z);
     placeSound('boxCommon', at.x, at.z);
-    reveal.youGot({
+    youGotWearable({
       name: reward.name,
       line: reward.line,
       color: '#fff7e8',

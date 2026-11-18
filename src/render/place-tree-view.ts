@@ -142,6 +142,76 @@ export function createTreeView(
 ) {
   const { flat, tree } = materials;
   const AXIS_Y = new THREE.Vector3(0, 1, 0);
+  // The chop's bite (G20): a band of the trunk at chopping height is opened on the cut side, and a dark heart behind it
+  // draws back as the cut deepens, so the trunk reads narrower at the cut. All in the trunk geometry's own space (a
+  // 6-sided frustum, 0.46 m at the base, 0.28 m at the top, 5 m tall, centred), so the bitten trunk meets the whole one.
+  const TRUNK_BASE = 0.46,
+    TRUNK_TOP = 0.28,
+    TRUNK_H = 5;
+  const BITE_LOW = 0.94,
+    BITE_HIGH = 1.3; // metres above the foot; chips fly at 1.1
+  const trunkRadius = (h: number) => TRUNK_BASE + ((TRUNK_TOP - TRUNK_BASE) * h) / TRUNK_H;
+  const BITE_R = trunkRadius((BITE_LOW + BITE_HIGH) / 2);
+  // The heart shrinks toward a point behind the axis, so its back stays inside the bark and its front draws back from
+  // the cut: about 8 cm deep at the first hit, 60% of the trunk's radius at the felling one (a 40% hinge).
+  const HEART_PIVOT = -0.8 * BITE_R;
+  const heartScale = (cut: number) => {
+    const front = BITE_R * (0.82 - 0.42 * Math.min(1, Math.max(0, cut)));
+    return (front - HEART_PIVOT) / (BITE_R - HEART_PIVOT);
+  };
+
+  /** The trunk with its chopping band opened on +z (two of six faces, 120°), bark inside the opening's edges. */
+  function bittenTrunkGeometry() {
+    const section = (from: number, to: number) =>
+      new THREE.CylinderGeometry(trunkRadius(to), trunkRadius(from), to - from, 6).translate(
+        0,
+        (from + to) / 2 - TRUNK_H / 2,
+        0,
+      );
+    const shell = new THREE.CylinderGeometry(
+      trunkRadius(BITE_HIGH),
+      trunkRadius(BITE_LOW),
+      BITE_HIGH - BITE_LOW,
+      4,
+      1,
+      true,
+      Math.PI / 3,
+      (Math.PI * 4) / 3,
+    ).translate(0, (BITE_LOW + BITE_HIGH) / 2 - TRUNK_H / 2, 0);
+    // The shell's inside, seen past the heart through the opening: the same faces wound the other way.
+    const inside = shell.clone();
+    const index = inside.getIndex()!;
+    for (let k = 0; k < index.count; k += 3) {
+      const a = index.getX(k);
+      index.setX(k, index.getX(k + 2));
+      index.setX(k + 2, a);
+    }
+    const normals = inside.getAttribute('normal');
+    for (let k = 0; k < normals.count; k++) normals.setXYZ(k, -normals.getX(k), -normals.getY(k), -normals.getZ(k));
+    const parts = [section(0, BITE_LOW), shell, inside, section(BITE_HIGH, TRUNK_H)];
+    // Merged by hand: every part is an indexed cylinder with position, normal and uv.
+    const merged = new THREE.BufferGeometry();
+    for (const name of ['position', 'normal', 'uv'] as const) {
+      const size = parts[0]!.getAttribute(name).itemSize;
+      merged.setAttribute(
+        name,
+        new THREE.Float32BufferAttribute(
+          parts.flatMap((part) => [...(part.getAttribute(name).array as Float32Array)]),
+          size,
+        ),
+      );
+    }
+    const indices: number[] = [];
+    let offset = 0;
+    for (const part of parts) {
+      const index = part.getIndex()!;
+      for (let k = 0; k < index.count; k++) indices.push(index.getX(k) + offset);
+      offset += part.getAttribute('position').count;
+      part.dispose();
+    }
+    merged.setIndex(indices);
+    return merged;
+  }
   const n = TREES.length;
   const hardwoodIndices = new Map(TREES.filter((t) => t.hardwood).map((t, k) => [t.index, k]));
   const hardwoodCount = hardwoodIndices.size;
@@ -155,12 +225,27 @@ export function createTreeView(
     barkVertices.setXYZ(k, x * ridge, barkVertices.getY(k), z * ridge);
   }
   hardwoodGeo.computeVertexNormals();
+  const trunkMaterial = tree('#7a5430', 'timber');
   const parts = {
-    trunk: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.28, 0.46, 5, 6), tree('#7a5430', 'timber'), n),
+    trunk: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.28, 0.46, 5, 6), trunkMaterial, n),
     crown: new THREE.InstancedMesh(new THREE.ConeGeometry(2.6, 6.5, 6), tree('#3f8a3a', 'green'), n),
     crown2: new THREE.InstancedMesh(new THREE.ConeGeometry(1.9, 4.6, 6), tree('#4f9c44', 'green'), n),
     stump: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.44, 0.5, 0.6, 6), tree('#ffffff', 'timber'), n),
     notch: new THREE.InstancedMesh(new THREE.BoxGeometry(0.5, 0.16, 0.16), flat('#39291e'), n),
+    // A tree being chopped draws this trunk instead of the whole one; the heart shows dark through its opening.
+    bitten: new THREE.InstancedMesh(bittenTrunkGeometry(), trunkMaterial, n),
+    heart: new THREE.InstancedMesh(
+      new THREE.CylinderGeometry(
+        trunkRadius(BITE_HIGH),
+        trunkRadius(BITE_LOW),
+        BITE_HIGH - BITE_LOW,
+        6,
+        1,
+        true,
+      ).translate(0, (BITE_LOW + BITE_HIGH) / 2 - TRUNK_H / 2, 0),
+      flat('#39291e'),
+      n,
+    ),
     hardwood: new THREE.InstancedMesh(hardwoodGeo, flat('#686359'), hardwoodCount),
     forks: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.22, 0.42, 3.5, 8), flat('#686359'), hardwoodCount * 2),
     broad: new THREE.InstancedMesh(new THREE.SphereGeometry(1, 7, 5), tree('#657a37', 'green'), hardwoodCount * 3),
@@ -188,7 +273,8 @@ export function createTreeView(
     local = new THREE.Matrix4(),
     out4 = new THREE.Matrix4(),
     e = new THREE.Euler(),
-    sv = new THREE.Vector3();
+    sv = new THREE.Vector3(),
+    spin = new THREE.Matrix4();
   const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
   const Q0 = new THREE.Quaternion(),
     S1 = new THREE.Vector3(),
@@ -214,7 +300,8 @@ export function createTreeView(
       write(mesh, slot, matrix, grow);
     const hardwoodIndex = hardwoodIndices.get(t.index);
     if (t.cleared) {
-      for (const mesh of [parts.trunk, parts.crown, parts.crown2, parts.stump, parts.notch]) put(mesh, t.index, ZERO);
+      for (const mesh of [parts.trunk, parts.crown, parts.crown2, parts.stump, parts.notch, parts.bitten, parts.heart])
+        put(mesh, t.index, ZERO);
       if (hardwoodIndex !== undefined) {
         for (const mesh of [parts.hardwood, parts.branch, parts.cutEnd]) put(mesh, hardwoodIndex, ZERO);
         for (let slot = 0; slot < 2; slot++) put(parts.forks, hardwoodIndex * 2 + slot, ZERO);
@@ -248,7 +335,18 @@ export function createTreeView(
     const taken = t.great && trunkTaken();
     const bare = fallen && t.fall >= 0.75;
     const compact = bare && t.collapsed;
-    put(parts.trunk, t.index, taken || t.hardwood || compact ? ZERO : at(2.5));
+    // The notch gets deeper only with accepted work; refusal leaves one shallow scuff. An ordinary trunk being chopped
+    // is drawn bitten (G20), turned so its opening faces the last stroke, and keeps the bite as it falls and lies.
+    const cut = t.work / (t.great ? greatStrokes : 15);
+    const bite = cut > 0 && !t.hardwood && !t.great && (growth === 0 || growth === 4);
+    put(parts.trunk, t.index, taken || t.hardwood || compact || bite ? ZERO : at(2.5));
+    const spun = !bite || compact ? null : at(2.5).multiply(spin.makeRotationY(t.cutYaw - t.fallYaw));
+    put(parts.bitten, t.index, spun ?? ZERO);
+    if (spun) {
+      const k = heartScale(cut);
+      spun.multiply(local.makeTranslation(0, 0, (1 - k) * HEART_PIVOT)).scale(S1.set(k, 1, k));
+    }
+    put(parts.heart, t.index, spun ?? ZERO);
     if (hardwoodIndex !== undefined) put(parts.hardwood, hardwoodIndex, taken || compact ? ZERO : at(2.5));
     // A crown follows the trunk's contact by 80 ms rather than twitching as one rigid stick.
     if (t.fall < 0 && t.shake > 0 && now - t.hitAt < 80) base.makeTranslation(t.x, t.y, t.z);
@@ -270,8 +368,6 @@ export function createTreeView(
         .scale(S1.set(2.8 * t.size, 2.3 * t.size, 2.6 * t.size));
       put(parts.broad, hardwoodIndex * 3 + k, !bare ? out4 : ZERO);
     }
-    // The notch gets wider only with accepted work; refusal leaves one shallow scuff.
-    const cut = t.work / (t.great ? greatStrokes : 15);
     const cutYaw = t.cutYaw;
     local.compose(
       P1.set(
@@ -282,7 +378,7 @@ export function createTreeView(
       Q0.setFromAxisAngle(AXIS_Y, cutYaw),
       S1.set(t.size * (t.scuff && !cut ? 0.35 : 0.5 + cut), t.scuff && !cut ? 0.2 : 0.5 + cut, 1),
     );
-    put(parts.notch, t.index, t.fall >= 0 || (!cut && !t.scuff) ? ZERO : local);
+    put(parts.notch, t.index, t.fall >= 0 || bite || (!cut && !t.scuff) ? ZERO : local);
     put(
       parts.stump,
       t.index,
