@@ -4,7 +4,7 @@
 
 Let a player keep one identity across browsers and devices by saving a short PIN, while continuing to let friends play without registering. Accounts identify people; each room keeps its own progress, wallet, upgrades and saves. Serves DESIGN.md **6. Communal world, personal things**, **8. Enjoyable alone and together**, **Clear authority** and **Small and readable**.
 
-> **Status, 17 November 2026 against main 6ddfe5d2:** Steps 1–4 are on main (#1868, #1871, #1873, #1875), with browser-proof/startup fixes (#1879, #1884, #1887). Checkpoint A's room-admission cases and the two-store browser flow **pass through the trusted broker** ([step 5 run](#step-5-runner-evidence-17-november-2026)). Step 5 stays open: broker `net` on the final harness, the eight-player load, the Account-menu visual review, room-progress isolation in the browser and a fresh review of identity binding, transactions and fail-closed errors are unverified.
+> **Status, 18 November 2026 against main ad7405c3:** Steps 1–4 are on main (#1868, #1871, #1873, #1875), with browser-proof/startup fixes (#1879, #1884, #1887) and the review fixes (#2153). Checkpoint A passed through the trusted broker and its fresh review ran ([17 November](#step-5-runner-evidence-17-november-2026)). Checkpoint B's browser and load proofs passed on main ([18 November](#checkpoint-b-run-18-november-2026)): `net` 237/237, before/after load, room isolation, storage denial, expired session, lost create response, the Account visual review and the atlas check. Step 5 stays open: a clean `npm run check` exit on the final tree, the owner's read of three Account copy/state notes, `net-roadmap.md` section 1 and the backlog status remain; not tested on a device.
 
 ## Owner answers (15 November 2026)
 
@@ -321,23 +321,97 @@ reviewed, merged and the trusted checkout updated. A fresh review confirmed CI c
       slot first", a timing flake against its 5 s limit (5.05–5.6 s; 2 of 3 isolated reruns passed; it uses its own
       temp queue directory). Because `check` stops at the first failing step, the rest ran directly: `registry`,
       `level-check`, `assets -- --check`, `prefabs -- --check` and `build` all exit 0. Not a clean `check` exit.
-- [ ] Broker `net` on the final tree: **not proved**. The broker run above used main's old harness, exited 1 and never
+- [x] Broker `net` on the final tree: **proved 18 November** ([18 November run](#checkpoint-b-run-18-november-2026)). Before that: **not proved**. The broker run above used main's old harness, exited 1 and never
       reached its summary. The trusted broker runs the trusted checkout's harness, so the updated harness cannot run
       through it until merged and the trusted checkout updated.
 - [x] Rendered `smoke` through the broker: 7/7 pass, WebGPU, no gfx errors, 27.9 s, load 6.88 → 9.54 (evidence
       `.look/evidence/1794978165398-29712`). Both stills opened: two avatars at the station, HUD showing "shared state:
       server replication" and "room server rtt 1 ms".
-- [ ] Before/after eight-player `npm run load`: **unverified**. It needs `WS_LOAD=1`, which broker `net` refuses, and
+- [x] Before/after eight-player `npm run load`: **proved 18 November** ([18 November run](#checkpoint-b-run-18-november-2026)). Before that: **unverified**. It needs `WS_LOAD=1`, which broker `net` refuses, and
       running it directly would launch Chromium outside the broker. No figures were taken; the orchestrator runs it on
       a quiet machine.
-- [ ] Browser room-progress isolation (rejoin keeps progress; another room imports no wallet, rails, upgrades, cargo
+- [x] **Proved 18 November** ([18 November run](#checkpoint-b-run-18-november-2026)). Browser room-progress isolation (rejoin keeps progress; another room imports no wallet, rails, upgrades, cargo
       or save): **unverified in the browser**; no reviewed harness case exists. Room reset preserving account and
       session records is covered by the server suite above.
-- [ ] Storage denial, expired session and lost create response in the browser: **unverified** (expiry and
+- [x] Storage denial, expired session and lost create response in the browser: **proved 18 November** ([18 November run](#checkpoint-b-run-18-november-2026)); before that **unverified** (expiry and
       lost-response recovery via `GET /account/session` are covered only at the server/HTTP level).
-- [ ] Account page visual review (desktop, narrow touch, controller focus): **not run** in this job.
-- [ ] `npm run atlas -- --check`: not rerun; the join story is unchanged since the 15 November run.
+- [x] Account page visual review (desktop, narrow touch, controller focus): **run 18 November** ([18 November run](#checkpoint-b-run-18-november-2026)), with three copy/state notes for the owner; not tested on a device.
+- [x] `npm run atlas -- --check`: **exit 0 on 18 November**, no warning on the join story ([18 November run](#checkpoint-b-run-18-november-2026)).
 
 Not tested on a device. No timing here is performance evidence beyond the quiet-machine load reading noted.
 Step 5 stays unticked: the load proof, browser room isolation, the Account visual review and the independent review
 remain.
+
+## Checkpoint B run, 18 November 2026
+
+Runner job on `claude/accounts-checkpoint-b` from main `ad7405c3` (tree `0116360f`, includes #2153), Node 26.13.0,
+HOTBOX (Windows, 20 logical CPUs), Playwright's full Chromium. Every browser run went through the machine-wide bot
+queue; one browser run of this job at a time. Load is busy logical CPUs out of 20 (bench quiet limit 12). Logs are local
+in `.look/`; stills are in `docs/reports/accounts-checkpoint-b/`. Crash durability on Windows was not repeated.
+
+1. **`net` on the final tree: proved.** `npm run test:net` with this tree's merged harness and the in-process server,
+   queued through the bot queue (the trusted broker was not used; the standalone run is the one with no host-only
+   skips): **237/237, exit 0, no `SKIP` lines**, including the account admission suite and the two-store browser probe
+   (`.look/net-final.log`). Load before the run 0.5.
+2. **Before/after eight-player load: proved for correctness; timings comparable.** `npm run load` fails on Windows
+   before it starts (`'WS_LOAD' is not recognized`: the script's POSIX env prefix under npm's cmd shell;
+   `.look/load-after-npm-windows.log`), so both sides ran `WS_LOAD=1 node dev/peer-test/ws-run.ts` directly. "Before" is
+   `bfab475f`, the parent of #1868, in a scratch detached worktree under `.look/` (removed afterwards). A sampler logged
+   load every 15 s.
+
+   | Run | Checks | 8 pages at 20 Hz for 20 s: server CPU, presence | Machine load |
+   | --- | --- | --- | --- |
+   | Before `bfab475f` | 226/226, exit 0 | 5.3% of one core, 100% | pre 5.1, post 2.3; 33 samples median 0.9, max 7.2 (quiet) |
+   | After `ad7405c3`, run 3 | 273/273, exit 0 | 7.0% of one core, 100% | window 18:30:07–18:30:27 UTC; samples 1.2 and 1.8 inside it (quiet); 20/20 from 18:30:30 for a minute, after it |
+   | After, run 1 | 273/273, exit 0 | 5.1%, 100% | 20/20 just before it queued, window unsampled: **under load, not evidence** |
+   | After, run 2 | 273/273, exit 0 | 9.8%, 100% | 20/20 for two minutes mid-run, window unsampled: **under load, not evidence** |
+
+   The railway load rows (2, 4, 6 players, normal and 5x churn, 0/100/200 ms) conserve material and agree on every
+   mirror on both sides with zero corrections. At 0 ms: confirm p50 16–17 ms before and after; others' p95 32–33 ms;
+   server step mean 0.050–0.079 ms before, 0.051–0.083 ms after; 6 players at 5x churn send 67.8 kbit/s before and
+   69.5 after. The after side runs 47 more checks (account admission and browser suites). One quiet run per side: the
+   7.0% against 5.3% is within the spread of the three after runs and is not a regression claim either way.
+   Logs: `.look/load-before.log`, `.look/load-after-1.log`, `.look/load-after-2.log`, `.look/load-after-3.log`, each
+   with its `.samples`.
+3. **Browser room-progress isolation: proved.** New dev scenario `dev/scenarios/account-rooms.ts` (not in the nightly
+   list), real game and account server, isolated browser stores (`.look/account-rooms-1.log`, 21/21, load 1.6 → 0.7).
+   A jumps into a room seeded at `house-ready` (wallet 168, lever/sea/hook/glide and trains, forge lit), chops two logs
+   onto their back, saves a PIN and rejoins: wallet, milestones, works and the back are unchanged. A guest control's
+   fresh room reads wallet 0, no milestones, forge unlit. B (another store) signs in with the PIN in a third fresh
+   room: same pid, and that room equals the control's fresh room with an empty back, so no wallet, rails, works,
+   cargo or save came with the account. A keeps playing its room meanwhile. B then walks into A's room and finds its
+   progress and the account's two logs; A is told it is playing elsewhere.
+4. **Storage denial, expired session, lost create response: proved** (same scenario). localStorage denied: a verified
+   guest joins the room, `persistent` false, Account says "This sign-in lasts for this visit only", and a reload keeps
+   the identity through the tab store; both stores denied: the game still boots into the room as an in-memory guest.
+   Expired: the scenario sets the session's `expires_at` in the past in the stack's `accounts.sqlite`; the next load
+   keeps the same pid and account, is `revoked`, joins no room and says "Sign-in expired or was replaced. Your saved
+   identity was kept."; signing in with the PIN restores the same pid in the room. Lost create: the request reaches the
+   server (200) and the reply is cut; the page recovers Signed in from GET session, shows no PIN, says "Could not show
+   the PIN. If this account was saved, use Replace PIN; otherwise reload to retry.", and Replace PIN then shows a fresh
+   PIN once, gone on dismissal. Room reset keeping accounts stays covered by the server suite only.
+5. **Account page visual review: run** (`dev/scenarios/account-look.ts`, `.look/account-look-1.log`, 10/10, load 1.0 →
+   3.4). Desktop 1200 × 800 with a controller: RB from You to Options, Down reaches Account
+   (Resume → Back → Controls → Graphics → Account), A opens it with focus on Save PIN, Down walks its buttons; the
+   reveal focuses "I saved my PIN" with the lost-PIN warning (checked in the DOM, never captured). Narrow touch 390 ×
+   844: every control is 50 px tall and on screen; the card clears the touch buttons. Stills opened:
+   `desk-guest-controller-focus.png`, `desk-signin-refused.png` (made-up `00000`, field cleared), `desk-signed-in.png`,
+   `phone-guest.png`, `phone-replaced-by-other-device.png`, `desk-expired-session.png`. Clear: the guest and signed-in
+   states are distinct and focus is visible. What reads wrong, for the owner (copy is not changed here):
+   - Replaced or expired, the primary action is **Reload to retry**, but a reload stays refused; the way back is Sign in
+     with the new PIN (`src/player/account-page.ts:134`).
+   - Signed in, the page still offers **Sign in** beside Replace PIN and Sign out, which reads as if the player were
+     signed out; it switches accounts (`account-page.ts:135`).
+   - With an expired session the world behind the card is the classic island (palms, lighthouse), not the room's
+     railway, while the card's title still names the room (`desk-expired-session.png`). It may be the intended solo
+     fallback (`src/netplay/net.ts:333`, first-run.md "Revoked sessions retain their saved identity but cannot join a
+     room"), but the player is not told they are somewhere else.
+   The refusal message under the form is plain body text with no error styling; readable, not urgent.
+6. **`npm run atlas -- --check`: exit 0**; no warning on `docs/atlas/stories/join.json` (stale citations only in the
+   railway, railway-recovery and opening stories) (`.look/atlas-check.log`).
+
+Still unverified: a clean `npm run check` exit on this tree (not run in this job); real-time feel and performance
+(nothing here is a timing claim beyond the load table); the resized viewports are **not tested on a device**. No
+defect in game or server code was found; the Windows `npm run load` script is a tooling gap (`package.json:20`).
+Harness added for review: `dev/scenarios/account-rooms.ts`, `dev/scenarios/account-look.ts`, and `t.dataDir` in
+`dev/scenarios/run.ts` (the stack's data directory, for the expiry case).
