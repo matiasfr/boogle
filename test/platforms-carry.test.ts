@@ -185,6 +185,61 @@ test('a correction beyond the railhead speed limit relocates the rider with it',
     run.close();
   }
 });
+// Review (railhead-deck-car): placeDeck's mount clearance hands the deck's footprint to siteExit, whose nearest edge
+// is a long side for anyone more than 2.9 m from either end. On the sea half of the walkway that edge is the sea:
+// a player standing there when the deck mounts (a reload or late join where the deck now stands) lands at lat 6.95,
+// past the walkway's outer edge (SIDE.lat1 6.3), in the water. Only the track side, an end or the deck top is safe.
+test('a player on the sea half of the walkway when the railhead mounts is never moved over the sea', async () => {
+  await physics.physicsReady;
+  const { sourceFunction } = await import('../dev/level/source.ts');
+  const outOf = sourceFunction<typeof import('../src/place/sites.ts').outOf>('src/place/sites.ts', 'outOf', {});
+  const { RING_S, line2World, line2Y } = await import('../src/entities/railway/line2-path.ts');
+  const { SIDE } = await import('../src/entities/railway/railhead-shape.ts');
+  const owner = createOwnedView();
+  try {
+    const deck = createRailheadDeck(owner);
+    const rider = makePlayerBody(false);
+    owner.addBody(rider);
+    const sideMid = (SIDE.lat0 + SIDE.lat1) / 2;
+    const at = line2World(RING_S + 110, 5.5, { x: 0, z: 0 });
+    physics.teleport(rider, at.x, line2Y(RING_S + 110) + PLAYER_R + 0.01, at.z);
+    placeDeck(deck, 120, true, rider, 0.1, outOf);
+    // The deck's local -x is the sea side (lat 6.3 is local x -2.25).
+    const lat = sideMid - toPlatform(deck.car.platform, rider.position, 0, { x: 0, y: 0, z: 0, yaw: 0 }).x;
+    assert.ok(lat <= SIDE.lat1, `moved from lat 5.5 to lat ${lat.toFixed(2)}: over the sea`);
+  } finally {
+    owner.dispose();
+  }
+});
+// The ends: only the back one leads onto built walkway; ahead of the face is the open gap.
+test('nobody standing anywhere under the mounting railhead is cleared past the walkway edge or the face', async () => {
+  await physics.physicsReady;
+  const { sourceFunction } = await import('../dev/level/source.ts');
+  const outOf = sourceFunction<typeof import('../src/place/sites.ts').outOf>('src/place/sites.ts', 'outOf', {});
+  const { RING_S, line2World, line2Y } = await import('../src/entities/railway/line2-path.ts');
+  const { SIDE } = await import('../src/entities/railway/railhead-shape.ts');
+  const sideMid = (SIDE.lat0 + SIDE.lat1) / 2;
+  const owner = createOwnedView();
+  try {
+    const deck = createRailheadDeck(owner);
+    const rider = makePlayerBody(false);
+    owner.addBody(rider);
+    const bad: string[] = [];
+    for (let u = 100; u <= 118; u += 2)
+      for (let lat = 2.2; lat <= 6.0 + 1e-9; lat += 0.2) {
+        const at = line2World(RING_S + u, lat, { x: 0, z: 0 });
+        physics.teleport(rider, at.x, line2Y(RING_S + u) + PLAYER_R + 0.01, at.z);
+        placeDeck(deck, 120, true, rider, 0.1, outOf);
+        const local = toPlatform(deck.car.platform, rider.position, 0, { x: 0, y: 0, z: 0, yaw: 0 });
+        const inside = Math.abs(local.x) < deck.car.platform.hx && Math.abs(local.z) < deck.car.platform.hz;
+        if (sideMid - local.x > SIDE.lat1 || local.z > deck.car.platform.hz || inside)
+          bad.push(`u ${u} lat ${lat.toFixed(1)} -> lat ${(sideMid - local.x).toFixed(2)} local z ${local.z.toFixed(2)}`);
+      }
+    assert.deepEqual(bad, []);
+  } finally {
+    owner.dispose();
+  }
+});
 
 test('a rider carried by a moving deck stays on it over a stationary deck registered before it', () => {
   const flatbed = deck('flatbed', 0, 0, 1.3, 2.4);

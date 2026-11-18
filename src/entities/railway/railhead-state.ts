@@ -41,6 +41,25 @@ export function createRailheadDeck(owner: OwnedView): RailheadDeck {
   };
 }
 const idleOffsets = new WeakMap<Car, { body: Body; x: number; z: number }>();
+// The deck's local -x side is the walkway's outer edge, over the sea, and its +z end is the railhead face, with only
+// the open gap ahead. Stretching the footprint both ways before the shared nearest-edge clearance leaves only the
+// track side and the back end (the built walkway) as exits; siteExit's overlap test still uses the real solids, so
+// nobody outside the deck is moved.
+const AWAY = 50;
+const landward =
+  (outOf: typeof moveOutside): typeof moveOutside =>
+  (f, p, r) =>
+    outOf(
+      {
+        ...f,
+        x: f.x + (AWAY / 2) * (f.s - f.c),
+        z: f.z + (AWAY / 2) * (f.c + f.s),
+        hw: f.hw + AWAY / 2,
+        hd: f.hd + AWAY / 2,
+      },
+      p,
+      r,
+    );
 export function placeDeck(
   deck: RailheadDeck,
   u: number,
@@ -79,7 +98,7 @@ export function placeDeck(
           { dx: 0, dy: 0, dz: 0, hx: foot.hw, hy: car.hy, hz: foot.hd },
           { dx: 0, dy: surface - car.y - 0.05, dz: 0, hx: foot.hw, hy: 0.05, hz: foot.hd },
         ],
-        outOf,
+        landward(outOf),
       );
       if (exit) rider.position.set(exit.x, rider.position.y, exit.z);
     } else if (
