@@ -648,3 +648,24 @@ Left in this area: the cave rock and its collars stay generated (marching cubes 
 terrain) under the caves' owner, not records; the moving sail bodies stay owner-made like step 12's vehicles; the
 bale and fence scatter and the cave probing are code generators, not named level generators. Left in step 13: Ring
 Island, the mushroom stall, the lookout, secrets. Not tested on a device.
+
+### Step 13, second area as built: the lookout
+
+The lookout's things are records (`src/content/prefabs/lookout.ts`; builders `src/prefab/builders/lookout.ts`): the
+ridge telescope, whose builder returns its legs and tube with its six-sided collider, `eyepiece` and `eye` points and
+its Look through it interaction (`lookout.look`) beside them in the record; and a buoy and its white top, each one
+instanced batch (`lookout:buoys`, `lookout:buoy-tops`) that the lookout still bobs, lifts and splashes every frame.
+`src/content/levels/lookout.ts` places the telescope in Place's frame (x from ORIGIN, y above the ground) and the seven
+buoys on the pier line as authored operands (`gaps` out times `gap` metres, in RING_BUOYS' order); the view resolves both
+on load. The view calls no collider API now, so its colliders-from-records debt entry (2) goes. Records 291 → 294,
+levels 22 → 23.
+
+Proof: `test/fixtures/prefab-lookout.json` was captured from the unconverted view (f83eeafa) and passes unchanged: all
+713 values bit-identical (every mesh's world pose and material, the buoys' full-precision instance matrices at build and
+after a frame, the collider, footprint, the target and the fixed view through the eyepiece), max deviation 0 against the
+1e-9 tolerance. Opened before/after stills of the telescope match ([stills](../world/prefab-lookout/)): the telescope's
+pixels are identical, only the animated water and flowers differ; Look through it opens with a real E press.
+
+Left in this area: the site footprint (`addFoot`, a clearance rule, not a solid), the buoys' bob and lift, and the
+telescope's panel and camera stay view code. Left in step 13: Ring Island, the mushroom stall, secrets. Not tested on a
+device.
