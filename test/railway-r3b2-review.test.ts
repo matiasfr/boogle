@@ -11,6 +11,7 @@ import { Aperture, Line, Rail, Train, createRailwayWorld } from '../src/sim/rail
 import { LINE2_STATIONS, Q6, Q7 } from '../src/sim/railway-line2-layout.ts';
 import { LINE2, RAIL_HALTS, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import { RING_HEAD } from '../src/sim/railway-ring-layout.ts';
+import { haulEnd } from '../src/sim/railway-ring-haul.ts';
 import { TRAIN, TRAIN_PHASE, trainAlong, trainDir, type RailTrain } from '../src/sim/railway-train.ts';
 import {
   LINE_SLOTS,
@@ -103,13 +104,26 @@ test('three bents in one burst with a train at the railhead end and one at its s
   const s = sixRacked();
   endWithWaiter(s, s.t);
   const along0 = trainAlong(train(s.w, A) as RailTrain, LINE2, s.t);
-  // Six footings set on one tick: the railhead moves on three bents (60 m) under a standing train.
+  // Six footings set on one tick: the deck hauls on three bents (60 m); the trains' Railhead follows at the settle
+  // (docs/plans/railhead-reroute.md), under a standing train.
   for (let k = 0; k < 6; k++) assert.equal(carry(s, k % 2 ? 'b' : 'a'), 1, `footing ${k}`);
   assert.equal(aperture(s.w).set, 6);
+  const end = haulEnd(aperture(s.w));
+  // An ask restarts A's dwell so it still stands at the end when the haul settles.
+  Object.assign(s.w.mut(Train, s.w.lookup(Train, A)!)!, { depart: end - TRAIN.dwellTicks + 1 });
+  assert.equal(invariant(s.w), null);
+  while (s.t < end - 1) {
+    tick(s, 'hauling');
+    assert.equal(stopsOf(s.w, LINE2)[HEAD], RING_HEAD[0]!.s, 'the stop holds through the haul');
+    assert.deepEqual([train(s.w, A).phase, train(s.w, A).at], [TRAIN_PHASE.STAND, HEAD], 'A stands at the old head');
+  }
+  tick(s, 'settle');
+  assert.equal(s.t, end);
   const stops = stopsOf(s.w, LINE2);
   assert.equal(stops[HEAD], RING_HEAD[3]!.s);
   const a = train(s.w, A);
-  assert.deepEqual([a.at, a.to, a.from], [-1, -1, along0], 'A stands where it stood, at no halt');
+  assert.notEqual(a.at, HEAD, 'A stands at no halt');
+  assert.equal(trainAlong(a as RailTrain, LINE2, s.t), along0, 'A where it stood');
   const [, block] = endBlocks(LINE2, stops);
   assert.ok(along0 + 620 <= block.from, `A (${along0}) is now outside the end block (${block.from}): not an end train`);
   // Both trains go on: A home, B up to the new railhead; nobody stands two minutes.
@@ -139,6 +153,12 @@ test('the bents move on under a train held by the balanced hold: its hold still 
   assert.equal(train(s.w, A).phase, TRAIN_PHASE.STAND, 'held');
   assert.equal(carry(s), 1);
   assert.equal(carry(s, 'b'), 1);
+  const end = haulEnd(aperture(s.w));
+  while (s.t < end - 1) {
+    tick(s, 'hauling');
+    assert.deepEqual([train(s.w, A).phase, train(s.w, A).at], [TRAIN_PHASE.STAND, HEAD], 'held at the old head');
+  }
+  tick(s, 'settle');
   assert.equal(train(s.w, A).at, -1, 'stands at no halt now');
   let left = -1;
   for (let k = 0; k < 2000 && left < 0; k++) {
@@ -311,32 +331,33 @@ const actorAt = (p: { x: number; y: number; z: number }): Actor => ({
   height: (y, r) => Math.abs(y - p.y) <= r,
   cadence: () => true,
 });
-test('the server judges rack 2, site 3 and the Railhead lever at RING_HEAD[floor(set / 2)], for every set 0 to 14', () => {
+test('the server judges rack 2 and site 3 at RING_HEAD[floor(set / 2)] and the Railhead lever at RING_HEAD[stop], for every set 0 to 14', () => {
   const s = seed(railwayAtRing('deck-laid'));
   const railhead = HALT_OF(LINE2, HEAD);
-  for (let set = 0; set <= WORKS.ring; set++) {
-    s.w.mut(Aperture, s.w.single(Aperture))!.set = set;
-    const head = Math.floor(set / 2);
-    for (let k = 0; k < RING_HEAD.length; k++) {
-      const h = RING_HEAD[k]!,
-        ok = k === head;
-      assert.equal(
-        railValid(s.w, { op: 'rail.footTake', rack: 2, epoch: 0, request: 0 }, actorAt(h.rack)),
-        ok,
-        `rack, set ${set}, at ${k}`,
-      );
-      assert.equal(
-        railValid(s.w, { op: 'rail.footSet', site: 3, epoch: 0, request: 0 }, actorAt(h.jib)),
-        ok,
-        `jib, set ${set}, at ${k}`,
-      );
-      assert.equal(
-        railValid(s.w, { op: 'rail.call', id: railhead, dir: -1, epoch: 0, request: 0 }, actorAt(h.platform)),
-        ok,
-        `lever, set ${set}, at ${k}`,
-      );
+  for (let set = 0; set <= WORKS.ring; set++)
+    for (let stop = 0; stop <= Math.floor(set / 2); stop++) {
+      Object.assign(s.w.mut(Aperture, s.w.single(Aperture))!, { set, stop });
+      const head = Math.floor(set / 2);
+      for (let k = 0; k < RING_HEAD.length; k++) {
+        const h = RING_HEAD[k]!,
+          ok = k === head;
+        assert.equal(
+          railValid(s.w, { op: 'rail.footTake', rack: 2, epoch: 0, request: 0 }, actorAt(h.rack)),
+          ok,
+          `rack, set ${set}, at ${k}`,
+        );
+        assert.equal(
+          railValid(s.w, { op: 'rail.footSet', site: 3, epoch: 0, request: 0 }, actorAt(h.jib)),
+          ok,
+          `jib, set ${set}, at ${k}`,
+        );
+        assert.equal(
+          railValid(s.w, { op: 'rail.call', id: railhead, dir: -1, epoch: 0, request: 0 }, actorAt(h.platform)),
+          k === stop,
+          `lever, set ${set}, stop ${stop}, at ${k}`,
+        );
+      }
     }
-  }
 });
 
 // ---------------------------------------------------------------- the load check on broken v27 rows
