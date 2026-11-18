@@ -68,7 +68,8 @@ async function openGarage() {
 }
 async function hold() {
   triggerAction('interact', 'down');
-  for (let k = 0; k < 150 && boiler() < 1; k++) await wait(50);
+  // Line.boiler 1 is the 20 m/s row (seeded at steel-home); the Longer boiler is 2.
+  for (let k = 0; k < 150 && boiler() < 2; k++) await wait(50);
   triggerAction('interact', 'up');
 }
 /** Waits for a moment to start on this page and to end, printing what `mineNow` says either side. */
