@@ -1,5 +1,7 @@
 // Authored seat headings stay in degrees in JSON; runtime attachments keep their existing radians contract.
 import type { Attach, ColliderDef, JsonObject, PrefabDef } from './types.ts';
+import { lighthouseColliders, lighthouseDims } from './lighthouse.ts';
+import { cellarRackCollider, cellarRackDims } from './cellar.ts';
 function object(value: unknown): JsonObject {
   if (!value || typeof value !== 'object' || Array.isArray(value))
     throw new Error('prefabs: expected authored seat attachment object');
@@ -8,6 +10,19 @@ function object(value: unknown): JsonObject {
 export function resolvePrefab(record: PrefabDef, records: Readonly<Record<string, PrefabDef>> = {}): PrefabDef {
   if (record.layout === undefined) return record;
   let layout = record.layout;
+  // The POIs' derived solids come from the dimensions their builders draw with (visual.params), never from JSON.
+  if (layout?.kind === 'lighthouse' || layout?.kind === 'cellar-rack') {
+    if (Object.keys(layout).length !== 1 || record.colliders.length || !('builder' in record.visual))
+      throw new Error(`prefabs: invalid ${layout.kind} recipe`);
+    const params = record.visual.params;
+    const colliders =
+      layout.kind === 'lighthouse'
+        ? lighthouseColliders(lighthouseDims(params))
+        : [cellarRackCollider(cellarRackDims(params))];
+    const resolved = { ...record, colliders };
+    delete resolved.layout;
+    return resolved;
+  }
   // A polygonal pit wall stores authored dimensions, not forty-eight derived trig transforms in JSON.
   if (layout?.kind === 'pit-ring') {
     const { inner, outer, bottom, top, segments } = layout;

@@ -33,9 +33,13 @@ import './builders/loader-parts.ts';
 import './builders/coach-parts.ts';
 import './builders/roundhouse-bay.ts';
 import './builders/roundhouse-table.ts';
+import './builders/poi-lighthouse.ts';
+import './builders/poi-windmills.ts';
+import './builders/poi-caves.ts';
 import type { Interactable } from '../player/hands.ts';
 import type { Part } from '../render/part-geometry.ts';
-import { builders, type ConstructionBuild } from './builders.ts';
+import { builders, type ConstructionBuild, type Piece } from './builders.ts';
+import { CAVE_GROUP } from '../constants.ts';
 import { makeGreyboxLabel } from './builders/greybox-label.ts';
 import { registerSeat, type Seat } from '../entities/railway/seat.ts';
 import { ROOM_GROUP, staticBody } from '../place/land.ts';
@@ -202,7 +206,7 @@ export function instantiate(
         shape,
         at: world(at),
         ...(placement.rot || q.x || q.y || q.z ? { q } : {}),
-        ...(c.group === 'room' ? { group: ROOM_GROUP } : {}),
+        ...(c.group === 'room' ? { group: ROOM_GROUP } : c.group === 'cave' ? { group: CAVE_GROUP } : {}),
       });
     switch (c.shape) {
       case 'box':
@@ -213,6 +217,15 @@ export function instantiate(
         break;
       case 'trunk':
         add({ kind: 'cylinder', rTop: c.r * scale.x, rBottom: c.r * scale.x, h: c.h * scale.y, segments: 12 });
+        break;
+      case 'cylinder':
+        add({
+          kind: 'cylinder',
+          rTop: c.rTop * scale.x,
+          rBottom: c.rBottom * scale.x,
+          h: c.h * scale.y,
+          segments: c.segments,
+        });
         break;
       case 'trunk-chain': {
         const lean = placement.params?.lean as Lean | undefined;
@@ -257,6 +270,7 @@ export function instantiate(
   const root = new THREE.Group();
   const construction: ConstructionBuild['construction'][] = [];
   const furnishingParts: Part[] = [],
+    pieces: Piece[] = [],
     glass: { x: number; y: number; z: number }[] = [];
   root.visible = enabled;
   root.position.fromArray(placement.pos);
@@ -273,6 +287,10 @@ export function instantiate(
         if (batch || parent || placement.rot || placement.scale || placement.pos.some((v) => v !== 0))
           throw new Error('prefabs: construction parts require an identity local placement');
         construction.push(visual.construction);
+      } else if ('pieces' in visual) {
+        if (batch || parent) throw new Error('prefabs: pieces are merged by their owner, never batched or carried');
+        for (const piece of visual.pieces)
+          pieces.push({ ...piece, matrix: localMatrix.clone().multiply(piece.matrix) });
       } else if ('parts' in visual) {
         if (batch || placement.rot || placement.scale || placement.pos.some((v) => v !== 0))
           throw new Error('prefabs: merged parts require an identity local placement');
@@ -366,6 +384,8 @@ export function instantiate(
   return {
     root,
     parts: furnishingParts,
+    /** Builder pieces in the owner's frame, for the owner to merge with its area's other pieces. */
+    pieces,
     construction,
     glass,
     targets: () => (enabled && !disposed ? handlers.flatMap((handler) => handler()) : []),

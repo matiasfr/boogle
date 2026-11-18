@@ -38,10 +38,12 @@ trees and rocks out of keep-out discs, and `src/entities/props/` pushes them int
    };
    ```
 
-2. `src/pois/<name>/index.ts` spawns entity-owned content in `onStart` (after the terrain and props exist), using
-   `groundHeight`, `siteFrame(site)` from `stamps.ts` for local-to-world placement, and `addPart`/`mergeParts` from
-   `src/render/props.ts` to merge small parts into one draw call.
-   Use the lifecycle in `src/entities/ball/` or `src/features/ping.ts`; new POIs cannot register `onFrame` or add bodies/meshes outside entities. The lighthouse is a site/placement reference only: its suppressed lifecycle is deliberate debt until the home redesign (`dev/lint/policy.ts`), not an example to copy.
+2. `src/pois/<name>/index.ts` spawns entity-owned content in `onStart` (after the terrain and props exist). Each
+   thing is a prefab record (`src/content/prefabs/pois.ts`, builders in `src/prefab/builders/poi-*.ts`) placed in
+   the site's frame by a level (`src/content/levels/pois.ts`) or by the POI's own seeded scatter; `instantiate` stands
+   it under the POI's owner with its solids, and the POI merges the records' pieces (`addPart`/`mergeParts` from
+   `src/render/geometry-parts.ts`) into one draw call. `src/pois/lighthouse/` is the small worked example; new POIs
+   cannot register `onFrame` or add bodies/meshes outside entities.
 3. `npm run island-map` writes `.look/island-map.png`: the composed island, keep-out discs in red. Check the POI sits
    where you meant, run `npm run level-check`, then look at it in the game (`npm run look -- --cam x,y,z --look x,y,z`).
 

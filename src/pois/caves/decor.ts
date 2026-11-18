@@ -6,28 +6,27 @@
 // Things are placed by probing the cave's distance field (caveSd), so lanterns sit on real walls and stalactites
 // hang from the real ceiling even if the network changes. Colliders are in the CAVE group: only bodies underground
 // touch them.
+//
+// Each thing is a record (content/prefabs/caves.ts) with its own pieces and solids. caveDecor() works out where each
+// stands, in the order the caves always drew them; buildDecor() stands them under the caves' owner and merges their
+// pieces into two draws.
 import * as THREE from 'three/webgpu';
-import { groundMat, GROUP } from '../../physics/physics.ts';
-import { createBody, addBody } from '../../physics/engine.ts';
-import { addPart, mergeParts } from '../../render/props.ts';
-import { addLightSource } from '../../render/lights.ts';
-import { readableGlow, readableUnlit } from '../../render/readable-unlit.ts';
+import { addPart, mergeParts } from '../../render/geometry-parts.ts';
+import { addLightSource, removeLightSource } from '../../render/lights.ts';
+import { readableUnlit } from '../../render/readable-unlit.ts';
 import { mulberry32 } from '../../math.ts';
+import { instantiate } from '../../prefab/instantiate.ts';
+import { definitions } from '../../prefab/catalogue.ts';
+import { cellarRack, cellarRackDims } from '../../prefab/cellar.ts';
 import { caveSd } from './mesh.ts';
 import { ambAt, withCaveAmbient } from './ambient.ts';
 import { NODES, SEGMENTS, MOUTHS, POND, TUNNEL_R, FLOOR_CUT, type CaveNode } from './network.ts';
-import type { Shape } from '../../physics/engine.ts';
+import type { OwnedView } from '../../render/owned-view.ts';
+import type { JsonObject, Placement, PrefabKey, Vec3 } from '../../prefab/types.ts';
 
 type P3 = { x: number; y: number; z: number };
 type Step = P3 & { dx: number; dz: number };
 type Geos = THREE.BufferGeometry[];
-
-const rng = mulberry32(4242);
-const box = new THREE.BoxGeometry(1, 1, 1);
-const m4 = new THREE.Matrix4(),
-  q = new THREE.Quaternion(),
-  e = new THREE.Euler(),
-  sc = new THREE.Vector3();
 
 // ---------------------------------------------------------------- probing the cave
 function march(x: number, y: number, z: number, dx: number, dy: number, dz: number, max = 14) {
@@ -86,6 +85,25 @@ function nearTunnel(id: string, x: number, z: number) {
 }
 
 // ---------------------------------------------------------------- text boards
+/** The boards' words, by label key: the mouths' names (network.ts), the hub's signpost and the two chamber signs. */
+const SIGNPOST: [string, string][] = [
+  ['mine', 'Old mine'],
+  ['pond', 'Pond'],
+  ['cellar', 'Cellar'],
+  ['south', 'Way out'],
+];
+const CAVE_TEXT: Record<string, string> = {
+  ...Object.fromEntries(MOUTHS.map((m) => [`mouth.${m.id}`, m.label])),
+  ...Object.fromEntries(
+    SIGNPOST.flatMap(([id, label]) => [
+      [`sign.${id}`, label + ' →'],
+      [`sign.${id}.back`, '← ' + label],
+    ]),
+  ),
+  mine: 'Old Boogle Mine',
+  cellar: 'Wine Cellar',
+};
+
 function board(text: string, w: number, h: number, bg = '#6b4a2c', fg = '#f6e7c8') {
   const c = document.createElement('canvas');
   c.width = 256;
@@ -115,63 +133,25 @@ export function mouthFrame(m: { x: number; z: number; ox: number; oz: number }) 
     half: Math.sqrt(TUNNEL_R ** 2 - FLOOR_CUT ** 2) - 0.35,
   };
 }
-export function buildDecor({ scene }: { scene: THREE.Object3D }) {
-  const root = new THREE.Group();
-  const parts: Geos = [],
-    glow: Geos = [];
-  const shapes: Shape[] = []; // colliders, relative to the hub
-  const O = NODES.hub;
 
-  const put = (
-    geo: THREE.BufferGeometry,
-    x: number,
-    y: number,
-    z: number,
-    sx: number,
-    sy: number,
-    sz: number,
-    color: string,
-    rx = 0,
-    ry = 0,
-    rz = 0,
-    list = parts,
-  ) => {
-    q.setFromEuler(e.set(rx, ry, rz, 'YXZ'));
-    m4.compose(new THREE.Vector3(x, y, z), q, sc.set(sx, sy, sz));
-    addPart(list, geo, m4, color);
-  };
-  const solid = (x: number, y: number, z: number, hx: number, hy: number, hz: number, ry = 0) =>
-    shapes.push({
-      kind: 'box' as const,
-      hx,
-      hy,
-      hz,
-      offset: { x: x - O.x, y: y - O.y, z: z - O.z },
-      rotation: { x: 0, y: Math.sin(ry / 2), z: 0, w: Math.cos(ry / 2) },
-    });
+/** Where every furnishing thing stands, in drawing order. Seeded: the same caves always get the same things. */
+function caveDecor(): Placement[] {
+  const rng = mulberry32(4242);
+  const out: Placement[] = [];
+  const place = (prefab: PrefabKey, pos: Vec3, extra: Omit<Placement, 'id' | 'prefab' | 'pos'> = {}) =>
+    out.push({ id: `cave/${out.length}`, prefab, pos, ...extra });
+  const turned = (yaw: number) => ({ rot: [yaw, 0, 0] as Vec3 });
 
   // ---------------------------------------------------------------- lanterns
-  const lanternGeo = new THREE.CylinderGeometry(0.11, 0.13, 0.32, 6);
-  const lantern = (x: number, y: number, z: number, color = '#ffc56e', intensity = 16) => {
-    put(box, x, y + 0.22, z, 0.24, 0.05, 0.24, '#2b2622');
-    put(box, x, y - 0.2, z, 0.26, 0.05, 0.26, '#2b2622');
-    put(lanternGeo, x, y, z, 1, 1, 1, color, 0, 0, 0, glow);
-    addLightSource({ position: new THREE.Vector3(x, y, z), color, intensity, distance: 13 });
-  };
+  const lantern = (x: number, y: number, z: number, color = '#ffc56e', intensity = 16) =>
+    place('cave.lantern', [x, y, z], { params: { color, light: { color, intensity, distance: 13 } } });
   const wallLantern = (p: Step, side: number) => {
     const [x, , z] = wallAt(p.x, p.y + 2.2, p.z, -p.dz * side, p.dx * side, 0.32);
     lantern(x, p.y + 2.2, z);
-    put(
-      box,
-      x - p.dz * side * 0.16,
-      p.y + 2.45,
-      z + p.dx * side * 0.16,
-      0.06,
-      0.06,
-      0.36,
-      '#2b2622',
-      0,
-      yawOf(-p.dz * side, p.dx * side),
+    place(
+      'cave.lantern-arm',
+      [x - p.dz * side * 0.16, p.y + 2.45, z + p.dx * side * 0.16],
+      turned(yawOf(-p.dz * side, p.dx * side)),
     );
   };
   for (const s of SEGMENTS) {
@@ -185,27 +165,19 @@ export function buildDecor({ scene }: { scene: THREE.Object3D }) {
   // ---------------------------------------------------------------- mouths: timber frames and name boards
   for (const m of MOUTHS) {
     const { rx, rz, fx, fz, half } = mouthFrame(m);
-    for (const sd of [-1, 1]) put(box, fx + rx * half * sd, m.y + 1.4, fz + rz * half * sd, 0.3, 2.8, 0.3, '#5d4026');
-    put(box, fx, m.y + 2.85, fz, 0.32, 0.32, half * 2 + 0.6, '#5d4026', 0, yawOf(rx, rz));
-    const b = board(m.label, 2.2, 0.55);
-    b.position.set(fx + m.ox * 0.18, m.y + 2.85, fz + m.oz * 0.18);
-    b.rotation.y = yawOf(m.ox, m.oz);
-    root.add(b);
+    place('cave.mouth-frame', [fx, m.y, fz], { params: { rx, rz, half } });
+    place('cave.mouth-board', [fx + m.ox * 0.18, m.y + 2.85, fz + m.oz * 0.18], {
+      ...turned(yawOf(m.ox, m.oz)),
+      labels: { board: `mouth.${m.id}` },
+    });
     lantern(fx + rx * (half - 0.05) + m.ox * 0.25, m.y + 2.2, fz + rz * (half - 0.05) + m.oz * 0.25);
   }
 
   // ---------------------------------------------------------------- hub: signpost
   {
     const h = NODES.hub;
-    put(box, h.x, h.y + 1.3, h.z, 0.16, 2.6, 0.16, '#6b4a2c');
-    solid(h.x, h.y + 1.3, h.z, 0.1, 1.3, 0.1);
-    const targets: [string, string][] = [
-      ['mine', 'Old mine'],
-      ['pond', 'Pond'],
-      ['cellar', 'Cellar'],
-      ['south', 'Way out'],
-    ];
-    targets.forEach(([id, label], k) => {
+    place('cave.signpost', [h.x, h.y, h.z]);
+    SIGNPOST.forEach(([id], k) => {
       const n = (NODES as Record<string, CaveNode>)[id]!;
       const dx = n.x - h.x,
         dz = n.z - h.z;
@@ -213,20 +185,17 @@ export function buildDecor({ scene }: { scene: THREE.Object3D }) {
       const ux = dx / l,
         uz = dz / l;
       // Two boards back to back, each reading towards its arrow.
-      for (const back of [false, true]) {
-        const b = board(back ? '← ' + label : label + ' →', 1.5, 0.34);
-        b.position.set(h.x + ux * 0.75, h.y + 2.2 - k * 0.38, h.z + uz * 0.75);
-        b.rotation.y = Math.atan2(-uz, ux) + (back ? Math.PI : 0);
-        b.translateZ(0.012);
-        root.add(b);
-      }
+      for (const back of [false, true])
+        place('cave.sign-board', [h.x + ux * 0.75, h.y + 2.2 - k * 0.38, h.z + uz * 0.75], {
+          ...turned(Math.atan2(-uz, ux) + (back ? Math.PI : 0)),
+          labels: { board: back ? `sign.${id}.back` : `sign.${id}` },
+        });
     });
     lantern(h.x + 0.3, h.y + 2.7, h.z, '#ffc56e', 20);
   }
 
   // ---------------------------------------------------------------- stalactites (hub and pond)
-  const coneGeo = new THREE.ConeGeometry(1, 1, 6);
-  const drips = (n: { x: number; y: number; z: number; r: number[] }, count: number, rockColor: string) => {
+  const drips = (n: { x: number; y: number; z: number; r: number[] }, count: number, color: string) => {
     const y0 = n.y;
     for (let k = 0; k < count; k++) {
       const a = rng() * Math.PI * 2,
@@ -236,7 +205,7 @@ export function buildDecor({ scene }: { scene: THREE.Object3D }) {
       if (caveSd(x, y0 + 1.5, z) > -0.3) continue;
       const top = ceilingAbove(x, y0 + 1.5, z);
       const len = 0.5 + rng() * 1.5;
-      put(coneGeo, x, top - len / 2 + 0.15, z, 0.18 + len * 0.08, len, 0.18 + len * 0.08, rockColor, Math.PI);
+      place('cave.stalactite', [x, top - len / 2 + 0.15, z], { params: { len, color } });
     }
   };
   drips(NODES.hub, 12, '#8a8073');
@@ -252,21 +221,17 @@ export function buildDecor({ scene }: { scene: THREE.Object3D }) {
     const rail = along(track, 0.8, 7);
     rail.forEach((p, k) => {
       const yaw = yawOf(p.dx, p.dz);
-      put(box, p.x, p.y + 0.05, p.z, 1.7, 0.1, 0.24, k % 3 ? '#5a4330' : '#4e3a2a', 0, yaw);
+      place('cave.sleeper', [p.x, p.y + 0.05, p.z], {
+        ...turned(yaw),
+        params: { color: k % 3 ? '#5a4330' : '#4e3a2a' },
+      });
       if (k + 1 < rail.length) {
         const n = rail[k + 1]!;
         for (const sd of [-0.55, 0.55])
-          put(
-            box,
-            (p.x + n.x) / 2 - p.dz * sd,
-            (p.y + n.y) / 2 + 0.14,
-            (p.z + n.z) / 2 + p.dx * sd,
-            0.08,
-            0.09,
-            0.84,
-            '#6e6a66',
-            0,
-            yaw,
+          place(
+            'cave.rail',
+            [(p.x + n.x) / 2 - p.dz * sd, (p.y + n.y) / 2 + 0.14, (p.z + n.z) / 2 + p.dx * sd],
+            turned(yaw),
           );
       }
     });
@@ -275,49 +240,24 @@ export function buildDecor({ scene }: { scene: THREE.Object3D }) {
     for (const p of along(track, 4.2, 9)) {
       if (inside(mine, p.x, p.z, 0.05) || inside(NODES.hub, p.x, p.z, 0.05)) continue;
       const yaw = yawOf(p.dx, p.dz);
-      for (const sd of [-1, 1]) {
-        put(box, p.x - p.dz * half * sd, p.y + 1.35, p.z + p.dx * half * sd, 0.24, 2.7, 0.24, '#6a4a2d', 0, yaw);
-        solid(p.x - p.dz * half * sd, p.y + 1.35, p.z + p.dx * half * sd, 0.12, 1.35, 0.12, yaw);
-      }
-      put(box, p.x, p.y + 2.78, p.z, half * 2 + 0.3, 0.26, 0.26, '#6a4a2d', 0, yaw);
+      for (const sd of [-1, 1])
+        place('cave.support-post', [p.x - p.dz * half * sd, p.y + 1.35, p.z + p.dx * half * sd], turned(yaw));
+      place('cave.support-beam', [p.x, p.y + 2.78, p.z], { ...turned(yaw), params: { w: half * 2 + 0.3 } });
     }
     // A minecart full of ore on the rails, near the middle of the chamber.
     const near = rail.reduce((b, p) =>
       Math.hypot(p.x - mine.x, p.z - mine.z) < Math.hypot(b.x - mine.x, b.z - mine.z) ? p : b,
     );
     const cart = { x: near.x + near.dx * 3, y: near.y, z: near.z + near.dz * 3, yaw: yawOf(near.dx, near.dz) };
-    const cx = cart.x,
-      cy = cart.y,
-      cz = cart.z;
-    put(box, cx, cy + 0.75, cz, 1.0, 0.7, 1.4, '#5b4632', 0, cart.yaw);
-    put(box, cx, cy + 1.1, cz, 1.06, 0.08, 1.46, '#3c3a38', 0, cart.yaw);
-    const wheel = new THREE.CylinderGeometry(0.22, 0.22, 0.1, 10);
-    for (const [wx, wz] of [
-      [-0.5, -0.45],
-      [0.5, -0.45],
-      [-0.5, 0.45],
-      [0.5, 0.45],
-    ] satisfies [number, number][]) {
-      const s = Math.sin(cart.yaw),
-        c = Math.cos(cart.yaw);
-      put(wheel, cx + wx * c + wz * s, cy + 0.32, cz - wx * s + wz * c, 1, 1, 1, '#2e2c2a', 0, cart.yaw, Math.PI / 2);
+    place('cave.minecart', [cart.x, cart.y, cart.z], turned(cart.yaw));
+    const lumps: number[][] = [];
+    for (let k = 0; k < 9; k++) {
+      const x = (rng() - 0.5) * 0.6,
+        y = 1.15 + rng() * 0.15,
+        z = (rng() - 0.5) * 0.9;
+      lumps.push([x, y, z, rng(), rng(), rng()]);
     }
-    const lump = new THREE.IcosahedronGeometry(0.22, 0);
-    for (let k = 0; k < 9; k++)
-      put(
-        lump,
-        cx + (rng() - 0.5) * 0.6,
-        cy + 1.15 + rng() * 0.15,
-        cz + (rng() - 0.5) * 0.9,
-        1,
-        1,
-        1,
-        k % 3 ? '#d8a531' : '#8b8278',
-        rng(),
-        rng(),
-        rng(),
-      );
-    solid(cx, cy + 0.75, cz, 0.5, 0.45, 0.72, cart.yaw);
+    place('cave.ore-load', [cart.x, cart.y, cart.z], { params: { lumps } });
     // Crates, a barrel, a pickaxe, a lantern on a post.
     for (let k = 0, tries = 0; k < 4 && tries < 40; tries++) {
       const a = rng() * Math.PI * 2;
@@ -325,66 +265,41 @@ export function buildDecor({ scene }: { scene: THREE.Object3D }) {
       if (nearTunnel('mine', wx, wz) < 2.6) continue;
       k++;
       const s = 0.8 + rng() * 0.3;
-      put(box, wx, mine.y + s / 2, wz, s, s, s, '#9a7448', 0, rng() * 3);
-      solid(wx, mine.y + s / 2, wz, s / 2, s / 2, s / 2);
-      if (k === 1) {
-        put(box, wx + 0.5, mine.y + 0.9, wz, 0.07, 1.5, 0.07, '#6b4a2c', 0, 0, 0.35);
-        put(box, wx + 0.75, mine.y + 1.6, wz, 0.75, 0.1, 0.1, '#8f8c88', 0, 0, 0.35);
-      }
+      place('cave.crate', [wx, mine.y + s / 2, wz], { scale: [s, s, s], params: { spin: rng() * 3 } });
+      if (k === 1) place('cave.pickaxe', [wx, mine.y, wz]);
     }
     lantern(mine.x - 2, mine.y + 2.4, mine.z + 1.5, '#ffc56e', 20);
-    put(box, mine.x - 2, mine.y + 1.15, mine.z + 1.5, 0.12, 2.3, 0.12, '#6b4a2c');
+    place('cave.lamp-post', [mine.x - 2, mine.y, mine.z + 1.5]);
     // Ore veins glinting in the walls.
-    const crystal = new THREE.OctahedronGeometry(0.2, 0);
     for (let k = 0; k < 14; k++) {
       const a = rng() * Math.PI * 2,
         y = mine.y + 0.8 + rng() * 2.6;
       const [wx, wy, wz] = wallAt(mine.x, y, mine.z, Math.cos(a), Math.sin(a), 0.05);
       if (!inside(mine, wx, wz)) continue; // looked down a tunnel
-      for (let c = 0; c < 4; c++)
-        put(
-          crystal,
-          wx + (rng() - 0.5) * 0.4,
-          wy + (rng() - 0.5) * 0.4,
-          wz + (rng() - 0.5) * 0.4,
-          0.6 + rng(),
-          1 + rng(),
-          0.6 + rng(),
-          '#ffd76a',
-          rng() * 3,
-          rng() * 3,
-          0,
-          glow,
-        );
+      const crystals: number[][] = [];
+      for (let c = 0; c < 4; c++) {
+        const x = (rng() - 0.5) * 0.4,
+          y = (rng() - 0.5) * 0.4,
+          z = (rng() - 0.5) * 0.4;
+        const sx = 0.6 + rng(),
+          sy = 1 + rng(),
+          sz = 0.6 + rng();
+        crystals.push([x, y, z, sx, sy, sz, rng() * 3, rng() * 3]);
+      }
+      place('cave.ore-vein', [wx, wy, wz], { params: { crystals } });
     }
-    const sign = board('Old Boogle Mine', 2.6, 0.6, '#3d2c1e');
-    sign.position.set(mine.x + 3, mine.y + 2.5, mine.z - 2);
-    sign.rotation.y = -0.6;
-    root.add(sign);
+    place('cave.mine-board', [mine.x + 3, mine.y + 2.5, mine.z - 2], {
+      ...turned(-0.6),
+      labels: { board: 'mine' },
+      params: { bg: '#3d2c1e' },
+    });
   }
 
   // ---------------------------------------------------------------- the pond
   {
     const pond = NODES.pond;
-    const water = new THREE.Mesh(
-      new THREE.CircleGeometry(1, 40).rotateX(-Math.PI / 2),
-      readableGlow(
-        new THREE.MeshStandardNodeMaterial({
-          color: '#0b3a44',
-          emissive: '#0e5866',
-          emissiveIntensity: 0.4,
-          roughness: 0.08,
-          metalness: 0.3,
-          transparent: true,
-          opacity: 0.84,
-        }),
-      ),
-    );
-    water.scale.set(POND.rx * 0.86, 1, POND.rz * 0.86);
-    water.position.set(POND.x, POND.level, POND.z);
-    root.add(water);
+    place('cave.pond', [POND.x, POND.level, POND.z], { scale: [POND.rx * 0.86, 1, POND.rz * 0.86] });
     // Crystal clusters round the edge and in the walls; some of them light the place.
-    const crystal = new THREE.OctahedronGeometry(0.3, 0);
     const colors = ['#79f0ff', '#b48cff', '#7cf5c8'];
     for (let k = 0; k < 16; k++) {
       const a = (k / 16) * Math.PI * 2 + rng() * 0.3;
@@ -395,37 +310,30 @@ export function buildDecor({ scene }: { scene: THREE.Object3D }) {
         : [POND.x + Math.cos(a) * POND.rx * 1.02, 0, POND.z + Math.sin(a) * POND.rz * 1.02];
       if (!inside(pond, x, z)) continue; // looked down a tunnel
       const fy = onWall ? y : floorBelow(x, pond.y + 1, z);
-      const col = colors[k % 3]!;
-      for (let c = 0; c < 5; c++)
-        put(
-          crystal,
-          x + (rng() - 0.5) * 0.6,
-          fy + 0.2 + rng() * 0.3,
-          z + (rng() - 0.5) * 0.6,
-          0.5 + rng() * 0.6,
-          1.2 + rng() * 1.6,
-          0.5 + rng() * 0.6,
-          col,
-          (rng() - 0.5) * 0.7,
-          rng() * 3,
-          (rng() - 0.5) * 0.7,
-          glow,
-        );
-      if (k % 4 === 0)
-        addLightSource({ position: new THREE.Vector3(x, fy + 0.8, z), color: col, intensity: 14, distance: 12 });
+      const color = colors[k % 3]!;
+      const crystals: number[][] = [];
+      for (let c = 0; c < 5; c++) {
+        const cx = (rng() - 0.5) * 0.6,
+          cy = 0.2 + rng() * 0.3,
+          cz = (rng() - 0.5) * 0.6;
+        const sx = 0.5 + rng() * 0.6,
+          sy = 1.2 + rng() * 1.6,
+          sz = 0.5 + rng() * 0.6;
+        crystals.push([cx, cy, cz, sx, sy, sz, (rng() - 0.5) * 0.7, rng() * 3, (rng() - 0.5) * 0.7]);
+      }
+      const params: JsonObject = { color, crystals };
+      place('cave.crystals', [x, fy, z], {
+        params: k % 4 === 0 ? { ...params, light: { color, intensity: 14, distance: 12 } } : params,
+      });
     }
     // Glowing mushrooms by the water (cousins of the garden's).
-    const stem = new THREE.CylinderGeometry(0.05, 0.07, 0.3, 6);
-    const cap = new THREE.SphereGeometry(0.2, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2);
     for (let k = 0; k < 14; k++) {
       const a = rng() * Math.PI * 2,
         r = 1.08 + rng() * 0.25;
       const x = POND.x + Math.cos(a) * POND.rx * r,
         z = POND.z + Math.sin(a) * POND.rz * r;
       const y = floorBelow(x, pond.y + 1.2, z);
-      const s = 0.6 + rng() * 0.9;
-      put(stem, x, y + 0.15 * s, z, s, s, s, '#d9f3ef');
-      put(cap, x, y + 0.29 * s, z, s, s * 0.8, s, '#5ff2d8', 0, 0, 0, glow);
+      place('cave.mushroom', [x, y, z], { params: { s: 0.6 + rng() * 0.9 } });
     }
     // A little rowboat pulled up on the shore.
     let bx = POND.x,
@@ -439,101 +347,66 @@ export function buildDecor({ scene }: { scene: THREE.Object3D }) {
         break;
       }
     }
-    const by = floorBelow(bx, pond.y + 1, bz);
-    put(box, bx, by + 0.25, bz, 1.0, 0.4, 2.4, '#7a5536', 0, 0.4, 0.06);
-    put(box, bx, by + 0.48, bz, 1.1, 0.08, 2.5, '#5e3f27', 0, 0.4, 0.06);
-    put(box, bx, by + 0.5, bz, 0.9, 0.06, 0.25, '#8d6643', 0, 0.4, 0.06);
-    put(box, bx + 0.7, by + 0.2, bz - 0.6, 0.1, 0.08, 1.7, '#8d6643', 0, 1.3, 0);
-    solid(bx, by + 0.3, bz, 0.5, 0.3, 1.2, 0.4);
+    place('cave.rowboat', [bx, floorBelow(bx, pond.y + 1, bz), bz]);
   }
 
   // ---------------------------------------------------------------- the wine cellar
   {
     const c = NODES.cellar;
     const [hx, , hz] = c.half;
-    const barrel = new THREE.LatheGeometry(
-      [0, 0.34, 0.41, 0.44, 0.41, 0.34, 0].map((r, k) => new THREE.Vector2(r || 0.001, -0.45 + (k * 0.9) / 6)),
-      12,
-    );
-    const hoop = new THREE.TorusGeometry(0.43, 0.025, 4, 14);
-    // Racks along both long walls: two tiers of barrels lying head-on to the wall, with gaps for the tunnels.
-    const count = Math.floor((hx * 2 - 2.8) / 0.95) + 1;
-    const step = (hx * 2 - 2.8) / (count - 1);
+    // Racks along both long walls: bays of barrels lying head-on to the wall, with gaps for the tunnels.
+    const rackParams = definitions['cave.rack-bay']!.visual;
+    const { count, step } = cellarRack(cellarRackDims('builder' in rackParams ? rackParams.params : {}));
     for (const side of [-1, 1]) {
       const wz = c.z + side * (hz - 0.75);
       for (let k = 0; k < count; k++) {
         const bx = c.x - hx + 1.4 + k * step;
         if (nearTunnel('cellar', bx, wz) < 2.4) continue;
-        put(box, bx, c.y + 0.12, wz, step + 0.02, 0.16, 0.9, '#4e3826');
-        solid(bx, c.y + 0.9, wz, step / 2, 0.9, 0.5);
-        for (const tier of [0, 1]) {
-          if (tier === 1 && k % 3 === 2) continue;
-          const by = c.y + 0.62 + tier * 0.86;
-          put(barrel, bx, by, wz, 1, 1, 1, tier ? '#8a5a35' : '#7a4e2f', Math.PI / 2, 0, 0);
-          for (const hzOff of [-0.28, 0.28]) put(hoop, bx, by, wz + hzOff, 1, 1, 1, '#3a3632', 0, 0, 0);
-        }
+        place('cave.rack-bay', [bx, c.y, wz], k % 3 === 2 ? { params: { top: false } } : {});
       }
     }
     // Bottle shelves on the far wall.
     const shelfX = c.x - hx + 0.35;
-    put(box, shelfX, c.y + 1.2, c.z, 0.5, 2.4, hz * 1.2, '#5a3f28');
-    solid(shelfX, c.y + 1.2, c.z, 0.3, 1.2, hz * 0.6);
-    const bottle = new THREE.CylinderGeometry(0.06, 0.06, 0.3, 6);
-    const neck = new THREE.CylinderGeometry(0.022, 0.03, 0.12, 5);
-    for (let row = 0; row < 5; row++)
-      for (let col = 0; col < 9; col++) {
-        const y = c.y + 0.35 + row * 0.42,
-          z = c.z - hz * 0.55 + col * ((hz * 1.1) / 8);
-        const glass = ['#1f4d2b', '#3b1d24', '#264a35'][(row + col) % 3]!;
-        put(bottle, shelfX + 0.2, y, z, 1, 1, 1, glass, 0, 0, Math.PI / 2);
-        put(neck, shelfX + 0.4, y, z, 1, 1, 1, glass, 0, 0, Math.PI / 2);
-      }
-    // The big cask at the other end, on a cradle, with a tap.
-    const caskX = c.x + hx - 1.4;
-    put(barrel, caskX, c.y + 1.25, c.z, 2.4, 2.2, 2.4, '#7d4f2d', 0, 0, Math.PI / 2);
-    for (const off of [-0.7, 0, 0.7])
-      put(hoop, caskX + off, c.y + 1.25, c.z, 2.4, 2.4, 2.4, '#3a3632', 0, Math.PI / 2, 0);
-    put(box, caskX, c.y + 0.2, c.z, 1.6, 0.4, 1.6, '#4e3826');
-    put(box, caskX - 1.1, c.y + 1.0, c.z, 0.2, 0.1, 0.1, '#b48a3c');
-    solid(caskX, c.y + 1.15, c.z, 1.1, 1.15, 1.1);
-    // A table with candles, bottles and two stools, off to the side of the way through.
+    place('cave.bottle-shelf', [shelfX, c.y, c.z], { scale: [1, 1, hz] });
+    place('cave.bottles', [shelfX, c.y, c.z], { params: { hz } });
+    // The big cask at the other end, on a cradle, with a tap; a table with candles and two stools.
+    place('cave.cask', [c.x + hx - 1.4, c.y, c.z]);
     const tx = c.x - 2;
-    put(box, tx, c.y + 0.78, c.z, 2.2, 0.1, 1.1, '#6b4a2c');
-    for (const [lx, lz] of [
-      [-1, -0.45],
-      [1, -0.45],
-      [-1, 0.45],
-      [1, 0.45],
-    ] satisfies [number, number][])
-      put(box, tx + lx, c.y + 0.38, c.z + lz, 0.1, 0.76, 0.1, '#5a3f28');
-    solid(tx, c.y + 0.42, c.z, 1.1, 0.42, 0.55);
-    put(bottle, tx - 0.5, c.y + 0.98, c.z + 0.1, 1, 1, 1, '#1f4d2b');
-    put(neck, tx - 0.5, c.y + 1.18, c.z + 0.1, 1, 1, 1, '#1f4d2b');
-    const candle = new THREE.CylinderGeometry(0.04, 0.04, 0.2, 6);
-    const flame = new THREE.ConeGeometry(0.035, 0.09, 5);
-    for (const [lx, lz] of [
-      [0.2, -0.2],
-      [0.45, 0.15],
-      [0.65, -0.1],
-    ] satisfies [number, number][]) {
-      put(candle, tx + lx, c.y + 0.93, c.z + lz, 1, 1, 1, '#f3ead6');
-      put(flame, tx + lx, c.y + 1.08, c.z + lz, 1, 1, 1, '#ffcc66', 0, 0, 0, glow);
-    }
-    addLightSource({
-      position: new THREE.Vector3(tx + 0.4, c.y + 1.3, c.z),
-      color: '#ffbb66',
-      intensity: 22,
-      distance: 11,
+    place('cave.table', [tx, c.y, c.z], { params: { light: { color: '#ffbb66', intensity: 22, distance: 11 } } });
+    for (const lx of [-1.6, 1.6]) place('cave.stool', [tx + lx, c.y, c.z + 0.2]);
+    place('cave.mouth-board', [c.x - hx + 0.62, c.y + 2.75, c.z], {
+      ...turned(Math.PI / 2),
+      labels: { board: 'cellar' },
+      params: { bg: '#3d2018' },
     });
-    const stool = new THREE.CylinderGeometry(0.25, 0.22, 0.5, 8);
-    for (const lx of [-1.6, 1.6]) {
-      put(stool, tx + lx, c.y + 0.25, c.z + 0.2, 1, 1, 1, '#5a3f28');
-      solid(tx + lx, c.y + 0.25, c.z + 0.2, 0.25, 0.25, 0.25);
+  }
+  return out;
+}
+
+type Light = { color: string; intensity: number; distance: number };
+/** Stand every thing under `owner` (still: they never move) and merge their pieces into the rock-lit and glowing draws. */
+export function buildDecor(owner: OwnedView) {
+  const parts: Geos = [],
+    glow: Geos = [];
+  for (const p of caveDecor()) {
+    const bg = p.params?.bg as string | undefined;
+    const thing = instantiate(p.prefab, p, {
+      owner,
+      still: true,
+      makeLabel: (a, key) => {
+        const b = board(CAVE_TEXT[key]!, a.w, a.h, bg);
+        b.position.fromArray(a.at);
+        return b;
+      },
+    });
+    thing.setEnabled(true);
+    for (const piece of thing.pieces)
+      addPart(piece.layer === 'glow' ? glow : parts, piece.geometry, piece.matrix, piece.color);
+    const light = p.params?.light as Light | undefined;
+    if (light) {
+      const source = addLightSource({ ...light, position: thing.attach('light').at });
+      owner.cleanup(() => removeLightSource(source));
     }
-    const sign = board('Wine Cellar', 2.2, 0.55, '#3d2018');
-    sign.position.set(c.x - hx + 0.62, c.y + 2.75, c.z);
-    sign.rotation.y = Math.PI / 2;
-    root.add(sign);
   }
 
   // Props darken with depth like the rock around them (aAmb scales the sky's ambient light, see index.ts).
@@ -551,8 +424,5 @@ export function buildDecor({ scene }: { scene: THREE.Object3D }) {
     mergeParts(glow),
     readableUnlit(new THREE.MeshBasicNodeMaterial({ vertexColors: true })),
   );
-  root.add(solidMesh, glowMesh);
-  scene.add(root);
-  addBody(createBody({ material: groundMat, group: GROUP.CAVE, position: O, shapes }));
-  return root;
+  owner.add(solidMesh, glowMesh);
 }

@@ -34,13 +34,15 @@ import {
   If,
   rand,
 } from 'three/tsl';
-import { scene, camera } from '../../render/scene.ts';
+import { camera } from '../../render/scene.ts';
+import { createOwnedView } from '../../render/owned-view.ts';
+import { defineKind, spawn } from '../../entity/entity.ts';
 import { precompile } from '../../render/precompile.ts';
 import { teleport } from '../../physics/engine.ts';
 import { groundMat, GROUP, groundProbe } from '../../physics/physics.ts';
-import { type Body, createBody, addBody, onPreStep, getMask, setMask } from '../../physics/engine.ts';
+import { type Body, createBody, onPreStep, getMask, setMask } from '../../physics/engine.ts';
 import { groundHeight, setTerrainHoles } from '../../island/terrain.ts';
-import { onStart, onFrame } from '../../loop.ts';
+import { onStart } from '../../loop.ts';
 import { atmosphere } from '../../render/sky.ts';
 import { camConstraints, me } from '../../player/player.ts';
 import { ball } from '../../entities/ball/state.ts';
@@ -89,9 +91,9 @@ export function inCave(x: number, y: number, z: number) {
 }
 
 // ---------------------------------------------------------------- build
-let caveMesh: THREE.Mesh | null = null,
-  collarMesh: THREE.Mesh | null = null,
-  decorRoot: THREE.Object3D | null = null;
+// The rock, its collars and the furnishing (decor.ts) all stand under one owner: the caves' entity, below.
+defineKind('caves', { lateUpdate: 2000 }); // after anything that moves the camera
+const owner = createOwnedView();
 const PALETTE: Record<number, [string, string]> = {
   [ZONE.TUNNEL]: ['#7b7166', '#6c6255'],
   [ZONE.HUB]: ['#80766a', '#6e6457'],
@@ -207,14 +209,14 @@ function* build() {
   }
   const m = r.value;
   const { geo, colliderIndices } = makeGeometry(m);
-  caveMesh = new THREE.Mesh(geo, brickMaterial());
+  const caveMesh = new THREE.Mesh(geo, brickMaterial());
   caveMesh.receiveShadow = true;
   caveMesh.castShadow = true; // the rock over the tunnels is what keeps the sun out (the heightfield above casts only its back faces)
-  scene.add(caveMesh);
+  owner.add(caveMesh);
   freezeStatic(caveMesh); // never moves: no per-frame matrix work
   background(precompile(caveMesh), 'cave shaders'); // build now, not when the first player walks in
 
-  addBody(
+  owner.addBody(
     createBody({
       material: groundMat,
       group: GROUP.CAVE,
@@ -223,14 +225,14 @@ function* build() {
   );
   yield;
 
-  collarMesh = makeCollars(yield* buildCollarMeshSteps());
-  scene.add(collarMesh);
+  const collarMesh = makeCollars(yield* buildCollarMeshSteps());
+  owner.add(collarMesh);
   freezeStatic(collarMesh);
   background(precompile(collarMesh), 'cave mouth shaders');
   yield;
 
-  decorRoot = buildDecor({ scene });
-  background(precompile(decorRoot), 'cave decor shaders');
+  buildDecor(owner);
+  background(precompile(owner.root), 'cave decor shaders');
   setTerrainHoles(
     MOUTHS.map((mo) => ({
       a: [mo.x + mo.ox * 1.5, mo.y + FLOOR_CUT, mo.z + mo.oz * 1.5],
@@ -315,9 +317,9 @@ function keepCameraInside(look: THREE.Vector3, pos: THREE.Vector3) {
 
 let under = 0;
 function update({ dt }: { dt: number }) {
-  if (!ready || !caveMesh || !collarMesh || !decorRoot) return;
+  if (!ready) return;
   const c = camera.position;
-  caveMesh.visible = collarMesh.visible = decorRoot.visible = nearCaves(c.x, c.z, 70) && c.y < 60;
+  owner.root.visible = nearCaves(c.x, c.z, 70) && c.y < 60;
   let target = 0;
   if (inCave(c.x, c.y, c.z)) target = THREE.MathUtils.smoothstep(-outOfMouth(c.x, c.z), 1, 9); // daylight near mouths
   under += (target - under) * Math.min(1, dt * 3);
@@ -359,4 +361,4 @@ onStart(() => {
   };
   setTimeout(slice, 0);
 });
-onFrame(update, { phase: 'late', order: 2000 }); // after anything that moves the camera
+spawn({ kind: 'caves', mesh: owner.root, lateUpdate: update });

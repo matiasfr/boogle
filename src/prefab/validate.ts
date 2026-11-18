@@ -75,7 +75,8 @@ export function validateColliderWorldTransforms(
     if (!orthogonal) fail('sheared collider world basis');
     const uniform = equal(scale[0], scale[1]) && equal(scale[0], scale[2]) && equal(scale[1], scale[2]);
     if ((c.shape === 'sphere' || c.shape === 'trunk-chain') && !uniform) fail('sphere needs uniform scale');
-    if (c.shape === 'trunk' && !equal(scale[0], scale[2])) fail('trunk needs equal radial scale');
+    if ((c.shape === 'trunk' || c.shape === 'cylinder') && !equal(scale[0], scale[2]))
+      fail(`${c.shape} needs equal radial scale`);
     checked.push(basis);
   }
   return checked;
@@ -202,7 +203,7 @@ export function validatePrefab(value: unknown, registry: NameRegistry = names): 
     const c = object(value);
     vec(c.at);
     if (c.rot !== undefined) vec(c.rot);
-    if (c.group !== undefined) known(c.group, ['scenery', 'room']);
+    if (c.group !== undefined) known(c.group, ['scenery', 'room', 'cave']);
     switch (c.shape) {
       case 'box':
         vec(c.half, true);
@@ -215,6 +216,13 @@ export function validatePrefab(value: unknown, registry: NameRegistry = names): 
       case 'trunk':
         number(c.r, true);
         number(c.h, true);
+        break;
+      case 'cylinder':
+        number(c.rTop, true);
+        number(c.rBottom, true);
+        number(c.h, true);
+        number(c.segments, true);
+        if (!Number.isInteger(c.segments) || (c.segments as number) < 3) fail('cylinder needs three or more segments');
         break;
       case 'trunk-chain':
         number(c.r, true);

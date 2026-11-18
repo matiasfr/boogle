@@ -127,6 +127,15 @@ export function captureWorkshop(positions: readonly (readonly [number, number, n
       ['railway.loader-parts', () => chair], // Registry completeness only, like the other unused builders; this captures workshop geometry.
       ['roundhouse.bay', () => chair],
       ['roundhouse.table', () => chair],
+      ['poi.lighthouse', () => chair],
+      ['poi.lighthouse-lantern', () => chair],
+      ['poi.windmill', () => chair],
+      ['poi.windmill-rotor', () => chair],
+      ['poi.hay-bale', () => chair],
+      ['poi.fence-post', () => chair],
+      ['poi.fence-rail', () => chair],
+      ['poi.cave-parts', () => chair],
+      ['poi.cave-water', () => chair],
       [
         'town.workshop-parts',
         (params) => workshopParts(params.piece as string, params.hw as number, params.hd as number),
@@ -331,6 +340,15 @@ function runtimeHarness(input?: { prefabs: PrefabArtifact; level: LevelArtifact 
         ['railway.loader-parts', () => new THREE.Group()],
         ['roundhouse.bay', () => new THREE.Group()],
         ['roundhouse.table', () => new THREE.Group()],
+        ['poi.lighthouse', () => new THREE.Group()],
+        ['poi.lighthouse-lantern', () => new THREE.Group()],
+        ['poi.windmill', () => new THREE.Group()],
+        ['poi.windmill-rotor', () => new THREE.Group()],
+        ['poi.hay-bale', () => new THREE.Group()],
+        ['poi.fence-post', () => new THREE.Group()],
+        ['poi.fence-rail', () => new THREE.Group()],
+        ['poi.cave-parts', () => new THREE.Group()],
+        ['poi.cave-water', () => new THREE.Group()],
         [
           'seat.chair',
           () => {

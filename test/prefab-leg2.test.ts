@@ -103,6 +103,15 @@ for (const area of ['bell', 'west'] as const)
     builders.set('railway.loader-parts', () => new THREE.Group());
     builders.set('roundhouse.bay', () => new THREE.Group());
     builders.set('roundhouse.table', () => new THREE.Group());
+    builders.set('poi.lighthouse', () => new THREE.Group());
+    builders.set('poi.lighthouse-lantern', () => new THREE.Group());
+    builders.set('poi.windmill', () => new THREE.Group());
+    builders.set('poi.windmill-rotor', () => new THREE.Group());
+    builders.set('poi.hay-bale', () => new THREE.Group());
+    builders.set('poi.fence-post', () => new THREE.Group());
+    builders.set('poi.fence-rail', () => new THREE.Group());
+    builders.set('poi.cave-parts', () => new THREE.Group());
+    builders.set('poi.cave-water', () => new THREE.Group());
     const { makeGreyboxLabel } = sourceModule<typeof import('../src/prefab/builders/greybox-label.ts')>(
       fs.readFileSync('src/prefab/builders/greybox-label.ts', 'utf8'),
       { signBoard },

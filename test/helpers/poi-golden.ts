@@ -187,7 +187,16 @@ export const documentStub = {
 };
 
 export type PoiWorld = { meshes: unknown[]; colliders: unknown[]; lights: unknown[] };
-const read = (f: string) => fs.readFileSync(f, 'utf8');
+/** q and -q are one rotation: make the first clearly nonzero component (w, x, y, z) positive, on both sides. */
+export function sameTurns(world: Record<string, PoiWorld>) {
+  for (const area of Object.values(world))
+    for (const c of area.colliders as { q: number[] }[]) {
+      const [x, y, z, w] = c.q;
+      const lead = [w!, x!, y!, z!].find((n) => Math.abs(n) > 1e-6) ?? 1;
+      if (lead < 0) c.q = c.q.map((n) => -n);
+    }
+  return world;
+}
 const common = () => {
   const bodies: BodySpec[] = [],
     lights: Parameters<typeof lightPrint>[0] = [],
@@ -215,43 +224,118 @@ const common = () => {
   };
 };
 
-/** The pre-record code, run as it was: one capture per POI. */
-export function capturePoisBefore(groundAt: (x: number, z: number) => number) {
+/** The record code: the POIs' entities over the real builders, catalogue and `instantiate`, with the same recorders. */
+export async function capturePoisAfter(groundAt: (x: number, z: number) => number) {
+  const { compiled, definitions } = await import('../../src/prefab/catalogue.ts');
+  const validation = await import('../../src/prefab/validate.ts');
+  const { names } = await import('../../src/prefab/names.ts');
+  const lighthouse = await import('../../src/prefab/lighthouse.ts');
+  const cellar = await import('../../src/prefab/cellar.ts');
+  const read = (f: string) => fs.readFileSync(f, 'utf8');
+  const json = (f: string) => JSON.parse(read(f)) as unknown;
   const out: Record<string, PoiWorld> = {};
-  // Lighthouse.
-  {
-    const c = common(),
-      scene = new THREE.Group();
-    sourceModule(read('src/pois/lighthouse/index.ts'), {
+  const run = (capture: (c: ReturnType<typeof common>, world: Record<string, unknown>) => THREE.Object3D) => {
+    const c = common();
+    const builders = new Map<string, import('../../src/prefab/builders.ts').Builder>(
+      names.builders.map((name) => [name, () => new THREE.Group()]),
+    );
+    const registerBuilder = (name: string, build: import('../../src/prefab/builders.ts').Builder) => {
+      builders.set(name, build);
+      return build;
+    };
+    const model = sourceModule<typeof import('../../src/pois/windmills/model.ts')>(
+      read('src/pois/windmills/model.ts'),
+      c.bindings,
+    );
+    const ours = {
+      ...sourceModule<typeof import('../../src/prefab/builders/poi-lighthouse.ts')>(
+        read('src/prefab/builders/poi-lighthouse.ts'),
+        {
+          ...c.bindings,
+          registerBuilder,
+          MeshBasicNodeMaterial: THREE.MeshBasicNodeMaterial,
+          uniform,
+          vec4,
+          pow,
+          uv,
+          ...lighthouse,
+        },
+      ),
+      ...sourceModule<typeof import('../../src/prefab/builders/poi-windmills.ts')>(
+        read('src/prefab/builders/poi-windmills.ts'),
+        { THREE, registerBuilder, ...model },
+      ),
+      ...sourceModule(read('src/prefab/builders/poi-caves.ts'), {
+        THREE,
+        registerBuilder,
+        readableGlow: <T>(m: T) => m,
+        ...cellar,
+      }),
+    };
+    const createOwnedView = sourceFunction<typeof import('../../src/render/owned-view.ts').createOwnedView>(
+      'src/render/owned-view.ts',
+      'createOwnedView',
+      { THREE, owners: new WeakMap(), addBody: c.bindings.addBody, removeBody() {} },
+    );
+    const runtime = sourceModule<typeof import('../../src/prefab/instantiate.ts')>(read('src/prefab/instantiate.ts'), {
+      THREE,
+      compiled,
+      names,
+      builders,
+      ...validation,
+      workshop: json('content/built/levels/workshop.json'),
+      gorge: json('content/built/levels/gorge.json'),
+      ROOM_GROUP: 8,
+      CAVE_GROUP: GROUP.CAVE,
+      staticBody: (
+        shape: BodySpec['shapes'][number],
+        at: THREE.Vector3,
+        q?: THREE.Quaternion,
+        group = GROUP.SCENERY,
+      ) => ({
+        group,
+        position: { x: at.x, y: at.y, z: at.z },
+        ...(q ? { rotation: { x: q.x, y: q.y, z: q.z, w: q.w } } : {}),
+        shapes: [shape],
+      }),
+    });
+    const spawned: { mesh: THREE.Object3D }[] = [];
+    const root = capture(c, {
       ...c.bindings,
-      uniform,
-      vec4,
-      pow,
-      uv,
-      MeshBasicNodeMaterial: THREE.MeshBasicNodeMaterial,
-      scene,
+      ...model,
+      ...ours,
+      createOwnedView,
+      instantiate: runtime.instantiate,
+      definitions,
+      loadLevelArtifact: validation.loadLevelArtifact,
+      removeLightSource() {},
+      defineKind() {},
+      spawn: (e: { mesh: THREE.Object3D }) => spawned.push(e),
+      spawned,
+    });
+    return { meshes: worldMeshes(root), colliders: worldColliders(c.bodies), lights: lightPrint(c.lights) };
+  };
+  out.lighthouse = run((c, world) => {
+    sourceModule(read('src/pois/lighthouse/index.ts'), {
+      ...world,
       camera: new THREE.PerspectiveCamera(),
       skyNow: { day: 1 },
       sharedSeconds: () => 0,
       reducedMotion: false,
-      PAD_Y,
+      level: json('content/built/levels/lighthouse.json'),
       site: lighthouseSite,
+      PAD_Y,
     });
     for (const s of c.starts) s();
-    out.lighthouse = { meshes: worldMeshes(scene), colliders: worldColliders(c.bodies), lights: lightPrint(c.lights) };
-  }
-  // Windmills.
-  {
-    const c = common(),
-      scene = new THREE.Group();
-    const model = sourceModule<Record<string, unknown>>(read('src/pois/windmills/model.ts'), c.bindings);
+    return (world.spawned as { mesh: THREE.Object3D }[])[0]!.mesh;
+  });
+  out.windmills = run((c, world) => {
     sourceModule(read('src/pois/windmills/index.ts'), {
-      ...c.bindings,
-      ...model,
+      ...world,
+      level: json('content/built/levels/windmills.json'),
+      site: windmillSite,
       MILLS,
       TRACK,
-      site: windmillSite,
-      scene,
       groundHeight: groundAt,
       NOT_SCENERY: ~(GROUP.SCENERY | GROUP.CAVE),
       BODY: { KINEMATIC: 'kinematic' },
@@ -262,12 +346,9 @@ export function capturePoisBefore(groundAt: (x: number, z: number) => number) {
       sailSpeed: () => 0,
     });
     for (const s of c.starts) s();
-    out.windmills = { meshes: worldMeshes(scene), colliders: worldColliders(c.bodies), lights: lightPrint(c.lights) };
-  }
-  // Cave furnishing (the rock and its collars are mesh.ts's, unchanged).
-  {
-    const c = common(),
-      scene = new THREE.Group();
+    return (world.spawned as { mesh: THREE.Object3D }[])[0]!.mesh;
+  });
+  out.caves = run((_c, world) => {
     const ambAt = sourceFunction('src/pois/caves/ambient.ts', 'ambAt', {
       THREE,
       MOUTHS: network.MOUTHS,
@@ -275,12 +356,20 @@ export function capturePoisBefore(groundAt: (x: number, z: number) => number) {
       AMB_FAR: 14,
       AMB_DEEP: 0.6,
     });
-    const { buildDecor } = sourceModule<{ buildDecor(o: { scene: THREE.Object3D }): THREE.Object3D }>(
-      read('src/pois/caves/decor.ts'),
-      { ...c.bindings, ...network, mulberry32, caveSd, ambAt, withCaveAmbient: <T>(m: T) => m },
-    );
-    scene.add(buildDecor({ scene: new THREE.Group() }));
-    out.caves = { meshes: worldMeshes(scene), colliders: worldColliders(c.bodies), lights: lightPrint(c.lights) };
-  }
+    const { buildDecor } = sourceModule<{
+      buildDecor(owner: ReturnType<typeof import('../../src/render/owned-view.ts').createOwnedView>): void;
+    }>(read('src/pois/caves/decor.ts'), {
+      ...world,
+      ...network,
+      ...cellar,
+      mulberry32,
+      caveSd,
+      ambAt,
+      withCaveAmbient: <T>(m: T) => m,
+    });
+    const owner = (world.createOwnedView as typeof import('../../src/render/owned-view.ts').createOwnedView)();
+    buildDecor(owner);
+    return owner.root;
+  });
   return out;
 }

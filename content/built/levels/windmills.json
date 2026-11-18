@@ -1,0 +1,13 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "place": "windmills",
+  "placements": [
+    {"id":"mill1","pos":[-17,-0.15,4],"prefab":"poi.windmill"},
+    {"id":"mill2","pos":[1,-0.15,-11],"prefab":"poi.windmill"},
+    {"id":"mill3","pos":[18,-0.15,3],"prefab":"poi.windmill"}
+  ],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}

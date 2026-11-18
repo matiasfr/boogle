@@ -1,7 +1,8 @@
-// Pure windmill geometry; the POI owns placement, clock and physics.
+// Pure windmill geometry; the POI owns placement, clock and physics. The records' builders
+// (src/prefab/builders/poi-windmills.ts) draw with these.
 import * as THREE from 'three';
 import { addPart, mergeParts } from '../../render/geometry-parts.ts';
-type Geos = THREE.BufferGeometry[];
+import type { Piece } from '../../prefab/builders.ts';
 export const TOWER_H = 7.2;
 export const R_BOTTOM = 2.5,
   R_TOP = 1.6;
@@ -9,13 +10,10 @@ export const PLINTH_H = 0.9;
 export const HUB_UP = PLINTH_H + TOWER_H + 1.1; // hub height above the mill's ground
 export const SAIL_LEN = 7.2;
 
-const m = new THREE.Matrix4(),
-  q = new THREE.Quaternion(),
-  s = new THREE.Vector3();
 const box = new THREE.BoxGeometry(1, 1, 1);
 export const put = (
-  parts: Geos,
-  geo: THREE.BufferGeometry,
+  pieces: Piece[],
+  geometry: THREE.BufferGeometry,
   x: number,
   y: number,
   z: number,
@@ -24,16 +22,21 @@ export const put = (
   sz: number,
   color: string,
   rot?: THREE.Euler,
-) => {
-  q.setFromEuler(rot ?? new THREE.Euler());
-  m.compose(new THREE.Vector3(x, y, z), q, s.set(sx, sy, sz));
-  addPart(parts, geo, m, color);
-};
+) =>
+  pieces.push({
+    geometry,
+    matrix: new THREE.Matrix4().compose(
+      new THREE.Vector3(x, y, z),
+      new THREE.Quaternion().setFromEuler(rot ?? new THREE.Euler()),
+      new THREE.Vector3(sx, sy, sz),
+    ),
+    color,
+  });
 
 // One mill's static body (local frame: origin at its foot, sails towards local -z).
-export function millBody(parts: Geos) {
+export function millBody(pieces: Piece[]) {
   put(
-    parts,
+    pieces,
     new THREE.CylinderGeometry(R_BOTTOM + 0.35, R_BOTTOM + 0.5, 1, 8),
     0,
     PLINTH_H / 2,
@@ -51,11 +54,11 @@ export function millBody(parts: Geos) {
     const r0 = R_BOTTOM + (R_TOP - R_BOTTOM) * t0,
       r1 = R_BOTTOM + (R_TOP - R_BOTTOM) * t1;
     const g = new THREE.CylinderGeometry(r1, r0, 1, 8);
-    put(parts, g, 0, PLINTH_H + TOWER_H * (t0 + t1) * 0.5, 0, 1, TOWER_H / bands, 1, k % 2 ? '#8d6a45' : '#9a774f');
+    put(pieces, g, 0, PLINTH_H + TOWER_H * (t0 + t1) * 0.5, 0, 1, TOWER_H / bands, 1, k % 2 ? '#8d6a45' : '#9a774f');
   }
   // Cap: a thatched dome, and the windshaft's housing.
   put(
-    parts,
+    pieces,
     new THREE.SphereGeometry(1, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2),
     0,
     PLINTH_H + TOWER_H,
@@ -65,24 +68,24 @@ export function millBody(parts: Geos) {
     R_TOP + 0.75,
     '#b88e52',
   );
-  put(parts, box, 0, HUB_UP, -1.3, 0.7, 0.7, 1.6, '#6f5034');
+  put(pieces, box, 0, HUB_UP, -1.3, 0.7, 0.7, 1.6, '#6f5034');
   // Door, windows, a little balcony rail.
-  put(parts, box, 0, PLINTH_H + 1.05, -R_BOTTOM + 0.05, 1.05, 1.9, 0.2, '#5c3f26');
-  put(parts, box, 0, PLINTH_H + 1.05, -R_BOTTOM - 0.02, 1.25, 2.1, 0.1, '#e9dcc0');
+  put(pieces, box, 0, PLINTH_H + 1.05, -R_BOTTOM + 0.05, 1.05, 1.9, 0.2, '#5c3f26');
+  put(pieces, box, 0, PLINTH_H + 1.05, -R_BOTTOM - 0.02, 1.25, 2.1, 0.1, '#e9dcc0');
   for (const [y, ang] of [
     [PLINTH_H + 3.6, 0.5],
     [PLINTH_H + 5.4, -0.9],
   ] as const) {
     const r = R_BOTTOM + (R_TOP - R_BOTTOM) * ((y - PLINTH_H) / TOWER_H) - 0.05;
-    put(parts, box, Math.sin(ang) * r, y, -Math.cos(ang) * r, 0.55, 0.7, 0.15, '#3b2a1c', new THREE.Euler(0, -ang, 0));
+    put(pieces, box, Math.sin(ang) * r, y, -Math.cos(ang) * r, 0.55, 0.7, 0.15, '#3b2a1c', new THREE.Euler(0, -ang, 0));
   }
 }
 
 // The rotor: four lattice sails with canvas on the leading side. Local frame: hub at the origin, sails in the xy plane.
 export function rotorParts() {
-  const parts: Geos = [];
+  const pieces: Piece[] = [];
   put(
-    parts,
+    pieces,
     new THREE.CylinderGeometry(0.42, 0.42, 0.5, 10),
     0,
     0,
@@ -101,18 +104,20 @@ export function rotorParts() {
       Math.sin(a) * d + Math.cos(a) * w,
     ];
     const [cx, cy] = along(SAIL_LEN / 2, 0);
-    put(parts, box, cx, cy, 0, SAIL_LEN, 0.2, 0.2, '#6b4c30', rot); // whip
+    put(pieces, box, cx, cy, 0, SAIL_LEN, 0.2, 0.2, '#6b4c30', rot); // whip
     for (const w of [-0.75, 0.75]) {
       const [rx, ry] = along(SAIL_LEN * 0.6, w);
-      put(parts, box, rx, ry, -0.05, SAIL_LEN * 0.78, 0.08, 0.08, '#7d5a39', rot); // side rails
+      put(pieces, box, rx, ry, -0.05, SAIL_LEN * 0.78, 0.08, 0.08, '#7d5a39', rot); // side rails
     }
     for (let b = 0; b < 7; b++) {
       const d = SAIL_LEN * 0.24 + b * SAIL_LEN * 0.12;
       const [bx, by] = along(d, 0);
-      put(parts, box, bx, by, -0.05, 0.07, 1.6, 0.07, '#7d5a39', rot); // bars
+      put(pieces, box, bx, by, -0.05, 0.07, 1.6, 0.07, '#7d5a39', rot); // bars
     }
     const [sx, sy] = along(SAIL_LEN * 0.62, 0.28);
-    put(parts, box, sx, sy, -0.1, SAIL_LEN * 0.72, 0.95, 0.03, '#efe4c9', rot); // canvas
+    put(pieces, box, sx, sy, -0.1, SAIL_LEN * 0.72, 0.95, 0.03, '#efe4c9', rot); // canvas
   }
+  const parts: THREE.BufferGeometry[] = [];
+  for (const p of pieces) addPart(parts, p.geometry, p.matrix, p.color);
   return mergeParts(parts);
 }

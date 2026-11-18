@@ -5,11 +5,13 @@ export type Json = null | boolean | number | string | readonly Json[] | JsonObje
 export type JsonObject = { readonly [key: string]: Json };
 export type PrefabKey = `${string}.${string}`;
 export type Transform = { pos: Vec3; rot?: Vec3; scale?: Vec3 };
-export type ColliderDef = { at: Vec3; rot?: Vec3; group?: 'scenery' | 'room' } & (
+export type ColliderDef = { at: Vec3; rot?: Vec3; group?: 'scenery' | 'room' | 'cave' } & (
   | { shape: 'box'; half: Vec3 }
   | { shape: 'sphere'; r: number }
   | { shape: 'capsule'; r: number; halfHeight: number }
   | { shape: 'trunk'; r: number; h: number }
+  /** A tapered round solid: Rapier's convex hull of `segments` sides, as the POIs' towers always used. */
+  | { shape: 'cylinder'; rTop: number; rBottom: number; h: number; segments: number }
   /** Leaning palm joints: distinct from the existing cylindrical trunk recipe. */
   | { shape: 'trunk-chain'; segments: number; r: number; lift: number }
   | { shape: 'trimesh'; vertices: readonly number[]; indices: readonly number[] }
