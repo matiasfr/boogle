@@ -8,7 +8,7 @@
 //   boogle.record.save()    downloads it, as the pill on screen does
 //
 // Presses come from the wrapped actions (every pad slot: keys, the pad, touch buttons and triggerAction reach them) and
-// from what input.ts binds by hand (Space, E, R, the touch jump and grab buttons), read on their way in. A press also
+// from what input.ts binds by hand (Space, R, the touch jump and grab buttons), read on their way in. A press also
 // says what it acted on, and a release the throw it made, since those read the camera and the wall clock, which a
 // replay doesn't have.
 import './record.css';
@@ -182,8 +182,7 @@ addEventListener(
     if (!me.entered || isTyping(e)) return;
     if (e.code === 'Space')
       note('jump', 1); // repeats too: holding Space queues the next jump
-    else if (e.repeat || MOVE_KEYS.test(e.code)) return;
-    else if (e.code === 'KeyE') note('e', 1, pressData());
+    else if (e.repeat || MOVE_KEYS.test(e.code) || e.code === 'KeyE') return; // E is interact's key: its wrap notes it
     else if (e.code === 'KeyR') note('respawn', 1);
     else note(`key:${e.code}`, 1);
   },
@@ -193,8 +192,7 @@ addEventListener(
   'keyup',
   (e) => {
     if (e.code === 'Space') note('jump', 0);
-    else if (e.code === 'KeyE') note('e', 0);
-    else if (e.code !== 'KeyR' && !MOVE_KEYS.test(e.code)) note(`key:${e.code}`, 0);
+    else if (e.code !== 'KeyR' && e.code !== 'KeyE' && !MOVE_KEYS.test(e.code)) note(`key:${e.code}`, 0);
   },
   { capture: true },
 );

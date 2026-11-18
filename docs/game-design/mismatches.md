@@ -4,7 +4,7 @@ Rechecked 2026-11-03 against the owning code:
 
 - Every room uses `src/net/ws-room.ts`, called by `src/netplay/net.ts`; the server defaults to hosting all rooms and `server/fly.toml` sets `SERVER_ROOMS = "*"`. There is no PeerJS fallback.
 - `src/` contains TypeScript, with no remaining `.js` source files. Stack versions live in `package.json`.
-- PR CI runs `world-inputs`; `smoke` runs separately. AGENTS.md already describes this correctly and correctly names Space, E and R as the hand-bound keys.
+- PR CI runs `world-inputs`; `smoke` runs separately. AGENTS.md already describes this correctly and correctly names Space and R as the hand-bound keys (E is the interact action's key since 18 November).
 - DESIGN.md no longer names weather in its authority table or promises elapsed-time growth in principle 9. The helper bank is the explicit offline-time system (`src/world/rules/bank.ts`).
 
 The old PLAN version pin is historical, not a mismatch in current guidance. Current work is in [find-the-fun.md](../archive/plans/find-the-fun.md); owner decisions are in [decisions.md](../decisions.md). Recipes and ownership pointers corrected in this pass are in [src/README.md](../../src/README.md), [world rules](../../src/world/rules/README.md), [island](../../src/island/README.md), [glossary](glossary.md) and [tech](tech.md).

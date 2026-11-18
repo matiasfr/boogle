@@ -323,7 +323,7 @@ export const TASK_ROUTES: Record<string, Route[]> = {
       checks: `${look}; registry --json before choosing a pad slot; check all three input modes`,
       lookalikes: ['src/player/input.ts'],
       warning:
-        'Hand-bound move/Space/E/R are not the recipe for new keys. Keep a pad slot free; wrapAction changes existing actions.',
+        'Hand-bound move/Space/R are not the recipe for new keys. Keep a pad slot free; wrapAction changes existing actions.',
     },
   ],
   interactable: [
