@@ -78,9 +78,9 @@ export const UNFOLLOWED: Record<string, { reaches: readonly string[]; why: strin
     reaches: ['src/place/land.ts'],
     why: 'the hook only records which modules the imports already followed evaluate; land.ts is the one source it reads as text and never imports',
   },
-  'test/round-grounding.test.ts: sourceModule': {
+  'test/helpers/secrets-golden.ts: sourceModule': {
     reaches: ['src/entities/finds/secrets-view.ts'],
-    why: 'executes the actual yard dressing block selected from this source-owned boundary',
+    why: 'builds the secrets view from its source, its lazy imports routed to stand-ins (the golden)',
   },
   'test/prefab-seats.test.ts: sourceModule': {
     reaches: ['src/entities/railway/track-machine.ts', 'src/entities/railway/train-view.ts'],

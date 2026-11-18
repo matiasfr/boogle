@@ -11,7 +11,26 @@ import { geometryFaces, materialSurface } from '../../src/geometry/drawn-faces.t
 import type { Face } from '../../src/geometry/zfight.ts';
 import { sourceModule } from './source.ts';
 import { compiled } from '../../src/prefab/catalogue.ts';
-import type { Placement, PrefabKey, Transform } from '../../src/prefab/types.ts';
+import type { Transform } from '../../src/prefab/types.ts';
+import { loadLevelArtifact } from '../../src/prefab/validate.ts';
+import { builders } from '../../src/prefab/builders.ts';
+import '../../src/prefab/builders/secrets.ts';
+import { placeSecretThing } from '../../src/entities/finds/secrets-place.ts';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+const transform = (p: Transform) =>
+  new THREE.Matrix4().compose(
+    new THREE.Vector3(...p.pos),
+    new THREE.Quaternion().setFromEuler(new THREE.Euler(p.rot?.[1] ?? 0, p.rot?.[0] ?? 0, p.rot?.[2] ?? 0, 'YXZ')),
+    new THREE.Vector3(...(p.scale ?? [1, 1, 1])),
+  );
+/** A piece in its one colour, as the secrets view draws it. */
+function colour(g: THREE.BufferGeometry, color: string) {
+  const c = new THREE.Color(color),
+    col = new Float32Array(g.getAttribute('position').count * 3);
+  for (let k = 0; k < col.length; k += 3) col.set([c.r, c.g, c.b], k);
+  return g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+}
 
 /** Fail closed if either source-owned geometry boundary moves. No copied dimensions or pad keep/exclude list. */
 function runSection(file: string, start: string, end: string, bindings: Record<string, unknown>) {
@@ -93,44 +112,50 @@ export function collectTechGeometry(): Face[] {
     },
   });
   meshes.forEach((mesh, i) => capture(mesh, `tech/line2/${i}`));
-  const parts: THREE.BufferGeometry[] = [];
-  runSection('src/entities/finds/secrets-view.ts', '  const m4 =', "  // The tower's boxes stand", {
-    THREE,
-    parts,
-    merged,
-    padById: tech.padById,
-    createPrefabBatch() {},
-    instantiate(key: PrefabKey, placement: Placement) {
-      const def = compiled.prefabs[key]!;
-      if (!('builder' in def.visual) || def.visual.builder !== 'greybox.box')
-        throw new Error('Tech census: expected box prefab');
-      const transform = (p: Transform) =>
-        new THREE.Matrix4().compose(
-          new THREE.Vector3(...p.pos),
-          new THREE.Quaternion().setFromEuler(
-            new THREE.Euler(p.rot?.[1] ?? 0, p.rot?.[0] ?? 0, p.rot?.[2] ?? 0, 'YXZ'),
-          ),
-          new THREE.Vector3(...(p.scale ?? [1, 1, 1])),
-        );
-      const frame = transform(placement);
+  // The secrets' ledges and what holds them up, and the helmet's ladder: their records where content/levels/secrets.ts
+  // puts them (the clues and plinths are not in the census). Each ledge or support is one piece, its pieces merged.
+  const secretsLevel = loadLevelArtifact(
+    JSON.parse(fs.readFileSync('content/built/levels/secrets.json', 'utf8')) as unknown,
+    compiled.prefabs,
+  );
+  const frame = {
+    ox: layout.ORIGIN.x,
+    H,
+    pad: tech.padById,
+    secret: (id: string) => tech.SECRETS.find((s) => s.id === id)!,
+  };
+  const CENSUS = new Set([
+    'secrets.stone-pad',
+    'secrets.ledge',
+    'secrets.support',
+    'secrets.balcony-column',
+    'secrets.stack-column',
+  ]);
+  let secret = 0;
+  for (const placed of secretsLevel.placements) {
+    const at = placeSecretThing(placed, frame);
+    if (!at) continue;
+    const def = compiled.prefabs[at.prefab]!;
+    if (!('builder' in def.visual)) throw new Error('Tech census: expected a built record');
+    const local = transform(at);
+    if (at.prefab === 'railway.sea-ladder') {
+      if (def.visual.builder !== 'greybox.box') throw new Error('Tech census: expected box prefab');
       for (const [i, part] of def.visual.instances!.entries()) {
         const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), flat(String(def.visual.params.colour)));
-        mesh.applyMatrix4(frame.clone().multiply(transform(part)));
-        capture(mesh, `tech/${placement.id}/${i}`);
+        mesh.applyMatrix4(local.clone().multiply(transform(part)));
+        capture(mesh, `tech/${at.id}/${i}`);
       }
-      return { setEnabled() {} };
-    },
-    H,
-    ox: layout.ORIGIN.x,
-    STONE: '#917b5e',
-    BRASS: '#c79a3e',
-    addStatic() {},
-    owner: {},
-  });
-  parts.forEach((geometry, i) => {
+      continue;
+    }
+    if (!CENSUS.has(at.prefab)) continue;
+    const built = builders.get(def.visual.builder)!({ ...def.visual.params, ...at.params }, undefined, at);
+    if (!('pieces' in built)) throw new Error('Tech census: expected pieces');
+    const geometry = mergeGeometries(
+      built.pieces.map((p) => colour(p.geometry.applyMatrix4(local.clone().multiply(p.matrix)), p.color)),
+    )!;
     const mesh = new THREE.Mesh(geometry, partMat);
     mesh.castShadow = mesh.receiveShadow = true;
-    capture(mesh, `tech/secrets/${i}`);
-  });
+    capture(mesh, `tech/secrets/${secret++}`);
+  }
   return faces;
 }

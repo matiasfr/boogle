@@ -247,22 +247,14 @@ export type Secret = {
   from: { x: number; z: number; y?: number };
 };
 const top = (id: string) => padById(id).top;
-/** One anchor for the gift, laundry pole and both solid fences. Offsets retain the yard's open east side. */
-export const YARD_DRESSING = {
-  anchor: TOWN_PROPS.yard,
-  laundry: { x: TOWN_PROPS.yard.x - 2.5, z: TOWN_PROPS.yard.z - 3.5, yaw: 0.25 },
-  fences: [
-    { x: TOWN_PROPS.yard.x - 3.1, z: TOWN_PROPS.yard.z + 0.5, w: 0.14, d: 8 },
-    { x: TOWN_PROPS.yard.x, z: TOWN_PROPS.yard.z + 4.7, w: 6.2, d: 0.14 },
-  ],
-} as const;
 export const SECRETS: Secret[] = [
   {
     id: 'yard',
     gift: 'strawhat',
     area: 'village',
     how: 'walk',
-    ...YARD_DRESSING.anchor,
+    // The yard behind the cottage; its laundry and fences are content/levels/secrets.ts's, measured from here.
+    ...TOWN_PROPS.yard,
     y: null,
     after: 'hook',
     from: { x: -136, z: 22 },

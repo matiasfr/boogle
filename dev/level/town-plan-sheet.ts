@@ -18,7 +18,10 @@ import {
   TOWN_STATUE,
 } from '../../src/place/layout.ts';
 import { CELL, H as groundHeight, NX, NZ, at, cellX, cellZ, heights, pathMask } from '../../src/place/terrain.ts';
-import { SECRETS, YARD_DRESSING, padById } from '../../src/place/tech-layout.ts';
+import { SECRETS, padById } from '../../src/place/tech-layout.ts';
+import { compiled } from '../../src/prefab/catalogue.ts';
+import { loadLevelArtifact } from '../../src/prefab/validate.ts';
+import { placeSecretThing } from '../../src/entities/finds/secrets-place.ts';
 import { LAND_TREES } from '../../src/place/tree-catalog.ts';
 import {
   HALL,
@@ -74,6 +77,7 @@ const SOURCES = [
   'src/place/opening-plans.ts',
   'src/place/town-blockout.ts',
   'src/content/levels/town-blockout.ts',
+  'content/built/levels/secrets.json',
   'src/entities/town/workshop.ts',
   'docs/plans/town-layout.md',
   'docs/plans/home-flip.md',
@@ -295,6 +299,22 @@ const yardSecret = SECRETS.find((s) => s.id === 'yard');
 if (!yardSecret) throw new Error('missing yard find');
 const yard: Point = { x: yardSecret.x, z: yardSecret.z };
 const balcony = padById('balcony');
+/** The yard's laundry pole and fences, where the secrets view stands them (content/levels/secrets.ts), in Place's frame. */
+const yardDressing = loadLevelArtifact(
+  JSON.parse(fs.readFileSync('content/built/levels/secrets.json', 'utf8')) as unknown,
+  compiled.prefabs,
+)
+  .placements.filter((p) => p.params?.on === 'secret:yard')
+  .map((p) => {
+    const at = placeSecretThing(p, {
+      ox: ORIGIN.x,
+      H: groundHeight,
+      pad: padById,
+      secret: (id) => SECRETS.find((s) => s.id === id)!,
+    })!;
+    const [w, , d] = at.scale ?? [0, 0, 0];
+    return { prefab: at.prefab, x: at.pos[0] - ORIGIN.x, z: at.pos[2], w, d };
+  });
 
 function panel(mode: 'today' | 'round' | 'overlay', ox: number, oy: number) {
   const out: string[] = [];
@@ -469,8 +489,9 @@ function panel(mode: 'today' | 'round' | 'overlay', ox: number, oy: number) {
   };
   if (mode === 'overlay') today.forEach((b) => draw(b, true));
   active.forEach((b) => draw(b));
-  for (const fence of YARD_DRESSING.fences) out.push(shape({ ...fence, yaw: 0 }, '#8a6238', '#8a6238'));
-  out.push(circle(YARD_DRESSING.laundry, 0.3, '#8a6238', '#8a6238'));
+  for (const t of yardDressing)
+    if (t.prefab === 'secrets.fence') out.push(shape({ ...t, yaw: 0 }, '#8a6238', '#8a6238'));
+  for (const t of yardDressing) if (t.prefab === 'secrets.laundry') out.push(circle(t, 0.3, '#8a6238', '#8a6238'));
   out.push(
     shape(
       { x: balcony.x, z: balcony.z, yaw: 0, w: balcony.hx * 2, d: balcony.hz * 2 },

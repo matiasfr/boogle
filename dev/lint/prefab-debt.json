@@ -81,11 +81,6 @@
       "exports": [],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
-    "src/entities/finds/secrets-view.ts": {
-      "count": 8,
-      "exports": ["createSecretsView"],
-      "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
-    },
     "src/entities/finds/view.ts": {
       "count": 1,
       "exports": ["createFindsView"],
@@ -816,8 +811,6 @@
     "src/boogler/play.ts#booglerTalk": 0,
     "src/boogler/play.ts#updateBooglerPlay": 1,
     "src/debug/perf-poses.ts#putPlayer": 1,
-    "src/entities/finds/secrets-view.ts#createSecretsView": 1,
-    "src/entities/finds/view.ts#createFindsView": 1,
     "src/entities/lookout/view.ts#createLookoutView": 1,
     "src/entities/player/state.ts#enterIsland": 3,
     "src/entities/railway/arrival.ts#createRailwayArrival": 1,
