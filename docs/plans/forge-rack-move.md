@@ -163,7 +163,7 @@ across `src`, `dev`, `test`, `server` and `docs`:
 
 Each step leaves `node dev/ship-check.ts` green. The full check and bots are Checkpoint R's.
 
-- [ ] **1. Move the rack: drawing, sim point, grounding, tests, pins and pages in one change.**
+- [x] **1. Move the rack: drawing, sim point, grounding, tests, pins and pages in one change.**
   - `src/place/home-station.ts`:
     - `PROPS.rack: { ...axisPoint(-2.95, 11.2), yaw: rad(90 - AXIS.bearing) }`. Its comment: road 2's outer side,
       abeam the cart's forge stop and the forge's mouth, 1.15 m off road 2's sleeper ends, 1.55 m off the cart, off the
@@ -220,7 +220,7 @@ Each step leaves `node dev/ship-check.ts` green. The full check and bots are Che
     - `npm run loop -- node Q1`: carries `1x41, 1x7`;
     - `node dev/ship-check.ts`;
     - stills 1 and 2 below.
-- [ ] **2. Dress the new place (view only).**
+- [x] **2. Dress the new place (view only).**
   - `src/entities/railway/line2-view.ts`:
     - The pour flight (about line 1104): name `POUR_FLIGHT = { dur: 0.9, apex: 2.4 }` and use it in place of
       `dur: 0.55, apex: 1.1`. Over the 16.2 m flight the rails pass about 3 m over the apron and 2.2 m over the cart at
@@ -233,7 +233,7 @@ Each step leaves `node dev/ship-check.ts` green. The full check and bots are Che
     `forgeRack.x + r·cos(yaw)`, `forgeRack.z − r·sin(yaw)` with `r = (Math.random() − 0.5)·2.2` and
     `yaw = layout.RACK.yaw`.
   - **Verify:** stills 3 (real-time video), 4 and 5; `node dev/ship-check.ts`.
-- [ ] **3. The bots stop using the rack as a hub.** In `dev/look/bots/railway.ts:548` and `:1761`, replace
+- [x] **3. The bots stop using the rack as a hub.** In `dev/look/bots/railway.ts:548` and `:1761`, replace
   `walk(view().forgeRack…, 3)` with a walk to a Home apron point: `const HOME_APRON = toWorld(axisPoint(-3.9, ISLAND_C))`
   from `src/place/home-station.ts`, which is the old rack's lane, where those legs passed through before. `walk` would
   route round the forge, but a detour across road 2 is pointless. Leave the real takes (`:1814`,
