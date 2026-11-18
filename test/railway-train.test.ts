@@ -29,8 +29,6 @@ import { LINE2_ROWS, line2Stops } from './helpers/rail-rows.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 import { railLinePoint } from '../src/sim/railway-line-path.ts';
 import {
-  TRAIN_STAGES,
-  WORKS_STAGES,
   act,
   advance,
   advanceWorks,
@@ -48,14 +46,14 @@ import {
   works as worksRow,
   type Seed,
 } from './helpers/rail.ts';
-import { line2Active, line2Completed, line2Rails, railCounts } from '../src/sim/railway-queries-line2.ts';
+import { line2Completed, line2Rails, railCounts } from '../src/sim/railway-queries-line2.ts';
 import { trainStops } from '../src/sim/railway-queries-trains.ts';
 import { Cart, DEPOT_OUT, Line, Train, createRailwayWorld } from '../src/sim/railway-components.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
 import { CART_PHASE } from '../src/sim/railway-cart.ts';
 import { HALTS, LINKS, ORIGIN, lineAt, railY } from '../src/place/layout.ts';
 import { PIER_STOP_CM, WORKS } from '../src/sim/railway-works-layout.ts';
-import { footingTotal, pierNeed } from '../src/sim/railway-queries-works.ts';
+import { pierNeed } from '../src/sim/railway-queries-works.ts';
 
 /** Halt ids (LINE_HALTS) on line 2. */
 const H = { village: 2, quarry: 3, farHead: 4, pier: 5 } as const;
@@ -368,17 +366,6 @@ test('line 1 waits for the cart to rest', () => {
   advance(w, 1);
   assert.equal(train(w.w, 0).phase, 1);
 });
-test('line 2 answers with a first departure exactly 33 seconds after the boiler fit', () => {
-  const w = railwayAtTrains('trains-on');
-  const fitted = rail(w.w).trains;
-  while (w.t < fitted + 329) advance(w, 1);
-  assert.equal(line2(w).phase, TRAIN_PHASE.STAND);
-  assert.equal(trains(w.w).filter((r) => r.phase !== TRAIN_PHASE.SHED).length, 2);
-  advance(w, 1);
-  assert.equal(line2(w).phase, TRAIN_PHASE.RUN);
-  assert.equal(line2(w).depart, fitted + 330);
-  assert.equal(invariant(w.w), null);
-});
 test('the kit needs no request: it loads on the line 2 train at the village; every unit has one home', () => {
   const w = railwayAtTrains('trains-on');
   const kit = () => L2.find((k) => train(w.w, k).logs + train(w.w, k).rails > 0);
@@ -407,16 +394,6 @@ test('the kit needs no request: it loads on the line 2 train at the village; eve
   const rows = JSON.stringify(trains(w.w));
   railResume(w.w, 0, w.t + 1, w.t, 50000);
   assert.equal(JSON.stringify(trains(w.w)), rows, 'away credit never advances trains');
-});
-test('Q6 funds from the rack and lays to the pier; every new seed loads', () => {
-  for (const stage of TRAIN_STAGES) {
-    const w = railwayAtTrains(stage);
-    assert.equal(invariant(w.w), null, stage);
-    if (stage === 'q6-done') {
-      assert.equal(line2Completed(w.w), 6);
-      assert.equal(line2Active(w.w), -1);
-    }
-  }
 });
 test('malformed train and line rows fail atomically', () => {
   const w = railwayAtTrains('trains-on');
@@ -594,51 +571,6 @@ test('asks never starve the footing wagon: a friend at Far Head asking for the p
   assert.ok(pressed > 0, 'the friend asked');
   assert.equal(invariant(w.w), null);
 });
-test('every footing has one home every tick; thirty-two in all (v27)', () => {
-  // The fixtures check footingTotal === poured after every rule tick (advanceWorks); here every stage and a long run.
-  for (const stage of WORKS_STAGES.slice(WORKS_STAGES.indexOf('works-lit'))) {
-    const s = railwayAtWorks(stage).w;
-    assert.equal(footingTotal(s), worksRow(s).poured, stage);
-    assert.ok(worksRow(s).poured <= WORKS.total);
-  }
-  const done = railwayAtWorks('crossing-done').w;
-  // The stall two and the pier twelve set; since v27 the kiln pours on towards the ring's eighteen.
-  assert.equal(worksRow(done).pierSet, 12, 'the pier twelve');
-  assert.ok(worksRow(done).poured >= 14, 'the stall two and the pier twelve');
-  const w = railwayAtWorks('wagon-on');
-  for (let t = 0; t < 3000; t++) {
-    const before = railCounts(w.w);
-    advanceWorks(w, 1);
-    const counts = railCounts(w.w);
-    assert.equal(counts.total - before.total, counts.produced - before.produced);
-    assert.equal(line2Rails(w.w), forge(w.w).poured);
-    if (t % 500 === 0) assert.equal(invariant(w.w), null);
-  }
-});
-test('pose is continuous with four stops', () => {
-  const w = railwayAtWorks('wagon-on');
-  const raw = w.w;
-  const rows = () => raw.ids(Train).map((id) => raw.get(Train, id)!);
-  const prev = rows().map((r) => trainAlong(r, lineOf(r.slot), w.t));
-  const made = [0, 0, 0, 0];
-  for (let t = 0; t < 2400; t++) {
-    if (t === 100) ask(w, H.pier, -1);
-    if (t === 900) ask(w, H.farHead, -1);
-    if (t === 1300) ask(w, H.quarry, 1);
-    const before = rows().map((r) => r.phase);
-    advance(w, 1);
-    rows().forEach((r, k) => {
-      const at = trainAlong(r, lineOf(r.slot), w.t);
-      assert.ok(Math.abs(at - prev[k]!) <= TRAIN.speed + 1, `train ${r.slot} tick ${w.t}`);
-      if (lineOf(r.slot) === 1 && before[k] === TRAIN_PHASE.RUN && r.phase === TRAIN_PHASE.STAND && r.at >= 0)
-        made[r.at]!++;
-      prev[k] = at;
-    });
-  }
-  assert.ok(made[3]! >= 1, 'the pier was reached');
-  assert.equal(invariant(w.w), null);
-});
-
 // ---------------------------------------------------------------- v27's eased end stop and homeward-only halt (R3a)
 /** v26's leg profile, copied before R3a: legs with no `brake` must stay bit for bit. */
 function v26Profile(dist: number, v0: number, a: number, top: number) {

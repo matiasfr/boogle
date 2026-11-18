@@ -10,9 +10,9 @@ The one record of who is running what, and what the three-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Railhead traveller: Checkpoint A's owed proofs, then step 3 (the deck is a car) | The railhead traveller (P2) | `codex/railhead-deck-car` | the owner's live orchestrator session (HOTBOX), Codex gpt-6.2-astra medium delegate | 18 November 03:45 | building |
-| Ring Island footbridge, abutment a (terrain-clean step 7), resumed: the ground cap, a solid landing at the old path height, and player clearance for Ring Island's near-view solids | Terrain clean-up (P2) | `codex/ring-footbridge-cap` | the owner's live orchestrator session (HOTBOX), Codex gpt-6.2-astra medium (the same builder thread) | 18 November 00:30; resumed 03:00 | building |
-| Turnouts step 2: the whole junction list (J2 to J9) and the level check reads it; no player-visible change | Turnouts (P2) | `codex/turnouts-list` | the owner's live orchestrator session (HOTBOX), Codex gpt-6.2-sol medium delegate | 18 November 05:00 | building (no browser) |
+| Railhead traveller: Checkpoint A's owed proofs, then step 3 (the deck is a car) | The railhead traveller (P2) | `codex/railhead-deck-car` | the owner's live orchestrator session (HOTBOX); moved from Codex to a Claude Opus medium delegate on his word, 18 November 06:20 UTC | 18 November 03:45 | building on Claude: the step 3 review defect (the mount clearance moves a sea-side walkway player over the sea), in the existing worktree |
+| Ring Island footbridge, abutment a (terrain-clean step 7), resumed: the ground cap, a solid landing at the old path height, and player clearance for Ring Island's near-view solids | Terrain clean-up (P2) | `codex/ring-footbridge-cap` | the owner's live orchestrator session (HOTBOX); moved from Codex to a Claude Opus medium delegate on his word, 18 November 06:20 UTC | 18 November 00:30; resumed 03:00 | building on Claude: the review's four defects, continuing the partial fix in the existing worktree |
+| Turnouts step 2: the whole junction list (J2 to J9) and the level check reads it; no player-visible change | Turnouts (P2) | `codex/turnouts-list` | the owner's live orchestrator session (HOTBOX); moved from Codex to a Claude Opus medium delegate on his word, 18 November 06:20 UTC | 18 November 05:00 | building on Claude (no browser) |
 
 ## Where the work stands
 
@@ -20,6 +20,10 @@ The one record of who is running what, and what the three-job limit is counted f
 - **Focus:** the choice-and-payoff loop ([decision](../decisions-process.md#d-2026-11-16-focus-choice-and-payoff)); the backlog's P1 rows, at most five. World v59 is on main (garage step 3, #2029).
 - **Next work by rank** (17 November handover; the backlog rows carry the detail): the town's sack on the counter (C2 and K1 shipped 17 November; K3 closed 17 November with the away host test, independently reviewed; left on the row are the designer’s items and the P2 gold-outline follow-up); garage choices: step 3 (steel spent) is on main (#2029, v59, independently reviewed); the designer's Quick or Strong rebalance, owed before step 4 is briefed now that an extra car can mean rider capacity, is on main as a proposal (see Open owner questions; step 4 waits for playable stage-4 lines); the gate cottage opening (home-flip D1) shipped 17 November (independently reviewed twice; the push-out fix in `src/place/sites.ts` is not pinned by a test, by the test diet); D2, the green and the kerb, shipped 17 November (view only; phone width and motion not looked at); D3, the forge's west door, shipped 18 November (#2049, view only, three independent reviews; the camera fix is proven by test, not by a look); then riders walking to the coach's doors instead of popping into seats (needs a short plan); a reliable frame-cost measurement of the coach (R4's timings are provisional: find the two 404 errors first); the P3 row of small fixes.
 - **Proof debts and leftovers:** [orchestrator-leftovers](orchestrator-leftovers.md). Nothing from 16 or 17 November was tested on a device.
+
+## Codex at its usage limit (18 November)
+
+The owner, 18 November 2026 about 06:20 UTC, after the ChatGPT usage limit stopped three Codex jobs: "Can we pivot to Claude?" Orchestrator's reading: until Codex usage returns, the Codex rows of `npm run models` (building, fixes, runners, reviews) run on Claude Opus at medium effort (high for tricky work), Fable kept for the heartbeat as before; the three paused jobs resume on Claude in their existing worktrees. When Codex is back, new jobs go back to the table as written. If he meant a permanent switch, the table in `dev/models.ts` is his to edit.
 
 ## Open owner questions
 

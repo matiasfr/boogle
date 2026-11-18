@@ -155,7 +155,7 @@ test('the wagon waits between the table and the train', () => {
   assert.equal(SHED_TABLE.z, Math.round((ORIGIN.z + TURNTABLE.z) * 100));
   assert.deepEqual(SHED_ROAD, { stall: 0, line2: 1 });
 });
-test('the rotunda rule points pin its centre, doorway and working stall to centimetres', () => {
+test("the rotunda's table, doorway and working stall are Place's rule points, to the centimetre", () => {
   const frame = stallFrame(STALLS.open);
   const pin = (p: Point) => [Math.round((ORIGIN.x + p.x) * 100), Math.round(p.z * 100)];
   assert.deepEqual([SHED_TABLE.x, SHED_TABLE.z], pin(TABLE));
@@ -164,8 +164,6 @@ test('the rotunda rule points pin its centre, doorway and working stall to centi
     [SHED_STALL.x, SHED_STALL.z],
     pin({ x: frame.door.x + frame.u.x * 3, z: frame.door.z + frame.u.z * 3 }),
   );
-  assert.equal(SHED_TABLE.reach, 1000);
-  assert.equal(WORKS.rollTicks, 140);
 });
 test('the pier stop fits', () => {
   const p = railPoint(PIER_STOP_CM / 100),

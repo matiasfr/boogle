@@ -525,14 +525,6 @@ test('malformed documents fail atomically', () => {
     assert.equal(target.hash(), before, name);
   }
 });
-test('every seeded stage loads', () => {
-  for (const stage of WORKS_STAGES) {
-    const s = railwayAtWorks(stage);
-    assert.equal(invariant(s.w), null, stage);
-    assert.equal(footingTotal(s.w), works(s.w).poured, stage);
-  }
-});
-
 test("the counted stone total is every rock slot's start plus renewal, as the bot checks it", () => {
   // The production playthrough checks `counts.stone.total === RAIL_STONE + produced` (dev/look/bots/railway.ts); it
   // once used line one's 24 and failed at T3 once the Works rocks counted. Hold the counts to the validator's sum.

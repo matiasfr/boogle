@@ -1,15 +1,26 @@
 name: CI
 
 # Runs on PRs, on main, and on the ship/* branches `npm run ship` pushes (their checks count as the PR's required
-# checks: same commit). automerge.yml dispatches it on main after each merge, since a bot merge doesn't fire push.
+# checks: same commit). automerge.yml dispatches it on main after each merge that changes code, since a bot merge
+# doesn't fire push; a docs-only merge gets main-docs.yml, which comes back here on any doubt.
 # A ship/* PR's own pull_request runs do nothing: the push run is the one automerge counts (owner call "Fast ships").
-# Docs-only changes (dev/ci/change-class.ts) run only the docs job; code runs lint, build, unit and registry, and server
-# and net when their import closure changed (always on main).
+# Docs-only changes (dev/ci/change-class.ts) run only the docs job; code runs lint, build, unit and registry, server
+# and net when their import closure changed and image when the server image's paths did (on main: since its last green run; all three once a day).
 on:
   pull_request:
   push:
     branches: [main, 'ship/**']
   workflow_dispatch:
+    inputs:
+      full:
+        description: On main, run server, image and net whatever changed since the last green run
+        type: boolean
+        default: false
+  # Once a day every job runs on main whatever changed: the backstop for a load no import walk follows, now that
+  # main's other runs scope server, image and net (the changes job). Its own group, so merges neither cancel it nor
+  # are cancelled by it.
+  schedule:
+    - cron: '47 9 * * *'
 
 permissions:
   contents: read
@@ -19,8 +30,8 @@ permissions:
 # run is never cancelled: automerge.yml merges on that exact run. Deploys and the smoke are other workflows with their
 # own groups and are never cancelled by this.
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/main' }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}${{ github.event_name == 'schedule' && '-daily' || '' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.ref == 'refs/heads/main' && github.event_name != 'schedule') }}
 
 jobs:
   changes:
@@ -28,6 +39,9 @@ jobs:
     # own PR events (opening it) still show as "action_required": GitHub holds those for approval; nothing needs them.
     if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'ship/')
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read # main's last verdict, for the scope below
     outputs:
       heavy: ${{ steps.diff.outputs.heavy }}
       docs: ${{ steps.diff.outputs.docs }}
@@ -49,20 +63,41 @@ jobs:
           EVENT: ${{ github.event_name }}
           BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
           REF: ${{ github.ref_name }}
+          FULL: ${{ inputs.full }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           # A ship is the entire delta from main, including its first push (before is zero).
           # Never classify only an autofix's last docs commit while earlier code is still unmerged.
           if [[ "$REF" == ship/* ]] || { [ "$EVENT" = workflow_dispatch ] && [ "$REF" != main ]; }; then
             BASE=$(git merge-base origin/main HEAD)
           fi
-          # Empty/unknown diffs and main (dispatch or push) run every gate: an empty list to --jobs means everything.
-          # Otherwise server and net run when their import closure changed, the image build and boot when its paths
-          # did (dev/ci/change-class.ts).
+          # Empty/unknown diffs run every gate: an empty list to --jobs means everything. Otherwise server and net run
+          # when their import closure changed, the image build and boot when its paths did (dev/ci/change-class.ts).
+          # Main (owner, 18 November: "go ahead with scope server") scopes those three the same way, by everything
+          # that changed since main's last verdict, when that verdict is green: a green run at a commit means its
+          # whole tree passed, so a job whose closure has not changed since would say what it said then. Lint, build,
+          # the full unit suite and registry still run for any code change. Every job runs when the last verdict is
+          # red or unreadable, when that commit is not an ancestor, when nothing changed (a rerun), on the daily
+          # schedule and on a dispatch with `full`.
           # The unit run: the full suite in eight balanced shards, or (dev/ci/unit-select.ts) the affected tests plus the core in
           # one job for a ship that touches neither lockstep nor a review path. Main and an empty diff are full.
           if [ "$REF" = main ] || [ -z "$BASE" ] || [[ "$BASE" =~ ^0+$ ]]; then
             jobs=$(node dev/ci/change-class.ts --jobs < /dev/null)
             unit=$(node dev/ci/unit-select.ts < /dev/null)
+            if [ "$REF" = main ] && [ "$EVENT" != schedule ] && [ "$FULL" != true ]; then
+              # The newest finished run that gave a verdict (a cancelled one was superseded), as dev/heartbeat.sh.
+              last=$(gh run list --workflow ci.yml --branch main --status completed --limit 20 --json conclusion,headSha \
+                --jq '[.[] | select(.conclusion != "cancelled" and .conclusion != "skipped")][0] // empty | "\(.conclusion) \(.headSha)"') || last=
+              green=${last#success }
+              if [[ "$last" == "success "* ]] && git merge-base --is-ancestor "$green" HEAD &&
+                 git diff --no-renames --name-only -z "$green" HEAD > "$RUNNER_TEMP/changed" && [ -s "$RUNNER_TEMP/changed" ]; then
+                echo "Main was green at $green: server, image and net by what changed since."
+                jobs=$(node dev/ci/change-class.ts --jobs < "$RUNNER_TEMP/changed")
+              else
+                echo "No green verdict to build on (${last:-none}): every job."
+              fi
+            fi
           else
             # Both sides of a rename: moving a file out of docs is a code change.
             git diff --no-renames --name-only -z "$BASE" HEAD > "$RUNNER_TEMP/changed"
@@ -195,15 +230,16 @@ jobs:
       # Reads committed files only: needs neither Blender nor KTX-Software.
       - run: npm run assets -- --check
 
-  # Only when the server tests' import closure changed; the image build and boot only when the image's paths did
-  # (dev/ci/change-class.ts). Skipped, the job reports success. Main always runs both.
+  # Only when the server tests' import closure changed (dev/ci/change-class.ts; on main, since its last green run).
+  # Skipped, the job reports success. Its own job, beside `image`: in one job the two took 7 to 12 minutes in a row and were the last to
+  # finish in 53 of 63 green main runs (12 to 18 November), 100 s after the slowest unit shard.
   server:
     needs: changes
-    if: needs.changes.outputs.heavy == 'true' && (needs.changes.outputs.server == 'true' || needs.changes.outputs.image == 'true')
+    if: needs.changes.outputs.heavy == 'true' && needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
-    # As deploy-server.yml: on main the audited tests (5.5 min) plus the image build's rail-save seeding (4+ min) pass
-    # 10, and a timed-out job is "cancelled", which red-main and the heartbeat read as superseded (17 November, twice).
-    timeout-minutes: 20
+    # The audited tests take 4 to 5.5 min. A timed-out job is "cancelled", which red-main and the heartbeat read as
+    # superseded (17 November, twice, when this job also built the image inside 10 minutes).
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: server
@@ -214,23 +250,27 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: server/package-lock.json
-      - if: needs.changes.outputs.server == 'true'
-        run: npm ci
-      - if: needs.changes.outputs.server == 'true'
-        run: npm test
+      - run: npm ci
+      - run: npm test
         env:
           RAIL_AUDIT: '1' # the rail audit on, as the unit job's --ci (test/helpers/rail-no-audit.ts)
+
+  # The server image, built and booted: only when the image's paths changed (dev/ci/change-class.ts), as `server`.
+  # Docker is on the runner and the image installs its own packages, so no Node setup or npm ci here.
+  image:
+    needs: changes
+    if: needs.changes.outputs.heavy == 'true' && needs.changes.outputs.image == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15 # the build is 4 to 4.5 min, most of it the rail-save seeding
+    steps:
+      - uses: actions/checkout@v7
       - name: Build the image (from the repo root, as the deploy does)
-        if: needs.changes.outputs.image == 'true'
-        working-directory: .
         run: docker build -f server/Dockerfile --build-arg BOOGLE_BUILD=ci-boot -t boogle-server:ci .
       # Tests run from the full checkout; this runs what the image carries (a missing module crash-looped Fly once).
       - name: Boot the image
-        if: needs.changes.outputs.image == 'true'
-        working-directory: .
         run: scripts/server-boot-check.sh boogle-server:ci ci-boot
 
-  # Only when the import closure of dev/peer-test changed (dev/ci/change-class.ts); main always runs it.
+  # Only when the import closure of dev/peer-test changed (dev/ci/change-class.ts), as `server`.
   net:
     needs: changes
     if: needs.changes.outputs.heavy == 'true' && needs.changes.outputs.net == 'true'
@@ -264,7 +304,7 @@ jobs:
   # ci-autofix.yml also has Claude open a claude/fix-main-* PR; this keeps one open `red-main` issue (GitHub notifies
   # the owner) and closes it when main is green again. `npm run heartbeat` leads with the same verdict.
   red-main:
-    needs: [changes, docs, lint, build, unit, registry, server, net]
+    needs: [changes, docs, lint, build, unit, registry, server, image, net]
     # Not in a cancelled (superseded) run: the newer run on main settles the verdict, so a cancelled one never opens,
     # comments on or closes the issue, even if a job had failed before it was cancelled.
     if: always() && !cancelled() && github.ref == 'refs/heads/main' && github.repository == 'matiasfr/boogle'
@@ -276,7 +316,9 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
       RED: ${{ contains(needs.*.result, 'failure') }}
-      GREEN: ${{ !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
+      # The daily run may open the issue but never closes it: it judges the commit it started on, and a newer run on a
+      # newer commit may have gone red while it ran.
+      GREEN: ${{ !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && github.event_name != 'schedule' }}
     steps:
       - run: |
           run="$GITHUB_SERVER_URL/$GH_REPO/actions/runs/$GITHUB_RUN_ID"

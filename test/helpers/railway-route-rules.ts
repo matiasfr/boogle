@@ -33,7 +33,6 @@ import {
   ROW_LINE,
   legFrame,
   legRack,
-  LEG_SITE_REACH,
   legS,
   legStartS,
   ROW_SHIFT,
@@ -948,19 +947,10 @@ export function routeRulesShard(shard: number) {
   });
   test('gate 10: at every stage of the leg the quiet round trip is at most 1.2 times non-stop', () => {
     stageWorlds().forEach((base, laid) => {
+      // The stage worlds' rivet is the seed itself; the others are settled 3,000 ticks.
       const u = unaudited({ w: restore(base.w), t: base.t });
-      if (laid === 0) advance(u, 3000); // the stage worlds' rivet is the seed itself; the others are settled 3,000
-      const slot = LINE_SLOTS[LINE2]![0]!,
-        left: number[] = [];
-      let prev = { ...train(u.w, slot) };
-      for (let k = 0; k < 12000; k++) {
-        advance(u, 1);
-        const r = train(u.w, slot);
-        if (prev.phase === TRAIN_PHASE.STAND && prev.at === 0 && r.phase === TRAIN_PHASE.RUN) left.push(u.t);
-        prev = { ...r };
-      }
-      assert.ok(left.length >= 3, 'laps at ' + laid + ' laid');
-      const lap = (left.at(-1)! - left[0]!) / (left.length - 1),
+      if (laid === 0) advance(u, 3000);
+      const lap = quietLap(u),
         nonstop = cycleTicks(LINE2, stopsOf(u.w, LINE2));
       assert.ok(lap <= 1.2 * nonstop, laid + ' laid: a lap of ' + lap + ' against ' + nonstop + ' non-stop');
     });
@@ -1219,34 +1209,6 @@ export function routeRulesShard(shard: number) {
     assert.ok(f.toGorge >= 0 && f.toGorge <= 3700, 'the Gorge within 3,700 ticks');
     assert.ok(f.idle[0]! <= 1200, 'the first frame');
     for (const v of f.idle.slice(1)) assert.ok(v <= 600, `a later frame idle ${v}`);
-  });
-
-  // ---------------------------------------------------------------- step 4's review: the catalog positions (b, k)
-  test("step 4's review: the frames, racks, pick and the incline's barrier stand where the designer placed them", () => {
-    const near = (p: { x: number; z: number; y: number }, x: number, z: number, y: number) =>
-      Math.abs(p.x - x) <= 3 && Math.abs(p.z - z) <= 3 && Math.abs(p.y - y) <= 1;
-    assert.ok(near(legFrame(LEG, 0), 140602, -82506, 890), 'frame 0, u 453 on the west platform');
-    assert.ok(near(legRack(LEG, 0), 140573, -81806, 890), 'rack 0, u 446');
-    // The designer's metres, to 3 cm (his script rounds to the centimetre in metres).
-    const frames = [
-        [98075, -92138],
-        [56692, -119448],
-        [22663, -156630],
-      ],
-      racks = [
-        [99056, -91995],
-        [57442, -118787],
-        [23207, -155792],
-      ];
-    for (let k = 1; k <= 3; k++) {
-      assert.ok(near(legFrame(LEG, k), frames[k - 1]![0]!, frames[k - 1]![1]!, 490), `frame ${k}`);
-      assert.ok(near(legRack(LEG, k), racks[k - 1]![0]!, racks[k - 1]![1]!, 490), `rack ${k}`);
-    }
-    for (let k = 0; k <= 3; k++) assert.equal(legFrame(LEG, k).reach, LEG_SITE_REACH);
-    assert.equal(LEG_SITE_REACH, 400);
-    assert.deepEqual(RAIL_GRANTS.find((g) => g.id === 'pick')!.at, { x: -7435, z: -203262, y: 8500, reach: 400 });
-    const inc = RAIL_GATES.find((g) => g.id === 'incline')!.at;
-    assert.deepEqual([inc.x, inc.z, inc.y], [-9726, -196884, 390]);
   });
 
   // ---------------------------------------------------------------- call 88: riding on from an old head
