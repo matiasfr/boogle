@@ -322,15 +322,18 @@ test('buy sockets: a real server refuses bad buys, spends once for racing and re
     const bought = { ...plot(w(), 0) };
     assert.ok(bought.at >= 0 && bought.paid === 150);
     // Everyone leaves while it builds; the room pauses, then the next join credits the time away.
-    const paused = Promise.withResolvers<void>();
+    let notifyPaused!: () => void;
+    const paused = new Promise<void>((resolve) => {
+      notifyPaused = resolve;
+    });
     const pause = world.pause.bind(world);
     t.mock.method(world, 'pause', () => {
       pause();
-      paused.resolve();
+      notifyPaused();
     });
     a.ws.close();
     b.ws.close();
-    await paused.promise;
+    await paused;
     assert.equal(world.paused(), true, 'paused while the house is building');
     assert.ok(world.sync.world.tick < bought.at + TRADE.buildTicks, 'still building at the pause');
     const c = await connect('alice');

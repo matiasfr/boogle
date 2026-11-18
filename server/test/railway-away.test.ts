@@ -330,18 +330,21 @@ function packet(ws: WebSocket, matches: (packet: Record<string, any>) => boolean
 }
 
 function nextPause(t: TestContext, world: ReturnType<typeof createRailwayWorldHost>) {
-  const paused = Promise.withResolvers<void>();
+  let notifyPaused!: () => void;
+  const paused = new Promise<void>((resolve) => {
+    notifyPaused = resolve;
+  });
   const original = world.pause;
   t.mock.method(
     world,
     'pause',
     () => {
       original();
-      paused.resolve();
+      notifyPaused();
     },
     { times: 1 },
   );
-  return paused.promise;
+  return paused;
 }
 
 test('a hosted room keeps simulating through the reload grace, then pauses until the next join', async (t) => {
@@ -374,19 +377,22 @@ test('a hosted room keeps simulating through the reload grace, then pauses until
     const world = svc.roomHost()!.room(room)!.world as ReturnType<typeof createRailwayWorldHost>;
     await world.whenReady();
     const leave = async () => {
-      const removed = Promise.withResolvers<void>();
+      let notifyRemoved!: () => void;
+      const removed = new Promise<void>((resolve) => {
+        notifyRemoved = resolve;
+      });
       const original = world.replication.removeClient.bind(world.replication);
       t.mock.method(
         world.replication,
         'removeClient',
         (sid: string) => {
           original(sid);
-          removed.resolve();
+          notifyRemoved();
         },
         { times: 1 },
       );
       ws.close();
-      await removed.promise;
+      await removed;
     };
     assert.equal(world.paused(), false);
     const marker = railClock(world.rules.railway.world()).resumeMarker;

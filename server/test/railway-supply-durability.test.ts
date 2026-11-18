@@ -17,14 +17,6 @@ import { setImmediate } from 'node:timers/promises';
 import type { ServerPacket } from '../../src/world/replicate.ts';
 import { SUPPLY_SOURCE, supplyFixture } from './fixtures/railway-supply-fixture.ts';
 
-const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-async function until(predicate: () => boolean, label: string) {
-  const deadline = performance.now() + 8000;
-  while (!predicate()) {
-    if (performance.now() > deadline) throw new Error(`timeout: ${label}`);
-    await sleep(10);
-  }
-}
 function assertSupply(host: RailwayWorldHost, stage: number) {
   const w = host.rules.railway.world();
   const counts = railCounts(w);
@@ -270,11 +262,11 @@ test('real idle eviction and rejoin retain the accepted recovery rack and regrow
       ['boogle.1'],
     );
     clients.push(ws);
-    let welcome = false;
-    ws.onmessage = (event) => {
-      welcome ||= (JSON.parse(String(event.data)) as { t: string }).t === 'welcome';
-    };
-    await until(() => welcome, 'supply manager welcome');
+    await new Promise<void>((resolve) => {
+      ws.onmessage = (event) => {
+        if (JSON.parse(String(event.data)).t === 'welcome') resolve();
+      };
+    });
     const room = rooms.room(roomId)!;
     const world = room.world as RailwayWorldHost;
     await world.whenReady();
@@ -282,8 +274,19 @@ test('real idle eviction and rejoin retain the accepted recovery rack and regrow
     return { ws, room };
   }
   const first = await connect('supplyfirst');
+  let notifyDrained!: () => void;
+  const drained = new Promise<void>((resolve) => {
+    notifyDrained = resolve;
+  });
+  const close = first.room.close.bind(first.room);
+  t.mock.method(first.room, 'close', async (...args: Parameters<typeof close>) => {
+    await close(...args);
+    notifyDrained();
+  });
   first.ws.close();
-  await until(() => !rooms.room(roomId), 'supply idle eviction');
+  await drained;
+  await setImmediate();
+  assert.ok(!rooms.room(roomId), 'supply idle eviction');
   const second = await connect('supplysecond');
   assert.notEqual(second.room, first.room, 'rejoin uses a recovered replacement authority');
   assertSupply(second.room.world as RailwayWorldHost, 35);
