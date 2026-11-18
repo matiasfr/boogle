@@ -1,6 +1,6 @@
 // The air going past while you glide: a low band of noise that follows your speed, so a glide isn't silent. Place's
 // moves-view.ts had it (windAt); the port to the railway left it behind with the wingtip wisps. The numbers live here,
-// plain, so a unit test can hold them (test/railway-glide-wind.test.ts); glide-view.ts owns the nodes. Local only.
+// plain; glide-view.ts owns the nodes. Local only.
 
 /**
  * Place's numbers: a looping 2 s white noise through a band-pass (Q 0.7) at 300 Hz + 45 Hz per m/s, at a linear gain of

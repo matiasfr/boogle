@@ -1,6 +1,6 @@
 // Two threads of air off the wing's tips while the canopy holds you and you're moving: it reads as speed, against the
 // sky. Place's moves-view.ts had them; the port to the railway (glide-view.ts) left them behind, so they live here as
-// plain numbers a unit test can hold (test/railway-glide-wisps.test.ts). Local and cosmetic: no shared state.
+// plain numbers. Local and cosmetic: no shared state.
 
 /** Place's numbers: tips 1.25 m either side and 1.45 m up, 50 pairs a second from 8 m/s, each 0.35 s and 3.5 cm. */
 export const WISP = {
