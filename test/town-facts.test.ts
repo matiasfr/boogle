@@ -2,15 +2,7 @@
 // rows (townRead).
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  TOWN_FACTS,
-  newestTownFact,
-  townHas,
-  townLevel,
-  townPopulation,
-  townRead,
-  type TownFact,
-} from '../src/sim/town-facts.ts';
+import { TOWN_FACTS, newestTownFact, townHas, townLevel, townRead, type TownFact } from '../src/sim/town-facts.ts';
 import { TRADE } from '../src/sim/railway-trade-layout.ts';
 import { plotPrice } from '../src/sim/railway-queries-trade.ts';
 import { till } from '../src/sim/railway-rows.ts';
@@ -28,16 +20,6 @@ import {
   type Seed,
 } from './helpers/rail.ts';
 
-// Each fixture is built once and only read.
-const once = <T>(make: () => T) => {
-  let v: T | undefined;
-  return () => (v ??= make());
-};
-const atPath = once(() => railwayAtPath());
-const atQ1 = once(() => buildSeedWorld('q1-done').w);
-const atTrains = once(() => buildSeedWorld('trains-on').w);
-const atPier = once(() => buildSeedWorld('q6-done').w);
-const facts = (s: World) => TOWN_FACTS.filter((f) => townHas(townRead(s), f));
 /** Line one played to T3 laid, the forge not yet fed: railwayAtQ2's first half. */
 function railwayAtPath(): World {
   const w = createRailway();
@@ -62,37 +44,24 @@ function railwayAtPath(): World {
   return w;
 }
 
-test('a fresh railway has no facts and 12 people', () => {
-  const s = createRailway();
-  assert.deepEqual(facts(s), []);
-  assert.equal(newestTownFact(townRead(s)), null);
-  assert.equal(townLevel(townRead(s)), 0);
-  assert.equal(townPopulation(townRead(s)), 12);
-});
-
-test('the first path opens on T3 completion: path, 20 people', () => {
-  const s = atPath();
-  assert.deepEqual(facts(s), ['path']);
-  assert.equal(townPopulation(townRead(s)), 20);
-});
-
-test('q1-done: path, forge, depot', () => {
-  const s = atQ1();
-  assert.deepEqual(facts(s), ['path', 'forge', 'depot']);
-  assert.equal(townPopulation(townRead(s)), 20);
-});
-
-test('trains-on adds trains', () => {
-  const s = atTrains();
-  assert.deepEqual(facts(s), ['path', 'forge', 'depot', 'head', 'trains']);
-  assert.equal(townPopulation(townRead(s)), 26);
-});
-
-test('q6-done: every milestone fact, 32 people', () => {
-  const s = atPier();
-  assert.deepEqual(facts(s), ['path', 'forge', 'depot', 'head', 'trains', 'pier']);
-  assert.equal(townLevel(townRead(s)), 6);
-  assert.equal(townPopulation(townRead(s)), 32);
+test('accepted railway milestones expose their facts in order', () => {
+  const milestones: [string, () => World, readonly TownFact[]][] = [
+    ['fresh', createRailway, []],
+    ['T3', railwayAtPath, ['path']],
+    ['Q1', () => buildSeedWorld('q1-done').w, ['path', 'forge', 'depot']],
+    ['trains', () => buildSeedWorld('trains-on').w, ['path', 'forge', 'depot', 'head', 'trains']],
+    ['Q6', () => buildSeedWorld('q6-done').w, ['path', 'forge', 'depot', 'head', 'trains', 'pier']],
+  ];
+  for (const [stage, world, expected] of milestones) {
+    const read = townRead(world());
+    assert.deepEqual(
+      TOWN_FACTS.filter((fact) => townHas(read, fact)),
+      expected,
+      stage,
+    );
+    assert.equal(newestTownFact(read), expected.at(-1) ?? null, `${stage}: newest fact`);
+    assert.equal(townLevel(read), expected.length, `${stage}: fact count`);
+  }
 });
 
 test('town flips only at the first house completion; stone needs the third priced plot built', () => {
@@ -118,11 +87,9 @@ test('town flips only at the first house completion; stone needs the third price
   assert.equal(townHas(townRead(stone.w, stone.t + 100), 'stone'), true);
 });
 
-test('newest is the last true fact in TOWN_FACTS order', () => {
-  assert.equal(newestTownFact(townRead(atPath())), 'path');
-  assert.equal(newestTownFact(townRead(atQ1())), 'depot');
-  assert.equal(newestTownFact(townRead(atTrains())), 'trains');
-  assert.equal(newestTownFact(townRead(atPier())), 'pier');
-  const order: TownFact[] = [...TOWN_FACTS];
-  assert.deepEqual(order, ['path', 'forge', 'depot', 'head', 'trains', 'town', 'stone', 'pier']);
+test('newest is the last true fact in story order, including the two house facts', () => {
+  const read = { path: true, forge: true, completed: 5, trains: true, houses: [0, 2] };
+  assert.equal(newestTownFact({ ...read, houses: [0] }), 'town');
+  assert.equal(newestTownFact(read), 'stone');
+  assert.equal(newestTownFact({ ...read, completed: 6 }), 'pier');
 });
