@@ -4,6 +4,10 @@
 //   inside  walked in, your own camera: the cutaway, the driver at the back facing the door
 //   talk    beside him; pair with --action dev/look/evals/first-house-talk.ts for the placeholder card
 //   yard    the works yard next door (--rail-seed yard-built): still no door and nobody
+//   shoulder you indoors; the camera fixed behind the driver's left shoulder on his train set (step 4)
+//   hall    from the hall side, eye height, through the open doorway onto the train set
+//   Every shot reports both model tables (`trainSet`, `museumBits`, `museumRails`) and whether they drew the
+//   same laid stretches (`sameRails`).
 //   stand   standing on the plot as its walls rise; doorway, on its threshold. Pair with --rail-seed house-ready
 //           and --action dev/look/evals/town-b2-buy.ts --real
 // npm run look -- --rail-seed house-built --eval dev/look/evals/first-house.ts --query house=street --hud --wall 240
@@ -37,7 +41,13 @@ const put = (p: { x: number; y: number; z: number }, yaw: number) => {
 const door = at(0, house.d / 2);
 const back = at(0, -house.d / 2);
 const debug = window.__debugCam!;
-const fixed = shot === 'street' || shot === 'yard';
+const fixed = shot === 'street' || shot === 'yard' || shot === 'shoulder' || shot === 'hall';
+/** Room space with a height over the floor, for the fixed cameras. */
+const eyeAt = (x: number, y: number, z: number): [number, number, number] => {
+  const p = at(x, z);
+  return [p.x, p.y + 0.14 + y, p.z];
+};
+const TABLE: [number, number, number] = [2.5, 0.5, -2];
 // The rest keep your own camera (the cutaway and the talk focus are what's looked at); none lets the harness move it.
 if (!fixed) debug.clear();
 if (shot === 'street') {
@@ -50,6 +60,14 @@ if (shot === 'street') {
   put(p, face(p, back));
   cam.dist = shot === 'inside' ? 6 : 4;
   cam.pitch = -0.35;
+} else if (shot === 'shoulder') {
+  // Indoors, so the cutaway is on; the camera behind and above the driver (room 0.6, -2.7), looking on the table.
+  const p = at(-1.6, 0.6);
+  put(p, face(p, back));
+  debug.set(eyeAt(-0.35, 1.35, -3.45), eyeAt(...TABLE));
+} else if (shot === 'hall') {
+  put(at(-3.2, house.d / 2 + 9), 0);
+  debug.set(eyeAt(-2.2, 1.6, house.d / 2 + 6), eyeAt(...TABLE));
 } else if (shot === 'yard') {
   const yard = townBuilding('plot2');
   put(at(-9, house.d / 2 + 13), 0);
@@ -73,6 +91,10 @@ const report = (label: string) =>
       room: inspectTown()?.rooms.plot3,
       plot: inspectTown()?.plots[0],
       indoors: inspectTown()?.indoors,
+      trainSet: inspectTown()?.trainSet,
+      museumBits: inspectTown()?.museumBits,
+      museumRails: inspectTown()?.museumRails,
+      sameRails: JSON.stringify(inspectTown()?.museumRails) === JSON.stringify(inspectTown()?.trainSet.stretches),
       driver: (inspectTown()?.residents as Record<string, unknown> | undefined)?.driver,
       bark: inspectTown()?.bark,
       cue: [...document.querySelectorAll<HTMLElement>('.speech-cue')]

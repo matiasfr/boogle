@@ -1,5 +1,14 @@
 import { definePrefab } from '../../prefab/types.ts';
 export const prefabs = [
+  // The driver's train set in the first bought house (src/entities/town/model-railway.ts, which draws it from this
+  // box): a 1.8 x 2.8 m baseboard 0.5 m high (at the little driver's chest) in room space, on the +x side between the back wall and the lamp's
+  // window, 0.3 m clear of the 2.6 m door lane and 0.2 m off the walls' inner faces (3.61 m out).
+  definePrefab({
+    key: 'town.driver-table',
+    visual: { none: true },
+    colliders: [{ shape: 'box', at: [2.5, 0.25, -2], half: [0.9, 0.25, 1.4] }],
+    scope: 'owner',
+  }),
   definePrefab({
     key: 'town.workshop-chair',
     visual: { builder: 'seat.chair', params: {} },
