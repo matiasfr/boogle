@@ -4,7 +4,7 @@
 // is physical". Local and cosmetic.
 import * as THREE from 'three/webgpu';
 import { material } from '../render/materials.ts';
-export { chips, dustRing } from '../render/particle-effects.ts';
+export { chips, dustRing, woodChips } from '../render/particle-effects.ts';
 import { PIECE, pieceColor, pieceMesh, commitPieces } from '../render/haul-pieces.ts';
 import { makeSet, type Box, type BoxSet } from '../render/boxes.ts';
 import { LOOK, STEEL, lookBackLogs } from './look.ts';

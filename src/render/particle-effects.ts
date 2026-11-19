@@ -44,7 +44,17 @@ const puff: Particle = {
   alphaCurve: [0.35, 0.9, 0],
   colorCurve: [dust, dustMid, dustEnd],
 };
-export function chips(x: number, y: number, z: number, n = 10, floor = y - 1.1, yaw?: number, rock = false, scale = 1) {
+export function chips(
+  x: number,
+  y: number,
+  z: number,
+  n = 10,
+  floor = y - 1.1,
+  yaw?: number,
+  rock = false,
+  scale = 1,
+  palette: readonly THREE.Color[] = timber,
+) {
   if (reducedMotion) return;
   n = Math.min(36, n);
   chip.x = x;
@@ -60,12 +70,25 @@ export function chips(x: number, y: number, z: number, n = 10, floor = y - 1.1, 
     chip.vy = (1.5 + Math.random() * 2) * Math.sqrt(scale);
     chip.life = 0.85 + Math.random() * 0.35;
     chip.size = particleEffects.chipSize * (0.7 + Math.random() * 0.6) * scale;
-    chip.color = rock ? stone : timber[k % timber.length]!;
+    chip.color = rock ? stone : palette[k % palette.length]!;
     chip.shape = rock ? 'quad' : 'chip';
     chip.rotation = Math.random() * Math.PI * 2;
     chip.spin = (k % 2 ? 1 : -1) * (5 + Math.random() * 9);
     emit(chip);
   }
+}
+
+// Fresh-cut wood, the colour of a felling notch's faces, with one bark flake in four.
+const freshWood = [
+  new THREE.Color('#f0d7a4'),
+  new THREE.Color('#e3c48b'),
+  new THREE.Color('#f6e2b8'),
+  new THREE.Color('#7a5430'),
+];
+/** A chop's chips: pale like the cut they came out of. */
+export function woodChips(x: number, y: number, z: number, n: number) {
+  if (reducedMotion) return;
+  chips(x, y, z, n, undefined, undefined, false, 1, freshWood);
 }
 
 /** Low-alpha lobes, not a smoke wall. Dust keeps intensity one under the existing exposure policy. */

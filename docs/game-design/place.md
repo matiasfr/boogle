@@ -1843,15 +1843,19 @@ precision** and **11. Show, don't tell**.
 **2**: the keener edge, shared by the room. The proper axe gives **5** a hit on trees and hardwoods; rocks stay at 2.
 A tree's notch and a rock's crack track the pieces taken, so the felling or breaking hit finishes it at either yield.
 
-**The bite (G20, 18 November, [plan](../plans/grant-c8-batch.md#g20-chop-progress-on-the-tree-with-a-wood-chop-effect-instead-of-the-bar)).**
-An ordinary tree shows its own chop progress: from the first accepted hit a band of the trunk between 0.94 m and
-1.3 m is opened on the side of the last stroke (two of its six faces), and a dark heart behind the opening draws back
-as pieces are taken, from about 8 cm deep at the first hit to 60% of the trunk's radius at the ninth of ten, so the
-trunk reads narrower at the cut, from the side most of all. The felled trunk tips and lies with its bite, over the
-pale stump. Each accepted chop throws more chips as the bite deepens: 9 at the first hit, 14 at the felling one
-(hardwoods by the same work, 9 to 14). Hardwoods and the great tree keep the old dark notch, and a refused stroke
-still leaves only its shallow scuff. View only (`src/render/place-tree-view.ts`, `src/entities/railway/sources.ts`);
-the rule, the yield and the timing are unchanged. Depth and chip count are defaults, cheap to retune.
+**The notch (G20, 18 November, [plan](../plans/grant-c8-batch.md#g20-chop-progress-on-the-tree-with-a-wood-chop-effect-instead-of-the-bar);
+[decision](../decisions-look.md#d-2026-11-18-chop-v-notch)).** An ordinary tree shows its own chop progress: from the
+first accepted hit a V notch is cut into the trunk on the side of the last stroke, between 0.84 m and 1.4 m up, its
+two faces pale fresh wood with bark at the rim. It deepens as pieces are taken, from about 8 cm at the first hit to
+past the trunk's axis at the felling one, so from the side only a thin hinge is left. The notch is one trunk shape
+with a per-tree depth (a morph target read per instance), so there is no extra batch for it. The felled trunk tips
+and lies with its notch, over the pale stump. Each accepted chop throws more chips as the notch deepens, pale like
+its faces with one bark flake in four: 9 at the first hit, 14 at the felling one (hardwoods by the same work). Up to
+six small pale boards lie round the foot, one more about every two hits, in the same places for that tree, until the
+stump regrows. Hardwoods and the great tree keep the old dark notch, and a refused stroke still leaves only its
+shallow scuff. View only (`src/render/place-tree-view.ts`, `src/render/particle-effects.ts`,
+`src/entities/railway/sources.ts`); the rule, the yield and the timing are unchanged. Depth, colours and chip counts
+are defaults, cheap to retune.
 
 **Drop and piles.** Drop (right click / R3 / touch **Drop**) puts one piece down, logs first, then stone, then rails;
 held, it puts the whole back down. It is how a back empties before shouldering a big thing and how friends hand cargo
