@@ -717,9 +717,12 @@ export const ROOM_PLOTS: Record<Exclude<RoomId, PlotRoomId>, RoomPlot> = {
   museum: { ...townBuilding('museum'), high: 5 },
   gate: { ...townBuilding('gate'), high: 3 },
 };
-/** The bought plots that open as walk-in rooms on their kit (docs/brainstorms/first-house-resident.md, step 1). The
- * slot keeps its blockout outline, its stakes and board (src/entities/town/plots.ts). */
-export const PLOT_ROOMS: Record<PlotRoomId, RoomPlot> = { plot3: { ...townBuilding('plot3'), high: 3.7 } };
+/** The bought plots that open as walk-in rooms on their kit (docs/brainstorms/first-house-resident.md, step 1), each
+ * with its trade plot index (`TRADE.plots`). The slot keeps its blockout outline, its stakes and board
+ * (src/entities/town/plots.ts). */
+export const PLOT_ROOMS: Record<PlotRoomId, RoomPlot & { plot: number }> = {
+  plot3: { ...townBuilding('plot3'), high: 3.7, plot: 0 },
+};
 /** Every room the town draws (src/entities/town/rooms.ts), and every door the ground grades to. */
 export const ROOMS: Record<RoomId, RoomPlot> = { ...ROOM_PLOTS, ...PLOT_ROOMS };
 /** The blockout's eaves above the ground, read from the kits so what can be climbed is what the real building will

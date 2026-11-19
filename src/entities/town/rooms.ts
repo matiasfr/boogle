@@ -50,9 +50,10 @@ import {
 } from '../../place/sites.ts';
 
 const shellLevels = { house: houseShell, shop: shopShell, museum: museumShell, gate: gateShell, plot3: plot3Shell };
-/** A bought plot's room builds at a plot's pace (./plots.ts): its last piece lands `TRADE.buildTicks` after the buy
- * (sites.ts `doneAt` is 9.1 paces plus 0.3 s). */
-const PACE: Partial<Record<RoomId, number>> = { museum: 1.6, plot3: (TRADE.buildTicks / 10 - 0.3) / 9.1 };
+/** s: a bought plot's build, buy to last piece, on the shared clock. */
+const PLOT_BUILD_S = TRADE.buildTicks / 10;
+/** A bought plot's room builds at a plot's pace (./plots.ts): sites.ts `doneAt` is 9.1 paces plus 0.3 s. */
+const PACE: Partial<Record<RoomId, number>> = { museum: 1.6, plot3: (PLOT_BUILD_S - 0.3) / 9.1 };
 
 export const ROOM_CAM = {
   enter: 0.75, // m outside the door where the show starts, and past which it can end
@@ -358,10 +359,9 @@ export function createRooms(
 
   // ---------------------------------------------------------------- standing, or not
   /** Up it goes: on the shared clock when the room keeps it, finished with no show once that build is over. */
-  function raise(r: Room) {
-    const since = env.since?.(r.id);
+  function raise(r: Room, since = env.since?.(r.id)) {
     if (since === undefined) return void startSite(r.site, r.id === 'museum' ? 3 : 1.2);
-    if (since >= TRADE.buildTicks / 10) snapSite(r.site, true);
+    if (since >= PLOT_BUILD_S) snapSite(r.site, true);
     else startSite(r.site, -since);
   }
   /** Start over, a reload or a co-op snapshot: each as the state says, with no show, and every piece back in its place.
@@ -371,8 +371,11 @@ export function createRooms(
       const up = env.up(r.id);
       r.up = up;
       const since = up ? env.since?.(r.id) : undefined;
-      snapSite(r.site, up && (since === undefined || since >= TRADE.buildTicks / 10));
-      if (r.site.state === 'none' && up) startSite(r.site, -since!);
+      if (since === undefined) snapSite(r.site, up);
+      else {
+        snapSite(r.site, false);
+        raise(r, since);
+      }
       setStake(r, !up);
       for (const g of FACES) r.t[g] = r.shown[g] = 0;
       for (const c of r.corners) c.shown = 0;

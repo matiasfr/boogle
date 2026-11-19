@@ -304,7 +304,6 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
     });
     return {
       k,
-      room: !!room,
       /** An opened plot's seconds since its accepted buy, for its room; undefined while unbought or unread. */
       since: undefined as number | undefined,
       loader,
@@ -388,7 +387,7 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
           visible = valid && bought < 0 && (offered || p.k === next);
         const price = valid ? drawn(plotPrice(w!, 0, p.k, pricePct)) : 0;
         // An opened plot's room raises itself from `since` (./rooms.ts); the rest are built here.
-        if (p.room) p.since = bought < 0 ? undefined : (tick - bought) / 10;
+        if (opened.has(p.k)) p.since = bought < 0 ? undefined : (tick - bought) / 10;
         else if (bought < 0) {
           if (p.site.state !== 'none') snapSite(p.site, false);
         } else if (tick >= bought + TRADE.buildTicks) {
