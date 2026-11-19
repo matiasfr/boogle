@@ -55,6 +55,14 @@
 // railway's next id follows) and stats.actions counts one more. 205 checkpoints append a false Rail.yoke column and
 // change namespace/hash/checksum; 5,671 snapBytes samples follow. Every other column, input, result and message is exact (keyed comparison with the
 // v63 fixture before the writer regenerated it).
+// v65 halt yards (docs/plans/halt-yard.md, step 1): the action sweep adds eight records for a refused rail.haltPut and
+// rail.haltTake (each its input, pending and settled status and rejection packet), the last two ops of the sweep, so
+// only Bob's final account request (45 -> 47), one ack and his r:session `next` (46 -> 48) move, each checkpoint after
+// them holds two more outcome rows and stats.actions counts two more. 205 checkpoints gain four all-zero HaltYard rows
+// (820 in all) spawned after the catalog, which push every later entity id on by 4 (the railway's next id by 6 with the
+// two outcomes); with ids remapped every other row is exact. Namespace/hash/checksum envelopes and 5,673 snapBytes
+// samples follow; no recovery lands in a halt yard. Keyed comparison with the v64 fixture before the writer regenerated
+// it: 8,616 records.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';

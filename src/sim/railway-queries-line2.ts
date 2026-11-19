@@ -49,6 +49,7 @@ import {
   steelId,
   worksId,
 } from './railway-queries.ts';
+import { haltYardTotals } from './railway-queries-yard.ts';
 
 /** The first path (T3) is open: the forge frame takes logs. */
 export const line2Open = (w: World) => !!w.get(Job, jobId(w, 2))!.completion;
@@ -154,7 +155,7 @@ function legsSpent(w: World, key: 'logs' | 'rails') {
   return n;
 }
 /** Line two's logs, wherever they are (conserved with the line-one totals in railCounts), the greybox route's fed and
- * laid among them. */
+ * laid among them, and the logs left in the halt yards (the Village's are the recovery rack, counted as the rack). */
 export function line2Logs(w: World, at?: number) {
   const f = w.get(Forge, forgeId(w))!,
     rail = w.get(Rail, railId(w))!,
@@ -167,7 +168,8 @@ export function line2Logs(w: World, at?: number) {
     w.get(Cart, cartId(w))!.logs +
     aboard(w, 'logs') +
     line2Jobs(w, at).reduce((n, { job: j, run }) => n + j.stock + run.allocation + run.used, 0) +
-    legsSpent(w, 'logs')
+    legsSpent(w, 'logs') +
+    haltYardTotals(w).logs
   );
 }
 const sumAccounts = (w: World, key: 'carry' | 'stone' | 'rails' | 'foot') => {
@@ -180,7 +182,7 @@ const sumPiles = (w: World, kind: (k: number) => boolean) => {
   w.each([Pile], (_id, p) => (n += kind(p.kind) ? p.n : 0));
   return n;
 };
-/** Every rail poured, wherever it is: equals the forge's `poured`. */
+/** Every rail poured, wherever it is (the halt yards' among them): equals the forge's `poured`. */
 export function line2Rails(w: World, at?: number) {
   const rail = w.get(Rail, railId(w))!,
     s = w.get(Steel, steelId(w))!;
@@ -195,7 +197,8 @@ export function line2Rails(w: World, at?: number) {
     sumPiles(w, (k) => k === RAILS) +
     line2Jobs(w, at).reduce((n, { job: j, run }) => n + j.railStock + run.railAllocation + run.railUsed, 0) +
     w.get(Shed, shedId(w))!.cradleRails +
-    legsSpent(w, 'rails')
+    legsSpent(w, 'rails') +
+    haltYardTotals(w).rails
   );
 }
 /** Conserved totals, including the depot cart and the line-2 kit train through line2Logs and line2Rails, and the
@@ -233,8 +236,17 @@ export function railCounts(w: World, at?: number) {
     delivered: total((j) => j.job.stoneDelivered),
     total: 0,
   };
+  // The halt yards' stone (the Village's is the rack's).
   stone.total =
-    stone.source + stone.carry + stone.loose + stone.stock + stone.allocation + stone.used + stone.rack + stone.kiln;
+    stone.source +
+    stone.carry +
+    stone.loose +
+    stone.stock +
+    stone.allocation +
+    stone.used +
+    stone.rack +
+    stone.kiln +
+    haltYardTotals(w).stone;
   const qjobs = line2Jobs(w, at);
   const rails = {
     forge: forge.rack,

@@ -70,6 +70,7 @@ import { buy, sack, tradeTick, yardTick } from './railway-sys-trade.ts';
 import { TRADE_PCT, type TradePct } from './railway-trade-layout.ts';
 import { install, steelFeed, steelTake, steelTick } from './railway-sys-steel.ts';
 import { arrive, gate, grant, legStock, legTick } from './railway-sys-route.ts';
+import { haltPut, haltTake } from './railway-sys-yard.ts';
 
 /** The systems for each op, in the order they are tried: the first that moves something answers. */
 // An op system that reads no action (the axe, the jump, the lever, the hook, the glider) takes it all the same.
@@ -121,6 +122,9 @@ const OPS: Record<string, readonly System<never, number>[]> = {
   'rail.grant': [grant],
   'rail.gate': [gate],
   'rail.arrive': [arrive],
+  // The halt yards (./railway-sys-yard.ts): Leave it here and Pick up at a yard's bins.
+  'rail.haltPut': [haltPut],
+  'rail.haltTake': [haltTake],
 };
 
 export function railOutcome(w: World, pid: string, epoch: number, request: number): RailResult | null {

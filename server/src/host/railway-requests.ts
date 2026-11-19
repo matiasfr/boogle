@@ -67,6 +67,8 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
     clean.id = e.id;
   // The greybox route's frame feed names its leg (a RAIL_LEGS index); the rules validate it.
   if (e.op === 'rail.legStock') clean.leg = e.leg;
+  // A halt yard's put and take name the yard (a HALT_YARDS index) and the kind; the rules validate both.
+  if (e.op === 'rail.haltPut' || e.op === 'rail.haltTake') clean.yard = e.yard;
   if (e.op === 'rail.footTake') clean.rack = e.rack;
   if (e.op === 'rail.footSet') clean.site = e.site;
   if (e.op === 'rail.turn') clean.to = e.to;
@@ -81,7 +83,17 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
     clean.station = e.station;
     clean.n = e.n;
   }
-  if (['rail.deposit', 'rail.drop', 'rail.take', 'rail.rackTake', 'rail.steelTake'].includes(String(e.op)))
+  if (
+    [
+      'rail.deposit',
+      'rail.drop',
+      'rail.take',
+      'rail.rackTake',
+      'rail.steelTake',
+      'rail.haltPut',
+      'rail.haltTake',
+    ].includes(String(e.op))
+  )
     clean.kind = e.kind;
   if (e.op === 'rail.install') {
     clean.line = e.line;
@@ -129,6 +141,7 @@ const EVENT_FIELDS = [
   'dir',
   'line',
   'part',
+  'yard',
 ] as const;
 /** What the result adds for effects (src/world/railway-predict.ts RailEffect), without what the intent already says:
  * a drop's pile stands at its x/y/z, and a take's pile is its id (its position still comes from here: it may be gone). */

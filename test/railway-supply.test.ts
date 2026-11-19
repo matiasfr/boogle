@@ -25,6 +25,13 @@ import {
   restore,
   tree,
   trees,
+  act,
+  buildSeedWorld,
+  chopTo,
+  forge,
+  rocks,
+  pilesWithIds,
+  haltYard,
 } from './helpers/rail.ts';
 const unseen = railGrowthMask(RAILWAY_SOURCES.map((_source, k) => k));
 const watched = railGrowthMask([]);
@@ -239,5 +246,44 @@ test('pinned clearings contain initial stubs and all finished T1 track with eigh
         ([x0, x1, z0, z1]) => x >= x0 + 799 && x <= x1 - 799 && z >= z0 + 799 && z <= z1 - 799,
       ),
     );
+  }
+});
+
+test('an abandoned pile recovers to the nearest open yard', () => {
+  // Logs and stone at (1000, 30) m: the Quarry's yard is nearest once Q3 is laid, the Village's rack before; rails go
+  // to the forge rack either way (a footing to the Works rack: test/railway-works.test.ts).
+  for (const [stage, open] of [
+    ['q2-stocked', false],
+    ['q3-done', true],
+  ] as const) {
+    const s = buildSeedWorld(stage);
+    chopTo(s, 'a', 2);
+    const k = rocks(s.w).findIndex((r) => r.left > 0);
+    const stone = act(s, 'a', 'rail.mine', { id: k });
+    if (!account(s.w, 'b')!.rails) act(s, 'b', 'rail.forgeTake');
+    const logs = account(s.w, 'a')!.carry;
+    assert.ok(logs > 0 && stone > 0, stage);
+    assert.equal(act(s, 'a', 'rail.drop', { x: 100000, y: 2400, z: 3000, n: logs, kind: 0 }), logs);
+    assert.equal(act(s, 'a', 'rail.drop', { x: 100010, y: 2400, z: 3000, n: stone, kind: 1 }), stone);
+    // A pile holds 8: what landed is what recovers.
+    const rails = act(s, 'b', 'rail.drop', { x: 100020, y: 2400, z: 3000, n: 8, kind: 2 });
+    assert.ok(rails > 0, stage);
+    const before = { rack: rail(s.w).rack, stoneRack: rail(s.w).stoneRack, forge: forge(s.w).rack };
+    const ids = pilesWithIds(s.w)
+      .filter((p) => p.z === 3000 && p.x >= 100000 && p.x <= 100020)
+      .map((p) => p.id);
+    assert.equal(ids.length, 3);
+    railSupplyPulse(s.w, { marker: 100, grow: watched, recover: [] });
+    railSupplyPulse(s.w, { marker: 121, grow: watched, recover: ids });
+    assert.equal(invariant(s.w), null);
+    const row = haltYard(s.w, 2);
+    if (!open) {
+      assert.deepEqual([rail(s.w).rack, rail(s.w).stoneRack], [before.rack + logs, before.stoneRack + stone], stage);
+      assert.deepEqual([row.logs, row.stone], [0, 0], 'the closed Quarry yard holds nothing');
+    } else {
+      assert.deepEqual([row.logs, row.stone, row.rails], [logs, stone, 0], stage);
+      assert.deepEqual([rail(s.w).rack, rail(s.w).stoneRack], [before.rack, before.stoneRack]);
+    }
+    assert.equal(forge(s.w).rack, before.forge + rails, `${stage}: rails to the forge rack`);
   }
 });

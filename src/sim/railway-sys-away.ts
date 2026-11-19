@@ -40,6 +40,7 @@ import {
   Yard,
   YardClock,
   Leg,
+  HaltYard,
 } from './railway-components.ts';
 import {
   activeStation,
@@ -66,6 +67,7 @@ import { boilerPedestal, cartMint, cartTakeRails, cartUnload, layLine2 } from '.
 import { yardsAway } from './railway-sys-trade.ts';
 import { sackCap, tillRate } from './railway-queries-trade.ts';
 import { TRADE_PCT, type TradePct } from './railway-trade-layout.ts';
+import { yardRecover } from './railway-sys-yard.ts';
 
 /** One capped sack of away fares; the strongbox earns nothing until somebody pours it. */
 function tillAway(w: World, ticks: number, tick: number, pct: TradePct) {
@@ -220,8 +222,8 @@ const progressUnits = (marker: number, minutes: number, interval: number, units:
 export const supply = defineSystem(
   'rail.supply',
   {
-    reads: [Account, Aperture],
-    writes: [Rail, RailClock, Pile, Forge, Tree, Rock, Beam, Boiler, Works, Leg],
+    reads: [Account, Aperture, Job, QJob],
+    writes: [Rail, RailClock, Pile, Forge, Tree, Rock, Beam, Boiler, Works, Leg, HaltYard],
     phase: 'supply',
     order: 0,
   },
@@ -242,9 +244,9 @@ export const supply = defineSystem(
       (id, pile) => {
         pile.age = Math.min(RECOVERY_MINUTES, pile.age + recover);
         if (pile.age === RECOVERY_MINUTES && e.recover.includes(id)) {
-          if (pile.kind === 1) rail.stoneRack += pile.n;
-          // Abandoned rails return to the forge's rack; logs to the recovery rack.
-          else if (pile.kind === RAILS) {
+          // Abandoned rails return to the forge's rack; logs and stone to the nearest open halt yard (the Village's
+          // is the recovery rack).
+          if (pile.kind === RAILS) {
             const f = w.mut(Forge, forgeId(w))!;
             // Keep the aged pile until the whole transfer fits the checkpoint's rack domain.
             if (f.rack + pile.n > 4096) return;
@@ -253,7 +255,7 @@ export const supply = defineSystem(
           }
           // An abandoned footing goes back to the Works rack (past its cap if it must).
           else if (pile.kind === FOOT) w.mut(Works, worksId(w))!.rack += pile.n;
-          else rail.rack += pile.n;
+          else yardRecover(w, pile);
           moved += pile.n;
           pile.n = 0;
           w.despawn(id);

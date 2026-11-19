@@ -81,6 +81,9 @@ export function sameTarget(a: RailwayAccepted, b: RailwayAccepted) {
   if (a.op === 'rail.rackTake') return (a.kind ?? 0) === ((b as typeof a).kind ?? 0);
   if (a.op === 'rail.footTake') return a.rack === (b as typeof a).rack;
   if (a.op === 'rail.steelTake') return (a.kind ?? 0) === ((b as typeof a).kind ?? 0);
+  // A halt yard's bin: the same yard and kind.
+  if (a.op === 'rail.haltPut' || a.op === 'rail.haltTake')
+    return a.yard === (b as typeof a).yard && a.kind === (b as typeof a).kind;
   return a.op === 'rail.forgeTake' || a.op === 'rail.depotTake' || a.op === 'rail.depotRailTake';
 }
 /** Ops whose whole result is one shared flag: when it holds anyway (someone else woke the machine), losing the race

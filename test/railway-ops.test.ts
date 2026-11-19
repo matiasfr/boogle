@@ -1,3 +1,5 @@
+// 2026-11-19 v65 halt yards: four empty HaltYard rows spawned last push every later entity id on by 4 and move all 321
+// hashes; every label and accepted count stays (keyed comparison with the v64 fixture, docs/plans/halt-yard.md step 1).
 // 2026-11-19 seed data only (rail-yoke step 2; owner-calls.md#seed-goldens): the seeds take the Rail yoke at Q1, so
 // the streams on stages built on railwayAtQ2 (boiler, call, foot: 254 hashes) move; opening and axe are unchanged and
 // every label and accepted count stays.

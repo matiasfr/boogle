@@ -15,6 +15,7 @@ import {
   Cart,
   Forge,
   ForgeClock,
+  HaltYard,
   Hardwood,
   Job,
   JobRun,
@@ -84,6 +85,19 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     break: (w) => {
       for (let i = 0; i < 129; i++) w.spawn([Pile, { n: 8, kind: 0, x: i, y: 0, z: 0, age: 0 }]);
     },
+  },
+  // The halt yards: the Village's logs are the recovery rack's, and the Quarry's yard is closed before Q3 is laid.
+  {
+    site: 'halt yards (village logs)',
+    message: 'railway: halt yards',
+    stage: A,
+    break: (w) => set(w, HaltYard, { logs: 3 }, 0),
+  },
+  {
+    site: 'halt yards (closed yard)',
+    message: 'railway: halt yards',
+    stage: A,
+    break: (w) => set(w, HaltYard, { logs: 2 }, 2),
   },
   { site: 'check tick', message: 'railway: tick', stage: A, break: (w) => set(w, Rail, { awake: -2 }) },
   {

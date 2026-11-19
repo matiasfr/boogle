@@ -56,6 +56,9 @@ const RAILWAY_BEATS: [string, RegExp][] = [
   ['called the cart', /^cart called$/],
   ['rode the cart', /^cart ride$/],
   ['picked up at the depot', /^depot pick up$/],
+  // The halt yards (docs/plans/halt-yard.md): Leave it here and Pick up at a bay.
+  ['left spares at a halt yard', /^yard left$/],
+  ['picked up at a halt yard', /^yard taken$/],
   ['pulled the sea switch', /^sea switch pulled$/],
   ['pressed the sea switch before Q4', /^sea switch refused$/],
   ['reached Far Head', /^Far Head reached$/],

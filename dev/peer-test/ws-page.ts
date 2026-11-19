@@ -522,6 +522,10 @@ function startWorld(room: Room) {
           return adapter.braceLeaf();
         case 'rail.steelTake':
           return adapter.steelTake(intent.kind);
+        case 'rail.haltPut':
+          return adapter.haltPut(intent.yard, intent.kind);
+        case 'rail.haltTake':
+          return adapter.haltTake(intent.yard, intent.kind);
         case 'rail.legStock':
           return adapter.feedLeg(intent.leg);
         case 'rail.grant':

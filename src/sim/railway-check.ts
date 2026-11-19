@@ -3,7 +3,8 @@
 //
 //   railwayCheck(world)            the load check: archetypes, counts, then every domain invariant on the world
 //                                  (accounts, piles, outcomes, catalog here; ./railway-check-line1.ts, -line2.ts,
-//                                  -trains.ts, -works.ts, -ring.ts, -trade.ts, -steel.ts, -route.ts; the conserved logs)
+//                                  -trains.ts, -works.ts, -ring.ts, -trade.ts, -steel.ts, -route.ts; the halt yards;
+//                                  the conserved logs)
 //
 // A build-out's component adds its check as its own function in its own railway-check-<domain>.ts, called from
 // checkRailway, and one entry per `throw` to test/fixtures/railway-bad-worlds.ts.
@@ -17,6 +18,8 @@ import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { TRADE, TRADE_TOWNS } from './railway-trade-layout.ts';
 import { RAIL_LEGS, RAIL_YARDS, railPos } from './railway-route.ts';
 import { RECOVERY_MINUTES, LOOSE_PILE_CAPACITY, LOOSE_PILE_MAX } from './railway-supply.ts';
+import { HALT_YARDS, VILLAGE_YARD } from './railway-yard-layout.ts';
+import { haltYardOpen } from './railway-queries-yard.ts';
 import { railInt, railYaw, RAILWAY_MAX_INT, RAILWAY_OUTCOMES } from './railway.ts';
 import {
   Account,
@@ -56,6 +59,7 @@ import {
   Leg,
   LegYard,
   Route,
+  HaltYard,
 } from './railway-components.ts';
 import {
   account,
@@ -111,6 +115,8 @@ const ARCHETYPES = [
   [Leg],
   [LegYard],
   [Route],
+  // The halt yards.
+  [HaltYard],
 ].map((set) => set.map((c) => c.kind).join());
 /** Every entity has a known shape, the catalog is whole, and every domain invariant holds on the world. */
 export function railwayCheck(w: World, tick = RAILWAY_MAX_INT) {
@@ -147,6 +153,7 @@ export function railwayCheck(w: World, tick = RAILWAY_MAX_INT) {
     [Leg, RAIL_LEGS.length],
     [LegYard, RAIL_YARDS.length],
     [Route, 1],
+    [HaltYard, HALT_YARDS.length],
   ] as const)
     if (w.count(c) !== n) throw new Error(`railway: ${w.count(c)} ${c.kind}`);
   if (w.count(Account) > MAX_PLAYERS || w.count(Outcome) > RAILWAY_OUTCOMES) throw new Error('railway: rows');
@@ -269,7 +276,23 @@ function checkRailway(w: World, tick: number) {
   checkTrade(w, tick);
   checkSteel(w);
   checkRoute(w);
+  checkHaltYards(w);
   const counts = worldCounts(w);
   if (counts.total !== RAILWAY_SUPPLY + 30 + counts.produced) bad('conservation');
 }
 const TIMING_KEYS = Object.keys(TIMING) as (keyof typeof TIMING)[];
+/** One row a catalog slot (counted in railwayCheck; the key refuses a repeat), integer counts; the Village's logs and stone are the rack's (its row holds only rails), and
+ * a closed yard holds nothing. Their conservation is the witnesses' (railCounts, line2Rails, the stone's). */
+function checkHaltYards(w: World) {
+  w.each([HaltYard], (_id, y) => {
+    if (
+      !railInt(y.slot, HALT_YARDS.length - 1) ||
+      !railInt(y.logs) ||
+      !railInt(y.stone) ||
+      !railInt(y.rails) ||
+      (y.slot === VILLAGE_YARD && (y.logs !== 0 || y.stone !== 0)) ||
+      (!haltYardOpen(w, y.slot) && y.logs + y.stone + y.rails !== 0)
+    )
+      bad('halt yards');
+  });
+}

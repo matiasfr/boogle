@@ -1,6 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { account, act, boiler, chopTo, piles, railwayAtTrains, type Seed } from './helpers/rail.ts';
+import {
+  account,
+  act,
+  boiler,
+  buildSeedWorld,
+  chopTo,
+  haltYard,
+  invariant,
+  LOGS,
+  piles,
+  rail,
+  railwayAtTrains,
+  restore,
+  roomOf,
+  type Seed,
+} from './helpers/rail.ts';
+import { line2Rails, railCounts } from '../src/sim/railway-queries-line2.ts';
 import { plan } from '../src/entities/railway/back-down-plan.ts';
 import { createDropHold, DROP_HOLD_MS } from '../src/player/drop-hold.ts';
 
@@ -86,4 +102,54 @@ test('hold Drop: released early is one tap; held to the threshold puts it all do
   h.cancel();
   h.up(9600);
   assert.equal(log.length, 3, 'a cancelled hold does nothing');
+});
+
+// docs/plans/halt-yard.md step 1: a halt yard takes a whole kind off the back and gives it back to anyone, on the
+// world's own rules (the server's reach, open and kind checks are the host test's).
+const yardRow = (s: Seed, k: number) => {
+  const y = haltYard(s.w, k);
+  return [y.logs, y.stone, y.rails];
+};
+/** Every conserved total: the logs, the stone and the rails. */
+const totals = (s: Seed) => {
+  const c = railCounts(s.w);
+  return [c.total, c.stone.total, line2Rails(s.w)];
+};
+test('halt yard: leave it here, pick it up, nothing lost', () => {
+  const s = buildSeedWorld('q3-done');
+  act(s, 'a', 'rail.pack'); // a back of 16 logs
+  chopTo(s, 'a', 10);
+  assert.ok(act(s, 'a', 'rail.forgeTake') > 0);
+  const a = () => account(s.w, 'a')!;
+  const [logs, rails] = [a().carry, a().rails];
+  const before = totals(s);
+  assert.equal(act(s, 'a', 'rail.haltPut', { yard: 3, kind: 0 }), 0, 'Far Head is closed before Q5 is laid');
+  assert.equal(act(s, 'a', 'rail.haltPut', { yard: 2, kind: 1 }), 0, 'no stone on the back');
+  assert.equal(act(s, 'a', 'rail.haltPut', { yard: 2, kind: 0 }), logs);
+  assert.equal(act(s, 'a', 'rail.haltPut', { yard: 2, kind: 2 }), rails);
+  assert.deepEqual([a().carry, a().rails], [0, 0]);
+  assert.deepEqual(yardRow(s, 2), [logs, 0, rails]);
+  assert.deepEqual(totals(s), before, 'the yard is in the conserved counts');
+  const room = roomOf(s.w, account(s.w, 'b')!, LOGS);
+  assert.equal(act(s, 'b', 'rail.haltTake', { yard: 3, kind: 0 }), 0, 'nothing from a closed yard');
+  assert.equal(act(s, 'b', 'rail.haltTake', { yard: 2, kind: 0 }), Math.min(logs, room));
+  assert.deepEqual(yardRow(s, 2), [logs - Math.min(logs, room), 0, rails]);
+  assert.deepEqual(totals(s), before);
+  assert.equal(invariant(s.w), null);
+  assert.equal(restore(s.w).hash(), s.w.hash(), 'the row survives a save');
+});
+test('the Village yard: logs to the rack, rails to its shelf, the rack take unchanged', () => {
+  const s = buildSeedWorld('q3-done');
+  chopTo(s, 'a', 4);
+  assert.ok(act(s, 'a', 'rail.forgeTake') > 0);
+  const a = () => account(s.w, 'a')!;
+  const [rack, logs, rails, before] = [rail(s.w).rack, a().carry, a().rails, totals(s)];
+  assert.equal(act(s, 'a', 'rail.haltPut', { yard: 0, kind: 0 }), logs);
+  assert.equal(act(s, 'a', 'rail.haltPut', { yard: 0, kind: 2 }), rails);
+  assert.equal(rail(s.w).rack, rack + logs, 'the logs are on the recovery rack');
+  assert.deepEqual(yardRow(s, 0), [0, 0, rails], 'only its rails on its row');
+  assert.equal(act(s, 'b', 'rail.haltTake', { yard: 0, kind: 0 }), 0, "the rack's logs are rail.rackTake's");
+  assert.equal(act(s, 'b', 'rail.rackTake', { kind: 0 }), Math.min(rack + logs, 8));
+  assert.equal(act(s, 'a', 'rail.haltTake', { yard: 0, kind: 2 }), rails);
+  assert.deepEqual(totals(s), before);
 });

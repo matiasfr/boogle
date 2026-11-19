@@ -1,4 +1,4 @@
-> **Status: proposed (2026-11-19), planner. Not built.** Read at `origin/main` `c0c993ff7` (world v62). Station-deposit
+> **Status: step 1 built (2026-11-19, `claude/halt-yard-store`, world v65); steps 2 to 5 not built.** Read at `origin/main` `c0c993ff7` (world v62). Station-deposit
 > build 1. Step 1 changes rules, wire, save and server validation: one `WORLD_NS` bump (**the next free
 > version**), one independent review. Build 2 (cargo cars carry a yard's goods) is out of scope: it waits for the
 > cargo trains row.
@@ -182,7 +182,19 @@ Each step leaves `node dev/ship-check.ts` green. The full check, the bots and `t
 review. Steps 1 to 5 ship together in one ship, between sessions (check `npm run heartbeat` for a live session
 first; owner-calls "Nothing waits on a world bump").
 
-- [ ] **1. The store, the two ops, the save and the world bump.** Seeds unchanged.
+- [x] **1. The store, the two ops, the save and the world bump.** Seeds unchanged.
+  - *As built (2026-11-19, world **v65**, over the Rail yoke's v64):* as written, with these moves. The server also
+    refuses `rail.haltTake` of logs or stone at yard 0 and any op at a closed yard in `railValid` (the rules give 0
+    for both too). A put and a take keep a greybox leg's kit books as `rail.drop` and `rail.take` do (agent calls).
+    Yard logs are counted in `line2Logs` (so in `railCounts.total`), rails in `line2Rails`, stone in
+    `railCounts.stone.total` and line 1's stone conservation. The sim tests read the back's real counts (a chop
+    yields 2, and the yoke's forge take gives 16 rails, so not 10 and 4), and the footing's recovery stays
+    `test/railway-works.test.ts`'s. `dev/loop/trace.ts` itself is unchanged: it reads its activity marks from
+    `dev/loop/graph.ts`, which gains `'rail.haltPut'` and `'rail.haltTake'` in `GENERIC_OPS` and
+    `/^yard (left|taken)$/` in `ACTIVITY_MARKS` (five lines, in their own commit, so `test/loop-graph.test.ts`'s
+    drift checks pass; greybox leg 2's step 5 edits the same two lists). The host trace's
+    action sweep gains 8 records (a refused `rail.haltPut` and `rail.haltTake`, 4 each), as `rail.yoke`'s did at
+    v64.
   - **Files:** the sim, world and host files listed under Design. `src/world/namespace.ts`: the next free version,
     with the line "halt yards (docs/plans/halt-yard.md): `HaltYard` rows and `rail.haltPut`/`rail.haltTake`;
     abandoned logs and stone recover to the nearest open yard; no migration."

@@ -167,6 +167,9 @@ export const GENERIC_OPS = [
   'rail.boilerDrop',
   'rail.call',
   'rail.footTake',
+  // The halt yards (docs/plans/halt-yard.md): Leave it here and Pick up at a bay, outside route order and bills.
+  'rail.haltPut',
+  'rail.haltTake',
 ] as const;
 /** Rail actions whose nodes are not built yet: the greybox route's stack line (the frame feed, the pickup, the barrier,
  * the arrival). Its nodes (`stack-1` to `stack-4`, `gorge`, `pick`) are greybox-route.md's step 5; until then the loop
@@ -184,6 +187,8 @@ export const ACTIVITY_MARKS: readonly RegExp[] = [
   /^footing shouldered$/,
   /^steel kit taken$/,
   /^works fed$/,
+  // The halt yards: putting spares in a bay and taking them out again.
+  /^yard (left|taken)$/,
   // The greybox route's leg 1 (step 4's prompts): activity until step 5 builds its nodes.
   /^leg frame fed$/,
   /^route pickup taken$/,

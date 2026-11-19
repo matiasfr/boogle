@@ -47,6 +47,8 @@ import {
 } from '../sim/railway-works-layout.ts';
 import { SEAM_THROAT } from '../sim/railway-works.ts';
 import { RECOVERY_RACK, type SupplyPulse } from '../sim/railway-supply.ts';
+import { HALT_YARD_REACH, HALT_YARDS } from '../sim/railway-yard-layout.ts';
+import { haltYardServes } from '../sim/railway-queries-yard.ts';
 import {
   Account,
   Beam,
@@ -140,6 +142,9 @@ export const RAIL_ACTIONS = new Set([
   'rail.grant',
   'rail.gate',
   'rail.arrive',
+  // The halt yards (docs/plans/halt-yard.md).
+  'rail.haltPut',
+  'rail.haltTake',
 ]);
 
 /** A passenger's reach of its train: 10 m of the train's pose (its cars run up to 14.5 m behind it, RIDER_SPAN), at the tick or in the
@@ -334,6 +339,14 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
       return railInt(e.id, RAIL_GATES.length - 1) && at(RAIL_GATES[e.id]!.at);
     case 'rail.arrive':
       return at(RAIL_ARRIVAL);
+    // The halt yards: at an open yard's bay, logs (0), stone (1) or rails (2); the Village's logs and stone are taken
+    // with rail.rackTake, so its haltTake takes only rails.
+    case 'rail.haltPut':
+    case 'rail.haltTake': {
+      if (!haltYardServes(w, e.op === 'rail.haltPut' ? 'put' : 'take', e.yard, e.kind)) return false;
+      const y = HALT_YARDS[e.yard]!;
+      return near(y.x, y.z, HALT_YARD_REACH);
+    }
   }
   return false;
 }

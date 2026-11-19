@@ -42,6 +42,8 @@ export function railwayActionMarks(intent: RailwayIntent, amount: number, mine: 
     'rail.legStock': 'leg frame fed',
     'rail.grant': 'route pickup taken',
     'rail.gate': 'route barrier opened',
+    'rail.haltPut': 'yard left',
+    'rail.haltTake': 'yard taken',
     'rail.depotTake': 'depot pick up',
     'rail.depotRailTake': 'depot pick up',
     'rail.deposit': 'deposit',
@@ -59,6 +61,7 @@ export function railwayActionMarks(intent: RailwayIntent, amount: number, mine: 
   if (intent.op === 'rail.strike') data.seam = intent.id;
   if (intent.op === 'rail.footTake') data.rack = intent.rack;
   if (intent.op === 'rail.footSet') data.site = intent.site;
+  if (intent.op === 'rail.haltPut' || intent.op === 'rail.haltTake') data.yard = intent.yard;
   return [[name, data]];
 }
 
