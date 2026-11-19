@@ -517,7 +517,8 @@ export async function createRailwayRoundhouse(
         const solids = parts.map((part) => ({ dx: part.x, dy: part.y, dz: part.z, ...part.half }));
         // Out of the deck's sides only, at their own height: stretched along, the foot leaves no way out of its ends
         // (past the end they would be put over the pit's wall onto the kerb).
-        const sideways: typeof outOf = (f, at, r) => outOf({ ...f, hd: f.hd + 50 }, at, r);
+        const ENDLESS = 50; // m added to the foot's half length: past any side exit, so outOf never picks an end
+        const sideways: typeof outOf = (f, at, r) => outOf({ ...f, hd: f.hd + ENDLESS }, at, r);
         const exit = siteExit(b.position, foot, 0, solids, sideways, undefined, 0.05);
         if (exit) b.position.set(exit.x, b.position.y, exit.z);
       }
