@@ -210,7 +210,9 @@ export function mergeTimber(pieces: readonly THREE.Mesh[]) {
   for (const piece of pieces) {
     const material = piece.material as THREE.Material;
     const key = `${material.uuid} ${piece.castShadow} ${piece.receiveShadow}`;
-    groups.set(key, [...(groups.get(key) ?? []), piece]);
+    const group = groups.get(key);
+    if (group) group.push(piece);
+    else groups.set(key, [piece]);
   }
   return [...groups.values()].map((group) => {
     const parts = group.map((piece) => {
