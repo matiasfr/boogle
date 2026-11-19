@@ -531,7 +531,9 @@ review** row (a fresh subagent, fable medium) on its one proof look. Step 2 and 
     `works-box-view.ts` (a new file may not import a collider-capable module). `view.ts` creates the batch from both
     lines' `track.points` (`line2-view.ts` exposes its own); Home's three lever spots are `Junction.stand`, read by
     `home-station-view.ts`, whose static brass arms are gone. The level tools gained `junctions` and `box-batch.ts`.
-  - **The tests** are `routeOf`'s four cases in `test/turnout.test.ts`, not a new file.
+  - **The tests** are `routeOf`'s four cases in `test/turnout.test.ts`, not a new file. Two existing tests follow
+    the change: `test/train-wheel-rail.test.ts` counts the blades (set either way) among the rails as drawn, its
+    ceilings unchanged, and `test/home-cart.test.ts`'s literal guards read the levers' spots in `junctions.ts`.
   - **Levers.** Line levers stand abeam the toe (`KIT.leverBack` 0.2 m) 2.0 m out on the headblocks' side, no
     collider; J8's stands across the track (`Junction.leverAcross`): Far Head's platform covers its headblocks' side.
     Home's three keep their boxes where they were (J1's is solid) and gain the arm, leaning 26° away from the track for
