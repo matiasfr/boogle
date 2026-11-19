@@ -517,16 +517,24 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     assert.equal(rail(world()).depotRails, LINE2_STATIONS[3]!.bill[1]);
     const far = await edit('s1', { op: 'rail.depotRailTake' }, [LINE2_FORGE.x, 0, LINE2_FORGE.z]);
     assert.equal(far.status, 'rejected');
-    const take = await edit('s1', { op: 'rail.depotRailTake' }, [q4.x, 0, q4.z]);
-    // The seeds take the Rail yoke at Q1: a row of 16 rails takes the whole shelf at once.
-    assert.equal(take.accepted, 16, 'a row of 16 rails: the whole shelf');
-    assert.equal(rail(world()).depotRails, 0);
-    // Separate capacities: a full rails row refuses rails, at the shelf and at the forge rack, and logs still fit.
+    // Separate capacities, with the yoke the seeds take at Q1 (16 rails a back): fill the back at the forge rack first,
+    // so the full row meets a shelf that still holds all its rails.
+    const rack: [number, number, number] = [LINE2_FORGE.rackX, 0, LINE2_FORGE.rackZ];
+    while (forge(world()).rack < 16) await ticks(10);
+    const fill = await edit('s1', { op: 'rail.forgeTake' }, rack);
+    assert.deepEqual([fill.status, fill.accepted], ['accepted', 16], 'one rack take fills a row of 16');
+    const shelf = rail(world()).depotRails;
+    assert.equal(shelf, LINE2_STATIONS[3]!.bill[1], 'the shelf still holds its 16');
     const full = await edit('s1', { op: 'rail.depotRailTake' }, [q4.x, 0, q4.z]);
-    assert.deepEqual([full.status, full.accepted], ['noop', 0], 'a full rails row takes no more rails');
-    assert.ok(forge(world()).rack > 0, 'the forge rack holds rails');
-    const forgeFull = await edit('s1', { op: 'rail.forgeTake' }, [LINE2_FORGE.rackX, 0, LINE2_FORGE.rackZ]);
-    assert.deepEqual([forgeFull.status, forgeFull.accepted], ['noop', 0], 'nor from the forge rack');
+    assert.deepEqual(
+      [full.status, full.accepted],
+      ['noop', 0],
+      'a full 16-rail row takes nothing from a stocked shelf',
+    );
+    assert.equal(rail(world()).depotRails, shelf, 'and leaves the shelf as it was');
+    while (forge(world()).rack === 0) await ticks(10);
+    const forgeFull = await edit('s1', { op: 'rail.forgeTake' }, rack);
+    assert.deepEqual([forgeFull.status, forgeFull.accepted], ['noop', 0], 'nor from a forge rack that holds rails');
     assert.ok(rail(world()).depot > 0, 'the cart left logs on the rack');
     const logsBeside = await edit('s1', { op: 'rail.depotTake' }, [q4.x, 0, q4.z]);
     assert.equal(logsBeside.status, 'accepted', 'logs fit beside a full rails row');
@@ -537,8 +545,11 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     assert.equal(shut.status, 'accepted');
     assert.equal(qjob(world(), 3).railStock, 8);
     assert.equal(qjob(world(), 3).start, -1);
+    // Half the row is free again: the take stops at the row's room, 8 of the shelf's 16.
     const again = await edit('s1', { op: 'rail.depotRailTake' }, [q4.x, 0, q4.z]);
-    assert.deepEqual([again.status, again.accepted], ['noop', 0], 'the shelf came off in one take');
+    assert.deepEqual([again.status, again.accepted], ['accepted', 8], "the row's room clips the shelf take");
+    assert.equal(rail(world()).depotRails, shelf - 8, 'the shelf keeps the rest');
+    assert.equal(host.rules.railway.account('a')!.rails, 16);
     const rails = railCounts(world()).rails!;
     assert.equal(rails.total, rails.poured);
     // A restart keeps the pack, the shelf and the rails on the back.
@@ -546,8 +557,9 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     host = create();
     await host.whenReady();
     assert.equal(rail(world()).pack, true);
-    assert.equal(host.rules.railway.account('a')!.rails, 8);
+    assert.equal(host.rules.railway.account('a')!.rails, 16);
     assert.equal(qjob(world(), 3).railStock, 8);
+    assert.equal(rail(world()).depotRails, shelf - 8);
     assert.equal(rail(world()).lever, false);
     assert.equal(railCounts(world()).rails!.total, rails.total);
   } finally {
