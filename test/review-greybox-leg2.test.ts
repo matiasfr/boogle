@@ -2,11 +2,13 @@
 // the reviewed branch and names the defect it shows.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { LINE2, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import { RAIL_LEGS } from '../src/sim/railway-route.ts';
-import { forge, rail } from '../src/sim/railway-rows.ts';
-import { legOpen, legRow } from '../src/sim/railway-queries-route.ts';
+import { forge, rail, trains } from '../src/sim/railway-rows.ts';
+import { legOpen, legRow, legYard } from '../src/sim/railway-queries-route.ts';
 import { act, advance, buildSeedWorld, invariant, restore, type Seed } from './helpers/rail.ts';
 
+const INCLINE = RAIL_LEGS.findIndex((l) => l.id === 'incline');
 const BAY = RAIL_LEGS.findIndex((l) => l.id === 'bay-cut');
 const copy = (stage: Parameters<typeof buildSeedWorld>[0]): Seed => {
   const s = buildSeedWorld(stage);
@@ -65,4 +67,30 @@ test("a lift and a put-down at the West landing's rack does not mint logs withou
   assert.equal(legRow(s.w, BAY).laid, 0);
   const minted = rail(s.w).depotProduced - produced0;
   assert.ok(minted <= bill, `${minted} logs minted at the West landing for a section of ${bill}, nothing fed`);
+});
+
+// legKitRoom (railway-queries-route.ts) gives line 2's unload at High Gorge the rack's lack first (legRackNeed: fed and
+// racked, not held), then the yard. With section 1's kit lifted off the Gorge rack and on its way to the frame, a line 2
+// train arriving with section 2's kit puts it on the rack, which becomes head 1's rack at the lay: the ns relay skipped.
+test("line 2's unload at High Gorge sends section 2's kit to the yard while section 1's is held on backs", () => {
+  const s = copy('incline-open');
+  const sec = RAIL_LEGS[INCLINE]!.sections[0]!;
+  assert.equal(rail(s.w).depot, sec.logs, "section 1's kit on the Gorge rack");
+  const aboard = () => trains(s.w).filter((t) => t.legKit && RAIL_TRAINS[t.slot]!.line === LINE2);
+  assert.ok(aboard().length > 0, "line 2 carries section 2's kit");
+  for (const pid of ['a', 'b']) {
+    act(s, pid, 'rail.depotTake');
+    act(s, pid, 'rail.depotRailTake');
+  }
+  assert.ok(legRow(s.w, INCLINE).heldLogs > 0, 'held on backs');
+  for (let guard = 0; aboard().length > 0; guard++) {
+    assert.ok(guard < 6000, "line 2 never unloaded section 2's kit");
+    advance(s, 1);
+  }
+  assert.equal(invariant(s.w), null);
+  assert.ok(
+    rail(s.w).depot + legRow(s.w, INCLINE).heldLogs <= sec.logs,
+    `rack ${rail(s.w).depot} + held ${legRow(s.w, INCLINE).heldLogs} past section 1's ${sec.logs}; ` +
+      `yard ${legYard(s.w, INCLINE).logs}`,
+  );
 });
