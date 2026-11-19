@@ -6,7 +6,8 @@
 // prompts wait for the slide. Beyond the railhead the gap reads as unbuilt: the deck ends on a striped beam, stakes
 // mark the bents to come and the next bent's two sockets glow. With bent 13 come the hook pile and its gold pad, the
 // take-off rail, and the joint's west platform with its plank crossing. Both tracks are laid to every railhead (call
-// 51): the stub's crossover is the pair of points 50 to 30 m short of the end, the up track runs on to its own buffer.
+// 51): the stub's crossover is the pair of points 50 to 30 m short of the end (J10, src/place/junctions.ts: its blades
+// are cut out of the rails here and drawn moving by turnout-blades.ts), the up track runs on to its own buffer.
 // Local view over the read facade (`adapter.read`); the sim reads none of it. A restore shows what is built, nothing
 // dropping. Bents 1-6 and Q7's deck are crossing-view.ts's and ring-deck.ts's.
 import * as THREE from 'three/webgpu';
@@ -27,6 +28,9 @@ import { driveDeck, railheadDrawn, railheadEnd, type RailheadDeck } from './rail
 import { outOf } from '../../place/sites.ts';
 import { H, slab } from '../../place/land.ts';
 import { OFFSET_LAT } from '../../place/layout.ts';
+import { crossoverPlan, movedBy, seaCrossovers, uncut } from '../../place/junctions.ts';
+import type { XZY } from '../../place/turnout.ts';
+import type { TrackPoint } from './track.ts';
 import { CROSSING_FOOT_OFF, WORKS } from '../../sim/railway-works-layout.ts';
 import { RING_BRACE, RING_BRACE_PLATFORM, RING_HEAD, RING_HOOK } from '../../sim/railway-ring-layout.ts';
 import { account, aperture, beam, boiler, type ReadWorld } from '../../sim/railway-rows.ts';
@@ -47,7 +51,7 @@ import {
   RACK_BACK,
   SIDE,
   bentU,
-  crossoverSpan,
+  INNER_FROM,
   headOf,
   headU,
   spanFrom,
@@ -298,6 +302,18 @@ export function createRailwayRailhead(
     pitch: 0,
     born: -Infinity,
   });
+
+  // ---------------------------------------------------------------- the stub's crossover (J10)
+  const cross = seaCrossovers().find((x) => x.view === 'railhead')!,
+    plan = crossoverPlan(cross);
+  /** Its two toes for turnout-blades.ts: laid while the railhead is, carried with the deck's end. */
+  const points: TrackPoint[] = plan.toes.map((p) => ({
+    ...p,
+    from: 0,
+    laid: () => opened,
+    retired: () => false,
+    moved: () => (railheadDrawn.live ? railheadEnd() : headU(0)) - headU(0),
+  }));
 
   // ---------------------------------------------------------------- state
   const staticBatch = createBoxBatch(owner, pieces.length + 16);
@@ -565,46 +581,30 @@ export function createRailwayRailhead(
         );
     }
   }
-  /** The rails from Q7's end (u 120) to the railhead's buffer, both tracks, and the stub's crossover. */
+  /** The rails from Q7's end (u 120) to the railhead's buffer, both tracks, and the stub's crossover (J10) as built at
+   * the first head (`cross`), carried `end - headU(0)` out with the deck's end: its timbers, its two rails, its wing and
+   * check rails, and each toe's blade cut out of the through road's inner rail. The two inner rails run from
+   * INNER_FROM on Q7's deck (ring-deck.ts leaves them to this view), where the first heads' crossovers stand. */
   function drawRails(end: number) {
+    const du = end - headU(0),
+      u = (s: number) => s - S(0) + du,
+      cuts = plan.cuts.map((c) => ({ lat: c.lat, s0: u(c.s0), s1: u(c.s1) }));
     for (const lat of [0, OFFSET_LAT])
-      for (const r of [-0.5, 0.5])
-        for (let u = 120; u < end - 1e-6; u += 4)
-          seg(u, lat + r, Math.min(end, u + 4), lat + r, 0.1, 0.12, TOP, COLOURS.rail);
-    const [c0, c1] = crossoverSpan(end);
-    if (c0 >= 120) {
-      const ease = (t: number) => t * t * (3 - 2 * t);
-      const N = 8;
-      for (const r of [-0.5, 0.5])
-        for (let i = 0; i < N; i++) {
-          const u0 = c0 + ((c1 - c0) * i) / N,
-            u1 = c0 + ((c1 - c0) * (i + 1)) / N;
-          seg(
-            u0,
-            OFFSET_LAT * (1 - ease(i / N)) + r,
-            u1,
-            OFFSET_LAT * (1 - ease((i + 1) / N)) + r,
-            0.1,
-            0.12,
-            TOP + 0.005,
-            COLOURS.rail,
-          );
-        }
-      // Long timbers where the crossover runs between the tracks.
-      for (let i = 1; i < N; i++) {
-        const u = c0 + ((c1 - c0) * i) / N;
-        seg(
-          u - 0.21,
-          OFFSET_LAT * (1 - ease(i / N)),
-          u + 0.21,
-          OFFSET_LAT * (1 - ease(i / N)),
-          2.3,
-          0.12,
-          -0.02,
-          COLOURS.stringer,
-        );
+      for (const r of [-0.5, 0.5]) {
+        const inner = (lat === 0) === r < 0;
+        for (let u0 = inner ? INNER_FROM : 120; u0 < end - 1e-6; u0 += 4)
+          for (const [a, b] of uncut(u0, Math.min(end, u0 + 4), lat + r, cuts))
+            seg(a, lat + r, b, lat + r, 0.1, 0.12, TOP, COLOURS.rail);
       }
+    for (const t of plan.timbers) {
+      const mid = (t.lo + t.hi) / 2;
+      seg(u(t.s) - 0.15, mid, u(t.s) + 0.15, mid, t.hi - t.lo, 0.06, 0.02, COLOURS.stringer);
     }
+    for (const r of plan.rails) seg(u(r.a.s), r.a.lat, u(r.b.s), r.b.lat, 0.1, 0.12, TOP + 0.005, COLOURS.rail);
+    // The wing and check rails, world pieces, translated as the head has moved along the straight, graded deck.
+    const by = movedBy(cross.a, du),
+      at = (p: XZY) => ({ x: p.x + by.x, y: p.y + by.y, z: p.z + by.z });
+    for (const { a, b, w } of plan.wings) live.between(at(a), at(b), 0.1 * w, 0.12, COLOURS.rail, TOP);
   }
   function drawEnd(end: number, bare: boolean) {
     // Buffers on both tracks at the railhead, until the rivet makes the line a through one.
@@ -1063,6 +1063,7 @@ export function createRailwayRailhead(
 
   return {
     restore: snap,
+    points,
     /** Where a footing hopping off the wagon lands: the railhead rack's slot k. */
     rackSlot,
     update(dt: number) {

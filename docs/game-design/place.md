@@ -1036,7 +1036,11 @@ beside (the Quarry's south platform, Far Head's east, the Railhead's and Ring Is
 on the second track, 4 m to the west, beside the second platforms. Line 1 does the same between its turnouts. At an
 end the arriving train runs straight in to the east platform and the leaving one takes the end's crossover (Far Head
 before the pier, Ring Island) or turnout (the Pier, the Railhead, a stack head) out to the homeward track; the engine
-still faces out, so it propels its cars home as before. **Levers:** a first platform's lever calls the train going
+still faces out, so it propels its cars home as before. Past the pier head each end's crossover is drawn as points
+(turnouts step 7): the Railhead's, 50 to 30 m short of the deck's end, at every head (it moves out with the head), and
+each stack head's and High Gorge's on the greybox deck, with blades that lie for the next train, timbers under both
+tracks, wing and check rails and, at each toe, a lever between the tracks (the deck's edge is on the other side).
+Ring Island's is still plain crossing rails. **Levers:** a first platform's lever calls the train going
 on and stands at the platform's far end (the Quarry's south lever: **Request stop: to Pier**, or to Far Head before
 the pier is laid); a second platform's lever calls the train home and stands at its Village end (the Quarry's north
 lever was already there; Far Head's west lever moved 19.2 m from the crossing end). **While a halt is the line's open

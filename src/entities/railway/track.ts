@@ -86,6 +86,9 @@ export type TrackPoint = {
   from: number;
   laid: () => boolean;
   retired: () => boolean;
+  /** A junction that moves with its track (the railhead's, J10, listed at the first head): metres along its line it
+   * stands now from where `j` and `t` put it. The line is straight and evenly graded there, so the parts translate. */
+  moved?: () => number;
 };
 /** A `timber` is a turnout's long sleeper (the kit's sleeper stretched, without tie plates), under one of the line's. */
 type PieceKind = 'sleeper' | 'timber' | 'plank' | 'rail' | 'cap' | 'stringer' | 'leg' | 'brace';
@@ -410,7 +413,8 @@ export function buildTrack(
   /** A blade's heel stops no nearer a rail joint than this, or runs on to it. */
   const SLIVER = 0.5;
   const points = junctions()
-    .filter((j) => j.line === spec.id)
+    // The crossovers past the pier head are their own views' (junctions.ts `view`).
+    .filter((j) => j.line === spec.id && !j.view)
     .map((j) => {
       // Where the up track's own rails begin, metres from the toe: the end of each of its rail pieces nearer the toe.
       // The crossover's rails run from its toes (Far Head, J7 and J8); the yard's roads are not this line's.
