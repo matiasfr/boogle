@@ -281,7 +281,12 @@ export const BOILERS = {
 export type BoilerId = keyof typeof BOILERS;
 /** The boiler an install moment's wheels start from, the one the part replaces: the Big boiler's from the long
  * boiler's rate (owner, 18 November 2026, docs/decisions-look.md#d-2026-11-18-decisions-page-look). */
-export const momentFrom = (id: InstallId): BoilerId => (id === 'blast' ? 'boiler' : id === 'big' ? 'long' : 'table');
+export const MOMENT_FROM: Record<InstallId, BoilerId> = {
+  blast: 'boiler',
+  long: 'table',
+  big: 'long',
+  cradle: 'table',
+};
 /** The line's run for the readouts: the Village stop to the line's last stop, in centimetres, or, until the island
  * halt is in the catalogue (generic-lines v26/v27), the brief's planned 1.2 km, which is the run the 10-second rule
  * and the per-minute numbers are about. */

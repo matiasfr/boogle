@@ -492,8 +492,8 @@ Not seen: a phone-width frame, reduced motion, a second player, the steel car ow
 
 **The whole frame goes solid (18 November 2026, done).** The owner's answer ("Keep the numbers; give "have" its own
 solid look", [decision](../decisions-look.md#d-2026-11-18-decisions-page-look)): the whole "have" frame now draws in
-its own shared material, the rope's gold, opaque and still with a brass finish (`garage-selection.ts`,
-`haveMaterial`, made once and never disposed; `createGhostOutlines` takes it as an optional last argument). Every
+its own shared material, the rope's gold, opaque and still with a brass finish (`createGhostOutlines`'
+`solid` mode in `ghost-outline.ts`, made once and never disposed). Every
 dashed ghost keeps 0.6 and the 6 s breath. The finish is a builder's default in
 [agent-calls](../agent-calls.md#graphics-water-sky-and-devices). Stills (`steel-home`, 1200 px):
 [the owned footing wagon in its solid frame](../reports/garage-moment-checkpoint/small-answers-have-frame-6.png),

@@ -386,8 +386,8 @@ ten-footing live trip remain unverified. **Not tested on a device.** No push or 
 
 - [x] **The Big-boiler moment's wheels start from the long boiler's rate.** The moment's run-up started every
   non-blast part from the table boiler's rate (20 m/s) while `watch()` started the Big boiler from the long boiler's;
-  both now read `momentFrom` in `garage-data.ts` (blast from the boiler, big from long, the rest from the table).
-  Printed from that function: the long boiler 25 m/s, the Big-boiler moment's start 25 m/s (was 20), fitted 30 m/s.
+  both now read `MOMENT_FROM` in `garage-data.ts` (blast from the boiler, big from long, the rest from the table).
+  Printed from that table: the long boiler 25 m/s, the Big-boiler moment's start 25 m/s (was 20), fitted 30 m/s.
   Not seen in a browser: no seed has High Gorge, the longer boiler and 6 steel together, and making one is sim work.
 - [x] **The "have" frame is solid** (see [garage-install-moment](garage-install-moment.md), "The whole frame goes
   solid").

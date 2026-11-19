@@ -22,7 +22,7 @@ import { createGarageSelection, type Focus } from './garage-selection.ts';
 import {
   BOILERS,
   INSTALL_ID,
-  momentFrom,
+  MOMENT_FROM,
   INSTALL_PART,
   isInstall,
   MOMENT,
@@ -470,6 +470,8 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     camSnap = true,
     camClock = 0;
   let momentPart: InstallId = 'long';
+  /** The rate a moment's wheels start from: the boiler its part replaces. */
+  const fromRate = () => speedMs(BOILERS[MOMENT_FROM[momentPart]].speed);
   // `facts` is a fresh object each frame, so the part list is built once per frame, not once per question.
   let partsFacts: RoomFacts | null = null,
     partsList: Part[] = [];
@@ -819,7 +821,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     if (part === 4) cradleCopy.root.visible = false;
     pipe.visible = part === 2;
     for (const b of bolts) b.visible = false;
-    spinRate = part === 4 ? today() : speedMs(BOILERS[momentFrom(momentPart)].speed);
+    spinRate = part === 4 ? today() : fromRate();
     phase = 'moment';
     partGroup.visible = true;
     if (hanging) ms = Math.min(ms, MOMENT.quiet - 0.001);
@@ -1065,11 +1067,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     // rows may already say fitted).
     const spin =
       phase === 'moment'
-        ? THREE.MathUtils.lerp(
-            speedMs(BOILERS[momentFrom(momentPart)].speed),
-            spinRate,
-            answered ? Math.min(1, (ms - MOMENT.answer) / 600) : 0,
-          )
+        ? THREE.MathUtils.lerp(fromRate(), spinRate, answered ? Math.min(1, (ms - MOMENT.answer) / 600) : 0)
         : today();
     // The wheels run only in the garage: closed, the copy stands still on the bridge rails.
     wheelAngle += dt * spin * 0.12 * (openT > 0 || phase === 'moment' ? 1 : 0);
