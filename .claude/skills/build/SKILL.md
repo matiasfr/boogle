@@ -30,9 +30,11 @@ that writes the plan carries it out, so it can change the plan when a step turns
    or your brief or a reviewer asks.
 6. **Edit, don't rewrite:** `Edit`, or `npm run patch` for many edits at once. No throwaway patch scripts and no
    whole-file `Write` of a file that exists, unless most of it really changes.
-7. **Commit** in small commits (docs/agents/shipping.md). Ship with `npm run ship` only if your brief says to; otherwise
+7. **Simplify.** When your code changes (not docs) are over ~3 files or ~150 lines, run `/simplify` on the diff
+   before the last check and commit (docs/agents/shipping.md); it changes no behaviour, so re-run the touched checks.
+8. **Commit** in small commits (docs/agents/shipping.md). Ship with `npm run ship` only if your brief says to; otherwise
    leave the commits for the caller.
-8. **Owed proofs are yours.** A rebase, bot run, still or tick mark your branch still owes comes back to this same
+9. **Owed proofs are yours.** A rebase, bot run, still or tick mark your branch still owes comes back to this same
    thread; you have the context a fresh agent would lack.
 
 Report: the plan as built and where it changed, files changed, check results, the paths of the stills you looked at
