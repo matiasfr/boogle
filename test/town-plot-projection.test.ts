@@ -58,22 +58,25 @@ test('a newly laid stretch reaches the shared reader and grows the driver’s tr
   assert.deepEqual(after.slice(before.length), [
     { line: 1, lo: LINE2_STATIONS[0]!.fromCm / 100, hi: LINE2_STATIONS[0]!.toCm / 100, end: 900 },
   ]);
-  const file = 'src/entities/town/model-railway.ts';
   const fit = sourceFunction<typeof import('../src/entities/town/model-railway.ts').fitTrainSet>(
-    file,
+    'src/entities/town/model-railway.ts',
     'fitTrainSet',
     {},
   );
   const plan = sourceFunction<typeof import('../src/entities/town/model-railway.ts').planTrainSet>(
-    file,
+    'src/entities/town/model-railway.ts',
     'planTrainSet',
     { lineAt },
   );
-  const look = sourceFunction<import('../src/entities/town/model-railway.ts').TrainSetLook>(file, 'LOOK', {});
+  const look = sourceFunction<import('../src/entities/town/model-railway.ts').TrainSetLook>(
+    'src/entities/town/model-railway.ts',
+    'LOOK',
+    {},
+  );
   const [solid] = artifact.prefabs['town.driver-table'].colliders as { shape: string; at: number[]; half: number[] }[];
   assert.equal(solid?.shape, 'box');
   const box = sourceFunction<typeof import('../src/entities/town/model-railway.ts').tableBox>(
-    file,
+    'src/entities/town/model-railway.ts',
     'tableBox',
     {},
   )(solid!);
