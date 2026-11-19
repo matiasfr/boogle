@@ -18,6 +18,7 @@ import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, RAIL_YARDS } from './railway-route.
 import { Account, LegYard, Train } from './railway-components.ts';
 import {
   SERVED_LEGS,
+  STOCKED_LEGS,
   gateLeg,
   legDone,
   legHeldRoom,
@@ -56,6 +57,14 @@ export function checkRoute(w: World) {
       !railInt(r.heldRails, legHeldRoom(w, k).rails)
     )
       bad('leg bounds');
+    // The stand-in mints a stocked leg's first kit once (legKitStock): until its first lay nothing else loads for it,
+    // so what it has loaded never passes that section's bill (the review of greybox leg 2, P2: over-minting).
+    if (
+      STOCKED_LEGS.includes(k) &&
+      r.laid === 0 &&
+      (r.loadedLogs > leg.sections[0]!.logs || r.loadedRails > leg.sections[0]!.rails)
+    )
+      bad('stand-in over its bill');
     // Laying exactly while the current section's bill is full (the last unit starts it; laying spends it).
     if (r.start >= 0 !== (!!sec && r.logs === sec.logs && r.rails === sec.rails)) bad('leg laying');
     // Nothing happens on a leg before it opens: not built, or the leg before it not complete (the rivet, for the first).

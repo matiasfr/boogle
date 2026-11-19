@@ -6,7 +6,9 @@ import { LINE2, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import { RAIL_LEGS } from '../src/sim/railway-route.ts';
 import { forge, rail, trains } from '../src/sim/railway-rows.ts';
 import { legOpen, legRow, legYard } from '../src/sim/railway-queries-route.ts';
-import { act, advance, buildSeedWorld, invariant, restore, type Seed } from './helpers/rail.ts';
+import { act, advance, buildSeedWorld, invariant, pilesWithIds, restore, type Seed } from './helpers/rail.ts';
+import { Leg } from '../src/sim/railway-components.ts';
+import { checkRoute } from '../src/sim/railway-check-route.ts';
 
 const INCLINE = RAIL_LEGS.findIndex((l) => l.id === 'incline');
 const BAY = RAIL_LEGS.findIndex((l) => l.id === 'bay-cut');
@@ -54,7 +56,9 @@ test("a lift and a put-down at the West landing's rack does not mint logs withou
   // Take what a back holds, put it down beside the rack, take again: the frame is never fed.
   for (let k = 0; k < 4; k++) {
     const n = act(s, 'a', 'rail.depotTake');
-    assert.ok(n > 0, `cycle ${k}: a takes logs off the rack`);
+    // Builder's fix (the stand-in mints the section's kit once): put-down units are not restocked, so the rack runs out
+    // after the first cycles and a later take finds nothing; only the first must take (the review's claim is below).
+    if (k === 0) assert.ok(n > 0, `cycle ${k}: a takes logs off the rack`);
     // Put down in piles a metre apart (a pile holds fewer than a back may carry).
     for (let left = n, j = 0; left > 0; j++) {
       const put = act(s, 'a', 'rail.drop', { x: 80100 + 100 * (8 * k + j), y: 490, z: -100, n: left, kind: 0 });
@@ -93,4 +97,33 @@ test("line 2's unload at High Gorge sends section 2's kit to the yard while sect
     `rack ${rail(s.w).depot} + held ${legRow(s.w, INCLINE).heldLogs} past section 1's ${sec.logs}; ` +
       `yard ${legYard(s.w, INCLINE).logs}`,
   );
+});
+
+// Builder's follow-up: the put-down units stay in their piles, retaken by hand, so the section still completes with
+// nothing minted again; the load check refuses a stand-in over its bill.
+test('units put down at the West landing are taken up again and the first section lays; nothing more is minted', () => {
+  const s = copy('bay-open');
+  const produced0 = rail(s.w).depotProduced;
+  const n = act(s, 'a', 'rail.depotTake');
+  assert.ok(n > 0);
+  for (let left = n, j = 0; left > 0; j++)
+    left -= act(s, 'a', 'rail.drop', { x: 80100 + 100 * j, y: 490, z: -100, n: left, kind: 0 });
+  advance(s, 5);
+  assert.equal(rail(s.w).depotProduced, produced0, 'not restocked');
+  for (const p of pilesWithIds(s.w)) if (p.kind === 0) act(s, 'a', 'rail.take', { id: p.id });
+  for (let guard = 0; legRow(s.w, BAY).start < 0; guard++) {
+    assert.ok(guard < 200, 'the first section fed');
+    for (const pid of ['a', 'b']) {
+      act(s, pid, 'rail.depotTake');
+      act(s, pid, 'rail.depotRailTake');
+      act(s, pid, 'rail.legStock', { leg: BAY });
+    }
+    advance(s, 1);
+  }
+  assert.equal(rail(s.w).depotProduced, produced0, 'nothing minted again');
+  assert.equal(invariant(s.w), null);
+  // The load check catches a stand-in that minted past its bill.
+  const over = copy('bay-open');
+  Object.assign(over.w.mut(Leg, over.w.lookup(Leg, BAY)!)!, { loadedLogs: RAIL_LEGS[BAY]!.sections[0]!.logs + 1 });
+  assert.throws(() => checkRoute(over.w), /stand-in over its bill/);
 });

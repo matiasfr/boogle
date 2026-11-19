@@ -306,8 +306,23 @@ pins (gate 8/9 settled worst 1,340, gate 14 rivet to Gorge 3,919 of 3,996, gate 
 bell-reached 18,756, bay-mid 19,057, bay-reached 20,660.
 
 **Between this ship and step 4** a room past `gorge-reached` runs `ns` and `bay` trains over track nobody draws, with
-no frame, rack, barrier, head platform or seeds post in view, and a return to a head can land on its platform point over
-the sea. That is the plan's order (steps 1 to 3 as one bump, views after); worth knowing before a playtest.
+no frame, rack, barrier, head platform or seeds post in view. A return to a leg 2 halt does not land over the sea: its
+landing has no jump `land` (unchecked), so the return search (`src/place/return-spot.ts`) probes for a surface within
+8 m, finds none at a head, gives that halt up to 2.5 s of its 8 s budget and goes on to the next open halt, or Home.
+**Production prebuilds every `JUMPS` row** (`OFFERED_STAGES`, `server/src/seeds/prebuild.ts`), so `POST /jump`
+reaches `incline-open`, `bell-reached`, `bay-open` and `bay-reached` straight after deploy, landing at the usual spawn
+(they have no `land`). That is the plan's order (steps 1 to 3 as one bump, views after); worth knowing before a
+playtest.
+
+**Review fixes (18 November).** The independent review found the rack's need blind to units lifted off it and still
+held (`legRackNeed`): every lift off the West landing's first rack restocked it at once (P2, minting), and at High
+Gorge a line 2 train racked section 2's kit while section 1's was carried, skipping the `ns` relay (P3).
+`legRackNeed` now counts held units (as `legKitNeed` does), for every leg. **And the stand-in mints its section's kit
+once** (its loaded counts never pass the bill; the load check refuses one that does): a unit put down at the West
+landing is taken up again from its pile, and a leaver's are made up by hand (chopped logs, rails off the forge rack),
+not minted again. That narrows "a unit lifted off a rack and lost is owed again" for the stand-in alone, where no train
+bounds the rate; leg 1's and the incline's racks keep the rule. No hash golden moved (the seeds hold nothing across a
+tick boundary where it matters) and the leg 2 fuzz figures are unchanged.
 
 **Checkpoint B (leg 2 playable).** Named proofs, run once: `npm run loop -- run` for one to three players with idle
 seconds per wait; the bot segment `--from gorge-reached --to bay`; `npm run test:net`; `npm run scenario --

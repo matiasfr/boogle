@@ -142,15 +142,20 @@ export function legYardHome(w: World, k: number) {
 }
 /** The stand-in (greybox-leg2.md, "the bay cut's first kit is stocked", open question 2): an open leg minted at its
  * own line's home with nothing laid, on a line with no track yet (no train can bring its first kit), has its rack
- * stocked from Home's stock: what the section lacks, logs minted, rails off the forge rack as they are there (as kit
- * loading waits for them). How goods cross Home to the West landing is still open (greybox-route section 3). */
+ * stocked from Home's stock: what the section lacks (fed, racked and held counted: legRackNeed), logs minted, rails off
+ * the forge rack as they are there (as kit loading waits for them). It stands in for one train's load, so it mints the
+ * section's kit once: what it has loaded never passes the bill (the review of greybox leg 2, P2). A unit put down there
+ * is taken up again from its pile, and a leaver's are made up by hand (chopped logs, rails off the forge rack), not
+ * minted again. How goods cross Home to the West landing is still open (greybox-route section 3). */
 export function legKitStock(w: World) {
   for (const k of STOCKED_LEGS) {
     if (legRow(w, k).laid > 0 || !legOpen(w, k)) continue;
     const need = legRackNeed(w, k),
+      row = legRow(w, k),
+      bill = RAIL_LEGS[k]!.sections[0]!,
       forge = w.get(Forge, w.single(Forge))!,
-      logs = need.logs,
-      rails = Math.min(need.rails, forge.rack);
+      logs = Math.max(0, Math.min(need.logs, bill.logs - row.loadedLogs)),
+      rails = Math.max(0, Math.min(need.rails, bill.rails - row.loadedRails, forge.rack));
     if (!logs && !rails) continue;
     const rail = w.mut(Rail, w.single(Rail))!,
       m = w.mut(Leg, legId(w, k))!;
