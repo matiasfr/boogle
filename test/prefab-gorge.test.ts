@@ -47,6 +47,7 @@ test('Gorge collider and placement values match the old massing', async (t) => {
   builders.set('town.museum-exhibit', () => new THREE.Group());
   builders.set('town.house-parts', () => new THREE.Group());
   builders.set('town.room-shell', () => new THREE.Group());
+  builders.set('town.yard-shell', () => new THREE.Group());
   builders.set('town.room-proxy', () => new THREE.Group());
   builders.set('town.boogler-statue', () => new THREE.Group());
   builders.set('town.statue-scaffold', () => new THREE.Group());

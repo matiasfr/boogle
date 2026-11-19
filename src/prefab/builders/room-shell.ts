@@ -1,10 +1,11 @@
 // Construction parts retain the shared plan's matrices, palettes, tapered gables and submission order.
 import { registerBuilder, type ConstructionBuild } from '../builders.ts';
 import type { JsonObject } from '../types.ts';
-import { housePlan, type HouseSpec, type Plan } from '../../place/building-plans.ts';
+import { housePlan, yardPlan, type HouseSpec, type Plan } from '../../place/building-plans.ts';
 declare module '../names.ts' {
   interface BuilderNames {
     'town.room-shell': true;
+    'town.yard-shell': true;
   }
 }
 let previous = '',
@@ -52,3 +53,18 @@ export function roomShell(p: JsonObject): ConstructionBuild {
   return { construction: { plan: cached, phase: p.phase, parts: [cached[p.phase][index]!] } };
 }
 registerBuilder('town.room-shell', roomShell);
+
+// The loader yard's shed and footings (yard-shape.ts): one plan per frame, both phases, like a plot house's shell.
+let yardKey = '',
+  yard: Plan | undefined;
+registerBuilder('town.yard-shell', (p): ConstructionBuild => {
+  for (const key of ['x', 'y', 'z', 'yaw'] as const)
+    if (typeof p[key] !== 'number' || !Number.isFinite(p[key])) throw new Error('yard: missing runtime frame');
+  if (p.phase !== 'scaffold' && p.phase !== 'pieces') throw new Error('yard: unknown construction phase');
+  const signature = JSON.stringify([p.x, p.y, p.z, p.yaw]);
+  if (!yard || signature !== yardKey) {
+    yard = yardPlan({ x: p.x as number, z: p.z as number, yaw: p.yaw as number }, p.y as number);
+    yardKey = signature;
+  }
+  return { construction: { plan: yard, phase: p.phase, parts: yard[p.phase] } };
+});
