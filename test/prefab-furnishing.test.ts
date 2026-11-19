@@ -658,7 +658,7 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
       assert.ok(activeBodies.delete(b));
     },
   };
-  const up = { house: true, shop: false, museum: false, gate: true };
+  const up: Record<string, boolean> = { house: true, shop: false, museum: false, gate: true };
   const player = { body: null as { interpolatedPosition: { x: number; y: number; z: number } } | null };
   const camera = new THREE.PerspectiveCamera();
   const cam = { pitch: 0, yaw: 0 };
@@ -735,7 +735,8 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
       mergeGeometries,
       H: ground,
       ROOM_GROUP: 8,
-      ROOM_PLOTS: plots,
+      ROOMS: plots,
+      TRADE: { buildTicks: 100 },
       ROOM_FLOOR,
       toWorld: (x: number) => x + 800,
       artifact,
@@ -748,6 +749,7 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
       shopShell: JSON.parse(fs.readFileSync('content/built/levels/room-shop.json', 'utf8')),
       museumShell: JSON.parse(fs.readFileSync('content/built/levels/room-museum.json', 'utf8')),
       gateShell: JSON.parse(fs.readFileSync('content/built/levels/room-gate.json', 'utf8')),
+      plot3Shell: JSON.parse(fs.readFileSync('content/built/levels/room-plot3.json', 'utf8')),
       instantiate: (...args: Parameters<typeof runtime.instantiate>) => {
         const instance = runtime.instantiate(...args);
         instances.push(instance);
@@ -786,7 +788,7 @@ test('town rooms retain old shells, plot boards and state-driven transitions', (
     },
   );
   const rooms = createRooms(owner as unknown as import('../src/render/owned-view.ts').OwnedView, {
-    up: (id) => up[id],
+    up: (id) => up[id] ?? false,
   });
   rooms.stakeBoard(rooms.rooms.shop, BOARDS.shopPlot);
   rooms.stakeBoard(rooms.rooms.museum, BOARDS.museumPlot);
@@ -1225,4 +1227,65 @@ test('site body records retain the old construction, ejection, snap and teardown
     old.events.splice(before, 0, old.events.splice(i, 1)[0]);
   }
   prefabGolden(recorded, old, 'record site lifecycle');
+});
+
+test('a room going solid leaves a player resting on its slab apron and moves one inside its walls', () => {
+  const run = (x: number) => {
+    const moved: number[][] = [];
+    const player = { position: { x, y: 18.45, z: 31 }, velocity: new THREE.Vector3() };
+    const sites = sourceModule<typeof import('../src/place/sites.ts')>(fs.readFileSync('src/place/sites.ts', 'utf8'), {
+      THREE,
+      PLAYER_R: 0.45,
+      siteExit,
+      ROOM_GROUP: 8,
+      me: { body: player },
+      H: () => 18,
+      addStatic: () => ({}),
+      teleport: (_body: unknown, tx: number, ty: number, tz: number) => void moved.push([tx, ty, tz]),
+      paintSite() {},
+      dustRing() {},
+      thump() {},
+      dropSet: () => ({ mesh: {}, snap() {}, drop() {}, update() {}, busy: () => false }),
+    });
+    const box = () => ({
+      x: 70,
+      y: 18,
+      z: 31,
+      local: new THREE.Matrix4(),
+      color: new THREE.Color(),
+      tall: false,
+      pop: 0,
+    });
+    // A room's walls, and its 14 cm slab reaching 0.8 m past them (prefab/resolve-prefab.ts, room-hull 7).
+    const plan: import('../src/place/sites.ts').Plan = {
+      x: 70,
+      y: 18,
+      z: 31,
+      yaw: 0,
+      scaffold: [box()],
+      pieces: [box()],
+      FRAME: 1,
+      WALLS: 1,
+      ROOFED: 1,
+      hulls: [
+        { dx: 2, dy: 1.85, dz: 0, hx: 0.14, hy: 1.85, hz: 2.14, room: true },
+        { dx: 0, dy: 0.07, dz: 0, hx: 2.8, hy: 0.07, hz: 2.8 },
+      ],
+      poles: [],
+      keepOut: { dx: 0, dy: 1.85, dz: 0, hx: 2.1, hy: 1.85, hz: 2.1 },
+      hw: 2,
+      hd: 2,
+      smoke: null,
+      top: { x: 70, y: 22, z: 31 },
+    };
+    const record = { bodies: [], setEnabled() {} };
+    const site = sites.addSite('apron', plan, 1, { hulls: [record], poles: [] });
+    const dispose = sites.buildSites({ cleanup() {} } as unknown as import('../src/render/owned-view.ts').OwnedView);
+    sites.snapSite(site, true);
+    dispose();
+    return moved;
+  };
+  assert.deepEqual(run(70 + 2.6), [], 'resting on the apron, beside the wall: left in place');
+  assert.equal(run(70 + 2.3).length, 1, 'against the wall: moved clear');
+  assert.equal(run(70 + 1.5).length, 1, 'inside the walls: moved out');
 });

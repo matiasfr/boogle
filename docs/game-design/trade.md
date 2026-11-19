@@ -95,9 +95,12 @@ Only an accepted server purchase spends the shared box and starts construction. 
 price, the first offer is 150 Boogles; after buying it the second rises from 400 to 800. The third offer's base is 800,
 so after both earlier buys its price is 1,600. A box above a reduced cap retains its Boogles; further fares stop
 landing until it has room. Historical `Plot.paid` values are preserved. The pile and board clear,
-the house's floor, frame, walls and roof fall into place, and its closed shell stands after 100 ticks (10 seconds).
+the house's floor, frame, walls and roof fall into place, and it stands after 100 ticks (10 seconds). The first
+house (trade plot 0, town slot `plot3`, board "Plot 1") goes up as a walk-in room on the `house` kit, its open
+doorway facing the quarry road and its board, with the indoor cutaway and camera of every room
+([first house](../brainstorms/first-house-resident.md), step 1); the yard and the third house keep their closed shells.
 Little guys gather and use their existing town lines. A player inside the footprint is moved to its edge as the
-hulls arrive. Reloads use the accepted purchase tick to resume or snap completed construction. Each completed
+hulls arrive; one resting beside it, on a room's slab or doorstep, is left where they stand. Reloads use the accepted purchase tick to resume or snap completed construction. Each completed
 fare-raising house adds one rider per minute in each direction. Every bought building doubles the remaining prices
 immediately, before construction finishes. Current main distinguishes the second offer (physical plot2): its board
 shows `Every train`, its house shell still goes up and its loader jib enables at completion, but its riders value

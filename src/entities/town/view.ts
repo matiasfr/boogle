@@ -88,14 +88,18 @@ export async function createTownView(read: () => TownLook | null) {
     hush: () => conversation.open || rewardUp,
   };
   // The house and gate cottage stand from the start; Fine Prices and the museum open on the first path (T5, T3). The shop needs this
-  // player's wardrobe, which the wardrobe entity starts on the production railway.
+  // player's wardrobe, which the wardrobe entity starts on the production railway. The first bought house (trade plot
+  // 0, slot plot3) goes up from its accepted buy, on the shared clock the plots read (./plots.ts).
   const clothes = wardrobe();
+  const FIRST_HOUSE = 0;
   const rooms = roomKit.createRooms(owner, {
     up: (id) =>
       id === 'house' ||
       id === 'gate' ||
       (id === 'museum' && env.has('path')) ||
-      (id === 'shop' && !!clothes && env.has('path')),
+      (id === 'shop' && !!clothes && env.has('path')) ||
+      (id === 'plot3' && plots.since(FIRST_HOUSE) !== undefined),
+    since: (id) => (id === 'plot3' ? plots.since(FIRST_HOUSE) : undefined),
   });
   rooms.stakeBoard(rooms.rooms.shop, lines.BOARDS.shopPlot);
   rooms.stakeBoard(rooms.rooms.museum, lines.BOARDS.museumPlot);
@@ -138,7 +142,9 @@ export async function createTownView(read: () => TownLook | null) {
   const museum = museumKit.createMuseum(owner, rooms, {
     *buildings() {
       yield* opening;
+      // The bought plots' rooms stay off the table, as their closed houses were.
       for (const r of Object.values(rooms.rooms)) {
+        if (r.id === 'plot3') continue;
         const q = r.site;
         if (q.state !== 'none') yield { plan: q.plan, grow: q.state === 'done' ? 1 : q.t / q.doneAt };
       }
@@ -168,7 +174,7 @@ export async function createTownView(read: () => TownLook | null) {
   // Empty plot outlines and mats, the monument, and the delivered freight at the priced plots.
   createTownBlockout(owner);
   createTownStreets(owner);
-  const plots = createTownPlots(owner);
+  const plots = createTownPlots(owner, new Map([[FIRST_HOUSE, rooms.rooms.plot3.site]]));
   const siteView = sites.buildSites(owner);
   plots.update(read()?.plots ?? null);
   rooms.snap();
@@ -223,7 +229,13 @@ export async function createTownView(read: () => TownLook | null) {
       newest: newestTownFact(facts),
       level: townLevel(facts),
       population: townPopulation(facts),
-      rooms: { house: room('house'), shop: room('shop'), museum: room('museum'), gate: room('gate') },
+      rooms: {
+        house: room('house'),
+        shop: room('shop'),
+        museum: room('museum'),
+        gate: room('gate'),
+        plot3: room('plot3'),
+      },
       indoors: { room: rooms.indoors.room?.id ?? null, inside: rooms.indoors.inside?.id ?? null },
       houseStage: house.stage(),
       museumBits: museum.shown(),

@@ -12,7 +12,7 @@ import { toWorld } from '../../place/layout.ts';
 import { H } from '../../place/terrain.ts';
 import { TRADE } from '../../sim/railway-trade-layout.ts';
 import type { TownLook } from './town-read.ts';
-import { addSite, startSite, snapSite } from '../../place/sites.ts';
+import { addSite, startSite, snapSite, type Site } from '../../place/sites.ts';
 import { createGhostOutlines } from '../../render/ghost-outline.ts';
 import { advanceHold } from '../../components/hold/view.ts';
 import { railwayCommands, railwayWorldRead, onRailwayCommands } from '../railway/state.ts';
@@ -98,7 +98,9 @@ function paintBoard({ g, cw, ch }: Pick<SignBoard, 'g' | 'cw' | 'ch'>, lines: re
   });
 }
 
-export function createTownPlots(owner: OwnedView) {
+/** `opened`: the plots whose building is a walk-in room (./rooms.ts builds it, on the same clock): its site, read here
+ * for the ghost and the inspection. Their board, stakes, piles and ghost stay here; their shell and hulls are the room's. */
+export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Site> = new Map()) {
   const kit = loadLevelArtifact(level, definitions).placements;
   const prices = TRADE.plots[0];
   const slotsPerPlot = kit.reduce((n, p) => {
@@ -185,31 +187,38 @@ export function createTownPlots(owner: OwnedView) {
     const jibPaint = (jib?.root.getObjectByName('mast') as Mesh<BoxGeometry, MeshStandardMaterial> | undefined)
       ?.material;
     jibPaint?.color.set(LOADER_PAINT.bare);
-    const shell = ['scaffold', 'pieces'].map((phase) =>
-      instantiate(
-        shellPrefab,
+    const room = opened.get(k);
+    const site = room ?? ownSite();
+    const plan = site.plan;
+    function ownSite() {
+      const shell = ['scaffold', 'pieces'].map((phase) =>
+        instantiate(
+          shellPrefab,
+          {
+            id: `plot.${k}.${phase}`,
+            prefab: shellPrefab,
+            pos: [0, 0, 0],
+            params: { ...params, phase },
+          },
+          { owner },
+        ),
+      );
+      const hull = instantiate(
+        hullPrefab,
         {
-          id: `plot.${k}.${phase}`,
-          prefab: shellPrefab,
-          pos: [0, 0, 0],
-          params: { ...params, phase },
+          id: `plot.${k}.hull`,
+          prefab: hullPrefab,
+          pos: [params.x, params.y, params.z],
+          rot: [building.yaw, 0, 0],
         },
         { owner },
-      ),
-    );
-    const plan = shell[0]!.construction[0]!.plan;
-    const hull = instantiate(
-      hullPrefab,
-      {
-        id: `plot.${k}.hull`,
-        prefab: hullPrefab,
-        pos: [params.x, params.y, params.z],
-        rot: [building.yaw, 0, 0],
-      },
-      { owner },
-    );
-    hull.setEnabled(false);
-    const site = addSite(`plot.${k}`, plan, (TRADE.buildTicks / 10 - 0.3) / 9.1, { hulls: [hull], poles: [] });
+      );
+      hull.setEnabled(false);
+      return addSite(`plot.${k}`, shell[0]!.construction[0]!.plan, (TRADE.buildTicks / 10 - 0.3) / 9.1, {
+        hulls: [hull],
+        poles: [],
+      });
+    }
     const ghost = createGhostOutlines(owner, 1024, 0.32, 0.14, 0.09);
     if (loader) {
       // The yard's silhouette: the shed as one box, each footing, the jib's solids and its rope.
@@ -295,6 +304,9 @@ export function createTownPlots(owner: OwnedView) {
     });
     return {
       k,
+      room: !!room,
+      /** An opened plot's seconds since its accepted buy, for its room; undefined while unbought or unread. */
+      since: undefined as number | undefined,
       loader,
       jib,
       jibPaint,
@@ -323,6 +335,8 @@ export function createTownPlots(owner: OwnedView) {
   });
   return {
     release,
+    /** An opened plot's seconds since its accepted buy, as of the last `update`; undefined while it stands unbought. */
+    since: (k: number) => plots[k]?.since,
     targets: () => targets,
     inspect: () =>
       plots.map((p) => ({
@@ -373,7 +387,9 @@ export function createTownPlots(owner: OwnedView) {
         const offered = valid && bought < 0 && (staked?.includes(p.k) ?? false),
           visible = valid && bought < 0 && (offered || p.k === next);
         const price = valid ? drawn(plotPrice(w!, 0, p.k, pricePct)) : 0;
-        if (bought < 0) {
+        // An opened plot's room raises itself from `since` (./rooms.ts); the rest are built here.
+        if (p.room) p.since = bought < 0 ? undefined : (tick - bought) / 10;
+        else if (bought < 0) {
           if (p.site.state !== 'none') snapSite(p.site, false);
         } else if (tick >= bought + TRADE.buildTicks) {
           if (p.site.state !== 'done') snapSite(p.site, true);

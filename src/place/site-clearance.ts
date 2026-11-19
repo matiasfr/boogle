@@ -13,12 +13,12 @@ export function siteExit(
   distanceToSolid?: (point: typeof position) => number,
 ) {
   const { x, z, c: cos, s: sin } = foot;
-  // Standing in the plot when the walls go up: you're moved to the nearest edge.
+  // Standing in the plot when the walls go up: you're moved to the nearest edge, clear of it. Only in it: next to it
+  // (on a doorstep) is the solids' business below.
   const pos = { x: position.x, z: position.z };
+  const kept = keepOut && { ...foot, hw: keepOut.hx, hd: keepOut.hz };
   let moved =
-    !!keepOut &&
-    position.y < y + keepOut.hy * 2 &&
-    outOf({ ...foot, hw: keepOut.hx, hd: keepOut.hz }, pos, PLAYER_R + 0.2);
+    !!kept && position.y < y + keepOut.hy * 2 && outOf(kept, { ...pos }, 0) && outOf(kept, pos, PLAYER_R + 0.2);
   if (!moved) {
     // A saved position can overlap a roof or the slab beyond keepOut. Check each of Buddy's spheres against the boxes,
     // including scaffold solids on a build, then clear the whole footprint before enabling any of them.

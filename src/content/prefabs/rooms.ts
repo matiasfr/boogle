@@ -1,14 +1,16 @@
 // Authored recipe operands only. Native construction math stays in the runtime builder.
 import { definePrefab, type PrefabDef } from '../../prefab/types.ts';
-import { ROOM_PLOTS } from '../../place/layout.ts';
+import { ROOMS } from '../../place/layout.ts';
 const looks = {
   house: { wall: '#e8dcc0', post: '#7f5630', roof: '#c9a86a', rise: 2.5, smoke: true },
   shop: { wall: '#f0c98a', post: '#8a4a2c', roof: '#c4453a', rise: 2.6, smoke: false },
   museum: { wall: '#c8c3b4', post: '#b2ad9f', roof: '#4d5560', rise: 2.8, smoke: false },
   gate: { wall: '#e8dcc0', post: '#7f5630', roof: '#b99a60', rise: 2.5, smoke: true },
+  // The first bought house keeps the closed plot house's look (town-plot-house.ts), only open: no chimney.
+  plot3: { wall: '#e8dcc0', post: '#7f5630', roof: '#c9a86a', rise: 2.5, smoke: false },
 };
 export const prefabs: PrefabDef[] = Object.entries(looks).flatMap(([id, look]) => {
-  const p = ROOM_PLOTS[id as keyof typeof ROOM_PLOTS];
+  const p = ROOMS[id as keyof typeof ROOMS];
   const spec = {
     w: p.w,
     d: p.d,
@@ -18,7 +20,11 @@ export const prefabs: PrefabDef[] = Object.entries(looks).flatMap(([id, look]) =
     roof: look.roof,
     rise: look.rise,
     smoke: look.smoke,
-    ...(id === 'house' || id === 'gate' ? { wallPalette: 'walls' } : id === 'museum' ? { wallPalette: 'stone' } : {}),
+    ...(id === 'house' || id === 'gate' || id === 'plot3'
+      ? { wallPalette: 'walls' }
+      : id === 'museum'
+        ? { wallPalette: 'stone' }
+        : {}),
     postPalette: id === 'museum' ? 'stone' : 'timber',
   };
   const records: PrefabDef[] = [];
