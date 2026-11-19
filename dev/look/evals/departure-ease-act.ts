@@ -1,4 +1,5 @@
-// The action for ./departure-ease.ts (its header has the command): walk the last load into Q5's frame, which funds the
+// npm run look -- --real --rail-seed q5-carry --eval dev/look/evals/departure-ease.ts --action dev/look/evals/departure-ease-act.ts --video --seconds 30 --cam 1186,36,-18 --look 1175,24.5,-25 --name departure-ease --question "Can a player at Q5's frame step aboard the layer as it pulls away?"
+// The action for ./departure-ease.ts: walk the last load into Q5's frame, which funds the
 // stretch, wait on the server's ticks for laying to start, then run and jump at the layer's deck until aboard. Logs the
 // tick laying started, the tick aboard and the layer's speed then (from the funded job's own timing), and rides on.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');

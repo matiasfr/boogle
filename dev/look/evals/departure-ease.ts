@@ -1,5 +1,5 @@
-// npm run look -- --real --rail-seed q5-carry --eval dev/look/evals/departure-ease.ts --action dev/look/evals/departure-ease-act.ts --video --seconds 30 --cam 1178,31,-38.3 --look 1174.5,25,-24.6 --name departure-ease --question "Can a player at Q5's frame step aboard the layer as it pulls away?"
-// (the camera: 9 m beside the track 14 m past Q5's start, looking back at the frame the layer leaves.)
+// npm run look -- --real --rail-seed q5-carry --eval dev/look/evals/departure-ease.ts --action dev/look/evals/departure-ease-act.ts --video --seconds 30 --cam 1186,36,-18 --look 1175,24.5,-25 --name departure-ease --question "Can a player at Q5's frame step aboard the layer as it pulls away?"
+// (the camera: above the track 15 m past Q5's start, looking back at the frame the layer leaves.)
 // G31/G32 proof (v63, a laying machine eases out over 50 ticks): on the accepted q5-carry seed (Q5's 24 rails in its
 // frame, its 24 logs on the depot rack) carry the logs in by ordinary inputs, holding the last load back at the rack.
 // The action (./departure-ease-act.ts) delivers it, which funds Q5, and steps aboard once the server starts laying.
