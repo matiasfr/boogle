@@ -15,7 +15,7 @@ import {
 import { RING_HALT, RING_HEAD, RING_JOINT_UP, RING_STEEL_WORKS, ringAt } from '../sim/railway-ring-layout.ts';
 import { CROSSING_BENTS, PIER_STOP, SHED_TABLE, WORKS_KILN, WORKS_RACK } from '../sim/railway-works-layout.ts';
 import { RAIL_LINES } from '../sim/railway-lines.ts';
-import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, legFrame, legRack } from '../sim/railway-route.ts';
+import { RAIL_GRANTS, RAIL_LEGS, legFrame, legRack } from '../sim/railway-route.ts';
 
 /** Where a jump-in lands, in metres on world axes; y is the surface stood on (terrain, pad or deck). */
 export type JumpLand = { x: number; y: number; z: number; yaw?: number };
@@ -84,14 +84,6 @@ const GORGE_HALT = RAIL_LINES[1]!.halts.find((h) => h.name === 'High Gorge')!.pl
   // The halt's point is on the rails; the north platform (the down track's, lat +1.8 to +6.3: route-greybox/massing.ts)
   // lies 4 m to the north, along -C of the split's frame (-0.5162, 0.8565), and a train stands on the rails.
   GORGE_LAND = near(GORGE_HALT, 0.5162 * 4.05, -0.8565 * 4.05, GORGE_HALT.y / 100 + 0.9, RAIL_GRANTS[0]!.at);
-
-/** Greybox leg 2's first frames and racks, and the seeds post (docs/plans/greybox-leg2.md, step 3's lands). */
-const INCLINE_FRAME_1 = legFrame(RAIL_LEGS[1]!, 0),
-  INCLINE_RACK_1 = legRack(RAIL_LEGS[1]!, 0),
-  BAY_FRAME_1 = legFrame(RAIL_LEGS[2]!, 0),
-  BAY_RACK_1 = legRack(RAIL_LEGS[2]!, 0),
-  BAY_MID_1 = { x: (BAY_FRAME_1.x + BAY_RACK_1.x) / 2, z: (BAY_FRAME_1.z + BAY_RACK_1.z) / 2 },
-  SEEDS_AT = RAIL_GRANTS.find((g) => g.id === 'seeds')!.at;
 
 // B2: clear of the first board's post, 1.8 m toward the hall; the built landing is on the green,
 // east of the statue, facing the house. Surface/clearance checked in the live collision probe and both stills.
@@ -277,35 +269,31 @@ export const JUMPS: readonly Jump[] = [
     land: GORGE_LAND, // the Gorge halt's north platform, facing the pickup on the rim
   },
   // Greybox leg 2 (docs/plans/greybox-leg2.md, step 3): the room fast-forward's rows, tooling only. Labels and lines are
-  // placeholders. The lands stand on surfaces the massing already has; no still has checked them yet (step 4's).
+  // placeholders. No `land` yet: a jump land is a checked landing (src/place/return-spot.ts reads every one as checked
+  // with a still, by x and z alone, which cannot tell Bell Rock's two levels apart), so each waits for step 4's still.
   {
     stage: 'incline-open',
     menu: false,
     label: 'Incline open',
     line: "The barrier is open; the incline's first kit is on the Gorge rack",
-    land: near(INCLINE_FRAME_1, 0, 0, INCLINE_FRAME_1.y / 100, INCLINE_RACK_1), // on incline-s at frame 1, facing the rack
   },
   {
     stage: 'bell-reached',
     menu: false,
     label: 'Bell Rock reached',
     line: 'The incline is laid to Bell Rock; the crystal seeds wait on the lower deck',
-    land: near(SEEDS_AT, 2.99, 0.18, SEEDS_AT.y / 100, SEEDS_AT), // the lower deck, 3 m east of the seeds post, facing it
   },
   {
     stage: 'bay-open',
     menu: false,
     label: 'Bay cut open',
     line: "The seeds are taken; the bay cut's first kit is on the West landing's rack",
-    land: near(BAY_MID_1, 0, 0, BAY_FRAME_1.y / 100, BAY_FRAME_1), // the apron between rack 1 and frame 1, facing the frame
   },
   {
     stage: 'bay-reached',
     menu: false,
     label: 'Bay cut laid',
     line: 'Both new lines run to Bell Rock; Home is a minute away',
-    // Bell Rock's upper deck (src/content/levels/leg2.ts, marks.upperDeck), facing the Canopy barrier.
-    land: near({ x: -8913, z: -86542 }, 0, 0, 15.9, RAIL_GATES.find((g) => g.id === 'canopy')!.at),
   },
 ];
 /** The rows a menu lists: every row but the tooling-only ones. */

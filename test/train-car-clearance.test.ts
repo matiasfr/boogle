@@ -255,9 +255,10 @@ test('buffers never stand in each other or in a deck: every 0.1 m of both lines,
 
 test('the couplings batch holds every train of the fleet, and the seated rider and the rack are found', () => {
   // Review: guard the fleet against every consist, including coach, wagon and steel car.
-  // Each slot is bounded independently even though only one wagon is fitted at a time.
-  assert.equal(RAIL_TRAINS.length, 7);
-  assert.equal(couplingCapacity(RAIL_TRAINS.length), 35);
+  // Each slot is bounded independently even though only one wagon is fitted at a time. v62 (greybox leg 2): the ns and
+  // bay lines' four train rows.
+  assert.equal(RAIL_TRAINS.length, 11);
+  assert.equal(couplingCapacity(RAIL_TRAINS.length), 55);
   for (const wagon of [false, true])
     for (const steel of [false, true]) {
       const need = RAIL_TRAINS.reduce((n, { line }) => n + consistOf({ line, wagon, steel }).length - 1, 0);
