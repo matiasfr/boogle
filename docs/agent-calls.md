@@ -173,3 +173,4 @@ C5 ruling, 15 November: **counts everywhere; squares gone** — an [owner call](
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 2026-11-18 | Default: the promo page lives at `/about/` as a static page with seven in-game stills (committed WebP, 55 to 90 KB each) and its own copy; headline "Build a railway across the sea with your friends"; no clips yet, and the classic island and its toys are left off | `about/index.html`, `about/about.css`, `public/about-share.jpg` | Claude (promo page) | The owner asked to publish it; boogle.club itself is the game. Stills were picked from a scouting pass of thirteen seed stages; copy is UI text, none The Boogler’s; horizon blockouts are framed out | open |
