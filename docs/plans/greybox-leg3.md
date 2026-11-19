@@ -1,4 +1,5 @@
-> **Status, 19 November 2026: plan, not built.** Planner, against main `c0c993ff7` (world v62). The owner's go
+> **Status, 19 November 2026: plan, not built.** Planner, against main `c0c993ff7` (world v62), rebased onto
+> `2b46fe79f` (docs only since). The owner's go
 > (19 November): "yes planner can start". It builds after [greybox leg 2](greybox-leg2.md)'s step 5; steps 1 and 5 to 6
 > need leg 2's views on main ([order](#order-and-what-waits-for-leg-2)). **Garage step 4 can be briefed once
 > [Checkpoint G](#checkpoint-g-garage-step-4-may-start) passes** ([what it gets](#what-garage-step-4-gets-from-leg-3)).
@@ -54,7 +55,9 @@ main** (`npm run loop -- node bay-2`: no node). Leg 3's step 7 builds on it.
 
 **In flight** (`npm run inflight`, 19 November): `claude/forge-rack-move` (`dev/look/bots/railway.ts`,
 `src/sim/railway-line2-layout.ts`, `line2-view.ts`, `home-station.ts`, `docs/agent-calls.md`, `place.md`): no code file
-here is shared; the two docs are appended to. **Not on origin, so not in that list:** `claude/greybox-leg2-views`
+here is shared; the two docs are appended to. Claimed on main's heartbeat: `claude/halt-yard-plan` (a planner, docs
+only: a timber bay "at each halt site"), which may later place one at Bell Rock or Canopy; nothing here waits for it.
+**Not on origin, so not in that list:** `claude/greybox-leg2-views`
 (leg 2's step 4, heartbeat 19 November) edits `src/content/levels/leg2.ts`, `src/entities/route-greybox/leg-view.ts`,
 `massing-bell.ts`, `massing.ts`, `state.ts`, `leg2-draw.ts`, `src/entities/railway/halts-view.ts`, `train-view.ts`,
 `kit-board.ts`, `leg-yard.ts`, new `row-path.ts`, `src/content/levels/gorge.ts` and the prefab fixtures: steps 1, 5
