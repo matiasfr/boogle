@@ -1794,6 +1794,10 @@ and separate pickup prompts (15 November).
 
 **Pack steel (8 November).** With the pack, carried rails stand in two banks on its shelf beside the log bundle,
 leaving both materials readable from behind and the side. Without it, the existing crosswise hold stays.
+**The stone heap (18 November; owner: "Seat the heap lower on the frame").** Stone sits four across a row, in two rows
+on the shelf; with logs on the back each stone settles into the lowest spot on the shelf or on the logs under it, so a
+full heap steps down the bundle's back instead of standing on its top, and its top stays under Buddy's head from
+behind. With one or two logs the heap sits on the shelf, not lifted over the thin bundle.
 The same seating and independent steel count apply to the player and friends as they take and deposit;
 capacity, accepted inventory and deposit rules are unchanged. DESIGN.md **11. Show, don't tell**.
 

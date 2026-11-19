@@ -12,8 +12,9 @@ export const frameOf = (a: THREE.Object3D): THREE.Object3D => {
   const u = a.userData as Worn;
   return u.loadFit?.frame ?? u.inner ?? a;
 };
-export const fitOf = (a: THREE.Object3D): BundleFit =>
-  (a.userData as Worn).loadFit ?? { back: 0.45, floor: 0.16, len: 1, round: false };
+/** A body with no fit of its own (the capsule). */
+export const DEFAULT_FIT: BundleFit = { back: 0.45, floor: 0.16, len: 1, round: false };
+export const fitOf = (a: THREE.Object3D): BundleFit => (a.userData as Worn).loadFit ?? DEFAULT_FIT;
 const slotsFor = (tall: number): [number, number][] => {
   const pts: [number, number][] = [];
   for (let j = 0; j < 8; j++) for (let i = 0; i < 9; i++) pts.push([(i + (j % 2) * 0.5) * 2 * R, j * 2 * R * 0.866]);
@@ -35,12 +36,23 @@ const q = new THREE.Quaternion(),
   e = new THREE.Euler(),
   v = new THREE.Vector3(),
   sc = new THREE.Vector3();
-/** How high the bundle of `n` logs stands on its frame (its top log's top): where a load riding on it sits. */
-export const bundleTop = (n: number, fit: BundleFit): number => {
-  const shown = Math.min(SHOWN, shownOf(n));
+/** How far back the bundle of `n` logs reaches on its frame (its last log's back; 0 for no logs). */
+export const bundleBack = (n: number, fit: BundleFit): number => {
+  const shown = shownOf(n);
   if (shown <= 0) return 0;
-  const [y] = EXTENTS.get(fit.round ? ROUND : TALL)![shown - 1]!;
-  return fit.floor + (2 * R + y) * (fit.radius ?? 1);
+  const [, z] = EXTENTS.get(fit.round ? ROUND : TALL)![shown - 1]!;
+  return fit.back + (2 * R + z) * (fit.radius ?? 1);
+};
+/** Where a round load resting on the bundle of `n` logs at depth `z` on its frame has its centre, with that centre
+ * `clear` m off the surface of the logs under it: the highest log it touches decides (0 where none is under it). */
+export const bundleRest = (n: number, fit: BundleFit, z: number, clear: number): number => {
+  const reach = R * (fit.radius ?? 1) + clear;
+  let rest = 0;
+  for (let m = 0; m < shownOf(n); m++) {
+    const dz = Math.abs(slotAt(m, fit, v).z - z);
+    if (dz < reach) rest = Math.max(rest, v.y + Math.sqrt(reach * reach - dz * dz));
+  }
+  return rest;
 };
 export const slotAt = (m: number, fit: BundleFit, out: THREE.Vector3): THREE.Vector3 => {
   const [y, z] = (fit.round ? ROUND : TALL)[m]!;
