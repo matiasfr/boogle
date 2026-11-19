@@ -8,6 +8,11 @@
 // went round the table with the deck (carried means about a full turn), how far it dropped, whether it ever stood
 // inside the copy's boxes, and whether it saw the moment (phase `moment`, not `mine`). It fails (a console error)
 // unless the friend was carried round with the deck, never dropped into the pit and ends on the deck's top.
+// `--query deckcase=jump`: the friend jumps in place twice during the fast part of the turn; it fails unless they end
+// on the deck or in the pit (a jump off a turning deck lands "into the shallow pit as before", place.md), never thrown
+// past the kerb. `--query deckcase=pitend`: the friend waits in the pit beside the deck's end and steps under where
+// the deck will stop while it turns; it fails unless, when the deck stops, they are moved out at their own height
+// (agent-calls, 18 November), still in the pit, never lifted onto the kerb.
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
@@ -29,7 +34,13 @@ const { inspectRailway, line, railReady, rw } = (await import(
   '/dev/look/rail-read.ts' as string
 )) as typeof import('../rail-read.ts');
 
+const { pressJump, releaseJump } = (await import(
+  '/src/entities/player/state.ts' as string
+)) as typeof import('../../../src/entities/player/state.ts');
+
 const second = new URLSearchParams(location.search).get('player') === '2';
+const deckcase = new URLSearchParams(location.search).get('deckcase') ?? 'ride';
+const PIT_RIM = 8.15; // m from the table's centre: the pit's wall (src/place/terrain.ts, tableR + 0.15)
 const who = second ? 'installer' : 'friend';
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const say = (text: string) => console.log(`DECK ${who}: ${text}`);
@@ -82,9 +93,12 @@ if (second) {
     const post = polarAt(centre, geo.post);
     if (Math.hypot(x - post.x, z - post.z) > 6) best = end;
   }
-  const x = centre.x + Math.sin(yaw) * r * best,
-    z = centre.z + Math.cos(yaw) * r * best;
-  teleport(me.body!, x, groundY + 1.2, z);
+  // pitend: in the pit 2.7 m off the deck's side, 7.3 m along it (where the pit floor rises to its wall).
+  const across = deckcase === 'pitend' ? 2.7 : 0,
+    along = deckcase === 'pitend' ? 7.3 * best : r * best;
+  const x = centre.x + Math.cos(yaw) * across + Math.sin(yaw) * along,
+    z = centre.z - Math.sin(yaw) * across + Math.cos(yaw) * along;
+  teleport(me.body!, x, groundY + (deckcase === 'pitend' ? 0.2 : 1.2), z);
   me.body!.velocity.set(0, 0, 0);
   cam.yaw = me.yaw = Math.atan2(x - centre.x, z - centre.z);
   await wait(14000);
@@ -111,9 +125,29 @@ if (second) {
         prev = { x: pos().x, z: pos().z };
       const marks: string[] = [];
       const t0 = performance.now();
-      let fellAt = -1;
+      let fellAt = -1,
+        jumps = 0,
+        stepped = false,
+        widest = 0; // m: the furthest the friend got from the table's centre
       while (garage.api!.snap().phase === 'moment' && performance.now() - t0 < 15000) {
         await new Promise((resolve) => requestAnimationFrame(resolve));
+        // The show-off turn runs about 2.5 s to 5 s after the moment starts; act in its fast part.
+        const since = performance.now() - t0;
+        if (deckcase === 'jump' && jumps < 2 && since > 2600 + jumps * 900) {
+          pressJump();
+          setTimeout(releaseJump, 120);
+          jumps++;
+        }
+        if (deckcase === 'pitend' && !stepped && since > 3200) {
+          // Under the deck's rest footprint (the turn is a full one), keeping the friend's own height.
+          stepped = true;
+          const dx = pos().x - centre.x,
+            dz = pos().z - centre.z;
+          const l = dx * Math.sin(yaw) + dz * Math.cos(yaw);
+          teleport(me.body!, centre.x + Math.sin(yaw) * l, pos().y, centre.z + Math.cos(yaw) * l);
+          me.body!.velocity.set(0, 0, 0);
+        }
+        widest = Math.max(widest, Math.hypot(pos().x - centre.x, pos().z - centre.z));
         const b = bearing();
         turned += wrap(b - last);
         last = b;
@@ -146,6 +180,24 @@ if (second) {
       const settled = round(y0 - pos().y);
       say(`a second later: ${settled} m under where they stood`);
       const deg = (a: number) => Math.round((a * 180) / Math.PI);
+      const rNow = Math.hypot(pos().x - centre.x, pos().z - centre.z);
+      say(`furthest from the table's centre ${round(widest)} m; now ${round(rNow)} m (the pit's wall at ${PIT_RIM})`);
+      if (deckcase !== 'ride') {
+        const caseFails =
+          deckcase === 'jump'
+            ? [
+                widest > PIT_RIM && `a jump on the turning deck threw the friend ${round(widest)} m out, past the pit`,
+                rNow > PIT_RIM && `ended ${round(rNow)} m out, outside the pit`,
+              ]
+            : [
+                pos().y - lowest > 0.1 && `lifted ${round(pos().y - lowest)} m when the deck stopped`,
+                rNow > PIT_RIM && `moved ${round(rNow)} m out, past the pit's wall onto the kerb`,
+              ];
+        const failed = caseFails.filter(Boolean);
+        if (failed.length) throw new Error(`garage-deck ${deckcase}: ${failed.join('; ')}`);
+        say(`PASS: ${deckcase}`);
+        return;
+      }
       const fails = [
         Math.abs(deg(deckTurned)) < 300 && `the deck turned only ${deg(deckTurned)}°`,
         Math.abs(deg(turned - deckTurned)) > 20 && `carried ${deg(turned)}° on a ${deg(deckTurned)}° turn`,
