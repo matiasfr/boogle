@@ -154,7 +154,16 @@ for (const area of ['bell', 'west'] as const)
     );
     const draw = sourceModule<typeof import('../src/entities/route-greybox/leg2-draw.ts')>(
       fs.readFileSync('src/entities/route-greybox/leg2-draw.ts', 'utf8'),
-      { ...runtime, artifact, compiled, definitions, records: compiled, ...validation, LEG2_TEXT },
+      {
+        ...runtime,
+        artifact,
+        compiled,
+        definitions,
+        records: compiled,
+        ...validation,
+        LEG2_TEXT,
+        areaLabels: new Map(),
+      },
     );
     type Massing = Record<string, (owner?: ReturnType<typeof createOwnedView>) => unknown>;
     const massing = {

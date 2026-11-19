@@ -18,6 +18,7 @@ import * as lineQueries from '../src/sim/railway-queries-line2.ts';
 import * as ring from '../src/sim/railway-ring-layout.ts';
 import * as line2Layout from '../src/sim/railway-line2-layout.ts';
 import * as path from '../src/entities/railway/line2-path.ts';
+import * as rowPath from '../src/entities/railway/row-path.ts';
 import * as haltMap from '../src/entities/railway/halt-map.ts';
 import * as leverPlace from '../src/entities/railway/lever-place.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
@@ -194,6 +195,7 @@ test('halt kit placements, colliders, lever plaques and ordered prompts match th
       ...ring,
       ...line2Layout,
       ...path,
+      ...rowPath,
       ...haltMap,
       ...leverPlace,
       // The deck as drawn, at rest at the seed's head (railhead-state.ts; the haul is railhead-view.ts's).
@@ -303,6 +305,8 @@ test('halt kit placements, colliders, lever plaques and ordered prompts match th
   // v62 (greybox leg 2): the catalog's ns and bay halts are built (reindexed, a head each), and at gorge-mid the kit
   // riding ahead moves the trains, so stack head 3's up lever stands down (no request standing), its handle with it;
   // no other state or geometry moves.
+  // Greybox leg 2 step 4: the ns and bay lines' eight levers (each built halt's outward platform, each head's homeward
+  // one) are made, stood down at these stages (their lines have no open stop): meshes only, no prompt or request.
   const fixture = 'test/fixtures/prefab-halts.json';
   const actual = JSON.parse(JSON.stringify({ catalogs: catalog.RAIL_HALTS, boxValues, meshes, states }));
   if (process.env.GOLDEN === '1') fs.writeFileSync(fixture, JSON.stringify(actual, null, 2) + '\n');
@@ -315,7 +319,8 @@ test('halt kit placements, colliders, lever plaques and ordered prompts match th
   const requests = 'test/fixtures/prefab-halt-requests.json';
   if (process.env.GOLDEN === '1') fs.writeFileSync(requests, JSON.stringify(calls, null, 2) + '\n');
   assert.deepEqual(calls, JSON.parse(fs.readFileSync(requests, 'utf8')));
-  assert.equal(levers.length, 20);
+  // 20 on lines 1 and 2, and the ns and bay lines' 8 (greybox leg 2 step 4).
+  assert.equal(levers.length, 28);
   owner.dispose();
   assert.equal(active.size, 0);
 });

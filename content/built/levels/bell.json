@@ -564,6 +564,55 @@
         },
         {
           "bounds": [
+            70,
+            79.793,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.85,
+          "id": "bay-bed-on",
+          "tone": "dark",
+          "top": {
+            "a": 15,
+            "b": 0.15,
+            "compute": "sub"
+          }
+        },
+        {
+          "bounds": [
+            79.793,
+            94,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.85,
+          "id": "bay-bed-climb",
+          "rise": {
+            "a": 14.29,
+            "b": {
+              "a": 15,
+              "b": 0.15,
+              "compute": "sub"
+            },
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": {
+            "a": 15,
+            "b": 0.15,
+            "compute": "sub"
+          }
+        },
+        {
+          "bounds": [
             -3,
             20,
             3.8,

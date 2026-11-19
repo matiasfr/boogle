@@ -1,17 +1,20 @@
-// The stack line to High Gorge, the greybox's views (docs/plans/greybox-route.md, leg 1 step 4, as its design review
-// rules it: answers b, e, g, i, j, k and l). A Local view of accepted state, mounted by the railway's works seam
-// (railway/works-live.ts) because its prompts send through the adapter only that view holds. Everything is read from
-// `adapter.read.world()` at the head of each entry point; nothing is kept from a world.
+// The greybox route's built legs, their views (docs/plans/greybox-route.md, leg 1 step 4, as its design review rules
+// it: answers b, e, g, i, j, k and l; docs/plans/greybox-leg2.md, step 4, for the incline and the bay cut). A Local
+// view of accepted state, mounted by the railway's works seam (railway/works-live.ts) because its prompts send through
+// the adapter only that view holds. Everything is read from `adapter.read.world()` at the head of each entry point;
+// nothing is kept from a world. Each built leg (RAIL_LEGS with its rules built: the stack, the incline, the bay cut) is
+// one LegSpec below, drawn the same way:
 //
-//   the deck      line 2 on from Ring Island's platforms along the `ring` row: a slab, two tracks and sea bents as far
-//                 as the line's end (the run-off at stage 0, then each section's end; a section laying grows over its
-//                 lay clock), with the buffers and the end board at that end
-//   the site      the current section's frame, its bill sign, the rack and its plate: on Ring Island's west platform
-//                 for section 1, then at each railhead
+//   the deck      a slab, two tracks and sea bents as far as the line's end (each section's end; a section laying grows
+//                 over its lay clock), with the buffers and the end board at that end. The stack line runs on from Ring
+//                 Island's platforms along line 2 (at stage 0 its end is the island's run-off); the incline and the
+//                 bay cut are lines of their own (railway/row-path.ts), with buffers at their start and their turnouts
+//   the site      the current section's frame, its bill sign, the rack and its plate (on Ring Island's west platform,
+//                 High Gorge's and the West landing's for section 1, then at each railhead), and High Gorge's yard
 //   the heads     a 25 m platform with a sea ramp at every head that is a stop (the levers are railway/halts-view.ts's)
 //   the signals   a post, an arm and a plate at each section end the line has passed
-//   High Gorge    the pickup post on the north rim, the incline's barrier, the stand-in town's board (the massing is
-//                 ./massing.ts's, resident by distance)
+//   High Gorge    the pickup post on the north rim, the incline's barrier at its first frame, the stand-in town's
+//                 board (the massing is ./massing.ts's, resident by distance)
 //   the prompts   Feed the frame, Take logs, Take rails, the pickup and the barrier
 //
 // Grey boxes and placeholder labels (none is The Boogler's), no effects and no sound (owner-calls, "mechanisms,
@@ -23,24 +26,50 @@ import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Body } from '../../physics/engine.ts';
 import type { Interactable } from '../../player/hands.ts';
+import type { LinePoint } from '../../place/layout.ts';
 import { me } from '../../player/player.ts';
 import { camera } from '../../render/scene.ts';
 import { signBoard } from '../../render/sign-board.ts';
 import { playObjective } from '../../proto/mark.ts';
-import { LINE2, RAIL_LINES } from '../../sim/railway-lines.ts';
+import { LINE2, RAIL_LINES, legBuilt } from '../../sim/railway-lines.ts';
 import { LINE_SLOTS } from '../../sim/railway-trains.ts';
 import { TRAIN_PHASE } from '../../sim/railway-train.ts';
+import { trainStops } from '../../sim/railway-queries-trains.ts';
 import { RING_S_HEAD } from '../../sim/railway-ring-layout.ts';
-import { LEG_TUNE, RAIL_LEGS, legFrame, legRack, legS } from '../../sim/railway-route.ts';
-import { account, aperture, line, rail, shed, steel, train } from '../../sim/railway-rows.ts';
+import {
+  LEG_TUNE,
+  RAIL_GATES,
+  RAIL_GRANTS,
+  RAIL_LEGS,
+  legFrame,
+  legRack,
+  legS,
+  type RouteLeg,
+} from '../../sim/railway-route.ts';
+import { account, aperture, line, rail, shed, steel, train, type ReadWorld } from '../../sim/railway-rows.ts';
 import { heldBig, LOGS, roomOf } from '../../sim/railway-queries.ts';
 import { RAILS } from '../../sim/railway-line2-layout.ts';
-import { gateLeg, legDone, legOpen, legReached, legRow, routeRow } from '../../sim/railway-queries-route.ts';
+import { gateLeg, legDone, legOpen, legReached, legRow, legYard, routeRow } from '../../sim/railway-queries-route.ts';
 import { createBoxBatch } from '../railway/works-box-view.ts';
 import { legKitFlight, paintPlate } from '../railway/kit-board.ts';
+import { legYardFlight, legYardSpot } from '../railway/leg-yard.ts';
 import { LINE2_END_S, line2At, line2World, line2Y } from '../railway/line2-path.ts';
+import {
+  BAY_KINK,
+  ROW_PLATFORM,
+  ROW_TRACK,
+  rowAt,
+  rowEndSwing,
+  rowStartCrossing,
+  rowWorld,
+  rowY,
+  type RowSwing,
+} from '../railway/row-path.ts';
 import { islandGround, ringIslandNear } from '../ring-island/state.ts';
 import { GATE_AT, GORGE_DECK, PICK_AT, TOWN_PAD, gorgeAt } from './massing.ts';
+import { bellPads } from './massing-bell.ts';
+import { AREA_CENTRES, LEG2_TEXT } from './leg2-layout.ts';
+import { areaLabels } from './state.ts';
 import type { GreyBox } from './boxes.ts';
 
 // Placeholder labels (the step 4 design review's answers b, e, i, k and l; none is The Boogler's).
@@ -58,13 +87,24 @@ const FEED = 'Feed the frame',
   OPEN_GATE = 'Open the barrier',
   NEEDS_PICK = 'Needs the powered pick',
   NO_LINE = 'No line beyond yet',
-  LINE_NAME = 'LINE TO HIGH GORGE',
-  UNDER_WAY = 'UNDER CONSTRUCTION';
+  UNDER_WAY = 'UNDER CONSTRUCTION',
+  // Greybox leg 2's (docs/plans/greybox-leg2.md, "Controls and copy", and step 4; placeholders, none The Boogler's).
+  TAKE_SEEDS = 'Take the crystal seeds',
+  SEEDS_NOT_YET = "The incline isn't laid yet",
+  CONNECTED = 'Connected (placeholder)',
+  HOME_LINE = 'LINE TO HOME (WEST LANDING)',
+  BUILT_FROM_HOME = 'BUILT FROM HOME';
 export const LEG_OBJECTIVES = {
   first: "Build the line to High Gorge: section 1 of 4. The frame is on Ring Island's west platform.",
   next: (n: number, of: number) => `Build the line to High Gorge: section ${n} of ${of}. Ride line 2 to the railhead.`,
   open: 'High Gorge is open. Ride line 2 to its end and climb the stair.',
-  gate: "Open the barrier behind High Gorge's south platform.",
+  // Greybox leg 2's (docs/plans/greybox-leg2.md, "Controls and copy"; placeholders): the barrier moved onto the
+  // incline's first frame, so its line is the plan's now.
+  gate: "Open the incline's barrier",
+  incline: 'Build the incline to Bell Rock',
+  seeds: 'Take the crystal seeds',
+  bay: 'Build the bay line from the West landing',
+  ride: 'Ride the bay line to Bell Rock',
 } as const;
 /** The steel loop's steps, from the rivet to the longer boiler (docs/plans/ring-island-build2.md, section 1). Draft
  * copy for the owner to reword (docs/agent-calls.md; decision d-2026-11-18-decisions-page-rail). */
@@ -83,27 +123,23 @@ const GREY = '#9c9ea1',
   BED = '#77705f',
   DANGER = '#c8402c',
   CLEAR = '#3c8f4a';
-
-/** The stack leg (RAIL_LEGS slot 0) and its numbers, metres along line 2. */
-const LEG = 0,
-  STACK = RAIL_LEGS[LEG]!,
-  SECTIONS = STACK.sections.length,
-  RING_S = RING_S_HEAD / 100;
-/** Each section's end. */
-const R = STACK.sections.map((sec) => legS(STACK, sec.toCm) / 100);
-/** Where the stack line's own rails and deck start (u 470: ring-island/view.ts ends the Way's there). */
-const RAILS_FROM = RING_S + 470,
-  DECK_FROM = RING_S + 470;
-/** The line's end by sections laid: the run-off's (u 483.5), each section's, the row's (20 m past High Gorge's stop). */
-const END = [RING_S + 483.5, ...R.slice(0, -1), LINE2_END_S];
-/** The formation: the down track at lat 0, the up track 4 m west; the slab's middle and width. */
-const TRACK_LATS = [0, -4],
-  FORM_MID = -2,
-  FORM_W = 8.6;
 const SEG = 10,
   SEA_BED = -8;
-/** A head's platform (RING_HEAD's: lat +1.8 to +6.3, the 25 m before the section's end, 90 cm over the rails). */
-const PLAT = { len: 25, lat: 4.05, w: 4.5, up: 0.9 };
+
+// ---------------------------------------------------------------- the legs' geometry
+/** A leg's line as the views stand it: world (x, z) of `lat` metres right (going out) of its line at `s`, the heading
+ * there (`at`'s ux, uz; its x and z are the path's own frame) and the rail height. */
+type Geo = {
+  at(s: number, out: LinePoint): LinePoint;
+  world(s: number, lat: number, out: { x: number; z: number }): { x: number; z: number };
+  y(s: number): number;
+};
+const LINE2_GEO: Geo = { at: (s, o) => line2At(s, o), world: line2World, y: line2Y };
+const rowGeo = (ln: number): Geo => ({
+  at: (s, o) => rowAt(ln, s, o),
+  world: (s, lat, o) => rowWorld(ln, s, lat, o),
+  y: (s) => rowY(ln, s),
+});
 
 const metres = (p: { x: number; y: number; z: number }) => ({ x: p.x / 100, y: p.y / 100, z: p.z / 100 });
 const within = (p: { x: number; y: number; z: number }, site: { x: number; y: number; z: number }, reach: number) =>
@@ -113,8 +149,8 @@ const within = (p: { x: number; y: number; z: number }, site: { x: number; y: nu
 type Site = { x: number; y: number; z: number; hx: number; hz: number; tx: number; tz: number; yaw: number };
 const P = { x: 0, z: 0, ux: 0, uz: 1 },
   q = { x: 0, z: 0 };
-function siteAt(p: { x: number; y: number; z: number }, s: number, toTrack: 1 | -1): Site {
-  line2At(s, P);
+function siteAt(p: { x: number; y: number; z: number }, geo: Geo, s: number, toTrack: 1 | -1): Site {
+  geo.at(s, P);
   // lat + is (-uz, ux); `toTrack` is the sign of the way from the site to the rails along it.
   return {
     ...metres(p),
@@ -125,22 +161,191 @@ function siteAt(p: { x: number; y: number; z: number }, s: number, toTrack: 1 | 
     yaw: Math.atan2(P.ux, P.uz),
   };
 }
-/** Section k's frame and rack: on Ring Island's west platform (the rails are east of it), then at its railhead. */
-const FRAMES = STACK.sections.map((_s, k) =>
-    siteAt(legFrame(STACK, k), k === 0 ? RING_S + 453 : R[k - 1]! - 8, k === 0 ? 1 : -1),
-  ),
-  RACKS = STACK.sections.map((_s, k) =>
-    siteAt(legRack(STACK, k), k === 0 ? RING_S + 446 : R[k - 1]! - 18, k === 0 ? 1 : -1),
-  );
 const local = (site: Site, along: number, toTrack: number) => ({
   x: site.x + site.hx * along + site.tx * toTrack,
   z: site.z + site.hz * along + site.tz * toTrack,
 });
 
+/** One built leg as the views draw it. */
+type LegSpec = {
+  k: number;
+  leg: RouteLeg;
+  geo: Geo;
+  /** Each section's end, metres along the leg's line. */
+  R: number[];
+  /** The line's end by sections laid (index `laid`). */
+  END: number[];
+  /** Where its rails and deck start. */
+  from: number;
+  /** The two tracks' offsets from the line, the slab's middle and width. */
+  tracks: readonly number[];
+  mid: number;
+  width: number;
+  /** A head's platform: the 25 m before the section's end, its centre `lat` from the line, `w` wide, `up` over the rails. */
+  plat: { len: number; lat: number; w: number; up: number };
+  /** The end board's first line. */
+  name: string;
+  frames: Site[];
+  racks: Site[];
+  /** Its own line (not line 2): buffers at its start, its turnouts drawn, its deck's colliders merged on straights. */
+  row: boolean;
+  /** Stretches with no sea bents (the bore, the level's own beds on posts and Bell Rock's rock). */
+  noBents: readonly (readonly [number, number])[];
+};
+const sectionEnds = (leg: RouteLeg) => leg.sections.map((sec) => legS(leg, sec.toCm) / 100);
+/** The stack leg (RAIL_LEGS slot 0): line 2 on from Ring Island. */
+function stackSpec(): LegSpec {
+  const k = 0,
+    leg = RAIL_LEGS[k]!,
+    R = sectionEnds(leg),
+    ring = RING_S_HEAD / 100,
+    // Section 1's at u `first` on Ring Island's west platform (the rails east of it); then `back` metres short of the
+    // railhead, right of the rails.
+    site = (p: { x: number; y: number; z: number }, j: number, first: number, back: number) =>
+      siteAt(p, LINE2_GEO, j === 0 ? ring + first : R[j - 1]! - back, j === 0 ? 1 : -1);
+  return {
+    k,
+    leg,
+    geo: LINE2_GEO,
+    R,
+    // The run-off's (u 483.5), each section's, the row's (20 m past High Gorge's stop).
+    END: [ring + 483.5, ...R.slice(0, -1), LINE2_END_S],
+    // u 470: ring-island/view.ts ends the Way's there.
+    from: ring + 470,
+    // The down track at lat 0, the up track 4 m west.
+    tracks: [0, -4],
+    mid: -2,
+    width: 8.6,
+    // RING_HEAD's: lat +1.8 to +6.3, 90 cm over the rails.
+    plat: { len: 25, lat: 4.05, w: 4.5, up: 0.9 },
+    name: 'LINE TO HIGH GORGE',
+    // Section k's frame and rack: on Ring Island's west platform (the rails are east of it), then at its railhead.
+    frames: leg.sections.map((_s, j) => site(legFrame(leg, j), j, 453, 8)),
+    racks: leg.sections.map((_s, j) => site(legRack(leg, j), j, 446, 18)),
+    row: false,
+    noBents: [],
+  };
+}
+/** A leg of its own row line (greybox leg 2: the incline, the bay cut). `first`: section 1's frame and rack, metres
+ * along their line, the side the rails are on and (when not the leg's own) the line's geometry; `start`, where its
+ * rails start; `face`, its buffers' face at the destination. */
+type FirstSite = readonly [s: number, toTrack: 1 | -1, geo?: Geo];
+function rowSpec(
+  id: string,
+  first: { frame: FirstSite; rack: FirstSite },
+  start: number,
+  face: (R: readonly number[]) => number,
+  noBents: readonly (readonly [number, number])[],
+): LegSpec {
+  const k = RAIL_LEGS.findIndex((l) => l.id === id),
+    leg = RAIL_LEGS[k]!,
+    geo = rowGeo(leg.line),
+    R = sectionEnds(leg);
+  const site = (p: { x: number; y: number; z: number }, j: number, at: FirstSite, back: number) =>
+    j === 0 ? siteAt(p, at[2] ?? geo, at[0], at[1]) : siteAt(p, geo, R[j - 1]! - back, -1);
+  return {
+    k,
+    leg,
+    geo,
+    R,
+    END: [start, ...R.slice(0, -1), face(R) + 1.8],
+    from: start,
+    // Right-hand running about the row (railway/row-path.ts): the outward track right going out.
+    tracks: [ROW_TRACK, -ROW_TRACK],
+    mid: 0,
+    // The level's unlaid bed (src/content/levels/leg2.ts, BED: 3.8 m either side).
+    width: 7.6,
+    // The platforms' 3.8 to 7.8 m off the row (the halts' 5.8 m, railway-lines.ts legPlatforms), 90 cm up.
+    plat: { len: 25, lat: ROW_PLATFORM, w: 4, up: 0.9 },
+    name: 'LINE TO BELL ROCK',
+    frames: leg.sections.map((_s, j) => site(legFrame(leg, j), j, first.frame, 8)),
+    racks: leg.sections.map((_s, j) => site(legRack(leg, j), j, first.rack, 18)),
+    row: true,
+    noBents,
+  };
+}
+/** Line 2's High Gorge stop, metres along line 2, and the line 2 kit car's offset behind it there (railway-route.ts). */
+const GORGE_S = sectionEnds(RAIL_LEGS[0]!).at(-1)!,
+  GORGE_KIT_CAR = 7.1;
+const SPECS: readonly LegSpec[] = [
+  stackSpec(),
+  // The incline: its rails from incline-s's and incline-n's start (t 16; leg 1's south platform crosses the row to t
+  // 15.3), the frame at t 24 on incline-s (the rails right of it), the rack on line 2's south platform abreast of its
+  // kit car; buffers 15 m past Bell Rock's stop. No bents through the bore (s 62 to 237, with its mouths) nor under
+  // Bell Rock's lower bed (n -60 to 60 about the stop).
+  rowSpec('incline', { frame: [24, 1], rack: [GORGE_S - GORGE_KIT_CAR, 1, LINE2_GEO] }, 16, (R) => R.at(-1)! + 15, [
+    [62, 237],
+    [1096, 1216],
+  ]),
+  // The bay cut: its rails from the West landing's bed (s 0), the frame and rack on the apron, right of the rails
+  // going out (lat 9.8); buffers at the kink. No bents under the landing's bed (s 0 to 60) nor over Bell Rock.
+  rowSpec('bay-cut', { frame: [12, -1], rack: [6, -1] }, 0.5, () => BAY_KINK, [
+    [0, 60],
+    [1150, 1240],
+  ]),
+].filter((sp) => legBuilt(sp.k));
+
+/** Bell Rock (greybox leg 2): the seeds post, the Canopy barrier (RAIL_GATES[1], shut until leg 3 is built: it stands
+ * in view) on the out half's heading (the line to Canopy leaves that way), and the stalls that rise by ruling 2's
+ * table: High Gorge's and Ring Island's with the incline, Home's with the bay cut. */
+const SEEDS = RAIL_GRANTS.findIndex((g) => g.id === 'seeds'),
+  SEEDS_AT = metres(RAIL_GRANTS[SEEDS]!.at),
+  CANOPY = RAIL_GATES.findIndex((g) => g.id === 'canopy'),
+  OUT_HALF = { x: -0.934 / Math.hypot(0.934, 0.357), z: 0.357 / Math.hypot(0.934, 0.357) },
+  CANOPY_SITE: Site = {
+    ...metres(RAIL_GATES[CANOPY]!.at),
+    hx: OUT_HALF.x,
+    hz: OUT_HALF.z,
+    tx: -OUT_HALF.z,
+    tz: OUT_HALF.x,
+    yaw: Math.atan2(OUT_HALF.x, OUT_HALF.z),
+  };
+const STALLS: Readonly<Record<string, string>> = {
+  'bell.pad-gorge': 'incline',
+  'bell.pad-ring': 'incline',
+  'bell.pad-home': 'bay-cut',
+};
+/** The board at the end of Bell Rock's upper in-half platform, where the bay line will arrive (the review's finding
+ * 1): on the bay row's bed 19.5 m in from the kink, facing the deck, from the incline's last lay to the bay cut's. */
+const HOME_BOARD_S = BAY_KINK - 19.5;
+
 export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
-  const [{ addStatic, slab }, ground] = await Promise.all([import('../../place/land.ts'), islandGround()]);
-  const deck = createBoxBatch(owner, 2400, false),
-    things = createBoxBatch(owner, 420, false);
+  const [{ addStatic, slab }, ground, { siteExit }, { outOf }] = await Promise.all([
+    import('../../place/land.ts'),
+    islandGround(),
+    import('../../place/site-clearance.ts'),
+    import('../../place/sites.ts'),
+  ]);
+  /** Whether your body (its two spheres) stands in box `b` (the shared site clearance, src/place/site-clearance.ts),
+   * measured in the box's own frame, pitch and all (a sea ramp's slip is pitched about 28°), as its collider is built
+   * (stand). A standing piece's collider waits until you are out of it: nothing here may move you (no teleport in a
+   * view), and a solid that closed round you would hold you. */
+  const toBox = new THREE.Quaternion(),
+    rel = new THREE.Vector3();
+  const inBox = (b: GreyBox) => {
+    if (!me.body) return false;
+    toBox.setFromEuler(euler.set(-(b.pitch ?? 0), b.yaw, 0)).invert();
+    const distance = (p: { x: number; y: number; z: number }) => {
+      rel.set(p.x - b.x, p.y - b.y, p.z - b.z).applyQuaternion(toBox);
+      return Math.hypot(
+        Math.max(0, Math.abs(rel.x) - b.w / 2),
+        Math.max(0, Math.abs(rel.y) - b.h / 2),
+        Math.max(0, Math.abs(rel.z) - b.d / 2),
+      );
+    };
+    return !!siteExit(
+      me.body.position,
+      { x: b.x, z: b.z, c: Math.cos(b.yaw), s: Math.sin(b.yaw), hw: 0, hd: 0 },
+      b.y,
+      [{ dx: 0, dy: 0, dz: 0, hx: b.w / 2, hy: b.h / 2, hz: b.d / 2 }],
+      outOf,
+      undefined,
+      0.02,
+      distance,
+    );
+  };
+  const deck = createBoxBatch(owner, 4800, false),
+    things = createBoxBatch(owner, 700, false);
   // Named, so a look can count what the leg's views add to a frame (dev/look/evals/stack-draws.ts).
   deck.mesh.name = 'route-greybox:deck';
   things.mesh.name = 'route-greybox:things';
@@ -172,210 +377,405 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     s.mesh.rotation.y = Math.atan2(nx, nz);
     s.mesh.visible = true;
   }
-  // The bill's foot clears the frame's top rail (1.7 m), which covered its last line from across the tracks.
+  // The bill's foot clears the frame's top rail (1.7 m), which covered its last line from across the tracks. One bill,
+  // rack plate and yard plate: one leg is open at a time on the whole route.
   const bill = sign(4.2, 1.8, 1.8, 'one', 768),
     plate = sign(1.9, 0.8, 1.3, 'one', 384),
-    endBoard = sign(5.2, 1.4, 0.9, 'two', 768),
-    signalPlates = R.slice(0, -1).map(() => sign(1.5, 0.8, 2.6, 'one', 256)),
     pickPlate = sign(2.2, 0.9, 1.7, 'one', 384),
     gatePlate = sign(3, 1, 2.3, 'none', 384),
-    townBoard = sign(3.2, 1.3, 1.2, 'two', 512);
-
-  // ---------------------------------------------------------------- the deck and its colliders
-  let deckEnd = -1,
-    deckLaid = -1;
-  const deckBodies: Body[] = [];
-  /** A box along the line from `s0` to `s1` at `lat`, its top `up` over the rails. */
-  function along(batch: typeof deck, s0: number, s1: number, lat: number, up: number, w: number, h: number, c: string) {
-    line2World(s0, lat, q);
-    const ax = q.x,
-      az = q.z,
-      ay = line2Y(s0) + up;
-    line2World(s1, lat, q);
-    const by = line2Y(s1) + up,
-      run = Math.hypot(q.x - ax, q.z - az),
-      pitch = Math.atan2(by - ay, run);
-    batch.box(
-      (ax + q.x) / 2,
-      (ay + by) / 2 - h / 2,
-      (az + q.z) / 2,
-      w,
-      h,
-      Math.hypot(run, by - ay) + 0.02,
-      c,
-      Math.atan2(q.x - ax, q.z - az),
-      -pitch,
-    );
-  }
-  function drawDeck(end: number) {
-    deck.begin();
-    for (let s0 = RAILS_FROM; s0 < end - 1e-6; s0 += SEG) {
-      const s1 = Math.min(end, s0 + SEG);
-      if (s1 > DECK_FROM) along(deck, Math.max(s0, DECK_FROM), s1, FORM_MID, 0, FORM_W, 0.5, GREY);
-      for (const t of TRACK_LATS) {
-        along(deck, s0, s1, t, 0.13, 2.4, 0.1, BED);
-        for (const r of [-0.5, 0.5]) along(deck, s0, s1, t + r, 0.29, 0.12, 0.14, RAIL);
-      }
-      // A bent every 20 m where the deck stands clear of the ground: two posts to the sea bed and a cap.
-      if (Math.round((s0 - RAILS_FROM) / SEG) % 2 === 0 && s0 >= DECK_FROM) {
-        const y = line2Y(s0);
-        line2World(s0, FORM_MID, q);
-        const foot = Math.max(SEA_BED, ground.onIsland(q.x, q.z) ? ground.islandH(q.x, q.z) : SEA_BED);
-        if (foot < y - 1.5) {
-          line2At(s0, P);
-          const yaw = Math.atan2(P.ux, P.uz);
-          for (const lat of [FORM_MID - 3.4, FORM_MID + 3.4]) {
-            line2World(s0, lat, q);
-            deck.box(q.x, (y - 0.5 + foot) / 2, q.z, 0.5, y - 0.5 - foot, 0.5, GREY_DARK, yaw);
-          }
-          line2World(s0, FORM_MID, q);
-          deck.box(q.x, y - 0.75, q.z, FORM_W, 0.5, 0.6, GREY_DARK, yaw);
-        }
-      }
-    }
-    deck.commit();
-  }
-  /** The deck's walkable top as far as the laid end (a section still laying is drawn, not yet solid). */
-  function solidDeck(laid: number) {
-    for (const b of deckBodies.splice(0)) owner.removeBody(b);
-    const end = END[laid]!,
-      a = { x: 0, z: 0 },
-      b = { x: 0, z: 0 };
-    for (let s0 = DECK_FROM; s0 < end - 1e-6; s0 += SEG) {
-      const s1 = Math.min(end, s0 + SEG);
-      line2World(s0, FORM_MID, a);
-      line2World(s1, FORM_MID, b);
-      deckBodies.push(slab(a.x, a.z, b.x, b.z, line2Y(s0), line2Y(s1), FORM_W, owner, 0.05));
-    }
-  }
-
-  // ---------------------------------------------------------------- the pieces that stand by state
-  /** The boxes that stand for a state of the line: buffers at its end, and each stopping head's platform and ramp. */
-  function pieces(laid: number): GreyBox[] {
-    const out: GreyBox[] = [];
-    const box = (s0: number, s1: number, lat: number, up0: number, up1: number, w: number, h: number, c: string) => {
-      line2World(s0, lat, q);
-      const a = { x: q.x, z: q.z, y: line2Y(s0) + up0 };
-      line2World(s1, lat, q);
-      const b = { x: q.x, z: q.z, y: line2Y(s1) + up1 },
-        run = Math.hypot(b.x - a.x, b.z - a.z),
-        pitch = Math.atan2(b.y - a.y, run);
-      out.push({
-        x: (a.x + b.x) / 2,
-        y: (a.y + b.y) / 2 - (h / 2) * Math.cos(pitch),
-        z: (a.z + b.z) / 2,
-        w,
-        h,
-        d: Math.hypot(run, b.y - a.y),
-        yaw: Math.atan2(b.x - a.x, b.z - a.z),
-        pitch,
-        colour: c,
-      });
-    };
-    // The buffers: a timber stop on each track, its face half a metre short of the run-off's end and 1.8 m short of
-    // a railhead's (the review's g) and of the Gorge's concourse.
-    const end = END[laid]!,
-      face = laid === 0 ? end - 0.5 : end - 1.8;
-    for (const t of TRACK_LATS) box(face, face + 0.6, t, 1.4, 1.4, 2.6, 1.2, GREY_DARK);
-    // The heads that are stops now: head j (1 to 3) from its section's lay until it closes behind two lays on; the
-    // third stays (the request stop `Stack halt`).
-    for (let j = 1; j < SECTIONS; j++) {
-      const closes = RAIL_LINES[LINE2]!.halts[STACK.railheadHalt + j - 1]!.closesAt;
-      if (laid < j || (closes !== undefined && laid >= j + 2)) continue;
-      const r = R[j - 1]!;
-      for (let s = r - PLAT.len; s < r - 1e-6; s += 5) {
-        box(s, s + 5, PLAT.lat, PLAT.up, PLAT.up, PLAT.w, 0.5, GREY_LIGHT);
-        line2World(s + 2.5, PLAT.lat, q);
-        const top = line2Y(s + 2.5) + PLAT.up - 0.5;
-        out.push({
-          x: q.x,
-          y: (top + SEA_BED) / 2,
-          z: q.z,
-          w: 0.5,
-          h: top - SEA_BED,
-          d: 0.5,
-          yaw: 0,
-          colour: GREY_DARK,
-        });
-      }
-      // The sea ramp (the deck is 4 m over open water): a landing behind the platform's home end, then a slip down
-      // along the line to under the surface, at the Ring ramps' pitch.
-      const lat = PLAT.lat + PLAT.w / 2 + 1,
-        drop = line2Y(r) + PLAT.up + 1.3;
-      box(r - PLAT.len, r - PLAT.len + 3, lat, PLAT.up, PLAT.up, 2, 0.4, GREY);
-      box(r - PLAT.len + 3, r - PLAT.len + 3 + drop / 0.54, lat, PLAT.up, PLAT.up - drop, 2, 0.3, GREY);
-    }
-    return out;
-  }
-  let stood = -1;
-  /** Takes the deck's slabs and the standing pieces' colliders away (and forgets what was drawn), until next shown. */
-  function clear() {
-    if (deckLaid < 0 && stood < 0 && deckEnd < 0) return;
-    for (const b of deckBodies.splice(0)) owner.removeBody(b);
-    for (const b of standing.bodies.splice(0)) owner.removeBody(b);
-    standing.boxes = [];
-    deckLaid = stood = deckEnd = -1;
-    deck.begin();
-    deck.commit();
-  }
-  const standing: { boxes: GreyBox[]; bodies: Body[] } = { boxes: [], bodies: [] };
+    townBoard = sign(3.2, 1.3, 1.2, 'two', 512),
+    homeBoard = sign(5.2, 1.4, 0.9, 'two', 768);
   const euler = new THREE.Euler(0, 0, 0, 'YXZ'),
     quat = new THREE.Quaternion();
-  function stand(laid: number) {
-    if (laid === stood) return;
-    stood = laid;
-    for (const b of standing.bodies.splice(0)) owner.removeBody(b);
-    standing.boxes = pieces(laid);
-    for (const b of standing.boxes)
-      standing.bodies.push(
-        addStatic(
-          { kind: 'box', hx: b.w / 2, hy: b.h / 2, hz: b.d / 2 },
-          { x: b.x, y: b.y, z: b.z },
-          quat.setFromEuler(euler.set(-(b.pitch ?? 0), b.yaw, 0)).clone(),
-          undefined,
-          owner,
-        ),
+
+  // ---------------------------------------------------------------- one leg's deck, pieces and signs
+  function legView(sp: LegSpec) {
+    const { geo, R, END, tracks, mid } = sp,
+      n = sp.leg.sections.length;
+    const endBoard = sign(5.2, 1.4, 0.9, 'two', 768),
+      signalPlates = R.slice(0, -1).map(() => sign(1.5, 0.8, 2.6, 'one', 256));
+    // A row line's plain departure boards (greybox-leg2.md, step 4; the halt map's drawing stays line 2's): one on each
+    // of its built halts' outward platform, at its back edge facing the rails, a few metres from the halt's lever
+    // (railway/halts-view.ts rowSpot), listing the line's open stops by their catalog names.
+    const halts = sp.row ? RAIL_LINES[sp.leg.line]!.halts : [],
+      departures = halts.flatMap((h, stop) => {
+        if (!h.leg) return [];
+        const at = h.s / 100 - (stop === 0 ? 14 : h.end?.kind === 'stub' ? 5 : 4);
+        return [{ stop, at, board: sign(2.6, 1.3, 1.4, 'two', 512) }];
+      });
+    /** The departure boards' lines: the line's open stops, rebuilt when their count changes. */
+    let listed = -1,
+      stopLines: { t: string; size: number }[] = [];
+    let deckEnd = -1,
+      deckLaid = -1,
+      stood = -1;
+    const deckBodies: Body[] = [];
+    const standing: { boxes: GreyBox[]; bodies: Body[] } = { boxes: [], bodies: [] };
+    /** A box along the line from (`s0`, `lat0`) to (`s1`, `lat1`), its top `up` over the rails. */
+    function along(s0: number, s1: number, lat0: number, lat1: number, up: number, w: number, h: number, c: string) {
+      geo.world(s0, lat0, q);
+      const ax = q.x,
+        az = q.z,
+        ay = geo.y(s0) + up;
+      geo.world(s1, lat1, q);
+      const by = geo.y(s1) + up,
+        run = Math.hypot(q.x - ax, q.z - az),
+        pitch = Math.atan2(by - ay, run);
+      deck.box(
+        (ax + q.x) / 2,
+        (ay + by) / 2 - h / 2,
+        (az + q.z) / 2,
+        w,
+        h,
+        Math.hypot(run, by - ay) + 0.02,
+        c,
+        Math.atan2(q.x - ax, q.z - az),
+        -pitch,
       );
+    }
+    /** A track from (`s0`, `lat0`) to (`s1`, `lat1`): its bed and two rails. */
+    function track(s0: number, s1: number, lat0: number, lat1: number) {
+      along(s0, s1, lat0, lat1, 0.13, 2.4, 0.1, BED);
+      for (const r of [-0.5, 0.5]) along(s0, s1, lat0 + r, lat1 + r, 0.29, 0.12, 0.14, RAIL);
+    }
+    const bentFree = (s: number) => !sp.noBents.some(([a, b]) => s >= a && s <= b);
+    /** Into the shared deck batch: the deck to `end`, and (a row's) the turnouts the line uses at `laid`. */
+    function drawDeck(end: number, laid: number) {
+      for (let s0 = sp.from; s0 < end - 1e-6; s0 += SEG) {
+        const s1 = Math.min(end, s0 + SEG);
+        along(s0, s1, mid, mid, 0, sp.width, 0.5, GREY);
+        for (const t of tracks) track(s0, s1, t, t);
+        // A bent every 20 m where the deck stands clear of the ground: two posts to the sea bed and a cap.
+        if (Math.round((s0 - sp.from) / SEG) % 2 === 0 && bentFree(s0)) {
+          const y = geo.y(s0);
+          geo.world(s0, mid, q);
+          const foot = Math.max(SEA_BED, ground.onIsland(q.x, q.z) ? ground.islandH(q.x, q.z) : SEA_BED);
+          if (foot < y - 1.5) {
+            geo.at(s0, P);
+            const yaw = Math.atan2(P.ux, P.uz);
+            for (const lat of [mid - sp.width / 2 + 0.9, mid + sp.width / 2 - 0.9]) {
+              geo.world(s0, lat, q);
+              deck.box(q.x, (y - 0.5 + foot) / 2, q.z, 0.5, y - 0.5 - foot, 0.5, GREY_DARK, yaw);
+            }
+            geo.world(s0, mid, q);
+            deck.box(q.x, y - 0.75, q.z, sp.width, 0.5, 0.6, GREY_DARK, yaw);
+          }
+        }
+      }
+      if (!sp.row || laid < 1) return;
+      // The turnouts (railway/row-path.ts rowLat): the start's crossover (homeward trains cross to the outward track on
+      // their way in), the end's stub at a head, the crossover before the destination's platforms (outward trains
+      // cross to the homeward track as they leave). Each a diagonal track between the two.
+      const swing = (w: RowSwing | null) => w && track(w.s0, w.s1, w.from, w.to),
+        open = halts[sp.leg.railheadHalt + Math.min(laid, n) - 1]?.end;
+      swing(rowStartCrossing(sp.leg.line));
+      if (open) swing(rowEndSwing(open));
+    }
+    /** The deck's walkable top as far as the laid end (a section still laying is drawn, not yet solid). A row's
+     * merges 10 m lengths that run straight and level into one slab. */
+    function solidDeck(laid: number) {
+      for (const b of deckBodies.splice(0)) owner.removeBody(b);
+      const end = END[laid]!,
+        a = { x: 0, z: 0 },
+        b = { x: 0, z: 0 },
+        c = { x: 0, z: 0 };
+      let s0 = sp.from;
+      while (s0 < end - 1e-6) {
+        let s1 = Math.min(end, s0 + SEG);
+        geo.world(s0, mid, a);
+        if (sp.row)
+          for (;;) {
+            const next = Math.min(end, s1 + SEG);
+            if (next <= s1 + 1e-6) break;
+            geo.world(s1, mid, b);
+            geo.world(next, mid, c);
+            const h0 = Math.atan2(b.x - a.x, b.z - a.z),
+              h1 = Math.atan2(c.x - b.x, c.z - b.z),
+              g0 = (geo.y(s1) - geo.y(s0)) / (s1 - s0),
+              g1 = (geo.y(next) - geo.y(s1)) / (next - s1);
+            if (Math.abs(h1 - h0) > 0.002 || Math.abs(g1 - g0) > 0.0005) break;
+            s1 = next;
+          }
+        geo.world(s1, mid, b);
+        deckBodies.push(slab(a.x, a.z, b.x, b.z, geo.y(s0), geo.y(s1), sp.width, owner, 0.05));
+        s0 = s1;
+      }
+    }
+    /** The boxes that stand for a state of the line: buffers at its end (and a row's start), and each stopping head's
+     * platform and ramp. */
+    function pieces(laid: number): GreyBox[] {
+      const out: GreyBox[] = [];
+      const box = (s0: number, s1: number, lat: number, up0: number, up1: number, w: number, h: number, c: string) => {
+        geo.world(s0, lat, q);
+        const a = { x: q.x, z: q.z, y: geo.y(s0) + up0 };
+        geo.world(s1, lat, q);
+        const b = { x: q.x, z: q.z, y: geo.y(s1) + up1 },
+          run = Math.hypot(b.x - a.x, b.z - a.z),
+          pitch = Math.atan2(b.y - a.y, run);
+        out.push({
+          x: (a.x + b.x) / 2,
+          y: (a.y + b.y) / 2 - (h / 2) * Math.cos(pitch),
+          z: (a.z + b.z) / 2,
+          w,
+          h,
+          d: Math.hypot(run, b.y - a.y),
+          yaw: Math.atan2(b.x - a.x, b.z - a.z),
+          pitch,
+          colour: c,
+        });
+      };
+      // A row line has no track before its first lay.
+      if (sp.row && laid < 1) return out;
+      // The buffers: a timber stop on each track, its face half a metre short of the run-off's end and 1.8 m short of
+      // a railhead's (the review's g) and of the Gorge's concourse; a row's also at its start.
+      const end = END[laid]!,
+        face = laid === 0 ? end - 0.5 : end - 1.8;
+      for (const t of tracks) {
+        box(face, face + 0.6, t, 1.4, 1.4, 2.6, 1.2, GREY_DARK);
+        if (sp.row) box(sp.from, sp.from + 0.6, t, 1.4, 1.4, 2.6, 1.2, GREY_DARK);
+      }
+      // The heads that are stops now: head j from its section's lay until it closes behind two lays on; the last
+      // stays (the request stop: the stack's `Stack halt`, the incline's and the bay cut's one head).
+      const { plat } = sp;
+      for (let j = 1; j < n; j++) {
+        const closes = RAIL_LINES[sp.leg.line]!.halts[sp.leg.railheadHalt + j - 1]!.closesAt;
+        if (laid < j || (closes !== undefined && laid >= j + 2)) continue;
+        const r = R[j - 1]!;
+        // A row line's head has a platform each side (right-hand running: the homeward lever's is the left one).
+        for (const side of sp.row ? [1, -1] : [1]) {
+          const lat = side * plat.lat;
+          for (let s = r - plat.len; s < r - 1e-6; s += 5) {
+            box(s, s + 5, lat, plat.up, plat.up, plat.w, 0.5, GREY_LIGHT);
+            geo.world(s + 2.5, lat, q);
+            const top = geo.y(s + 2.5) + plat.up - 0.5;
+            out.push({
+              x: q.x,
+              y: (top + SEA_BED) / 2,
+              z: q.z,
+              w: 0.5,
+              h: top - SEA_BED,
+              d: 0.5,
+              yaw: 0,
+              colour: GREY_DARK,
+            });
+          }
+          // The sea ramp (the deck is 4 m over open water): a landing behind the platform's home end, then a slip
+          // down along the line to under the surface, at the Ring ramps' pitch.
+          const ramp = side * (plat.lat + plat.w / 2 + 1),
+            drop = geo.y(r) + plat.up + 1.3;
+          box(r - plat.len, r - plat.len + 3, ramp, plat.up, plat.up, 2, 0.4, GREY);
+          box(r - plat.len + 3, r - plat.len + 3 + drop / 0.54, ramp, plat.up, plat.up - drop, 2, 0.3, GREY);
+        }
+      }
+      return out;
+    }
+    /** The standing pieces whose colliders wait for you to step out of them (inBox). */
+    let waiting: GreyBox[] = [];
+    function stand(laid: number) {
+      if (laid !== stood) {
+        stood = laid;
+        for (const b of standing.bodies.splice(0)) owner.removeBody(b);
+        standing.boxes = pieces(laid);
+        waiting = [...standing.boxes];
+      }
+      if (!waiting.length) return;
+      waiting = waiting.filter((b) => {
+        if (inBox(b)) return true;
+        standing.bodies.push(
+          addStatic(
+            { kind: 'box', hx: b.w / 2, hy: b.h / 2, hz: b.d / 2 },
+            { x: b.x, y: b.y, z: b.z },
+            quat.setFromEuler(euler.set(-(b.pitch ?? 0), b.yaw, 0)).clone(),
+            undefined,
+            owner,
+          ),
+        );
+        return false;
+      });
+    }
+    /** Takes the deck's slabs and the standing pieces' colliders away (and forgets what was drawn), until next shown. */
+    function clear() {
+      for (const b of deckBodies.splice(0)) owner.removeBody(b);
+      for (const b of standing.bodies.splice(0)) owner.removeBody(b);
+      standing.boxes = [];
+      waiting = [];
+      deckLaid = stood = deckEnd = -1;
+    }
+    /** A train of this leg's line held at the block signal at `s` metres (standing at no halt, within 80 m of it). */
+    const heldAt = (wd: ReadWorld, s: number) =>
+      LINE_SLOTS[sp.leg.line]!.some((slot) => {
+        const t = train(wd, slot);
+        return t.phase === TRAIN_PHASE.STAND && t.at < 0 && Math.abs(t.from / 100 - s) < 80;
+      });
+    return {
+      sp,
+      endBoard,
+      signalPlates,
+      departures,
+      clear,
+      /** The deck's end this frame (to the laid end, and on over a laying section's lay clock in 2 m steps), or -1 for
+       * none drawn. */
+      end(r: LegRows | null, here: boolean) {
+        if (!r || !here) return -1;
+        const laying = r.open && r.row.start >= 0 && r.laid < n;
+        if (sp.row && r.laid < 1 && !laying) return -1;
+        const grown = laying
+          ? Math.max(0, Math.min(1, (adapter.read.tick() - r.row.start) / LEG_TUNE.layTicks)) *
+            (END[r.laid + 1]! - END[r.laid]!)
+          : 0;
+        return END[r.laid]! + Math.floor(grown / 2) * 2;
+      },
+      drawDeck(end: number, laid: number) {
+        deckEnd = end;
+        drawDeck(end, laid);
+      },
+      /** The slabs and standing pieces for `laid` (once each change). */
+      solid(laid: number) {
+        if (laid !== deckLaid) solidDeck((deckLaid = laid));
+        stand(laid);
+      },
+      /** Into `things`: the standing pieces, the end board, the passed block signals and a row's departure boards. */
+      draw(r: LegRows, wd: ReadWorld, joined: boolean) {
+        const open = departures.length ? trainStops(wd, sp.leg.line).length : 0;
+        if (open !== listed) {
+          listed = open;
+          stopLines = halts.slice(0, open).map((h) => ({ t: h.name, size: 0.2 }));
+        }
+        for (const d of departures) {
+          if (d.stop >= open) continue;
+          geo.at(d.at, P);
+          geo.world(d.at, sp.plat.lat + 1.5, q);
+          show(d.board, q, geo.y(d.at) + sp.plat.up, P.uz, -P.ux, stopLines);
+        }
+        for (const b of standing.boxes)
+          things.box(b.x, b.y, b.z, b.w, b.h, b.d, b.colour ?? GREY, b.yaw, -(b.pitch ?? 0));
+        const laid = r.laid;
+        // The end board, 1.5 m behind the buffers' faces, facing back down the line: the stack's blank until the
+        // rivet, then the line's name; it travels with the head and is gone at the destination (answer i). A row's
+        // stands from its first lay (the West landing's own board says the same before it).
+        if (laid < n && (!sp.row || laid > 0)) {
+          const s = !sp.row && laid === 0 ? END[0]! + 0.6 : END[laid]! - 0.3;
+          geo.at(s, P);
+          geo.world(s, mid, q);
+          show(
+            endBoard,
+            q,
+            geo.y(s),
+            -P.ux,
+            -P.uz,
+            joined
+              ? [
+                  { t: sp.name, size: 0.34 },
+                  { t: UNDER_WAY, size: 0.22 },
+                ]
+              : [],
+          );
+        }
+        // The block signals the line has passed (answer e): a post between the tracks 3 m beyond each section end,
+        // its arm at danger while a train is held there.
+        signalPlates.forEach((s, k) => {
+          if (laid <= k + 1) return;
+          const at = R[k]! + 3;
+          geo.at(at, P);
+          geo.world(at, mid, q);
+          const y = geo.y(at);
+          show(s, q, y, -P.ux, -P.uz, [
+            { t: 'SIGNAL', size: 0.36 },
+            { t: 'TRAIN AHEAD', size: 0.22 },
+          ]);
+          const held = heldAt(wd, R[k]!);
+          things.box(
+            q.x,
+            y + 3.9,
+            q.z,
+            1.3,
+            0.22,
+            0.12,
+            held ? DANGER : CLEAR,
+            Math.atan2(P.ux, P.uz),
+            0,
+            held ? 0 : 0.7,
+          );
+        });
+      },
+      inspect: () => ({
+        deckEnd,
+        deckSolids: deckBodies.length,
+        standing: standing.boxes.length,
+        waiting: waiting.length,
+        endBoard: endBoard.mesh.visible ? endBoard.text : null,
+        signals: signalPlates.filter((s) => s.mesh.visible).length,
+      }),
+    };
   }
+  const legs = SPECS.map(legView);
+  /** The stack leg's view (its Ring Island run-off and the steel loop's objectives are its own). */
+  const legIndex = new Map(legs.map((l, i) => [l.sp.leg.id, i])),
+    stack = legs[legIndex.get('stack')!]!,
+    incline = legs.find((l) => l.sp.leg.id === 'incline'),
+    bay = legs.find((l) => l.sp.leg.id === 'bay-cut');
+  /** Whether the built leg `id` is complete. */
+  const done = (r: { per: readonly LegRows[] }, id: string) => {
+    const i = legIndex.get(id);
+    return i !== undefined && r.per[i]!.done;
+  };
+  /** Whether a leg's views stand: the stack's only with a section laid or Ring Island's near view mounted (its end is
+   * the island's run-off till then); every other leg's always. */
+  const shown = (l: (typeof legs)[number], lr: LegRows | null) =>
+    !!lr && (l !== stack || lr.laid > 0 || ringIslandNear.mounted);
+  /** Every sign the legs' views stand (each frame hides them all, then stands those wanted). */
+  const signs = [
+    bill,
+    plate,
+    pickPlate,
+    gatePlate,
+    townBoard,
+    homeBoard,
+    ...legs.flatMap((l) => [l.endBoard, ...l.signalPlates, ...l.departures.map((d) => d.board)]),
+  ];
 
   // ---------------------------------------------------------------- reads
+  type LegRows = ReturnType<typeof legRows>;
+  function legRows(wd: ReadWorld, k: number) {
+    const row = legRow(wd, k);
+    return {
+      row,
+      open: legOpen(wd, k),
+      done: legDone(wd, k),
+      reached: legReached(wd, k),
+      laid: Math.min(RAIL_LEGS[k]!.sections.length, row.laid),
+    };
+  }
   function rows() {
     if (!adapter.read.whole()) return null;
     const wd = adapter.read.world(),
-      leg = legRow(wd, LEG),
       route = routeRow(wd),
-      stock = rail(wd);
-    const open = legOpen(wd, LEG),
-      done = legDone(wd, LEG);
+      stock = rail(wd),
+      per = legs.map((l) => legRows(wd, l.sp.k)),
+      open = legs.findIndex((_l, i) => per[i]!.open);
     return {
       wd,
-      leg,
+      per,
+      /** The open leg's index into `legs`, or -1 (one is open at a time on the whole route). */
       open,
-      done,
-      reached: legReached(wd, LEG),
       joined: aperture(wd).joined >= 0,
-      laid: Math.min(SECTIONS, leg.laid),
       // The racks are the open leg's only once it is open (before, Rail.depot is a Q job's).
-      rack: open ? { logs: stock.depot, rails: stock.depotRails } : { logs: 0, rails: 0 },
+      rack: open >= 0 ? { logs: stock.depot, rails: stock.depotRails } : { logs: 0, rails: 0 },
+      grants: route.grants,
+      gates: route.gates,
       pick: !!(route.grants & 1),
       gate: !!(route.gates & 1),
       steelStep: steelStep(wd),
     };
   }
   /** The steel loop's step, or null before the rivet and once line 2 wears the longer boiler (BOILER_SPEED row 2). */
-  function steelStep(wd: ReturnType<typeof adapter.read.world>): keyof typeof STEEL_OBJECTIVES | null {
+  function steelStep(wd: ReadWorld): keyof typeof STEEL_OBJECTIVES | null {
     if (aperture(wd).joined < 0 || line(wd, LINE2).boiler >= 2) return null;
     const s = steel(wd);
     if (shed(wd).steel > 0) return 'install';
     if (s.lit >= 0) return 'cast';
     return s.yardLogs + s.yardRails + s.logs + s.rails > 0 ? 'feed' : 'kit';
   }
-  /** A train of line 2 held at the block signal at `s` metres (standing at no halt, within a train's length of it). */
-  const heldAt = (wd: ReturnType<typeof adapter.read.world>, s: number) =>
-    LINE_SLOTS[LINE2]!.some((slot) => {
-      const t = train(wd, slot);
-      return t.phase === TRAIN_PHASE.STAND && t.at < 0 && Math.abs(t.from / 100 - s) < 80;
-    });
   const nearGorge = () => {
     const g = gorgeAt(0, 0),
       b = me.body?.position;
@@ -385,198 +785,233 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     );
   };
 
-  let objective = '';
+  let objective = '',
+    drawnDeck = '';
   function draw() {
     const r = rows();
-    for (const s of [bill, plate, endBoard, pickPlate, gatePlate, townBoard, ...signalPlates]) s.mesh.visible = false;
-    // With nothing laid the line's end is Ring Island's run-off, which belongs to the island's near view: its deck,
-    // its slabs and the buffers (drawn and solid) stand only while that view is mounted. Across the sea the island
-    // is its far cones, and a slab there would float over the bare hillside.
-    const here = !!r && (r.laid > 0 || ringIslandNear.mounted);
-    deck.mesh.visible = here;
-    things.mesh.visible = !!r;
-    if (!r || !here) {
-      clear();
-      things.begin();
-      things.commit();
-      if (!r) return;
-      gorge(r);
-      things.commit();
-      note(r);
-      return;
-    }
-    const { leg, laid } = r;
-    // The deck: to the laid end, and on over a laying section's lay clock (2 m steps).
-    const laying = r.open && leg.start >= 0 && laid < SECTIONS;
-    const grown = laying
-      ? Math.max(0, Math.min(1, (adapter.read.tick() - leg.start) / LEG_TUNE.layTicks)) * (END[laid + 1]! - END[laid]!)
-      : 0;
-    const end = END[laid]! + Math.floor(grown / 2) * 2;
-    if (end !== deckEnd) drawDeck((deckEnd = end));
-    if (laid !== deckLaid) solidDeck((deckLaid = laid));
-    stand(laid);
-
-    things.begin();
-    for (const b of standing.boxes) things.box(b.x, b.y, b.z, b.w, b.h, b.d, b.colour ?? GREY, b.yaw, -(b.pitch ?? 0));
-    // The end board, 1.5 m behind the buffers' faces, facing back down the line: blank until the rivet, then the
-    // line's name; it travels with the head and is gone at High Gorge (answer i).
-    const ringEnd = laid === 0;
-    if (laid < SECTIONS) {
-      const s = ringEnd ? END[0]! + 0.6 : END[laid]! - 0.3;
-      line2At(s, P);
-      line2World(s, FORM_MID, q);
-      show(
-        endBoard,
-        q,
-        line2Y(s),
-        -P.ux,
-        -P.uz,
-        r.joined
-          ? [
-              { t: LINE_NAME, size: 0.34 },
-              { t: UNDER_WAY, size: 0.22 },
-            ]
-          : [],
-      );
-    }
-    // The block signals the line has passed (answer e): a post between the tracks 3 m beyond each section end, its
-    // arm at danger while a train is held there.
-    signalPlates.forEach((s, k) => {
-      if (laid <= k + 1) return;
-      const at = R[k]! + 3;
-      line2At(at, P);
-      line2World(at, FORM_MID, q);
-      const y = line2Y(at);
-      show(s, q, y, -P.ux, -P.uz, [
-        { t: 'SIGNAL', size: 0.36 },
-        { t: 'TRAIN AHEAD', size: 0.22 },
-      ]);
-      const held = heldAt(r.wd, R[k]!);
-      things.box(q.x, y + 3.9, q.z, 1.3, 0.22, 0.12, held ? DANGER : CLEAR, Math.atan2(P.ux, P.uz), 0, held ? 0 : 0.7);
+    for (const s of signs) s.mesh.visible = false;
+    things.mesh.visible = deck.mesh.visible = !!r;
+    // With nothing laid the stack line's end is Ring Island's run-off, which belongs to the island's near view: its
+    // deck, its slabs and the buffers (drawn and solid) stand only while that view is mounted. Across the sea the
+    // island is its far cones, and a slab there would float over the bare hillside.
+    const ends = legs.map((l, i) => {
+      const lr = r?.per[i] ?? null,
+        e = l.end(lr, shown(l, lr));
+      if (e < 0) l.clear();
+      return e;
     });
-
-    // The current section's frame, bill, rack and plate.
-    if (r.open) {
-      const f = FRAMES[laid]!,
-        k = RACKS[laid]!,
-        sec = STACK.sections[laid]!,
-        n = String(laid + 1);
-      const put = (site: Site, a: number, t: number, y: number, w: number, h: number, d: number, c: string) => {
-        const p = local(site, a, t);
-        things.box(p.x, site.y + y, p.z, w, h, d, c, site.yaw);
-      };
-      // The frame: 2.6 m along, 2.0 m across: a pallet, four posts and two top rails; the fed logs and rails inside.
-      put(f, 0, 0, 0.06, 2.0, 0.12, 2.6, GREY_DARK);
-      for (const a of [-1.25, 1.25]) for (const t of [-0.95, 0.95]) put(f, a, t, 0.85, 0.1, 1.7, 0.1, GREY);
-      for (const t of [-0.95, 0.95]) put(f, 0, t, 1.65, 0.1, 0.1, 2.6, GREY);
-      for (let i = 0; i < Math.min(leg.logs, sec.logs); i++)
-        put(f, -1.05 + (i % 5) * 0.22, 0, 0.24 + Math.floor(i / 5) * 0.22, 1.7, 0.2, 0.2, LOG);
-      for (let i = 0; i < Math.min(leg.rails, sec.rails); i++)
-        put(f, 0.2 + (i % 5) * 0.2, 0, 0.18 + Math.floor(i / 5) * 0.12, 1.7, 0.1, 0.1, RAIL);
-      const where = laying
-        ? 'LAYING THE SECTION'
-        : r.rack.logs + r.rack.rails > 0
-          ? 'KIT: ON THE RACK'
-          : 'KIT: ON A TRAIN';
-      show(
-        bill,
-        local(f, 1.5, 0),
-        f.y,
-        f.tx,
-        f.tz,
-        [
-          { t: LINE_NAME, size: 0.2 },
-          { t: `SECTION ${n} OF ${SECTIONS}`, size: 0.15 },
-          { t: `LOGS ${leg.logs}/${sec.logs}   RAILS ${leg.rails}/${sec.rails}`, size: 0.15 },
-          { t: where, size: 0.13 },
-        ],
-        n,
-      );
-      // The rack: a pallet, the logs and rails a train has set down, and the plate with the section's number.
-      put(k, 0, 0, 0.06, 1.9, 0.12, 2.6, GREY_DARK);
-      // A unit still in the air from a kit car (railway/kit-board.ts) is drawn on the rack once it lands.
-      const lying = { logs: r.rack.logs - legKitFlight.logs, rails: r.rack.rails - legKitFlight.rails };
-      for (let i = 0; i < Math.min(lying.logs, 40); i++)
-        put(k, -1.05 + (i % 5) * 0.22, 0, 0.24 + Math.floor(i / 5) * 0.22, 1.7, 0.2, 0.2, LOG);
-      for (let i = 0; i < Math.min(lying.rails, 40); i++)
-        put(k, 0.2 + (i % 5) * 0.2, 0, 0.18 + Math.floor(i / 5) * 0.12, 1.7, 0.1, 0.1, RAIL);
-      show(plate, local(k, -1.6, 0), k.y, k.tx, k.tz, [{ t: `KIT ${n}`, size: 0.5 }], n);
+    // The deck batch is shared: rewritten when any leg's end moves.
+    const key = ends.join();
+    if (key !== drawnDeck) {
+      drawnDeck = key;
+      deck.begin();
+      legs.forEach((l, i) => {
+        if (ends[i]! >= 0) l.drawDeck(ends[i]!, r!.per[i]!.laid);
+      });
+      deck.commit();
     }
-
+    things.begin();
+    if (!r) return things.commit();
+    legs.forEach((l, i) => {
+      if (ends[i]! < 0) return;
+      l.solid(r.per[i]!.laid);
+      l.draw(r.per[i]!, r.wd, r.joined);
+    });
+    // The open leg's current section: its frame, bill, rack and plate (the stack's while Ring Island's near view
+    // stands, as its deck does with nothing laid).
+    const o = r.open >= 0 ? legs[r.open]! : null;
+    if (o && shown(o, r.per[r.open]!)) site(o, r, r.per[r.open]!);
+    yard(r);
     gorge(r);
+    bell(r);
     things.commit();
     note(r);
   }
-  /** High Gorge: the pickup post, the barrier and the stand-in town's board, while you are near it (into `things`). */
+  const put = (site: Site, a: number, t: number, y: number, w: number, h: number, d: number, c: string) => {
+    const p = local(site, a, t);
+    things.box(p.x, site.y + y, p.z, w, h, d, c, site.yaw);
+  };
+  /** `logs` logs and `rails` rails stacked at `k` (a frame's fill, a pallet's load). */
+  function load(k: Site, logs: number, rails: number) {
+    for (let i = 0; i < logs; i++)
+      put(k, -1.05 + (i % 5) * 0.22, 0, 0.24 + Math.floor(i / 5) * 0.22, 1.7, 0.2, 0.2, LOG);
+    for (let i = 0; i < rails; i++)
+      put(k, 0.2 + (i % 5) * 0.2, 0, 0.18 + Math.floor(i / 5) * 0.12, 1.7, 0.1, 0.1, RAIL);
+  }
+  /** Up to 40 logs and 40 rails lying on a pallet at `k`. */
+  function pile(k: Site, logs: number, rails: number) {
+    put(k, 0, 0, 0.06, 1.9, 0.12, 2.6, GREY_DARK);
+    load(k, Math.min(logs, 40), Math.min(rails, 40));
+  }
+  function site(l: (typeof legs)[number], r: NonNullable<ReturnType<typeof rows>>, lr: LegRows) {
+    const { sp } = l,
+      laid = lr.laid,
+      n = sp.leg.sections.length,
+      f = sp.frames[laid]!,
+      k = sp.racks[laid]!,
+      sec = sp.leg.sections[laid]!,
+      num = String(laid + 1),
+      laying = lr.row.start >= 0;
+    // The frame: 2.6 m along, 2.0 m across: a pallet, four posts and two top rails; the fed logs and rails inside.
+    put(f, 0, 0, 0.06, 2.0, 0.12, 2.6, GREY_DARK);
+    for (const a of [-1.25, 1.25]) for (const t of [-0.95, 0.95]) put(f, a, t, 0.85, 0.1, 1.7, 0.1, GREY);
+    for (const t of [-0.95, 0.95]) put(f, 0, t, 1.65, 0.1, 0.1, 2.6, GREY);
+    load(f, Math.min(lr.row.logs, sec.logs), Math.min(lr.row.rails, sec.rails));
+    const where = laying
+      ? 'LAYING THE SECTION'
+      : r.rack.logs + r.rack.rails > 0
+        ? 'KIT: ON THE RACK'
+        : 'KIT: ON A TRAIN';
+    show(
+      bill,
+      local(f, 1.5, 0),
+      f.y,
+      f.tx,
+      f.tz,
+      [
+        { t: sp.name, size: 0.2 },
+        { t: `SECTION ${num} OF ${n}`, size: 0.15 },
+        { t: `LOGS ${lr.row.logs}/${sec.logs}   RAILS ${lr.row.rails}/${sec.rails}`, size: 0.15 },
+        { t: where, size: 0.13 },
+      ],
+      num,
+    );
+    // The rack: a pallet, the logs and rails a train has set down, and the plate with the section's number. A unit
+    // still in the air from a kit car (railway/kit-board.ts) is drawn on the rack once it lands.
+    pile(k, r.rack.logs - legKitFlight.logs, r.rack.rails - legKitFlight.rails);
+    show(plate, local(k, -1.6, 0), k.y, k.tx, k.tz, [{ t: `KIT ${num}`, size: 0.5 }], num);
+  }
+  /** High Gorge's yard (the incline's, greybox leg 2): the units line 2 has set down past what its first rack lacks,
+   * on a pallet beside that rack, until the `ns` trains take them on. Unlabelled (no new copy). */
+  const yards = legs.flatMap((l, i) => (l.sp.leg.kit !== 'home' ? [{ l, i }] : []));
+  function yard(r: NonNullable<ReturnType<typeof rows>>) {
+    for (const { l, i } of yards) {
+      if (!r.per[i]!.open) continue;
+      const y = legYard(r.wd, l.sp.k),
+        logs = y.logs - legYardFlight.logs,
+        rails = y.rails - legYardFlight.rails;
+      if (logs <= 0 && rails <= 0) continue;
+      const rack = l.sp.racks[0]!,
+        at = legYardSpot(l.sp.k);
+      pile({ ...rack, x: at.x, z: at.z }, logs, rails);
+    }
+  }
+  /** High Gorge: the pickup post, the barrier on the incline's first frame and the stand-in town's board, while you
+   * are near it (into `things`). */
   function gorge(r: NonNullable<ReturnType<typeof rows>>) {
-    if (nearGorge()) {
-      const north = gorgeAt(0, -1),
-        o = gorgeAt(0, 0),
-        toSplit = { x: o.x - north.x, z: o.z - north.z },
-        alongA = { x: gorgeAt(1, 0).x - o.x, z: gorgeAt(1, 0).z - o.z },
-        yawA = Math.atan2(alongA.x, alongA.z);
-      if (!r.pick)
-        things.box(PICK_AT.x, PICK_AT.y + 0.7, PICK_AT.z, 0.5, 1.4, 0.5, r.done ? '#e8b72c' : GREY_DARK, yawA);
-      show(
-        pickPlate,
-        { x: PICK_AT.x - alongA.x * 1.6, z: PICK_AT.z - alongA.z * 1.6 },
-        PICK_AT.y,
-        toSplit.x,
-        toSplit.z,
-        [
-          { t: 'POWERED PICK', size: 0.34 },
-          { t: r.pick ? 'TAKEN' : r.done ? 'TAKE IT' : 'NOT YET', size: 0.26 },
-        ],
-      );
-      // The barrier: two posts and a bar across the pad, lifted once it is open.
-      for (const side of [-1.6, 1.6])
-        things.box(
-          GATE_AT.x + alongA.x * side,
-          GATE_AT.y + 1.1,
-          GATE_AT.z + alongA.z * side,
-          0.3,
-          2.2,
-          0.3,
-          GREY_DARK,
-          yawA,
-        );
-      things.box(
-        GATE_AT.x,
-        GATE_AT.y + (r.gate ? 2.1 : 1.1),
-        GATE_AT.z,
-        0.2,
-        r.gate ? 0.2 : 1.6,
-        3.2,
-        r.gate ? CLEAR : DANGER,
-        yawA,
-      );
-      show(gatePlate, GATE_AT, GATE_AT.y, -toSplit.x, -toSplit.z, [
+    if (!nearGorge()) return;
+    const north = gorgeAt(0, -1),
+      o = gorgeAt(0, 0),
+      toSplit = { x: o.x - north.x, z: o.z - north.z },
+      alongA = { x: gorgeAt(1, 0).x - o.x, z: gorgeAt(1, 0).z - o.z },
+      yawA = Math.atan2(alongA.x, alongA.z),
+      stackDone = done(r, 'stack');
+    if (!r.pick)
+      things.box(PICK_AT.x, PICK_AT.y + 0.7, PICK_AT.z, 0.5, 1.4, 0.5, stackDone ? '#e8b72c' : GREY_DARK, yawA);
+    show(pickPlate, { x: PICK_AT.x - alongA.x * 1.6, z: PICK_AT.z - alongA.z * 1.6 }, PICK_AT.y, toSplit.x, toSplit.z, [
+      { t: 'POWERED PICK', size: 0.34 },
+      { t: r.pick ? 'TAKEN' : stackDone ? 'TAKE IT' : 'NOT YET', size: 0.26 },
+    ]);
+    // The barrier on the incline's first frame (greybox-leg2.md, step 4: moved from the pad behind the south platform,
+    // which stays), barring it from the platform's side; its plate over it, facing the platform.
+    const f = incline?.sp.frames[0];
+    if (f) {
+      barrier(f, r.gate);
+      show(gatePlate, local(f, 0, -1.35), f.y, -f.tx, -f.tz, [
         { t: 'BARRIER: THE INCLINE', size: 0.3 },
         { t: r.gate ? 'OPEN' : r.pick ? 'SHUT' : 'NEEDS THE POWERED PICK', size: 0.24 },
       ]);
-      const t = gorgeAt(TOWN_PAD.a1 - 1.2, (TOWN_PAD.c0 + TOWN_PAD.c1) / 2);
-      show(townBoard, t, GORGE_DECK, alongA.x, alongA.z, [
-        { t: 'HIGH GORGE TOWN', size: 0.3 },
-        { t: 'STAND-IN: 3 PLOTS STAKED', size: 0.2 },
+    }
+    const t = gorgeAt(TOWN_PAD.a1 - 1.2, (TOWN_PAD.c0 + TOWN_PAD.c1) / 2);
+    show(townBoard, t, GORGE_DECK, alongA.x, alongA.z, [
+      { t: 'HIGH GORGE TOWN', size: 0.3 },
+      { t: 'STAND-IN: 3 PLOTS STAKED', size: 0.2 },
+    ]);
+  }
+  /** A barrier on a frame `site`: two posts and a panel on the side away from the rails, lifted to a bar once open. */
+  function barrier(site: Site, open: boolean) {
+    for (const a of [-1.85, 1.85]) put(site, a, -1.35, 1.3, 0.3, 2.6, 0.3, GREY_DARK);
+    put(site, 0, -1.35, open ? 2.5 : 1.1, 0.2, open ? 0.2 : 1.6, 3.4, open ? CLEAR : DANGER);
+  }
+  const nearBell = () => {
+    const c = AREA_CENTRES.bell,
+      b = me.body?.position;
+    return (
+      Math.hypot(camera.position.x - c.x, camera.position.z - c.z) < 450 ||
+      (!!b && Math.hypot(b.x - c.x, b.z - c.z) < 450)
+    );
+  };
+  /** What each pad's sign was last painted with, by the relabel it was painted through (a remount paints again). */
+  const padPainted = new Map<string, { by: (lines: readonly string[]) => void; text: string }>();
+  /** Bell Rock, while you are near it: the seeds post (until taken), the Canopy barrier, the stalls risen on their
+   * pads with the pads reading connected, and the board for the bay line. */
+  function bell(r: NonNullable<ReturnType<typeof rows>>) {
+    if (!nearBell()) return;
+    if (!(r.grants & (1 << SEEDS)))
+      things.box(SEEDS_AT.x, SEEDS_AT.y + 0.7, SEEDS_AT.z, 0.5, 1.4, 0.5, done(r, 'incline') ? '#4fd1c5' : GREY_DARK);
+    barrier(CANOPY_SITE, !!(r.gates & (1 << CANOPY)));
+    for (const pad of bellPads) {
+      const leg = STALLS[pad.id],
+        on = !!leg && done(r, leg);
+      // A stall's box: a counter on the pad's +e half, low enough that its sign (on the -e edge, facing +e) reads over
+      // it. Drawn only: it holds nobody.
+      if (on)
+        things.box(
+          pad.x + Math.cos(pad.yaw) * 0.8,
+          pad.y + 0.45,
+          pad.z - Math.sin(pad.yaw) * 0.8,
+          2.2,
+          0.9,
+          4,
+          GREY_LIGHT,
+          pad.yaw,
+        );
+      const base = LEG2_TEXT[pad.id],
+        relabel = areaLabels.get(pad.id);
+      if (!base || !relabel) continue;
+      const lines = on ? [base[0]!, CONNECTED] : base,
+        text = lines.join('|'),
+        was = padPainted.get(pad.id);
+      if (was?.by === relabel && was.text === text) continue;
+      relabel(lines);
+      padPainted.set(pad.id, { by: relabel, text });
+    }
+    if (bay && done(r, 'incline') && !done(r, 'bay-cut')) {
+      bay.sp.geo.at(HOME_BOARD_S, P);
+      bay.sp.geo.world(HOME_BOARD_S, 0, q);
+      show(homeBoard, q, bay.sp.geo.y(HOME_BOARD_S), P.ux, P.uz, [
+        { t: HOME_LINE, size: 0.3 },
+        { t: BUILT_FROM_HOME, size: 0.22 },
       ]);
     }
   }
+  /** Leg 2's step once the incline's barrier is open: build the incline, take the seeds, build the bay line, ride it
+   * (beats 3 to 10; the seeds first, though the bay cut does not need them). */
+  function leg2Objective(r: NonNullable<ReturnType<typeof rows>>) {
+    if (!incline) return '';
+    if (!done(r, 'incline')) return LEG_OBJECTIVES.incline;
+    if (!(r.grants & (1 << SEEDS))) return LEG_OBJECTIVES.seeds;
+    if (!bay) return '';
+    return done(r, 'bay-cut') ? LEG_OBJECTIVES.ride : LEG_OBJECTIVES.bay;
+  }
   /** The objective line's text, to the play record (no on-screen line on the route). */
   function note(r: NonNullable<ReturnType<typeof rows>>) {
-    const laid = r.laid;
-    const text = !r.reached
+    const s = r.per[legIndex.get('stack')!]!,
+      laid = s.laid,
+      of = RAIL_LEGS[0]!.sections.length;
+    const text = !s.reached
       ? ''
-      : !r.done
+      : !s.done
         ? r.steelStep
           ? STEEL_OBJECTIVES[r.steelStep]
           : laid === 0
-          ? LEG_OBJECTIVES.first
-          : LEG_OBJECTIVES.next(laid + 1, SECTIONS)
+            ? LEG_OBJECTIVES.first
+            : LEG_OBJECTIVES.next(laid + 1, of)
         : !r.pick
           ? LEG_OBJECTIVES.open
           : !r.gate
             ? LEG_OBJECTIVES.gate
-            : '';
+            : leg2Objective(r);
     if (text !== objective) {
       objective = text;
       if (text) playObjective(text);
@@ -589,33 +1024,39 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     restore: draw,
     update: draw,
     accepted() {},
-    /** Feed the frame and the rack's two takes while the leg is open; the pickup and the barrier at High Gorge. An
-     * empty or wrong back meets "Feed the frame" blocked with its reason, never silence. */
+    /** Feed the frame and the rack's two takes while a leg is open; the pickup and the barrier at High Gorge. An
+     * empty or wrong back meets "Feed the frame" blocked with its reason, never silence; a shut barrier's frame
+     * meets the barrier's own prompt, on the same spot. */
     targets(): Interactable[] {
       const p = me.body?.position,
         r = rows();
       if (!p || !r || !adapter.read.ready()) return [];
-      const { wd, leg, laid } = r,
+      const { wd } = r,
         mine = account(wd, adapter.read.pid),
         out: Interactable[] = [];
-      if (r.open && (laid > 0 || ringIslandNear.mounted)) {
-        const f = FRAMES[laid]!,
-          k = RACKS[laid]!,
-          sec = STACK.sections[laid]!;
-        if (leg.start < 0 && within(p, f, legFrame(STACK, laid).reach)) {
-          const needLogs = leg.logs < sec.logs,
-            needRails = leg.rails < sec.rails;
+      const o = r.open >= 0 ? legs[r.open]! : null,
+        lr = o ? r.per[r.open]! : null;
+      if (o && lr && shown(o, lr)) {
+        const { sp } = o,
+          laid = lr.laid,
+          f = sp.frames[laid]!,
+          k = sp.racks[laid]!,
+          sec = sp.leg.sections[laid]!,
+          shut = sec.gate !== undefined && !(r.gates & (1 << sec.gate));
+        if (lr.row.start < 0 && !shut && within(p, f, legFrame(sp.leg, laid).reach)) {
+          const needLogs = lr.row.logs < sec.logs,
+            needRails = lr.row.rails < sec.rails;
           if (needLogs || needRails) {
             const fills = ((mine?.carry ?? 0) > 0 && needLogs) || ((mine?.rails ?? 0) > 0 && needRails);
             const target = { id: 'railway-leg-feed', verb: FEED, at: v3(f, f.y + 1.5) };
             out.push(
               fills
-                ? { ...target, run: () => void adapter.feedLeg(LEG) }
+                ? { ...target, run: () => void adapter.feedLeg(sp.k) }
                 : { ...target, blocked: needLogs && needRails ? BRING_BOTH : needLogs ? BRING_LOGS : BRING_RAILS },
             );
           }
         }
-        if (within(p, k, legRack(STACK, laid).reach)) {
+        if (within(p, k, legRack(sp.leg, laid).reach)) {
           // A blocked prompt carries its reason and no `run`.
           const take = (id: string, verb: string, kind: number, along: number, run: () => void): Interactable => {
             const target = { id, verb, at: v3(local(k, along, 0), k.y + 1.3) };
@@ -636,10 +1077,11 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         }
       }
       // The pickup refuses until the fourth section is laid ("Not yet": call 28); the barrier until the room holds
-      // the pick, and then until the leg it shuts is built (leg 2's rules: the rule refuses it today).
+      // the pick, and then until the leg it shuts is open.
+      const stackDone = done(r, 'stack');
       if (!r.pick && within(p, PICK_AT, 400)) {
         const target = { id: 'railway-leg-pick', verb: TAKE_PICK, at: v3(PICK_AT, PICK_AT.y + 1.6) };
-        out.push(r.done ? { ...target, run: () => void adapter.takeGrant(0) } : { ...target, blocked: NOT_YET });
+        out.push(stackDone ? { ...target, run: () => void adapter.takeGrant(0) } : { ...target, blocked: NOT_YET });
       }
       if (!r.gate && within(p, GATE_AT, 1260)) {
         const target = { id: 'railway-leg-gate', verb: OPEN_GATE, at: v3(GATE_AT, GATE_AT.y + 1.6) },
@@ -652,26 +1094,46 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
               : { ...target, blocked: NO_LINE },
         );
       }
+      // Bell Rock (greybox leg 2): the seeds refuse until the incline is laid; the Canopy barrier until its leg is
+      // built and open with the seeds held (leg 3's: it refuses today, in view).
+      if (!(r.grants & (1 << SEEDS)) && within(p, SEEDS_AT, RAIL_GRANTS[SEEDS]!.at.reach)) {
+        const target = { id: 'railway-leg-seeds', verb: TAKE_SEEDS, at: v3(SEEDS_AT, SEEDS_AT.y + 1.6) };
+        out.push(
+          done(r, 'incline')
+            ? { ...target, run: () => void adapter.takeGrant(SEEDS) }
+            : { ...target, blocked: SEEDS_NOT_YET },
+        );
+      }
+      const canopy = gateLeg(CANOPY);
+      if (!(r.gates & (1 << CANOPY)) && within(p, CANOPY_SITE, RAIL_GATES[CANOPY]!.at.reach)) {
+        const target = { id: 'railway-leg-canopy', verb: OPEN_GATE, at: v3(CANOPY_SITE, CANOPY_SITE.y + 1.6) };
+        out.push(
+          canopy && legOpen(wd, canopy.leg) && r.grants & (1 << RAIL_GATES[CANOPY]!.needs)
+            ? { ...target, run: () => void adapter.openGate(CANOPY) }
+            : { ...target, blocked: NO_LINE },
+        );
+      }
       return out;
     },
     inspect: () => {
-      const r = rows();
+      const r = rows(),
+        s = r?.per[legIndex.get('stack')!];
       return {
         legView: {
-          laid: r?.laid ?? null,
-          deckEnd,
-          deckSolids: deckBodies.length,
-          standing: standing.boxes.length,
+          laid: s?.laid ?? null,
+          ...stack.inspect(),
           boxes: deck.count + things.count,
           bill: bill.mesh.visible ? bill.text : null,
           plate: plate.mesh.visible ? plate.text : null,
-          endBoard: endBoard.mesh.visible ? endBoard.text : null,
-          signals: signalPlates.filter((s) => s.mesh.visible).length,
-          frame: r ? { logs: r.leg.logs, rails: r.leg.rails, laying: r.leg.start >= 0 } : null,
+          frame: s ? { logs: s.row.logs, rails: s.row.rails, laying: s.row.start >= 0 } : null,
           rack: r?.rack ?? null,
+          open: r && r.open >= 0 ? legs[r.open]!.sp.leg.id : null,
           pick: r?.pick ?? false,
           gate: r?.gate ?? false,
           objective,
+          legs: Object.fromEntries(
+            legs.map((l, i) => [l.sp.leg.id, { laid: r?.per[i]?.laid ?? null, ...l.inspect() }]),
+          ),
         },
       };
     },

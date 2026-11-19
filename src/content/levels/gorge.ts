@@ -1,7 +1,7 @@
 // High Gorge's complete massing, compiled to JSON; array order preserves body and batch insertion.
 import { defineLevel } from '../../prefab/types.ts';
 import { add, sub, mul, layoutData, type Scalar } from '../../prefab/authoring.ts';
-import { GORGE_DECK, GORGE_RIM, STAIR, TOWN_PAD } from '../../entities/route-greybox/massing.ts';
+import { GORGE_DECK, GORGE_RIM, INCLINE_BORE, STAIR, TOWN_PAD } from '../../entities/route-greybox/massing.ts';
 import { inclineLayout } from './leg2.ts';
 
 const GREY = '#9c9ea1',
@@ -115,10 +115,18 @@ function placements() {
   );
   out.push(levelBox(-3, 6, -WALL - 12, -WALL, GORGE_RIM, STAIR_TOP, GREY_LIGHT));
   // The stacks, as colliders under the silhouette's mesh: the wall at c ±45 and the 85 m top, boxes inside the map's
-  // outlines (a ±120, 200 m back from each wall).
+  // outlines (a ±120, 200 m back from each wall). The south one stands over the incline's bore (greybox-leg2.md, step
+  // 4): its slab from the bore's roof up; the rest of it, round the bore, is leg2.ts's (the Gorge's incline pieces).
   for (const side of [-1, 1])
     out.push({
-      ...levelBox(-120, 120, side * WALL, side * (WALL + 200), -10, GORGE_RIM),
+      ...levelBox(
+        -120,
+        120,
+        side * WALL,
+        side * (WALL + 200),
+        side > 0 ? INCLINE_BORE.roof + INCLINE_BORE.slab : -10,
+        GORGE_RIM,
+      ),
       hidden: true,
     });
   // The stand-in town (campaign-outline, "Towns at the hubs", 4): a flat pad, two box buildings with no interior, three

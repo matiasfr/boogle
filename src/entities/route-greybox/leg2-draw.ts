@@ -4,6 +4,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
 import { loadLevelArtifact } from '../../prefab/validate.ts';
 import { LEG2_TEXT } from './leg2-layout.ts';
+import { areaLabels } from './state.ts';
 function compiled(input: unknown) {
   const value = loadLevelArtifact(input, records.prefabs);
   for (const p of value.placements)
@@ -19,6 +20,22 @@ export function leg2Massing(value: unknown) {
   return compiled(value).placements.filter((p) => batched(p.prefab));
 }
 export function leg2Extras(owner: OwnedView, value: unknown) {
-  for (const p of compiled(value).placements.filter((p) => !batched(p.prefab)))
-    instantiate(p.prefab, p, { owner, texts: LEG2_TEXT, still: true }).setEnabled(true);
+  for (const p of compiled(value).placements.filter((p) => !batched(p.prefab))) {
+    const made = instantiate(p.prefab, p, { owner, texts: LEG2_TEXT, still: true });
+    made.setEnabled(true);
+    // Each label can be repainted while this area stands (route-greybox/leg-view.ts: a stall pad that connects).
+    for (const [name, key] of Object.entries(p.labels ?? {})) {
+      const relabel = (lines: readonly string[]) => made.relabel(name, lines);
+      areaLabels.set(key, relabel);
+      owner.cleanup(() => {
+        if (areaLabels.get(key) === relabel) areaLabels.delete(key);
+      });
+    }
+  }
+}
+/** A leg 2 level's pads (`greybox.pad` placements): id, centre and yaw. */
+export function leg2Pads(value: unknown) {
+  return compiled(value)
+    .placements.filter((p) => p.prefab === 'greybox.pad')
+    .map((p) => ({ id: p.id, x: p.pos[0], y: p.pos[1], z: p.pos[2], yaw: p.rot?.[0] ?? 0 }));
 }

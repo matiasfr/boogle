@@ -9,6 +9,7 @@ import { instantiate } from '../../prefab/instantiate.ts';
 import { FIXED, PLAYER_R, reducedMotion } from '../../constants.ts';
 import { camera } from '../../render/scene.ts';
 type CabFace = import('./engine-kit.ts').CabFace;
+type LinePoint = import('../../place/layout.ts').LinePoint;
 import { setShapes, stepAlpha, teleport, type Shape } from '../../physics/engine.ts';
 import { me } from '../../player/player.ts';
 import { remotes } from '../../netplay/net.ts';
@@ -45,6 +46,7 @@ import { railTrainAsked, railTrainHeld, trainStops, railCallPlatform } from '../
 import { COACH_SEATS } from './coach-kit.ts';
 import { coachStepAmount, poseCoachSteps } from './coach-motion.ts';
 import { line2At, line2Lat, line2Y, endMergeM, departureHalt } from './line2-path.ts';
+import { isRowLine, rowAt, rowLat, rowY } from './row-path.ts';
 import { BOTTOM, type Car } from './car.ts';
 import type { CarRole } from './cars.ts';
 import { STEEL_CAR, ridesOn, consistOf, consistBounds, roleIndex, offsetOf } from './cars.ts';
@@ -54,8 +56,9 @@ import type { TrainAhead } from './path-refuge.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { createBoxBatch, footingParts, footingFrame } from './works-box-view.ts';
 import { createKitBoard, kitMarks, legKitFlight } from './kit-board.ts';
+import { legYardFlight, legYardSpot } from './leg-yard.ts';
 import { RAIL_LEGS, legRack } from '../../sim/railway-route.ts';
-import { legKitStop, legRow, openLeg } from '../../sim/railway-queries-route.ts';
+import { legKitDrop, legRow, legsServed } from '../../sim/railway-queries-route.ts';
 
 const BRASS = '#c79a3e';
 /** Steel, the island's orange (ring-island/view.ts, ring-steel/view.ts). */
@@ -309,9 +312,10 @@ export async function createRailwayTrains(
       deck: crateDeck,
       goods: TRADE.yards.find((yard) => yard.line === line)?.goods,
       solid: solidLoad,
-      // Line 2's kit car says whose kit it carries (./kit-board.ts; the greybox route's step 4 review, answer j).
+      // A kit car says whose kit it carries (./kit-board.ts; the greybox route's step 4 review, answer j): line 2's and
+      // the greybox route's own lines' (greybox-leg2.md, step 4: "the kit board's number").
       board:
-        line === LINE2
+        line === LINE2 || isRowLine(line)
           ? createKitBoard(owner, meshByRole('kit'), carByRole('kit').spec.top, carByRole('kit').spec.hz)
           : null,
       boiler,
@@ -352,6 +356,8 @@ export async function createRailwayTrains(
   const first = trains[0]!;
   /** Line 2's trains: the ones that carry the kit and the footing wagon. */
   const cargo = trains.filter((tr) => tr.line === LINE2);
+  /** The trains whose kit car carries a leg's kit: line 2's and the greybox route's own lines'. */
+  const kitTrains = trains.filter((tr) => tr.line === LINE2 || isRowLine(tr.line));
   const wagonCar = rail.makeCar(wagon.WAGON_CAR, wagonRock, () => {}, {}, owner);
   wagonCar.platform.id = 'railway:wagon';
   wagonCar.platform.shared = true;
@@ -409,11 +415,21 @@ export async function createRailwayTrains(
    * turnouts, easing over each 20 m turnout. Line 2 reads its open end from the room's rows (./line2-path.ts: Far
    * Head's crossover, the Pier's stub, the Railhead's stub that moves with `head`, Ring Island's crossover). Local. */
   const formations = layout.LINKS.map((l) => layout.FORMATION[l.id]);
-  /** The open stops of line 2 and where its end merges, read once a frame through the read facade (step). */
-  let stops2: readonly number[] = trainStops(adapter.read.world(), LINE2),
+  /** Every line's open stops (the greybox route's rows read their open end from them), line 2's and where its end
+   * merges, read once a frame through the read facade (step) and on a restore. */
+  let stopsAll: readonly (readonly number[])[] = [],
+    stops2: readonly number[] = [],
+    merge2 = 0;
+  const readStops = (w: ReturnType<typeof adapter.read.world>) => {
+    stopsAll = RAIL_LINES.map((_l, k) => trainStops(w, k));
+    stops2 = stopsAll[LINE2]!;
     merge2 = endMergeM(stops2);
+  };
+  readStops(adapter.read.world());
   function latOf(tr: (typeof trains)[number], row: Readonly<RailTrain>, s: number) {
     if (tr.line === LINE2) return line2Lat(row, s, stops2, merge2, true);
+    // The greybox route's own lines (./row-path.ts): right-hand running about the row's centre.
+    if (isRowLine(tr.line)) return rowLat(tr.line, row, s, stopsAll[tr.line]!);
     if (!row.track) return 0;
     return layout.offsetLat(formations[tr.line]!, s, true) ?? 0;
   }
@@ -425,23 +441,39 @@ export async function createRailwayTrains(
     (stops2.length - 1 === FAR_HEAD ||
       crossoverEnd(stops2) ||
       RAIL_LINES[LINE2]!.halts[departureHalt(row)]?.end?.kind === 'crossover');
-  /** Poses a car of line 2 on the path that goes on past the layout's pier head (./line2-path.ts). */
-  const a2 = { x: 0, z: 0, ux: 0, uz: 1 },
-    b2 = { x: 0, z: 0, ux: 0, uz: 1 };
-  function poseOnLine2(c: Car, s: number, lat: (s: number) => number) {
-    line2At(s + 1.1, a2, true);
-    line2At(s - 1.1, b2, true);
+  /** The path a car of `line` is posed on, unless it is the layout's own line (lines 1 and 2's start): line 2's goes
+   * on past the layout's pier head (./line2-path.ts, local metres from ORIGIN); the greybox route's own lines are their
+   * rows (./row-path.ts, world metres). */
+  type CarPath = { at: (s: number, out: LinePoint) => void; y: (s: number) => number; ox: number; oz: number };
+  const LINE2_PATH: CarPath = {
+    at: (s, out) => line2At(s, out, true),
+    y: line2Y,
+    ox: layout.ORIGIN.x,
+    oz: layout.ORIGIN.z,
+  };
+  const ROW_PATHS = new Map(
+    RAIL_LINES.flatMap((_l, k): [number, CarPath][] =>
+      isRowLine(k) ? [[k, { at: (s, out) => rowAt(k, s, out), y: (s) => rowY(k, s), ox: 0, oz: 0 }]] : [],
+    ),
+  );
+  const pathOf = (line: number) => (line === LINE2 ? LINE2_PATH : ROW_PATHS.get(line));
+  const a2: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 },
+    b2: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
+  /** Poses a car on `path`, each axle end set across by `lat` (as car.ts poseCarOnLine does on a layout line). */
+  function poseOnPath(c: Car, path: CarPath, s: number, lat: (s: number) => number) {
+    path.at(s + 1.1, a2);
+    path.at(s - 1.1, b2);
     const la = lat(s + 1.1),
       lb = lat(s - 1.1);
     a2.x -= a2.uz * la;
     a2.z += a2.ux * la;
     b2.x -= b2.uz * lb;
     b2.z += b2.ux * lb;
-    c.x = (a2.x + b2.x) / 2 + layout.ORIGIN.x;
-    c.z = (a2.z + b2.z) / 2 + layout.ORIGIN.z;
+    c.x = (a2.x + b2.x) / 2 + path.ox;
+    c.z = (a2.z + b2.z) / 2 + path.oz;
     c.yaw = Math.atan2(a2.x - b2.x, a2.z - b2.z);
-    const ya = line2Y(s + 1.1),
-      yb = line2Y(s - 1.1);
+    const ya = path.y(s + 1.1),
+      yb = path.y(s - 1.1);
     c.y = (ya + yb) / 2 + BOTTOM + c.hy;
     c.pitch = Math.atan2(ya - yb, 2.2);
   }
@@ -493,6 +525,7 @@ export async function createRailwayTrains(
     );
   const wake = makeWake(first, look.rustTrainU);
   const answer = makeWake(cargo[0]!, look.rustAnswerU);
+  const lastRack = { logs: railRow(adapter.read.world()).depot, rails: railRow(adapter.read.world()).depotRails };
   let flyingLogs = 0,
     flyingRails = 0,
     unloading = false;
@@ -504,18 +537,15 @@ export async function createRailwayTrains(
       target = adapter.read.tickNow(),
       on = line2Trains(w),
       shown = adapter.read.whole();
-    stops2 = trainStops(w, LINE2);
-    merge2 = endMergeM(stops2);
+    readStops(w);
     if (clock < 0 || Math.abs(target - clock) > 3) clock = target;
     else clock += FIXED * 10 + Math.max(-0.02, Math.min(0.02, (target - clock) * 0.05));
     const coupled = wagonTrain();
     trains.forEach((tr) => {
-      // A train on a row with no drawn line yet (the greybox route's ns and bay rows, until greybox-leg2 step 4)
-      // stays parked under the land, where makeCar put it.
-      const link = layout.LINKS[tr.line];
-      if (!link) return;
       const row = trainRow(w, tr.slot),
-        line = link.line;
+        path = pathOf(tr.line),
+        // The layout's line, for a train on no path of its own (line 1).
+        line = path ? null : layout.LINKS[tr.line]!.line;
       // Asleep, a row stands at its home; awake, wherever the room's clock puts it.
       const along = trainAlong(row, tr.line, clock) / 100;
       tr.speed = on ? Math.abs(trainAlong(row, tr.line, clock + 0.1) - trainAlong(row, tr.line, clock)) : 0;
@@ -527,14 +557,14 @@ export async function createRailwayTrains(
       // (car-spacing.ts: inside a bend the up track is the shorter, and cars spaced by the line's metres closed up
       // into each other). Bodies, seats, the cab's cutaway and the camera all read the cars these poses move.
       const trackAt = (s: number, out: { x: number; z: number }) => {
-        if (tr.line === LINE2) line2At(s, a2, true);
-        else layout.lineSmoothAt(line, s, a2);
+        if (path) path.at(s, a2);
+        else layout.lineSmoothAt(line!, s, a2);
         const l = lat(s);
         out.x = a2.x - a2.uz * l;
         out.z = a2.z + a2.ux * l;
       };
       const pose = (c: Car, at: number) =>
-        tr.line === LINE2 ? poseOnLine2(c, at, lat) : rail.poseCarOnLine(c, line, at, 1, lat);
+        path ? poseOnPath(c, path, at, lat) : rail.poseCarOnLine(c, line!, at, 1, lat);
       // Joining, the cars grow from the train's middle (car 1's spot): each car's place along the track closes in
       // by its scale, so the couplings stay shut.
       made.length = 0;
@@ -836,14 +866,16 @@ export async function createRailwayTrains(
     const w = adapter.read.world(),
       on = line2Trains(w);
     clock = adapter.read.tickNow();
-    stops2 = trainStops(w, LINE2);
-    merge2 = endMergeM(stops2);
+    readStops(w);
     secondVisible = on;
     flyingLogs = flyingRails = 0;
     legKitFlight.logs = legKitFlight.rails = 0;
+    legYardFlight.logs = legYardFlight.rails = 0;
+    lastRack.logs = railRow(w).depot;
+    lastRack.rails = railRow(w).depotRails;
     unloading = false;
     footFlights.length = 0;
-    for (const tr of cargo) crates.clearCrates(tr.deck);
+    for (const tr of kitTrains) crates.clearCrates(tr.deck);
     wake.reset(on ? (clock - railRow(w).trains) / 10 : -1);
     const answerAt = trainWakeAt(LINE2, railRow(w).trains);
     answer.reset(on ? (clock - answerAt) / 10 : -1);
@@ -995,7 +1027,7 @@ export async function createRailwayTrains(
         });
   }, 7);
   owner.cleanup(() => {
-    for (const tr of cargo) crates.clearCrates(tr.deck);
+    for (const tr of kitTrains) crates.clearCrates(tr.deck);
   });
   return {
     restore,
@@ -1114,8 +1146,16 @@ export async function createRailwayTrains(
         answer.start();
       }
       // Each line's open stops, worked out once for the frame and shared by the lamps.
-      const stops = [trainStops(w, 0), trainStops(w, LINE2)];
+      const stops = RAIL_LINES.map((_l, k) => trainStops(w, k));
       const marks = kitMarks(w, tick);
+      // What the open leg's rack gained since the last frame: a yard leg's unload splits between it and the yard.
+      const stock = railRow(w),
+        rackGain = {
+          logs: Math.max(0, stock.depot - lastRack.logs),
+          rails: Math.max(0, stock.depotRails - lastRack.rails),
+        };
+      lastRack.logs = stock.depot;
+      lastRack.rails = stock.depotRails;
       trains.forEach((tr) => {
         const row = trainRow(w, tr.slot);
         if (tr.riderCar) {
@@ -1264,33 +1304,67 @@ export async function createRailwayTrains(
         }
         // A leg's kit hops from the car to its rack (the greybox route's step 4 review, answer b: 8 m over the up
         // track at Ring Island, then onto each railhead's), drawn as the Q kits' unload is. The rows moved the units
-        // on the tick the train stood; the rack's view draws each once its crate lands (legKitFlight).
-        const leg = tr.line === LINE2 && tr.last?.legKit ? openLeg(w, LINE2) : -1;
-        if (leg >= 0 && tr.last && row.phase === TRAIN_PHASE.STAND && row.at === legKitStop(w, leg) && tr.count > 0) {
+        // on the tick the train stood; the rack's view draws each once its crate lands (legKitFlight). On any line
+        // (greybox leg 2, step 4): line 2's car at High Gorge sets the incline's kit on its first rack, what that
+        // rack gained, and the rest into the yard beside it (legYardFlight); the `ns` and `bay` cars onto their heads'.
+        const leg =
+          tr.last?.legKit && row.phase === TRAIN_PHASE.STAND && tr.count > 0
+            ? (legsServed(w, tr.line).find((k) => legKitDrop(w, tr.line, k) === row.at) ?? -1)
+            : -1;
+        if (leg >= 0 && tr.last) {
           const logs = tr.last.logs - row.logs,
             rails = tr.last.rails - row.rails,
             keep = Math.ceil((row.logs + row.rails) / 8),
             count = tr.count - keep;
           if (logs >= 0 && rails >= 0 && logs + rails > 0 && count > 0) {
-            const rack = legRack(RAIL_LEGS[leg]!, legRow(w, leg).laid);
-            legKitFlight.logs += logs;
-            legKitFlight.rails += rails;
-            // A rack across a track (Ring Island's, 8.4 m over the up track): the arc tops out HOP_OVER above the
-            // rails, so a tumbling crate (0.71 m to its far corner) clears a cab roof (3.3 m) standing under it.
+            // A yard leg's rack stands at this drop (its feeder's destination) only while nothing is laid; then line 2
+            // sets on it what it gained this frame (the sim's legKitRoom: the rack's lack first, then the yard). Once a
+            // section is laid the rack is at the leg's head, and line 2's whole unload goes into the yard.
+            const yardLeg = RAIL_LEGS[leg]!.line !== tr.line,
+              rackHere = !yardLeg || legRow(w, leg).laid === 0,
+              onRack = !rackHere
+                ? { logs: 0, rails: 0 }
+                : yardLeg
+                  ? { logs: Math.min(logs, rackGain.logs), rails: Math.min(rails, rackGain.rails) }
+                  : { logs, rails };
+            rackGain.logs -= onRack.logs;
+            rackGain.rails -= onRack.rails;
+            const toYard = { logs: logs - onRack.logs, rails: rails - onRack.rails },
+              rack = legRack(RAIL_LEGS[leg]!, legRow(w, leg).laid),
+              yard = yardLeg ? legYardSpot(leg) : null;
+            legKitFlight.logs += onRack.logs;
+            legKitFlight.rails += onRack.rails;
+            legYardFlight.logs += toYard.logs;
+            legYardFlight.rails += toYard.rails;
+            // A rack across a track (Ring Island's, 8.4 m over the up track; High Gorge's, over line 2's up track):
+            // the arc tops out HOP_OVER above the rails, so a tumbling crate (0.71 m to its far corner) clears a cab
+            // roof (3.3 m) standing under it.
+            // The crates split as the units do: the rack's share first, then the yard's.
+            const rackCrates =
+              toYard.logs + toYard.rails > 0
+                ? Math.round((count * (onRack.logs + onRack.rails)) / (logs + rails))
+                : count;
             const kitCar = tr.carByRole('kit'),
-              far = Math.hypot(rack.x / 100 - kitCar.x, rack.z / 100 - kitCar.z) > 6,
+              aim = rackCrates > 0 || !yard ? { x: rack.x / 100, z: rack.z / 100 } : yard,
+              far = Math.hypot(aim.x - kitCar.x, aim.z - kitCar.z) > 6,
               over = far ? kitCar.y - (BOTTOM + kitCar.hy) + HOP_OVER : undefined;
             for (let i = 0; i < count; i++) {
-              const to = new THREE.Vector3(rack.x / 100, rack.y / 100 + 0.5, rack.z / 100);
-              const share = (n: number) => Math.floor((n * (i + 1)) / count) - Math.floor((n * i) / count);
+              const first = i < rackCrates,
+                there = first ? onRack : toYard,
+                n = first ? rackCrates : count - rackCrates,
+                j = first ? i : i - rackCrates,
+                flight = first ? legKitFlight : legYardFlight,
+                spot = first || !yard ? { x: rack.x / 100, y: rack.y / 100, z: rack.z / 100 } : yard;
+              const to = new THREE.Vector3(spot.x, spot.y + 0.5, spot.z);
+              const share = (u: number) => Math.floor((u * (j + 1)) / n) - Math.floor((u * j) / n);
               crates.hopOff(
                 tr.deck,
                 keep + i,
                 to,
                 i * 0.09,
                 () => {
-                  legKitFlight.logs = Math.max(0, legKitFlight.logs - share(logs));
-                  legKitFlight.rails = Math.max(0, legKitFlight.rails - share(rails));
+                  flight.logs = Math.max(0, flight.logs - share(there.logs));
+                  flight.rails = Math.max(0, flight.rails - share(there.rails));
                 },
                 over,
               );

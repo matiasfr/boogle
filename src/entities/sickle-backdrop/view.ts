@@ -4,6 +4,8 @@ import html from '../../../docs/world/map-prototypes.html?raw';
 import { layout, parseMapPage, type XZ } from '../../sickle/map-data.ts';
 import { addPart, mergeParts } from '../../render/geometry-parts.ts';
 import { freezeInPlace } from '../../render/instances.ts';
+import { WORLD_LINES } from '../../sim/railway-world-lines.ts';
+import { INCLINE_BORE } from '../route-greybox/massing.ts';
 
 // The map's Place-local origin. Ring Island and the Original Island already render in the live world.
 const ORIGIN_X = 1000;
@@ -11,6 +13,35 @@ const CLIFF = '#9c988f',
   WALK = '#a9b48c',
   DARK = '#2c3038',
   CROWN = '#5d6a66';
+
+/** The incline's bore through the south stack (docs/plans/greybox-leg2.md, step 4): its walls are open where the `ns`
+ * row passes, between the bore's lining (route-greybox/massing.ts INCLINE_BORE; the row is straight there), so a rider
+ * sees out of each mouth and a train is seen going in. Map coordinates (world x less ORIGIN_X). */
+const BORE = (() => {
+  const r = WORLD_LINES.find((l) => l.id === 'ns')!,
+    [p, q] = [r.pts[0]!, r.pts[4]!],
+    len = Math.hypot(q[0] - p[0], q[1] - p[1]);
+  return {
+    land: 'stack-s',
+    o: [p[0] / 100 - ORIGIN_X, p[1] / 100] as XZ,
+    u: [(q[0] - p[0]) / len, (q[1] - p[1]) / len] as XZ,
+    half: INCLINE_BORE.half,
+    y0: INCLINE_BORE.floor,
+    y1: INCLINE_BORE.roof,
+  };
+})();
+/** The stretch [u0, u1] of the wall from `a` to `b` that lies within the bore's half-width of its row, or null. */
+function boreHole(a: XZ, b: XZ): [number, number] | null {
+  const off = (p: XZ) => (p[0] - BORE.o[0]) * BORE.u[1] - (p[1] - BORE.o[1]) * BORE.u[0],
+    da = off(a),
+    db = off(b);
+  if (da === db) return null;
+  const ua = (BORE.half - da) / (db - da),
+    ub = (-BORE.half - da) / (db - da),
+    u0 = Math.max(0, Math.min(ua, ub)),
+    u1 = Math.min(1, Math.max(ua, ub));
+  return u1 > u0 ? [u0, u1] : null;
+}
 
 export function createBackdrop() {
   const map = layout(parseMapPage(html), 'sickle', 'A');
@@ -47,11 +78,27 @@ export function createBackdrop() {
       triangle(outline[a!]!, top, outline[b!]!, top, outline[c!]!, top);
     add(geometry(), land.horizon ? '#7d8a84' : WALK);
     vertices.length = 0;
+    const quad = (a: XZ, b: XZ, y0: number, y1: number) => {
+      triangle(a, y1, a, y0, b, y1);
+      triangle(b, y1, a, y0, b, y0);
+    };
+    const at = (a: XZ, b: XZ, u: number): XZ => [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u];
     for (let i = 0; i < outline.length; i++) {
       const a = outline[i]!,
-        b = outline[(i + 1) % outline.length]!;
-      triangle(a, top, a, -10, b, top);
-      triangle(b, top, a, -10, b, -10);
+        b = outline[(i + 1) % outline.length]!,
+        hole = land.id === BORE.land ? boreHole(a, b) : null;
+      if (!hole) {
+        quad(a, b, -10, top);
+        continue;
+      }
+      // The wall round the bore's mouth: either side of it full height, over and under it across it.
+      const [u0, u1] = hole,
+        p = at(a, b, u0),
+        q = at(a, b, u1);
+      if (u0 > 0) quad(a, p, -10, top);
+      if (u1 < 1) quad(q, b, -10, top);
+      quad(p, q, BORE.y1, top);
+      quad(p, q, -10, BORE.y0);
     }
     add(geometry(), tint);
     if (land.horizon) {
