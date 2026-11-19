@@ -1,4 +1,4 @@
-> **Status: step 1 built (2026-11-19, `claude/halt-yard-store`, world v65); steps 2 to 5 not built.** Read at `origin/main` `c0c993ff7` (world v62). Station-deposit
+> **Status: step 1 built (2026-11-19, `claude/halt-yard-store`, world v65); step 2 built (2026-11-19, `claude/halt-yard-bay`, view only); steps 3 to 5 not built.** Read at `origin/main` `c0c993ff7` (world v62). Station-deposit
 > build 1. Step 1 changes rules, wire, save and server validation: one `WORLD_NS` bump (**the next free
 > version**), one independent review. Build 2 (cargo cars carry a yard's goods) is out of scope: it waits for the
 > cargo trains row.
@@ -248,7 +248,28 @@ first; owner-calls "Nothing waits on a world bump").
     that reach them. Review against: room-safety "Don't" (no effect in apply, no queued-as-done), mixed-builds (the
     bump and its line), conservation across the three witnesses, the keyed fixture comparison and the host test.*
 
-- [ ] **2. The bay and its prompts at Camp, Quarry and Far Head.**
+- [x] **2. The bay and its prompts at Camp, Quarry and Far Head.**
+  - *As built (2026-11-19, view only, no bump):* the bay's boxes are one table, `haltYardBay(hand)` in
+    `src/content/prefabs/halts.ts` (whole centimetres; `hand` puts the cradle at the ramp end). The view draws the
+    three bays from it in one drop-set (one draw, 27 boxes a bay, 81 in all, 972 triangles), and the same table is the collider
+    record of two prefabs, `railway.halt-yard-bay-a` and `-b` (visual none), because lint's prefab door refuses
+    hand-made bodies in a view. The bay's open long side faces the platform; the back and the ends are boarded. It
+    drops in when its yard opens within 80 m of you and stands built otherwise. Before its solids come in, a player
+    standing in them is moved clear by `siteExit` (`src/place/site-clearance.ts`, with `outOf` from `sites.ts`) at a
+    2 cm contact tolerance. A bin's prompt shows within `inReach` of the bin and 3.9 m of the bay's centre (the
+    server's 4.2 m less 0.3 m), so no prompt is offered that the server would refuse for reach. A closed yard has no
+    bay and so no prompt: the closed case of `blocked` never shows, and no new copy was needed. A full kind greys
+    Pick up with the existing `Logs full`, `Stone full` or `Rails full`. Pick up names the bin's count as a pile's
+    prompt does (`5 logs`); Leave it here has no count. A bin still shows nothing of its stock (step 3). `view.ts`
+    gets two lines, the mount and the targets, not one.
+  - *Proof:* a look on `q3-done` chopped five logs with real presses, then pressed Interact at the Quarry bay. Leave
+    it here was accepted by the server (mark `yard left`, `authority: server`; the confirmed row read 5) and Pick up
+    gave them back (`yard taken`; the row 0, the back 5). Stills: [approach](halt-yard/step2-quarry-approach-q3-done.png),
+    [ramp foot, q3-done](halt-yard/step2-quarry-ramp-foot-q3-done.png),
+    [ramp foot, q2-stocked, no bay](halt-yard/step2-quarry-ramp-foot-q2-stocked.png),
+    [Leave it here](halt-yard/step2-quarry-leave-it-here.png), [Camp](halt-yard/step2-camp-q2-stocked.png),
+    [Far Head](halt-yard/step2-far-head-q5-done.png). The Quarry has no halt deck or back ramp at `q3-done` (they drop
+    in with the trains), so the ramp-foot still stands where the foot will be.
   - **Files:** `src/entities/railway/halt-yard-view.ts` (new); `view.ts` (mount); `src/render/` only if a strap
     mesh needs a builder.
   - Per bin, one `Interactable` at the bin's position (`inReach` from `tools.ts`): Leave it here or Pick up by owner
