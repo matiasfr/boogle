@@ -433,7 +433,9 @@ export function createRooms(
         r.up = false;
         snapSite(r.site, false);
         setStake(r, true);
-      }
+      } else if (want && r.site.state === 'building' && (env.since?.(r.id) ?? 0) >= PLOT_BUILD_S)
+        // The shared clock says it's built: a beat that's fallen behind it (a slow frame, a hidden tab) finishes now.
+        snapSite(r.site, true);
       const ready = r.site.state === 'done';
       if (ready !== r.ready) {
         r.ready = ready;
