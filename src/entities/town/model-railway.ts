@@ -266,7 +266,10 @@ export function createModelRailway(
   bits.setColorAt(0, new THREE.Color(LOOK.rail[2]));
   bits.count = 0;
   room.near.add(bits);
-  owner.cleanup(() => bits.geometry.dispose());
+  owner.cleanup(() => {
+    bits.geometry.dispose();
+    bits.dispose();
+  });
   const m_ = new THREE.Matrix4(),
     q_ = new THREE.Quaternion(),
     p_ = new THREE.Vector3(),

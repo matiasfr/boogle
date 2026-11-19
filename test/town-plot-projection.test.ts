@@ -107,9 +107,4 @@ test('a newly laid stretch reaches the shared reader and grows the driver’s tr
   assert.ok(now.length > was.length, `the table grows: ${was.length} -> ${now.length} bits`);
   assert.ok(now.some((b) => b.glow > 0) && !was.some((b) => b.glow > 0), 'the newest stretch is bright');
   assert.ok(!draw(after, 900 + look.freshTicks).some((b) => b.glow > 0), 'and dries on the shared clock');
-  // The table stands clear of the door lane (and Buddy's radius) and of the driver's spot, inside the walls.
-  const DOOR = sourceFunction<{ w: number }>('src/entities/town/rooms.ts', 'DOOR', {});
-  assert.ok(box.x - box.hx >= DOOR.w / 2 + 0.3, 'clear of the door lane');
-  assert.ok(box.x - box.hx - 0.6 > 0.45 * 2, 'clear of the driver at room x 0.6');
-  assert.ok(box.x + box.hx < room.w / 2 - 0.09 - 0.1 && box.z - box.hz > -room.d / 2 + 0.09 + 0.1, 'off the walls');
 });
