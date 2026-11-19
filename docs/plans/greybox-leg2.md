@@ -1,4 +1,5 @@
-> **Status, 18 November 2026: planned, nothing built.** Planner, against main `e8ae03b0f` (world v61), rebased onto `cfb8123d6` with the owner's 18 November rail answers folded in. Owner's go
+> **Status, 18 November 2026: steps 1 to 3 built (world v62) on `claude/greybox-leg2-rules`, awaiting review; steps 4
+> and 5 not started** ([as built](#steps-1-to-3-as-built-18-november)). Planner, against main `e8ae03b0f` (world v61), rebased onto `cfb8123d6` with the owner's 18 November rail answers folded in. Owner's go
 > (18 November, decisions page): "Start the greybox route's leg 2 rules now, so garage step 4 can follow? -> Yes,
 > start a planner after separate capacities". **Garage choices step 4 can start once steps 2 and 3 are on main**
 > ([below](#what-garage-step-4-waits-for)). Design review [at the end](#design-review-2026-11-18).
@@ -222,7 +223,7 @@ did); 4 and 5 ship on their own after it.
       the Gorge's rack-to-frame walk under 15 m, stated). Verify: `test/railway-route.test.ts` (sections 560 and 598.5 m;
       every built leg's `railheadHalt` is its from halt's sim index + 1; the points within 1 m of the table above);
       `test/world-lines.test.ts`; `npm run level-check` (no new report).
-- [ ] **2. The rules and the bump (L; HOTBOX). Unblocks garage step 4 with step 3.** `src/sim/railway-lines.ts`:
+- [x] **2. The rules and the bump (L; HOTBOX). Unblocks garage step 4 with step 3.** `src/sim/railway-lines.ts`:
       `ns` and `bay` as built lines (halts in sim order, ends, `fleet`, `signals`), not `rowLine`'s all-shut rows; the
       load-time checks extended (a built leg's heads and destination in order). `railway-queries-route.ts`: the serve
       roles, the yard in `legKitNeed`, `legKitTrains` per line, the kit ahead. `railway-sys-route-kit.ts`: the
@@ -240,7 +241,7 @@ did); 4 and 5 ship on their own after it.
       November); line 2's waits and leg 1's gates 5, 8, 9, 11 and 14 re-measured with the kit ahead (it changes what
       line 2 carries); the long mode (`ROUTE_GATES=1`) run and its output pasted before the bump ships. `npm run loop
       -- run`.
-- [ ] **3. Seeds and stages (S; HOTBOX).** `src/sim/railway-seed-legs.ts` from `gorge-reached`, accepted ops only:
+- [x] **3. Seeds and stages (S; HOTBOX).** `src/sim/railway-seed-legs.ts` from `gorge-reached`, accepted ops only:
       `incline-open` (pick taken, barrier open, section 1's kit on the Gorge rack), `incline-mid` (section 1 laid,
       section 2's kit aboard an `ns` train, the rest in the yard), `bell-reached` (the incline laid, seeds not taken),
       `bay-open` (seeds taken, the West landing's rack stocked), `bay-mid` (section 1 laid, kit aboard a `bay` train),
@@ -274,6 +275,39 @@ did); 4 and 5 ship on their own after it.
       walk to the West landing; `dev/look/segments.ts` `RAIL_STOPS.bell` and `.bay`. Verify: `npm run loop -- node
       incline-1` and `-- node bay-2` print the bill, the train supply and the cue; `npm run loop -- run`; `npm run
       playthrough -- --from gorge-reached --to bay` (a pass verdict; its timings are not evidence under load).
+
+### Steps 1 to 3 as built (18 November)
+
+Builder, on the plan's three open questions' recommendations (bay cut after the incline; the West landing stand-in;
+the kit rides ahead). No wire, op or save field changed. **Where the build moved from the plan:**
+
+- **Step 1.** The two stops are a `stopCm` on the generator's halt spec and the `ns` start crossover a map turnback
+  (s 80); regenerating moved the `ns` deck (its first vertex 3.62 m, the climb to 3.9 m now s 56 to 80, so the
+  crossover stands on a 3.9% grade). The bay crossover's centre is s 1192.5 (t 35 from the kink): the tail of a train
+  standing at s 1217 (16.1 m back) reaches 1.6 m into its far end; the sim's block rule is unaffected, step 4's view
+  should look. Incline rack 1 is 6.8 m from frame 1 in a straight line; on foot is unproven (no Gorge artifact).
+- **Step 2.** The kit roles are `MINT_LEGS` (the line whose trains mint a leg's kit at its home), `YARD_LEGS` (the line
+  whose trains load it from a yard) and `legMintChain` (a mint line's legs in order, so the incline's kit loads once
+  the stack is owed nothing: the kit ahead). The stand-in stocks a built leg whose line's first halt opens with its
+  first section (`STOCKED_LEGS`). Also needed and not listed: the train load check's cargo bound (a section's bill on a
+  leg line), conservation (`legsSpent` counts the yard and other lines' kit), the cart's hold kept to line 1, and the
+  rack being any open leg's. The seeds landed in step 2's commit, since its tests build on them.
+- **Step 3.** Four jump rows (`incline-open`, `bell-reached`, `bay-open`, `bay-reached`), tooling only and **with no
+  `land`**: return-spot reads every jump land as a still-checked landing, matched by x and z alone, so a Bell Rock land
+  would put someone returning to the upper bay halt on the lower deck. Lands wait for step 4's stills (and a height
+  test in `src/place/return-spot.ts`).
+
+**Measured** (Windows, 20 logical cores; the long fuzz ran five test processes at once, so no timing here is evidence):
+the new lines' worst waits, four seeds at 75%, 20,000 ticks: settled (`bay-reached`) `ns` 1,023 and `bay` 1,075
+(bound 1,350); growing, fed from `incline-open` through `bay-reached`, `ns` 1,201 and `bay` 1,467 (bound 1,600; the
+one over 1,350 is Bay head 1 homeward). Leg 1's gates with the kit ahead, `ROUTE_GATES=1`: all pass at their v61
+pins (gate 8/9 settled worst 1,340, gate 14 rivet to Gorge 3,919 of 3,996, gate 15 +1,820, every head-to-head under
+1,158). `gorge-reached` comes 904 ticks sooner in the seed. Stage ticks: incline-open 16,871, incline-mid 17,172,
+bell-reached 18,756, bay-mid 19,057, bay-reached 20,660.
+
+**Between this ship and step 4** a room past `gorge-reached` runs `ns` and `bay` trains over track nobody draws, with
+no frame, rack, barrier, head platform or seeds post in view, and a return to a head can land on its platform point over
+the sea. That is the plan's order (steps 1 to 3 as one bump, views after); worth knowing before a playtest.
 
 **Checkpoint B (leg 2 playable).** Named proofs, run once: `npm run loop -- run` for one to three players with idle
 seconds per wait; the bot segment `--from gorge-reached --to bay`; `npm run test:net`; `npm run scenario --
