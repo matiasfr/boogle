@@ -1121,7 +1121,11 @@ Both lines are drawn double track ([generic-lines](../plans/generic-lines.md), s
 the original in the +s direction. Right-hand running puts outward trains on the original and homeward trains on the offset
 from merge to merge, line 1 s 36–182 and line 2 s 34–556, easing in and out over a 20 m
 stub turnout at each end, so the turntable, both Village platforms, the Camp end and the pier stay one track. Far Head
-has a departure crossover at s 490–512, original track to offset, while it is line 2's end. On the ridge, gorge and sea trestles
+has a departure crossover at s 490–512, original track to offset, while it is line 2's end. Every place the two tracks
+part is drawn as points ([turnouts](../plans/turnouts.md), steps 3 and 4): Home's two (J4, J6), the Camp end (J5), the
+pier's root (J9, taken up with the old merge when Q7 relays the pier) and both ends of Far Head's crossover (J7, J8),
+each with long timbers under both roads, wing and check rails and an uncut frog. The crossover's ends have an open
+blade; at J5 and J9 the offset track's rails close on the through road's from the toe. The points do not move yet. On the ridge, gorge and sea trestles
 the deck spans both tracks (7.6 m) on bents that reach out under the offset track. The track layer lays both tracks of
 each panel in one trip: the gantry lifts the top two pairs off its stack, seats today's track's pair, lets go, crosses
 4 m and sets the offset track's pair down, so its stack empties by two a panel (bills, panel counts and timing are

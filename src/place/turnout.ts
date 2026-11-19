@@ -36,6 +36,9 @@ export type Turnout = {
   plainD: number;
   /** The diverging centre at d (along it), across the through road: signed, + to the through road's right. */
   offset: (d: number) => number;
+  /** How far the open blade stands off its closed line at d (along the diverging road), toward the through road's
+   * far rail: the throw at the tip, nothing from `bladeLen` on. */
+  throwAt: (d: number) => number;
   /** The timber across the through road at d (along the through road): its two ends, metres to the through road's
    * right. Long enough for all four rails, in whole steps; the headblocks at the toe run out toward the lever. Null
    * outside the turnout. */
@@ -67,6 +70,8 @@ export const KIT = {
 } as const;
 
 const EPS = 0.05;
+/** A cut timber's extra length: `len` rounded up to whole `KIT.step`s. */
+export const wholeSteps = (len: number) => Math.ceil(len / KIT.step - 1e-9) * KIT.step;
 const frame = (c: Centre, d: number) => {
   const a = c(d - EPS),
     b = c(d + EPS),
@@ -171,8 +176,11 @@ export function turnout(through: Centre, diverging: Centre, lever: 1 | -1, plain
     if (plain - from >= 0.5) run('stock', 'diverging', at(hand * half), from, plain);
   }
   // Its inner rail starts as the open blade, its tip a throw off the through road's far rail, thin at the tip.
-  const open = (d: number) => -hand * half + hand * KIT.throw * (1 - d / bladeLen);
-  const bladeTo = Math.min(bladeLen, plainD);
+  const throwAt = (d: number) => (d >= 0 && d < bladeLen ? KIT.throw * (1 - d / bladeLen) : 0);
+  const open = (d: number) => -hand * half + hand * throwAt(d);
+  // Where the plain rails begin within a blade's least length of the toe (line 2's J9) there is no room for one: the
+  // plain rail would meet its end a step off.
+  const bladeTo = plain !== undefined && plain < KIT.bladeMin ? 0 : Math.min(bladeLen, plainD);
   run('blade', 'diverging', open, 0, bladeTo / 2, 0.45);
   run('blade', 'diverging', open, bladeTo / 2, bladeTo, 0.75);
   // The closure rail stops a flangeway short of the through rail it would cross, and takes up again past it as the
@@ -212,7 +220,7 @@ export function turnout(through: Centre, diverging: Centre, lever: 1 | -1, plain
       head = d <= EPS ? KIT.headblock : 0;
     let lo = -end,
       hi = end;
-    const far = Math.ceil(across / KIT.step - 1e-9) * KIT.step;
+    const far = wholeSteps(across);
     if (hand > 0) hi += far;
     else lo -= far;
     if (lever > 0) hi += head;
@@ -229,6 +237,7 @@ export function turnout(through: Centre, diverging: Centre, lever: 1 | -1, plain
     nose: { ...nosePoint, through: noseT, diverging: noseD },
     plainD,
     offset,
+    throwAt,
     span,
     rails,
   };
