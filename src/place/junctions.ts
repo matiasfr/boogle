@@ -32,6 +32,9 @@ export type Junction = {
   lever: 1 | -1;
   /** Shown only with this part of the yard: the leg's two ends stand while the leg does. */
   when?: 'leg';
+  /** The through road's lateral off its line, metres to the line's right: Far Head's crossover leaves the up track
+   * at J7. 0 when omitted. */
+  off?: number;
   through: Centre;
   diverging: Centre;
 };
@@ -68,10 +71,11 @@ const leg = (at: number) => {
 };
 
 /** The timber across junction `j`'s line at the line's `s`: its two ends in metres to the line's right (`t.span` is to
- * the through road's, which runs against the line where `dir` is -1); null outside the turnout. */
+ * the through road's, which runs against the line where `dir` is -1, and `off` beside it); null outside the turnout. */
 export function spanAcross(j: Junction, t: Turnout, s: number): readonly [number, number] | null {
-  const span = t.span((s - j.s) * j.dir);
-  return span && (j.dir > 0 ? span : [-span[1], -span[0]]);
+  const span = t.span((s - j.s) * j.dir),
+    off = j.off ?? 0;
+  return span && (j.dir > 0 ? [off + span[0], off + span[1]] : [off - span[1], off - span[0]]);
 }
 
 export function junctions(): Junction[] {
@@ -115,6 +119,7 @@ export function junctions(): Junction[] {
       dir,
       kind,
       lever,
+      off: through(s),
       through: along(l, s, dir, through),
       diverging: along(l, s, dir, diverging),
     };

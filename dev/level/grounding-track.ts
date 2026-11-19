@@ -17,7 +17,7 @@ import { sampleFootprint } from '../../src/place/support.ts';
 import { carriedPiece, sleeperStations, trackPanels } from '../../src/entities/railway/track-panels.ts';
 import { chunkOf } from '../../src/entities/railway/track-chunks.ts';
 import { junctions, spanAcross } from '../../src/place/junctions.ts';
-import { turnout } from '../../src/place/turnout.ts';
+import { KIT, turnout } from '../../src/place/turnout.ts';
 import { sourceFunction } from './source.ts';
 
 // The sources are stubbed past the boxes, so the owner is never asked for anything.
@@ -56,6 +56,7 @@ export function trackBoxes() {
       junctions,
       spanAcross,
       turnout,
+      KIT,
       box: sourceFunction('src/render/boxes.ts', 'box', { boxAt, groundHeight: H }),
       dropSet: (boxes: Box[]) => boxes,
       lookTrack: (boxes: Box[], kinds: string[]) => {

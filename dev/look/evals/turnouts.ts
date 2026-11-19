@@ -9,6 +9,8 @@
 //   at=top&id=J4   any junction from straight above at 13 m, as spur-top
 //   at=eye&id=J4   any junction from a player's eye behind its toe, as spur
 //   at=back&id=J6  any junction from a player's eye between its roads past the frog, looking back at the toe
+//                  (top, eye and back mirror to the side the junction's diverging road leaves on)
+//   at=farhead     Far Head's crossover (J8 near, J7 beyond) from a player's eye on the platform's end, looking back
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
@@ -42,6 +44,14 @@ const by =
   };
 const j1 = by('J1');
 const id = query.get('id') ?? 'J4';
+/** +1 where junction `id`'s diverging road leaves to its through road's right, -1 to its left. */
+const side = (() => {
+  const j = pick(id),
+    p = by(id)(6, 1),
+    q = j.through(6),
+    o = j.diverging(6);
+  return (o.x - q.x) * (p.x - q.x) + (o.z - q.z) * (p.z - q.z) > 0 ? 1 : -1;
+})();
 
 let stand: V, eye: V, look: V;
 let fov = 60;
@@ -61,22 +71,22 @@ if (at === 'spur') {
   fov = 55;
 } else if (at === 'top') {
   const f = by(id);
-  stand = f(0, 3.2);
-  eye = f(5.49, -1.2, 13);
-  look = f(5.5, -1.2, 0);
+  stand = f(0, -3.2 * side);
+  eye = f(5.49, 1.2 * side, 13);
+  look = f(5.5, 1.2 * side, 0);
   fov = 50;
 } else if (at === 'eye') {
   const f = by(id);
-  stand = f(0, 2.6);
-  eye = f(-4, 0.3, 1.6);
-  look = f(6.5, -0.8, 0);
+  stand = f(0, -2.6 * side);
+  eye = f(-4, -0.3 * side, 1.6);
+  look = f(6.5, 0.8 * side, 0);
 } else if (at === 'back') {
   // From a player's eye between the two roads past the frog, looking back at the toe: where a standing train hides
   // the view from behind the toe.
   const f = by(id);
-  stand = f(15, -1.9);
-  eye = f(13, -1.9, 1.6);
-  look = f(4.5, -0.2, 0);
+  stand = f(15, 1.9 * side);
+  eye = f(13, 1.9 * side, 1.6);
+  look = f(4.5, 0.2 * side, 0);
 } else if (at === 'throat-top') {
   // Over the middle of the four toes, the screen's up toward the east so line 1's run south lies across it.
   const toes = ['J2', 'J3', 'J4', 'J6'].map((j) => pick(j).through(5));
@@ -95,7 +105,16 @@ if (at === 'spur') {
   eye = by('J4')(-5, 1.6, 1.7);
   look = by('J4')(9, -0.6, 0);
   fov = 62;
-} else throw new Error('Choose at=spur|spur-top|spur-frog|throat-top|throat|top|eye|back');
+} else if (at === 'farhead') {
+  // On Far Head's platform (s 513 to 535, 2.9 m right of line 2) by its end ramp, 2 m past J8's toe, looking back
+  // along the crossover: J8's points near, the up track's J7 beyond. J8's through road runs against the line, so
+  // the platform is to its left.
+  const f = by('J8');
+  stand = f(-7, -3.4);
+  eye = f(-3, -2.6, 2.3);
+  look = f(13, 1.6, 0);
+  fov = 58;
+} else throw new Error('Choose at=spur|spur-top|spur-frog|throat-top|throat|top|eye|back|farhead');
 
 const body = me.body;
 if (!body) throw new Error('turnouts look: no player body');
