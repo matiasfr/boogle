@@ -2,6 +2,7 @@
 import { defineLevel } from '../../prefab/types.ts';
 
 import { frame, unit, perp, mix, offset, sub, layoutData, type Evaluated } from '../../prefab/authoring.ts';
+import { INCLINE_BORE } from '../../entities/route-greybox/massing.ts';
 /** Room kept clear for the rules plan: a rectangle and the heights a leg 2 box may not enter. */
 export type Reserve = { id: string; x: number; z: number; yaw: number; w: number; d: number; y0: number; y1: number };
 /** The unlaid bed: 7.6 m wide, 0.1 m under rail height (no rails are drawn until a leg lays them). */
@@ -279,6 +280,164 @@ const tl = frame(GORGE_O, GORGE_T, perp(GORGE_T, -1)),
 const GORGE_RAIL = 3,
   GORGE_DECK = 3.9;
 
+// ---------------------------------------------------------------- the incline's bore (greybox-leg2.md, step 4)
+// The `ns` row through the south stack, in the split's a/c frame: t along the row from the split's origin, l right of
+// it going out (+c). a(t, l) = TA t - TC l, c(t, l) = TC t + TA l.
+const TN = Math.hypot(0.741, 0.672),
+  TA = 0.741 / TN,
+  TC = 0.672 / TN;
+/** The stack's east face where the row leaves it: the `stack-s` outline's vertices 0 to 2 in the a/c frame
+ * (docs/world/map-prototypes.html; the split's wall, where it enters, is c 45). */
+const EAST_FACE = [
+  [170.234, 135.26],
+  [171.269, 152.159],
+  [173.688, 168.934],
+] as const;
+/** Where the line `l` metres off the row meets the split's wall, and the stack's east face (t). */
+const wallT = (l: number) => (45 - TA * l) / TC;
+function faceT(l: number) {
+  for (let i = 1; i < EAST_FACE.length; i++) {
+    const [pa, pc] = EAST_FACE[i - 1]!,
+      [qa, qc] = EAST_FACE[i]!,
+      da = qa - pa,
+      dc = qc - pc,
+      det = da * TC - TA * dc,
+      ra = pa + TC * l,
+      rc = pc - TA * l,
+      t = (dc * -ra + da * rc) / det,
+      u = (TA * rc - TC * ra) / det;
+    if (u >= 0 && u <= 1) return t;
+  }
+  throw new Error('leg2: the bore misses the east face');
+}
+/** The bore's ends, authored to 0.1 m: [l, t at the split's wall, t at the east face] every half metre across it.
+ * Checked against wallT and faceT at load (within 0.1 m), so a moved outline fails the build, not the look. */
+const BORE_ENDS: readonly (readonly [number, number, number])[] = [
+  [-4.5, 71.9, 226.9],
+  [-4, 71.4, 227.4],
+  [-3.5, 70.8, 227.9],
+  [-3, 70.3, 228.4],
+  [-2.5, 69.7, 228.9],
+  [-2, 69.2, 229.5],
+  [-1.5, 68.6, 230.1],
+  [-1, 68.1, 230.7],
+  [-0.5, 67.5, 231.3],
+  [0, 67, 231.9],
+  [0.5, 66.4, 232.5],
+  [1, 65.9, 233.1],
+  [1.5, 65.3, 233.7],
+  [2, 64.8, 234.3],
+  [2.5, 64.2, 234.9],
+  [3, 63.7, 235.5],
+  [3.5, 63.1, 236.1],
+  [4, 62.6, 236.8],
+  [4.5, 62, 237.4],
+];
+for (const [l, w, f] of BORE_ENDS)
+  if (Math.abs(w - wallT(l)) > 0.1 || Math.abs(f - faceT(l)) > 0.1) throw new Error(`leg2: bore end l ${l} has moved`);
+const boreEnds = (l: number) => {
+  const e = BORE_ENDS.find((r) => r[0] === l);
+  if (!e) throw new Error(`leg2: no bore end at l ${l}`);
+  return { wall: e[1], face: e[2] };
+};
+/** The mouth marks' bounds, a and c (to 0.01 m): 0.8 m frames outside where the lining's inner faces (l ±4) meet each
+ * face, and a lintel over each opening to the lining's outer faces (l ±5). */
+const MOUTH = {
+  in: { s: [42.87, 43.67], n: [55.58, 56.38], lintel: [42.87, 56.38] },
+  out: {
+    s: { a: [172.69, 173.49], c: [162.01, 162.81] },
+    n: { a: [171.12, 171.92], c: [148.99, 149.79] },
+    lintel: { a: [171.04, 173.71], c: [148.36, 163.56] },
+  },
+} as const;
+/** The south stack's collider round the bore, in the band between its floor and roof (to 0.1 m, never into the bore):
+ * west of where its +c side (l 5) meets the split's wall, a 42.1; the box along the row on that side from there to a
+ * 120 (t 61.5 to 166.6, l 5 to 58); over that box, c 115.6 on; east of the -c side's meeting (a 57.06), a stair of
+ * slices [a0, a1, c top] whose corners the lining's wall closes. */
+const STACK_S = {
+  westA: 42.1,
+  along: { t0: 61.5, t1: 166.6, l0: 5, l1: 58 },
+  overC: 115.6,
+  east: [
+    [58.1, 59.1, 45.9],
+    [59.1, 60.1, 46.8],
+    [60.1, 61.1, 47.7],
+    [61.1, 65.1, 48.6],
+    [65.1, 69.1, 52.2],
+    [69.1, 73.1, 55.9],
+    [73.1, 77.1, 59.5],
+    [77.1, 81.1, 63.1],
+    [81.1, 85.1, 66.7],
+    [85.1, 89.1, 70.4],
+    [89.1, 93.1, 74],
+    [93.1, 97.1, 77.6],
+    [97.1, 101.1, 81.3],
+    [101.1, 105.1, 84.9],
+    [105.1, 109.1, 88.5],
+    [109.1, 113.1, 92.1],
+    [113.1, 117.1, 95.8],
+    [117.1, 120, 99.4],
+  ],
+} as const;
+{
+  // Never into the bore (l -5 to 5: c - m a within ±5 / TA), and the box along the row reaches a 120.
+  const m = TC / TA,
+    k = 5 / TA,
+    inBore = (a: number, c: number) => Math.abs(c - m * a) < k - 1e-6;
+  const bad =
+    inBore(STACK_S.westA, 45) ||
+    inBore(120, STACK_S.overC) ||
+    STACK_S.east.some(([a0, a1, c]) => inBore(a0, c) || a0 >= a1) ||
+    Math.abs(STACK_S.along.t0 - wallT(5)) > 0.1 ||
+    STACK_S.along.t1 * TA - TC * 5 < 120;
+  if (bad) throw new Error('leg2: the south stack collider enters the bore');
+}
+/** The bore's dark lining, its two mouth marks and the south stack's collider round it (the stack's slab over the
+ * bore is gorge.ts's). The lining's slabs are cut in strips along l so each strip's ends meet the stack's faces (within
+ * half a metre); its walls seal the bore from the collider's corners. */
+function bore() {
+  const B = INCLINE_BORE,
+    side = B.half + B.wall,
+    top = B.roof + B.slab,
+    bottom = B.floor - B.slab,
+    band = top - bottom,
+    pieces: unknown[] = [];
+  const s = boreEnds(B.half + B.wall / 2),
+    n = boreEnds(-B.half - B.wall / 2);
+  pieces.push(tl.box('bore-wall-s', s.wall, s.face, B.half, side, top, band, 'black'));
+  pieces.push(tl.box('bore-wall-n', n.wall, n.face, -side, -B.half, top, band, 'black'));
+  for (let l = -side; l < side; l += 1) {
+    const e = boreEnds(l + 0.5);
+    pieces.push(tl.box(`bore-roof-${l + side}`, e.wall, e.face, l, l + 1, top, B.slab, 'black'));
+  }
+  for (let l = -side; l < side; l += 2) {
+    const e = boreEnds(l + 1);
+    pieces.push(tl.box(`bore-floor-${l + side}`, e.wall, e.face, l, l + 2, B.floor, B.slab, 'black'));
+  }
+  // The mouth marks: a pale frame round each opening (the split's lintel is the old portal, in gorge()).
+  const mark = (id: string, a: readonly number[], c: readonly number[], y: number, h: number) => ({
+    ...ac.box(id, a[0]!, a[1]!, c[0]!, c[1]!, y, h, 'pale'),
+    solid: false,
+  });
+  const { in: i, out: o } = MOUTH,
+    jamb = B.roof - B.floor;
+  pieces.push(mark('mouth-in-s', i.s, [44.6, 45], B.roof, jamb));
+  pieces.push(mark('mouth-in-n', i.n, [44.6, 45], B.roof, jamb));
+  pieces.push(mark('mouth-out-s', o.s.a, o.s.c, B.roof, jamb));
+  pieces.push(mark('mouth-out-n', o.n.a, o.n.c, B.roof, jamb));
+  pieces.push(mark('mouth-out-lintel', o.lintel.a, o.lintel.c, B.roof + 1.2, 1.2));
+  const hidden = (p: object) => ({ ...p, hidden: true });
+  const S = STACK_S;
+  pieces.push(hidden(ac.box('stack-s-under', -120, 120, 45, 245, bottom, bottom + 10, 'black')));
+  pieces.push(hidden(ac.box('stack-s-west', -120, S.westA, 45, 245, top, band, 'black')));
+  pieces.push(hidden(tl.box('stack-s-along', S.along.t0, S.along.t1, S.along.l0, S.along.l1, top, band, 'black')));
+  pieces.push(hidden(ac.box('stack-s-over', S.westA, 120, S.overC, 245, top, band, 'black')));
+  S.east.forEach(([a0, a1, c], j) =>
+    pieces.push(hidden(ac.box(`stack-s-east-${j}`, a0, a1, 45, c, top, band, 'black'))),
+  );
+  return pieces;
+}
+
 function gorge() {
   return {
     origin: GORGE_O,
@@ -287,8 +446,22 @@ function gorge() {
     pieces: [
       { ...tl.box('incline-n', 16, 56, BED, PLAT, GORGE_DECK, 0.5, 'light'), posts: true },
       { ...tl.box('incline-s', 16, 56, -PLAT, -BED, GORGE_DECK, 0.5, 'light'), posts: true },
-      // Call 116: the tunnel's mouth is marked on the south wall where the row enters the rock; nothing is bored.
-      { ...ac.box('portal', 45.1, 54.1, 44.7, 45, GORGE_RAIL + 7, 7, 'black'), solid: false },
+      // Call 116: the tunnel's mouth is marked on the south wall where the row enters the rock. Bored by step 4 of
+      // greybox-leg2 (bore(), after these): the old dark panel is the mouth's pale lintel now.
+      {
+        ...ac.box(
+          'portal',
+          MOUTH.in.lintel[0],
+          MOUTH.in.lintel[1],
+          44.4,
+          45,
+          INCLINE_BORE.roof + 1.2,
+          1.2,
+          'pale',
+        ),
+        solid: false,
+      },
+      ...bore(),
     ],
     pads: [],
     posts: [],

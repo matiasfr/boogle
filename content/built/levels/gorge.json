@@ -1841,7 +1841,7 @@
           "operand": 0
         },
         "hidden": true,
-        "y0": -10,
+        "y0": 11.5,
         "y1": 85
       },
       {
@@ -2193,20 +2193,751 @@
         },
         {
           "bounds": [
-            45.1,
-            54.1,
-            44.7,
+            42.87,
+            56.38,
+            44.4,
             45
           ],
           "compute": "rect",
           "frame": {
             "operand": 0
           },
-          "h": 7,
+          "h": 1.2,
           "id": "portal",
           "solid": false,
+          "tone": "pale",
+          "top": 12.2
+        },
+        {
+          "bounds": [
+            62,
+            237.4,
+            4,
+            5
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 9.5,
+          "id": "bore-wall-s",
           "tone": "black",
-          "top": 10
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            71.9,
+            226.9,
+            -5,
+            -4
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 9.5,
+          "id": "bore-wall-n",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            71.9,
+            226.9,
+            -5,
+            -4
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.5,
+          "id": "bore-roof-0",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            70.8,
+            227.9,
+            -4,
+            -3
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.5,
+          "id": "bore-roof-1",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            69.7,
+            228.9,
+            -3,
+            -2
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.5,
+          "id": "bore-roof-2",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            68.6,
+            230.1,
+            -2,
+            -1
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.5,
+          "id": "bore-roof-3",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            67.5,
+            231.3,
+            -1,
+            0
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.5,
+          "id": "bore-roof-4",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            66.4,
+            232.5,
+            0,
+            1
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.5,
+          "id": "bore-roof-5",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            65.3,
+            233.7,
+            1,
+            2
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.5,
+          "id": "bore-roof-6",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            64.2,
+            234.9,
+            2,
+            3
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.5,
+          "id": "bore-roof-7",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            63.1,
+            236.1,
+            3,
+            4
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.5,
+          "id": "bore-roof-8",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            62,
+            237.4,
+            4,
+            5
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.5,
+          "id": "bore-roof-9",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            71.4,
+            227.4,
+            -5,
+            -3
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.5,
+          "id": "bore-floor-0",
+          "tone": "black",
+          "top": 2.5
+        },
+        {
+          "bounds": [
+            69.2,
+            229.5,
+            -3,
+            -1
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.5,
+          "id": "bore-floor-2",
+          "tone": "black",
+          "top": 2.5
+        },
+        {
+          "bounds": [
+            67,
+            231.9,
+            -1,
+            1
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.5,
+          "id": "bore-floor-4",
+          "tone": "black",
+          "top": 2.5
+        },
+        {
+          "bounds": [
+            64.8,
+            234.3,
+            1,
+            3
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.5,
+          "id": "bore-floor-6",
+          "tone": "black",
+          "top": 2.5
+        },
+        {
+          "bounds": [
+            62.6,
+            236.8,
+            3,
+            5
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.5,
+          "id": "bore-floor-8",
+          "tone": "black",
+          "top": 2.5
+        },
+        {
+          "bounds": [
+            42.87,
+            43.67,
+            44.6,
+            45
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 8.5,
+          "id": "mouth-in-s",
+          "solid": false,
+          "tone": "pale",
+          "top": 11
+        },
+        {
+          "bounds": [
+            55.58,
+            56.38,
+            44.6,
+            45
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 8.5,
+          "id": "mouth-in-n",
+          "solid": false,
+          "tone": "pale",
+          "top": 11
+        },
+        {
+          "bounds": [
+            172.69,
+            173.49,
+            162.01,
+            162.81
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 8.5,
+          "id": "mouth-out-s",
+          "solid": false,
+          "tone": "pale",
+          "top": 11
+        },
+        {
+          "bounds": [
+            171.12,
+            171.92,
+            148.99,
+            149.79
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 8.5,
+          "id": "mouth-out-n",
+          "solid": false,
+          "tone": "pale",
+          "top": 11
+        },
+        {
+          "bounds": [
+            171.04,
+            173.71,
+            148.36,
+            163.56
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 1.2,
+          "id": "mouth-out-lintel",
+          "solid": false,
+          "tone": "pale",
+          "top": 12.2
+        },
+        {
+          "bounds": [
+            -120,
+            120,
+            45,
+            245
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 12,
+          "hidden": true,
+          "id": "stack-s-under",
+          "tone": "black",
+          "top": 2
+        },
+        {
+          "bounds": [
+            -120,
+            42.1,
+            45,
+            245
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 9.5,
+          "hidden": true,
+          "id": "stack-s-west",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            61.5,
+            166.6,
+            5,
+            58
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 9.5,
+          "hidden": true,
+          "id": "stack-s-along",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            42.1,
+            120,
+            115.6,
+            245
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 9.5,
+          "hidden": true,
+          "id": "stack-s-over",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            58.1,
+            59.1,
+            45,
+            45.9
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 9.5,
+          "hidden": true,
+          "id": "stack-s-east-0",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            59.1,
+            60.1,
+            45,
+            46.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 9.5,
+          "hidden": true,
+          "id": "stack-s-east-1",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            60.1,
+            61.1,
+            45,
+            47.7
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 9.5,
+          "hidden": true,
+          "id": "stack-s-east-2",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            61.1,
+            65.1,
+            45,
+            48.6
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 9.5,
+          "hidden": true,
+          "id": "stack-s-east-3",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            65.1,
+            69.1,
+            45,
+            52.2
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 9.5,
+          "hidden": true,
+          "id": "stack-s-east-4",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            69.1,
+            73.1,
+            45,
+            55.9
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 9.5,
+          "hidden": true,
+          "id": "stack-s-east-5",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            73.1,
+            77.1,
+            45,
+            59.5
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 9.5,
+          "hidden": true,
+          "id": "stack-s-east-6",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            77.1,
+            81.1,
+            45,
+            63.1
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 9.5,
+          "hidden": true,
+          "id": "stack-s-east-7",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            81.1,
+            85.1,
+            45,
+            66.7
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 9.5,
+          "hidden": true,
+          "id": "stack-s-east-8",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            85.1,
+            89.1,
+            45,
+            70.4
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 9.5,
+          "hidden": true,
+          "id": "stack-s-east-9",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            89.1,
+            93.1,
+            45,
+            74
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 9.5,
+          "hidden": true,
+          "id": "stack-s-east-10",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            93.1,
+            97.1,
+            45,
+            77.6
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 9.5,
+          "hidden": true,
+          "id": "stack-s-east-11",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            97.1,
+            101.1,
+            45,
+            81.3
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 9.5,
+          "hidden": true,
+          "id": "stack-s-east-12",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            101.1,
+            105.1,
+            45,
+            84.9
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 9.5,
+          "hidden": true,
+          "id": "stack-s-east-13",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            105.1,
+            109.1,
+            45,
+            88.5
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 9.5,
+          "hidden": true,
+          "id": "stack-s-east-14",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            109.1,
+            113.1,
+            45,
+            92.1
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 9.5,
+          "hidden": true,
+          "id": "stack-s-east-15",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            113.1,
+            117.1,
+            45,
+            95.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 9.5,
+          "hidden": true,
+          "id": "stack-s-east-16",
+          "tone": "black",
+          "top": 11.5
+        },
+        {
+          "bounds": [
+            117.1,
+            120,
+            45,
+            99.4
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 9.5,
+          "hidden": true,
+          "id": "stack-s-east-17",
+          "tone": "black",
+          "top": 11.5
         }
       ],
       "posts": [],
