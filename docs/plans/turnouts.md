@@ -1,7 +1,9 @@
 # Turnouts: real points wherever tracks merge or cross
 
-> **Status, 17 November 2026:** Step 1 (J1 static spur turnout) is on main (#1802). Step 2 (J2 to J9 in junctions(), the level check's junction table) is on main (#2079, 18 November; reconciled by the 18 November tidy). Checkpoint A owner/designer viewing is not verified here; the owner said on 18 November to go ahead without his look at J1's stills (decisions-rail, `d-2026-11-18-decisions-page-rail`). Step 3 (Home's throat: J4, J6, J2, J3) is on main (#2256, 19 November). Step 4 (the lines: J5, J7, J8, J9) is on main (#2262, 19 November). Step 5 (the table's rim, T1 to T4) is built on
-> `claude/turnouts-table-rim` (19 November), not shipped. Step 6 (moving blades and levers) is built on `claude/turnouts-blades` (19 November), not shipped. Next: step 7. Written on `origin/main` at 9036299a8. It builds on the view-only track tidy pass (one sleeper set through
+> **Status, 19 November 2026:** Step 1 (J1 static spur turnout) is on main (#1802). Step 2 (J2 to J9 in junctions(), the level check's junction table) is on main (#2079, 18 November; reconciled by the 18 November tidy). Checkpoint A owner/designer viewing is not verified here; the owner said on 18 November to go ahead without his look at J1's stills (decisions-rail, `d-2026-11-18-decisions-page-rail`). Step 3 (Home's throat: J4, J6, J2, J3) is on main (#2256, 19 November). Step 4 (the lines: J5, J7, J8, J9) is on main (#2262, 19 November). Step 5 (the table's rim, T1 to T4) is on main
+> (#2281, 19 November). Step 6 (moving blades and levers) is on main (#2302, 19 November). Step 7 (the sea junctions)
+> is built on `claude/turnouts-sea-junctions` (19 November), not shipped: J10 and J12 drawn, J11 listed but not drawn
+> (Ring Island's golden, see step 7). Next: checkpoint B. Written on `origin/main` at 9036299a8. It builds on the view-only track tidy pass (one sleeper set through
 > overlaps, one track kit, the stall road seated: PR 1793, `yard-track.ts` and `home-yard.ts`) and does not redo it;
 > step 1 extends that pass's shared timbers rather than drawing through `track.ts` (see step 1's departures).
 
@@ -68,9 +70,9 @@ stop overlapping. World metres (x, z). Radii of the line turnouts are `npm run l
 | J7 | Far Head crossover, offset-track end, s 490 | (1331.3, −150.8) | right | 7.2 m, 13.5° (1:4.2) | 12.1 m | 24.3 m | `track.ts` | trains |
 | J8 | Far Head crossover, down-track end, s 512 | (1351.8, −159.8) | right | 7.2 m, 13.5° | 12.1 m | 24.8 m | `track.ts` | trains |
 | J9 | Line 2 offset track, pier root, s 556 down to 536 | (1385.5, −187.4) | right | 6.5 m, 14.8° | 11.0 m | 15.4 m | `track.ts`; `retire()` removes it at Q7 | trains |
-| J10 | Railhead stub, moves with the head: merge s 832 to 972 in 20 m steps | (1404.5, −462.0) to (1408.3, −601.9) | — | not measured | — | straight deck | `railhead-view.ts` (`crossoverSpan`) | trains |
-| J11 | Ring Island crossover, s 1137 to 1159 | (1412.7, −766.9) | — | not measured | — | straight | `src/entities/ring-island/view.ts` | trains |
-| J12 | Stack heads 1 to 3 (merge s 1670, 2180, 2690) and High Gorge's crossover (s 3195) | on the greybox row | — | not measured | — | — | the greybox route's views (not read) | trains |
+| J10 | Railhead stub, moves with the head: merge s 832 to 972 in 20 m steps; two toes, J10a on the up track at s 812 and J10b on the down track at s 832 (head 0) | (1399.9, −442.1) and (1404.4, −462.0) at head 0 | right, both | 6.5 m, 14.8° (1:3.8) | 11.0 m | 20.6 m | `railhead-view.ts` (step 7) | trains |
+| J11 | Ring Island crossover, s 1137 to 1159; J11a and J11b | (1408.7, −767.0) and (1413.3, −788.9) | right, both | 7.2 m, 13.5° (1:4.2) | 12.1 m | 24.5 m | listed, not drawn (step 7) | trains |
+| J12 | Stack heads 1 to 3 (merge s 1670.1, 2180.2, 2690.3) and High Gorge's crossover (s 3192 to 3214); J12.1a/b to J12.4a/b | J12.1a (1021.3, −907.4) … J12.4b (−73.5, −1966.7) | right, all | 6.5 m, 14.7 to 14.8° (heads); 7.2 m, 13.5° (Gorge) | 11.0 m; 12.1 m | 20.4 to 24.9 m | `route-greybox/leg-view.ts` (step 7) | trains |
 | T1 | Table rim, the spur (bearing 310° from the centre) | table (942.1, 17.1), r 4.8 | — | a butt join | — | straight 1.5 m | `home-station-view`, `roundhouse-view` | the shunt |
 | T2 to T4 | Table rim, stall roads at 160°, 190° (open), 220° | rims (943.7, 21.6), (941.3, 21.8), (939.0, 20.8) | — | butt joins | — | straight 3.7 m | same | the shunt (190° only) |
 
@@ -558,10 +560,64 @@ review** row (a fresh subagent, fable medium) on its one proof look. Step 2 and 
     rules are tested, not looked at), far LOD, phone width; frame time; not tested on a device. A line 2 train standing
     at Home stands over J2's blades, which the cart alone sets: if the cart were on the leg then, they would show set
     for the leg under it.
-- [ ] **7. The sea junctions: J10, J11, J12.** `railhead-view.ts` (`crossoverSpan`), `src/entities/ring-island/view.ts`
+- [x] **7. The sea junctions: J10, J11, J12.** `railhead-view.ts` (`crossoverSpan`), `src/entities/ring-island/view.ts`
   and the greybox route's track view call `turnout()` with their own centrelines (`line2World` with `line2Lat`'s
   shapes) and draw through their own box paths; `junctions.ts` gains them so step 6's blades cover them. Read those
   three files first: this plan did not. Proof look: the railhead's points from its platform.
+  **Built 19 November 2026** (branch `claude/turnouts-sea-junctions`), J10 and J12 drawn, J11 listed only, with these
+  departures:
+  - **Each is a crossover with two toes, as Far Head's.** Every end past the pier head is one: the up track's toe
+    (`a`, with s) and the down track's (`b`, against it), 12 toes in all. `seaCrossovers()` in `junctions.ts` reads them
+    from the catalog's ends of line 2 (a stub's over the 20 m before its merge, a crossover's over the 22 m after it,
+    as `line2Lat` eases a homeward train), so High Gorge's is s 3192 to 3214 (the table's 3195 was before its move).
+    `Junction.view` names the drawing view; `track.ts` skips them. `crossoverPlan()` gives each view the same parts:
+    both turnouts (`plain` 0, the crossover's rails from each toe, as J7 and J8), the blades' cuts in the through
+    roads' inner rails, the crossover's two rails a gauge apart square to it with its inner rail cut at each end, the
+    wing and check rails, and a timber per station (1.18 m) from a headblock behind one toe to one behind the other.
+  - **The ring run's centimetre rounding.** `line2World` there goes through `ringAt`, which rounds each point to the
+    centimetre: over a turnout's 0.1 m frames that read J11a's frog as 19.4°. The sea centrelines read the ring run
+    along 20 m chords (`seaPoint`); the stack's smoothed row is not rounded and is read as is.
+  - **J10 at every head, moving with it.** It is listed at the first head (s 812 to 832); `TrackPoint.moved` gives the
+    metres the deck's end has come since (`railheadEnd()`), and `turnout-blades.ts` translates the junction's parts by
+    `movedBy()` (the deck is straight and graded 4% there) and reads its route there. Today's view drew no crossover at
+    the first three heads (its gate `c0 >= 120`: they stand on Q7's deck); now it draws one at every head. Q7's deck
+    (`ring-deck.ts`) leaves the two inner rails past u 69 (`INNER_FROM`, a rail joint) to the railhead view once the
+    railhead is drawn (`railheadDrawn.live`), so it cuts their blades wherever the head stands. The old crossover's
+    eight-chord rails and seven 2.3 m boards are gone.
+  - **Timbers on the decks.** Step 4 put none on a deck; these three views draw no sleepers at all, so the timbers are
+    what says points: on the railhead's planks 6 cm thick (top 1 cm over the planks, the rails sitting on them), on
+    the greybox's beds 8 cm (top 4 cm over the bed, a darker grey-brown).
+  - **Levers between the tracks.** Designer call 3 puts a line's lever away from the other track; on these decks that
+    side is the edge over the sea (and the Way's edge at 1.8 m), so every sea toe's lever and headblocks stand toward
+    the other track, 2.0 m out: midway between the two (logged call). The arm, rod and box are step 6's.
+  - **J11 is listed, not drawn (a scope wall).** Ring Island's near view is held piece for piece against
+    `test/fixtures/prefab-ring-island.json` (`test/prefab-trees.test.ts`, "never rewritten"), and its track and
+    crossover are records (`src/content/levels/ring-island.ts`), which may not import `turnout()`. Cutting the Way's
+    rails for blades and adding timbers, wing and check rails changes that golden, which this step may not edit. J11
+    is in the list and the level check's table; it has no TrackPoint, so no blades or lever are drawn there.
+  - **Greybox leg 2's views** add more places two tracks meet, not built here: the incline's and the bay cut's start
+    crossovers (`rowStartCrossing`), each head's stub and the crossover before Bell Rock's platforms (`rowEndSwing`), all
+    drawn as a straight diagonal track by `leg-view.ts` `swing()`.
+  - **Through trains** sit 3.9 to 4.3 cm off the nearest drawn rail at the blade tips (J7 to J9: 4.0 to 4.6 cm): the
+    same recorded call, a closed blade a rail's width in from its stock rail (7.7 cm at the tip).
+  - **The tests** (`test/turnout.test.ts`): the list is J1 to J12; each end past the pier head has a crossover on the
+    trains' path (its lateral is `line2Lat`'s for a homeward train from that end, J10's span `crossoverSpan(headU(0))`);
+    the sea levers stand between the tracks; a train leaving heads 0, 3 and 7 sets J10b moved to that head. The level
+    check's table carries the 12 new rows (above).
+  - **Cost** (counted from `crossoverPlan`; no frame time measured): no new draw. Each crossover is about 72 boxes
+    (20 or 21 timbers, 38 or 42 crossover rail chords, 12 wing and check rails, a remnant or two from the cuts), 864
+    triangles. The railhead's live batch nets about +41 boxes (the old crossover's 23 and Q7's 34 inner rail pieces
+    past u 69 go; 26 of its own come); the stack's deck batch +288 at most (3,953 of its 4,800 at `bay-reached`). The
+    blades batch gains 10 toes, at most 80 boxes (960 triangles), never culled, casting; it is rewritten each frame of
+    a haul while J10 moves.
+  - **Seen** ([turnouts/](turnouts/)): `step7-railhead.png` (from the platform's back end at the last head,
+    `gap-footed`), `step7-railhead-first-head.png` (the same at the first head, on Q7's deck, `deck-laid`),
+    `step7-j12-1-top.png` (the stack's first head from above, `gorge-mid`): each reads as two sets of points, blades
+    with tie bar and rod to a lever between the tracks, timbers under all four rails. Local only: J10b and J10a's
+    blades at a crouching eye at the first head (no doubled or missing rail), J10 from above, and J12.4 (High Gorge,
+    `bay-reached`) from above.
+  - **Not seen:** a train throwing any of them (J10's rule at three heads is tested), the haul carrying J10 in motion,
+    J12.2 and J12.3, far LOD, phone width; frame time; not tested on a device.
 - [ ] **Checkpoint B (after step 7, or after step 5 if 6 and 7 wait).** Runner: Codex, gpt-6.1-sol medium. Once:
   `npm run check:full`; `npm run level-check`; `npm run perf` at Home and Far Head against step 1's numbers;
   `npm run checkpoints -- trains-on`; the track layer laying line 1's first panels over J4 (the bot segment to Q1) to
