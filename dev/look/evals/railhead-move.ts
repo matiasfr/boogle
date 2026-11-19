@@ -10,7 +10,8 @@
 // (winch and bell) close up. `&train=1` (docs/plans/railhead-reroute.md, step 3) holds the footing until a line 2 train
 // is 30 to 150 m short of the Railhead, sets it, and frames the old head from the sea side, still: the train stands its
 // dwell at the old head while the deck hauls off, the lever stays and the far crowd rides the deck; at the settle the
-// stop, the map and the lever move out. Prints `RAILHEAD MOVE ...` lines with the haul's phase.
+// stop, the map and the lever move out. Prints `RAILHEAD MOVE ...` lines with the haul's phase. With `--players 2` the
+// second page (`&player=2`) only watches: it waits for the first page's footing and frames and flags the same haul.
 const R = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
@@ -31,7 +32,9 @@ const query = new URLSearchParams(location.search);
 const still = query.get('still'),
   lever = query.get('cam') === 'lever',
   kit = query.get('cam') === 'kit',
-  arriving = query.get('train') === '1';
+  arriving = query.get('train') === '1',
+  // `--players 2`: the second page only watches; the first sets the footing.
+  watcher = query.get('player') === '2';
 const { trainAlong, TRAIN_PHASE } = (await import(
   '/src/sim/railway-train.ts' as string
 )) as typeof import('../../../src/sim/railway-train.ts');
@@ -65,16 +68,21 @@ const ap = () => R.aperture(R.rw());
 const set0 = ap().set;
 if (set0 % 2 !== 1 || ap().rack < 1) throw new Error(`RAILHEAD MOVE needs an odd set and a racked footing: ${set0}`);
 const head = RING_HEAD[set0 >> 1]!;
+if (watcher)
+  for (let i = 0; ap().set === set0; i++) {
+    if (i > 6000) throw new Error('RAILHEAD MOVE the first page never set the footing');
+    await wait(100);
+  }
 const bot = makeBot({ doneFlag: '__railheadMoveBot' });
-teleport(me.body!, head.rack.x / 100 + 1.5, head.rack.y / 100 + 1, head.rack.z / 100);
+if (!watcher) teleport(me.body!, head.rack.x / 100 + 1.5, head.rack.y / 100 + 1, head.rack.z / 100);
 await wait(400);
-if (!(await bot.use(head.rack.x / 100, head.rack.z / 100, 'shoulder a footing', /Shoulder a footing/)))
+if (!watcher && !(await bot.use(head.rack.x / 100, head.rack.z / 100, 'shoulder a footing', /Shoulder a footing/)))
   throw new Error('RAILHEAD MOVE no shoulder');
-for (let i = 0; !R.railBack().foot; i++) {
+for (let i = 0; !watcher && !R.railBack().foot; i++) {
   if (i > 100) throw new Error('RAILHEAD MOVE no footing on the back');
   await wait(100);
 }
-if (arriving)
+if (arriving && !watcher)
   for (let i = 0; ; i++) {
     if (i > 3000) throw new Error('RAILHEAD MOVE no train came to the Railhead');
     const c = coming();
@@ -84,7 +92,7 @@ if (arriving)
     }
     await wait(100);
   }
-if (!(await bot.use(head.jib.x / 100, head.jib.z / 100, 'set the footing', /Set the footing/)))
+if (!watcher && !(await bot.use(head.jib.x / 100, head.jib.z / 100, 'set the footing', /Set the footing/)))
   throw new Error('RAILHEAD MOVE no set');
 for (let i = 0; ap().set === set0; i++) {
   if (i > 100) throw new Error('RAILHEAD MOVE the footing was not set');
