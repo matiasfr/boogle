@@ -246,6 +246,8 @@ export function createIslandBoards(
   for (let k = 0; k < gliders.count; k++) gliders.setMatrixAt(k, hide);
   const color = new THREE.Color();
   trainLines.forEach((li, t) => {
+    // A train on a line the map does not draw (the greybox route's rows beyond line 2) has no marker.
+    if (!lines[li]) return;
     color.set(lines[li]!.color);
     for (let b = 0; b < count; b++) marks.setColorAt(b * T + t, color);
   });
@@ -385,7 +387,7 @@ export function createIslandBoards(
         trainLines.forEach((li, t) => {
           const k = b * T + t,
             a = along[t];
-          if (!bd.on || a === null || a === undefined) {
+          if (!bd.on || a === null || a === undefined || !lines[li]) {
             holds.setMatrixAt(k, hide);
             return marks.setMatrixAt(k, hide);
           }
