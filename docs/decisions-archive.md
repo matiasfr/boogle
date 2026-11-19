@@ -1532,6 +1532,15 @@ History for [decisions-characters.md](decisions-characters.md), verbatim.
 
 ## Archive: Graphics, water, sky and devices
 
+### The chopped tree, 18 November 2026
+
+Changed by [the V-notch entry](decisions-look.md#d-2026-11-18-chop-v-notch) (owner, 18 November 2026); moved word for word from [agent-calls](agent-calls.md).
+
+| Date | Call | Where | By | Why this pick | Status when archived |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-18 | Default: a tree's notch bites into the trunk with a darker inner face, so the trunk reads narrower as pieces are taken; chips grow from 9 to 14 with the cut (G20, plan only) | [grant-c8-batch](plans/grant-c8-batch.md#design-review-2026-11-18); `src/render/place-tree-view.ts` | Planner (design review) | At 1 a hit a tree takes 10 hits; the tree should show its own progress | changed |
+| 2026-11-18 | Default: the bite is a band from 0.94 to 1.3 m opened on the stroke's side, its dark heart about 8 cm deep at the first hit and 60% of the trunk's radius at the felling one; the felled trunk keeps its bite, where the notch was hidden once a tree fell (G20, as built, #2214) | [grant-c8-batch](plans/grant-c8-batch.md); `src/render/place-tree-view.ts` | Builder; the orchestrator's read | Cheap to retune; the lying log shows where it was cut | changed |
+
 ### Decisions page answers, 18 November 2026
 
 Ruled in [the decisions-page entry](decisions-look.md#d-2026-11-18-decisions-page-look) (owner, 18 November 2026); moved word for word from [agent-calls](agent-calls.md).

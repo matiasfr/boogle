@@ -142,54 +142,117 @@ export function createTreeView(
 ) {
   const { flat, tree } = materials;
   const AXIS_Y = new THREE.Vector3(0, 1, 0);
-  // The chop's bite (G20): a band of the trunk at chopping height is opened on the cut side, and a dark heart behind it
-  // draws back as the cut deepens, so the trunk reads narrower at the cut. All in the trunk geometry's own space (a
-  // 6-sided frustum, 0.46 m at the base, 0.28 m at the top, 5 m tall, centred), so the bitten trunk meets the whole one.
+  // The chop's notch (G20): a V cut into the trunk at chopping height on the stroke's side, pale fresh wood inside,
+  // deepening hit by hit past the axis to a thin hinge at the felling one. One trunk geometry carries it as a morph
+  // target, set per tree: 0 is the whole trunk, 1 the felling cut. All in the trunk geometry's own space (a 6-sided
+  // frustum, 0.46 m at the base, 0.28 m at the top, 5 m tall, centred, a corner facing +z), so it meets the whole trunk.
   const TRUNK_BASE = 0.46,
     TRUNK_TOP = 0.28,
     TRUNK_H = 5;
-  const BITE_LOW = 0.94,
-    BITE_HIGH = 1.3; // metres above the foot; chips fly at 1.1
+  const NOTCH_LOW = 0.84,
+    NOTCH_MID = 1.12, // metres above the foot; chips fly at 1.1
+    NOTCH_HIGH = 1.4;
   const trunkRadius = (h: number) => TRUNK_BASE + ((TRUNK_TOP - TRUNK_BASE) * h) / TRUNK_H;
-  const BITE_R = trunkRadius((BITE_LOW + BITE_HIGH) / 2);
-  // The heart shrinks toward a point behind the axis, so its back stays inside the bark and its front draws back from
-  // the cut: about 8 cm deep at the first hit, 60% of the trunk's radius at the felling one (a 40% hinge).
-  const HEART_PIVOT = -0.8 * BITE_R;
-  const heartScale = (cut: number) => {
-    const front = BITE_R * (0.82 - 0.42 * Math.min(1, Math.max(0, cut)));
-    return (front - HEART_PIVOT) / (BITE_R - HEART_PIVOT);
-  };
+  // The felling cut's inner edge, 30% of the radius past the axis: from the side the hinge left is a sliver.
+  const APEX_DEEP = -0.3 * trunkRadius(NOTCH_MID);
+  const LITTER = 6; // chips at the foot of a felling cut
+  // A first hit already shows a small notch (about 8 cm deep); the last one is the whole cut.
+  const notchAt = (cut: number) => Math.min(1, 0.08 + 0.92 * Math.max(0, cut));
 
-  /** The trunk with its chopping band opened on +z (two of six faces, 120°), bark inside the opening's edges. */
-  function bittenTrunkGeometry() {
+  /**
+   * The trunk with its chopping band built from four of its six faces (θ -120°..120°, the cut side) as a 5×5 grid of
+   * rows (band bottom, lower lip, apex, upper lip, band top) and columns (the corners). Whole, the lips and apex sit together on
+   * the bark; cut, the lips open to the band's edges and the apex row is pushed back to APEX_DEEP, so the two front
+   * faces' middle strips become the notch's two faces. Those strips draw in the second material (fresh wood).
+   */
+  function notchedTrunkGeometry() {
     const section = (from: number, to: number) =>
       new THREE.CylinderGeometry(trunkRadius(to), trunkRadius(from), to - from, 6).translate(
         0,
         (from + to) / 2 - TRUNK_H / 2,
         0,
       );
-    const shell = new THREE.CylinderGeometry(
-      trunkRadius(BITE_HIGH),
-      trunkRadius(BITE_LOW),
-      BITE_HIGH - BITE_LOW,
-      4,
+    // The back two faces of the band stay bark and never move.
+    const back = new THREE.CylinderGeometry(
+      trunkRadius(NOTCH_HIGH),
+      trunkRadius(NOTCH_LOW),
+      NOTCH_HIGH - NOTCH_LOW,
+      2,
       1,
       true,
-      Math.PI / 3,
-      (Math.PI * 4) / 3,
-    ).translate(0, (BITE_LOW + BITE_HIGH) / 2 - TRUNK_H / 2, 0);
-    // The shell's inside, seen past the heart through the opening: the same faces wound the other way.
-    const inside = shell.clone();
-    const index = inside.getIndex()!;
-    for (let k = 0; k < index.count; k += 3) {
-      const a = index.getX(k);
-      index.setX(k, index.getX(k + 2));
-      index.setX(k + 2, a);
-    }
-    const normals = inside.getAttribute('normal');
-    for (let k = 0; k < normals.count; k++) normals.setXYZ(k, -normals.getX(k), -normals.getY(k), -normals.getZ(k));
-    const parts = [section(0, BITE_LOW), shell, inside, section(BITE_HIGH, TRUNK_H)];
-    // Merged by hand: every part is an indexed cylinder with position, normal and uv.
+      (Math.PI * 2) / 3,
+      (Math.PI * 2) / 3,
+    ).translate(0, (NOTCH_LOW + NOTCH_HIGH) / 2 - TRUNK_H / 2, 0);
+    const whole = [NOTCH_LOW, NOTCH_MID, NOTCH_MID, NOTCH_MID, NOTCH_HIGH];
+    const cutRows = [NOTCH_LOW, NOTCH_LOW, NOTCH_MID, NOTCH_HIGH, NOTCH_HIGH];
+    const corner = (h: number, column: number, apex: number | null, out: THREE.Vector3) => {
+      const theta = ((column - 2) * Math.PI) / 3,
+        r = trunkRadius(h);
+      const z = r * Math.cos(theta);
+      return out.set(r * Math.sin(theta), h - TRUNK_H / 2, apex === null ? z : Math.min(z, apex));
+    };
+    const at = (rows: number[], apex: number, row: number, column: number, out: THREE.Vector3) =>
+      corner(rows[row]!, column, row === 2 ? apex : null, out);
+    const a = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()],
+      b = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()],
+      e1 = new THREE.Vector3(),
+      e2 = new THREE.Vector3(),
+      centre = new THREE.Vector3();
+    // Each triangle as [row, column] corners, wound to face away from the axis in whichever state it has area.
+    const facesOf = (wood: boolean) => {
+      const tris: [number, number][][] = [];
+      for (let row = 0; row < 4; row++)
+        for (let column = 0; column < 4; column++) {
+          if (((row === 1 || row === 2) && (column === 1 || column === 2)) !== wood) continue;
+          const q: [number, number][] = [
+            [row, column],
+            [row, column + 1],
+            [row + 1, column + 1],
+            [row + 1, column],
+          ];
+          for (const tri of [
+            [q[0]!, q[1]!, q[2]!],
+            [q[0]!, q[2]!, q[3]!],
+          ]) {
+            tri.forEach(([r, c], k) => at(whole, Infinity, r, c, a[k]!));
+            tri.forEach(([r, c], k) => at(cutRows, APEX_DEEP, r, c, b[k]!));
+            const area = (p: THREE.Vector3[]) => e1.subVectors(p[1]!, p[0]!).cross(e2.subVectors(p[2]!, p[0]!));
+            const na = area(a).clone(),
+              nb = area(b);
+            const [n, p] = na.lengthSq() > nb.lengthSq() ? [na, a] : [nb, b];
+            centre.copy(p[0]!).add(p[1]!).add(p[2]!);
+            centre.y = 0;
+            tris.push(n.dot(centre) < 0 ? [tri[0]!, tri[2]!, tri[1]!] : tri);
+          }
+        }
+      return tris;
+    };
+    // Grid triangles unrolled into their own vertices, with the cut state's offsets as the morph target.
+    const grid = (wood: boolean) => {
+      const tris = facesOf(wood),
+        position: number[] = [],
+        delta: number[] = [],
+        normal: number[] = [];
+      for (const tri of tris)
+        for (const [r, c] of tri) {
+          at(whole, Infinity, r, c, a[0]!);
+          at(cutRows, APEX_DEEP, r, c, b[0]!);
+          position.push(a[0]!.x, a[0]!.y, a[0]!.z);
+          delta.push(b[0]!.x - a[0]!.x, b[0]!.y - a[0]!.y, b[0]!.z - a[0]!.z);
+          e1.set(a[0]!.x, 0, a[0]!.z).normalize();
+          normal.push(e1.x, e1.y, e1.z);
+        }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(position, 3));
+      geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normal, 3));
+      geometry.setAttribute('uv', new THREE.Float32BufferAttribute(new Array((position.length / 3) * 2).fill(0), 2));
+      geometry.setIndex(Array.from({ length: position.length / 3 }, (_, k) => k));
+      return { geometry, delta };
+    };
+    const barkGrid = grid(false),
+      woodGrid = grid(true);
+    const parts = [section(0, NOTCH_LOW), back, barkGrid.geometry, section(NOTCH_HIGH, TRUNK_H), woodGrid.geometry];
+    // Merged by hand: every part is indexed with position, normal and uv; only the grids move.
     const merged = new THREE.BufferGeometry();
     for (const name of ['position', 'normal', 'uv'] as const) {
       const size = parts[0]!.getAttribute(name).itemSize;
@@ -201,14 +264,25 @@ export function createTreeView(
         ),
       );
     }
+    const morph = parts.flatMap((part) =>
+      part === barkGrid.geometry
+        ? barkGrid.delta
+        : part === woodGrid.geometry
+          ? woodGrid.delta
+          : new Array<number>(part.getAttribute('position').count * 3).fill(0),
+    );
+    merged.morphAttributes.position = [new THREE.Float32BufferAttribute(morph, 3)];
+    merged.morphTargetsRelative = true;
     const indices: number[] = [];
     let offset = 0;
     for (const part of parts) {
+      if (part === woodGrid.geometry) merged.addGroup(0, indices.length, 0); // bark, then the fresh wood
       const index = part.getIndex()!;
       for (let k = 0; k < index.count; k++) indices.push(index.getX(k) + offset);
       offset += part.getAttribute('position').count;
       part.dispose();
     }
+    merged.addGroup(merged.groups[0]!.count, indices.length - merged.groups[0]!.count, 1);
     merged.setIndex(indices);
     return merged;
   }
@@ -232,25 +306,16 @@ export function createTreeView(
     crown2: new THREE.InstancedMesh(new THREE.ConeGeometry(1.9, 4.6, 6), tree('#4f9c44', 'green'), n),
     stump: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.44, 0.5, 0.6, 6), tree('#ffffff', 'timber'), n),
     notch: new THREE.InstancedMesh(new THREE.BoxGeometry(0.5, 0.16, 0.16), flat('#39291e'), n),
-    // A tree being chopped draws this trunk instead of the whole one; the heart shows dark through its opening.
-    bitten: new THREE.InstancedMesh(bittenTrunkGeometry(), trunkMaterial, n),
-    heart: new THREE.InstancedMesh(
-      new THREE.CylinderGeometry(
-        trunkRadius(BITE_HIGH),
-        trunkRadius(BITE_LOW),
-        BITE_HIGH - BITE_LOW,
-        6,
-        1,
-        true,
-      ).translate(0, (BITE_LOW + BITE_HIGH) / 2 - TRUNK_H / 2, 0),
-      flat('#39291e'),
-      n,
-    ),
+    // A tree being chopped draws this trunk instead of the whole one: bark, and fresh wood in the notch.
+    // At least two slots: three.js reads a per-instance morph only from an instanced mesh of more than one.
+    bitten: new THREE.InstancedMesh(notchedTrunkGeometry(), [trunkMaterial, flat('#ead3a0')], Math.max(2, n)),
     hardwood: new THREE.InstancedMesh(hardwoodGeo, flat('#686359'), hardwoodCount),
     forks: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.22, 0.42, 3.5, 8), flat('#686359'), hardwoodCount * 2),
     broad: new THREE.InstancedMesh(new THREE.SphereGeometry(1, 7, 5), tree('#657a37', 'green'), hardwoodCount * 3),
     branch: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.17, 0.21, 1.5, 8), flat('#686359'), hardwoodCount),
     cutEnd: new THREE.InstancedMesh(new THREE.CircleGeometry(0.17, 8), flat('#ddc89b'), hardwoodCount),
+    // Chips lying round the foot of a tree being chopped, more as the notch deepens: fresh wood like its faces.
+    litter: new THREE.InstancedMesh(new THREE.BoxGeometry(0.17, 0.035, 0.08), flat('#ead3a0'), n * LITTER),
   };
   const roots = [
     createTreeRoots(
@@ -282,6 +347,20 @@ export function createTreeView(
     OLD_STUMP = new THREE.Color('#c9a06a'),
     RENEWED_STUMP = new THREE.Color('#dec89f');
   const slotSphere = new THREE.Sphere();
+  // Each bitten tree's notch depth, as a per-instance morph influence (relative targets, so no base weight).
+  const notchDepth = new THREE.Mesh();
+  notchDepth.morphTargetInfluences = [0];
+  parts.bitten.setMorphAt(0, notchDepth);
+  for (let slot = n; slot < parts.bitten.count; slot++) parts.bitten.setMatrixAt(slot, ZERO);
+  const chipAt = new THREE.Matrix4(),
+    chipTurn = new THREE.Quaternion(),
+    chipPlace = new THREE.Vector3(),
+    chipSize = new THREE.Vector3();
+  // A fixed scatter per tree and chip (view only): the same tree always drops its chips in the same places.
+  const scatter = (tree: number, chip: number, salt: number) => {
+    const v = Math.sin(tree * 12.9898 + chip * 78.233 + salt * 37.719) * 43758.5453;
+    return v - Math.floor(v);
+  };
   let fitted = false;
   function write(mesh: (typeof batches)[number], slot: number, matrix: THREE.Matrix4, grow: boolean) {
     mesh.setMatrixAt(slot, matrix);
@@ -300,8 +379,9 @@ export function createTreeView(
       write(mesh, slot, matrix, grow);
     const hardwoodIndex = hardwoodIndices.get(t.index);
     if (t.cleared) {
-      for (const mesh of [parts.trunk, parts.crown, parts.crown2, parts.stump, parts.notch, parts.bitten, parts.heart])
+      for (const mesh of [parts.trunk, parts.crown, parts.crown2, parts.stump, parts.notch, parts.bitten])
         put(mesh, t.index, ZERO);
+      for (let k = 0; k < LITTER; k++) put(parts.litter, t.index * LITTER + k, ZERO);
       if (hardwoodIndex !== undefined) {
         for (const mesh of [parts.hardwood, parts.branch, parts.cutEnd]) put(mesh, hardwoodIndex, ZERO);
         for (let slot = 0; slot < 2; slot++) put(parts.forks, hardwoodIndex * 2 + slot, ZERO);
@@ -336,17 +416,32 @@ export function createTreeView(
     const bare = fallen && t.fall >= 0.75;
     const compact = bare && t.collapsed;
     // The notch gets deeper only with accepted work; refusal leaves one shallow scuff. An ordinary trunk being chopped
-    // is drawn bitten (G20), turned so its opening faces the last stroke, and keeps the bite as it falls and lies.
+    // is drawn notched (G20), turned so its notch faces the last stroke, and keeps the notch as it falls and lies.
     const cut = t.work / (t.great ? greatStrokes : 15);
     const bite = cut > 0 && !t.hardwood && !t.great && (growth === 0 || growth === 4);
     put(parts.trunk, t.index, taken || t.hardwood || compact || bite ? ZERO : at(2.5));
     const spun = !bite || compact ? null : at(2.5).multiply(spin.makeRotationY(t.cutYaw - t.fallYaw));
     put(parts.bitten, t.index, spun ?? ZERO);
     if (spun) {
-      const k = heartScale(cut);
-      spun.multiply(local.makeTranslation(0, 0, (1 - k) * HEART_PIVOT)).scale(S1.set(k, 1, k));
+      notchDepth.morphTargetInfluences![0] = notchAt(cut);
+      parts.bitten.setMorphAt(t.index, notchDepth);
+      parts.bitten.morphTexture!.needsUpdate = true;
     }
-    put(parts.heart, t.index, spun ?? ZERO);
+    const chips = bite ? Math.ceil(notchAt(cut) * LITTER) : 0;
+    for (let k = 0; k < LITTER; k++) {
+      if (k >= chips) {
+        put(parts.litter, t.index * LITTER + k, ZERO);
+        continue;
+      }
+      const angle = scatter(t.index, k, 1) * Math.PI * 2,
+        reach = (0.6 + 0.7 * scatter(t.index, k, 2)) * t.size;
+      const x = t.x + Math.sin(angle) * reach,
+        z = t.z + Math.cos(angle) * reach;
+      chipTurn.setFromEuler(e.set(0.25 * (scatter(t.index, k, 3) - 0.5), scatter(t.index, k, 4) * Math.PI * 2, 0));
+      const s = 0.7 + 0.6 * scatter(t.index, k, 5);
+      chipAt.compose(chipPlace.set(x, H(x, z) + 0.02, z), chipTurn, chipSize.set(s, 1, s));
+      put(parts.litter, t.index * LITTER + k, chipAt);
+    }
     if (hardwoodIndex !== undefined) put(parts.hardwood, hardwoodIndex, taken || compact ? ZERO : at(2.5));
     // A crown follows the trunk's contact by 80 ms rather than twitching as one rigid stick.
     if (t.fall < 0 && t.shake > 0 && now - t.hitAt < 80) base.makeTranslation(t.x, t.y, t.z);
