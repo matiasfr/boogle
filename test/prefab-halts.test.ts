@@ -300,6 +300,9 @@ test('halt kit placements, colliders, lever plaques and ordered prompts match th
       });
   });
   // v48 heavy-load seed timing changes only stack-3 Pier.calling; geometry and ordered prompts stay exact.
+  // v62 (greybox leg 2): the catalog's ns and bay halts are built (reindexed, a head each), and at gorge-mid the kit
+  // riding ahead moves the trains, so stack head 3's up lever stands down (no request standing), its handle with it;
+  // no other state or geometry moves.
   const fixture = 'test/fixtures/prefab-halts.json';
   const actual = JSON.parse(JSON.stringify({ catalogs: catalog.RAIL_HALTS, boxValues, meshes, states }));
   if (process.env.GOLDEN === '1') fs.writeFileSync(fixture, JSON.stringify(actual, null, 2) + '\n');

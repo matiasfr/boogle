@@ -51,13 +51,14 @@ test("the wake: no lamp before the trains' wake ends, exactly at its end and hal
     held(at + TRAIN.wakeTicks - 0.5),
     RAIL_TRAINS.map(() => false),
   );
+  // Every line but line 2 wakes with the boiler's fit (trainWakeAt: line 2 answers later); greybox leg 2's lines too.
   assert.deepEqual(
     held(at + TRAIN.wakeTicks),
-    RAIL_TRAINS.map((r) => r.line === 0),
+    RAIL_TRAINS.map((r) => r.line !== LINE2),
   );
   assert.deepEqual(
     held(trainWakeAt(LINE2, at) + TRAIN.wakeTicks - 0.5),
-    RAIL_TRAINS.map((r) => r.line === 0),
+    RAIL_TRAINS.map((r) => r.line !== LINE2),
   );
   assert.deepEqual(
     held(trainWakeAt(LINE2, at) + TRAIN.wakeTicks),

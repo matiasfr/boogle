@@ -167,7 +167,9 @@ test('the menu lists the rows it always did: the house and leg 1 stages are tool
     tooling,
   );
   for (const stage of tooling) {
-    assert.ok(jumpOf(stage)?.land, `${stage} resolves with its landing`);
+    // Leg 2's rows land at the usual spawn until step 4's stills check a landing (greybox-leg2.md).
+    if (!['incline-open', 'bell-reached', 'bay-open', 'bay-reached'].includes(stage))
+      assert.ok(jumpOf(stage)?.land, `${stage} resolves with its landing`);
     assert.ok(OFFERED_STAGES.includes(stage as never), `${stage} stays buildable by ?from=`);
   }
 });
