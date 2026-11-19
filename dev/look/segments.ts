@@ -37,8 +37,12 @@ export const RAIL_STOPS = {
   'steel-lit': 'steel works lit',
   'steel-home': 'steel home',
   'boiler-long': 'boiler installed',
-  // The greybox route's leg 1 (dev/look/bots/railway-legs.ts), from `--from ring-joined`, `gorge-open` or `gorge-mid`.
+  // The greybox route's legs (dev/look/bots/railway-legs.ts): leg 1 from `--from ring-joined`, `gorge-open` or
+  // `gorge-mid`; leg 2 from `gorge-reached` or a later leg seed. Bell Rock is reached by the incline's last ride, the
+  // bay when the bay cut's first train brings the bot to Bell Rock's upper platform.
   gorge: 'gorge reached',
+  bell: 'bell reached',
+  bay: 'bay reached',
 } as const;
 export type RailStop = keyof typeof RAIL_STOPS;
 /** `--from <stage>`: an accepted `--rail-seed` server save that its `bot` eval resumes from (its `railFrom`).
@@ -59,6 +63,14 @@ export const RAIL_FROM = {
   // Leg 1 (greybox route step 5): the stack line to High Gorge. `--from ring-joined --to gorge` runs it too.
   'gorge-open': { railFrom: 'legs', after: 'ring-joined', bot: 'railway-legs-bot.ts' },
   'gorge-mid': { railFrom: 'legs', after: 'ring-joined', bot: 'railway-legs-bot.ts' },
+  // Leg 2 (greybox-leg2.md, step 5): the pick, the barrier, the incline to Bell Rock, the seeds, the ride home and the bay
+  // cut, from High Gorge reached or a later stage of railway-seed-legs.ts.
+  'gorge-reached': { railFrom: 'legs', after: 'gorge', bot: 'railway-legs-bot.ts' },
+  'incline-open': { railFrom: 'legs', after: 'gorge', bot: 'railway-legs-bot.ts' },
+  'incline-mid': { railFrom: 'legs', after: 'gorge', bot: 'railway-legs-bot.ts' },
+  'bell-reached': { railFrom: 'legs', after: 'bell', bot: 'railway-legs-bot.ts' },
+  'bay-open': { railFrom: 'legs', after: 'bell', bot: 'railway-legs-bot.ts' },
+  'bay-mid': { railFrom: 'legs', after: 'bell', bot: 'railway-legs-bot.ts' },
 } as const satisfies Record<string, { railFrom: string; after: RailStop; bot: string }>;
 /** Beats both peers pass in a two-player run; the follower watches line two from the village. */
 export const RAIL_COOP_STOPS: readonly RailStop[] = [
@@ -90,9 +102,9 @@ export function railSegmentOptions(args: string[]) {
     to = value('--to');
   if (from !== undefined && !isSeed(from)) throw new Error(`--from: ${Object.keys(RAIL_FROM).join(', ')} (rail seeds)`);
   if (to !== undefined && !isStop(to)) throw new Error(`--to: ${names.join(', ')}`);
-  // `ring-joined` runs the steel bot, or the leg bot when the stop is the Gorge.
+  // `ring-joined` runs the steel bot, or the leg bot when the stop is a leg's.
   const seed = from
-    ? from === 'ring-joined' && to === 'gorge'
+    ? from === 'ring-joined' && (to === 'gorge' || to === 'bell' || to === 'bay')
       ? RAIL_FROM['gorge-open']
       : RAIL_FROM[from]
     : undefined;

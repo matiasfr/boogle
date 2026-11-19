@@ -108,6 +108,11 @@ export function printNode(id: string, json: boolean) {
   const out = [
     `${n.id}${n.optional ? ' (optional)' : ''}: ${n.label} [${n.area}]`,
     `  bill: ${billText(n.bill)}`,
+    `  supply: ${
+      Object.entries(NODES.find((x) => x.id === id)!.supply)
+        .map(([m, s]) => `${m} ${s.by === 'hand' ? `by hand from the ${s.label}` : `by ${s.by}: ${s.label}`}`)
+        .join('; ') || '-'
+    }`,
     `  carries x straight-line m: ${n.grind.map((x) => `${x.carries}x${x.metres}${x.by === 'hand' ? '' : ` (${x.by})`}`).join(', ') || '-'}`,
     ...(n.vehicleFed
       ? [`  by hand if the vehicle is away: ${n.grind.map((x) => `${x.carries}x${x.handMetres}`).join(', ')}`]

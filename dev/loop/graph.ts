@@ -45,6 +45,15 @@ import {
   RING_STEEL_YARD,
   STEEL,
 } from '../../src/sim/railway-ring-layout.ts';
+import {
+  RAIL_GATES,
+  RAIL_GRANTS,
+  RAIL_LEGS,
+  legFrame,
+  legRack,
+  rowHalt,
+  type RouteLeg,
+} from '../../src/sim/railway-route.ts';
 
 import { garageRow, polarAt } from '../../src/entities/railway/garage-geo.ts';
 const garageSite = garageRow();
@@ -91,7 +100,14 @@ export type NodeId =
   | 'steelkit'
   | 'steelworks'
   | 'steelhome'
-  | 'install';
+  | 'install'
+  | SectionId
+  | 'gorge'
+  | 'pick'
+  | 'incline-gate'
+  | 'seeds';
+/** The greybox legs' sections (ROUTE_SECTIONS). */
+export type SectionId = 'stack-1' | 'stack-2' | 'stack-3' | 'stack-4' | 'incline-1' | 'incline-2' | 'bay-1' | 'bay-2';
 
 /** World centimetres, as the catalogs pin them. `y` only where the catalog gives a height. */
 export type Point = { x: number; z: number; y?: number };
@@ -121,7 +137,8 @@ export type Material = 'logs' | 'stone' | 'rails' | 'beam' | 'boiler' | 'footing
  * rack beside the frame (the last carry is then rack to frame). A vehicle supply names `foot`: where a player would
  * fetch it on foot if the vehicle isn't there (the nearest trees, the forge rack, the Works rack). */
 export type HandSupply = { by: 'hand'; from: readonly Point[]; per: number; label: string };
-export type Supply = HandSupply | { by: 'cart' | 'train' | 'wagon'; rack: Point; label: string; foot: HandSupply };
+export type Supply =
+  HandSupply | { by: 'cart' | 'train' | 'wagon' | 'stocked'; rack: Point; label: string; foot: HandSupply };
 /** A mark (src/adapters/railway-marks.ts) that says the node was reached: the `nth` match, or the last one. */
 export type Reached = {
   mark: string;
@@ -133,7 +150,7 @@ export type Reached = {
 export type LoopNode = {
   id: NodeId;
   label: string;
-  area: 'line 1' | 'line 2' | 'works';
+  area: 'line 1' | 'line 2' | 'works' | 'route';
   at: Point;
   bill: Partial<Record<Material, number>>;
   supply: Partial<Record<Material, Supply>>;
@@ -171,10 +188,19 @@ export const GENERIC_OPS = [
   'rail.haltPut',
   'rail.haltTake',
 ] as const;
-/** Rail actions whose nodes are not built yet: the greybox route's stack line (the frame feed, the pickup, the barrier,
- * the arrival). Its nodes (`stack-1` to `stack-4`, `gorge`, `pick`) are greybox-route.md's step 5; until then the loop
- * models area 4 as a stand-in (dev/loop/standins.ts) and these ops are named here, not owned by a node. */
-export const PENDING_OPS = ['rail.legStock', 'rail.grant', 'rail.gate', 'rail.arrive'] as const;
+/** Rail actions whose nodes are not built yet: the meeting on the Original Island (the route's last leg, area 9, a
+ * stand-in in dev/loop/standins.ts). Named here, not owned by a node. */
+export const PENDING_OPS = ['rail.arrive'] as const;
+/** The greybox legs' reached marks that the play record does not carry yet (greybox-leg2.md, step 5, as built): no
+ * progress mark names a laid section or the arrival at High Gorge (src/adapters/railway-marks.ts), and the pickup and
+ * barrier marks have no beat (dev/playtest/beats.ts). Both files belong to later work; test/loop-graph.test.ts holds
+ * these out of its two checks, and fails once a mark is both emitted and a beat, so the entry comes out. */
+export const PENDING_MARKS: readonly string[] = [
+  'route section laid',
+  'High Gorge reached',
+  'route pickup taken',
+  'route barrier opened',
+];
 /** Marks that are activity, attributed to the node current at the time (dev/loop/trace.ts). */
 export const ACTIVITY_MARKS: readonly RegExp[] = [
   /^chop$/,
@@ -189,10 +215,8 @@ export const ACTIVITY_MARKS: readonly RegExp[] = [
   /^works fed$/,
   // The halt yards: putting spares in a bay and taking them out again.
   /^yard (left|taken)$/,
-  // The greybox route's leg 1 (step 4's prompts): activity until step 5 builds its nodes.
+  // The greybox route's frame feed (rail.legStock): each section's carries, as `deposit` is a station's.
   /^leg frame fed$/,
-  /^route pickup taken$/,
-  /^route barrier opened$/,
   /^stretch funded [TQ]\d$/,
 ];
 
@@ -339,6 +363,159 @@ const steelKit = (foot: HandSupply): Supply => ({
   label: 'kit train to the island yard',
   foot,
 });
+
+// The greybox route's legs (docs/plans/greybox-route.md and greybox-leg2.md, step 5): each section is a node, fed at
+// its frame off its rack; bills, frames and racks are RAIL_LEGS's. The rules: src/sim/railway-sys-route.ts (legStock,
+// grant, gate), the facts src/sim/railway-queries-route.ts (legReached: a leg's `after` complete).
+const RULES_ROUTE = 'src/sim/railway-sys-route.ts';
+const ROUTE_QUERIES = 'src/sim/railway-queries-route.ts';
+const LEG_VIEW = 'src/entities/route-greybox/leg-view.ts';
+const legIndex = (id: string) => RAIL_LEGS.findIndex((l) => l.id === id);
+const STACK = RAIL_LEGS[legIndex('stack')]!,
+  INCLINE = RAIL_LEGS[legIndex('incline')]!,
+  BAY = RAIL_LEGS[legIndex('bay-cut')]!;
+const grantOf = (id: string) => RAIL_GRANTS.findIndex((g) => g.id === id);
+/** Who brings section k's kit to its rack (src/sim/railway-queries-route.ts: MINT_LEGS, YARD_LEGS, STOCKED_LEGS). */
+const KIT_BY: Record<string, (k: number) => string> = {
+  stack: () => "line 2's kit car from the Village to the railhead rack",
+  incline: (k) =>
+    k === 0
+      ? "line 2's kit car to High Gorge's rack (the kit ahead)"
+      : "an ns train from High Gorge's yard to the head",
+  'bay-cut': (k) =>
+    k === 0 ? "stocked on the West landing's rack (the stand-in: no train)" : 'a bay train from the West landing',
+};
+const legNodeId = (leg: RouteLeg, k: number) =>
+  `${leg === STACK ? 'stack' : leg === INCLINE ? 'incline' : 'bay'}-${k + 1}` as SectionId;
+/** Each built leg's sections as nodes: the node, its RAIL_LEGS index and the section index. */
+export const ROUTE_SECTIONS: readonly { id: SectionId; leg: number; section: number }[] = [STACK, INCLINE, BAY].flatMap(
+  (leg) => leg.sections.map((_s, section) => ({ id: legNodeId(leg, section), leg: RAIL_LEGS.indexOf(leg), section })),
+);
+function legSection(leg: RouteLeg, k: number, label: string, requires: Edge[], stops: string[] = []): LoopNode {
+  const sec = leg.sections[k]!;
+  const supply = (foot: HandSupply): Supply => ({
+    by: k === 0 && leg === BAY ? 'stocked' : 'train',
+    rack: p(legRack(leg, k)),
+    label: KIT_BY[leg.id]!(k),
+    foot,
+  });
+  return {
+    id: legNodeId(leg, k),
+    label,
+    area: 'route',
+    at: p(legFrame(leg, k)),
+    bill: { logs: sec.logs, rails: sec.rails },
+    // No rails come on foot by then: the forge rack gives none once the cradle is fitted (railway-sys-line2.ts
+    // forgeTake), so a leg's rails are its rack's even by hand.
+    supply: {
+      logs: supply(trees),
+      rails: supply(one(p(legRack(leg, k)), "the section's rack (the forge rack gives none after the cradle)")),
+    },
+    ops: ['rail.legStock'],
+    reached: { mark: 'route section laid', data: { leg: leg.id, section: k + 1 } },
+    stops,
+    requires: [
+      k === 0
+        ? dec(
+            leg.after < 0 ? 'rivet' : legNodeId(RAIL_LEGS[leg.after]!, RAIL_LEGS[leg.after]!.sections.length - 1),
+            'rules',
+            `${ROUTE_QUERIES} legReached: ${leg.after < 0 ? 'Ring Island joined' : `${RAIL_LEGS[leg.after]!.id} laid`}`,
+          )
+        : dec(legNodeId(leg, k - 1), 'rules', `${RULES_ROUTE} legStock: the frame of the section after the last laid`),
+      ...requires,
+    ],
+    cue: [
+      onMain(
+        'world',
+        `section ${k + 1}'s frame with its bill sign and the rack's plate (KIT ${k + 1}) beside it`,
+        `${LEG_VIEW} site`,
+      ),
+    ],
+  };
+}
+const ROUTE_NODES: readonly LoopNode[] = [
+  ...STACK.sections.map((_s, k) =>
+    legSection(
+      STACK,
+      k,
+      `The stack line to High Gorge, section ${k + 1} of ${STACK.sections.length}`,
+      [],
+      k === STACK.sections.length - 1 ? ['gorge'] : [],
+    ),
+  ),
+  {
+    id: 'gorge',
+    label: "Step off at High Gorge (the stack line's end)",
+    area: 'route',
+    at: p(rowHalt('ring', STACK.destRowHalt)),
+    bill: {},
+    supply: {},
+    ops: [],
+    reached: { mark: 'High Gorge reached' },
+    stops: [],
+    requires: [dec('stack-4', 'world', `${RULES_ROUTE} lay: the last section opens the Gorge halt; reached by train`)],
+    cue: [onMain('world', "High Gorge's platforms, stair and the stand-in town's board", `${LEG_VIEW} High Gorge`)],
+  },
+  {
+    id: 'pick',
+    label: 'Take the powered pick on the Gorge rim',
+    area: 'route',
+    at: p(RAIL_GRANTS[grantOf('pick')]!.at),
+    bill: {},
+    supply: {},
+    ops: ['rail.grant'],
+    reached: { mark: 'route pickup taken', nth: 1 },
+    stops: [],
+    requires: [dec('stack-4', 'rules', `${RULES_ROUTE} grant: its leg laid (legDone)`)],
+    cue: [onMain('world', 'the pickup post on the north rim, at the stair head', `${LEG_VIEW} High Gorge`)],
+  },
+  {
+    id: 'incline-gate',
+    label: "Open the incline's barrier",
+    area: 'route',
+    at: p(RAIL_GATES[INCLINE.sections[0]!.gate!]!.at),
+    bill: {},
+    supply: {},
+    ops: ['rail.gate'],
+    reached: { mark: 'route barrier opened', nth: 1 },
+    stops: [],
+    requires: [dec('pick', 'rules', `${RULES_ROUTE} gate: the room holds its needs grant (the pick)`)],
+    cue: [onMain('world', "the red barrier on the incline's first frame, with its plate", `${LEG_VIEW} High Gorge`)],
+  },
+  ...INCLINE.sections.map((_s, k) =>
+    legSection(
+      INCLINE,
+      k,
+      `The incline to Bell Rock, section ${k + 1} of ${INCLINE.sections.length}`,
+      k === 0
+        ? [dec('incline-gate', 'rules', `${RULES_ROUTE} legStock: refused while the frame's barrier is shut`)]
+        : [],
+      k === INCLINE.sections.length - 1 ? ['bell'] : [],
+    ),
+  ),
+  {
+    id: 'seeds',
+    label: "Take the crystal seeds on Bell Rock's lower deck",
+    area: 'route',
+    at: p(RAIL_GRANTS[grantOf('seeds')]!.at),
+    bill: {},
+    supply: {},
+    ops: ['rail.grant'],
+    reached: { mark: 'route pickup taken', nth: 2 },
+    stops: [],
+    requires: [dec('incline-2', 'rules', `${RULES_ROUTE} grant: its leg laid (legDone)`)],
+    cue: [onMain('world', "the teal seeds post on Bell Rock's lower deck", `${LEG_VIEW} Bell Rock`)],
+  },
+  ...BAY.sections.map((_s, k) =>
+    legSection(
+      BAY,
+      k,
+      `The bay cut from the West landing to Bell Rock, section ${k + 1} of ${BAY.sections.length}`,
+      [],
+      k === BAY.sections.length - 1 ? ['bay'] : [],
+    ),
+  ),
+];
 
 export const NODES: readonly LoopNode[] = [
   {
@@ -1029,6 +1206,7 @@ export const NODES: readonly LoopNode[] = [
       ),
     ],
   },
+  ...ROUTE_NODES,
 ];
 
 export const node = (id: NodeId) => NODES.find((n) => n.id === id)!;

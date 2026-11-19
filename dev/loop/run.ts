@@ -71,14 +71,37 @@ import {
 } from '../../src/sim/railway-ring-layout.ts';
 import { LINE2 } from '../../src/sim/railway-lines.ts';
 import type { RailAction } from '../../src/sim/railway.ts';
-import { DETOUR, NODES, WALK_MPS, cm, detourOf, node, proposeOrders, type NodeId, type Point } from './graph.ts';
+import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, legFrame, legRack, rowHalt } from '../../src/sim/railway-route.ts';
+import { legOpen, legRow, routeRow } from '../../src/sim/railway-queries-route.ts';
+import {
+  DETOUR,
+  NODES,
+  ROUTE_SECTIONS,
+  WALK_MPS,
+  cm,
+  detourOf,
+  node,
+  proposeOrders,
+  type NodeId,
+  type Point,
+  type SectionId,
+} from './graph.ts';
 import { createHost, type Host } from './host.ts';
 import { variantOf, wholeRouteLines } from './standins.ts';
 
 type Cmd = { walk: Point } | { act: string; fields?: Partial<RailAction> } | { wait: number };
 type Policy = Generator<Cmd, void, number>;
 type Player = { pid: string; i: number; at: Point; busy: number; walked: number; gen: Policy | null };
-type Tally = { carries: number; walked: number; refused: number; actions: number; accepted: number; last?: Cmd };
+type Tally = {
+  carries: number;
+  walked: number;
+  refused: number;
+  actions: number;
+  accepted: number;
+  last?: Cmd;
+  /** Ops pressed at all, accepted or not (the order probes). */
+  tried?: Set<string>;
+};
 export type NodeTime = { id: NodeId; tick: number; startTick: number; parked: boolean } & Tally;
 export type RunResult = {
   order: string;
@@ -111,6 +134,7 @@ const CARRY_OPS = new Set([
   'rail.footSet',
   'rail.beamDeposit',
   'rail.boilerFit',
+  'rail.legStock',
 ]);
 
 class Game {
@@ -526,12 +550,66 @@ function* cradle(g: Game, pl: Player): Policy {
   );
 }
 
+// ---------------------------------------------------------------- the greybox route's legs
+const grantIndex = (id: string) => RAIL_GRANTS.findIndex((x) => x.id === id);
+const PICK = grantIndex('pick'),
+  SEEDS = grantIndex('seeds'),
+  INCLINE_GATE = RAIL_GATES.findIndex((x) => x.id === 'incline');
+/** A route point (cm, with its height: the server's reach check judges both). */
+const routePoint = (q: { x: number; z: number; y: number }): Point => ({ x: q.x, z: q.z, y: q.y });
+/** Section `s` of leg `k`: every player takes what its rack holds (the kit a train brought, or the stand-in stocked)
+ * and feeds its frame, logs and rails shared among friends; `byHand`, the logs from the trees instead (no rails come
+ * on foot by then). The lay clock then runs on its own (the node is reached when the section is laid). */
+function legSection(g: Game, pl: Player, k: number, s: number, byHand: boolean): Policy {
+  const L = RAIL_LEGS[k]!,
+    sec = L.sections[s]!;
+  const rack = routePoint(legRack(L, s)),
+    frame = routePoint(legFrame(L, s));
+  const row = () => legRow(g.w, k);
+  const gateOpen = () => sec.gate === undefined || !!(routeRow(g.w).gates & (1 << sec.gate));
+  return (function* () {
+    yield* waitFor(g, () => legOpen(g.w, k) && row().laid === s && gateOpen());
+    yield* dropBig(g, pl);
+    const feed = () => ({ op: 'rail.legStock', leg: k });
+    const logs = carry(
+      g,
+      pl,
+      { key: `${L.id}${s}:logs`, kind: 0, left: () => (row().laid === s ? sec.logs - row().logs : 0) },
+      byHand
+        ? (want) => chopTo(g, pl, want)
+        : (want) => fromRack(g, pl, rack, 'rail.depotTake', () => rail(g.w).depot, want, 'carry'),
+      () => g.acct(pl.pid).carry,
+      frame,
+      feed,
+    );
+    const rails = carry(
+      g,
+      pl,
+      { key: `${L.id}${s}:rails`, kind: 2, left: () => (row().laid === s ? sec.rails - row().rails : 0) },
+      // Always off the rack: the forge rack gives no rails once the cradle is fitted (railway-sys-line2.ts forgeTake).
+      (want) => fromRack(g, pl, rack, 'rail.depotRailTake', () => rail(g.w).depotRails, want, 'rails'),
+      () => g.acct(pl.pid).rails ?? 0,
+      frame,
+      feed,
+    );
+    const railsLane = g.players.length > 1 && pl.i === g.players.length - 1;
+    for (const r of railsLane ? [rails, logs] : [logs, rails]) yield* r;
+  })();
+}
+/** A pickup or a barrier (`op`, catalog index `id` at `at`): the first player walks there and presses it. */
+function* routePress(g: Game, pl: Player, op: 'rail.grant' | 'rail.gate', id: number, ready: () => boolean): Policy {
+  if (pl.i !== 0) return;
+  yield* waitFor(g, ready);
+  yield* walk(routePoint((op === 'rail.grant' ? RAIL_GRANTS : RAIL_GATES)[id]!.at));
+  yield* press(op, { id });
+}
+
 type Run = {
   g: Game;
   done: Record<NodeId, () => boolean>;
   policy: Record<NodeId, (pl: Player) => Policy>;
-  /** World facts the sim doesn't hold (the pier is reached by walking there). */
-  flags: { atPier: boolean; wagonReturned: boolean };
+  /** World facts the sim doesn't hold (the pier and High Gorge are reached by walking there). */
+  flags: { atPier: boolean; wagonReturned: boolean; atGorge: boolean };
   /** The node being played, and how much farther than straight-line its walks are (1 unless calibrated). */
   current: NodeId | null;
   detour: (id: NodeId) => number;
@@ -546,7 +624,14 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
     gen: null,
   }));
   const g = new Game(h, players);
-  const flags = { atPier: false, wagonReturned: false };
+  const flags = { atPier: false, wagonReturned: false, atGorge: false };
+  const sections = Object.fromEntries(
+    ROUTE_SECTIONS.map(({ id, leg, section }) => [id, () => legRow(w(), leg).laid > section]),
+  ) as Record<SectionId, () => boolean>;
+  const sectionPolicies = Object.fromEntries(
+    ROUTE_SECTIONS.map(({ id, leg, section }) => [id, (pl: Player) => legSection(g, pl, leg, section, byHand.has(id))]),
+  ) as Record<SectionId, (pl: Player) => Policy>;
+  const granted = (id: number) => () => !!(routeRow(w()).grants & (1 << id));
   const w = () => g.w;
   const q = (k: number) => !!qjob(w(), k).completion;
   const done: Record<NodeId, () => boolean> = {
@@ -594,6 +679,11 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
     steelworks: () => steelOf(w()).lit >= 0,
     steelhome: () => shed(w()).steel >= 1,
     install: () => lineOf(w(), LINE2).boiler >= 2,
+    ...sections,
+    gorge: () => flags.atGorge,
+    pick: granted(PICK),
+    'incline-gate': () => !!(routeRow(w()).gates & (1 << INCLINE_GATE)),
+    seeds: granted(SEEDS),
   };
   const ready = (id: NodeId) => () => node(id).requires.every((e) => e.scope === 'finish' || done[e.on]());
   const policy: Record<NodeId, (pl: Player) => Policy> = {
@@ -711,6 +801,18 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
         yield* waitFor(g, done.steelhome);
       })(),
     install: (pl) => device(g, pl, SHED_TABLE, 'rail.install', done.steelhome),
+    ...sectionPolicies,
+    // The stack line's last lay opens High Gorge's halt: the first player goes there (a ride, walked straight here).
+    gorge: (pl) =>
+      (function* () {
+        if (pl.i !== 0) return;
+        yield* waitFor(g, done['stack-4']);
+        yield* walk(routePoint(rowHalt('ring', RAIL_LEGS[0]!.destRowHalt)));
+        flags.atGorge = true;
+      })(),
+    pick: (pl) => routePress(g, pl, 'rail.grant', PICK, ready('pick')),
+    'incline-gate': (pl) => routePress(g, pl, 'rail.gate', INCLINE_GATE, ready('incline-gate')),
+    seeds: (pl) => routePress(g, pl, 'rail.grant', SEEDS, ready('seeds')),
   };
   return { g, done, policy, flags, current: null, detour: () => 1 };
 }
@@ -742,6 +844,7 @@ function step(r: Run, pl: Player, t: Tally, log: string[]) {
         Object.assign(fields, { line: LINE2, part: fields.part ?? 2, revision: lineOf(g.w, LINE2).boiler });
       const res = g.h.act(pl.pid, cmd.act, fields, pl.at);
       t.actions++;
+      t.tried?.add(cmd.act);
       if (res.status === 'rejected') {
         t.refused++;
         log.push(`${g.h.tick()} ${pl.pid} ${cmd.act} refused at (${Math.round(pl.at.x)}, ${Math.round(pl.at.z)})`);
@@ -775,6 +878,27 @@ function probePolicy(r: Run, pl: Player, id: NodeId): Policy | null {
         n: g.acct(pl.pid).carry,
       });
     })();
+  // A leg's section: a back of logs (off the open leg's rack if it holds any, else from the trees) into its frame.
+  const sec = ROUTE_SECTIONS.find((x) => x.id === id);
+  if (sec)
+    return (function* () {
+      yield* dropBig(g, pl);
+      yield* clearBack(g, pl, 0);
+      const rack = RAIL_LEGS.findIndex((_l, k) => legOpen(g.w, k));
+      if (rack >= 0 && rail(g.w).depot > 0) {
+        yield* walk(routePoint(legRack(RAIL_LEGS[rack]!, legRow(g.w, rack).laid)));
+        yield* press('rail.depotTake');
+      }
+      if (!g.acct(pl.pid).carry) yield* chopTo(g, pl, capacityOf(g.w, LOGS));
+      yield* walk(n.at);
+      yield* press('rail.legStock', { leg: sec.leg });
+    })();
+  const routeId = { pick: PICK, seeds: SEEDS, 'incline-gate': INCLINE_GATE }[id as 'pick'];
+  if (routeId !== undefined)
+    return (function* () {
+      yield* walk(n.at);
+      yield* press(n.ops[0]!, { id: routeId });
+    })();
   const seam = id === 'slab' ? 0 : id === 'throat' ? 1 : id === 'rivet' ? 2 : -1;
   // The pier is the world's (a walk), the crossing's footings ride the wagon: nothing to press early.
   if (seam < 0 && !n.ops.length) return null;
@@ -795,8 +919,8 @@ function probe(h: Host, players: Player[], id: NodeId, before: NodeId): Probe | 
   const gen = probePolicy(r, pl, id);
   if (!gen) return null;
   pl.gen = gen;
-  const t: Tally = { carries: 0, walked: 0, refused: 0, actions: 0, accepted: 0 };
-  const own = new Set([...node(id).ops, 'rail.deposit', 'rail.kiln']);
+  const t: Tally = { carries: 0, walked: 0, refused: 0, actions: 0, accepted: 0, tried: new Set() };
+  const own = new Set([...node(id).ops, 'rail.deposit', 'rail.kiln', 'rail.strike']);
   let accepted = false;
   for (let k = 0; k < PROBE && pl.gen; k++) {
     // The held node finished on its own (a train brought what it waits for) before the press: the probe can't tell.
@@ -806,6 +930,8 @@ function probe(h: Host, players: Player[], id: NodeId, before: NodeId): Probe | 
     if (t.accepted > was && t.last && 'act' in t.last && own.has(t.last.act)) accepted = true;
     copy.advance();
   }
+  // Out of time before its own press (a long walk to the trees): the probe can't tell either.
+  if (!accepted && ![...own].some((op) => t.tried!.has(op))) return null;
   const edge = node(id).requires.find((e) => e.on === before && e.status === 'decided')!;
   return { node: id, before, by: edge.by, accepted, what: edge.source };
 }
@@ -1092,6 +1218,8 @@ function byHandPlan(id: NodeId) {
   if (id === 'Q6' || id === 'Q7') return { flags: null, before: null };
   if (id === 'bents' || id === 'weights') return { flags: null, before: null };
   if (id === 'crossing') return { flags: null, before: 'table' as NodeId };
+  // A leg's section, fed from the trees and the forge rack instead of its rack (legSection's `byHand`).
+  if (ROUTE_SECTIONS.some((x) => x.id === id)) return { flags: null, before: null };
   throw new Error(`--by-hand: no vehicle feeds ${id}`);
 }
 function handOrder(ids: readonly NodeId[]) {
