@@ -18,9 +18,10 @@
 // `--query deckcase=pitjump` (recheck 2): as pitend, but under the deck's middle (`pitalong`, default 0), and the
 // friend hops (jump held `hop` ms, default 40) from the pit floor twice while the deck turns, when it has no boxes. It
 // fails if the deck's 1 cm pose marker (a registered platform, collision or not) holds the friend up inside the deck's
-// thickness, or if they end past the pit.
+// thickness, or if they end past the pit. In the garage moment the works copy's static box (garage-view.ts, at rest
+// pose, kept through the turn) sits over the pit's middle and stops the hop, so the marker is out of reach there.
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
-const { teleport } = (await import(
+const { teleport, raycastClosest, rayHit } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
 const { triggerAction } = (await import(
@@ -46,7 +47,7 @@ const { input } = (await import(
 const { carry } = (await import(
   '/src/physics/platforms.ts' as string
 )) as typeof import('../../../src/physics/platforms.ts');
-const { pressJump, releaseJump } = (await import(
+const { pressJump, releaseJump, localJumpCount } = (await import(
   '/src/entities/player/state.ts' as string
 )) as typeof import('../../../src/entities/player/state.ts');
 
@@ -201,6 +202,7 @@ if (second) {
         markerUp = 0, // pitjump: how far over the pit floor (under) the marker held them, m
         peak = -Infinity, // pitjump: the friend's highest y
         frameMs = 0;
+      const trace: string[] = [];
       while (garage.api!.snap().phase === 'moment' && performance.now() - t0 < 15000) {
         await new Promise((resolve) => requestAnimationFrame(resolve));
         // The show-off turn runs about 2.5 s to 5 s after the moment starts; act in its fast part.
@@ -224,9 +226,34 @@ if (second) {
           offSpeed = Math.max(offSpeed, (Math.hypot(pos().x - prev.x, pos().z - prev.z) * 1000) / (since - lastMs));
         lastMs = since;
         if (deckcase === 'pitjump' && under && jumps < 2 && since > 3500 + jumps * 900) {
+          say(
+            `hop ${jumps + 1} (accepted so far ${localJumpCount()}): coyote ${round(me.coyote)}, swimming ${me.swimming}, down ${me.down}, vy ${round(me.body!.velocity.y)}, y ${round(pos().y)}`,
+          );
           pressJump();
           setTimeout(releaseJump, hop);
           jumps++;
+        }
+        if (deckcase === 'pitjump' && jumps > 0 && trace.length < 12)
+          trace.push(`${round(pos().y)}/${round(me.body!.velocity.y)}`);
+        if (deckcase === 'pitjump' && jumps === 1 && trace.length === 1) {
+          const hit = rayHit(),
+            from = { x: pos().x, y: pos().y + 0.5, z: pos().z };
+          const ok = raycastClosest(from, { x: from.x, y: from.y + 3, z: from.z }, {}, hit);
+          say(
+            `ray up from the friend's head: ${ok ? `hit at +${round(hit.distance)} m, normal y ${round(hit.hitNormalWorld.y)}` : 'nothing'}`,
+          );
+          for (const [dx, h] of [
+            [0, 25],
+            [0, 18.2],
+            [2.5, 25],
+          ] as const) {
+            const down = rayHit(),
+              f = { x: pos().x + dx, y: h, z: pos().z };
+            const got = raycastClosest(f, { x: f.x, y: f.y - 10, z: f.z }, {}, down);
+            say(
+              `ray down at +${dx} m from y ${h}: ${got ? `top at y ${round(down.hitPointWorld.y)}` : 'nothing'}; friend y ${round(pos().y)}, table yaw ${round(works()?.table?.yaw ?? NaN)}, deckYaw ${round(works()?.garageView?.deckYaw ?? NaN)}`,
+            );
+          }
         }
         if (deckcase === 'pitjump') {
           peak = Math.max(peak, pos().y);
@@ -286,8 +313,9 @@ if (second) {
         );
       if (deckcase === 'pitjump')
         say(
-          `pitjump: ${jumps} hops of ${hop} ms; peak ${under ? round(peak - under.y) : '?'} m over the pit floor; the marker held them ${Math.round(markerMs)} ms, up to ${markerUp} m over the floor; carry now ${carry.on ? `hx ${carry.on.hx}` : 'none'}`,
+          `pitjump: ${jumps} hops of ${hop} ms, ${localJumpCount()} accepted; peak ${under ? round(peak - under.y) : '?'} m over the pit floor; the marker held them ${Math.round(markerMs)} ms, up to ${markerUp} m over the floor; carry now ${carry.on ? `hx ${carry.on.hx}` : 'none'}`,
         );
+      if (deckcase === 'pitjump') say(`frames after the first hop (y/vy): ${trace.join(' ')}`);
       if (deckcase === 'walkoff') say(`off the deck at ${Math.round(offAt)} ms; then at most ${round(offSpeed)} m/s`);
       say(`furthest from the table's centre ${round(widest)} m; now ${round(rNow)} m (the pit's wall at ${PIT_RIM})`);
       if (deckcase !== 'ride') {
