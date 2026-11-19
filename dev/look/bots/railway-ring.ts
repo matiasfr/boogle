@@ -222,13 +222,9 @@ export async function rideToIsland(bot: Bot, { rideFrom, hopTo, view, until }: R
           0.5,
         );
       },
-      // Not the knob itself (its post blocks the walk): 2 m from it toward the platform's middle.
-      wait: (() => {
-        const l = outward()!,
-          c = cm(RING_HEAD[ringOpen(rw()).head]!.platform),
-          d = Math.hypot(c.x - l.x, c.z - l.z) || 1;
-        return { x: l.x + ((c.x - l.x) / d) * 2, z: l.z + ((c.z - l.z) / d) * 2 };
-      })(),
+      // Wait where the rivet left the rider: the lever's platform stands 0.9 m above the deck with no way up the
+      // planner knows, and `before` walks to the lever and hops up onto it.
+      wait: { x: me.body!.position.x, z: me.body!.position.z },
     },
     STOP.island,
   ).catch((error: unknown) => {
