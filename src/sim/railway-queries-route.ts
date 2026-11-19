@@ -223,16 +223,18 @@ export function legKitSurplus(w: World, slot: number): Kit {
   const k = legOpenYard(w, line);
   return k < 0 ? { logs: r.logs, rails: r.rails } : less(r, legYardOwed(w, k, slot));
 }
-/** What leg k's current section still lacks, counting what is fed and on the rack: a train unloads only this. Nothing
- * for a leg that is not open (its rack is not the depot shelf yet) or laying. */
+/** What leg k's current section still lacks, counting what is fed, on the rack and lifted off it onto backs (heldKit:
+ * the review of greybox leg 2, P2 and P3, as legKitNeed counts them): a train unloads only this, and the stand-in stocks
+ * only this. Nothing for a leg that is not open (its rack is not the depot shelf yet) or laying. */
 export function legRackNeed(w: World, k: number) {
   const s = RAIL_LEGS[k]!.sections[legRow(w, k).laid],
     row = legRow(w, k),
     rail = w.get(Rail, w.single(Rail))!;
   if (!s || row.start >= 0 || !legOpen(w, k)) return { logs: 0, rails: 0 };
+  const held = heldKit(w, k);
   return {
-    logs: Math.max(0, s.logs - row.logs - rail.depot),
-    rails: Math.max(0, s.rails - row.rails - rail.depotRails),
+    logs: Math.max(0, s.logs - row.logs - rail.depot - held.logs),
+    rails: Math.max(0, s.rails - row.rails - rail.depotRails - held.rails),
   };
 }
 /** The halt (on `line`) where its trains unload leg k's kit: the feeder's destination for a yard leg minted on another
