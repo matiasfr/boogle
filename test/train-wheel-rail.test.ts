@@ -9,6 +9,8 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three/webgpu';
 import { FORMATION, HALTS, LINKS, ORIGIN, OFFSET_HALTS, lineAt, lineSmoothAt, offsetLat } from '../src/place/layout.ts';
 import { trackBoxes } from '../dev/level/grounding-track.ts';
+import { junctions } from '../src/place/junctions.ts';
+import { turnout } from '../src/place/turnout.ts';
 
 type P = { x: number; z: number };
 const p = { x: 0, z: 0, ux: 0, uz: 1 };
@@ -25,18 +27,30 @@ const toSegment = (q: P, a: P, b: P) => {
     t = Math.max(0, Math.min(1, ((q.x - a.x) * dx + (q.z - a.z) * dz) / (dx * dx + dz * dz || 1)));
   return Math.hypot(q.x - a.x - t * dx, q.z - a.z - t * dz);
 };
-/** Every drawn rail of line `k` as a segment along its box. */
+/** Every drawn rail of line `k` as a segment along its box, and its junctions' switch blades (turnouts step 6: cut
+ * out of the line's rails and drawn moving by turnout-blades.ts), set either way, each as two chords. */
 function railsOf(k: number): [P, P][] {
   const row = trackBoxes().find((t) => t.spec.id === LINKS[k]!.id && t.mode === 'panels')!;
-  return row.boxes.flatMap((b, i) =>
-    row.kinds[i] !== 'rail'
-      ? []
-      : [
-          [-0.5, 0.5].map((z) => {
-            const v = new THREE.Vector3(0, 0, z).applyMatrix4(b.local);
-            return { x: v.x + b.x, z: v.z + b.z };
-          }) as [P, P],
-        ],
+  const blades = junctions()
+    .filter((j) => j.line === LINKS[k]!.id)
+    .flatMap((j) => turnout(j.through, j.diverging, j.lever).blades)
+    .flatMap((blade) =>
+      [0, 1].flatMap((set) => [
+        [blade.at(0, set), blade.at(blade.to / 2, set)] as [P, P],
+        [blade.at(blade.to / 2, set), blade.at(blade.to, set)] as [P, P],
+      ]),
+    );
+  return blades.concat(
+    row.boxes.flatMap((b, i) =>
+      row.kinds[i] !== 'rail'
+        ? []
+        : [
+            [-0.5, 0.5].map((z) => {
+              const v = new THREE.Vector3(0, 0, z).applyMatrix4(b.local);
+              return { x: v.x + b.x, z: v.z + b.z };
+            }) as [P, P],
+          ],
+    ),
   );
 }
 /** The furthest any wheel of a car stands from a rail, the car anywhere along the track every 0.05 m. */

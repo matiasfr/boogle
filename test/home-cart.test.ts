@@ -37,9 +37,13 @@ test('renderer-local Home envelope literals agree with production construction s
   const home = 'src/entities/railway/home-station-view.ts';
   has(home, 'const yaw = home.HALL.yaw');
   has(home, `box(p.x, ground(p) + 0.18, p.z, ${l.w}, 0.36, ${l.d}, yaw)`);
-  has(home, `side(0, home.LEG.from + ${l.along}, -${l.lat})`);
-  has(home, `side(1, home.LEG.to + ${l.along}, ${l.lat})`);
-  has(home, `side(1, home.SPUR.s - ${l.along}, ${l.lat})`);
+  has(home, `box(j1.x, ground(j1) + 0.18, j1.z, ${l.w}, 0.36, ${l.d}, yaw)`);
+  // The three levers' spots are the junction list's (turnouts step 6), the box square to the hall.
+  const junctions = 'src/place/junctions.ts';
+  has(junctions, 'yaw: HALL.yaw');
+  has(junctions, `roadSide(0, LEG.from + ${l.along}, -${l.lat})`);
+  has(junctions, `roadSide(1, LEG.to + ${l.along}, ${l.lat})`);
+  has(junctions, `roadSide(SPUR.road, SPUR.s - ${l.along}, ${l.lat})`);
   const forge = 'src/place/opening-models.ts';
   has(forge, `[-${f.postZ}, ${f.postZ}]`);
   has(forge, `[-${f.postX}, ${f.postX}]`);
