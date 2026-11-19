@@ -97,8 +97,23 @@
       "message": "on foot from the commons down to the landing (the flood only; step 5 walks it)"
     },
     {
+      "kind": "assertion",
+      "passed": true,
+      "message": "on foot from platform A to the commons (the flood only; step 5 walks it)"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "on foot from platform B to the commons (the flood only; step 5 walks it)"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "on foot from the commons down to platform A (the flood only; step 5 walks it)"
+    },
+    {
       "kind": "fact",
-      "message": "  build: survey stakes and board only; no platform reach targets until the build that starts bay-cut"
+      "message": "  build: West landing platforms stand"
     },
     {
       "kind": "assertion",

@@ -28,6 +28,7 @@ import {
   Yard,
   Till,
   Leg,
+  LegYard,
 } from './railway-components.ts';
 import {
   apertureId,
@@ -229,6 +230,8 @@ function trainIO(w: World, headPct: number, pct: TradePct, hold: TrainHold, tick
       if (r.at === 0) boilerAdopt(w, trainId(w, slot), RAIL_TRAINS[slot]!.line);
       if (!line2(slot)) {
         if (legKitLoad(w, slot, tick) === 'hold') return 'hold';
+        // The cart's hold is line 1's alone (its trains meet the cart); the greybox route's lines never wait for it.
+        if (RAIL_LINES[RAIL_TRAINS[slot]!.line]!.id !== 'line1') return 'on';
         return w.get(Cart, cartId(w))!.phase !== CART_PHASE.REST ? 'hold' : 'on';
       }
       // The active train-fed job's kit (its bill, up to the kit car's LINE2_KIT) loads onto whichever line 2 train
@@ -278,7 +281,7 @@ export const trainTick = defineSystem(
   'rail.trainTick',
   {
     reads: [QJob, Cart, Account, Plot],
-    writes: [Train, Line, Rail, Forge, Works, Aperture, Yard, Town, Till, Steel, Shed, Leg],
+    writes: [Train, Line, Rail, Forge, Works, Aperture, Yard, Town, Till, Steel, Shed, Leg, LegYard],
     phase: 'tick',
     order: 3,
   },

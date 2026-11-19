@@ -102,6 +102,13 @@ export const SEED_STAGES = [
   'gorge-open',
   'gorge-mid',
   'gorge-reached',
+  // Leg 2 (./railway-seed-legs.ts; docs/plans/greybox-leg2.md, step 3): the incline to Bell Rock, the bay cut home.
+  'incline-open',
+  'incline-mid',
+  'bell-reached',
+  'bay-open',
+  'bay-mid',
+  'bay-reached',
 ] as const;
 export type SeedStage = (typeof SEED_STAGES)[number];
 const Q5_STAGES: readonly string[] = ['q4-done', 'sea-open', 'q5-stocked', 'q5-finishing', 'q5-done'];

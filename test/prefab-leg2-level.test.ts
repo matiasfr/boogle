@@ -95,12 +95,13 @@ for (const mutation of ['height', 'lower', 'rotate', 'scale'] as const)
     );
   });
 
-test('Gorge clearance uses placed box dimensions; the staked West site has no platform bodies', () => {
+test('Gorge clearance uses placed box dimensions; the unstaked West landing has its platform bodies', () => {
   const definitions = structuredClone(artifact);
   definitions.prefabs['greybox.box'].colliders[0]!.half[0] = 5;
   const result = report(bell, definitions);
   assert.ok(result.entries.some((e) => e.kind === 'assertion' && !e.passed && e.message.includes('incline-n')));
-  assert.ok(!west.placements.some((p) => p.prefab === 'greybox.box' || p.prefab === 'greybox.collider'));
+  // Greybox leg 2's rules unstake it (docs/plans/greybox-leg2.md, step 2): the bed, both platforms and the apron.
+  assert.ok(west.placements.some((p) => p.prefab === 'greybox.box' || p.prefab === 'greybox.collider'));
 });
 
 test('pad clearance follows the placed scale', () => {

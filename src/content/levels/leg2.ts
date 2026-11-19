@@ -194,8 +194,9 @@ const WEST_ROOT = { x: 801, z: 10 },
   WEST_LAT = perp(WEST_S, -1);
 const sl = frame(WEST_ROOT, WEST_S, WEST_LAT);
 // Owner Q1, 15 November: every room sees the staked site until the build that starts bay-cut.
-// Flip this with that build's station/formation work, never from room progression.
-const WEST_STAKED = true;
+// Flip this with that build's station/formation work, never from room progression. Flipped with greybox leg 2's rules
+// (docs/plans/greybox-leg2.md, step 2: the build that starts bay-cut), 18 November 2026.
+const WEST_STAKED = false;
 const WEST_RAIL = 4,
   WEST_SHELF = 3;
 

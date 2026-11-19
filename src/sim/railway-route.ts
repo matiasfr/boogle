@@ -397,7 +397,7 @@ export const legStartS = (leg: RouteLeg) => (leg.row === 'ring' ? RING_END.s : l
 export const rowPoint = pointAt;
 export const rowHalt = haltAt;
 /** The point `lat` cm to the right (going out) of a row's centre at `cm` along it, `up` cm over its deck. */
-function rowSide(id: RowId, cm: number, lat: number, up: number, reach: number): RailPlatform {
+export function rowSide(id: RowId, cm: number, lat: number, up: number, reach: number): RailPlatform {
   const p = pointAt(id, cm),
     q = pointAt(id, cm + 100),
     dx = q.x - p.x,
