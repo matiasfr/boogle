@@ -81,7 +81,9 @@ test("every halt that can be its line's open end says how it turns trains back, 
     l.halts.forEach((h, k) => {
       // A shut halt (the greybox route's rows) gets its end with the leg whose rules open it.
       if (h.shut) return;
-      const last = k === 0 || k === l.halts.length - 1 || l.halts[k + 1]!.opens >= 0;
+      // A halt before one a later job, a leg's section or a later leg opens (the greybox route's) can be the open end.
+      const next = l.halts[k + 1];
+      const last = k === 0 || !next || next.opens >= 0 || !!next.leg || !!next.shut;
       assert.equal(!!h.end, last, `${h.name}`);
       if (h.end) {
         assert.ok(h.end.kind !== 'loop', 'no loop before v27');
@@ -113,6 +115,8 @@ test("the sim's train reach and turnout are the drawn ones, and every signal sta
       if (!h.end || h.heads || h.ring) return;
       const side = k === 0 ? -1 : 1,
         lead = side < 0 ? TRAIN_EXTENT.behindCm : TRAIN_EXTENT.aheadCm;
+      // The greybox route's built rows (greybox-leg2.md, step 2) draw their ends from the catalog, not FORMATION.
+      if (h.leg) return assert.equal(h.end.signalCm, h.end.edgeCm - side * lead, `${h.name}: clear of the block`);
       if (h.end.kind === 'stub') {
         assert.equal(
           h.end.mergeCm,

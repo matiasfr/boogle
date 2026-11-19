@@ -6,16 +6,29 @@
 //
 //   checkRoute(w)   each leg's bounds: 0 <= laid <= sections; fed never over the section's bill and nothing fed on a
 //                   complete leg; laying only with the bill full; nothing laid, fed or loaded before the leg opens;
-//                   loaded never over the leg's bill; a yard's bounds (nothing feeds one yet); a grant bit only with
+//                   loaded never over the leg's bill; a yard's units only while its leg is open, within its remaining
+//                   bills less fed; each line's kit carriers within its kitTrains; a grant bit only with
 //                   its leg complete, a gate bit only with its grant and its leg reached, `arrived` only with the
 //                   route's last leg complete; a train's `legKit` mark only with cargo aboard on a line with a leg
 //                   reached (throws on the first broken one)
 import type { World } from '../ecs/index.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
-import { RAIL_TRAINS, legBuilt } from './railway-lines.ts';
+import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, RAIL_YARDS } from './railway-route.ts';
 import { Account, LegYard, Train } from './railway-components.ts';
-import { gateLeg, legDone, legHeldRoom, legReached, legRow, routeRow } from './railway-queries-route.ts';
+import {
+  MINT_LEGS,
+  YARD_LEGS,
+  gateLeg,
+  legDone,
+  legHeldRoom,
+  legKitCarriers,
+  legKitTrains,
+  legOpen,
+  legReached,
+  legRow,
+  routeRow,
+} from './railway-queries-route.ts';
 
 const bad = (what: string): never => {
   throw new Error(`railway: ${what}`);
@@ -46,11 +59,10 @@ export function checkRoute(w: World) {
     // Laying exactly while the current section's bill is full (the last unit starts it; laying spends it).
     if (r.start >= 0 !== (!!sec && r.logs === sec.logs && r.rails === sec.rails)) bad('leg laying');
     // Nothing happens on a leg before it opens: not built, or the leg before it not complete (the rivet, for the first).
-    if (
-      !legReached(w, k) &&
-      (r.laid || r.logs || r.rails || r.loadedLogs || r.loadedRails || r.heldLogs || r.heldRails)
-    )
-      bad('leg before it opens');
+    // Its kit may load once the leg before it is reached (greybox-leg2.md, the kit ahead), never sooner.
+    if (!legReached(w, k) && (r.laid || r.logs || r.rails || r.heldLogs || r.heldRails)) bad('leg before it opens');
+    if (!legReached(w, k) && (r.loadedLogs || r.loadedRails) && !(leg.after >= 0 && legReached(w, leg.after)))
+      bad('leg kit before its leg');
     // A gated section is fed only once its barrier is open.
     if (sec?.gate !== undefined && (r.logs || r.rails) && !(routeRow(w).gates & (1 << sec.gate))) bad('leg gate');
   });
@@ -65,18 +77,30 @@ export function checkRoute(w: World) {
   const heldLogs = RAIL_LEGS.reduce((n, _l, k) => n + legRow(w, k).heldLogs, 0),
     heldRails = RAIL_LEGS.reduce((n, _l, k) => n + legRow(w, k).heldRails, 0);
   if (holding.length > 1 || heldLogs !== liftedLogs || heldRails !== liftedRails) bad('leg held');
-  // A train's `legKit` mark stands exactly while it carries a leg's kit: on a line with a leg reached, with cargo aboard
-  // (steel first, call 64: the mark is what keeps the works' kit and a leg's apart).
+  // A train's `legKit` mark stands exactly while it carries a leg's kit: on a line serving a leg reached, or one whose
+  // kit rides ahead (its leg before reached), with cargo aboard (steel first, call 64: the mark is what keeps the
+  // works' kit and a leg's apart).
   w.each([Train], (_id, t) => {
     if (!t.legKit) return;
-    const line = RAIL_TRAINS[t.slot]!.line;
-    if (t.logs + t.rails <= 0 || !RAIL_LEGS.some((l, k) => l.line === line && legReached(w, k))) bad('leg kit mark');
+    const line = RAIL_TRAINS[t.slot]!.line,
+      served = [...MINT_LEGS[line]!, ...YARD_LEGS[line]!];
+    const live = (k: number) => legReached(w, k) || (RAIL_LEGS[k]!.after >= 0 && legReached(w, RAIL_LEGS[k]!.after));
+    if (t.logs + t.rails <= 0 || !served.some(live)) bad('leg kit mark');
+  });
+  // Each line's kit carriers within its kitTrains (line 2: running less one; greybox-leg2.md, step 2).
+  RAIL_LINES.forEach((_l, line) => {
+    if (legKitCarriers(w, line) > legKitTrains(w, line)) bad('leg kit carriers');
   });
   w.each([LegYard], (_id, y) => {
     if (!railInt(y.slot, RAIL_YARDS.length - 1) || !railInt(y.logs, KIT_CAP) || !railInt(y.rails, KIT_CAP))
       bad('yard bounds');
-    // Nothing unloads at a junction yard until the leg that loads there is built (leg 2's rules).
-    if ((y.logs || y.rails) && !RAIL_LEGS.some((l, k) => l.kit === y.slot && legBuilt(k))) bad('yard before its leg');
+    // A junction yard holds units only while a leg that loads there is open, never more than its remaining sections'
+    // bills less what is fed (greybox-leg2.md, step 2: on the lay that completes it, the yard goes home).
+    if (!y.logs && !y.rails) return;
+    const k = RAIL_LEGS.findIndex((l, j) => l.kit === y.slot && legOpen(w, j));
+    if (k < 0) bad('yard without its open leg');
+    const room = legHeldRoom(w, k);
+    if (y.logs > room.logs || y.rails > room.rails) bad('yard over its leg');
   });
   const route = routeRow(w);
   if (

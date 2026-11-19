@@ -12,6 +12,7 @@ import { RAILWAY_T1 as T1 } from './railway-layout.ts';
 import { LINE2_FORGE as FORGE, LINE2_STATIONS, RAILS } from './railway-line2-layout.ts';
 import { CART, CART_PHASE } from './railway-cart.ts';
 import { RAIL_LEGS } from './railway-route.ts';
+import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
 import {
   Account,
   Beam,
@@ -29,6 +30,8 @@ import {
   Tree,
   Works,
   Leg,
+  LegYard,
+  Train,
 } from './railway-components.ts';
 import {
   aboard,
@@ -133,13 +136,16 @@ export function line2KitOwed(w: World) {
     ),
   };
 }
-/** The greybox route's logs or rails fed into its legs' frames and laid (spent) in their sections. */
+/** The greybox route's logs or rails fed into its legs' frames and laid (spent) in their sections, and its kit off
+ * line 2 (greybox-leg2.md, step 2): in a junction yard and aboard another line's trains (their `legKit` cargo). */
 function legsSpent(w: World, key: 'logs' | 'rails') {
   let n = 0;
   w.each([Leg], (_id, l) => {
     n += l[key];
     for (const s of RAIL_LEGS[l.slot]!.sections.slice(0, l.laid)) n += s[key];
   });
+  w.each([LegYard], (_id, y) => (n += y[key]));
+  w.each([Train], (_id, t) => (n += t.legKit && RAIL_TRAINS[t.slot]!.line !== LINE2 ? t[key] : 0));
   return n;
 }
 /** Line two's logs, wherever they are (conserved with the line-one totals in railCounts), the greybox route's fed and

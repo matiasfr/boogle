@@ -19,11 +19,11 @@ import { TRAIN_PHASE } from './railway-train.ts';
 import { LINE_SLOTS, endMoved } from './railway-trains.ts';
 import { reqAdd, reqDrop, reqOnly } from './railway-train.ts';
 import { railInt } from './railway.ts';
-import { Account, Aperture, Boiler, Leg, Line, QJob, Route, Train } from './railway-components.ts';
+import { Account, Aperture, Boiler, Forge, Leg, LegYard, Line, QJob, Rail, Route, Train } from './railway-components.ts';
 import { boilerHeld, stopsOf } from './railway-queries.ts';
 import { gateLeg, legDone, legId, legKitStop, legOpen, legRow, routeId, routeRow } from './railway-queries-route.ts';
 import { trainMoveIO } from './railway-sys-trains.ts';
-import { legKitPut, trimLegHeld } from './railway-sys-route-kit.ts';
+import { legKitPut, legKitStock, legYardHome, trimLegHeld } from './railway-sys-route-kit.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 
 const bit = (k: number) => 1 << k;
@@ -68,8 +68,10 @@ function lay(w: World, k: number, tick: number) {
   m.laid++;
   m.logs = m.rails = 0;
   m.start = -1;
-  // The last lay leaves no room: units still counted lifted off its rack are no longer held for it.
+  // The last lay leaves no room: units still counted lifted off its rack are no longer held for it, and a yard leg's
+  // yard goes home (greybox-leg2.md, step 2).
   trimLegHeld(w);
+  if (m.laid === n) legYardHome(w, k);
   // The line runs on past the old end (its first halt, then each head), which stays a stop (call 88): a train running
   // up to it stops there once (endMoved), and the line's up-way ask there brings the first up train after the lay to
   // it, so whoever stands at the old head rides on to the new one.
@@ -100,18 +102,24 @@ function lay(w: World, k: number, tick: number) {
     }
     w.mut(Line, lid)!.req = reqDrop(reqDrop(w.get(Line, lid)!.req, j, 1, stops), j, -1, stops);
   });
-  void n;
 }
 /** The lay clock: a section laying since `start` is laid LEG_TUNE.layTicks later (about 30 s whatever its length;
- * ruling 1.3). Reads the tick against the row's `start`, so nothing is written until it lays. */
+ * ruling 1.3). Reads the tick against the row's `start`, so nothing is written until it lays. Then the stand-in stock
+ * (legKitStock): an open leg with no track yet has its first rack stocked, written only while that rack lacks. */
 export const legTick = defineSystem(
   'rail.legTick',
-  { reads: [Aperture, Route, QJob], writes: [Leg, Train, Line, Account], phase: 'tick', order: 1.5 },
+  {
+    reads: [Aperture, Route, QJob],
+    writes: [Leg, Train, Line, Account, Rail, Forge, LegYard],
+    phase: 'tick',
+    order: 1.5,
+  },
   (w, { tick }: Tick) => {
     for (let k = 0; k < RAIL_LEGS.length; k++) {
       const start = legRow(w, k).start;
       if (start >= 0 && tick >= start + LEG_TUNE.layTicks) lay(w, k, tick);
     }
+    legKitStock(w);
   },
 );
 /** Take a pickup (`id`, a RAIL_GRANTS index) for the room: refused until its leg's last section is laid, and once

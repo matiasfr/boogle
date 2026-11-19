@@ -7,93 +7,7 @@
       "basis": {
         "operand": 0
       },
-      "extras": [
-        {
-          "id": "survey-0",
-          "params": {
-            "colour": "#8a6238"
-          },
-          "pos": [
-            805.5,
-            3.5,
-            6.5
-          ],
-          "prefab": "greybox.decoration",
-          "scale": [
-            0.14,
-            1.2,
-            0.14
-          ]
-        },
-        {
-          "id": "survey-1",
-          "params": {
-            "colour": "#8a6238"
-          },
-          "pos": [
-            802.5,
-            3.5,
-            2.5
-          ],
-          "prefab": "greybox.decoration",
-          "scale": [
-            0.14,
-            1.2,
-            0.14
-          ]
-        },
-        {
-          "id": "survey-2",
-          "params": {
-            "colour": "#8a6238"
-          },
-          "pos": [
-            799.5,
-            3.5,
-            -1.5
-          ],
-          "prefab": "greybox.decoration",
-          "scale": [
-            0.14,
-            1.2,
-            0.14
-          ]
-        },
-        {
-          "id": "survey-3",
-          "params": {
-            "colour": "#8a6238"
-          },
-          "pos": [
-            796.5,
-            3.5,
-            -5.5
-          ],
-          "prefab": "greybox.decoration",
-          "scale": [
-            0.14,
-            1.2,
-            0.14
-          ]
-        },
-        {
-          "id": "survey-4",
-          "params": {
-            "colour": "#8a6238"
-          },
-          "pos": [
-            793.5,
-            3.5,
-            -9.5
-          ],
-          "prefab": "greybox.decoration",
-          "scale": [
-            0.14,
-            1.2,
-            0.14
-          ]
-        }
-      ],
+      "extras": [],
       "marks": {
         "cliffFoot": {
           "x": 808,
@@ -200,16 +114,105 @@
         }
       },
       "pads": [],
-      "pieces": [],
+      "pieces": [
+        {
+          "bounds": [
+            0,
+            60,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 1,
+          "id": "bed",
+          "posts": true,
+          "tone": "dark",
+          "top": 3.9
+        },
+        {
+          "bounds": [
+            0,
+            40,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 2,
+          "id": "platform-a",
+          "posts": true,
+          "tone": "light",
+          "top": 4.9
+        },
+        {
+          "bounds": [
+            2,
+            40,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 2,
+          "id": "platform-b",
+          "posts": true,
+          "tone": "light",
+          "top": 4.9
+        },
+        {
+          "bounds": [
+            0,
+            -4,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.3,
+          "id": "end-ramp",
+          "rise": {
+            "a": 4.9,
+            "b": 3,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 3
+        },
+        {
+          "bounds": [
+            4,
+            16,
+            7.8,
+            11.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 2,
+          "id": "apron",
+          "tone": "grey",
+          "top": 4.9
+        }
+      ],
       "posts": [
         {
           "id": "board",
           "label": "west.board",
-          "nx": 0,
-          "nz": 1,
-          "x": 810,
+          "nx": 1,
+          "nz": 0,
+          "x": 805,
           "y": 3,
-          "z": 5.5
+          "z": 20.5
         }
       ],
       "reserves": [
@@ -274,7 +277,7 @@
           "y1": 7.9
         }
       ],
-      "staked": true
+      "staked": false
     },
     "kind": "leg2",
     "operands": [

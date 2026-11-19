@@ -8,86 +8,107 @@
 // tick's apply. Pure integers. On line 2 the steel works' kit comes first (call 64): a leg's kit loads only when the
 // works wants none, onto a train not carrying the works', and is marked `Train.legKit` so neither side reads the other's.
 //
-//   legKitService(w, slot, r)   the kit's service stop: the rack's halt while this train carries kit it can unload
-//   legKitArrive(w, slot)       come to a stand: unload onto the rack (Rail.depot and Rail.depotRails); at the kit
-//                               halt the kit no leg can use goes home (logs unmade, rails to the forge rack)
-//   legKitLoad(w, slot, tick)   standing at the kit halt: load, holding for the forge's rails as Q6's and Q7's kit does
+//   legKitService(w, slot, r)   the kit's service stops: each open leg's drop while this train carries kit it can unload
+//   legKitArrive(w, slot)       come to a stand: unload onto the rack (Rail.depot and Rail.depotRails), then a yard
+//                               leg's yard (LegYard); at the kit halt the kit no leg can use goes home (logs unmade,
+//                               rails to the forge rack)
+//   legKitLoad(w, slot, tick)   standing at the kit halt: load (minted, holding for the forge's rails as Q6's and Q7's
+//                               kit does; or, on a yard leg's line, out of the yard)
+//   legKitStock(w)              the stand-in: an open leg with no track yet has its first rack stocked from Home's
+//   legYardHome(w, k)           a completed yard leg's yard goes home
 //   legKitLifted, legKitPut      the rack's units on backs: lifted off the rack (counted held), off a back (not)
 //   legKitRelease                a leaver's units no longer counted held (the host's leaver check)
 import { defineSystem, type World } from '../ecs/index.ts';
 import { deckHeld } from './railway-queries-trade.ts';
 import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
 import { RAIL_LEGS } from './railway-route.ts';
-import { steelNeed } from './railway-queries.ts';
+import { steelNeed, stopsOf } from './railway-queries.ts';
 import { TRAIN, type RailTrain, type ServiceStop } from './railway-train.ts';
-import { Account, Forge, Leg, Rail, Train } from './railway-components.ts';
+import { Account, Forge, Leg, LegYard, Rail, Train } from './railway-components.ts';
 import {
+  MINT_LEGS,
+  YARD_LEGS,
   legHeldRoom,
   legId,
   legKitCap,
   legKitCarriers,
+  legKitDrop,
   legKitHalt,
-  legKitNeed,
-  legKitStop,
-  legKitTrains,
+  legKitRoom,
   legKitSurplus,
+  legKitTrains,
+  legMintLine,
+  legMintOwed,
   legOpen,
+  legOpenYard,
   legRackNeed,
   legRow,
-  openLeg,
+  legYard,
+  legYardOwed,
+  legsServed,
 } from './railway-queries-route.ts';
 
 const trainOf = (w: World, slot: number) => w.lookup(Train, slot)!;
-/** The kit's service stop for train `slot` (row `r`): its line's open leg's rack halt, while it carries kit the current
- * section still lacks. Its kit halt needs none: it is the line's first halt, an end every train stands at. */
+/** The kit's service stops for train `slot` (row `r`): the drop halt of each open leg its line serves that lacks
+ * something it carries (legKitRoom). Its kit halt needs none: it is the line's first halt, an end every train stands
+ * at. */
 export function legKitService(w: World, slot: number, r: Readonly<RailTrain>): ServiceStop {
-  const k = openLeg(w, RAIL_TRAINS[slot]!.line);
-  if (k < 0 || !r.legKit || r.logs + r.rails <= 0) return () => false;
-  const at = legKitStop(w, k),
-    need = legRackNeed(w, k),
-    some = (r.logs > 0 && need.logs > 0) || (r.rails > 0 && need.rails > 0);
-  return (stop) => some && stop === at;
+  const line = RAIL_TRAINS[slot]!.line;
+  if (!r.legKit || r.logs + r.rails <= 0) return () => false;
+  const at: number[] = [];
+  for (const k of legsServed(w, line)) {
+    const { rack, yard } = legKitRoom(w, line, k);
+    if ((r.logs > 0 && rack.logs + yard.logs > 0) || (r.rails > 0 && rack.rails + yard.rails > 0))
+      at.push(legKitDrop(w, line, k));
+  }
+  return (stop) => at.includes(stop);
 }
-/** Train `slot` has come to a stand: at its line's open leg's rack halt it unloads what the current section still
- * lacks (fed and racked), up to what it carries; at its kit halt the kit no leg there can use goes home (legKitHome). */
+/** Train `slot` has come to a stand: at each open leg's drop halt it unloads what that leg may take (legKitRoom), the
+ * rack's first (Rail.depot and Rail.depotRails), then the yard's (LegYard), up to what it carries; at its kit halt the
+ * kit no leg it serves can use goes home (legKitHome). */
 export function legKitArrive(w: World, slot: number) {
   const line = RAIL_TRAINS[slot]!.line,
-    k = openLeg(w, line),
     r = w.get(Train, trainOf(w, slot))!;
   if (!r.legKit || r.logs + r.rails <= 0) return;
   if (r.at === legKitHalt(line)) return legKitHome(w, slot);
-  if (k < 0 || r.at !== legKitStop(w, k)) return;
-  const need = legRackNeed(w, k),
-    logs = Math.min(r.logs, need.logs),
-    rails = Math.min(r.rails, need.rails);
+  for (const k of legsServed(w, line)) {
+    if (r.at !== legKitDrop(w, line, k)) continue;
+    const { rack } = legKitRoom(w, line, k);
+    move(w, slot, rack, (logs, rails) => {
+      const rail = w.mut(Rail, w.single(Rail))!;
+      rail.depot += logs;
+      rail.depotRails += rails;
+    });
+    // The yard's room, read after the rack's share is on the rack.
+    const { yard } = legKitRoom(w, line, k);
+    move(w, slot, yard, (logs, rails) => {
+      const y = w.mut(LegYard, w.lookup(LegYard, RAIL_LEGS[k]!.kit as number)!)!;
+      y.logs += logs;
+      y.rails += rails;
+    });
+  }
+}
+/** Off train `slot`, up to `room` and what it carries, into `put`; with nothing left aboard its kit mark clears. */
+function move(w: World, slot: number, room: { logs: number; rails: number }, put: (logs: number, rails: number) => void) {
+  const r = w.get(Train, trainOf(w, slot))!,
+    logs = Math.min(r.logs, room.logs),
+    rails = Math.min(r.rails, room.rails);
   if (!logs && !rails) return;
-  const rail = w.mut(Rail, w.single(Rail))!,
-    m = w.mut(Train, trainOf(w, slot))!;
-  rail.depot += logs;
-  rail.depotRails += rails;
+  put(logs, rails);
+  const m = w.mut(Train, trainOf(w, slot))!;
   m.logs -= logs;
   m.rails -= rails;
   if (m.logs + m.rails === 0) m.legKit = false;
 }
-/** Train `slot` at its kit halt sends home the leg kit no leg on its line can use (legKitSurplus: the leg is complete,
- * or its remaining sections lack none of it, fed from backs while it rode), as the steel works' surplus goes home
- * (steelArrives, build 2's P2-1): its logs off the books (made here, they are unmade: Rail.depotProduced and the leg's
- * loadedLogs, so the depot's output still balances), its rails back onto the forge rack (out of loadedRails); with
- * nothing left aboard the mark clears, and the works may load the car again. */
-function legKitHome(w: World, slot: number) {
-  const out = legKitSurplus(w, slot);
-  if (!out.logs && !out.rails) return;
-  const m = w.mut(Train, trainOf(w, slot))!;
-  m.logs -= out.logs;
-  m.rails -= out.rails;
-  if (m.logs + m.rails === 0) m.legKit = false;
-  w.mut(Rail, w.single(Rail))!.depotProduced -= out.logs;
-  if (out.rails) w.mut(Forge, w.single(Forge))!.rack += out.rails;
-  // Out of the loaded counts of the line's legs that loaded it, the latest first.
-  let logs = out.logs,
-    rails = out.rails;
-  for (let k = RAIL_LEGS.length - 1; k >= 0 && logs + rails > 0; k--) {
-    if (RAIL_LEGS[k]!.line !== RAIL_TRAINS[slot]!.line) continue;
+/** `logs` and `rails` of leg kit gone home (a train's surplus at its kit halt, a completed yard leg's yard), as the
+ * steel works' surplus goes home (steelArrives, build 2's P2-1): its logs off the books (minted, they are unmade:
+ * Rail.depotProduced and the loaded counts, so the depot's output still balances), its rails back onto the forge rack;
+ * out of the loaded counts of `legs`, the latest first. */
+function kitHome(w: World, legs: readonly number[], logs: number, rails: number) {
+  w.mut(Rail, w.single(Rail))!.depotProduced -= logs;
+  if (rails) w.mut(Forge, w.single(Forge))!.rack += rails;
+  for (const k of [...legs].sort((a, b) => b - a)) {
+    if (logs + rails <= 0) break;
     const row = w.get(Leg, legId(w, k))!,
       dl = Math.min(logs, row.loadedLogs),
       dr = Math.min(rails, row.loadedRails);
@@ -98,16 +119,64 @@ function legKitHome(w: World, slot: number) {
     [logs, rails] = [logs - dl, rails - dr];
   }
 }
-/** Train `slot`, standing, before its dwell is judged: at its line's kit halt it loads the open leg's kit, up to one
- * section's bill aboard (one kit a train): logs minted (counted production, as the depot's), rails off the forge rack.
- * While rails are still owed and the forge is lit it holds up to TRAIN.kitWaitTicks past its dwell, as Q6's and Q7's
- * kit does. */
+/** Train `slot` at its kit halt sends home the leg kit no leg its line serves can use (legKitSurplus: the leg is
+ * complete, or its remaining sections lack none of it, fed from backs while it rode); with nothing left aboard the
+ * mark clears, and the works may load the car again. */
+function legKitHome(w: World, slot: number) {
+  const line = RAIL_TRAINS[slot]!.line,
+    out = legKitSurplus(w, slot);
+  if (!out.logs && !out.rails) return;
+  const m = w.mut(Train, trainOf(w, slot))!;
+  m.logs -= out.logs;
+  m.rails -= out.rails;
+  if (m.logs + m.rails === 0) m.legKit = false;
+  kitHome(w, [...MINT_LEGS[line]!, ...YARD_LEGS[line]!], out.logs, out.rails);
+}
+/** A yard leg completed: whatever its yard still holds goes home (greybox-leg2.md, "Completion"). */
+export function legYardHome(w: World, k: number) {
+  if (RAIL_LEGS[k]!.kit === 'home') return;
+  const y = legYard(w, k);
+  if (!y.logs && !y.rails) return;
+  kitHome(w, [k], y.logs, y.rails);
+  const m = w.mut(LegYard, w.lookup(LegYard, RAIL_LEGS[k]!.kit as number)!)!;
+  m.logs = m.rails = 0;
+}
+/** The stand-in (greybox-leg2.md, "the bay cut's first kit is stocked", open question 2): an open leg minted at its
+ * own line's home with nothing laid, on a line with no track yet (no train can bring its first kit), has its rack
+ * stocked from Home's stock: what the section lacks, logs minted, rails off the forge rack as they are there (as kit
+ * loading waits for them). How goods cross Home to the West landing is still open (greybox-route section 3). */
+export function legKitStock(w: World) {
+  for (const k of MINT_LEGS.flat()) {
+    const leg = RAIL_LEGS[k]!;
+    if (leg.kit !== 'home' || legMintLine(k) !== leg.line || !legOpen(w, k) || legRow(w, k).laid > 0) continue;
+    if (stopsOf(w, leg.line).length >= 2) continue;
+    const need = legRackNeed(w, k),
+      forge = w.get(Forge, w.single(Forge))!,
+      logs = need.logs,
+      rails = Math.min(need.rails, forge.rack);
+    if (!logs && !rails) continue;
+    const rail = w.mut(Rail, w.single(Rail))!,
+      m = w.mut(Leg, legId(w, k))!;
+    rail.depot += logs;
+    rail.depotProduced += logs;
+    rail.depotRails += rails;
+    m.loadedLogs += logs;
+    m.loadedRails += rails;
+    if (rails) w.mut(Forge, w.single(Forge))!.rack -= rails;
+  }
+}
+/** Train `slot`, standing, before its dwell is judged: at its line's kit halt it loads kit, up to one section's bill
+ * aboard (one kit a train). A mint line's: its loading legs' owed (the first first; logs minted, counted production as
+ * the depot's, rails off the forge rack), holding up to TRAIN.kitWaitTicks past its dwell while rails are still owed
+ * and the forge is lit, as Q6's and Q7's kit does. A yard line's: its open yard leg's, out of the yard, no hold. */
 export function legKitLoad(w: World, slot: number, tick: number): 'hold' | 'on' {
   const line = RAIL_TRAINS[slot]!.line,
-    k = openLeg(w, line);
-  if (k < 0) return 'on';
-  const r = w.get(Train, trainOf(w, slot))!;
+    r = w.get(Train, trainOf(w, slot))!;
   if (deckHeld(r) || r.at !== legKitHalt(line)) return 'on';
+  if (!MINT_LEGS[line]!.length) return yardLoad(w, slot);
+  const ch = legMintOwed(w, line),
+    first = ch.legs.findIndex((_k, i) => ch.loading[i] && ch.owed[i]!.logs + ch.owed[i]!.rails > 0);
+  if (first < 0) return 'on';
   // Steel first (call 64; owner, 12 November): the steel works' kit has the kit car and the forge's rails first. A leg's
   // kit loads only when the works wants none brought (steelNeed: its kit is fed, in the yard or aboard), and never onto
   // a train carrying the works' kit, so a train never carries both.
@@ -115,43 +184,68 @@ export function legKitLoad(w: World, slot: number, tick: number): 'hold' | 'on' 
     const steel = steelNeed(w);
     if (steel.logs + steel.rails > 0 || (!r.legKit && r.logs + r.rails > 0)) return 'on';
   }
-  // At most `kitTrains` (the running trains less one) carry kit: an empty train loads only below that.
+  // At most `kitTrains` carry kit: an empty train loads only below that.
   if (r.logs + r.rails === 0 && legKitCarriers(w, line) >= legKitTrains(w, line)) return 'on';
-  const cap = legKitCap(w, k),
-    need = legKitNeed(w, k),
+  const cap = legKitCap(w, ch.legs[first]!),
+    want = ch.owed.reduce((a, o) => ({ logs: a.logs + o.logs, rails: a.rails + o.rails }), { logs: 0, rails: 0 }),
     forge = w.get(Forge, w.single(Forge))!;
-  const logs = Math.max(0, Math.min(cap.logs - r.logs, need.logs)),
-    rails = Math.max(0, Math.min(cap.rails - r.rails, need.rails, forge.rack));
+  let logs = Math.max(0, Math.min(cap.logs - r.logs, want.logs)),
+    rails = Math.max(0, Math.min(cap.rails - r.rails, want.rails, forge.rack));
   if (logs || rails) {
-    const rail = w.mut(Rail, w.single(Rail))!,
-      leg = w.mut(Leg, legId(w, k))!,
-      m = w.mut(Train, trainOf(w, slot))!;
-    rail.depotProduced += logs;
-    leg.loadedLogs += logs;
+    const m = w.mut(Train, trainOf(w, slot))!;
+    w.mut(Rail, w.single(Rail))!.depotProduced += logs;
     m.logs += logs;
-    leg.loadedRails += rails;
     m.rails += rails;
     m.legKit = true;
     if (rails) w.mut(Forge, w.single(Forge))!.rack -= rails;
+    // Loaded for the legs it is owed to, the first first.
+    ch.legs.forEach((k, i) => {
+      const dl = Math.min(logs, ch.owed[i]!.logs),
+        dr = Math.min(rails, ch.owed[i]!.rails);
+      if (!dl && !dr) return;
+      const leg = w.mut(Leg, legId(w, k))!;
+      leg.loadedLogs += dl;
+      leg.loadedRails += dr;
+      [logs, rails] = [logs - dl, rails - dr];
+    });
   }
-  const now = w.get(Train, trainOf(w, slot))!;
-  if (
-    now.rails < cap.rails &&
-    legKitNeed(w, k).rails > 0 &&
-    forge.lit >= 0 &&
-    tick < now.depart + TRAIN.dwellTicks + TRAIN.kitWaitTicks
-  )
+  const now = w.get(Train, trainOf(w, slot))!,
+    after = legMintOwed(w, line).owed.reduce((n, o) => n + o.rails, 0);
+  if (now.rails < cap.rails && after > 0 && forge.lit >= 0 && tick < now.depart + TRAIN.dwellTicks + TRAIN.kitWaitTicks)
     return 'hold';
+  return 'on';
+}
+/** A yard line's train at its kit halt (the yard's) takes its open yard leg's kit from the yard: up to one section's
+ * bill aboard and what the leg's sections still lack past its line's trains. */
+function yardLoad(w: World, slot: number): 'on' {
+  const line = RAIL_TRAINS[slot]!.line,
+    k = legOpenYard(w, line),
+    r = w.get(Train, trainOf(w, slot))!;
+  if (k < 0 || (r.logs + r.rails > 0 && !r.legKit)) return 'on';
+  if (r.logs + r.rails === 0 && legKitCarriers(w, line) >= legKitTrains(w, line)) return 'on';
+  const cap = legKitCap(w, k),
+    owe = legYardOwed(w, k),
+    y = legYard(w, k),
+    logs = Math.max(0, Math.min(cap.logs - r.logs, owe.logs, y.logs)),
+    rails = Math.max(0, Math.min(cap.rails - r.rails, owe.rails, y.rails));
+  if (!logs && !rails) return 'on';
+  const ym = w.mut(LegYard, w.lookup(LegYard, RAIL_LEGS[k]!.kit as number)!)!,
+    m = w.mut(Train, trainOf(w, slot))!;
+  ym.logs -= logs;
+  ym.rails -= rails;
+  m.logs += logs;
+  m.rails += rails;
+  m.legKit = true;
   return 'on';
 }
 // ---------------------------------------------------------------- the rack's units on backs (review of step 3, P2-2)
 // Each account counts what it lifted off the open leg's rack and still carries toward its frame (Account.legLogs,
 // Account.legRails); the leg's held counts (Leg.heldLogs, Leg.heldRails) are their sum, moved with them, so the kit
 // owed reads one number and a release takes off one account's own units only.
-/** The open leg loading at its line's home halt, whose rack is the depot shelf (Rail.depot, Rail.depotRails), or -1
- * (the catalog opens one leg at a time). */
+/** The open leg, whose rack is the depot shelf (Rail.depot, Rail.depotRails), or -1 (the catalog opens one leg at a
+ * time, whichever line mints its kit). */
 const LIFT_MAX = 255;
-const rackLeg = (w: World) => RAIL_LEGS.findIndex((l, k) => l.kit === 'home' && legOpen(w, k));
+const rackLeg = (w: World) => RAIL_LEGS.findIndex((_l, k) => legOpen(w, k));
 /** Move account `aid`'s lifted counts and leg k's held counts together by `dl` logs and `dr` rails. */
 function moveHeld(w: World, aid: number, k: number, dl: number, dr: number) {
   if (!dl && !dr) return;

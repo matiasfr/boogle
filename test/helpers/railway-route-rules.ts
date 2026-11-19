@@ -147,7 +147,7 @@ export function routeRulesShard(shard: number) {
   }
 
   // ---------------------------------------------------------------- the catalog
-  test('line 2 grows on past Ring Island to the stack railhead and High Gorge; ns, bay and cave are lines 2 to 4, shut', () => {
+  test('line 2 grows on past Ring Island to the stack railhead and High Gorge; ns, bay and cave are lines 2 to 4; leg 2 builds ns and bay', () => {
     assert.deepEqual(
       RAIL_LINES.map((l) => l.id),
       ['line1', 'line2', 'ns', 'bay', 'cave'],
@@ -180,16 +180,20 @@ export function routeRulesShard(shard: number) {
     assert.equal(line2.halts[RING]!.s, legStartS(LEG), 'R2b service mark; physical construction origin stays fixed');
     for (let k = 1; k < line2.halts.length; k++) assert.ok(line2.halts[k]!.s > line2.halts[k - 1]!.s);
     assert.equal(line2.path.length / 2 - 1, Math.floor(legS(LEG, 325140) / 1000), 'the path runs past the buffers');
+    // Leg 2 (docs/plans/greybox-leg2.md, step 2): ns and bay are built to Bell Rock, their later halts shut; cave stays
+    // shut. No train before their leg's first lay.
     for (const id of ['ns', 'bay', 'cave'] as const) {
       const l = RAIL_LINES[ROW_LINE[id]]!;
       assert.equal(l.id, id);
-      assert.ok(l.halts.every((h) => h.shut) && l.trains === 0, `${id}: every halt shut, no train`);
-      assert.deepEqual(trainStopsOf(ROW_LINE[id], 7, { head: 7, joined: true }, [N, 2, 2, 3, 3, 6, 1, 1]), []);
+      assert.equal(l.trains, 0, `${id}: no train at first`);
+      const open = trainStopsOf(ROW_LINE[id], 7, { head: 7, joined: true }, [N, 2, 2, 3, 3, 6, 1, 1]);
+      assert.equal(open.length, id === 'cave' ? 0 : 3, `${id}: open to Bell Rock`);
+      assert.ok(l.halts.slice(id === 'cave' ? 0 : 3).every((h) => h.shut), `${id}: its later halts shut`);
     }
     assert.deepEqual(
       RAIL_LEGS.map((_l, k) => legBuilt(k)),
-      [true, false, false, false, false, false, false, false],
-      'step 3 builds the stack leg only',
+      [true, true, true, false, false, false, false, false],
+      'leg 2 builds the incline and the bay cut',
     );
   });
 
@@ -229,12 +233,17 @@ export function routeRulesShard(shard: number) {
         [1, true],
         [1, true],
         [1, true],
+        // Leg 2's lines (greybox-leg2.md, step 2): two shed rows each, appended after every existing slot.
+        [2, true],
+        [2, true],
+        [3, true],
+        [3, true],
       ],
     );
     const w = createRailwayWorld();
     assert.deepEqual(
       trains(w).map((r) => r.phase),
-      [0, 0, TRAIN_PHASE.SHED, TRAIN_PHASE.SHED, TRAIN_PHASE.SHED, TRAIN_PHASE.SHED, TRAIN_PHASE.SHED],
+      [0, 0, ...Array.from({ length: 9 }, () => TRAIN_PHASE.SHED)],
     );
     // Spawned last, in catalog order, nothing laid.
     assert.equal(w.count(Leg), RAIL_LEGS.length);
@@ -327,7 +336,7 @@ export function routeRulesShard(shard: number) {
     assert.equal(invariant(s.w), null);
   });
 
-  test("High Gorge opens on the fourth; `pick` is refused before it and granted after, once; the incline's barrier waits for leg 2", () => {
+  test("High Gorge opens on the fourth; `pick` is refused before it and granted after, once; then the incline's barrier opens", () => {
     const s = copy(JOINED);
     const pick = RAIL_GRANTS.findIndex((g) => g.id === 'pick'),
       incline = RAIL_GATES.findIndex((g) => g.id === 'incline');
@@ -344,14 +353,16 @@ export function routeRulesShard(shard: number) {
     assert.equal(routeRow(s.w).grants, 1 << pick);
     for (const id of [1, 2, 3])
       assert.equal(act(s, 'a', 'rail.grant', { id }), 0, `${RAIL_GRANTS[id]!.id}: its leg is not laid`);
-    assert.equal(act(s, 'a', 'rail.gate', { id: incline }), 0, "held, but leg 2's rules are not built");
+    // Leg 2 (greybox-leg2.md, step 2): held, and the incline open, the barrier opens, once.
+    assert.equal(act(s, 'a', 'rail.gate', { id: incline }), 1, 'held and the incline open');
+    assert.equal(act(s, 'a', 'rail.gate', { id: incline }), 0, 'once');
     assert.equal(act(s, 'a', 'rail.legStock', { leg: STACK }), 0, 'the leg is complete');
     // Nothing more is owed: every kit unloaded (or rides on, surplus to no section).
     assert.deepEqual(legKitNeed(s.w, STACK), { logs: 0, rails: 0 });
-    // All leg cargo is zero once the leg is complete: what rode on goes home at the Village (legKitHome), so no train
-    // keeps the mark that bars the works' kit from it.
-    for (let k = 0; trains(s.w).some((r) => r.legKit); k++) {
-      assert.ok(k < 4000, 'the leg kit aboard goes home');
+    // All line 2 leg cargo is zero once the leg is complete: what rode on unloads at the Gorge for the incline (its rack
+    // and yard), or goes home at the Village (legKitHome), so no train keeps the mark that bars the works' kit from it.
+    for (let k = 0; trains(s.w).some((r, slot) => RAIL_TRAINS[slot]!.line === LINE2 && r.legKit); k++) {
+      assert.ok(k < 4000, 'the leg kit aboard unloads or goes home');
       advance(s, 1);
     }
     assert.deepEqual(
@@ -427,14 +438,21 @@ export function routeRulesShard(shard: number) {
   });
 
   // ---------------------------------------------------------------- the kit
-  /** Gate 16: kit units loaded equal units aboard, racked, fed, laid and on backs (the rack and backs hold none at the
-   * rivet), logs and rails. */
+  /** Gate 16: kit units loaded equal units aboard, racked, fed, laid, in a yard and on backs (the rack and backs hold
+   * none at the rivet), logs and rails, over every leg (greybox-leg2.md: the incline's kit rides ahead of it). */
   const legCarrier = (w: World, k: number) => train(w, k).legKit && train(w, k).logs + train(w, k).rails > 0;
   function kitEquality(w: World) {
-    const g = legRow(w, STACK);
-    let logs = g.logs,
-      rails = g.rails;
-    for (const sec of LEG.sections.slice(0, g.laid)) [logs, rails] = [logs + sec.logs, rails + sec.rails];
+    let logs = 0,
+      rails = 0,
+      loadedLogs = 0,
+      loadedRails = 0;
+    RAIL_LEGS.forEach((leg, k) => {
+      const g = legRow(w, k);
+      [logs, rails, loadedLogs, loadedRails] = [logs + g.logs, rails + g.rails, loadedLogs + g.loadedLogs, loadedRails + g.loadedRails];
+      for (const sec of leg.sections.slice(0, g.laid)) [logs, rails] = [logs + sec.logs, rails + sec.rails];
+    });
+    w.each([LegYard], (_id, y) => ((logs += y.logs), (rails += y.rails)));
+    const g = { loadedLogs, loadedRails };
     // A leg's kit aboard is the marked cargo (Train.legKit): the steel works' kit rides the same cars (steel first).
     for (const r of trains(w)) if (r.legKit) [logs, rails] = [logs + r.logs, rails + r.rails];
     w.each([Account], (_id, a) => ((logs += a.carry), (rails += a.rails)));
@@ -600,7 +618,13 @@ export function routeRulesShard(shard: number) {
     refuse(
       'a yard fed',
       (w) => Object.assign(w.mut(LegYard, w.lookup(LegYard, 0)!)!, { logs: 1 }),
-      /yard before its leg/,
+      /yard without its open leg/,
+    );
+    // Leg 2 (greybox-leg2.md, step 2): the incline's kit may ride ahead once the stack is reached, never a later leg's.
+    refuse(
+      "a later leg's kit loaded",
+      (w) => Object.assign(w.mut(Leg, w.lookup(Leg, 2)!)!, { loadedLogs: 1 }),
+      /leg kit before its leg/,
     );
     refuse(
       'a grant before its leg',
@@ -1597,11 +1621,14 @@ export function routeRulesShard(shard: number) {
    * its own trains (a leg's onto a marked train, the works' onto an unmarked one), a train's cargo never changes owner
    * while it has any, and no leg kit loads on a tick that ends with the works still wanting kit brought. */
   function steelFirstTick(s: Seed, what: string) {
+    // Every leg's loaded counts (the incline's kit rides ahead on line 2: greybox-leg2.md), and line 2's trains only
+    // (the `ns` trains load the incline's kit out of the Gorge yard, minted already).
+    const loaded = () => RAIL_LEGS.reduce((n, _l, k) => n + legRow(s.w, k).loadedLogs + legRow(s.w, k).loadedRails, 0);
     const before = trains(s.w).map((r) => ({ ...r })),
-      leg0 = legRow(s.w, STACK).loadedLogs + legRow(s.w, STACK).loadedRails,
+      leg0 = loaded(),
       out0 = steelRow(s.w).outLogs + steelRow(s.w).outRails;
     advance(s, 1);
-    const dLeg = legRow(s.w, STACK).loadedLogs + legRow(s.w, STACK).loadedRails - leg0,
+    const dLeg = loaded() - leg0,
       dSteel = steelRow(s.w).outLogs + steelRow(s.w).outRails - out0;
     let onLeg = 0,
       onSteel = 0;
@@ -1613,6 +1640,7 @@ export function routeRulesShard(shard: number) {
       if (had > 0 && has > 0)
         assert.equal(!!r.legKit, !!p.legKit, `${what}: train ${slot}'s kit changed owner at ${s.t}`);
       // Loads happen only standing at the Village; an unload and a load never share a tick there.
+      if (RAIL_TRAINS[slot]!.line !== LINE2) return;
       const up = Math.max(0, r.logs - p.logs) + Math.max(0, r.rails - p.rails);
       if (r.legKit) onLeg += up;
       else onSteel += up;

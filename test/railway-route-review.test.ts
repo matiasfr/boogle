@@ -6,7 +6,7 @@ import { Account, Steel } from '../src/sim/railway-components.ts';
 import { LINE2, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import { RAIL_LEGS } from '../src/sim/railway-route.ts';
 import { rail, trains } from '../src/sim/railway-rows.ts';
-import { legKitNeed, legRow } from '../src/sim/railway-queries-route.ts';
+import { legHeldRoom, legKitNeed, legKitSurplus, legRow, legYard } from '../src/sim/railway-queries-route.ts';
 import { steelNeed } from '../src/sim/railway-queries.ts';
 import {
   act,
@@ -52,7 +52,10 @@ function playTo(s: Seed, laid: number, max = 9000) {
 // (freightStop: cargo aboard that is not "waiting"). Build 2's review fixed the same thing for the works' kit
 // ("kit still aboard with the works finished: nowhere takes it"); the assertion edited in 46e5ed84f now skips marked
 // cargo, so it no longer sees this.
-test('review: logs brought to the last frame leave no leg kit riding the trains (or on the rack) once the leg is complete', () => {
+// From leg 2 (docs/plans/greybox-leg2.md, step 2) the stack's completion opens the incline, which takes the kit that
+// rides on (it is fungible: logs and rails), so what is left riding, racked or in the Gorge yard is the incline's, owed
+// to it, and no train carries surplus that nowhere takes.
+test('review: logs brought to the last frame leave no leg kit riding the trains that nowhere takes, once the leg is complete', () => {
   const s = fresh();
   playTo(s, N - 1);
   // The whole leg's kit is loaded: nothing more is owed.
@@ -70,11 +73,19 @@ test('review: logs brought to the last frame leave no leg kit riding the trains 
   playTo(s, N, 12000);
   advance(s, 3000);
   assert.equal(invariant(s.w), null);
-  const riding = trains(s.w).map((r, slot) => (r.legKit ? `train ${slot}: ${r.logs} logs, ${r.rails} rails` : ''));
+  const surplus = trains(s.w).flatMap((_r, slot) => {
+    const out = legKitSurplus(s.w, slot);
+    return out.logs + out.rails ? [`train ${slot}: ${out.logs} logs, ${out.rails} rails`] : [];
+  });
+  const held = (key: 'logs' | 'rails') =>
+    trains(s.w).reduce((n, r) => n + (r.legKit ? r[key] : 0), 0) +
+    (key === 'logs' ? rail(s.w).depot : rail(s.w).depotRails) +
+    legYard(s.w, 1)[key];
+  const room = legHeldRoom(s.w, 1);
   assert.deepEqual(
-    { riding: riding.filter(Boolean), rack: [rail(s.w).depot, rail(s.w).depotRails] },
-    { riding: [], rack: [0, 0] },
-    `leg kit left with the leg complete (${kit0} units were in hand for the last section, ${brought} brought): nowhere takes it`,
+    { surplus, logs: held('logs') <= room.logs, rails: held('rails') <= room.rails },
+    { surplus: [], logs: true, rails: true },
+    `leg kit left with the leg complete (${kit0} units were in hand for the last section, ${brought} brought): all of it the incline's`,
   );
 });
 

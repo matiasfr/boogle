@@ -12,7 +12,7 @@ import {
   RING_JOINT_UP,
   RING_PATH,
 } from './railway-ring-layout.ts';
-import { RAIL_LEGS, ROW_LINE, ROW_SHIFT, legS, legStartS, pathOf, rowHalt, rowPoint } from './railway-route.ts';
+import { RAIL_LEGS, ROW_LINE, ROW_SHIFT, legS, legStartS, pathOf, rowHalt, rowPoint, rowSide } from './railway-route.ts';
 import { WORLD_LINES } from './railway-world-lines.ts';
 
 export type RailEndKind = 'stub' | 'crossover' | 'loop';
@@ -209,6 +209,65 @@ function rowLine(id: 'ns' | 'bay' | 'cave'): RailLineDef {
     trains: 0,
     speed: r.speed,
     accel: r.accel,
+  };
+}
+/** A built leg's halt platforms by right-hand running (owner, 18 November: "Yes, every line"; docs/plans/running-side.md):
+ * [outward, homeward], each 5.8 m off the row's centre on its own side (the formation's platforms), on the deck 0.9 m
+ * over the rail, with a halt's reach. */
+const legPlatforms = (id: 'ns' | 'bay', cm: number): readonly [RailPlatform, RailPlatform] => [
+  rowSide(id, cm, 580, 90, 1260),
+  rowSide(id, cm, -580, 90, 1260),
+];
+/** A row whose first leg's rules are built (docs/plans/greybox-leg2.md, step 2): its home halt, one halt a head and the
+ * destination, all opened by the leg's sections (its home halt with the first: before it the line has no track), then
+ * the row's later halts shut. Fleet 0, 1, 2 by sections laid, block signals at each section's end but the last. */
+function builtLine(legId: string, headName: string, destEnd: number): RailLineDef {
+  const slot = RAIL_LEGS.findIndex((l) => l.id === legId),
+    leg = RAIL_LEGS[slot]!,
+    id = leg.row as 'ns' | 'bay',
+    base = rowLine(id),
+    r = WORLD_LINES.find((l) => l.id === id)!,
+    last = leg.sections.length - 1,
+    heads = leg.sections.slice(0, -1).map((sec) => legS(leg, sec.toCm) - HEAD_BACK_CM),
+    from = r.stops[0]!,
+    dest = legS(leg, leg.sections[last]!.toCm);
+  const halts: RailHalt[] = [
+    {
+      name: r.halts[0]!.name,
+      s: from,
+      opens: -1,
+      leg: { slot, section: 0 },
+      platforms: legPlatforms(id, from),
+      end: railEnd('crossover', r.ends.find((e) => e.at === 'start')!.sCm, -1),
+    },
+    // One halt a head (call 88), a stub end while it is the line's last; a two-section leg's one head stays a request
+    // stop both ways once passed (the stack's third head's rule: nothing lays after next to close it behind).
+    ...heads.map(
+      (at, k): RailHalt => ({
+        name: `${headName} ${k + 1}`,
+        s: at,
+        opens: -1,
+        leg: { slot, section: k },
+        platforms: legPlatforms(id, at),
+        end: railEnd('stub', at - HEAD_MERGE_CM, 1),
+        ...(k < heads.length - 1 ? { closesAt: leg.railheadHalt + k + 3 } : {}),
+      }),
+    ),
+    {
+      name: r.halts[leg.destRowHalt]!.name,
+      s: dest,
+      opens: -1,
+      leg: { slot, section: last },
+      platforms: legPlatforms(id, dest),
+      end: railEnd('crossover', destEnd, 1),
+    },
+    ...base.halts.slice(leg.destRowHalt + 1),
+  ];
+  return {
+    ...base,
+    halts,
+    fleet: { leg: slot, trains: [0, ...leg.sections.map((_s, k) => Math.min(2, k + 1))] },
+    signals: leg.sections.slice(0, -1).map((sec) => legS(leg, sec.toCm)),
   };
 }
 
@@ -483,9 +542,12 @@ export const RAIL_LINES: readonly RailLineDef[] = [
     // another up the 1.5 km from Ring Island block by block (re-measure ruling 1).
     signals: STACK.sections.slice(0, -1).map((sec) => legS(STACK, sec.toCm)),
   },
-  // The greybox route's own rows (step 3), every halt shut.
-  rowLine('ns'),
-  rowLine('bay'),
+  // The greybox route's own rows (step 3). Leg 2 (docs/plans/greybox-leg2.md, step 2) builds the incline and the bay
+  // cut: the `ns` line ends at Bell Rock on a crossover before its platforms (s 1096 to 1116); the `bay` line's on the
+  // in half's bed, t 25 to 45 short of the 52° kink (its buffers at the kink: leg 3 eases the bend). The cave row stays
+  // shut.
+  builtLine('incline', 'Incline head', 110600),
+  builtLine('bay-cut', 'Bay head', WORLD_LINES.find((l) => l.id === 'bay')!.legs[0]!.toCm - 3500),
   rowLine('cave'),
 ];
 
@@ -594,7 +656,8 @@ RAIL_LINES.forEach((l) => {
     RAIL_LINES[leg.line] !== l ||
     f.trains.length !== leg.sections.length + 1 ||
     f.trains[0] !== l.trains ||
-    f.trains.some((n, k) => !Number.isSafeInteger(n) || n < (k ? f.trains[k - 1]! : 1)) ||
+    // None before the first lay only on a line its leg's first section opens (it has no track until then).
+    f.trains.some((n, k) => !Number.isSafeInteger(n) || n < (k ? Math.max(1, f.trains[k - 1]!) : l.halts[0]?.leg ? 0 : 1)) ||
     f.opens?.some(
       (r, k) =>
         !Number.isSafeInteger(r.stop) ||
@@ -626,18 +689,28 @@ RAIL_LEGS.forEach((leg, k) => {
     head = halts[leg.railheadHalt]!,
     last = leg.sections.length - 1;
   // A built leg has a head halt for each section but the last, in order from its railhead halt, each opened by its
-  // section; it starts at a halt of its line and its last section opens one more (its destination).
+  // section, at the section's end less HEAD_BACK_CM; the halt before its railhead is its from halt (at its start) and
+  // the one after its last head its destination, which its last section opens (greybox-leg2.md, step 2).
   for (let j = 0; j < last; j++) {
     const h = halts[leg.railheadHalt + j];
-    if (h?.leg?.slot !== k || h.leg.section !== j || h.heads || !h.end)
+    if (
+      h?.leg?.slot !== k ||
+      h.leg.section !== j ||
+      h.heads ||
+      !h.end ||
+      h.s !== legS(leg, leg.sections[j]!.toCm) - HEAD_BACK_CM
+    )
       throw new Error(`railway: leg ${leg.id}'s heads`);
   }
   void head;
+  const dest = halts[leg.railheadHalt + last];
   if (
-    !halts.some((h) => h.s === legStartS(leg)) ||
-    !halts.some(
-      (h) => h.leg?.slot === k && h.leg.section === last && !h.heads && h.s === legS(leg, leg.sections[last]!.toCm),
-    )
+    halts[leg.railheadHalt - 1]?.s !== legStartS(leg) ||
+    dest?.leg?.slot !== k ||
+    dest.leg.section !== last ||
+    dest.heads ||
+    !dest.end ||
+    dest.s !== legS(leg, leg.sections[last]!.toCm)
   )
     throw new Error(`railway: leg ${leg.id}'s ends`);
 });
