@@ -161,9 +161,9 @@ export function placeDeck(
 // a step off) drops the deck's speed, so they land on the deck or in the pit, never thrown past the pit's wall.
 // The deck is a shared platform (`railway:table`): a rider sends their place on it (the `riding` presence,
 // src/entities/remote-player/), and every tab draws them on its own deck, whatever yaw that tab shows. For that a
-// marker car, a 1 cm box 0.2 m under the deck's top at its centre with no collision (mask 0) and too small to stand
-// on, follows the
-// drawn deck on every tab. It registers first, so it is what `platformById` finds; on the rider's tab the two agree.
+// marker car, a 1 cm box at the deck's centre, follows the drawn deck on every tab. It is only found by id, for
+// drawing: it collides with nothing (mask 0) and is never stood on (its `topAt` is out of reach, so the carry never
+// takes it). It registers first, so it is what `platformById` finds; on the rider's tab the two agree.
 type XZ = { x: number; z: number };
 /** Feet this far over the deck's top (a jump) still ride it; under it, as far as the carry counts (CARRY.below). A
  * ride starts only with the feet at the top, within START of it, and not rising (0.1 m/s at most). */
@@ -189,6 +189,8 @@ export function createTableRide(owner: OwnedView, table: XZ, r: number, top: num
     c.spinLimit = 2 * Math.PI;
     c.spinGain = 1 / FIXED;
   }
+  // No top anyone's feet can reach: the carry (src/physics/platforms.ts, stands) never holds anyone on the marker.
+  marker.platform.topAt = () => Infinity;
   /** The drawn deck's pose, led by its turn since the frame drew it (physics steps before the views draw, so without
    * the lead the rider would trail the drawn deck by a frame). */
   function pose(c: Car) {

@@ -742,7 +742,7 @@ the drawn yaw. A ride never starts while rising out of the pit; a jump from the 
 drops the deck's speed: they land on the deck or in the pit at their own walking speed, not the deck's (its end moves at
 about 24 m/s in the show-off). Trains and the railhead traveller keep their carry. The deck is a shared platform
 (`railway:table`): a rider sends their place on it (the `riding` presence) and every page draws them on its own deck,
-whatever yaw that page shows (a marker car, a 1 cm box under the deck's middle that collides with nothing, follows the drawn deck on every tab; until 19 November it collided and lifted a player under the deck's middle out of the pit; `deckcase=pitend&pitalong=0` holds it).
+whatever yaw that page shows (a marker car, a 1 cm box at the deck's middle, follows the drawn deck on every tab; it is only found by id for drawing, collides with nothing and is never stood on. Until 19 November it first collided, lifting a player under the deck's middle out of the pit (`deckcase=pitend&pitalong=0` holds it), then still held such a player inside the turning deck as a platform (`test/platforms-carry.test.ts` holds it)).
 When the deck's boxes come back, a player inside them (in the pit under it) is moved out of its side only, at their own
 height, still in the pit; never off its end onto the kerb. This reverses the "carried" part of call 23 below (logged in
 [agent-calls](../agent-calls.md)); the engine copy still passes through a friend. On a phone the touch stick and buttons
