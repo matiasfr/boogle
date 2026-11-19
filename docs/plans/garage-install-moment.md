@@ -574,7 +574,8 @@ the live install working. One proof look each; the full check, the bot and the t
       of the whole install at desktop width for the owner (motion is judged in motion); `npm run perf` at the
       Roundhouse before and after, reported; one device run or the line "not tested on a device". Then ship; no bump,
       so no mid-session hold.
-      Run on 18 November: [below](#checkpoint-run-18-november-2026).
+      Run on 18 November: [below](#checkpoint-run-18-november-2026). The four cases it left unproven:
+      [below](#unproven-cases-18-november-2026); held by the friend on the deck (P2).
 
 <a id="checkpoint-run-18-november-2026"></a>
 
@@ -674,6 +675,65 @@ here; the default `prompt` step used above is unaffected).
 **At the Home flip (home-station step 6, not this plan):** `SHED_TABLE` moves with the flip's own bump; delete
 `GARAGE_GEO.a`, the `installHere` fallback and what is left of `boiler-install-view.ts`'s post and prompt (its pallet
 moves to B's bay); re-take section 5's still for `b`.
+
+<a id="unproven-cases-18-november-2026"></a>
+
+### The four unproven cases, 18 November 2026 (late)
+
+**Still not ticked: the friend on the deck fails** (case 2 below). Cases 1 and 3 pass. #2210 (pause over the garage)
+and #2215 (keyboard E) are on main, so the two defects above no longer hold the box.
+
+On HOTBOX, branch `claude/garage-moment-unproven` from origin/main `045fa1529`; game, server and tests are origin/main's.
+Load is the verdict's busy CPUs of 20, start to end. Raw output: `.look/gmu-*` and `.look/gmu/` (not committed). Stills:
+the `unproven-*` files in [docs/reports/garage-moment-checkpoint/](../reports/garage-moment-checkpoint/).
+
+1. **A touch hold: proved.** look gained `--touch` (a phone page; `window.__touch` sends a real touch point through the
+   browser), and `dev/look/evals/garage-touch-act.ts` holds the garage's own Install button (342×48 at 390×844, the
+   point hit-tested as the button, `body.touch` on) by touch only, after `railway-install.ts` opened the garage.
+   `--real --touch --size 390x844 --rail-seed steel-home --hud --video`. **Full hold** (`gmu-touch-full`, load 0.5 to
+   2.2): holding at 52 ms, commit 1249, accept 1266, **press-to-drop 1427 ms**, hit 1554, let go at 1591; Line 2's
+   boiler 1 to 2, nothing spent (the Longer boiler costs no steel). Seen in the video: "Keep holding" with the yellow
+   ghost, the barrel in from the left and down onto the engine, "Installed" on the pill and then the button, the rows
+   counting to 25 m/s and 5 cars, Skip, then the turn. **Let go at 600 ms** (`gmu-touch-early`, load 0.6 to 1.8): idle,
+   holding, idle; no commit; boiler still 1, nothing spent; the button back to "Install", the pill "Ready".
+2. **A friend on the deck through the turn: fails.** `dev/look/evals/garage-deck.ts` (`--players 2 --real --rail-seed
+   steel-home --hud --video`, `gmu-deck`, load 0.7 to 1.7): the friend stands on the deck's free end 6.6 m out, the
+   other player installs. The friend saw the moment (phase `moment`, not `mine`, garage shut). The deck turned 360°;
+   the friend went −1° round: **not carried**. At the turn's first step the friend **dropped 0.92 m into the pit**
+   (2436 ms into the moment), stood there while the deck and engine swept round, and **ended waist-deep inside the
+   drawn deck**: not pushed, but inside a drawn solid. Stills: `unproven-deck-friend-before.png`, `-in-pit.png`,
+   `-after.png`. See Defects below.
+3. **The race: proved.** The server test that already races real `r:edit`s on one rule tick, run as is
+   (`server/test/railway-steel-host.test.ts`): "paid host: cradle and big boiler cross r:edit, share the pool,
+   replicate and survive restart" (one accepted, the other `noop`, steel spent once, host and a replicated client
+   agree, and after a restart), "review: upgrade host races on one tick, ..." (two installs of one part on one tick,
+   exactly one) and "steel host: the install at the table, once, two players pressing on the same revision": 3 pass, 0
+   fail. Also `test/railway-install.test.ts` "two presses on one tick install once; ..." and "paid installs spend only
+   the shared pool, ...": pass. In the browser against the look's local server, `garage-two.ts` with `two=race`
+   unchanged (`--players 2 --real --rail-seed steel-home --hud --video`, `gmu-race`, load 1.4 to 3.2): both pages held
+   from tick 14300; page one's moment was its own, page two saw it as not `mine`, its Back left the garage, and both
+   read Line.boiler 2. Still: `unproven-race-loser-after-back.png`. **Unseen:** the loser page's own request status
+   was not read, and the Longer boiler spends no steel, so the spent-once fact rests on the server test's paid parts.
+4. **Sound: sound not heard.** The audio engine keeps no played-cue log (`src/render/audio.ts` has the context state
+   and bus gains only), so nothing shows the clank, thump, chuff and whistle fired once each. The touch pages read the
+   context `running` before the press: cues could play, not that they did.
+
+**Defects (not fixed here).**
+
+- **P2: a friend on the table's deck drops into the pit when someone's install turns it, and ends inside the
+  deck.** `roundhouse-view.ts` removes the deck's bodies while it turns ("a turning deck would shove whoever stands
+  by it", src/entities/railway/roundhouse-view.ts:484-523) and puts them back only once this tab's player is clear,
+  so the friend falls and, when the deck stops, stands in its drawn volume. Smallest reproduction: two players at
+  `steel-home`; one stands on the deck's free end, the other installs the Longer boiler; the first falls about 0.9 m at
+  the show-off turn and ends waist-deep in the deck (`garage-deck.ts`). Whether they can jump out was not tried.
+- **P3: on a phone the game's Glide and Grab buttons sit over the open garage's category rail** ("Looks and sounds",
+  Looks, Whistle). Seen in every touch frame.
+
+**Scripts changed.** `dev/look/look.ts` gains `--touch`; new `dev/look/evals/garage-touch-act.ts` and
+`dev/look/evals/garage-deck.ts`.
+
+**Copy seen, unchanged:** "Keep holding", "Install", "Installed", "Ready", "Skip", "Free: the reward for reaching
+steel", "Look at the engine" (still at the post after the install).
 
 ## 7. Now, and what truly waits for the flip
 
