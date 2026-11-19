@@ -1,7 +1,8 @@
 // The first bought house's dressing (docs/brainstorms/first-house-resident.md, step 2): a warm lamp in its front
 // window, on once the room is up, so a lit window says someone's home before you reach the door. A pane, not a light:
-// it reads by day as well as at dusk and costs no light in the scene. On the room's `outside` group, which rooms.ts
-// shows only once the building's done and the camera's within its dressing radius. Local.
+// it reads by day as well as at dusk and costs no light in the scene. On the room's `over` group, which rooms.ts shows
+// only once the building's done and the camera's within its dressing radius, and which goes with the roof when you're
+// in: the front wall it sits on sinks then. Local.
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { ROOM_FLOOR } from '../../place/layout.ts';
@@ -27,6 +28,6 @@ export function createFirstHouseLamp(room: Room) {
     readableUnlit(new THREE.MeshBasicNodeMaterial({ color: LAMP })),
   );
   lamp.name = 'town:first-house-lamp';
-  room.outside.add(lamp);
+  room.over.add(lamp);
   return lamp;
 }

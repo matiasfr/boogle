@@ -100,7 +100,12 @@ house (trade plot 0, town slot `plot3`, board "Plot 1") goes up as a walk-in roo
 doorway facing the quarry road and its board, with the indoor cutaway and camera of every room
 ([first house](../brainstorms/first-house-resident.md), step 1); the yard and the third house keep their closed shells.
 Once it stands, a warm lamp shows in its front window on the room's +x side (a lit pane, no scene light, so it reads
-by day too; [first-house.ts](../../src/entities/town/first-house.ts)).
+by day too, gone with the roof while you're inside; [first-house.ts](../../src/entities/town/first-house.ts)).
+The retired engine driver lives there ([decision](../decisions-characters.md#d-2026-11-19-first-house-resident)), a
+sixth resident at the back of the front room facing the door, beside the clear floor where his table will stand (room
+x 1.3 to 3.3 m, z −2.1 to 0.9 m). His `…` shows from the road while you can see him through the door; inside he says
+his hello once and Talk opens his card. His name and every line are marked placeholders (`[owner's line: …]`) until
+the owner writes them ([town-lines.ts](../../src/entities/town/town-lines.ts)).
 Little guys gather and use their existing town lines. A player inside the footprint is moved to its edge as the
 hulls arrive; one resting beside it, on a room's slab or doorstep, is left where they stand. Reloads use the accepted purchase tick to resume or snap completed construction. Each completed
 fare-raising house adds one rider per minute in each direction. Every bought building doubles the remaining prices
