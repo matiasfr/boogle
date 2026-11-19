@@ -1,6 +1,7 @@
 // Standing where Grant passed the forge's pedestal (docs/plans/forge-call-handoff.md, "Done means"), on foot with the
 // game's follow camera: (922, 6) at 7 m by default, `stand=x,z` for another of his passes, `face=x,z` to look at
-// something else (the rack's board). Reports the prompt on offer and the hoist.
+// something else (the rack's board). Reports the prompt on offer, the target Interact would pick, the hoist and the
+// crew's foreman (forge-guide.ts: his stage, bubble and unread `…`). `wait=ms` holds before the report (default 1500).
 //   npm run look -- --rail-seed q5-done --eval dev/look/evals/forge-pedestal-stand.ts --until window.__placeDone \
 //     --hud --name pedestal-7m
 const { inspectRailway, railRead } = (await import(
@@ -11,6 +12,9 @@ const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
 const land = (await import('/src/place/land.ts' as string)) as typeof import('../../../src/place/land.ts');
+const { interactTarget } = (await import(
+  '/src/player/hands.ts' as string
+)) as typeof import('../../../src/player/hands.ts');
 const page = window as Window & { __placeDone?: boolean };
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const end = performance.now() + 60000;
@@ -33,13 +37,15 @@ cam.pitch = -0.1;
 window.__debugCam!.clear();
 const clear = setInterval(() => window.__debugCam!.clear(), 50);
 setTimeout(() => clearInterval(clear), 20000);
-await wait(1500);
+await wait(Number(q.get('wait') ?? 1500));
 const scene = inspectRailway()!;
 console.log(
   `STAND ${JSON.stringify({
     at,
     prompt: document.querySelector('.prompt, .interact-prompt')?.textContent ?? null,
+    picks: interactTarget()?.verb ?? null,
     hoist: scene.hoist,
+    guide: scene.guide,
     rackSign: scene.line2View.rackSign,
   })}`,
 );

@@ -1,5 +1,7 @@
-> **Status: proposed (2026-11-18).** Light brainstorm (one pass, three lenses). Nothing built. The character, its
-> name and every line it says are the owner's: this brief proposes and writes no copy.
+> **Status: building (2026-11-18).** Light brainstorm (one pass, three lenses). The owner picked B, the forge crew's
+> foreman ([decision](../decisions-characters.md#d-2026-11-18-decisions-page-characters)); the other questions proceed
+> on their recommended answers. As built: [place.md](../game-design/place.md#the-forge-crews-foreman). The character,
+> its name and every line it says are the owner's: the build carries marked placeholders and writes no copy.
 
 # A guide at the boiler
 

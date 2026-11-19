@@ -146,6 +146,8 @@ type Guy = {
   route: Route;
   act: Mood; // a resident: what they're doing when you're not there
   tint: THREE.Color | null;
+  /** Holds a hammer whatever he's doing (the forge crew's foreman, part-hoist.ts): the kit's own hammer, at rest. */
+  tool?: boolean;
 };
 // Where steer() is taking it: the goal it was given (r), that goal clear of footprints (g), the corner it's rounding (w),
 // the corner before that (p), and the s it has left; below 0, nothing's planned.
@@ -1008,7 +1010,7 @@ function pose(g: Guy) {
     held.setMatrixAt(i0, m.compose(p.set(0, 0.44, 0.3), q.identity(), s.set(0.95, 0.16, 0.16)).premultiply(base));
     held.setColorAt(i0, LOG);
     held.setMatrixAt(i1, ZERO);
-  } else if (itemB) {
+  } else if (itemB || g.tool) {
     const a = 0.5 - lift * 1.5;
     e.set(a, 0, 0, 'XYZ');
     q.setFromEuler(e);

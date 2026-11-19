@@ -581,6 +581,23 @@ the existing server-confirmed `boiler taken` / `breaker taken` marks finish the 
 player's take). A late join beside a waiting part starts the measure there; a dropped boiler does not restart it.
 The target is a take within 20 s of that approach, alongside 2 min 30 s from Q5 and 3 min from Q6.
 
+#### The forge crew's foreman
+
+The middle of the three, facing the part from the forge, is the crew's foreman (owner, 18 November:
+[the boiler's guide](../decisions-characters.md#d-2026-11-18-decisions-page-characters); [brief](../brainstorms/boiler-guide.md)).
+He reads apart at a glance: a deep blue coat among the oranges and the kit's hammer always in his hand (a placeholder
+look; his look, name and quirk are the owner's). In each stage, the first time you come within 10 m of him he says one
+line in a bubble (the residents' bark bubble, held 2.6 to 6 s by its length); within 3.3 m Interact offers Talk on the
+shared talk card, whose lines turn over on each Talk, with his `…` while one is unheard in the stage. He stands where the
+three always stood, 3.1 m off the pedestal's centre on the forge side, so the pedestal's take (6 m, measured to its
+1.3 m edge) wins on and beside the pedestal and Talk wins only on his side, in front of the forge. His bubble and Talk
+wait while anything else holds the input (a card, a show, the garage, the fall, another talk) or a moment has the
+screen. Stages, from accepted state: **boiler** (on the pedestal) and **breaker** (on the pedestal). Every line is a
+marked placeholder, `owner's line: <what it must tell>` ([`FOREMAN_LINES`](../../src/entities/railway/forge-guide.ts)),
+and his card's name is his role, "Foreman", until the owner names him. Local presentation over the railway rows: no
+state, command, wire or save change; a reload, a late join or a `?from=` jump finds him in the current stage, and his
+once-a-stage bubble is once per page. No collider. Serves DESIGN.md 7 (Telegraph everything).
+
 **Walking-in composition, 4 November:** Station 3's existing bill sits on the source side of its pile so
 the unchanged `great beam 0/1` row stays visible. The receiver, feeder, machine and crossing fit are retained;
 the 14 November prow move replaces the old 53 m uphill haul with 35 m from beyond Station 3. The proper-axe
