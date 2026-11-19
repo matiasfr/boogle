@@ -270,7 +270,8 @@ cloth is a flag. No buildings, no folk, no tree interiors.
   outward platform is 12.6 m from `wall-cn`'s south tip, the homeward 23.7 m. The bay row's bed on the isle from s 2117
   (13 m over 12 m ground: a low bank), head 2's platform with a step down to the ground each side, Canopy's two 40 m
   platforms and a deck at the halt's level on the homeward side wrapping round the buffers to the cloth post and the
-  Notch barrier. Head 1 over the sea gets a sea ramp, as leg 2's heads do.
+  Notch barrier. Head 1 over the sea gets a sea ramp, as leg 2's heads do. A reserve of 30 × 30 m on the homeward
+  side, within 60 m of the platforms, is kept clear for the hub stand-in town ([open question 5](#open-questions)).
 
 ## Steps
 
@@ -453,3 +454,125 @@ over the catalog (`rowPoint`, `rowSide`) and are read against the report:
 - **Performance.** Canopy isle (one slab with a beach skirt), five trunks to 150 m, two 120 m chalk walls, 1.2 km of
   deck and bents, three bay trains. Reported by `npm run perf` and the look harness's counts; not a reason to cut
   anything without the owner's word.
+
+## Design review (2026-11-19)
+
+The planner's own review, in the same sitting (owner call "Fold roles into the builder", 16 November); the plan was
+reread from the top before the calls were sorted. **Read:** DESIGN.md; owner-calls' index; the rail and rewards
+Current rules with the entries cited below; docs/direction.md (phase 1, focus "choice and payoff"); the 14 November
+owner session as leg 2's review quotes it (his last press was "Open the barrier", five times, against "No line beyond
+yet"); the research above; the level report and the scratch measurements; `npm run loop -- node canopy` and
+`-- node bell`; the code each call depends on; garage-choices.html's leg 3 calculator. **Seen:** numbers only. **Not
+seen:** any still. No Canopy massing exists, so the isle, the cleft, the heads and the eased Bell Rock are judged from
+the map data and the catalog, which is why steps 5 and 6 list their stills.
+
+**Flow, beat to beat** (the beats table; progression-flow-layout's three firm rules):
+
+- *The next goal can be found.* Beat 1's barrier is now beside the train you arrive on (it moves to frame 1); each
+  head's rack is beside the train that stops there; head 2 is the isle's edge, facing the trees; the cloth post and the
+  Notch barrier stand at the line's end, 10 m apart. Home is the same line back.
+- *A gate keeps its meaning.* The Canopy barrier takes the seeds at the only gated frame; a swimmer reaches the isle
+  early and every post refuses; a glider skips water, never a bill.
+- *Nobody is stranded.* Head 1 has a sea ramp; the isle has beaches all round; head 2 stays a request stop; trains run
+  both ways from every open halt; the keys are the room's, so a leaver loses nothing. A held Strong train is at most
+  two minutes of wait for someone who wants to leave the railhead (measured against 1,600).
+- *Lenses.* "A world that shortens behind you": Canopy is one ride from Home on the line the bay cut started, so the
+  shortcut pays twice. "The key in sight of the lock": the cloth and the Notch barrier are 10 m apart, and the lock
+  refuses (finding 4). "Ending a beat facing the next": the ride home ends at the West landing, where leg 4 will start.
+  "A place to meet": Bell Rock's upper deck; Canopy's deck.
+
+### Calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | 20 logs + 20 rails a section, about 30 s to lay; sections end at a place, up to about 900 m | Decided | [16 November](../decisions-rail.md#d-2026-11-16-batch2-greybox-section-length-and-lay-time) (head 1 is mid-strait, as legs 1 and 2's sea heads are; call 14) |
+| 2 | Strong is a hold: two sections' kit, waiting at the railhead; built with leg 3; Strong while building, Quick after | Decided | [19 November](../decisions-rewards.md#d-2026-11-19-garage-step4-waits-for-leg3) (the orchestrator's call, his to overrule) |
+| 3 | Quick 25 m/s with the same cars; Strong 20 m/s with one more car | Decided | [15 November garage trade answers](../decisions-core-loop.md#d-2026-11-15-garage-trade-answers) |
+| 4 | One fixed order through Bell Rock; Canopy after the bay cut | Decided | [16 November](../decisions-rail.md#d-2026-11-16-batch2-fixed-order-branch-wayfinding); [campaign outline answered](../decisions-core-loop.md#d-2026-11-12-campaign-outline-answered) |
+| 5 | Canopy's stall at Bell Rock rises with its leg, on the bay line's level | Decided | [12 November](../decisions-rewards.md#d-2026-11-12-cargo-trains-and-hub-towns-answered) (5), the market's fixed table |
+| 6 | Trains stop on request; a lever at each platform side | Decided | [10 November](../decisions-rail.md#d-2026-11-10-trains-stop-on-request-at-the) |
+| 7 | Right-hand running on the bay line's new halts | Decided | Owner, [18 November](../decisions-rail.md#d-2026-11-18-decisions-page-rail) |
+| 8 | Waits at most 1,350 settled and 1,600 growing; fleets sized by those limits | Decided | [16 November](../decisions-rail.md#d-2026-11-16-batch2-waits-use-owner-limits) (RC-263, RC-294) |
+| 9 | `rail.legStock` predicted; grant and gate server-confirmed | Decided | [16 November](../decisions-rail.md#d-2026-11-16-batch2-greybox-stock-is-predicted) |
+| 10 | Live for everyone, grey and labelled, the leg shipped whole | Decided | [12 November](../decisions-rail.md#d-2026-11-12-ring-island-build-2-and-the-greybox-route-answered) (4) |
+| 11 | Mechanisms on blockout: Canopy's town stays a flat deck, no folk or bespoke props; the sling stays out | Decided | Owner call [greybox before detail](../agents/owner-calls.md#mechanisms-systems-greybox-details), 11 November; greybox-route's stand-ins |
+| 12 | **The hold is Strong's alone**: a standard or Quick train carrying the next section's kit runs its circuit; a held Strong train keeps the following train at the last signal up to two minutes | **New** | Otherwise Strong is dead again; the fuzz bounds the cost. Recommended as planned |
+| 13 | **The kit ahead runs into leg 3**, so its first kits ride standard trains before the bay trade is offered | **New** | Leg 2's rule for every same-line successor (its call 10, open). Keep it for now; Checkpoint G measures what is left for Strong. Open question 1 |
+| 14 | Three sections cut at the strait's level middle (s ~1750) and 33 m onto the isle (s ~2150), the last to Canopy's stop: about 533, 400 and 255 m | Default | Level finding 2: equal thirds put both heads on grades. Open question 2 |
+| 15 | Bell Rock's kink eased with a 60 m arc; the stop stays at s 1217, on the curve; the upper platforms as chords | Default | The track report; the smallest move that passes it. Open question 4 |
+| 16 | Canopy's stop 25 m short of its kink, a crossover before, buffers 2 m short; no loop end | Default | No train crosses a 102° kink; a loop does not fit the 71 m cleft (finding 5) |
+| 17 | The Canopy barrier moves from the upper deck's reserve to frame 1 on the outward platform; rack 1 abreast of the kit car | Default | Leg 2's call 11 (the frame is where it reads as a gate); Q7's last carry under 15 m |
+| 18 | The bay fleet `[2, 2, 3, 3]` over leg 3, a fourth at the last stage only if the fuzz needs it | Default | Call 8; leg 2's measured bay line scaled; the owner's "too many trains" (14 November) |
+| 19 | Head 1 closes once Canopy opens; head 2 stays a request stop both ways | Default | The stack's `closesAt` rule; head 2 is a place to get off into the forest |
+| 20 | The cloth post on Canopy's homeward deck round the buffers (reach 4 m), taken once the leg is laid; the Notch barrier across the row at the kink, 10 m from it | Default | The key beside the lock it will open; the halt's map point is already the kink |
+| 21 | The Notch barrier refuses "No line beyond yet" with the cloth held; a board "LINE TO LANTERN NOTCH / LATER" beside it | Default | DESIGN 7; finding 4 |
+| 22 | The hold's bound: until the section lays, at most 1,200 ticks past the dwell, always while laying, never at a middle halt | Default | A solo feed and lay is about 60 s; the fuzz may shorten it |
+| 23 | A Strong train carries two sections of one leg, never across legs | Default | The next leg on the bay line is not built, and kit for a closed leg cannot unload |
+| 24 | Canopy's stand-in: the isle as a slab with beaches, five mother trunks, the two chalk walls with the cleft open, a deck at the halt; head 1 a sea ramp, head 2 steps | Default | level-design rec 3; leg 2's massing pattern |
+| 25 | Prompt "Take the glider cloth" and its block, four objective texts, the end boards | Default | Placeholder copy, none The Boogler's |
+| 26 | Jump rows `canopy-open`, `canopy-mid`, `canopy-reached` without a `land` until step 6's stills | Default | Leg 2's step 3 reason (return-spot matches lands by x and z) |
+
+**Counts:** 11 Decided, 13 Default, 2 New. Every Default and New call is logged in
+[agent-calls](../agent-calls.md#rail-construction-levels-and-travel) (rail) and, for calls 12 and 13,
+[core loop](../agent-calls.md#core-loop-pacing-and-progression). **Suspect lines of The Boogler's:** none written,
+changed or read as suspect.
+
+### Findings
+
+1. **(changed step 1) Equal thirds put both heads on grades.** Measured on the row: head 1 across the s 1608 grade
+   break, head 2 on the 3.9% climb offshore. The cuts move to level places (call 14), the test recomputes them.
+2. **(changed steps 1 and 5, and the batch) The arc moves track leg 2's views draw.** Easing Bell Rock's kink runs the
+   bay line 6.8 m inside the old vertex, through leg 2's provisional inner platforms. So Bell Rock's rework (step 5)
+   ships in the bump's batch, and step 1 waits for leg 2's views.
+3. **(added step 3's trade script and Checkpoint G's report; no change to leg 3's rules) Strong's window is small.**
+   Garage step 4 offers each line's trade at its leg's last lay (its call 11); the bay cut's last lay is also the one
+   that opens leg 3. By then the kit ahead has put leg 3's first sections on standard trains, and the room stands at
+   Bell Rock, 2 km from the post. A solo room that fits Strong then pays a round trip home of about 3 minutes to make
+   the next West landing train Strong, which holds only for the sections still to load; a pair that splits at beat 1
+   gets it. The 27 to 30 s is a best case that leaves the kit ahead out. upgrade-economy rec 2 asks that an upgrade
+   repay an inconvenience already felt: the room first feels the kit wait on the bay cut, at `bay-mid`, standing at the
+   West landing 28 s from the post, before the trade is offered. Calls 12 and 13; open question 1.
+4. **(changed step 6: the board) The Notch barrier refuses with the key in hand.** The room takes the cloth 10 m from a
+   barrier that needs it and says "No line beyond yet" for two more legs: the refusal the owner pressed five times at
+   the Gorge, now with the key held. Leg 2 accepted the same at Bell Rock (its call 21), and that barrier opens here.
+   The barrier stays (it telegraphs the ending's approach, DESIGN 7); a board beside it says "LATER" before the prompt
+   does (call 21).
+5. **(changed step 1) Canopy is a crossover end, not "a loop end".** greybox-route's table asks for a loop; the halt
+   stands in a 71 m cleft between two 120 m chalk islets, and a 40 m loop needs about 90 m. A crossover and buffers, as
+   at Bell Rock, cost nothing; leg 6, which runs on to the Notch's loop, may revisit it.
+6. **(no change) The route's live end is Canopy until leg 4 ships.** The next leg (the cave line) starts at the West
+   landing and takes the pick the room holds. The ride home ends there, facing it; the objective line says the next
+   line is not built yet. Nothing in the world at the West landing says so until leg 4's views.
+7. **(no change) Solo and co-op.** Solo works end to end on the room's keys (the seeds since leg 2). A pair splits at
+   beat 1 (one fits at Home once garage step 4 exists, one feeds); three players feed a section in one trip each; a
+   friend joining is one bay line ride from the railhead. A held train is also the room's ride to the next head.
+8. **(changed step 6: a reserve) The hub stand-in town is owed and not built** (decided 12 November, "stand-in towns go
+   into the greybox now, at the minimum"; High Gorge has none either, `TRADE_TOWNS = 1`). The brief keeps Canopy's town
+   the route plan's stand-in. Step 6 keeps room for one on the homeward deck. Open question 5.
+
+## Open questions
+
+None blocks leg 3's build: each proceeds on its recommendation. Question 1 holds garage step 4's screen (its offer
+moment and readout), not its rules and not this plan; question 3 changes when steps 1 to 5 start, not what they do.
+
+1. **Strong's window (for garage step 4, after Checkpoint G).** The bay trade opens at the bay cut's last lay, after the
+   kit ahead has loaded leg 3's first sections onto standard trains, with the room 2 km from the post. **Recommended:**
+   if Checkpoint G's table shows Strong fitted at `bay-reached` saving under 15 s solo, garage step 4 offers the bay
+   line's trade from the bay cut's first lay (`bay-mid`), when the room stands at the West landing 28 s from the post
+   and has just met the kit wait; the ten-second rule is met by the whole line (10.5 s at the bay cut, about 22 s with
+   leg 3). Or keep the offer where it is and accept that Strong pays mostly to a pair who split; or stop the kit ahead
+   at a gated leg (leg 3's kit loads only once the Canopy barrier is open), which gives Strong its window but adds a
+   lap's wait at Bell Rock for every room. **Blocks garage step 4's step 3, not leg 3.**
+2. **Cut leg 3 at level places (the strait's middle and 33 m onto the isle), or keep the catalog's equal thirds?**
+   **Recommended: places.** Thirds stand both heads on grades (one across a grade break, one on a 3.9% climb offshore);
+   places put head 2 on the isle's edge, the first footfall on the forest isle. Proceeds on it.
+3. **May steps 1 to 5 start once leg 2's views are on main, before leg 2's step 5 (its bot and loop)?** Your brief's
+   order is after step 5. **Recommended: yes.** Steps 1 to 5 share no file with leg 2's step 5, and garage step 4, the
+   top backlog row, waits on Checkpoint G. Until you answer, the brief's order stands.
+4. **Bell Rock's arc: 60 m (6.8 m inside the old vertex) or 100 m (11.4 m, as leg 2's massing review assumed)?**
+   **Recommended: 60 m.** It passes the track report, moves the upper level least and leaves the deck's pads where they
+   are; step 5's still judges whether a train on it reads well. Proceeds on it.
+5. **The hub stand-in town.** Decided 12 November (a `Town` row, a pad within 60 m, two box buildings, three stakes, one
+   board, plot 1 staked by the first train), not built at High Gorge either. **Recommended:** one stand-in towns plan
+   for High Gorge, Canopy and Port Quay once slice 5's rules take more than one town; leg 3 keeps the room. Proceeds;
+   it adds nothing to leg 3.
