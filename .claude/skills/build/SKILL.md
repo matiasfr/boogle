@@ -33,7 +33,9 @@ that writes the plan carries it out, so it can change the plan when a step turns
 7. **Simplify.** When your code changes (not docs) are over ~3 files or ~150 lines, run `/simplify` on the diff
    before the last check and commit (docs/agents/shipping.md); it changes no behaviour, so re-run the touched checks.
 8. **Commit** in small commits (docs/agents/shipping.md). Ship with `npm run ship` only if your brief says to; otherwise
-   leave the commits for the caller.
+   leave the commits for the caller. A session working directly with the owner ships finished work and reports it; it
+   does not ask "want me to ship it?" (owner, 19 November, docs/decisions-process.md, "finished work ships"). The
+   usual gates stay: the checks, a look, and an independent review where `npm run review-stamp` asks for one.
 9. **Owed proofs are yours.** A rebase, bot run, still or tick mark your branch still owes comes back to this same
    thread; you have the context a fresh agent would lack.
 
