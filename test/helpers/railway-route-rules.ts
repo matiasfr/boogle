@@ -452,11 +452,10 @@ export function routeRulesShard(shard: number) {
       for (const sec of leg.sections.slice(0, g.laid)) [logs, rails] = [logs + sec.logs, rails + sec.rails];
     });
     w.each([LegYard], (_id, y) => ((logs += y.logs), (rails += y.rails)));
-    const g = { loadedLogs, loadedRails };
     // A leg's kit aboard is the marked cargo (Train.legKit): the steel works' kit rides the same cars (steel first).
     for (const r of trains(w)) if (r.legKit) [logs, rails] = [logs + r.logs, rails + r.rails];
     w.each([Account], (_id, a) => ((logs += a.carry), (rails += a.rails)));
-    return [g.loadedLogs - logs - rail(w).depot, g.loadedRails - rails - rail(w).depotRails];
+    return [loadedLogs - logs - rail(w).depot, loadedRails - rails - rail(w).depotRails];
   }
   test('the idle room (ruling B, gate 13): at rest by +1,500, kit 1 racked, two kit trains, one kit car empty, 60 and 60 loaded; then nothing moves', () => {
     const s = unaudited(copy(JOINED));

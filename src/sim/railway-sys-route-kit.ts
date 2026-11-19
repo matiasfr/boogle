@@ -22,30 +22,34 @@ import { defineSystem, type World } from '../ecs/index.ts';
 import { deckHeld } from './railway-queries-trade.ts';
 import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
 import { RAIL_LEGS } from './railway-route.ts';
-import { steelNeed, stopsOf } from './railway-queries.ts';
+import { steelNeed } from './railway-queries.ts';
 import { TRAIN, type RailTrain, type ServiceStop } from './railway-train.ts';
 import { Account, Forge, Leg, LegYard, Rail, Train } from './railway-components.ts';
 import {
   MINT_LEGS,
-  YARD_LEGS,
+  SERVED_LEGS,
+  STOCKED_LEGS,
+  sum,
   legHeldRoom,
   legId,
   legKitCap,
   legKitCarriers,
   legKitDrop,
+  legKitFits,
   legKitHalt,
   legKitRoom,
   legKitSurplus,
   legKitTrains,
-  legMintLine,
-  legMintOwed,
+  legMintChain,
   legOpen,
   legOpenYard,
   legRackNeed,
   legRow,
   legYard,
+  legYardId,
   legYardOwed,
   legsServed,
+  type Kit,
 } from './railway-queries-route.ts';
 
 const trainOf = (w: World, slot: number) => w.lookup(Train, slot)!;
@@ -55,12 +59,7 @@ const trainOf = (w: World, slot: number) => w.lookup(Train, slot)!;
 export function legKitService(w: World, slot: number, r: Readonly<RailTrain>): ServiceStop {
   const line = RAIL_TRAINS[slot]!.line;
   if (!r.legKit || r.logs + r.rails <= 0) return () => false;
-  const at: number[] = [];
-  for (const k of legsServed(w, line)) {
-    const { rack, yard } = legKitRoom(w, line, k);
-    if ((r.logs > 0 && rack.logs + yard.logs > 0) || (r.rails > 0 && rack.rails + yard.rails > 0))
-      at.push(legKitDrop(w, line, k));
-  }
+  const at = legsServed(w, line).flatMap((k) => (legKitFits(w, line, k, r) ? [legKitDrop(w, line, k)] : []));
   return (stop) => at.includes(stop);
 }
 /** Train `slot` has come to a stand: at each open leg's drop halt it unloads what that leg may take (legKitRoom), the
@@ -82,14 +81,14 @@ export function legKitArrive(w: World, slot: number) {
     // The yard's room, read after the rack's share is on the rack.
     const { yard } = legKitRoom(w, line, k);
     move(w, slot, yard, (logs, rails) => {
-      const y = w.mut(LegYard, w.lookup(LegYard, RAIL_LEGS[k]!.kit as number)!)!;
+      const y = w.mut(LegYard, legYardId(w, k))!;
       y.logs += logs;
       y.rails += rails;
     });
   }
 }
 /** Off train `slot`, up to `room` and what it carries, into `put`; with nothing left aboard its kit mark clears. */
-function move(w: World, slot: number, room: { logs: number; rails: number }, put: (logs: number, rails: number) => void) {
+function move(w: World, slot: number, room: Kit, put: (logs: number, rails: number) => void) {
   const r = w.get(Train, trainOf(w, slot))!,
     logs = Math.min(r.logs, room.logs),
     rails = Math.min(r.rails, room.rails);
@@ -107,7 +106,7 @@ function move(w: World, slot: number, room: { logs: number; rails: number }, put
 function kitHome(w: World, legs: readonly number[], logs: number, rails: number) {
   w.mut(Rail, w.single(Rail))!.depotProduced -= logs;
   if (rails) w.mut(Forge, w.single(Forge))!.rack += rails;
-  for (const k of [...legs].sort((a, b) => b - a)) {
+  for (const k of [...legs].reverse()) {
     if (logs + rails <= 0) break;
     const row = w.get(Leg, legId(w, k))!,
       dl = Math.min(logs, row.loadedLogs),
@@ -130,7 +129,7 @@ function legKitHome(w: World, slot: number) {
   m.logs -= out.logs;
   m.rails -= out.rails;
   if (m.logs + m.rails === 0) m.legKit = false;
-  kitHome(w, [...MINT_LEGS[line]!, ...YARD_LEGS[line]!], out.logs, out.rails);
+  kitHome(w, SERVED_LEGS[line]!, out.logs, out.rails);
 }
 /** A yard leg completed: whatever its yard still holds goes home (greybox-leg2.md, "Completion"). */
 export function legYardHome(w: World, k: number) {
@@ -138,7 +137,7 @@ export function legYardHome(w: World, k: number) {
   const y = legYard(w, k);
   if (!y.logs && !y.rails) return;
   kitHome(w, [k], y.logs, y.rails);
-  const m = w.mut(LegYard, w.lookup(LegYard, RAIL_LEGS[k]!.kit as number)!)!;
+  const m = w.mut(LegYard, legYardId(w, k))!;
   m.logs = m.rails = 0;
 }
 /** The stand-in (greybox-leg2.md, "the bay cut's first kit is stocked", open question 2): an open leg minted at its
@@ -146,10 +145,8 @@ export function legYardHome(w: World, k: number) {
  * stocked from Home's stock: what the section lacks, logs minted, rails off the forge rack as they are there (as kit
  * loading waits for them). How goods cross Home to the West landing is still open (greybox-route section 3). */
 export function legKitStock(w: World) {
-  for (const k of MINT_LEGS.flat()) {
-    const leg = RAIL_LEGS[k]!;
-    if (leg.kit !== 'home' || legMintLine(k) !== leg.line || !legOpen(w, k) || legRow(w, k).laid > 0) continue;
-    if (stopsOf(w, leg.line).length >= 2) continue;
+  for (const k of STOCKED_LEGS) {
+    if (legRow(w, k).laid > 0 || !legOpen(w, k)) continue;
     const need = legRackNeed(w, k),
       forge = w.get(Forge, w.single(Forge))!,
       logs = need.logs,
@@ -174,9 +171,6 @@ export function legKitLoad(w: World, slot: number, tick: number): 'hold' | 'on' 
     r = w.get(Train, trainOf(w, slot))!;
   if (deckHeld(r) || r.at !== legKitHalt(line)) return 'on';
   if (!MINT_LEGS[line]!.length) return yardLoad(w, slot);
-  const ch = legMintOwed(w, line),
-    first = ch.legs.findIndex((_k, i) => ch.loading[i] && ch.owed[i]!.logs + ch.owed[i]!.rails > 0);
-  if (first < 0) return 'on';
   // Steel first (call 64; owner, 12 November): the steel works' kit has the kit car and the forge's rails first. A leg's
   // kit loads only when the works wants none brought (steelNeed: its kit is fed, in the yard or aboard), and never onto
   // a train carrying the works' kit, so a train never carries both.
@@ -186,8 +180,11 @@ export function legKitLoad(w: World, slot: number, tick: number): 'hold' | 'on' 
   }
   // At most `kitTrains` carry kit: an empty train loads only below that.
   if (r.logs + r.rails === 0 && legKitCarriers(w, line) >= legKitTrains(w, line)) return 'on';
+  const ch = legMintChain(w, line),
+    first = ch.legs.findIndex((_k, i) => ch.loading[i] && ch.owed[i]!.logs + ch.owed[i]!.rails > 0);
+  if (first < 0) return 'on';
   const cap = legKitCap(w, ch.legs[first]!),
-    want = ch.owed.reduce((a, o) => ({ logs: a.logs + o.logs, rails: a.rails + o.rails }), { logs: 0, rails: 0 }),
+    want = sum(ch.owed),
     forge = w.get(Forge, w.single(Forge))!;
   let logs = Math.max(0, Math.min(cap.logs - r.logs, want.logs)),
     rails = Math.max(0, Math.min(cap.rails - r.rails, want.rails, forge.rack));
@@ -209,9 +206,13 @@ export function legKitLoad(w: World, slot: number, tick: number): 'hold' | 'on' 
       [logs, rails] = [logs - dl, rails - dr];
     });
   }
-  const now = w.get(Train, trainOf(w, slot))!,
-    after = legMintOwed(w, line).owed.reduce((n, o) => n + o.rails, 0);
-  if (now.rails < cap.rails && after > 0 && forge.lit >= 0 && tick < now.depart + TRAIN.dwellTicks + TRAIN.kitWaitTicks)
+  const now = w.get(Train, trainOf(w, slot))!;
+  if (
+    now.rails < cap.rails &&
+    forge.lit >= 0 &&
+    tick < now.depart + TRAIN.dwellTicks + TRAIN.kitWaitTicks &&
+    sum(legMintChain(w, line).owed).rails > 0
+  )
     return 'hold';
   return 'on';
 }
@@ -229,7 +230,7 @@ function yardLoad(w: World, slot: number): 'on' {
     logs = Math.max(0, Math.min(cap.logs - r.logs, owe.logs, y.logs)),
     rails = Math.max(0, Math.min(cap.rails - r.rails, owe.rails, y.rails));
   if (!logs && !rails) return 'on';
-  const ym = w.mut(LegYard, w.lookup(LegYard, RAIL_LEGS[k]!.kit as number)!)!,
+  const ym = w.mut(LegYard, legYardId(w, k))!,
     m = w.mut(Train, trainOf(w, slot))!;
   ym.logs -= logs;
   ym.rails -= rails;

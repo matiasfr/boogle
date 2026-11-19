@@ -231,7 +231,7 @@ function trainIO(w: World, headPct: number, pct: TradePct, hold: TrainHold, tick
       if (!line2(slot)) {
         if (legKitLoad(w, slot, tick) === 'hold') return 'hold';
         // The cart's hold is line 1's alone (its trains meet the cart); the greybox route's lines never wait for it.
-        if (RAIL_LINES[RAIL_TRAINS[slot]!.line]!.id !== 'line1') return 'on';
+        if (RAIL_TRAINS[slot]!.line !== LINE1) return 'on';
         return w.get(Cart, cartId(w))!.phase !== CART_PHASE.REST ? 'hold' : 'on';
       }
       // The active train-fed job's kit (its bill, up to the kit car's LINE2_KIT) loads onto whichever line 2 train
@@ -272,6 +272,8 @@ function trainIO(w: World, headPct: number, pct: TradePct, hold: TrainHold, tick
     controlOff: (line, slot) => holdOff(w, line, row(slot)),
   };
 }
+/** Line 1's index: the line whose trains meet the cart. */
+const LINE1 = RAIL_LINES.findIndex((l) => l.id === 'line1');
 function trainStep(w: World, tick: number, headPct: number, pct: TradePct, hold: TrainHold) {
   if (w.get(Rail, railId(w))!.trains < 0) return;
   const io = trainIO(w, headPct, pct, hold, tick);

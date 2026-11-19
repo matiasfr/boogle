@@ -17,24 +17,13 @@
 import { act, advance, type Seed } from './railway-seed-route.ts';
 import { invariant, need, restore } from './railway-drive.ts';
 import { railwayAtRing } from './railway-seed-ring.ts';
-import { account, rail, trains } from './railway-rows.ts';
+import { account, rail } from './railway-rows.ts';
 import { LOGS, roomOf } from './railway-queries.ts';
 import { RAILS } from './railway-line2-layout.ts';
-import { legRow } from './railway-queries-route.ts';
+import { legKitCarriers, legRow } from './railway-queries-route.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS } from './railway-route.ts';
-import { RAIL_TRAINS } from './railway-lines.ts';
 
-export type LegStage =
-  | 'gorge-open'
-  | 'gorge-mid'
-  | 'gorge-reached'
-  | 'incline-open'
-  | 'incline-mid'
-  | 'bell-reached'
-  | 'bay-open'
-  | 'bay-mid'
-  | 'bay-reached';
-export const LEG_STAGES: readonly LegStage[] = [
+export const LEG_STAGES = [
   'gorge-open',
   'gorge-mid',
   'gorge-reached',
@@ -44,31 +33,21 @@ export const LEG_STAGES: readonly LegStage[] = [
   'bay-open',
   'bay-mid',
   'bay-reached',
-];
+] as const;
+export type LegStage = (typeof LEG_STAGES)[number];
 
 /** The legs' slots in RAIL_LEGS. */
 const STACK = RAIL_LEGS.findIndex((l) => l.id === 'stack'),
   INCLINE = RAIL_LEGS.findIndex((l) => l.id === 'incline'),
   BAY = RAIL_LEGS.findIndex((l) => l.id === 'bay-cut');
-/** Each stage's base: the stage before it, or `ring-joined` for the first. */
-const BASE: Partial<Record<LegStage, LegStage>> = {
-  'gorge-mid': 'gorge-open',
-  'gorge-reached': 'gorge-mid',
-  'incline-open': 'gorge-reached',
-  'incline-mid': 'incline-open',
-  'bell-reached': 'incline-mid',
-  'bay-open': 'bell-reached',
-  'bay-mid': 'bay-open',
-  'bay-reached': 'bay-mid',
-};
 
 // Share only a serialized source fixture through restore, never a mutable world between callers.
 const cache = new Map<LegStage, Seed>();
-/** The railway at a leg stage (`ring-joined` first, then each stage before it). */
+/** The railway at a leg stage, built on the stage before it in LEG_STAGES (`ring-joined` for the first). */
 export function railwayAtLegs(stage: LegStage): Seed {
   let base = cache.get(stage);
   if (!base) {
-    const before = BASE[stage];
+    const before = LEG_STAGES[LEG_STAGES.indexOf(stage) - 1];
     base = build(before ? railwayAtLegs(before) : railwayAtRing('ring-joined'), stage);
     const broken = invariant(base.w);
     need(broken === null, `${stage}: ${broken}`);
@@ -112,8 +91,7 @@ const racked = (s: Seed, k: number) => {
   return rail(s.w).depot >= sec.logs && rail(s.w).depotRails >= sec.rails;
 };
 /** A train of leg `k`'s line carries its kit. */
-const aboard = (s: Seed, k: number) =>
-  trains(s.w).some((t, slot) => RAIL_TRAINS[slot]!.line === RAIL_LEGS[k]!.line && t.legKit && t.logs + t.rails > 0);
+const aboard = (s: Seed, k: number) => legKitCarriers(s.w, RAIL_LEGS[k]!.line) > 0;
 
 function build(s: Seed, stage: LegStage): Seed {
   const w = s.w;

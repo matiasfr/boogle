@@ -78,11 +78,15 @@ export function legKitCap(w: World, k: number) {
 }
 /** Leg kit units aboard `line`'s trains (a train's `legKit` cargo; the steel works' kit is not a leg's), less train
  * `skip`'s. */
-const aboardLine = (w: World, line: number, key: 'logs' | 'rails', skip = -1) =>
-  LINE_SLOTS[line]!.reduce((n, s) => {
+function aboardKit(w: World, line: number, skip = -1): Kit {
+  let logs = 0,
+    rails = 0;
+  for (const s of LINE_SLOTS[line]!) {
     const t = w.get(Train, w.lookup(Train, s)!)!;
-    return n + (t.legKit && s !== skip ? t[key] : 0);
-  }, 0);
+    if (t.legKit && s !== skip) [logs, rails] = [logs + t.logs, rails + t.rails];
+  }
+  return { logs, rails };
+}
 /** What leg k's held counts may reach (Leg.heldLogs, Leg.heldRails): its remaining sections' bills less what is fed
  * (nothing once it is complete). The load check's bound; a lift is clamped to it. */
 export function legHeldRoom(w: World, k: number) {
@@ -93,15 +97,26 @@ export function legHeldRoom(w: World, k: number) {
 /** Leg k's units on backs: those each account lifted off its rack and has not fed or put down (Account.legLogs,
  * Account.legRails; their sum is Leg.heldLogs, Leg.heldRails), each never more than that back carries (a unit that
  * left it by a way that does not count it off). */
-function heldOf(w: World, k: number, key: 'carry' | 'rails') {
-  if (!legRow(w, k).heldLogs && !legRow(w, k).heldRails) return 0;
-  let n = 0;
-  w.each([Account], (_id, a) => (n += Math.min(key === 'carry' ? a.legLogs : a.legRails, a[key])));
-  return n;
+function heldKit(w: World, k: number): Kit {
+  if (!legRow(w, k).heldLogs && !legRow(w, k).heldRails) return NONE;
+  let logs = 0,
+    rails = 0;
+  w.each([Account], (_id, a) => {
+    logs += Math.min(a.legLogs, a.carry);
+    rails += Math.min(a.legRails, a.rails);
+  });
+  return { logs, rails };
 }
-type Kit = { logs: number; rails: number };
-const NONE: Kit = { logs: 0, rails: 0 };
-const less = (a: Kit, b: Kit): Kit => ({ logs: Math.max(0, a.logs - b.logs), rails: Math.max(0, a.rails - b.rails) });
+/** Logs and rails of a leg's kit. */
+export type Kit = { logs: number; rails: number };
+export const NONE: Kit = { logs: 0, rails: 0 };
+/** `a` less `b`, each never under 0. */
+export const less = (a: Kit, b: Kit): Kit => ({
+  logs: Math.max(0, a.logs - b.logs),
+  rails: Math.max(0, a.rails - b.rails),
+});
+export const sum = (ks: readonly Kit[]): Kit =>
+  ks.reduce((a, b) => ({ logs: a.logs + b.logs, rails: a.rails + b.rails }), NONE);
 
 // ---------------------------------------------------------------- the kit's roles (docs/plans/greybox-leg2.md, step 2)
 // A leg's kit is minted at a line's home halt (logs made, rails off the forge rack) by the trains of its MINT line: its
@@ -124,17 +139,26 @@ export const MINT_LEGS: readonly (readonly number[])[] = RAIL_LINES.map((_l, lin
 export const YARD_LEGS: readonly (readonly number[])[] = RAIL_LINES.map((_l, line) =>
   RAIL_LEGS.flatMap((l, k) => (legBuilt(k) && l.kit !== 'home' && l.line === line ? [k] : [])),
 );
+/** The legs whose kit a line's trains carry (minted or out of a yard), in RAIL_LEGS order. */
+export const SERVED_LEGS: readonly (readonly number[])[] = RAIL_LINES.map((_l, line) =>
+  [...MINT_LEGS[line]!, ...YARD_LEGS[line]!].sort((a, b) => a - b),
+);
+/** Built legs whose first kit is stocked (the stand-in, legKitStock): minted at their own line's home, on a line their
+ * first section gives its track (its first halt opens with it, so no train can bring that kit). */
+export const STOCKED_LEGS: readonly number[] = RAIL_LEGS.flatMap((l, k) =>
+  legBuilt(k) && l.kit === 'home' && RAIL_LINES[l.line]!.halts[0]?.leg?.slot === k ? [k] : [],
+);
 /** Where the mint line's trains unload yard leg k's kit: its feeder's destination halt (line 2's High Gorge). */
 export function legYardDrop(k: number) {
   const f = RAIL_LEGS[feederOf(k)]!;
   return f.railheadHalt + f.sections.length - 1;
 }
-/** Yard leg k's yard row (LegYard). */
-export const legYard = (w: World, k: number) =>
-  w.get(LegYard, w.lookup(LegYard, RAIL_LEGS[k]!.kit as number)!)!;
+/** Yard leg k's yard row (LegYard) and its id. */
+export const legYardId = (w: World, k: number) => w.lookup(LegYard, RAIL_LEGS[k]!.kit as number)!;
+export const legYard = (w: World, k: number) => w.get(LegYard, legYardId(w, k))!;
 /** What leg k still lacks for the sections owed ahead (ruling 1.4, "the kit runs ahead by the whole leg": the current
  * section and the next LEG_TUNE.kitLead - 1), less what is fed, on the rack (Rail.depot, Rail.depotRails, the open
- * leg's: one leg is open at a time) and lifted off the rack onto backs (heldOf; the step 3 review's P2-2: not every
+ * leg's: one leg is open at a time) and lifted off the rack onto backs (heldKit; the step 3 review's P2-2: not every
  * back's logs and rails, so the steel works' rails held, or a leaver's, never short it). A unit lifted off the rack
  * and then dropped, or fed to another bill, is owed again (the step 4 review's finding 2), so the leg can always
  * complete. */
@@ -143,27 +167,27 @@ function legLack(w: World, k: number): Kit {
     row = legRow(w, k),
     rail = w.get(Rail, w.single(Rail))!,
     open = legOpen(w, k),
-    out = billOf(k, row.laid, Math.min(leg.sections.length, row.laid + LEG_TUNE.kitLead));
+    out = billOf(k, row.laid, Math.min(leg.sections.length, row.laid + LEG_TUNE.kitLead)),
+    held = heldKit(w, k);
   return less(out, {
-    logs: row.logs + (open ? rail.depot : 0) + heldOf(w, k, 'carry'),
-    rails: row.rails + (open ? rail.depotRails : 0) + heldOf(w, k, 'rails'),
+    logs: row.logs + (open ? rail.depot : 0) + held.logs,
+    rails: row.rails + (open ? rail.depotRails : 0) + held.rails,
   });
 }
-/** A yard leg's lack beyond its yard and every train of its own line (less train `skip`'s): what is still to mint. */
-const yardLack = (w: World, k: number, skip = -1) =>
-  less(legLack(w, k), {
-    logs: legYard(w, k).logs + aboardLine(w, RAIL_LEGS[k]!.line, 'logs', skip),
-    rails: legYard(w, k).rails + aboardLine(w, RAIL_LEGS[k]!.line, 'rails', skip),
-  });
+/** What yard leg k's own line's trains may still take from the yard: its lack less what they carry (less `skip`'s). */
+export const legYardOwed = (w: World, k: number, skip = -1) =>
+  less(legLack(w, k), aboardKit(w, RAIL_LEGS[k]!.line, skip));
+/** A yard leg's lack beyond its yard and every train of its own line: what is still to mint. */
+const yardLack = (w: World, k: number) => less(legYardOwed(w, k), legYard(w, k));
 /** A mint line's legs, each with whether it is loading and what it is still owed, over the line's aboard units (less
  * train `skip`'s), the first leg first; `spare` is the aboard units no loading leg lacks. A leg loads while it is
  * open, or while its kit rides ahead (greybox-leg2.md, "the kit ahead"): the leg before it on the same mint line is
  * open and owed nothing more, so line 2 brings the incline's kit while the stack's last section is still fed. */
-function mintChain(w: World, line: number, skip = -1) {
+export function legMintChain(w: World, line: number, skip = -1) {
   const legs = MINT_LEGS[line]!,
     loading: boolean[] = [],
     owed: Kit[] = [];
-  let spare: Kit = { logs: aboardLine(w, line, 'logs', skip), rails: aboardLine(w, line, 'rails', skip) };
+  let spare = aboardKit(w, line, skip);
   legs.forEach((k, i) => {
     const leg = RAIL_LEGS[k]!,
       prev = owed[i - 1];
@@ -179,20 +203,13 @@ function mintChain(w: World, line: number, skip = -1) {
   });
   return { legs, loading, owed, spare };
 }
-const sum = (ks: readonly Kit[]): Kit => ks.reduce((a, b) => ({ logs: a.logs + b.logs, rails: a.rails + b.rails }), NONE);
 /** The kit still to mint for leg k: what it lacks less its yard, its own line's trains and the mint line's aboard units
- * the legs before it do not take (mintChain). Zero for a leg that is not loading. */
+ * the legs before it do not take (legMintChain). Zero for a leg that is not loading. */
 export function legKitNeed(w: World, k: number): Kit {
-  const ch = mintChain(w, legMintLine(k)),
+  const ch = legMintChain(w, legMintLine(k)),
     i = ch.legs.indexOf(k);
   return i < 0 ? NONE : ch.owed[i]!;
 }
-/** What yard leg k's own line's trains may still take from the yard: its lack less what they carry (less `skip`'s). */
-export const legYardOwed = (w: World, k: number, skip = -1) =>
-  less(legLack(w, k), {
-    logs: aboardLine(w, RAIL_LEGS[k]!.line, 'logs', skip),
-    rails: aboardLine(w, RAIL_LEGS[k]!.line, 'rails', skip),
-  });
 /** The open yard leg `line`'s trains load from the yard, or -1. */
 export const legOpenYard = (w: World, line: number) => YARD_LEGS[line]!.find((k) => legOpen(w, k)) ?? -1;
 /** The leg kit aboard train `slot` (its `legKit` cargo) that no leg its line serves can use: all of it while none is
@@ -202,7 +219,7 @@ export function legKitSurplus(w: World, slot: number): Kit {
   const r = w.get(Train, w.lookup(Train, slot)!)!,
     line = RAIL_TRAINS[slot]!.line;
   if (!r.legKit) return NONE;
-  if (MINT_LEGS[line]!.length) return less(r, sum(mintChain(w, line, slot).owed));
+  if (MINT_LEGS[line]!.length) return less(r, sum(legMintChain(w, line, slot).owed));
   const k = legOpenYard(w, line);
   return k < 0 ? { logs: r.logs, rails: r.rails } : less(r, legYardOwed(w, k, slot));
 }
@@ -232,8 +249,16 @@ export function legKitRoom(w: World, line: number, k: number) {
   return { rack, yard: less(yardLack(w, k), rack) };
 }
 /** The open legs whose kit `line`'s trains carry, in RAIL_LEGS order. */
-export const legsServed = (w: World, line: number) =>
-  [...MINT_LEGS[line]!, ...YARD_LEGS[line]!].filter((k) => legOpen(w, k)).sort((a, b) => a - b);
+export const legsServed = (w: World, line: number) => SERVED_LEGS[line]!.filter((k) => legOpen(w, k));
+/** Row `r` of `line` carries kit that open leg k may take at its drop now (legKitRoom). */
+export function legKitFits(w: World, line: number, k: number, r: Readonly<RailTrain>) {
+  const { rack, yard } = legKitRoom(w, line, k);
+  return (r.logs > 0 && rack.logs + yard.logs > 0) || (r.rails > 0 && rack.rails + yard.rails > 0);
+}
+/** Leg k's kit may be loaded: the leg is reached, or the leg before it is (its kit rides ahead). The load check's bound
+ * on legMintChain's loading test, which also needs the leg before open and owed nothing more. */
+export const legKitMayLoad = (w: World, k: number) =>
+  legReached(w, k) || (RAIL_LEGS[k]!.after >= 0 && legReached(w, RAIL_LEGS[k]!.after));
 /** The trains of `line` that may carry a leg's kit at once (`kitTrains`, call 65): on line 2 those running less one, so
  * one kit car stays empty for build 2's steel, which only line 2 carries; on any other line every running train
  * (greybox-leg2.md, step 2). */
@@ -255,17 +280,14 @@ export function legKitWaiting(w: World, line: number, r: Readonly<RailTrain>) {
   if (!r.legKit || r.logs + r.rails <= 0) return false;
   const open = legsServed(w, line);
   if (!open.length) return false;
-  return !open.some((k) => {
-    const { rack, yard } = legKitRoom(w, line, k);
-    return (r.logs > 0 && rack.logs + yard.logs > 0) || (r.rails > 0 && rack.rails + yard.rails > 0);
-  });
+  return !open.some((k) => legKitFits(w, line, k, r));
 }
 /** An empty train on `line` is owed a kit at its kit halt (within kitTrains): its mint line's loading legs are still
  * owed kit, or its open yard leg's yard holds units its trains have not taken. */
 export function legKitOwed(w: World, line: number, r: Readonly<RailTrain>) {
   if (r.logs + r.rails > 0 || legKitCarriers(w, line) >= legKitTrains(w, line)) return false;
   if (MINT_LEGS[line]!.length) {
-    const need = sum(mintChain(w, line).owed);
+    const need = sum(legMintChain(w, line).owed);
     return need.logs > 0 || need.rails > 0;
   }
   const k = legOpenYard(w, line);
@@ -274,9 +296,6 @@ export function legKitOwed(w: World, line: number, r: Readonly<RailTrain>) {
     y = legYard(w, k);
   return (owe.logs > 0 && y.logs > 0) || (owe.rails > 0 && y.rails > 0);
 }
-/** A mint line's loading legs and what each is still owed, the first first (mintChain): what its trains load at the
- * kit halt. */
-export const legMintOwed = (w: World, line: number) => mintChain(w, line);
 /** The leg and section RAIL_GATES[g] shuts, or undefined. */
 export function gateLeg(g: number) {
   for (const [leg, l] of RAIL_LEGS.entries()) {

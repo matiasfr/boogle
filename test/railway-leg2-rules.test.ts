@@ -6,14 +6,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { World } from '../src/ecs/index.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
-import { Account, Forge, Leg, LegYard, Rail, Route, Train } from '../src/sim/railway-components.ts';
+import { Account, Forge, Leg, LegYard, Rail, Route } from '../src/sim/railway-components.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
-import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
+import { LINE2, RAIL_HALTS, RAIL_LINES } from '../src/sim/railway-lines.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, ROW_LINE, legFrame, legRack } from '../src/sim/railway-route.ts';
 import { TRAIN_PHASE, fleetOf, lineStagesOf, trainDir, trainPassesBy } from '../src/sim/railway-train.ts';
 import { LINE_SLOTS, servingSlots, trainSpacing } from '../src/sim/railway-trains.ts';
 import { railTick } from '../src/sim/railway-systems.ts';
-import { rail, train, trains } from '../src/sim/railway-rows.ts';
+import { account, forge, rail, train, trains } from '../src/sim/railway-rows.ts';
 import { LOGS, roomOf, stopsOf } from '../src/sim/railway-queries.ts';
 import { RAILS } from '../src/sim/railway-line2-layout.ts';
 import {
@@ -25,7 +25,6 @@ import {
   routeRow,
 } from '../src/sim/railway-queries-route.ts';
 import { legYardHome, railLegKitRelease } from '../src/sim/railway-sys-route-kit.ts';
-import { railCounts } from '../src/sim/railway-queries-line2.ts';
 import { railValid, type Actor } from '../src/world/railway-server.ts';
 import { act, advance, apply, buildSeedWorld, invariant, restore, unaudited, type Seed } from './helpers/rail.ts';
 import { routeTicks } from './helpers/fuzz.ts';
@@ -42,8 +41,7 @@ const copy = (stage: Parameters<typeof buildSeedWorld>[0]): Seed => {
   const s = buildSeedWorld(stage);
   return { w: restore(s.w), t: s.t };
 };
-const acc = (s: Seed, pid: string) => s.w.get(Account, s.w.lookup(Account, pid)!)!;
-const forge = (w: World) => w.get(Forge, w.single(Forge))!;
+const acc = (s: Seed, pid: string) => account(s.w, pid)!;
 const actorAt = (p: { x: number; y: number; z: number }): Actor => ({
   reach: (x, z, r) => Math.hypot(x - p.x, z - p.z) <= r,
   height: (y, r) => Math.abs(y - p.y) <= r,
@@ -165,8 +163,6 @@ test('the relay conserves every unit: line 2 to the Gorge rack and yard, the ns 
   assert.ok(nsCarried > 0, 'an ns train carried kit out of the yard');
   assert.ok(headRacked > 0, "head 1's rack was stocked by the ns train");
   assert.equal(legYardDrop(INCLINE), RAIL_LINES[LINE2]!.halts.findIndex((h) => h.name === 'High Gorge'));
-  const c = railCounts(s.w);
-  assert.equal(c.total, c.total, 'counted');
   railwayCheck(s.w);
 });
 
@@ -329,7 +325,8 @@ function ask(s: Seed, f: Record<string, unknown>) {
  * the seeds taken once the incline is laid. The worst served wait on each new line. */
 function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: boolean) {
   let s = unaudited(copy(stage));
-  const rand = mulberry32(seed),
+  const t0 = s.t,
+    rand = mulberry32(seed),
     asked = new Map<string, number>(),
     worst = new Map<number, number>([
       [NS, 0],
@@ -381,7 +378,7 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
       if (!worst.has(h.line)) continue;
       const v = s.t - since;
       worst.set(h.line, Math.max(worst.get(h.line)!, v));
-      if (v > SETTLED) long.push(`${h.name} ${dir > 0 ? 'out' : 'home'} asked +${since - copy(stage).t}: ${v}`);
+      if (v > SETTLED) long.push(`${h.name} ${dir > 0 ? 'out' : 'home'} asked +${since - t0}: ${v}`);
     }
     if (k % 10 === 0)
       assert.equal(
@@ -428,6 +425,4 @@ test('replay: the same leg 2 ops from the same seed give the same hash, through 
     return s.w.hash();
   };
   assert.equal(run(), run());
-  void Train;
-  void RAIL_TRAINS;
 });

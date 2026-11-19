@@ -17,12 +17,12 @@ import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, RAIL_YARDS } from './railway-route.ts';
 import { Account, LegYard, Train } from './railway-components.ts';
 import {
-  MINT_LEGS,
-  YARD_LEGS,
+  SERVED_LEGS,
   gateLeg,
   legDone,
   legHeldRoom,
   legKitCarriers,
+  legKitMayLoad,
   legKitTrains,
   legOpen,
   legReached,
@@ -61,8 +61,7 @@ export function checkRoute(w: World) {
     // Nothing happens on a leg before it opens: not built, or the leg before it not complete (the rivet, for the first).
     // Its kit may load once the leg before it is reached (greybox-leg2.md, the kit ahead), never sooner.
     if (!legReached(w, k) && (r.laid || r.logs || r.rails || r.heldLogs || r.heldRails)) bad('leg before it opens');
-    if (!legReached(w, k) && (r.loadedLogs || r.loadedRails) && !(leg.after >= 0 && legReached(w, leg.after)))
-      bad('leg kit before its leg');
+    if ((r.loadedLogs || r.loadedRails) && !legKitMayLoad(w, k)) bad('leg kit before its leg');
     // A gated section is fed only once its barrier is open.
     if (sec?.gate !== undefined && (r.logs || r.rails) && !(routeRow(w).gates & (1 << sec.gate))) bad('leg gate');
   });
@@ -82,10 +81,8 @@ export function checkRoute(w: World) {
   // works' kit and a leg's apart).
   w.each([Train], (_id, t) => {
     if (!t.legKit) return;
-    const line = RAIL_TRAINS[t.slot]!.line,
-      served = [...MINT_LEGS[line]!, ...YARD_LEGS[line]!];
-    const live = (k: number) => legReached(w, k) || (RAIL_LEGS[k]!.after >= 0 && legReached(w, RAIL_LEGS[k]!.after));
-    if (t.logs + t.rails <= 0 || !served.some(live)) bad('leg kit mark');
+    const served = SERVED_LEGS[RAIL_TRAINS[t.slot]!.line]!;
+    if (t.logs + t.rails <= 0 || !served.some((k) => legKitMayLoad(w, k))) bad('leg kit mark');
   });
   // Each line's kit carriers within its kitTrains (line 2: running less one; greybox-leg2.md, step 2).
   RAIL_LINES.forEach((_l, line) => {
