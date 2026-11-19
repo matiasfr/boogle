@@ -6,7 +6,7 @@
 import { BUFFERS, SHUNT_CUSP_S, STALLS, TABLE, roadAt, shuntPath, stallFrame } from '../../place/home-station.ts';
 import { LINES, ORIGIN, railY } from '../../place/layout.ts';
 import { WAGON_S } from '../../sim/railway-works-layout.ts';
-import { SHUNT, shuntPose, stallRoadY } from './works-shape.ts';
+import { SHUNT, TABLE_RAIL, shuntPose, stallRoadY } from './works-shape.ts';
 
 type P3 = { x: number; y: number; z: number };
 /** Along the stall's length from its middle (the door at -4.5): the wagon parks at the door end, the shunter `gap`
@@ -41,7 +41,7 @@ const wrap = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
 
 export function createShuntPath() {
   const world = (p: { x: number; z: number }) => ({ x: p.x + ORIGIN.x, z: p.z });
-  const deck = railY(LINES.east, 0);
+  const deck = TABLE_RAIL;
   const table = world(TABLE);
   const stall = stallFrame(STALLS.open);
   /** A point of the stall road `r` metres from the table's centre, at the height the road is drawn at there. */

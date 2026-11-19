@@ -2,7 +2,7 @@
 import { WORKS_SEAMS, WORKS_CLEFT, WORKS_RACK, WORKS_ROCKS, PIER_FRAME } from '../../sim/railway-works-layout.ts';
 import { ROTUNDA_HOME, STALLS, TABLE } from '../../place/home-station.ts';
 import { ROTUNDA_BLOCK, ROTUNDA_KIT, bayFrame } from '../../place/rotunda.ts';
-import { ORIGIN } from '../../place/layout.ts';
+import { LINES, ORIGIN, railY } from '../../place/layout.ts';
 export type WorksPoint = { x: number; z: number };
 export type WorksBox = WorksPoint & {
   y: number;
@@ -162,6 +162,9 @@ export const { STALL_YAW, stallPoint, STALL_SLAB, STALL_ROAD, STALL_SOCKETS, SLA
 export const STALL_RAIL = 18.06;
 /** A rail's head over its track's rail height (./yard-track.ts and the lines: the foot 0.1 over it, the rail 0.135). */
 export const RAIL_HEAD = 0.235;
+/** The table's rail height (as layout.railY): the deck's, and the spur's and every stall road's where they meet the
+ * rim. Road 2's at s 0, which the spur runs level from (src/place/junctions.ts, J1). */
+export const TABLE_RAIL = railY(LINES.east, 0);
 /** The stall shunter and its wagon, in each one's own frame (origin on the track's centreline, y up): the wheels'
  * centres across the track (on the rails, a metre apart), each one's wheel blocks and frame slab (centre and height),
  * and how far the frame rides over the rail height so the wheels stand on the rail heads. The slabs' tops are where
@@ -173,6 +176,22 @@ export const SHUNT = (() => {
     shunter = { wheel: { y: 0.36, h: 0.3, z: 1, d: 0.55 }, body: { y: 0.46, h: 0.28, d: 3.4 } };
   return { gauge: 0.5, bogie: 1, wagon, shunter, ride: RAIL_HEAD - (wagon.wheel.y - wagon.wheel.h / 2) };
 })();
+/** Where rails meet the table's rim (docs/plans/turnouts.md, (e)): every approach rail is cut on the circle
+ * `TABLE.r + RIM_GAP` and the deck's on `TABLE.r - RIM_GAP`, so each join is a 6 cm gap square to its road.
+ * `rimCut(side)` is how far from the table's centre, along a radial road, its rails (`SHUNT.gauge` either side of the
+ * centreline) are cut: outside the rim for `1`, on the deck for `-1`. */
+const RIM_GAP = 0.03;
+export const rimCut = (side: 1 | -1) => Math.sqrt((TABLE.r + side * RIM_GAP) ** 2 - SHUNT.gauge ** 2);
+/** The kit's sleeper (src/place/look-kit.ts), metres: across its track, along it, and high. */
+export const SLEEPER = { length: 2.3, depth: 0.42, height: 0.12 } as const;
+/** The timber under each road's rail ends at the rim (./yard-track.ts, `rimTimber`): a sleeper with its inner edge on
+ * the pit's kerb (the coping, `TABLE.r` + 0.15 to + `ROTUNDA_KIT.rim`, its top `ROTUNDA_BLOCK.kerb` over the table's
+ * ground) and its outer edge 2 cm inside it, stretched down from the rails' foot onto the kerb. `at` is its centre's
+ * distance from the table's centre, `bottom` the kerb's top. */
+export const RIM_TIMBER = {
+  at: TABLE.r + ROTUNDA_KIT.rim - 0.02 - SLEEPER.depth / 2,
+  bottom: TABLE.y + ROTUNDA_BLOCK.kerb,
+} as const;
 type RailPoint = { x: number; y: number; z: number };
 /** A shunt vehicle's frame from its two bogie points on the track (`SHUNT.bogie` either side of its middle, each at
  * the track's rail height there), as the trains are posed on a chord: midway between them, heading and pitched along

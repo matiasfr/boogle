@@ -223,15 +223,19 @@ test('every stop stands beside the island, 1.65 m in from its edge and within it
     }
 });
 
+/** A rectangle's four corners, in order round it. */
+const corners = (r: Rect) =>
+  [
+    [-1, -1],
+    [-1, 1],
+    [1, 1],
+    [1, -1],
+  ].map(([i, j]) => ({
+    x: r.c.x + r.u.x * r.hd * i! - r.u.z * r.hw * j!,
+    z: r.c.z + r.u.z * r.hd * i! + r.u.x * r.hw * j!,
+  }));
 /** Separating axes: two rectangles (centre, unit `u` along their depth, half sizes) overlap. */
 function overlaps(a: Rect, b: Rect) {
-  const corners = (r: Rect) =>
-    [-1, 1].flatMap((i) =>
-      [-1, 1].map((j) => ({
-        x: r.c.x + r.u.x * r.hd * i - r.u.z * r.hw * j,
-        z: r.c.z + r.u.z * r.hd * i + r.u.x * r.hw * j,
-      })),
-    );
   for (const r of [a, b])
     for (const axis of [r.u, { x: -r.u.z, z: r.u.x }]) {
       const pa = corners(a).map((p) => p.x * axis.x + p.z * axis.z),
@@ -555,4 +559,89 @@ test('the island’s two levers stand more than twice the prompt’s reach apart
     // Nearer its own road than the other.
     assert.ok(Math.abs(at.c - road * ROAD_GAP) < Math.abs(at.c - (1 - road) * ROAD_GAP));
   });
+});
+
+test("the deck rests on the spur's and the stall's bearings", async () => {
+  const [{ tableYaws }, { rimCut }, { layHomeYard }, THREE] = await Promise.all([
+    import('../src/entities/railway/table-bridge.ts'),
+    import('../src/entities/railway/works-shape.ts'),
+    import('../src/entities/railway/home-yard.ts'),
+    import('three/webgpu'),
+  ]);
+  const bearingOfYaw = (yaw: number) => bearingOf(Math.sin(yaw), Math.cos(yaw));
+  const end = march(
+    roadAt(1, SPUR.s),
+    SPUR.segs,
+    SPUR.segs.reduce((n, s) => n + s.len, 0),
+  );
+  const [toStall, toSpur] = tableYaws().map(bearingOfYaw);
+  // The deck is one straight across the table: lying along a road either way round is resting on it.
+  const along = (a: number, b: number) => Math.min(angleGap(a, b), angleGap(a, b + 180));
+  assert.ok(along(toSpur!, bearingOf(end.x - TABLE.x, end.z - TABLE.z)) < 1e-6, `spur ${toSpur}`);
+  const open = stallFrame(STALLS.open);
+  assert.ok(along(toStall!, bearingOf(open.rim.x - TABLE.x, open.rim.z - TABLE.z)) < 1e-6, `stall ${toStall}`);
+  // At either rest each rail meets the road's across 6 cm: the deck's are cut 3 cm inside the rim, and every rail
+  // the yard lays that reaches the rim is cut 3 cm outside it (docs/plans/turnouts.md, (e)).
+  assert.ok(Math.abs(Math.hypot(rimCut(-1), 0.5) - (TABLE.r - 0.03)) < 1e-9, 'the deck rails end on r - 0.03');
+  const centre = { x: TABLE.x + ORIGIN.x, z: TABLE.z };
+  const ends = layHomeYard(H)
+    .rails()
+    .flatMap((m) => {
+      const half = new THREE.Vector3(0, 0, 3.05 / 2).applyMatrix4(m),
+        mid = new THREE.Vector3().setFromMatrixPosition(m);
+      return [half, mid.multiplyScalar(2).sub(half)].map((p) => Math.hypot(p.x - centre.x, p.z - centre.z));
+    })
+    .filter((r) => r < TABLE.r + 1);
+  // The spur's two and the seven stall roads' two each.
+  assert.equal(ends.length, 2 * (1 + 7));
+  for (const r of ends)
+    assert.ok(Math.abs(r - (TABLE.r + 0.03)) < 0.001, `a rail ends ${(r - TABLE.r).toFixed(4)} m out`);
+});
+
+test('rim timbers clear each other', async () => {
+  const [{ layHomeYard }, { SLEEPER }, { segDist }, { prefabs }] = await Promise.all([
+    import('../src/entities/railway/home-yard.ts'),
+    import('../src/entities/railway/works-shape.ts'),
+    import('../src/island/stamps.ts'),
+    import('../src/content/prefabs/roundhouse.ts'),
+  ]);
+  const kerb = prefabs.find((p) => p.key === 'roundhouse.table')!.layout as { inner: number; outer: number };
+  const centre = { x: TABLE.x + ORIGIN.x, z: TABLE.z };
+  // The timbers the yard lays, as footprints: a sleeper's size, square to its road.
+  const timbers = layHomeYard(H)
+    .rimTimbers()
+    .map((p): Rect => ({
+      c: p,
+      u: { x: Math.sin(p.yaw), z: Math.cos(p.yaw) },
+      hw: SLEEPER.length / 2,
+      hd: SLEEPER.depth / 2,
+    }));
+  assert.equal(timbers.length, 8, 'the spur and seven bays');
+  // Each lies along its road, out from the centre, on the pit's kerb: its inner edge on it, its outer inside it.
+  for (const t of timbers) {
+    const r = dist(t.c, centre);
+    // Along its road either way: the spur runs in to the table, the stall roads out from it.
+    const across = angleGap(bearingOf(t.u.x, t.u.z), bearingOf(t.c.x - centre.x, t.c.z - centre.z));
+    assert.ok(Math.min(across, 180 - across) < 1e-6, `a timber ${across.toFixed(4)} degrees off radial`);
+    assert.ok(r - t.hd >= kerb.inner && r + t.hd <= kerb.outer, `a timber's middle ${r.toFixed(3)} m out`);
+  }
+  /** Two rectangles that do not overlap are as far apart as a corner of one is from an edge of the other. */
+  const gap = (a: Rect, b: Rect) =>
+    Math.min(
+      ...[
+        [a, b],
+        [b, a],
+      ].flatMap(([p, q]) =>
+        corners(p!).flatMap((c) =>
+          corners(q!).map((e, k, all) => segDist(c.x, c.z, e.x, e.z, all[(k + 1) % 4]!.x, all[(k + 1) % 4]!.z).d),
+        ),
+      ),
+    );
+  let nearest = Infinity;
+  for (let i = 0; i < timbers.length; i++)
+    for (let j = i + 1; j < timbers.length; j++) {
+      assert.ok(!overlaps(timbers[i]!, timbers[j]!));
+      nearest = Math.min(nearest, gap(timbers[i]!, timbers[j]!));
+    }
+  assert.ok(nearest >= 0.18, `the nearest two rim timbers are ${nearest.toFixed(3)} m apart`);
 });

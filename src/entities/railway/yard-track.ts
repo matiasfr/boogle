@@ -5,7 +5,7 @@ import * as THREE from 'three/webgpu';
 import { fitInstanceBounds } from '../../render/instance-bounds.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Paint } from '../../place/look.ts';
-import { RAIL_HEAD, SHUNT } from './works-shape.ts';
+import { RAIL_HEAD, SHUNT, SLEEPER } from './works-shape.ts';
 
 /** A point on a track's centreline: world metres, `yaw` the way it runs (three.js rotation.y) and `y` its rail height
  * (layout.railY: the sleeper's base is 0.02 under it, the rail's foot 0.1 over it, as buildTrack lays them). */
@@ -15,7 +15,7 @@ export type TrackPath = (l: number) => TrackPose;
 type RailEnd = { x: number; z: number; y: number };
 
 /** The kit's sleeper and rail, metres. */
-const SLEEPER_SIZE = { length: 2.3, depth: 0.42 },
+const SLEEPER_SIZE = SLEEPER,
   RAIL_LENGTH = 3.05;
 // One source with what rides the yard's rails (./works-shape.ts): each rail's place from the centreline, and its foot
 // over the rail height, the kit rail's 0.135 m under its head (0.1, as buildTrack's TOP).
@@ -38,7 +38,8 @@ export function createYardTrack(ground: (x: number, z: number) => number) {
     plates: THREE.Matrix4[] = [],
     rails: THREE.Matrix4[] = [],
     posts: THREE.Matrix4[] = [],
-    blobs: { x: number; y: number; z: number; yaw: number }[] = [];
+    blobs: { x: number; y: number; z: number; yaw: number }[] = [],
+    rims: TrackPose[] = [];
   let split: number[] | null = null;
   const e = new THREE.Euler(0, 0, 0, 'YXZ'),
     q = new THREE.Quaternion(),
@@ -65,6 +66,18 @@ export function createYardTrack(ground: (x: number, z: number) => number) {
         height = p.y + BASE - foot;
       if (height > 0.18) posts.push(matrix(at.x, foot, at.z, p.yaw, 0, 0.7, height, 0.7));
     }
+  }
+  /** A rim timber (docs/plans/turnouts.md, (e)): a sleeper `l` along `path`, square to it and pitched with it, with
+   * its tie plates as a sleeper's, but stretched down so its foot (its highest edge's, when pitched) rests on `bottom`.
+   * No post and no contact blob: it lies on stone. */
+  function rimTimber(path: TrackPath, l: number, bottom: number) {
+    const p = path(l),
+      pitch = slope(path, l, l - 0.3, l + 0.3);
+    const top = p.y + BASE + SLEEPER_SIZE.height,
+      foot = bottom - 0.005 - (SLEEPER_SIZE.depth / 2) * Math.abs(Math.tan(pitch));
+    sleepers.push(matrix(p.x, foot, p.z, p.yaw, pitch, 1, (top - foot) / SLEEPER_SIZE.height, 1));
+    plates.push(matrix(p.x, p.y + BASE, p.z, p.yaw, pitch, 1, 1, 1));
+    rims.push(p);
   }
   /** Sleepers evenly along `path` from `from` to `to`, about 1.2 m apart, the first and last half a space in. */
   function sleepersAlong(path: TrackPath, from: number, to: number) {
@@ -172,6 +185,7 @@ export function createYardTrack(ground: (x: number, z: number) => number) {
   }
   return {
     sleeper,
+    rimTimber,
     sleepersAlong,
     rail,
     railsAlong,
@@ -183,6 +197,8 @@ export function createYardTrack(ground: (x: number, z: number) => number) {
     /** The rails laid so far, each a kit rail's matrix (its foot's middle, 3.05 m along its own z before scaling):
      * what a vehicle on the yard's track stands on. */
     rails: (): readonly THREE.Matrix4[] => rails,
+    /** The rim timbers laid so far, each its centre's pose (the timber is a sleeper's size, square to `yaw`). */
+    rimTimbers: (): readonly TrackPose[] => rims,
     /** Draws what was collected. The kit and its paints load here, so collecting needs no scene or asset. */
     async draw(owner: OwnedView) {
       const [{ kitBatch }, { LOOK, STEEL, addBlob, honeyOf, setBlob }] = await Promise.all([

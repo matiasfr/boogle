@@ -1,7 +1,7 @@
 # Turnouts: real points wherever tracks merge or cross
 
-> **Status, 17 November 2026:** Step 1 (J1 static spur turnout) is on main (#1802). Step 2 (J2 to J9 in junctions(), the level check's junction table) is on main (#2079, 18 November; reconciled by the 18 November tidy). Checkpoint A owner/designer viewing is not verified here; the owner said on 18 November to go ahead without his look at J1's stills (decisions-rail, `d-2026-11-18-decisions-page-rail`). Step 3 (Home's throat: J4, J6, J2, J3) is on main (#2256, 19 November). Step 4 (the lines: J5, J7, J8, J9) is built on `claude/turnouts-lines` (19 November), not shipped. Next: step 5; nothing else is
-> built. Written on `origin/main` at 9036299a8. It builds on the view-only track tidy pass (one sleeper set through
+> **Status, 17 November 2026:** Step 1 (J1 static spur turnout) is on main (#1802). Step 2 (J2 to J9 in junctions(), the level check's junction table) is on main (#2079, 18 November; reconciled by the 18 November tidy). Checkpoint A owner/designer viewing is not verified here; the owner said on 18 November to go ahead without his look at J1's stills (decisions-rail, `d-2026-11-18-decisions-page-rail`). Step 3 (Home's throat: J4, J6, J2, J3) is on main (#2256, 19 November). Step 4 (the lines: J5, J7, J8, J9) is on main (#2262, 19 November). Step 5 (the table's rim, T1 to T4) is built on
+> `claude/turnouts-table-rim` (19 November), not shipped. Next: step 6; nothing else is built. Written on `origin/main` at 9036299a8. It builds on the view-only track tidy pass (one sleeper set through
 > overlaps, one track kit, the stall road seated: PR 1793, `yard-track.ts` and `home-yard.ts`) and does not redo it;
 > step 1 extends that pass's shared timbers rather than drawing through `track.ts` (see step 1's departures).
 
@@ -448,10 +448,47 @@ review** row (a fresh subagent, fable medium) on its one proof look. Step 2 and 
     `deck-laid`): each reads as points from above and at eye height; no doubled sleepers. The stills predate the 1 cm
     timber ends. J8's headblocks end under Far Head's platform start (logged call).
   - **Not seen:** a train running through any of these turnouts, far LOD, phone width; not tested on a device.
-- [ ] **5. The table's rim and the stall roads (T1 to T4).** As (e): `home-station-view.ts` (the spur's end, the two
+- [x] **5. The table's rim and the stall roads (T1 to T4).** As (e): `home-station-view.ts` (the spur's end, the two
   ruin roads, the coping ring), `roundhouse-view.ts` (the open stall's road, the deck's rails, one rail height).
   `test/home-station.test.ts`: "the deck rests on the spur's and the stall's bearings"; "rim timbers clear each other".
   Proof look: `at=table`, the framing of `late-table-close.png`.
+  **Built 19 November 2026** (branch `claude/turnouts-table-rim`), against today's table, which is not (e)'s: since the
+  rotunda's blockout it is r 8 (not 4.8) with a 16 m bridge over a pit whose stone kerb runs from r 8.15 to 8.6, and
+  seven bays at 130° to 250° every 20° each have a road to the rim (not three at 160°, 190°, 220°). The 5 cm step (e)
+  measured was gone too: the yard tidy pass had put every road at the deck's height. Departures:
+  - **The files are the yard's.** The spur and every stall road are `home-yard.ts`'s (laid with `yard-track.ts`), not
+    `home-station-view.ts`'s, which is not edited. The deck's rails are `roundhouse-view.ts`'s.
+  - **One rail height:** `TABLE_RAIL` in `works-shape.ts` (road 2's at s 0, 18.30) is the deck's
+    (`roundhouse-view.ts`), the spur's and the stall roads' at the rim (`home-yard.ts`), the shunt's
+    (`shunt-path.ts`) and the turn cue's (`works-view.ts`). J1's diverging road in `src/place/junctions.ts` keeps its own `railY(LINES.east, 0)` (the same
+    value): `src/place` cannot import from the railway entity. The deck's top and what a player stands on are unchanged.
+  - **The cuts:** `rimCut(1)` and `rimCut(-1)` (`works-shape.ts`): every approach rail ends on r + 0.03, the deck's on
+    r − 0.03, each join a 6 cm gap square to its road (it was about 5 cm, by no rule). The deck rests at
+    `tableYaws()`, which `roundhouse-view.ts` now reads instead of its own copy.
+  - **No second coping ring.** The rotunda's pit kerb (48 capstones, top 0.15 m over the yard) is the coping; (e)'s 24
+    boxes at the rails' foot would stand 0.25 m over it (logged call).
+  - **Rim timbers:** one under each road's rail ends, the spur's and all seven bays' (ruins too): the kit's sleeper,
+    2.3 m across its road and 0.42 m along it, its inner edge at r 8.16 on the kerb, stretched down from the rails'
+    foot onto the kerb's top and pitched with the stall roads' ramp. It takes that road's first sleeper's place; the
+    road's own sleepers begin a space past it. Adjacent timbers clear each other by 0.57 m (the plan's 0.18 m was for
+    r 4.8 and 30°). Drawn only, no collider, as all yard track.
+  - **The test** "the deck rests on…" also holds every rail end the yard lays at the rim on r + 0.03 (16 ends) and the
+    deck's on r − 0.03. The level tool that evaluates the bridge from source (`dev/level/bridge-geometry.ts`) gains
+    `TABLE_RAIL` and `rimCut` as bindings.
+  - **The eval** gains `at=table | table-top | table-join&b=…`. `late-table-close.png` was not on this machine, so
+    `at=table` is a new framing: from outside the rim between the open stall and the 170° bay, over the open stall's
+    join and the resting deck.
+  - **Cost** (pieces from `layHomeYard` against origin/main): no new batch or draw (the yard's four). Sleepers 152 →
+    152 (eight become timbers), plates (129) and rails (148) unchanged, posts 102 → 86, contact blobs 121 → 113; the deck's
+    rails are the same two boxes. No frame time (none measured). Level check: z-fighting "likely visible" 152 → 152,
+    no row at the table; grounding and machine clearance 0 problems.
+  - **Seen** ([turnouts/](turnouts/), `trains-on`): `step5-before-table.png` and `step5-table.png` (`at=table`),
+    `step5-top.png`, `step5-before-join-open-stall.png` and `step5-join-open-stall.png` (the deck resting on the open
+    stall, at a crouching eye), `step5-join-spur.png` (the spur's end, the deck turned away): one rail height at each
+    join, a square gap, each road's rail ends on its timber on the kerb; the timbers ring the kerb from above. No
+    z-fighting seen.
+  - **Not seen:** the deck turning or resting on the spur (it rests on the open stall between the shunt's runs; its
+    rest yaws are tested), far LOD, phone width; not tested on a device.
 - [ ] **6. Blades that move, and levers that throw with them.** New `src/entities/railway/turnout-blades.ts`: one
   `createBoxBatch` for every junction's two blades, tie bar and lever arm, rewritten only while a junction changes
   (0.4 s ease, a clank through the existing sound helper). Pure `routeOf(junction, rows)` beside it with

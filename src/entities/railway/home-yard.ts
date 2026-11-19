@@ -8,7 +8,7 @@ import { bayFrame } from '../../place/rotunda.ts';
 import { LINES, LINKS, ORIGIN, railY } from '../../place/layout.ts';
 import { KIT, turnout, type RailPiece } from '../../place/turnout.ts';
 import { sleeperStations } from './track-panels.ts';
-import { stallRoadY } from './works-shape.ts';
+import { RIM_TIMBER, TABLE_RAIL, rimCut, stallRoadY } from './works-shape.ts';
 import { createYardTrack, type TrackPath, type TrackPose } from './yard-track.ts';
 
 /** Where a bay's road ends, from the table's centre (m): a metre and a half short of the back wall. */
@@ -18,7 +18,12 @@ export function layHomeYard(ground: (x: number, z: number) => number) {
   const yard = createYardTrack(ground);
   const world = (p: { x: number; z: number }) => ({ x: p.x + ORIGIN.x, z: p.z });
   const railAt = (road: 0 | 1, s: number) => railY(road ? LINES.east : LINES.north, Math.max(0, s));
-  const deck = railY(LINES.east, 0);
+  const deck = TABLE_RAIL;
+  /** At the table's rim (docs/plans/turnouts.md, (e)): a radial road's rails stop `cut` metres short of the rim, so
+   * each meets the deck's across a 6 cm gap (`rimCut`), and its rail ends lie on a rim timber `timber` metres out
+   * from the rim, over the pit's kerb. Its own sleepers begin a sleeper's space past that. */
+  const cut = rimCut(1) - home.TABLE.r,
+    timber = RIM_TIMBER.at - home.TABLE.r;
   /** A station pose (Place-local, bearing in degrees) as a track pose at rail height `y`. */
   const poseOf = (p: { x: number; z: number; bearing: number }, y: number): TrackPose => {
     const b = (p.bearing * Math.PI) / 180;
@@ -65,10 +70,11 @@ export function layHomeYard(ground: (x: number, z: number) => number) {
       Math.min(len, 14),
     );
     // The stock rail from the toe, the open blade, the closure rail, the vee's leg and a check rail; then plain track
-    // to the table's rim.
+    // to the table's rim and its timber there.
     for (const r of points.rails) if (withSpur(r)) yard.rail(r.a, r.b, r.w);
-    yard.railsAlong(spur, points.plainD, len);
-    yard.sleepersAlong(spur, shared ? shared.hi + 0.7 : 0, len);
+    yard.railsAlong(spur, points.plainD, len - cut);
+    yard.sleepersAlong(spur, shared ? shared.hi + 0.7 : 0, len - timber - 0.6);
+    yard.rimTimber(spur, len - timber, RIM_TIMBER.bottom);
   }
   // The stall roads: off the table's rim at the lines' height, down a ramp to ground-level rails at the door
   // (`stallRoadY`, which the shunt's path reads too), then level: to the back wall of the working bay, and in every
@@ -82,13 +88,11 @@ export function layHomeYard(ground: (x: number, z: number) => number) {
       yaw: f.yaw,
       y: stallRoadY(l, deck),
     });
-    for (const [from, to] of [
-      [0, ramp],
-      [ramp, end],
-    ] as const) {
-      yard.railsAlong(road, from, to);
-      yard.sleepersAlong(road, from, to);
-    }
+    yard.railsAlong(road, cut, ramp);
+    yard.sleepersAlong(road, timber + 0.6, ramp);
+    yard.railsAlong(road, ramp, end);
+    yard.sleepersAlong(road, ramp, end);
+    yard.rimTimber(road, timber, RIM_TIMBER.bottom);
   }
   // The cart's leg, shown once it is laid, everything of it together (its turnouts' parts beside the lines' rails
   // too). At each end it leaves a line at a turnout (J3 off line 1, J2 onto road 2: src/place/junctions.ts), whose

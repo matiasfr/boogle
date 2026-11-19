@@ -11,6 +11,10 @@
 //   at=back&id=J6  any junction from a player's eye between its roads past the frog, looking back at the toe
 //                  (top, eye and back mirror to the side the junction's diverging road leaves on)
 //   at=farhead     Far Head's crossover (J8 near, J7 beyond) from a player's eye on the platform's end, looking back
+//   at=table       the Roundhouse table close (step 5): from outside the rim between the open stall (190) and 170,
+//                  over the open stall's join and the deck
+//   at=table-top   the table from straight above: the rim, its kerb and every road's join
+//   at=table-join&b=190  one road's join (b: its bearing) at a crouching player's eye, beside it outside the rim
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
@@ -20,6 +24,12 @@ const { junctions } = (await import(
   '/src/place/junctions.ts' as string
 )) as typeof import('../../../src/place/junctions.ts');
 const { turnout } = (await import('/src/place/turnout.ts' as string)) as typeof import('../../../src/place/turnout.ts');
+const { garageRow, polarAt } = (await import(
+  '/src/entities/railway/garage-geo.ts' as string
+)) as typeof import('../../../src/entities/railway/garage-geo.ts');
+const { TABLE_RAIL } = (await import(
+  '/src/entities/railway/works-shape.ts' as string
+)) as typeof import('../../../src/entities/railway/works-shape.ts');
 
 type V = { x: number; y: number; z: number };
 const query = new URLSearchParams(location.search);
@@ -111,7 +121,32 @@ if (at === 'spur') {
   eye = f(-3, -2.6, 2.3);
   look = f(13, 1.6, 0);
   fov = 58;
-} else throw new Error('Choose at=spur|spur-top|spur-frog|throat-top|throat|top|eye|back|farhead');
+} else if (at.startsWith('table')) {
+  // The table's frame: a point on bearing `b` (degrees clockwise from north, as the rotunda's) `r` m from its centre,
+  // `up` over the table's rail height.
+  const { table } = garageRow();
+  const polar = (bearing: number, r: number, up = 0): V => ({ ...polarAt(table, { bearing, r }), y: TABLE_RAIL + up });
+  if (at === 'table') {
+    stand = polar(166, 9.4);
+    eye = polar(180, 12.6, 2.4);
+    look = polar(196, 4.5, -0.3);
+    fov = 58;
+  } else if (at === 'table-top') {
+    stand = polar(280, 10);
+    eye = polar(0, 0.01, 26);
+    look = polar(0, 0);
+    fov = 50;
+  } else if (at === 'table-join') {
+    const b = Number(query.get('b') ?? 190);
+    stand = polar(b + 14, 9.6);
+    eye = polar(b + 9, 9.4, 0.75);
+    look = polar(b, 8, 0.1);
+    fov = 55;
+  } else throw new Error('Choose at=table|table-top|table-join');
+} else
+  throw new Error(
+    'Choose at=spur|spur-top|spur-frog|throat-top|throat|top|eye|back|farhead|table|table-top|table-join',
+  );
 
 const body = me.body;
 if (!body) throw new Error('turnouts look: no player body');
