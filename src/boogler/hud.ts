@@ -10,8 +10,8 @@ import { replay } from './dialogue.ts';
 
 const EDGE_X = 46; // pointer inset from the left/right edges, px
 const EDGE_Y = 58; // pointer inset from the top/bottom edges, px
-const FIND_NEAR = 35; // metres: full pointer inside this
-const FIND_FAR = 60; // metres: no pointer past this
+const FIND_NEAR = 18; // metres: full pointer inside this
+const FIND_FAR = 24; // metres: no pointer past this, the same reach as his overhead mark (owner, 18 November)
 const NAME_NEAR = 10; // metres: his name plate shows inside this...
 const NAME_FAR = 12; // ...and hides again past this, so it doesn't flicker at the edge
 
