@@ -12,7 +12,9 @@
 // on the deck or in the pit (a jump off a turning deck lands "into the shallow pit as before", place.md), never thrown
 // past the kerb. `--query deckcase=pitend`: the friend waits in the pit beside the deck's end and steps under where
 // the deck will stop while it turns; it fails unless, when the deck stops, they are moved out at their own height
-// (agent-calls, 18 November), still in the pit, never lifted onto the kerb.
+// (agent-calls, 18 November), still in the pit, never lifted onto the kerb. `--query deckcase=walkoff`: the friend
+// strafes off the deck's side during the fast part of the turn and lets go as it leaves the deck; the same bar as
+// the jump, and the speed it leaves with is printed (a step, not the deck's 20 m/s).
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
@@ -34,11 +36,17 @@ const { inspectRailway, line, railReady, rw } = (await import(
   '/dev/look/rail-read.ts' as string
 )) as typeof import('../rail-read.ts');
 
+const { input } = (await import(
+  '/src/player/input-state.ts' as string
+)) as typeof import('../../../src/player/input-state.ts');
 const { pressJump, releaseJump } = (await import(
   '/src/entities/player/state.ts' as string
 )) as typeof import('../../../src/entities/player/state.ts');
 
-const second = new URLSearchParams(location.search).get('player') === '2';
+// `deckview=installer` swaps the roles, so page 1 (the look's still, sheet and video) is the installer's.
+const second =
+  (new URLSearchParams(location.search).get('player') === '2') !==
+  (new URLSearchParams(location.search).get('deckview') === 'installer');
 const deckcase = new URLSearchParams(location.search).get('deckcase') ?? 'ride';
 const PIT_RIM = 8.15; // m from the table's centre: the pit's wall (src/place/terrain.ts, tableR + 0.15)
 const who = second ? 'installer' : 'friend';
@@ -82,6 +90,51 @@ if (second) {
     })(),
     'deck installer',
   );
+  // The friend as this page draws them, against this page's drawn deck: from the garage opening (its camera pose
+  // turns the deck here only) through the moment. Off the deck's side means the avatar's centre further across than
+  // the deck's half width plus a body radius; the lag is the avatar's bearing behind the deck's axis.
+  if (deckcase === 'ride')
+    background(
+      (async () => {
+        const { remotes } = (await import(
+          '/src/netplay/net.ts' as string
+        )) as typeof import('../../../src/netplay/net.ts');
+        const friend = () => [...remotes.values()].find((r) => r.entered)?.avatar;
+        let frames = 0,
+          off = 0,
+          lag = 0,
+          widest = 0;
+        const t0 = performance.now();
+        let seen = false;
+        while (performance.now() - t0 < 16000) {
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+          const phase = garage.api?.snap().phase;
+          if (phase === 'moment') seen = true;
+          else if (seen) break;
+          const a = friend(),
+            d = works()?.garageView?.deckYaw ?? works()?.table?.yaw;
+          if (!a || d === undefined || Math.hypot(a.position.x - centre.x, a.position.z - centre.z) < 2) continue;
+          const dx = a.position.x - centre.x,
+            dz = a.position.z - centre.z;
+          const across = Math.abs(dx * Math.cos(d) - dz * Math.sin(d));
+          frames++;
+          if (across > 1.6 + 0.45) off++;
+          widest = Math.max(widest, across);
+          const behind = Math.abs(wrap(Math.atan2(dx, dz) - d));
+          lag = Math.max(lag, Math.min(behind, Math.PI - behind));
+        }
+        const deg = Math.round((lag * 180) / Math.PI);
+        say(
+          `the friend as drawn here: off the deck's side in ${off} of ${frames} frames, furthest ${round(widest)} m across, at most ${deg}° off its axis`,
+        );
+        if (frames && (off > frames * 0.05 || deg > 15))
+          throw new Error(
+            `garage-deck installer: the friend is drawn off this page's deck (${off}/${frames} frames, ${deg}°)`,
+          );
+        say('PASS: the friend drawn on this page deck');
+      })(),
+      'deck installer view',
+    );
 } else {
   // The deck's free end: along the deck's axis from the table's centre, past the copy, on the side away from the post.
   const yaw = works()?.table?.yaw ?? 0;
@@ -93,9 +146,11 @@ if (second) {
     const post = polarAt(centre, geo.post);
     if (Math.hypot(x - post.x, z - post.z) > 6) best = end;
   }
-  // pitend: in the pit 2.7 m off the deck's side, 7.3 m along it (where the pit floor rises to its wall).
+  // pitend: in the pit 2.7 m off the deck's side, 7.3 m along it (where the pit floor rises to its wall); `pitalong=3`
+  // puts them 3 m along instead, mid-deck on the level floor.
+  const pitAlong = Number(new URLSearchParams(location.search).get('pitalong') ?? 7.3);
   const across = deckcase === 'pitend' ? 2.7 : 0,
-    along = deckcase === 'pitend' ? 7.3 * best : r * best;
+    along = deckcase === 'pitend' ? pitAlong * best : r * best;
   const x = centre.x + Math.cos(yaw) * across + Math.sin(yaw) * along,
     z = centre.z - Math.sin(yaw) * across + Math.cos(yaw) * along;
   teleport(me.body!, x, groundY + (deckcase === 'pitend' ? 0.2 : 1.2), z);
@@ -128,7 +183,11 @@ if (second) {
       let fellAt = -1,
         jumps = 0,
         stepped = false,
-        widest = 0; // m: the furthest the friend got from the table's centre
+        widest = 0, // m: the furthest the friend got from the table's centre
+        offAt = -1, // ms: walkoff, when the deck stopped carrying them
+        offSpeed = 0, // m/s: the fastest they moved over the 0.5 s after
+        lastMs = 0,
+        under: { x: number; y: number; z: number } | null = null; // pitend: where they stood under the deck
       while (garage.api!.snap().phase === 'moment' && performance.now() - t0 < 15000) {
         await new Promise((resolve) => requestAnimationFrame(resolve));
         // The show-off turn runs about 2.5 s to 5 s after the moment starts; act in its fast part.
@@ -138,6 +197,19 @@ if (second) {
           setTimeout(releaseJump, 120);
           jumps++;
         }
+        // walkoff: strafe (camera-relative, the friend faces out along the deck) off its side, letting go once they
+        // are 0.3 m under its top (off it); then the speed they leave with (a throw, or a step).
+        if (deckcase === 'walkoff' && !stepped && since > 2800) {
+          stepped = true;
+          input.keys.add('KeyD');
+        }
+        if (deckcase === 'walkoff' && stepped && offAt < 0 && pos().y < y0 - 0.3) {
+          input.keys.delete('KeyD');
+          offAt = since;
+        }
+        if (offAt >= 0 && since - offAt < 500 && since > lastMs)
+          offSpeed = Math.max(offSpeed, (Math.hypot(pos().x - prev.x, pos().z - prev.z) * 1000) / (since - lastMs));
+        lastMs = since;
         if (deckcase === 'pitend' && !stepped && since > 3200) {
           // Under the deck's rest footprint (the turn is a full one), keeping the friend's own height.
           stepped = true;
@@ -146,6 +218,7 @@ if (second) {
           const l = dx * Math.sin(yaw) + dz * Math.cos(yaw);
           teleport(me.body!, centre.x + Math.sin(yaw) * l, pos().y, centre.z + Math.cos(yaw) * l);
           me.body!.velocity.set(0, 0, 0);
+          under = { x: pos().x, y: pos().y, z: pos().z };
         }
         widest = Math.max(widest, Math.hypot(pos().x - centre.x, pos().z - centre.z));
         const b = bearing();
@@ -161,7 +234,7 @@ if (second) {
         const ms = Math.round(performance.now() - t0);
         if (marks.length < 40 && ms > marks.length * 500)
           marks.push(
-            `${ms}:${round(pos().y)}/${Math.round((turned * 180) / Math.PI)}°/deck ${Math.round((deckTurned * 180) / Math.PI)}°`,
+            `${ms}:${round(pos().y)}/r${round(Math.hypot(pos().x - centre.x, pos().z - centre.z))}/${Math.round((turned * 180) / Math.PI)}°/deck ${Math.round((deckTurned * 180) / Math.PI)}°`,
           );
       }
       const end = {
@@ -181,16 +254,24 @@ if (second) {
       say(`a second later: ${settled} m under where they stood`);
       const deg = (a: number) => Math.round((a * 180) / Math.PI);
       const rNow = Math.hypot(pos().x - centre.x, pos().z - centre.z);
+      if (under)
+        say(
+          `pitend: moved ${round(Math.hypot(pos().x - under.x, pos().z - under.z))} m from under the deck, ${round(pos().y - under.y)} m up`,
+        );
+      if (deckcase === 'walkoff') say(`off the deck at ${Math.round(offAt)} ms; then at most ${round(offSpeed)} m/s`);
       say(`furthest from the table's centre ${round(widest)} m; now ${round(rNow)} m (the pit's wall at ${PIT_RIM})`);
       if (deckcase !== 'ride') {
         const caseFails =
-          deckcase === 'jump'
+          deckcase === 'jump' || deckcase === 'walkoff'
             ? [
-                widest > PIT_RIM && `a jump on the turning deck threw the friend ${round(widest)} m out, past the pit`,
+                widest > PIT_RIM &&
+                  `leaving the turning deck (${deckcase}) threw the friend ${round(widest)} m out, past the pit`,
                 rNow > PIT_RIM && `ended ${round(rNow)} m out, outside the pit`,
+                deckcase === 'walkoff' && offAt < 0 && 'never stepped off the deck',
               ]
             : [
-                pos().y - lowest > 0.1 && `lifted ${round(pos().y - lowest)} m when the deck stopped`,
+                !under && 'never stood under the deck',
+                under && pos().y - under.y > 0.1 && `lifted ${round(pos().y - under.y)} m when the deck stopped`,
                 rNow > PIT_RIM && `moved ${round(rNow)} m out, past the pit's wall onto the kerb`,
               ];
         const failed = caseFails.filter(Boolean);
