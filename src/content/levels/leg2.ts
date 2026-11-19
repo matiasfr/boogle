@@ -1,7 +1,18 @@
 // Leg 2 authoring. Private frame inputs compile to placements; the checker reads the same JSON.
 import { defineLevel } from '../../prefab/types.ts';
 
-import { frame, unit, perp, mix, offset, sub, layoutData, type Evaluated } from '../../prefab/authoring.ts';
+import {
+  frame,
+  unit,
+  perp,
+  mix,
+  offset,
+  add,
+  sub,
+  layoutData,
+  type Evaluated,
+  type Scalar,
+} from '../../prefab/authoring.ts';
 import { INCLINE_BORE } from '../../entities/route-greybox/massing.ts';
 /** Room kept clear for the rules plan: a rectangle and the heights a leg 2 box may not enter. */
 export type Reserve = { id: string; x: number; z: number; yaw: number; w: number; d: number; y0: number; y1: number };
@@ -406,26 +417,28 @@ function bore() {
     n = boreEnds(-B.half - B.wall / 2);
   pieces.push(tl.box('bore-wall-s', s.wall, s.face, B.half, side, top, band, 'black'));
   pieces.push(tl.box('bore-wall-n', n.wall, n.face, -side, -B.half, top, band, 'black'));
-  for (let l = -side; l < side; l += 1) {
+  // The roof and floor between the walls (they share no face with them: no coplanar overlap to flicker).
+  for (let l = -B.half; l < B.half; l += 1) {
     const e = boreEnds(l + 0.5);
-    pieces.push(tl.box(`bore-roof-${l + side}`, e.wall, e.face, l, l + 1, top, B.slab, 'black'));
+    pieces.push(tl.box(`bore-roof-${l + B.half}`, e.wall, e.face, l, l + 1, top, B.slab, 'black'));
   }
-  for (let l = -side; l < side; l += 2) {
+  for (let l = -B.half; l < B.half; l += 2) {
     const e = boreEnds(l + 1);
-    pieces.push(tl.box(`bore-floor-${l + side}`, e.wall, e.face, l, l + 2, B.floor, B.slab, 'black'));
+    pieces.push(tl.box(`bore-floor-${l + B.half}`, e.wall, e.face, l, l + 2, B.floor, B.slab, 'black'));
   }
   // The mouth marks: a pale frame round each opening (the split's lintel is the old portal, in gorge()).
-  const mark = (id: string, a: readonly number[], c: readonly number[], y: number, h: number) => ({
+  const mark = (id: string, a: readonly number[], c: readonly number[], y: Scalar, h: Scalar) => ({
     ...ac.box(id, a[0]!, a[1]!, c[0]!, c[1]!, y, h, 'pale'),
     solid: false,
   });
+  // Each frame stands clear of the roof's slab it meets in plan: its lintel 0.1 m over the slab's top.
   const { in: i, out: o } = MOUTH,
-    jamb = B.roof - B.floor;
-  pieces.push(mark('mouth-in-s', i.s, [44.6, 45], B.roof, jamb));
-  pieces.push(mark('mouth-in-n', i.n, [44.6, 45], B.roof, jamb));
-  pieces.push(mark('mouth-out-s', o.s.a, o.s.c, B.roof, jamb));
-  pieces.push(mark('mouth-out-n', o.n.a, o.n.c, B.roof, jamb));
-  pieces.push(mark('mouth-out-lintel', o.lintel.a, o.lintel.c, B.roof + 1.2, 1.2));
+    lintel = add(top, 0.1);
+  pieces.push(mark('mouth-in-s', i.s, [44.6, 45], lintel, sub(lintel, B.floor)));
+  pieces.push(mark('mouth-in-n', i.n, [44.6, 45], lintel, sub(lintel, B.floor)));
+  pieces.push(mark('mouth-out-s', o.s.a, o.s.c, lintel, sub(lintel, B.floor)));
+  pieces.push(mark('mouth-out-n', o.n.a, o.n.c, lintel, sub(lintel, B.floor)));
+  pieces.push(mark('mouth-out-lintel', o.lintel.a, o.lintel.c, add(lintel, 1.2), 1.2));
   const hidden = (p: object) => ({ ...p, hidden: true });
   const S = STACK_S;
   pieces.push(hidden(ac.box('stack-s-under', -120, 120, 45, 245, bottom, bottom + 10, 'black')));
@@ -455,7 +468,7 @@ function gorge() {
           MOUTH.in.lintel[1],
           44.4,
           45,
-          INCLINE_BORE.roof + 1.2,
+          add(add(INCLINE_BORE.roof, INCLINE_BORE.slab), 1.3),
           1.2,
           'pale',
         ),

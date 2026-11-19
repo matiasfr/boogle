@@ -2,7 +2,8 @@
 // `&rideLine=` (2 the `ns` line, 3 the `bay` line) to stand at its stop `&rideFrom=`, puts Buddy on its players' car,
 // turns the follow camera the way it will leave, and ends the warm-up (window.__placeDone) as the train passes
 // `&rideAt=` metres along its line, so the capture is the rider's view there. Prints the train's row and whether Buddy
-// rides it, at boarding and at the capture.
+// rides it, at boarding and at the capture. With `&rideStand=1` it boards nothing and ends the warm-up as the train
+// stands at `&rideFrom=`, for a still from the --cam, with Buddy put at `&rideStay=x,y,z` beside the shot.
 //   npm run look -- --rail-seed bell-reached --eval dev/look/evals/leg2-ride.ts \
 //     --query 'rideLine=2&rideFrom=2&rideAt=90&rideSide=1' --until window.__placeDone --real --name ride-bore-home
 const { inspectRailway } = (await import(
@@ -19,6 +20,14 @@ const { rowAt } = (await import(
   '/src/entities/railway/row-path.ts' as string
 )) as typeof import('../../../src/entities/railway/row-path.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
+const { routeAreas } = (await import(
+  '/src/entities/route-greybox/state.ts' as string
+)) as typeof import('../../../src/entities/route-greybox/state.ts');
+/** Every route area within 380 m of Buddy has mounted its massing (they mount within 400 m, asynchronously). */
+const areasIn = () => {
+  const p = me.body?.position;
+  return !!p && [...routeAreas.values()].every((a) => a.mounted || Math.hypot(p.x - a.x, p.z - a.z) > 380);
+};
 
 type Car = { role?: string; x: number; y: number; z: number; riding: boolean };
 type Train = { line: number; phase: number; at: number; track: number; along: number; cars: Car[]; kitBoard: string };
@@ -27,7 +36,8 @@ const line = Number(q.get('rideLine') ?? 2),
   from = Number(q.get('rideFrom') ?? 0),
   rideAt = Number(q.get('rideAt') ?? 100),
   // Metres off the car's middle across it (+ right of the way the cars stand), so the follow camera sees past a cab.
-  side = Number(q.get('rideSide') ?? 0);
+  side = Number(q.get('rideSide') ?? 0),
+  standOnly = q.get('rideStand') === '1';
 const w = window as Window & { __placeDone?: boolean };
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const trains = () => (inspectRailway()?.line2View as unknown as { trains: Train[] } | undefined)?.trains ?? [];
@@ -46,6 +56,7 @@ const state = (t: Train) => ({
   along: +(t.along / 100).toFixed(1),
   kitBoard: t.kitBoard,
   riding: t.cars.some((c) => c.riding),
+  cars: t.cars.map((c) => [+c.x.toFixed(2), +c.z.toFixed(2)]),
   carry: carry.on?.id ?? null,
 });
 background(
@@ -54,6 +65,19 @@ background(
     await until(() => trains().some(standingHere), `a line ${line} train standing at stop ${from}`, 600000);
     const k = trains().findIndex(standingHere),
       t = () => trains()[k]!;
+    if (standOnly) {
+      // Buddy waits by the shot (`&rideStay=x,y,z`), so what is resident by distance is there.
+      const stay = (q.get('rideStay') ?? '').split(',').map(Number);
+      if (stay.length === 3 && stay.every(Number.isFinite)) {
+        teleport(me.body!, stay[0]!, stay[1]!, stay[2]!);
+        me.body!.velocity.set(0, 0, 0);
+      }
+      await until(areasIn, 'the massing near Buddy', 60000);
+      await until(() => trains().some(standingHere), `a line ${line} train standing at stop ${from}`, 600000);
+      w.__placeDone = true;
+      console.log(`RIDE standing ${JSON.stringify(state(t()))}`);
+      return;
+    }
     const car = t().cars.find((c) => c.role === 'player') ?? t().cars[1]!,
       [e, f] = [t().cars[0]!, t().cars[1]!],
       len = Math.hypot(e.x - f.x, e.z - f.z) || 1;
@@ -72,6 +96,7 @@ background(
       `the train passes s ${rideAt}`,
       300000,
     );
+    await until(areasIn, 'the massing near Buddy', 60000);
     window.__debugCam?.clear();
     const clear = setInterval(() => window.__debugCam?.clear(), 50); // look re-applies its pose after the warm-up
     me.yaw = cam.yaw = Math.atan2(-p.ux * sign, -p.uz * sign);
