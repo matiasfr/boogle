@@ -100,6 +100,12 @@ function hostOnlyDone(section: HostSection) {
   if (ran !== HOST_ONLY[section])
     check(`HOST_ONLY counts ${section}'s checks (ran ${ran}, listed ${HOST_ONLY[section]}): update it`, false);
 }
+/** Runs `section` unless the broker net skips it, then checks its listed count. */
+async function hostSection(section: HostSection, run: () => Promise<unknown>) {
+  if (hostOnly(section)) return;
+  await run();
+  hostOnlyDone(section);
+}
 let closeWeb = async () => {};
 
 let exitCode = 1;
@@ -313,18 +319,12 @@ try {
   await railwaySeats(ctx); // Server-kind chairs survive hidden/closed peers and a sitter's reconnect.
   await railwayJumpIn(ctx); // a seeded playtest room, two players, through a restart
   hostOnlyDone('jump-in replace');
-  if (!hostOnly('request stop')) {
-    await railwayRequestStop(ctx); // a lever request, mirrored on three tabs, and the train stopping for it
-    hostOnlyDone('request stop');
-  }
-  if (!hostOnly('leaf')) {
-    await railwayLeaf(ctx); // Ring Island's leaf: two players bring it down, a late joiner, a reload and a restart
-    hostOnlyDone('leaf');
-  }
-  if (!hostOnly('carrier leaves')) {
-    await railwayCarrierLeaves(ctx); // Ring Island build 2's Checkpoint A: a steel-yard carrier leaves mid-carry
-    hostOnlyDone('carrier leaves');
-  }
+  // A lever request, mirrored on three tabs, and the train stopping for it.
+  await hostSection('request stop', () => railwayRequestStop(ctx));
+  // Ring Island's leaf: two players bring it down, a late joiner, a reload and a restart.
+  await hostSection('leaf', () => railwayLeaf(ctx));
+  // Ring Island build 2's Checkpoint A: a steel-yard carrier leaves mid-carry.
+  await hostSection('carrier leaves', () => railwayCarrierLeaves(ctx));
 
   // 11. WS_LOAD=1: R1a's and R1b's measurements (2, 4, 6 players at 0, 100, 200 ms added latency, normal and 5x
   // churn). WS_LOAD_PLAYERS=6 / WS_LOAD_LAT=200 / WS_LOAD_CHURN=5x pick rows.
