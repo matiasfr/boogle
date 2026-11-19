@@ -534,7 +534,7 @@ export async function createRailwayRoundhouse(
         );
       deckBodyYaw = drawn;
     }
-    ride.update(drawn, !deckBodies.length, dt);
+    ride.update(drawn, !still, dt);
   }
   /**
    * Where the wagon and shunter stand and how far the deck has turned, from `ready` and the mover clock alone (so a

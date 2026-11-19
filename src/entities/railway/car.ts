@@ -70,7 +70,7 @@ export type Car = {
   pitch: number;
   speedLimit: number;
   /** The body turns toward `yaw` at `spinGain` times the gap per second (eased, a train's bend), at most `spinLimit`
-   * rad/s; the turntable's deck (./table-ride.ts) follows its drawn yaw exactly. */
+   * rad/s; the turntable's deck (./railhead-state.ts, createTableRide) follows its drawn yaw exactly. */
   spinLimit: number;
   spinGain: number;
   platform: Platform;
