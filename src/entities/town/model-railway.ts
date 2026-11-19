@@ -102,10 +102,15 @@ export function planTrainSet(
   /** A heading on the land (a direction) as a yaw on the table. */
   const yawOf = (ux: number, uz: number) => Math.atan2(ux * fit.c - uz * fit.s, ux * fit.s + uz * fit.c);
   const pt: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
-  /** Where metre `m` of a line lies on the table, and which way it runs there. */
+  const spot = { x: 0, z: 0, yaw: 0 };
+  /** Where metre `m` of a line lies on the table, and which way it runs there (one shared result, read before the
+   * next call). */
   const along = (line: Line, m: number) => {
     lineAt(line, m, pt);
-    return { x: tx(pt.x, pt.z), z: tz(pt.x, pt.z), yaw: yawOf(pt.ux, pt.uz) };
+    spot.x = tx(pt.x, pt.z);
+    spot.z = tz(pt.x, pt.z);
+    spot.yaw = yawOf(pt.ux, pt.uz);
+    return spot;
   };
   let newest = -1;
   for (const q of stretches) newest = Math.max(newest, q.end);

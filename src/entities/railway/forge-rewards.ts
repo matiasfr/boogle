@@ -103,8 +103,9 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
   // The pack: the worn frame's own parts, standing as on a back, its straps toward the unload point where the bill is
   // paid, on its stand. Bare (no straps or buckles) until the little guy is done.
   const isStrap = (kind: string) => kind === 'packstrap' || kind === 's';
-  const bare = keep(merged(packParts().filter((p) => !isStrap(p[0]))));
-  const straps = keep(merged(packParts().filter((p) => isStrap(p[0]))));
+  const parts = packParts();
+  const bare = keep(merged(parts.filter((p) => !isStrap(p[0]))));
+  const straps = keep(merged(parts.filter((p) => isStrap(p[0]))));
   bare.computeBoundingBox();
   const box = bare.boundingBox!;
   const centre = new THREE.Vector3((box.min.x + box.max.x) / 2, box.min.y, (box.min.z + box.max.z) / 2);
@@ -326,7 +327,10 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
     update(dt: number) {
       const w = rd.world();
       axe.visible = forge(w).lit >= 0 && !rail(w).axe;
-      if (axe.visible && axeLeans(w) !== leaning) poseAxe(axe, (leaning = axeLeans(w)));
+      if (axe.visible) {
+        const lean = axeLeans(w);
+        if (lean !== leaning) poseAxe(axe, (leaning = lean));
+      }
       socket.visible = axe.visible && !leaning;
       if (heat !== 'cool') {
         heatT += dt;
