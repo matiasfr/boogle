@@ -260,13 +260,18 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   await checkpoint('gorge reached');
 
   // The powered pick on the north rim, up the stair; the barrier on the incline's first frame, behind the south
-  // platform.
+  // platform. The stair's four switchback flights walk about three times the straight distance, past bot.walk's default
+  // budget (a second of page time a straight metre): the climb and the way down to the barrier get four minutes each.
+  const stairWalk = async (p: { x: number; z: number }, beat: string) =>
+    check(await bot.walk(p.x / 100, p.z / 100, 3, { limit: 240000 }), beat);
   if (!granted(PICK)) {
+    await stairWalk(RAIL_GRANTS[PICK]!.at, 'climbed the stair to the powered pick');
     await press('railway-leg-pick', RAIL_GRANTS[PICK]!.at, 'take the powered pick');
     check(granted(PICK), 'the room holds the powered pick');
     await checkpoint('pick taken');
   }
   if (!(route().gates & (1 << inclineGate))) {
+    await stairWalk(RAIL_GATES[inclineGate]!.at, "walked down to the incline's barrier");
     await press('railway-leg-gate', RAIL_GATES[inclineGate]!.at, "open the incline's barrier");
     check(route().gates & (1 << inclineGate), "the incline's barrier is open");
     await checkpoint('barrier opened');
