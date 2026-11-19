@@ -119,12 +119,8 @@ G33 (running uphill is faster, he liked it) and G35 (the free shop's "$0" never 
 
 ### G28. The bench on the cliff edge is too big and has no clear purpose
 
-- **Today:** not found. No placed seat bench stands on a cliff: the halts' benches are 3 m
-  (`src/prefab/builders/halt-parts.ts`), the museum's and the workshop's are indoors. "Bench" may be a terrain bench,
-  the graded shelves of [terrain-clean](terrain-clean.md) (the canyon climb, the west descent, the top of the
-  climb). His session is gone from the endpoint, so his position cannot be pulled.
-- **Waits on the owner** (question 1). If it is a terrain shelf, it folds into [start-area](start-area.md) or
-  terrain-clean.
+- **Found (owner, 19 November 2026, with a phone screenshot, [still](grant-c8-batch/g28-bench.jpg)):** "This is the bench Grant complained about being to big. Or one of them at least". It is north of the Round, at the top of the dirt path that climbs the grassy hill toward the sea, past the works yard: a tall cut face of bare tan earth on the hill's west side with a small brown object on the shelf above it. Orchestrator's reading, not his words: a terrain bench (a graded shelf from [terrain-clean](terrain-clean.md)) whose cut is oversized for the hill, not a seat; "or one of them" means other shelves may share it.
+- **Next:** a small view job: find the shelf from the still's spot, say what the brown object is, and shrink the cut (lower the shelf, soften the face) so it reads as part of the hill; then check the other terrain benches for the same. Terrain only, no rule; under terrain-clean's rules if it changes a walk collider.
 
 ### G30. The crate with a bell floats by the water
 
@@ -261,7 +257,7 @@ Run on this plan by its author, as the design-review skill says. Reread from the
 
 At most five; each has a recommended answer first. None is recorded as his call.
 
-1. **G28: which bench did Grant mean?** Recommended: ask Grant for a screenshot or the spot; until then G28 leaves
+1. **G28: which bench did Grant mean?** Answered 19 November: the owner's screenshot (above). Was: ask Grant for a screenshot or the spot; until then G28 leaves
    the batch. If it is a terrain shelf on the canyon climb, it joins [start-area](start-area.md).
 2. **G31 and G32: line 2's laying.** Laying speed stays (your 16 November confirmation). Should the layer start
    slower, so a player at the frame can step aboard? Recommended: yes, set the room tune `railDepartureTicks` from 20
