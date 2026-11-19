@@ -4,8 +4,10 @@
 //                      and Ring Island's railhead rack, bents and counterweight (v27)
 //   pierNeed(w)        footings the pier still wants that are not already set, racked there or aboard trains
 //   worksStage(w)      a label for views and the bot
+//   upgradePool(w)     the steel every upgrade may spend: all hub stores of steel added together; today only Home's
+//                      Roundhouse bay, landed less spent (docs/plans/shared-pool.md, section 3)
 import type { World } from '../ecs/index.ts';
-import { WORKS } from './railway-works-layout.ts';
+import { WORKS, steelPool } from './railway-works-layout.ts';
 import { SEAM_THROAT, type WorksStage } from './railway-works.ts';
 import { Account, Aperture, Pile, Shed, Train, Works } from './railway-components.ts';
 import { apertureId, FOOT, pierOwed, shedId, worksId } from './railway-queries.ts';
@@ -53,3 +55,6 @@ export function worksStage(w: World): WorksStage {
   if (works.seams & SEAM_THROAT) return 'open';
   return 'breaker';
 }
+/** The one world-wide steel pool an upgrade checks its price against (docs/plans/shared-pool.md, section 3). Screens
+ * count this; a store's stack shows only what lies in that store (`steelPool` of its own row). */
+export const upgradePool = (w: World) => steelPool(w.get(Shed, shedId(w))!);

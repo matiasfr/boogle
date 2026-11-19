@@ -21,7 +21,8 @@ import { LINE2_KIT, RAILS } from './railway-line2-layout.ts';
 import { railInt } from './railway.ts';
 import { LINE2 } from './railway-lines.ts';
 import { BOILER_MAX } from './railway-train.ts';
-import { INSTALL_STEEL, installPart, installRevision, steelPool } from './railway-works-layout.ts';
+import { INSTALL_STEEL, installPart, installRevision } from './railway-works-layout.ts';
+import { upgradePool } from './railway-queries-works.ts';
 import { legDone } from './railway-queries-route.ts';
 import {
   Account,
@@ -192,7 +193,12 @@ export function steelService(w: World, r: Readonly<Row<typeof Train>>, k: number
   return usable > 0 || (w.get(Steel, steelId(w))!.rack > 0 && r.steel < STEEL.trip);
 }
 // ---------------------------------------------------------------- the install (R3)
-/** One hold at Home, from the line's shared fit revision. Parts 1/2 are free; 3/4 spend the one steel pool.
+/** The take: n steel off the upgrade pool, inside the accepted op (docs/plans/shared-pool.md, section 3, item 4).
+ * One store today, Home's Roundhouse bay; the step that adds a second store adds the fixed draw order here. */
+function spendUpgrade(w: World, n: number) {
+  w.mut(Shed, shedId(w))!.spent += n;
+}
+/** One hold at Home, from the line's shared fit revision. Parts 1/2 are free; 3/4 spend the shared upgrade pool.
  * Boiler fits adopt at the next Village stand; the cradle changes the wagon's next load, never cargo aboard. */
 export const install = defineSystem(
   'rail.install',
@@ -205,7 +211,7 @@ export const install = defineSystem(
     if (e.revision !== installRevision(l)) return 0;
     if (e.part === 4 ? l.cradle !== 0 || l.boiler < 1 : l.boiler !== e.part - 1) return 0;
     if (h.ready >= 0 && wagonSlot(w) < 0) return 0;
-    if (steelPool(h) < INSTALL_STEEL[e.part]) return 0;
+    if (upgradePool(w) < INSTALL_STEEL[e.part]) return 0;
     if (e.part === 1) {
       if (h.fitted < 0 || h.table !== 1) return 0;
       for (const home of [0, LINE2]) Object.assign(w.mut(Line, lineId(w, home))!, { boiler: 1, fitted: tick });
@@ -216,7 +222,7 @@ export const install = defineSystem(
       if (e.part === 3 && !legDone(w, 0)) return 0;
       if (e.part === 4) w.mut(Line, id)!.cradle = 1;
       else Object.assign(w.mut(Line, id)!, { boiler: e.part, fitted: tick });
-      w.mut(Shed, shedId(w))!.spent += INSTALL_STEEL[e.part];
+      spendUpgrade(w, INSTALL_STEEL[e.part]);
     }
     return 1;
   },
