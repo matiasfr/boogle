@@ -15,6 +15,10 @@
 // (agent-calls, 18 November), still in the pit, never lifted onto the kerb. `--query deckcase=walkoff`: the friend
 // strafes off the deck's side during the fast part of the turn and lets go as it leaves the deck; the same bar as
 // the jump, and the speed it leaves with is printed (a step, not the deck's 20 m/s).
+// `--query deckcase=pitjump` (recheck 2): as pitend, but under the deck's middle (`pitalong`, default 0), and the
+// friend hops (jump held `hop` ms, default 40) from the pit floor twice while the deck turns, when it has no boxes. It
+// fails if the deck's 1 cm pose marker (a registered platform, collision or not) holds the friend up inside the deck's
+// thickness, or if they end past the pit.
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
@@ -39,6 +43,9 @@ const { inspectRailway, line, railReady, rw } = (await import(
 const { input } = (await import(
   '/src/player/input-state.ts' as string
 )) as typeof import('../../../src/player/input-state.ts');
+const { carry } = (await import(
+  '/src/physics/platforms.ts' as string
+)) as typeof import('../../../src/physics/platforms.ts');
 const { pressJump, releaseJump } = (await import(
   '/src/entities/player/state.ts' as string
 )) as typeof import('../../../src/entities/player/state.ts');
@@ -148,12 +155,14 @@ if (second) {
   // pitend: in the pit 2.7 m off the deck's side, 7.3 m along it (where the pit floor rises to its wall); `pitalong=3`
   // puts them 3 m along instead, mid-deck on the level floor; `pitalong=0` under the deck's middle (one query:
   // `--query "deckcase=pitend&pitalong=0"`).
-  const pitAlong = Number(query.get('pitalong') ?? 7.3);
-  const across = deckcase === 'pitend' ? 2.7 : 0,
-    along = deckcase === 'pitend' ? pitAlong * best : r * best;
+  const inPit = deckcase === 'pitend' || deckcase === 'pitjump';
+  const pitAlong = Number(query.get('pitalong') ?? (deckcase === 'pitjump' ? 0 : 7.3));
+  const hop = Number(query.get('hop') ?? 40);
+  const across = inPit ? 2.7 : 0,
+    along = inPit ? pitAlong * best : r * best;
   const x = centre.x + Math.cos(yaw) * across + Math.sin(yaw) * along,
     z = centre.z - Math.sin(yaw) * across + Math.cos(yaw) * along;
-  teleport(me.body!, x, groundY + (deckcase === 'pitend' ? 0.2 : 1.2), z);
+  teleport(me.body!, x, groundY + (inPit ? 0.2 : 1.2), z);
   me.body!.velocity.set(0, 0, 0);
   cam.yaw = me.yaw = Math.atan2(x - centre.x, z - centre.z);
   await wait(14000);
@@ -187,7 +196,11 @@ if (second) {
         offAt = -1, // ms: walkoff, when the deck stopped carrying them
         offSpeed = 0, // m/s: the fastest they moved over the 0.5 s after
         lastMs = 0,
-        under: { x: number; y: number; z: number } | null = null; // pitend: where they stood under the deck
+        under: { x: number; y: number; z: number } | null = null, // pitend: where they stood under the deck
+        markerMs = 0, // pitjump: ms the 1 cm pose marker (hx 0.005) carried the friend
+        markerUp = 0, // pitjump: how far over the pit floor (under) the marker held them, m
+        peak = -Infinity, // pitjump: the friend's highest y
+        frameMs = 0;
       while (garage.api!.snap().phase === 'moment' && performance.now() - t0 < 15000) {
         await new Promise((resolve) => requestAnimationFrame(resolve));
         // The show-off turn runs about 2.5 s to 5 s after the moment starts; act in its fast part.
@@ -210,7 +223,20 @@ if (second) {
         if (offAt >= 0 && since - offAt < 500 && since > lastMs)
           offSpeed = Math.max(offSpeed, (Math.hypot(pos().x - prev.x, pos().z - prev.z) * 1000) / (since - lastMs));
         lastMs = since;
-        if (deckcase === 'pitend' && !stepped && since > 3200) {
+        if (deckcase === 'pitjump' && under && jumps < 2 && since > 3500 + jumps * 900) {
+          pressJump();
+          setTimeout(releaseJump, hop);
+          jumps++;
+        }
+        if (deckcase === 'pitjump') {
+          peak = Math.max(peak, pos().y);
+          if (carry.on && carry.on.hx < 0.01) {
+            markerMs += since - frameMs;
+            if (under) markerUp = Math.max(markerUp, round(pos().y - under.y));
+          }
+        }
+        frameMs = since;
+        if (inPit && !stepped && since > 3200) {
           // Under the deck's rest footprint (the turn is a full one), keeping the friend's own height.
           stepped = true;
           const dx = pos().x - centre.x,
@@ -258,6 +284,10 @@ if (second) {
         say(
           `pitend: moved ${round(Math.hypot(pos().x - under.x, pos().z - under.z))} m from under the deck, ${round(pos().y - under.y)} m up`,
         );
+      if (deckcase === 'pitjump')
+        say(
+          `pitjump: ${jumps} hops of ${hop} ms; peak ${under ? round(peak - under.y) : '?'} m over the pit floor; the marker held them ${Math.round(markerMs)} ms, up to ${markerUp} m over the floor; carry now ${carry.on ? `hx ${carry.on.hx}` : 'none'}`,
+        );
       if (deckcase === 'walkoff') say(`off the deck at ${Math.round(offAt)} ms; then at most ${round(offSpeed)} m/s`);
       say(`furthest from the table's centre ${round(widest)} m; now ${round(rNow)} m (the pit's wall at ${PIT_RIM})`);
       if (deckcase !== 'ride') {
@@ -271,10 +301,17 @@ if (second) {
               ]
             : [
                 !under && 'never stood under the deck',
+                // Review (recheck 2): the marker is mask 0 but still a registered platform (platforms.ts stands()).
+                deckcase === 'pitjump' &&
+                  markerMs > 100 &&
+                  `the deck's pose marker held the friend ${markerUp} m up, inside the turning deck, for ${Math.round(markerMs)} ms`,
                 // Review (recheck): `pitalong=0` stands them under the deck's middle, where the marker car sits; it
                 // must not shove them while the deck turns (main leaves them at r 0; this branch threw them 11 m).
                 widest > PIT_RIM && `thrown ${round(widest)} m from the centre while the deck turned, past the pit`,
-                under && pos().y - under.y > 0.1 && `lifted ${round(pos().y - under.y)} m when the deck stopped`,
+                deckcase === 'pitend' &&
+                  under &&
+                  pos().y - under.y > 0.1 &&
+                  `lifted ${round(pos().y - under.y)} m when the deck stopped`,
                 rNow > PIT_RIM && `moved ${round(rNow)} m out, past the pit's wall onto the kerb`,
               ];
         const failed = caseFails.filter(Boolean);
