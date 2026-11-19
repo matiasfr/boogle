@@ -191,7 +191,7 @@ export function partsOf(room: RoomFacts): Part[] {
           id: 'wagon',
           cat: 'cargo',
           name: 'Footing wagon',
-          desc: 'It rolled out of the stall when the kiln lit. 6 footings a trip, Quarry to Pier.',
+          desc: `It rolled out of the stall when the kiln lit. ${CRADLE_CAP[Number(room.cradleFitted)]} footings a trip, Quarry to Pier.`,
           standing: 'free',
           pill: 'Free with the kiln',
           size: 'medium',
@@ -279,6 +279,14 @@ export const BOILERS = {
   big: { ...BOILER[3], pulls: 5 },
 } as const;
 export type BoilerId = keyof typeof BOILERS;
+/** The boiler an install moment's wheels start from, the one the part replaces: the Big boiler's from the long
+ * boiler's rate (owner, 18 November 2026, docs/decisions-look.md#d-2026-11-18-decisions-page-look). */
+export const MOMENT_FROM: Record<InstallId, BoilerId> = {
+  blast: 'boiler',
+  long: 'table',
+  big: 'long',
+  cradle: 'table',
+};
 /** The line's run for the readouts: the Village stop to the line's last stop, in centimetres, or, until the island
  * halt is in the catalogue (generic-lines v26/v27), the brief's planned 1.2 km, which is the run the 10-second rule
  * and the per-minute numbers are about. */

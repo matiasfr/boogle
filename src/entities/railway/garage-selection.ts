@@ -1,6 +1,6 @@
 // What the garage's chosen part shows on the works copy (owner, 14 November 2026: "there should be some visual
-// change, and I'm looking through the different wagons"): a gold frame round the part (whole when the room has it;
-// the game's dashed "a part goes here" when it does not) that settles onto it, and a pale ghost flatbed for a car the
+// change, and I'm looking through the different wagons"): a gold frame round the part (whole and solid when the room
+// has it; the game's dashed, see-through "a part goes here" when it does not) that settles onto it, and a pale ghost flatbed for a car the
 // copy does not carry, where it rides in the train. No button and no rule: nothing is tried on, and nothing on a real
 // train changes until an install. Local to this tab: nobody else sees a selection.
 // Everything made here leaves with the view: the frames are the owner's, and the ghost car's geometry and material
@@ -22,7 +22,7 @@ const backOut = (t: number) => 1 + 2.7 * (t - 1) ** 3 + 1.7 * (t - 1) ** 2;
 
 /** `train`: the group whose frame a `Focus` is in. It must already hang under `owner`'s root. */
 export function createGarageSelection(owner: OwnedView, train: THREE.Object3D) {
-  const have = createGhostOutlines(owner, 12, 40, 0, 0.045);
+  const have = createGhostOutlines(owner, 12, 40, 0, 0.045, true);
   const goes = createGhostOutlines(owner, 320);
   const material = new THREE.MeshStandardNodeMaterial({
     color: '#e6dcc0',

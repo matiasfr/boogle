@@ -381,6 +381,21 @@ the old longer-boiler descriptions/car counts in historical prose also predate t
 untouched. Real-time smoothness/audio, the big-boiler browser moment, device behavior, the later bills and a
 ten-footing live trip remain unverified. **Not tested on a device.** No push or ship is authorized.
 
+**Three answers built (18 November 2026, view only).** From the owner's decisions page
+([look](../decisions-look.md#d-2026-11-18-decisions-page-look), [controls](../decisions-controls.md#d-2026-11-18-decisions-page-controls)):
+
+- [x] **The Big-boiler moment's wheels start from the long boiler's rate.** The moment's run-up started every
+  non-blast part from the table boiler's rate (20 m/s) while `watch()` started the Big boiler from the long boiler's;
+  both now read `MOMENT_FROM` in `garage-data.ts` (blast from the boiler, big from long, the rest from the table).
+  Printed from that table: the long boiler 25 m/s, the Big-boiler moment's start 25 m/s (was 20), fitted 30 m/s.
+  Not seen in a browser: no seed has High Gorge, the longer boiler and 6 steel together, and making one is sim work.
+- [x] **The "have" frame is solid** (see [garage-install-moment](garage-install-moment.md), "The whole frame goes
+  solid").
+- [x] **The footing wagon tile shows the live count.** Its description reads `CRADLE_CAP` at the line's cradle: "6
+  footings a trip" before the Bigger cradle, "10" after; every other word is as it was. Seen through a real cradle
+  install in one look (`steel-home`): [6](../reports/garage-moment-checkpoint/small-answers-have-frame-6.png),
+  [10](../reports/garage-moment-checkpoint/small-answers-cradle-10.png). Not tested on a device.
+
 **Step 2 as built (17 November).** The pure `bayOccupants(site, { serving })` returns Home's waiting bays in
 departure order: 250°, 150°, 170°, 210°, 230°. `rotunda-stage.ts` reads the existing line-2 serving slots; a delayed
 join keeps its covered engine until the actual row enters service. Building a bay does not change occupancy.

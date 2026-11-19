@@ -1315,7 +1315,9 @@ the rows still show what it will change. With steel home the bill is gone and th
 and I'm looking through the different wagons, whatever makes sense."):** the camera eases to a newly chosen tab or
 part instead of cutting (about a third of a second); the chosen part gets a gold frame on the works copy that settles
 onto it from a little oversize: a whole frame when the room has the part, the game's dashed "a part goes here" frame
-when it does not; and a car the room owns that the copy does not carry (the rail and kit car, the footing wagon once
+when it does not. The whole "have" frame is solid polished gold, opaque and still, so a part you own does not read as
+a part to come; the dashed frame keeps every ghost's see-through 0.6 and its 6 s breath (owner, 18 November 2026,
+[decision](../decisions-look.md#d-2026-11-18-decisions-page-look)); and a car the room owns that the copy does not carry (the rail and kit car, the footing wagon once
 coupled, the steel car once the longer boiler is on) is drawn as a pale ghost flatbed where it rides behind the first
 car, the Cargo camera sliding back along the train to it. A replaced part has no frame. The frame and ghost hide
 through a hold and a moment. There is no button and nothing is tried on: no real train changes until an install.
@@ -1344,8 +1346,12 @@ steel, and stays free. The boiler-fit copy remains “The first install. It woke
 
 **Steel is spent (17 November, garage choices step 3).** Line 2's Bigger cradle is offered beside the free longer
 boiler once steel lands. It costs 4 steel and raises the footing wagon's capacity from 6 to 10 on its next load;
-it does not change cargo already aboard or the loader deck. The Big boiler follows the longer boiler once all four
-sections to High Gorge are laid: 6 steel, 30 m/s, the same cars, adoption at the next Home stand. Its own braking
+it does not change cargo already aboard or the loader deck. The footing wagon's tile says the live count: 6
+footings a trip, or 10 once the Bigger cradle is in (owner, 18 November 2026,
+[decision](../decisions-controls.md#d-2026-11-18-decisions-page-controls)). The Big boiler follows the longer boiler once all four
+sections to High Gorge are laid: 6 steel, 30 m/s, the same cars, adoption at the next Home stand. Its install
+moment's wheels start from the longer boiler's rate (25 m/s) and run up to 30, as every other install starts from
+the boiler it replaces (owner, 18 November 2026, [decision](../decisions-look.md#d-2026-11-18-decisions-page-look)). Its own braking
 row is 3.5 m/s²; at cruise a request 128.57 m away is too late and one 128.58 m away can be served.
 The paid tiles show Later before their gate, a STEEL have/need bill without a button while short, Ready with the
 bill and Install when funded, and Installed after acceptance. Prices and capacities remain the plan's stand-ins.

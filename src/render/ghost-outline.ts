@@ -37,10 +37,25 @@ const ghostMaterial = () => {
   return shared;
 };
 
-/** Up to `max` dashes, in metres: `dash` long, `gap` apart, `thick` across. */
-export function createGhostOutlines(owner: OwnedView, max: number, dash = 0.14, gap = 0.09, thick = 0.035) {
+let solidShared: THREE.MeshStandardNodeMaterial | null = null;
+/** The garage's "have" frame, which is not a ghost (owner, 18 November 2026: "Keep the numbers; give "have" its own
+ * solid look", docs/decisions-look.md#d-2026-11-18-decisions-page-look): the same gold, opaque and still, with a
+ * polished brass finish so a part you own does not read as a part to come. Shared: never mutate or dispose it. */
+const solidMaterial = () =>
+  (solidShared ??= new THREE.MeshStandardNodeMaterial({ color: GOLD_ROPE, roughness: 0.35, metalness: 0.6 }));
+
+/** Up to `max` dashes, in metres: `dash` long, `gap` apart, `thick` across. `solid`: the opaque, still gold of a part
+ * you have, not a ghost. */
+export function createGhostOutlines(
+  owner: OwnedView,
+  max: number,
+  dash = 0.14,
+  gap = 0.09,
+  thick = 0.035,
+  solid = false,
+) {
   const geometry = new THREE.BoxGeometry(1, 1, 1);
-  const mesh = new THREE.InstancedMesh(geometry, ghostMaterial(), max);
+  const mesh = new THREE.InstancedMesh(geometry, solid ? solidMaterial() : ghostMaterial(), max);
   geometry.dispose();
   mesh.castShadow = false;
   mesh.count = 0;
