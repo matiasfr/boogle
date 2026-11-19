@@ -592,7 +592,12 @@ shared talk card, whose lines turn over on each Talk, with his `…` while one i
 three always stood, 3.1 m off the pedestal's centre on the forge side, so the pedestal's take (6 m, measured to its
 1.3 m edge) wins on and beside the pedestal and Talk wins only on his side, in front of the forge. His bubble and Talk
 wait while anything else holds the input (a card, a show, the garage, the fall, another talk) or a moment has the
-screen. Stages, from accepted state: **boiler** (on the pedestal) and **breaker** (on the pedestal). Every line is a
+screen. Stages, from accepted state: **boiler** (on the pedestal); **held** (the boiler on a rope or put down anywhere);
+**breaker** (on the pedestal; the fit casts it on the same edge as the trains wake, so the trains' line is this stage's
+second Talk); **seam** (the breaker taken, neither the Roundhouse slab's seam nor the cut's throat struck). He goes
+when the first seam is struck. In held and seam the other two have gone in and he stays at his spot, facing the next
+place with his arm out (a new `point` pose in the folk kit) while you are within 30 m: the old train's saddle, then
+the Roundhouse slab's seam, the nearer one (34 m off). Every line is a
 marked placeholder, `owner's line: <what it must tell>` ([`FOREMAN_LINES`](../../src/entities/railway/forge-guide.ts)),
 and his card's name is his role, "Foreman", until the owner names him. Local presentation over the railway rows: no
 state, command, wire or save change; a reload, a late join or a `?from=` jump finds him in the current stage, and his

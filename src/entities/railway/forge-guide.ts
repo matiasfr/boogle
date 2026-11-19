@@ -3,7 +3,9 @@
 // pedestal (part-hoist.ts) says what the waiting part is for and where it goes. On first coming within GUIDE.bark of him
 // in a stage he says one line in a bubble; within GUIDE.talk Interact offers Talk through the shared talk card, his `…`
 // marking lines still unheard in this stage (owner call "One NPC bubble"). Both wait while anything holds the input or a
-// moment has the screen. Local presentation over accepted state: the stage is read from the railway rows each frame, so
+// moment has the screen. Once the part is taken the other two go back in, and he stays until the first seam is struck,
+// pointing the way: to the old train while the boiler is out, to the Roundhouse slab's seam once the breaker is out.
+// Local presentation over accepted state: the stage is read from the railway rows each frame, so
 // a reload, a late join or a `?from=` jump finds him on the current thing; nothing is sent or saved.
 import * as THREE from 'three/webgpu';
 import { createSpeechCue } from '../../components/speech-cue/view.ts';
@@ -16,10 +18,13 @@ import { folkVoice } from '../../render/npc-voice.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { toScreen, view } from '../../render/scene.ts';
 import { boiler as boilerRow, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
+import { LINE2_OLD_TRAIN } from '../../sim/railway-line2-layout.ts';
+import { WORKS_SEAMS } from '../../sim/railway-works-layout.ts';
+import { SEAM_STALL, SEAM_THROAT } from '../../sim/railway-works.ts';
 import type { Guy } from '../../place/folk.ts';
-import { FOREMAN } from './part-hoist.ts';
+import { FOREMAN, HOIST } from './part-hoist.ts';
 
-export type GuideStage = 'boiler' | 'breaker';
+export type GuideStage = 'boiler' | 'held' | 'breaker' | 'seam';
 /** What he says, by stage. Every word is the owner's: each placeholder says what its line must tell. `bark` is said once
  * a stage in a bubble as you come near; `talk` turns over on each Talk. */
 export const FOREMAN_LINES: Record<GuideStage, { bark: string; talk: readonly string[] }> = {
@@ -30,6 +35,10 @@ export const FOREMAN_LINES: Record<GuideStage, { bark: string; talk: readonly st
       "owner's line: it is slow to drag alone, and a friend can help carry it",
     ],
   },
+  held: {
+    bark: "owner's line: the old train is that way",
+    talk: ["owner's line: which way the old train is, and that the boiler fits in its saddle"],
+  },
   breaker: {
     bark: "owner's line: the breaker opens the Works",
     talk: [
@@ -37,6 +46,16 @@ export const FOREMAN_LINES: Record<GuideStage, { bark: string; talk: readonly st
       "owner's line: the trains now carry Q6's goods",
     ],
   },
+  seam: {
+    bark: "owner's line: where the first seam is",
+    talk: ["owner's line: where the first seam is, and that the breaker strikes it"],
+  },
+};
+/** Where he points in the stages after the take, in metres: the old train's saddle, then the nearer seam (the
+ * Roundhouse slab's, 34 m off; the cut's throat is 200 m on). */
+const AIM: Partial<Record<GuideStage, { x: number; z: number }>> = {
+  held: { x: LINE2_OLD_TRAIN.x / 100, z: LINE2_OLD_TRAIN.z / 100 },
+  seam: { x: WORKS_SEAMS[0].x / 100, z: WORKS_SEAMS[0].z / 100 },
 };
 /** A placeholder for the owner's name for him: his role, as the camp's "Camp resident" is. */
 export const FOREMAN_NAME = 'Foreman';
@@ -45,8 +64,13 @@ export const GUIDE = { talk: 3.3, bark: 10, barkMin: 2.6, barkMax: 6, perWord: 0
 
 /** Which stage he is in, from accepted state: null when the pedestal has nothing for him to talk about. */
 export function guideStage(w: ReadWorld, worksOn: boolean): GuideStage | null {
-  if (boilerRow(w).state === 'pedestal') return 'boiler';
-  return worksOn && worksRow(w).breaker === 1 ? 'breaker' : null;
+  const boiler = boilerRow(w).state;
+  if (boiler === 'pedestal') return 'boiler';
+  if (boiler === 'held' || boiler === 'ground') return 'held';
+  if (!worksOn) return null;
+  const works = worksRow(w);
+  if (works.breaker === 1) return 'breaker';
+  return works.breaker === 2 && !(works.seams & (SEAM_STALL | SEAM_THROAT)) ? 'seam' : null;
 }
 
 type Deps = {
@@ -128,9 +152,19 @@ export function createForgeGuide(owner: OwnedView, { body, stage, ready }: Deps)
       const g = body();
       if (!g || !cur) return;
       at.set(g.x, (g.fy ?? g.y) + 1.5, g.z);
-      if (speaking) g.mood = 'chat';
       const p = me.body?.position,
         d = p ? Math.hypot(p.x - g.x, p.z - g.z) : Infinity;
+      // No part on the pedestal: the hoist has sent the three in; he stays and points the way for whoever is near.
+      const aim = AIM[cur];
+      if (aim) {
+        g.on = true;
+        g.mood = d <= HOIST.wave ? 'point' : 'idle';
+        g.yaw = Math.atan2(aim.x - g.x, aim.z - g.z);
+      }
+      if (speaking) {
+        g.mood = 'chat';
+        if (p) g.yaw = Math.atan2(p.x - g.x, p.z - g.z);
+      }
       if (barking) {
         barkLeft -= dt;
         if (barkLeft <= 0 || quiet() || !g.on || d > GUIDE.bark * 2) stopBark();

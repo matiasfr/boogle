@@ -102,7 +102,19 @@ type Job =
   | 'resident'
   | 'greeter'
   | 'looker';
-type Mood = 'idle' | 'walk' | 'run' | 'hammer' | 'carry' | 'wave' | 'cheer' | 'sit' | 'ride' | 'chat' | 'give';
+type Mood =
+  | 'idle'
+  | 'walk'
+  | 'run'
+  | 'hammer'
+  | 'carry'
+  | 'wave'
+  | 'cheer'
+  | 'sit'
+  | 'ride'
+  | 'chat'
+  | 'give'
+  | 'point';
 type Guy = {
   /** A commuter not stepped since he was put out or slept far from the camera, and one stepped this frame but too
    * far to draw (path-refuge.ts commuterBand): only there is a woken one stood in his refuge. */
@@ -929,6 +941,15 @@ function pose(g: Guy) {
       hr = [0.18, 0.42, 0.22];
       itemA = true;
       break;
+    case 'point': {
+      // An arm out ahead at shoulder height, the way he faces (the forge's foreman, forge-guide.ts), with a nudge.
+      const reach = Math.min(1, g.poseTime / 0.25),
+        nudge = Math.max(0, Math.sin(t * 2.4)) * 0.04;
+      hr = [0.24 - 0.08 * reach, 0.28 + 0.36 * reach, 0.02 + (0.46 + nudge) * reach];
+      pitch = -0.04 * reach;
+      tilt = -0.04 * reach;
+      break;
+    }
     case 'give':
       hr = [0.22, 0.65, 0.48];
       hl = [-0.2, 0.4, 0.18];
