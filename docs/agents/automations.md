@@ -20,6 +20,9 @@ they can be turned back on there with `enabled: true` (and the Windows ones paus
    T3, since delegates run as `gpt-6.2-sol` and `gpt-6.2-astra`. Run `npm ci` in the clone root as well as in the
    heartbeat's worktree (`npm run heartbeat` reads play sessions and device runs from the root), copy the old clone's
    `.env.local` (`REPORT_TOKEN` and the other keys), and run `npx playwright install chromium` for bots and looks.
+   In T3, set the Boogle project's `defaultThreadEnvMode` to `worktree` and `autoPull` on (owner, 19 November,
+   [decision](../decisions-process.md#d-2026-11-19-finished-work-ships-threads-in-worktrees)): new threads then get their own checkout, and the
+   root, which every delegate worktree starts from, follows main.
 2. **Paths:** the prompts name the clone's path (`C:\Users\matia\Claude work\boogle` now); change it to the new
    clone's path. `../boogle-heartbeat` is relative to the clone, so it needs no change.
 3. **Create:** open the new orchestrator thread in the Boogle project and create both tasks from it with

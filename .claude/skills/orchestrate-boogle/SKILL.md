@@ -78,6 +78,7 @@ Give every brief, Claude or Codex, the binding rules: stay on its branch, no pus
 
 ## 4. Merge
 
+- Finished work ships; nobody asks the owner first ([decision](../../../docs/decisions-process.md#d-2026-11-19-finished-work-ships-threads-in-worktrees), 19 November). A branch that is built, checked, looked at and (where `review-stamp` asks) reviewed goes to the ship queue in the same turn, and the report says it shipped. Holds are only the ones he has named: his word to hold, The Boogler's copy, and what section 9 leaves for him. A branch found waiting on "shall I ship?" is shipped by whoever finds it.
 - Ship with `npm run ship-queue -- <worktree> --wait` in the background (see [tools](../../../docs/agents/tools.md)). It queues behind any other ship on this machine, runs `ship-branch` from the trusted checkout and reports `ship: on main` when the commits land. When branches touch the same files, decide the order and rebase the later one.
 - Read the output every time. `CODE CONFLICT` means nothing shipped: send it back to rebase. If a ship stalls, look at its pull request: a cancelled check usually needs `gh run rerun <id> --failed`, and a conflict needs a fresh ship. Confirm with `git fetch` that main has the commits before saying something merged.
 - Owner call "Nothing waits for a playtest" (9 November): keep merging while the owner plays. A play session in the playdata never holds a ship, a `WORLD_NS` bump included; hold only when the owner says he is playtesting and wants it held (13 November).
