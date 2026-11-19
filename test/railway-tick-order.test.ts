@@ -9,6 +9,9 @@
 // A refactor step must NEVER re-record test/fixtures/railway-tick-order-heads.json. Only a deliberate change to the
 // tick's systems or rules (which also bumps WORLD_NS) may (see the rule and its seed-data exception in
 // test/helpers/railway-golden.ts): `TICK_ORDER_HEADS=1 node --test test/railway-tick-order.test.ts`.
+// Re-recorded 19 November: v64's yoke column moved every hash with every sequence the same (rail-yoke step 1), then
+// seed data only (step 2: the seeds take the yoke at Q1; all 12 rows are built on railwayAtQ2): every per-tick system
+// sequence and start tick the same, every hash moves.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';

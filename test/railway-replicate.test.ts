@@ -645,11 +645,15 @@ test('Q6 prediction keeps train rails aboard until funding is confirmed', () => 
   assert.equal(train(w.w, 1).rails, 32);
   seedAct(w, 'a', 'rail.pack');
   seedLogs(w, 'a', 'Q6', 32);
-  // Rails are 8 a back: all but the last row's worth by hand, then the last 8 that fund it.
+  // All but the last 8 by hand, then a rack take (16 a back with the yoke, which the seeds take at Q1) whose first 8
+  // fund it.
   seedRails(w, 'b', 'Q6', 24);
   seedAdvance(w, 80);
-  assert.ok(seedAct(w, 'b', 'rail.forgeTake') > 0);
-  assert.equal(account(w.w, 'b')!.rails, 8);
+  const [rack, held] = [forge(w.w).rack, account(w.w, 'b')!.rails];
+  const took = seedAct(w, 'b', 'rail.forgeTake');
+  assert.equal(took, Math.min(rack, 16 - held));
+  assert.ok(held + took >= 8, 'at least the last 8');
+  assert.equal(account(w.w, 'b')!.rails, held + took);
   const shown = shownOf(w.w),
     beforeRack = forge(shown).rack,
     beforeTrains = structuredClone(trains(shown));

@@ -24,6 +24,7 @@ import {
   railwayAtQ2,
   railwayAtQ4,
   railwayAtForgeLast,
+  railwayAtQ1Last,
   railwayAtQ5,
   railwayAtTrains,
   TRAIN_STAGES,
@@ -46,6 +47,8 @@ export const SEED_STAGES = [
   // Look only (forge-made rewards, step 1): the forge one log short of its frame's bill, then of lighting.
   'forge-frame-last',
   'forge-lit-last',
+  // Look only (the Rail yoke, step 2): Q1 one rail short of its bill, `a` carrying rails.
+  'q1-last',
   'q1-done',
   'q2-stocked',
   'q2-arriving',
@@ -127,6 +130,7 @@ export function buildSeedWorld(stage: SeedStage): Seed {
   }
   if (stage === 'forge-frame-last') return railwayAtForgeLast('frame');
   if (stage === 'forge-lit-last') return railwayAtForgeLast('lit');
+  if (stage === 'q1-last') return railwayAtQ1Last();
   if (stage === 'hook-taken') return railwayAtHook();
   if ((TRAIN_STAGES as readonly string[]).includes(stage)) return railwayAtTrains(stage as TrainStage);
   if (stage === 'works-stocked') {

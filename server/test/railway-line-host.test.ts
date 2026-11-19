@@ -518,7 +518,9 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     const far = await edit('s1', { op: 'rail.depotRailTake' }, [LINE2_FORGE.x, 0, LINE2_FORGE.z]);
     assert.equal(far.status, 'rejected');
     const take = await edit('s1', { op: 'rail.depotRailTake' }, [q4.x, 0, q4.z]);
-    assert.equal(take.accepted, 8, 'a row of 8 rails: half the shelf');
+    // The seeds take the Rail yoke at Q1: a row of 16 rails takes the whole shelf at once.
+    assert.equal(take.accepted, 16, 'a row of 16 rails: the whole shelf');
+    assert.equal(rail(world()).depotRails, 0);
     // Separate capacities: a full rails row refuses rails, at the shelf and at the forge rack, and logs still fit.
     const full = await edit('s1', { op: 'rail.depotRailTake' }, [q4.x, 0, q4.z]);
     assert.deepEqual([full.status, full.accepted], ['noop', 0], 'a full rails row takes no more rails');
@@ -529,14 +531,14 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     const logsBeside = await edit('s1', { op: 'rail.depotTake' }, [q4.x, 0, q4.z]);
     assert.equal(logsBeside.status, 'accepted', 'logs fit beside a full rails row');
     assert.equal(host.rules.railway.account('a')!.carry, logsBeside.accepted);
-    assert.equal(host.rules.railway.account('a')!.rails, 8);
+    assert.equal(host.rules.railway.account('a')!.rails, 16);
     // The quarry gate is up: deliveries stock the frame without starting it.
     const shut = await edit('s1', { op: 'rail.deposit', station: 'Q4', n: 8, kind: 2 }, [q4.x, 0, q4.z]);
     assert.equal(shut.status, 'accepted');
     assert.equal(qjob(world(), 3).railStock, 8);
     assert.equal(qjob(world(), 3).start, -1);
     const again = await edit('s1', { op: 'rail.depotRailTake' }, [q4.x, 0, q4.z]);
-    assert.equal(again.accepted, 8, 'an emptied row takes the shelf rest');
+    assert.deepEqual([again.status, again.accepted], ['noop', 0], 'the shelf came off in one take');
     const rails = railCounts(world()).rails!;
     assert.equal(rails.total, rails.poured);
     // A restart keeps the pack, the shelf and the rails on the back.

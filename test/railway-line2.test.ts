@@ -478,17 +478,25 @@ test('Q4: behind the quarry gate; its cart brings logs and moves rails off the f
   restoreIn(w);
   assert.equal(act(w, 'a', 'rail.lever'), 1);
   assert.equal(line2GateOpen(w.w), true);
-  // Taking from the shelf: the rails row's room clips it, beside the logs already on the back.
+  // Taking from the shelf: the rails row's room clips it, beside the logs already on the back. With the yoke (the seeds
+  // take it at Q1) a row holds 16, the whole shelf, so `a` first carries 8 forge rails (any more off the rack put down)
+  // and the shelf keeps a rest.
+  while (forge(w.w).rack < 8) advance(w, 1);
+  const fromForge = act(w, 'a', 'rail.forgeTake');
+  assert.ok(fromForge >= 8, 'a rack take of at least 8');
+  if (fromForge > 8)
+    assert.equal(act(w, 'a', 'rail.drop', { x: 91450, y: 2000, z: 900, n: fromForge - 8, kind: 2 }), fromForge - 8);
   const room = capacityOf(w.w, RAILS) - account(w.w, 'a')!.rails;
+  assert.equal(room, 8);
   assert.equal(act(w, 'a', 'rail.depotRailTake'), room, 'a full row of rails, no more');
   assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: 3 }), 3, 'logs go in with the gate down');
   advance(w, cartCycleTicks(3));
   assert.equal(rail(w.w).depotRails, LINE2_STATIONS[3]!.bill[1] - room, 'rails on a back are not brought again');
   assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: room, kind: 2 }), room);
   railsHeld(w);
-  // Rails carried from the forge by hand fill the bill first, so the shelf's rest is left over when Q4 funds: it goes
-  // back to the forge rack, in that one deposit. Meanwhile the cart owes the shelf nothing more.
-  rails(w, 'b', 'Q4', 16 - qj(w.w, 3).railStock);
+  // Rails carried from the forge by hand (a's 8 off the rack) fill the bill first, so the shelf's rest is left over when
+  // Q4 funds: it goes back to the forge rack, in that one deposit. Meanwhile the cart owes the shelf nothing more.
+  assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q4', n: 8, kind: 2 }), 8, "a's forge rails");
   assert.equal(qj(w.w, 3).railStock, 16);
   const shelfLeft = rail(w.w).depotRails;
   assert.ok(shelfLeft > 0, 'shelf rails are left over');
@@ -565,13 +573,15 @@ test('Q5: behind the sea gate; one cart trip brings all 24 of its rails, never m
   assert.equal(line2SeaOpen(w.w), true);
   assert.equal(line2GateDown(w.w, 4), true);
   assert.equal(move('a', 'rail.deposit', { station: 'Q5', n: 8 }), 0, 'the back is already empty');
-  // Eight rails stocked by hand from the forge first, so the shelf's last eight are left over when Q5 funds.
-  assert.equal(move('b', 'rail.forgeTake'), 8);
+  // Eight rails stocked by hand from the forge first, so the shelf's last eight are left over when Q5 funds. With the
+  // yoke (the seeds take it at Q1) b's rack take can be up to 16, and one row of 16 comes off the shelf.
+  const rack = forge(w.w).rack;
+  const took = move('b', 'rail.forgeTake');
+  assert.equal(took, Math.min(rack, 16));
+  assert.ok(took >= 8, 'at least eight rails off the rack');
   assert.equal(move('b', 'rail.deposit', { station: 'Q5', kind: 2, n: 8 }), 8);
-  for (const pid of ['a', 'b']) {
-    assert.equal(move(pid, 'rail.depotRailTake'), 8);
-    assert.equal(move(pid, 'rail.deposit', { station: 'Q5', kind: 2, n: 8 }), 8);
-  }
+  assert.equal(move('a', 'rail.depotRailTake'), 16, 'a row of 16 off the shelf');
+  assert.equal(move('a', 'rail.deposit', { station: 'Q5', kind: 2, n: 16 }), 16);
   restoreIn(w);
   advance(w, cartCycleTicks(4));
   assert.equal(cart(w.w).phase, CART_PHASE.REST, 'no second trip: the rails are in and the logs are on the rack');

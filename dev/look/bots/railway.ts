@@ -714,7 +714,7 @@ export async function boilerToPier(
     );
   };
   for (let trip = 0; job().start < 0; trip++) {
-    check(trip < 6, 'Q6 funds in bounded carries (16 logs, 8 rails a back)');
+    check(trip < 6, 'Q6 funds in bounded carries (16 logs a back, 8 rails or 16 with the yoke)');
     if (job().stock < 32) {
       const depot = view().depot!;
       check(await bot.use(depot[0]!, depot[2]!, 'take Q6 depot logs', /^Pick up$/), 'Q6 depot offered');

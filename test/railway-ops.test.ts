@@ -1,3 +1,6 @@
+// 2026-11-19 seed data only (rail-yoke step 2; owner-calls.md#seed-goldens): the seeds take the Rail yoke at Q1, so
+// the streams on stages built on railwayAtQ2 (boiler, call, foot: 254 hashes) move; opening and axe are unchanged and
+// every label and accepted count stays.
 // 2026-11-19 v64 Rail yoke: the rail row's new yoke column (false in every stream) moves all 321 hashes; every label and
 // accepted count stays (keyed comparison with the v63 fixture, docs/plans/rail-yoke.md step 1).
 // 2026-11-15 v48: axe trace second hardwood now accepts 4 above comfort (formerly 0); four hashes follow.

@@ -31,10 +31,14 @@ const cueText = (n: LoopNode) => {
 
 function loopReport() {
   const canonical = proposeOrders()[0]!.order;
-  const [packAt, breakerAt] = [canonical.indexOf('pack'), canonical.indexOf('breaker')];
+  const [packAt, breakerAt, yokeAt] = [
+    canonical.indexOf('pack'),
+    canonical.indexOf('breaker'),
+    canonical.indexOf('yoke'),
+  ];
   const after = (id: NodeId, at: number) => at >= 0 && canonical.indexOf(id) > at;
   const nodes = NODES.map((n) => {
-    const g = grindOf(n, { pack: after(n.id, packAt), breaker: after(n.id, breakerAt) });
+    const g = grindOf(n, { pack: after(n.id, packAt), breaker: after(n.id, breakerAt), yoke: after(n.id, yokeAt) });
     return {
       id: n.id,
       label: n.label,

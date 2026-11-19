@@ -28,12 +28,15 @@ export function act(s: Seed, pid: string, op: string, fields: Partial<RailAction
 export function advance(s: Seed, ticks: number) {
   for (let i = 0; i < ticks; i++) railTick(s.w, ++s.t);
 }
+/** Both backs emptied onto piles beside the line. A pile holds 8, so a back of 16 rails (the yoke) takes two drops;
+ * a back of 8 or fewer is one drop, as before the yoke. */
 function clear(s: Seed) {
   for (const pid of ['a', 'b'])
     for (const kind of [0, 2] as const) {
-      const a = account(s.w, pid)!;
-      const n = kind ? a.rails : a.carry;
-      if (n) need(act(s, pid, 'rail.drop', { x: 100000 + kind * 100, y: 2000, z: 3000, n, kind }) === n, 'clear: drop');
+      const left = () => (kind ? account(s.w, pid)!.rails : account(s.w, pid)!.carry);
+      for (let n = left(); n; n = left()) {
+        need(act(s, pid, 'rail.drop', { x: 100000 + kind * 100, y: 2000, z: 3000, n, kind }) > 0, 'clear: drop');
+      }
     }
 }
 function chop(s: Seed, pid: string) {
@@ -129,6 +132,9 @@ export function railwayAtQ1Funded(): Seed {
 export function railwayAtQ2(): Seed {
   const s = railwayAtQ1Funded(),
     w = s.w;
+  // The Rail yoke is made as Q1's bill goes in and stands beside the forge rail rack: taken there, as a player meets
+  // it (the axe lesson: a seed that skips a pickup breaks the bots past it). Every stage from Q2 on carries 16 rails.
+  need(act(s, 'a', 'rail.yoke') === 1, 'the rail yoke');
   advance(s, layTicks(w, 0));
   need(qjob(w, 0).completion === 1, 'Q1 laid');
   need(invariant(w) === null, 'railwayAtQ2: invariant');
@@ -256,8 +262,8 @@ export function railwayAtTrains(stage: TrainStage): Seed {
   need(broken === null, `railwayAtTrains ${stage}: ${broken}`);
   return s;
 }
-/** The pack opened, then Q6's kit from its depot into its frame: logs 16 a back with the pack, rails 8, a and b taking
- * turns until the depot is empty. */
+/** The pack opened, then Q6's kit from its depot into its frame: logs 16 a back with the pack, rails 16 with the yoke,
+ * a and b taking turns until the depot is empty. */
 export function stockQ6(s: Seed) {
   const w = s.w;
   need(act(s, 'a', 'rail.pack') === 1, 'the pack');

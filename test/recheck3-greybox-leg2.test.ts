@@ -39,7 +39,12 @@ test("rails put down 120 m off and never recovered are made up within a minute o
   // a lifts a back of rails off the West landing's rack and puts them down at the Village, where they stay.
   const n = act(s, 'a', 'rail.depotRailTake');
   assert.ok(n > 0, 'a lifts rails');
-  assert.equal(act(s, 'a', 'rail.drop', { x: 93000, y: 490, z: 300, n, kind: RAILS }), n, 'put down far off');
+  // A pile holds 8 and a back with the yoke 16: put down in piles of 8, every rail of them.
+  for (let left = n; left > 0;) {
+    const down = act(s, 'a', 'rail.drop', { x: 93000, y: 490, z: 300, n: left, kind: RAILS });
+    assert.equal(down, Math.min(left, 8), 'put down far off');
+    left -= down;
+  }
   assert.equal(acc(s, 'a').rails, 0);
   const bill = RAIL_LEGS[BAY]!.sections[0]!;
   const t0 = s.t;

@@ -132,19 +132,25 @@ test('treeGrowth is the minutes a felled tree is past regrowth (31), 0 for a sta
   }
 });
 
-test('roomIgnoringBig is a kind row less its load by count alone (8 each, 16 logs with the pack), whatever is held', () => {
+test('roomIgnoringBig is a kind row less its load by count alone (8 each, 16 logs with the pack and 16 rails with the yoke), whatever is held', () => {
   const [, w] = SEEDED[1]!;
   const pid = 'a';
   const row = () => railAccount(w, pid)!;
   const set = (load: Partial<{ carry: number; stone: number; rails: number; foot: number }>) =>
     Object.assign(w.mut(Account, w.lookup(Account, pid)!)!, { carry: 0, stone: 0, rails: 0, foot: 0 }, load);
   set({});
-  for (const kind of [LOGS, STONE, RAILS]) assert.equal(roomIgnoringBig(w, pid, kind), 8, `an empty ${kind} row`);
+  // q1-done: the seeds take the Rail yoke at Q1, so the rails row is 16.
+  for (const [kind, row] of [
+    [LOGS, 8],
+    [STONE, 8],
+    [RAILS, 16],
+  ] as const)
+    assert.equal(roomIgnoringBig(w, pid, kind), row, `an empty ${kind} row`);
   assert.equal(roomIgnoringBig(w, 'nobody', LOGS), 8, 'no account: the whole row');
   set({ carry: 3, stone: 2, rails: 1 });
   assert.deepEqual(
     [LOGS, STONE, RAILS].map((kind) => roomIgnoringBig(w, pid, kind)),
-    [5, 6, 7],
+    [5, 6, 15],
   );
   assert.equal(roomOf(w, row(), LOGS), 5, 'each kind its own room');
   set({ carry: 8 });
@@ -159,11 +165,17 @@ test('roomIgnoringBig is a kind row less its load by count alone (8 each, 16 log
   set({ foot: 1 });
   assert.equal(roomOf(w, row(), LOGS), 0, 'a footing worn: no room');
   assert.equal(roomIgnoringBig(w, pid, LOGS), 8, 'by count, the whole row');
-  // The pack doubles the logs row only.
+  // The pack doubles the logs row only (the rails row is the yoke's 16 already).
   Object.assign(w.mut(Rail, railId(w))!, { pack: true });
   set({ carry: 3, stone: 2, rails: 1 });
   assert.deepEqual(
     [LOGS, STONE, RAILS].map((kind) => roomIgnoringBig(w, pid, kind)),
-    [13, 6, 7],
+    [13, 6, 15],
+  );
+  // The yoke doubles the rails row only.
+  Object.assign(w.mut(Rail, railId(w))!, { pack: false, yoke: false });
+  assert.deepEqual(
+    [LOGS, STONE, RAILS].map((kind) => roomIgnoringBig(w, pid, kind)),
+    [5, 6, 7],
   );
 });

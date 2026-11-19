@@ -142,7 +142,7 @@ test('capacities: a hit gives 1 through Station 2 and Station 3 until it is fund
   assert.equal(invariant(s.w), null);
 });
 
-test('capacities: the pack lifts logs to 16 and the breaker stone to 16; rails stay 8; the axe gives 5 on trees', () => {
+test('capacities: the pack lifts logs to 16 and the breaker stone to 16, each its own step; the axe gives 5 on trees', () => {
   const forge = buildSeedWorld('forge-frame-last');
   assert.deepEqual(caps(forge.w), [8, 8, 8]);
   assert.equal(send(forge, 'a', 'rail.deposit', { station: 'F', kind: 0, n: 1 }), 1);
@@ -150,10 +150,10 @@ test('capacities: the pack lifts logs to 16 and the breaker stone to 16; rails s
   assert.deepEqual(caps(forge.w), [16, 8, 8], 'the pack is the logs step only');
   const works = buildSeedWorld('works-arrive');
   if (!rail(works.w).axe) assert.equal(send(works, 'a', 'rail.axe'), 1);
-  assert.deepEqual(caps(works.w), [16, 8, 8]);
+  assert.deepEqual(caps(works.w), [16, 8, 16], 'the seeds take the yoke at Q1');
   assert.equal(chop(works), 5, 'the proper axe: 5 a hit on a tree');
   assert.equal(send(works, 'a', 'rail.breaker'), 1);
-  assert.deepEqual(caps(works.w), [16, 16, 8], 'the breaker is the stone step only');
+  assert.deepEqual(caps(works.w), [16, 16, 16], 'the breaker is the stone step only');
   assert.equal(invariant(works.w), null);
 });
 

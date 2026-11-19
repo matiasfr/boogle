@@ -127,7 +127,12 @@ test('an empty forge keeps the cart waiting: it leaves only with the rails the s
     while (forgeRack(w) > 0) {
       for (const pid of ['a', 'b']) {
         const n = act(w, pid, 'rail.forgeTake');
-        if (n) assert.equal(act(w, pid, 'rail.drop', { x: 91450, y: 2000, z: 900, n, kind: 2 }), n);
+        // A pile holds 8 and a back with the yoke 16: the take goes down in piles until the back is empty.
+        for (let left = n; left > 0;) {
+          const down = act(w, pid, 'rail.drop', { x: 91450, y: 2000, z: 900, n: left, kind: 2 });
+          assert.ok(down > 0, 'the rails go down');
+          left -= down;
+        }
       }
     }
   };
