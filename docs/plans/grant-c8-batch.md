@@ -120,7 +120,81 @@ G33 (running uphill is faster, he liked it) and G35 (the free shop's "$0" never 
 ### G28. The bench on the cliff edge is too big and has no clear purpose
 
 - **Found (owner, 19 November 2026, with a phone screenshot, [still](grant-c8-batch/g28-bench.jpg)):** "This is the bench Grant complained about being to big. Or one of them at least". It is north of the Round, at the top of the dirt path that climbs the grassy hill toward the sea, past the works yard: a tall cut face of bare tan earth on the hill's west side with a small brown object on the shelf above it. Orchestrator's reading, not his words: a terrain bench (a graded shelf from [terrain-clean](terrain-clean.md)) whose cut is oversized for the hill, not a seat; "or one of them" means other shelves may share it.
-- **Next:** a small view job: find the shelf from the still's spot, say what the brown object is, and shrink the cut (lower the shelf, soften the face) so it reads as part of the hill; then check the other terrain benches for the same. Terrain only, no rule; under terrain-clean's rules if it changes a walk collider.
+- **Next (was):** a small view job: find the shelf from the still's spot, say what the brown object is, and shrink the cut (lower the shelf, soften the face) so it reads as part of the hill; then check the other terrain benches for the same. Terrain only, no rule; under terrain-clean's rules if it changes a walk collider.
+- **Where it is (builder, 19 November, matched in the running game):** the **quarry path's first bend**, south of the
+  Round, not north. The phone camera stands over the green's north edge looking south: Fine Prices is the ring's 190°
+  slot, so the dirt path between the works yard and the shop is the quarry path out of the 130° mouth. Its west
+  descent drops from (-78, 108) at 17.5 m to a 12 m landing at local (-70, 146), world (930, 146), turns east down to
+  (-50, 150) at 8 m and on into the gorge. That cuts a trench up to 6 m deep through the 18 m shoulder, and on the
+  bend's seaward (south) side stood the cut in the still: bare tan earth from the tread at 11.4 m up to 18.6 m in 2.5
+  to 3 m (about 71°), about 20 m long, 9.4 m at its tallest by the gorge (8.8 m to 18.0 m in one 2 m cell). The
+  shelf on top was the cart's level pad, 6 m deep (7 to 13 m from the path's centre line). It faces the Round, which is
+  why it reads from the town. [Before, phone angle](grant-c8-batch/g28-phone-angle-before-after.jpg) (left);
+  [before, close](grant-c8-batch/g28-close-before.jpg).
+- **The brown object is the bank cart:** a static wooden cart (a 2.4 by 4 m bed on two dark wheels), one of the
+  opening's props in `openingStops()` (`src/place/opening-stops.ts`, beside the lookout deck, the flag and the arches),
+  at `BANK_CART` in `src/place/layout.ts`. Nothing uses it; you cannot press it. Grant's "bench ... no clear purpose"
+  may well be the cart itself: from the path it is a brown slab on a cliff edge, bench-shaped. Owner question 1 asks.
+- **How the ground there is made:** `src/place/terrain.ts`. `bake()` lays every path's graded strip (`PATHS`, inner 4.8
+  m and outer 7.7 m for a plain path since terrain-clean step 5) before the tree-catalog snapshot; after it, step 6's
+  bench profile `QUARRY_WEST_BENCH` (`src/place/path-benches.ts`) cuts the same descent again (inner 4.9, outer 7.8,
+  a 2.9 m shoulder), and `gradeSupport(BANK_CART …, soft 0.5)` levels the cart's pad with half a metre of fade (step
+  6 narrowed it from 3 m so it stopped lifting the tread). The 2.9 m shoulder on a 6 to 10 m cut, and the pad's sharp
+  edge on top of it, made the cliff and the shelf.
+- **Who reads those heights:** only the client. `terrain.ts` is Local ("nothing here reaches the sim"); `server/`,
+  `src/sim`, `src/world` and `src/net` import none of it (the server's Dockerfile copies only `town-plan`,
+  `home-station` and `rotunda` from `src/place`; the Boogler's pinned land bake is the old island grid, not Place).
+  The harvest catalog reads `catalogClearMask`, snapshotted before these edits: all 350 trees and the 32 hidden
+  locally are identical (`WORLD_NS` v50's pin holds). Level-check's grounding audit and the static props stand on `H`
+  and move with it. A saved pose is browser storage and restores onto the current ground through `createPosePolicy(H…)`
+  (terrain-clean's "existing ground snap"), so a player saved on the old shelf lands on the slope, not inside it.
+  No server, sim or saved-world reader, so the build is in scope. **One wall, a client golden:**
+  `test/coast-regions.test.ts` pins the water shore's baked bytes (`COAST_BASELINE.texture` and `.sampled`), and the
+  shore bake keeps every terrain height up to 25 m (`src/render/water/coast.ts`), so any regrade moves them. Its two
+  tests failed on the builder's commit. The test's comment says to print and update the pins after an intentional
+  terrain change; the orchestrator reprinted them on the rebased branch and updated the two pins in the ship
+  (`PRINT_COAST_BASELINE=1`): texture `ed69c3bf51851763f63cf691032122b25d776f16a34eae6abf0c15179fec41e4`, sampled
+  `c122e3f04c01f51b76f06f86d5ba8727790c55e44cbe3fbfd3b2d78d5ed4872e` (width 2015, height 780 unchanged).
+- **Built (`claude/g28-cliff-bench`):** two inputs, no special case for one spot. (1) `strip()` takes an optional
+  batter: a cut's shoulder widens to 1.2 m per metre of cut, up to 8 m past the tread's inner edge, fading out over
+  the 4 m beyond the gorge's walls so they keep their cliffs; only the quarry west bench uses it. (2) The cart moves to
+  the crest past the new slope, (-59, 163) at 17.7 m (was (-62, 157) at 18.6 m), turned lengthwise along the crest,
+  with a 3 m support fade now that it is 15 m from the tread. Through the old cart spot the ground now climbs 11.1 m to
+  17.7 m over about 6.5 m (about 45° on average) as grass; the trench's west wall goes 12 m to 18.7 m over 8 m.
+  Unwalkable ground over the bend (1 m map, local x -84 to -44, z 126 to 174): 304 cells on main, 176 on the branch.
+  155 grid cells move: lowered up to 8.63 m, raised up to 1.74 m (the cart's new seat). The tread, its width and
+  its landings are unchanged. [After, phone angle](grant-c8-batch/g28-phone-angle-before-after.jpg) (right);
+  [after, close](grant-c8-batch/g28-close-after.jpg); [the walk](grant-c8-batch/g28-walk.jpg) (the game's own input,
+  W held and steered at the waypoints, (-77, 114) down round the bend to (-49, 147) in 10 s, the body 0.45 to 0.50
+  m over the ground all the way: no stall, drop or sinking).
+- **Left as it is:** where the east leg nears the gorge (local x -60 to -51, z 156 to 158) the cut is 9 to 10 m deep and
+  the 8 m cap leaves a strip about 5 m tall at about 60° (12.1 m to 16.6 m at x -60); on main it was 9.2 m in one
+  cell. A 10 m cap narrows it but adds as much steep ground on the seaward side, so it was not taken. The knob inside
+  the hairpin keeps a 7.8 m face over 8 m of path at the gorge corner (10.7 m over 28 m on main).
+- **Checks:** `npm run level-check` exit 0 before and after: production grounding 5,247 placements, 0 problems; drawn
+  z-fighting 152 likely / 62 joints / 609 hidden before and after; machine clearance and timber against track 0
+  problems; one fewer cell reachable only by the second jump's hop (438 to 437, now walkable). Far ground (`LEVELS`
+  in `src/place/far-ground.ts`): over every 4 m or 8 m block the change touches, the coarse ground stands at most
+  1.58 m and 3.80 m above the full grid (main, same blocks: 3.15 m and 7.81 m); over the cart's seat at most 0.30 m.
+- **Other benches like it** (same measure on main, every path's graded ground: per path sample and side out to 16 m,
+  the rise steeper than walkable, counted only where the path's strips lowered the ground by 2 m or more; G28's own is
+  7.2 m under the cart and 9.4 m at its tallest, so this lists 5 m and up). Not changed here; a list for the owner.
+  These four are the ones outside the gorge's own walls:
+  1. **The camp path's climb round the ridge to the machine,** world (951.8, -177.1): 19.7 m on its south side over
+     97 m of path, and 11.5 m on its north side at (937.2, -172.8) over 28 m: a trench of tan walls on both sides at
+     the top of the walk. [Still](grant-c8-batch/g28-other-camp-ridge.jpg).
+  2. **The quarry path's climb out of the gorge's east side,** world (993.8, 151.3), at the 8 m landing near (-10, 150):
+     15.6 m over 38 m, a tan canyon. [Still](grant-c8-batch/g28-other-quarry-east.jpg).
+  3. **The shore ramp up from the dock,** world (814.4, 12.6): 11.7 m on its north side over 15 m, an orange cut beside
+     "Line to Bell Rock". [Still](grant-c8-batch/g28-other-shore-ramp.jpg).
+  4. **The quarry path's climb onto the table,** world (1020.0, 160.0) and (1024.4, 154.8): 8.7 m and 8.3 m on both
+     sides over about 21 m, the cutting the opening's east arch spans. [Still](grant-c8-batch/g28-other-quarry-table.jpg).
+
+  Also over 5 m but inside or against the gorge's walls, where the path descends a cliff by design: the camp path's
+  footbridge descent, world (958.0, -88.8), 27.6 m, and (939.9, -79.8), 14.8 m; the quarry path's footbridge, (981.6,
+  120.3), 22.7 m, and (958.8, 129.2), 14.3 m; one sample at the camp path's ridge bend, (918.0, -165.0), 7.0 m.
+  The batter built here would soften 1, 2 and 4 if the owner wants it (the gorge fade keeps the cliffs that are the
+  gorge's).
 
 ### G30. The crate with a bell floats by the water
 
@@ -258,7 +332,11 @@ Run on this plan by its author, as the design-review skill says. Reread from the
 At most five; each has a recommended answer first. None is recorded as his call.
 
 1. **G28: which bench did Grant mean?** Answered 19 November: the owner's screenshot (above). Was: ask Grant for a screenshot or the spot; until then G28 leaves
-   the batch. If it is a terrain shelf on the canyon climb, it joins [start-area](start-area.md).
+   the batch. If it is a terrain shelf on the canyon climb, it joins [start-area](start-area.md). Built on
+   `claude/g28-cliff-bench`: the cut leans back as grass and the bank cart sits on the crest. Still open: was his
+   "bench" the cart itself (a brown slab on the edge, with no use)? Recommended: keep it on the crest as built; if he
+   meant the cart, remove it from the opening's props. And should the other four benches in G28's list get the same
+   batter? Recommended: yes for the camp ridge climb and the quarry table cutting, after a look at each.
 2. **G31 and G32: line 2's laying.** Laying speed stays (your 16 November confirmation). Should the layer start
    slower, so a player at the frame can step aboard? Recommended: yes, set the room tune `railDepartureTicks` from 20
    to 50 (about 5 s of slow start), with no code change, and play it once.

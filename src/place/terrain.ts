@@ -165,16 +165,20 @@ function strip(
   /** false: leave `clearMask` as it was. The tree catalog reads it, and `heights` too (its h < 4 filter), so a strip
    * that must keep the catalog also has to skip every cell whose height could cross that filter. */
   clears = true,
+  /** A cut's wall leans back `per` metres for each metre of cut, to at most `max` past `inner` (never under `outer`).
+   * The lean fades out over the 4 m beyond the gorge's walls, which stay near-vertical. */
+  batter?: { per: number; max: number },
 ) {
   const best = new Map<number, [number, number]>();
-  const cells = Math.ceil(outer / CELL) + 1;
+  const reach = batter ? Math.max(outer, inner + batter.max) : outer;
+  const cells = Math.ceil(reach / CELL) + 1;
   for (const [x, z, y] of samples) {
     const ci = Math.round((x - GRID.x0) / CELL),
       cj = Math.round((z - GRID.z0) / CELL);
     for (let j = Math.max(0, cj - cells); j <= Math.min(NZ - 1, cj + cells); j++)
       for (let i = Math.max(0, ci - cells); i <= Math.min(NX - 1, ci + cells); i++) {
         const d = Math.hypot(cellX(i) - x, cellZ(j) - z);
-        if (d > outer) continue;
+        if (d > reach) continue;
         const k = at(i, j),
           b = best.get(k);
         if (!b || d < b[0]) best.set(k, [d, y]);
@@ -184,7 +188,11 @@ function strip(
     const i = k % NX,
       j = Math.floor(k / NX);
     if (skip?.(cellX(i), cellZ(j), y, k)) continue;
-    const t = smoothstep(outer, inner, d);
+    const cut = heights[k]! - y,
+      wall = GORGE.bank + GORGE.wall;
+    const lean = batter && cut > 0 ? smoothstep(wall, wall + 4, gorgeD(cellX(i), cellZ(j))) : 0;
+    const leaned = batter ? inner + Math.min(batter.max, Math.max(outer - inner, cut * batter.per)) : outer;
+    const t = smoothstep(outer + (leaned - outer) * lean, inner, d);
     heights[k] = heights[k]! + (y - heights[k]!) * t;
     if (clears) clearMask[k] = Math.max(clearMask[k]!, t);
     if (paintInner !== false) pathMask[k] = Math.max(pathMask[k]!, smoothstep(paintInner + 1, paintInner - 0.5, d));
@@ -468,7 +476,9 @@ function gradeSupport(wx: number, wz: number, y: number, w: number, d: number, y
 // The cart's soft support skirt used to overwrite the west tread (2.87 m cross fall at -60,148).
 // Cut the benches before restoring narrowly feathered bearings; the old 3 m support skirt is unnecessary here.
 // Two metres of tread plus a cell diagonal, then a 2.9 m shoulder; paint keeps its existing width.
-strip(samplePath(QUARRY_WEST_BENCH, 0.1, true), 4.9, 7.8, false);
+// The west descent cuts 6 to 10 m into the shoulder at the first bend: its walls lean back as a grassy slope
+// (G28, docs/plans/grant-c8-batch.md) rather than standing as a cliff with a shelf on top.
+strip(samplePath(QUARRY_WEST_BENCH, 0.1, true), 4.9, 7.8, false, undefined, true, { per: 1.2, max: 8 });
 strip(samplePath(QUARRY_EAST_BENCH, 0.1, true), 4.9, 7.8, false);
 // Six clear metres at the turn, including the corner triangles; run-ins hold the same 8 m datum.
 strip([[-10, 150, 8]], 5.9, 8.8, false);
@@ -480,8 +490,8 @@ if (SHORE_COAST)
     false,
     (x, z) => Math.hypot(x - TOWN_CENTRE.x, z - TOWN_CENTRE.z) <= TOWN_GROUND.r,
   );
-// Keep a cell of flat bearing around each prop, but only half a metre of fade into the adjacent tread.
-gradeSupport(BANK_CART.x + ORIGIN.x, BANK_CART.z, BANK_CART.y, 3, 4, BANK_CART.yaw, 0.5);
+// Keep a cell of flat bearing around the cart; it stands on the crest past the leaned wall, so its fade is a full 3 m.
+gradeSupport(BANK_CART.x + ORIGIN.x, BANK_CART.z, BANK_CART.y, 3, 4, BANK_CART.yaw, 3);
 if (SHORE_COAST)
   gradeSupport(
     SHORE_HOP.x + ORIGIN.x,
