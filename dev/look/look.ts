@@ -40,6 +40,7 @@ const opt: {
   room?: string;
   railSeed?: string;
   query: string | undefined;
+  query2?: string;
   hud: boolean;
   warp: boolean;
   until: string | null;
@@ -125,6 +126,8 @@ for (let k = 0; k < argv.length; k++) {
     opt.room = v(); // e.g. proto-wagon: a playtest room, where tune and shortcut ops are allowed
   else if (a === '--query')
     opt.query = v(); // URL params for the page, like BOOGLE_QUERY; a Codex rule can't see past an environment variable
+  else if (a === '--query2')
+    opt.query2 = v(); // more URL params for the second player's page only (--players 2), e.g. railLag=400 on one tab
   else if (a === '--hud')
     opt.hud = true; // keep the HUD in the picture
   else if (a === '--touch')
@@ -178,6 +181,7 @@ for (let k = 0; k < argv.length; k++) {
   [--saves <directory>]                     use checkpoints from this playthrough instead of latest
   [--root <checkout>]                       serve another checkout's build
   [--players 2]                             two players, one room: the eval runs on both, &player=1 and &player=2
+  [--query2 'railLag=400']                  with --players 2: added to the second page's query only, after --query
   [--warp-speed 5]                          cap both pages and accelerate the local server; --real opts out
   [--curves] [--curves-vs old.csv] [--target glide]   speed, height, camera, frame time per frame: CSV, plot, readings`);
     process.exit(0);
@@ -346,7 +350,7 @@ try {
           hud: opt.hud,
           name: 'Second',
           room: opt.room ?? 'look-two',
-          query: [opt.query, 'player=2'].filter(Boolean).join('&'),
+          query: [opt.query, 'player=2', opt.query2].filter(Boolean).join('&'),
           prefix: 'p2-',
           warp: opt.warp,
         })

@@ -256,6 +256,26 @@ Rows are from `npm run models` (mode withCodex, 14 November).
       fresh subagent that did not build it (fable medium). Runner for the owed proofs: Codex gpt-6.1-sol medium.
       Then: `docs/game-design/place.md` (the railhead's section), [gap-readability](gap-readability.md)'s status
       block, an agent-calls row for the `HAUL` timings.
+      **Lagged-tab proof (19 November): passed.** `npm run look -- --players 2 --real --rail-seed ring-set-3
+      --query debugcam=1 --query2 railLag=400 --eval dev/look/evals/railhead-lag.ts --until window.__railheadMove
+      --warm 240 --frames 4 --seconds 12` (`--query2` is new: page 2 only; page 2 logged `&player=2&railLag=400`, page
+      1 no `railLag`). Real time, not warped. Both players stand on the platform; page 1 sets the footing by real input
+      (set 4, u 140 to 160 m). Every 50 ms each page logs `Date.now()`, its `railheadView.shownU`, its own `carry.on`
+      and where it draws the friend against its own platform; `node dev/look/lag-trace.ts <output>` pairs page 2 to
+      page 1 by wall time (interpolated). Two runs, load 2.5 to 4.3 and 4.9 to 2.6 of 20 CPUs (look's verdict line):
+      - `traveller-lag-1`: over the whole 15 s trace median 0.000 m, peak 0.073 m; while the deck moves (4.5 s, 91
+        pairs) median 0.025 m, peak 0.073 m, at phase 30, u 148.2, 4.9 m/s (top speed).
+      - `traveller-lag-2`: whole trace median 0.000 m, peak 0.074 m; moving median 0.022 m, peak 0.074 m, at phase 22,
+        u 144.0, 5.0 m/s.
+      - The difference is a few centimetres at top speed (median 0.013 to 0.018 m below 2 m/s, 0.023 to 0.029 m above
+        4 m/s) and zero at rest; the lagged page drew its deck slightly ahead (run 1: ahead in 90 of 91 moving pairs;
+        run 2: 52 ahead, 30 behind). The earlier 0.21 m peak was taken under load (15.2 of 20).
+      - Friend on the deck throughout: in all 300 rows on each page, each run, the friend is drawn on the platform as
+        that page draws it (9.0 m and 16.9 to 17.0 m from its back end, within 0.07 m of its middle line, 0.52 to 0.74
+        m over its top). Each page's own `carry.on` was `railway:railhead` from boarding (0.1 s into the trace) to the end.
+      - Stills (`traveller-lag-2`): [tab 1, told to settled](../reports/railhead-traveller-lag/1-tab1-haul-sheet.png)
+        (the friend in purple riding the platform in all four frames) and [tab 2, lagged, at told](../reports/railhead-traveller-lag/2-tab2-lagged-told.png)
+        (the friend in red on the platform). Not seen: sounds; not tested on a device.
 
 ## Step 5 design note (18 November)
 
