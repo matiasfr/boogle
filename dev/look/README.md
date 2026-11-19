@@ -11,7 +11,8 @@ node dev/look/look.ts --players 2 --rail-seed trains-on --query shot=play --real
 ```
 
 Two local players default to a 5x cap. `--warp-speed N` changes it; `--real` opts out. Loading and captures stay at
-1x. Setup runs concurrently on both pages, so one eval can await the other's move. That eval starts from an accepted
+1x. `--query` goes to both pages; `--query2 '<params>'` goes to the second page only (for example `railLag=400` to
+lag one tab). Setup runs concurrently on both pages, so one eval can await the other's move. That eval starts from an accepted
 server seed and drives both players by real input; for the whole route by two players, `npm run playthrough --
 --players 2`.
 
