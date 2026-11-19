@@ -1,4 +1,5 @@
-// B2: standing houses from the same compiled hull record, and the optional rooftop route's geometric gaps.
+// B2: standing houses from the same compiled hull records (the loader yard's open shed has its own), and the optional
+// rooftop route's geometric gaps.
 import { Quaternion, Vector3 } from 'three';
 import { definitions } from '../../src/prefab/catalogue.ts';
 import { townBuilding, townLocal, TOWN_PLOTS, TOWN_PROPS } from '../../src/place/town-plan.ts';
@@ -6,6 +7,13 @@ import { H } from '../../src/place/terrain.ts';
 import { ROOM_PLOTS, toWorld } from '../../src/place/layout.ts';
 import { padById } from '../../src/place/tech-layout.ts';
 import { openScene, type Solid } from './scene.ts';
+import { TRADE } from '../../src/sim/railway-trade-layout.ts';
+import { YARD, shedCentre } from '../../src/place/yard-shape.ts';
+
+const yardAt = (i: number) => {
+  const p = TRADE.plots[0][i];
+  return !!p && 'gives' in p && p.gives === 'loader';
+};
 
 type Frame = { x: number; z: number; yaw: number; w: number; d: number };
 function perimeter(b: Frame) {
@@ -29,12 +37,13 @@ export async function checkTownHouses() {
   const houses = TOWN_PLOTS.order.slice(0, 3).map(townBuilding);
   for (const [i, b] of houses.entries()) {
     const q = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), b.yaw);
-    for (const [k, c] of definitions['town.plot-house-hull']!.colliders.entries()) {
+    const yard = yardAt(i);
+    for (const [k, c] of definitions[yard ? 'town.plot-yard-hull' : 'town.plot-house-hull']!.colliders.entries()) {
       if (c.shape !== 'box') throw new Error('house hull must be a box');
       const p = townLocal(b, c.at[0], c.at[2]);
       solids.push({
         id: `house.${i}.${k}`,
-        source: { file: 'src/content/prefabs/town-plot-house.ts', symbol: 'prefabs' },
+        source: { file: `src/content/prefabs/${yard ? 'loader-yard' : 'town-plot-house'}.ts`, symbol: 'prefabs' },
         shape: { kind: 'box', hx: c.half[0], hy: c.half[1], hz: c.half[2] },
         position: { x: toWorld(p.x), y: H(toWorld(b.x), b.z) + c.at[1], z: p.z },
         rotation: q,
@@ -45,10 +54,14 @@ export async function checkTownHouses() {
   const scene = await openScene(solids);
   let failures = 0;
   const tops = houses.map((b, i) => {
-    const x = toWorld(b.x),
-      y = H(x, b.z);
-    const hit = scene.below({ x, y: y + 12, z: b.z }, 15);
-    if (!hit || !scene.clear({ x, y: y + 0.5, z: b.z })) failures++;
+    // A house is solid at its middle; the yard's shed roof is over its own middle, and its jib's mast is solid.
+    const yard = yardAt(i);
+    const roofAt = yard ? townLocal(b, shedCentre.x, shedCentre.z) : b,
+      solidAt = yard ? townLocal(b, YARD.jib.x, YARD.jib.z) : b;
+    const x = toWorld(roofAt.x),
+      y = H(toWorld(b.x), b.z);
+    const hit = scene.below({ x, y: y + 12, z: roofAt.z }, 15);
+    if (!hit || !scene.clear({ x: toWorld(solidAt.x), y: y + 1.5, z: solidAt.z })) failures++;
     return { slot: i, roof: hit ? hit.y : null };
   });
   scene.world.free();

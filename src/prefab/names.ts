@@ -55,6 +55,7 @@ export const names: NameRegistry = {
     'town.museum-exhibit',
     'town.house-parts',
     'town.room-shell',
+    'town.yard-shell',
     'town.room-proxy',
     'town.boogler-statue',
     'town.statue-scaffold',

@@ -1,5 +1,5 @@
 // The Round’s delivered freight and B2 house purchase. Local views follow accepted Plot rows; a hold only sends an intent.
-import { Color, Vector3, Matrix4 } from 'three/webgpu';
+import { Color, Vector3, Matrix4, type BoxGeometry, type Mesh, type MeshStandardMaterial } from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { SignBoard } from '../../render/sign-board.ts';
 import { createPrefabBatch, instantiate } from '../../prefab/instantiate.ts';
@@ -17,7 +17,8 @@ import { createGhostOutlines } from '../../render/ghost-outline.ts';
 import { advanceHold } from '../../components/hold/view.ts';
 import { railwayCommands, railwayWorldRead, onRailwayCommands } from '../railway/state.ts';
 import { Plot, Till } from '../../sim/railway-components.ts';
-import { plotPrice } from '../../sim/railway-queries-trade.ts';
+import { loaderBuilt, plotPrice } from '../../sim/railway-queries-trade.ts';
+import { JIB_SOLIDS, LOADER_PAINT, YARD, shedCentre, yardHulls, type YardBox } from '../../place/yard-shape.ts';
 import { TOWN_BOARD, townPlotBoard } from '../../place/town-plan.ts';
 import { me } from '../../player/state.ts';
 import { type Interactable } from '../../player/hands.ts';
@@ -165,6 +166,9 @@ export function createTownPlots(owner: OwnedView) {
     const one = [target];
     const params = { x: toWorld(building.x), y: H(toWorld(building.x), building.z), z: building.z, yaw: building.yaw };
     const loader = 'gives' in need && need.gives === 'loader';
+    // The loader yard is a works building (an open shed, a jib, footings), not a house shell: no door, no windows.
+    const shellPrefab = loader ? 'town.plot-yard' : 'town.plot-house',
+      hullPrefab = loader ? 'town.plot-yard-hull' : 'town.plot-house-hull';
     const jib = loader
       ? instantiate(
           'town.loader-jib',
@@ -178,12 +182,15 @@ export function createTownPlots(owner: OwnedView) {
         )
       : null;
     jib?.setEnabled(false);
+    const jibPaint = (jib?.root.getObjectByName('mast') as Mesh<BoxGeometry, MeshStandardMaterial> | undefined)
+      ?.material;
+    jibPaint?.color.set(LOADER_PAINT.bare);
     const shell = ['scaffold', 'pieces'].map((phase) =>
       instantiate(
-        'town.plot-house',
+        shellPrefab,
         {
           id: `plot.${k}.${phase}`,
-          prefab: 'town.plot-house',
+          prefab: shellPrefab,
           pos: [0, 0, 0],
           params: { ...params, phase },
         },
@@ -192,10 +199,10 @@ export function createTownPlots(owner: OwnedView) {
     );
     const plan = shell[0]!.construction[0]!.plan;
     const hull = instantiate(
-      'town.plot-house-hull',
+      hullPrefab,
       {
         id: `plot.${k}.hull`,
-        prefab: 'town.plot-house-hull',
+        prefab: hullPrefab,
         pos: [params.x, params.y, params.z],
         rot: [building.yaw, 0, 0],
       },
@@ -204,40 +211,62 @@ export function createTownPlots(owner: OwnedView) {
     hull.setEnabled(false);
     const site = addSite(`plot.${k}`, plan, (TRADE.buildTicks / 10 - 0.3) / 9.1, { hulls: [hull], poles: [] });
     const ghost = createGhostOutlines(owner, 1024, 0.32, 0.14, 0.09);
-    ghost.box(
-      params.x,
-      params.y + plan.hulls[0]!.hy,
-      params.z,
-      building.w,
-      plan.hulls[0]!.hy * 2,
-      building.d,
-      building.yaw,
-    );
-    // Roof slopes from the same construction recipe, so the ghost reads as this house's pitched roof.
-    for (let i = plan.WALLS + 6; i < plan.ROOFED; i++) {
-      const b = plan.pieces[i]!;
-      ghost.outline(
-        new Matrix4()
-          .makeTranslation(b.x, b.y, b.z)
-          .multiply(b.local)
-          .multiply(new Matrix4().makeTranslation(0, 0.5, 0)),
-        1,
-        1,
-        1,
-      );
-    }
     if (loader) {
+      // The yard's silhouette: the shed as one box, each footing, the jib's solids and its rope.
       const frame = new Matrix4()
         .makeTranslation(params.x, params.y, params.z)
         .multiply(new Matrix4().makeRotationY(building.yaw));
-      for (const [x, y, z, w, h, d] of [
-        [-2.85, 2.2, 4.03, 0.22, 3.4, 0.22],
-        [-1.9, 3.85, 4.03, 2.1, 0.22, 0.22],
-        [-0.95, 2.85, 4.03, 0.06, 1.8, 0.06],
-        [-0.95, 1.96, 4.03, 0.28, 0.12, 0.12],
-        [-0.95, 0.9, 4.03, 0.8, 0.8, 0.8],
-      ])
-        ghost.outline(frame.clone().multiply(new Matrix4().makeTranslation(x!, y!, z!)), w!, h!, d!);
+      const { shed, jib: j, floor } = YARD;
+      const roof = shed.high + shed.beam + shed.board;
+      const outlines: YardBox[] = [
+        {
+          dx: shedCentre.x,
+          dy: roof / 2,
+          dz: shedCentre.z,
+          hx: (shed.x1 - shed.x0) / 2 + shed.eave,
+          hy: roof / 2,
+          hz: (shed.z1 - shed.z0) / 2 + shed.eave,
+        },
+        ...yardHulls().slice(-YARD.footings.length - JIB_SOLIDS.length),
+        {
+          dx: j.x,
+          dy: (floor + j.hookY + j.top) / 2,
+          dz: j.hookZ,
+          hx: 0.03,
+          hy: (j.top - floor - j.hookY) / 2,
+          hz: 0.03,
+        },
+      ];
+      for (const b of outlines)
+        ghost.outline(
+          frame.clone().multiply(new Matrix4().makeTranslation(b.dx, b.dy, b.dz)),
+          b.hx * 2,
+          b.hy * 2,
+          b.hz * 2,
+        );
+    } else {
+      ghost.box(
+        params.x,
+        params.y + plan.hulls[0]!.hy,
+        params.z,
+        building.w,
+        plan.hulls[0]!.hy * 2,
+        building.d,
+        building.yaw,
+      );
+      // Roof slopes from the same construction recipe, so the ghost reads as this house's pitched roof.
+      for (let i = plan.WALLS + 6; i < plan.ROOFED; i++) {
+        const b = plan.pieces[i]!;
+        ghost.outline(
+          new Matrix4()
+            .makeTranslation(b.x, b.y, b.z)
+            .multiply(b.local)
+            .multiply(new Matrix4().makeTranslation(0, 0.5, 0)),
+          1,
+          1,
+          1,
+        );
+      }
     }
     ghost.commit();
     ghost.mesh.visible = false;
@@ -275,6 +304,8 @@ export function createTownPlots(owner: OwnedView) {
       k,
       loader,
       jib,
+      jibPaint,
+      painted: false,
       previous,
       woodNeed,
       stoneNeed,
@@ -354,7 +385,14 @@ export function createTownPlots(owner: OwnedView) {
         } else if (p.site.state === 'none') startSite(p.site, -(tick - bought) / 10);
         if (waiting === p.k && bought >= 0) waiting = -1;
         p.ghost.mesh.visible = offered && money >= price;
-        p.jib?.setEnabled(bought >= 0 && tick >= bought + TRADE.buildTicks);
+        // The jib stands once the yard's frame is up and solid (its solids are the site's), bare until the yard is
+        // built, then in the Works arm's yellow at the same tick. It never swings: nothing loads in town.
+        p.jib?.setEnabled(p.site.bodies.length > 0);
+        const painted = !!w && loaderBuilt(w, tick);
+        if (p.jibPaint && painted !== p.painted) {
+          p.painted = painted;
+          p.jibPaint.color.set(painted ? LOADER_PAINT.built : LOADER_PAINT.bare);
+        }
         if (holding === p.k) {
           if (!offered || money < price || !near(p.at)) release();
           else {

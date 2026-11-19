@@ -1,6 +1,7 @@
 // Rigid loader parts. The view drives named pivots; this builder owns geometry and its private paint.
 import * as THREE from 'three/webgpu';
 import { registerBuilder } from '../builders.ts';
+import { JIB_SOLIDS, YARD } from '../../place/yard-shape.ts';
 declare module '../names.ts' {
   interface BuilderNames {
     'railway.loader-parts': true;
@@ -51,16 +52,38 @@ registerBuilder('railway.loader-parts', (p) => {
     box(hook, 'hook-bar', 0, 0, 0, 0.5, 0.12, 0.12);
     for (const x of [-0.22, 0.22]) box(hook, 'hook-tip', x, -0.12, 0, 0.08, 0.28, 0.12, iron);
   } else if (p.kind === 'yard') {
-    // On the road-side step, inside the existing 9 m square plinth. The wall remains closed.
-    box(root, 'mast', -2.85, 2.2, 4.03, 0.22, 3.4, 0.22);
-    box(root, 'jib', -1.9, 3.85, 4.03, 2.1, 0.22, 0.22);
-    box(root, 'rope', -0.95, 2.85, 4.03, 0.06, 1.8, 0.06, iron);
-    box(root, 'hook', -0.95, 1.96, 4.03, 0.28, 0.12, 0.12, iron);
-    for (const x of [-0.95, 0.55]) {
-      box(root, 'footing', x, 0.84, 4.03, 0.8, 0.68, 0.8, stone);
-      for (const side of [-1, 1]) box(root, 'shoulder', x + side * 0.27, 1.21, 4.03, 0.26, 0.12, 0.8, stone);
-      box(root, 'band', x, 0.73, 4.03, 0.82, 0.08, 0.82, iron);
+    // The town yard's jib, in its plot's frame (yard-shape.ts): the Works arm's paint and iron, a mast taller than the
+    // shed, the boom out over the footings. It never moves; the view repaints `paint` with the Works arm's.
+    const { jib, floor } = YARD;
+    // JIB_SOLIDS order: base, mast, boom, counterweight. The paint parts share one material the view repaints.
+    JIB_SOLIDS.forEach((b, i) =>
+      box(
+        root,
+        ['base', 'mast', 'boom', 'counterweight'][i]!,
+        b.dx,
+        b.dy,
+        b.dz,
+        b.hx * 2,
+        b.hy * 2,
+        b.hz * 2,
+        i === 1 || i === 2 ? paint : iron,
+      ),
+    );
+    box(root, 'slew', jib.x, jib.top - 0.08, jib.z, 0.62, 0.16, 0.62, iron);
+    box(root, 'pinnacle', jib.x, jib.top + 0.9, jib.z, 0.2, 0.96, 0.2, paint);
+    // Ties from the pinnacle to the boom's ends, thin iron like the arm's rope.
+    for (const end of [jib.boomZ1 - 0.15, jib.boomZ0 + 0.15]) {
+      const dy = 0.96,
+        dz = end - jib.z,
+        tie = box(root, 'tie', jib.x, jib.top + 0.42 + dy / 2, jib.z + dz / 2, 0.06, 0.06, Math.hypot(dy, dz), iron);
+      tie.rotation.x = dz > 0 ? Math.atan2(dy, dz) : -Math.atan2(dy, -dz);
     }
+    box(root, 'trolley', jib.x, jib.top - 0.06, jib.hookZ, 0.5, 0.16, 0.4, iron);
+    const rope = jib.top - 0.14 - (floor + jib.hookY);
+    box(root, 'rope', jib.x, floor + jib.hookY + rope / 2, jib.hookZ, 0.06, rope, 0.06, iron);
+    box(root, 'hook-bar', jib.x, floor + jib.hookY, jib.hookZ, 0.5, 0.12, 0.12);
+    for (const x of [-0.22, 0.22])
+      box(root, 'hook-tip', jib.x + x, floor + jib.hookY - 0.12, jib.hookZ, 0.08, 0.28, 0.12, iron);
   } else throw new Error('loader-parts: unknown kind');
   return {
     object: root,

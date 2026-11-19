@@ -54,6 +54,7 @@ import {
 } from './cradle-cues.ts';
 import { LINE2_FORGE } from '../../sim/railway-line2-layout.ts';
 import { loaderBuilt } from '../../sim/railway-queries-trade.ts';
+import { LOADER_PAINT } from '../../place/yard-shape.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
 import { FOOTING_COPY, footingBoardLine } from './footing-cues.ts';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -163,14 +164,14 @@ export async function createRailwayWorks(
   const mast = loader.root.getObjectByName('mast') as THREE.Mesh<THREE.BoxGeometry, THREE.MeshStandardMaterial>;
   let loaderColoured = false,
     loaderMoving = false;
-  mast.material.color.set('#737878');
+  mast.material.color.set(LOADER_PAINT.bare);
   const folded = new THREE.Vector3(0, 1.6, 1.1),
     hookLocal = folded.clone();
   function drawLoader(dt: number, snap = false) {
     const coloured = loaderBuilt(adapter.read.world(), adapter.read.tick());
     if (coloured !== loaderColoured) {
       loaderColoured = coloured;
-      mast.material.color.set(coloured ? '#d8a34a' : '#737878');
+      mast.material.color.set(coloured ? LOADER_PAINT.built : LOADER_PAINT.bare);
     }
     const target = !snap && loaderColoured ? deps.loaderHook() : null;
     loaderMoving = !!target;

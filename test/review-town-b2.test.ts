@@ -7,7 +7,8 @@ import { sourceFunction } from '../dev/level/source.ts';
 import { buildSeedWorld } from '../src/sim/railway-seeds.ts';
 import { plot } from '../src/sim/railway-rows.ts';
 import { Plot, Till } from '../src/sim/railway-components.ts';
-import { plotPrice, plotsStaked } from '../src/sim/railway-queries-trade.ts';
+import { loaderBuilt, plotPrice, plotsStaked } from '../src/sim/railway-queries-trade.ts';
+import * as yard from '../src/place/yard-shape.ts';
 import { TRADE } from '../src/sim/railway-trade-layout.ts';
 import { loadLevelArtifact } from '../src/prefab/validate.ts';
 import { definitions } from '../src/prefab/catalogue.ts';
@@ -48,6 +49,8 @@ function plotsView(adapter: RailwayAdapter) {
     Plot,
     Till,
     plotPrice,
+    loaderBuilt,
+    ...yard,
     drawn: (n: number) => (Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0),
     TIMBER: {},
     STONE: {},
@@ -55,10 +58,11 @@ function plotsView(adapter: RailwayAdapter) {
     createPrefabBatch: () => ({ mesh: { setColorAt() {}, instanceColor: {} } }),
     createGhostOutlines: () => ({ box() {}, outline() {}, commit() {}, mesh: { visible: false } }),
     instantiate(prefab: string, _p: unknown, o: { handlers?: Record<string, () => Interactable[]> }) {
-      if (prefab === 'town.plot-house')
+      if (prefab === 'town.plot-house' || prefab === 'town.plot-yard')
         return { construction: [{ plan: { hulls: [{ hy: 1.85 }], pieces: [], WALLS: 0, ROOFED: 0 } }] };
       return {
         bodies: [],
+        root: { getObjectByName: () => undefined },
         setEnabled() {},
         relabel() {},
         targets: () => o.handlers?.['town.plot-buy']?.() ?? [],

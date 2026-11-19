@@ -1,6 +1,7 @@
 // Shared construction plans with explicit ground height, no world or game lifecycle.
 import * as THREE from 'three/webgpu';
 import { boxAt, place, type Box } from '../render/box-plan.ts';
+import { FOOTING_H, YARD, shedCentre, shedPosts, yardHulls } from './yard-shape.ts';
 // ---------------------------------------------------------------- the plan of a building
 export type Hull = { dx: number; dy: number; dz: number; hx: number; hy: number; hz: number; room?: boolean };
 export type Plan = {
@@ -369,5 +370,82 @@ export function blockPlan(s: BlockSpec, ground: number, lifts = 1, top?: string)
     hd: s.d / 2 + 0.4,
     smoke: null,
     top: { x: s.x, y: y + y0 + s.h, z: s.z },
+  };
+}
+/** The Round's loader yard (yard-shape.ts): a frame of posts and beams, the shed's back wall by rows, a flat board
+ * roof, then its timber stack and the footings, the house's beat with no door, window or chimney. */
+export function yardPlan(s: { x: number; z: number; yaw: number }, ground: number): Plan {
+  const { x, z, yaw } = s,
+    y = ground,
+    { shed, floor, stack, footing } = YARD,
+    post = '#7f5630',
+    timber = parter(x, y, z, yaw, 'timber'),
+    roofPart = parter(x, y, z, yaw, 'roofs'),
+    stonePart = parter(x, y, z, yaw, 'stone'),
+    iron = parter(x, y, z, yaw);
+  const width = shed.x1 - shed.x0,
+    depth = shed.z1 - shed.z0,
+    { x: cx, z: cz } = shedCentre;
+  const pieces: Box[] = [];
+  for (const [px, pz] of shedPosts()) pieces.push(timber(px, floor, pz, shed.post, shed.high - floor, shed.post, post));
+  for (const px of [shed.x0, shed.x1])
+    pieces.push(timber(px, shed.high, cz, shed.post, shed.beam, depth + shed.post, post));
+  for (const pz of [shed.z0, shed.z1])
+    pieces.push(timber(cx, shed.high, pz, width + shed.post, shed.beam, shed.post, post));
+  const FRAME = pieces.length;
+  const rows = 4,
+    h = (shed.high - floor) / rows;
+  for (let row = 0; row < rows; row++)
+    for (const side of [-1, 1])
+      pieces.push(timber(cx + (side * width) / 4, floor + row * h, shed.z0, width / 2, h, 0.18, PLANK));
+  const WALLS = pieces.length;
+  const boards = 4,
+    roofD = depth + 2 * shed.eave;
+  for (let k = 0; k < boards; k++)
+    pieces.push(
+      roofPart(
+        cx,
+        shed.high + shed.beam,
+        cz - roofD / 2 + ((k + 0.5) * roofD) / boards,
+        width + 2 * shed.eave,
+        shed.board,
+        roofD / boards + 0.02,
+        k % 2 ? '#8a5a3a' : '#94603e',
+      ),
+    );
+  const ROOFED = pieces.length;
+  for (let k = 0; k < 3; k++)
+    pieces.push(
+      timber(stack.dx, floor + (k * stack.h) / 3, stack.dz, stack.w - k * 0.25, stack.h / 3, stack.d, '#ab6b34'),
+    );
+  for (const [fx, layer, fz] of YARD.footings) {
+    const base = floor + layer * FOOTING_H;
+    pieces.push(stonePart(fx, base, fz, footing.w, footing.body, footing.w, '#d6cfbf'));
+    pieces.push(iron(fx, base + 0.24, fz, footing.w + 0.02, 0.08, footing.w + 0.02, '#494d4e'));
+    for (const side of [-1, 1])
+      pieces.push(stonePart(fx + side * 0.27, base + footing.body, fz, 0.26, footing.shoulder, footing.w, '#d6cfbf'));
+  }
+  const top = shed.high + shed.beam + shed.board;
+  return {
+    x,
+    y,
+    z,
+    yaw,
+    scaffold: [
+      stonePart(0, -1, 0, YARD.w + 1.6, floor + 1, YARD.d + 1.6, '#b2ad9f'),
+      ...poles(timber, YARD.w, YARD.d, top + 0.8, 1.8),
+    ],
+    pieces,
+    FRAME,
+    WALLS,
+    ROOFED,
+    hulls: yardHulls(),
+    // Open sides: a shed going up round you moves you off the whole plot, like an open room shell.
+    keepOut: { dx: 0, dy: top / 2, dz: 0, hx: YARD.w / 2 + 0.1, hy: top / 2, hz: YARD.d / 2 + 0.1 },
+    poles: poleHulls(YARD.w, YARD.d, top + 0.8, 1.8),
+    hw: YARD.w / 2 + 0.8,
+    hd: YARD.d / 2 + 0.8,
+    smoke: null,
+    top: { x, y: y + YARD.jib.top, z },
   };
 }
