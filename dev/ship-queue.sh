@@ -13,7 +13,8 @@
 #   2. Takes a machine-wide lock for the local part only (rebase, gate, push), so the next ship can start while CI runs.
 #   3. Runs dev/codex/ship-branch.sh from the trusted checkout (../boogle-trusted, detached at origin/main), never from
 #      the branch being shipped; a missing or broken trusted checkout is exit 1.
-#   4. With --wait, polls up to 30 minutes for the commits on origin/main, and starts CI once if none ran for the push.
+#   4. With --wait, polls up to 30 minutes for the commits on origin/main, starts CI once if none ran for the push, and
+#      reruns a cancelled CI run's failed jobs once (a job at its time limit on a slow runner).
 # Exit: 0 shipped (with --wait: on main; with --dry-run: checks passed), 1 cannot ship (no trusted checkout), 4 needs
 # review, the stamp is stale or the orchestrator's read is missing, 5 not on main after the wait, 6 held by a red
 # nightly, 7 held by a red main, 8 with --wait: the ship's pull request conflicts with main (rerun to reship), otherwise
@@ -136,6 +137,7 @@ trap - EXIT
 [ "$wait" = 1 ] || exit 0
 
 sha=$(git -C "$wt" rev-parse HEAD)
+reran=0
 left() { git -C "$wt" fetch -q origin; git -C "$wt" log origin/main..HEAD --oneline | wc -l | tr -d ' '; }
 for i in $(seq 1 90); do
   [ "$(left)" = 0 ] && { echo "ship: on main"; exit 0; }
@@ -147,6 +149,16 @@ for i in $(seq 1 90); do
       -q '.[0] | select(.mergeStateStatus == "DIRTY") | .number' 2>/dev/null) && [ -n "$pr" ]; then
       echo "ship: pull request #$pr conflicts with main; nothing merged. Rerun ship-queue to rebase and reship, then close #$pr."
       exit 8
+    fi
+  fi
+  # A CI run cancelled at a job's time limit (a slow runner: the halt yard's server job, 19 November) never merges and
+  # nobody is told: rerun its failed jobs once. Only the newest run for this commit is read.
+  if [ "$reran" = 0 ] && [ $((i % 3)) = 0 ]; then
+    run=$(gh run list --commit "$sha" --workflow ci.yml --json databaseId,status,conclusion \
+      -q '.[0] | select(.status == "completed" and .conclusion == "cancelled") | .databaseId' 2>/dev/null)
+    if [ -n "$run" ]; then
+      echo "ship-queue: CI run $run for $sha was cancelled (a job's time limit?); rerunning its failed jobs once"
+      gh run rerun "$run" --failed && reran=1
     fi
   fi
   # A push sometimes gets no CI run ("workflow file issue" on Auto-merge, seen 9 November): start CI once by hand.
