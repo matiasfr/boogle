@@ -1,5 +1,5 @@
-> **Status, 19 November 2026: steps 1 to 3 on main (world v62, #2270); step 4 built on `claude/greybox-leg2-views`
-> ([as built](#step-4-as-built-19-november)), awaiting review; step 5 not started** (steps 1 to 3 [as built](#steps-1-to-3-as-built-18-november)). Planner, against main `e8ae03b0f` (world v61), rebased onto `cfb8123d6` with the owner's 18 November rail answers folded in. Owner's go
+> **Status, 19 November 2026: steps 1 to 4 on main; step 5 built on `claude/greybox-leg2-bot`
+> ([as built](#step-5-as-built-19-november)), awaiting review** (steps 1 to 3 [as built](#steps-1-to-3-as-built-18-november), step 4 [as built](#step-4-as-built-19-november)). Planner, against main `e8ae03b0f` (world v61), rebased onto `cfb8123d6` with the owner's 18 November rail answers folded in. Owner's go
 > (18 November, decisions page): "Start the greybox route's leg 2 rules now, so garage step 4 can follow? -> Yes,
 > start a planner after separate capacities". **Garage choices step 4 can start once steps 2 and 3 are on main**
 > ([below](#what-garage-step-4-waits-for)). Design review [at the end](#design-review-2026-11-18).
@@ -269,7 +269,8 @@ did); 4 and 5 ship on their own after it.
       deck with the seeds post and the two stall boxes; the Canopy barrier from the ramp's head; the West landing from
       the commons' edge, unstaked; a `bay` train at Bell Rock's upper platform; the look harness's mesh and collider
       counts with Bell Rock resident and not.
-- [ ] **5. The bot and the loop (M; HOTBOX).** `dev/loop/graph.ts`: leg 1's nodes first if still missing (`stack-1` to
+- [x] **5. The bot and the loop (M; HOTBOX).** Built 19 November on `claude/greybox-leg2-bot`
+      ([as built](#step-5-as-built-19-november)). `dev/loop/graph.ts`: leg 1's nodes first if still missing (`stack-1` to
       `stack-4`, `gorge`, `pick`), then `incline-gate`, `incline-1`, `incline-2`, `seeds`, `bay-1`, `bay-2`, bills
       and positions imported from `RAIL_LEGS`; `standins.ts` drops the `gorge` and `bell` slots. `dev/look/bots/railway-legs.ts`
       (already driven by `RAIL_LEGS`): the barrier, the change of trains at the Gorge, the seeds, the ride home and the
@@ -389,7 +390,8 @@ halts, adapters, docs. No rule, wire, op or save field changed; nothing under `s
   (9 m over line 2's up track) and the rest on an unlabelled pile beside it, High Gorge's yard.
 - **The bore** is 8 m clear between 1 m black walls, its roof 11 m (at least 7 m over the rail, which climbs from
   about 3.2 m at the split's mouth to 4.0 m), lined in strips that meet the stack's faces, with a pale frame at each
-  mouth. Its floor across the deck's width is an unlaid bed 0.15 m under the rail (review fix, below). The south stack's hidden collider keeps its slab over
+  mouth. Its floor across the deck's width is an unlaid bed (review fix, below), 0.15 m under the row's straight grade
+  (0.045 to 0.17 m under the drawn rail: [step 5's note](#step-5-as-built-19-november)). The south stack's hidden collider keeps its slab over
   the bore at its index and is split round the bore in `leg2.ts`, authored to 0.1 m and checked against the stack's
   outline at build. **Moved from the plan:** the horizon mesh (`sickle-backdrop/view.ts`) is double-sided, so it is
   opened at both mouths; otherwise a rider sees the cliff's back across each mouth. The old dark portal panel is the
@@ -434,7 +436,8 @@ test counts 28 levers and the portability test 72 Bell Rock placements. Each reg
 
 **Review fixes (19 November).** The independent review's P2: a lay made the incline's deck solid over the bore's open
 floor, 0.4 to 1.1 m under the slab, closing it over a body standing there. The bore's floor across the deck's width is
-now an unlaid bed (as Bell Rock's and the West landing's are), 0.15 m under the rail and solid down to the floor's
+now an unlaid bed (as Bell Rock's and the West landing's are), 0.15 m under the row's straight grade (so 0.045 to 0.17 m
+under the smoothed, drawn rail; least at the grade knot near s 79) and solid down to the floor's
 level, so a lay only lifts a body; the same was true where the bay row climbs onto Bell Rock's rock east of its
 in-half bed, which now carries on there to t 94. `test/prefab-leg2-level.test.ts` (the review's test, rewritten to the
 property) checks both new lines' whole rows: the highest level surface under every metre of deck sits within a body
@@ -444,6 +447,79 @@ the yard once the incline's rack has moved to its head (it took whatever that ra
 slip). The barrier still is retaken: the unlaid bed now shows inside the bore's mouth. **Unverified:** the bot and the loop (step 5); a lever
 pull answered on the new lines in a live room; a second player; the kit's hop and the yard pile in motion; the
 level report's walk over the new head platforms. Not tested on a device.
+
+### Step 5 as built (19 November)
+
+Builder, on `claude/greybox-leg2-bot`. No rule, wire, op, save, seed or view changed; the only `src/` edits are two
+comments (the bore's bed, below). Still: [`step5-bay-reached.png`](greybox-leg2/step5-bay-reached.png).
+
+- **The loop graph** (`dev/loop/graph.ts`) has the twelve nodes, after `install` in the canonical order (leg 1 opens at
+  the rivet beside the steel loop; a room plays the steel loop first): `stack-1` to `stack-4`, `gorge`, `pick`,
+  `incline-gate`, `incline-1`, `incline-2`, `seeds`, `bay-1`, `bay-2`. Bills, frames, racks, the pickups and the barrier
+  are RAIL_LEGS's, `legFrame`, `legRack`, RAIL_GRANTS and RAIL_GATES. Each section requires the one before (the rule
+  judges `rail.legStock` at the frame after the last laid), `stack-1` the rivet, `incline-1` the barrier, `bay-1` the
+  incline's last section (`legReached`), `pick` and `seeds` their leg laid (`legDone`), the barrier the pick; `gorge` is
+  the walk onto High Gorge's platform (world). `dev/loop/run.ts` plays them through the real rules: every player takes
+  off the rack and feeds the frame, the first player walks to the Gorge and presses the pickups and the barrier.
+  `-- node` prints a supply line (who brings each kit).
+- **Stand-ins** (`dev/loop/standins.ts`): the `gorge` and `bell` slots are gone; the sea cave gates on the built `pick`,
+  the Wall on the built `seeds`. The whole-route table plays areas 1 to 5. **Moved from the plan:** area 3 now ends at
+  the install ("Ring Island, builds 1 and 2"), since the steel loop's minutes fell between rows before; `--branch-first`
+  is refused (High Gorge is built and first). A call in [agent-calls](../agent-calls.md).
+- **Moved from the plan: the reached marks.** No progress mark names a laid section or the arrival at High Gorge
+  (`src/adapters/railway-marks.ts`), and the pickup and barrier marks have no beat (`dev/playtest/beats.ts`); both files
+  were held by other work. The nodes name the marks they want ("route section laid" with `leg` and `section`, "High
+  Gorge reached", and the pickup and barrier marks by their nth), `PENDING_MARKS` lists them, and
+  `test/loop-graph.test.ts` holds them out of its two mark checks until a mark is both emitted and a beat.
+- **Also needed and not listed:** the order probes count only an op actually pressed (a probe out of time before its
+  press said "refused" before), and the seams' strike counts as theirs (no node owned it, so a seam probe could never
+  report an accepted strike). The 30 old probes all hold. A leg's rails come only off its rack in the loop, by hand too:
+  the forge rack gives none once the cradle is fitted (`railway-sys-line2.ts`, forgeTake), and `--by-hand incline-2`
+  softlocked fetching them there.
+- **The bot** (`dev/look/bots/railway-legs.ts`) plays every built leg from the rows: from `gorge-reached` (the seed
+  starts at the Village) line 2 to High Gorge, the pick up the stair (the path planner climbs it; no waypoints), the
+  barrier, both incline sections riding `ns` trains to head 1 and Bell Rock's lower deck, the seeds, an `ns` train home,
+  line 2 to the Village, the 140 m walk to the West landing and both bay cut sections riding `bay` trains to Bell Rock's
+  upper platform. A row line's ride (`rowRide`) waits at the halt's lever where halts-view stands it, pulls it only
+  while it is free (a blocked "Stop requested" is a train on its way), boards by a real jump and asks each stop aboard.
+  `RAIL_STOPS.bell` and `.bay`; `RAIL_FROM['gorge-reached']`. The later leg seeds are not played from.
+
+**Verify.** `npm run loop -- node incline-1` and `-- node bay-2` print the bill (20 logs + 20 rails), the supply ("line
+2's kit car to High Gorge's rack (the kit ahead)"; "a bay train from the West landing") and the cue. `npm run loop --
+run`: no softlock at 1 to 4 players, every allowed order finishes, the 41 order probes (solo) all refused as the graph claims; the
+built nodes' times to `install` are unchanged (38:24 solo). Solo, straight-line: `stack-1` 42:00, `stack-4` 49:08,
+`pick` 50:59, `incline-2` 54:31, `bay-2` 1:03:07. Whole route, areas 1 to 5 played: High Gorge 13 / 12 / 12 / 12 min
+for 1 to 4 players (allowance 72), Bell Rock 12 / 14 / 14 / 14 (allowance 30), the total 2:54 / 2:46 / 2:44 / 2:45 (3:14
+solo with the two stand-ins). A lower bound: the loop walks Bell Rock to the West landing in a straight line over the
+sea and rides no train.
+
+`npm run playthrough -- --from gorge-reached --to bay --wall 3600 --stall 1800`: **pass** on the rebased branch
+(`077ba8fa`, load 1.32 → 1.35, not under load), five runs in all. The first stopped at head 1: the bot gave up on the
+train the lay had already asked for after a minute of page time (a bot defect, fixed). The second passed but ended in
+the bay train's open car: its step-off aimed at the halt's point, which is on the track (fixed: the last step-off lands
+on the outward platform at the lever's spot). The third passed (`fac0261a`). The fourth, on the rebased branch, ran out
+of `bot.walk`'s default budget 40.8 m short of the pick: the switchback walks about three times its straight distance
+(fixed: the climb and the way down get four minutes). The fifth passed with no recovery: fifteen checkpoints in order,
+ending on Bell Rock's upper platform by the bay lever. Room ticks, one bot run (not evidence of feel or timing): the
+pick 18 s after the Gorge, the incline 3.1 min from the barrier to Bell Rock, **the ride home 4.9 min** (the seeds to
+the Village; the plan's arithmetic said 6 to 7 with the walk), the bay cut 3.2 min from the West landing's frame to
+Bell Rock's upper platform, 12.0 min from the Gorge to the bay reached. Findings: twice a run, aboard line 2, the cord
+offered a stop the server then refused (`rail.call`: "Request stop: Ring Island", "Request stop: Stack head 3", a head
+closed behind); the longest wait, 3 to 4 min at bay head 1, was for the train the last lay asked for.
+
+**Step 4's re-check P3s.** (1) The bore's bed is 0.15 m under the row's straight grade, not the drawn rail: the smoothed
+rail runs up to 0.103 m under those pieces, so the bed's top is 0.045 to 0.17 m under the drawn rail, least at the grade
+knot near s 79 (measured on the compiled colliders at 5 cm by 20 cm; the re-check had 0.022 m at t 79). The comments in
+`leg2.ts` and `massing.ts` and step 4's text say so now. (2) `test/prefab-leg2-level.test.ts` samples ±3.6 m across at
+0.6 m and each metre along: on its grid Bell Rock's worst margin is 43.8 mm (s 1132.5); a 5 cm by 10 cm scan of s 1128
+to 1140 finds the least, 6.7 mm, at s 1133.45 on the deck's edge (lat -3.6), and no spot past the bound. No bound
+changed. (3) The bed's left edge (going out) stands 2.5 cm (s 80) to 7 cm (s 220) past the drawn deck's and its right
+edge as much short: the bed's straight strips are turned slightly against the row. Not a one-line view change (the
+bed is `leg2.ts`'s level frame), so not fixed. With the massing resident the bed is dark against the bore's black
+lining, and no still shows the sliver (`.look/bore-bed-edge-mid2-still.png`, s 150 from 0.9 m over the deck's edge).
+
+**Unverified:** the loop's two- to four-player leg times against a real room; two players on the bot route; the bot
+from `incline-open` to `bay-mid` (not registered); the long ride home's feel. Not tested on a device.
 
 ### Left out
 

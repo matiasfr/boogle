@@ -2,7 +2,7 @@
 // a named generic route-independent op / activity mark), and the hand-kept beat lists agree with the graph's nodes.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ACTIVITY_MARKS, GENERIC_OPS, NODES, PENDING_OPS, proposeOrders } from '../dev/loop/graph.ts';
+import { ACTIVITY_MARKS, GENERIC_OPS, NODES, PENDING_MARKS, PENDING_OPS, proposeOrders } from '../dev/loop/graph.ts';
 import { isStandIn, standInRoute } from '../dev/loop/standins.ts';
 import { RAIL_ACTIONS } from '../src/world/railway-server.ts';
 import {
@@ -19,7 +19,7 @@ import { beatsOf } from '../dev/playtest/beats.ts';
 import { RAIL_STOPS } from '../dev/look/segments.ts';
 
 const generic = new Set<string>(GENERIC_OPS);
-// The greybox route's ops before step 5 builds their nodes (dev/loop/graph.ts, PENDING_OPS): named, never owned too.
+// The route's ops whose nodes are not built yet (dev/loop/graph.ts, PENDING_OPS): named, never owned too.
 const pending = new Set<string>(PENDING_OPS);
 const owned = new Set(NODES.flatMap((n) => n.ops));
 
@@ -62,30 +62,47 @@ function markNames() {
   return names;
 }
 
+// The greybox legs' marks the play record and the beat list do not carry yet (dev/loop/graph.ts, PENDING_MARKS).
+const pendingMarks = new Set(PENDING_MARKS);
+
 test('every railway mark is a node milestone or an activity mark', () => {
   const names = markNames();
   assert.ok(names.size > 20, 'marks were enumerated');
+  const beats = beatsOf('', true);
+  for (const m of pendingMarks) {
+    assert.ok(
+      NODES.some((n) => n.reached.mark === m),
+      `pending mark "${m}" is no node's: take it out of PENDING_MARKS`,
+    );
+    assert.ok(
+      !(names.has(m) && beats.some(([, re]) => re.test(m))),
+      `"${m}" is emitted and a beat now: take it out of PENDING_MARKS`,
+    );
+  }
   for (const name of names)
     assert.ok(
       NODES.some((n) => n.reached.mark === name || n.reached.also?.includes(name)) ||
         ACTIVITY_MARKS.some((re) => re.test(name)),
       `mark "${name}" has no node`,
     );
-  for (const n of NODES) assert.ok(names.has(n.reached.mark), `${n.id}'s mark "${n.reached.mark}" is never emitted`);
+  for (const n of NODES)
+    assert.ok(
+      names.has(n.reached.mark) || pendingMarks.has(n.reached.mark),
+      `${n.id}'s mark "${n.reached.mark}" is never emitted`,
+    );
 });
 
 test('the hand-kept beat lists agree with the graph', () => {
   const beats = beatsOf('', true);
   for (const n of NODES)
     assert.ok(
-      beats.some(([, re]) => re.test(n.reached.mark)),
+      beats.some(([, re]) => re.test(n.reached.mark)) || pendingMarks.has(n.reached.mark),
       `RAILWAY_BEATS (dev/playtest/beats.ts) lacks ${n.id}'s "${n.reached.mark}"`,
     );
   const stops = new Set(NODES.flatMap((n) => n.stops));
   for (const s of stops) assert.ok(s in RAIL_STOPS, `${s} is not a RAIL_STOPS key`);
-  // Not loop beats: the audio check, and slice 5's freight home and first fare (economy beats no route step waits for),
-  // and `gorge`, the leg 1 bot's stop, until the loop graph's stack nodes are built (greybox-route step 5, left).
-  const notLoop = new Set(['audio-loop', 'freight', 'fare', 'gorge']);
+  // Not loop beats: the audio check, and slice 5's freight home and first fare (economy beats no route step waits for).
+  const notLoop = new Set(['audio-loop', 'freight', 'fare']);
   for (const s of Object.keys(RAIL_STOPS)) assert.ok(stops.has(s) || notLoop.has(s), `RAIL_STOPS ${s} has no node`);
 });
 
@@ -98,24 +115,24 @@ test('the solver proposes the canonical order and each soft edge flipped', () =>
 test('built nodes and stand-ins are told apart by the flag, and the stand-ins reach the ending', () => {
   for (const n of NODES) assert.ok(!isStandIn(n), `${n.id} is built: it carries no standIn flag`);
   const built = new Set<string>(NODES.map((n) => n.id));
-  for (const first of ['gorge', 'canopy'] as const)
-    for (const branches of ['both', 'first'] as const) {
-      const { nodes, lost } = standInRoute({ first, branches, bills: 1 });
-      assert.equal(nodes.length, branches === 'both' ? 6 : 5);
-      assert.equal(
-        nodes[0]!.requires[0]!.on,
-        NODES[NODES.length - 1]!.id,
-        'the stand-ins start where the built graph ends',
+  // High Gorge and Bell Rock are built (greybox leg 2, step 5): the stand-ins are areas 6 to 9, Canopy Town cuttable.
+  for (const branches of ['both', 'first'] as const) {
+    const { nodes, lost } = standInRoute({ branches, bills: 1 });
+    assert.equal(nodes.length, branches === 'both' ? 4 : 3);
+    assert.equal(
+      nodes[0]!.requires[0]!.on,
+      NODES[NODES.length - 1]!.id,
+      'the stand-ins start where the built graph ends',
+    );
+    assert.equal(nodes[nodes.length - 1]!.id, 'ending');
+    assert.equal(lost.length, branches === 'both' ? 0 : 1, 'cutting a branch loses exactly its gate');
+    for (const s of nodes) {
+      assert.ok(isStandIn(s), `${s.id} is flagged a stand-in`);
+      assert.ok(!built.has(s.id), `${s.id} is not a built node's id`);
+      assert.ok(
+        Object.values(s.bill).every((n) => n > 0) && s.legs.every((l) => l.km > 0),
+        `${s.id}: a bill and a leg`,
       );
-      assert.equal(nodes[nodes.length - 1]!.id, 'ending');
-      assert.equal(lost.length, branches === 'both' ? 0 : 1, 'cutting a branch loses exactly its gate');
-      for (const s of nodes) {
-        assert.ok(isStandIn(s), `${s.id} is flagged a stand-in`);
-        assert.ok(!built.has(s.id), `${s.id} is not a built node's id`);
-        assert.ok(
-          Object.values(s.bill).every((n) => n > 0) && s.legs.every((l) => l.km > 0),
-          `${s.id}: a bill and a leg`,
-        );
-      }
     }
+  }
 });

@@ -120,7 +120,8 @@ test('each after and needs points backwards', () => {
 });
 
 test("the three long-range gates equal standins.ts's GATES", () => {
-  const areaOf: Record<string, number> = { gorge: 4, bell: 5, canopy: 6, port: 7, wall: 8, ending: 9 };
+  // The built pickups' nodes (dev/loop/graph.ts) stand for areas 4 and 5 since greybox leg 2's step 5.
+  const areaOf: Record<string, number> = { pick: 4, seeds: 5, canopy: 6, port: 7, wall: 8, ending: 9 };
   const grantOf: Record<string, string> = { 'powered pick': 'pick', 'crystal seeds': 'seeds', 'glider cloth': 'cloth' };
   const { nodes } = standInRoute();
   let found = 0;
