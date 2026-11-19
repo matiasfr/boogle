@@ -24,10 +24,12 @@ const { junctions } = (await import(
   '/src/place/junctions.ts' as string
 )) as typeof import('../../../src/place/junctions.ts');
 const { turnout } = (await import('/src/place/turnout.ts' as string)) as typeof import('../../../src/place/turnout.ts');
-const { TABLE } = (await import(
-  '/src/place/home-station.ts' as string
-)) as typeof import('../../../src/place/home-station.ts');
-const { ORIGIN } = (await import('/src/place/layout.ts' as string)) as typeof import('../../../src/place/layout.ts');
+const { garageRow, polarAt } = (await import(
+  '/src/entities/railway/garage-geo.ts' as string
+)) as typeof import('../../../src/entities/railway/garage-geo.ts');
+const { TABLE_RAIL } = (await import(
+  '/src/entities/railway/works-shape.ts' as string
+)) as typeof import('../../../src/entities/railway/works-shape.ts');
 
 type V = { x: number; y: number; z: number };
 const query = new URLSearchParams(location.search);
@@ -122,10 +124,8 @@ if (at === 'spur') {
 } else if (at.startsWith('table')) {
   // The table's frame: a point on bearing `b` (degrees clockwise from north, as the rotunda's) `r` m from its centre,
   // `up` over the table's rail height.
-  const polar = (b: number, r: number, up = 0): V => {
-    const a = (b * Math.PI) / 180;
-    return { x: TABLE.x + ORIGIN.x + Math.sin(a) * r, y: 18.3 + up, z: TABLE.z - Math.cos(a) * r };
-  };
+  const { table } = garageRow();
+  const polar = (bearing: number, r: number, up = 0): V => ({ ...polarAt(table, { bearing, r }), y: TABLE_RAIL + up });
   if (at === 'table') {
     stand = polar(166, 9.4);
     eye = polar(180, 12.6, 2.4);
@@ -144,7 +144,9 @@ if (at === 'spur') {
     fov = 55;
   } else throw new Error('Choose at=table|table-top|table-join');
 } else
-  throw new Error('Choose at=spur|spur-top|spur-frog|throat-top|throat|top|eye|back|farhead|table|table-top|table-join');
+  throw new Error(
+    'Choose at=spur|spur-top|spur-frog|throat-top|throat|top|eye|back|farhead|table|table-top|table-join',
+  );
 
 const body = me.body;
 if (!body) throw new Error('turnouts look: no player body');

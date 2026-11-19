@@ -451,7 +451,16 @@ export async function createRailwayRoundhouse(
     for (const side of [-1, 1]) {
       const ox = Math.cos(drawn) * side * SHUNT.gauge,
         oz = -Math.sin(drawn) * side * SHUNT.gauge;
-      batch.box(table.x + ox, tableY + RAIL_HEAD - 0.135 / 2, table.z + oz, 0.1, 0.135, rimCut(-1) * 2, '#4c5058', drawn);
+      batch.box(
+        table.x + ox,
+        tableY + RAIL_HEAD - 0.135 / 2,
+        table.z + oz,
+        0.1,
+        0.135,
+        rimCut(-1) * 2,
+        '#4c5058',
+        drawn,
+      );
     }
     const deckTop = tableY + 0.05,
       deckY = deckTop - DECK.h / 2,

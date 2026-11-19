@@ -74,7 +74,7 @@ export function layHomeYard(ground: (x: number, z: number) => number) {
     for (const r of points.rails) if (withSpur(r)) yard.rail(r.a, r.b, r.w);
     yard.railsAlong(spur, points.plainD, len - cut);
     yard.sleepersAlong(spur, shared ? shared.hi + 0.7 : 0, len - timber - 0.6);
-    yard.rimTimber(spur(len - timber), RIM_TIMBER.bottom);
+    yard.rimTimber(spur, len - timber, RIM_TIMBER.bottom);
   }
   // The stall roads: off the table's rim at the lines' height, down a ramp to ground-level rails at the door
   // (`stallRoadY`, which the shunt's path reads too), then level: to the back wall of the working bay, and in every
@@ -92,7 +92,7 @@ export function layHomeYard(ground: (x: number, z: number) => number) {
     yard.sleepersAlong(road, timber + 0.6, ramp);
     yard.railsAlong(road, ramp, end);
     yard.sleepersAlong(road, ramp, end);
-    yard.rimTimber(road(timber), RIM_TIMBER.bottom, Math.atan2(stallRoadY(ramp, deck) - deck, ramp));
+    yard.rimTimber(road, timber, RIM_TIMBER.bottom);
   }
   // The cart's leg, shown once it is laid, everything of it together (its turnouts' parts beside the lines' rails
   // too). At each end it leaves a line at a turnout (J3 off line 1, J2 onto road 2: src/place/junctions.ts), whose

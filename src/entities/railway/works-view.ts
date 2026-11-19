@@ -58,7 +58,7 @@ import { LOADER_PAINT } from '../../place/yard-shape.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
 import { FOOTING_COPY, footingBoardLine } from './footing-cues.ts';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { SPLIT_ROCK_BOXES, THROAT_SLAB, ROLLER_ROAD, beam, box, type WorksBox } from './works-shape.ts';
+import { SPLIT_ROCK_BOXES, THROAT_SLAB, ROLLER_ROAD, TABLE_RAIL, beam, box, type WorksBox } from './works-shape.ts';
 import { drawWorksBoxes, createBoxBatch, createLater, footingFrame, footingParts } from './works-box-view.ts';
 import { bridgeHandle, tableYaws } from './table-bridge.ts';
 
@@ -390,7 +390,7 @@ export async function createRailwayWorks(
   const tableHandle = () => {
     const yaw = yaws[shed(wd).table] ?? yaws[0],
       at = bridgeHandle(tableAt, home.TABLE.r, yaw);
-    return { x: at.x, y: layout.railY(line2, 0) + 0.6, z: at.z, yaw };
+    return { x: at.x, y: TABLE_RAIL + 0.6, z: at.z, yaw };
   };
   const wagonWait = (() => {
     const s = WAGON_S / 100,

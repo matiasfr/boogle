@@ -223,15 +223,19 @@ test('every stop stands beside the island, 1.65 m in from its edge and within it
     }
 });
 
+/** A rectangle's four corners, in order round it. */
+const corners = (r: Rect) =>
+  [
+    [-1, -1],
+    [-1, 1],
+    [1, 1],
+    [1, -1],
+  ].map(([i, j]) => ({
+    x: r.c.x + r.u.x * r.hd * i! - r.u.z * r.hw * j!,
+    z: r.c.z + r.u.z * r.hd * i! + r.u.x * r.hw * j!,
+  }));
 /** Separating axes: two rectangles (centre, unit `u` along their depth, half sizes) overlap. */
 function overlaps(a: Rect, b: Rect) {
-  const corners = (r: Rect) =>
-    [-1, 1].flatMap((i) =>
-      [-1, 1].map((j) => ({
-        x: r.c.x + r.u.x * r.hd * i - r.u.z * r.hw * j,
-        z: r.c.z + r.u.z * r.hd * i + r.u.x * r.hw * j,
-      })),
-    );
   for (const r of [a, b])
     for (const axis of [r.u, { x: -r.u.z, z: r.u.x }]) {
       const pa = corners(a).map((p) => p.x * axis.x + p.z * axis.z),
@@ -595,47 +599,49 @@ test("the deck rests on the spur's and the stall's bearings", async () => {
 });
 
 test('rim timbers clear each other', async () => {
-  const { RIM_TIMBER, rimBearings, rimTimbers } = await import('../src/entities/railway/works-shape.ts');
-  const corners = (b: { x: number; z: number; w: number; d: number; yaw: number }): XZ[] => {
-    const u = { x: Math.sin(b.yaw), z: Math.cos(b.yaw) },
-      n = { x: u.z, z: -u.x };
-    return [
-      [-1, -1],
-      [1, -1],
-      [1, 1],
-      [-1, 1],
-    ].map(([i, j]) => ({
-      x: b.x + (n.x * i! * b.w) / 2 + (u.x * j! * b.d) / 2,
-      z: b.z + (n.z * i! * b.w) / 2 + (u.z * j! * b.d) / 2,
+  const [{ layHomeYard }, { SLEEPER }, { segDist }, { prefabs }] = await Promise.all([
+    import('../src/entities/railway/home-yard.ts'),
+    import('../src/entities/railway/works-shape.ts'),
+    import('../src/island/stamps.ts'),
+    import('../src/content/prefabs/roundhouse.ts'),
+  ]);
+  const kerb = prefabs.find((p) => p.key === 'roundhouse.table')!.layout as { inner: number; outer: number };
+  const centre = { x: TABLE.x + ORIGIN.x, z: TABLE.z };
+  // The timbers the yard lays, as footprints: a sleeper's size, square to its road.
+  const timbers = layHomeYard(H)
+    .rimTimbers()
+    .map((p): Rect => ({
+      c: p,
+      u: { x: Math.sin(p.yaw), z: Math.cos(p.yaw) },
+      hw: SLEEPER.length / 2,
+      hd: SLEEPER.depth / 2,
     }));
-  };
-  const toSegment = (p: XZ, a: XZ, b: XZ) => {
-    const dx = b.x - a.x,
-      dz = b.z - a.z,
-      t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.z - a.z) * dz) / (dx * dx + dz * dz)));
-    return dist(p, { x: a.x + dx * t, z: a.z + dz * t });
-  };
-  /** Two convex footprints that do not overlap are as far apart as a corner of one from an edge of the other. */
-  const gap = (a: XZ[], b: XZ[]) =>
+  assert.equal(timbers.length, 8, 'the spur and seven bays');
+  // Each lies along its road, out from the centre, on the pit's kerb: its inner edge on it, its outer inside it.
+  for (const t of timbers) {
+    const r = dist(t.c, centre);
+    // Along its road either way: the spur runs in to the table, the stall roads out from it.
+    const across = angleGap(bearingOf(t.u.x, t.u.z), bearingOf(t.c.x - centre.x, t.c.z - centre.z));
+    assert.ok(Math.min(across, 180 - across) < 1e-6, `a timber ${across.toFixed(4)} degrees off radial`);
+    assert.ok(r - t.hd >= kerb.inner && r + t.hd <= kerb.outer, `a timber's middle ${r.toFixed(3)} m out`);
+  }
+  /** Two rectangles that do not overlap are as far apart as a corner of one is from an edge of the other. */
+  const gap = (a: Rect, b: Rect) =>
     Math.min(
       ...[
         [a, b],
         [b, a],
-      ].flatMap(([p, q]) => p!.flatMap((c) => q!.map((e, k) => toSegment(c, e, q![(k + 1) % 4]!)))),
+      ].flatMap(([p, q]) =>
+        corners(p!).flatMap((c) =>
+          corners(q!).map((e, k, all) => segDist(c.x, c.z, e.x, e.z, all[(k + 1) % 4]!.x, all[(k + 1) % 4]!.z).d),
+        ),
+      ),
     );
-  const timbers = rimTimbers(),
-    bearings = rimBearings(),
-    centre = { x: TABLE.x + ORIGIN.x, z: TABLE.z };
-  assert.equal(timbers.length, 8, 'the spur and seven bays');
-  // Each is square to its road and lies on the kerb (8.15 to 8.6 m out): its inner edge on it, its outer inside it.
-  timbers.forEach((t, k) => {
-    assert.ok(angleGap(bearingOf(Math.sin(t.yaw), Math.cos(t.yaw)), bearings[k]!) < 1e-6);
-    const r = dist(t, centre);
-    assert.ok(r - RIM_TIMBER.depth / 2 >= TABLE.r + 0.15 && r + RIM_TIMBER.depth / 2 <= TABLE.r + 0.6, `at ${r}`);
-  });
   let nearest = Infinity;
   for (let i = 0; i < timbers.length; i++)
-    for (let j = i + 1; j < timbers.length; j++)
-      nearest = Math.min(nearest, gap(corners(timbers[i]!), corners(timbers[j]!)));
+    for (let j = i + 1; j < timbers.length; j++) {
+      assert.ok(!overlaps(timbers[i]!, timbers[j]!));
+      nearest = Math.min(nearest, gap(timbers[i]!, timbers[j]!));
+    }
   assert.ok(nearest >= 0.18, `the nearest two rim timbers are ${nearest.toFixed(3)} m apart`);
 });

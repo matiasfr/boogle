@@ -182,29 +182,16 @@ export const SHUNT = (() => {
  * centreline) are cut: outside the rim for `1`, on the deck for `-1`. */
 const RIM_GAP = 0.03;
 export const rimCut = (side: 1 | -1) => Math.sqrt((TABLE.r + side * RIM_GAP) ** 2 - SHUNT.gauge ** 2);
-/** The timber under each road's rail ends at the rim: the kit's sleeper (2.3 m across its road, 0.42 m along it), its
- * inner edge on the pit's kerb (the coping, `TABLE.r` + 0.15 to + `ROTUNDA_KIT.rim`, its top `ROTUNDA_BLOCK.kerb`
- * over the table's ground) and its outer edge 2 cm inside it, stretched down from the rails' foot onto the kerb. `at`
- * is its centre's distance from the table's centre, `bottom` the kerb's top. */
+/** The kit's sleeper (src/place/look-kit.ts), metres: across its track, along it, and high. */
+export const SLEEPER = { length: 2.3, depth: 0.42, height: 0.12 } as const;
+/** The timber under each road's rail ends at the rim (./yard-track.ts, `rimTimber`): a sleeper with its inner edge on
+ * the pit's kerb (the coping, `TABLE.r` + 0.15 to + `ROTUNDA_KIT.rim`, its top `ROTUNDA_BLOCK.kerb` over the table's
+ * ground) and its outer edge 2 cm inside it, stretched down from the rails' foot onto the kerb. `at` is its centre's
+ * distance from the table's centre, `bottom` the kerb's top. */
 export const RIM_TIMBER = {
-  length: 2.3,
-  depth: 0.42,
-  at: TABLE.r + ROTUNDA_KIT.rim - 0.02 - 0.21,
+  at: TABLE.r + ROTUNDA_KIT.rim - 0.02 - SLEEPER.depth / 2,
   bottom: TABLE.y + ROTUNDA_BLOCK.kerb,
 } as const;
-/** The roads that meet the table, by bearing (degrees clockwise from north): the spur, then every bay's. */
-export const rimBearings = () => [
-  TABLE.spur,
-  ...ROTUNDA_HOME.order.map((bay) => bayFrame(ROTUNDA_HOME, bay).bearing),
-];
-/** Each rim timber's footprint (world metres; `yaw` runs along its road, `w` across it), in `rimBearings` order. */
-export const rimTimbers = (): WorksBox[] =>
-  rimBearings().map((bearing) => {
-    const a = (bearing * Math.PI) / 180,
-      u = { x: Math.sin(a), z: -Math.cos(a) };
-    const p = toWorld({ x: TABLE.x + u.x * RIM_TIMBER.at, z: TABLE.z + u.z * RIM_TIMBER.at });
-    return box(p.x, RIM_TIMBER.bottom, p.z, RIM_TIMBER.length, 0, RIM_TIMBER.depth, Math.atan2(u.x, u.z));
-  });
 type RailPoint = { x: number; y: number; z: number };
 /** A shunt vehicle's frame from its two bogie points on the track (`SHUNT.bogie` either side of its middle, each at
  * the track's rail height there), as the trains are posed on a chord: midway between them, heading and pitched along
