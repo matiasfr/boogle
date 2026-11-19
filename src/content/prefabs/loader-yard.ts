@@ -45,6 +45,7 @@ export const prefabs = [
       { shape: 'box', at: [2.9, 3.12, 2.6], half: [0.21, 2.48, 0.21] }, // jib mast
       { shape: 'box', at: [0.7, 5.81, 2.6], half: [2.9, 0.21, 0.21] }, // jib boom
       { shape: 'box', at: [3.36, 5.25, 2.6], half: [0.23, 0.35, 0.45] }, // counterweight
+      { shape: 'box', at: [2.9, 6.5, 2.6], half: [0.1, 0.48, 0.1] }, // jib pinnacle
     ],
   }),
 ];

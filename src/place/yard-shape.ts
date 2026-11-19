@@ -32,7 +32,8 @@ export const shedCentre = { x: (shed.x0 + shed.x1) / 2, z: (shed.z0 + shed.z1) /
 /** The footing's layer height: its body plus the shoulders the next one sits on. */
 export const FOOTING_H = footing.body + footing.shoulder;
 
-/** The jib's solid parts (the rope, hook and tie stay open, like the Works arm's). */
+/** The jib's solid parts: base, mast, boom, counterweight, pinnacle (the rope, hook and ties stay open, like the
+ * Works arm's). */
 export const JIB_SOLIDS: YardBox[] = [
   { dx: jib.x, dy: floor + 0.25, dz: jib.z, hx: 0.55, hy: 0.25, hz: 0.55 },
   { dx: jib.x, dy: (floor + 0.5 + jib.top) / 2, dz: jib.z, hx: 0.21, hy: (jib.top - floor - 0.5) / 2, hz: 0.21 },
@@ -45,6 +46,7 @@ export const JIB_SOLIDS: YardBox[] = [
     hz: 0.21,
   },
   { dx: jib.boomX1 - 0.24, dy: jib.top - 0.35, dz: jib.z, hx: 0.23, hy: 0.35, hz: 0.45 },
+  { dx: jib.x, dy: jib.top + 0.9, dz: jib.z, hx: 0.1, hy: 0.48, hz: 0.1 },
 ];
 
 /** Every solid box, centre and half extents above the plot's ground. The first is the slab. */
