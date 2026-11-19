@@ -51,17 +51,19 @@ const GREAT_TREE = 28;
 export async function createTownView(read: () => TownLook | null) {
   const owner = createOwnedView();
   owner.root.name = 'town';
-  const [roomKit, houseKit, shopKit, sites, lines, residentKit, museumKit, plans, layout] = await Promise.all([
-    import('./rooms.ts'),
-    import('./house.ts'),
-    import('./shop.ts'),
-    import('../../place/sites.ts'),
-    import('./town-lines.ts'),
-    import('./residents.ts'),
-    import('./museum.ts'),
-    import('../../place/opening-plans.ts'),
-    import('../../place/layout.ts'),
-  ]);
+  const [roomKit, houseKit, shopKit, sites, lines, residentKit, museumKit, plans, layout, firstHouse] =
+    await Promise.all([
+      import('./rooms.ts'),
+      import('./house.ts'),
+      import('./shop.ts'),
+      import('../../place/sites.ts'),
+      import('./town-lines.ts'),
+      import('./residents.ts'),
+      import('./museum.ts'),
+      import('../../place/opening-plans.ts'),
+      import('../../place/layout.ts'),
+      import('./first-house.ts'),
+    ]);
   let facts: TownRead = { path: false, forge: false, completed: 0, trains: false };
   let score = 0;
   let railway: TownLook | null = null;
@@ -104,6 +106,7 @@ export async function createTownView(read: () => TownLook | null) {
   rooms.stakeBoard(rooms.rooms.shop, lines.BOARDS.shopPlot);
   rooms.stakeBoard(rooms.rooms.museum, lines.BOARDS.museumPlot);
   const house = houseKit.createHouse(owner, rooms.rooms.house, env);
+  firstHouse.createFirstHouseLamp(rooms.rooms.plot3);
   const memory = createTownMemory();
   const residents = residentKit.createResidents(owner, rooms, env, memory);
   addEventListener('pagehide', memory.flush);

@@ -99,6 +99,8 @@ the house's floor, frame, walls and roof fall into place, and it stands after 10
 house (trade plot 0, town slot `plot3`, board "Plot 1") goes up as a walk-in room on the `house` kit, its open
 doorway facing the quarry road and its board, with the indoor cutaway and camera of every room
 ([first house](../brainstorms/first-house-resident.md), step 1); the yard and the third house keep their closed shells.
+Once it stands, a warm lamp shows in its front window on the room's +x side (a lit pane, no scene light, so it reads
+by day too; [first-house.ts](../../src/entities/town/first-house.ts)).
 Little guys gather and use their existing town lines. A player inside the footprint is moved to its edge as the
 hulls arrive; one resting beside it, on a room's slab or doorstep, is left where they stand. Reloads use the accepted purchase tick to resume or snap completed construction. Each completed
 fare-raising house adds one rider per minute in each direction. Every bought building doubles the remaining prices

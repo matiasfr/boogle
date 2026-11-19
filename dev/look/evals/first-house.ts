@@ -38,8 +38,8 @@ const back = at(0, -house.d / 2);
 const debug = window.__debugCam!;
 if (shot === 'street') {
   // Out of frame, behind the camera; the camera's fixed from the road on the hall side.
-  put(at(-3.5, house.d / 2 + 9), 0);
-  const eye = at(-3.2, house.d / 2 + 6.6);
+  put(at(-4.5, house.d / 2 + 12), 0);
+  const eye = at(-3.6, house.d / 2 + 9);
   debug.set([eye.x, eye.y + 1.6, eye.z], [door.x, door.y + 1.4, door.z]);
   debug.set = () => {};
 } else if (shot === 'inside' || shot === 'talk') {
