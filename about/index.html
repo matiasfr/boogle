@@ -6,7 +6,7 @@
     <title>About · Boogle</title>
     <meta
       name="description"
-      content="Boogle is a co-op browser game: you and a few friends build a railway from island to island. Free, nothing to download."
+      content="Boogle is a free co-op game in your browser. You and a few friends chop, haul and lay track until trains run across the sea."
     />
     <meta property="og:site_name" content="Boogle" />
     <meta property="og:type" content="website" />
@@ -14,7 +14,7 @@
     <meta property="og:title" content="Boogle: build a railway across the sea with your friends" />
     <meta
       property="og:description"
-      content="A co-op game that runs in your browser. Chop, carry, lay track and ride what you built."
+      content="A free co-op game in your browser. Chop, haul, lay track, and ride what you built."
     />
     <meta property="og:image" content="https://boogle.club/about-share.jpg" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -30,130 +30,189 @@
   <body>
     <header class="hero">
       <img
-        src="./media/railhead.webp"
-        alt="A red steam engine on a timber trestle at sea, facing a raised bridge and a mountain island"
+        class="hero-art"
+        src="./media/hero.webp"
+        alt="Players in different hats ride an open carriage behind a red steam engine, crossing a bridge toward a mountain island"
+        width="1600"
+        height="900"
       />
       <div class="hero-card">
         <p class="brand">B<span class="o">oo</span>gle</p>
         <h1>Build a railway across the sea with your friends</h1>
         <p>
-          A co-op game that runs in your browser. Land on an island with an axe and a rusty engine, and lay track until
-          the trains run to the next island.
+          A co-op game that runs in your browser. You start on a small island with an axe. By the end of the evening
+          there are trains running over the water, and you laid every piece of the track.
         </p>
         <a class="play" href="../">Play now</a>
-        <p class="small">Free. Nothing to download.</p>
+        <ul class="chips">
+          <li>Free</li>
+          <li>No download</li>
+          <li>No sign-up</li>
+          <li>1 to 4 players</li>
+        </ul>
       </div>
     </header>
 
     <main>
-      <section>
-        <img
-          src="./media/summit.webp"
-          alt="A player on the summit deck of Needle Bell, the home island and the sea spread out below"
-          loading="lazy"
-          width="1280"
-          height="720"
-        />
-        <div>
-          <h2>One island to start</h2>
-          <p>
-            From the top of Needle Bell you can see all of it: the town, the timber camp, the quarry and every stretch
-            of line laid so far. The glider is the quick way back down.
-          </p>
-        </div>
+      <section class="steps" aria-labelledby="how">
+        <h2 id="how">How it plays</h2>
+        <ol>
+          <li>
+            <img
+              src="./media/chop.webp"
+              alt="A player in a hard hat swings an axe into a tree while a friend carries a bundle of logs"
+              loading="lazy"
+              width="1200"
+              height="750"
+            />
+            <h3><span class="n">1</span>Chop</h3>
+            <p>Take an axe to the nearest tree and load the logs on your back.</p>
+          </li>
+          <li>
+            <img
+              src="./media/build.webp"
+              alt="Two players at a crate of logs beside a sign reading Station 1, logs 16 of 24, with a track-laying machine behind"
+              loading="lazy"
+              width="1200"
+              height="750"
+            />
+            <h3><span class="n">2</span>Build</h3>
+            <p>Drop them at the end of the line. Fill the order and the machine lays the next stretch of track.</p>
+          </li>
+          <li>
+            <img
+              src="./media/ride.webp"
+              alt="Seen from behind the riders, the train heads along a bridge toward a mountain island"
+              loading="lazy"
+              width="1200"
+              height="750"
+            />
+            <h3><span class="n">3</span>Ride</h3>
+            <p>Every stretch you finish is track you can ride, a little farther each time.</p>
+          </li>
+        </ol>
       </section>
-      <section>
+
+      <section class="split" aria-labelledby="friends">
         <img
-          src="./media/boiler.webp"
-          alt="A red boiler hanging from a crane beside the forge while townsfolk watch"
+          src="./media/friends.webp"
+          alt="Four players in a row on the town green: a straw hat, a teacup, flying goggles and a bobble hat with headphones, with small townsfolk around them"
           loading="lazy"
-          width="1280"
-          height="720"
+          width="1600"
+          height="900"
         />
         <div>
-          <h2>Chop, carry, lay track</h2>
+          <h2 id="friends">Better with friends</h2>
           <p>
-            Each stretch of track has a bill of logs and stone. Fill it and the line moves on. Haul the boiler home and
-            the old engine wakes: from then on the trains carry the timber for you.
+            Send a link and your friends land in the same world. Split up to chop and haul, or all pile onto one train.
+            It works alone too, just slower.
           </p>
-        </div>
-      </section>
-      <section>
-        <img
-          src="./media/crossing.webp"
-          alt="A timber trestle running out from the island over open water, a crane setting its last frames"
-          loading="lazy"
-          width="1280"
-          height="720"
-        />
-        <div>
-          <h2>Then out over the water</h2>
-          <p>
-            Past the pier there is no ground left. Set footings one frame at a time and the trestle walks out to sea,
-            toward Ring Island.
-          </p>
-        </div>
-      </section>
-      <section>
-        <img
-          src="./media/train.webp"
-          alt="A steam engine and coach standing on the trestle far out at sea"
-          loading="lazy"
-          width="1280"
-          height="720"
-        />
-        <div>
-          <h2>Ride what you built</h2>
-          <p>
-            Every stretch you finish becomes part of the ride. Step on at the town and step off at the end of the line,
-            where the next job is waiting.
-          </p>
-        </div>
-      </section>
-      <section>
-        <img
-          src="./media/town.webp"
-          alt="The town green with its scaffolded statue, the museum, the forge and a crowd of small townsfolk"
-          loading="lazy"
-          width="1280"
-          height="720"
-        />
-        <div>
-          <h2>A town that grows with the line</h2>
-          <p>
-            Freight and fares land in the town’s strongbox. It is one wallet for everyone, and it buys plots and houses
-            that send more riders to the trains.
-          </p>
-        </div>
-      </section>
-      <section>
-        <img
-          src="./media/roundhouse.webp"
-          alt="Red engines on the turntable outside the stone roundhouse, a new boiler on the hoist"
-          loading="lazy"
-          width="1280"
-          height="720"
-        />
-        <div>
-          <h2>Better engines</h2>
-          <p>
-            Steel comes home from Ring Island by rail. Spend it at the roundhouse and the engine goes round on the
-            turntable with a new boiler.
-          </p>
+          <p>There are hats to find. Somebody always ends up in the teacup.</p>
         </div>
       </section>
 
-      <section class="facts">
-        <h2>Good to know</h2>
+      <section class="change" aria-labelledby="change">
+        <h2 id="change">Watch the island change</h2>
+        <p>
+          The world is shared, and what you build stays built. Come back tomorrow and the line is where you left it.
+        </p>
+        <div class="pair">
+          <figure>
+            <img
+              src="./media/before.webp"
+              alt="The island from the air on arrival: forest, a small town and empty sea between it and the next island"
+              loading="lazy"
+              width="1400"
+              height="900"
+            />
+            <figcaption>When you arrive</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="./media/after.webp"
+              alt="The same view later: railway lines cross the island and a long bridge reaches over the sea to the next island"
+              loading="lazy"
+              width="1400"
+              height="900"
+            />
+            <figcaption>Once the line is through</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="more" aria-labelledby="more">
+        <h2 id="more">Along the way</h2>
         <ul>
-          <li><strong>One to four players.</strong> It works alone; friends join the same world from a link.</li>
-          <li><strong>The world is shared and saved.</strong> What one of you builds, everyone rides.</li>
-          <li><strong>Keyboard and mouse, touch or a gamepad.</strong></li>
           <li>
-            <strong>Still being built.</strong> Changes land most days, and a big update can reset the world.
-            <a href="../updates/">Watch the patch videos</a>.
+            <img
+              src="./media/glide.webp"
+              alt="A player hangs from a striped glider high above the town"
+              loading="lazy"
+              width="1200"
+              height="750"
+            />
+            <h3>Glide home</h3>
+            <p>Climb the tallest rock on the island, then jump off it with a glider.</p>
+          </li>
+          <li>
+            <img
+              src="./media/crossing.webp"
+              alt="A train on a long wooden bridge over open water, the home island behind it"
+              loading="lazy"
+              width="1200"
+              height="750"
+            />
+            <h3>Cross open water</h3>
+            <p>Where the land runs out, you build the bridge out to sea one frame at a time.</p>
+          </li>
+          <li>
+            <img
+              src="./media/town.webp"
+              alt="The town green with a museum, a forge and a crowd of small townsfolk"
+              loading="lazy"
+              width="1200"
+              height="750"
+            />
+            <h3>Grow the town</h3>
+            <p>Freight and fares pay into one wallet you all share. Spend it on houses and the town fills up.</p>
+          </li>
+          <li>
+            <img
+              src="./media/roundhouse.webp"
+              alt="Red engines on a turntable outside a stone engine shed, a new boiler on the hoist"
+              loading="lazy"
+              width="1200"
+              height="750"
+            />
+            <h3>Upgrade the engines</h3>
+            <p>Bring steel home by rail and fit a bigger boiler at the engine shed.</p>
           </li>
         </ul>
+      </section>
+
+      <section class="facts" aria-labelledby="facts">
+        <h2 id="facts">Good to know</h2>
+        <dl>
+          <div>
+            <dt>Players</dt>
+            <dd>One to four. Friends join from a link.</dd>
+          </div>
+          <div>
+            <dt>Price</dt>
+            <dd>Free.</dd>
+          </div>
+          <div>
+            <dt>Plays on</dt>
+            <dd>A recent browser on a computer, phone or tablet. Keyboard and mouse, touch or a gamepad.</dd>
+          </div>
+          <div>
+            <dt>Status</dt>
+            <dd>
+              Still being built. Changes land most days, and a big update can reset the world.
+              <a href="../updates/">Watch the patch videos</a>.
+            </dd>
+          </div>
+        </dl>
         <a class="play" href="../">Play now</a>
       </section>
     </main>
