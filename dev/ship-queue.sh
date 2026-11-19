@@ -16,7 +16,8 @@
 #   4. With --wait, polls up to 30 minutes for the commits on origin/main, and starts CI once if none ran for the push.
 # Exit: 0 shipped (with --wait: on main; with --dry-run: checks passed), 1 cannot ship (no trusted checkout), 4 needs
 # review, the stamp is stale or the orchestrator's read is missing, 5 not on main after the wait, 6 held by a red
-# nightly, 7 held by a red main, otherwise ship-branch's status.
+# nightly, 7 held by a red main, 8 with --wait: the ship's pull request conflicts with main (rerun to reship), otherwise
+# ship-branch's status.
 set -uo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 wt=$(cd "${1:?worktree path}" && pwd) || exit 1
@@ -138,6 +139,16 @@ sha=$(git -C "$wt" rev-parse HEAD)
 left() { git -C "$wt" fetch -q origin; git -C "$wt" log origin/main..HEAD --oneline | wc -l | tr -d ' '; }
 for i in $(seq 1 90); do
   [ "$(left)" = 0 ] && { echo "ship: on main"; exit 0; }
+  # A ship pull request that conflicts with main (another ship landed while this one was in CI) never merges: say so
+  # now, not after 30 minutes. A rerun rebases onto the new main and pushes a new ship branch.
+  if [ $((i % 3)) = 0 ]; then
+    branch=$(git -C "$wt" branch -r --contains "$sha" | sed -n 's|^ *origin/\(ship/.*\)$|\1|p' | head -1)
+    if [ -n "$branch" ] && pr=$(gh pr list --head "$branch" --state open --json number,mergeStateStatus \
+      -q '.[0] | select(.mergeStateStatus == "DIRTY") | .number' 2>/dev/null) && [ -n "$pr" ]; then
+      echo "ship: pull request #$pr conflicts with main; nothing merged. Rerun ship-queue to rebase and reship, then close #$pr."
+      exit 8
+    fi
+  fi
   # A push sometimes gets no CI run ("workflow file issue" on Auto-merge, seen 9 November): start CI once by hand.
   if [ "$i" = 12 ] && [ "$(gh run list --commit "$sha" --workflow ci.yml --json databaseId -q length 2>/dev/null)" = 0 ]; then
     branch=$(git -C "$wt" branch -r --contains "$sha" | sed -n 's|^ *origin/\(ship/.*\)$|\1|p' | head -1)
