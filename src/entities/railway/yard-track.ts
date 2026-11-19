@@ -15,7 +15,7 @@ export type TrackPath = (l: number) => TrackPose;
 type RailEnd = { x: number; z: number; y: number };
 
 /** The kit's sleeper and rail, metres. */
-const SLEEPER_SIZE = { length: 2.3, depth: 0.42 },
+const SLEEPER_SIZE = { length: 2.3, depth: 0.42, height: 0.12 },
   RAIL_LENGTH = 3.05;
 // One source with what rides the yard's rails (./works-shape.ts): each rail's place from the centreline, and its foot
 // over the rail height, the kit rail's 0.135 m under its head (0.1, as buildTrack's TOP).
@@ -65,6 +65,15 @@ export function createYardTrack(ground: (x: number, z: number) => number) {
         height = p.y + BASE - foot;
       if (height > 0.18) posts.push(matrix(at.x, foot, at.z, p.yaw, 0, 0.7, height, 0.7));
     }
+  }
+  /** A rim timber (docs/plans/turnouts.md, (e)): a sleeper at `p`, square to its track and pitched with it, with its
+   * tie plates as a sleeper's, but stretched down so its foot (its highest edge's, when pitched) rests on `bottom`.
+   * No post and no contact blob: it lies on stone. */
+  function rimTimber(p: TrackPose, bottom: number, pitch = 0) {
+    const top = p.y + BASE + SLEEPER_SIZE.height,
+      foot = bottom - 0.005 - (SLEEPER_SIZE.depth / 2) * Math.abs(Math.tan(pitch));
+    sleepers.push(matrix(p.x, foot, p.z, p.yaw, pitch, 1, (top - foot) / SLEEPER_SIZE.height, 1));
+    plates.push(matrix(p.x, p.y + BASE, p.z, p.yaw, pitch, 1, 1, 1));
   }
   /** Sleepers evenly along `path` from `from` to `to`, about 1.2 m apart, the first and last half a space in. */
   function sleepersAlong(path: TrackPath, from: number, to: number) {
@@ -172,6 +181,7 @@ export function createYardTrack(ground: (x: number, z: number) => number) {
   }
   return {
     sleeper,
+    rimTimber,
     sleepersAlong,
     rail,
     railsAlong,

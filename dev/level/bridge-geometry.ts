@@ -2,9 +2,9 @@
 import fs from 'node:fs';
 import * as THREE from 'three/webgpu';
 import { TABLE } from '../../src/place/home-station.ts';
-import { LINKS, ORIGIN, railY } from '../../src/place/layout.ts';
+import { ORIGIN } from '../../src/place/layout.ts';
 import { BRIDGE, tableYaws } from '../../src/entities/railway/table-bridge.ts';
-import { RAIL_HEAD, SHUNT } from '../../src/entities/railway/works-shape.ts';
+import { RAIL_HEAD, SHUNT, TABLE_RAIL, rimCut } from '../../src/entities/railway/works-shape.ts';
 import type { BoxBatch } from '../../src/entities/railway/works-box-view.ts';
 import { material } from '../../src/render/materials.ts';
 import { geometryFaces, materialSurface } from '../../src/geometry/drawn-faces.ts';
@@ -29,11 +29,12 @@ export function collectBridgeGeometry(): Face[] {
     batch,
     m: new THREE.Matrix4(),
     table: { x: TABLE.x + ORIGIN.x, z: TABLE.z },
-    tableY: railY(LINKS[1]!.line, 0),
+    tableY: TABLE_RAIL,
     R: TABLE.r,
     DECK: BRIDGE,
     SHUNT,
     RAIL_HEAD,
+    rimCut,
     drawn: tableYaws()[0],
   }).draw();
   batch.commit();

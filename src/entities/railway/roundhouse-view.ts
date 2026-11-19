@@ -24,10 +24,11 @@ import {
   STALL_SLAB,
   SLAB_Z,
   PIER,
-  STALL_ROAD,
   STALL_RAIL,
   RAIL_HEAD,
   SHUNT,
+  TABLE_RAIL,
+  rimCut,
   STALL_SOCKETS,
   STALL_YAW,
   stallPoint,
@@ -45,7 +46,7 @@ import { PARK, createShuntPath } from './shunt-path.ts';
 import { account, shed, trains, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
 import { ROTUNDA_BLOCK, ROTUNDA_KIT } from '../../place/rotunda.ts';
 import { createRotundaView } from './rotunda-view.ts';
-import { BRIDGE, bridgeHalf, bridgeHandle, clearOfBridge } from './table-bridge.ts';
+import { BRIDGE, bridgeHalf, bridgeHandle, clearOfBridge, tableYaws } from './table-bridge.ts';
 import { createTableRide } from './railhead-state.ts';
 import { siteExit } from '../../place/site-clearance.ts';
 import { outOf } from '../../place/sites.ts';
@@ -113,13 +114,10 @@ export async function createRailwayRoundhouse(
   const rotunda = createRotundaView(owner);
   const anchor = { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100 };
   const table = toWorld(home.TABLE);
-  const line2 = layout.LINKS[1]!.line;
-  const tableY = layout.railY(line2, 0);
+  const tableY = TABLE_RAIL;
   const R = home.TABLE.r;
-  const rim = STALL_ROAD[0]!;
-  const yaws = [Math.atan2(rim.x - table.x, rim.z - table.z), 0];
-  const spur = (home.TABLE.spur * Math.PI) / 180;
-  yaws[1] = Math.atan2(Math.sin(spur), -Math.cos(spur));
+  /** The deck's two rests: on the open stall's road and down the spur (./table-bridge.ts). */
+  const yaws = tableYaws();
   /** The bridge's deck and where its handle stands when the deck's yaw is `yaw` (./table-bridge.ts, which the turn's
    * cue reads too). */
   const DECK = BRIDGE;
@@ -448,11 +446,12 @@ export async function createRailwayRoundhouse(
     // table and the prompts keep `tableYaw`.
     const drawn = garageView.deckYaw() ?? tableYaw;
     // The bridge's rails at the yard track's gauge and height (./yard-track.ts: a metre apart, heads 0.235 over the
-    // rail height), a hand short of the rim at each end, so the spur and the stall road run straight on.
+    // rail height), cut on the circle 3 cm inside the rim (`rimCut`): each road's rails stop 3 cm outside it, so a
+    // resting deck meets the spur or a stall road across a 6 cm gap square to the road.
     for (const side of [-1, 1]) {
       const ox = Math.cos(drawn) * side * SHUNT.gauge,
         oz = -Math.sin(drawn) * side * SHUNT.gauge;
-      batch.box(table.x + ox, tableY + RAIL_HEAD - 0.135 / 2, table.z + oz, 0.1, 0.135, R * 2 - 0.1, '#4c5058', drawn);
+      batch.box(table.x + ox, tableY + RAIL_HEAD - 0.135 / 2, table.z + oz, 0.1, 0.135, rimCut(-1) * 2, '#4c5058', drawn);
     }
     const deckTop = tableY + 0.05,
       deckY = deckTop - DECK.h / 2,

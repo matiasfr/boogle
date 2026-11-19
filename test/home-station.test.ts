@@ -556,3 +556,86 @@ test('the island’s two levers stand more than twice the prompt’s reach apart
     assert.ok(Math.abs(at.c - road * ROAD_GAP) < Math.abs(at.c - (1 - road) * ROAD_GAP));
   });
 });
+
+test("the deck rests on the spur's and the stall's bearings", async () => {
+  const [{ tableYaws }, { rimCut }, { layHomeYard }, THREE] = await Promise.all([
+    import('../src/entities/railway/table-bridge.ts'),
+    import('../src/entities/railway/works-shape.ts'),
+    import('../src/entities/railway/home-yard.ts'),
+    import('three/webgpu'),
+  ]);
+  const bearingOfYaw = (yaw: number) => bearingOf(Math.sin(yaw), Math.cos(yaw));
+  const end = march(
+    roadAt(1, SPUR.s),
+    SPUR.segs,
+    SPUR.segs.reduce((n, s) => n + s.len, 0),
+  );
+  const [toStall, toSpur] = tableYaws().map(bearingOfYaw);
+  // The deck is one straight across the table: lying along a road either way round is resting on it.
+  const along = (a: number, b: number) => Math.min(angleGap(a, b), angleGap(a, b + 180));
+  assert.ok(along(toSpur!, bearingOf(end.x - TABLE.x, end.z - TABLE.z)) < 1e-6, `spur ${toSpur}`);
+  const open = stallFrame(STALLS.open);
+  assert.ok(along(toStall!, bearingOf(open.rim.x - TABLE.x, open.rim.z - TABLE.z)) < 1e-6, `stall ${toStall}`);
+  // At either rest each rail meets the road's across 6 cm: the deck's are cut 3 cm inside the rim, and every rail
+  // the yard lays that reaches the rim is cut 3 cm outside it (docs/plans/turnouts.md, (e)).
+  assert.ok(Math.abs(Math.hypot(rimCut(-1), 0.5) - (TABLE.r - 0.03)) < 1e-9, 'the deck rails end on r - 0.03');
+  const centre = { x: TABLE.x + ORIGIN.x, z: TABLE.z };
+  const ends = layHomeYard(H)
+    .rails()
+    .flatMap((m) => {
+      const half = new THREE.Vector3(0, 0, 3.05 / 2).applyMatrix4(m),
+        mid = new THREE.Vector3().setFromMatrixPosition(m);
+      return [half, mid.multiplyScalar(2).sub(half)].map((p) => Math.hypot(p.x - centre.x, p.z - centre.z));
+    })
+    .filter((r) => r < TABLE.r + 1);
+  // The spur's two and the seven stall roads' two each.
+  assert.equal(ends.length, 2 * (1 + 7));
+  for (const r of ends)
+    assert.ok(Math.abs(r - (TABLE.r + 0.03)) < 0.001, `a rail ends ${(r - TABLE.r).toFixed(4)} m out`);
+});
+
+test('rim timbers clear each other', async () => {
+  const { RIM_TIMBER, rimBearings, rimTimbers } = await import('../src/entities/railway/works-shape.ts');
+  const corners = (b: { x: number; z: number; w: number; d: number; yaw: number }): XZ[] => {
+    const u = { x: Math.sin(b.yaw), z: Math.cos(b.yaw) },
+      n = { x: u.z, z: -u.x };
+    return [
+      [-1, -1],
+      [1, -1],
+      [1, 1],
+      [-1, 1],
+    ].map(([i, j]) => ({
+      x: b.x + (n.x * i! * b.w) / 2 + (u.x * j! * b.d) / 2,
+      z: b.z + (n.z * i! * b.w) / 2 + (u.z * j! * b.d) / 2,
+    }));
+  };
+  const toSegment = (p: XZ, a: XZ, b: XZ) => {
+    const dx = b.x - a.x,
+      dz = b.z - a.z,
+      t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.z - a.z) * dz) / (dx * dx + dz * dz)));
+    return dist(p, { x: a.x + dx * t, z: a.z + dz * t });
+  };
+  /** Two convex footprints that do not overlap are as far apart as a corner of one from an edge of the other. */
+  const gap = (a: XZ[], b: XZ[]) =>
+    Math.min(
+      ...[
+        [a, b],
+        [b, a],
+      ].flatMap(([p, q]) => p!.flatMap((c) => q!.map((e, k) => toSegment(c, e, q![(k + 1) % 4]!)))),
+    );
+  const timbers = rimTimbers(),
+    bearings = rimBearings(),
+    centre = { x: TABLE.x + ORIGIN.x, z: TABLE.z };
+  assert.equal(timbers.length, 8, 'the spur and seven bays');
+  // Each is square to its road and lies on the kerb (8.15 to 8.6 m out): its inner edge on it, its outer inside it.
+  timbers.forEach((t, k) => {
+    assert.ok(angleGap(bearingOf(Math.sin(t.yaw), Math.cos(t.yaw)), bearings[k]!) < 1e-6);
+    const r = dist(t, centre);
+    assert.ok(r - RIM_TIMBER.depth / 2 >= TABLE.r + 0.15 && r + RIM_TIMBER.depth / 2 <= TABLE.r + 0.6, `at ${r}`);
+  });
+  let nearest = Infinity;
+  for (let i = 0; i < timbers.length; i++)
+    for (let j = i + 1; j < timbers.length; j++)
+      nearest = Math.min(nearest, gap(corners(timbers[i]!), corners(timbers[j]!)));
+  assert.ok(nearest >= 0.18, `the nearest two rim timbers are ${nearest.toFixed(3)} m apart`);
+});
