@@ -738,11 +738,11 @@ steel", "Look at the engine" (still at the post after the install).
 **Fixed, 18 November 2026 (night), branch `claude/garage-deck-friend`: both defects, then the review's three.**
 Whoever has their feet on the deck's top, at rest or turning, rides it on their own tab: a kinematic copy of the deck
 (`createTableRide` in `src/entities/railway/railhead-state.ts`, on `car.ts`'s carry, as the railhead's deck), led by
-the drawn yaw. A ride never starts from below (out of the pit). Leaving the deck (a jump, a step off its side or end)
+the drawn yaw. A ride never starts while rising out of the pit; a jump from the pit floor that clears the top lands on it. Leaving the deck (a jump, a step off its side or end)
 drops the deck's speed: they land on the deck or in the pit at their own walking speed, not the deck's (its end moves at
 about 24 m/s in the show-off). Trains and the railhead traveller keep their carry. The deck is a shared platform
 (`railway:table`): a rider sends their place on it (the `riding` presence) and every page draws them on its own deck,
-whatever yaw that page shows (a marker car, a 1 cm box under the deck's middle, follows the drawn deck on every tab).
+whatever yaw that page shows (a marker car, a 1 cm box under the deck's middle that collides with nothing, follows the drawn deck on every tab; until 19 November it collided and lifted a player under the deck's middle out of the pit; `deckcase=pitend&pitalong=0` holds it).
 When the deck's boxes come back, a player inside them (in the pit under it) is moved out of its side only, at their own
 height, still in the pit; never off its end onto the kerb. This reverses the "carried" part of call 23 below (logged in
 [agent-calls](../agent-calls.md)); the engine copy still passes through a friend. On a phone the touch stick and buttons
