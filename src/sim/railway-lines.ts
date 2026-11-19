@@ -686,7 +686,6 @@ export const legBuilt = (k: number) => {
 RAIL_LEGS.forEach((leg, k) => {
   if (!legBuilt(k)) return;
   const halts = RAIL_LINES[leg.line]!.halts,
-    head = halts[leg.railheadHalt]!,
     last = leg.sections.length - 1;
   // A built leg has a head halt for each section but the last, in order from its railhead halt, each opened by its
   // section, at the section's end less HEAD_BACK_CM; the halt before its railhead is its from halt (at its start) and
@@ -702,7 +701,6 @@ RAIL_LEGS.forEach((leg, k) => {
     )
       throw new Error(`railway: leg ${leg.id}'s heads`);
   }
-  void head;
   const dest = halts[leg.railheadHalt + last];
   if (
     halts[leg.railheadHalt - 1]?.s !== legStartS(leg) ||

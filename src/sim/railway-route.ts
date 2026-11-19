@@ -429,6 +429,8 @@ const FIRST_SITE: Readonly<Record<string, { frame: RailPlatform; rack: RailPlatf
     rack: rowSide('bay', 600, 980, 90, LEG_SITE_REACH),
   },
 };
+if (Object.keys(FIRST_SITE).join() !== SPECS.filter((sp) => sp.built).map((sp) => sp.id).join())
+  throw new Error('railway-route: every built leg names its first frame and rack, in order');
 /** Section k's frame, where `rail.legStock` is judged: a built leg's first is its FIRST_SITE; the others stand 8 m short
  * of the railhead (the section's first centimetre), 4.8 m to the right going out, 90 cm over the deck (step 4's
  * review, b), on any row. An unbuilt leg's first is a placeholder at its row's first centimetre. */

@@ -11,7 +11,7 @@ import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { LINE2, RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { lineBlocksBroken, lineReqOk, servingSlots, trainRowBroken } from './railway-trains.ts';
 import { TRAIN_PHASE, fleetOf, trainIdle } from './railway-train.ts';
-import { MINT_LEGS, YARD_LEGS, legsLaid } from './railway-queries-route.ts';
+import { SERVED_LEGS, legsLaid } from './railway-queries-route.ts';
 import { RAIL_LEGS } from './railway-route.ts';
 import { lines, rail, trains } from './railway-rows.ts';
 import { stopsOf } from './railway-queries.ts';
@@ -20,12 +20,12 @@ import { railTrainsOf } from './railway-queries-trains.ts';
 const bad = (what: string): never => {
   throw new Error(`railway: ${what}`);
 };
-/** The trains' and lines' whole-world invariants; throws on the first broken one. */
 /** The most of each kind a train of `line` carries: line 2's kit car (32), a section's bill on a line that carries a
  * leg's kit (greybox-leg2.md, step 2: one kit a train), else none. */
 const LEG_KIT_MOST = Math.max(...RAIL_LEGS.flatMap((l) => l.sections.map((s) => Math.max(s.logs, s.rails))));
 const cargoOf = (line: number) =>
-  line === LINE2 ? 32 : MINT_LEGS[line]!.length + YARD_LEGS[line]!.length ? LEG_KIT_MOST : 0;
+  line === LINE2 ? 32 : SERVED_LEGS[line]!.length ? LEG_KIT_MOST : 0;
+/** The trains' and lines' whole-world invariants; throws on the first broken one. */
 export function checkTrains(w: World) {
   // The train and line row counts are railwayCheck's own count check, which refuses first.
   const awake = rail(w).trains >= 0;

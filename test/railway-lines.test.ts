@@ -26,6 +26,7 @@ import { LINE2_ROWS, line2Stops } from './helpers/rail-rows.ts';
 import { TRAIN_CARS, TRAIN_OFFSETS, TRAIN_TAIL_M } from '../src/entities/railway/cars.ts';
 import { ENGINE_LONG_AHEAD } from '../src/entities/railway/engine.ts';
 import { FORMATION, TURNOUT } from '../src/place/layout.ts';
+import { WORLD_LINES } from '../src/sim/railway-world-lines.ts';
 import { TRAIN, TRAIN_STOPS, trainStopsOf } from '../src/sim/railway-train.ts';
 import { railLinePoint } from '../src/sim/railway-line-path.ts';
 import { PIER_STOP_CM } from '../src/sim/railway-works-layout.ts';
@@ -115,9 +116,10 @@ test("the sim's train reach and turnout are the drawn ones, and every signal sta
       if (!h.end || h.heads || h.ring) return;
       const side = k === 0 ? -1 : 1,
         lead = side < 0 ? TRAIN_EXTENT.behindCm : TRAIN_EXTENT.aheadCm;
-      // The greybox route's built rows (greybox-leg2.md, step 2) draw their ends from the catalog, not FORMATION.
-      if (h.leg) return assert.equal(h.end.signalCm, h.end.edgeCm - side * lead, `${h.name}: clear of the block`);
-      if (h.end.kind === 'stub') {
+      // The greybox route's built rows (greybox-leg2.md, step 2) take their ends from the catalog, not FORMATION.
+      if (h.leg) {
+        if (k === 0) assert.equal(h.end.mergeCm, WORLD_LINES.find((r) => r.id === l.id)!.ends[0]!.sCm, h.name);
+      } else if (h.end.kind === 'stub') {
         assert.equal(
           h.end.mergeCm,
           (side < 0 ? drawn[line]!.from : drawn[line]!.to) * 100,
