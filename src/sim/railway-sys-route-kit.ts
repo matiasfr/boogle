@@ -21,11 +21,13 @@
 import { defineSystem, type World } from '../ecs/index.ts';
 import { deckHeld } from './railway-queries-trade.ts';
 import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
-import { RAIL_LEGS } from './railway-route.ts';
+import { RAIL_LEGS, legRack } from './railway-route.ts';
+import { RAILS } from './railway-line2-layout.ts';
 import { steelNeed } from './railway-queries.ts';
 import { TRAIN, type RailTrain, type ServiceStop } from './railway-train.ts';
-import { Account, Forge, Leg, LegYard, Rail, Train } from './railway-components.ts';
+import { Account, Aperture, Forge, Leg, LegYard, Pile, Rail, Train } from './railway-components.ts';
 import {
+  heldKit,
   MINT_LEGS,
   SERVED_LEGS,
   STOCKED_LEGS,
@@ -323,7 +325,7 @@ export function trimLegHeld(w: World) {
  * session that has since changed. Returns the units released from the count. */
 export const legKitRelease = defineSystem(
   'rail.legKitRelease',
-  { writes: [Leg, Account], phase: 'legKit', order: 0 },
+  { reads: [Rail, Aperture], writes: [Leg, Account], phase: 'legKit', order: 0 },
   (w, q: { pid: string; epoch: number }) => {
     const id = w.lookup(Account, q.pid);
     const a = id === undefined ? undefined : w.get(Account, id)!;
@@ -332,8 +334,9 @@ export const legKitRelease = defineSystem(
     const n = a.legLogs + a.legRails,
       rails = a.legRails;
     moveHeld(w, id!, k, -a.legLogs, -a.legRails);
-    // The stand-in's rails gone with a leaver are owed again (the re-check of greybox leg 2, P1).
-    if (standing(w, k)) w.mut(Leg, legId(w, k))!.loadedRails -= rails;
+    // The stand-in's rails gone with a leaver are owed again (the re-check of greybox leg 2, P1), never more than it
+    // has lost (the second re-check's P2: the shelf may hold the leg before's leftovers, lifted too).
+    if (standing(w, k)) w.mut(Leg, legId(w, k))!.loadedRails -= Math.min(rails, legStandInLost(w, k).rails);
     return n;
   },
 );
@@ -346,17 +349,78 @@ const standing = (w: World, k: number) => STOCKED_LEGS.includes(k) && legRow(w, 
 export function legKitRecovered(w: World, rails: number) {
   for (const k of STOCKED_LEGS) {
     if (rails <= 0 || !standing(w, k)) continue;
-    const back = Math.min(rails, legStandInLost(w, k));
+    const back = Math.min(rails, legStandInLost(w, k).rails);
     if (back <= 0) continue;
     w.mut(Leg, legId(w, k))!.loadedRails -= back;
     rails -= back;
   }
 }
-/** Rails stand-in leg k has loaded that are not on its rack, counted held on a back, or fed: put down, or a leaver's
- * before the grace. Never under 0 (the rack may hold the leg before's leftovers). */
-export function legStandInLost(w: World, k: number) {
-  const row = legRow(w, k);
-  return Math.max(0, row.loadedRails - w.get(Rail, w.single(Rail))!.depotRails - row.heldRails - row.rails);
+/** What stand-in leg k has loaded that is not on its rack, counted held on a back (heldKit, as legRackNeed counts it)
+ * or fed: put down, carried off uncounted, or a leaver's before the grace. Never under 0 (the rack may hold the leg
+ * before's leftovers). */
+export function legStandInLost(w: World, k: number): Kit {
+  const row = legRow(w, k),
+    rail = w.get(Rail, w.single(Rail))!,
+    held = heldKit(w, k);
+  return {
+    logs: Math.max(0, row.loadedLogs - rail.depot - held.logs - row.logs),
+    rails: Math.max(0, row.loadedRails - rail.depotRails - held.rails - row.rails),
+  };
+}
+/** Units taken off a pile by account `aid` while a stand-in stands: what it has lost of that kind counts held again
+ * (the second re-check of greybox leg 2, P1: a unit put down and taken up again was no longer counted, so a leaver
+ * carrying it off left the section short unseen), capped at the lost count and the held room. */
+export function legKitRetaken(w: World, aid: number, logs: number, rails: number) {
+  for (const k of STOCKED_LEGS) {
+    if (logs + rails <= 0 || !standing(w, k)) continue;
+    const lost = legStandInLost(w, k),
+      room = legHeldRoom(w, k),
+      row = legRow(w, k),
+      a = w.get(Account, aid)!;
+    moveHeld(
+      w,
+      aid,
+      k,
+      Math.max(0, Math.min(logs, lost.logs, room.logs - row.heldLogs, LIFT_MAX - a.legLogs)),
+      Math.max(0, Math.min(rails, lost.rails, room.rails - row.heldRails, LIFT_MAX - a.legRails)),
+    );
+  }
+}
+/** How near the stand-in's rack a pile must lie to hold the backstop off (cm): a unit put down there is taken up again. */
+const BACKSTOP_NEAR_CM = 3000;
+/** The stand-in's liveness backstop (the second re-check of greybox leg 2): at a supply pulse that opens a new minute
+ * (the host sends one a minute while the room plays; railway-sys-away.ts, supply), a standing stand-in whose section
+ * is short (legRackNeed: fed, racked and counted held) with units it has lost (legStandInLost) and no pile of that
+ * kind within BACKSTOP_NEAR_CM of its rack is made whole: lost rails come off its loaded count (legKitStock stocks
+ * them again from the forge rack on the next tick, so rails stay conserved and loaded never passes the bill), lost
+ * logs are minted onto its rack. At most once a minute, so it bounds how fast logs can be minted by losing them; it is
+ * the floor under every other path (a leaver, a pile recovered, a unit carried off uncounted), not a replacement. */
+export function legStandInBackstop(w: World) {
+  for (const k of STOCKED_LEGS) {
+    if (!standing(w, k)) continue;
+    const need = legRackNeed(w, k),
+      lost = legStandInLost(w, k),
+      rack = legRack(RAIL_LEGS[k]!, 0);
+    const near = (kind: number) => {
+      let found = false;
+      w.each([Pile], (_id, p) => {
+        const dx = p.x - rack.x,
+          dz = p.z - rack.z;
+        if (p.kind === kind && p.n > 0 && dx * dx + dz * dz <= BACKSTOP_NEAR_CM * BACKSTOP_NEAR_CM) found = true;
+      });
+      return found;
+    };
+    const rails = Math.min(need.rails, lost.rails),
+      logs = Math.min(need.logs, lost.logs);
+    if (rails > 0 && !near(RAILS)) w.mut(Leg, legId(w, k))!.loadedRails -= rails;
+    if (logs > 0 && !near(0)) {
+      const r = w.mut(Rail, w.single(Rail))!,
+        m = w.mut(Leg, legId(w, k))!;
+      r.depot += logs;
+      r.depotProduced += logs;
+      m.loadedLogs += logs;
+    }
+  }
 }
 /** Who carries units lifted off a leg's rack, and in which session (the host's leaver check; accepted state only). */
 export function railLegKitHolders(w: World) {

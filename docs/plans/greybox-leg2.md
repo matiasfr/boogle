@@ -333,6 +333,34 @@ leaver's are made up by chopping, and recovered logs go to the recovery rack, wh
 lifted off a rack and lost is owed again" holds for the stand-in too, bounded by what was lost rather than by a train's
 rate; leg 1's and the incline's racks are unchanged. Again no hash golden moved, and the leg 2 fuzz is unchanged.
 
+**Second re-check fix (18 November): closing the class.** A third way in: units put down and taken up again from
+their pile were no longer counted held, so a leaver carrying them off was never released and section 1 stayed short.
+And a release could take more off the stand-in's loaded rails than it had (the shelf may hold the incline's leftovers),
+driving them negative. Now, still with no new state:
+
+- **Taken up again, counted again.** While the stand-in stands (open, nothing laid), `rail.take` from a pile counts
+  logs and rails as held again (`legKitRetaken`), capped at what the stand-in has lost (`legStandInLost`: loaded less
+  racked, counted held and fed) and the held room. The release then sees them.
+- **No release past what was lost.** A release takes `Math.min(rails, lost)` off the loaded rails, never more.
+- **The liveness backstop.** At a supply pulse that opens a new minute (the host sends one a minute while the room
+  plays), a stand-in whose section is short (fed, racked and counted held), with units it has lost and no pile of
+  that kind within 30 m of its rack, is made whole: lost rails come off its loaded count and the stand-in stocks them
+  again from the forge rack on the next tick (rails stay conserved, loaded rails never pass the bill); lost logs are
+  minted onto its rack. It is the floor under every other path, at most once a minute, which bounds how fast logs can
+  be minted by losing them. A unit put down near the rack holds it off: take it up again. The delay is the pulse's
+  minute rather than a measured wait since the shortfall began: that needs a timer the state does not have, and the
+  pulse already bounds the rate.
+- **The load check** keeps its over-bill bound for rails only (`stand-in over its bill`); logs are rate-bounded
+  instead.
+- **A property test** (`test/railway-leg2-standin.test.ts`), from `bay-open` with the steel works lit: seeded random
+  histories of take, put down (near or 120 m off), take up again, feed, leave (for good, or back within a 1,200-tick
+  grace), host restart and supply pulses, then whoever is in the room feeds section 1 with the rack and the piles near
+  it. **300 seeds ran: section 1 laid in every one, the slowest 1,200 ticks after the room settled (bound 3,600)**,
+  with the load check holding and loaded rails never negative at every step. With the backstop switched off it fails
+  within 60 seeds. The suite runs 24 (`STANDIN_SEEDS`).
+
+No hash golden moved; the leg 2 long fuzz is unchanged in every figure.
+
 **Checkpoint B (leg 2 playable).** Named proofs, run once: `npm run loop -- run` for one to three players with idle
 seconds per wait; the bot segment `--from gorge-reached --to bay`; `npm run test:net`; `npm run scenario --
 reconnect-edit` at `--rail-seed incline-mid` (a second tab joins; the first leaves carrying a rail and rejoins after a

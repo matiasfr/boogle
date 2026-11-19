@@ -91,13 +91,16 @@ test('rails put down at the West landing, taken up again and carried off by a le
   const ids = putDownRails(s, 'a', n);
   for (const id of ids) act(s, 'a', 'rail.take', { id, kind: RAILS });
   assert.equal(acc(s, 'a').rails, n, 'a carries them again');
-  assert.equal(acc(s, 'a').legRails, 0, 'no longer counted held');
+  // Builder's fix (a): taken up again while the stand-in stands, they count held again (capped at what it lost), so
+  // the host lists a and the leaver's release owes them again; the backstop is the floor if it did not.
+  assert.equal(acc(s, 'a').legRails, n, 'counted held again');
   assert.equal(
     railLegKitHolders(s.w).some((h) => h.pid === 'a'),
-    false,
-    'the host has nothing to release for a',
+    true,
+    'the host can release a',
   );
-  // a leaves for good; b plays on. Forge pours, pulses run.
+  // a leaves for good; past the grace the host releases a's held units; b plays on. Forge pours, pulses run.
+  railLegKitRelease(s.w, 'a', acc(s, 'a').epoch);
   const ok = feedRails(s, ['b']);
   assert.equal(invariant(s.w), null);
   assert.ok(
@@ -116,8 +119,10 @@ test('rails a friend picked up off a West landing pile and took away can still b
   const ids = putDownRails(s, 'a', n);
   for (const id of ids) act(s, 'b', 'rail.take', { id, kind: RAILS });
   assert.equal(acc(s, 'b').rails, n, 'b carries them');
-  assert.equal(acc(s, 'b').legRails, 0);
-  // b leaves for good; a plays on.
+  // Builder's fix (a): counted held again on b, so b's release owes them again.
+  assert.equal(acc(s, 'b').legRails, n);
+  // b leaves for good; past the grace the host releases b; a plays on.
+  railLegKitRelease(s.w, 'b', acc(s, 'b').epoch);
   const ok = feedRails(s, ['a']);
   assert.equal(invariant(s.w), null);
   assert.ok(

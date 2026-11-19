@@ -15,6 +15,7 @@ import {
 } from './railway-supply.ts';
 import { RAILWAY_MAX_INT } from './railway.ts';
 import {
+  Account,
   Aperture,
   Beam,
   Boiler,
@@ -60,7 +61,7 @@ import {
 import { STEEL } from './railway-ring-layout.ts';
 import { jobClock } from './railway-sys-core.ts';
 import { layLine1 } from './railway-sys-line1.ts';
-import { legKitRecovered } from './railway-sys-route-kit.ts';
+import { legKitRecovered, legStandInBackstop } from './railway-sys-route-kit.ts';
 import { boilerPedestal, cartMint, cartTakeRails, cartUnload, layLine2 } from './railway-sys-line2.ts';
 import { yardsAway } from './railway-sys-trade.ts';
 import { sackCap, tillRate } from './railway-queries-trade.ts';
@@ -218,7 +219,12 @@ const progressUnits = (marker: number, minutes: number, interval: number, units:
 /** Idempotent accepted event. Nearby/unknown players are excluded by the host before it stamps recover ids. */
 export const supply = defineSystem(
   'rail.supply',
-  { writes: [Rail, RailClock, Pile, Forge, Tree, Rock, Beam, Boiler, Works, Leg], phase: 'supply', order: 0 },
+  {
+    reads: [Account, Aperture],
+    writes: [Rail, RailClock, Pile, Forge, Tree, Rock, Beam, Boiler, Works, Leg],
+    phase: 'supply',
+    order: 0,
+  },
   (w, { e, intervals }: { e: SupplyPulse; intervals: SupplyIntervals }) => {
     const rid = railId(w);
     const clock = w.get(RailClock, rid)!;
@@ -255,8 +261,10 @@ export const supply = defineSystem(
       },
       [Pile],
     );
-    // Rails back on the forge rack that a West landing stand-in had lost are owed to it again (greybox leg 2, P1).
+    // Rails back on the forge rack that a West landing stand-in had lost are owed to it again (greybox leg 2, P1); and,
+    // a minute on, whatever it has still lost with nothing put down near its rack (the liveness backstop).
     legKitRecovered(w, rails);
+    if (minutes > 0) legStandInBackstop(w);
     w.each(
       [Tree],
       (_id, t) => {
