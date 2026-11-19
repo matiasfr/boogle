@@ -6,7 +6,8 @@
 // facing the table. Player 2 opens the garage at the post and, 4 s after both are ready, holds Install. The friend's
 // page samples its own body every frame from the moment's start to its end and prints what happened to it: how far it
 // went round the table with the deck (carried means about a full turn), how far it dropped, whether it ever stood
-// inside the copy's boxes, and whether it saw the moment (phase `moment`, not `mine`).
+// inside the copy's boxes, and whether it saw the moment (phase `moment`, not `mine`). It fails (a console error)
+// unless the friend was carried round with the deck, never dropped into the pit and ends on the deck's top.
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
@@ -139,6 +140,20 @@ if (second) {
       );
       say(`samples ${marks.join(' ')}`);
       say(`after: ${JSON.stringify(end)}, Line.boiler ${boiler()}, copy solids ${works()?.garageView?.copy?.solid}`);
+      // Carried (the deck's yaw, within 20°), never dropped into the pit, and still on the deck's top a second after
+      // the deck's boxes came back (not inside them).
+      await wait(1000);
+      const settled = round(y0 - pos().y);
+      say(`a second later: ${settled} m under where they stood`);
+      const deg = (a: number) => Math.round((a * 180) / Math.PI);
+      const fails = [
+        Math.abs(deg(deckTurned)) < 300 && `the deck turned only ${deg(deckTurned)}°`,
+        Math.abs(deg(turned - deckTurned)) > 20 && `carried ${deg(turned)}° on a ${deg(deckTurned)}° turn`,
+        y0 - lowest > 0.3 && `dropped ${round(y0 - lowest)} m`,
+        Math.abs(settled) > 0.15 && `ended ${settled} m under the deck's top`,
+      ].filter(Boolean);
+      if (fails.length) throw new Error(`garage-deck: ${fails.join('; ')}`);
+      say('PASS: carried round on the deck, never dropped');
     })(),
     'deck friend',
   );

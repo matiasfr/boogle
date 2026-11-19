@@ -28,8 +28,8 @@ export function bridgeHandle(table: XZ, r: number, yaw: number): XZ {
   };
 }
 /** Whether a player's body (its centre, `PLAYER_R` over its feet) is clear of the deck resting at `yaw`, whose top is
- * at `top`: off its footprint by the body's own radius, or standing at its top or higher. The deck's collider is put
- * back only then, so it never returns through someone who dropped into the pit while it turned. No player is clear. */
+ * at `top`: off its footprint by the body's own radius, or standing at its top or higher. When the deck's collider comes
+ * back, a player not clear is moved to its nearest side if they overlap it, never lifted through it. No player is clear. */
 export function clearOfBridge(
   table: XZ,
   r: number,
