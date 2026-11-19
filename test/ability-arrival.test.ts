@@ -181,6 +181,23 @@ test("the boiler's card: every page's at the live trains edge, after its show, n
   }
 });
 
+test("review: with no show (reduced motion), a friend gets the boiler's card as the wake ends, not a flourish too", () => {
+  const h = harness();
+  const { v, fit } = h.mount('b');
+  v.update(4);
+  fit('a');
+  v.update(30);
+  // boiler-view.ts's live trains edge with no shot queued (reduced motion): no `queued`, and the card is owed only as
+  // the wake ends (`cardDue`, FIT.wake = 3.1 s later). This page is free the whole time.
+  h.w.trains = 3376;
+  v.update(0.1);
+  v.update(3.1);
+  v.showing('boiler', 'owed');
+  for (let i = 0; i < 4; i++) v.update(1);
+  assert.deepEqual({ keys: v.inspect().keys, cards: h.cards }, { keys: [], cards: ['boiler'] }, 'one moment, the card');
+  v.dispose();
+});
+
 test('a fitter reloading during the wait retains attribution in local storage', () => {
   const h = harness();
   const first = h.mount('a');
