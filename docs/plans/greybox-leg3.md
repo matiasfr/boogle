@@ -1,4 +1,4 @@
-> **Status, 19 November 2026: plan, not built.** Planner, against main `c0c993ff7` (world v62), rebased onto
+> **Status, 19 November 2026: plan, not built.** Planner, against main `76a326cea` (world v62), rebased onto
 > `2b46fe79f` (docs only since). The owner's go
 > (19 November): "yes planner can start". It builds after [greybox leg 2](greybox-leg2.md)'s step 5; steps 1 and 5 to 6
 > need leg 2's views on main ([order](#order-and-what-waits-for-leg-2)). **Garage step 4 can be briefed once
@@ -406,7 +406,7 @@ Ship outside the owner's sessions (`npm run heartbeat` first).
 
 ## Level findings
 
-`npm run level-check` ran on 19 November (main `c0c993ff7`): **21 reports, none new; "route leg 2 (planned): ok"**.
+`npm run level-check` ran on 19 November (main `76a326cea`): **21 reports, none new; "route leg 2 (planned): ok"**.
 Leg 3 has no level artifact yet (no Canopy massing exists), so its planned points were measured with a scratch script
 over the catalog (`rowPoint`, `rowSide`) and are read against the report:
 
