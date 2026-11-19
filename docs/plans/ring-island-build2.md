@@ -655,7 +655,14 @@ the 20 m/s fit since b5bc4e0cb; it now wants 2. The steel bot already does both.
   whole from the doorway and from across the tracks. View code: `src/entities/ring-steel/view.ts`.
 - P3, for the owner (copy, not The Boogler's): through the whole steel loop the objective line reads "Build the line to
   High Gorge: section 1 of 4. The frame is on Ring Island's west platform." Nothing on the HUD names the works, the
-  steel or the install.
+  steel or the install. _Answered 18 November ("Name the step", [decision](../decisions-rail.md#d-2026-11-18-decisions-page-rail))
+  and built the same day:_ until line 2 wears the longer boiler the objective line names the step (kit coming, carry
+  the kit in, casting, install at the table), in draft copy (game-design place.md, "The steel works"; agent-calls). The
+  line is the play record's, as everywhere: the game draws no objective line on screen (place.md, "The world gives
+  direction"). Stills with the harness's caption of the line:
+  [cast](../reports/ring-build2-checkpoints/steel-objective-cast.png),
+  [install](../reports/ring-build2-checkpoints/steel-objective-install.png),
+  [after the install](../reports/ring-build2-checkpoints/steel-objective-installed.png).
 - P3: `dev/look/evals/railway-install.ts`'s `installstep=hold` and `adopt` paths still wait for `Line.boiler` 1 (the
   garage checkpoint's note; not run here).
 - Timing, not a defect: lit to steel home took 142 s of server time against 117.5 s on 12 November (the world, the

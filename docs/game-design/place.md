@@ -1277,7 +1277,14 @@ the open deck between the tarp and the shed. Once the rivet is struck a bill sig
 stacks put them on your back ("Your back is full" when it is); **Feed the works** at the doorway puts your logs and
 rails into the bill, and with an empty or wrong back shows blocked with "Bring logs or rails". When the bill is full the
 server lights the works: the sign reads "lit  steel n/12" and orange steel blocks appear on the rack, up to six, for
-the next train's kit car. Every label here is a placeholder. No sound or effect yet. **On the train (V2):** steel
+the next train's kit car. Every label here is a placeholder. No sound or effect yet. **The objective line (18
+November 2026; owner: "Name the step").** From the rivet until line 2 wears the longer boiler, the play record's
+objective line (not drawn on screen, as everywhere) names the steel loop's step instead of the stack line's section:
+nothing in the yard or the bill yet, "Light Ring Island's steel works. Ride line 2 to the island; the train brings its
+kit."; kit in the yard or the bill part fed, "Light the steel works: carry the kit from Ring Island's yard into the
+shed."; lit with no steel home, "The steel works is casting. Line 2 carries its steel Home to the Roundhouse."; steel
+in the Roundhouse bay, "Steel is in the Roundhouse bay. Hold Install at the table for the longer boiler." Then the
+stack line's own lines return. Draft copy, the owner's to reword (`docs/agent-calls.md`). **On the train (V2):** steel
 rides home as orange blocks on the kit car of whichever line 2 train took it, up to six; a train that has taken the
 longer boiler at the Village wears the longer engine (a longer frame and barrel ahead of the same cab), drawn only:
 its collider is the short engine's. **At Home (Home flip, 13 November):** the grey pallet east of the spur table holds the steel that has come home,
