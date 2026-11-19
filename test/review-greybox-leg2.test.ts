@@ -122,8 +122,8 @@ test('units put down at the West landing are taken up again and the first sectio
   }
   assert.equal(rail(s.w).depotProduced, produced0, 'nothing minted again');
   assert.equal(invariant(s.w), null);
-  // The load check catches a stand-in that minted past its bill.
+  // The load check catches a stand-in whose loaded rails pass its bill.
   const over = copy('bay-open');
-  Object.assign(over.w.mut(Leg, over.w.lookup(Leg, BAY)!)!, { loadedLogs: RAIL_LEGS[BAY]!.sections[0]!.logs + 1 });
+  Object.assign(over.w.mut(Leg, over.w.lookup(Leg, BAY)!)!, { loadedRails: RAIL_LEGS[BAY]!.sections[0]!.rails + 1 });
   assert.throws(() => checkRoute(over.w), /stand-in over its bill/);
 });

@@ -97,7 +97,7 @@ export function legHeldRoom(w: World, k: number) {
 /** Leg k's units on backs: those each account lifted off its rack and has not fed or put down (Account.legLogs,
  * Account.legRails; their sum is Leg.heldLogs, Leg.heldRails), each never more than that back carries (a unit that
  * left it by a way that does not count it off). */
-function heldKit(w: World, k: number): Kit {
+export function heldKit(w: World, k: number): Kit {
   if (!legRow(w, k).heldLogs && !legRow(w, k).heldRails) return NONE;
   let logs = 0,
     rails = 0;

@@ -25,7 +25,7 @@ import {
   Tree,
   Works,
 } from './railway-components.ts';
-import { legKitPut } from './railway-sys-route-kit.ts';
+import { legKitPut, legKitRetaken } from './railway-sys-route-kit.ts';
 import {
   activeStation,
   balanceOf,
@@ -214,7 +214,7 @@ export const drop = defineSystem(
 );
 export const take = defineSystem(
   'rail.take',
-  { reads: [Boiler, Rail, Beam, Works], writes: [Pile, Account], phase: 'act', order: 6 },
+  { reads: [Boiler, Rail, Beam, Works], writes: [Pile, Account, Leg], phase: 'act', order: 6 },
   (w, { a: aid, e }: Act) => {
     const a = w.mut(Account, aid)!;
     const kind = pileKind(e.kind);
@@ -225,6 +225,8 @@ export const take = defineSystem(
     p.n -= n;
     credit(a, kind, n);
     if (!p.n) w.despawn(e.id!);
+    // A West landing stand-in's lost units, taken up again, count held again (greybox leg 2, the second re-check).
+    if (n > 0 && (kind === 0 || kind === RAILS)) legKitRetaken(w, aid, kind === 0 ? n : 0, kind === RAILS ? n : 0);
     return n;
   },
 );
