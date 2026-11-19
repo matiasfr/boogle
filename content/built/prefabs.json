@@ -4163,6 +4163,28 @@
         }
       }
     },
+    "town.driver-table": {
+      "colliders": [
+        {
+          "at": [
+            2.5,
+            0.25,
+            -2
+          ],
+          "half": [
+            0.9,
+            0.25,
+            1.4
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.driver-table",
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
     "town.green-kerb": {
       "colliders": [],
       "key": "town.green-kerb",

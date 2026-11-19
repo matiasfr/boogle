@@ -20,6 +20,11 @@ export type TownInspection = {
   houseStage: number;
   /** How many bits the museum's 1:120 table drew last (0 until the museum stands and you're near it). */
   museumBits: number;
+  /** The laid stretches the museum's table drew last (./town-read.ts `laidStretches`), in metres along each line. */
+  museumRails: { line: 0 | 1; lo: number; hi: number }[];
+  /** The driver's train set in the first bought house (./model-railway.ts): its bits, the stretches and trains it drew
+   * last, whether the newest stretch is still bright, and its scale. */
+  trainSet: ReturnType<import('./model-railway.ts').ModelRailway['inspect']>;
   /** What this player owns and wears (src/entities/wardrobe/state.ts), for Fine Prices' evals. */
   wardrobe: ReturnType<typeof import('../wardrobe/state.ts').inspectWardrobe>;
   /** Where each resident stands, and whether they're drawn and can be talked to (only near their standing room). */

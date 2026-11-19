@@ -1,4 +1,4 @@
-> **Status: building (2026-11-19).** Light brainstorm (one pass, three lenses). Steps 1 to 3 on `claude/first-house-open`. Who moves in is
+> **Status: building (2026-11-19).** Light brainstorm (one pass, three lenses). Steps 1 to 3 on main (#2253); steps 4 and 5 on `claude/first-house-train-set`. Who moves in is
 > decided: the retired engine driver ([entry](../decisions-characters.md#d-2026-11-19-first-house-resident)). His
 > name, look, quirks and every line he says are the owner's
 > ([11 November](../decisions-characters.md#d-2026-11-11-the-story-and-characters-are-the-owner-s)): this brief
@@ -117,13 +117,13 @@ optional later-stage seed in step 5.
    marked placeholder saying what the line must do (for example `[owner's line: says hello and points at the table]`).
    Files: `src/entities/town/residents.ts`, `town-lines.ts`. Proof: `--rail-seed house-built`, player at the door:
    `…` from 20 m, Talk within reach, the placeholder card open.
-4. **The train set. View-only.** `src/entities/town/model-railway.ts`: a baseboard of about 3 × 2 m in the front room,
+4. **[x] The train set. View-only.** (Built: a 1.8 × 2.8 m board at 1:250, laid stretches only; [place](../game-design/place.md#the-town-you-can-go-into).) `src/entities/town/model-railway.ts`: a baseboard of about 3 × 2 m in the front room,
    laid stretches of line 1 and line 2 on their real curves, fitted to the lines' extent; a halt board at each laid
    halt; the trains from the shared sample; the newest stretch bright for a while after its completion tick (the same
    for every player). The reader is lifted from `view.ts` and shared with the museum (suggestion 4). Proof: an eval
    inside the house at `house-built` reading the table's drawn bit count, and a still over his shoulder; then the same
    at `yard-built`, where both tables show the same laid stretches.
-5. **The update, proven. View-only.** A unit test over the shared reader: two worlds, one with a later stretch laid,
+5. **[x] The update, proven. View-only.** (Built in `test/town-plot-projection.test.ts`.) A unit test over the shared reader: two worlds, one with a later stretch laid,
    yield different stretches, and the table's bit count rises. A live look of a stretch appearing would need a seed
    with the house built and a later line stage, which is a new stage in `src/sim/railway-seed-trade.ts`: that one
    touches `src/sim` and should go through a planner, so it is left out of the first build.
