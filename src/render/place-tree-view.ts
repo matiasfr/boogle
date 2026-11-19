@@ -155,7 +155,6 @@ export function createTreeView(
   const trunkRadius = (h: number) => TRUNK_BASE + ((TRUNK_TOP - TRUNK_BASE) * h) / TRUNK_H;
   // The felling cut's inner edge, 30% of the radius past the axis: from the side the hinge left is a sliver.
   const APEX_DEEP = -0.3 * trunkRadius(NOTCH_MID);
-  const LITTER = 6; // chips at the foot of a felling cut
   // A first hit already shows a small notch (about 8 cm deep); the last one is the whole cut.
   const notchAt = (cut: number) => Math.min(1, 0.08 + 0.92 * Math.max(0, cut));
 
@@ -314,8 +313,6 @@ export function createTreeView(
     broad: new THREE.InstancedMesh(new THREE.SphereGeometry(1, 7, 5), tree('#657a37', 'green'), hardwoodCount * 3),
     branch: new THREE.InstancedMesh(new THREE.CylinderGeometry(0.17, 0.21, 1.5, 8), flat('#686359'), hardwoodCount),
     cutEnd: new THREE.InstancedMesh(new THREE.CircleGeometry(0.17, 8), flat('#ddc89b'), hardwoodCount),
-    // Chips lying round the foot of a tree being chopped, more as the notch deepens: fresh wood like its faces.
-    litter: new THREE.InstancedMesh(new THREE.BoxGeometry(0.17, 0.035, 0.08), flat('#ead3a0'), n * LITTER),
   };
   const roots = [
     createTreeRoots(
@@ -352,15 +349,6 @@ export function createTreeView(
   notchDepth.morphTargetInfluences = [0];
   parts.bitten.setMorphAt(0, notchDepth);
   for (let slot = n; slot < parts.bitten.count; slot++) parts.bitten.setMatrixAt(slot, ZERO);
-  const chipAt = new THREE.Matrix4(),
-    chipTurn = new THREE.Quaternion(),
-    chipPlace = new THREE.Vector3(),
-    chipSize = new THREE.Vector3();
-  // A fixed scatter per tree and chip (view only): the same tree always drops its chips in the same places.
-  const scatter = (tree: number, chip: number, salt: number) => {
-    const v = Math.sin(tree * 12.9898 + chip * 78.233 + salt * 37.719) * 43758.5453;
-    return v - Math.floor(v);
-  };
   let fitted = false;
   function write(mesh: (typeof batches)[number], slot: number, matrix: THREE.Matrix4, grow: boolean) {
     mesh.setMatrixAt(slot, matrix);
@@ -381,7 +369,6 @@ export function createTreeView(
     if (t.cleared) {
       for (const mesh of [parts.trunk, parts.crown, parts.crown2, parts.stump, parts.notch, parts.bitten])
         put(mesh, t.index, ZERO);
-      for (let k = 0; k < LITTER; k++) put(parts.litter, t.index * LITTER + k, ZERO);
       if (hardwoodIndex !== undefined) {
         for (const mesh of [parts.hardwood, parts.branch, parts.cutEnd]) put(mesh, hardwoodIndex, ZERO);
         for (let slot = 0; slot < 2; slot++) put(parts.forks, hardwoodIndex * 2 + slot, ZERO);
@@ -426,21 +413,6 @@ export function createTreeView(
       notchDepth.morphTargetInfluences![0] = notchAt(cut);
       parts.bitten.setMorphAt(t.index, notchDepth);
       parts.bitten.morphTexture!.needsUpdate = true;
-    }
-    const chips = bite ? Math.ceil(notchAt(cut) * LITTER) : 0;
-    for (let k = 0; k < LITTER; k++) {
-      if (k >= chips) {
-        put(parts.litter, t.index * LITTER + k, ZERO);
-        continue;
-      }
-      const angle = scatter(t.index, k, 1) * Math.PI * 2,
-        reach = (0.6 + 0.7 * scatter(t.index, k, 2)) * t.size;
-      const x = t.x + Math.sin(angle) * reach,
-        z = t.z + Math.cos(angle) * reach;
-      chipTurn.setFromEuler(e.set(0.25 * (scatter(t.index, k, 3) - 0.5), scatter(t.index, k, 4) * Math.PI * 2, 0));
-      const s = 0.7 + 0.6 * scatter(t.index, k, 5);
-      chipAt.compose(chipPlace.set(x, H(x, z) + 0.02, z), chipTurn, chipSize.set(s, 1, s));
-      put(parts.litter, t.index * LITTER + k, chipAt);
     }
     if (hardwoodIndex !== undefined) put(parts.hardwood, hardwoodIndex, taken || compact ? ZERO : at(2.5));
     // A crown follows the trunk's contact by 80 ms rather than twitching as one rigid stick.

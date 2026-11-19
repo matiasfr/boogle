@@ -2,6 +2,7 @@
 import * as THREE from 'three/webgpu';
 import { reducedMotion } from '../constants.ts';
 import { emit, type Particle } from './particles.ts';
+import { readableIntensity } from './readable-unlit.ts';
 
 /** Small typed authoring surface; visual-only, never saved or sent to another player. */
 const particleEffects = {
@@ -85,10 +86,34 @@ const freshWood = [
   new THREE.Color('#f6e2b8'),
   new THREE.Color('#7a5430'),
 ];
-/** A chop's chips: pale like the cut they came out of. */
-export function woodChips(x: number, y: number, z: number, n: number) {
+/**
+ * A chop's chips, pale like the cut they came out of and as bright as authored (readable intensity, not the dimmer
+ * default that suits dust). The first `settle` fly short and low towards `yaw` (out of the cut), land on `floor`, lie
+ * still and fade over a few seconds; the rest fly and are gone as they land.
+ */
+export function woodChips(x: number, y: number, z: number, n: number, floor: number, settle: number, yaw: number) {
   if (reducedMotion) return;
-  chips(x, y, z, n, undefined, undefined, false, 1, freshWood);
+  chip.intensity = readableIntensity();
+  chips(x, y, z, n - settle, floor, undefined, false, 1, freshWood);
+  chip.floor = floor + 0.025;
+  for (let k = 0; k < settle; k++) {
+    const a = yaw + (Math.random() - 0.5) * 2.4,
+      speed = 1.3 + Math.random() * 1.1;
+    chip.vx = Math.sin(a) * speed;
+    chip.vz = Math.cos(a) * speed;
+    chip.vy = 0.8 + Math.random();
+    chip.life = 4 + Math.random() * 2;
+    chip.fade = 0.35;
+    chip.settle = true;
+    chip.size = particleEffects.chipSize * (0.8 + Math.random() * 0.4);
+    chip.color = freshWood[k % 3]!; // wood, not the bark flake
+    chip.rotation = Math.random() * Math.PI * 2;
+    chip.spin = (k % 2 ? 1 : -1) * (5 + Math.random() * 9);
+    emit(chip);
+  }
+  chip.fade = 0.22;
+  chip.settle = false;
+  chip.intensity = 1;
 }
 
 /** Low-alpha lobes, not a smoke wall. Dust keeps intensity one under the existing exposure policy. */

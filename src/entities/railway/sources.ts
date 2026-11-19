@@ -555,8 +555,9 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     tree.hitAt = performance.now();
     if (tree.cleared) return;
     placeSound('treeBite', tree.x, tree.z);
-    // More chips as the notch deepens (G20): 9 at the first stroke, 14 at the felling one, pale like the cut.
-    pieces.woodChips(at.x, at.y, at.z, 9 + Math.round(5 * Math.min(1, tree.work / 15)));
+    // More chips as the notch deepens (G20): 9 at the first stroke, 14 at the felling one, pale like the cut; three
+    // of them land by the trunk and lie a few seconds before fading.
+    pieces.woodChips(at.x, at.y, at.z, 9 + Math.round(5 * Math.min(1, tree.work / 15)), H(at.x, at.z), 3, tree.cutYaw);
     for (let k = 0; k < event.accepted - (event.returned ?? 0); k++) {
       const flight = pieces.send(
         'log',
