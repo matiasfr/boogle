@@ -1260,6 +1260,14 @@ _Archived 14 November 2026; the owner accepts the listed [Round blockout](decisi
 
 ## Archive: Rewards, co-op and town roles
 
+### The first house's resident, 19 November 2026
+
+Ruled in [the first house's resident](decisions-characters.md#d-2026-11-19-first-house-resident) (owner, 19 November 2026); moved word for word from [agent-calls](agent-calls.md).
+
+| Date | Call | Where | By | Why this pick | Status when archived |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-18 | New: after the yard, the first bought house gets its resident (the retired engine driver role; character and lines the owner's) (proposal, owner question 3) | [first-town-lesson-review](brainstorms/first-town-lesson-review.md#design-review-2026-11-18) | Designer (Opus) | Lesson 4 becomes a person; playtests asked for a reward for a building existing | answered: yes |
+
 ### Decisions page answers, 18 November 2026
 
 Ruled in [the decisions-page entry](decisions-rewards.md#d-2026-11-18-decisions-page-rewards) (owner, 18 November 2026); moved word for word from [agent-calls](agent-calls.md).
