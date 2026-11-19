@@ -43,11 +43,10 @@ const { pressJump, releaseJump } = (await import(
   '/src/entities/player/state.ts' as string
 )) as typeof import('../../../src/entities/player/state.ts');
 
+const query = new URLSearchParams(location.search);
 // `deckview=installer` swaps the roles, so page 1 (the look's still, sheet and video) is the installer's.
-const second =
-  (new URLSearchParams(location.search).get('player') === '2') !==
-  (new URLSearchParams(location.search).get('deckview') === 'installer');
-const deckcase = new URLSearchParams(location.search).get('deckcase') ?? 'ride';
+const second = (query.get('player') === '2') !== (query.get('deckview') === 'installer');
+const deckcase = query.get('deckcase') ?? 'ride';
 const PIT_RIM = 8.15; // m from the table's centre: the pit's wall (src/place/terrain.ts, tableR + 0.15)
 const who = second ? 'installer' : 'friend';
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -138,7 +137,7 @@ if (second) {
 } else {
   // The deck's free end: along the deck's axis from the table's centre, past the copy, on the side away from the post.
   const yaw = works()?.table?.yaw ?? 0;
-  const r = Number(new URLSearchParams(location.search).get('deckr') ?? 6.6);
+  const r = Number(query.get('deckr') ?? 6.6);
   let best = 1;
   for (const end of [1, -1]) {
     const x = centre.x + Math.sin(yaw) * r * end,
@@ -148,7 +147,7 @@ if (second) {
   }
   // pitend: in the pit 2.7 m off the deck's side, 7.3 m along it (where the pit floor rises to its wall); `pitalong=3`
   // puts them 3 m along instead, mid-deck on the level floor.
-  const pitAlong = Number(new URLSearchParams(location.search).get('pitalong') ?? 7.3);
+  const pitAlong = Number(query.get('pitalong') ?? 7.3);
   const across = deckcase === 'pitend' ? 2.7 : 0,
     along = deckcase === 'pitend' ? pitAlong * best : r * best;
   const x = centre.x + Math.cos(yaw) * across + Math.sin(yaw) * along,
