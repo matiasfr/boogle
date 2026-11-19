@@ -3,13 +3,15 @@
 // sequences of take, put down (near the rack or far off), take up again, feed, leave (for good, or rejoining within the
 // grace), host restart and supply pulse. Then whoever is in the room feeds section 1 with what they can reach. It always
 // lays within LIVE_BOUND ticks, the load check holds at every step, and the stand-in's loaded rails never go negative.
-// STANDIN_SEEDS sets the seed count (24 by default; the build ran 300).
+// STANDIN_SEEDS sets the seed count: 8 by default, so the file fits CI's budget (about 23 s of base build and 1 s a
+// seed locally, CI about 3.5 times slower); STANDIN_SEEDS=300 for a long local run. The pulse is the host's cadence
+// (one a minute, a pile recovered only once due): with the backstop switched off it fails within the first 8 seeds.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { RAIL_LEGS, legRack } from '../src/sim/railway-route.ts';
 import { RAILS } from '../src/sim/railway-line2-layout.ts';
-import { railGrowthMask } from '../src/sim/railway-supply.ts';
+import { RECOVERY_MINUTES, railGrowthMask } from '../src/sim/railway-supply.ts';
 import { legOpen, legRow } from '../src/sim/railway-queries-route.ts';
 import { railLegKitHolders, railLegKitRelease } from '../src/sim/railway-sys-route-kit.ts';
 import { railSession } from '../src/sim/railway-sys-core.ts';
@@ -34,7 +36,7 @@ const MINUTE = 600;
 /** Section 1 lays within this many ticks of the room settling to feed it: the grace, the backstop's minute, and the
  * feeding, with room to spare. */
 const LIVE_BOUND = GRACE + 2 * MINUTE + 1200;
-const SEEDS = Number(process.env.STANDIN_SEEDS ?? 24);
+const SEEDS = Number(process.env.STANDIN_SEEDS ?? 8);
 const STEPS = 160;
 
 const acc = (s: Seed, pid: string) => s.w.get(Account, s.w.lookup(Account, pid)!)!;
@@ -69,12 +71,14 @@ function run(seed: number) {
     const broken = invariant(s.w);
     assert.equal(broken, null, `${seed}: ${what}: ${broken}`);
   };
+  // The host's real cadence (host-supply.ts; recheck3's P3): one pulse a minute, the marker one on, and a pile offered
+  // for recovery only once it is due (21 minutes old after this pulse ages it). So put-down rails rarely come back the
+  // old way inside a run, and the backstop is what makes them up.
   const pulse = () => {
-    // Recover whatever lies on the ground (the host's "nobody near" is the model's chance).
     const recover = pilesWithIds(s.w)
-      .filter(() => rand() < 0.5)
+      .filter((p) => p.age >= RECOVERY_MINUTES - 1)
       .map((p) => p.id);
-    railSupplyPulse(s.w, { marker: (marker += 1 + Math.floor(rand() * 25)), grow: railGrowthMask([]), recover });
+    railSupplyPulse(s.w, { marker: ++marker, grow: railGrowthMask([]), recover });
     lastPulse = s.t;
   };
   /** The host's leaver check: past the grace, a gone player's counted units are released. */
@@ -124,7 +128,7 @@ function run(seed: number) {
       }
     } else if (r < 0.8) {
       s = { w: restore(s.w), t: s.t }; // the host restarts from its checkpoint
-    } else if (r < 0.88) pulse();
+    }
     advance(s, 1 + Math.floor(rand() * 40));
     if (s.t - lastPulse >= MINUTE) pulse();
     host();

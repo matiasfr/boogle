@@ -354,10 +354,14 @@ driving them negative. Now, still with no new state:
   instead.
 - **A property test** (`test/railway-leg2-standin.test.ts`), from `bay-open` with the steel works lit: seeded random
   histories of take, put down (near or 120 m off), take up again, feed, leave (for good, or back within a 1,200-tick
-  grace), host restart and supply pulses, then whoever is in the room feeds section 1 with the rack and the piles near
-  it. **300 seeds ran: section 1 laid in every one, the slowest 1,200 ticks after the room settled (bound 3,600)**,
-  with the load check holding and loaded rails never negative at every step. With the backstop switched off it fails
-  within 60 seeds. The suite runs 24 (`STANDIN_SEEDS`).
+  grace) and host restart, with the host's real supply cadence (one pulse a minute, the marker one on, a pile offered
+  for recovery only once due: recheck3's P3, so put-down rails rarely come back the old way and the backstop makes them
+  up). Then whoever is in the room feeds section 1 with the rack and the piles near it. **300 seeds ran locally:
+  section 1 laid in every one, the slowest 1,215 ticks after the room settled (bound 3,600)**, the load check holding
+  and loaded rails never negative at every step. With the backstop switched off it fails within the first 8 seeds, as
+  does recheck3's guard test. The suite runs 8 (`STANDIN_SEEDS` for more): about 30 s locally (23 s of it the base
+  build), weighed at 100 s for CI in `dev/ci/unit-weights.json`; at 24 seeds and the old pulse model it passed 480 s
+  on a CI runner and failed the whole-file budget (PR #2264, unit shard 8).
 
 No hash golden moved; the leg 2 long fuzz is unchanged in every figure.
 
