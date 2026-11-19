@@ -370,10 +370,10 @@ const steelKit = (foot: HandSupply): Supply => ({
 const RULES_ROUTE = 'src/sim/railway-sys-route.ts';
 const ROUTE_QUERIES = 'src/sim/railway-queries-route.ts';
 const LEG_VIEW = 'src/entities/route-greybox/leg-view.ts';
-const legIndex = (id: string) => RAIL_LEGS.findIndex((l) => l.id === id);
-const STACK = RAIL_LEGS[legIndex('stack')]!,
-  INCLINE = RAIL_LEGS[legIndex('incline')]!,
-  BAY = RAIL_LEGS[legIndex('bay-cut')]!;
+const legOf = (id: string) => RAIL_LEGS.find((l) => l.id === id)!;
+const STACK = legOf('stack'),
+  INCLINE = legOf('incline'),
+  BAY = legOf('bay-cut');
 const grantOf = (id: string) => RAIL_GRANTS.findIndex((g) => g.id === id);
 /** Who brings section k's kit to its rack (src/sim/railway-queries-route.ts: MINT_LEGS, YARD_LEGS, STOCKED_LEGS). */
 const KIT_BY: Record<string, (k: number) => string> = {
@@ -385,8 +385,7 @@ const KIT_BY: Record<string, (k: number) => string> = {
   'bay-cut': (k) =>
     k === 0 ? "stocked on the West landing's rack (the stand-in: no train)" : 'a bay train from the West landing',
 };
-const legNodeId = (leg: RouteLeg, k: number) =>
-  `${leg === STACK ? 'stack' : leg === INCLINE ? 'incline' : 'bay'}-${k + 1}` as SectionId;
+const legNodeId = (leg: RouteLeg, k: number) => `${leg === BAY ? 'bay' : leg.id}-${k + 1}` as SectionId;
 /** Each built leg's sections as nodes: the node, its RAIL_LEGS index and the section index. */
 export const ROUTE_SECTIONS: readonly { id: SectionId; leg: number; section: number }[] = [STACK, INCLINE, BAY].flatMap(
   (leg) => leg.sections.map((_s, section) => ({ id: legNodeId(leg, section), leg: RAIL_LEGS.indexOf(leg), section })),

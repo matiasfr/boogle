@@ -102,14 +102,15 @@ export function printNode(id: string, json: boolean) {
       `no node "${id}". Nodes: ${r.nodes.map((x) => x.id).join(', ')}. Stand-ins: ${STAND_IN_IDS.join(', ')}`,
     );
   const edges = [...r.defects, ...r.free, ...r.unruled, ...r.worldOnly].filter((e) => e.node === id || e.on === id);
-  const requires = NODES.find((x) => x.id === id)!.requires;
+  const built = NODES.find((x) => x.id === id)!;
+  const requires = built.requires;
   const g = r.grindRank.find((x) => x.id === id);
   if (json) return console.log(JSON.stringify({ ...n, requires, grind: g ?? null }, null, 2));
   const out = [
     `${n.id}${n.optional ? ' (optional)' : ''}: ${n.label} [${n.area}]`,
     `  bill: ${billText(n.bill)}`,
     `  supply: ${
-      Object.entries(NODES.find((x) => x.id === id)!.supply)
+      Object.entries(built.supply)
         .map(([m, s]) => `${m} ${s.by === 'hand' ? `by hand from the ${s.label}` : `by ${s.by}: ${s.label}`}`)
         .join('; ') || '-'
     }`,

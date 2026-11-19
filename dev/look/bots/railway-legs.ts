@@ -17,7 +17,8 @@ import { interactTarget } from '../../../src/player/hands.ts';
 import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
 import { RING_HALT, ringAt } from '../../../src/sim/railway-ring-layout.ts';
 import { RING_CROSSING } from '../../../src/entities/ring-island/state.ts';
-import { RAIL_HALTS, RAIL_TRAINS } from '../../../src/sim/railway-lines.ts';
+import { RAIL_HALTS } from '../../../src/sim/railway-lines.ts';
+import { LINE_SLOTS } from '../../../src/sim/railway-trains.ts';
 import { ROW_PLATFORM, rowWorld } from '../../../src/entities/railway/row-path.ts';
 import {
   RAIL_GATES,
@@ -172,10 +173,9 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
             tick: railAt(),
             line,
             want,
-            trains: trains(rw())
-              .map((t, slot) => ({ t, slot }))
-              .filter(({ t, slot }) => t.phase !== 2 && RAIL_TRAINS[slot]!.line === line)
-              .map(({ t }) => [t.phase, t.at, t.to, t.track, t.depart, t.req]),
+            trains: LINE_SLOTS[line]!.map((slot) => trains(rw())[slot]!)
+              .filter((t) => t.phase !== 2)
+              .map((t) => [t.phase, t.at, t.to, t.track, t.depart, t.req]),
           })}`,
         ),
       20000,
@@ -246,7 +246,8 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   // ---------------------------------------------------------------- leg 2: the incline, the seeds and the bay cut
   const route = () => routeRow(rw());
   const granted = (id: number) => !!(route().grants & (1 << id));
-  const inclineGate = RAIL_LEGS[INCLINE]!.sections[0]!.gate!;
+  const incline = RAIL_LEGS[INCLINE]!;
+  const inclineGate = incline.sections[0]!.gate!;
   const gorge = rowHalt('ring', L.destRowHalt);
   // A seed that starts past the stack line (`gorge-reached`) stands at the Village: line 2 to its end, High Gorge.
   if (!legDone(rw(), BAY) && !legDone(rw(), INCLINE) && !near(gorge, 80)) {
@@ -287,7 +288,7 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
       await checkpoint(`${name} section ${k + 1} laid`);
       const last = at() >= m;
       const stop = leg.railheadHalt + at() - 1;
-      await rowRide(leg.line, k === 0 ? fromStop(leg) : leg.railheadHalt + k - 1, stop, name);
+      await rowRide(leg.line, leg.railheadHalt + k - 1, stop, name);
       // Off the car onto the platform: the next frame at a head, the outward platform at the lever's spot at the end
       // (the catalog halt's point is on the track, where the car stands).
       const frameNext = legFrame(leg, at()),
@@ -302,9 +303,10 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   const rowRide = async (line: number, from: number, to: number, name: string) => {
     const dir = to > from ? 1 : -1;
     const standing = () =>
-      trains(rw()).findIndex(
-        (r, slot) => RAIL_TRAINS[slot]!.line === line && r.phase === 0 && r.at === from && (r.track ? -1 : 1) === dir,
-      );
+      LINE_SLOTS[line]!.find((slot) => {
+        const r = trains(rw())[slot]!;
+        return r.phase === 0 && r.at === from && (r.track ? -1 : 1) === dir;
+      }) ?? -1;
     const lever = rowLever(line, from);
     const watch = watchTrains(line, from);
     try {
@@ -324,7 +326,8 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
       const end = performance.now() + 20000;
       try {
         while (!aboard() && performance.now() < end) {
-          const car = train().cars[1] ?? train().cars[0]!;
+          const cars = train().cars,
+            car = cars[1] ?? cars[0]!;
           face(car.x, car.z);
           input.keys.add('KeyW');
           if (me.coyote > 0) pressJump();
@@ -357,7 +360,7 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
 
   // The incline: section 1's frame and rack are High Gorge's; its heads and Bell Rock's lower deck by `ns` trains.
   if (!legDone(rw(), INCLINE)) await buildRowLeg(INCLINE, 'incline');
-  const bell = rowHalt('ns', RAIL_LEGS[INCLINE]!.destRowHalt);
+  const bell = rowHalt(incline.row, incline.destRowHalt);
   if (!legDone(rw(), BAY)) {
     await checkpoint('bell reached');
     if (!granted(SEEDS)) {
@@ -366,9 +369,8 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
       await checkpoint('seeds taken');
     }
     // Home the long way: an `ns` train back to High Gorge, line 2 to the Village, the walk to the West landing.
-    const ns = RAIL_LEGS[INCLINE]!;
     check(near(bell, 80), "on Bell Rock's lower deck for the ride home");
-    await rowRide(ns.line, ns.railheadHalt + ns.sections.length - 1, fromStop(ns), 'incline');
+    await rowRide(incline.line, incline.railheadHalt + incline.sections.length - 1, fromStop(incline), 'incline');
     const nsGorge = rowHalt('ns', 0);
     await hopTo(nsGorge.x / 100, nsGorge.z / 100, "stepped off at the incline's High Gorge platform");
     await until(() => me.coyote > 0 && !me.swimming, 'standing at High Gorge again', 10000);

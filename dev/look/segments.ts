@@ -45,6 +45,8 @@ export const RAIL_STOPS = {
   bay: 'bay reached',
 } as const;
 export type RailStop = keyof typeof RAIL_STOPS;
+/** The greybox legs' stops (dev/look/bots/railway-legs.ts). */
+const LEG_STOPS: readonly RailStop[] = ['gorge', 'bell', 'bay'];
 /** `--from <stage>`: an accepted `--rail-seed` server save that its `bot` eval resumes from (its `railFrom`).
  * Seeds are written per run through the real host's save path; there are no client fixtures to keep. */
 export const RAIL_FROM = {
@@ -99,7 +101,7 @@ export function railSegmentOptions(args: string[]) {
   if (to !== undefined && !isStop(to)) throw new Error(`--to: ${names.join(', ')}`);
   // `ring-joined` runs the steel bot, or the leg bot when the stop is a leg's.
   const seed = from
-    ? from === 'ring-joined' && (to === 'gorge' || to === 'bell' || to === 'bay')
+    ? from === 'ring-joined' && to !== undefined && LEG_STOPS.includes(to)
       ? RAIL_FROM['gorge-open']
       : RAIL_FROM[from]
     : undefined;

@@ -58,10 +58,10 @@ const OUTLINE = 'docs/plans/campaign-outline.md section 3';
 /** The route's slots past the built graph, in the outline's order: `stage` is world-lines.ts's build stage (High Gorge
  * first), `steps` the model's. */
 const SLOTS = [
-  { slot: 'canopy', area: 6, stage: 5, allowanceMin: 42, steps: ['b2.reach', 'b2.connect'] },
-  { slot: 'port', area: 7, stage: 6, allowanceMin: 48, steps: ['port.reach', 'port.connect'] },
-  { slot: 'wall', area: 8, stage: 7, allowanceMin: 48, steps: ['ring.close'] },
-  { slot: 'ending', area: 9, stage: 8, allowanceMin: 18, steps: ['final'] },
+  { id: 'canopy', area: 6, stage: 5, allowanceMin: 42, steps: ['b2.reach', 'b2.connect'] },
+  { id: 'port', area: 7, stage: 6, allowanceMin: 48, steps: ['port.reach', 'port.connect'] },
+  { id: 'wall', area: 8, stage: 7, allowanceMin: 48, steps: ['ring.close'] },
+  { id: 'ending', area: 9, stage: 8, allowanceMin: 18, steps: ['final'] },
 ] as const;
 const PLACE: Record<StandInId, { label: string; grants: string[] }> = {
   canopy: { label: 'Canopy Town', grants: ['carry sling', 'glider cloth'] },
@@ -86,8 +86,8 @@ export function standInRoute(v: Variant = DEFAULT_VARIANT): { nodes: StandIn[]; 
   const lost: string[] = [];
   let last: NodeId | StandInId = NODES[NODES.length - 1]!.id;
   for (const s of SLOTS) {
-    if (s.slot === 'canopy' && v.branches === 'first') continue;
-    const id: StandInId = s.slot;
+    if (s.id === 'canopy' && v.branches === 'first') continue;
+    const id: StandInId = s.id;
     const bill: StandIn['bill'] = {};
     for (const key of s.steps)
       for (const f of model.steps.find((st) => st.key === key)!.flows)

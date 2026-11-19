@@ -71,7 +71,7 @@ import {
 } from '../../src/sim/railway-ring-layout.ts';
 import { LINE2 } from '../../src/sim/railway-lines.ts';
 import type { RailAction } from '../../src/sim/railway.ts';
-import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, legFrame, legRack, rowHalt } from '../../src/sim/railway-route.ts';
+import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, legRack } from '../../src/sim/railway-route.ts';
 import { legOpen, legRow, routeRow } from '../../src/sim/railway-queries-route.ts';
 import {
   DETOUR,
@@ -352,11 +352,18 @@ function* forge(g: Game, pl: Player): Policy {
     (n) => ({ op: 'rail.deposit', station: 'F', kind: 0, n }),
   );
 }
-function* device(g: Game, pl: Player, at: Point, op: string, ready: () => boolean): Policy {
+function* device(
+  g: Game,
+  pl: Player,
+  at: Point,
+  op: string,
+  ready: () => boolean,
+  fields: Partial<RailAction> = {},
+): Policy {
   if (pl.i !== 0) return;
   yield* waitFor(g, ready);
   yield* walk(at);
-  yield* press(op);
+  yield* press(op, fields);
 }
 /** `byHand`: the vehicle isn't there, so logs come from the trees and rails from the forge rack, on foot. */
 function quarry(g: Game, pl: Player, k: number, byHand = false): Policy {
@@ -551,10 +558,12 @@ function* cradle(g: Game, pl: Player): Policy {
 }
 
 // ---------------------------------------------------------------- the greybox route's legs
-const grantIndex = (id: string) => RAIL_GRANTS.findIndex((x) => x.id === id);
-const PICK = grantIndex('pick'),
-  SEEDS = grantIndex('seeds'),
-  INCLINE_GATE = RAIL_GATES.findIndex((x) => x.id === 'incline');
+/** The route's pickups and barrier: each node's op and its catalog index (RAIL_GRANTS or RAIL_GATES). */
+const ROUTE_PRESS: Partial<Record<NodeId, { op: 'rail.grant' | 'rail.gate'; id: number }>> = {
+  pick: { op: 'rail.grant', id: RAIL_GRANTS.findIndex((x) => x.id === 'pick') },
+  'incline-gate': { op: 'rail.gate', id: RAIL_GATES.findIndex((x) => x.id === 'incline') },
+  seeds: { op: 'rail.grant', id: RAIL_GRANTS.findIndex((x) => x.id === 'seeds') },
+};
 /** A route point (cm, with its height: the server's reach check judges both). */
 const routePoint = (q: { x: number; z: number; y: number }): Point => ({ x: q.x, z: q.z, y: q.y });
 /** Section `s` of leg `k`: every player takes what its rack holds (the kit a train brought, or the stand-in stocked)
@@ -564,7 +573,7 @@ function legSection(g: Game, pl: Player, k: number, s: number, byHand: boolean):
   const L = RAIL_LEGS[k]!,
     sec = L.sections[s]!;
   const rack = routePoint(legRack(L, s)),
-    frame = routePoint(legFrame(L, s));
+    frame = node(ROUTE_SECTIONS.find((x) => x.leg === k && x.section === s)!.id).at;
   const row = () => legRow(g.w, k);
   const gateOpen = () => sec.gate === undefined || !!(routeRow(g.w).gates & (1 << sec.gate));
   return (function* () {
@@ -596,13 +605,6 @@ function legSection(g: Game, pl: Player, k: number, s: number, byHand: boolean):
     for (const r of railsLane ? [rails, logs] : [logs, rails]) yield* r;
   })();
 }
-/** A pickup or a barrier (`op`, catalog index `id` at `at`): the first player walks there and presses it. */
-function* routePress(g: Game, pl: Player, op: 'rail.grant' | 'rail.gate', id: number, ready: () => boolean): Policy {
-  if (pl.i !== 0) return;
-  yield* waitFor(g, ready);
-  yield* walk(routePoint((op === 'rail.grant' ? RAIL_GRANTS : RAIL_GATES)[id]!.at));
-  yield* press(op, { id });
-}
 
 type Run = {
   g: Game;
@@ -631,7 +633,14 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
   const sectionPolicies = Object.fromEntries(
     ROUTE_SECTIONS.map(({ id, leg, section }) => [id, (pl: Player) => legSection(g, pl, leg, section, byHand.has(id))]),
   ) as Record<SectionId, (pl: Player) => Policy>;
-  const granted = (id: number) => () => !!(routeRow(w()).grants & (1 << id));
+  /** A pickup taken or the barrier open (ROUTE_PRESS). */
+  const pressed = (id: NodeId) => () => {
+    const { op, id: k } = ROUTE_PRESS[id]!,
+      r = routeRow(w());
+    return !!((op === 'rail.grant' ? r.grants : r.gates) & (1 << k));
+  };
+  const routePolicy = (id: NodeId) => (pl: Player) =>
+    device(g, pl, node(id).at, ROUTE_PRESS[id]!.op, ready(id), { id: ROUTE_PRESS[id]!.id });
   const w = () => g.w;
   const q = (k: number) => !!qjob(w(), k).completion;
   const done: Record<NodeId, () => boolean> = {
@@ -681,9 +690,9 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
     install: () => lineOf(w(), LINE2).boiler >= 2,
     ...sections,
     gorge: () => flags.atGorge,
-    pick: granted(PICK),
-    'incline-gate': () => !!(routeRow(w()).gates & (1 << INCLINE_GATE)),
-    seeds: granted(SEEDS),
+    pick: pressed('pick'),
+    'incline-gate': pressed('incline-gate'),
+    seeds: pressed('seeds'),
   };
   const ready = (id: NodeId) => () => node(id).requires.every((e) => e.scope === 'finish' || done[e.on]());
   const policy: Record<NodeId, (pl: Player) => Policy> = {
@@ -807,12 +816,12 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
       (function* () {
         if (pl.i !== 0) return;
         yield* waitFor(g, done['stack-4']);
-        yield* walk(routePoint(rowHalt('ring', RAIL_LEGS[0]!.destRowHalt)));
+        yield* walk(node('gorge').at);
         flags.atGorge = true;
       })(),
-    pick: (pl) => routePress(g, pl, 'rail.grant', PICK, ready('pick')),
-    'incline-gate': (pl) => routePress(g, pl, 'rail.gate', INCLINE_GATE, ready('incline-gate')),
-    seeds: (pl) => routePress(g, pl, 'rail.grant', SEEDS, ready('seeds')),
+    pick: routePolicy('pick'),
+    'incline-gate': routePolicy('incline-gate'),
+    seeds: routePolicy('seeds'),
   };
   return { g, done, policy, flags, current: null, detour: () => 1 };
 }
@@ -893,11 +902,11 @@ function probePolicy(r: Run, pl: Player, id: NodeId): Policy | null {
       yield* walk(n.at);
       yield* press('rail.legStock', { leg: sec.leg });
     })();
-  const routeId = { pick: PICK, seeds: SEEDS, 'incline-gate': INCLINE_GATE }[id as 'pick'];
-  if (routeId !== undefined)
+  const route = ROUTE_PRESS[id];
+  if (route)
     return (function* () {
       yield* walk(n.at);
-      yield* press(n.ops[0]!, { id: routeId });
+      yield* press(route.op, { id: route.id });
     })();
   const seam = id === 'slab' ? 0 : id === 'throat' ? 1 : id === 'rivet' ? 2 : -1;
   // The pier is the world's (a walk), the crossing's footings ride the wagon: nothing to press early.
