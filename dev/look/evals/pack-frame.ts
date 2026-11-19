@@ -1,7 +1,9 @@
-// command: unknown, needs the rail seed and pose: derived from the file, queries are packCam=back|side|three, packLoad=0|8|16, packSubject=me|remote (two pages for remote), packOn, and ride=1&seat=1&railStop=T1%20seated for the seated pack; no doc or bot calls it
+// command: unknown, needs the rail seed and pose: derived from the file, queries are packCam=back|side|three|follow, packLoad=0|8|16, yokeOn=1, railLoad=0|8|16, stoneLoad=0|8|16, packSubject=me|remote (two pages for remote), packOn, and ride=1&seat=1&railStop=T1%20seated for the seated pack; no doc or bot calls it
 // Buddy's carry frame (the railway's shared pack) on a back, framed close. The railway's own seams stand in for the
 // world state: backSeam.pack says the pack is open, backSeam.count the logs on every back (&packLoad=0|8|16).
-//   &packCam=back|side|three  &packSubject=me|remote (two pages: player 1 looks at player 2)
+//   &packCam=back|side|three|follow (follow: the game's own camera)  &packSubject=me|remote (two pages: player 1 looks
+//   at player 2). &yokeOn=1 wears the Rail yoke (backSeam.yoke); &railLoad=0|8|16 and &stoneLoad=0|8|16 seat that many
+//   rails and stones on your back with the game's carry models, as line-cargo.ts does for an account's counts.
 // Seated on the track layer: &ride=1&seat=1&railStop=T1%20seated (the played route; the camera follows the rider).
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
@@ -12,15 +14,36 @@ const { remotes } = (await import('/src/netplay/net.ts' as string)) as typeof im
 const { inspectRailway } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
+const { makeCarryModels } = (await import(
+  '/src/render/carry-models.ts' as string
+)) as typeof import('../../../src/render/carry-models.ts');
+const { frameOf, fitOf } = (await import(
+  '/src/render/haul-bundle.ts' as string
+)) as typeof import('../../../src/render/haul-bundle.ts');
 const q = new URLSearchParams(location.search);
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const shot = window as Window & { __railStop?: string; __placeDone?: boolean };
 const load = Number(q.get('packLoad') ?? 16);
 const packOn = q.get('packOn') !== '0';
+const yokeOn = q.get('yokeOn') === '1';
+const railLoad = Number(q.get('railLoad') ?? 0),
+  stoneLoad = Number(q.get('stoneLoad') ?? 0);
 const onceMounted = async () => {
   while (!backSeam.carry || !inspectRailway() || !me.entered || !me.avatar) await wait(100);
   backSeam.count = () => load;
   backSeam.pack = () => packOn;
+  backSeam.yoke = () => yokeOn;
+  if (!railLoad && !stoneLoad) return;
+  const cargo = makeCarryModels();
+  cargo.root.visible = true;
+  const avatar = me.avatar;
+  frameOf(avatar).add(cargo.root);
+  setInterval(() => {
+    cargo.setRails(railLoad, packOn, yokeOn);
+    cargo.stone.count = stoneLoad;
+    cargo.stone.visible = stoneLoad > 0;
+    if (stoneLoad) cargo.seatStone(load, fitOf(avatar));
+  }, 50);
 };
 const hideNotes = () => {
   for (const panel of document.querySelectorAll<HTMLDivElement>('body > div'))
@@ -51,7 +74,9 @@ if (q.get('railStop')) {
       const a = subject();
       if (!a) throw new Error('No subject avatar');
       hideNotes();
+      if (q.get('packCam') === 'follow') window.__debugCam!.clear();
       const frame = setInterval(() => {
+        if (q.get('packCam') === 'follow') return;
         a.updateMatrixWorld();
         const p = a.getWorldPosition(new (a.position.constructor as typeof import('three').Vector3)());
         const back = a.getWorldDirection(new (a.position.constructor as typeof import('three').Vector3)());

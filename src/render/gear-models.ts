@@ -166,6 +166,44 @@ export function packFrameMesh(owned = false) {
   return mesh;
 }
 
+/** The Rail yoke on the load socket: the shoulder bar's height and depth, the arms' (x either side, height, front to back), and
+ * where the rails hang (each bank's centre, its first rail, and the depth one upright rail takes). carry-models.ts hangs
+ * the rails from these. */
+const YOKE = { shoulder: 0.7, bar: 0.06, x: 0.42, arm: 0.8, front: 0.1, back: 0.84 };
+export const YOKE_BANK: [number, number, number] = [YOKE.x, YOKE.arm - 0.44, 0.29];
+export const YOKE_PITCH = 0.065;
+/** The Rail yoke: an iron bar over the shoulders (over the pack frame's, when it is worn), rising at each end into an
+ * arm that runs back over a bank of rails, with a stirrup hung from it that the rails stand in. Darker than the worn
+ * rails, so it reads apart from the steel it holds. Load-socket coordinates, like `packParts`. */
+export function yokeParts(): Part[] {
+  const IRON = '#56616b',
+    PAD = '#69472e';
+  const { shoulder, bar, x: ax, arm, front, back } = YOKE;
+  const len = back - front,
+    low = YOKE_BANK[1] - 0.36,
+    fore = YOKE_BANK[2] - 0.04,
+    aft = back - 0.03;
+  const parts: Part[] = [['c', 0, shoulder, bar, 0.035, 2 * ax, 0.035, IRON, 0, Math.PI / 2]];
+  for (const x of [-ax, ax])
+    parts.push(
+      ['b', x, (shoulder + arm) / 2, front, 0.05, arm - shoulder + 0.05, 0.05, IRON],
+      ['b', x, arm, front + len / 2, 0.05, 0.05, len, IRON],
+      ['b', x, (arm + low) / 2, fore, 0.025, arm - low, 0.025, IRON],
+      ['b', x, (arm + low) / 2, aft, 0.025, arm - low, 0.025, IRON],
+      ['b', x, low, (fore + aft) / 2, 0.06, 0.035, aft - fore + 0.025, IRON],
+      ['b', x * 0.5, shoulder - 0.035, bar, 0.16, 0.03, 0.1, PAD],
+    );
+  return parts;
+}
+let yokeGeometry: THREE.BufferGeometry | undefined;
+const yokeMaterial = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.55, metalness: 0.25 });
+export function yokeMesh() {
+  const mesh = new THREE.Mesh((yokeGeometry ??= merged(yokeParts())), yokeMaterial);
+  mesh.name = 'wear_yoke';
+  mesh.castShadow = mesh.receiveShadow = true;
+  return mesh;
+}
+
 /** The folded glider: a cream roll in teal bands on a brass bar, tied with two straps. The summit drum and the glider's
  * card build the same parts (reward-data.ts), so what you take is what you wear. Axis along x; the straps' side is -z. */
 export const GLIDER_ROLL: Part[] = [

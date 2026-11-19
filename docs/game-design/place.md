@@ -1899,8 +1899,7 @@ stands 6 m back and 8 m outward from its frame (a 10 m haul), clear of the cart'
 rack stays 10 m back, its rail shelf 4 m to the side (10.77 m from the frame), leaving 1.5 m between their footprints
 and separate pickup prompts (15 November).
 
-**Pack steel (8 November).** With the pack, carried rails stand in two banks on its shelf beside the log bundle,
-leaving both materials readable from behind and the side. Without it, the existing crosswise hold stays.
+**Pack steel (8 November) and the Rail yoke (19 November, step 3).** With the pack alone, carried rails stand in two banks on its shelf beside the log bundle, leaving both materials readable from behind and the side; without the pack or yoke, the existing crosswise hold stays. Once the room has the Rail yoke (`Rail.yoke`), every avatar wears a darker iron shoulder bar with leather pads, rising into two back arms and hung stirrups (`yokeMesh`, over the pack frame when worn or on bare shoulders when not), and carried rails hang in two upright banks of up to 8 a side (16 total) inside the stirrups, clear of the head, the log bundle, the stone heap and the folded glider.
 **The stone heap (18 November; owner: "Seat the heap lower on the frame").** Stone sits four across a row, in two rows
 on the shelf; with logs on the back each stone settles into the lowest spot on the shelf or on the logs under it, so a
 full heap steps down the bundle's back instead of standing on its top, and its top stays under Buddy's head from
@@ -1914,7 +1913,7 @@ capacity, accepted inventory and deposit rules are unchanged. DESIGN.md **11. Sh
 counts on the carry tag ([counts everywhere](../agents/owner-calls.md#counts-everywhere), partly superseded); piles,
 bills, racks and boards keep their counts (below). The temporary carry tag
 ([haul-stack.ts](../../src/features/haul-stack.ts)) shows one row of squares a kind, logs, then stone, then rails,
-each as long as that kind's capacity (8 or 16; rails 8). No numbers, fraction, total or icons. Filled squares count
+each as long as that kind's capacity (8 or 16; rails 8, or 16 with the Rail yoke). No numbers, fraction, total or icons. Filled squares count
 from the left in the kind's colour (logs `#c98a4b`, stone `#a49bad`, rails `#579fbc`, the 4 November slot palette);
 empty squares are the same colour at 30%, so an empty row still says its kind. Squares are 16 px with 2 px gaps and
 4 px more after every fourth: a row of 16 is 298 px. A row shows while you carry that kind, and for the tag's 2 s hold
