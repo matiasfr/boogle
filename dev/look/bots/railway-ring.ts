@@ -5,7 +5,7 @@
 // for the leaf to land, strike the rivet (the Meet), then ride from the Railhead to the island halt and step off.
 // Inspection observes; it never seeds a world or moves a player. A fall into the sea is a finding (no recovery).
 import type { Bot } from '../bot.ts';
-import { aperture, inspectRailway, rail, railAt, railBack, ringOpen, rw } from '../rail-read.ts';
+import { aperture, inspectRailway, rail, railAt, railBack, ringHead, ringOpen, rw } from '../rail-read.ts';
 import { me, cam } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
@@ -89,7 +89,9 @@ export async function ringIslandRoute({ bot, checkpoint }: RingRoute) {
     await checkpoint('gap footed');
   }
 
-  // 2. The gap: a sprint along the platform, a jump at its end, the glide to the brace platform.
+  // 2. The gap: a sprint along the platform, a jump at its end, the glide to the brace platform. `head()` is the trains'
+  // stop, which reaches the build head only when the last haul settles (v61): wait for it, or the run-up is a bent short.
+  await untilTicks(() => ringOpen(rw()).head === ringHead(rw()), 'the last haul settled at the build head', 400);
   const mid = RING_BRACE_PLATFORM.lat0 / 2 + RING_BRACE_PLATFORM.lat1 / 2;
   const landing = cm(ringAt((RING_BRACE_PLATFORM.u0 + RING_BRACE_PLATFORM.u1) / 2, mid));
   const lane = 400;
@@ -175,6 +177,28 @@ export async function rideToIsland(bot: Bot, { rideFrom, hopTo, view, until }: R
   const levers = () => (view() as unknown as { ringLevers: RingLever[] }).ringLevers;
   const outward = () => levers().find((l) => l.halt === STOP.railhead && l.dir === 1 && l.on);
   const levers0 = () => `RING LEVERS ${JSON.stringify({ at: me.body!.position, levers: levers() })}`;
+  // `wait` below reads the outbound lever at once. From a just-struck rivet it may not stand yet, and it can stand
+  // for a moment and go back: a train already bound for the old end keeps its end block (and the lever its Village
+  // side, chained) until it clears. Wait until it has stood, at rest, for 100 server ticks.
+  const t0 = railAt();
+  let since = -1,
+    was = '';
+  const steady = () => {
+    const l = outward();
+    const ok = !!l && Math.abs(l.u - l.goal) < 0.05;
+    const now = l ? (ok ? 'stands' : 'sliding') : 'not on';
+    if (now !== was) bot.note(`OUTBOUND LEVER ${now} at ${railAt() - t0} ticks`);
+    was = now;
+    if (!ok) since = -1;
+    else if (since < 0) since = railAt();
+    return ok && railAt() - since >= 100;
+  };
+  if (!outward()) console.log(levers0());
+  await until(steady, 'the outbound Railhead lever stands', 600000).catch((error: unknown) => {
+    console.log(levers0());
+    throw error;
+  });
+  bot.note(`OUTBOUND LEVER steady from ${since - t0} ticks after the ride was asked for`);
   const train = await rideFrom(
     {
       name: 'Railhead',
@@ -198,7 +222,9 @@ export async function rideToIsland(bot: Bot, { rideFrom, hopTo, view, until }: R
           0.5,
         );
       },
-      wait: { x: outward()!.x, z: outward()!.z },
+      // Wait where the rivet left the rider: the lever's platform stands 0.9 m above the deck with no way up the
+      // planner knows, and `before` walks to the lever and hops up onto it.
+      wait: { x: me.body!.position.x, z: me.body!.position.z },
     },
     STOP.island,
   ).catch((error: unknown) => {

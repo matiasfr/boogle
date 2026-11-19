@@ -100,10 +100,11 @@ Rows from `npm run models` (18 November). No new test files (state rule 8).
       `the map redraws at settle`; `the old platform's place is walkway at every tick of a haul`. Verify: a motion
       sheet from `dev/look/evals/railhead-move.ts` at `ring-set-3` with a train arriving mid-haul. Update
       `docs/game-design/place.md`, "The railhead and the gap".
-- [ ] **Checkpoint (1 to 3, one ship, v61 its own commit).** Once: `npm run test:net`; the ring bot
+- [x] **Checkpoint (1 to 3, one ship, v61 its own commit).** Once: `npm run test:net`; the ring bot
       (`railway-ring-bot.ts --rail-seed deck-laid`, all fourteen footings); the footing wagon trip by trip with every
       delivery tick (state rule 14); a two-tab look with a mid-haul arrival. Code review: fresh Codex delegate on the
       committed branch, gpt-6.2-astra medium. Visual review: main session.
+      Run 18 November on main after #2218 ([record](#checkpoint-run-18-november-2026)).
 
 ## Steps 1 and 2 as built (18 November 2026)
 
@@ -226,6 +227,109 @@ its reach to agree.
   the one waiting little guy rode the deck out and boarded it; the lever held u 115.6, stepped down 0.9 m as the deck
   left it, and at the settle slid to u 135.6 and back up. The map's redraw was not in frame (the tests hold it). Not
   tested on a device.
+
+## Checkpoint run (18 November 2026)
+
+Runner: test sub-agent on HOTBOX (Windows, Node 26.13), branch `claude/railhead-reroute-checkpoint` from `origin/main`
+`045fa1529` (the merge `b9f4dba09` plus bookkeeping; nothing under `src/sim`, `src/net`, `server/` or `dev/peer-test`
+changed since the merge). Load stayed between 0.9 and 4.2 against HOTBOX's limit of 18; no run was `underLoad`.
+Code review and visual review were met before the merge (three independent reviews of #2218); none was started here.
+
+**1. `npm run test:net`: passed on the merge commit, not rerun.** CI run 44420528246 (`ci.yml`, `workflow_dispatch` on
+`main` at `b9f4dba09`), job `net` 135212144083: `PASS: 237/237 checks passed`. The ship run on the branch head
+`4696a3e` (44419387949) passed its `net` job too.
+
+**2. The ring bot: passed, after three corrections to the bot (dev/look only).**
+`npm run playthrough -- --from deck-laid --to ring-ride --stall 3000 --wall 2700` (`railFrom=ring`, the
+`railway-ring-bot.ts` eval). The passing run, `reroute-ring6`: `verdict.json` `pass` on `cc8539ee1`, `dirty: 0`, load
+1.42 → 1.14, `underLoad: false`, 389 s wall, 1,575 s of game. All fourteen bent footings shouldered and set by real
+input (idle at the rack 135 s of server time), the glide landed dry on the brace platform (1416, 8.4, -660.1), the pawl,
+the hook back, four weights, the leaf down, the rivet (joined, tick 11584), and the ride to the island halt: it ended
+`ring ridden` at tick 12126 standing at (1417.8, 9.3, -819.7), not swimming. **No recovery** (the bot's end line says
+"no recovery"; this route forbids it). Its checkpoints show the stop trailing the build head through the last haul
+(`gap footed` at tick 11352: set 14, stop 6, head 6), then stop 7 from `gap glided` on.
+Earlier runs failed on stale bot code, not the game:
+- `reroute-ring` (`045fa1529`): after the fourteenth footing the bot ran up to `RING_HEAD[ringOpen().head]`, which under
+  v61 is the trains' stop, still bent 6 mid-haul, so it jumped from a bent short and fell in the sea. Fix: wait for
+  `ringOpen(rw()).head === ringHead(rw())` (the last haul settled) before the run-up.
+- `reroute-ring2`: `rideToIsland` read the outbound lever eagerly; just after the rivet it did not stand. Fix: wait for it.
+- `reroute-ring3` to `5`: the outbound lever flickered on and off after the rivet (the P3 finding below). Then the bot's
+  wait spot was the lever knob on its raised platform, which the planner cannot reach (12 November's route used the
+  joint's west platform). Fixes: wait until the lever has stood at rest for 100 server ticks; wait for the train where
+  the rivet left the rider (`before` already walks to the lever and hops up).
+
+**3. The footing wagon, trip by trip: the plan's figures exactly, on current main and at v60.** A scratch driver (not
+committed) builds `railwayAtRing('deck-laid')` and applies the seeds' policy each tick (a footing on the railhead rack
+is taken and set at once; the brace, the four weights and the rivet as soon as each is possible), logging every change
+of the wagon's row and the `Aperture` row by rule tick. Run on this checkout (v61) and on `55c4827d9` (main before the
+merge, `WORLD_NS` v60). Rule ticks, v60 / v61:
+
+| Trip | Railhead arrival = delivery (6 footings) | Leaves the Railhead | Village | Works load | Stop moves (v61) |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 8823 / 8823 | 8824 / 8873 | 9297 / 9346 | 9481 / 9530 | 9030 (0 to 3) |
+| 2 | 9979 / 10028 | 9980 / 10078 | 10483 / 10581 | 10667 / 10765 | 10235 (3 to 6) |
+| 3 | 11195 / 11293 (2 bents, 4 weights, rivet the same tick) | 11196 / 11343 | 11729 / 11876 | | 11420 (6 to 7) |
+| after | Ring Island 12423 / 12570, Village 13117 / 13263 | | | | |
+
+From each arrival to the next: v60 1,156 and 1,216 ticks, v61 1,205 and 1,265. **Each trip is exactly 49 ticks
+longer, the same every trip; no trip's delay grows.** The 49 ticks are the wagon standing its own 50-tick dwell at the
+old head. Under v60 a re-route sent it off the tick after it arrived; under v61 it leaves at arrival + 50 on all three
+trips. So deliveries trail v60 by 0, 49 and 98 ticks, and later events by 147. That is a fixed cost per trip that adds
+up, as recorded under steps 1 and 2, and no hidden wait: the wagon never stands past its dwell, and every haul had
+settled before the next arrival. In the ring bot's own run the fourteenth footing was set at tick 11352, against
+11293 under the seed policy, because the bot carries each footing at a person's pace. The bot does not log delivery
+ticks trip by trip.
+
+**4. Two-tab look with a mid-haul arrival: passed.** `dev/look/evals/railhead-move.ts` gained a watcher mode: the
+second page waits for the first page's footing, then frames and flags the same haul. Commands:
+`npm run look -- --players 2 --warp-speed 2 --rail-seed ring-set-3 --query 'debugcam=1&train=1' --eval
+dev/look/evals/railhead-move.ts --until window.__railheadMove --frames 2 --seconds 4 --name reroute-2tab-a` (pass;
+page 2's clock fell up to 2.1 s behind during setup and was back inside 1 s at the end), and the same with `--real --frames 3 --seconds 10
+--name reroute-2tab-b` (pass). Two `--warp-speed 2` attempts at the 10 s capture stopped on the harness's clock check
+(page 2 ended 2.4 and 4.2 s behind while world ticks agreed), which is not a game failure. Both pages logged the same state at every
+half second of `reroute-2tab-b`:
+- Train 3 set off 135 m short; the footing was set at tick 9011; the haul ends at 9138.
+- From phase 25 to 65: `stop 1 build 2 standing 3 at 87200` (the old head) while the deck went from u 145.5 to 160.0.
+- The lever held u 115.6 and stepped down from y 22.72 to 21.82 as the deck left it (phase 15 to 19).
+- The one waiting little guy (`wait1` 1) was gone at phase 25, when the train stood.
+- At phase 70 (settled): `stop 2` and nothing standing at stop 4. The lever slid from u 117.8 to 135.6 by phase 100
+  and stepped back up (y 21.92).
+
+`shownU` on the two pages differed by at most 0.06 m at matching log lines (each page logs on its own timer, not at
+the same wall time). Stills, 1200 px:
+- [Tab 1: told, 5 s, 10 s](../reports/railhead-reroute-checkpoint/1-tab1-told-mid-settled.png). Told: the deck at the
+  old head, a little guy waiting on it, the lever on its dais. At 5 s: the deck hauled off, the old platform's place is
+  walkway with the lever stepped down on it, and train 3 stands there. At 10 s, after the settle: the train moving off
+  homeward and the lever out at the new head on the deck.
+- [Tab 1, mid-haul](../reports/railhead-reroute-checkpoint/2-tab1-mid-haul.png) and
+  [tab 2, mid-haul](../reports/railhead-reroute-checkpoint/3-tab2-mid-haul.png) (`reroute-2tab-a`): the train
+  standing at the old head beside the walkway, the lever (red knob) stepped down on the walkway, the deck ahead.
+- [Tab 2, after the settle](../reports/railhead-reroute-checkpoint/4-tab2-after-settle.png) (`reroute-2tab-b`): the
+  train moving on homeward, the lever at the new head on the deck.
+
+**Unseen.**
+- The little guy riding the deck is in no still. At `ring-set-3` the train first logged standing about 1 s after the
+  deck began to move (the deck 5.5 m out), and the eval's frames fall either side of that; the logs show only the waiting count.
+- The lever's prompt text on the walkway was not captured (the tests check it).
+- Sounds, the map's redraw, a third tab, and a reload mid-haul in a browser.
+- **Checkpoint B's `&railLag=400` reading was not taken.** The machine was quiet enough, but `look --players 2` gives
+  both pages the same `--query`, and `railLag` is read at boot. Lagging one tab needs a new harness flag, with review
+  and a launcher restart, which is beyond this runner's remit.
+- Not tested on a device.
+
+**Finding, P3: the Railhead's outbound lever flickers after the rivet.** In every bot run the outbound lever in the
+view (`ringLevers`, halt 4, `dir` 1, `on`) came and went several times before it held. `reroute-ring4`: on at 29
+ticks after the joined checkpoint, off at 38, on at 50, off at 56, on at 63, steady from 68. `reroute-ring6`: five
+flips between 72 and 82 ticks. Between flips it reads "Village", chained, and slides back. The sim's rule switches
+once: from `deck-laid` with the seeds' policy, `railPlatformEnd(w, 1, 4, t)` and `railCallReady(+1)` hold their
+end-of-line values from the rivet (11293) while the wagon keeps its retained end block, and switch for good at 11396.
+So the flicker comes from the view (`halts-view.ts`, `mainWay` and `chained` on the tab's clock), not the rule. A
+player who presses during it gets nothing. Reproduction: `npm run playthrough -- --from deck-laid --to ring-ride
+--stall 3000 --wall 2700`, then read the `OUTBOUND LEVER` lines in `bot.txt`. It was not compared at v60, so it is not
+known to come from the re-route. Not fixed here.
+
+**Changed for the run (dev/look only):** `dev/look/bots/railway-ring.ts` (the three bot fixes above);
+`dev/look/evals/railhead-move.ts` (the watcher page).
 
 ## Level findings and risks
 
