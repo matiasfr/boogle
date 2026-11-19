@@ -191,7 +191,7 @@ export function partsOf(room: RoomFacts): Part[] {
           id: 'wagon',
           cat: 'cargo',
           name: 'Footing wagon',
-          desc: 'It rolled out of the stall when the kiln lit. 6 footings a trip, Quarry to Pier.',
+          desc: `It rolled out of the stall when the kiln lit. ${CRADLE_CAP[Number(room.cradleFitted)]} footings a trip, Quarry to Pier.`,
           standing: 'free',
           pill: 'Free with the kiln',
           size: 'medium',
