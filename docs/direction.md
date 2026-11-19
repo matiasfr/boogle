@@ -99,7 +99,7 @@ The graph can step back for an affected risk. Exit evidence for each is in the [
 
 ## Owner decisions that change the next work
 
-- The shared pool: does it replace halt yards for upgrades, or cover only goods carried to a hub ([entry](decisions-rewards.md#d-2026-11-12-upgrades-pay-from-a-shared-pool))? Garage step 3 spends steel from one pool by his 15 November answer; the wider reading is still open.
+- The shared pool: does it replace halt yards for upgrades, or cover only goods carried to a hub ([entry](decisions-rewards.md#d-2026-11-12-upgrades-pay-from-a-shared-pool))? Garage step 3 spends steel from one pool by his 15 November answer; the plan ([shared-pool](plans/shared-pool.md), 19 November) recommends that halt yards join no pool until an upgrade is priced in their kinds; its three questions are his.
 - Right-hand running: the plan's three questions ([running-side](plans/running-side.md)).
 - The Round: his walk of the blockout may move plots before houses are built on them.
 - From the 8 November list, not re-checked for this review: the jump-upgrade balcony and the ankle rings (his call after playing B5–B8), and the unanswered [cart first, then trains](plans/cart-then-trains.md) proposal.
