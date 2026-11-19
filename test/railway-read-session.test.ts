@@ -140,12 +140,11 @@ test('roomIgnoringBig is a kind row less its load by count alone (8 each, 16 log
     Object.assign(w.mut(Account, w.lookup(Account, pid)!)!, { carry: 0, stone: 0, rails: 0, foot: 0 }, load);
   set({});
   // q1-done: the seeds take the Rail yoke at Q1, so the rails row is 16.
-  for (const [kind, row] of [
-    [LOGS, 8],
-    [STONE, 8],
-    [RAILS, 16],
-  ] as const)
-    assert.equal(roomIgnoringBig(w, pid, kind), row, `an empty ${kind} row`);
+  assert.deepEqual(
+    [LOGS, STONE, RAILS].map((kind) => roomIgnoringBig(w, pid, kind)),
+    [8, 8, 16],
+    'empty rows',
+  );
   assert.equal(roomIgnoringBig(w, 'nobody', LOGS), 8, 'no account: the whole row');
   set({ carry: 3, stone: 2, rails: 1 });
   assert.deepEqual(

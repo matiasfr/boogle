@@ -7,7 +7,7 @@ import type { RailAction } from './railway.ts';
 import { apply, check, createRailway, invariant, need, restore } from './railway-drive.ts';
 import { railTick } from './railway-systems.ts';
 import { railSession } from './railway-sys-core.ts';
-import { scheduleOf } from './railway-queries.ts';
+import { balanceOf, scheduleOf } from './railway-queries.ts';
 import { account, beam, boiler, cart, forge, qjob, rail, rocks, trains, trees } from './railway-rows.ts';
 import { RAILWAY_CAPACITY, RAILWAY_SOURCES } from './railway-layout.ts';
 import { LINE1_STATIONS } from './railway-line-layout.ts';
@@ -28,12 +28,11 @@ export function act(s: Seed, pid: string, op: string, fields: Partial<RailAction
 export function advance(s: Seed, ticks: number) {
   for (let i = 0; i < ticks; i++) railTick(s.w, ++s.t);
 }
-/** Both backs emptied onto piles beside the line. A pile holds 8, so a back of 16 rails (the yoke) takes two drops;
- * a back of 8 or fewer is one drop, as before the yoke. */
+/** Both backs emptied onto piles beside the line; a pile holds 8, so a back of 16 rails (the yoke) takes two drops. */
 function clear(s: Seed) {
   for (const pid of ['a', 'b'])
     for (const kind of [0, 2] as const) {
-      const left = () => (kind ? account(s.w, pid)!.rails : account(s.w, pid)!.carry);
+      const left = () => balanceOf(account(s.w, pid)!, kind);
       for (let n = left(); n; n = left()) {
         need(act(s, pid, 'rail.drop', { x: 100000 + kind * 100, y: 2000, z: 3000, n, kind }) > 0, 'clear: drop');
       }

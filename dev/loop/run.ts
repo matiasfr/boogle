@@ -26,7 +26,7 @@ import {
   LINE2_OLD_TRAIN,
   depotOffset,
 } from '../../src/sim/railway-line2-layout.ts';
-import { line2Active } from '../../src/sim/railway-queries-line2.ts';
+import { line2Active, line2YokeReady } from '../../src/sim/railway-queries-line2.ts';
 import { capacityOf, LOGS, STONE } from '../../src/sim/railway-queries.ts';
 import { RAILS } from '../../src/sim/railway-line2-layout.ts';
 import {
@@ -607,7 +607,7 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
     axe: (pl) => device(g, pl, LINE2_AXE, 'rail.axe', ready('axe')),
     pack: (pl) => device(g, pl, LINE2_PACK, 'rail.pack', () => forgeOf(w()).used >= LINE2_FORGE.bills[0]),
     Q1: (pl) => quarry(g, pl, 0),
-    yoke: (pl) => device(g, pl, LINE2_YOKE, 'rail.yoke', () => qjob(w(), 0).start >= 0),
+    yoke: (pl) => device(g, pl, LINE2_YOKE, 'rail.yoke', () => line2YokeReady(w())),
     Q2: (pl) => quarry(g, pl, 1, byHand.has('Q2')),
     hook: (pl) => device(g, pl, LINE2_HOOK, 'rail.hook', ready('hook')),
     Q3: (pl) => quarry(g, pl, 2, byHand.has('Q3')),

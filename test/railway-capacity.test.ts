@@ -12,7 +12,7 @@ import { Account, Pile, Rail } from '../src/sim/railway-components.ts';
 import { WORKS_ROCKS } from '../src/sim/railway-works-layout.ts';
 import { LOOSE_PILE_CAPACITY } from '../src/sim/railway-supply.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
-import { advance, logs, railwayAtQ1Last, type Seed } from '../src/sim/railway-seed-route.ts';
+import { advance, logs, type Seed } from '../src/sim/railway-seed-route.ts';
 import { chopTo } from '../src/sim/railway-seed-works.ts';
 import { railPredict } from '../src/world/railway-predict.ts';
 import { accepted } from '../src/adapters/railway-effects.ts';
@@ -157,8 +157,10 @@ test('capacities: the pack lifts logs to 16 and the breaker stone to 16, each it
   assert.equal(invariant(works.w), null);
 });
 
+// Built at module scope, outside the 5 s test timeout (as the golden shards do); the test gets its own copy.
+buildSeedWorld('q1-last');
 test("capacities: the rail yoke lifts rails to 16 once Q1's bill is in", () => {
-  const s = railwayAtQ1Last();
+  const s = buildSeedWorld('q1-last');
   assert.deepEqual(caps(s.w), [8, 8, 8]);
   assert.equal(send(s, 'a', 'rail.yoke'), 0, "no yoke before Q1's bill");
   assert.equal(rail(s.w).yoke, false);

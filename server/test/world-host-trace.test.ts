@@ -52,8 +52,8 @@
 // v64 Rail yoke (docs/plans/rail-yoke.md, step 1): the action sweep adds four records for a refused rail.yoke (one
 // input, its pending and settled status, its rejection packet), so Bob's later request ids, acks (20 replica packets),
 // account request and r:session `next` move by one, each checkpoint after it holds one more outcome row (the
-// railway's next id follows) and stats.actions counts one more. 205 checkpoints append a false Rail.yoke column and change namespace/hash/checksum;
-// 5,671 snapBytes samples follow. Every other column, input, result and message is exact (keyed comparison with the
+// railway's next id follows) and stats.actions counts one more. 205 checkpoints append a false Rail.yoke column and
+// change namespace/hash/checksum; 5,671 snapBytes samples follow. Every other column, input, result and message is exact (keyed comparison with the
 // v63 fixture before the writer regenerated it).
 import test from 'node:test';
 import assert from 'node:assert/strict';
