@@ -8,7 +8,7 @@ import { createTownReader, laidStretches, townLookOf } from '../src/entities/tow
 import type { ReadWorld } from '../src/sim/railway-rows.ts';
 import { QJob, Town } from '../src/sim/railway-components.ts';
 import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
-import { HALTS, LINKS, PLOT_ROOMS } from '../src/place/layout.ts';
+import { HALTS, LINKS, PLOT_ROOMS, lineAt } from '../src/place/layout.ts';
 import { sourceFunction } from '../dev/level/source.ts';
 import artifact from '../content/built/prefabs.json' with { type: 'json' };
 
@@ -67,21 +67,31 @@ test('a newly laid stretch reaches the shared reader and grows the driver’s tr
   const plan = sourceFunction<typeof import('../src/entities/town/model-railway.ts').planTrainSet>(
     file,
     'planTrainSet',
-    {},
+    { lineAt },
   );
   const look = sourceFunction<import('../src/entities/town/model-railway.ts').TrainSetLook>(file, 'LOOK', {});
   const [solid] = artifact.prefabs['town.driver-table'].colliders as { shape: string; at: number[]; half: number[] }[];
   assert.equal(solid?.shape, 'box');
-  const [x = 0, y = 0, z = 0] = solid!.at,
-    [hx = 0, hy = 0, hz = 0] = solid!.half;
-  const box = { x, z, hx, hz, top: y + hy };
+  const box = sourceFunction<typeof import('../src/entities/town/model-railway.ts').tableBox>(
+    file,
+    'tableBox',
+    {},
+  )(solid!);
   const room = PLOT_ROOMS.plot3;
   const lines = LINKS.map((l) => l.line);
   const at = fit(lines, room.yaw, box, 0.08);
   const draw = (stretches: typeof before, tick: number) => {
     const bits: { x: number; z: number; glow: number }[] = [];
-    const n = plan(stretches, lines, HALTS, [], at, box.top, tick, look, (x, _y, z, _sx, _sy, _sz, _yaw, _c, glow) =>
-      bits.push({ x, z, glow }),
+    const { n } = plan(
+      stretches,
+      lines,
+      HALTS,
+      [],
+      at,
+      box.top,
+      tick,
+      look,
+      (x, _y, z, _sx, _sy, _sz, _yaw, _c, glow) => bits.push({ x, z, glow }),
     );
     assert.equal(n, bits.length);
     for (const b of bits) {

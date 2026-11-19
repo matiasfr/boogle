@@ -11,7 +11,7 @@ import * as THREE from 'three/webgpu';
 import { PLAYER_R } from '../../constants.ts';
 import { me } from '../../player/player.ts';
 import { createOwnedView, type OwnedView } from '../../render/owned-view.ts';
-import { HALTS, LINKS, ORIGIN, type Line } from '../../place/layout.ts';
+import { HALTS, LINKS, ORIGIN, lineAt, type Line, type LinePoint } from '../../place/layout.ts';
 import { outOf } from '../../place/sites.ts';
 import { siteExit } from '../../place/site-clearance.ts';
 import { H } from '../../place/terrain.ts';
@@ -46,6 +46,17 @@ type Bit = (
   glow: number,
 ) => void;
 
+/** The table's box in room space, from its record's collider. */
+export function tableBox(solid: { at: readonly number[]; half: readonly number[] }): TableBox {
+  return {
+    x: solid.at[0]!,
+    z: solid.at[2]!,
+    hx: solid.half[0]!,
+    hz: solid.half[2]!,
+    top: solid.at[1]! + solid.half[1]!,
+  };
+}
+
 /** The scale and centre that fit every line's whole length on the table top, `margin` in from its edges, turned into
  * room axes by the room's `yaw` (so the model lies as the land does). */
 export function fitTrainSet(lines: readonly Line[], yaw: number, box: TableBox, margin: number): TrainSetFit {
@@ -70,9 +81,10 @@ export function fitTrainSet(lines: readonly Line[], yaw: number, box: TableBox, 
   return { k, c, s, u: (u0 + u1) / 2, v: (v0 + v1) / 2, x: box.x, z: box.z };
 }
 
-/** Every bit of the table's railway, through `bit`, and how many: each laid stretch as ballast and a rail every
+/** Every bit of the table's railway, through `bit`; returns how many, and how bright the newest stretch still is
+ * (0 to 1). Each laid stretch as ballast and a rail every
  * `look.step` metres, the newest still bright until `look.freshTicks` after its end tick; a board beside each halt
- * whose middle is laid; each train on its track. Pure over its arguments (the unit test runs it). */
+ * whose middle is laid; each train on its track. Pure over its arguments and `lineAt` (the unit test runs it). */
 export function planTrainSet(
   stretches: readonly LaidStretch[],
   lines: readonly Line[],
@@ -87,16 +99,13 @@ export function planTrainSet(
   let n = 0;
   const tx = (x: number, z: number) => fit.x + (x * fit.c - z * fit.s - fit.u) * fit.k;
   const tz = (x: number, z: number) => fit.z + (x * fit.s + z * fit.c - fit.v) * fit.k;
+  /** A heading on the land (a direction) as a yaw on the table. */
+  const yawOf = (ux: number, uz: number) => Math.atan2(ux * fit.c - uz * fit.s, ux * fit.s + uz * fit.c);
+  const pt: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
   /** Where metre `m` of a line lies on the table, and which way it runs there. */
   const along = (line: Line, m: number) => {
-    const k = Math.max(0, Math.min(line.xs.length - 2, Math.floor(m)));
-    const x = tx(line.xs[k]!, line.zs[k]!),
-      z = tz(line.xs[k]!, line.zs[k]!);
-    return {
-      x,
-      z,
-      yaw: Math.atan2(tx(line.xs[k + 1]!, line.zs[k + 1]!) - x, tz(line.xs[k + 1]!, line.zs[k + 1]!) - z),
-    };
+    lineAt(line, m, pt);
+    return { x: tx(pt.x, pt.z), z: tz(pt.x, pt.z), yaw: yawOf(pt.ux, pt.uz) };
   };
   let newest = -1;
   for (const q of stretches) newest = Math.max(newest, q.end);
@@ -134,6 +143,7 @@ export function planTrainSet(
     let best = Infinity,
       on: Line | null = null,
       at = 0;
+    // (A point index; its heading is the span on from it.)
     for (const line of lines)
       for (let k = 0; k < line.xs.length; k++) {
         const d = (line.xs[k]! - t.x) ** 2 + (line.zs[k]! - t.z) ** 2;
@@ -144,11 +154,12 @@ export function planTrainSet(
         }
       }
     if (!on) continue;
-    const yaw = along(on, at).yaw;
+    const k = Math.min(at, on.xs.length - 2);
+    const yaw = yawOf(on.xs[k + 1]! - on.xs[k]!, on.zs[k + 1]! - on.zs[k]!);
     bit(tx(t.x, t.z), top + bh + rh + trh / 2, tz(t.x, t.z), trw, trh, trl, yaw, trc, 0);
     n++;
   }
-  return n;
+  return { n, fresh };
 }
 
 const LOOK: TrainSetLook = {
@@ -175,13 +186,7 @@ export function createModelRailway(
   const def = definitions['town.driver-table'];
   const solid = def?.colliders[0];
   if (!solid || solid.shape !== 'box') throw new Error('model-railway: the table record has no box');
-  const box: TableBox = {
-    x: solid.at[0],
-    z: solid.at[2],
-    hx: solid.half[0],
-    hz: solid.half[2],
-    top: solid.at[1] + solid.half[1],
-  };
+  const box = tableBox(solid);
   const lines = LINKS.map((l) => l.line);
   const fit = fitTrainSet(lines, room.yaw, box, MARGIN);
   const fixtureOwner = createOwnedView();
@@ -195,37 +200,25 @@ export function createModelRailway(
   // Moves you clear before the table's solid comes in: out of the table, or of the corner it fills to the walls and a
   // little past them, so the way out is into the room (or well outside), never into a wall.
   const zone = { x0: box.x - box.hx, x1: room.w / 2 + 1.5, z0: -room.d / 2 - 1.5, z1: box.z + box.hz };
-  const zoneAt = roomToWorld(room, (zone.x0 + zone.x1) / 2, 0, (zone.z0 + zone.z1) / 2, new THREE.Vector3());
+  const zx = (zone.x0 + zone.x1) / 2,
+    zz = (zone.z0 + zone.z1) / 2;
+  const zoneAt = roomToWorld(room, zx, 0, zz, new THREE.Vector3());
+  const foot = {
+    x: zoneAt.x,
+    z: zoneAt.z,
+    c: Math.cos(room.yaw),
+    s: Math.sin(room.yaw),
+    hw: (zone.x1 - zone.x0) / 2,
+    hd: (zone.z1 - zone.z0) / 2,
+  };
+  const solids = [{ dx: box.x - zx, dy: solid.at[1], dz: box.z - zz, hx: box.hx, hy: solid.half[1], hz: box.hz }];
   const clear = () => {
     const b = me.body;
     if (!b) return;
-    const exit = siteExit(
-      b.position,
-      {
-        x: zoneAt.x,
-        z: zoneAt.z,
-        c: Math.cos(room.yaw),
-        s: Math.sin(room.yaw),
-        hw: (zone.x1 - zone.x0) / 2,
-        hd: (zone.z1 - zone.z0) / 2,
-      },
-      room.y,
-      [
-        {
-          dx: box.x - (zone.x0 + zone.x1) / 2,
-          dy: solid.at[1],
-          dz: box.z - (zone.z0 + zone.z1) / 2,
-          hx: box.hx,
-          hy: solid.half[1],
-          hz: box.hz,
-        },
-      ],
-      outOf,
-      undefined,
-      0.02,
-    );
+    const exit = siteExit(b.position, foot, room.y, solids, outOf, undefined, 0.02);
     if (!exit) return;
-    const y = H(exit.x, exit.z) + PLAYER_R + 0.2;
+    // On the floor if it's in the room, else on the ground.
+    const y = Math.max(H(exit.x, exit.z), room.y) + PLAYER_R + 0.2;
     b.position.set(exit.x, y, exit.z);
     b.interpolatedPosition.set(exit.x, y, exit.z);
     b.velocity.set(0, 0, 0);
@@ -241,10 +234,10 @@ export function createModelRailway(
   const wood = '#8a5a34';
   const parts: Part[] = [
     ['b', x, top - 0.02, z, hx * 2, 0.04, hz * 2, '#5f9a48'],
-    ['b', x, top - 0.05, z - hz + 0.02, hx * 2, 0.1, 0.04, wood],
-    ['b', x, top - 0.05, z + hz - 0.02, hx * 2, 0.1, 0.04, wood],
-    ['b', x - hx + 0.02, top - 0.05, z, 0.04, 0.1, hz * 2, wood],
-    ['b', x + hx - 0.02, top - 0.05, z, 0.04, 0.1, hz * 2, wood],
+    ...[-1, 1].flatMap((side): Part[] => [
+      ['b', x, top - 0.05, z + side * (hz - 0.02), hx * 2, 0.1, 0.04, wood],
+      ['b', x + side * (hx - 0.02), top - 0.05, z, 0.04, 0.1, hz * 2, wood],
+    ]),
     ...[-1, 1].flatMap((sx) =>
       [-1, 1].map((sz): Part => [
         'b',
@@ -288,27 +281,19 @@ export function createModelRailway(
     bits.setColorAt(n_, c_.set(color).lerp(FRESH, glow));
     n_++;
   };
-  const seen = { stretches: [] as LaidStretch[], trains: 0, fresh: false, tick: -1 };
+  let drawn: LaidStretch[] = [],
+    fresh = 0;
   const trainsAt: { x: number; z: number }[] = [];
   function draw() {
     const look = env.look();
-    const stretches = [...laidStretches(look)];
+    drawn = [...laidStretches(look)];
     trainsAt.length = 0;
     for (const t of env.trains()) trainsAt.push({ x: t.x - ORIGIN.x, z: t.z });
     n_ = 0;
-    const tick = look?.tick ?? 0;
-    planTrainSet(stretches, lines, HALTS, trainsAt, fit, top, tick, LOOK, bit);
+    fresh = planTrainSet(drawn, lines, HALTS, trainsAt, fit, top, look?.tick ?? 0, LOOK, bit).fresh;
     bits.count = n_;
     bits.instanceMatrix.needsUpdate = true;
     if (bits.instanceColor) bits.instanceColor.needsUpdate = true;
-    let newest = -1;
-    for (const q of stretches) newest = Math.max(newest, q.end);
-    Object.assign(seen, {
-      stretches,
-      trains: trainsAt.length,
-      fresh: newest >= 0 && tick - newest < LOOK.freshTicks,
-      tick,
-    });
   }
   let wait = 0;
   return {
@@ -320,9 +305,9 @@ export function createModelRailway(
     /** For the evals: what the table drew last, and its scale (metres of table per metre of line). */
     inspect: () => ({
       bits: bits.count,
-      stretches: seen.stretches.map(({ line, lo, hi }) => ({ line, lo, hi })),
-      trains: seen.trains,
-      fresh: seen.fresh,
+      stretches: drawn.map(({ line, lo, hi }) => ({ line, lo, hi })),
+      trains: trainsAt.length,
+      fresh: fresh > 0,
       scale: fit.k,
     }),
   };
