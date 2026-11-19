@@ -1,7 +1,7 @@
 # Turnouts: real points wherever tracks merge or cross
 
 > **Status, 17 November 2026:** Step 1 (J1 static spur turnout) is on main (#1802). Step 2 (J2 to J9 in junctions(), the level check's junction table) is on main (#2079, 18 November; reconciled by the 18 November tidy). Checkpoint A owner/designer viewing is not verified here; the owner said on 18 November to go ahead without his look at J1's stills (decisions-rail, `d-2026-11-18-decisions-page-rail`). Step 3 (Home's throat: J4, J6, J2, J3) is on main (#2256, 19 November). Step 4 (the lines: J5, J7, J8, J9) is on main (#2262, 19 November). Step 5 (the table's rim, T1 to T4) is built on
-> `claude/turnouts-table-rim` (19 November), not shipped. Next: step 6; nothing else is built. Written on `origin/main` at 9036299a8. It builds on the view-only track tidy pass (one sleeper set through
+> `claude/turnouts-table-rim` (19 November), not shipped. Step 6 (moving blades and levers) is built on `claude/turnouts-blades` (19 November), not shipped. Next: step 7. Written on `origin/main` at 9036299a8. It builds on the view-only track tidy pass (one sleeper set through
 > overlaps, one track kit, the stall road seated: PR 1793, `yard-track.ts` and `home-yard.ts`) and does not redo it;
 > step 1 extends that pass's shared timbers rather than drawing through `track.ts` (see step 1's departures).
 
@@ -489,7 +489,7 @@ review** row (a fresh subagent, fable medium) on its one proof look. Step 2 and 
     z-fighting seen.
   - **Not seen:** the deck turning or resting on the spur (it rests on the open stall between the shunt's runs; its
     rest yaws are tested), far LOD, phone width; not tested on a device.
-- [ ] **6. Blades that move, and levers that throw with them.** New `src/entities/railway/turnout-blades.ts`: one
+- [x] **6. Blades that move, and levers that throw with them.** New `src/entities/railway/turnout-blades.ts`: one
   `createBoxBatch` for every junction's two blades, tie bar and lever arm, rewritten only while a junction changes
   (0.4 s ease, a clank through the existing sound helper). Pure `routeOf(junction, rows)` beside it with
   `test/turnout-route.test.ts`: "a homeward train within 60 m sets the stub for the offset track", "no train rests it for the
@@ -498,6 +498,64 @@ review** row (a fresh subagent, fable medium) on its one proof look. Step 2 and 
   The shunt's and the cart's positions come out of their views as pure helpers over the rows they already read, not by
   one view reading another. Line levers are drawn in the batch with no collider; Home's three keep their boxes and
   gain the moving arm. Proof look: a real-time clip from the island's end ramp of a line 1 train leaving through J4.
+  **Built 19 November 2026** (branch `claude/turnouts-blades`), against today's code, with these departures:
+  - **What the code had become since the plan.** At J4 and J6 the up track's carried rails now reach the toe (step 3's
+    "plain rails from about 2.2 m" no longer holds), so like J5 and J9 they drew no open blade, and at all four the up
+    track's inner rail lay on the through road's far rail, and its far rail on the through road's inner rail, for
+    about the first metre: doubled rail at every line toe. The yard's spur and leg (J1 to J3) likewise had the yard's
+    stock rail over the line's inner rail at the toe.
+  - **Two cuts, not one.** At each junction the through road's inner rail is cut from the toe to the heel (on line 1,
+    line 2 or, at J7, the up track), and so is the diverging road's where the line draws it: the up track's inner rail
+    at J4, J5, J6 and J9, the crossover's at J7 and J8 (its set-over open blade is gone from panelled track). The
+    yard's diverging blades (J1 to J3) were `turnout()`'s `blade` pieces and simply leave `rails`. At J9 the through
+    rail is cut only from 0.81 m, where the up track's rails begin: before that it is the stock rail. Doubled rail at
+    the toes is gone (the level check's z-fight joints 62 → 60 against origin/main; likely visible 153 both).
+  - **The cut keeps every index.** Each cut piece keeps its index, shortened to what is left of it; a second remnant
+    joins `turnoutRails` after every other piece; a piece a blade covers whole is left a 1 mm speck (J1, J4, J5, J6,
+    J7, J8, six in all). The gantry seats and pair-counts from the uncut piece (`seatOf`): every panel's seat, direction,
+    pair count and up seat are identical to origin/main on both lines (307 panels compared), and the lines' piece
+    counts are unchanged (775 and 2,629). The risk's "a 3 m piece always leaves a remnant" did not hold (toes fall
+    mid-piece, blades span joints), so a covered piece is a speck rather than a removed one: the gantry still carries
+    and seats a whole pair, and the blade lies where the rest of it was.
+  - **Blade lengths.** A heel short of a joint by under 0.5 m runs on to it: J4 2.6 m and J5 2.47 m (over the plan's
+    2.4 m); the rest keep `KIT.blade` of the lead. Behind the toe J4 keeps a 0.3 m and J5 a 0.4 m stub of rail
+    (squeezed joint plates, as the turnouts' other short pieces).
+  - **The blades' pose.** `Turnout` gains `toe`, `blades` (each with `at(d, k)`, the points `k` of the way to the
+    diverging road, and `plain(d)`) and `lever`; `turnout()` takes an optional blade length. A closed blade keeps a
+    rail's width in from its stock rail near the toe, so the tip moves 6.5 cm, not the full throw.
+  - **Files the plan did not name.** `routeOf` lives in its own pure `turnout-route.ts` (the view imports three.js; the
+    test may not), with `pointsTrains` (the trains as the points see them, as train-view.ts places and sets them
+    across) and `routeRows`. The shunt's position is `shuntTargets` and `shuntOnSpur` in `shunt-path.ts` (moved out
+    of `roundhouse-view.ts`, which calls it); the cart's is `cartOn` and `cartAt` in `cart-tag.ts` (out of
+    `cart-view.ts`, whose public surface may not grow). `createBoxBatch` moved to `box-batch.ts`, re-exported by
+    `works-box-view.ts` (a new file may not import a collider-capable module). `view.ts` creates the batch from both
+    lines' `track.points` (`line2-view.ts` exposes its own); Home's three lever spots are `Junction.stand`, read by
+    `home-station-view.ts`, whose static brass arms are gone. The level tools gained `junctions` and `box-batch.ts`.
+  - **The tests** are `routeOf`'s four cases in `test/turnout.test.ts`, not a new file.
+  - **Levers.** Line levers stand abeam the toe (`KIT.leverBack` 0.2 m) 2.0 m out on the headblocks' side, no
+    collider; J8's stands across the track (`Junction.leverAcross`): Far Head's platform covers its headblocks' side.
+    Home's three keep their boxes where they were (J1's is solid) and gain the arm, leaning 26° away from the track for
+    the through road and toward it for the other.
+  - **Where no turnout is** (J2 and J3 before the leg is laid, J9 after Q7's relay) the cut is drawn as plain rail and
+    there is no lever.
+  - **Cost.** One instanced draw for every junction's moving parts, never culled, casting: +1 draw and +1 shadow-pass
+    draw, at most 69 boxes (828 triangles); Home's statics lose three boxes. No track batch or piece is added. `npm
+    run perf -- --render` from spawn read 259 calls and 677,844 triangles both on this branch and on origin/main (four
+    commits newer); shadow calls and geometry counts moved between runs, as step 1 found. No frame time measured.
+  - **Seen** ([turnouts/](turnouts/), `trains-on` unless named): `step6-ramp-through.png` and `step6-ramp-offset.png`
+    (from the island's end ramp, a homeward line 1 train coming in through J4: the arm leans over and back),
+    `step6-j4-toe-through.png` and `step6-j4-toe-offset.png` (J4 from above at 5 m in each position),
+    `step6-j1-toe.png` to `step6-j8-toe.png` (each junction's toe from above, set for the through road),
+    `step6-j9-toe.png` (`crossing-done`), `step6-j9-after-relay.png` (`deck-laid`: plain rail, no lever) and
+    `step6-j1-lever.png` (Home's J1 box with its arm and rod). The real-time clip (60 s, `.look/blades-ramp-realtime.webm`,
+    not committed) shows the train come in on the offset track through J4 with the points set for it, the points
+    spring back once its tail clears the toe, and the next outward train run through on the through road. The J1 to J7
+    stills predate the levers' move abeam the toe (J8 and J9 are after it). The blades read close up; from the ramp
+    (13 m) it is the lever's arm that shows the throw.
+  - **Not seen:** a crossing train throwing Far Head's crossover, the shunt throwing J1 and the cart J2 and J3 (their
+    rules are tested, not looked at), far LOD, phone width; frame time; not tested on a device. A line 2 train standing
+    at Home stands over J2's blades, which the cart alone sets: if the cart were on the leg then, they would show set
+    for the leg under it.
 - [ ] **7. The sea junctions: J10, J11, J12.** `railhead-view.ts` (`crossoverSpan`), `src/entities/ring-island/view.ts`
   and the greybox route's track view call `turnout()` with their own centrelines (`line2World` with `line2Lat`'s
   shapes) and draw through their own box paths; `junctions.ts` gains them so step 6's blades cover them. Read those
