@@ -4,6 +4,19 @@
 
 ## Archive: Core loop, pacing and progression
 
+### Decisions page answers, 18 November 2026
+
+Ruled in [the decisions-page entry](decisions-core-loop.md#d-2026-11-18-decisions-page-core-loop) (owner, 18 November 2026); moved word for word from [agent-calls](agent-calls.md).
+
+| Date | Call | Where | By | Why this pick | Status when archived |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-18 | Default: the summit's mast and forge-pointing vane are removed with the core; the roll sits in the rings at its worn size, turning at 0.6 rad/s with the core's bob (G25, as built, #2207). Lapses the 9 November default that the vane points at the forge | [grant-c8-batch](plans/grant-c8-batch.md); `src/entities/railway/glide-device-view.ts` | Builder; the orchestrator's read | The teal vane was the wing Grant read as a different glider; the roll is literally the worn object, so it keeps its size | open |
+| 2026-11-18 | New: glide speed stays 10 m/s until the owner flies the first-climb glider; updrafts and the bird are parked, not built (G25, recommendation) | [grant-c8-batch](plans/grant-c8-batch.md#design-review-2026-11-18), owner question 3 | Planner (design review) | Speed is his verdict; updrafts break the glide's no-lift rule and would let movement supply a route | open |
+| 2026-11-18 | New: the rails' upgrade raises rails from 8 to 16 (proposal, nothing built) | [rails-capacity-upgrade](brainstorms/rails-capacity-upgrade.md#design-review-2026-11-18), call 5 | Brainstorm (design review) | Line 2 is about 66 s shorter solo; 12 buys back only 6 m less, so 16 keeps the same step as logs and stone | open |
+| 2026-11-18 | New: the rails' upgrade comes at Q1's (Station 4's) funding, before both forge rail hauls (proposal) | [rails-capacity-upgrade](brainstorms/rails-capacity-upgrade.md#design-review-2026-11-18), call 6 | Brainstorm (design review) | The only free beat before Q2: Q1's completion starts the depot cart and Q2's gives the hook; Station 3's keener edge is the precedent | open |
+| 2026-11-18 | New: the forge makes the rails' upgrade: the little guy builds it beside the forge rail rack (proposal) | [rails-capacity-upgrade](brainstorms/rails-capacity-upgrade.md#design-review-2026-11-18), call 7 | Brainstorm (design review) | Extends forge-made rewards to a forge product that serves rails; the key in sight of the lock | open |
+| 2026-11-18 | Default: the rails' upgrade is an optional pickup like the pack, with cards and no camera cut; it waits beside the rack; the rails' row grows to 16 squares; `[Rail yoke]` and its look are placeholders; Canopy Town's carry sling stays a separate later grant (proposal) | [rails-capacity-upgrade](brainstorms/rails-capacity-upgrade.md#design-review-2026-11-18), call 8 to 12 | Brainstorm (design review) | The pack's precedent and the separate-capacities squares rules; the name and look are the owner's | open |
+
 ### Batch-3 answers, 17 November 2026
 
 <a id="batch3-core-loop"></a>
@@ -400,6 +413,19 @@ _Archived 15 November 2026: the ability-order proposals below are accepted, and 
 | 2026-11-09 | The summit locator is as faint as the jump device's (opacity 0.1, no flare) | [glider-placement](brainstorms/glider-placement.md#design-review-designer-2026-11-09), call 12 · built: [glider B](plans/glider-b-home-flow.md#as-built) | designer | 3 Nov: blue shafts felt heavy-handed | reverted (10 Nov playtest: nobody saw it; see the glider cue row) |
 
 ## Archive: Rail, construction, levels and travel
+
+### Decisions page answers, 18 November 2026
+
+Ruled in [the decisions-page entry](decisions-rail.md#d-2026-11-18-decisions-page-rail) (owner, 18 November 2026); moved word for word from [agent-calls](agent-calls.md).
+
+| Date | Call | Where | By | Why this pick | Status when archived |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-18 | New: line 2's layer eases off over 50 ticks (room tune `railDepartureTicks`, was 20) so a player at the frame can step aboard; cruise speed kept (G32, recommendation, waits on the owner) | [grant-c8-batch](plans/grant-c8-batch.md#design-review-2026-11-18), owner question 2 | Planner (design review) | At 8 to 9 m/s a 9.5 m/s sprint barely closes on it; a tune, no code | open |
+| 2026-11-18 | Default: west decks at all three stack heads while each is served homeward, not Stack halt alone; each fixed at its head, standing from the lay that makes it a middle stop until it closes behind, never while it is the end (plan, nothing built) | [stack-west-platforms](plans/stack-west-platforms.md#design-review-2026-11-18), calls 3 and 4 | Planner (design review) | The lay puts the party on the old head just as it becomes a homeward stop; same fix, one loop; a deck where no train stops would mislead | open |
+| 2026-11-18 | Default: the west deck is the east deck mirrored (25 by 4.5 m, lat −8.05, 0.9 m up) with its own sea ramp and no board or sign (plan) | [stack-west-platforms](plans/stack-west-platforms.md#design-review-2026-11-18), calls 5, 8 and 11 | Planner (design review) | Finding 12's proposal and the Joint's west platform; every head deck has a sea ramp over open water; Place's up platforms carry only a lever | open |
+| 2026-11-18 | Default: a foot crossing at the decks' home end (planks 28.9 to 31.3 m short of the section end), with 3.9 m ramps (8.9°) outside both decks starting at the planks' top (plan) | [stack-west-platforms](plans/stack-west-platforms.md#design-review-2026-11-18), calls 6 and 7 | Planner (design review) | Ring Island's precedent; a standing train ends 2.8 m short, a signal-held one 12.8 m; both decks stay full height where cars stand; no step (#2176) | open |
+| 2026-11-18 | Default: the west lever stands 9.5 m toward home of the deck's middle, 0.5 m in, plaque twice size; the east deck's homeward lever stands only while the head is the line's end (plan) | [stack-west-platforms](plans/stack-west-platforms.md#design-review-2026-11-18), calls 9 and 10 | Planner (design review) | Ring Island's and the Joint's west levers; running side: a lever calls only trains that stop at its deck, at the end they leave toward | open |
+| 2026-11-18 | Default: each stack head's homeward platform point (server reach, coach steps) is its west deck's middle; `WORLD_NS` v61 (plan) | [stack-west-platforms](plans/stack-west-platforms.md#design-review-2026-11-18), call 12 | Planner (design review) | Every other two-sided halt's catalog point; one source for the lever's reach and the side the coach's steps fold to | open |
 
 ### Batch-3 answers, 17 November 2026
 
@@ -1234,6 +1260,14 @@ _Archived 14 November 2026; the owner accepts the listed [Round blockout](decisi
 
 ## Archive: Rewards, co-op and town roles
 
+### Decisions page answers, 18 November 2026
+
+Ruled in [the decisions-page entry](decisions-rewards.md#d-2026-11-18-decisions-page-rewards) (owner, 18 November 2026); moved word for word from [agent-calls](agent-calls.md).
+
+| Date | Call | Where | By | Why this pick | Status when archived |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-18 | New: if the owner turns the boiler's "Steam" card on, it comes up for every page after the boiler's show, not only the fitter's | [cutscenes-for-everyone plan](plans/cutscenes-for-everyone.md#design-review-2026-11-18) | Planner (Opus) | The 17 November standard includes item gets; copy stays his (open question 2) | open |
+
 ### Batch-3 answers, 17 November 2026
 
 <a id="batch3-rewards"></a>
@@ -1377,6 +1411,14 @@ History for [decisions-rewards.md](decisions-rewards.md), verbatim.
 
 ## Archive: Characters, cosmetics and story
 
+### Decisions page answers, 18 November 2026
+
+Ruled in [the decisions-page entry](decisions-core-loop.md#d-2026-11-18-decisions-page-core-loop) (owner, 18 November 2026); moved word for word from [agent-calls](agent-calls.md).
+
+| Date | Call | Where | By | Why this pick | Status when archived |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-18 | New: wearables stay cosmetic personal finds; a purpose for them waits for a brainstorm (G22, recommendation) | [grant-c8-batch](plans/grant-c8-batch.md#design-review-2026-11-18), owner question 4 | Planner (design review) | DESIGN 6 personal finds; a stat would make outfits a chore | open |
+
 <a id="b2-rest-characters"></a>
 
 ### Batch-2 flags and bulk answered 16 November 2026
@@ -1482,6 +1524,16 @@ History for [decisions-characters.md](decisions-characters.md), verbatim.
 
 ## Archive: Graphics, water, sky and devices
 
+### Decisions page answers, 18 November 2026
+
+Ruled in [the decisions-page entry](decisions-look.md#d-2026-11-18-decisions-page-look) (owner, 18 November 2026); moved word for word from [agent-calls](agent-calls.md).
+
+| Date | Call | Where | By | Why this pick | Status when archived |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-18 | Default: every gold ghost (dashed outlines and the house ghost) is half opaque at a mean opacity of 0.6 (`GHOST_OPACITY`) | `src/render/ghost-outline.ts`; [decision](decisions-look.md#d-2026-11-16-gold-outline-not-physical) | Gold-outline builder (Opus) | "About half"; at 0.55 the trough's far dashes almost vanished over the pale pier deck, 0.6 keeps them | open |
+| 2026-11-18 | Default: the opacity breathes 0.45 to 0.75 (`GHOST_PULSE` 0.15) over a 6 s sine (`GHOST_PULSE_PERIOD_S`), every ghost in step | `src/render/ghost-outline.ts`; [decision](decisions-look.md#d-2026-11-16-gold-outline-not-physical) | Gold-outline builder (Opus) | "Very slowly": slower than a breath, visible side by side but never a blink; one shared clock costs no CPU | open |
+| 2026-11-18 | Default: the garage's solid gold "have" frame shares the ghost material, so it also goes half opaque and breathes | `src/entities/railway/garage-selection.ts` | Gold-outline builder (Opus) | One shared look for every gold outline, as the decision's "gold used for nothing else" implies; not captured | open |
+
 <a id="b2-rest-look"></a>
 
 ### Batch-2 flags and bulk answered 16 November 2026
@@ -1568,6 +1620,14 @@ History for [decisions-look.md](decisions-look.md), verbatim.
 | 2026-11-09 | `?water=sun` / `?water=sun-depth` work without Dev (other `?graphics=` Dev overrides still need it), so the owner can try them on a friend's phone | `src/render/water-render.ts`, `waterChoice` | implementer (Sunshine water A and B) | One client's look only, Local, applied on reload; the plan's phone check needs it on boogle.club | changed (owner, 10 November: no `?water=`, B is the sea; [decision](decisions.md#decided)) |
 
 ## Archive: Controls, HUD and arrival
+
+### Decisions page answers, 18 November 2026
+
+Ruled in [the decisions-page entry](decisions-controls.md#d-2026-11-18-decisions-page-controls) (owner, 18 November 2026); moved word for word from [agent-calls](agent-calls.md).
+
+| Date | Call | Where | By | Why this pick | Status when archived |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-18 | Default: the first wearable you get shows one more card line naming Pause, once; draft copy "Change what you wear in Pause" (G22, plan only) | [grant-c8-batch](plans/grant-c8-batch.md#design-review-2026-11-18); `src/render/reward-reveal.ts` | Planner (design review) | Grant never found Pause's You page; helper text once, where the world cannot show it | open |
 
 <a id="b2-rest-controls"></a>
 

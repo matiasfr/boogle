@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-18 · Decisions page (look): gold ghosts keep 0.6 and the 6 s breath, the garage's "have" frame goes solid; the summit vane stays gone; the Big-boiler moment's wheels start from the long boiler's rate ([entry](#d-2026-11-18-decisions-page-look))
 - 2026-11-16 · The dressing kit's small calls stand without painted risers ([entry](#d-2026-11-16-batch2-dressing-kit-without-painted-risers))
 - 2026-11-16 · The 5 batch-2 bulk calls in this topic are confirmed as logged, subject to later explicit owner decisions ([entry](#d-2026-11-16-batch2-bulk-confirmed))
 
@@ -60,6 +61,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-11-01 · night stays light, moonlit ([entry](#d-2026-11-01-night-stays-light-moonlit))
 
 ## Decided
+
+- <a id="d-2026-11-18-decisions-page-look"></a>**2026-11-18, decisions page: gold ghosts kept, the garage's "have" frame solid, the summit vane gone, the big boiler's wheels** (owner, 18 November 2026 (19 November UTC), his picks on the orchestrator's decisions page ([page](https://claude.ai/artifact/6BfvBJTeqtKCN3GFWYZrt7)), pasted back in chat). His picks, word for word: the gold ghosts "Keep the numbers; give "have" its own solid look"; the glider summit's mast and vane "Keep it gone"; the Big-boiler moment's wheels "Start from the long boiler's rate". The rules: every gold ghost stays see-through at 0.6 and breathes 0.45 to 0.75 over 6 s ([gold outline](#d-2026-11-16-gold-outline-not-physical)), but the garage's gold "have" frame, which marks a part you own, gets its own solid material; nothing on the summit points the way; the Big-boiler moment starts its wheels from the long boiler's rate, as `watch()` does.
 
 - <a id="d-2026-11-16-batch2-dressing-kit-without-painted-risers"></a>**2026-11-16, the dressing kit without painted risers** (owner, 16 November 2026, in chat: "Answered recs on the flags"). Accepted recommendations: **GX-005:** confirm, minus "painted risers stay". The rest of each original row stands except the named change or retirement; full rows are in the [archive](decisions-archive.md#b2-rest-look). Basis: [docs/decisions-look.md#d-2026-11-15-plain-path-climbs](decisions-look.md#d-2026-11-15-plain-path-climbs). No player or character copy is authored by this entry.
 
