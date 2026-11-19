@@ -9,7 +9,14 @@
 //   --warp-speed 2
 //   --question "Does the friend's page cut to the old train waking, then to the breaker at the forge, and come home facing it?"
 // BOILER lines: the friend's `reward.arrival` and line 2's switch camera before the fit, after it and as a trace every
-// 100 ms; PASS/FAIL checks. The boiler's show (cutscenes-for-everyone plan, step 2) replaces the friend's flourish.
+// 100 ms; PASS/FAIL checks. The boiler's show (cutscenes-for-everyone plan, step 2) replaces the friend's flourish, and
+// after it hands back both pages get the "Steam" card (step 3): the friend's is put away after 1.6 s, the fitter's
+// after &fitterCardMs= (1.6 s by default; longer keeps it up for the closing still of page 2).
+// &boilerReload=1 (with --real): the friend then reloads and must get no card, show or flourish (BOILER RELOAD lines);
+// a real reload destroys this document, so --until brings this file back in the new one:
+// npm run look -- --real --rail-seed boiler-camp --players 2 --eval dev/look/evals/railway-boiler-fit.ts
+//   --query boilerReload=1 --seconds 2
+//   --until "(sessionStorage.getItem('boiler-reload') && (window.__boilerAgain ||= import('/dev/look/evals/railway-boiler-fit.ts')), !!window.__boilerReloaded || location.search.includes('player=2'))"
 // Solo (no `--players`, step 8's press as an `--action`): take it, walk to the saddle and fit it, watched side-on;
 // BOILER PRESS logs the view frame of the press, the frame the boiler first moved and the frame trains were accepted.
 // npm run look -- --rail-seed boiler-camp --action dev/look/evals/railway-boiler-fit.ts --video --seconds 14
@@ -47,7 +54,9 @@ type BoilerView = P & {
 };
 const solo = !new URLSearchParams(location.search).has('player');
 const fitter = solo || new URLSearchParams(location.search).get('player') === '2';
-const w = window as Window & { __boilerShot?: boolean };
+const w = window as Window & { __boilerShot?: boolean; __boilerReloaded?: boolean };
+const query = new URLSearchParams(location.search);
+const RELOAD = 'boiler-reload';
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 const read = () => inspectRailway()!;
 const trainsOn = () => line2Trains(rw());
@@ -57,6 +66,12 @@ type SwitchCamera = { active: boolean; pending: boolean; seconds: number; kind: 
 const camera = () => (read().line2View as unknown as { switchCamera: SwitchCamera }).switchCamera;
 const guys = () =>
   (read().line2View as unknown as { bolting: { left: number; guys: number; here: number } | null }).bolting;
+/** The boiler's "Steam" card is up on this page. */
+const steamUp = () => !!read().reward.showing && arrival().cards.includes('boiler');
+const putAway = () => {
+  window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
+  window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
+};
 function check(ok: unknown, label: string) {
   console.log(`BOILER ${ok ? 'PASS' : 'FAIL'} ${label}`);
   if (!ok) throw new Error(`BOILER FAIL ${label}`);
@@ -188,6 +203,13 @@ async function fit() {
     `BOILER FITTER ${JSON.stringify({ flourishes: a.flourishes, late: a.late, keys: a.keys, seen: a.seen })}`,
   );
   check(a.seen.includes('boiler') && !a.keys.includes('boiler'), 'the fitter is marked as shown, with no flourish');
+  await until(steamUp, "the fitter's Steam card comes up", 30000);
+  check(!(camera().kind === 'boiler' && camera().active), "the fitter's card comes after the show");
+  console.log(`BOILER FITTER CARD ${JSON.stringify({ cards: arrival().cards, held: inputState.held })}`);
+  await wait(Number(query.get('fitterCardMs')) || 1600);
+  putAway();
+  await until(() => !read().reward.showing && !inputState.held, "the fitter's card put away, input free", 5000);
+  check(arrival().cards.filter((k) => k === 'boiler').length === 1, 'one Steam card for the fitter');
 }
 
 async function friend() {
@@ -242,7 +264,13 @@ async function friend() {
   console.log(`BOILER SHOW ${JSON.stringify({ longest: +longest.toFixed(2), turns: camera().forgeTurns - turns })}`);
   check(longest > 4.6, 'the show played on past the train into the forge cut');
   check(camera().forgeTurns === turns + 1, 'the camera came home facing the forge');
-  check(!read().reward.showing && !inputState.held, 'no card and no hold after the show');
+  const shown = performance.now();
+  await until(steamUp, "the friend's Steam card comes up after the show", 5000);
+  console.log(`BOILER FRIEND CARD ${JSON.stringify({ after: Math.round(performance.now() - shown), held: inputState.held })}`);
+  check(inputState.held, "the friend's card holds input");
+  await wait(1600);
+  putAway();
+  await until(() => !read().reward.showing && !inputState.held, "the friend's card put away, input free", 5000);
   const moving = { x: me.body!.position.x, z: me.body!.position.z };
   await walking;
   await bot.walk(home.x - 4, home.z - 3, 1, { limit: 6000 });
@@ -253,7 +281,33 @@ async function friend() {
   const a = arrival();
   console.log(`BOILER AFTER ${JSON.stringify({ flourishes: a.flourishes, late: a.late, keys: a.keys, seen: a.seen })}`);
   check(!a.keys.includes('boiler') && a.seen.includes('boiler') && a.late === before.late, 'no flourish, the show played');
+  check(a.cards.filter((k) => k === 'boiler').length === 1, 'one Steam card for the friend');
+  if (!query.has('boilerReload')) return;
+  sessionStorage.setItem(RELOAD, '1');
+  location.reload();
 }
 
-background(fitter ? fit() : friend(), `boiler fit ${fitter ? 'fitter' : 'friend'}`);
+/** After the friend's reload (&boilerReload=1): trains are running, and nothing of the boiler's comes again. */
+async function afterReload() {
+  sessionStorage.removeItem(RELOAD);
+  await until(landed, 'reloaded friend landed', 120000);
+  check(trainsOn(), 'trains run after the reload');
+  let card = false,
+    show = false;
+  const end = performance.now() + 8000;
+  while (performance.now() < end) {
+    card ||= steamUp();
+    show ||= camera().kind === 'boiler' && (camera().active || camera().pending);
+    await wait(50);
+  }
+  const a = arrival();
+  console.log(`BOILER RELOAD ${JSON.stringify({ card, show, keys: a.keys, cards: a.cards, seen: a.seen })}`);
+  check(!card && !a.cards.includes('boiler'), 'no Steam card after the reload');
+  check(!show, 'no boiler show after the reload');
+  check(!a.keys.includes('boiler'), 'no boiler flourish after the reload');
+  w.__boilerReloaded = true;
+}
+
+const role = sessionStorage.getItem(RELOAD) ? 'reloaded' : fitter ? 'fitter' : 'friend';
+background(role === 'reloaded' ? afterReload() : fitter ? fit() : friend(), `boiler fit ${role}`);
 export {};
