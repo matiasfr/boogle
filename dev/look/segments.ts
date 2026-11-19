@@ -64,13 +64,8 @@ export const RAIL_FROM = {
   'gorge-open': { railFrom: 'legs', after: 'ring-joined', bot: 'railway-legs-bot.ts' },
   'gorge-mid': { railFrom: 'legs', after: 'ring-joined', bot: 'railway-legs-bot.ts' },
   // Leg 2 (greybox-leg2.md, step 5): the pick, the barrier, the incline to Bell Rock, the seeds, the ride home and the bay
-  // cut, from High Gorge reached or a later stage of railway-seed-legs.ts.
+  // cut, from High Gorge reached (the seed starts at the Village). The later leg seeds are not yet played from.
   'gorge-reached': { railFrom: 'legs', after: 'gorge', bot: 'railway-legs-bot.ts' },
-  'incline-open': { railFrom: 'legs', after: 'gorge', bot: 'railway-legs-bot.ts' },
-  'incline-mid': { railFrom: 'legs', after: 'gorge', bot: 'railway-legs-bot.ts' },
-  'bell-reached': { railFrom: 'legs', after: 'bell', bot: 'railway-legs-bot.ts' },
-  'bay-open': { railFrom: 'legs', after: 'bell', bot: 'railway-legs-bot.ts' },
-  'bay-mid': { railFrom: 'legs', after: 'bell', bot: 'railway-legs-bot.ts' },
 } as const satisfies Record<string, { railFrom: string; after: RailStop; bot: string }>;
 /** Beats both peers pass in a two-player run; the follower watches line two from the village. */
 export const RAIL_COOP_STOPS: readonly RailStop[] = [
