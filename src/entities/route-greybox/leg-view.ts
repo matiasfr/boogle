@@ -443,8 +443,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     function track(s0: number, s1: number, lat0: number, lat1: number, cuts: readonly RailCut[] = []) {
       along(s0, s1, lat0, lat1, 0.13, 2.4, 0.1, BED);
       for (const r of [-0.5, 0.5])
-        for (const [a, b] of lat0 === lat1 ? uncut(s0, s1, lat0 + r, cuts) : [[s0, s1]])
-          along(a!, b!, lat0 + r, lat1 + r, 0.29, 0.12, 0.14, RAIL);
+        for (const [a, b] of uncut(s0, s1, lat0 + r, cuts)) along(a, b, lat0 + r, lat1 + r, 0.29, 0.12, 0.14, RAIL);
     }
     // The stack's crossovers (J12): each drawn once the deck reaches past its far toe's headblocks, its two toes'
     // blades cut out of the plain rails from then on.
@@ -460,21 +459,8 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         along(t.s - 0.15, t.s + 0.15, mid, mid, 0.17, t.hi - t.lo, 0.08, TIMBER);
       }
       for (const r of plan.rails) along(r.a.s, r.b.s, r.a.lat, r.b.lat, 0.29, 0.12, 0.14, RAIL);
-      for (const { a, b, w } of [...plan.ta.rails, ...plan.tb.rails]) {
-        const run = Math.hypot(b.x - a.x, b.z - a.z);
-        // A rail piece's centre is TOP (0.1 m) over its centreline (junctions.ts puts that 0.12 m over line2Y).
-        deck.box(
-          (a.x + b.x) / 2,
-          (a.y + b.y) / 2 + 0.1,
-          (a.z + b.z) / 2,
-          0.12 * w,
-          0.14,
-          Math.hypot(run, b.y - a.y),
-          RAIL,
-          Math.atan2(b.x - a.x, b.z - a.z),
-          -Math.atan2(b.y - a.y, run),
-        );
-      }
+      // A rail piece's centre is TOP (0.1 m) over its centreline (junctions.ts puts that 0.12 m over line2Y).
+      for (const { a, b, w } of plan.wings) deck.between(a, b, 0.12 * w, 0.14, RAIL, 0.1);
     }
     const bentFree = (s: number) => !sp.noBents.some(([a, b]) => s >= a && s <= b);
     /** Into the shared deck batch: the deck to `end`, and (a row's) the turnouts the line uses at `laid`. */
@@ -650,10 +636,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       });
     /** Its crossovers' toes for turnout-blades.ts: laid while the deck as drawn reaches past them. */
     const points: TrackPoint[] = crossings.flatMap((x) =>
-      [
-        { j: x.c.a, t: x.plan.ta },
-        { j: x.c.b, t: x.plan.tb },
-      ].map((p) => ({ ...p, from: 0, laid: () => deckEnd >= x.reach, retired: () => false })),
+      x.plan.toes.map((p) => ({ ...p, from: 0, laid: () => deckEnd >= x.reach, retired: () => false })),
     );
     return {
       sp,

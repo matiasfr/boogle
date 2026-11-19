@@ -5,7 +5,7 @@
 // check measures them. J10 to J12 (step 7) are the crossovers past the pier head, each two toes like Far Head's: the
 // railhead's (railhead-view.ts, moving with the head), Ring Island's and the greybox stack's (route-greybox/leg-view.ts).
 // Local, no three.js.
-import { clamp, lerp } from '../math.ts';
+import { clamp, lerp, smoothstep } from '../math.ts';
 import { LINE2, RAIL_LINES } from '../sim/railway-lines.ts';
 import { RING_S, STACK_S, line2World, line2Y } from '../entities/railway/line2-path.ts';
 import { HALL, LEG, SPUR, march, roadAt } from './home-station.ts';
@@ -123,10 +123,6 @@ const sea =
     const s = s0 + dir * d;
     return { ...seaPoint(s, lat(s)), y: line2Y(s) + dy };
   };
-const ease = (t: number) => {
-  const x = clamp(t, 0, 1);
-  return x * x * (3 - 2 * x);
-};
 export type SeaCrossover = {
   id: string;
   view: NonNullable<Junction['view']>;
@@ -160,7 +156,8 @@ export function seaCrossovers(): SeaCrossover[] {
       // Each view's rails stand at its own height over line2Y: the railhead's TOP over it, the Way's records 0.15 m
       // and the greybox's 0.22 m (their rail centres).
       dy = view === 'stack' ? 0.12 : view === 'ring' ? 0.05 : 0;
-    const lat = (s: number) => OFFSET_LAT * (1 - ease((s - s0) / (s1 - s0)));
+    // As layout.ts crossLat eases Far Head's, but read past its ends too (the rails' slope reads just outside).
+    const lat = (s: number) => OFFSET_LAT * (1 - smoothstep(s0, s1, s));
     const toe = (a: boolean): Junction => {
       const s = a ? s0 : s1,
         dir: 1 | -1 = a ? 1 : -1;
@@ -190,7 +187,8 @@ export type RailCut = { lat: number; s0: number; s1: number };
  * are cut out of (`cuts`: each toe's through-road inner rail, toe to heel), the crossover's two rails as chords about 1 m
  * long, each a gauge apart square to it and its inner rail cut for the blade at each end, and one timber per station
  * from a headblock behind one toe to one behind the other, the union of the two turnouts' spans (stations 1.2 m apart
- * or a little less, both toes on one). The turnouts' wing and check rails are world pieces (`ta.rails`, `tb.rails`).
+ * or a little less, both toes on one). `toes` pairs each toe with its turnout (turnout-blades.ts draws their blades);
+ * `wings` are both turnouts' wing and check rails, world pieces.
  */
 export function crossoverPlan(c: SeaCrossover) {
   const ta = turnout(c.a.through, c.a.diverging, c.a.lever, 0),
@@ -198,19 +196,20 @@ export function crossoverPlan(c: SeaCrossover) {
   const half = KIT.gauge / 2;
   // The through road's blade lies `dir * hand` half a gauge to the line's right of it (track.ts cutPoints), the
   // crossover's on the other side of the crossover.
-  const blades = [
+  const toes = [
     { j: c.a, t: ta },
     { j: c.b, t: tb },
-  ].map(({ j, t }) => {
+  ];
+  const blades = toes.map(({ j, t }) => {
     const r = j.dir * t.hand * half,
       [s0, s1] = [j.s, j.s + j.dir * t.bladeLen].sort((x, y) => x - y) as [number, number];
-    return { through: { lat: (j.off ?? 0) + r, s0, s1 }, cross: { r: -r, s0, s1 } };
+    return { lat: (j.off ?? 0) + r, r: -r, s0, s1 };
   });
-  const cuts: RailCut[] = blades.map((b) => b.through);
+  const cuts: RailCut[] = blades.map(({ lat, s0, s1 }) => ({ lat, s0, s1 }));
   // The crossover's rails: stations every metre or so, and at each blade's heel.
   const n = Math.max(1, Math.round(c.s1 - c.s0)),
-    at = [...Array.from({ length: n + 1 }, (_, k) => c.s0 + ((c.s1 - c.s0) * k) / n), ...blades.map((b) => b.cross.s0)]
-      .concat(blades.map((b) => b.cross.s1))
+    grid = Array.from({ length: n + 1 }, (_, k) => c.s0 + ((c.s1 - c.s0) * k) / n),
+    at = [...grid, ...blades.flatMap((b) => [b.s0, b.s1])]
       .sort((x, y) => x - y)
       .filter((s, k, all) => k === 0 || s - all[k - 1]! > 1e-6);
   const slope = (s: number) => (c.lat(s + 0.05) - c.lat(s - 0.05)) / 0.1;
@@ -225,7 +224,7 @@ export function crossoverPlan(c: SeaCrossover) {
       const s0 = at[k - 1]!,
         s1 = at[k]!,
         mid = (s0 + s1) / 2;
-      if (blades.some((b) => b.cross.r === r && mid > b.cross.s0 && mid < b.cross.s1)) continue;
+      if (blades.some((b) => b.r === r && mid > b.s0 && mid < b.s1)) continue;
       rails.push({ a: side(s0, r), b: side(s1, r) });
     }
   const pitch = (c.s1 - c.s0) / Math.round((c.s1 - c.s0) / 1.2);
@@ -235,7 +234,15 @@ export function crossoverPlan(c: SeaCrossover) {
     if (spans.length)
       timbers.push({ s, lo: Math.min(...spans.map((x) => x[0])), hi: Math.max(...spans.map((x) => x[1])) });
   }
-  return { ta, tb, cuts, rails, timbers };
+  return { toes, wings: [...ta.rails, ...tb.rails], cuts, rails, timbers };
+}
+/** How far a junction's parts translate when it stands `ds` metres along its line from where it was built (a moving
+ * one, the railhead's J10: its line is straight and evenly graded there). */
+export function movedBy(j: Junction, ds: number) {
+  if (!ds) return { x: 0, y: 0, z: 0 };
+  const a = j.through(0),
+    b = j.through(j.dir * ds);
+  return { x: b.x - a.x, y: b.y - a.y, z: b.z - a.z };
 }
 /** What is left of a plain rail from `s0` to `s1` at `lat` once `cuts` are taken out (none under 8 cm). */
 export function uncut(s0: number, s1: number, lat: number, cuts: readonly RailCut[]): [number, number][] {

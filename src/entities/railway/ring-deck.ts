@@ -19,6 +19,7 @@ import { line2Jobs, q7Laid, timingOf } from '../../sim/railway-queries.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { createBoxBatch } from './works-box-view.ts';
 import { INNER_FROM } from './railhead-shape.ts';
+import { railheadDrawn } from './railhead-state.ts';
 import { RING_S, line2At, line2World, line2Y } from './line2-path.ts';
 
 /** The formation: lat -5.8 to +1.8, the down track at 0 and the up track at OFFSET_LAT (src/sim/railway-ring-layout.ts
@@ -223,12 +224,12 @@ export function createRingDeck(adapter: RailwayAdapter, owner: OwnedView, track:
       });
     }
   }
-  /** What the room has laid: whether the relay is down, how many of Q7's panels, and whether the railhead is open
-   * (railhead-view.ts `opened`: it draws the inner rails past INNER_FROM). */
+  /** What the room has laid: whether the relay is down, how many of Q7's panels, and whether the railhead is drawn
+   * (railhead-state.ts `railheadDrawn.live`, which railhead-view.ts writes: it draws the inner rails past INNER_FROM). */
   function laid(): Laid {
     const wd = adapter.read.world();
     if (!adapter.read.ready() || !line2Trains(wd)) return { relay: false, panels: 0, open: false };
-    if (q7Laid(wd)) return { relay: true, panels: LINE2_STATIONS[Q7]!.panels, open: adapter.read.whole() };
+    if (q7Laid(wd)) return { relay: true, panels: LINE2_STATIONS[Q7]!.panels, open: railheadDrawn.live };
     const { job, run } = line2Jobs(wd, adapter.read.tick())[Q7]!;
     return {
       relay: false,

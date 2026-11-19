@@ -11,6 +11,7 @@ import { clank } from '../../render/machine-sfx.ts';
 import { lerp, smoothstep } from '../../math-pure.ts';
 import { H } from '../../place/terrain.ts';
 import { KIT, type Blade, type XZY } from '../../place/turnout.ts';
+import { movedBy } from '../../place/junctions.ts';
 import { line2Completed } from '../../sim/railway-queries-line2.ts';
 import { createBoxBatch } from './box-batch.ts';
 import { createShuntPath } from './shunt-path.ts';
@@ -100,11 +101,7 @@ export function createTurnoutBlades(adapter: RailwayAdapter, owner: OwnedView, p
       if (s.shown === 'hidden') continue;
       const { j, t, from } = s.point;
       // A moving junction's parts translate along its straight, evenly graded line.
-      const c0 = j.through(0),
-        c1 = s.ds ? j.through(j.dir * s.ds) : c0;
-      by.x = c1.x - c0.x;
-      by.y = c1.y - c0.y;
-      by.z = c1.z - c0.z;
+      Object.assign(by, movedBy(j, s.ds));
       if (s.shown === 'plain') {
         // No turnout here (yet, or any more): the cut is plain rail again, the through road's inner rail.
         const rail = t.blades[0];
@@ -155,7 +152,7 @@ export function createTurnoutBlades(adapter: RailwayAdapter, owner: OwnedView, p
       const ds = p.moved?.() ?? 0;
       if (ds !== s.ds) {
         s.ds = ds;
-        dirty = true;
+        if (shown !== 'hidden') dirty = true;
       }
       const to = shown === 'live' ? routeOf(ds ? { j: { ...p.j, s: p.j.s + ds }, t: p.t } : p, rows) : 0;
       // Points that come into view, or a first or restored frame, are simply where they lie; a live change throws.
@@ -166,7 +163,10 @@ export function createTurnoutBlades(adapter: RailwayAdapter, owner: OwnedView, p
         s.from = lerp(s.from, s.to, smoothstep(0, 1, s.u));
         s.to = to;
         s.u = snap ? 1 : 0;
-        if (!snap) clank(p.j.through(p.j.dir * ds).x, p.j.through(p.j.dir * ds).z);
+        if (!snap) {
+          const toe = p.j.through(p.j.dir * ds);
+          clank(toe.x, toe.z);
+        }
         dirty = true;
       } else if (snap) s.u = 1;
       if (s.u < 1) {
