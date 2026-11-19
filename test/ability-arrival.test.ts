@@ -83,7 +83,7 @@ function harness() {
     const v = module.createAbilityArrival(adapter, owner, {
       busy: () => hold.busy,
       seated: () => hold.chair,
-      card: (key) => (key === 'boiler' ? null : { key, name: key, model: new THREE.Group() }),
+      card: (key) => ({ key, name: key, model: new THREE.Group() }),
       youGot: (g) => {
         if (shown.has(g.key!)) return false;
         shown.add(g.key!);
@@ -131,7 +131,7 @@ test('the accepted fitter keeps attribution through an already-aged cold wait', 
   v.dispose();
 });
 
-test('a peer still gets the boiler flourish once, at the wake', () => {
+test('a peer whose page had no live trains edge (a reload, a resync) gets the boiler flourish once, no card', () => {
   const h = harness();
   const { v, fit } = h.mount('b');
   v.update(4);
@@ -143,26 +143,39 @@ test('a peer still gets the boiler flourish once, at the wake', () => {
   v.update(4);
   assert.deepEqual(v.inspect().keys, ['boiler']);
   assert.equal(h.sounds.length, 1);
+  assert.deepEqual(h.cards, []);
   v.dispose();
 });
 
-test("a peer whose page played the boiler's show gets no flourish; one whose show was dropped unseen gets it", () => {
-  for (const end of ['played', 'dropped'] as const) {
+test("the boiler's card: every page's at the live trains edge, after its show, never under a talk; no flourish", () => {
+  for (const [pid, end] of [
+    ['b', 'played'],
+    ['b', 'dropped'],
+    ['a', 'played'], // the fitter
+  ] as const) {
     const h = harness();
-    const { v, fit } = h.mount('b');
+    const { v, fit } = h.mount(pid);
     v.update(4);
     fit('a');
     v.update(30);
-    // boiler-view.ts queues the show on the trains edge, before this file's update in the same frame (view.ts's order).
+    // boiler-view.ts queues the show and owes the card on the live trains edge, before this file's update in the same
+    // frame (view.ts's order).
     h.w.trains = 3376;
     v.showing('boiler', 'queued');
+    v.showing('boiler', 'owed');
     v.update(0.1);
     v.update(4);
-    assert.deepEqual(v.inspect().keys, [], 'no flourish while the show is queued');
+    assert.deepEqual({ keys: v.inspect().keys, cards: h.cards }, { keys: [], cards: [] }, 'nothing while queued');
     v.showing('boiler', end);
-    v.update(0.1);
-    v.update(4);
-    assert.deepEqual(v.inspect().keys, end === 'played' ? [] : ['boiler'], end);
+    // A playing show is momentBusy; a talk box holds input without being a modal.
+    h.hold.moment = end === 'played';
+    h.hold.talk = true;
+    for (let i = 0; i < 4; i++) v.update(1);
+    assert.deepEqual(h.cards, [], `${pid} ${end}: no card under the show or a talk`);
+    h.hold.moment = h.hold.talk = false;
+    v.update(0.016);
+    for (let i = 0; i < 4; i++) v.update(1);
+    assert.deepEqual({ keys: v.inspect().keys, cards: h.cards }, { keys: [], cards: ['boiler'] }, `${pid} ${end}`);
     assert.equal(v.seen.has('boiler'), true);
     v.dispose();
   }

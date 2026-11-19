@@ -16,7 +16,7 @@ import { T1_CRATE_PARTS, T1_REWARD, MULTI_AXE_REWARD } from '../../render/t1-rew
 import { confettiBurst, rewardDust, rewardSparkles } from '../../render/reward-particles.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { thump } from '../../render/machine-sfx.ts';
-import { GLIDE_REWARD, HOOK_REWARD, T2_REWARD } from './reward-data.ts';
+import { BOILER_REWARD, GLIDE_REWARD, HOOK_REWARD, T2_REWARD } from './reward-data.ts';
 import { railwayRoomId } from '../../world/railway-namespace.ts';
 import { claimCountsIn } from '../../world/railway-jump.ts';
 import { createRailwayTools, inReach } from './tools.ts';
@@ -54,7 +54,8 @@ export async function createRailwayReward(
   const glidePrize = shapes.merged(GLIDE_REWARD.parts);
   const hookPrize = shapes.merged(HOOK_REWARD.parts);
   const glideMat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.75, flatShading: true });
-  // The boiler's: one copy of the engine's boiler (makeProp owns its geometry and materials), reused by each flourish.
+  // The boiler's: one copy of the engine's boiler (makeProp owns its geometry and materials), reused by each flourish;
+  // its card holds up a clone (the same geometry and materials).
   const boilerBadge = props.makeProp('boiler');
   owner.cleanup(() => {
     glidePrize.dispose();
@@ -77,7 +78,9 @@ export async function createRailwayReward(
         ? { key, name: GLIDE_REWARD.name, line: GLIDE_REWARD.line, model: new THREE.Mesh(glidePrize, glideMat) }
         : key === 'hook'
           ? { key, name: HOOK_REWARD.name, line: HOOK_REWARD.line, model: new THREE.Mesh(hookPrize, glideMat) }
-          : tools.cardFor(key),
+          : key === 'boiler'
+            ? { key, ...BOILER_REWARD, model: boilerBadge.clone() }
+            : tools.cardFor(key),
     jump: () => tools.inspect(),
     axeModel: (key) =>
       key === 'glide' ? new THREE.Mesh(glidePrize, glideMat) : key === 'boiler' ? boilerBadge : tools.axeModel(key),

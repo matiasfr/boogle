@@ -13,11 +13,12 @@
 // The axes follow the same rule. The multi-axe is the machine's wake: the player who pressed wake gets the card (once
 // the server has accepted it, reward.ts); a friend who heard the wake accepted gets theirs as the wake finishes. The
 // proper axe is the chest's, and the pack frame (the forge's chest, a back of 16 for everyone) works the same. A late
-// flourish for an axe has no charge ring: a small model of it pops up over Buddy and settles away. The boiler has no
-// card (boiler-view.ts's BOILER_CARD): every page whose camera played the boiler's show (boiler-shot.ts) has had its
-// moment (`showing`: held back while it is queued, seen once it is on screen, released if it is dropped unseen); a page
-// with no shot (reduced motion, a vehicle's seat, a dropped one) gets the flourish with a small boiler over Buddy
-// (boiler-first-choice plan, step 9), as does one that wasn't there. The keener edge (separate capacities, step 4: a hit gives 2 once Station 3 is
+// flourish for an axe has no charge ring: a small model of it pops up over Buddy and settles away. The boiler's
+// "Steam" card is every page's, the fitter's too (cutscenes for everyone, step 3): boiler-view.ts owes it from the live
+// trains edge (`showing(key, 'owed')`; a reload, late join or resync has no live edge), and it waits behind the
+// boiler's show (boiler-shot.ts) while that is queued, then for the free frame after it hands back. The show itself is
+// the moment's other half (`showing`: held back while queued, seen once on screen, released if dropped unseen); a page
+// that wasn't there gets the flourish with a small boiler over Buddy (boiler-first-choice plan, step 9). The keener edge (separate capacities, step 4: a hit gives 2 once Station 3 is
 // funded) has no card, no words and no finder: everyone, the funder included, gets the multi-axe's flourish when they
 // are next free, as the machine starts the trestle (or on a later first landing).
 //   update(dt)                  owed cards, late flourishes, the charge mark, the first-jump teach and the first-fall
@@ -70,7 +71,7 @@ const ABILITIES: {
   /** A state-edge ability's state has begun turning (the wake is under way): a heard event whose state stops having
    * begun for the reset grace was undone by a fresh start, and owes nothing. */
   begun?: (l: Look) => boolean;
-  /** A friend online gets its "You got" card (reward.ts builds it). The boiler has none (boiler-view.ts's BOILER_CARD). */
+  /** A friend online gets its "You got" card (reward.ts builds it). The boiler's is owed by boiler-view.ts instead. */
   card?: boolean;
 }[] = [
   { key: 'jump', op: 'rail.jump', cue: 'pickupJump', has: ({ w }) => rail(w).jump, card: true },
@@ -176,6 +177,10 @@ export function createAbilityArrival(
    * it, so a show that never reached the screen leaves the late flourish. */
   const showing = new Set<string>();
   const heard = new Map<string, number>();
+  const unowe = (key: string) => {
+    const i = owed.indexOf(key);
+    if (i >= 0) owed.splice(i, 1);
+  };
   const owe = (key: string) => {
     const ability = ABILITIES.find((a) => a.key === key);
     if (ability?.card && !seen.has(key) && !owed.includes(key)) owed.push(key);
@@ -302,8 +307,9 @@ export function createAbilityArrival(
       if (ability.key === 'jump') seen.add('jump-taught');
       return;
     }
-    // A state-edge card (the wake's) is owed as the state turns (update); the boiler has no card and keeps its
-    // flourish there.
+    // The boiler's card is owed from boiler-view.ts's live trains edge, on every page (`showing`).
+    if (ability.key === 'boiler') return;
+    // A state-edge card (the wake's) is owed as the state turns (update).
     if (ability.atState) return void heard.set(ability.key, 0);
     owe(ability.key);
   });
@@ -312,13 +318,18 @@ export function createAbilityArrival(
     if (c.event.op === 'rail.wake') seen.forget('multi-axe');
     // A refused glider take: no card stands for it, and no flourish was marked as shown.
     if (c.event.op === 'rail.glide') seen.forget('glide');
+    // A refused fit (the fitter's prediction): no trains, so no card.
+    if (c.event.op === 'rail.boilerFit') unowe('boiler');
   });
 
   const api = {
     seen,
-    /** A show of this moment on this page (the boiler's): `queued` holds its flourish back, `played` (on screen) has
-     * shown it, `dropped` (never on screen: a seat taken, another shot, a refused fit) lets the flourish come. */
-    showing(key: string, state: 'queued' | 'played' | 'dropped') {
+    /** A show of this moment on this page (the boiler's): `queued` holds its flourish and card back, `played` (on
+     * screen) has shown it, `dropped` (never on screen: a seat taken, another shot, a refused fit) lets the flourish
+     * come. `owed`: its live edge on this page owes its card (once: the caller's edge is live only, and the reveal
+     * shows a key once a session), whatever this player was shown before. */
+    showing(key: string, state: 'owed' | 'queued' | 'played' | 'dropped') {
+      if (state === 'owed') return void (owed.includes(key) || owed.push(key));
       if (state === 'queued') showing.add(key);
       else showing.delete(key);
       if (state === 'played') seen.add(key);
@@ -365,8 +376,7 @@ export function createAbilityArrival(
         missing.set(a.key, gone);
         if (gone > 3) {
           seen.forget(a.key);
-          const i = owed.indexOf(a.key);
-          if (i >= 0) owed.splice(i, 1);
+          unowe(a.key);
         }
       }
       const grounded = me.coyote > 0 && !me.swimming;
@@ -380,8 +390,10 @@ export function createAbilityArrival(
         !railwayGlideOpen() &&
         !env.busy() &&
         !momentBusy();
-      // A friend's card: one per free frame (the reveal's own queue makes the next wait for this one's dismissal).
-      const due = free ? owed.shift() : undefined;
+      // A friend's card: one per free frame (the reveal's own queue makes the next wait for this one's dismissal); one
+      // whose show is still queued waits for it (a playing show is momentBusy).
+      const next = free ? owed.findIndex((k) => !showing.has(k)) : -1;
+      const due = next >= 0 ? owed.splice(next, 1)[0] : undefined;
       const got = due ? env.card(due) : null;
       // The reveal refuses a key it has already shown this session (a fresh start since): the flourish stands in.
       if (due && !(got && env.youGot(got))) {
