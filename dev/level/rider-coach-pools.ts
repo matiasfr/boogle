@@ -9,7 +9,7 @@ import * as layout from '../../src/place/layout.ts';
 import * as turnout from '../../src/place/turnout.ts';
 import * as shape from '../../src/entities/railway/works-shape.ts';
 import { bayFrame } from '../../src/place/rotunda.ts';
-import { junctions } from '../../src/place/junctions.ts';
+import { junctions, spanAcross } from '../../src/place/junctions.ts';
 import { sleeperStations } from '../../src/entities/railway/track-panels.ts';
 import { H } from '../../src/place/terrain.ts';
 import { TREE_SOURCES } from '../../src/place/tree-sources.ts';
@@ -20,7 +20,7 @@ const yardSource = fs
 const { createYardTrack } = sourceModule<{ createYardTrack: unknown }>(yardSource, { THREE, ...shape });
 const { layHomeYard } = sourceModule<{ layHomeYard: (ground: typeof H) => { blobCount: () => number } }>(
   fs.readFileSync('src/entities/railway/home-yard.ts', 'utf8'),
-  { home, ...layout, ...turnout, bayFrame, junctions, sleeperStations, ...shape, createYardTrack },
+  { home, ...layout, ...turnout, bayFrame, junctions, spanAcross, sleeperStations, ...shape, createYardTrack },
 );
 const sleepers = trackBoxes()
   .filter((t) => t.mode === 'panels')

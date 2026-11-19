@@ -16,7 +16,7 @@ import { H, surfaceHeight } from '../../src/place/terrain.ts';
 import { sampleFootprint } from '../../src/place/support.ts';
 import { carriedPiece, sleeperStations, trackPanels } from '../../src/entities/railway/track-panels.ts';
 import { chunkOf } from '../../src/entities/railway/track-chunks.ts';
-import { junctions } from '../../src/place/junctions.ts';
+import { junctions, spanAcross } from '../../src/place/junctions.ts';
 import { turnout } from '../../src/place/turnout.ts';
 import { sourceFunction } from './source.ts';
 
@@ -54,6 +54,7 @@ export function trackBoxes() {
       offsetLat,
       crossLat,
       junctions,
+      spanAcross,
       turnout,
       box: sourceFunction('src/render/boxes.ts', 'box', { boxAt, groundHeight: H }),
       dropSet: (boxes: Box[]) => boxes,

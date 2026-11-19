@@ -3,7 +3,7 @@
 // for every bay of the rotunda, then (shown once line 2 has its first stretch) the cart's leg and the turnout's parts on road 2. Geometry only, no scene: the station view draws it
 // (./home-station-view.ts) and the yard test reads the same rails the shunt rides (test/roundhouse-yard.test.ts).
 import * as home from '../../place/home-station.ts';
-import { junctions } from '../../place/junctions.ts';
+import { junctions, spanAcross } from '../../place/junctions.ts';
 import { bayFrame } from '../../place/rotunda.ts';
 import { LINES, LINKS, ORIGIN, railY } from '../../place/layout.ts';
 import { KIT, turnout, type RailPiece } from '../../place/turnout.ts';
@@ -39,8 +39,13 @@ export function layHomeYard(ground: (x: number, z: number) => number) {
   // The spur leaves road 2 at a turnout (J1: src/place/junctions.ts; docs/plans/turnouts.md), drawn for the through
   // road. Its parts on the spur's own rails stand from the start; those beside road 2's rails are laid with road 2's
   // track, at the end of this function.
-  const j1 = junctions().find((j) => j.id === 'J1')!,
-    points = turnout(j1.through, j1.diverging, j1.lever);
+  const list = junctions();
+  /** A junction from the one list, with its turnout. */
+  const at = (id: string) => {
+    const j = list.find((x) => x.id === id)!;
+    return { j, t: turnout(j.through, j.diverging, j.lever) };
+  };
+  const { j: j1, t: points } = at('J1');
   // Both wing rails wait for road 2: the one beside the spur's vee leg springs from road 2's rail.
   const withSpur = (r: RailPiece) => r.road === 'diverging' && r.role !== 'wing';
   {
@@ -94,27 +99,18 @@ export function layHomeYard(ground: (x: number, z: number) => number) {
     const { from, to, start, segs, len } = home.LEG;
     const fromY = railAt(0, from),
       toY = railAt(1, to);
-    // Past road 2's end it runs straight on, so the headblocks behind J2's toe find it (behind J3's, march does).
-    const leg: TrackPath = (l) => {
-      const p = poseOf(home.march(start, segs, Math.min(l, len)), fromY + ((toY - fromY) * Math.min(l, len)) / len),
-        on = Math.max(0, l - len);
-      return { ...p, x: p.x + Math.sin(p.yaw) * on, z: p.z + Math.cos(p.yaw) * on };
-    };
-    const at = (id: string) => {
-      const j = junctions().find((x) => x.id === id)!;
-      return { j, t: turnout(j.through, j.diverging, j.lever) };
-    };
+    // Past either end it runs straight on (march), so the headblocks behind each toe find it.
+    const leg: TrackPath = (l) => poseOf(home.march(start, segs, l), fromY + ((toY - fromY) * Math.min(l, len)) / len);
     const j2 = at('J2'),
       j3 = at('J3'),
       j4 = at('J4');
-    // J3 runs against line 1's `s`, so its right is the line's left. It shares stations with J4 on line 1's other
-    // side: there line 1 already draws J4's timber, and this carries it on under the leg (the union is one timber).
+    // J3 shares stations with J4 on line 1's other side: there line 1 already draws J4's timber (track.ts), and this
+    // carries it on under the leg, so the union is one timber.
     const off = yard.timbers(
       sleeperStations(LINKS[0]!, from - j3.t.clearD, from + KIT.head).flatMap((st) => {
-        const mine = j3.t.span(from - st.s);
+        const mine = spanAcross(j3.j, j3.t, st.s);
         if (!mine) return [];
-        const theirs = j4.t.span(st.s - j4.j.s),
-          span = [Math.max(-mine[1], theirs ? theirs[1] : -Infinity), -mine[0]] as const;
+        const span = [Math.max(mine[0], spanAcross(j4.j, j4.t, st.s)?.[1] ?? -Infinity), mine[1]] as const;
         return span[1] - span[0] > 0.05 ? [{ ...roadPath(0)(st.s), depth: st.depth, span }] : [];
       }),
       leg,
@@ -123,7 +119,7 @@ export function layHomeYard(ground: (x: number, z: number) => number) {
     );
     yard.timbers(
       sleeperStations(LINKS[1]!, to - KIT.head, to + j2.t.clearD).flatMap((st) => {
-        const span = j2.t.span(st.s - to);
+        const span = spanAcross(j2.j, j2.t, st.s);
         return span ? [{ ...roadPath(1)(st.s), depth: st.depth, span }] : [];
       }),
       leg,

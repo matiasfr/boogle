@@ -17,7 +17,7 @@ import {
   type LineSpec,
 } from '../../place/layout.ts';
 import { dropSet, type DropSet } from '../../place/pieces.ts';
-import { junctions } from '../../place/junctions.ts';
+import { junctions, spanAcross } from '../../place/junctions.ts';
 import { turnout } from '../../place/turnout.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { chunkOf } from './track-chunks.ts';
@@ -295,6 +295,36 @@ export function buildTrack(
     lineAt(line, s, P);
     return lateral(l, out);
   };
+  /** A box from world point `a` to `b` (`y` their rail heights) along its own heading, `dy` over them, placed in
+   * the laying order at the line's `s`; `d` its length if not theirs. */
+  const boxBetween = (
+    kind: PieceKind,
+    s: number,
+    a: { x: number; z: number; y: number },
+    b: { x: number; z: number; y: number },
+    w: number,
+    h: number,
+    dy: number,
+    color: string,
+    lead: number,
+    fall: number,
+    d?: number,
+  ) => {
+    const dx = b.x - a.x,
+      dz = b.z - a.z,
+      len = Math.hypot(dx, dz);
+    const local = place(
+      0,
+      0,
+      0,
+      w,
+      h,
+      d ?? len,
+      Math.atan2(dx, dz),
+      new THREE.Euler(-Math.atan2(b.y - a.y, len), 0, 0),
+    );
+    add(s, kind, (a.x + b.x) / 2, (a.z + b.z) / 2, (a.y + b.y) / 2 + dy, local, color, lead, fall);
+  };
   /** A box from (sa, la) to (sb, lb) along its own heading: a rail or a sleeper on a turnout's curve. */
   const offsetBox = (
     kind: PieceKind,
@@ -312,21 +342,18 @@ export function buildTrack(
   ) => {
     offsetAt(sa, la, wa);
     offsetAt(sb, lb, wb);
-    const ya = railY(line, sa),
-      yb = railY(line, sb);
-    const dx = wb.x - wa.x,
-      dz = wb.z - wa.z,
-      len = Math.hypot(dx, dz);
-    add(
-      (sa + sb) / 2,
+    boxBetween(
       kind,
-      (wa.x + wb.x) / 2,
-      (wa.z + wb.z) / 2,
-      (ya + yb) / 2 + dy,
-      place(0, 0, 0, w, h, d ?? len, Math.atan2(dx, dz), new THREE.Euler(-Math.atan2(yb - ya, len), 0, 0)),
+      (sa + sb) / 2,
+      { ...wa, y: railY(line, sa) },
+      { ...wb, y: railY(line, sb) },
+      w,
+      h,
+      dy,
       color,
       lead,
       fall,
+      d,
     );
   };
   const upAt = (s: number) => offsetLat(formation, s);
@@ -373,10 +400,10 @@ export function buildTrack(
     let lo = Infinity,
       hi = -Infinity;
     for (const { j, t } of zones) {
-      const span = t.span((s - j.s) * j.dir);
+      const span = spanAcross(j, t, s);
       if (!span) continue;
-      lo = Math.min(lo, j.dir > 0 ? span[0] : -span[1]);
-      hi = Math.max(hi, j.dir > 0 ? span[1] : -span[0]);
+      lo = Math.min(lo, span[0]);
+      hi = Math.max(hi, span[1]);
     }
     return hi > lo ? ([lo, hi] as const) : null;
   };
@@ -555,7 +582,7 @@ export function buildTrack(
   // The turnouts' pieces come after every other, so no piece's index changes; each lands with the panel at its place.
   // A timber lies a centimetre under today's sleeper and is thinner, so the sleeper and its tie plates stay on top.
   const turnoutRails = new Set<number>();
-  for (const st of zones.length ? stations : []) {
+  for (const st of stations) {
     const span = timberAt(st.s);
     if (!span) continue;
     lineAt(line, st.s, P);
@@ -565,22 +592,7 @@ export function buildTrack(
   }
   for (const { j, t } of zones)
     for (const r of t.rails) {
-      const dx = r.b.x - r.a.x,
-        dz = r.b.z - r.a.z,
-        len = Math.hypot(dx, dz),
-        pitch = new THREE.Euler(-Math.atan2(r.b.y - r.a.y, len), 0, 0);
-      const local = place(0, 0, 0, 0.1 * r.w, 0.12, len, Math.atan2(dx, dz), pitch);
-      add(
-        j.s + j.dir * r.d,
-        'rail',
-        (r.a.x + r.b.x) / 2,
-        (r.a.z + r.b.z) / 2,
-        (r.a.y + r.b.y) / 2 + TOP,
-        local,
-        '#4c5058',
-        -2.2,
-        0.8,
-      );
+      boxBetween('rail', j.s + j.dir * r.d, r.a, r.b, 0.1 * r.w, 0.12, TOP, '#4c5058', -2.2, 0.8);
       turnoutRails.add(boxes.length - 1);
     }
   const set = lookTrack(

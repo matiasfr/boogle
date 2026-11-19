@@ -19,7 +19,7 @@ import {
   type LinePoint,
   type LineSpec,
 } from './layout.ts';
-import type { Centre } from './turnout.ts';
+import type { Centre, Turnout } from './turnout.ts';
 
 export type Junction = {
   id: string;
@@ -66,6 +66,13 @@ const leg = (at: number) => {
     t = clamp(at / LEG.len, 0, 1);
   return { x: toWorld(p.x), z: p.z, y: lerp(from, to, t) };
 };
+
+/** The timber across junction `j`'s line at the line's `s`: its two ends in metres to the line's right (`t.span` is to
+ * the through road's, which runs against the line where `dir` is -1); null outside the turnout. */
+export function spanAcross(j: Junction, t: Turnout, s: number): readonly [number, number] | null {
+  const span = t.span((s - j.s) * j.dir);
+  return span && (j.dir > 0 ? span : [-span[1], -span[0]]);
+}
 
 export function junctions(): Junction[] {
   // J1: the spur leaves road 2 at s 5.5 to the right; both at road 2's rail height (the spur is level to the table).
