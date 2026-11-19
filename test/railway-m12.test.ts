@@ -15,6 +15,9 @@
 // Re-recorded for terrain-clean step 5: twelve cleared harvest sources are removed from the v50 catalog (after heavy-load v49).
 // Re-recorded 18 November for seed data only (owner-calls.md#seed-goldens): the seeds take the proper axe at the lit
 // forge, so every stage from q1-done on moves (76 of 82 traces; fresh and awake unchanged; no trace length changes).
+// Re-recorded 18 November for v62 (greybox leg 2's rules, docs/plans/greybox-leg2.md): four new train rows and the
+// ns and bay lines built change the world's hash from the first frame, so all 82 final hashes and 1,244 marks move;
+// all 82 trace lengths stay equal.
 // The value is the trace's FNV hash per client, with a checkpoint every 25 frames so a difference can be found.
 import test from 'node:test';
 import assert from 'node:assert/strict';
