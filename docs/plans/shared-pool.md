@@ -1,4 +1,4 @@
-> **Status: proposed (2026-11-18), planner. Nothing built.** The planner read the code at `origin/main` `ead747afe`
+> **Status: proposed (2026-11-18), planner. Step 1 is on main (#2254, 19 November 2026); nothing else is built.** The planner read the code at `origin/main` `ead747afe`
 > (world v61), ran `npm run loop` and `npm run loop -- node <id>` for `steelhome` and `install`, and `npm run
 > inflight`. No browser run; nothing placed, so no level check. Three owner questions, each proceeding on its
 > recommendation.
