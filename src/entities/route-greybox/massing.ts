@@ -30,7 +30,7 @@ export const PICK_AT = metres(RAIL_GRANTS[0]!.at),
  * split's wall (s 67) to the stack's east face (s 232), 8 m clear between its dark lining's walls (`half` either side
  * of the row, each `wall` thick), its floor's top at `floor` and its roof's underside at `roof` (the rail climbs from
  * about 3.2 m at the split's mouth to 4.0 m, so the roof is at least 7 m over it), each lining slab `slab` thick; an
- * unlaid bed fills it from the floor to just under the deck (0.15 m under the row's straight grade, so 0.05 to 0.17 m
+ * unlaid bed fills it from the floor to just under the deck (0.15 m under the row's straight grade, so 0.045 to 0.17 m
  * under the smoothed rail: leg2.ts BORE_BED). content/levels/gorge.ts and leg2.ts split the
  * stack's hidden collider round it and line it; the horizon's mesh (sickle-backdrop/view.ts) is open at its two mouths. */
 export const INCLINE_BORE = { half: 4, wall: 1, floor: 2.5, roof: 11, slab: 0.5 } as const;

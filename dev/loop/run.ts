@@ -1227,7 +1227,7 @@ function byHandPlan(id: NodeId) {
   if (id === 'Q6' || id === 'Q7') return { flags: null, before: null };
   if (id === 'bents' || id === 'weights') return { flags: null, before: null };
   if (id === 'crossing') return { flags: null, before: 'table' as NodeId };
-  // A leg's section, fed from the trees and the forge rack instead of its rack (legSection's `byHand`).
+  // A leg's section, its logs fed from the trees instead of its rack, its rails still off it (legSection's `byHand`).
   if (ROUTE_SECTIONS.some((x) => x.id === id)) return { flags: null, before: null };
   throw new Error(`--by-hand: no vehicle feeds ${id}`);
 }

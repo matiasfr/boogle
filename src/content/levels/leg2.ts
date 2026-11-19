@@ -411,7 +411,7 @@ const STACK_S = {
 }
 /** The bore's unlaid bed (as Bell Rock's and the West landing's are), its floor across the deck's 7.6 m: 0.15 m under
  * the row's straight grade pieces (BED_KNOTS), so the deck a lay makes solid only steps a body standing on it up. The
- * drawn rail is smoothed and runs up to 0.103 m under those pieces, so the bed's top is 0.05 to 0.17 m under it: about
+ * drawn rail is smoothed and runs up to 0.103 m under those pieces, so the bed's top is 0.045 to 0.17 m under it: about
  * 0.15 m along most of the bore, the least (0.045 m, measured) at the grade knot near s 79, and it never shows through
  * the deck. It is solid down to the floor's level (`BED_FOOT`, where the floor's edge strips beside the walls have
  * their top), so nothing standable is left under the deck. In 0.95 m strips, each from the split's wall to the east
