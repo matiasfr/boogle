@@ -146,7 +146,8 @@ if (second) {
     if (Math.hypot(x - post.x, z - post.z) > 6) best = end;
   }
   // pitend: in the pit 2.7 m off the deck's side, 7.3 m along it (where the pit floor rises to its wall); `pitalong=3`
-  // puts them 3 m along instead, mid-deck on the level floor.
+  // puts them 3 m along instead, mid-deck on the level floor; `pitalong=0` under the deck's middle (one query:
+  // `--query "deckcase=pitend&pitalong=0"`).
   const pitAlong = Number(query.get('pitalong') ?? 7.3);
   const across = deckcase === 'pitend' ? 2.7 : 0,
     along = deckcase === 'pitend' ? pitAlong * best : r * best;
@@ -270,6 +271,9 @@ if (second) {
               ]
             : [
                 !under && 'never stood under the deck',
+                // Review (recheck): `pitalong=0` stands them under the deck's middle, where the marker car sits; it
+                // must not shove them while the deck turns (main leaves them at r 0; this branch threw them 11 m).
+                widest > PIT_RIM && `thrown ${round(widest)} m from the centre while the deck turned, past the pit`,
                 under && pos().y - under.y > 0.1 && `lifted ${round(pos().y - under.y)} m when the deck stopped`,
                 rNow > PIT_RIM && `moved ${round(rNow)} m out, past the pit's wall onto the kerb`,
               ];
