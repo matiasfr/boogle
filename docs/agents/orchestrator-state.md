@@ -10,8 +10,7 @@ The one record of who is running what, and what the five-job limit is counted fr
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Fix: a friend on the Roundhouse deck falls into the pit when an install turns it (P2), and the touch buttons over the open garage (P3, if small) | Garage choices (P1) | `claude/garage-deck-friend` | heartbeat (Claude Opus medium) | 19 November 00:37 | running; browser-heavy (one two-player look) |
-| Proof: the net case for a carrier leaving mid-carry (`dev/peer-test/ws-railway.ts`) | Ring Island build 2 (P2) | `claude/ring-carrier-leaves` | heartbeat (Claude Opus medium) | 18 November 23:36 | built (31 checks, `test:net` 268 of 268); in independent review since 19 November 00:36 |
+| Fix: a friend on the Roundhouse deck falls into the pit when an install turns it (P2), and the touch buttons over the open garage (P3, if small) | Garage choices (P1) | `claude/garage-deck-friend` | heartbeat (Claude Opus medium) | 19 November 00:37 | built; in independent review since 19 November 01:05 |
 | Build: greybox leg 2 steps 1 to 3 (catalog, rules and the world bump, seeds; unblocks garage step 4) | The greybox route (P2) | `claude/greybox-leg2-rules` | owner's live orchestrator session (Claude Opus high builder) | 19 November 02:10 | running; independent review before merge |
 | Build: the Round's loader yard as a works yard (open shed, proper jib, footing stack; view only) | Home's town as the Round (P1) | `claude/round-works-yard` | owner's live orchestrator session (Claude Opus medium builder) | 19 November 01:40 | running |
 
