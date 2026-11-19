@@ -13,6 +13,7 @@
       --line: #dddcd6;
       --blue: #2a78d6;
       --green: #167752;
+      --amber: #9a5b00;
     }
     * {
       box-sizing: border-box;
@@ -69,14 +70,16 @@
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 14px;
     }
-    .grid .card {
+    .grid .card,
+    .grid section {
       margin: 0;
     }
     label {
       display: block;
       margin: 8px 0;
     }
-    input {
+    input,
+    select {
       width: 85px;
       padding: 6px;
       border: 1px solid #aaa;
@@ -84,18 +87,45 @@
       font: inherit;
       background: white;
     }
+    select {
+      width: auto;
+    }
     button {
       font: inherit;
       padding: 7px 14px;
     }
-    strong.quick {
+    strong.quick,
+    .quick {
       color: var(--blue);
     }
-    strong.strong {
+    strong.strong,
+    .strong {
       color: var(--green);
+    }
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid currentColor;
+      vertical-align: 1px;
+    }
+    .tag.m {
+      color: var(--green);
+    }
+    .tag.a {
+      color: var(--amber);
     }
     .verdict {
       border-left: 6px solid var(--blue);
+    }
+    .rec {
+      border-left: 6px solid var(--green);
+    }
+    .scroll {
+      overflow-x: auto;
     }
     table {
       width: 100%;
@@ -106,6 +136,13 @@
       text-align: left;
       padding: 8px 4px;
       border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    td.n {
+      text-align: right;
+    }
+    #lines th {
+      width: 55%;
     }
     .timeline {
       border-left: 3px solid #c3c2b7;
@@ -119,6 +156,9 @@
     .bar i {
       display: block;
       height: 100%;
+      background: #8d8c86;
+    }
+    .bar.quick i {
       background: var(--blue);
     }
     .bar.strong i {
@@ -152,7 +192,7 @@
     }
     @media (max-width: 600px) {
       main {
-        padding: 18px 14px;
+        padding: 18px 16px;
       }
       h1 {
         font-size: 30px;
@@ -170,737 +210,497 @@
     }
   </style>
   <main>
-    <small>BOOGLE / DESIGN WORKBENCH / STEP 0 · re-measured 48e0f68f2 · world v59</small>
-    <h1>Quick or Strong?</h1>
+    <small
+      >BOOGLE / DESIGN WORKBENCH / GARAGE STEP 4, STEP 1 · re-measured on main 9eccec7d6 · world v62 · 19 November
+      2026</small
+    >
+    <h1>Quick or Strong, on the lines as built</h1>
     <p>
-      One shared steel pool. A faster ride or a whole extra car. This is an editable design model, not the garage UI or
-      a played route.
+      A per-line trade: <strong class="quick">Quick boiler</strong> (25 m/s, the same cars) or
+      <strong class="strong">Strong boiler</strong> (20 m/s, one more car), one price, swaps free. This page asks
+      whether that trade means anything on the North–south (<code>ns</code>) and Bay (<code>bay</code>) lines that
+      greybox leg 2 built, and what would make Strong pay without new freight. It is an editable design model, not the
+      garage UI or a played route. The plan it serves is <a href="../plans/garage-step4.md">garage-step4.md</a> (step
+      1).
     </p>
     <p>
-      <a href="../brainstorms/garage-trade-rebalance.md">Rebalance proposal, 17 November</a>: retain 25 / 20 m/s; model
-      future-line cargo cars at 10 footings each (Quick 10, Strong 20). This is a proposed payload, not an inherited
-      cradle fit. Both rows keep 4 player seats and the separate 8-place riders' coach. Strong adds cargo.
+      <span class="tag m">MEASURED</span> means read from the sim on main (seeds <code>incline-mid</code>,
+      <code>bay-mid</code>, <code>bay-reached</code>, 6,000 ticks each, or leg 2's own measurements).
+      <span class="tag a">ARITHMETIC</span> means computed on this page from <code>trainLegTicks</code>' profile (the
+      <code>leg()</code> function below) and stated assumptions; nobody has played or timed it.
     </p>
-    <section class="verdict" aria-live="polite" id="verdict"></section>
-    <div id="trades" class="grid"></div>
+
+    <section class="verdict" id="answer"></section>
+
+    <h2>The two lines as built</h2>
+    <p>
+      Each line runs two trains between its depot (halt 0) and Bell Rock, nonstop unless a rider asks for head 1. Each
+      leg is two sections of 20 logs + 20 rails. One train carries a whole section's kit, and the rider goes with that
+      kit: section 1's rack is at the depot, and the player rides the section 2 kit train to head 1. Once a leg is laid,
+      the line has no towns, no riders and no freight. The trade is offered at the leg's last lay
+      (<code>bell-reached</code>, <code>bay-reached</code>), so it never applies while its own line is being built.
+    </p>
+    <div id="lines" class="grid"></div>
+
+    <h2>At 1, 2 and 3 players</h2>
     <section>
-      <h2>How to read the comparison</h2>
       <p>
-        Blue is Quick boiler (25 m/s, current cars); green is Strong boiler (20 m/s, one extra car). Minutes include
-        footing haul cycles plus sequential player travel legs. Savings are against 20 m/s with the current load.
-        Shorter bars win. Both rows pay the same steel once; swaps are free.
+        On today's lines the only thing the trade can change is a ride, and a ride takes the same time at any player
+        count: the players' car has four seats, so three players ride one train together. Riding is all a player waits
+        for here: the leg is laid, so there is no kit to wait for.
       </p>
-      <p>
-        Stand-in assignment: each area's footings are split equally across the lines it extends (rounded up); the full
-        built line length at that stage is used. This is an editable scenario, not a designed freight itinerary. Other
-        materials, source production, intermediate stops, walking, fares, contention and parallel travel are excluded.
-        One effective service is modelled per line; actual fleet scheduling is unmeasured. Three players riding together
-        fit in the same 4-seat car, so the default elapsed travel is the same at 1p and 3p, not divided by three. An
-        editable handling allowance divided by player count exposes only off-train labour uncertainty.
-      </p>
+      <div class="scroll"><table id="players"></table></div>
       <small
-        >Sources:
-        <a href="../brainstorms/garage-line-trade.md">garage-line-trade.md — approved rows and whole-car rule</a>;
-        <a href="../../src/sim/railway-train.ts">railway-train.ts — BOILER, TRAIN.dwellTicks and trainLegTicks</a>;
-        <a href="../../src/sim/railway-works-layout.ts">railway-works-layout.ts — CRADLE_CAP=[6,10], rackCap=6</a>;
-        <a href="../../src/sim/railway-trade-layout.ts">TRADE.riderPlaces=8</a>. The ten-unit future-line car is a
-        proxy; today's six-place rack does not demonstrate a 20-unit full load.</small
-      ><label
-        >Handling seconds per footing (unmeasured; neutral default 0)
-        <input id="handling" type="number" min="0" value="0" /></label
-      ><button id="reset">Reset inputs</button>
+        >Saved per end-to-end trip = the mean wait at a depot (arithmetic, below) + the ride. A player who splits from
+        the group (leg 2's beat 7) rides alone and saves the same per ride.</small
+      >
     </section>
-    <h2>Route timeline · steel landed minus route and garage spending</h2>
+
+    <h2>Variants that could make Strong pay without new freight</h2>
     <p>
-      Area durations are the economy's solo allowance stand-ins, not measured Ready times. No future steel-production
-      rule exists. Supply continues at the plan review's proposed 1 steel/minute by default; the built Works stops at
-      12. Negative balances expose missing supply, rather than borrowing steel silently.
+      What already exists, from <a href="../plans/greybox-leg2.md">greybox-leg2.md</a> and the rail decisions: the
+      players' car seats four (10 November, "Four seats"); the riders' coach is a separate car and does not count toward
+      a boiler's car allowance, so Strong's car stays cargo (<a
+        href="../decisions-rail.md#d-2026-11-16-rider-coach-a-and-rework"
+        >16 November</a
+      >); one kit a train, and a section's bill is one train load; the next leg's kit can already ride aboard before its
+      rack exists ("the kit rides ahead"); a train can already hold at its depot while kit loads (<code
+        >legKitLoad</code
+      >
+      returns <code>hold</code>). Leg 3 (<code>bell-canopy</code>, the Bay line's next leg, three sections, kit loaded
+      at the West landing) is specified in <code>railway-route.ts</code> but its rules are not built. The North–south
+      line's next leg is the causeway: one section of 6 logs + 6 rails, in area 9.
+    </p>
+    <div class="scroll"><table id="variants"></table></div>
+
+    <h3 style="margin-top: 24px">Leg 3 on the Bay line: where a hold could pay</h3>
+    <section>
+      <p>
+        <span class="tag a">ARITHMETIC</span> Leg 3 is not built, so this is the only number on the page that describes
+        a future route. Section <i>k</i>'s rack stands at its start. After a lay, the players stand at the section's
+        rack and wait for the next kit train to come from the West landing, then ride it one section on. With
+        <b>Strong as a hold</b>, the train that brought section 1's kit also carries section 2's and stands at the
+        railhead until section 1 is laid, so section 2's wait is only the hop. Section 3 is waited for as today: the
+        second train cannot stand at the same railhead (an assumption, unmeasured). The best case is assumed throughout:
+        a loaded kit train leaves the depot the moment it is needed. The extra-wait input below adds a late train (leg
+        2's worst settled wait was 107.5 s, measured).
+      </p>
+      <div class="grid">
+        <div>
+          <label>Sections <input id="l3n" type="number" min="1" max="6" value="3" /></label>
+          <label>Leg length, m <input id="l3len" type="number" min="1" value="1213" /></label>
+          <label>Depot to the first rack, m <input id="l3first" type="number" min="1" value="1197" /></label>
+        </div>
+        <div>
+          <label>Feed a section solo, s <input id="l3feed" type="number" min="0" value="30" /></label>
+          <label>Lay a section, s <input id="l3lay" type="number" min="0" value="30" /></label>
+          <label>Extra wait for a late kit train, s <input id="l3late" type="number" min="0" value="0" /></label>
+        </div>
+      </div>
+      <small
+        >Defaults: bay stops s 1217 to s 2430 (<code>railway-world-lines.ts</code>), three equal sections
+        (<code>sectionsOf</code>); feed 30 s for 40 units solo and lay 30 s from leg 2's beat table (arithmetic, not
+        measured), feed split evenly between players; dwell 5 s (<code>TRAIN.dwellTicks</code>).</small
+      >
+      <div id="leg3"></div>
+    </section>
+
+    <section class="rec" id="rec"></section>
+
+    <h2>Steel · the built Works casts 12 and then stops</h2>
+    <p>
+      The built route spends no steel: every leg is greybox kit (20 logs + 20 rails a section, no footings). The steel
+      works casts <code>STEEL.total</code> = 12 and nothing casts more, so the supply after the works' 12 defaults to 0.
+      A room can also reach stage 4 without lighting the works at all (the stack leg opens on the rivet), with 0 steel
+      landed. Negative balances show missing supply, not borrowed steel.
     </p>
     <section>
       <label
-        >Steel/min after steel home · stand-in <input id="supply" type="number" min="0" step="0.1" value="1" /></label
-      ><small
-        ><a href="../plans/garage-choices.md">garage-choices.md review calls 13–15</a>;
-        <a href="../../src/sim/railway-ring-layout.ts">railway-ring-layout.ts STEEL.total=12, trip=6</a>. Set rate to 0
-        to see built supply only.</small
-      ><label>Bigger cradle price · built default <input id="cradle" type="number" min="0" value="4" /></label
-      ><label>Big boiler price · built default <input id="bigPrice" type="number" min="0" value="6" /></label
+        >Bills
+        <select id="bills">
+          <option value="built" selected>Built greybox kit (main, v62)</option>
+          <option value="old">Old stand-in bills (10/20-footing model, 17 November)</option>
+        </select></label
+      ><label>Steel landed from the works · built 12 <input id="landed" type="number" min="0" value="12" /></label
       ><label
-        >Price per line's Quick / Strong step · stand-in <input id="price" type="number" min="0" value="6" /></label
-      ><small>Prices: garage-choices.md §2 G-c through G-f. Charged once per new line in this scenario.</small>
+        >Steel/min after the works' 12 · built 0 <input id="supply" type="number" min="0" step="0.1" value="0" /></label
+      ><label>Bigger cradle price · built 4 <input id="cradle" type="number" min="0" value="4" /></label
+      ><label>Big boiler price · built 6 <input id="bigPrice" type="number" min="0" value="6" /></label
+      ><label
+        >Quick or Strong, first fit per line · plan 1 (was 6)
+        <input id="price" type="number" min="0" value="1" /></label
+      ><small
+        ><a href="../../src/sim/railway-ring-layout.ts">railway-ring-layout.ts</a> STEEL.total = 12;
+        <a href="../../src/sim/railway-works-layout.ts">railway-works-layout.ts</a> INSTALL_STEEL 3: 6, 4: 4; the 1
+        steel trade price is the plan's call 19 (a stand-in). The old page's 1 steel a minute was its own stand-in: no
+        production rule exists. The old bills are the economy's stand-ins (<code>dev/loop/standins.ts</code>), kept as
+        an alternative.</small
+      >
     </section>
     <div id="timeline" class="timeline"></div>
+
     <h2>Parts · Ready is a route fact, not a clock</h2>
     <div class="grid">
       <section>
-        <h3>20 m/s upgrade</h3>
-        Ready: table turn. Free. Every Home engine; wagon rollout follows.<small
-          >Built. “Blast pipe” is the owner's name (16 November).</small
+        <h3>Blast pipe (20 m/s)</h3>
+        Ready: table turn. Free. Every Home engine; the wagon rolls out after.<small
+          >Built. The owner's name (16 November).</small
         >
       </section>
       <section>
         <h3>Longer boiler + steel car</h3>
-        Ready: steel home, at least 1 steel landed. Free; spends none.<small
-          >Plan §2 G-b; current garage-data.ts.</small
-        >
+        Ready: steel home, at least 1 steel landed. Free; spends none.<small>Built; garage-data.ts.</small>
       </section>
       <section>
         <h3>Bigger cradle</h3>
-        Ready: steel home + its price in the shared pool. Built 6 →
-        <input aria-label="Bigger cradle capacity" id="cradleCap" type="number" min="1" value="10" /> footings.<small
-          >Built v59: line 2 only, 10 at the next load; price 4, spent from the pool. Rack remains 6.</small
+        Ready: steel home + 4 steel in the pool. Line 2 only: 6 → 10 footings at the next load.<small
+          >Built v59. Rack stays 6.</small
         >
       </section>
       <section>
         <h3>Big boiler</h3>
-        Ready: all four High Gorge sections laid, longer boiler installed + its price. Line 2 only.
-        <input aria-label="Big boiler speed" id="bigSpeed" type="number" min="25" value="30" /> m/s.<small
-          >Built v59: 30 m/s, price 6; cars unchanged. No trade on line 2.</small
+        Ready: the stack leg laid, the longer boiler installed + 6 steel. Line 2 only, 30 m/s, cars unchanged.<small
+          >Built v59. No trade on line 2.</small
         >
       </section>
       <section>
         <h3>Quick boiler / Strong boiler</h3>
-        Ready: stage 4's North-south and Bay lines; stage 6's Cave line, plus the shared price. Free unlimited swaps at
-        the Roundhouse, adopted at next depot departure.<small
-          >Plan §2 G-e/f and brainstorm owner answers, 15 November.</small
+        Ready: each line at its own leg's last lay (North–south at <code>bell-reached</code>, Bay at
+        <code>bay-reached</code>) + 1 steel the first time. Chosen at Home's Roundhouse with the line's copy on the
+        table; taken by the line's next train standing at its depot (High Gorge, the West landing). Swaps free.<small
+          >Planned, not built: garage-step4.md. Strong's car carries nothing on these lines until a freight rule or a
+          variant above gives it a load.</small
         >
       </section>
       <section>
         <h3>Faster engine · reserved row</h3>
-        Ready: Port Quay engine comes home.
+        Ready: Port Quay's engine comes home.
         <input aria-label="Faster engine speed" type="number" id="fast" min="35" max="40" value="35" /> m/s (proposed
-        range 35–40). Price: unset; no purchase charged.<small
-          >Plan §9. Default is the range's lower bound, not an approved profile.</small
-        >
+        35–40). Price unset.<small>garage-choices.md §9. Not an approved profile.</small>
       </section>
     </div>
     <h2>Boiler ladder</h2>
     <section id="ladder"></section>
-    <h2>Bays by stage · proposed occupancy</h2>
+    <h2>Bays · the copies</h2>
     <section>
-      <p>Home: 0 → 3 → 5 → 6 → 7 bays. These are building stages, separate from route build stages.</p>
       <dl>
         <dt>Stage 1 · stall</dt>
-        <dd>190° working bay; 170° / 210° waiting engines → line 2 / North-south copies</dd>
+        <dd>190° working bay; 170° / 210° waiting engines → line 2 / North–south copies</dd>
         <dt>Stage 2 · steel landed</dt>
         <dd>150° steel store; 230° waiting engine → Bay copy</dd>
-        <dt>Stage 3a · cave opens</dt>
-        <dd>130° Cave copy (fourth fitted line)</dd>
-        <dt>Stage 3b · faster engine home</dt>
-        <dd>250° faster engine copy</dd>
+        <dt>Stages 3a, 3b</dt>
+        <dd>Moved out of step 4: bay 130° rises with the cave line's plan, 250° with Port Quay's</dd>
       </dl>
-      <p>
-        Port Quay: five bays complete at arrival — working bay with its locally built engine, plus four fitted-line
-        copies. Both hubs fit every line. Bays cost nothing.
-      </p>
       <small
-        ><a href="../plans/garage-choices.md">garage-choices.md §§4–5</a>. Built
-        <a href="../../src/place/rotunda.ts">rotunda.ts</a> has [0,3,5,7]; proposed [0,3,5,6,7] is not built. Waiting
-        engines depart 250° at Pier, 150° at Railhead, then 170°/210°/230° at the first greybox section.</small
+        ><a href="../plans/garage-step4.md">garage-step4.md, "The bays"</a>. Built
+        <a href="../../src/place/rotunda.ts">rotunda.ts</a> has [0,3,5,7] bays by stage. Bays cost nothing.</small
       >
     </section>
+
+    <details>
+      <summary>Old stand-in comparison (17 November rebalance) · not the built route</summary>
+      <section>
+        <p>
+          Kept as an alternative input. It modelled each new line hauling the area's stand-in footings in 10-footing
+          cargo cars (Quick one car, Strong two). The greybox replaced those bills with kit, so this split does not
+          describe main. <a href="../brainstorms/garage-trade-rebalance.md">Rebalance proposal</a>.
+        </p>
+        <label
+          >Handling seconds per footing (unmeasured; neutral default 0)
+          <input id="handling" type="number" min="0" value="0"
+        /></label>
+        <div id="oldVerdict"></div>
+        <div id="trades" class="grid"></div>
+      </section>
+    </details>
+    <p><button id="reset">Reset inputs</button></p>
+
     <h2>Provenance & limits</h2>
     <p>
-      Embedded source snapshot; opens offline with no imports or network. Bills and stage lengths were extracted with
-      standInRoute() from <a href="../../dev/loop/standins.ts">dev/loop/standins.ts</a>, using
-      <a href="../../dev/economy/ring-data.ts">ring-data.ts ROUTE</a>,
-      <a href="../../dev/economy/ring-sim.ts">ring-sim.ts</a> and
-      <a href="../../src/sim/railway-world-lines.ts">railway-world-lines.ts</a>. Built route beats come from
-      <a href="../../dev/loop/graph.ts">dev/loop/graph.ts</a>. Later route bills and durations are all stand-ins. Rider
-      legs default to two per model step (ROUTE.rides=1); allocations across lines are assumptions, editable below.
-      Route bills and comparison lengths still match main. The unused line-2 crossover coordinates were refreshed; no
-      measured live freight itinerary underlies these later bills.
+      Embedded snapshot; opens offline with no imports or network. Built facts:
+      <code>src/sim/railway-route.ts</code> (SPECS, BILL), <code>railway-lines.ts</code> (fleets: two trains a line once
+      its leg is laid), <code>railway-train.ts</code> (BOILER, TRAIN.dwellTicks 50, trainLegTicks),
+      <code>railway-seeds.ts</code>. Measured on main 9eccec7d6 (world v62) with a scratch script stepping
+      <code>railTick</code> from three seeds, not kept: ns trains stand at High Gorge every 1,336 ticks, 501 and 835
+      ticks apart; bay trains at the West landing every 1,412, 529 and 883 apart; a section 2 kit train runs depot to
+      head 1 in 333 (ns) and 352 (bay) ticks. Worst settled waits (ns 1,023, bay 1,075 ticks) are leg 2's measurement
+      (greybox-leg2.md, "Steps 1 to 3 as built"). Mean waits under Quick assume the two trains keep the same spacing at
+      the shorter cycle; unmeasured.
     </p>
     <p>
-      No new part names or character copy. Blast pipe and Big boiler are now owner-approved names. This page cannot
-      establish fun, supply balance, rack behavior or the final freight route.
+      This page cannot establish fun, how often a room rides each line, or leg 3's real waits. No character copy.
+      Placeholders: "Nothing to haul yet", "Later" (the plan's).
     </p>
   </main>
   <script>
-    const source = {
-      route: [
-        {
-          id: 'gorge',
-          standIn: true,
-          area: 4,
-          label: 'High Gorge',
-          allowanceMin: 72,
-          modelSteps: ['b1.reach', 'b1.connect'],
-          bill: { logs: 32, rails: 36, footings: 32, steel: 42, copper: 18 },
-          legs: [{ id: 'ledge', line: 'Line 2 to High Gorge', km: 2.05014 }],
-          grants: ['powered pick', 'hook reel'],
-          requires: [
-            { on: 'install', source: "docs/plans/campaign-outline.md section 3: the route's order (default, unruled)" },
-          ],
-        },
-        {
-          id: 'bell',
-          standIn: true,
-          area: 5,
-          label: 'Bell Rock and the bay shortcut',
-          allowanceMin: 30,
-          modelSteps: ['spoke1'],
-          bill: { logs: 12, rails: 28, footings: 44, steel: 52, copper: 4, crystal: 2 },
-          legs: [
-            { id: 'incline', line: 'North-south line', km: 1.15579 },
-            { id: 'bay-cut', line: 'Bay line', km: 1.22748 },
-          ],
-          grants: ['bay shortcut', 'crystal seeds'],
-          requires: [
-            { on: 'gorge', source: "docs/plans/campaign-outline.md section 3: the route's order (default, unruled)" },
-          ],
-        },
-        {
-          id: 'canopy',
-          standIn: true,
-          area: 6,
-          label: 'Canopy Town',
-          allowanceMin: 42,
-          modelSteps: ['b2.reach', 'b2.connect'],
-          bill: { logs: 48, rails: 36, footings: 24, steel: 24, fibre: 24 },
-          legs: [{ id: 'bell-canopy', line: 'Bay line', km: 1.20256 }],
-          grants: ['carry sling', 'glider cloth'],
-          requires: [
-            { on: 'bell', source: "docs/plans/campaign-outline.md section 3: the route's order (default, unruled)" },
-          ],
-        },
-        {
-          id: 'port',
-          standIn: true,
-          area: 7,
-          label: 'Sea cave, Saltpan, High Port',
-          allowanceMin: 48,
-          modelSteps: ['port.reach', 'port.connect'],
-          bill: { logs: 40, rails: 36, footings: 66, steel: 112, copper: 16 },
-          legs: [
-            { id: 'seacave', line: 'Cave line and the White Wall', km: 0.74029 },
-            { id: 'salt-quay', line: 'Cave line and the White Wall', km: 0.50988 },
-          ],
-          grants: ['harbour crane', 'faster engine'],
-          requires: [
-            { on: 'canopy', source: "docs/plans/campaign-outline.md section 3: the route's order (default, unruled)" },
-            {
-              on: 'gorge',
-              needs: 'powered pick',
-              source: "docs/plans/campaign-outline.md section 3: break the sea cave's plug with the powered pick",
-            },
-          ],
-        },
-        {
-          id: 'wall',
-          standIn: true,
-          area: 8,
-          label: 'The White Wall line',
-          allowanceMin: 48,
-          modelSteps: ['ring.close'],
-          bill: { logs: 24, rails: 24, footings: 50, steel: 100, fibre: 32, copper: 20, crystal: 2 },
-          legs: [
-            { id: 'wall-s', line: 'Cave line and the White Wall', km: 2.10892 },
-            { id: 'wall-n', line: 'Cave line and the White Wall', km: 1.97053 },
-          ],
-          grants: ['crystal collars', 'the lap'],
-          requires: [
-            { on: 'port', source: "docs/plans/campaign-outline.md section 3: the route's order (default, unruled)" },
-            {
-              on: 'bell',
-              needs: 'crystal seeds',
-              source: 'docs/plans/campaign-outline.md section 3: crystal collars for the one deep span',
-            },
-          ],
-        },
-        {
-          id: 'ending',
-          standIn: true,
-          area: 9,
-          label: 'Lantern Notch, the causeway, the Original Island',
-          allowanceMin: 18,
-          modelSteps: ['final'],
-          bill: { logs: 8, footings: 8, steel: 4, copper: 4, crystal: 1 },
-          legs: [
-            { id: 'final', line: 'North-south line', km: 0.74648 },
-            { id: 'notch-tunnel', line: 'Bay line', km: 0.88467 },
-          ],
-          grants: ['the ending'],
-          requires: [
-            { on: 'wall', source: "docs/plans/campaign-outline.md section 3: the route's order (default, unruled)" },
-            {
-              on: 'canopy',
-              needs: 'glider cloth',
-              source: "docs/plans/campaign-outline.md section 3: the glide from Canopy's ledge to the Notch",
-            },
-          ],
-        },
-      ],
-      lines: [
-        {
-          id: 'ring',
-          name: 'Line 2 to High Gorge',
-          extends: 1,
-          fromCm: 74300,
-          lengthCm: 250840,
-          speed: 200,
-          accel: 3.5,
-          stops: [119100, 323140],
-          halts: [
-            { name: 'Ring Island halt', stop: 0, x: 141418, z: -81983, y: 800, reach: 1260 },
-            { name: 'High Gorge', stop: 1, x: -8641, z: -197684, y: 300, reach: 1260 },
-          ],
-          ends: [{ at: 'end', kind: 'crossover', sCm: 319300, x: -5698, z: -195221, y: 370 }],
-          legs: [
-            { id: 'ringx', reverse: false, fromCm: 74300, toCm: 120126, stage: [2, 2] },
-            { id: 'ledge', reverse: false, fromCm: 120126, toCm: 325140, stage: [3, 5] },
-          ],
-          pts: [
-            [140200, -37200, 2430],
-            [140254, -39192, 2430],
-            [140907, -63200, 1493],
-            [141392, -81017, 800],
-            [141446, -83008, 800],
-            [141301, -84503, 779],
-            [140886, -85968, 720],
-            [140231, -87373, 660],
-            [139366, -88688, 598],
-            [138321, -89883, 536],
-            [137126, -90928, 474],
-            [135811, -91793, 413],
-            [134406, -92448, 400],
-            [132941, -92863, 400],
-            [131446, -93008, 400],
-            [130409, -92969, 400],
-            [129301, -92858, 400],
-            [128126, -92689, 400],
-            [126886, -92473, 400],
-            [125585, -92223, 400],
-            [124227, -91951, 400],
-            [122815, -91669, 400],
-            [121353, -91388, 400],
-            [119844, -91122, 400],
-            [118291, -90882, 400],
-            [116699, -90680, 400],
-            [115070, -90529, 400],
-            [113409, -90440, 400],
-            [111717, -90427, 400],
-            [110000, -90500, 400],
-            [108491, -90606, 400],
-            [107012, -90713, 400],
-            [105558, -90825, 400],
-            [104124, -90945, 400],
-            [102705, -91078, 400],
-            [101295, -91227, 400],
-            [99891, -91396, 400],
-            [98486, -91588, 400],
-            [97076, -91808, 400],
-            [95655, -92058, 400],
-            [94220, -92344, 400],
-            [92763, -92668, 400],
-            [91282, -93035, 400],
-            [89770, -93448, 400],
-            [88222, -93910, 400],
-            [86634, -94426, 400],
-            [85000, -95000, 400],
-            [84183, -95329, 400],
-            [83344, -95729, 400],
-            [82483, -96196, 400],
-            [81600, -96726, 400],
-            [80696, -97318, 400],
-            [79770, -97967, 400],
-            [78823, -98672, 400],
-            [77856, -99428, 400],
-            [76869, -100232, 400],
-            [75861, -101082, 400],
-            [74834, -101974, 400],
-            [73787, -102905, 400],
-            [72721, -103872, 400],
-            [71636, -104873, 400],
-            [70532, -105903, 400],
-            [69410, -106960, 400],
-            [68271, -108040, 400],
-            [67113, -109142, 400],
-            [65938, -110260, 400],
-            [64746, -111393, 400],
-            [63537, -112538, 400],
-            [62311, -113690, 400],
-            [61069, -114847, 400],
-            [59811, -116007, 400],
-            [58537, -117165, 400],
-            [57248, -118319, 400],
-            [55944, -119466, 400],
-            [54625, -120602, 400],
-            [53291, -121724, 400],
-            [51943, -122830, 400],
-            [50581, -123916, 400],
-            [49206, -124979, 400],
-            [47817, -126016, 400],
-            [46415, -127024, 400],
-            [45000, -128000, 400],
-            [44167, -128591, 400],
-            [43326, -129242, 400],
-            [42476, -129953, 400],
-            [41620, -130722, 400],
-            [40756, -131545, 400],
-            [39884, -132420, 400],
-            [39006, -133347, 400],
-            [38122, -134322, 400],
-            [37231, -135343, 400],
-            [36335, -136408, 400],
-            [35432, -137516, 400],
-            [34524, -138663, 400],
-            [33611, -139848, 400],
-            [32693, -141069, 400],
-            [31770, -142324, 400],
-            [30843, -143610, 400],
-            [29912, -144925, 400],
-            [28976, -146267, 400],
-            [28038, -147634, 400],
-            [27095, -149024, 400],
-            [26150, -150434, 400],
-            [25202, -151864, 400],
-            [24251, -153309, 400],
-            [23298, -154769, 400],
-            [22343, -156241, 400],
-            [21387, -157723, 400],
-            [20428, -159213, 400],
-            [19469, -160709, 400],
-            [18509, -162208, 400],
-            [17547, -163709, 400],
-            [16586, -165209, 400],
-            [15624, -166706, 400],
-            [14662, -168198, 400],
-            [13701, -169683, 400],
-            [12740, -171159, 400],
-            [11781, -172624, 400],
-            [10822, -174075, 400],
-            [9865, -175510, 400],
-            [8909, -176927, 400],
-            [7956, -178325, 400],
-            [7004, -179701, 400],
-            [6055, -181052, 400],
-            [5109, -182377, 400],
-            [4166, -183673, 400],
-            [3226, -184939, 400],
-            [2290, -186173, 400],
-            [1357, -187371, 400],
-            [429, -188532, 400],
-            [-496, -189654, 400],
-            [-1415, -190735, 400],
-            [-2330, -191772, 400],
-            [-3239, -192764, 400],
-            [-4144, -193708, 400],
-            [-5042, -194602, 400],
-            [-5935, -195444, 359],
-            [-6821, -196232, 313],
-            [-7701, -196964, 300],
-            [-8575, -197637, 300],
-            [-9441, -198250, 300],
-            [-10300, -198800, 300],
-          ],
-        },
-        {
-          id: 'ns',
-          name: 'North-south line',
-          extends: null,
-          fromCm: 0,
-          lengthCm: 190227,
-          speed: 200,
-          accel: 3.5,
-          stops: [2000, 115600, 188227],
-          halts: [
-            { name: 'High Gorge', stop: 0, x: -9726, z: -196884, y: 300, reach: 1260 },
-            { name: 'Bell Rock', stop: 1, x: -5001, z: -84979, y: 400, reach: 1260 },
-            { name: 'Original Island', stop: 2, x: -618, z: -13503, y: 400, reach: 1260 },
-          ],
-          ends: [
-            { at: 'start', kind: 'crossover', sCm: 5500, x: -8720, z: -193532, y: 358 },
-            { at: 'end', kind: 'loop', sCm: 190227, x: -3806, z: -10369, y: 400 },
-          ],
-          legs: [
-            { id: 'incline', reverse: true, fromCm: 0, toCm: 115579, stage: [4, 5] },
-            { id: 'final', reverse: false, fromCm: 115579, toCm: 190227, stage: [8, 8] },
-          ],
-          pts: [
-            [-10300, -198800, 300],
-            [-9732, -196905, 300],
-            [-9151, -194969, 300],
-            [-8418, -192526, 399],
-            [-8026, -191221, 400],
-            [-4047, -177958, 400],
-            [-1205, -168484, 400],
-            [-637, -166589, 400],
-            [500, -162800, 400],
-            [-4154, -96969, 400],
-            [-4295, -94974, 400],
-            [-4859, -86995, 400],
-            [-5000, -85000, 400],
-            [-5096, -83065, 400],
-            [-5385, -77262, 400],
-            [-5481, -75327, 400],
-            [-7500, -34700, 400],
-            [-577, -13377, 400],
-            [0, -11600, 400],
-          ],
-        },
-        {
-          id: 'bay',
-          name: 'Bay line',
-          extends: null,
-          fromCm: 0,
-          lengthCm: 331471,
-          speed: 200,
-          accel: 3.5,
-          stops: [2000, 122700, 243000, 329471],
-          halts: [
-            { name: 'West landing', stop: 0, x: 78869, z: -576, y: 400, reach: 1260 },
-            { name: 'Bell Rock', stop: 1, x: -4959, z: -84975, y: 1500, reach: 1260 },
-            { name: 'Canopy Town', stop: 2, x: -109997, z: -30003, y: 1300, reach: 1260 },
-            { name: 'Lantern Notch', stop: 3, x: -160453, z: -98732, y: 700, reach: 1260 },
-          ],
-          ends: [
-            { at: 'start', kind: 'crossover', sCm: 5500, x: 76715, z: -3335, y: 400 },
-            { at: 'end', kind: 'loop', sCm: 331471, x: -159465, z: -103094, y: 700 },
-          ],
-          legs: [
-            { id: 'bay-cut', reverse: false, fromCm: 0, toCm: 122748, stage: [4, 4] },
-            { id: 'bell-canopy', reverse: false, fromCm: 122748, toCm: 243004, stage: [5, 3] },
-            { id: 'notch-tunnel', reverse: false, fromCm: 243004, toCm: 331471, stage: [8, 8] },
-          ],
-          pts: [
-            [80100, 1000, 400],
-            [78886, -555, 400],
-            [29100, -64300, 400],
-            [25942, -66217, 400],
-            [3525, -79825, 1422],
-            [1820, -80860, 1500],
-            [-3295, -83965, 1500],
-            [-5000, -85000, 1500],
-            [-6849, -84293, 1500],
-            [-14244, -81463, 1500],
-            [-16093, -80756, 1423],
-            [-40586, -71385, 400],
-            [-66550, -61452, 400],
-            [-80800, -56000, 995],
-            [-85180, -52100, 1224],
-            [-86640, -50800, 1300],
-            [-108540, -31300, 1300],
-            [-110000, -30000, 1300],
-            [-110993, -31727, 1300],
-            [-125893, -57627, 1300],
-            [-126887, -59353, 1222],
-            [-137399, -77626, 400],
-            [-139800, -81800, 400],
-            [-147154, -87829, 400],
-            [-151640, -91507, 625],
-            [-153120, -92720, 700],
-            [-160520, -98787, 700],
-            [-162000, -100000, 700],
-          ],
-        },
-        {
-          id: 'bay-trestle',
-          name: 'Bay trestle',
-          extends: null,
-          fromCm: 0,
-          lengthCm: 157886,
-          speed: 200,
-          accel: 3.5,
-          stops: [2000, 155886],
-          halts: [
-            { name: 'Ring Island halt', stop: 0, x: 141165, z: -84982, y: 800, reach: 1260 },
-            { name: 'Bell Rock', stop: 1, x: -3189, z: -85849, y: 1500, reach: 1260 },
-          ],
-          ends: [
-            { at: 'start', kind: 'crossover', sCm: 5500, x: 139723, z: -88146, y: 742 },
-            { at: 'end', kind: 'crossover', sCm: 152386, x: -21, z: -87336, y: 1500 },
-          ],
-          legs: [{ id: 'ring-bell', reverse: false, fromCm: 0, toCm: 157886, stage: [null, 3] }],
-          pts: [
-            [141446, -83008, 800],
-            [141301, -84503, 800],
-            [140886, -85968, 800],
-            [140231, -87373, 778],
-            [139366, -88688, 716],
-            [138321, -89883, 654],
-            [137126, -90928, 592],
-            [135811, -91793, 531],
-            [134406, -92448, 471],
-            [132941, -92863, 411],
-            [131446, -93008, 400],
-            [130409, -92969, 400],
-            [129301, -92858, 400],
-            [128126, -92689, 400],
-            [126886, -92473, 400],
-            [125585, -92223, 400],
-            [124227, -91951, 400],
-            [122815, -91669, 400],
-            [121353, -91388, 400],
-            [119844, -91122, 400],
-            [118291, -90882, 400],
-            [116699, -90680, 400],
-            [115070, -90529, 400],
-            [113409, -90440, 400],
-            [111717, -90427, 400],
-            [110000, -90500, 400],
-            [37000, -104700, 400],
-            [29300, -101088, 400],
-            [5500, -89925, 1425],
-            [3750, -89104, 1500],
-            [-3250, -85821, 1500],
-            [-5000, -85000, 1500],
-          ],
-        },
-        {
-          id: 'cave',
-          name: 'Cave line and the White Wall',
-          extends: null,
-          fromCm: 0,
-          lengthCm: 532962,
-          speed: 200,
-          accel: 3.5,
-          stops: [2000, 74000, 125000, 335900, 530962],
-          halts: [
-            { name: 'West landing', stop: 0, x: 79916, z: 2991, y: 400, reach: 1260 },
-            { name: 'Saltpan Halt', stop: 1, x: 55008, z: 69972, y: 300, reach: 1260 },
-            { name: 'Port Quay', stop: 2, x: 12012, z: 95988, y: 300, reach: 1260 },
-            { name: 'Canopy Town', stop: 3, x: -109991, z: -30000, y: 1300, reach: 1260 },
-            { name: 'High Gorge', stop: 4, x: -11174, z: -197000, y: 300, reach: 1260 },
-          ],
-          ends: [
-            { at: 'start', kind: 'crossover', sCm: 5500, x: 79594, z: 6476, y: 400 },
-            { at: 'end', kind: 'crossover', sCm: 527462, x: -12703, z: -193852, y: 359 },
-          ],
-          legs: [
-            { id: 'seacave', reverse: false, fromCm: 0, toCm: 74029, stage: [6, 6] },
-            { id: 'salt-quay', reverse: false, fromCm: 74029, toCm: 125017, stage: [6, 6] },
-            { id: 'wall-s', reverse: false, fromCm: 125017, toCm: 335909, stage: [7, 7] },
-            { id: 'wall-n', reverse: false, fromCm: 335909, toCm: 532962, stage: [7, 7] },
-          ],
-          pts: [
-            [80100, 1000, 400],
-            [79500, 7500, 400],
-            [67000, 30000, 400],
-            [56323, 65591, 400],
-            [55583, 68058, 300],
-            [55000, 70000, 300],
-            [53261, 70789, 300],
-            [50882, 71868, 399],
-            [23700, 84200, 400],
-            [15233, 92740, 400],
-            [13300, 94689, 300],
-            [12000, 96000, 300],
-            [11453, 96260, 300],
-            [10777, 96485, 300],
-            [9979, 96676, 306],
-            [9064, 96833, 342],
-            [8040, 96957, 382],
-            [6911, 97050, 400],
-            [5684, 97111, 400],
-            [4365, 97142, 400],
-            [2960, 97143, 400],
-            [1476, 97116, 400],
-            [-82, 97060, 400],
-            [-1708, 96977, 400],
-            [-3395, 96868, 400],
-            [-5138, 96732, 400],
-            [-6930, 96572, 400],
-            [-8766, 96388, 400],
-            [-10639, 96180, 400],
-            [-12542, 95949, 400],
-            [-14471, 95697, 400],
-            [-16419, 95424, 400],
-            [-18380, 95130, 400],
-            [-20348, 94817, 400],
-            [-22316, 94485, 400],
-            [-24279, 94135, 400],
-            [-26231, 93767, 400],
-            [-28165, 93384, 400],
-            [-30076, 92984, 400],
-            [-31956, 92570, 400],
-            [-33802, 92142, 400],
-            [-35605, 91700, 400],
-            [-37360, 91246, 400],
-            [-39062, 90779, 400],
-            [-40703, 90302, 400],
-            [-42278, 89815, 400],
-            [-43781, 89318, 400],
-            [-45206, 88813, 400],
-            [-46546, 88299, 400],
-            [-47796, 87779, 400],
-            [-48949, 87252, 400],
-            [-50000, 86719, 400],
-            [-50941, 86182, 400],
-            [-51768, 85641, 400],
-            [-52475, 85096, 400],
-            [-53054, 84549, 400],
-            [-53500, 84000, 400],
-            [-75500, 52000, 400],
-            [-86853, 19832, 400],
-            [-87500, 18000, 475],
-            [-88500, -1200, 1225],
-            [-88600, -3120, 1300],
-            [-90000, -30000, 1300],
-            [-108000, -30000, 1300],
-            [-110000, -30000, 1300],
-            [-108684, -31474, 1300],
-            [-104737, -35895, 1300],
-            [-102105, -38842, 1300],
-            [-92895, -49158, 1300],
-            [-91579, -50632, 1300],
-            [-90263, -52105, 1300],
-            [-88947, -53579, 1223],
-            [-85000, -58000, 992],
-            [-78222, -71555, 401],
-            [-64000, -100000, 400],
-            [-34000, -150000, 400],
-            [-27229, -163943, 400],
-            [-26382, -165686, 400],
-            [-22150, -174400, 400],
-            [-12839, -193571, 371],
-            [-12052, -195191, 300],
-            [-11146, -197057, 300],
-            [-10300, -198800, 300],
-          ],
-        },
-      ],
-    };
+    // ---- Built facts (main 9eccec7d6, v62). Metres and seconds.
+    const DWELL = 5;
+    const built = [
+      {
+        id: 'ns',
+        name: 'North–south line',
+        depot: 'High Gorge',
+        far: 'Bell Rock',
+        m: 1120, // s 36 to s 1156
+        head: 550, // depot to head 1 (s 586)
+        cycleTicks: 1336, // measured, bay-reached
+        gaps: [501, 835], // measured stand-to-stand at the depot
+        worst: 1023, // leg 2's measured worst settled wait, ticks
+        kitTicks: 333, // measured: incline-mid's section 2 kit train, depot to head 1
+        next: 'the causeway (area 9): one section of 6 logs + 6 rails, kit from the Gorge yard',
+        felt: 'Rarely: once the bay cut is laid, the North–south line is the long way to Bell Rock. The offer comes as a solo player leaves Bell Rock by this line; the fit is chosen at Home and taken at High Gorge, so that ride home cannot wear it.',
+      },
+      {
+        id: 'bay',
+        name: 'Bay line',
+        depot: 'the West landing',
+        far: 'Bell Rock',
+        m: 1197, // s 20 to s 1217
+        head: 588.5,
+        cycleTicks: 1412,
+        gaps: [529, 883],
+        worst: 1075,
+        kitTicks: 352,
+        next: 'leg 3, Bell Rock to Canopy Town: three sections of 20 logs + 20 rails, kit loaded at the West landing (specified, rules not built)',
+        felt: "Often: it is Home's shortcut to Bell Rock, and its depot is 158 m (about 28 s on foot) from the garage post, so a room can fit, walk and ride the train it chose.",
+      },
+    ];
     const $ = (id) => document.getElementById(id),
-      n = (id) => Math.max(0, Number($(id).value) || 0);
-    const scenarios = [];
-    source.route.forEach((s) => {
-      const names = [...new Set(s.legs.map((l) => l.line))];
-      names.forEach((name) => {
-        const line = source.lines.find((l) => l.name === name);
-        const stage = { gorge: 3, bell: 4, canopy: 5, port: 6, wall: 7, ending: 8 }[s.id];
-        const cm = Math.max(...line.legs.filter((l) => l.stage[0] !== null && l.stage[0] <= stage).map((l) => l.toCm));
-        if (name === 'Line 2 to High Gorge') return;
-        scenarios.push({
-          area: s.id,
-          name,
-          cm,
-          foot: Math.ceil((s.bill.footings || 0) / names.length),
-          rides: 2 * s.modelSteps.length,
-        });
-      });
-    });
-    $('trades').innerHTML = scenarios
-      .map(
-        (s, i) =>
-          `<section><small>STAND-IN BILL / ${s.area}</small><h3>${s.name}</h3><div id="result${i}"></div><details><summary>Scenario inputs & sources</summary><label>Line length (m) <input id="len${i}" type="number" min="1" value="${s.cm / 100}"></label><small>railway-world-lines.ts cumulative toCm, High Gorge first</small><label>Footings assigned <input id="bill${i}" type="number" min="0" value="${s.foot}"></label><label>Sequential player one-way legs (one player or a group riding together) <input id="rides${i}" type="number" min="0" value="${s.rides}"></label><small>standins.ts bill split equally / ROUTE.rides × 2 per step, scenario assumptions</small><label>Footings per future-line cargo car · proposed <input id="cap${i}" type="number" min="1" value="10"></label><small>Quick: one cargo car. Strong: two identical cargo cars, twice this load. Built line 2's 6/10 cradle is a numerical reference, not a fit for these lines. Both keep 4 player seats + 8 NPC rider places.</small></details></section>`,
-      )
-      .join('');
-    // trainLegTicks profile, from rest, converted from centimetres/tick to SI; whole 100 ms ticks.
+      n = (id) => Math.max(0, Number($(id).value) || 0),
+      s1 = (x) => x.toFixed(1);
+    // trainLegTicks' profile from rest to rest, accel = brake = 3.5 m/s², in whole 100 ms ticks.
     function leg(m, v) {
       const a = 3.5,
-        b = 3.5,
-        d = (v * v) / (2 * a) + (v * v) / (2 * b);
-      return (
-        Math.ceil(
-          (m >= d ? v / a + (m - d) / v + v / b : Math.sqrt((2 * a * b * m) / (a + b)) * (1 / a + 1 / b)) * 10,
-        ) / 10
-      );
+        d = (v * v) / a;
+      return Math.ceil((m >= d ? (2 * v) / a + (m - d) / v : (2 * Math.sqrt(a * m)) / a) * 10) / 10;
+    }
+    // Mean wait for a train at the depot, arriving at a random moment: Σgap² / (2·cycle).
+    const meanWait = (gaps, cycle) => gaps.reduce((s, g) => s + g * g, 0) / (2 * cycle);
+    function lineFacts(l) {
+      const cycle = l.cycleTicks / 10,
+        cq = 2 * leg(l.m, 25) + 2 * DWELL,
+        gaps = l.gaps.map((g) => g / 10),
+        w = meanWait(gaps, cycle),
+        wq = w * (cq / cycle);
+      return {
+        ride: leg(l.m, 20),
+        rideQ: leg(l.m, 25),
+        cycle,
+        cq,
+        w,
+        wq,
+        trip: leg(l.m, 20) + w,
+        tripQ: leg(l.m, 25) + wq,
+        half: leg(l.head, 20) - leg(l.head, 25),
+      };
+    }
+    // Leg 3 itinerary: section k's rack at first + (k-1)·sec from the depot.
+    function leg3(v, hold, p) {
+      const k = Math.max(1, Math.round(n('l3n'))),
+        sec = n('l3len') / k,
+        first = n('l3first'),
+        work = n('l3feed') / p + n('l3lay');
+      let trains = leg(first, v); // section 1: the players ride with its kit from the depot
+      for (let i = 2; i <= k; i++) {
+        const at = first + (i - 2) * sec; // where the players stand: the rack of section i-1
+        const wait = hold && i === 2 ? 0 : DWELL + n('l3late') + leg(at, v);
+        trains += wait + leg(sec, v);
+      }
+      return { trains, total: trains + k * work };
     }
     function update() {
-      let wins = [];
+      const F = built.map(lineFacts);
+      // ---- The answer.
+      $('answer').innerHTML =
+        `<h2 style="margin-top:0">The answer: not on the lines as built</h2>` +
+        `<p><b>Strong never matters on <code>ns</code> or <code>bay</code> today, and Quick barely does.</b> Strong is the standard 20 m/s engine with an empty car: it changes nothing a player can time, so it is never better than Quick and never worse than not fitting. Quick is never worse than Strong; it saves <b>${s1(F[0].ride - F[0].rideQ)} s</b> (North–south) and <b>${s1(F[1].ride - F[1].rideQ)} s</b> (Bay) on a whole-line ride, about <b>${s1(F[0].w - F[0].wq)} s</b> and <b>${s1(F[1].w - F[1].wq)} s</b> more on the mean wait for a train, the same at 1, 2 and 3 players. Nothing on these lines is waited for but the ride: the trade opens at each leg's last lay, after the only kit the lines carry.</p>` +
+        `<p>So as planned the choice is Quick-or-nothing, worth about a quarter-minute a trip on the Bay line and rarely met on the North–south line. No variant below makes Strong pay on the North–south line without freight. One does on the Bay line, once leg 3 exists: <b>Strong as a hold</b>, with a second section's kit aboard (<a href="#rec">recommendation</a>).</p>`;
+      // ---- Per-line cards.
+      $('lines').innerHTML = built
+        .map((l, i) => {
+          const f = F[i],
+            max = f.trip;
+          const bar = (cls, t) => `<div class="bar ${cls}"><i style="width:${(t / max) * 100}%"></i></div>`;
+          return (
+            `<section><small>${l.id} · depot ${l.depot}</small><h3>${l.name}</h3>` +
+            `<table><tbody>` +
+            `<tr><th>Ride, depot to ${l.far} (${l.m} m)</th><td class="n">${s1(f.ride)} s → <span class="quick">${s1(f.rideQ)} s</span> <span class="tag a">A</span></td></tr>` +
+            `<tr><th>Round trip, two dwells</th><td class="n">${s1(f.cycle)} s <span class="tag m">M</span> → <span class="quick">${s1(f.cq)} s</span> <span class="tag a">A</span></td></tr>` +
+            `<tr><th>Mean wait for a train at the depot (two trains)</th><td class="n">${s1(f.w)} s → <span class="quick">${s1(f.wq)} s</span> <span class="tag a">A</span></td></tr>` +
+            `<tr><th>Worst wait at a halt, settled</th><td class="n">${s1(l.worst / 10)} s <span class="tag m">M</span></td></tr>` +
+            `<tr><th>Section 2's kit train while the leg is built</th><td class="n">${s1(l.kitTicks / 10)} s <span class="tag m">M</span>; Quick would save ${s1(f.half)} s, but the trade is not open yet</td></tr>` +
+            `</tbody></table>` +
+            `<div class="rows" style="margin-top:12px">` +
+            `<div class="row"><strong class="quick">Quick boiler</strong><br>25 m/s · the same cars${bar('quick', f.tripQ)}Wait + ride: <b>${s1(f.tripQ)} s</b> · saves ${s1(f.trip - f.tripQ)} s a trip</div>` +
+            `<div class="row"><strong class="strong">Strong boiler</strong><br>20 m/s · +1 car${bar('strong', f.trip)}Wait + ride: <b>${s1(f.trip)} s</b> · saves 0 s. The car carries <b>nothing</b>.</div>` +
+            `</div>` +
+            `<p><b>Felt:</b> ${l.felt}</p>` +
+            `<p><b>What Strong's car carries today:</b> nothing: one train already carries a section's whole kit, and after the leg there is no load. <b>What the freight brief would change</b> (owner, 18 November, G7: full loads belong to the future-line freight brief): if this line gains a load bigger than one car, Strong carries more a trip at a 20 m/s cost, and the trade gets its other side. <b>This line's next leg:</b> ${l.next}.</p>` +
+            `</section>`
+          );
+        })
+        .join('');
+      // ---- Players table.
+      $('players').innerHTML =
+        '<thead><tr><th>Line</th><th>Players</th><th>Standard</th><th class="quick">Quick</th><th class="strong">Strong</th><th>Ever matters?</th></tr></thead><tbody>' +
+        built
+          .flatMap((l, i) =>
+            [1, 2, 3].map(
+              (p) =>
+                `<tr><th>${p === 1 ? l.name : ''}</th><td>${p}</td><td class="n">${s1(F[i].trip)} s</td><td class="n quick">${s1(F[i].tripQ)} s</td><td class="n strong">${s1(F[i].trip)} s</td><td>${p === 1 ? (l.id === 'ns' ? 'Quick, by about a quarter-minute a trip, on a line rarely ridden; Strong never' : 'Quick, by about a quarter-minute a trip, on the shortcut; Strong never') : 'the same'}</td></tr>`,
+            ),
+          )
+          .join('') +
+        '</tbody>';
+      // ---- Leg 3 calculator.
+      const rows = [
+        ['Standard (no fit)', 20, false, ''],
+        ['Quick boiler', 25, false, 'quick'],
+        ['Strong, as planned (empty car)', 20, false, 'strong'],
+        ['Strong as a hold (variant B)', 20, true, 'strong'],
+      ];
+      const L3 = rows.map(([, v, h]) => [1, 2, 3].map((p) => leg3(v, h, p)));
+      const top = Math.max(...L3.flat().map((r) => r.total));
+      $('leg3').innerHTML =
+        '<div class="scroll"><table><thead><tr><th>Fit</th><th>Train time</th><th>1p leg</th><th>2p leg</th><th>3p leg</th><th>vs Quick, 1p / 3p</th></tr></thead><tbody>' +
+        rows
+          .map(
+            ([name, , , cls], i) =>
+              `<tr><th class="${cls}">${name}<div class="bar ${cls}"><i style="width:${(L3[i][0].total / top) * 100}%"></i></div></th><td class="n">${s1(L3[i][0].trains)} s</td>${L3[i].map((r) => `<td class="n">${(r.total / 60).toFixed(2)} min</td>`).join('')}<td class="n">${s1(L3[i][0].total - L3[1][0].total)} / ${s1(L3[i][2].total - L3[1][2].total)} s</td></tr>`,
+          )
+          .join('') +
+        '</tbody></table></div>' +
+        `<p>With the defaults the hold beats Quick by <b>${s1(L3[1][0].total - L3[3][0].total)} s</b> over leg 3 (the same at every player count: only feeding scales with players, and the hold saves train time). At 3 players feeding is faster, so the saving is a bigger share of the leg. After leg 3, every West landing to Canopy Town ride is ${s1(leg(2410, 20) - leg(2410, 25))} s faster on Quick, so a room that keeps Strong gives the lead back in about ${Math.max(1, Math.ceil((L3[1][0].total - L3[3][0].total) / (leg(2410, 20) - leg(2410, 25))))} rides, and a room that swaps back (free) after the leg gets both. That is the trade's point: <b>Strong while the line builds, Quick while it carries riders.</b> Set a late kit train (extra wait) to see the hold save more.</p>`;
+      // ---- Variants table.
+      const holdGain = L3[1][0].total - L3[3][0].total;
+      $('variants').innerHTML =
+        '<thead><tr><th>Variant</th><th>North–south, 1–3p</th><th>Bay, 1–3p</th><th>Ever worse than the other?</th><th>Cost</th></tr></thead><tbody>' +
+        [
+          [
+            "0. As planned: Strong's car is cargo, nothing loads it",
+            `Quick saves ${s1(F[0].trip - F[0].tripQ)} s a trip; Strong 0`,
+            `Quick saves ${s1(F[1].trip - F[1].tripQ)} s a trip; Strong 0`,
+            'Strong is never better; Quick never worse',
+            'None beyond the plan (v63)',
+          ],
+          [
+            "A. Rider capacity: Strong's car is a second players' car (4 more seats)",
+            'Never matters: 3 players fit in 4 seats',
+            'Never matters: 3 players fit in 4 seats; no towns or NPC riders on the line',
+            'Only above four players in one train',
+            "Reverses the 16 November call (Strong's car is cargo; the coach does not count). Sim: seats per consist; bump",
+          ],
+          [
+            "B. Strong as a hold: a Strong train carries two sections' kit and stands at the railhead until the next rack opens",
+            "Never: the North–south line's legs are laid when the trade opens, and its next leg (causeway) is one section",
+            `Nothing today (leg 2 is laid; on a two-section leg whose first rack is the depot it would save 0). On leg 3: about ${s1(holdGain)} s over Quick, best case; more with a late kit train`,
+            'Yes, on purpose: worse than Quick on every ride, better while a 3+-section leg is built; swaps are free',
+            "Sim: the leg-line load bound becomes two bills on a Strong train; a railhead hold in the stand; the conservation and kit-carrier checks; whether two trains can stand at one railhead (unmeasured); a world bump. Pays only once leg 3's rules are built, so it belongs in leg 3's plan",
+          ],
+          [
+            'C. Kit per trip: every car carries half a section (20 units), so a standard or Quick train takes two trips a section and Strong one',
+            'Never after the trade opens (the leg is laid); before, it would slow leg 2 itself',
+            "On leg 3: the saving is the gap between the two trains' arrivals, which two trains a line mostly absorb (unmeasured, likely small)",
+            'Strong better while building, Quick on rides',
+            'Sim: the load bound on every leg line; re-measuring leg 1 and leg 2 waits; a world bump; slows the built legs for every room',
+          ],
+        ]
+          .map(
+            (r, i) =>
+              `<tr><th>${r[0]}</th>${r
+                .slice(1)
+                .map((c) => `<td>${c}</td>`)
+                .join('')}</tr>`,
+          )
+          .join('') +
+        '</tbody>';
+      // ---- Recommendation.
+      $('rec').innerHTML =
+        `<h2 style="margin-top:0">Recommended: variant B, built with leg 3's rules</h2>` +
+        `<p><b>Strong as a hold</b> is the only variant that makes Strong pay on today's route without new freight, and it does so on the Bay line only: about ${s1(holdGain)} s over Quick across leg 3 in the best case (arithmetic), with Quick still winning every ride, so the free swap becomes a real call: Strong while the line builds, Quick after. It uses kit and rules that exist (the kit rides ahead, the depot hold) and needs no new car meaning. Its cost: a sim change to the kit load bound and a railhead hold, the checks that go with them, and a world bump; and it is worth nothing until leg 3's rules exist, so it goes in that plan, not in garage step 4's step 2.</p>` +
+        `<p><b>What that means for step 4 now</b> (the plan's open question 1, the owner's call): until leg 3, Strong is dead on both lines. Offering both tiles now, with "Nothing to haul yet", is honest but offers a choice with one right answer. I'd show Strong as "Later" on the Bay line until leg 3 brings the hold, and on the North–south line until the freight brief gives it a load. Variant A pays nothing at 1–3 players and reverses a decided call. Variant C costs more and slows the built legs for an unmeasured gain.</p>` +
+        `<small>The ${s1(holdGain)} s is a best case on stand-in feed and lay times, a future leg and an assumed hold; leg 3's checkpoint would measure it.</small>`;
+      // ---- Steel timeline.
+      const old = $('bills').value === 'old';
+      let pool = n('landed') - n('cradle') - n('bigPrice');
+      $('timeline').innerHTML =
+        `<section><h3>Steel home and stage 3 · built</h3>Landed ${n('landed')}. Longer boiler: free. Bigger cradle: ${n('cradle')}. Big boiler: ${n('bigPrice')}. Pool after stage 3: <b>${pool}</b>.<small>STEEL.total = 12; INSTALL_STEEL. No more steel is cast.</small></section>` +
+        stages
+          .map((s) => {
+            const start = pool,
+              income = s.allowanceMin * n('supply'),
+              route = old ? s.oldSteel : 0,
+              buy = s.trade.length * n('price');
+            pool += income - route - buy;
+            return `<section><small>${old ? 'STAND-IN' : s.builtNote} · area ${s.area}${s.allowanceMin ? ` · allowance +${s.allowanceMin} min` : ''}</small><h3>${s.label}</h3><p>${old ? s.oldBill : s.kit}</p><p>Pool ${start.toFixed(0)} + supply ${income.toFixed(0)} − route ${route} − garage ${buy}${s.trade.length ? ` (${s.trade.join(', ')})` : ''} = <b>${pool.toFixed(0)} steel ${pool < 0 ? '· SUPPLY SHORTFALL' : ''}</b></p>${s.trade.length && n('price') > 0 && start + income - route < buy ? `<small>The trade reads "STEEL ${Math.max(0, Math.floor(start + income - route))}/${buy}" here and does not open.</small>` : ''}</section>`;
+          })
+          .join('');
+      $('ladder').innerHTML =
+        `14 → 20 → 25 → 30 → ${n('fast')} m/s<p>Built BOILER rows: 14 (accel 2.5, brake 3.5), 20, 25 and 30 (all 3.5 / 3.5 m/s²). The plan appends Quick (25) and Strong (20) as rows 4 and 5, the new lines' own kin; the faster engine stays proposed.</p>`;
+      oldModel();
+    }
+    // ---- Route stages for the steel timeline. Built kit from railway-route.ts SPECS; old bills from standins.ts.
+    const stages = [
+      {
+        area: 4,
+        label: 'The stack leg to High Gorge',
+        builtNote: 'BUILT',
+        kit: '4 sections × (20 logs + 20 rails); no footings, no steel',
+        allowanceMin: 72,
+        oldBill: '32 logs · 36 rails · 32 footings · 42 steel · 18 copper',
+        oldSteel: 42,
+        trade: [],
+      },
+      {
+        area: 5,
+        label: 'The incline and the bay cut (Bell Rock)',
+        builtNote: 'BUILT',
+        kit: "Incline 2 sections + bay cut 2 sections, each 20 logs + 20 rails; no footings, no steel. The trade opens on each line at its leg's last lay",
+        allowanceMin: 30,
+        oldBill: '12 logs · 28 rails · 44 footings · 52 steel · 4 copper · 2 crystal',
+        oldSteel: 52,
+        trade: ['North–south', 'Bay'],
+      },
+      {
+        area: 6,
+        label: 'Leg 3: Bell Rock to Canopy Town',
+        builtNote: 'SPECIFIED, RULES NOT BUILT',
+        kit: '3 sections × (20 logs + 20 rails) on the Bay line; no steel',
+        allowanceMin: 42,
+        oldBill: '48 logs · 36 rails · 24 footings · 24 steel · 24 fibre',
+        oldSteel: 24,
+        trade: [],
+      },
+      {
+        area: 7,
+        label: 'The cave line to Port Quay',
+        builtNote: 'SPECIFIED, RULES NOT BUILT',
+        kit: "3 sections × (20 logs + 20 rails); no steel. The cave line's own trade is left to its plan (open question 3)",
+        allowanceMin: 48,
+        oldBill: '40 logs · 36 rails · 66 footings · 112 steel · 16 copper',
+        oldSteel: 112,
+        trade: [],
+      },
+    ];
+    // ---- The old 10/20-footing comparison, unchanged in method, behind the details.
+    const oldScenarios = [
+      { area: 'bell', name: 'North–south line', m: 1155.79, foot: 22, rides: 2 },
+      { area: 'bell', name: 'Bay line', m: 1227.48, foot: 22, rides: 2 },
+      { area: 'canopy', name: 'Bay line', m: 2430.04, foot: 24, rides: 4 },
+      { area: 'port', name: 'Cave line and the White Wall', m: 1250.17, foot: 66, rides: 4 },
+      { area: 'wall', name: 'Cave line and the White Wall', m: 5329.62, foot: 50, rides: 2 },
+      { area: 'ending', name: 'North–south line', m: 1902.27, foot: 4, rides: 2 },
+      { area: 'ending', name: 'Bay line', m: 3314.71, foot: 4, rides: 2 },
+    ];
+    $('trades').innerHTML = oldScenarios
+      .map(
+        (s, i) =>
+          `<section><small>STAND-IN BILL / ${s.area}</small><h3>${s.name}</h3><div id="result${i}"></div><label>Line length (m) <input id="len${i}" type="number" min="1" value="${s.m}"></label><label>Footings assigned <input id="bill${i}" type="number" min="0" value="${s.foot}"></label><label>Player one-way legs <input id="rides${i}" type="number" min="0" value="${s.rides}"></label><label>Footings per cargo car <input id="cap${i}" type="number" min="1" value="10"></label></section>`,
+      )
+      .join('');
+    function oldModel() {
       const totals = new Map();
-      scenarios.forEach((s, i) => {
+      oldScenarios.forEach((s, i) => {
         const m = n('len' + i),
           f = n('bill' + i),
           r = n('rides' + i),
@@ -909,78 +709,29 @@
           quick = 2 * leg(m, 25) + 10;
         const trips = Math.ceil(f / cap),
           strongTrips = Math.ceil(f / (2 * cap));
-        const b = trips * base + r * leg(m, 20);
         const q = trips * quick + r * leg(m, 25),
           st = strongTrips * base + r * leg(m, 20);
-        wins.push(q < st ? 'Quick' : q > st ? 'Strong' : 'Tie');
-        const total = totals.get(s.name) || [0, 0, 0];
-        total[0] += q;
-        total[1] += st;
-        total[2] += f * n('handling');
-        totals.set(s.name, total);
-        const max = Math.max(q, st, 1);
+        const t = totals.get(s.name) || [0, 0];
+        t[0] += q + f * n('handling');
+        t[1] += st + f * n('handling');
+        totals.set(s.name, t);
         $('result' + i).innerHTML =
-          `<p><b>${wins.at(-1)}</b> leads · Quick saves ${(leg(m, 20) - leg(m, 25)).toFixed(1)} s per rider leg ${leg(m, 20) - leg(m, 25) >= 10 ? '✓ ten-second rule' : '· below ten-second rule'}</p><div class="rows">` +
-          [
-            ['Quick', q, trips, 25],
-            ['Strong', st, strongTrips, 20],
-          ]
-            .map(
-              ([name, t, tr, v]) =>
-                `<div class="row"><strong class="${name.toLowerCase()}">${name} boiler</strong><br>${v} m/s · ${name === 'Quick' ? 'current cars' : '+1 whole cargo car'}<div class="bar ${name.toLowerCase()}"><i style="width:${(t / max) * 100}%"></i></div>${tr} footing trips · ${((tr * (name === 'Quick' ? quick : base)) / 60).toFixed(1)} min freight<br>${r} player legs · ${((r * leg(m, v)) / 60).toFixed(1)} min travel<br>` +
-                [1, 3]
-                  .map(
-                    (p) =>
-                      `${p}p: <b>${((t + (f * n('handling')) / p) / 60).toFixed(1)} min</b> · saves ${((b - t) / 60).toFixed(1)} min`,
-                  )
-                  .join('<br>') +
-                '</div>',
-            )
-            .join('') +
-          '</div>';
+          `<p><b>${q < st ? 'Quick' : q > st ? 'Strong' : 'Tie'}</b> · Quick ${(q / 60).toFixed(1)} min (${trips} trips) · Strong ${(st / 60).toFixed(1)} min (${strongTrips} trips)</p>`;
       });
-      $('verdict').innerHTML =
-        '<h2>Line totals · freight + player travel</h2><table><thead><tr><th>Line</th><th>1p Quick / Strong min</th><th>3p Quick / Strong min</th><th>Lead</th></tr></thead><tbody>' +
+      $('oldVerdict').innerHTML =
+        '<table><thead><tr><th>Line (old bills)</th><th>Quick / Strong min</th><th>Lead</th></tr></thead><tbody>' +
         [...totals]
           .map(
-            ([name, [q, st, h]]) =>
-              `<tr><th>${name}</th>${[1, 3].map((p) => `<td>${((q + h / p) / 60).toFixed(2)} / ${((st + h / p) / 60).toFixed(2)}</td>`).join('')}<td><strong class="${q <= st ? 'quick' : 'strong'}">${q < st ? 'Quick' : q > st ? 'Strong' : 'Tie'}</strong> ${Math.abs(q - st).toFixed(1)} s</td></tr>`,
+            ([name, [q, st]]) =>
+              `<tr><th>${name}</th><td>${(q / 60).toFixed(2)} / ${(st / 60).toFixed(2)}</td><td>${q < st ? 'Quick' : q > st ? 'Strong' : 'Tie'} ${Math.abs(q - st).toFixed(1)} s</td></tr>`,
           )
           .join('') +
-        '</tbody></table><p>Default 10/20 load: Quick leads North-south and Bay by only 14.8 s / 33.4 s; Strong leads Cave by 12.1 min. Strong wins the large building bills; Quick wins the small ending bills and every player travel leg. This split is sensitive to bill thresholds and assumed travel: it is a proposal, not a proven live choice.</p><small>1p and 3p share the same train service and group travel legs; only the editable off-train handling term scales with players. Coach capacity stays 8 in both rows. With bills ×0.75 (round up), Strong leads all line totals again.</small>';
-      let pool = 12 - n('cradle'),
-        elapsed = 0;
-      const charged = new Set();
-      $('timeline').innerHTML =
-        `<section><h3>Steel home · built supply 12</h3>Longer boiler: free, needs 1. Bigger cradle: ${n('cradle')} steel. Pool after cradle: ${pool}.<small>STEEL.total / plan §2; no future production built.</small></section>` +
-        source.route
-          .map((s) => {
-            elapsed += s.allowanceMin;
-            const start = pool;
-            const income = s.allowanceMin * n('supply');
-            let buy = s.id === 'gorge' ? n('bigPrice') : 0;
-            for (const l of s.legs) {
-              if (l.line !== 'Line 2 to High Gorge' && !charged.has(l.line)) {
-                charged.add(l.line);
-                buy += n('price');
-              }
-            }
-            pool += income - (s.bill.steel || 0) - buy;
-            return `<section><small>STAND-IN · area ${s.area} · allowance +${s.allowanceMin} min</small><h3>${s.label}</h3><p>${Object.entries(
-              s.bill,
-            )
-              .map(([k, v]) => `${v} ${k}`)
-              .join(
-                ' · ',
-              )}</p><p>Pool ${start.toFixed(0)} + supply ${income.toFixed(0)} − route ${s.bill.steel || 0} − garage ${buy} = <b>${pool.toFixed(0)} steel ${pool < 0 ? '· SUPPLY SHORTFALL' : ''}</b></p><small>${elapsed} allowance minutes after steel home; standins.ts / ring-data.ts. Garage prices: plan §2. Ready requires both the named beat and available steel.</small></section>`;
-          })
-          .join('');
-      $('ladder').innerHTML =
-        `14 → 20 → 25 → ${n('bigSpeed')} → ${n('fast')} m/s<p>Built BOILER rows: 14 (accel 2.5, brake 3.5), 20, 25 and 30 (all 3.5 / 3.5 m/s²). Big boiler's built default is 30; faster engine remains proposed. Quick / Strong use built 25 / 20 profiles.</p>`;
+        '</tbody></table>';
     }
     document.addEventListener('input', update);
     $('reset').onclick = () => {
       document.querySelectorAll('input').forEach((e) => (e.value = e.defaultValue));
+      $('bills').value = 'built';
       update();
     };
     update();
