@@ -1850,10 +1850,10 @@ two faces pale fresh wood with bark at the rim. It deepens as pieces are taken, 
 past the trunk's axis at the felling one, so from the side only a thin hinge is left. The notch is one trunk shape
 with a per-tree depth (a morph target read per instance), so there is no extra batch for it. The felled trunk tips
 and lies with its notch, over the pale stump. Each accepted chop throws more chips as the notch deepens, pale like
-its faces with one bark flake in four: 9 at the first hit, 14 at the felling one (hardwoods by the same work). Up to
-six small pale boards lie round the foot, one more about every two hits, in the same places for that tree, until the
-stump regrows. Hardwoods and the great tree keep the old dark notch, and a refused stroke still leaves only its
-shallow scuff. View only (`src/render/place-tree-view.ts`, `src/render/particle-effects.ts`,
+its faces with one bark flake in four: 9 at the first hit, 14 at the felling one (hardwoods by the same work). Three
+of each chop's chips fly short and low out of the cut, land by the trunk, lie flat for a few seconds and fade (the
+pool's `settle` particles). The tree's chips draw at the readable intensity so the pale wood reads pale. Hardwoods and the great tree keep the old dark notch, and a refused stroke still leaves only its
+shallow scuff. View only (`src/render/place-tree-view.ts`, `src/render/particle-effects.ts`, `src/render/particle-pool.ts`,
 `src/entities/railway/sources.ts`); the rule, the yield and the timing are unchanged. Depth, colours and chip counts
 are defaults, cheap to retune.
 

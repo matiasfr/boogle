@@ -54,6 +54,8 @@ export type Particle = {
   spin?: number; // radians/second
   /** Floor restitution, then a 180 ms retirement. Unset retains floor death (water spray). */
   bounce?: number;
+  /** Comes to rest on its floor, stops spinning and lies there until its life runs out (overrides bounce). */
+  settle?: boolean;
   sizeCurve?: ParticleCurve;
   alphaCurve?: ParticleCurve;
   /** Linear-RGB interpolation at birth, half-life and death; intensity is applied once to every key. */
@@ -128,7 +130,15 @@ export function createParticlePool(renderer: THREE.WebGPURenderer, now = () => p
     vl.y.subAssign(mo.y.mul(dt));
     pl.xyz.addAssign(vl.xyz.mul(dt));
     If(vl.y.lessThan(0).and(pl.y.lessThan(mo.w)), () => {
-      If(end.w.greaterThan(0), () => {
+      If(end.w.lessThan(0), () => {
+        // Settled: lies where it landed and stops turning, its long side within about 20° of level so it reads as
+        // a chip lying flat, never one standing on end. Rotation is birth angle plus spin × elapsed (drawLook).
+        pl.y.assign(mo.w);
+        vl.xyz.mulAssign(0);
+        mo.y.assign(0);
+        ap.y.assign(sin(ap.y.add(ap.z.mul(ap.w))).mul(0.35));
+        ap.z.assign(0);
+      }).ElseIf(end.w.greaterThan(0), () => {
         pl.y.assign(mo.w);
         vl.y.assign(vl.y.negate().mul(end.w));
         vl.xz.mulAssign(0.35);
@@ -217,17 +227,20 @@ export function createParticlePool(renderer: THREE.WebGPURenderer, now = () => p
     const dustA = texture(dust, rotated.mul(0.5).add(0.5)).a.toVar();
     const alpha = max(0, dot(p, p).oneMinus()).toVar(),
       shade = float(1).toVar();
-    If(ap.x.equal(1), () => {
+    // The shape index reaches the fragment as an interpolated float that can land a hair off its integer on some
+    // sprites; exact equality dropped those to the soft round default (dark blurry blobs), so compare by nearest.
+    const shape = ap.x.add(0.5).floor();
+    If(shape.equal(1), () => {
       alpha.assign(starA);
     });
-    If(ap.x.equal(2), () => {
+    If(shape.equal(2), () => {
       alpha.assign(quadA);
     });
-    If(ap.x.equal(3), () => {
+    If(shape.equal(3), () => {
       alpha.assign(chipA);
       shade.assign(tumble.mul(0.25).add(0.75));
     });
-    If(ap.x.equal(4), () => {
+    If(shape.equal(4), () => {
       alpha.assign(dustA);
     });
     return vec4(c.xyz.mul(shade), c.w.mul(alpha));
@@ -292,7 +305,7 @@ export function createParticlePool(renderer: THREE.WebGPURenderer, now = () => p
     four(o + 24, p.sizeCurve?.[0] ?? 1, p.sizeCurve?.[1] ?? 1, p.sizeCurve?.[2] ?? 1, 0);
     four(o + 28, p.alphaCurve?.[0] ?? 1, p.alphaCurve?.[1] ?? 1, p.alphaCurve?.[2] ?? 1, 0);
     colorAt(o + 32, p.colorCurve?.[1] ?? p.color, intensity, 0);
-    colorAt(o + 36, p.colorCurve?.[2] ?? p.color, intensity, p.bounce ?? 0);
+    colorAt(o + 36, p.colorCurve?.[2] ?? p.color, intensity, p.settle ? -1 : (p.bounce ?? 0));
     four(o + 40, slot, 0, 0, 0);
     deathAt[slot] = time + p.life * 1000;
     liveUntil = Math.max(liveUntil, deathAt[slot]);
