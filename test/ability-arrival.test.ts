@@ -19,6 +19,7 @@ function harness() {
   let phase = 'asleep';
   function mount(pid: string) {
     let accepted: (e: RailwayAccepted) => void = () => {};
+    let corrected: (c: { event: { op: string } }) => void = () => {};
     const shown = new Set<string>();
     const body = { interpolatedPosition: new THREE.Vector3(), velocity: new THREE.Vector3() };
     const element = () => ({ classList: { remove() {}, toggle() {} }, style: {}, remove() {} });
@@ -77,7 +78,10 @@ function harness() {
         accepted = fn;
         return () => {};
       },
-      onCorrected: () => () => {},
+      onCorrected: (fn: typeof corrected) => {
+        corrected = fn;
+        return () => {};
+      },
     } as unknown as RailwayAdapter;
     const owner = { root: new THREE.Group(), cleanup() {} } as unknown as OwnedView;
     const v = module.createAbilityArrival(adapter, owner, {
@@ -95,6 +99,8 @@ function harness() {
     });
     return {
       v,
+      /** A refused prediction of `op` (the server's correction). */
+      refuse: (op: string) => corrected({ event: { op } }),
       fit: (fitter: string) => {
         w.boiler = 'fitted';
         accepted({ op: 'rail.boilerFit', pid: fitter, accepted: 1 } as RailwayAccepted);
@@ -181,7 +187,7 @@ test("the boiler's card: every page's at the live trains edge, after its show, n
   }
 });
 
-test("review: with no show (reduced motion), a friend gets the boiler's card as the wake ends, not a flourish too", () => {
+test("with no show (reduced motion), a friend gets the boiler's card as the wake ends, not a flourish too", () => {
   const h = harness();
   const { v, fit } = h.mount('b');
   v.update(4);
@@ -189,12 +195,37 @@ test("review: with no show (reduced motion), a friend gets the boiler's card as 
   v.update(30);
   // boiler-view.ts's live trains edge with no shot queued (reduced motion): no `queued`, and the card is owed only as
   // the wake ends (`cardDue`, FIT.wake = 3.1 s later). This page is free the whole time.
+  // The edge holds the moment back until then (boiler-view.ts: `queued` at the edge, `owed` then `dropped` at cardDue).
   h.w.trains = 3376;
+  v.showing('boiler', 'queued');
   v.update(0.1);
   v.update(3.1);
   v.showing('boiler', 'owed');
+  v.showing('boiler', 'dropped');
   for (let i = 0; i < 4; i++) v.update(1);
   assert.deepEqual({ keys: v.inspect().keys, cards: h.cards }, { keys: [], cards: ['boiler'] }, 'one moment, the card');
+  v.dispose();
+});
+
+test("a refused fit drops the boiler's owed card", () => {
+  const h = harness();
+  const { v, fit, refuse } = h.mount('a');
+  v.update(4);
+  fit('a');
+  // The fitter's predicted trains edge queues the show and owes the card; the server then refuses the fit.
+  h.w.trains = 3376;
+  v.showing('boiler', 'queued');
+  v.showing('boiler', 'owed');
+  v.update(0.1);
+  refuse('rail.boilerFit');
+  v.showing('boiler', 'dropped'); // boiler-view.ts's corrected()
+  h.w.trains = -1;
+  h.w.boiler = 'none';
+  for (let i = 0; i < 6; i++) v.update(1);
+  assert.deepEqual(
+    { keys: v.inspect().keys, cards: h.cards, owed: v.inspect().owed },
+    { keys: [], cards: [], owed: [] },
+  );
   v.dispose();
 });
 

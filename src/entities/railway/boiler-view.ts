@@ -470,8 +470,10 @@ export function createRailwayBoiler(
     mine.helping();
     haul(frameDt, now);
     if (cardDue >= 0 && now >= cardDue) {
+      // The wake is over: owe the card, then let go of the moment held back since the edge.
       cardDue = -1;
       showing?.('owed');
+      showing?.('dropped');
     }
     const held = b.state === 'held';
     echoRoot.visible = held && !line2Trains(w) && !fit;
@@ -492,13 +494,20 @@ export function createRailwayBoiler(
     if (awake && !wasAwake) {
       // The live edge only: a rebuild or a resync sets wasAwake first (restore, resync). Every page gets the show.
       const queued = shot?.(claim.cue) ?? false;
-      playMark('moment played', { moment: 'boiler trains', mine: false, shot: queued, authority: 'local', edge: 'state' });
+      playMark('moment played', {
+        moment: 'boiler trains',
+        mine: false,
+        shot: queued,
+        authority: 'local',
+        edge: 'state',
+      });
       // The breaker is cast on this tick: its call waits for the show, or for the wake when no shot was queued.
-      // The card is owed now and waits behind the show; with none it is owed as the wake ends, as the call sounds.
+      // The card is owed now and waits behind the show; with none it is owed as the wake ends, as the call sounds,
+      // and the moment is held back until then (`queued`), so no flourish comes first.
+      showing?.('queued');
       if (queued) {
         claim.claim(BOILER_SHOW.hold);
         show = 'queued';
-        showing?.('queued');
         showing?.('owed');
       } else {
         holdForgeCall(FIT.wake);
@@ -619,7 +628,9 @@ export function createRailwayBoiler(
     corrected(c?: RailwayCorrection) {
       if (c?.event.op !== 'rail.boilerFit') return;
       refuseFit(performance.now());
-      cardDue = -1; // no trains after all: ability-arrival.ts drops an owed card too
+      // No trains after all: ability-arrival.ts drops an owed card too, and a card still due lets go of its hold.
+      if (cardDue >= 0) showing?.('dropped');
+      cardDue = -1;
       // A show queued on the predicted fit: no trains after all. The real fit's edge plays it again.
       if (show === 'none') return;
       cancelShot?.();

@@ -307,8 +307,8 @@ export function createAbilityArrival(
       if (ability.key === 'jump') seen.add('jump-taught');
       return;
     }
-    // A state-edge card (the wake's) is owed as the state turns (update); the boiler's (no `card` flag) is owed by
-    // boiler-view.ts's live trains edge instead, on every page (`showing`).
+    // A state-edge card (the wake's) is owed as the state turns (update). The boiler's is heard too, but has no `card`
+    // flag, so owe() skips it there: boiler-view.ts's live trains edge owes it instead, on every page (`showing`).
     if (ability.atState) return void heard.set(ability.key, 0);
     owe(ability.key);
   });
@@ -323,7 +323,8 @@ export function createAbilityArrival(
 
   const api = {
     seen,
-    /** A show of this moment on this page (the boiler's): `queued` holds its flourish and card back, `played` (on
+    /** A show of this moment on this page (the boiler's): `queued` holds its flourish and card back (also while its
+     * card is due with no show: boiler-view.ts's wake), `played` (on
      * screen) has shown it, `dropped` (never on screen: a seat taken, another shot, a refused fit) lets the flourish
      * come. `owed`: its live edge on this page owes its card (once: the caller's edge is live only, and the reveal
      * shows a key once a session), whatever this player was shown before. */

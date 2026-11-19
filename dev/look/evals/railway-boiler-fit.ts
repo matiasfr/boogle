@@ -37,7 +37,9 @@ const { remotes } = (await import('/src/netplay/net.ts' as string)) as typeof im
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
-const { INTERP_MS } = (await import('/src/constants.ts' as string)) as typeof import('../../../src/constants.ts');
+const { INTERP_MS, reducedMotion } = (await import(
+  '/src/constants.ts' as string
+)) as typeof import('../../../src/constants.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 const { forgeCue } = (await import(
   '/src/entities/railway/forge-call.ts' as string
@@ -261,21 +263,38 @@ async function friend() {
       await bot.walk(home.x + (k % 2 ? 0 : 6), home.z + 3, 1, { limit: 6000 });
   })();
   await until(() => trainsOn(), 'friend sees trains on', 120000);
-  watchCall(performance.now(), 'friend');
+  const edge = performance.now();
+  watchCall(edge, 'friend');
+  if (reducedMotion) {
+    // --reduced-motion: no show; nothing of the boiler's until the wake ends, then the card (owed at 3.1 s).
+    let shot = false;
+    while (!steamUp() && performance.now() - edge < 5000) {
+      shot ||= camera().kind === 'boiler' && (camera().active || camera().pending);
+      check(!arrival().keys.includes('boiler'), 'no boiler flourish before the card');
+      await wait(50);
+    }
+    check(!shot, 'no boiler show under reduced motion');
+    const at = (performance.now() - edge) / 1000;
+    console.log(`BOILER REDUCED CARD ${JSON.stringify({ at: +at.toFixed(2) })}`);
+    check(Math.abs(at - 3.1) <= 0.6, 'the card comes as the wake ends, about 3.1 s after the trains');
+  }
   const turns = camera().forgeTurns;
-  await until(
-    () => camera().kind === 'boiler' && camera().active,
-    'the boiler show is queued on the trains edge',
-    1000,
-  );
+  if (!reducedMotion)
+    await until(
+      () => camera().kind === 'boiler' && camera().active,
+      'the boiler show is queued on the trains edge',
+      1000,
+    );
   let longest = 0;
   while (camera().kind === 'boiler' && camera().active) {
     longest = Math.max(longest, camera().seconds);
     await wait(50);
   }
   console.log(`BOILER SHOW ${JSON.stringify({ longest: +longest.toFixed(2), turns: camera().forgeTurns - turns })}`);
-  check(longest > 4.6, 'the show played on past the train into the forge cut');
-  check(camera().forgeTurns === turns + 1, 'the camera came home facing the forge');
+  if (!reducedMotion) {
+    check(longest > 4.6, 'the show played on past the train into the forge cut');
+    check(camera().forgeTurns === turns + 1, 'the camera came home facing the forge');
+  }
   await takeSteam('friend', 5000, 1600);
   const moving = { x: me.body!.position.x, z: me.body!.position.z };
   await walking;
