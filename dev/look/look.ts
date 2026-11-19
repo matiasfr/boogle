@@ -302,6 +302,7 @@ async function pageScript(g: Game, file: string) {
 }
 try {
   if (opt.railSeed && opt.url) throw new Error('--rail-seed needs a local stack, not --url');
+  if (opt.query2 !== undefined && opt.players < 2) throw new Error('--query2 is for the second page: add --players 2');
   stack = await startStack({ url: opt.url, root: opt.root, warp: opt.warp && opt.players === 2 });
   // launch acquires the shared bot slot. Stamp the save afterwards: queue time must not become away
   // credit that unloads an arriving cart (or finishes a build) before the page can observe it.

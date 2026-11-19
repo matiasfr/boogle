@@ -18,7 +18,10 @@ const { teleport } = (await import(
 const { carry } = (await import(
   '/src/physics/platforms.ts' as string
 )) as typeof import('../../../src/physics/platforms.ts');
-const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
+const { makeBot, hideBotNotes } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
+const { PLATFORM, SIDE } = (await import(
+  '/src/entities/railway/railhead-shape.ts' as string
+)) as typeof import('../../../src/entities/railway/railhead-shape.ts');
 const haul = (await import(
   '/src/sim/railway-ring-haul.ts' as string
 )) as typeof import('../../../src/sim/railway-ring-haul.ts');
@@ -52,11 +55,14 @@ const ap = () => R.aperture(R.rw());
 const set0 = ap().set;
 if (set0 % 2 !== 1 || ap().rack < 1) throw new Error(`RAILHEAD LAG needs an odd set and a racked footing: ${set0}`);
 const head = RING_HEAD[set0 >> 1]!;
-/** Stand on the platform, `back` m behind its end, mid-width (lat 4.05 m). */
+/** The platform's middle line (lat, cm) and its top over the deck (cm). */
+const MID = Math.round(((SIDE.lat0 + SIDE.lat1) / 2) * 100),
+  UP = PLATFORM.up * 100;
+/** Stand on the platform, `back` m behind its end, on its middle line. */
 const board = (back: number) => {
   const u = Math.round((view()!.shownU - back) * 100);
-  const q = ringAt(u, 405);
-  teleport(me.body!, q.x / 100, (ringDeckY(u) + 90) / 100 + 1, q.z / 100);
+  const q = ringAt(u, MID);
+  teleport(me.body!, q.x / 100, (ringDeckY(u) + UP) / 100 + 1, q.z / 100);
   me.body!.velocity.set(0, 0, 0);
 };
 if (second) {
@@ -81,8 +87,7 @@ if (second) {
     if (i > 100) throw new Error('RAILHEAD LAG the footing was not set');
     await wait(100);
   }
-  for (const d of document.querySelectorAll<HTMLDivElement>('div'))
-    if (d.style.top === '90px' && d.style.zIndex === '9999') d.remove();
+  hideBotNotes();
   board(8);
 }
 const a = ap();
@@ -91,29 +96,30 @@ const phase = () => haul.haulPhase(ap(), R.railAt());
 say(`query ${location.search}`);
 say(`set ${a.set} moved ${a.moved} from ${a.from} target ${haul.haulTarget(a)} end ${end}`);
 /** The friend as this page draws it, against the platform as this page draws it: metres along from the platform's
- * back end (0 to 25 is on it), metres off its middle line (within 2.25 is on it), and height over its top. */
+ * back end (0 to PLATFORM.len is on it), metres off its middle line, and height over its top. */
 const friend = (u: number) => {
   const pos = [...remotes.values()].find((r) => r.avatar)?.avatar?.position;
   if (!pos) return null;
-  let best = { along: NaN, off: Infinity };
+  let best = { cm: 0, off: Infinity };
   for (let s = u - 30; s <= u + 5; s += 0.1) {
-    const q = ringAt(Math.round(s * 100), 405);
+    const cm = Math.round(s * 100);
+    const q = ringAt(cm, MID);
     const off = Math.hypot(pos.x - q.x / 100, pos.z - q.z / 100);
-    if (off < best.off) best = { along: s - (u - 25), off };
+    if (off < best.off) best = { cm, off };
   }
-  const over = pos.y - (ringDeckY(Math.round((u - 25 + best.along) * 100)) + 90) / 100;
-  return [+best.along.toFixed(2), +best.off.toFixed(2), +over.toFixed(2)];
+  const along = best.cm / 100 - (u - PLATFORM.len),
+    over = pos.y - (ringDeckY(best.cm) + UP) / 100;
+  return [+along.toFixed(2), +best.off.toFixed(2), +over.toFixed(2)];
 };
-const p = { x: 0, z: 0 };
+const eye = { x: 0, z: 0 },
+  at = { x: 0, z: 0 };
 const rows: unknown[] = [];
 const trace = setInterval(() => {
   const v = view()!;
   const s = RING_S + v.shownU;
-  line2World(s + 3, 11.5, p);
-  const cx = p.x,
-    cz = p.z;
-  line2World(s - 12, 4, p);
-  window.__debugCam?.set([cx, line2Y(s) + 6, cz], [p.x, line2Y(s - 12) + 1, p.z], 60);
+  line2World(s + 3, 11.5, eye);
+  line2World(s - 12, 4, at);
+  window.__debugCam?.set([eye.x, line2Y(s) + 6, eye.z], [at.x, line2Y(s - 12) + 1, at.z], 60);
   rows.push([
     Date.now(),
     +v.shownU.toFixed(3),
@@ -128,7 +134,6 @@ const flush = setInterval(() => {
   if (R.railAt() > end + 20 && view()!.settled) {
     clearInterval(trace);
     clearInterval(flush);
-    if (rows.length) console.log(`LAGTRACE ${who} ${JSON.stringify(rows.splice(0))}`);
     say(`done at tick ${R.railAt()}`);
   }
 }, 1000);

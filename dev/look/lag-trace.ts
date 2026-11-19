@@ -3,8 +3,14 @@
 // each page drew the friend against the platform it drew.
 //   node dev/look/lag-trace.ts <look's stdout, saved to a file>
 import { readFileSync } from 'node:fs';
+import { PLATFORM, SIDE } from '../../src/entities/railway/railhead-shape.ts';
 
-type Row = [number, number, number, 0 | 1, string | null, [number, number, number] | null];
+/** As the eval pushes it: wall ms, shownU, haul phase, settled, own carry.on, the friend [along, off, over] (m). */
+type Friend = [number, number, number];
+type Row = [number, number, number, 0 | 1, string | null, Friend | null];
+/** Drawn on the platform: along it, within its half-width (plus 0.35 m for the avatar), standing on its top. */
+const onPlatform = ([along, off, over]: Friend) =>
+  along >= 0 && along <= PLATFORM.len && off <= (SIDE.lat1 - SIDE.lat0) / 2 + 0.35 && over > -0.6 && over < 2.5;
 const file = process.argv[2];
 if (!file) {
   console.error('usage: node dev/look/lag-trace.ts <look output file>');
@@ -75,15 +81,15 @@ for (const [lo, hi] of [
 }
 for (const [name, rows] of Object.entries(pages)) {
   const seen = rows.filter((r) => r[5]);
-  const on = seen.filter(([, , , , , f]) => f![0] >= 0 && f![0] <= 25 && f![1] <= 2.6 && f![2] > -0.6 && f![2] < 2.5);
+  const off = seen.filter((r) => !onPlatform(r[5]!));
   const range = (k: 0 | 1 | 2) => {
     const xs = seen.map((r) => r[5]![k]);
     return `${Math.min(...xs).toFixed(2)} to ${Math.max(...xs).toFixed(2)}`;
   };
   const decks = [...new Set(rows.map((r) => r[4]))].join(', ');
   console.log(
-    `${name} draws the friend: ${seen.length} of ${rows.length} rows, on the platform in ${on.length}; along ${range(0)} m, off the middle ${range(1)} m, over the top ${range(2)} m; own carry.on: ${decks}`,
+    `${name} draws the friend: ${seen.length} of ${rows.length} rows, on the platform in ${seen.length - off.length}; along ${range(0)} m, off the middle ${range(1)} m, over the top ${range(2)} m; own carry.on: ${decks}`,
   );
-  for (const r of seen.filter((r) => !on.includes(r)).slice(0, 5))
+  for (const r of off.slice(0, 5))
     console.log(`  off at ${((r[0] - t0) / 1000).toFixed(2)} s u ${r[1]} phase ${r[2]}: ${JSON.stringify(r[5])}`);
 }
