@@ -128,7 +128,10 @@
 // logs. No migration.
 // v61 (2026-11-18): the railhead re-route (docs/plans/railhead-reroute.md): the Aperture row carries the trains'
 // Railhead bent (`stop`), which moves when the haul settles (rail.ringStop), not at the pair; no migration.
-export const WORLD_NS = 'v61';
+// v62 (2026-11-18): greybox leg 2's rules (docs/plans/greybox-leg2.md, steps 1 to 3): the ns and bay lines built to
+// Bell Rock with their halts reindexed (home, a head, Bell Rock), four new shed train rows, the ns Gorge stop at s 36
+// and the bay's Bell Rock stop at s 1217; the incline's kit relays through the Gorge yard. No migration.
+export const WORLD_NS = 'v62';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

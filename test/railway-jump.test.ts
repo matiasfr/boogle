@@ -148,13 +148,28 @@ test("the fares-running row lands on line 2's Village platform, where riders boa
 test('the menu lists the rows it always did: the house and leg 1 stages are tooling, still resolved by ?from=', () => {
   // Pinned: a new stage joins the menu only by an owner's call that edits this list (docs/agents/owner-calls.md).
   assert.equal(MENU_JUMPS.at(-1)!.stage, 'boiler-long');
-  assert.equal(MENU_JUMPS.length, JUMPS.length - 6);
+  // Greybox leg 2's four rows (docs/plans/greybox-leg2.md, step 3) are tooling too: the room fast-forward's list.
+  const tooling = [
+    'house-ready',
+    'house-built',
+    'sack-waiting',
+    'yard-wagon',
+    'gorge-open',
+    'gorge-reached',
+    'incline-open',
+    'bell-reached',
+    'bay-open',
+    'bay-reached',
+  ];
+  assert.equal(MENU_JUMPS.length, JUMPS.length - tooling.length);
   assert.deepEqual(
     JUMPS.filter((j) => !MENU_JUMPS.includes(j)).map((j) => j.stage),
-    ['house-ready', 'house-built', 'sack-waiting', 'yard-wagon', 'gorge-open', 'gorge-reached'],
+    tooling,
   );
-  for (const stage of ['house-ready', 'house-built', 'sack-waiting', 'yard-wagon', 'gorge-open', 'gorge-reached']) {
-    assert.ok(jumpOf(stage)?.land, `${stage} resolves with its landing`);
+  for (const stage of tooling) {
+    // Leg 2's rows land at the usual spawn until step 4's stills check a landing (greybox-leg2.md).
+    if (!['incline-open', 'bell-reached', 'bay-open', 'bay-reached'].includes(stage))
+      assert.ok(jumpOf(stage)?.land, `${stage} resolves with its landing`);
     assert.ok(OFFERED_STAGES.includes(stage as never), `${stage} stays buildable by ?from=`);
   }
 });

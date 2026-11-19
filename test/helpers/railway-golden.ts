@@ -67,6 +67,13 @@ export const SHARDS: readonly (readonly SeedStage[])[] = [
     'gorge-open',
     'gorge-mid',
     'gorge-reached',
+    // Greybox leg 2 (docs/plans/greybox-leg2.md, step 3): built on gorge-reached, a second apiece.
+    'incline-open',
+    'incline-mid',
+    'bell-reached',
+    'bay-open',
+    'bay-mid',
+    'bay-reached',
   ],
 ];
 type Row = { tick: number; stage: number; after: number };

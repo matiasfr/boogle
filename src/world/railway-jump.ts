@@ -268,6 +268,33 @@ export const JUMPS: readonly Jump[] = [
     line: 'The stack line is laid to High Gorge; the powered pick waits on the rim',
     land: GORGE_LAND, // the Gorge halt's north platform, facing the pickup on the rim
   },
+  // Greybox leg 2 (docs/plans/greybox-leg2.md, step 3): the room fast-forward's rows, tooling only. Labels and lines are
+  // placeholders. No `land` yet: a jump land is a checked landing (src/place/return-spot.ts reads every one as checked
+  // with a still, by x and z alone, which cannot tell Bell Rock's two levels apart), so each waits for step 4's still.
+  {
+    stage: 'incline-open',
+    menu: false,
+    label: 'Incline open',
+    line: "The barrier is open; the incline's first kit is on the Gorge rack",
+  },
+  {
+    stage: 'bell-reached',
+    menu: false,
+    label: 'Bell Rock reached',
+    line: 'The incline is laid to Bell Rock; the crystal seeds wait on the lower deck',
+  },
+  {
+    stage: 'bay-open',
+    menu: false,
+    label: 'Bay cut open',
+    line: "The seeds are taken; the bay cut's first kit is on the West landing's rack",
+  },
+  {
+    stage: 'bay-reached',
+    menu: false,
+    label: 'Bay cut laid',
+    line: 'Both new lines run to Bell Rock; Home is a minute away',
+  },
 ];
 /** The rows a menu lists: every row but the tooling-only ones. */
 export const MENU_JUMPS: readonly Jump[] = JUMPS.filter((j) => j.menu !== false);

@@ -1,4 +1,5 @@
-> **Status, 18 November 2026: planned, nothing built.** Planner, against main `e8ae03b0f` (world v61), rebased onto `cfb8123d6` with the owner's 18 November rail answers folded in. Owner's go
+> **Status, 18 November 2026: steps 1 to 3 built (world v62) on `claude/greybox-leg2-rules`, awaiting review; steps 4
+> and 5 not started** ([as built](#steps-1-to-3-as-built-18-november)). Planner, against main `e8ae03b0f` (world v61), rebased onto `cfb8123d6` with the owner's 18 November rail answers folded in. Owner's go
 > (18 November, decisions page): "Start the greybox route's leg 2 rules now, so garage step 4 can follow? -> Yes,
 > start a planner after separate capacities". **Garage choices step 4 can start once steps 2 and 3 are on main**
 > ([below](#what-garage-step-4-waits-for)). Design review [at the end](#design-review-2026-11-18).
@@ -213,7 +214,7 @@ landing", "Ride the bay line to Bell Rock". No Boogler line is written or change
 Each step leaves `node dev/ship-check.ts` green. **Steps 1 to 3 ship together as the leg's bump** (as leg 1's 3 to 5
 did); 4 and 5 ship on their own after it.
 
-- [ ] **1. The catalog (S; HOTBOX).** `dev/level/world-blockout.ts`: the `ns` row's Gorge stop to s 36 and its start
+- [x] **1. The catalog (S; HOTBOX).** `dev/level/world-blockout.ts`: the `ns` row's Gorge stop to s 36 and its start
       crossover to s 70 to 90; Bell Rock's `bay` stop to s 1217. Regenerate (`node --import ./dev/sim/hooks.ts
       dev/level/world-blockout.ts`): `src/sim/railway-world-lines.ts`, `docs/world/world-blockout.html`,
       `rail-map.html`. `src/sim/railway-route.ts`: `simHalt`, `railheadHalt` by it, the explicit section 1 frames and
@@ -222,7 +223,7 @@ did); 4 and 5 ship on their own after it.
       the Gorge's rack-to-frame walk under 15 m, stated). Verify: `test/railway-route.test.ts` (sections 560 and 598.5 m;
       every built leg's `railheadHalt` is its from halt's sim index + 1; the points within 1 m of the table above);
       `test/world-lines.test.ts`; `npm run level-check` (no new report).
-- [ ] **2. The rules and the bump (L; HOTBOX). Unblocks garage step 4 with step 3.** `src/sim/railway-lines.ts`:
+- [x] **2. The rules and the bump (L; HOTBOX). Unblocks garage step 4 with step 3.** `src/sim/railway-lines.ts`:
       `ns` and `bay` as built lines (halts in sim order, ends, `fleet`, `signals`), not `rowLine`'s all-shut rows; the
       load-time checks extended (a built leg's heads and destination in order). `railway-queries-route.ts`: the serve
       roles, the yard in `legKitNeed`, `legKitTrains` per line, the kit ahead. `railway-sys-route-kit.ts`: the
@@ -240,7 +241,7 @@ did); 4 and 5 ship on their own after it.
       November); line 2's waits and leg 1's gates 5, 8, 9, 11 and 14 re-measured with the kit ahead (it changes what
       line 2 carries); the long mode (`ROUTE_GATES=1`) run and its output pasted before the bump ships. `npm run loop
       -- run`.
-- [ ] **3. Seeds and stages (S; HOTBOX).** `src/sim/railway-seed-legs.ts` from `gorge-reached`, accepted ops only:
+- [x] **3. Seeds and stages (S; HOTBOX).** `src/sim/railway-seed-legs.ts` from `gorge-reached`, accepted ops only:
       `incline-open` (pick taken, barrier open, section 1's kit on the Gorge rack), `incline-mid` (section 1 laid,
       section 2's kit aboard an `ns` train, the rest in the yard), `bell-reached` (the incline laid, seeds not taken),
       `bay-open` (seeds taken, the West landing's rack stocked), `bay-mid` (section 1 laid, kit aboard a `bay` train),
@@ -274,6 +275,95 @@ did); 4 and 5 ship on their own after it.
       walk to the West landing; `dev/look/segments.ts` `RAIL_STOPS.bell` and `.bay`. Verify: `npm run loop -- node
       incline-1` and `-- node bay-2` print the bill, the train supply and the cue; `npm run loop -- run`; `npm run
       playthrough -- --from gorge-reached --to bay` (a pass verdict; its timings are not evidence under load).
+
+### Steps 1 to 3 as built (18 November)
+
+Builder, on the plan's three open questions' recommendations (bay cut after the incline; the West landing stand-in;
+the kit rides ahead). No wire, op or save field changed. **Where the build moved from the plan:**
+
+- **Step 1.** The two stops are a `stopCm` on the generator's halt spec and the `ns` start crossover a map turnback
+  (s 80); regenerating moved the `ns` deck (its first vertex 3.62 m, the climb to 3.9 m now s 56 to 80, so the
+  crossover stands on a 3.9% grade). The bay crossover's centre is s 1192.5 (t 35 from the kink): the tail of a train
+  standing at s 1217 (16.1 m back) reaches 1.6 m into its far end; the sim's block rule is unaffected, step 4's view
+  should look. Incline rack 1 is 6.8 m from frame 1 in a straight line; on foot is unproven (no Gorge artifact).
+- **Step 2.** The kit roles are `MINT_LEGS` (the line whose trains mint a leg's kit at its home), `YARD_LEGS` (the line
+  whose trains load it from a yard) and `legMintChain` (a mint line's legs in order, so the incline's kit loads once
+  the stack is owed nothing: the kit ahead). The stand-in stocks a built leg whose line's first halt opens with its
+  first section (`STOCKED_LEGS`). Also needed and not listed: the train load check's cargo bound (a section's bill on a
+  leg line), conservation (`legsSpent` counts the yard and other lines' kit), the cart's hold kept to line 1, and the
+  rack being any open leg's. The seeds landed in step 2's commit, since its tests build on them.
+- **Step 3.** Four jump rows (`incline-open`, `bell-reached`, `bay-open`, `bay-reached`), tooling only and **with no
+  `land`**: return-spot reads every jump land as a still-checked landing, matched by x and z alone, so a Bell Rock land
+  would put someone returning to the upper bay halt on the lower deck. Lands wait for step 4's stills (and a height
+  test in `src/place/return-spot.ts`).
+
+**Measured** (Windows, 20 logical cores; the long fuzz ran five test processes at once, so no timing here is evidence):
+the new lines' worst waits, four seeds at 75%, 20,000 ticks: settled (`bay-reached`) `ns` 1,023 and `bay` 1,075
+(bound 1,350); growing, fed from `incline-open` through `bay-reached`, `ns` 1,201 and `bay` 1,467 (bound 1,600; the
+one over 1,350 is Bay head 1 homeward). Leg 1's gates with the kit ahead, `ROUTE_GATES=1`: all pass at their v61
+pins (gate 8/9 settled worst 1,340, gate 14 rivet to Gorge 3,919 of 3,996, gate 15 +1,820, every head-to-head under
+1,158). `gorge-reached` comes 904 ticks sooner in the seed. Stage ticks: incline-open 16,871, incline-mid 17,172,
+bell-reached 18,756, bay-mid 19,057, bay-reached 20,660.
+
+**Between this ship and step 4** a room past `gorge-reached` runs `ns` and `bay` trains over track nobody draws, with
+no frame, rack, barrier, head platform or seeds post in view. A return to a leg 2 halt does not land over the sea: its
+landing has no jump `land` (unchecked), so the return search (`src/place/return-spot.ts`) probes for a surface within
+8 m, finds none at a head, gives that halt up to 2.5 s of its 8 s budget and goes on to the next open halt, or Home.
+**Production prebuilds every `JUMPS` row** (`OFFERED_STAGES`, `server/src/seeds/prebuild.ts`), so `POST /jump`
+reaches `incline-open`, `bell-reached`, `bay-open` and `bay-reached` straight after deploy, landing at the usual spawn
+(they have no `land`). That is the plan's order (steps 1 to 3 as one bump, views after); worth knowing before a
+playtest.
+
+**Review fixes (18 November).** The independent review found the rack's need blind to units lifted off it and still
+held (`legRackNeed`): every lift off the West landing's first rack restocked it at once (P2, minting), and at High
+Gorge a line 2 train racked section 2's kit while section 1's was carried, skipping the `ns` relay (P3).
+`legRackNeed` now counts held units (as `legKitNeed` does), for every leg. **And the stand-in mints its section's kit
+once** (its loaded counts never pass the bill; the load check refuses one that does): a unit put down at the West
+landing is taken up again from its pile, not minted again. No hash golden moved (the seeds hold nothing across a tick
+boundary where it matters) and the leg 2 fuzz figures are unchanged.
+
+**Re-check fix (18 November, P1).** Rails cannot be made up by hand at this stage: `rail.forgeTake` gives none once
+the cradle is fitted, and a room that played in order has the steel works lit with its yard empty. So a rail the
+stand-in loaded that leaves the leg's books is owed again, and only then: a leaver's rails released after the grace
+(`legKitRelease`), and put-down rails the supply pulse returns to the forge rack (`legKitRecovered`, at most what the
+stand-in has lost: loaded less racked, held and fed) come off `Leg.loadedRails`, and the stand-in stocks them again
+from the forge rack, exactly as many. Loaded still never passes the bill, so the load check's bound stands as it was;
+no state was added (the same accounting `kitHome` uses when rails go back to the forge rack). Logs need none of it: a
+leaver's are made up by chopping, and recovered logs go to the recovery rack, which anyone takes from. So "a unit
+lifted off a rack and lost is owed again" holds for the stand-in too, bounded by what was lost rather than by a train's
+rate; leg 1's and the incline's racks are unchanged. Again no hash golden moved, and the leg 2 fuzz is unchanged.
+
+**Second re-check fix (18 November): closing the class.** A third way in: units put down and taken up again from
+their pile were no longer counted held, so a leaver carrying them off was never released and section 1 stayed short.
+And a release could take more off the stand-in's loaded rails than it had (the shelf may hold the incline's leftovers),
+driving them negative. Now, still with no new state:
+
+- **Taken up again, counted again.** While the stand-in stands (open, nothing laid), `rail.take` from a pile counts
+  logs and rails as held again (`legKitRetaken`), capped at what the stand-in has lost (`legStandInLost`: loaded less
+  racked, counted held and fed) and the held room. The release then sees them.
+- **No release past what was lost.** A release takes `Math.min(rails, lost)` off the loaded rails, never more.
+- **The liveness backstop.** At a supply pulse that opens a new minute (the host sends one a minute while the room
+  plays), a stand-in whose section is short (fed, racked and counted held), with units it has lost and no pile of
+  that kind within 30 m of its rack, is made whole: lost rails come off its loaded count and the stand-in stocks them
+  again from the forge rack on the next tick (rails stay conserved, loaded rails never pass the bill); lost logs are
+  minted onto its rack. It is the floor under every other path, at most once a minute, which bounds how fast logs can
+  be minted by losing them. A unit put down near the rack holds it off: take it up again. The delay is the pulse's
+  minute rather than a measured wait since the shortfall began: that needs a timer the state does not have, and the
+  pulse already bounds the rate.
+- **The load check** keeps its over-bill bound for rails only (`stand-in over its bill`); logs are rate-bounded
+  instead.
+- **A property test** (`test/railway-leg2-standin.test.ts`), from `bay-open` with the steel works lit: seeded random
+  histories of take, put down (near or 120 m off), take up again, feed, leave (for good, or back within a 1,200-tick
+  grace) and host restart, with the host's real supply cadence (one pulse a minute, the marker one on, a pile offered
+  for recovery only once due: recheck3's P3, so put-down rails rarely come back the old way and the backstop makes them
+  up). Then whoever is in the room feeds section 1 with the rack and the piles near it. **300 seeds ran locally:
+  section 1 laid in every one, the slowest 1,215 ticks after the room settled (bound 3,600)**, the load check holding
+  and loaded rails never negative at every step. With the backstop switched off it fails within the first 8 seeds, as
+  does recheck3's guard test. The suite runs 8 (`STANDIN_SEEDS` for more): about 30 s locally (23 s of it the base
+  build), weighed at 100 s for CI in `dev/ci/unit-weights.json`; at 24 seeds and the old pulse model it passed 480 s
+  on a CI runner and failed the whole-file budget (PR #2264, unit shard 8).
+
+No hash golden moved; the leg 2 long fuzz is unchanged in every figure.
 
 **Checkpoint B (leg 2 playable).** Named proofs, run once: `npm run loop -- run` for one to three players with idle
 seconds per wait; the bot segment `--from gorge-reached --to bay`; `npm run test:net`; `npm run scenario --

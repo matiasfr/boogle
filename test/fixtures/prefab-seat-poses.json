@@ -654,5 +654,357 @@
     "available": true,
     "forward": 0.16,
     "perch": 0.32
+  },
+  {
+    "id": "railway:train7-1-seat0",
+    "group": "railway:train7-1",
+    "platform": "railway:train7-1",
+    "anchorView": true,
+    "frame": "car.rock",
+    "at": {
+      "x": 0.45,
+      "y": 1.24,
+      "z": -0.85,
+      "yaw": -1.5707963267948966
+    },
+    "exit": {
+      "x": 0.85,
+      "y": 0.74,
+      "z": -0.85,
+      "yaw": -1.5707963267948966
+    },
+    "available": true,
+    "forward": 0.16,
+    "perch": 0.32
+  },
+  {
+    "id": "railway:train7-1-seat1",
+    "group": "railway:train7-1",
+    "platform": "railway:train7-1",
+    "anchorView": true,
+    "frame": "car.rock",
+    "at": {
+      "x": 0.45,
+      "y": 1.24,
+      "z": 0.45,
+      "yaw": -1.5707963267948966
+    },
+    "exit": {
+      "x": 0.85,
+      "y": 0.74,
+      "z": 0.45,
+      "yaw": -1.5707963267948966
+    },
+    "available": true,
+    "forward": 0.16,
+    "perch": 0.32
+  },
+  {
+    "id": "railway:train7-1-seat2",
+    "group": "railway:train7-1",
+    "platform": "railway:train7-1",
+    "anchorView": true,
+    "frame": "car.rock",
+    "at": {
+      "x": -0.45,
+      "y": 1.24,
+      "z": 0.85,
+      "yaw": 1.5707963267948966
+    },
+    "exit": {
+      "x": -0.85,
+      "y": 0.74,
+      "z": 0.85,
+      "yaw": 1.5707963267948966
+    },
+    "available": true,
+    "forward": 0.16,
+    "perch": 0.32
+  },
+  {
+    "id": "railway:train7-1-seat3",
+    "group": "railway:train7-1",
+    "platform": "railway:train7-1",
+    "anchorView": true,
+    "frame": "car.rock",
+    "at": {
+      "x": -0.45,
+      "y": 1.24,
+      "z": -0.45,
+      "yaw": 1.5707963267948966
+    },
+    "exit": {
+      "x": -0.85,
+      "y": 0.74,
+      "z": -0.45,
+      "yaw": 1.5707963267948966
+    },
+    "available": true,
+    "forward": 0.16,
+    "perch": 0.32
+  },
+  {
+    "id": "railway:train8-1-seat0",
+    "group": "railway:train8-1",
+    "platform": "railway:train8-1",
+    "anchorView": true,
+    "frame": "car.rock",
+    "at": {
+      "x": 0.45,
+      "y": 1.24,
+      "z": -0.85,
+      "yaw": -1.5707963267948966
+    },
+    "exit": {
+      "x": 0.85,
+      "y": 0.74,
+      "z": -0.85,
+      "yaw": -1.5707963267948966
+    },
+    "available": true,
+    "forward": 0.16,
+    "perch": 0.32
+  },
+  {
+    "id": "railway:train8-1-seat1",
+    "group": "railway:train8-1",
+    "platform": "railway:train8-1",
+    "anchorView": true,
+    "frame": "car.rock",
+    "at": {
+      "x": 0.45,
+      "y": 1.24,
+      "z": 0.45,
+      "yaw": -1.5707963267948966
+    },
+    "exit": {
+      "x": 0.85,
+      "y": 0.74,
+      "z": 0.45,
+      "yaw": -1.5707963267948966
+    },
+    "available": true,
+    "forward": 0.16,
+    "perch": 0.32
+  },
+  {
+    "id": "railway:train8-1-seat2",
+    "group": "railway:train8-1",
+    "platform": "railway:train8-1",
+    "anchorView": true,
+    "frame": "car.rock",
+    "at": {
+      "x": -0.45,
+      "y": 1.24,
+      "z": 0.85,
+      "yaw": 1.5707963267948966
+    },
+    "exit": {
+      "x": -0.85,
+      "y": 0.74,
+      "z": 0.85,
+      "yaw": 1.5707963267948966
+    },
+    "available": true,
+    "forward": 0.16,
+    "perch": 0.32
+  },
+  {
+    "id": "railway:train8-1-seat3",
+    "group": "railway:train8-1",
+    "platform": "railway:train8-1",
+    "anchorView": true,
+    "frame": "car.rock",
+    "at": {
+      "x": -0.45,
+      "y": 1.24,
+      "z": -0.45,
+      "yaw": 1.5707963267948966
+    },
+    "exit": {
+      "x": -0.85,
+      "y": 0.74,
+      "z": -0.45,
+      "yaw": 1.5707963267948966
+    },
+    "available": true,
+    "forward": 0.16,
+    "perch": 0.32
+  },
+  {
+    "id": "railway:train9-1-seat0",
+    "group": "railway:train9-1",
+    "platform": "railway:train9-1",
+    "anchorView": true,
+    "frame": "car.rock",
+    "at": {
+      "x": 0.45,
+      "y": 1.24,
+      "z": -0.85,
+      "yaw": -1.5707963267948966
+    },
+    "exit": {
+      "x": 0.85,
+      "y": 0.74,
+      "z": -0.85,
+      "yaw": -1.5707963267948966
+    },
+    "available": true,
+    "forward": 0.16,
+    "perch": 0.32
+  },
+  {
+    "id": "railway:train9-1-seat1",
+    "group": "railway:train9-1",
+    "platform": "railway:train9-1",
+    "anchorView": true,
+    "frame": "car.rock",
+    "at": {
+      "x": 0.45,
+      "y": 1.24,
+      "z": 0.45,
+      "yaw": -1.5707963267948966
+    },
+    "exit": {
+      "x": 0.85,
+      "y": 0.74,
+      "z": 0.45,
+      "yaw": -1.5707963267948966
+    },
+    "available": true,
+    "forward": 0.16,
+    "perch": 0.32
+  },
+  {
+    "id": "railway:train9-1-seat2",
+    "group": "railway:train9-1",
+    "platform": "railway:train9-1",
+    "anchorView": true,
+    "frame": "car.rock",
+    "at": {
+      "x": -0.45,
+      "y": 1.24,
+      "z": 0.85,
+      "yaw": 1.5707963267948966
+    },
+    "exit": {
+      "x": -0.85,
+      "y": 0.74,
+      "z": 0.85,
+      "yaw": 1.5707963267948966
+    },
+    "available": true,
+    "forward": 0.16,
+    "perch": 0.32
+  },
+  {
+    "id": "railway:train9-1-seat3",
+    "group": "railway:train9-1",
+    "platform": "railway:train9-1",
+    "anchorView": true,
+    "frame": "car.rock",
+    "at": {
+      "x": -0.45,
+      "y": 1.24,
+      "z": -0.45,
+      "yaw": 1.5707963267948966
+    },
+    "exit": {
+      "x": -0.85,
+      "y": 0.74,
+      "z": -0.45,
+      "yaw": 1.5707963267948966
+    },
+    "available": true,
+    "forward": 0.16,
+    "perch": 0.32
+  },
+  {
+    "id": "railway:train10-1-seat0",
+    "group": "railway:train10-1",
+    "platform": "railway:train10-1",
+    "anchorView": true,
+    "frame": "car.rock",
+    "at": {
+      "x": 0.45,
+      "y": 1.24,
+      "z": -0.85,
+      "yaw": -1.5707963267948966
+    },
+    "exit": {
+      "x": 0.85,
+      "y": 0.74,
+      "z": -0.85,
+      "yaw": -1.5707963267948966
+    },
+    "available": true,
+    "forward": 0.16,
+    "perch": 0.32
+  },
+  {
+    "id": "railway:train10-1-seat1",
+    "group": "railway:train10-1",
+    "platform": "railway:train10-1",
+    "anchorView": true,
+    "frame": "car.rock",
+    "at": {
+      "x": 0.45,
+      "y": 1.24,
+      "z": 0.45,
+      "yaw": -1.5707963267948966
+    },
+    "exit": {
+      "x": 0.85,
+      "y": 0.74,
+      "z": 0.45,
+      "yaw": -1.5707963267948966
+    },
+    "available": true,
+    "forward": 0.16,
+    "perch": 0.32
+  },
+  {
+    "id": "railway:train10-1-seat2",
+    "group": "railway:train10-1",
+    "platform": "railway:train10-1",
+    "anchorView": true,
+    "frame": "car.rock",
+    "at": {
+      "x": -0.45,
+      "y": 1.24,
+      "z": 0.85,
+      "yaw": 1.5707963267948966
+    },
+    "exit": {
+      "x": -0.85,
+      "y": 0.74,
+      "z": 0.85,
+      "yaw": 1.5707963267948966
+    },
+    "available": true,
+    "forward": 0.16,
+    "perch": 0.32
+  },
+  {
+    "id": "railway:train10-1-seat3",
+    "group": "railway:train10-1",
+    "platform": "railway:train10-1",
+    "anchorView": true,
+    "frame": "car.rock",
+    "at": {
+      "x": -0.45,
+      "y": 1.24,
+      "z": -0.45,
+      "yaw": 1.5707963267948966
+    },
+    "exit": {
+      "x": -0.85,
+      "y": 0.74,
+      "z": -0.45,
+      "yaw": 1.5707963267948966
+    },
+    "available": true,
+    "forward": 0.16,
+    "perch": 0.32
   }
 ]
