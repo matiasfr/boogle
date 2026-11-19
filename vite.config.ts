@@ -53,6 +53,7 @@ export default defineConfig({
         assets: resolve('assets/index.html'),
         menu: resolve('menu/index.html'),
         development: resolve('development/index.html'),
+        about: resolve('about/index.html'), // the promo page (/about/): static, no script
       },
       output: {
         codeSplitting: {
