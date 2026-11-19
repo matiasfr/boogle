@@ -297,6 +297,10 @@ or missing post cannot silently disappear from the check. Tree identity and cata
 collision changes. Moving cargo, vehicles, floating collectibles, distant landforms and future town growth are outside
 this static support audit.
 
+**The quarry path's first bend (G28, 19 November 2026).** Where the path out of the Round drops toward the gorge,
+local `(-70, 146)`, the cutting's walls lean back as grass slopes instead of standing as a tan cliff with a shelf on
+top, and the bank cart rests lengthwise on the crest beyond, at `(-59, 163)`. Local terrain and collision only.
+
 An island about 440 m across, 1 km east of today's, in the crossing's sea. A Y-shaped gorge, with walls about 16-30 m high
 and a river at the bottom, splits it into three lobes: the village (west, 18 m), the timber camp (north ridge, 30 m) and the
 quarry (east table, 24 m). Needle Bell, a leaning 105 m spire, stands where the gorge forks. Two low footbridges cross the
