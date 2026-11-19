@@ -387,8 +387,9 @@ halts, adapters, docs. No rule, wire, op or save field changed; nothing under `s
   so a homeward train takes the start's crossover on its way in (the server judges a departure's lever from the
   start's outward platform). Kit marks and the kit's hop are per line: line 2 sets the incline's kit on its first rack
   (9 m over line 2's up track) and the rest on an unlabelled pile beside it, High Gorge's yard.
-- **The bore** is 8 m clear between 1 m black walls, its roof 11 m (7 m over the 4.0 m rail at least), lined in strips
-  that meet the stack's faces, with a pale frame at each mouth. The south stack's hidden collider keeps its slab over
+- **The bore** is 8 m clear between 1 m black walls, its roof 11 m (at least 7 m over the rail, which climbs from
+  about 3.2 m at the split's mouth to 4.0 m), lined in strips that meet the stack's faces, with a pale frame at each
+  mouth. Its floor across the deck's width is an unlaid bed 0.15 m under the rail (review fix, below). The south stack's hidden collider keeps its slab over
   the bore at its index and is split round the bore in `leg2.ts`, authored to 0.1 m and checked against the stack's
   outline at build. **Moved from the plan:** the horizon mesh (`sickle-backdrop/view.ts`) is double-sided, so it is
   opened at both mouths; otherwise a rider sees the cliff's back across each mouth. The old dark portal panel is the
@@ -423,11 +424,24 @@ and 421,448, here 372 and 474,846; the West landing 491 and 1,000,019, here 496 
 177 and 370,875, here 670 and 1,178,947 (the two lines' four trains, drawn now, parked under the land on main). Static
 colliders 2,890 to 2,945 on main, 2,983 to 3,069 here; High Gorge's massing 55 to 91 solids (the bore). With Bell
 Rock resident: 1,110 meshes and 3,001 colliders (its 75 boxes, 21 solids); from head 1, Bell Rock not resident: 1,133
-meshes and 2,983 colliders. No frame time: the machine was shared, so none would be evidence.
+meshes and 2,983 colliders. No frame time: the machine was shared, so none would be evidence. Measured before the
+review's beds, which add 22 solids at High Gorge (113) and 2 at Bell Rock (77 boxes, 23 solids), in the same batches.
 
-**Fixtures moved:** `prefab-gorge-colliders.json` and `prefab-gorge-placements.json` (the bore's pieces; the incline's
-post supports renumbered after them), `prefab-halts.json` (the eight new levers' meshes and plaques, additive); the
-halt test counts 28 levers. Each regenerated with `GOLDEN=1`. **Unverified:** the bot and the loop (step 5); a lever
+**Fixtures moved:** `prefab-gorge-colliders.json` and `prefab-gorge-placements.json` (the bore's pieces and bed; the
+incline's post supports renumbered after them), `prefab-bell-colliders.json` and `prefab-bell-placements.json` (the
+bay's two bed pieces on the rock), `prefab-halts.json` (the eight new levers' meshes and plaques, additive); the halt
+test counts 28 levers and the portability test 72 Bell Rock placements. Each regenerated with `GOLDEN=1`.
+
+**Review fixes (19 November).** The independent review's P2: a lay made the incline's deck solid over the bore's open
+floor, 0.4 to 1.1 m under the slab, closing it over a body standing there. The bore's floor across the deck's width is
+now an unlaid bed (as Bell Rock's and the West landing's are), 0.15 m under the rail and solid down to the floor's
+level, so a lay only lifts a body; the same was true where the bay row climbs onto Bell Rock's rock east of its
+in-half bed, which now carries on there to t 94. `test/prefab-leg2-level.test.ts` (the review's test, rewritten to the
+property) checks both new lines' whole rows: the highest level surface under every metre of deck sits within a body
+sphere's radius under the rail or leaves a whole body under the slab. P3s: line 2's unload at High Gorge goes all to
+the yard once the incline's rack has moved to its head (it took whatever that rack gained in the frame); the `ns` and
+`bay` kit cars carry a kit board; a standing piece's hold measures the body against the pitched box (a sea ramp's
+slip). The barrier still is retaken: the unlaid bed now shows inside the bore's mouth. **Unverified:** the bot and the loop (step 5); a lever
 pull answered on the new lines in a live room; a second player; the kit's hop and the yard pile in motion; the
 level report's walk over the new head platforms. Not tested on a device.
 

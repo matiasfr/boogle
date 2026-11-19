@@ -1519,8 +1519,9 @@ section end, a 25 m platform each side of its head with a sea ramp, and the open
 "KIT" plate. Trains run on the outward track and stand at a line's start on the outward platform: a homeward train
 takes the start's crossover on its way in (`railway/row-path.ts`). The end board reads "LINE TO BELL ROCK / UNDER
 CONSTRUCTION" at each line's end until it reaches Bell Rock. **The incline** leaves High Gorge through a 165 m bore
-in the south stack, 8 m clear under a dark lining, with a pale frame round each mouth: riding home, the split opens
-out of the dark; riding out, the sea does. The barrier stands on the incline's first frame (a red panel on two posts,
+in the south stack, 8 m clear under a dark lining, with a pale frame round each mouth and an unlaid bed for its
+floor, as Bell Rock's and the West landing's are: riding home, the split opens out of the dark; riding out, the sea
+does. The bay line's bed runs on over Bell Rock's rock where the line climbs onto it. The barrier stands on the incline's first frame (a red panel on two posts,
 lifted once opened with the powered pick); the old pad behind the south platform is empty. Line 2's kit car sets the
 incline's kit on its first rack, on line 2's south platform, and the rest on an unlabelled pile beside it (High
 Gorge's yard), which the `ns` trains take on. **Bell Rock** gains the seeds post on the lower deck ("Take the crystal
