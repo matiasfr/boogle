@@ -32,6 +32,9 @@ dialog.pause::backdrop {
   animation: pause-fade 200ms ease-out;
   transition: background-color 200ms ease-out; /* none on You (wardrobe/menu.css): fade, don't pop, between pages */
 }
+dialog.pause.session-expired .pause-dim {
+  background: rgb(12, 28, 52); /* --glass at full strength: the solo island stays out of sight */
+}
 .pause-card {
   position: relative;
   width: min(440px, 100%);

@@ -108,6 +108,13 @@ export default {
     );
     await pad(desk, 'confirm');
     await desk.wait(0.3);
+    const labels = `return [...document.querySelectorAll('.account-page button')].map((b) => b.textContent);`;
+    const signedInLabels = (await desk.eval(labels)) as string[];
+    t.check(
+      'signed in: the account switch reads "Switch account" (18 November), not "Sign in"',
+      signedInLabels.includes('Switch account') && !signedInLabels.includes('Sign in'),
+      signedInLabels.join(' · '),
+    );
     t.check('signed-in still', await noPin(desk), await desk.still('desk-signed-in'));
     await desk.eval(`document.querySelector('.account-page button.primary').click();`); // Replace PIN: asks first
     await desk.wait(0.3);
@@ -175,6 +182,24 @@ export default {
       refusedMs >= 0 && /Sign-in unavailable/.test(replacedText) && /expired or was replaced/.test(replacedText),
       `${refusedMs} ms; ${await phone.still('phone-replaced')}`,
     );
+    // 18 November: "Sign in" is the main button and has focus, the reload is gone, and the island is hidden.
+    const replaced = await phone.eval(`return {
+      labels: [...document.querySelectorAll('.account-page button')].map((b) => b.textContent),
+      primary: document.querySelector('.account-page button.primary')?.textContent,
+      focus: document.activeElement?.textContent,
+      dim: getComputedStyle(document.querySelector('.pause-dim')).backgroundColor,
+    };`);
+    t.check(
+      'replaced: Sign in is the main button and has focus, no reload, the dim hides the island',
+      replaced.primary === 'Sign in' &&
+        replaced.focus === 'Sign in' &&
+        !replaced.labels.includes('Reload to retry') &&
+        replaced.dim === 'rgb(12, 28, 52)',
+      JSON.stringify(replaced),
+    );
+    await phone.page.setViewportSize({ width: 1200, height: 800 });
+    await phone.wait(0.5);
+    t.check('replaced at desktop width still', true, await phone.still('desk-replaced'));
     forgive(phone, /status of 401/);
   },
 };

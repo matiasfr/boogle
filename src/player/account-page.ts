@@ -131,8 +131,15 @@ export function mountAccount(parent: HTMLElement, resume: () => void) {
         );
         if (!signedIn) page.append(el('p', 'Get a PIN to use this identity on another device.', 'pause-note'));
         else page.append(el('p', 'Forgot your PIN? Replace it here.', 'pause-note'));
-      } else page.append(button('Reload to retry', () => location.reload()));
-      page.append(button('Sign in', () => show('sign-in')));
+      } else if (status.state !== 'revoked') page.append(button('Reload to retry', () => location.reload()));
+      // An expired or replaced session gets back in only by signing in, so that is its main button (18 November).
+      page.append(
+        button(
+          signedIn && status.state === 'ready' ? 'Switch account' : 'Sign in',
+          () => show('sign-in'),
+          status.state === 'revoked',
+        ),
+      );
       if (signedIn || status.state !== 'ready') page.append(button('Sign out', () => show('sign-out')));
     }
     const message = el('p', error, 'account-message');
