@@ -29,6 +29,7 @@ import { createRailwayArrival } from './arrival.ts';
 import { createReturnHalts } from './return-halts.ts';
 import { createRailwayOpening } from './opening-view.ts';
 import { createPartHoist } from './part-hoist.ts';
+import { createForgeGuide, guideStage } from './forge-guide.ts';
 import { createRailwayPath } from './path.ts';
 import { createRailwayPanelView } from './panel-view.ts';
 import { createRailwayLine2 } from './line2-view.ts';
@@ -284,6 +285,14 @@ export async function createRailwayView(adapter: RailwayAdapter) {
           if (boilerRow(w).state === 'pedestal') return 'boiler';
           return works && worksRow(w).breaker === 1 ? 'breaker' : null;
         },
+      })
+    : null;
+  // The crew's foreman, the middle of the three: a word on the waiting part and Talk (docs/brainstorms/boiler-guide.md).
+  const guide = hoist
+    ? createForgeGuide(owner, {
+        body: hoist.foreman,
+        stage: () => guideStage(world(), !!works),
+        ready,
       })
     : null;
   function restoreMotion() {
@@ -569,6 +578,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       halts.update(dt);
       homeStation.update();
       hoist?.update(dt); // before the views that draw the part it holds
+      guide?.update(dt); // after the hoist, which waves the three
       works?.update(dt);
       line2.update(dt);
       hook.update(dt, now);
@@ -630,6 +640,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       sources.lateUpdate();
       line2.lateUpdate();
       works?.lateUpdate();
+      guide?.lateUpdate();
     },
     targets(): Interactable[] {
       beginFrame();
@@ -644,6 +655,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
         ...halts.targets(),
         ...trains.targets(),
         ...hook.targets(),
+        ...(guide?.targets() ?? []),
       ];
       // The track layer's two chairs: Sit aboard with nothing else to press for; seated, Interact stands you up.
       return seats.withSeatTargets(targets);
@@ -675,6 +687,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       line2View: { ...line2.inspect(), ...shelf.inspect(), ...cart.inspect(), ...trains.inspect(), ...halts.inspect() },
       // The Works and Roundhouse views' own inspection; `works` and `shed` are the adapter's accepted state (J3).
       hoist: hoist?.inspect().hoist ?? null,
+      guide: guide?.inspect() ?? null,
       worksView: works?.inspect() ?? null,
       crossingView: works?.crossingInspect() ?? null,
     } satisfies RailwayScene;

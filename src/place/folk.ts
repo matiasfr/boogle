@@ -102,7 +102,8 @@ type Job =
   | 'resident'
   | 'greeter'
   | 'looker';
-type Mood = 'idle' | 'walk' | 'run' | 'hammer' | 'carry' | 'wave' | 'cheer' | 'sit' | 'ride' | 'chat' | 'give';
+type Mood =
+  'idle' | 'walk' | 'run' | 'hammer' | 'carry' | 'wave' | 'cheer' | 'sit' | 'ride' | 'chat' | 'give' | 'point';
 type Guy = {
   /** A commuter not stepped since he was put out or slept far from the camera, and one stepped this frame but too
    * far to draw (path-refuge.ts commuterBand): only there is a woken one stood in his refuge. */
@@ -146,6 +147,8 @@ type Guy = {
   route: Route;
   act: Mood; // a resident: what they're doing when you're not there
   tint: THREE.Color | null;
+  /** Holds a hammer whatever he's doing (the forge crew's foreman, part-hoist.ts): the kit's own hammer, at rest. */
+  tool?: boolean;
 };
 // Where steer() is taking it: the goal it was given (r), that goal clear of footprints (g), the corner it's rounding (w),
 // the corner before that (p), and the s it has left; below 0, nothing's planned.
@@ -295,8 +298,8 @@ export function addGreeter(x: number, y: number, z: number) {
 }
 /** One of Ring Island's folk (src/entities/ring-folk/view.ts): placed, moved, faced and talked to by its owner; the kit only
  * draws it and, like the greeter, never steers it. */
-export function addLooker(x: number, y: number, z: number, yaw: number, color: string) {
-  return make('looker', x, z, { fy: y, yaw, tint: new THREE.Color(color) });
+export function addLooker(x: number, y: number, z: number, yaw: number, color: string, extra?: Partial<Guy>) {
+  return make('looker', x, z, { fy: y, yaw, tint: new THREE.Color(color), ...extra });
 }
 export type { Guy, Mood };
 
@@ -875,7 +878,7 @@ function pose(g: Guy) {
     hl = [-0.25, 0.28, 0.02],
     hr = [0.25, 0.28, 0.02];
   let itemA = false,
-    itemB = false;
+    itemB = !!g.tool;
   let lift = 0,
     liftL = 0,
     liftR = 0;
@@ -927,6 +930,15 @@ function pose(g: Guy) {
       hr = [0.18, 0.42, 0.22];
       itemA = true;
       break;
+    case 'point': {
+      // An arm out ahead at shoulder height, the way he faces (the forge's foreman, forge-guide.ts), with a nudge.
+      const reach = Math.min(1, g.poseTime / 0.25),
+        nudge = Math.max(0, Math.sin(t * 2.4)) * 0.04;
+      hr = [0.24 - 0.08 * reach, 0.28 + 0.36 * reach, 0.02 + (0.46 + nudge) * reach];
+      pitch = -0.04 * reach;
+      tilt = -0.04 * reach;
+      break;
+    }
     case 'give':
       hr = [0.22, 0.65, 0.48];
       hl = [-0.2, 0.4, 0.18];

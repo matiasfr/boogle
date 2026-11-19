@@ -40,6 +40,10 @@ type Deps = {
   waits: () => 'boiler' | 'breaker' | null;
 };
 const COATS = ['#e2742e', '#d95f3c', '#e89a2c'] as const;
+/** The middle one, facing the part from the forge, is the crew's foreman (forge-guide.ts, owner 18 November: "The forge
+ * crew's foreman"): a deep blue coat among the oranges and a hammer always in hand, so he reads at a glance. His look is a
+ * placeholder for the owner's. */
+export const FOREMAN = { index: 1, coat: '#2f5d8a' } as const;
 
 export function createPartHoist(owner: OwnedView, { crane, land, waits }: Deps) {
   const px = LINE2_BOILER.x / 100,
@@ -67,8 +71,14 @@ export function createPartHoist(owner: OwnedView, { crane, land, waits }: Deps) 
   void import('../../place/folk.ts').then((k) => {
     if (!owner.alive) return;
     kit = k;
-    guys = spots.map((s, n) => k.addLooker(s.x, s.y, s.z, Math.atan2(px - s.x, pz - s.z), COATS[n % COATS.length]!));
-    for (const g of guys) g.on = false;
+    guys = spots.map((s, n) => {
+      const foreman = n === FOREMAN.index;
+      const yaw = Math.atan2(px - s.x, pz - s.z);
+      return k.addLooker(s.x, s.y, s.z, yaw, foreman ? FOREMAN.coat : COATS[n % COATS.length]!, {
+        on: false,
+        tool: foreman,
+      });
+    });
     owner.cleanup(() => {
       for (const g of guys) {
         const i = k.folk.guys.indexOf(g);
@@ -109,6 +119,8 @@ export function createPartHoist(owner: OwnedView, { crane, land, waits }: Deps) 
     }
   }
   return {
+    /** The foreman's body once the kit has loaded; forge-guide.ts directs him after `update`. */
+    foreman: () => guys[FOREMAN.index] ?? null,
     /** Snap to the state (first frame, reload, late join, resync): a waiting part is held already. */
     restore() {
       part = waits();
