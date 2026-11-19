@@ -105,6 +105,7 @@ export function createBoilerInstall(adapter: RailwayAdapter, owner: OwnedView) {
     if (!adapter.read.whole()) return;
     const sh = shed(adapter.read.world()),
       nextShown = sh.steel >= 1,
+      // A stack shows what lies in its own store, never the pool (`upgradePool`), which the screens count.
       next = steelPool(sh);
     if (next === count && shown === nextShown) return;
     count = next;

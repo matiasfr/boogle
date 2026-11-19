@@ -7,7 +7,8 @@
 import { leg, line, shed, trains, type ReadWorld } from '../../sim/railway-rows.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { LINE2 } from '../../sim/railway-lines.ts';
-import { installRevision, steelPool } from '../../sim/railway-works-layout.ts';
+import { installRevision } from '../../sim/railway-works-layout.ts';
+import { upgradePool } from '../../sim/railway-queries-works.ts';
 import { RAIL_LEGS } from '../../sim/railway-route.ts';
 import type { CatId, Phase, PartId, RoomFacts } from './garage-data.ts';
 
@@ -21,7 +22,8 @@ export function roomFacts(w: ReadWorld): RoomFacts {
     // The roll-out owns the table from the commission until the wagon has coupled.
     tableBusy: shed(w).ready >= 0 && !wagonCoupled,
     steelHome: shed(w).steel >= 1,
-    steel: steelPool(shed(w)),
+    // A screen counts the pool (every store of steel); a store's stack shows only what lies there.
+    steel: upgradePool(w),
     longFitted: boiler >= 2,
     boilerRev: boiler,
     installRev: installRevision(line(w, LINE2)),

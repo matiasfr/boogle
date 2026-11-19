@@ -196,7 +196,7 @@ upgrade you could pay for at one store you can still pay for.
 
 Each step leaves `node dev/ship-check.ts` green. The checkpoints carry the suites.
 
-- [ ] **1. The pool has one owner in the rules** (sim refactor; no state, op, wire, save or bump).
+- [x] **1. The pool has one owner in the rules** (sim refactor; no state, op, wire, save or bump).
   - `src/sim/railway-queries-works.ts`: `upgradePool(w)` returns Home's bay landed less spent (the `steelPool`
     formula, read from the world). `src/sim/railway-sys-steel.ts`: `install` checks `upgradePool(w)` and spends
     through one `spendUpgrade(w, n)` that writes `Shed.spent`. Draw order needs no code while there is one store.

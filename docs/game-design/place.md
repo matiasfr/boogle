@@ -1334,7 +1334,11 @@ sections to High Gorge are laid: 6 steel, 30 m/s, the same cars, adoption at the
 row is 3.5 m/s²; at cruise a request 128.57 m away is too late and one 128.58 m away can be served.
 The paid tiles show Later before their gate, a STEEL have/need bill without a button while short, Ready with the
 bill and Install when funded, and Installed after acceptance. Prices and capacities remain the plan's stand-ins.
-Every paid install debits the one landed-minus-spent pool. Landed steel still opens stage 2 and the longer boiler,
+Every paid install debits the one landed-minus-spent pool. An upgrade is paid from one world-wide pool of each kind,
+every hub store of that kind added together, and its price comes off those stores where they lie: the paying post's
+store first, then the others in catalog order ([shared pool](../plans/shared-pool.md#3-the-rule-for-builders)).
+Screens count the pool; a store's stack shows only what lies in that store, and nothing travels when a far store pays.
+Landed steel still opens stage 2 and the longer boiler,
 so spending cannot undo either. Bay 150° is open from stage 2 and holds the pool's stack. The boiler stand hides
 most of it from the post, so a low token pallet at the old apron position shows up to six blocks from that same
 pool. Both lose blocks when steel is spent; neither is a second stock. New solids clear an overlapping player first.
