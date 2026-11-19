@@ -316,12 +316,24 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     import('../../place/site-clearance.ts'),
     import('../../place/sites.ts'),
   ]);
-  /** Whether your body (its two spheres) stands in box `b` (the shared site clearance, src/place/site-clearance.ts). A
-   * standing piece's collider waits until you are out of it: nothing here may move you (no teleport in a view), and a
-   * solid that closed round you would hold you. */
-  const inBox = (b: GreyBox) =>
-    !!me.body &&
-    !!siteExit(
+  /** Whether your body (its two spheres) stands in box `b` (the shared site clearance, src/place/site-clearance.ts),
+   * measured in the box's own frame, pitch and all (a sea ramp's slip is pitched about 28°), as its collider is built
+   * (stand). A standing piece's collider waits until you are out of it: nothing here may move you (no teleport in a
+   * view), and a solid that closed round you would hold you. */
+  const toBox = new THREE.Quaternion(),
+    rel = new THREE.Vector3();
+  const inBox = (b: GreyBox) => {
+    if (!me.body) return false;
+    toBox.setFromEuler(euler.set(-(b.pitch ?? 0), b.yaw, 0)).invert();
+    const distance = (p: { x: number; y: number; z: number }) => {
+      rel.set(p.x - b.x, p.y - b.y, p.z - b.z).applyQuaternion(toBox);
+      return Math.hypot(
+        Math.max(0, Math.abs(rel.x) - b.w / 2),
+        Math.max(0, Math.abs(rel.y) - b.h / 2),
+        Math.max(0, Math.abs(rel.z) - b.d / 2),
+      );
+    };
+    return !!siteExit(
       me.body.position,
       { x: b.x, z: b.z, c: Math.cos(b.yaw), s: Math.sin(b.yaw), hw: 0, hd: 0 },
       b.y,
@@ -329,7 +341,9 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       outOf,
       undefined,
       0.02,
+      distance,
     );
+  };
   const deck = createBoxBatch(owner, 4800, false),
     things = createBoxBatch(owner, 700, false);
   // Named, so a look can count what the leg's views add to a frame (dev/look/evals/stack-draws.ts).
