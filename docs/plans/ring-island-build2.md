@@ -1,4 +1,4 @@
-> **Status, 18 November 2026 against origin/main 2a875bf53 (world v60):** R1–R5 and V1–V3 are on main (#1672), with later garage/fourth-car follow-ups (#1681, #1711). Checkpoints reconciled and run on HOTBOX on 18 November ([checkpoint run](#checkpoint-run-18-november-2026)). **Checkpoint B ticked** (check, perf at the island halt and the Roundhouse, the V1 and V3 looks; not tested on a device). **Checkpoint A ticked** (later on 18 November): check, `loop -- run` and the steel bot from `ring-joined` to `boiler-long` pass on main, and `test:net` now has the steel-yard carrier leaving mid-carry (`railwayCarrierLeaves`, 31 checks, pass, no defect); its "ship v28" no longer applies. Next: T (held for the owner's word on question 1). Ring Island
+> **Status, 18 November 2026 against origin/main 2a875bf53 (world v60):** R1–R5 and V1–V3 are on main (#1672), with later garage/fourth-car follow-ups (#1681, #1711). Checkpoints reconciled and run on HOTBOX on 18 November ([checkpoint run](#checkpoint-run-18-november-2026)). **Checkpoint B ticked** (check, perf at the island halt and the Roundhouse, the V1 and V3 looks; not tested on a device). **Checkpoint A ticked** (later on 18 November): check, `loop -- run` and the steel bot from `ring-joined` to `boiler-long` pass on main `2a875bf53` (world v60, not rerun on v61: the railhead re-route, #2218, has changed `src/sim/railway-sys-ring.ts` since), and on v61 `test:net` now has the steel-yard carrier leaving mid-carry (`railwayCarrierLeaves`, 31 checks, pass, no defect) and the host test for a leaver who never returns passes; its "ship v28" no longer applies. Next: T (held for the owner's word on question 1). Ring Island
 > build 2 as a systems-first greybox, `WORLD_NS` v31 (main took v28 for slice 5; v29 is the Quarry stone stop's and v30 is the riders step's). Its owner questions were answered on 12 November (UTC) ([below](#owner-questions)); steps
 > R1 to R5 do not wait for them. **Designer's review, 11 November: cleared to build;
 > [its rulings](#design-review-designer-2026-11-11) A to F are what gets built where a step below differs** (no footings
@@ -397,7 +397,12 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       `dev/peer-test/ws-railway.ts`, a host-only section of `test:net` (31 checks; the run 268 of 268). It passes and
       shows no defect: a yard carrier who loses their socket keeps the kit through the reconnect grace and feeds it on
       return; past the grace the kit stays on the departed account (no carry grace covers the yard's kit), conserved,
-      and the bill's need still owes it, so no stall. Ticked on that.
+      and the bill's need still owes it, so no stall (the net case shows `steelNeed` unchanged by the departure; the
+      host test "steel host (review): a leaver holding 8 logs and 8 rails forever does not stall the works",
+      `server/test/railway-steel-host.test.ts`, shows the need back at {8, 8}, line 2 bringing the kit and a present
+      player lighting the works with the leaver gone). Ticked on that. The check, the loop and the bot ran on main
+      `2a875bf53` (world v60); the net case and that host test ran on v61 (the railhead re-route, #2218, has changed
+      `src/sim/railway-sys-ring.ts` since), and those three were not rerun on v61.
 - [x] **V1. The works on the island (M, Mac).** Create `src/entities/ring-steel/{index,view}.ts`. Greybox boxes only:
       yard stacks drawn from `yardLogs`, `yardRails`, `yardFoot`; a bill sign over the works (the frame sign's
       have/need per material, `stock-sign.ts`'s pattern); the rack's steel blocks; a box jib for the loader between

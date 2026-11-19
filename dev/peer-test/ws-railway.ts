@@ -1283,10 +1283,22 @@ export async function railwayCarrierLeaves(c: Ctx) {
   railCheck('the take moves logs from the yard to the back, none made or lost', kit().yardLogs === STEEL.logs - logs);
   railCheck("every tab mirrors the carrier's back before the drop", await agree(pages, 'carry0'));
   const conns = await ev(K0.page, () => window.T.conn.length);
-  // A network loss: the socket closes without `bye`, and the page holds its reconnect for 1.2 s (the room's grace is
-  // 1.5 s, hosted-room.ts reconnectGraceMs).
-  await ev(K0.page, () => window.T.room.pause(1200));
-  railCheck("the carrier's socket is closed", (await waitFor(async () => !(await connected(K0)), 2000)) >= 0);
+  const players = () => c.hosted(roomId)!.status().players;
+  const before = players();
+  // A network loss: the socket closes without `bye`, and the page holds its reconnect for 0.6 s (the room's grace is
+  // 1.5 s, hosted-room.ts reconnectGraceMs; the page's own reconnect lands about 1.2 s after the close at the earliest).
+  await ev(K0.page, () => window.T.room.pause(600));
+  // The server must have handled the close before its rows are read: the room's connected clients lose the carrier's
+  // socket (or, should the reconnect win the race, a new socket has replaced it). A carrier departed at once, or kit
+  // cleared on departure, then shows in the next check, whichever way the race went.
+  railCheck(
+    "the server handles the carrier's socket closing",
+    (await waitFor(
+      async () => players() < before || (await ev(K0.page, (n: number) => window.T.conn.length >= n + 2, conns)),
+      5000,
+    )) >= 0,
+    `players ${before} -> ${players()}`,
+  );
   railCheck(
     'inside the grace the server keeps the logs on the absent back and the yard as it was',
     back('carry0').logs === logs && kit().yardLogs === STEEL.logs - logs && kit().logs === 0,
