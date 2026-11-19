@@ -198,8 +198,9 @@ function tickCarry(load: CarryReadout, now: number) {
           .filter((k) => load[k])
           .map((k) => `${load[k]} of ${load.capacity[k]} ${k}`)
           .join(', ') || 'Empty';
-    pauseBig.textContent = load.big ? bigName(load.big) : '';
-    pauseBig.hidden = !load.big;
+    // Big things show their name only, on the tag and in Pause.
+    bigLabel.textContent = pauseBig.textContent = load.big ? bigName(load.big) : '';
+    bigLabel.hidden = pauseBig.hidden = !load.big;
     for (const k of kinds) {
       pauseRowsBy[k].el.hidden = !!load.big || !load[k];
       fillRow(pauseRowsBy[k], load.capacity[k], load[k], false);
@@ -207,9 +208,7 @@ function tickCarry(load: CarryReadout, now: number) {
     pauseCarry.hidden = !load.big && !held;
     tag.setAttribute('aria-label', exact);
   }
-  // Big things show their name only; otherwise a row for each kind carried, or just refused or grown.
-  bigLabel.textContent = load.big ? bigName(load.big) : '';
-  bigLabel.hidden = !load.big;
+  // Otherwise a row for each kind carried, or just refused or grown.
   for (const k of kinds) {
     tagRows[k].el.hidden = !!load.big || (!load[k] && now >= rowUntil[k]);
     fillRow(tagRows[k], load.capacity[k], landed[k], true);
