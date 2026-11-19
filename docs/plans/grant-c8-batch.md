@@ -151,8 +151,8 @@ G33 (running uphill is faster, he liked it) and G35 (the free shop's "$0" never 
   No server, sim or saved-world reader, so the build is in scope. **One wall, a client golden:**
   `test/coast-regions.test.ts` pins the water shore's baked bytes (`COAST_BASELINE.texture` and `.sampled`), and the
   shore bake keeps every terrain height up to 25 m (`src/render/water/coast.ts`), so any regrade moves them. Its two
-  tests fail on this branch. The test's comment says to print and update the pins after an intentional terrain change;
-  the brief forbids changing assertions, so they are not updated here. New values if that is approved
+  tests failed on the builder's commit. The test's comment says to print and update the pins after an intentional
+  terrain change; the orchestrator reprinted them on the rebased branch and updated the two pins in the ship
   (`PRINT_COAST_BASELINE=1`): texture `ed69c3bf51851763f63cf691032122b25d776f16a34eae6abf0c15179fec41e4`, sampled
   `c122e3f04c01f51b76f06f86d5ba8727790c55e44cbe3fbfd3b2d78d5ed4872e` (width 2015, height 780 unchanged).
 - **Built (`claude/g28-cliff-bench`):** two inputs, no special case for one spot. (1) `strip()` takes an optional
