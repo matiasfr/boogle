@@ -8,24 +8,26 @@ export const YARD = {
   d: 7.4,
   floor: 0.14,
   slab: 4.5,
-  shed: { x0: -3.5, x1: 0.4, z0: -3.5, z1: 3.1, high: 3.3, post: 0.36, beam: 0.3, board: 0.16, eave: 0.4 },
+  /** Across the back of the plot, open to the road; only its back wall is boarded. */
+  shed: { x0: -3.5, x1: 3.3, z0: -3.5, z1: -0.4, high: 3.3, post: 0.36, beam: 0.3, board: 0.16, eave: 0.4 },
   /** The timber stack along the shed's back wall. */
-  stack: { dx: -1.55, dz: -2.75, w: 3, h: 0.66, d: 0.9 },
+  stack: { dx: -1.4, dz: -2.85, w: 3, h: 0.66, d: 0.9 },
   /** Bottom-centre of each footing: three on the slab, one on the seam of the front two, under the hook. */
   footing: { w: 0.8, body: 0.68, shoulder: 0.12 },
   footings: [
-    [2.3, 0, 1.5],
-    [3.2, 0, 1.5],
-    [2.75, 0, 2.45],
-    [2.75, 1, 1.5],
+    [-1.65, 0, 1.6],
+    [-0.75, 0, 1.6],
+    [-1.2, 0, 0.65],
+    [-1.2, 1, 1.6],
   ] as const,
-  /** The jib: a mast at the back of the yard, its boom out over the footings, a counterweight behind. */
-  jib: { x: 2.75, z: -2.6, top: 5.6, boomZ0: -3.5, boomZ1: 2.0, hookZ: 1.5, hookY: 2.35 },
+  /** The jib: a mast at the front corner by the road, its boom along the front over the footings, so a player on
+   * the ring road sees it side on; the counterweight past the mast. */
+  jib: { x: 2.9, z: 2.6, top: 5.6, boomX0: -2.2, boomX1: 3.6, hookX: -1.2, hookY: 2.35 },
 } as const;
 
 const { shed, footing, jib, floor } = YARD;
 export const shedPosts = (): [number, number][] =>
-  [shed.x0, shed.x1].flatMap((x) => [shed.z0, (shed.z0 + shed.z1) / 2, shed.z1].map((z): [number, number] => [x, z]));
+  [shed.x0, (shed.x0 + shed.x1) / 2, shed.x1].flatMap((x) => [shed.z0, shed.z1].map((z): [number, number] => [x, z]));
 export const shedCentre = { x: (shed.x0 + shed.x1) / 2, z: (shed.z0 + shed.z1) / 2 };
 /** The footing's layer height: its body plus the shoulders the next one sits on. */
 export const FOOTING_H = footing.body + footing.shoulder;
@@ -35,14 +37,14 @@ export const JIB_SOLIDS: YardBox[] = [
   { dx: jib.x, dy: floor + 0.25, dz: jib.z, hx: 0.55, hy: 0.25, hz: 0.55 },
   { dx: jib.x, dy: (floor + 0.5 + jib.top) / 2, dz: jib.z, hx: 0.21, hy: (jib.top - floor - 0.5) / 2, hz: 0.21 },
   {
-    dx: jib.x,
+    dx: (jib.boomX0 + jib.boomX1) / 2,
     dy: jib.top + 0.21,
-    dz: (jib.boomZ0 + jib.boomZ1) / 2,
-    hx: 0.21,
+    dz: jib.z,
+    hx: (jib.boomX1 - jib.boomX0) / 2,
     hy: 0.21,
-    hz: (jib.boomZ1 - jib.boomZ0) / 2,
+    hz: 0.21,
   },
-  { dx: jib.x, dy: jib.top - 0.35, dz: jib.boomZ0 + 0.35, hx: 0.45, hy: 0.35, hz: 0.3 },
+  { dx: jib.boomX1 - 0.24, dy: jib.top - 0.35, dz: jib.z, hx: 0.23, hy: 0.35, hz: 0.45 },
 ];
 
 /** Every solid box, centre and half extents above the plot's ground. The first is the slab. */

@@ -72,18 +72,18 @@ registerBuilder('railway.loader-parts', (p) => {
     box(root, 'slew', jib.x, jib.top - 0.08, jib.z, 0.62, 0.16, 0.62, iron);
     box(root, 'pinnacle', jib.x, jib.top + 0.9, jib.z, 0.2, 0.96, 0.2, paint);
     // Ties from the pinnacle to the boom's ends, thin iron like the arm's rope.
-    for (const end of [jib.boomZ1 - 0.15, jib.boomZ0 + 0.15]) {
+    for (const end of [jib.boomX0 + 0.15, jib.boomX1 - 0.15]) {
       const dy = 0.96,
-        dz = end - jib.z,
-        tie = box(root, 'tie', jib.x, jib.top + 0.42 + dy / 2, jib.z + dz / 2, 0.06, 0.06, Math.hypot(dy, dz), iron);
-      tie.rotation.x = dz > 0 ? Math.atan2(dy, dz) : -Math.atan2(dy, -dz);
+        dx = end - jib.x,
+        tie = box(root, 'tie', jib.x + dx / 2, jib.top + 0.42 + dy / 2, jib.z, Math.hypot(dy, dx), 0.06, 0.06, iron);
+      tie.rotation.z = dx < 0 ? Math.atan2(dy, -dx) : -Math.atan2(dy, dx);
     }
-    box(root, 'trolley', jib.x, jib.top - 0.06, jib.hookZ, 0.5, 0.16, 0.4, iron);
+    box(root, 'trolley', jib.hookX, jib.top - 0.06, jib.z, 0.4, 0.16, 0.5, iron);
     const rope = jib.top - 0.14 - (floor + jib.hookY);
-    box(root, 'rope', jib.x, floor + jib.hookY + rope / 2, jib.hookZ, 0.06, rope, 0.06, iron);
-    box(root, 'hook-bar', jib.x, floor + jib.hookY, jib.hookZ, 0.5, 0.12, 0.12);
+    box(root, 'rope', jib.hookX, floor + jib.hookY + rope / 2, jib.z, 0.06, rope, 0.06, iron);
+    box(root, 'hook-bar', jib.hookX, floor + jib.hookY, jib.z, 0.5, 0.12, 0.12);
     for (const x of [-0.22, 0.22])
-      box(root, 'hook-tip', jib.x + x, floor + jib.hookY - 0.12, jib.hookZ, 0.08, 0.28, 0.12, iron);
+      box(root, 'hook-tip', jib.hookX + x, floor + jib.hookY - 0.12, jib.z, 0.08, 0.28, 0.12, iron);
   } else throw new Error('loader-parts: unknown kind');
   return {
     object: root,

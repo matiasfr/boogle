@@ -229,9 +229,9 @@ export function createTownPlots(owner: OwnedView) {
         },
         ...yardHulls().slice(-YARD.footings.length - JIB_SOLIDS.length),
         {
-          dx: j.x,
+          dx: j.hookX,
           dy: (floor + j.hookY + j.top) / 2,
-          dz: j.hookZ,
+          dz: j.z,
           hx: 0.03,
           hy: (j.top - floor - j.hookY) / 2,
           hz: 0.03,
