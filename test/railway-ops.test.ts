@@ -1,3 +1,5 @@
+// 2026-11-19 v64 Rail yoke: the rail row's new yoke column (false in every stream) moves all 321 hashes; every label and
+// accepted count stays (keyed comparison with the v63 fixture, docs/plans/rail-yoke.md step 1).
 // 2026-11-15 v48: axe trace second hardwood now accepts 4 above comfort (formerly 0); four hashes follow.
 // The scripted op stream (docs/plans/ecs-migration-railway.md, M0 follow-up): the railway ops and lifecycle entry
 // points that no seed stage runs (or runs only to be refused), each driven here on a world a seed stage or the route's

@@ -20,6 +20,9 @@
 // all 82 trace lengths stay equal.
 // Re-recorded 19 November for v63 (a laying machine's 50-tick departure ease, G31/G32): the job rows' default timing
 // changes the world's hash from the first frame, so all 82 final hashes and 1,244 marks move; all 82 lengths stay equal.
+// Re-recorded 19 November for v64 (the Rail yoke, docs/plans/rail-yoke.md step 1): the rail row's new yoke column
+// (false: no trace takes it) changes the world's hash from the first frame, so all 82 final hashes and 1,244 marks move;
+// all 82 trace lengths stay equal.
 // The value is the trace's FNV hash per client, with a checkpoint every 25 frames so a difference can be found.
 import test from 'node:test';
 import assert from 'node:assert/strict';

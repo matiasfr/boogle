@@ -58,7 +58,7 @@ import { ENGINE, ENGINE_LONG_AHEAD } from '../src/entities/railway/engine.ts';
 import { LINE_HALTS, TRAIN_STOPS } from '../src/sim/railway-train.ts';
 import { WAGON_S } from '../src/sim/railway-works-layout.ts';
 import { CART_ROAD } from '../src/sim/railway-cart.ts';
-import { LINE2_FORGE } from '../src/sim/railway-line2-layout.ts';
+import { LINE2_FORGE, LINE2_YOKE } from '../src/sim/railway-line2-layout.ts';
 import { H } from '../src/place/terrain.ts';
 
 const bearingOf = (ux: number, uz: number) => ((((Math.atan2(ux, -uz) * 180) / Math.PI) % 360) + 360) % 360;
@@ -459,6 +459,14 @@ test("the forge rack stands off the island on road 2's outer side, abeam the car
   assert.ok(Math.abs(at.a - toAxis({ x: FORGE.x, z: FORGE.z + FORGE.d / 2 - 0.5 }).a) < 0.1, "abeam the forge's mouth");
   const sim = { x: LINE2_FORGE.rackX / 100 - ORIGIN.x, z: LINE2_FORGE.rackZ / 100 - ORIGIN.z };
   assert.ok(dist(sim, PROPS.rack) < 0.01, `the sim's point is ${dist(sim, PROPS.rack).toFixed(3)} m off the drawing`);
+});
+
+// docs/plans/rail-yoke.md: the Rail yoke's block on the rack's outer side, in sight of where Q2's rails are taken.
+test("the rail yoke's block is the sim's point, beside the forge rack", () => {
+  const sim = { x: LINE2_YOKE.x / 100 - ORIGIN.x, z: LINE2_YOKE.z / 100 - ORIGIN.z };
+  assert.ok(dist(sim, PROPS.yoke) < 0.01, `the sim's point is ${dist(sim, PROPS.yoke).toFixed(3)} m off the drawing`);
+  const off = dist(PROPS.yoke, PROPS.rack);
+  assert.ok(off > 2.5 && off < 3.4, `${off.toFixed(2)} m from the rack: inside its reach, off its footprint`);
 });
 
 test('the island stays open: no yard prop stands on it', () => {

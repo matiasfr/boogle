@@ -8,11 +8,11 @@ import type { RailAction } from '../src/sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../src/sim/railway-layout.ts';
 import { LINE1_STATIONS } from '../src/sim/railway-line-layout.ts';
 import { RAILS } from '../src/sim/railway-line2-layout.ts';
-import { Account, Pile } from '../src/sim/railway-components.ts';
+import { Account, Pile, Rail } from '../src/sim/railway-components.ts';
 import { WORKS_ROCKS } from '../src/sim/railway-works-layout.ts';
 import { LOOSE_PILE_CAPACITY } from '../src/sim/railway-supply.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
-import { advance, logs, type Seed } from '../src/sim/railway-seed-route.ts';
+import { advance, logs, railwayAtQ1Last, type Seed } from '../src/sim/railway-seed-route.ts';
 import { chopTo } from '../src/sim/railway-seed-works.ts';
 import { railPredict } from '../src/world/railway-predict.ts';
 import { accepted } from '../src/adapters/railway-effects.ts';
@@ -20,6 +20,7 @@ import {
   account,
   apply,
   beam,
+  forge,
   buildSeedWorld,
   capacityOf,
   hitYield,
@@ -154,6 +155,27 @@ test('capacities: the pack lifts logs to 16 and the breaker stone to 16; rails s
   assert.equal(send(works, 'a', 'rail.breaker'), 1);
   assert.deepEqual(caps(works.w), [16, 16, 8], 'the breaker is the stone step only');
   assert.equal(invariant(works.w), null);
+});
+
+test("capacities: the rail yoke lifts rails to 16 once Q1's bill is in", () => {
+  const s = railwayAtQ1Last();
+  assert.deepEqual(caps(s.w), [8, 8, 8]);
+  assert.equal(send(s, 'a', 'rail.yoke'), 0, "no yoke before Q1's bill");
+  assert.equal(rail(s.w).yoke, false);
+  assert.equal(send(s, 'a', 'rail.deposit', { station: 'Q1', kind: 2, n: 1 }), 1, 'the last rail');
+  assert.equal(send(s, 'a', 'rail.yoke'), 1);
+  assert.deepEqual(caps(s.w), [8, 8, 16], 'the yoke is the rails step only');
+  assert.equal(send(s, 'b', 'rail.yoke'), 0, 'one yoke for two openers');
+  // The forge rack gives up to a back's 16 rails, its count permitting.
+  while (forge(s.w).rack < 16) advance(s, 1);
+  const before = account(s.w, 'a')!.rails;
+  assert.equal(send(s, 'a', 'rail.forgeTake'), 16 - before);
+  assert.equal(account(s.w, 'a')!.rails, 16);
+  assert.equal(invariant(s.w), null);
+  const saved = restore(s.w);
+  assert.equal(account(saved, 'a')!.rails, 16, 'a save with 16 rails on a back loads');
+  saved.mut(Rail, saved.single(Rail))!.yoke = false;
+  assert.throws(() => railwayCheck(saved), /accounts/, '16 rails without the yoke');
 });
 
 test('capacities: a kiln feed of 16 logs and 16 stone is one accepted action, inside the wire bound', () => {

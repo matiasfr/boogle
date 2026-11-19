@@ -1,5 +1,5 @@
 {
-  "worldNs": "v63",
+  "worldNs": "v64",
   "components": [
     {
       "kind": "rail",
@@ -35,7 +35,8 @@
         ["out6", "int"],
         ["pack", "bool"],
         ["depotRails", "int"],
-        ["shelfOut", "int"]
+        ["shelfOut", "int"],
+        ["yoke", "bool"]
       ]
     },
     {

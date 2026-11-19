@@ -53,12 +53,14 @@ export function logs(s: Seed, pid: string, station: string, n: number) {
     n -= moved;
   }
 }
+/** A take at the forge rail rack, waiting for a pour first if it is empty. */
+function forgeTake(s: Seed, pid: string) {
+  if (!forge(s.w).rack) advance(s, LINE2_FORGE.pourTicks * 8);
+  need(act(s, pid, 'rail.forgeTake') > 0, 'forge: rails taken');
+}
 export function rails(s: Seed, pid: string, station: string, n: number) {
   while (n > 0) {
-    if (!account(s.w, pid)!.rails) {
-      if (!forge(s.w).rack) advance(s, LINE2_FORGE.pourTicks * 8);
-      need(act(s, pid, 'rail.forgeTake') > 0, 'forge: rails taken');
-    }
+    if (!account(s.w, pid)!.rails) forgeTake(s, pid);
     const moved = act(s, pid, 'rail.deposit', { station, n: Math.min(n, account(s.w, pid)!.rails), kind: 2 });
     need(moved > 0, `${station} took rails`);
     n -= moved;
@@ -97,10 +99,11 @@ export function railwayAtForgeLast(last: 'frame' | 'lit'): Seed {
   need(invariant(s.w) === null, `railwayAtForgeLast ${last}: invariant`);
   return s;
 }
-/** Players `a` and `b`, at Q2 with nothing delivered there yet. */
-export function railwayAtQ2(): Seed {
-  const s = railwayAtForgeBill(),
-    w = s.w;
+/** Look and tests: the forge lit, the axe taken, Q1's 16 logs and 5 of its 6 rails in, and `a` carrying rails from
+ * the rack (taken as `rails` would take them for the sixth), so a deposit plays the live edge that makes the Rail
+ * yoke. */
+export function railwayAtQ1Last(): Seed {
+  const s = railwayAtForgeBill();
   logs(s, 'a', 'F', LINE2_FORGE.logs);
   // The proper axe is the lit forge's first made thing (railAxeAvailable, since the great beam pass, 7 November):
   // taken at its pedestal as the forge lights, as a player meets it. Until 18 November the seeds asked for it at
@@ -109,7 +112,23 @@ export function railwayAtQ2(): Seed {
   need(act(s, 'a', 'rail.axe') === 1, 'the proper axe taken at the lit forge');
   advance(s, LINE2_FORGE.turnTicks);
   logs(s, 'b', 'Q1', 16);
-  rails(s, 'a', 'Q1', 6);
+  rails(s, 'a', 'Q1', LINE2_STATIONS[0]!.bill[1] - 1);
+  if (!account(s.w, 'a')!.rails) forgeTake(s, 'a');
+  need(qjob(s.w, 0).start < 0, "Q1's bill still owed");
+  need(invariant(s.w) === null, 'railwayAtQ1Last: invariant');
+  return s;
+}
+/** railwayAtQ1Last and its last rail: Q1's bill in, its stretch laying. */
+export function railwayAtQ1Funded(): Seed {
+  const s = railwayAtQ1Last();
+  rails(s, 'a', 'Q1', 1);
+  need(qjob(s.w, 0).start >= 0, "Q1's bill in");
+  return s;
+}
+/** Players `a` and `b`, at Q2 with nothing delivered there yet. */
+export function railwayAtQ2(): Seed {
+  const s = railwayAtQ1Funded(),
+    w = s.w;
   advance(s, layTicks(w, 0));
   need(qjob(w, 0).completion === 1, 'Q1 laid');
   need(invariant(w) === null, 'railwayAtQ2: invariant');

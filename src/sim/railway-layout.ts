@@ -4,8 +4,16 @@
 // Terrain-clean step 5 removes twelve ordinary trees cleared by the widened benches; survivors keep their IDs.
 export const RAILWAY_CATALOG = 1;
 /** What a back holds of each kind (separate capacities, owner 17 November 2026): logs 8, 16 once the pack chest is
- * open; stone 8, 16 once the breaker is taken; rails 8. A full kind refuses only that kind. */
-export const RAILWAY_CAPACITY = { logs: 8, logsPack: 16, stone: 8, stoneBreaker: 16, rails: 8 } as const;
+ * open; stone 8, 16 once the breaker is taken; rails 8, 16 once the Rail yoke is taken. A full kind refuses only that
+ * kind. */
+export const RAILWAY_CAPACITY = {
+  logs: 8,
+  logsPack: 16,
+  stone: 8,
+  stoneBreaker: 16,
+  rails: 8,
+  railsYoke: 16,
+} as const;
 /** Pieces a hit gives: 1 at first, 2 once Station 3 is funded (the keener edge), 5 from trees with the proper axe. */
 export const RAILWAY_YIELD = { first: 1, edge: 2, axe: 5 } as const;
 export const RAILWAY_T1 = {

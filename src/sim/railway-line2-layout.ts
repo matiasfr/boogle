@@ -172,6 +172,12 @@ export const depotReach = (s: Line2Station) => {
  * owner's review, 18 November; was 91400, -900, against the forge's south wall, Place ladder.ts CHEST_AT.pack). A
  * position only, no saved field holds it: the server judges `rail.pack` from here, as the client's prompt does. */
 export const LINE2_PACK = { x: 92200, z: -1760, carry: RAILWAY_CAPACITY.logsPack } as const;
+/** The Rail yoke's block beside the forge rail rack: Q1's bill puts it there, and taking it gives everyone in the world
+ * a back that carries RAILWAY_CAPACITY.railsYoke rails instead of 8 (docs/plans/rail-yoke.md). On the rack's outer side,
+ * square to it and 3.0 m from its centre, in sight of where Q2's rails are taken. The world centimetres of Place's
+ * `PROPS.yoke` (src/place/home-station.ts; test/home-station.test.ts pins them together). A position only, no saved
+ * field holds it: the server judges `rail.yoke` from here, as the client's prompt does. */
+export const LINE2_YOKE = { x: 91958, z: 1856, reach: 340 } as const;
 /** The lever on the quarry apron (2.2 m up), and the hook device on pillar p2's top. p2 stands 11 m left of line 2 at
  * s 89.5 since the second track's formation (generic-lines step 2, 10 November; was 7 m at s 92, device at 99954, 2086,
  * 2350): a position only, no saved field holds it. */

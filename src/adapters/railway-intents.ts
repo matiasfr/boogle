@@ -35,6 +35,7 @@ export type RailwayIntent =
         | 'rail.hook'
         | 'rail.glide'
         | 'rail.pack'
+        | 'rail.yoke'
         | 'rail.breaker'
         | 'rail.kiln'
         | 'rail.cradle'
@@ -100,7 +101,8 @@ export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
     e.op === 'rail.hook' ||
     e.op === 'rail.glide' ||
     e.op === 'rail.depotRailTake' ||
-    e.op === 'rail.pack'
+    e.op === 'rail.pack' ||
+    e.op === 'rail.yoke'
   )
     return { op: e.op };
   if (e.op === 'rail.call' && railInt(e.id, LINE_HALTS.length - 1) && (e.dir === -1 || e.dir === 1))
@@ -184,6 +186,7 @@ export const NOT_MATERIAL: ReadonlySet<string> = new Set([
   'rail.hook',
   'rail.glide',
   'rail.pack',
+  'rail.yoke',
   'rail.boilerTake',
   'rail.boilerDrop',
   'rail.boilerFit',
@@ -250,6 +253,7 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
     depotTake: () => submit({ op: 'rail.depotTake' }),
     depotRailTake: () => submit({ op: 'rail.depotRailTake' }),
     openPack: () => submit({ op: 'rail.pack' }),
+    takeYoke: () => submit({ op: 'rail.yoke' }),
     takeBoiler: (revision: number) => railInt(revision) && submit({ op: 'rail.boilerTake', revision }),
     dropBoiler: (x: number, y: number, z: number, revision: number) =>
       railInt(revision) &&

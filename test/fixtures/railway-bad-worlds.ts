@@ -268,6 +268,12 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     break: (w) => set(w, Rail, { pack: true }),
   },
   {
+    site: 'line2 yoke',
+    message: 'railway: yoke before the Q1 bill',
+    stage: A,
+    break: (w) => set(w, Rail, { yoke: true }),
+  },
+  {
     site: 'line2 shelf bounds',
     message: 'railway: shelf bounds',
     stage: A,

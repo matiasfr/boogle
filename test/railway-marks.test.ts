@@ -37,6 +37,7 @@ test('accepted railway actions map amounts and material without identifying the 
     'lever',
     'seaSwitch',
     'pack',
+    'yoke',
     'depotTake',
     'depotRailTake',
   ] as const;

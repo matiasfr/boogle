@@ -21,6 +21,7 @@ import {
   LINE2_GLIDE,
   LINE2_HOOK,
   LINE2_PACK,
+  LINE2_YOKE,
   LINE2_AXE,
   LINE2_BOILER,
   LINE2_OLD_TRAIN,
@@ -118,6 +119,7 @@ export const RAIL_ACTIONS = new Set([
   'rail.glide',
   'rail.depotRailTake',
   'rail.pack',
+  'rail.yoke',
   'rail.boilerTake',
   'rail.boilerDrop',
   'rail.boilerFit',
@@ -267,6 +269,8 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     }
     case 'rail.pack':
       return near(LINE2_PACK.x, LINE2_PACK.z, 340);
+    case 'rail.yoke':
+      return near(LINE2_YOKE.x, LINE2_YOKE.z, LINE2_YOKE.reach);
     case 'rail.lever':
       return height(LINE2_LEVER.y) && near(LINE2_LEVER.x, LINE2_LEVER.z, 320);
     case 'rail.seaSwitch':

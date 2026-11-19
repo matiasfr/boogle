@@ -14,7 +14,14 @@ import { railwayCheck } from '../../src/sim/railway-check.ts';
 import { Pile, Rail } from '../../src/sim/railway-components.ts';
 import { railMaxDuration } from '../../src/sim/railway-queries-line1.ts';
 import { line2Active, line2Rails, line2SeaOpen, railCounts } from '../../src/sim/railway-queries-line2.ts';
-import { LINE2_FORGE, LINE2_PACK, LINE2_STATIONS, LINE2_SEA } from '../../src/sim/railway-line2-layout.ts';
+import {
+  LINE2_FORGE,
+  LINE2_PACK,
+  LINE2_STATIONS,
+  LINE2_SEA,
+  LINE2_YOKE,
+  RAILS,
+} from '../../src/sim/railway-line2-layout.ts';
 import { CART_PHASE, cartCycleTicks } from '../../src/sim/railway-cart.ts';
 import {
   buildSeedWorld,
@@ -26,10 +33,12 @@ import {
   qjob,
   rail,
   railClock,
+  railwayAtQ1Funded,
   railwayAtQ4,
   railwayAtQ5,
   railwayAtTrains,
   trees,
+  capacityOf,
   type Seed,
 } from '../../test/helpers/rail.ts';
 import { setImmediate } from 'node:timers/promises';
@@ -539,6 +548,83 @@ test('line host: the pack and Q4 judged where their actor stands; gate, shelf an
     assert.equal(qjob(world(), 3).railStock, 8);
     assert.equal(rail(world()).lever, false);
     assert.equal(railCounts(world()).rails!.total, rails.total);
+  } finally {
+    await host.close({ save: false }).catch(() => {});
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('line host: the rail yoke judged where its taker stands, once; 16 rails a back survive a restart', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-host-yoke-'));
+  const store = createStore({ dataDir: dir, maxRooms: 2 });
+  await store.init();
+  const roomId = railwayRoomId('line-host-yoke');
+  let now = 1800000000000;
+  const sent: Obj[] = [];
+  const sessions = new Map<string, { epoch: number; request: number }>();
+  const create = () => {
+    const value = createRailwayWorldHost({ roomId, store, tick: false, now: () => now, pidOf: () => 'a' });
+    value.onSend((message) => sent.push(message));
+    return value;
+  };
+  let host = create();
+  const world = () => host.rules.railway.world(); // read again each time: a restart replaces it
+  const ticks = async (n: number) => {
+    for (let i = 0; i < n; i++) {
+      now += 100;
+      host.step(0.1);
+    }
+    await host.sync.whenDurable();
+  };
+  const open = async (sid: string) => {
+    host.deliver({ t: 'r:open' }, sid);
+    await ticks(3);
+    const response = sent.findLast((m) => m.t === 'r:session' && m.to === sid);
+    assert.ok(response);
+    sessions.set(sid, { epoch: Number(response.epoch), request: 0 });
+  };
+  /** An action from where its actor stands (cm); resolves to the recorded outcome. */
+  const edit = async (sid: string, e: Obj, at: [number, number, number]) => {
+    const session = sessions.get(sid)!;
+    const request = ++session.request;
+    now += 1000; // past every cadence
+    host.deliver({ t: 'r:edit', e: { ...e, epoch: session.epoch, request, at, ms: now - 1800000000000 } }, sid);
+    await ticks(3);
+    assert.equal(invariant(world()), null);
+    return host.rules.railway.outcome('a', session.epoch, request)!;
+  };
+  try {
+    await host.whenReady();
+    const w = railwayAtQ1Funded();
+    while (host.sync.world.tick < w.t) await ticks(1);
+    world().load(JSON.parse(JSON.stringify(w.w.snapshot())), railwayCheck);
+    host.rules.railway.touchAll();
+    await open('s1');
+    const q4 = LINE2_STATIONS[3]!;
+    const yoke: [number, number, number] = [LINE2_YOKE.x, 0, LINE2_YOKE.z];
+    assert.equal((await edit('s1', { op: 'rail.yoke' }, [q4.x, 0, q4.z])).status, 'rejected', "from Q4's frame");
+    assert.equal(rail(world()).yoke, false);
+    assert.equal((await edit('s1', { op: 'rail.yoke' }, yoke)).status, 'accepted');
+    assert.equal(rail(world()).yoke, true);
+    assert.equal(capacityOf(world(), RAILS), 16);
+    assert.equal((await edit('s1', { op: 'rail.yoke' }, yoke)).status, 'noop', 'taken once, for the room');
+    // The forge rack fills the back to 16, more than the old row of 8 in one take, once it holds them.
+    const before = host.rules.railway.account('a')!.rails;
+    while (forge(world()).rack < 16 - before) await ticks(10);
+    const take = await edit('s1', { op: 'rail.forgeTake' }, [LINE2_FORGE.rackX, 0, LINE2_FORGE.rackZ]);
+    assert.deepEqual([take.status, take.accepted], ['accepted', 16 - before]);
+    assert.ok(take.accepted > 8, `${take.accepted} rails in one take`);
+    const carried = host.rules.railway.account('a')!.rails;
+    assert.equal(carried, 16);
+    const rails = railCounts(world()).rails!;
+    assert.equal(rails.total, rails.poured);
+    // A restart keeps the yoke and the rails on the back.
+    await host.close({ save: true });
+    host = create();
+    await host.whenReady();
+    assert.equal(rail(world()).yoke, true);
+    assert.equal(host.rules.railway.account('a')!.rails, carried);
+    assert.equal(capacityOf(world(), RAILS), 16);
   } finally {
     await host.close({ save: false }).catch(() => {});
     await fs.rm(dir, { recursive: true, force: true });

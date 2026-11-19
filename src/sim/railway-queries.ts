@@ -81,16 +81,18 @@ export const FOOT = 3;
 /** What a back holds of `kind`. */
 export const balanceOf = (a: Readonly<AccountRow>, kind: number) =>
   kind === STONE ? a.stone : kind === RAILS ? a.rails : kind === FOOT ? a.foot : a.carry;
-/** The most a back ever holds of one kind (logs with the pack, stone with the breaker): the wire's bound on a count. */
-export const MAX_KIND_CAPACITY = Math.max(CAPACITY.logsPack, CAPACITY.stoneBreaker, CAPACITY.rails);
+/** The most a back ever holds of one kind (logs with the pack, stone with the breaker, rails with the yoke): the
+ * wire's bound on a count. */
+export const MAX_KIND_CAPACITY = Math.max(CAPACITY.logsPack, CAPACITY.stoneBreaker, CAPACITY.railsYoke);
 /** The most one action ever moves: every kind a back holds at once (`rail.kiln` takes logs and stone together, up to
  * 32, and `rail.steel` logs and rails), the bound on an outcome's and an event's accepted count. */
 export const MAX_ACCEPTED = 3 * MAX_KIND_CAPACITY;
 /** What a back holds of `kind` (separate capacities, owner 17 November 2026): logs 8, 16 once the pack chest is open;
- * stone 8, 16 once the breaker is taken; rails 8; one footing. The room's, so late joiners have it too. */
+ * stone 8, 16 once the breaker is taken; rails 8, 16 once the Rail yoke is taken; one footing. The room's, so late
+ * joiners have it too. */
 export function capacityOf(w: World, kind: number) {
   if (kind === FOOT) return 1;
-  if (kind === RAILS) return CAPACITY.rails;
+  if (kind === RAILS) return w.get(Rail, railId(w))!.yoke ? CAPACITY.railsYoke : CAPACITY.rails;
   if (kind === STONE) return w.get(Works, worksId(w))!.breaker === 2 ? CAPACITY.stoneBreaker : CAPACITY.stone;
   return w.get(Rail, railId(w))!.pack ? CAPACITY.logsPack : CAPACITY.logs;
 }
