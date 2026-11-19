@@ -133,7 +133,7 @@ pays most of it back (−45 loaded metres, about 16 s). Trees still hold 10 logs
 are unchanged; a tree takes 10 hits instead of 5 until the edge. The model counts one material per trip, so it
 understates the plan: a Station 2 trip can now bring 8 logs and 8 stone together (5 trips can become 4), a Q1 trip 16
 logs and 6 rails. Today's optional heavy load is no loss on the measured geometry
-([heavy-load.ts](../../dev/loop/heavy-load.ts): comfort was already faster on every early log bill; heavy saved about
+(`dev/loop/heavy-load.ts`, since removed in #2152: comfort was already faster on every early log bill; heavy saved about
 1.4 s at Q2 and Q5 only).
 
 ### Presentation (Local, over the replicated rows)

@@ -1,4 +1,4 @@
-> **Status: planned 18 November 2026 (design sub-agent); sittings 1 (G27), 2 (G25's look) and 3 (G20, G22's hint) built 18 November.** Four items are ready in three sittings (G27,
+> **Status: planned 18 November 2026 (design sub-agent); sittings 1 (G27), 2 (G25's look) and 3 (G20, G22's hint) built 18 November; G28 (#2282), G31 and G32 (#2293, world v63) and G20's notch and chips (#2287, #2296) on main 19 November; G34 closed by the owner.** Four items are ready in three sittings (G27,
 > G25's look, G20, G22's hint); G24 and G30 are already answered on main; G28, G31, G32 and G34 wait on the owner or
 > are his own rows. Checked against `origin/main` at `df94d5816` (world v60). Source: [queue](grant-1114-queue.md)
 > C8, rows G20 to G34 in [round-4-notes](round-4-notes.md#grants-playtest-14-november-his-granola-call-ranked-queued-15-november).
