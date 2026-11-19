@@ -51,6 +51,8 @@ export async function createRailwayWorksLive(
   return {
     /** Where the footing wagon's loads hop from and to: the Works rack and the pier rack. */
     footPlaces: { works: works.rackSlot, pier: crossing.rackSlot, ring: railhead.rackSlot },
+    /** The junctions these views draw (the railhead's J10, the greybox stack's J12), for turnout-blades.ts. */
+    points: [...railhead.points, ...leg.points],
     crossingInspect: () => crossing.inspect().crossingView,
     restore() {
       for (const view of views) view.restore();

@@ -4,6 +4,8 @@ import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { material } from '../../render/materials.ts';
 
+type XYZ = { x: number; y: number; z: number };
+
 /** One draw of moving coloured boxes, rewritten each frame from state: slabs, footings, vehicles and frames.
  * Never culled (its pieces travel); no colliders, which their owners add and remove from state. */
 export function createBoxBatch(owner: OwnedView, max: number, shadows = true) {
@@ -48,6 +50,24 @@ export function createBoxBatch(owner: OwnedView, max: number, shadows = true) {
       out.compose(p.set(x, y, z), q.setFromEuler(e.set(pitch, yaw, roll)), s.set(w, h, d));
       mesh.setMatrixAt(n, out);
       mesh.setColorAt(n++, c.set(colour));
+    },
+    /** A box from world point `a` to `b` (its centreline), `w` across and `h` high, `dy` over them, pitched along. */
+    between(a: XYZ, b: XYZ, w: number, h: number, colour: string, dy = 0) {
+      const dx = b.x - a.x,
+        dz = b.z - a.z,
+        rise = b.y - a.y,
+        run = Math.hypot(dx, dz);
+      batch.box(
+        (a.x + b.x) / 2,
+        (a.y + b.y) / 2 + dy,
+        (a.z + b.z) / 2,
+        w,
+        h,
+        Math.hypot(run, rise),
+        colour,
+        Math.atan2(dx, dz),
+        -Math.atan2(rise, run),
+      );
     },
     /** A box in a parent frame (`frame` maps local metres to world). */
     part(frame: THREE.Matrix4, x: number, y: number, z: number, w: number, h: number, d: number, colour: string) {

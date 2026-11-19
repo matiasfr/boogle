@@ -1,24 +1,48 @@
-// The junction list (src/place/junctions.ts; docs/plans/turnouts.md, steps 2 and 6): the list, its line ends against
-// the sim's catalog, the J3 and J4 cluster's shared timbers, which side each lever stands, and which road the points
-// lie for (routeOf). Each junction's frog, clear and radius are `npm run level-check`'s table; the parts' geometry is
+// The junction list (src/place/junctions.ts; docs/plans/turnouts.md, steps 2, 6 and 7): the list, its line ends against
+// the sim's catalog and line 2's crossovers past the pier head against the trains' path, the J3 and J4 cluster's shared
+// timbers, which side each lever stands, and which road the points lie for (routeOf), the railhead's as its head moves. Each junction's frog, clear and radius are `npm run level-check`'s table; the parts' geometry is
 // seen in a look.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { junctions } from '../src/place/junctions.ts';
+import { junctions, seaCrossovers } from '../src/place/junctions.ts';
 import { KIT, turnout } from '../src/place/turnout.ts';
 import { FORMATION, LINKS, offsetLat } from '../src/place/layout.ts';
 import { LINE2, RAIL_LINES } from '../src/sim/railway-lines.ts';
 import { sleeperStations } from '../src/entities/railway/track-panels.ts';
-import { line2Lat } from '../src/entities/railway/line2-path.ts';
+import { RING_S, line2Lat } from '../src/entities/railway/line2-path.ts';
+import { crossoverSpan, headU } from '../src/entities/railway/railhead-shape.ts';
+import { RING_HEAD } from '../src/sim/railway-ring-layout.ts';
 import { routeOf, type PointsTrain, type RouteRows } from '../src/entities/railway/turnout-route.ts';
 
 const all = junctions();
 
-test('the list is J1 to J9, each once', () => {
+test('the list is J1 to J12, each once', () => {
+  const sea = ['J10', 'J11', 'J12.1', 'J12.2', 'J12.3', 'J12.4'].flatMap((id) => [id + 'a', id + 'b']);
   assert.deepEqual(
     all.map((j) => j.id),
-    ['J1', 'J2', 'J3', 'J4', 'J5', 'J6', 'J7', 'J8', 'J9'],
+    ['J1', 'J2', 'J3', 'J4', 'J5', 'J6', 'J7', 'J8', 'J9', ...sea],
   );
+});
+
+test("line 2's ends past the pier head each have a crossover on the trains' path", () => {
+  // A homeward train leaving each end (its origin) is on the up track at the crossover's first toe and on the down
+  // track at its second, and eases across between them as the crossover's own centre does (line2-path.ts line2Lat).
+  const halts = RAIL_LINES[LINE2]!.halts,
+    sea = seaCrossovers();
+  const ends = halts.flatMap((h, k) => (h.end && h.end.mergeCm / 100 > RING_S ? [k] : []));
+  assert.equal(sea.length, ends.length);
+  ends.forEach((k, i) => {
+    const c = sea[i]!,
+      stops = halts.slice(0, k + 1).map((h) => h.s),
+      lat = (s: number) => line2Lat({ track: 1, origin: halts[k]!.s }, s, stops);
+    for (let s = c.s0; s <= c.s1 + 1e-6; s += 0.5)
+      assert.ok(Math.abs(lat(s) - c.lat(s)) < 1e-6, `${c.id} at s ${s}: train ${lat(s)}, crossover ${c.lat(s)}`);
+    assert.equal(c.a.s, c.s0);
+    assert.equal(c.b.s, c.s1);
+  });
+  // The railhead's is listed at its first head, as railhead-shape.ts places it from the deck's end.
+  const j10 = sea.find((c) => c.id === 'J10')!;
+  assert.deepEqual([j10.s0, j10.s1], crossoverSpan(headU(0)).map((u) => u + RING_S));
 });
 
 test('every line end the layout draws has a junction', () => {
@@ -64,11 +88,12 @@ test('one timber per station in a cluster (J3 with J4)', () => {
   assert.ok(shared >= 3, `the zones share ${shared} stations`);
 });
 
-test('J2 to J9: the lever stands away from the road that leaves (designer call 3)', () => {
+test('J2 to J9: the lever stands away from the road that leaves (designer call 3); J10 to J12 between the tracks', () => {
   // J3's lever box already stands on line 1's west, away from the leg (home-station-view.ts, LEG.from + 1.5 at -2.4).
+  // Past the pier head the side away from the other track is the deck's edge, so those stand between the two.
   for (const j of all.filter((x) => x.id !== 'J1')) {
     const tj = turnout(j.through, j.diverging, j.lever);
-    assert.equal(j.lever, -tj.hand, `${j.id}: lever ${j.lever} on the diverging road's side (hand ${tj.hand})`);
+    assert.equal(j.lever, j.view ? tj.hand : -tj.hand, `${j.id}: lever ${j.lever}, hand ${tj.hand}`);
   }
 });
 
@@ -94,8 +119,7 @@ test('a homeward train within 60 m sets the stub for the offset track', () => {
 });
 
 test('no train rests it for the through road', () => {
-  for (const id of ['J1', 'J2', 'J3', 'J4', 'J5', 'J6', 'J7', 'J8', 'J9'])
-    assert.equal(routeOf(points(id), rows([])), 0, id);
+  for (const { id } of all) assert.equal(routeOf(points(id), rows([])), 0, id);
 });
 
 test('an outward train trailing through sets it back', () => {
@@ -126,5 +150,27 @@ test("Far Head's crossover follows crossing()", () => {
   ] as const) {
     const r = rows([train([...stops], origin)]);
     assert.deepEqual([routeOf(points('J7'), r), routeOf(points('J8'), r)], [crosses, crosses], `${stops.length} stops`);
+  }
+});
+
+test("the railhead's points follow the head: a train leaving each head crosses at its own", () => {
+  // J10 is listed at the first head; turnout-blades.ts moves it with the deck's end (TrackPoint.moved), and routeOf
+  // reads it there. A homeward train leaving head k, its front 10 m short of its stop, takes the crossover at head k:
+  // J10b on the down track sets for it there, and not where the first head's would be.
+  const halts = RAIL_LINES[LINE2]!.halts.map((h) => h.s);
+  const railhead = RAIL_LINES[LINE2]!.halts.findIndex((h) => h.name === 'Railhead');
+  for (const k of [0, 3, 7]) {
+    const head = RING_HEAD[k]!,
+      stops = [...halts.slice(0, railhead), head.s];
+    const tr: PointsTrain = {
+      line: LINE2,
+      s: head.s / 100 - 10,
+      dir: -1,
+      lat: (x) => line2Lat({ track: 1, origin: head.s }, x, stops),
+    };
+    const b = points('J10b'),
+      moved = headU(k) - headU(0);
+    assert.equal(routeOf({ j: { ...b.j, s: b.j.s + moved }, t: b.t }, rows([tr])), 1, `head ${k}`);
+    if (k) assert.equal(routeOf(b, rows([tr])), 0, `head ${k}: not at the first head's`);
   }
 });

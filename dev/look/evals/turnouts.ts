@@ -19,6 +19,9 @@
 //                  over the open stall's join and the deck
 //   at=table-top   the table from straight above: the rim, its kerb and every road's join
 //   at=table-join&b=190  one road's join (b: its bearing) at a crouching player's eye, beside it outside the rim
+//   at=railhead    the railhead's crossover (J10, step 7) from a player's eye on the railhead platform's back end,
+//                  looking back along the deck at J10b near and J10a beyond (wherever the head stands now)
+//   at=cross-top&id=J12.1a  a sea crossover (J10, J11, J12.1 to J12.4) from straight above its middle, both toes in view
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
@@ -50,6 +53,7 @@ const by =
   (id: string) =>
   (d: number, lat: number, up = 0): V => {
     const j = pick(id);
+    d += moved(id);
     const a = j.through(d - 0.05),
       b = j.through(d + 0.05),
       p = j.through(d),
@@ -57,6 +61,17 @@ const by =
     const t = { x: (b.x - a.x) / len, z: (b.z - a.z) / len };
     return { x: p.x - t.z * lat, y: p.y + up, z: p.z + t.x * lat };
   };
+/** J10 is listed at the railhead's first head and moves with it (railhead-view.ts): how far it has come. */
+const rh = (await import(
+  '/src/entities/railway/railhead-state.ts' as string
+)) as typeof import('../../../src/entities/railway/railhead-state.ts');
+const shape = (await import(
+  '/src/entities/railway/railhead-shape.ts' as string
+)) as typeof import('../../../src/entities/railway/railhead-shape.ts');
+const moved = (id: string) => {
+  const j = pick(id);
+  return j.view === 'railhead' && rh.railheadDrawn.live ? j.dir * (rh.railheadEnd() - shape.headU(0)) : 0;
+};
 const j1 = by('J1');
 const id = query.get('id') ?? 'J4';
 /** Junction `id`'s frame mirrored so its diverging road leaves to the left, as J4's does: the framings below are
@@ -66,6 +81,8 @@ const mirrored = (d: number, lat: number, up = 0) => by(id)(d, -hand * lat, up);
 
 let stand: V, eye: V, look: V;
 let fov = 60;
+/** Stand Buddy at `stand`'s own height (a deck over the sea), not on the ground under it. */
+let onDeck = false;
 if (at === 'spur') {
   stand = j1(1.2, 2.6);
   eye = j1(-3.2, -0.2, 1.6);
@@ -158,6 +175,27 @@ if (at === 'spur') {
   eye = f(-3, -2.6, 2.3);
   look = f(13, 1.6, 0);
   fov = 58;
+} else if (at === 'railhead') {
+  // The railhead platform (lat +1.8 to +6.3, 25 m back from the deck's end, 0.9 m up) begins 5 m past J10b's toe
+  // toward the end; J10b's through road (the down track) runs home, so the platform is to its left.
+  const f = by('J10b');
+  stand = f(-7.5, -4.6, 0.9);
+  eye = f(-5.5, -3.4, 0.9 + 1.6);
+  look = f(10, 2, 0);
+  fov = 58;
+  onDeck = true;
+} else if (at === 'cross-top') {
+  const name = id.replace(/[ab]$/, ''),
+    a = by(name + 'a'),
+    b = by(name + 'b');
+  const p = a(0, 2),
+    q = b(0, 2),
+    mid = { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2, z: (p.z + q.z) / 2 };
+  stand = b(-3, 2, 0);
+  eye = { x: mid.x + 0.01, y: mid.y + 26, z: mid.z };
+  look = mid;
+  fov = 52;
+  onDeck = true;
 } else if (at.startsWith('table')) {
   // The table's frame: a point on bearing `b` (degrees clockwise from north, as the rotunda's) `r` m from its centre,
   // `up` over the table's rail height.
@@ -182,7 +220,7 @@ if (at === 'spur') {
   } else throw new Error('Choose at=table|table-top|table-join');
 } else
   throw new Error(
-    'Choose at=spur|spur-top|spur-frog|throat-top|throat|top|eye|back|farhead|table|table-top|table-join',
+    'Choose at=spur|spur-top|spur-frog|throat-top|throat|top|eye|back|farhead|railhead|cross-top|table|table-top|table-join',
   );
 
 // Step 6: true while a line 1 train coming home is 62 to 90 m short of J4's zone, for --until (any framing).
@@ -199,7 +237,7 @@ const { pointsTrains } = (await import(
 const body = me.body;
 if (!body) throw new Error('turnouts look: no player body');
 await wait(500);
-teleport(body, stand.x, land.H(stand.x, stand.z) + 0.9, stand.z);
+teleport(body, stand.x, (onDeck ? stand.y : land.H(stand.x, stand.z)) + 0.9, stand.z);
 cam.yaw = me.yaw = Math.atan2(-(look.x - stand.x), -(look.z - stand.z));
 const setCam = () => window.__debugCam?.set([eye.x, eye.y, eye.z], [look.x, look.y, look.z], fov);
 setCam();

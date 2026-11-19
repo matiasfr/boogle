@@ -63,6 +63,10 @@ export const RACK_BACK = 18,
   MERGE_BACK = 30,
   CROSS_LEN = 20;
 export const crossoverSpan = (u: number) => [u - MERGE_BACK - CROSS_LEN, u - MERGE_BACK] as const;
+/** Where the railhead view takes the two inner rails (the down track's west, the up track's east) over from Q7's deck
+ * (ring-deck.ts): on its rail joint (3 m lengths from u 0) before the first head's crossover (u 70 to 90), so its
+ * blades' cuts at the first three heads are this view's. */
+export const INNER_FROM = 69;
 export function leanClock(clock: number, target: number, dt: number) {
   if (clock < 0 || Math.abs(target - clock) > 3) return target;
   return clock + dt * 10 + Math.max(-0.02, Math.min(0.02, (target - clock) * 0.05));
