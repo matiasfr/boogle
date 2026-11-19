@@ -302,8 +302,8 @@ Each step leaves `node dev/ship-check.ts` green, updates its `place.md` lines, a
   attribution marks `boiler` seen at the fit; the live edge is the once-guard, with the reveal's per-session key) and
   holds it while the show is still queued; a playing show is `momentBusy`; so it comes on the first `free()` frame
   after the hand-back, and `free()` already waits for `inputState.held` (a talk, the garage panel, the fall). A friend's
-  accepted `rail.boilerFit` no longer sets `heard` (the edge owes the card instead), and a refused fit drops an owed
-  card. The copy moved unchanged to `reward-data.ts` (`BOILER_REWARD`), where the other cards' copy lives; the card
+  accepted `rail.boilerFit` still sets `heard`, as before, but the boiler has no `card` flag, so nothing is owed from
+  it (the edge owes the card instead); a refused fit drops an owed card. The copy moved unchanged to `reward-data.ts` (`BOILER_REWARD`), where the other cards' copy lives; the card
   holds a clone of the flourish's boiler model, with no rise point (like every friend's card). A page whose show was
   dropped unseen now gets the card, not the flourish. Tests: the two boiler cases in `test/ability-arrival.test.ts`
   changed to the new rule; no new test. Bots: the playthrough's fitter puts the card away after `TRAINS`; the eval
@@ -319,6 +319,15 @@ Each step leaves `node dev/ship-check.ts` green, updates its `place.md` lines, a
   **Not seen:** the card under reduced motion (no shot: owed at 3.1 s; code and unit test only); a show dropped while
   queued (unit test only); a talk box open at the hand-back in the browser (unit test only); the sound; phone width;
   anything on a device.
+  **After the independent review (2026-11-18):** (P2) with no show (reduced motion, a vehicle's seat), a free friend got
+  the boiler flourish on the trains edge and then the card 3.1 s later. The no-show edge now holds the moment back too
+  (`showing('boiler', 'queued')`, at every live edge), and when the wake ends boiler-view.ts owes the card and lets go
+  of the hold; a refused fit while the card is due lets go of it too, with no card. The reviewer's test (its expected
+  calls updated to the hold) and a refused-fit case are in `test/ability-arrival.test.ts` (the harness now drives
+  `onCorrected`). The eval expects no show under `--reduced-motion`, no flourish before the card, and the card about
+  3.1 s after the trains. **Known edge, left:** a `rail.boilerFit` correction that arrives while trains really run drops
+  the show and the card and gives the flourish; the show half predates this step, and the review found no normal way
+  to reach it.
 
 **Checkpoint** (after step 2): the full check, `npm run test:net`, and two proofs. First, `coop-unlock.ts` at
 `coopShot=unlock` and `late`: a friend's card live, and a late flourish with no card. Second, `railway-boiler-fit.ts`
