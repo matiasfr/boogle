@@ -1,5 +1,5 @@
-> **Status, 18 November 2026: steps 1 to 3 built (world v62) on `claude/greybox-leg2-rules`, awaiting review; steps 4
-> and 5 not started** ([as built](#steps-1-to-3-as-built-18-november)). Planner, against main `e8ae03b0f` (world v61), rebased onto `cfb8123d6` with the owner's 18 November rail answers folded in. Owner's go
+> **Status, 19 November 2026: steps 1 to 3 on main (world v62, #2270); step 4 built on `claude/greybox-leg2-views`
+> ([as built](#step-4-as-built-19-november)), awaiting review; step 5 not started** (steps 1 to 3 [as built](#steps-1-to-3-as-built-18-november)). Planner, against main `e8ae03b0f` (world v61), rebased onto `cfb8123d6` with the owner's 18 November rail answers folded in. Owner's go
 > (18 November, decisions page): "Start the greybox route's leg 2 rules now, so garage step 4 can follow? -> Yes,
 > start a planner after separate capacities". **Garage choices step 4 can start once steps 2 and 3 are on main**
 > ([below](#what-garage-step-4-waits-for)). Design review [at the end](#design-review-2026-11-18).
@@ -248,7 +248,8 @@ did); 4 and 5 ship on their own after it.
       `bay-reached` (the bay cut laid: both stage 4 lines run trains). `laySection` takes a leg. `SEED_STAGES` and its
       golden shard; `src/world/railway-jump.ts` rows (they are the room fast-forward's list: placeholder UI text).
       Verify: `test/railway-jump.test.ts`; each stage's invariant check.
-- [ ] **4. The views (M to L; Mac).** `src/entities/route-greybox/leg-view.ts` generalized from the stack leg to any
+- [x] **4. The views (M to L; Mac).** Built 19 November on `claude/greybox-leg2-views`
+      ([as built](#step-4-as-built-19-november)). `src/entities/route-greybox/leg-view.ts` generalized from the stack leg to any
       built leg (it hard-codes `LEG = 0`): deck, rails and sea bents from `laid`, the frame with its bill and plate, the
       rack, a 25 m head platform with a sea ramp, block signal posts, the end board ("LINE TO BELL ROCK / UNDER
       CONSTRUCTION", placeholder) at each line's end, and one more at the end of Bell Rock's upper in-half platform
@@ -371,6 +372,64 @@ reconnect-edit` at `--rail-seed incline-mid` (a second tab joins; the first leav
 server restart; `Leg`, `LegYard` and the kit aboard unchanged: `LegYard`'s first rejoin proof, greybox-route section 6);
 step 4's stills on one sheet; one frame-time reading at Bell Rock on the Mac (reported, not a gate); `npm run perf`
 (two decks of 1.1 and 1.2 km, two heads, four trains). The independent review covers steps 1 to 3 as one batch.
+
+### Step 4 as built (19 November)
+
+Builder, all six parts of the step, in its order: track and trains, the bore, frames, racks, platforms and boards,
+halts, adapters, docs. No rule, wire, op or save field changed; nothing under `src/sim`, `src/world`, `src/net` or
+`server/` was edited. Stills: [`greybox-leg2/`](greybox-leg2/).
+
+- **The views of one leg are one spec** (`route-greybox/leg-view.ts` `LegSpec`): the stack leg keeps its numbers
+  (line 2's path); the incline and the bay cut are lines of their own, drawn on their catalog rows smoothed
+  (`railway/row-path.ts`, as `line2-path.ts` reads the `ring` row) with the outward track 2 m right of the row and the
+  homeward 2 m left. Deck colliders merge 10 m lengths that run straight and level (17 slabs for the incline's 1.17 km).
+  Trains on the two lines are posed and ridden on the same paths; they stand at a line's start on its outward track,
+  so a homeward train takes the start's crossover on its way in (the server judges a departure's lever from the
+  start's outward platform). Kit marks and the kit's hop are per line: line 2 sets the incline's kit on its first rack
+  (9 m over line 2's up track) and the rest on an unlabelled pile beside it, High Gorge's yard.
+- **The bore** is 8 m clear between 1 m black walls, its roof 11 m (7 m over the 4.0 m rail at least), lined in strips
+  that meet the stack's faces, with a pale frame at each mouth. The south stack's hidden collider keeps its slab over
+  the bore at its index and is split round the bore in `leg2.ts`, authored to 0.1 m and checked against the stack's
+  outline at build. **Moved from the plan:** the horizon mesh (`sickle-backdrop/view.ts`) is double-sided, so it is
+  opened at both mouths; otherwise a rider sees the cliff's back across each mouth. The old dark portal panel is the
+  near mouth's lintel.
+- **Moved from the plan:** each head of the two lines has a platform each side (the homeward lever's, right-hand
+  running). Levers stand within `rail.call`'s 12.6 m reach of their platform points: **three of the level's reserved
+  lever ends** (High Gorge t 16 to 19, the West landing s 0 to 5, Bell Rock's lower level n -28 to -25) are 17 to 27 m
+  from their stops, which moved since; Bell Rock's upper one (the bay line's) is used. The departure boards are the
+  leg view's (it owns the route's signs), on each built halt's outward platform.
+- **Bell Rock's stalls** are 0.9 m counters on the track side of their pads (a taller box hid the pad's sign); each pad
+  then reads "Connected (placeholder)" through a label registry the mounted area fills (`route-greybox/state.ts`).
+  Stalls, barriers and the seeds post are drawn only. A standing piece (buffers, a head's platform) holds its collider
+  until your body is out of it, by the shared site clearance; a view may not move a player (no `teleport`).
+- **The adapters needed no change:** `rail.grant` and `rail.gate` already take the seeds and the Canopy barrier by
+  index. The prompts are the leg view's, as the pick's; the objective texts go to the play record.
+- **Main could not boot from #2270 to #2274/#2276:** `island-boards.ts` and `train-view.ts` indexed two-entry tables
+  by the new lines' trains. The boards' guard stays (the halt map is line 2's); the trains' is replaced by the pose.
+
+**Verify, each still opened** (`.look/`, curated in [`greybox-leg2/`](greybox-leg2/)): from partway up the stair
+(the foot is screened by line 2's train standing at High Gorge), the red barrier on incline frame 1 with its plate,
+section 1's bill, rack 1's "KIT 1" and the yard's pile, and the bore's framed mouth; from an `ns` train, homeward,
+the dark bore with the crossover and the split opening ahead, and outward, the far mouth opening on the sea; head 1's
+platform, lever, board and sea ramp from the train; Bell Rock's lower deck: the teal seeds post, the two stall
+counters, the departure board "High Gorge / Incline head 1 / Bell Rock", the lever and a pad reading "Connected";
+the Canopy barrier, shut, from the ramp's head; the West landing unstaked from the cliff's brow over the commons, the
+bay cut's frame and bill on the apron and its stocked rack; a `bay` train at Bell Rock's upper in-half platform, by
+the buffers at the kink. Riding: Buddy stayed aboard an `ns` train from Bell Rock home through the bore and out again.
+
+**Counts** (`dev/look/evals/leg2-counts.ts`, `bay-reached`, one frame each; trains move, so draws vary with what is
+in view; main is `c2187130d`): High Gorge 266 draws and 674,904 triangles on main, 172 and 399,236 here; Bell Rock 257
+and 421,448, here 372 and 474,846; the West landing 491 and 1,000,019, here 496 and 1,026,737; head 1 facing Bell Rock
+177 and 370,875, here 670 and 1,178,947 (the two lines' four trains, drawn now, parked under the land on main). Static
+colliders 2,890 to 2,945 on main, 2,983 to 3,069 here; High Gorge's massing 55 to 91 solids (the bore). With Bell
+Rock resident: 1,110 meshes and 3,001 colliders (its 75 boxes, 21 solids); from head 1, Bell Rock not resident: 1,133
+meshes and 2,983 colliders. No frame time: the machine was shared, so none would be evidence.
+
+**Fixtures moved:** `prefab-gorge-colliders.json` and `prefab-gorge-placements.json` (the bore's pieces; the incline's
+post supports renumbered after them), `prefab-halts.json` (the eight new levers' meshes and plaques, additive); the
+halt test counts 28 levers. Each regenerated with `GOLDEN=1`. **Unverified:** the bot and the loop (step 5); a lever
+pull answered on the new lines in a live room; a second player; the kit's hop and the yard pile in motion; the
+level report's walk over the new head platforms. Not tested on a device.
 
 ### Left out
 

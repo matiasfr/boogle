@@ -1509,8 +1509,29 @@ competing way into town. The bare cliff cannot be walked up. The [owner's Q1/Q2 
 set the future station's trigger and terrain rule; S5/S6 remain separate work.
 
 **High Gorge** gains the incline's two 40 m platforms beside the north-south row, level with the stack line's
-south platform, and a dark mark on the south wall where the row will enter the rock (nothing is bored).
-Not tested on a device.
+south platform. Not tested on a device.
+
+**The incline and the bay cut, drawn (19 November 2026; [greybox-leg2](../plans/greybox-leg2.md), step 4).** The
+two lines leg 2's rules run are drawn from the room's rows, as the stack line is (`route-greybox/leg-view.ts`, one
+view for every built leg). Each line's deck, two tracks and sea bents run as far as its laid sections (a laying
+section grows over its 30 s lay clock), with buffers at both ends, its turnouts, a signal post at each passed
+section end, a 25 m platform each side of its head with a sea ramp, and the open section's frame, bill, rack and
+"KIT" plate. Trains run on the outward track and stand at a line's start on the outward platform: a homeward train
+takes the start's crossover on its way in (`railway/row-path.ts`). The end board reads "LINE TO BELL ROCK / UNDER
+CONSTRUCTION" at each line's end until it reaches Bell Rock. **The incline** leaves High Gorge through a 165 m bore
+in the south stack, 8 m clear under a dark lining, with a pale frame round each mouth: riding home, the split opens
+out of the dark; riding out, the sea does. The barrier stands on the incline's first frame (a red panel on two posts,
+lifted once opened with the powered pick); the old pad behind the south platform is empty. Line 2's kit car sets the
+incline's kit on its first rack, on line 2's south platform, and the rest on an unlabelled pile beside it (High
+Gorge's yard), which the `ns` trains take on. **Bell Rock** gains the seeds post on the lower deck ("Take the crystal
+seeds", refused with "The incline isn't laid yet"), the Canopy barrier on the upper deck, shut ("No line beyond
+yet"), a stall counter on the High Gorge and Ring Island pads once the incline is laid and on Home's once the bay cut
+is, each pad then reading "Connected (placeholder)", and from the incline's last lay a board at the end of the upper
+in-half platform: "LINE TO HOME (WEST LANDING) / BUILT FROM HOME". **The West landing** is unstaked (step 2): its two
+platforms, bed, end ramp and apron, where the bay cut's first kit appears on the rack. Each built halt of the two
+lines has a request lever on its outward platform and each head a second on its homeward platform, and a plain
+departure board listing the line's open stops. Leg 2's objective texts go to the play record only. All copy is
+placeholder. Not tested on a device.
 
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 
