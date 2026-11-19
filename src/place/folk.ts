@@ -103,18 +103,7 @@ type Job =
   | 'greeter'
   | 'looker';
 type Mood =
-  | 'idle'
-  | 'walk'
-  | 'run'
-  | 'hammer'
-  | 'carry'
-  | 'wave'
-  | 'cheer'
-  | 'sit'
-  | 'ride'
-  | 'chat'
-  | 'give'
-  | 'point';
+  'idle' | 'walk' | 'run' | 'hammer' | 'carry' | 'wave' | 'cheer' | 'sit' | 'ride' | 'chat' | 'give' | 'point';
 type Guy = {
   /** A commuter not stepped since he was put out or slept far from the camera, and one stepped this frame but too
    * far to draw (path-refuge.ts commuterBand): only there is a woken one stood in his refuge. */
@@ -309,8 +298,8 @@ export function addGreeter(x: number, y: number, z: number) {
 }
 /** One of Ring Island's folk (src/entities/ring-folk/view.ts): placed, moved, faced and talked to by its owner; the kit only
  * draws it and, like the greeter, never steers it. */
-export function addLooker(x: number, y: number, z: number, yaw: number, color: string) {
-  return make('looker', x, z, { fy: y, yaw, tint: new THREE.Color(color) });
+export function addLooker(x: number, y: number, z: number, yaw: number, color: string, extra?: Partial<Guy>) {
+  return make('looker', x, z, { fy: y, yaw, tint: new THREE.Color(color), ...extra });
 }
 export type { Guy, Mood };
 
@@ -889,7 +878,7 @@ function pose(g: Guy) {
     hl = [-0.25, 0.28, 0.02],
     hr = [0.25, 0.28, 0.02];
   let itemA = false,
-    itemB = false;
+    itemB = !!g.tool;
   let lift = 0,
     liftL = 0,
     liftR = 0;
@@ -1031,7 +1020,7 @@ function pose(g: Guy) {
     held.setMatrixAt(i0, m.compose(p.set(0, 0.44, 0.3), q.identity(), s.set(0.95, 0.16, 0.16)).premultiply(base));
     held.setColorAt(i0, LOG);
     held.setMatrixAt(i1, ZERO);
-  } else if (itemB || g.tool) {
+  } else if (itemB) {
     const a = 0.5 - lift * 1.5;
     e.set(a, 0, 0, 'XYZ');
     q.setFromEuler(e);

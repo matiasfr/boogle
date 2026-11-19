@@ -3,6 +3,7 @@
 // something else (the rack's board). Reports the prompt on offer, the target Interact would pick, the hoist and the
 // crew's foreman (forge-guide.ts: his stage, bubble and unread `…`). `wait=ms` holds before the report (default 1500). `take=1` first takes what waits on the pedestal, as a player
 // would, so the foreman's later stages show (--rail-seed trains-on take=1: the breaker taken, no seam struck).
+// `talk=1` presses Interact at the stand when it offers Talk, opening the foreman's card.
 //   npm run look -- --rail-seed q5-done --eval dev/look/evals/forge-pedestal-stand.ts --until window.__placeDone \
 //     --hud --name pedestal-7m
 const { inspectRailway, railRead } = (await import(
@@ -53,6 +54,12 @@ window.__debugCam!.clear();
 const clear = setInterval(() => window.__debugCam!.clear(), 50);
 setTimeout(() => clearInterval(clear), 20000);
 await wait(Number(q.get('wait') ?? 1500));
+if (q.get('talk')) {
+  const t = interactTarget();
+  if (t?.verb !== 'Talk' || !t.run) throw new Error(`STAND no Talk here: ${t?.verb ?? 'nothing'}`);
+  t.run();
+  await wait(2500);
+}
 const scene = inspectRailway()!;
 console.log(
   `STAND ${JSON.stringify({

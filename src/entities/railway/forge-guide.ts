@@ -8,6 +8,7 @@
 // Local presentation over accepted state: the stage is read from the railway rows each frame, so
 // a reload, a late join or a `?from=` jump finds him on the current thing; nothing is sent or saved.
 import * as THREE from 'three/webgpu';
+import { angleLerp } from '../../math.ts';
 import { createSpeechCue } from '../../components/speech-cue/view.ts';
 import { conversation } from '../../player/conversation.ts';
 import { NO_TARGETS, type Interactable } from '../../player/hands.ts';
@@ -58,9 +59,9 @@ const AIM: Partial<Record<GuideStage, { x: number; z: number }>> = {
   seam: { x: WORKS_SEAMS[0].x / 100, z: WORKS_SEAMS[0].z / 100 },
 };
 /** A placeholder for the owner's name for him: his role, as the camp's "Camp resident" is. */
-export const FOREMAN_NAME = 'Foreman';
+const FOREMAN_NAME = 'Foreman';
 /** Metres: Talk's reach (Sleeves'), the bubble's first-approach range; seconds a bubble holds (the residents' barks). */
-export const GUIDE = { talk: 3.3, bark: 10, barkMin: 2.6, barkMax: 6, perWord: 0.34 } as const;
+const GUIDE = { talk: 3.3, bark: 10, barkMin: 2.6, barkMax: 6, perWord: 0.34 } as const;
 
 /** Which stage he is in, from accepted state: null when the pedestal has nothing for him to talk about. */
 export function guideStage(w: ReadWorld, worksOn: boolean): GuideStage | null {
@@ -98,13 +99,14 @@ export function createForgeGuide(owner: OwnedView, { body, stage, ready }: Deps)
   const screen = { x: 0, y: 0, behind: false };
   let cur: GuideStage | null = null,
     cursor = 0,
-    speaking = false,
+    who: import('../../place/talk.ts').Who | null = null,
     barking: Guy | null = null,
     barkLeft = 0,
     lineNo = 0;
   const barked = new Set<GuideStage>();
   // Anything else holding the input (a card, a show, the garage, the fall, another talk) or a moment on screen.
   const quiet = () => inputState.held || conversation.open || momentBusy();
+  const speaking = () => !!who && talk?.talking() === who;
   function stopBark() {
     if (!barking) return;
     barking.chat = 0;
@@ -122,24 +124,21 @@ export function createForgeGuide(owner: OwnedView, { body, stage, ready }: Deps)
     const g = body();
     if (!talk || !g || !cur || quiet()) return;
     const lines = FOREMAN_LINES[cur].talk;
-    const started = talk.startTalk(
-      { name: FOREMAN_NAME, voice: VOICE, x: g.x, z: g.z, color: FOREMAN.coat },
-      { say: lines[cursor % lines.length]!, answers: [{ label: 'Bye', then: () => null }] },
-      () => {
-        speaking = false;
-      },
-    );
-    if (!started) return;
-    speaking = true;
+    // He stands still: one speaker for every talk, so `talking()` says whether the card is his.
+    who ??= { name: FOREMAN_NAME, voice: VOICE, x: g.x, z: g.z, color: FOREMAN.coat };
+    if (!talk.startTalk(who, { say: lines[cursor % lines.length]!, answers: [{ label: 'Bye', then: () => null }] }))
+      return;
     cursor++;
     stopBark();
   }
   owner.cleanup(() => {
-    if (speaking) talk?.endTalk();
+    if (speaking()) talk?.endTalk();
     stopBark();
     bubble.remove();
   });
   const unread = () => !!cur && cursor < FOREMAN_LINES[cur].talk.length;
+  // The one target, the same every frame: allocated once.
+  const near: Interactable[] = [{ id: 'railway-talk-foreman', verb: 'Talk', at, run: open, show: cue.show }];
   return {
     /** After the hoist's update, which faces and waves the three. */
     update(dt: number) {
@@ -156,14 +155,16 @@ export function createForgeGuide(owner: OwnedView, { body, stage, ready }: Deps)
         d = p ? Math.hypot(p.x - g.x, p.z - g.z) : Infinity;
       // No part on the pedestal: the hoist has sent the three in; he stays and points the way for whoever is near.
       const aim = AIM[cur];
+      const talking = speaking(),
+        turn = Math.min(1, dt * 5);
       if (aim) {
         g.on = true;
         g.mood = d <= HOIST.wave ? 'point' : 'idle';
-        g.yaw = Math.atan2(aim.x - g.x, aim.z - g.z);
+        if (!talking) g.yaw = angleLerp(g.yaw, Math.atan2(aim.x - g.x, aim.z - g.z), turn);
       }
-      if (speaking) {
+      if (talking) {
         g.mood = 'chat';
-        if (p) g.yaw = Math.atan2(p.x - g.x, p.z - g.z);
+        if (p) g.yaw = angleLerp(g.yaw, Math.atan2(p.x - g.x, p.z - g.z), turn);
       }
       if (barking) {
         barkLeft -= dt;
@@ -172,12 +173,12 @@ export function createForgeGuide(owner: OwnedView, { body, stage, ready }: Deps)
         barked.add(cur);
         bark(g, FOREMAN_LINES[cur].bark);
       }
-      if (speaking) talk?.updateTalkCard();
+      if (talking) talk?.updateTalkCard();
     },
     /** After the prompts and the camera. */
     lateUpdate() {
       const g = body();
-      cue.update(!!g?.on && ready() && !quiet() && unread());
+      cue.update(!!g?.on && unread() && ready() && !quiet());
       if (!barking) return;
       toScreen(head.copy(at).setY(at.y + 0.55), screen);
       const shown = !screen.behind && screen.x > 0 && screen.x < view.w && screen.y > 0 && screen.y < view.h;
@@ -188,9 +189,9 @@ export function createForgeGuide(owner: OwnedView, { body, stage, ready }: Deps)
     targets(): Interactable[] {
       const g = body(),
         p = me.body?.position;
-      if (!g?.on || !cur || !p || !ready() || quiet()) return NO_TARGETS;
+      if (!g?.on || !cur || !p) return NO_TARGETS;
       if (Math.hypot(p.x - g.x, p.z - g.z) > GUIDE.talk || Math.abs(p.y - (g.fy ?? g.y)) > 3) return NO_TARGETS;
-      return [{ id: 'railway-talk-foreman', verb: 'Talk', at, run: open, show: cue.show }];
+      return ready() && !quiet() ? near : NO_TARGETS;
     },
     inspect: () => {
       const g = body();
@@ -204,7 +205,7 @@ export function createForgeGuide(owner: OwnedView, { body, stage, ready }: Deps)
         heard: cursor,
         barked: [...barked],
         barking: barking ? (bubble.textContent ?? '') : null,
-        speaking,
+        speaking: speaking(),
       };
     },
   };

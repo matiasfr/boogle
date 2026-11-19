@@ -71,17 +71,14 @@ export function createPartHoist(owner: OwnedView, { crane, land, waits }: Deps) 
   void import('../../place/folk.ts').then((k) => {
     if (!owner.alive) return;
     kit = k;
-    guys = spots.map((s, n) =>
-      k.addLooker(
-        s.x,
-        s.y,
-        s.z,
-        Math.atan2(px - s.x, pz - s.z),
-        n === FOREMAN.index ? FOREMAN.coat : COATS[n % COATS.length]!,
-      ),
-    );
-    for (const g of guys) g.on = false;
-    guys[FOREMAN.index]!.tool = true;
+    guys = spots.map((s, n) => {
+      const foreman = n === FOREMAN.index;
+      const yaw = Math.atan2(px - s.x, pz - s.z);
+      return k.addLooker(s.x, s.y, s.z, yaw, foreman ? FOREMAN.coat : COATS[n % COATS.length]!, {
+        on: false,
+        tool: foreman,
+      });
+    });
     owner.cleanup(() => {
       for (const g of guys) {
         const i = k.folk.guys.indexOf(g);
