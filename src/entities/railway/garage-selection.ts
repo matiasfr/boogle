@@ -1,6 +1,6 @@
 // What the garage's chosen part shows on the works copy (owner, 14 November 2026: "there should be some visual
-// change, and I'm looking through the different wagons"): a gold frame round the part (whole when the room has it;
-// the game's dashed "a part goes here" when it does not) that settles onto it, and a pale ghost flatbed for a car the
+// change, and I'm looking through the different wagons"): a gold frame round the part (whole and solid when the room
+// has it; the game's dashed, see-through "a part goes here" when it does not) that settles onto it, and a pale ghost flatbed for a car the
 // copy does not carry, where it rides in the train. No button and no rule: nothing is tried on, and nothing on a real
 // train changes until an install. Local to this tab: nobody else sees a selection.
 // Everything made here leaves with the view: the frames are the owner's, and the ghost car's geometry and material
@@ -8,6 +8,7 @@
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { createGhostOutlines } from '../../render/ghost-outline.ts';
+import { GOLD_ROPE } from '../../render/gold-rope.ts';
 
 /** Where a part is, or goes, in the train's frame (the first car's centre at z 0, y from the rail): the box its frame
  * is drawn round. `ghost`: a car to draw as a ghost with it, at this z with its deck this high. */
@@ -20,9 +21,16 @@ export type Focus = {
 export const SETTLE = { s: 0.28, over: 0.14, drop: 0.35 } as const;
 const backOut = (t: number) => 1 + 2.7 * (t - 1) ** 3 + 1.7 * (t - 1) ** 2;
 
+let solid: THREE.MeshStandardNodeMaterial | null = null;
+/** The "have" frame's own solid gold (owner, 18 November 2026: "Keep the numbers; give "have" its own solid look",
+ * docs/decisions-look.md#d-2026-11-18-decisions-page-look): opaque, no breath, a polished brass finish, so a part you
+ * own does not read as a part to come. One material for every garage, made once: never mutate or dispose it. */
+const haveMaterial = () =>
+  (solid ??= new THREE.MeshStandardNodeMaterial({ color: GOLD_ROPE, roughness: 0.35, metalness: 0.6 }));
+
 /** `train`: the group whose frame a `Focus` is in. It must already hang under `owner`'s root. */
 export function createGarageSelection(owner: OwnedView, train: THREE.Object3D) {
-  const have = createGhostOutlines(owner, 12, 40, 0, 0.045);
+  const have = createGhostOutlines(owner, 12, 40, 0, 0.045, haveMaterial());
   const goes = createGhostOutlines(owner, 320);
   const material = new THREE.MeshStandardNodeMaterial({
     color: '#e6dcc0',

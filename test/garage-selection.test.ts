@@ -29,6 +29,9 @@ test('stepping through the tabs draws a frame and a ghost car, and disposing the
   root.add(train);
   const selection = createGarageSelection(owner, train);
   const { made } = selection;
+  // The "have" frame is solid, not a ghost (decisions-look, 18 November 2026); the "goes" frame keeps the ghosts' gold.
+  const [haveMat, goesMat] = made.frames.map((m) => m.material as THREE.Material);
+  assert.ok(!haveMat!.transparent && haveMat!.opacity === 1 && haveMat !== goesMat && goesMat!.transparent);
 
   const bench: Focus = { c: [0, 1.3, 0], s: [2.3, 1.2, 3.3] };
   const wagon: Focus = { c: [0, 0.5, -7.4], s: [2.3, 1, 3.3], ghost: { z: -7.4, top: 0.5 } };

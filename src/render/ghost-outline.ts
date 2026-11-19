@@ -37,10 +37,19 @@ const ghostMaterial = () => {
   return shared;
 };
 
-/** Up to `max` dashes, in metres: `dash` long, `gap` apart, `thick` across. */
-export function createGhostOutlines(owner: OwnedView, max: number, dash = 0.14, gap = 0.09, thick = 0.035) {
+/** Up to `max` dashes, in metres: `dash` long, `gap` apart, `thick` across. `material` replaces the ghosts' see-through
+ * gold for a frame that is not a ghost (the garage's "have" frame); it must be shared too, since the owner never
+ * disposes it. */
+export function createGhostOutlines(
+  owner: OwnedView,
+  max: number,
+  dash = 0.14,
+  gap = 0.09,
+  thick = 0.035,
+  material: THREE.Material = ghostMaterial(),
+) {
   const geometry = new THREE.BoxGeometry(1, 1, 1);
-  const mesh = new THREE.InstancedMesh(geometry, ghostMaterial(), max);
+  const mesh = new THREE.InstancedMesh(geometry, material, max);
   geometry.dispose();
   mesh.castShadow = false;
   mesh.count = 0;
