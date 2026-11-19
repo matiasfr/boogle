@@ -2,7 +2,7 @@
 
 The owner's scheduled orchestrator runs, recorded so they can be recreated exactly on another machine. They are
 T3 Code scheduled tasks in the Boogle project, each bound to a thread (`bindToCurrentThread: true`), so every run
-posts there. Since 17 November they are bound to different threads: the heartbeat to "Move Boogle Heartbeat Thread"
+posts there. Since 17 November they are bound to different threads: the heartbeat to "Boogle orchestrator" (named "Move Boogle Heartbeat Thread" until 19 November)
 with a fresh session each run, the daily tidy to "Set Up Scheduled Boogle Tasks", where it keeps its context.
 
 Running since 17 November 2026 (first heartbeat 07:24 UTC) on the Windows machine `hotbox`, clone
@@ -50,7 +50,7 @@ they can be turned back on there with `enabled: true` (and the Windows ones paus
 
 - Schedule: `{type: "interval", everyMs: 3600000}` (hourly). Enabled. Task id
   `scheduled-task:ae9bad7f-91a5-4e85-bf10-3472d12db915`, created 17 November 2026 at 09:32 UTC.
-- Bound to the thread "Move Boogle Heartbeat Thread" (`b15f0ebb-023a-4024-89ef-dfc8344f4c84`), full access,
+- Bound to the thread "Boogle orchestrator" (`b15f0ebb-023a-4024-89ef-dfc8344f4c84`), full access,
   `freshSession: true`: every run posts in that thread but starts a fresh session, so nothing carries over from
   earlier runs.
 - Model: **Fable 5.2 medium** (`claude-fable-5-2`, effort medium, the thread's default), set in the bound thread's
