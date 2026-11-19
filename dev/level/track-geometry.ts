@@ -9,7 +9,7 @@ import * as layout from '../../src/place/layout.ts';
 import * as turnout from '../../src/place/turnout.ts';
 import { ROTUNDA_KIT, bayFrame } from '../../src/place/rotunda.ts';
 import * as shape from '../../src/entities/railway/works-shape.ts';
-import { junctions } from '../../src/place/junctions.ts';
+import { junctions, spanAcross } from '../../src/place/junctions.ts';
 import { sleeperStations } from '../../src/entities/railway/track-panels.ts';
 import { H } from '../../src/place/terrain.ts';
 import { geometryFaces } from '../../src/geometry/drawn-faces.ts';
@@ -125,7 +125,7 @@ export async function collectTrackGeometry() {
   );
   const { layHomeYard } = sourceModule<typeof import('../../src/entities/railway/home-yard.ts')>(
     fs.readFileSync('src/entities/railway/home-yard.ts', 'utf8'),
-    { home, ...layout, ...turnout, bayFrame, junctions, sleeperStations, ...shape, createYardTrack },
+    { home, ...layout, ...turnout, bayFrame, junctions, spanAcross, sleeperStations, ...shape, createYardTrack },
   );
   const yard = layHomeYard(H);
   const owner = {

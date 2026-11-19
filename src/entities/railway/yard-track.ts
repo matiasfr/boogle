@@ -170,26 +170,12 @@ export function createYardTrack(ground: (x: number, z: number) => number) {
     }
     return hi < lo ? null : { lo, hi };
   }
-  /** How far along `path` from `from` (toward `to`) its rails first stand `gap` metres clear of another track's
-   * centreline (`other`, sampled between `s0` and `s1`): where its rails begin, beside the other's. */
-  function clearOf(path: TrackPath, from: number, to: number, other: TrackPath, s0: number, s1: number, gap = 0.1) {
-    const theirs: TrackPose[] = [];
-    for (let at = s0; at <= s1; at += 0.1) theirs.push(other(at));
-    const step = Math.sign(to - from) * 0.05;
-    for (let l = from; (to - l) * step > 0; l += step) {
-      const p = path(l);
-      if (theirs.every((o) => Math.hypot(o.x - p.x, o.z - p.z) >= gap)) return l;
-    }
-    return to;
-  }
-
   return {
     sleeper,
     sleepersAlong,
     rail,
     railsAlong,
     timbers,
-    clearOf,
     /** Everything added from here on is shown only on `showLater(true)`. */
     later() {
       split = [sleepers.length, plates.length, rails.length, posts.length, blobs.length];

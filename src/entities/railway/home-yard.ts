@@ -3,7 +3,7 @@
 // for every bay of the rotunda, then (shown once line 2 has its first stretch) the cart's leg and the turnout's parts on road 2. Geometry only, no scene: the station view draws it
 // (./home-station-view.ts) and the yard test reads the same rails the shunt rides (test/roundhouse-yard.test.ts).
 import * as home from '../../place/home-station.ts';
-import { junctions } from '../../place/junctions.ts';
+import { junctions, spanAcross } from '../../place/junctions.ts';
 import { bayFrame } from '../../place/rotunda.ts';
 import { LINES, LINKS, ORIGIN, railY } from '../../place/layout.ts';
 import { KIT, turnout, type RailPiece } from '../../place/turnout.ts';
@@ -28,9 +28,6 @@ export function layHomeYard(ground: (x: number, z: number) => number) {
     (road: 0 | 1): TrackPath =>
     (s) =>
       poseOf(home.roadAt(road, s), railAt(road, s));
-  /** A line's own sleepers between two of its `s`, as poses: where another track runs beside it, they carry both. */
-  const lineSleepers = (road: 0 | 1, from: number, to: number) =>
-    sleeperStations(LINKS[road]!, from, to).map((t) => ({ ...roadPath(road)(t.s), depth: t.depth }));
 
   // The stubs. The line's own track starts at s 0: a stub carries its rails and its sleepers' spacing back to the buffer.
   for (const road of [0, 1] as const) {
@@ -42,8 +39,13 @@ export function layHomeYard(ground: (x: number, z: number) => number) {
   // The spur leaves road 2 at a turnout (J1: src/place/junctions.ts; docs/plans/turnouts.md), drawn for the through
   // road. Its parts on the spur's own rails stand from the start; those beside road 2's rails are laid with road 2's
   // track, at the end of this function.
-  const j1 = junctions().find((j) => j.id === 'J1')!,
-    points = turnout(j1.through, j1.diverging, j1.lever);
+  const list = junctions();
+  /** A junction from the one list, with its turnout. */
+  const at = (id: string) => {
+    const j = list.find((x) => x.id === id)!;
+    return { j, t: turnout(j.through, j.diverging, j.lever) };
+  };
+  const { j: j1, t: points } = at('J1');
   // Both wing rails wait for road 2: the one beside the spur's vee leg springs from road 2's rail.
   const withSpur = (r: RailPiece) => r.road === 'diverging' && r.role !== 'wing';
   {
@@ -88,22 +90,45 @@ export function layHomeYard(ground: (x: number, z: number) => number) {
       yard.sleepersAlong(road, from, to);
     }
   }
-  // The cart's leg, shown once it is laid. At each end it runs beside a line and shares that line's sleepers, as the
-  // spur does; between them it has its own, on posts over the dip it crosses.
+  // The cart's leg, shown once it is laid, everything of it together (its turnouts' parts beside the lines' rails
+  // too). At each end it leaves a line at a turnout (J3 off line 1, J2 onto road 2: src/place/junctions.ts), whose
+  // timbers are that line's sleepers carried on under it, as at the spur; between them it has its own, on posts over
+  // the dip it crosses.
   yard.later();
   {
     const { from, to, start, segs, len } = home.LEG;
     const fromY = railAt(0, from),
       toY = railAt(1, to);
-    const leg: TrackPath = (l) => poseOf(home.march(start, segs, l), fromY + ((toY - fromY) * l) / len);
-    const off = yard.timbers(lineSleepers(0, from - 14, from), leg, 0, 14),
-      on = yard.timbers(lineSleepers(1, to, to + 14), leg, len - 14, len);
-    yard.railsAlong(
+    // Past either end it runs straight on (march), so the headblocks behind each toe find it.
+    const leg: TrackPath = (l) => poseOf(home.march(start, segs, l), fromY + ((toY - fromY) * Math.min(l, len)) / len);
+    const j2 = at('J2'),
+      j3 = at('J3'),
+      j4 = at('J4');
+    // J3 shares stations with J4 on line 1's other side: there line 1 already draws J4's timber (track.ts), and this
+    // carries it on under the leg, so the union is one timber.
+    const off = yard.timbers(
+      sleeperStations(LINKS[0]!, from - j3.t.clearD, from + KIT.head).flatMap((st) => {
+        const mine = spanAcross(j3.j, j3.t, st.s);
+        if (!mine) return [];
+        const span = [Math.max(mine[0], spanAcross(j4.j, j4.t, st.s)?.[1] ?? -Infinity), mine[1]] as const;
+        return span[1] - span[0] > 0.05 ? [{ ...roadPath(0)(st.s), depth: st.depth, span }] : [];
+      }),
       leg,
-      yard.clearOf(leg, 0, 6, roadPath(0), from - 8, from),
-      yard.clearOf(leg, len, len - 6, roadPath(1), to, to + 8),
+      -KIT.head,
+      j3.t.clearD + 2,
     );
-    yard.sleepersAlong(leg, off ? off.hi + 0.7 : 0, on ? on.lo - 0.7 : len);
+    yard.timbers(
+      sleeperStations(LINKS[1]!, to - KIT.head, to + j2.t.clearD).flatMap((st) => {
+        const span = spanAcross(j2.j, j2.t, st.s);
+        return span ? [{ ...roadPath(1)(st.s), depth: st.depth, span }] : [];
+      }),
+      leg,
+      len - j2.t.clearD - 2,
+      len + KIT.head,
+    );
+    for (const { t } of [j3, j2]) for (const r of t.rails) yard.rail(r.a, r.b, r.w);
+    yard.railsAlong(leg, j3.t.plainD, len - j2.t.plainD);
+    yard.sleepersAlong(leg, Math.max(j3.t.clearD, off ? off.hi + 0.7 : 0), len - j2.t.clearD);
   }
   // The spur turnout's parts beside road 2's own rails (the wing rails and a check rail): road 2 past s 7 is laid
   // with line 2's first stretch, as the leg is.

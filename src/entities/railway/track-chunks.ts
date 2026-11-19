@@ -10,7 +10,7 @@ import { lodLevel } from '../../render/lod-level.ts';
 export const TRACK_CHUNK_M = 200;
 /** Posts, planks, caps, stringers and braces are 44 triangles each: smaller chunks save no triangles worth a draw. */
 export const TRACK_LIGHT_CHUNK_M = 400;
-const HEAVY = new Set(['rail', 'sleeper', 'sleeper_steel']);
+const HEAVY = new Set(['rail', 'sleeper', 'timber', 'sleeper_steel']);
 /** Legs, braces, caps and stringers cast a shadow only in chunks this close to the camera (the sun's shadow camera
  * reaches 36 m, so this is generous: nothing that matters is dropped). */
 export const TRACK_SHADOW_M = 120;
@@ -27,7 +27,7 @@ export const TRACK_LOD_FROM: readonly number[] = [0, 50, 120];
 /** A chunk that stepped down returns to the finer level only this much inside the distance, so a camera on the edge does not flicker. */
 export const TRACK_LOD_HYSTERESIS_M = 15;
 /** Kinds with a plain far shape. */
-export const FAR_KINDS = new Set(['rail', 'sleeper', 'sleeper_steel']);
+export const FAR_KINDS = new Set(['rail', 'sleeper', 'timber', 'sleeper_steel']);
 
 /** Piece of `kind` at `u`: its chunk. Without a kind, the heavy span. */
 export const chunkOf = (u: number, kind = 'rail') =>

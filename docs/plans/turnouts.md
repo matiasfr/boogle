@@ -1,6 +1,6 @@
 # Turnouts: real points wherever tracks merge or cross
 
-> **Status, 17 November 2026:** Step 1 (J1 static spur turnout) is on main (#1802). Step 2 (J2 to J9 in junctions(), the level check's junction table) is on main (#2079, 18 November; reconciled by the 18 November tidy). Checkpoint A owner/designer viewing is not verified here. Next: Checkpoint A, then step 3; nothing else is
+> **Status, 17 November 2026:** Step 1 (J1 static spur turnout) is on main (#1802). Step 2 (J2 to J9 in junctions(), the level check's junction table) is on main (#2079, 18 November; reconciled by the 18 November tidy). Checkpoint A owner/designer viewing is not verified here; the owner said on 18 November to go ahead without his look at J1's stills (decisions-rail, `d-2026-11-18-decisions-page-rail`). Step 3 (Home's throat: J4, J6, J2, J3) is built on `claude/turnouts-throat` (18 November), not shipped. Next: step 4; nothing else is
 > built. Written on `origin/main` at 9036299a8. It builds on the view-only track tidy pass (one sleeper set through
 > overlaps, one track kit, the stall road seated: PR 1793, `yard-track.ts` and `home-yard.ts`) and does not redo it;
 > step 1 extends that pass's shared timbers rather than drawing through `track.ts` (see step 1's departures).
@@ -360,11 +360,53 @@ review** row (a fresh subagent, fable medium) on its one proof look. Step 2 and 
   draws yet: "the list is J1 to J9", "every line end the layout draws has a junction", "one timber per station in a
   cluster" and "the lever stands away from the road that leaves". The per-junction tangent, frog and hand cases are
   the level check's table, and step 1's five part cases stay retired as geometry a look shows.
-- [ ] **3. Home's throat: J4, J6, then J2 and J3.** `track.ts` for both lines; the offset track's sleeper loop skips
+- [x] **3. Home's throat: J4, J6, then J2 and J3.** `track.ts` for both lines; the offset track's sleeper loop skips
   inside a zone; `span()` takes the union where zones overlap (J3 with J4). `home-station-view.ts`: the leg's sleepers
   start at `clearD` at both ends; its turnout pieces show with the leg (`legLaid()`). Proof look: `at=throat-top` (the
   framing of `late-topdown-throat.png`); `at=throat` (of `late-throat-eye-level.png`) to the reviewer. If the frog on
   the curve reads wrong here, option B becomes a step of its own.
+  **Built 18 November 2026** (branch `claude/turnouts-throat`, two commits: J4 and J6, then J2 and J3), with these
+  departures:
+  - **The line turnouts' frogs are uncut crossings** (step 1's open point 2). The up track's plain rails from the first
+    rail cut past the toe (about 2.2 m) are the pairs the gantry carries for those panels, so they stay whole and cross
+    the through road's inner rail; `turnout(through, diverging, lever, plain)` then gives only the open blade up to
+    them, two wing and two check rails (6 pieces each at J4 and J6), and no stock rail where it would lie on the
+    through road's own. Every panel's carried pairs, seats and pair counts on both lines are unchanged (compared
+    against `origin/main`). J2 and J3 cut their frogs as J1 does: the leg is the yard's.
+  - **A timber goes under the line's sleeper, not in place of it**, as J1's do: kind `'timber'` (the kit's sleeper
+    stretched, no tie plates; `KIT_SIZE`, `KIT_NAME`, `WOOD_KINDS`, `HEAVY`, `FAR_KINDS`, no shadow), a centimetre
+    lower and 2 cm thinner, at the same `s` and frontier, so it drops with its panel and the sleeper above keeps its
+    plates and its thud. No existing piece changes index: timbers and rails come after every other piece. The up
+    track's own and paired sleepers inside a zone are skipped (6 on line 1, 5 on line 2, and their posts).
+  - **The union (J3 with J4) is two boxes.** Line 1 draws J4's timber from the first panel; the yard carries it on
+    under the leg (from J4's far end to J3's) with the leg's later part, so before the leg is laid J4 stands alone
+    and nothing points at a leg that is not there. `spanAcross(j, t, s)` in `junctions.ts` gives a junction's
+    timber in its line's own frame for both. The test's "one timber per station in a cluster" still holds (the
+    union is whole steps).
+  - **The leg is `home-yard.ts`'s**, not `home-station-view.ts`'s (the tidy pass moved it): its timbers, rails
+    from `plainD` and own sleepers from `clearD` at both ends, and both turnouts' parts, all in the yard's later
+    part (`legLaid()`). `yard.clearOf` is gone. `home-station-view.ts` is not edited; the leg's two lever boxes
+    stand where they were.
+  - **No lever at J4 or J6** (designer call 3 puts line levers in step 6's batch); their headblocks run out to the
+    east, toward the lever's side.
+  - **Two dev tools evaluate `track.ts` and `home-yard.ts` from source** with injected bindings
+    (`dev/level/grounding-track.ts`, `machine-clearance.ts`, `rider-coach-pools.ts`, `track-geometry.ts`): they
+    gain `junctions`, `turnout` and `spanAcross`.
+  - **The eval** gains `at=throat-top | throat | top&id=J… | eye&id=J… | back&id=J…`. The two reference stills
+    (`late-topdown-throat.png`, `late-throat-eye-level.png`) were not on this machine, so the framings are new:
+    `throat-top` 34 m over the middle of the four toes, `throat` a player's eye beside line 1 behind J4's toe.
+  - **Seen** ([turnouts/](turnouts/), `trains-on` and `forge-frame-last`): every junction reads as points from
+    above and at eye height; rails run on through each frog, one timber per station, timbers under both roads, no
+    z-fighting seen. At `forge-frame-last` (line 1 laid, line 2 not) J4 stands whole; the leg, J2, J3 and J6 are
+    absent. The frog on J4's curve reads as a crossing on a bend, not wrong: option B is not needed for it.
+  - **Cost** (piece counts from `buildTrack` and `chunkRuns`, against `origin/main`; the runtime readout in the
+    look harness read zero, so no live figure): line 1 gains one batch (its `timber` run), line 2 two (`timber` and
+    a new chunk-0 `rail` run, the line's up rails having closed on chunk 2): +3 draws where they are in view, none
+    casting. Pieces: +13 timbers and +6 rails a line, −6 and −5 sleepers, −5 posts on line 2. Near triangles about
+    +12 × 228 for the rails, the timbers about as many sleepers' worth as they cover less the skipped ones' plates.
+    The yard's batches are fixed (four), so J2 and J3 add no draw: 30 rail pieces join its rail batch. Level check:
+    z-fighting "likely visible" 156 → 154, grounding and machine clearance 0 problems, as before.
+  - **Not seen:** a train running through any of these turnouts, far LOD, phone width; not tested on a device.
 - [ ] **4. The lines: J5, J7, J8, J9.** `track.ts` only. J9's pieces join `merge` so `retire()` takes them at Q7. On a
   deck (`deck(s)`) no timbers: the planks already span both tracks. Proof look: `at=farhead`, the crossover from Far
   Head's platform end at eye level.

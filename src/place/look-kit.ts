@@ -232,6 +232,7 @@ export function kitLogs(max: number, owner: OwnedView) {
 type Part = { mesh: THREE.InstancedMesh; inv: THREE.Vector3 };
 const WOOD_KINDS: Record<string, { axis: 'x' | 'y' | 'z'; unit: [number, number, number] }> = {
   sleeper: { axis: 'x', unit: [2.3, 0.12, 0.42] },
+  timber: { axis: 'x', unit: [2.3, 0.12, 0.42] },
   plank: { axis: 'x', unit: [3.6, 0.12, 0.84] },
   cap: { axis: 'x', unit: [5, 0.55, 1] },
   stringer: { axis: 'z', unit: [0.8, 0.4, 6.6] },
@@ -241,6 +242,7 @@ const WOOD_KINDS: Record<string, { axis: 'x' | 'y' | 'z'; unit: [number, number,
 // A leg or brace is as long as its drop: its height stays a scale over the kit's 1 m piece. The rest are their own size.
 const KIT_SIZE: Record<string, [number, number, number]> = {
   sleeper: [2.3, 0.12, 0.42],
+  timber: [2.3, 0.12, 0.42],
   plank: [3.6, 0.12, 0.84],
   cap: [5, 0.55, 1],
   stringer: [0.8, 0.4, 6.6],
@@ -248,7 +250,8 @@ const KIT_SIZE: Record<string, [number, number, number]> = {
   leg: [0.5, 1, 0.5],
   brace: [0.26, 1, 0.26],
 };
-const KIT_NAME: Record<string, string> = { leg: 'post' };
+// A turnout's timber is the kit's sleeper stretched; it has no tie-plate batch (a stretched sleeper would stretch them).
+const KIT_NAME: Record<string, string> = { leg: 'post', timber: 'sleeper' };
 const unitBox = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0);
 if (LOOK.contact && !LOOK.kit) bakeContact(unitBox, 0.42, 1);
 const tm = new THREE.Matrix4();
@@ -331,7 +334,7 @@ export function lookTrack(set: DropSet, kinds: string[], owner: OwnedView, chunk
       q.mesh.computeBoundingSphere = () => void (q.mesh.boundingSphere = chunk.sphere);
     }
     // What lies flat on its bed has no shadow worth a second draw: the bed's contact blobs already ground it.
-    if (run.kind === 'sleeper' || run.kind === 'rail') {
+    if (run.kind === 'sleeper' || run.kind === 'timber' || run.kind === 'rail') {
       for (const q of list) q.mesh.castShadow = false;
       chunk.shadow = false;
     }

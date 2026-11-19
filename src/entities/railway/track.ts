@@ -17,6 +17,8 @@ import {
   type LineSpec,
 } from '../../place/layout.ts';
 import { dropSet, type DropSet } from '../../place/pieces.ts';
+import { junctions, spanAcross } from '../../place/junctions.ts';
+import { turnout } from '../../place/turnout.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { chunkOf } from './track-chunks.ts';
 import { lookTrack } from '../../place/look-kit.ts';
@@ -73,7 +75,8 @@ export type Track = {
    * them (path-refuge.ts plankTops). */
   planks: () => { x: number; y: number; z: number; local: THREE.Matrix4 }[];
 };
-type PieceKind = 'sleeper' | 'plank' | 'rail' | 'cap' | 'stringer' | 'leg' | 'brace';
+/** A `timber` is a turnout's long sleeper (the kit's sleeper stretched, without tie plates), under one of the line's. */
+type PieceKind = 'sleeper' | 'timber' | 'plank' | 'rail' | 'cap' | 'stringer' | 'leg' | 'brace';
 export function buildTrack(
   spec: LineSpec,
   thudAt: (k: number, kind: PieceKind, x: number, y: number, z: number) => void,
@@ -143,6 +146,8 @@ export function buildTrack(
     lateral(ul, qUp);
     return railY(line, s) - H(qUp.x, qUp.z) > 1;
   };
+  /** Today's track's sleepers on the land, as laid: a turnout's timbers go under them (`zones`, below). */
+  const stations: { s: number; depth: number; yaw: number; y: number; lean: THREE.Euler }[] = [];
   if (!panelled) {
     // Sleepers on the land; on the trestle a plank deck wide enough to walk, nearly closed.
     for (let s = 0.6; s < line.len;) {
@@ -158,6 +163,7 @@ export function buildTrack(
       else {
         lateral(0, q);
         add(s, 'sleeper', q.x, q.z, y - 0.02, place(0, 0, 0, 2.3, 0.12, 0.42, yaw, lean), '#8a6236', 0, 1.1);
+        stations.push({ s, depth: 0.42, yaw, y, lean });
         // Low sleepers need support too: the tall trestle bents only start beyond a metre of clearance.
         for (const side of [-0.75, 0.75]) {
           lateral(side, q);
@@ -231,6 +237,7 @@ export function buildTrack(
             0,
             1.1,
           );
+          stations.push({ s, depth: Math.min(0.42, length), yaw, y, lean });
           // Low sleepers need support too: the tall trestle bents only start beyond a metre of clearance.
           for (const side of [-0.75, 0.75]) {
             lateral(side, q);
@@ -288,6 +295,36 @@ export function buildTrack(
     lineAt(line, s, P);
     return lateral(l, out);
   };
+  /** A box from world point `a` to `b` (`y` their rail heights) along its own heading, `dy` over them, placed in
+   * the laying order at the line's `s`; `d` its length if not theirs. */
+  const boxBetween = (
+    kind: PieceKind,
+    s: number,
+    a: { x: number; z: number; y: number },
+    b: { x: number; z: number; y: number },
+    w: number,
+    h: number,
+    dy: number,
+    color: string,
+    lead: number,
+    fall: number,
+    d?: number,
+  ) => {
+    const dx = b.x - a.x,
+      dz = b.z - a.z,
+      len = Math.hypot(dx, dz);
+    const local = place(
+      0,
+      0,
+      0,
+      w,
+      h,
+      d ?? len,
+      Math.atan2(dx, dz),
+      new THREE.Euler(-Math.atan2(b.y - a.y, len), 0, 0),
+    );
+    add(s, kind, (a.x + b.x) / 2, (a.z + b.z) / 2, (a.y + b.y) / 2 + dy, local, color, lead, fall);
+  };
   /** A box from (sa, la) to (sb, lb) along its own heading: a rail or a sleeper on a turnout's curve. */
   const offsetBox = (
     kind: PieceKind,
@@ -305,24 +342,71 @@ export function buildTrack(
   ) => {
     offsetAt(sa, la, wa);
     offsetAt(sb, lb, wb);
-    const ya = railY(line, sa),
-      yb = railY(line, sb);
-    const dx = wb.x - wa.x,
-      dz = wb.z - wa.z,
-      len = Math.hypot(dx, dz);
-    add(
-      (sa + sb) / 2,
+    boxBetween(
       kind,
-      (wa.x + wb.x) / 2,
-      (wa.z + wb.z) / 2,
-      (ya + yb) / 2 + dy,
-      place(0, 0, 0, w, h, d ?? len, Math.atan2(dx, dz), new THREE.Euler(-Math.atan2(yb - ya, len), 0, 0)),
+      (sa + sb) / 2,
+      { ...wa, y: railY(line, sa) },
+      { ...wb, y: railY(line, sb) },
+      w,
+      h,
+      dy,
       color,
       lead,
       fall,
+      d,
     );
   };
   const upAt = (s: number) => offsetLat(formation, s);
+  // The up track's rails come in the same cuts as today's, so each panel lays both tracks.
+  const pieces: [number, number][] = [];
+  if (panelled)
+    for (let cut = 1; cut < cuts.length; cut++) {
+      const from = cuts[cut - 1]!,
+        to = cuts[cut]!;
+      const piece = panelOf(from) >= 0 ? carriedPiece(to - from).length : 3;
+      for (let at = from; at < to - 1e-7; at += piece) {
+        const a = dir > 0 ? at : line.len - at,
+          b = dir > 0 ? Math.min(to, at + piece) : line.len - Math.min(to, at + piece);
+        pieces.push([Math.min(a, b), Math.max(a, b)]);
+      }
+    }
+  else for (let s = 0; s < line.len; s += 3) pieces.push([s, Math.min(line.len, s + 3)]);
+  /** The stretch of a rail piece the up track has its own rails on: where it is off today's track by over 0.12 m. */
+  const upSpan = (s0: number, s1: number) => {
+    const a = Math.max(s0, formation.from),
+      b = Math.min(s1, formation.to);
+    if (b - a <= 0.2) return null;
+    const la = upAt(a)!,
+      lb = upAt(b)!;
+    return la < -0.12 || lb < -0.12 ? { a, b, la, lb } : null;
+  };
+  // Home's throat (docs/plans/turnouts.md, step 3): the turnouts where the up track leaves this line, from the one
+  // list. The up track's plain rails stay whole through the frog (the gantry carries them), so each turnout adds its
+  // open blade, wing and check rails up to and round them, and a long timber under each of today's sleepers in its
+  // zone, where the up track lays none of its own.
+  const DRAWN = new Set(['J4', 'J6']);
+  const zones = junctions()
+    .filter((j) => j.line === spec.id && DRAWN.has(j.id))
+    .map((j) => {
+      // Where the up track's own rails begin, metres from the toe.
+      const first = Math.min(
+        ...pieces.map(([s0, s1]) => upSpan(s0, s1)?.a ?? Infinity).filter((a) => (a - j.s) * j.dir >= -1),
+      );
+      return { j, t: turnout(j.through, j.diverging, j.lever, (first - j.s) * j.dir) };
+    });
+  /** The timber across today's track at `s`: its two ends, metres to the line's right (as `lateral`), the union where
+   * zones overlap; null outside every zone. */
+  const timberAt = (s: number) => {
+    let lo = Infinity,
+      hi = -Infinity;
+    for (const { j, t } of zones) {
+      const span = spanAcross(j, t, s);
+      if (!span) continue;
+      lo = Math.min(lo, span[0]);
+      hi = Math.max(hi, span[1]);
+    }
+    return hi > lo ? ([lo, hi] as const) : null;
+  };
   // Sleepers. On a turnout the two tracks share them (one set through the overlap, not two interleaved): the up track
   // has none of its own while today's reach under both its rails (0.65 m apart or less); from there until it is clear
   // of today's (2.4 m), one beside each of today's and in line with it, a centimetre under it so neither flickers
@@ -338,12 +422,12 @@ export function buildTrack(
       : Array.from({ length: Math.ceil(line.len / 1.2) }, (_, k) => 0.6 + k * 1.2)
   ).filter((s) => {
     const l = upAt(s);
-    return l !== null && l <= COVERED && l > CLEAR && !deck(s);
+    return l !== null && l <= COVERED && l > CLEAR && !deck(s) && !timberAt(s);
   });
   const own: number[] = [];
   for (let s = formation.from + 0.6; s < formation.to; s += 1.2) {
     const l = upAt(s);
-    if (l !== null && l <= CLEAR && !deck(s) && !beside.some((t) => Math.abs(t - s) < 0.6)) own.push(s);
+    if (l !== null && l <= CLEAR && !deck(s) && !timberAt(s) && !beside.some((t) => Math.abs(t - s) < 0.6)) own.push(s);
   }
   const ups = [...beside.map((t) => [t, true] as const), ...own.map((t) => [t, false] as const)];
   for (const [s, shared] of ups.sort((a, b) => a[0] - b[0])) {
@@ -407,33 +491,17 @@ export function buildTrack(
       );
     }
   }
-  const pieces: [number, number][] = [];
-  if (panelled)
-    for (let cut = 1; cut < cuts.length; cut++) {
-      const from = cuts[cut - 1]!,
-        to = cuts[cut]!;
-      const piece = panelOf(from) >= 0 ? carriedPiece(to - from).length : 3;
-      for (let at = from; at < to - 1e-7; at += piece) {
-        const a = dir > 0 ? at : line.len - at,
-          b = dir > 0 ? Math.min(to, at + piece) : line.len - Math.min(to, at + piece);
-        pieces.push([Math.min(a, b), Math.max(a, b)]);
-      }
-    }
-  else for (let s = 0; s < line.len; s += 3) pieces.push([s, Math.min(line.len, s + 3)]);
   for (const [s0, s1] of pieces) {
-    const a = Math.max(s0, formation.from),
-      b = Math.min(s1, formation.to);
-    if (b - a > 0.2) {
-      const la = upAt(a)!,
-        lb = upAt(b)!;
-      if (la < -0.12 || lb < -0.12)
-        for (const r of [-0.5, 0.5]) {
-          offsetBox('rail', a, la + r, b, lb + r, 0.1, 0.12, TOP, '#4c5058', -2.2, 0.8);
-          upRails.add(boxes.length - 1);
-          // A rail piece that is not on the straight up track (OFFSET_LAT) at one end is in the merge turnout.
-          if (a > formation.to - 60 && (la > OFFSET_LAT + 0.01 || lb > OFFSET_LAT + 0.01))
-            merge.push({ k: boxes.length - 1, from: a });
-        }
+    const up = upSpan(s0, s1);
+    if (up) {
+      const { a, b, la, lb } = up;
+      for (const r of [-0.5, 0.5]) {
+        offsetBox('rail', a, la + r, b, lb + r, 0.1, 0.12, TOP, '#4c5058', -2.2, 0.8);
+        upRails.add(boxes.length - 1);
+        // A rail piece that is not on the straight up track (OFFSET_LAT) at one end is in the merge turnout.
+        if (a > formation.to - 60 && (la > OFFSET_LAT + 0.01 || lb > OFFSET_LAT + 0.01))
+          merge.push({ k: boxes.length - 1, from: a });
+      }
     }
     const c = formation.crossover;
     if (!c) continue;
@@ -511,6 +579,22 @@ export function buildTrack(
       }
   }
 
+  // The turnouts' pieces come after every other, so no piece's index changes; each lands with the panel at its place.
+  // A timber lies a centimetre under today's sleeper and is thinner, so the sleeper and its tie plates stay on top.
+  const turnoutRails = new Set<number>();
+  for (const st of stations) {
+    const span = timberAt(st.s);
+    if (!span) continue;
+    lineAt(line, st.s, P);
+    lateral((span[0] + span[1]) / 2, q);
+    const local = place(0, 0, 0, span[1] - span[0], 0.12, st.depth - 0.02, st.yaw, st.lean);
+    add(st.s, 'timber', q.x, q.z, st.y - 0.03, local, '#8a6236', 0, 1.1);
+  }
+  for (const { j, t } of zones)
+    for (const r of t.rails) {
+      boxBetween('rail', j.s + j.dir * r.d, r.a, r.b, 0.1 * r.w, 0.12, TOP, '#4c5058', -2.2, 0.8);
+      turnoutRails.add(boxes.length - 1);
+    }
   const set = lookTrack(
     dropSet(
       boxes,
@@ -601,10 +685,12 @@ export function buildTrack(
     const near = (k: number) => Math.abs(triggers[k]! - 2.2 - centre);
     return rails.sort((a, b) => near(a) - near(b)).slice(0, 2);
   };
-  const carriedPair = panels.map((_, index) => nearestPair(index, (k) => !upRails.has(k) && !crossRails.has(k)));
+  const carriedPair = panels.map((_, index) =>
+    nearestPair(index, (k) => !upRails.has(k) && !crossRails.has(k) && !turnoutRails.has(k)),
+  );
   // Where the panel has up track the gantry carries its pair too, a second pair in the jaws, seated after the first.
   const carriedUp = panels.map((_, index) => {
-    const pair = nearestPair(index, (k) => upRails.has(k));
+    const pair = nearestPair(index, (k) => upRails.has(k) && !turnoutRails.has(k));
     return pair.length === 2 ? pair : [];
   });
   const pairMid = (pair: number[], mid: THREE.Vector3, dirOut: THREE.Vector3, index: number) => {

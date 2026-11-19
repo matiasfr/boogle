@@ -7,6 +7,8 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { dequantize } from '@gltf-transform/functions';
 import { MeshoptDecoder } from 'meshoptimizer';
 import { sourceModule, sourceFunction } from './source.ts';
+import { junctions, spanAcross } from '../../src/place/junctions.ts';
+import { turnout } from '../../src/place/turnout.ts';
 import {
   CRANE,
   FORMATION,
@@ -455,6 +457,9 @@ export async function checkMachineClearance() {
       OFFSET_LAT,
       offsetLat,
       crossLat,
+      junctions,
+      spanAcross,
+      turnout,
       box: sourceFunction('src/render/boxes.ts', 'box', { boxAt, groundHeight: H }),
       dropSet: () => ({}),
       lookTrack: () => ({}),

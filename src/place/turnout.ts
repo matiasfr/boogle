@@ -110,8 +110,11 @@ function reach(f: (d: number) => number, target: number, from: number, to: numbe
 }
 
 /** The turnout where `diverging` leaves `through`. `lever` is the side the points lever stands on (+1 the through
- * road's right), which the headblocks run out to. */
-export function turnout(through: Centre, diverging: Centre, lever: 1 | -1): Turnout {
+ * road's right), which the headblocks run out to. `plain`: where the diverging road's own plain rails already begin
+ * (metres along it), when they are a line's and run on unbroken through the frog (track.ts: the gantry carries them).
+ * Then the frog is an uncut crossing: `rails` holds only the open blade up to them, the wing and the check rails, and
+ * no stock rail where it would lie on the through road's own. */
+export function turnout(through: Centre, diverging: Centre, lever: 1 | -1, plain?: number): Turnout {
   const REACH = 60;
   const offset = (d: number) => locate(through, diverging(d), d).lat;
   const hand: 1 | -1 = offset(reach((d) => Math.abs(offset(d)), 0.2, 0, REACH)) > 0 ? 1 : -1;
@@ -132,7 +135,7 @@ export function turnout(through: Centre, diverging: Centre, lever: 1 | -1): Turn
   const ft = frame(through, noseT).t,
     fd = frame(diverging, frogD).t;
   const frogAngle = (Math.acos(Math.min(1, ft.x * fd.x + ft.z * fd.z)) * 180) / Math.PI;
-  const plainD = noseD + KIT.wingPast + 0.3;
+  const plainD = plain ?? noseD + KIT.wingPast + 0.3;
 
   const rails: RailPiece[] = [];
   /** A rail beside road `c` from `from` to `to`, `lat(d)` to its right, as chords of about 1.5 m. */
@@ -160,16 +163,25 @@ export function turnout(through: Centre, diverging: Centre, lever: 1 | -1): Turn
 
   // The diverging road's far rail is a stock rail: whole from the toe, where the through road's inner rail (the
   // closed blade) lies against it.
-  run('stock', 'diverging', at(hand * half), 0, plainD);
+  // Where the diverging road's own rails already run from `plain`, the stock rail before them lies on the through
+  // road's (they part by a rail's width only about there), so it is that rail.
+  if (plain === undefined) run('stock', 'diverging', at(hand * half), 0, plainD);
+  else {
+    const from = reach((d) => Math.abs(offset(d)), KIT.rail, 0, REACH);
+    if (plain - from >= 0.5) run('stock', 'diverging', at(hand * half), from, plain);
+  }
   // Its inner rail starts as the open blade, its tip a throw off the through road's far rail, thin at the tip.
   const open = (d: number) => -hand * half + hand * KIT.throw * (1 - d / bladeLen);
-  run('blade', 'diverging', open, 0, bladeLen / 2, 0.45);
-  run('blade', 'diverging', open, bladeLen / 2, bladeLen, 0.75);
+  const bladeTo = Math.min(bladeLen, plainD);
+  run('blade', 'diverging', open, 0, bladeTo / 2, 0.45);
+  run('blade', 'diverging', open, bladeTo / 2, bladeTo, 0.75);
   // The closure rail stops a flangeway short of the through rail it would cross, and takes up again past it as the
   // vee's leg (the through rail itself is the vee's other leg).
   const closureEnd = reach(inner, half - gap, bladeLen, REACH);
-  run('closure', 'diverging', at(-hand * half), bladeLen, closureEnd);
-  run('vee', 'diverging', at(-hand * half), reach(inner, half + 0.03, closureEnd, REACH), plainD);
+  if (plain === undefined) {
+    run('closure', 'diverging', at(-hand * half), bladeLen, closureEnd);
+    run('vee', 'diverging', at(-hand * half), reach(inner, half + 0.03, closureEnd, REACH), plainD);
+  } else run('closure', 'diverging', at(-hand * half), bladeLen, Math.min(closureEnd, plainD));
   // Wing rails: each closure rail bent to run beside the other road's vee leg, past the nose, easing away from it
   // (one length each: a short kit rail squeezes its joint plates to scraps).
   {
