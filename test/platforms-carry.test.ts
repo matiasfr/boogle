@@ -7,7 +7,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { FIXED, PLAYER_R } from '../src/constants.ts';
 const { createOwnedView } = await import('../src/render/owned-view.ts');
-const { createRailheadDeck, deckU, placeDeck } = await import('../src/entities/railway/railhead-state.ts');
+const { createRailheadDeck, createTableRide, deckU, placeDeck } =
+  await import('../src/entities/railway/railhead-state.ts');
 const { haulU } = await import('../src/sim/railway-ring-haul.ts');
 const physics = await import('../src/physics/engine.ts');
 const { makePlayerBody } = await import('../src/physics/physics.ts');
@@ -354,5 +355,51 @@ test('a rider who walks off their deck onto an overlapping one transfers to it',
     assert.equal(carry.on?.id, 'car-b');
   } finally {
     for (const f of off) f();
+  }
+});
+
+// Review (recheck 2 of the table ride): the deck's pose marker (railhead-state.ts createTableRide, a 1 cm box 0.2 m
+// under the deck's top at its centre) has collision mask 0, but it is still a registered platform, so carryStep's
+// stands() takes it as a floor. While the deck turns it has no static boxes and the riding copy waits parked; a player
+// whose feet come down through the deck's middle short of its top (a short hop from the pit floor, apex 0.75 to 1.2 m
+// over it) must drop to the pit, not stand inside the deck on the marker.
+test("a player dropping through the turning table deck's middle is not held up by its pose marker", async () => {
+  await physics.physicsReady;
+  const wall = softWall.at;
+  softWall.at = Infinity;
+  const owner = createOwnedView();
+  const top = 100; // in open air: no land under it, only the marker could hold them
+  const ride = createTableRide(owner, { x: 0, z: 0 }, 8, top);
+  const rider = makePlayerBody(false);
+  owner.addBody(rider);
+  try {
+    let yaw = 0;
+    ride.update(yaw, FIXED);
+    physics.stepFixed();
+    const y0 = top - 0.1 + PLAYER_R; // feet 0.1 m under the deck's top: inside it, short of a ride's start
+    physics.teleport(rider, 0.05, y0, 0.05);
+    rider.velocity.set(0, -1, 0);
+    player.body = rider;
+    player.coyote = 0;
+    driveRider = true;
+    let held = 0;
+    for (let frame = 0; frame < 30; frame++) {
+      yaw += 0.05; // a turn's fast part, 3 rad/s
+      ride.update(yaw, FIXED);
+      physics.stepFixed();
+      if (carry.on && carry.on.hx < 0.01) held++;
+    }
+    const fell = y0 - rider.position.y;
+    assert.ok(
+      held === 0 && fell > 0.5,
+      `held by the marker in ${held} of 30 steps; fell ${fell.toFixed(3)} m in 0.5 s (feet now ${(rider.position.y - PLAYER_R - top).toFixed(3)} m from the deck's top)`,
+    );
+  } finally {
+    driveRider = false;
+    softWall.at = wall;
+    player.body = null;
+    carry.on = null;
+    carry.x = carry.y = carry.z = 0;
+    owner.dispose();
   }
 });

@@ -1,7 +1,8 @@
 import { Group } from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { FIXED, PLAYER_R } from '../../constants.ts';
-import { carry } from '../../physics/platforms.ts';
+import { carry, CARRY } from '../../physics/platforms.ts';
+import { angleLerp } from '../../math.ts';
 import { me } from '../../player/state.ts';
 import type { Body } from '../../physics/engine.ts';
 import { siteExit } from '../../place/site-clearance.ts';
@@ -12,7 +13,8 @@ import { haulU } from '../../sim/railway-ring-haul.ts';
 import { aperture, type ReadWorld } from '../../sim/railway-rows.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { q7Laid } from '../../sim/railway-queries.ts';
-import { makeCar, snapCar, type Car } from './car.ts';
+import { BOTTOM, makeCar, snapCar, type Car } from './car.ts';
+import { BRIDGE, bridgeHalf } from './table-bridge.ts';
 
 export type RailheadDeck = { car: Car; snap(): void; drive(fn: () => void): void };
 const sideMid = (SIDE.lat0 + SIDE.lat1) / 2;
@@ -149,4 +151,93 @@ export function placeDeck(
     }
   }
   if (opening) deck.snap();
+}
+
+// ---------------------------------------------------------------- the turntable's deck as a ride
+// The turntable's deck as a ride (./roundhouse-view.ts). At rest the deck is static boxes; they go for a turn, so the
+// deck never shoves anyone in the pit. Whoever has their feet on the deck's top (at rest or turning; never while rising
+// from below, out of the pit: a jump from the pit floor that clears the top and comes down on it does land on it) rides a kinematic copy of it on their own tab (./car.ts, the carry the trains and the railhead
+// traveller use: velocity, spin and the idle edge hold); it waits under the land for anyone else. Leaving it (a jump,
+// a step off) drops the deck's speed, so they land on the deck or in the pit, never thrown past the pit's wall.
+// The deck is a shared platform (`railway:table`): a rider sends their place on it (the `riding` presence,
+// src/entities/remote-player/), and every tab draws them on its own deck, whatever yaw that tab shows. For that a
+// marker car, a 1 cm box at the deck's centre, follows the drawn deck on every tab. It is only found by id, for
+// drawing: it collides with nothing (mask 0) and is never stood on (its `topAt` is out of reach, so the carry never
+// takes it). It registers first, so it is what `platformById` finds; on the rider's tab the two agree.
+type XZ = { x: number; z: number };
+/** Feet this far over the deck's top (a jump) still ride it; under it, as far as the carry counts (CARRY.below). A
+ * ride starts only with the feet at the top, within START of it, and not rising (0.1 m/s at most). */
+const ABOVE = 3,
+  START = 0.05,
+  PARKED = -60, // m: the riding deck waits under the land, as a train not yet needed does
+  ID = 'railway:table';
+
+export function createTableRide(owner: OwnedView, table: XZ, r: number, top: number) {
+  const half = bridgeHalf(r);
+  let riding = false,
+    stood = false, // the carry stood this tab's player on the deck in the last step
+    yaw = 0,
+    rate = 0, // rad/s the drawn deck turned over the last frame
+    since = 0; // s stepped since the last frame's yaw
+  const centre = top - BRIDGE.h / 2;
+  const marker = makeCar({ hx: 0.005, hz: 0.005, top: BOTTOM + 0.01 }, new Group(), step, { mask: 0 }, owner);
+  const car = makeCar({ hx: half.hx, hz: half.hz, top: BOTTOM + BRIDGE.h }, new Group(), drive, {}, owner);
+  for (const c of [marker, car]) {
+    c.platform.id = ID;
+    c.platform.shared = true;
+    // A show-off turn peaks at about π rad/s; the deck is drawn at its yaw, so the bodies follow it exactly.
+    c.spinLimit = 2 * Math.PI;
+    c.spinGain = 1 / FIXED;
+  }
+  // No top anyone's feet can reach: the carry (src/physics/platforms.ts, stands) never holds anyone on the marker.
+  marker.platform.topAt = () => Infinity;
+  /** The drawn deck's pose, led by its turn since the frame drew it (physics steps before the views draw, so without
+   * the lead the rider would trail the drawn deck by a frame). */
+  function pose(c: Car) {
+    c.x = table.x;
+    c.z = table.z;
+    c.y = centre;
+    c.yaw = yaw + rate * since;
+  }
+  /** Every fixed step, first (the marker registered first): the drawn deck's pose. */
+  function step() {
+    since += FIXED;
+    pose(marker);
+  }
+  /** Then, before the carry: whether this tab's player rides the deck. */
+  function drive() {
+    pose(car);
+    const b = me.body;
+    // Off the deck since the last step: the deck's speed goes with it (a train's or the railhead's keeps it).
+    if (stood && carry.on !== car.platform && b) {
+      b.velocity.x -= carry.x;
+      b.velocity.z -= carry.z;
+      carry.x = carry.z = 0;
+    }
+    stood = carry.on === car.platform;
+    riding = !!b && (riding ? over(b, car.yaw, -CARRY.below) : b.velocity.y <= 0.1 && over(b, car.yaw, -START));
+    if (!riding) car.y = PARKED;
+  }
+  /** Whether the body is over the deck turned `at`, its feet from `low` to ABOVE over its top. */
+  function over(b: Body, at: number, low: number) {
+    const dx = b.position.x - table.x,
+      dz = b.position.z - table.z;
+    const across = dx * Math.cos(at) - dz * Math.sin(at),
+      along = dx * Math.sin(at) + dz * Math.cos(at),
+      feet = b.position.y - PLAYER_R - top;
+    return (
+      Math.abs(across) <= half.hx + CARRY.edge &&
+      Math.abs(along) <= half.hz + CARRY.edge &&
+      feet >= low &&
+      feet <= ABOVE
+    );
+  }
+  return {
+    /** Once a frame with the deck's drawn yaw. */
+    update(drawn: number, dt: number) {
+      rate = dt > 0 ? (angleLerp(yaw, drawn, 1) - yaw) / dt : 0;
+      yaw = drawn;
+      since = 0;
+    },
+  };
 }

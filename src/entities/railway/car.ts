@@ -69,6 +69,10 @@ export type Car = {
   yaw: number;
   pitch: number;
   speedLimit: number;
+  /** The body turns toward `yaw` at `spinGain` times the gap per second (eased, a train's bend), at most `spinLimit`
+   * rad/s; the turntable's deck (./railhead-state.ts, createTableRide) follows its drawn yaw exactly. */
+  spinLimit: number;
+  spinGain: number;
   platform: Platform;
   /** Footprint of the cargo surface currently supporting a rider; absent means the flatbed. */
   supportAt?: (x: number, z: number) => { x: number; z: number; hx: number; hz: number } | undefined;
@@ -86,7 +90,7 @@ export function makeCar(
   const body = createBody({
     type: BODY.KINEMATIC,
     material: groundMat,
-    mask: NOT_SCENERY,
+    mask: extra?.mask ?? NOT_SCENERY, // 0: touches nothing (the turntable's pose marker, ./railhead-state.ts)
     position: { x: ORIGIN.x, y: -60, z: ORIGIN.z },
     shapes: [{ kind: 'box', hx: spec.hx, hy, hz: spec.hz }, ...(extra?.shapes ?? [])],
   });
@@ -109,6 +113,8 @@ export function makeCar(
     yaw: 0,
     pitch: 0,
     speedLimit: TUNE.cruise * 1.5, // slopes and small reconciliation nudges, never a snapshot's distance / FIXED
+    spinLimit: 2,
+    spinGain: 8,
     platform: {
       body,
       hx: spec.hx,
@@ -140,7 +146,7 @@ function moveCar(c: Car, dt: number) {
   // and ease the last part, keeping the collider, drawn deck and rider on the same smooth heading.
   if (Math.hypot(dx, dy, dz) > c.speedLimit * dt) return snapCar(c);
   p.velocity.set(dx / dt, dy / dt, dz / dt);
-  p.angularVelocity.set(0, Math.max(-2, Math.min(2, turn * Math.min(8, 1 / dt))), 0);
+  p.angularVelocity.set(0, Math.max(-c.spinLimit, Math.min(c.spinLimit, turn * Math.min(c.spinGain, 1 / dt))), 0);
 }
 const riderLocal = { x: 0, y: 0, z: 0, yaw: 0 },
   riderWorld = { ...riderLocal };

@@ -330,6 +330,11 @@
 body.garage-open .hud > :not(.garage-ui):not(.shot-skip-chip):not(.notify) {
   visibility: hidden;
 }
+/* So do the touch stick and buttons (Glide, Grab): they sat over the category rail on a phone. The garage's own
+   Install and Back buttons take touch. */
+body.garage-open #touch {
+  visibility: hidden;
+}
 @media (max-width: 899px) {
   .g-rail {
     top: auto;

@@ -735,6 +735,45 @@ the `unproven-*` files in [docs/reports/garage-moment-checkpoint/](../reports/ga
 **Copy seen, unchanged:** "Keep holding", "Install", "Installed", "Ready", "Skip", "Free: the reward for reaching
 steel", "Look at the engine" (still at the post after the install).
 
+**Fixed, 18 November 2026 (night), branch `claude/garage-deck-friend`: both defects, then the review's three.**
+Whoever has their feet on the deck's top, at rest or turning, rides it on their own tab: a kinematic copy of the deck
+(`createTableRide` in `src/entities/railway/railhead-state.ts`, on `car.ts`'s carry, as the railhead's deck), led by
+the drawn yaw. A ride never starts while rising out of the pit; a jump from the pit floor that clears the top lands on it. Leaving the deck (a jump, a step off its side or end)
+drops the deck's speed: they land on the deck or in the pit at their own walking speed, not the deck's (its end moves at
+about 24 m/s in the show-off). Trains and the railhead traveller keep their carry. The deck is a shared platform
+(`railway:table`): a rider sends their place on it (the `riding` presence) and every page draws them on its own deck,
+whatever yaw that page shows (a marker car, a 1 cm box at the deck's middle, follows the drawn deck on every tab; it is only found by id for drawing, collides with nothing and is never stood on. Until 19 November it first collided, lifting a player under the deck's middle out of the pit (`deckcase=pitend&pitalong=0` holds it), then still held such a player inside the turning deck as a platform (`test/platforms-carry.test.ts` holds it)).
+When the deck's boxes come back, a player inside them (in the pit under it) is moved out of its side only, at their own
+height, still in the pit; never off its end onto the kerb. This reverses the "carried" part of call 23 below (logged in
+[agent-calls](../agent-calls.md)); the engine copy still passes through a friend. On a phone the touch stick and buttons
+hide while the garage is open. `garage-deck.ts` fails unless the friend is carried within 20° of the deck, drops under
+0.3 m, ends on the deck's top, and (on the installer's page) is drawn on that page's deck; `deckcase=jump|walkoff` fail
+past the pit's wall (8.15 m), `deckcase=pitend` fails on a lift or past the wall. Proof on HOTBOX, last runs
+(`.look/gdf2-*`, not committed):
+
+- **Ride** (`--players 2 --real --rail-seed steel-home --hud --video`, load 2.5 to 4.2): deck 360°, friend 360° round,
+  dropped 0 m, ended at r 6.6 on the top. **On the installer's page:** off the deck's side in 0 of 516 frames, furthest
+  0.33 m across its middle, at most 3° off its axis (the review measured 462 of 500 frames off and up to 107° behind,
+  and 5.5 m off before the turn). Swapped pages (`deckview=installer`, load 4.0 to 3.8): 0 of 555 frames off, 3°.
+  Stills: `deck-friend-carried-sheet.png` (the friend's page), `deck-friend-installer-sheet.png` (the installer's: the
+  friend riding in front of the engine at 7.8 s).
+- **Jump** (`deckcase=jump`, load 0.8 to 5.5): two jumps in the fast part; the friend landed in the pit (dropped 0.96 m),
+  furthest 6.6 m from the centre, ended 6.36 m.
+- **Walk off** (`deckcase=walkoff`, strafing off the side, letting go once 0.3 m under the top): load 18.0 to 3.6, off at
+  3548 ms, then at most 5.19 m/s, furthest 7.87 m, ended 7.66 m in the pit: pass. An earlier run under load 20 (key held
+  until 0.3 m under) left at 4.61 m/s, a step, but walked up the pit's bank (level only to r 6, rising to the wall at
+  8.15 m) to 9.14 m: a step near the deck's end at walking speed can climb out of the shallow pit; no throw.
+- **Under the deck when it stops** (`deckcase=pitend`): at its end (7.3 m along, load 6.1 to 2.0), moved 2.26 m out of
+  its side, 0 m up, ended 7.37 m from the centre; mid-deck (`pitalong=3`, load 4.8 to 2.1), moved 2.26 m, 0 m up, ended
+  3.65 m. (The review measured 8.96 m and a 0.33 m lift onto the kerb.)
+- **The ordinary table turn** (one player at `cradle-fitted`, on the deck by the handle, first build): accepted, the deck
+  stays on road 0 until the roll-out, the player did not move. Not rerun.
+- **Touch** (`--real --touch --size 390x844 --rail-seed steel-home --hud`, load 2.7 to 3.4): Install held by touch,
+  press-to-drop 1430 ms, Line 2's boiler 1 to 2; no stick or buttons over the rail. Still: `touch-rail-clear-sheet.png`.
+
+Not proven: a slow machine (about 20 fps), a reload mid-turn, two players on the deck at once, the roll-out turn with a
+rider, and sound (still unheard). The checkpoint box stays unticked for sound. Not tested on a device.
+
 ## 7. Now, and what truly waits for the flip
 
 | Ships now, kept after the flip | Waits for the flip |
