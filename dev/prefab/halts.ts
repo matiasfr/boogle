@@ -1,7 +1,9 @@
 import { createHash } from 'node:crypto';
 import { canonical } from './compiler.ts';
 // Placement authority: join, never rewrite, the sim catalog and the existing view-only platform layout.
-import { RAIL_HALTS } from '../../src/sim/railway-lines.ts';
+import { RAIL_HALTS, RAIL_LINES } from '../../src/sim/railway-lines.ts';
+/** The greybox route's lines whose halts the views give levers (the stack line's are the `halt-ring-lever`s). */
+const ROW_LEVER_LINES = new Set(['ns', 'bay']);
 import { HALT_PIER } from '../../src/prefab/halt-deck.ts';
 import { HALTS, OFFSET_HALTS, CROSSING_SPAN, CROSSING_WIDTH, FORMATION } from '../../src/place/layout.ts';
 import { ISLAND, HEADS, BUFFERS, LINE_ORIGIN, AXIS, ISLAND_LEVER } from '../../src/place/home-station.ts';
@@ -90,6 +92,18 @@ export function haltKitContent() {
           side: h.stop <= 5 && up ? -1 : 1,
           plaque: h.leg && stub ? 2 : 1,
         },
+        colliders: [],
+      });
+  }
+  // The greybox route's own lines (docs/plans/greybox-leg2.md, step 4): a lever on each built halt's outward platform,
+  // and on each head's homeward one (right-hand running), stood by the view (railway/halts-view.ts rowSpot).
+  for (const [id, h] of RAIL_HALTS.entries()) {
+    if (!h.leg || !ROW_LEVER_LINES.has(RAIL_LINES[h.line]!.id)) continue;
+    for (const up of h.end?.kind === 'stub' ? [false, true] : [false])
+      entries.push({
+        id: `halt-row-lever-${id}-${up ? 'up' : 'down'}`,
+        prefab: 'railway.halt-lever',
+        params: { row: id, up, piece: 'lever', ring: true, side: up ? -1 : 1, plaque: 1 },
         colliders: [],
       });
   }

@@ -9,8 +9,10 @@ import { RAIL_LINES } from '../../sim/railway-lines.ts';
 import { ROW_LINE, type RowId } from '../../sim/railway-route.ts';
 import { WORLD_LINES } from '../../sim/railway-world-lines.ts';
 
-/** Each track's offset from the row, metres (the outward track +, the homeward -). */
-export const ROW_TRACK = 2;
+/** Each track's offset from the row, metres (the outward track +, the homeward -), and each platform's middle (the
+ * halts' platform points, railway-lines.ts legPlatforms: 3.8 to 7.8 m off the row). */
+export const ROW_TRACK = 2,
+  ROW_PLATFORM = 5.8;
 /** A crossover's and a stub turnout's length, metres (the sim's 20 m turnout). */
 const CROSS = 20,
   TURN = 20;
@@ -121,18 +123,19 @@ export type RowLatRow = { readonly track: number; readonly origin: number };
 /** `from` to `to` over [a, b], eased. */
 const swing = (s: number, a: number, b: number, from: number, to: number) => from + (to - from) * ease((s - a) / (b - a));
 /** The lateral of a train of row line `line` at `s` metres (right-hand running, the views' own: the sim reads only s).
- * Going out it runs on the outward track; at the line's start it stood on the homeward one (the arriving train runs
- * straight in) and takes the start's crossover out (the Gorge's in the bore, s 70 to 90; the West landing's, s 45 to
- * 65). Going home it is on the homeward track, after the turnout or crossover of the end it left: a stub's merge at a
- * head (the terminal track is the outward one), the crossover before Bell Rock's platforms. The end it left is the one
- * at `origin` (the sim's retained departure stop) or, with none, today's open end. */
+ * Going out it runs on the outward track. Going home it is on the homeward track, after the turnout or crossover of
+ * the end it left (a stub's merge at a head, whose terminal track is the outward one; the crossover before Bell Rock's
+ * platforms), and it takes the start's crossover on its way in (the Gorge's in the bore, s 70 to 90; the West
+ * landing's, s 45 to 65), so it stands at the start's outward platform, which the server judges a departure's lever
+ * from (railway-lines.ts haltPlatform), and leaves straight out. The end it left is the one at `origin` (the sim's
+ * retained departure stop) or, with none, today's open end. */
 export function rowLat(line: number, row: RowLatRow, s: number, stops: readonly number[]) {
-  const halts = RAIL_LINES[line]!.halts;
-  if (!row.track) {
-    const start = halts[0]!.end;
-    if (!start) return ROW_TRACK;
+  if (!row.track) return ROW_TRACK;
+  const halts = RAIL_LINES[line]!.halts,
+    start = halts[0]?.end;
+  if (start && s <= start.mergeCm / 100 + CROSS / 2) {
     const c = start.mergeCm / 100;
-    return swing(s, c - CROSS / 2, c + CROSS / 2, -ROW_TRACK, ROW_TRACK);
+    return swing(s, c - CROSS / 2, c + CROSS / 2, ROW_TRACK, -ROW_TRACK);
   }
   const left = row.origin ? halts.findIndex((h, k) => k > 0 && h.end && h.s === row.origin) : -1,
     end = halts[left >= 0 ? left : Math.max(0, stops.length - 1)]?.end;

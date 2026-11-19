@@ -34,6 +34,7 @@ import { playObjective } from '../../proto/mark.ts';
 import { LINE2, RAIL_LINES, legBuilt } from '../../sim/railway-lines.ts';
 import { LINE_SLOTS } from '../../sim/railway-trains.ts';
 import { TRAIN_PHASE } from '../../sim/railway-train.ts';
+import { trainStops } from '../../sim/railway-queries-trains.ts';
 import { RING_S_HEAD } from '../../sim/railway-ring-layout.ts';
 import {
   LEG_TUNE,
@@ -54,7 +55,7 @@ import { createBoxBatch } from '../railway/works-box-view.ts';
 import { legKitFlight, paintPlate } from '../railway/kit-board.ts';
 import { legYardFlight, legYardSpot } from '../railway/leg-yard.ts';
 import { LINE2_END_S, line2At, line2World, line2Y } from '../railway/line2-path.ts';
-import { ROW_TRACK, rowAt, rowWorld, rowY } from '../railway/row-path.ts';
+import { ROW_PLATFORM, ROW_TRACK, rowAt, rowWorld, rowY } from '../railway/row-path.ts';
 import { islandGround, ringIslandNear } from '../ring-island/state.ts';
 import { GATE_AT, GORGE_DECK, PICK_AT, TOWN_PAD, gorgeAt } from './massing.ts';
 import { bellPads } from './massing-bell.ts';
@@ -240,7 +241,7 @@ function rowSpec(
     // The level's unlaid bed (src/content/levels/leg2.ts, BED: 3.8 m either side).
     width: 7.6,
     // The platforms' 3.8 to 7.8 m off the row (the halts' 5.8 m, railway-lines.ts legPlatforms), 90 cm up.
-    plat: { len: 25, lat: 5.8, w: 4, up: 0.9 },
+    plat: { len: 25, lat: ROW_PLATFORM, w: 4, up: 0.9 },
     name: 'LINE TO BELL ROCK',
     frames: leg.sections.map((_s, j) => site(legFrame(leg, j), j, first.frame, 8)),
     racks: leg.sections.map((_s, j) => site(legRack(leg, j), j, first.rack, 18)),
@@ -378,6 +379,15 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       n = sp.leg.sections.length;
     const endBoard = sign(5.2, 1.4, 0.9, 'two', 768),
       signalPlates = R.slice(0, -1).map(() => sign(1.5, 0.8, 2.6, 'one', 256));
+    // A row line's plain departure boards (greybox-leg2.md, step 4; the halt map's drawing stays line 2's): one on each
+    // of its built halts' outward platform, at its back edge facing the rails, a few metres from the halt's lever
+    // (railway/halts-view.ts rowSpot), listing the line's open stops by their catalog names.
+    const halts = sp.row ? RAIL_LINES[sp.leg.line]!.halts : [],
+      departures = halts.flatMap((h, stop) => {
+        if (!h.leg) return [];
+        const at = h.s / 100 - (stop === 0 ? 14 : h.end?.kind === 'stub' ? 5 : 4);
+        return [{ stop, at, board: sign(2.6, 1.3, 1.4, 'two', 512) }];
+      });
     let deckEnd = -1,
       deckLaid = -1,
       stood = -1;
@@ -435,12 +445,13 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         }
       }
       if (!sp.row || laid < 1) return;
-      // The turnouts (railway/row-path.ts rowLat): the start's crossover, the end's stub at a head, the crossover
-      // before the destination's platforms. Each a diagonal track, from the homeward track to the outward.
+      // The turnouts (railway/row-path.ts rowLat): the start's crossover (homeward trains cross to the outward track on
+      // their way in), the end's stub at a head, the crossover before the destination's platforms (outward trains
+      // cross to the homeward track as they leave). Each a diagonal track between the two.
       const halts = RAIL_LINES[sp.leg.line]!.halts,
         start = halts[0]?.end,
         endHalt = halts[laid >= n ? sp.leg.railheadHalt + n - 1 : sp.leg.railheadHalt + laid - 1]?.end;
-      if (start) track(start.mergeCm / 100 - 10, start.mergeCm / 100 + 10, -ROW_TRACK, ROW_TRACK);
+      if (start) track(start.mergeCm / 100 - 10, start.mergeCm / 100 + 10, ROW_TRACK, -ROW_TRACK);
       if (endHalt?.kind === 'stub') track(endHalt.mergeCm / 100 - 20, endHalt.mergeCm / 100, -ROW_TRACK, ROW_TRACK);
       else if (endHalt) track(endHalt.mergeCm / 100 - 10, endHalt.mergeCm / 100 + 10, -ROW_TRACK, ROW_TRACK);
     }
@@ -514,27 +525,31 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         const closes = RAIL_LINES[sp.leg.line]!.halts[sp.leg.railheadHalt + j - 1]!.closesAt;
         if (laid < j || (closes !== undefined && laid >= j + 2)) continue;
         const r = R[j - 1]!;
-        for (let s = r - plat.len; s < r - 1e-6; s += 5) {
-          box(s, s + 5, plat.lat, plat.up, plat.up, plat.w, 0.5, GREY_LIGHT);
-          geo.world(s + 2.5, plat.lat, q);
-          const top = geo.y(s + 2.5) + plat.up - 0.5;
-          out.push({
-            x: q.x,
-            y: (top + SEA_BED) / 2,
-            z: q.z,
-            w: 0.5,
-            h: top - SEA_BED,
-            d: 0.5,
-            yaw: 0,
-            colour: GREY_DARK,
-          });
+        // A row line's head has a platform each side (right-hand running: the homeward lever's is the left one).
+        for (const side of sp.row ? [1, -1] : [1]) {
+          const lat = side * plat.lat;
+          for (let s = r - plat.len; s < r - 1e-6; s += 5) {
+            box(s, s + 5, lat, plat.up, plat.up, plat.w, 0.5, GREY_LIGHT);
+            geo.world(s + 2.5, lat, q);
+            const top = geo.y(s + 2.5) + plat.up - 0.5;
+            out.push({
+              x: q.x,
+              y: (top + SEA_BED) / 2,
+              z: q.z,
+              w: 0.5,
+              h: top - SEA_BED,
+              d: 0.5,
+              yaw: 0,
+              colour: GREY_DARK,
+            });
+          }
+          // The sea ramp (the deck is 4 m over open water): a landing behind the platform's home end, then a slip
+          // down along the line to under the surface, at the Ring ramps' pitch.
+          const ramp = side * (plat.lat + plat.w / 2 + 1),
+            drop = geo.y(r) + plat.up + 1.3;
+          box(r - plat.len, r - plat.len + 3, ramp, plat.up, plat.up, 2, 0.4, GREY);
+          box(r - plat.len + 3, r - plat.len + 3 + drop / 0.54, ramp, plat.up, plat.up - drop, 2, 0.3, GREY);
         }
-        // The sea ramp (the deck is 4 m over open water): a landing behind the platform's home end, then a slip down
-        // along the line to under the surface, at the Ring ramps' pitch.
-        const lat = plat.lat + plat.w / 2 + 1,
-          drop = geo.y(r) + plat.up + 1.3;
-        box(r - plat.len, r - plat.len + 3, lat, plat.up, plat.up, 2, 0.4, GREY);
-        box(r - plat.len + 3, r - plat.len + 3 + drop / 0.54, lat, plat.up, plat.up - drop, 2, 0.3, GREY);
       }
       return out;
     }
@@ -580,6 +595,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       sp,
       endBoard,
       signalPlates,
+      departures,
       clear,
       /** The deck's end this frame (to the laid end, and on over a laying section's lay clock in 2 m steps), or -1 for
        * none drawn. */
@@ -602,8 +618,22 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         if (laid !== deckLaid) solidDeck((deckLaid = laid));
         stand(laid);
       },
-      /** Into `things`: the standing pieces, the end board and the passed block signals. */
+      /** Into `things`: the standing pieces, the end board, the passed block signals and a row's departure boards. */
       draw(r: LegRows, wd: ReadW, joined: boolean) {
+        const open = departures.length ? trainStops(wd, sp.leg.line).length : 0;
+        for (const d of departures) {
+          if (d.stop >= open) continue;
+          geo.at(d.at, P);
+          geo.world(d.at, sp.plat.lat + 1.5, q);
+          show(
+            d.board,
+            q,
+            geo.y(d.at) + sp.plat.up,
+            P.uz,
+            -P.ux,
+            halts.slice(0, open).map((h) => ({ t: h.name, size: 0.2 })),
+          );
+        }
         for (const b of standing.boxes)
           things.box(b.x, b.y, b.z, b.w, b.h, b.d, b.colour ?? GREY, b.yaw, -(b.pitch ?? 0));
         const laid = r.laid;
@@ -719,7 +749,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       gatePlate,
       townBoard,
       homeBoard,
-      ...legs.flatMap((l) => [l.endBoard, ...l.signalPlates]),
+      ...legs.flatMap((l) => [l.endBoard, ...l.signalPlates, ...l.departures.map((d) => d.board)]),
     ])
       s.mesh.visible = false;
     things.mesh.visible = deck.mesh.visible = !!r;
