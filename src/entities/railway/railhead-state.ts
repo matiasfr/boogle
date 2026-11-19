@@ -155,17 +155,18 @@ export function placeDeck(
 
 // ---------------------------------------------------------------- the turntable's deck as a ride
 // The turntable's deck as a ride (./roundhouse-view.ts). At rest the deck is static boxes; they go for a turn, so the
-// deck never shoves anyone in the pit. Whoever has their feet on the deck's top (at rest or turning; never from below,
-// out of the pit) rides a kinematic copy of it on their own tab (./car.ts, the carry the trains and the railhead
+// deck never shoves anyone in the pit. Whoever has their feet on the deck's top (at rest or turning; never while rising
+// from below, out of the pit: a jump from the pit floor that clears the top and comes down on it does land on it) rides a kinematic copy of it on their own tab (./car.ts, the carry the trains and the railhead
 // traveller use: velocity, spin and the idle edge hold); it waits under the land for anyone else. Leaving it (a jump,
 // a step off) drops the deck's speed, so they land on the deck or in the pit, never thrown past the pit's wall.
 // The deck is a shared platform (`railway:table`): a rider sends their place on it (the `riding` presence,
 // src/entities/remote-player/), and every tab draws them on its own deck, whatever yaw that tab shows. For that a
-// marker car, a 1 cm box 0.2 m under the deck's top at its centre (nothing stands on it or touches it), follows the
+// marker car, a 1 cm box 0.2 m under the deck's top at its centre with no collision (mask 0) and too small to stand
+// on, follows the
 // drawn deck on every tab. It registers first, so it is what `platformById` finds; on the rider's tab the two agree.
 type XZ = { x: number; z: number };
 /** Feet this far over the deck's top (a jump) still ride it; under it, as far as the carry counts (CARRY.below). A
- * ride starts only with the feet at the top, within START of it. */
+ * ride starts only with the feet at the top, within START of it, and not rising (0.1 m/s at most). */
 const ABOVE = 3,
   START = 0.05,
   PARKED = -60, // m: the riding deck waits under the land, as a train not yet needed does
@@ -179,7 +180,7 @@ export function createTableRide(owner: OwnedView, table: XZ, r: number, top: num
     rate = 0, // rad/s the drawn deck turned over the last frame
     since = 0; // s stepped since the last frame's yaw
   const centre = top - BRIDGE.h / 2;
-  const marker = makeCar({ hx: 0.005, hz: 0.005, top: BOTTOM + 0.01 }, new Group(), step, {}, owner);
+  const marker = makeCar({ hx: 0.005, hz: 0.005, top: BOTTOM + 0.01 }, new Group(), step, { mask: 0 }, owner);
   const car = makeCar({ hx: half.hx, hz: half.hz, top: BOTTOM + BRIDGE.h }, new Group(), drive, {}, owner);
   for (const c of [marker, car]) {
     c.platform.id = ID;
@@ -212,7 +213,7 @@ export function createTableRide(owner: OwnedView, table: XZ, r: number, top: num
       carry.x = carry.z = 0;
     }
     stood = carry.on === car.platform;
-    riding = !!b && over(b, car.yaw, riding ? -CARRY.below : -START);
+    riding = !!b && (riding ? over(b, car.yaw, -CARRY.below) : b.velocity.y <= 0.1 && over(b, car.yaw, -START));
     if (!riding) car.y = PARKED;
   }
   /** Whether the body is over the deck turned `at`, its feet from `low` to ABOVE over its top. */

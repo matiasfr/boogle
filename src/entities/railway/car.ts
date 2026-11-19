@@ -90,7 +90,7 @@ export function makeCar(
   const body = createBody({
     type: BODY.KINEMATIC,
     material: groundMat,
-    mask: NOT_SCENERY,
+    mask: extra?.mask ?? NOT_SCENERY, // 0: touches nothing (the turntable's pose marker, ./railhead-state.ts)
     position: { x: ORIGIN.x, y: -60, z: ORIGIN.z },
     shapes: [{ kind: 'box', hx: spec.hx, hy, hz: spec.hz }, ...(extra?.shapes ?? [])],
   });
