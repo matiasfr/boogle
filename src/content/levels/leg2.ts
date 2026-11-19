@@ -403,6 +403,11 @@ const STACK_S = {
     STACK_S.along.t1 * TA - TC * 5 < 120;
   if (bad) throw new Error('leg2: the south stack collider enters the bore');
 }
+/** A pale, drawn-only box in the split's a/c frame: a part of a bore mouth's frame. */
+const mouthMark = (id: string, a: readonly number[], c: readonly number[], y: Scalar, h: Scalar) => ({
+  ...ac.box(id, a[0]!, a[1]!, c[0]!, c[1]!, y, h, 'pale'),
+  solid: false,
+});
 /** The bore's dark lining, its two mouth marks and the south stack's collider round it (the stack's slab over the
  * bore is gorge.ts's). The lining's slabs are cut in strips along l so each strip's ends meet the stack's faces (within
  * half a metre); its walls seal the bore from the collider's corners. */
@@ -426,19 +431,17 @@ function bore() {
     const e = boreEnds(l + 1);
     pieces.push(tl.box(`bore-floor-${l + B.half}`, e.wall, e.face, l, l + 2, B.floor, B.slab, 'black'));
   }
-  // The mouth marks: a pale frame round each opening (the split's lintel is the old portal, in gorge()).
-  const mark = (id: string, a: readonly number[], c: readonly number[], y: Scalar, h: Scalar) => ({
-    ...ac.box(id, a[0]!, a[1]!, c[0]!, c[1]!, y, h, 'pale'),
-    solid: false,
-  });
-  // Each frame stands clear of the roof's slab it meets in plan: its lintel 0.1 m over the slab's top.
+  // The mouth marks: a pale frame round each opening (the split's lintel is the old portal, in gorge()). Each frame
+  // stands clear of the roof's slab it meets in plan: its lintel 0.1 m over the slab's top.
   const { in: i, out: o } = MOUTH,
-    lintel = add(top, 0.1);
-  pieces.push(mark('mouth-in-s', i.s, [44.6, 45], lintel, sub(lintel, B.floor)));
-  pieces.push(mark('mouth-in-n', i.n, [44.6, 45], lintel, sub(lintel, B.floor)));
-  pieces.push(mark('mouth-out-s', o.s.a, o.s.c, lintel, sub(lintel, B.floor)));
-  pieces.push(mark('mouth-out-n', o.n.a, o.n.c, lintel, sub(lintel, B.floor)));
-  pieces.push(mark('mouth-out-lintel', o.lintel.a, o.lintel.c, add(lintel, 1.2), 1.2));
+    lintel = add(top, 0.1),
+    jamb = sub(lintel, B.floor),
+    wall: readonly number[] = [44.6, 45];
+  pieces.push(mouthMark('mouth-in-s', i.s, wall, lintel, jamb));
+  pieces.push(mouthMark('mouth-in-n', i.n, wall, lintel, jamb));
+  pieces.push(mouthMark('mouth-out-s', o.s.a, o.s.c, lintel, jamb));
+  pieces.push(mouthMark('mouth-out-n', o.n.a, o.n.c, lintel, jamb));
+  pieces.push(mouthMark('mouth-out-lintel', o.lintel.a, o.lintel.c, add(lintel, 1.2), 1.2));
   const hidden = (p: object) => ({ ...p, hidden: true });
   const S = STACK_S;
   pieces.push(hidden(ac.box('stack-s-under', -120, 120, 45, 245, bottom, bottom + 10, 'black')));
@@ -461,19 +464,7 @@ function gorge() {
       { ...tl.box('incline-s', 16, 56, -PLAT, -BED, GORGE_DECK, 0.5, 'light'), posts: true },
       // Call 116: the tunnel's mouth is marked on the south wall where the row enters the rock. Bored by step 4 of
       // greybox-leg2 (bore(), after these): the old dark panel is the mouth's pale lintel now.
-      {
-        ...ac.box(
-          'portal',
-          MOUTH.in.lintel[0],
-          MOUTH.in.lintel[1],
-          44.4,
-          45,
-          add(add(INCLINE_BORE.roof, INCLINE_BORE.slab), 1.3),
-          1.2,
-          'pale',
-        ),
-        solid: false,
-      },
+      mouthMark('portal', MOUTH.in.lintel, [44.4, 45], add(add(INCLINE_BORE.roof, INCLINE_BORE.slab), 1.3), 1.2),
       ...bore(),
     ],
     pads: [],

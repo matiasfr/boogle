@@ -88,8 +88,9 @@ background(
     await until(() => t().phase !== 0, 'the train leaves', 300000);
     // The way it runs: +s on track 0 (outward), -s on track 1.
     const sign = t().track ? -1 : 1,
-      p = rowAt(line, t().along / 100, { x: 0, z: 0, ux: 0, uz: 1 });
-    me.yaw = cam.yaw = Math.atan2(-p.ux * sign, -p.uz * sign);
+      p = rowAt(line, t().along / 100, { x: 0, z: 0, ux: 0, uz: 1 }),
+      yaw = Math.atan2(-p.ux * sign, -p.uz * sign);
+    me.yaw = cam.yaw = yaw;
     cam.pitch = -0.05;
     await until(
       () => (sign > 0 ? t().along / 100 >= rideAt : t().along / 100 <= rideAt),
@@ -99,7 +100,7 @@ background(
     await until(areasIn, 'the massing near Buddy', 60000);
     window.__debugCam?.clear();
     const clear = setInterval(() => window.__debugCam?.clear(), 50); // look re-applies its pose after the warm-up
-    me.yaw = cam.yaw = Math.atan2(-p.ux * sign, -p.uz * sign);
+    me.yaw = cam.yaw = yaw;
     w.__placeDone = true;
     console.log(`RIDE at ${JSON.stringify(state(t()))}`);
     await wait(4000);

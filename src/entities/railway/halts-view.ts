@@ -376,8 +376,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       lift: number;
     };
     slide?: { z0: number; goal: () => number; shown: number };
-    /** A greybox route line's lever (rowSpot): it stands still at `s` metres along its row, `lat` off it, while `need`. */
-    row?: { need: () => boolean };
+    /** A greybox route line's lever (rowSpot), stood once on its platform: whether it stands now (its halt open). */
+    need?: () => boolean;
   };
   const HOME = () => -1 as const;
   const spots: Spot[] = [
@@ -546,7 +546,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     lever.group.rotation.y = Math.atan2(ahead.x - p.x, ahead.z - p.z);
     lever.group.updateMatrixWorld(true);
     lever.group.visible = false;
-    return { id, line: h.line, stop: h.stop, dir: way(), way, lever, up, west: up, row: { need } };
+    return { id, line: h.line, stop: h.stop, dir: way(), way, lever, up, west: up, need };
   };
   for (const [id, h] of RAIL_HALTS.entries()) {
     if (!h.leg || !isRowLine(h.line)) continue;
@@ -671,8 +671,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   /** Whether a lever stands: its halt is up and its frame shown (an up lever with today's halt's). */
   const upWanted = (pair: number) => halts[pair]!.up && layout.upHaltReady(pair, line2Completed(adapter.read.world()));
   const standing = (x: Spot) =>
-    x.ring || x.row
-      ? x.stop < stopsNow[x.line]!.length && (x.ring ?? x.row)!.need()
+    x.ring || x.need
+      ? x.stop < stopsNow[x.line]!.length && (x.ring?.need ?? x.need)!()
       : halts[x.id]!.up && halts[x.id]!.lever.group.visible && (!x.up || upWanted(x.id));
   /** Whether a lever stands over: the line's ask that way stands and no train of the line stands here leaving that way. */
   function over(x: Spot) {
@@ -712,7 +712,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       if (x.ring) {
         placeRing(x, dt, snap);
         x.lever.group.visible = standing(x);
-      } else if (x.up || x.row) x.lever.group.visible = standing(x);
+      } else if (x.up || x.need) x.lever.group.visible = standing(x);
       if (x.slide) {
         // Restood along its platform at the same 7 m/s (local +z is the line's +s, halt-attachments.ts).
         const goal = x.slide.goal(),

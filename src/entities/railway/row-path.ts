@@ -8,6 +8,7 @@ import type { LinePoint } from '../../place/layout.ts';
 import { RAIL_LINES } from '../../sim/railway-lines.ts';
 import { ROW_LINE, type RowId } from '../../sim/railway-route.ts';
 import { WORLD_LINES } from '../../sim/railway-world-lines.ts';
+import { lerp, smoothstep } from '../../math-pure.ts';
 
 /** Each track's offset from the row, metres (the outward track +, the homeward -), and each platform's middle (the
  * halts' platform points, railway-lines.ts legPlatforms: 3.8 to 7.8 m off the row). */
@@ -17,10 +18,6 @@ export const ROW_TRACK = 2,
 const CROSS = 20,
   TURN = 20;
 const STEP = 5;
-const ease = (t: number) => {
-  const x = Math.max(0, Math.min(1, t));
-  return x * x * (3 - 2 * x);
-};
 
 type RowPath = { line: number; table: Float64Array; len: number };
 /** Where a row's drawn path stops and runs on straight, cm along it: the `bay` row at its 52° kink at Bell Rock (t 0,
@@ -29,6 +26,8 @@ type RowPath = { line: number; table: Float64Array; len: number };
 const TRIM: Partial<Record<RowId, number>> = {
   bay: WORLD_LINES.find((l) => l.id === 'bay')!.legs[0]!.toCm,
 };
+/** The `bay` row's 52° kink at Bell Rock, metres along it: where its drawn path stops and its buffers stand. */
+export const BAY_KINK = TRIM.bay! / 100;
 function build(id: 'ns' | 'bay'): RowPath {
   const r = WORLD_LINES.find((l) => l.id === id)!,
     end = TRIM[id] ?? r.fromCm + r.lengthCm;
@@ -120,8 +119,24 @@ export function rowWorld(line: number, s: number, lat: number, out: { x: number;
 
 /** The part of a train row the lateral reads. */
 export type RowLatRow = { readonly track: number; readonly origin: number };
-/** `from` to `to` over [a, b], eased. */
-const swing = (s: number, a: number, b: number, from: number, to: number) => from + (to - from) * ease((s - a) / (b - a));
+/** A turnout or crossover a train swings over: from `from` metres off the row at `s0` to `to` at `s1`. */
+export type RowSwing = { s0: number; s1: number; from: number; to: number };
+const swingAt = (w: RowSwing, s: number) => lerp(w.from, w.to, smoothstep(w.s0, w.s1, s));
+/** The start's crossover (homeward trains cross onto the outward track on their way in), centred on its merge. */
+export const rowStartCrossing = (line: number): RowSwing | null => {
+  const start = RAIL_LINES[line]!.halts[0]?.end;
+  if (!start) return null;
+  const c = start.mergeCm / 100;
+  return { s0: c - CROSS / 2, s1: c + CROSS / 2, from: ROW_TRACK, to: -ROW_TRACK };
+};
+/** The way out of an end a homeward train leaves: a head's stub (its terminal track the outward one, merging at
+ * `mergeCm`) or the crossover before a destination's platforms, centred on its merge. */
+export const rowEndSwing = (end: { kind: string; mergeCm: number }): RowSwing => {
+  const m = end.mergeCm / 100;
+  return end.kind === 'stub'
+    ? { s0: m - TURN, s1: m, from: -ROW_TRACK, to: ROW_TRACK }
+    : { s0: m - CROSS / 2, s1: m + CROSS / 2, from: -ROW_TRACK, to: ROW_TRACK };
+};
 /** The lateral of a train of row line `line` at `s` metres (right-hand running, the views' own: the sim reads only s).
  * Going out it runs on the outward track. Going home it is on the homeward track, after the turnout or crossover of
  * the end it left (a stub's merge at a head, whose terminal track is the outward one; the crossover before Bell Rock's
@@ -132,16 +147,9 @@ const swing = (s: number, a: number, b: number, from: number, to: number) => fro
 export function rowLat(line: number, row: RowLatRow, s: number, stops: readonly number[]) {
   if (!row.track) return ROW_TRACK;
   const halts = RAIL_LINES[line]!.halts,
-    start = halts[0]?.end;
-  if (start && s <= start.mergeCm / 100 + CROSS / 2) {
-    const c = start.mergeCm / 100;
-    return swing(s, c - CROSS / 2, c + CROSS / 2, ROW_TRACK, -ROW_TRACK);
-  }
+    start = rowStartCrossing(line);
+  if (start && s <= start.s1) return swingAt(start, s);
   const left = row.origin ? halts.findIndex((h, k) => k > 0 && h.end && h.s === row.origin) : -1,
     end = halts[left >= 0 ? left : Math.max(0, stops.length - 1)]?.end;
-  if (!end) return -ROW_TRACK;
-  const m = end.mergeCm / 100;
-  return end.kind === 'stub'
-    ? swing(s, m - TURN, m, -ROW_TRACK, ROW_TRACK)
-    : swing(s, m - CROSS / 2, m + CROSS / 2, -ROW_TRACK, ROW_TRACK);
+  return end ? swingAt(rowEndSwing(end), s) : -ROW_TRACK;
 }
