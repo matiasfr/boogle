@@ -38,6 +38,7 @@ import { getVolume, isMuted, setMuted, setVolume } from '../render/audio.ts';
 import { uiSound } from '../ui/ui-sound.ts';
 import { pausePages, pauseNavigation, pauseSections, startPage } from '../player/pause-pages.ts';
 import { devCursorFree } from '../player/dev-input.ts';
+import { accountStatus } from '../player/account.ts';
 import { tuningVisit } from '../dev-preferences.ts';
 
 const TABS: [GuideKind, string][] = [
@@ -589,6 +590,9 @@ function build() {
 // A newer tab of this player took over (src/features/identity.ts): its card is this tab's only way back, so the menu
 // stays shut over it. Losing focus to that tab can end the pointer lock and open the menu just before the server says so.
 const superseded = () => net.error === 'elsewhere';
+// An expired or replaced session leaves this page on the solo island: the menu hides it until a sign-in (18 November).
+const expired = () => accountStatus().state === 'revoked' || net.error === 'unauthenticated';
+const hideIsland = () => dlg.classList.toggle('session-expired', expired());
 
 export function openPause(start?: Page) {
   if (!me.entered || open || superseded()) return false;
@@ -598,6 +602,7 @@ export function openPause(start?: Page) {
   tab = inputKind();
   padCtx = 'foot';
   card.querySelector('.pause-title')!.textContent = getRoomId();
+  hideIsland();
   dlg.showModal(); // after openModal: its setPadModal keeps gamepad.ts from pulling focus off the buttons
   startId = startPage()?.id ?? null;
   // The dim fades between pages (none on You), not on open: skip the fade from the page left last time.
@@ -632,6 +637,7 @@ pauseNavigation.open = (next) => {
 pauseNavigation.close = closePause;
 onNetState(() => {
   if (superseded()) closePause();
+  if (open) hideIsland();
 });
 
 registerAction('pause', {

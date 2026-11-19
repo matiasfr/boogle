@@ -14,7 +14,7 @@ type RewardPart = [
 export const MULTI_AXE_REWARD = {
   key: 'multi',
   name: 'The multi-axe',
-  line: 'Chops trees, breaks rocks, and more.',
+  line: 'Chops trees and more.',
   parts: [
     ['b', 0, 0.55, 0, 0.11, 1.3, 0.11, '#a9794c'],
     ['b', 0, 1.06, -0.2, 0.15, 0.34, 0.4, '#c9ced8'],

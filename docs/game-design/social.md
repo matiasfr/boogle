@@ -29,12 +29,15 @@ to keep their current identity, or **Sign in** with a five-digit PIN (a text fie
 spaces/hyphens are accepted and leading zeroes are preserved). No account is required to start playing.
 An account keeps identity only: progress stays with each room; name, colour, wardrobe, settings and visit
 memory remain on the device. Signing into another identity reloads and does not merge the guest's belongings.
+A signed-in player's button for it reads **Switch account** (owner, [18 November](../decisions-controls.md#d-2026-11-18-decisions-page-controls)).
 
 The server generates the PIN. Save PIN and **Replace PIN** show it once, with the warning: “If you lose your
 PIN and every device is signed out, you’ll need a new account.” Dismissal clears the reveal. It is never
 auto-copied or stored locally. Replace PIN first warns that the old PIN stops working and other devices sign out.
 **Sign out** confirms that the player needs the PIN to return, then reloads as a new guest without resetting
-the room. An unavailable or revoked session shows the account problem with reload, sign-in and sign-out routes;
+the room. An unavailable session shows the account problem with reload, sign-in and sign-out routes. An expired or
+replaced session (18 November) has **Sign in** as its main button with focus, no reload, and the whole pause menu
+hides the solo island behind a solid dim until the player signs in or resumes;
 blocked persistent storage is labelled “this visit only”. Lost create/replace replies recover account status
 when possible and offer replacement, never pretend the PIN was saved.
 
