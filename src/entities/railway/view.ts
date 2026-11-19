@@ -38,6 +38,7 @@ import { createRailwayCart } from './cart-view.ts';
 import { createRailwayTrains } from './train-view.ts';
 import { createFreight } from './freight-view.ts';
 import { createRailwayHalts } from './halts-view.ts';
+import { createTurnoutBlades } from './turnout-blades.ts';
 import { createRailwayHook } from './hook-shot.ts';
 import { createRailwayGlide } from './glide.ts';
 import { stepMoves } from './move-order.ts';
@@ -127,6 +128,8 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   trains.holdBoiler(line2.boilerFlying);
   const halts = await createRailwayHalts(adapter, owner);
   const homeStation = await import('./home-station-view.ts').then((m) => m.createHomeStation(adapter, owner));
+  // Every junction's moving blades and levers, cut out of both lines' rails.
+  const points = createTurnoutBlades(adapter, owner, [...track.points, ...line2.points]);
   const flying = () => ({
     logs: cart.flying().logs + trains.trainFlying().logs,
     rails: cart.flying().rails + trains.trainFlying().rails,
@@ -416,6 +419,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     line2.snapshot();
     trains.restore();
     halts.restore();
+    points.restore();
   }
   machine.onStep = (dt) => {
     if (line2.working()) return line2.step(dt);
@@ -477,6 +481,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
         line2.resynced();
         trains.restore();
         halts.restore();
+        points.restore();
         hoist?.restore();
         works?.restore();
       }
@@ -577,6 +582,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       freight.update();
       halts.update(dt);
       homeStation.update();
+      points.update(dt);
       hoist?.update(dt); // before the views that draw the part it holds
       guide?.update(dt); // after the hoist, which waves the three
       works?.update(dt);

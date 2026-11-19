@@ -2,12 +2,20 @@
 // So they're expecting I have to go back and get them, or not"). It read "More coming" and never a number. Now it is
 // the shipment against what the bill still waits for: `logs 24 of 24  rails 24 of 24`, the first number what this trip
 // carries (aboard, plus what it will still load at the camp and the forge), the second everything not yet at the rack,
-// the shelf or the frame. Equal numbers mean nobody walks back. Pure reads of accepted rows. Draft UI copy.
-import { CART, CART_PHASE } from '../../sim/railway-cart.ts';
+// the shelf or the frame. Equal numbers mean nobody walks back. And where the cart is out on its road. Pure reads of
+// accepted rows. Draft UI copy.
+import { CART, CART_PHASE, cartAlong } from '../../sim/railway-cart.ts';
 import { DEPOT_OUT } from '../../sim/railway-components.ts';
 import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
-import { line2CartWants, line2Served } from '../../sim/railway-queries-line2.ts';
+import { line2CartWants, line2Completed, line2Served, line2Trains } from '../../sim/railway-queries-line2.ts';
 import { cart, qjob, rail, type ReadWorld } from '../../sim/railway-rows.ts';
+
+/** The cart is out on its road: line 2's first stretch is laid, and it is not parked while trains run. */
+export const cartOn = (w: ReadWorld, ready: boolean) =>
+  ready && line2Completed(w) >= 1 && !(line2Trains(w) && cart(w).phase === CART_PHASE.REST);
+/** Where the cart is along its road at `tick` once the whole state is in (metres from the camp: home-station.ts
+ * cartRoadAt), or null while it is not out; the cart view poses it there and the leg's points (./turnout-blades.ts) lie for it. Pure over its rows. */
+export const cartAt = (w: ReadWorld, tick: number) => (cartOn(w, true) ? cartAlong(cart(w), tick) / 100 : null);
 
 export type CartLoad = { logs: [bring: number, owed: number]; rails: [bring: number, owed: number] };
 

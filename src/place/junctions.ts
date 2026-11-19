@@ -1,10 +1,10 @@
 // Every place two tracks part, as the two centrelines a turnout is built from (./turnout.ts; the list and where each
 // is: docs/plans/turnouts.md, "Every place two tracks meet"). One list, so no junction is hand placed. J1 to J9: the
-// engine spur, the cart's leg at both ends, and the lines' offset-track turnouts and Far Head's crossover. Only J1 is
-// drawn so far (home-yard.ts picks it by id); the rest are measured by the level check and test/turnout.test.ts. The
-// sea junctions (railhead, Ring Island, the greybox stack) are step 7's. Local, no three.js.
+// engine spur, the cart's leg at both ends, and the lines' offset-track turnouts and Far Head's crossover. The yard
+// (home-yard.ts) and the lines (track.ts) draw their parts, turnout-blades.ts their moving blades and levers; the level
+// check measures them. The sea junctions (railhead, Ring Island, the greybox stack) are step 7's. Local, no three.js.
 import { clamp, lerp } from '../math.ts';
-import { LEG, SPUR, march, roadAt } from './home-station.ts';
+import { HALL, LEG, SPUR, march, roadAt } from './home-station.ts';
 import {
   FORMATION,
   LINES,
@@ -36,8 +36,20 @@ export type Junction = {
   /** The through road's lateral off its line, metres to the line's right: Far Head's crossover leaves the up track
    * at J7. 0 when omitted. */
   off?: number;
+  /** Home's points levers (J1 to J3): where the lever's box stands on the ground and its heading (the hall's), which
+   * home-station-view.ts draws; a line's lever stands on its headblocks instead (turnout.ts `lever`). */
+  stand?: { x: number; z: number; yaw: number };
+  /** A line's lever box stands across the track from the headblocks' side (`lever`), where that side is taken. */
+  leverAcross?: true;
   through: Centre;
   diverging: Centre;
+};
+
+/** A lever box `lat` metres beside Home's road `road` at `s` (Place's bearing convention), square to the hall. */
+const roadSide = (road: 0 | 1, s: number, lat: number) => {
+  const p = roadAt(road, s),
+    b = (p.bearing * Math.PI) / 180;
+  return { x: toWorld(p.x + Math.cos(b) * lat), z: p.z + Math.sin(b) * lat, yaw: HALL.yaw };
 };
 
 const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
@@ -90,6 +102,7 @@ export function junctions(): Junction[] {
     dir: 1,
     kind: 'spur',
     lever: 1,
+    stand: roadSide(SPUR.road, SPUR.s - 1.5, 2.4),
     through: head(SPUR.road, SPUR.s, 1),
     diverging: (d) => {
       const p = march(toe, SPUR.segs, d);
@@ -140,6 +153,7 @@ export function junctions(): Junction[] {
       kind: 'spur',
       lever: 1,
       when: 'leg',
+      stand: roadSide(1, LEG.to + 1.5, 2.4),
       through: head(1, LEG.to, 1),
       diverging: (d) => leg(LEG.len - d),
     },
@@ -151,6 +165,7 @@ export function junctions(): Junction[] {
       kind: 'spur',
       lever: 1,
       when: 'leg',
+      stand: roadSide(0, LEG.from + 1.5, -2.4),
       through: head(0, LEG.from, -1),
       diverging: (d) => leg(d),
     },
@@ -158,7 +173,8 @@ export function junctions(): Junction[] {
     line('J5', 'timber', one.to, -1, 'stub', -1, today, up(one)),
     line('J6', 'quarry', two.from, 1, 'stub', 1, today, up(two)),
     line('J7', 'quarry', two.crossover![0], 1, 'crossover', -1, () => OFFSET_LAT, cross),
-    line('J8', 'quarry', two.crossover![1], -1, 'crossover', -1, today, cross),
+    // J8's headblocks run out under Far Head's platform (step 4), so its lever stands across the track from them.
+    { ...line('J8', 'quarry', two.crossover![1], -1, 'crossover', -1, today, cross), leverAcross: true },
     line('J9', 'quarry', two.to, -1, 'stub', -1, today, up(two), 'merge'),
   ];
 }

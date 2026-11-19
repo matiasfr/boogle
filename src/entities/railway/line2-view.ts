@@ -1096,6 +1096,8 @@ export async function createRailwayLine2(
   }
   const api = {
     railheadDeck: createRailheadDeck(owner),
+    /** Line 2's junctions, their blades cut out of its rails (./turnout-blades.ts draws them moving). */
+    points: track.points,
     /** Line two owns the machine once the forge is lit and the turn has played. */
     working,
     /** The boiler's haul pace (before the controller) and its rope (after Buddy's final pose). */

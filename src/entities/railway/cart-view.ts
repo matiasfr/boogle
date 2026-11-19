@@ -16,22 +16,12 @@ import { placeSound } from '../../render/place-sfx.ts';
 import { paintTwoLines, signBoard } from '../../render/sign-board.ts';
 import { CART, CART_PHASE, cartAlong } from '../../sim/railway-cart.ts';
 import type { Car } from './car.ts';
-import { cartTagLine } from './cart-tag.ts';
+import { cartOn, cartTagLine } from './cart-tag.ts';
 import { playMark } from '../../proto/mark.ts';
-import {
-  line2Active,
-  line2CartStatus,
-  line2Completed,
-  line2Served,
-  line2Trains,
-} from '../../sim/railway-queries-line2.ts';
-import { cart as cartRow, rail as railRow, type ReadWorld } from '../../sim/railway-rows.ts';
+import { line2Active, line2CartStatus, line2Served } from '../../sim/railway-queries-line2.ts';
+import { cart as cartRow, rail as railRow } from '../../sim/railway-rows.ts';
 import { prefabAsset } from '../../prefab/catalogue.ts';
 import type { PropPart } from '../../render/prop-kit.ts';
-
-/** The cart is out on its road: line 2's first stretch is laid, and it is not parked while trains run. */
-const cartOn = (w: ReadWorld, ready: boolean) =>
-  ready && line2Completed(w) >= 1 && !(line2Trains(w) && cartRow(w).phase === CART_PHASE.REST);
 
 /** Place's depot service tag (depot.ts SERVICE). */
 const SERVICE = {
@@ -178,8 +168,7 @@ export async function createRailwayCart(
     const target = adapter.read.tickNow();
     if (clock < 0 || Math.abs(target - clock) > 3) clock = target;
     else clock += FIXED * TICKS_PER_S + Math.max(-0.02, Math.min(0.02, (target - clock) * 0.05));
-    const d = cartAlong(cartRow(w), clock) / 100;
-    poseOnRoad(car, d);
+    poseOnRoad(car, cartAlong(cartRow(w), clock) / 100);
     if (!shown) {
       shown = true;
       rail.snapCar(car);
