@@ -1,4 +1,4 @@
-> **Status: steps 1 and 2 built (2026-11-18): step 1 in #2145, step 2 in #2167; step 3 waits for the owner's answer to open question 2 (reconciled by the 18 November tidy).** Planned 18 November. Decision: [cutscenes for everyone, 17 November](../decisions-rewards.md#d-2026-11-17-cutscenes-for-everyone)
+> **Status: all three steps built (2026-11-18): step 1 in #2145, step 2 in #2167, step 3 on `claude/cutscenes-steam-card` (the owner answered open question 2 on 18 November: "Yes, with your 9 November words").** Planned 18 November. Decision: [cutscenes for everyone, 17 November](../decisions-rewards.md#d-2026-11-17-cutscenes-for-everyone)
 > (the orchestrator's reading is still marked to confirm; open question 1). Backlog rows: "Cutscenes for everyone" and
 > "The boiler-fitted cinematic" ([round-4-notes](round-4-notes.md) O18-5), folded in here. Base: `origin/main` at
 > `ea3bc52a`. **No `WORLD_NS` bump**: no wire shape, op, catalog entry, saved room state or presence key changes
@@ -289,11 +289,45 @@ Each step leaves `node dev/ship-check.ts` green, updates its `place.md` lines, a
   while the show waits still gets its cut (review P3-3); and every show shares one camera slot (`switchCamera` keeps
   one pending shot, so a later show replaces a queued one), which is older than this branch (review P3-4).
 
-- [ ] **3. (Only if the owner says yes to open question 2.) The "Steam" card after the show, for every page.** File:
+- [x] **3. (Only if the owner says yes to open question 2.) The "Steam" card after the show, for every page.** File:
   `boiler-view.ts`: `BOILER_CARD = true`. The card is owed from the trains edge to every page (not only `fittedByMe`)
   and comes up through step 1's `free()` gate after the show's hand-back. Copy is the owner's: the 9 November words
   ("Steam" / "Trains run both lines.") or his rewrite. **Check:** ship-check. **Look:** step 2's clip, extended 4 s.
   *Risk: low.*
+  **Built (2026-11-18):** the owner said yes with his 9 November words ([decision](../decisions-rewards.md#d-2026-11-18-decisions-page-rewards)).
+  Not as a flag: `BOILER_CARD`, `fittedByMe` and boiler-view.ts's own fitter-only card timer went, and the card is
+  step 1's owed card. boiler-view.ts's live trains edge (the one `restore()`, `resync()` and a refused fit guard) calls
+  `showing('boiler', 'owed')` on every page: at the edge when the show was queued, or as the wake ends (3.1 s, with the
+  forge's call) when no shot was. ability-arrival.ts pushes it to `owed` whatever `seen` says (the fitter's
+  attribution marks `boiler` seen at the fit; the live edge is the once-guard, with the reveal's per-session key) and
+  holds it while the show is still queued; a playing show is `momentBusy`; so it comes on the first `free()` frame
+  after the hand-back, and `free()` already waits for `inputState.held` (a talk, the garage panel, the fall). A friend's
+  accepted `rail.boilerFit` still sets `heard`, as before, but the boiler has no `card` flag, so nothing is owed from
+  it (the edge owes the card instead); a refused fit drops an owed card. The copy moved unchanged to `reward-data.ts` (`BOILER_REWARD`), where the other cards' copy lives; the card
+  holds a clone of the flourish's boiler model, with no rise point (like every friend's card). A page whose show was
+  dropped unseen now gets the card, not the flourish. Tests: the two boiler cases in `test/ability-arrival.test.ts`
+  changed to the new rule; no new test. Bots: the playthrough's fitter puts the card away after `TRAINS`; the eval
+  checks the card on both pages after the show and, with `&boilerReload=1` and `--real`, a reloaded friend.
+  **Seen** (two players, `--warp-speed 2`, `--hud`): on the friend's page the forge cut comes home facing the forge
+  and, on the next free frame, "You got steam!" / "Trains run both lines." comes up over their Buddy holding the boiler
+  ([friend](cutscenes-for-everyone/steam-card-friend.png)); the fitter's page shows the same card by the old train
+  ([fitter](cutscenes-for-everyone/steam-card-fitter.png)). Both cards held input and were put away with Interact: one
+  card each, no flourish, the forge's call once at 4.5 s on both pages. The `--real` reload run: after putting the card
+  away the friend reloads and gets no card, show or flourish in 8 s ([after the reload](cutscenes-for-everyone/steam-card-reload.png)).
+  **For the owner:** the reveal writes every card's title as "You got" plus the name with its first letter lowered
+  (`reward-reveal.ts`), so "Steam" reads "You got steam!" on screen. The words are unchanged; left as they are.
+  **Not seen:** the card under reduced motion (no shot: owed at 3.1 s; code and unit test only); a show dropped while
+  queued (unit test only); a talk box open at the hand-back in the browser (unit test only); the sound; phone width;
+  anything on a device.
+  **After the independent review (2026-11-18):** (P2) with no show (reduced motion, a vehicle's seat), a free friend got
+  the boiler flourish on the trains edge and then the card 3.1 s later. The no-show edge now holds the moment back too
+  (`showing('boiler', 'queued')`, at every live edge), and when the wake ends boiler-view.ts owes the card and lets go
+  of the hold; a refused fit while the card is due lets go of it too, with no card. The reviewer's test (its expected
+  calls updated to the hold) and a refused-fit case are in `test/ability-arrival.test.ts` (the harness now drives
+  `onCorrected`). The eval expects no show under `--reduced-motion`, no flourish before the card, and the card about
+  3.1 s after the trains. **Known edge, left:** a `rail.boilerFit` correction that arrives while trains really run drops
+  the show and the card and gives the flourish; the show half predates this step, and the review found no normal way
+  to reach it.
 
 **Checkpoint** (after step 2): the full check, `npm run test:net`, and two proofs. First, `coop-unlock.ts` at
 `coopShot=unlock` and `late`: a friend's card live, and a late flourish with no card. Second, `railway-boiler-fit.ts`

@@ -577,6 +577,17 @@ export async function boilerToPier(
     check(await bot.use(saddle.x, saddle.z, 'fit the boiler', /^Fit the boiler$/), 'boiler fit offered');
     check(await bot.work(() => R.line2Trains(R.rw()), 30000, 380), 'boiler fitted at the old train');
     await checkpoint('TRAINS');
+    // Cutscenes for everyone (step 3): every page gets the boiler's "Steam" card once its show hands back (a friend's
+    // is put away by `friendCards`); the fitter puts theirs away as dismiss() does.
+    await until(
+      () => read().reward.arrival.cards.includes('boiler') && read().reward.showing,
+      "the fitter's Steam card after the boiler's show",
+      120000,
+    );
+    await bot.wait(Number(new URLSearchParams(location.search).get('cardMs')) || 1600);
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
+    await until(() => !read().reward.showing, 'Steam card dismissed with Interact', 10000);
   }
   // Slice 5 (R1, R2): `--to freight` waits wherever the seed landed the bot until line 1's first load of timber is at
   // the Village (the mirror's Town.wood >= 8); asked for only, so no other run waits for it.

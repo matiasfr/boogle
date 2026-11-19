@@ -109,8 +109,8 @@ export async function createRailwayLine2(
   hookShown?: () => void,
   rewardBusy: () => boolean = () => false,
   /** A show of a moment on this page (ability-arrival.ts): a page that played the boiler's show gets no boiler
-   * flourish; one whose show was dropped unseen does. */
-  showing: (key: string, state: 'queued' | 'played' | 'dropped') => void = () => {},
+   * flourish; one whose show was dropped unseen does; and the trains edge owes every page the boiler's card. */
+  showing: (key: string, state: 'owed' | 'queued' | 'played' | 'dropped') => void = () => {},
 ) {
   const [layout, stations, pieces, land, plans, tech, shapes, flatMod, sounds, look, kit, props, carry] =
     await Promise.all([
@@ -627,7 +627,6 @@ export async function createRailwayLine2(
       sounds,
       pieces,
       flat,
-      youGot,
       // The boiler's show (boiler-shot.ts): the old train waking, then the breaker at the forge when it waits there.
       shot: (cue) => {
         const breaker = worksPreview() && worksRow(rd.world()).breaker === 1;

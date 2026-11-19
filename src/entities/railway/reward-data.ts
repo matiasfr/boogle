@@ -16,6 +16,8 @@ export const HOOK_REWARD = {
     ['k', 0, 0.42, 0, 0.12, 0.34, 0.12, '#39e6c6'],
   ] satisfies ['c' | 'k', number, number, number, number, number, number, string][],
 };
+/** The boiler's card, every page's once the trains run (owner, 9 November; on for everyone 18 November). */
+export const BOILER_REWARD = { name: 'Steam', line: 'Trains run both lines.' };
 export const GLIDE_REWARD = {
   name: 'The glider',
   line: 'Open it in the air.',
