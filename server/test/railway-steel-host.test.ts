@@ -18,7 +18,7 @@ import { SHED_TABLE, WORKS, INSTALL_STEEL, installRevision, steelPool } from '..
 import { laySection } from '../../src/sim/railway-seed-legs.ts';
 import { railwayAtSteel, type SteelStage } from '../../src/sim/railway-seed-steel.ts';
 import { buildSeedWorld, invariant, line, steel, type Seed } from '../../test/helpers/rail.ts';
-import { shed } from '../../src/sim/railway-rows.ts';
+import { account, shed } from '../../src/sim/railway-rows.ts';
 import { rail } from '../../src/sim/railway-rows.ts';
 import {
   RAIL_GATES,
@@ -47,7 +47,7 @@ import { LINE_SLOTS, trainServes } from '../../src/sim/railway-trains.ts';
 import { TRAIN, TRAIN_PHASE, trainAlong } from '../../src/sim/railway-train.ts';
 import { railLinePoint } from '../../src/sim/railway-line-path.ts';
 import { LINE2, RAIL_HALTS, RAIL_LINES, haltPlatform, trainPassesBy } from '../../src/sim/railway-lines.ts';
-import { LOGS, ringHead, roomOf, stopsOf } from '../../src/sim/railway-queries.ts';
+import { LOGS, ringHead, roomOf, steelNeed, stopsOf } from '../../src/sim/railway-queries.ts';
 import { RAILS } from '../../src/sim/railway-line2-layout.ts';
 import { ringRivetSequence } from '../../test/helpers/railway-rivet-sequence.ts';
 import { setTune, type TuneKey } from '../../src/sim/tune.ts';
@@ -851,6 +851,43 @@ test('hold host: a lever ask assigned to a held train releases it', async () => 
     await r.ticks(1);
     assert.equal(train(r.w, k).phase, TRAIN_PHASE.RUN, 'released: it leaves for the ask');
     assert.ok(train(r.w, k).depart < arrived + TRAIN.dwellTicks + 200, 'before the cap');
+  } finally {
+    await r.done();
+  }
+});
+
+// Review of the carrier-leaves net case (Checkpoint A): a leaver who never comes back holds the yard's kit for good (no
+// carry grace covers it). The island must not stall: the bill's need counts no back, so line 2 brings the kit again and
+// a present player lights the works with the leaver still gone.
+test('steel host (review): a leaver holding 8 logs and 8 rails forever does not stall the works', async () => {
+  const r = await host('kit-leaver', fixture('steel-kit'), { s: 'a', t: 'b' });
+  try {
+    assert.equal(await r.action({ op: 'rail.steelTake', kind: 1 }, spot(RING_STEEL_YARD), 't'), 'accepted');
+    assert.equal(await r.action({ op: 'rail.steelTake', kind: 0 }, spot(RING_STEEL_YARD), 't'), 'accepted');
+    const held = account(r.w, 'b')!;
+    assert.deepEqual({ logs: held.carry, rails: held.rails }, { logs: STEEL.logs, rails: 8 }, 'all logs, 8 rails');
+    r.depart('t');
+    r.later(r.grace());
+    await r.ticks(3);
+    assert.deepEqual({ logs: account(r.w, 'b')!.carry, rails: account(r.w, 'b')!.rails }, { logs: 8, rails: 8 });
+    assert.deepEqual(steelNeed(r.w), { logs: STEEL.logs, rails: 8 }, 'owed again with the leaver gone');
+    for (let k = 0; steel(r.w).lit < 0; k++) {
+      assert.ok(
+        k < 200,
+        `lit in time (yard ${steel(r.w).yardLogs}/${steel(r.w).yardRails}, bill ${steel(r.w).logs}/${steel(r.w).rails})`,
+      );
+      if (steel(r.w).yardLogs + steel(r.w).yardRails > 0) {
+        for (const kind of [0, 1]) await r.action({ op: 'rail.steelTake', kind }, spot(RING_STEEL_YARD));
+        await r.action({ op: 'rail.steel' }, spot(RING_STEEL_WORKS));
+      }
+      await r.ticks(50);
+    }
+    assert.deepEqual(
+      { logs: account(r.w, 'b')!.carry, rails: account(r.w, 'b')!.rails },
+      { logs: 8, rails: 8 },
+      'still on the leaver',
+    );
+    assert.equal(invariant(r.w), null);
   } finally {
     await r.done();
   }

@@ -24,7 +24,7 @@ import type { HostedRoom } from '../../server/src/host/hosted-room.ts';
 
 type Page = { name: string; page: import('playwright').Page; selfId: unknown };
 /** Sections that read or step the in-process room host (ws-run.ts counts their checks). */
-export type HostSection = 'jump-in replace' | 'request stop' | 'leaf';
+export type HostSection = 'jump-in replace' | 'request stop' | 'leaf' | 'carrier leaves';
 type Web = { open(name: string, query: string): Promise<Page> };
 type Ctx = {
   web: Web;
@@ -1160,6 +1160,217 @@ export async function railwayLeaf(c: Ctx) {
   await mirrored('the rivet: joined on all three tabs', '14,0,4,0,1');
   await c.restart();
   await mirrored('after a restart every tab reconnects to the joined leaf', '14,0,4,0,1', 20000);
+  await Promise.all(pages.map((p) => p.page.close()));
+}
+
+// Ring Island build 2's Checkpoint A (docs/plans/ring-island-build2.md): a carrier leaving mid-carry from the steel
+// yard, over real sockets. Three tabs at `steel-kit` (the whole kit in the island yard, the works cold). One player
+// takes logs off the yard and loses their socket (ws-room's pause: a network loss, no `bye`); inside the room's
+// reconnect grace the server keeps the logs on their account and both peers mirror it; they reconnect and feed the bill.
+// A second player takes rails and stays away past the grace: the room departs them (peers hear `left`), and today's
+// rules keep the rails on the absent account. The carry graces (server/src/host/host-maintenance.ts) cover the beam,
+// the boiler, footings and a greybox leg's rack units, not the yard's kit: an `Account`'s logs and rails are its own
+// and no release or return touches them. Nothing is lost (railCounts counts backs), and the yard's kit is never
+// stranded by a leaver: the bill's need (steelNeed, src/sim/railway-queries.ts) never counted kit on a back, so a line 2
+// train brings the lack out again. The leaver who comes back later still carries it and can feed it.
+export async function railwayCarrierLeaves(c: Ctx) {
+  const { railwayAtSteel } = await import('../../src/sim/railway-seed-steel.ts');
+  const { railwayCheck } = await import('../../src/sim/railway-check.ts');
+  const { account, steel } = await import('../../src/sim/railway-rows.ts');
+  const { steelNeed } = await import('../../src/sim/railway-queries.ts');
+  const { RING_STEEL_YARD, RING_STEEL_WORKS, STEEL } = await import('../../src/sim/railway-ring-layout.ts');
+  const railCheck = (name: string, ok: boolean, detail = '') => {
+    c.check(`carrier leaves: ${name}`, ok, detail);
+    if (!ok) throw new Error(`Carrier proof stopped: ${name}${detail ? ` (${detail})` : ''}`);
+  };
+  const seed = railwayAtSteel('steel-kit');
+  const roomId = railwayRoomId(`${c.room}-carry`);
+  const url = (pid: string, lat: number) =>
+    `room=${roomId}&server=http://127.0.0.1:${c.port()}&pid=${pid}&lat=${lat}&adapter=1`;
+  // As railwayRequestStop: a plain mirror brings the room up and the seed loads before any session opens.
+  const host = await c.web.open('K-host', `room=${roomId}&server=http://127.0.0.1:${c.port()}&pid=carryhost`);
+  const world = await hostedWorld(c, roomId);
+  await advancePast(world, seed.t + 5);
+  world.rules.railway.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())), railwayCheck);
+  world.rules.railway.touchAll();
+  const K0 = await c.web.open('K0', url('carry0', 0)),
+    K1 = await c.web.open('K1', url('carry1', 100)),
+    K2 = await c.web.open('K2', url('carry2', 200));
+  await host.page.close();
+  const pages = [K0, K1, K2];
+  // The server's world, read again at each use (a load replaces it; the rules write rows in place).
+  const live = () => world.rules.railway.world();
+  const back = (pid: string) => {
+    const a = account(live(), pid);
+    return { logs: a?.carry ?? 0, rails: a?.rails ?? 0 };
+  };
+  /** The yard, the bill and every back: the kit's logs and rails the case moves, on the server. */
+  const kit = () => {
+    const s = steel(live());
+    return { yardLogs: s.yardLogs, yardRails: s.yardRails, logs: s.logs, rails: s.rails, lit: s.lit };
+  };
+  // A tab's view of one player's back, from its own mirror (every tab mirrors every account row).
+  const mirroredBack = async (p: Page, pid: string) => {
+    const a = (await rail(p)).accounts.find((x) => x.pid === pid);
+    return { logs: a?.carry ?? 0, rails: a?.rails ?? 0 };
+  };
+  const ready = (p: Page) =>
+    waitFor(async () => {
+      const s = (await adapter(p)).session;
+      return s.ready && s.pending === 0;
+    }, 15000);
+  /** Mirrors agree when they hash the same, every room total is conserved, and each shows `pid`'s back as the server. */
+  const agree = async (group: Page[], pid: string) =>
+    (await waitFor(async () => {
+      const want = JSON.stringify(back(pid));
+      const all = await Promise.all(group.map(rail));
+      const backs = await Promise.all(group.map((p) => mirroredBack(p, pid)));
+      return (
+        all.every((s) => s.ready && s.hash === all[0]!.hash && s.counts.total === INITIAL + s.counts.produced) &&
+        backs.every((b) => JSON.stringify(b) === want)
+      );
+    }, 10000)) >= 0;
+  const intent = (p: Page, at: { x: number; y: number; z: number }, e: Record<string, unknown>) =>
+    ev(
+      p.page,
+      ({ at, e }) => {
+        window.T.railStand(at.x, at.y, at.z);
+        return window.T.railIntent(e as never);
+      },
+      { at: { x: at.x, y: at.y, z: at.z }, e },
+    );
+  /** One intent through the tab's adapter, accepted when the server's rows show `done` and the tab has nothing pending. */
+  const accept = async (
+    name: string,
+    p: Page,
+    at: typeof RING_STEEL_YARD,
+    e: Record<string, unknown>,
+    done: () => boolean,
+  ) => {
+    railCheck(`${p.name} has a live session before ${String(e.op)}`, (await ready(p)) >= 0);
+    await intent(p, at, e);
+    const ok = await waitFor(async () => done() && (await adapter(p)).session.pending === 0, 10000);
+    railCheck(
+      name,
+      ok >= 0,
+      `server kit ${JSON.stringify(kit())}, backs ${JSON.stringify([back('carry0'), back('carry1')])}`,
+    );
+  };
+  const connected = (p: Page) => ev(p.page, () => window.T.conn.at(-1)?.c === true);
+  const sees = (p: Page, other: Page) =>
+    ev(p.page, (id: unknown) => window.T.room.peers().some((x: { peer: unknown }) => x.peer === id), other.selfId);
+
+  railCheck(
+    'every tab is ready on the steel-kit seed',
+    (await Promise.all(pages.map(ready))).every((t) => t >= 0),
+  );
+  const start = kit();
+  railCheck(
+    'the seed holds the whole kit in the yard, the works cold',
+    start.yardLogs === STEEL.logs && start.yardRails === STEEL.rails && start.logs + start.rails === 0 && start.lit < 0,
+    JSON.stringify(start),
+  );
+
+  // Run 1: a carrier loses their link mid-carry and comes back inside the grace.
+  await accept(
+    'the carrier takes logs off the yard',
+    K0,
+    RING_STEEL_YARD,
+    { op: 'rail.steelTake', kind: 0 },
+    () => back('carry0').logs > 0,
+  );
+  const logs = back('carry0').logs;
+  railCheck('the take moves logs from the yard to the back, none made or lost', kit().yardLogs === STEEL.logs - logs);
+  railCheck("every tab mirrors the carrier's back before the drop", await agree(pages, 'carry0'));
+  const conns = await ev(K0.page, () => window.T.conn.length);
+  const players = () => c.hosted(roomId)!.status().players;
+  const before = players();
+  // A network loss: the socket closes without `bye`, and the page holds its reconnect for 0.6 s (the room's grace is
+  // 1.5 s, hosted-room.ts reconnectGraceMs; the page's own reconnect lands about 1.2 s after the close at the earliest).
+  await ev(K0.page, () => window.T.room.pause(600));
+  // The server must have handled the close before its rows are read: the room's connected clients lose the carrier's
+  // socket (or, should the reconnect win the race, a new socket has replaced it). A carrier departed at once, or kit
+  // cleared on departure, then shows in the next check, whichever way the race went.
+  railCheck(
+    "the server handles the carrier's socket closing",
+    (await waitFor(
+      async () => players() < before || (await ev(K0.page, (n: number) => window.T.conn.length >= n + 2, conns)),
+      5000,
+    )) >= 0,
+    `players ${before} -> ${players()}`,
+  );
+  railCheck(
+    'inside the grace the server keeps the logs on the absent back and the yard as it was',
+    back('carry0').logs === logs && kit().yardLogs === STEEL.logs - logs && kit().logs === 0,
+    JSON.stringify({ back: back('carry0'), kit: kit() }),
+  );
+  railCheck('inside the grace both peers mirror the absent back identically', await agree([K1, K2], 'carry0'));
+  railCheck(
+    'the peers checked inside the grace: the carrier was not yet departed',
+    (await sees(K1, K0)) && (await sees(K2, K0)),
+  );
+  railCheck(
+    'the carrier reconnects',
+    (await waitFor(
+      () => ev(K0.page, (n: number) => window.T.conn.length >= n + 2 && window.T.conn.at(-1).c, conns),
+      10000,
+    )) >= 0,
+  );
+  railCheck('after the reconnect every tab mirrors the carry intact', await agree(pages, 'carry0'));
+  railCheck('the reconnected carrier sees its own back', (await adapter(K0)).rows.account?.carry === logs);
+  await accept(
+    'the reconnected carrier feeds the logs into the bill',
+    K0,
+    RING_STEEL_WORKS,
+    { op: 'rail.steel' },
+    () => kit().logs === logs && back('carry0').logs === 0,
+  );
+  railCheck('every tab mirrors the delivery', await agree(pages, 'carry0'));
+
+  // Run 2: a second carrier takes rails and stays away past the grace.
+  await accept(
+    'the second carrier takes rails off the yard',
+    K1,
+    RING_STEEL_YARD,
+    { op: 'rail.steelTake', kind: 1 },
+    () => back('carry1').rails > 0,
+  );
+  const rails = back('carry1').rails;
+  railCheck('the take moves rails from the yard to the back', kit().yardRails === STEEL.rails - rails);
+  railCheck('every tab mirrors the second back before the drop', await agree(pages, 'carry1'));
+  const needBefore = steelNeed(live()).rails;
+  await ev(K1.page, () => window.T.room.pause(8000));
+  railCheck(
+    'past the grace the room departs the absent carrier (both peers hear it leave)',
+    (await waitFor(async () => !(await sees(K0, K1)) && !(await sees(K2, K1)), 6000)) >= 0,
+  );
+  railCheck('the departed carrier is still away', !(await connected(K1)));
+  // Today's rule (read, not decided here): no carry grace covers the yard's kit, so the rails stay on the departed
+  // account. Conserved: railCounts counts every back, so `agree`'s room total holds with the rails off the yard.
+  railCheck(
+    'past the grace the rails stay on the departed account: not returned to the yard, not dropped, not lost',
+    back('carry1').rails === rails && kit().yardRails === STEEL.rails - rails && kit().rails === 0,
+    JSON.stringify({ back: back('carry1'), kit: kit() }),
+  );
+  railCheck('past the grace the remaining peers mirror the departed back identically', await agree([K0, K2], 'carry1'));
+  // No stall either: the bill's need never counted a back, so it already owes the carried rails and a line 2 train
+  // brings them out again (steelLoads, steelService) whether the carrier comes back or not.
+  railCheck(
+    "the bill's need still owes the departed carrier's rails (what sends a train for them)",
+    steelNeed(live()).rails === needBefore && needBefore >= rails,
+    `need ${needBefore} -> ${steelNeed(live()).rails}, carried ${rails}`,
+  );
+  railCheck('the carrier comes back after the grace', (await waitFor(() => connected(K1), 15000)) >= 0);
+  railCheck('the returning carrier gets a live session', (await ready(K1)) >= 0);
+  railCheck('the returning carrier still carries the rails', (await adapter(K1)).rows.account?.rails === rails);
+  await accept(
+    'the returning carrier feeds the rails into the bill',
+    K1,
+    RING_STEEL_WORKS,
+    { op: 'rail.steel' },
+    () => kit().rails === rails && back('carry1').rails === 0,
+  );
+  railCheck('every tab mirrors the late delivery and the room totals', await agree(pages, 'carry1'));
   await Promise.all(pages.map((p) => p.page.close()));
 }
 

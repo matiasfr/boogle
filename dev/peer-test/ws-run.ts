@@ -30,6 +30,7 @@ const {
   railwayJumpIn,
   railwayRequestStop,
   railwayLeaf,
+  railwayCarrierLeaves,
   railwayLoad,
   railwayCartRide,
   railwayTrainRide,
@@ -75,7 +76,12 @@ let svc = await serve();
 // Sections that read or step the in-process room host, with their check counts. Broker net runs the server out of
 // process and skips them; every standalone run (CI's net) recounts them and fails on a stale count, so the broker's
 // skipped total stays true.
-const HOST_ONLY: Record<HostSection, number> = { 'jump-in replace': 14, 'request stop': 11, leaf: 9 };
+const HOST_ONLY: Record<HostSection, number> = {
+  'jump-in replace': 14,
+  'request stop': 11,
+  leaf: 9,
+  'carrier leaves': 31,
+};
 const skipped: HostSection[] = [];
 const hostMarks = new Map<HostSection, number>();
 function hostOnly(section: HostSection) {
@@ -314,6 +320,10 @@ try {
   if (!hostOnly('leaf')) {
     await railwayLeaf(ctx); // Ring Island's leaf: two players bring it down, a late joiner, a reload and a restart
     hostOnlyDone('leaf');
+  }
+  if (!hostOnly('carrier leaves')) {
+    await railwayCarrierLeaves(ctx); // Ring Island build 2's Checkpoint A: a steel-yard carrier leaves mid-carry
+    hostOnlyDone('carrier leaves');
   }
 
   // 11. WS_LOAD=1: R1a's and R1b's measurements (2, 4, 6 players at 0, 100, 200 ms added latency, normal and 5x
