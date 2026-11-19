@@ -236,7 +236,7 @@ export const take = defineSystem(
 );
 export const rackTake = defineSystem(
   'rail.rackTake',
-  { reads: [Boiler, Beam, Pile, Works], writes: [Rail, Account], phase: 'act', order: 7 },
+  { reads: [Boiler, Beam, Pile, Works], writes: [Rail, Account, Leg], phase: 'act', order: 7 },
   (w, { a: aid, e }: Act) => {
     const a = w.mut(Account, aid)!;
     if (e.kind === 2) return 0;
@@ -252,6 +252,9 @@ export const rackTake = defineSystem(
     const n = Math.min(rail.rack, room);
     rail.rack -= n;
     a.carry += n;
+    // The rack is the Village halt yard's log bin (docs/plans/halt-yard.md): leg kit left there and taken back counts
+    // held again, as a pile's or another yard's take does. Stone is never leg kit, so its branch has nothing to count.
+    pickedUp(w, aid, LOGS, n);
     return n;
   },
 );

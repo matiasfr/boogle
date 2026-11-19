@@ -853,6 +853,67 @@ test("a halt yard's Leave it here is predicted, confirmed once, and seen by a fr
   assert.equal(row(r.mirrors.get('c')!.confirmed()).rails, rails, 'a late joiner sees it too');
 });
 
+// The cases the prediction test above does not reach. The client predicts a halt yard op without the server's reach, so a press out of reach shows and must come back; and a log take a friend
+// wins must name the friend (a kind of 0 is left out of the server's event, so sameTarget compares 0 with a defaulted 0).
+test('a halt yard put the server refuses as out of reach comes back; a raced log take names who won', () => {
+  const r = seeded(buildSeedWorld('q3-done'));
+  r.join('b');
+  r.pump();
+  assert.equal(serverAct(r, 'a', { op: 'rail.forgeTake' }).status, 'accepted');
+  const rails = r.api.account('a')!.rails;
+  assert.ok(rails > 0);
+  r.join('a2');
+  const far: Actor = { reach: () => false, height: () => true, cadence: () => true };
+  const { adapter, sent, corrections } = predictor(r, 'a2', { x: 1077, y: 24, z: 51 }, r.api.account('a')!.request + 1);
+  assert.equal(adapter.haltPut(2, 2), true, 'predicted on the press');
+  assert.equal(account(adapter.read.world(), 'a')!.rails, 0);
+  const e = sent.at(-1)!;
+  const refused = r.api.act('a', e as RailAction, far);
+  assert.equal(refused.status, 'rejected', 'out of reach on the server');
+  r.replication.ack('a2', e.epoch as number, e.request as number);
+  r.replication.reject('a2', e.epoch as number, e.request as number, 'refused');
+  r.pump();
+  assert.equal(adapter.read.pending(), 0);
+  assert.equal(account(adapter.read.world(), 'a')!.rails, rails, 'the rails come back to the back');
+  assert.equal(haltYard(adapter.read.world(), 2).rails, 0, 'and off the bin');
+  assert.deepEqual(
+    corrections.map((c) => [c.event.op, c.lost]),
+    [['rail.haltPut', rails]],
+  );
+  // Logs in the Quarry's bin (kind 0, left out of the server's event); b takes them first, then a's predicted take.
+  const k = trees(r.api.world()).findIndex((t) => t.left > 0);
+  assert.equal(
+    serverAct(r, 'b', { op: 'rail.chop', id: RAILWAY_SOURCES[k]![0], yaw: 0, collapsed: false }).status,
+    'accepted',
+  );
+  const logs = r.api.account('b')!.carry;
+  assert.ok(logs > 0);
+  assert.equal(serverAct(r, 'b', { op: 'rail.haltPut', yard: 2, kind: 0 }).accepted, logs);
+  r.pump();
+  assert.equal(adapter.haltTake(2, 0), true, 'predicted on the press');
+  assert.equal(account(adapter.read.world(), 'a')!.carry, logs);
+  const won = serverAct(r, 'b', { op: 'rail.haltTake', yard: 2, kind: 0 });
+  assert.equal(won.accepted, logs, 'the friend got there first');
+  // b's event as server/src/host/railway-requests.ts builds it: the yard, and a kind of 0 left out.
+  r.replication.emit(
+    { op: 'rail.haltTake', pid: 'b', request: r.api.account('b')!.request, accepted: logs, yard: 2 },
+    'b',
+  );
+  const t = sent.at(-1)!;
+  assert.deepEqual([t.op, t.kind], ['rail.haltTake', 0]);
+  assert.equal(r.api.act('a', t as RailAction, anywhere).status, 'noop');
+  r.replication.ack('a2', t.epoch as number, t.request as number);
+  r.pump();
+  assert.equal(account(adapter.read.world(), 'a')!.carry, 0, 'the logs go back');
+  assert.deepEqual(
+    corrections.slice(1).map((c) => [c.event.op, c.lost, c.winner]),
+    [['rail.haltTake', logs, 'b']],
+  );
+  adapter.dispose();
+  agree(r, 'a2');
+  agree(r, 'b');
+});
+
 test('a late joiner sees the fitted boiler cold while the cart returns', () => {
   const seed = buildSeedWorld('boiler');
   seedAct(seed, 'a', 'rail.boilerTake', { revision: boiler(seed.w).revision });

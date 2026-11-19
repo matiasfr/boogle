@@ -17,11 +17,13 @@ import { railLegKitHolders, railLegKitRelease } from '../src/sim/railway-sys-rou
 import { railSession } from '../src/sim/railway-sys-core.ts';
 import { Account, Steel } from '../src/sim/railway-components.ts';
 import {
+  account,
   act,
   advance,
   buildSeedWorld,
   invariant,
   pilesWithIds,
+  rail,
   railSupplyPulse,
   restore,
   type Seed,
@@ -180,3 +182,29 @@ test(
     );
   },
 );
+
+// The halt yards (docs/plans/halt-yard.md; docs/agent-calls.md, 2026-11-19): leg kit taken back from a yard counts held
+// again, as a pile's take does. At the Camp rail.haltTake gives the logs back; at the Village they lie on the recovery
+// rack and come back with rail.rackTake. Either way the West landing stand-in has them held again while they ride on a
+// back, so the next minute's backstop mints none. Built on this file's `bay-open` (the seed is built once a file).
+test('leg kit left at the Village yard and taken back counts held again, as at the Camp', () => {
+  for (const yard of [1, 0]) {
+    const s = buildSeedWorld('bay-open');
+    const marker = 5000;
+    railSupplyPulse(s.w, { marker, grow: railGrowthMask([]), recover: [] });
+    const lifted = act(s, 'a', 'rail.depotTake');
+    assert.ok(lifted > 0 && account(s.w, 'a')!.legLogs === lifted, 'the stand-in kit is counted held');
+    assert.equal(act(s, 'a', 'rail.haltPut', { yard, kind: 0 }), lifted);
+    // Taken back the way each yard gives logs: Pick up at the Camp, the recovery rack's take at the Village.
+    const back = yard ? act(s, 'a', 'rail.haltTake', { yard, kind: 0 }) : act(s, 'a', 'rail.rackTake', { kind: 0 });
+    assert.equal(back, lifted);
+    const minted = rail(s.w).depotProduced;
+    railSupplyPulse(s.w, { marker: marker + 1, grow: railGrowthMask([]), recover: [] });
+    assert.deepEqual(
+      [account(s.w, 'a')!.legLogs, legRow(s.w, BAY).heldLogs, rail(s.w).depotProduced - minted],
+      [lifted, lifted, 0],
+      `yard ${yard}: held again, and the backstop mints none while they are on a back`,
+    );
+    assert.equal(invariant(s.w), null);
+  }
+});
