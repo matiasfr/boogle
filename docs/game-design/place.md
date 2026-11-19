@@ -245,8 +245,10 @@ start beside the through track's. Every junction at Home is drawn as points from
 (docs/plans/turnouts.md, steps 1 and 3): the spur's (J1), the leg's at both ends (J2, J3) and where each line's offset
 track leaves (J4, J6) have an open blade, wing and check rails and long timbers under both roads; the leg's parts come
 with the leg. The offset track's frogs are uncut crossings (its rails are the pairs the gantry carries), the leg's and
-the spur's are cut. The points are set for the through road and do not move yet, the levers do not work, and the
-table has no pit: that is the station's art pass (home-station steps 9 and 10). Each ruin's floor and near wall stop 0.3 m short of the built
+the spur's are cut. The points are set for the through road and do not move yet, and the levers do not work (turnouts
+step 6). At the table's rim (turnouts step 5) the deck, the spur and every stall road share one rail height; each road's
+rails stop 3 cm outside the rim and the deck's 3 cm inside it, so a resting deck meets a road across a 6 cm gap square
+to it, and each road's rail ends lie on a timber across the pit's stone kerb (its first sleeper, stretched down). Each ruin's floor and near wall stop 0.3 m short of the built
 stall's eave. The garage's stand, jib, lever post and crew stand on the yard's ground beside the table (they hung
 0.3 m over it, at the deck's height), and a rail along each side joins the stand's two legs so it reads as a trestle
 when its part has gone; the jib's mast is 0.3 m longer, so its arm is where it was over the deck. Drawn only: no rule,
