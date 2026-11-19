@@ -1055,6 +1055,7 @@ test('R3: played through pier, ring, counterweight and rivet, riders aboard when
     t0 = town(w0, 0),
     paid = earned(w0);
   const phase = LINE2_SLOTS.map((k) => train(w0, k).phase);
+  const riders = LINE2_SLOTS.map((k) => train(w0, k).riders);
   const offAt = [0, 0, 0, 0, 0, 0]; // riders stepped off, by line 2 stop
   const line2 = (w: World) => LINE2_SLOTS.reduce((n, k) => n + train(w, k).riders, 0);
   aboard = line2(w0);
@@ -1076,11 +1077,20 @@ test('R3: played through pier, ring, counterweight and rivet, riders aboard when
       (k, i) => phase[i] === TRAIN_PHASE.RUN && train(w, k).phase === TRAIN_PHASE.STAND && train(w, k).at >= 0,
     );
     if (stepped) {
-      assert.equal(came.length, 1, `tick ${tk}: one train arrived as riders stepped off`);
-      const at = train(w, came[0]!).at;
-      offAt[at] = offAt[at]! + stepped;
+      // A train's riders step off all at once, so they came from the arriving trains whose riders a tick ago sum to
+      // them, and only one such set may: two trains can come to a stand on the same tick (from v63 one reaches the Pier
+      // as another stands at the Quarry, tick 6244).
+      const before = (k: number) => riders[LINE2_SLOTS.indexOf(k)]!;
+      const sets = came
+        .reduce<number[][]>((all, k) => [...all, ...all.map((set) => [...set, k])], [[]])
+        .filter((set) => set.length && set.reduce((n, k) => n + before(k), 0) === stepped);
+      assert.equal(sets.length, 1, `tick ${tk}: ${stepped} stepped off one set of the trains that arrived`);
+      for (const k of sets[0]!) offAt[train(w, k).at] = offAt[train(w, k).at]! + before(k);
     }
-    LINE2_SLOTS.forEach((k, i) => (phase[i] = train(w, k).phase));
+    LINE2_SLOTS.forEach((k, i) => {
+      phase[i] = train(w, k).phase;
+      riders[i] = train(w, k).riders;
+    });
     const f = routeFar(w, 0);
     if (f !== far) {
       // The end moved this tick: the riders aboard before it are still aboard (or stepped off and paid, above).

@@ -16,17 +16,11 @@ import { LINE2_STATIONS, Q6, line2Panels } from '../src/sim/railway-line2-layout
 import { apply, createRailway, invariant, railSession, rocks } from './helpers/rail.ts';
 import { railCounts } from '../src/sim/railway-queries-line2.ts';
 import { lineFeed, lineLayDistance, lineSchedule, type LineTiming } from '../src/sim/railway-line-schedule.ts';
+import { LINE_TIMING } from '../src/sim/railway-line.ts';
+import { TUNABLES } from '../src/sim/tune.ts';
 
-// Accepted Place inputs in milliseconds/10 Hz ticks, supplied as room settings at the future funding boundary.
-const timing: LineTiming = {
-  depositMs: 320,
-  feedIntervalMs: 70,
-  logFlightMs: 550,
-  stoneFlightMs: 450,
-  beamFlightMs: 900,
-  cruiseCmPerTick: 50,
-  departureTicks: 20,
-};
+// Accepted Place inputs in milliseconds/10 Hz ticks, supplied as room settings at the funding boundary.
+const timing: LineTiming = { ...LINE_TIMING };
 
 test('line 1 preserves source identity, exact bills and the one twelve-panel allowance', () => {
   assert.deepEqual(
@@ -117,9 +111,9 @@ test('mixed feeds finish after every flight, with explicit tick rounding rather 
   assert.deepEqual(
     schedules.map((s) => [s.depositTicks, s.feedTicks, s.layTicks]),
     [
-      [4, 22, 89],
-      [4, 33, 75],
-      [4, 28, 179],
+      [4, 22, 99],
+      [4, 33, 85],
+      [4, 28, 189],
     ],
   );
   assert.deepEqual(
@@ -160,6 +154,33 @@ test('rail pairs commit on the first tick reaching their contact; fixed schedule
   for (const bad of [NaN, Infinity, -1, -0, 0.5, 60001])
     assert.throws(() => lineSchedule(LINE1_STATIONS[0]!, { ...timing, feedIntervalMs: bad }), /line timing/);
   assert.throws(() => lineSchedule(LINE1_STATIONS[0]!, { ...timing, cruiseCmPerTick: 0 }), /line timing/);
+});
+
+test('a layer eases out of its stop over the room default, 50 ticks, at an unchanged cruise (G31, G32)', () => {
+  // One owner: the default timing's ease is the room tune's default, so seeds and untuned rooms fund the same stretch.
+  assert.equal(TUNABLES.find((t) => t.key === 'railDepartureTicks')!.def, 50);
+  assert.equal(LINE_TIMING.departureTicks, 50);
+  assert.equal(LINE_TIMING.cruiseCmPerTick, 50, 'cruise kept');
+  const stretches = [
+    ...LINE1_STATIONS.map((station) => ({ station, cruise: LINE_TIMING.cruiseCmPerTick })),
+    // Line 2's stretches lay at their own share of the cruise (railway-sys-line2.ts, fundQ).
+    ...LINE2_STATIONS.map((station) => ({
+      station,
+      cruise: Math.max(1, Math.floor((LINE_TIMING.cruiseCmPerTick * station.speed) / 100)),
+    })),
+  ];
+  for (const { station, cruise } of stretches) {
+    const eased = { ...LINE_TIMING, cruiseCmPerTick: cruise };
+    // Five seconds in it has covered two thirds of five seconds at cruise, and it runs at cruise from there.
+    assert.ok(Math.abs(lineLayDistance(50, eased) - (cruise * 50 * 2) / 3) < 1e-6, `${station.id} eased distance`);
+    assert.ok(
+      Math.abs(lineLayDistance(60, eased) - lineLayDistance(50, eased) - cruise * 10) < 1e-6,
+      `${station.id} cruise`,
+    );
+    // Against cruise all the way the ease costs a third of itself (50 / 3 ticks): ten more than the 20-tick ease did.
+    const before = lineSchedule(station, { ...eased, departureTicks: 20 });
+    assert.equal(lineSchedule(station, eased).layTicks - before.layTicks, 10, `${station.id} lay`);
+  }
 });
 
 test('the machine view lays the same rail pairs the shared schedule commits', async () => {
