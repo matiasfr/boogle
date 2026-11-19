@@ -89,7 +89,13 @@ export const LEG_OBJECTIVES = {
   first: "Build the line to High Gorge: section 1 of 4. The frame is on Ring Island's west platform.",
   next: (n: number, of: number) => `Build the line to High Gorge: section ${n} of ${of}. Ride line 2 to the railhead.`,
   open: 'High Gorge is open. Ride line 2 to its end and climb the stair.',
-  gate: "Open the barrier behind High Gorge's south platform.",
+  // Greybox leg 2's (docs/plans/greybox-leg2.md, "Controls and copy"; placeholders): the barrier moved onto the
+  // incline's first frame, so its line is the plan's now.
+  gate: "Open the incline's barrier",
+  incline: 'Build the incline to Bell Rock',
+  seeds: 'Take the crystal seeds',
+  bay: 'Build the bay line from the West landing',
+  ride: 'Ride the bay line to Bell Rock',
 } as const;
 /** The steel loop's steps, from the rivet to the longer boiler (docs/plans/ring-island-build2.md, section 1). Draft
  * copy for the owner to reword (docs/agent-calls.md; decision d-2026-11-18-decisions-page-rail). */
@@ -956,6 +962,15 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       ]);
     }
   }
+  /** Leg 2's step once the incline's barrier is open: build the incline, take the seeds, build the bay line, ride it
+   * (beats 3 to 10; the seeds first, though the bay cut does not need them). */
+  function leg2Objective(r: NonNullable<ReturnType<typeof rows>>) {
+    if (!incline) return '';
+    if (!done(r, 'incline')) return LEG_OBJECTIVES.incline;
+    if (!(routeRow(r.wd).grants & (1 << SEEDS))) return LEG_OBJECTIVES.seeds;
+    if (!legs.some((l) => l.sp.leg.id === 'bay-cut')) return '';
+    return done(r, 'bay-cut') ? LEG_OBJECTIVES.ride : LEG_OBJECTIVES.bay;
+  }
   /** The objective line's text, to the play record (no on-screen line on the route). */
   function note(r: NonNullable<ReturnType<typeof rows>>) {
     const s = r.per[legs.indexOf(stack)]!,
@@ -973,7 +988,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
           ? LEG_OBJECTIVES.open
           : !r.gate
             ? LEG_OBJECTIVES.gate
-            : '';
+            : leg2Objective(r);
     if (text !== objective) {
       objective = text;
       if (text) playObjective(text);
