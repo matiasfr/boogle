@@ -40,6 +40,11 @@
 // v61 railhead re-route: the trace never pairs a bent. 205 checkpoints append a zero Aperture.stop column and change
 // namespace/hash/checksum; 5,671 snapBytes samples follow. All 8,604 records keep every old column, input, result,
 // message and replica packet (keyed comparison with the v60 fixture; docs/plans/railhead-reroute.md, step 1 as built).
+// v62 greybox leg 2: the trace never reaches the route. 205 checkpoints gain four shed train rows (slots 7 to 10, in
+// the shed at their lines' first halts) whose entity ids push every later component's id column on by 4; the 7 old
+// train rows equal the v61 fixture in every column and every other column is exact. 205 namespace/hash/checksum
+// envelopes and 5,671 snapBytes samples follow. All 8,604 records keep their inputs, results, messages and replica
+// packets (keyed comparison with the v61 fixture before the writer regenerated it; docs/plans/greybox-leg2.md).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
