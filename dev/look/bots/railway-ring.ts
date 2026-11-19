@@ -177,14 +177,28 @@ export async function rideToIsland(bot: Bot, { rideFrom, hopTo, view, until }: R
   const levers = () => (view() as unknown as { ringLevers: RingLever[] }).ringLevers;
   const outward = () => levers().find((l) => l.halt === STOP.railhead && l.dir === 1 && l.on);
   const levers0 = () => `RING LEVERS ${JSON.stringify({ at: me.body!.position, levers: levers() })}`;
-  // `wait` below reads the outbound lever at once: from a just-struck rivet it may not stand yet.
+  // `wait` below reads the outbound lever at once. From a just-struck rivet it may not stand yet, and it can stand
+  // for a moment and go back: a train already bound for the old end keeps its end block (and the lever its Village
+  // side, chained) until it clears. Wait until it has stood, at rest, for 100 server ticks.
   const t0 = railAt();
+  let since = -1,
+    was = '';
+  const steady = () => {
+    const l = outward();
+    const ok = !!l && Math.abs(l.u - l.goal) < 0.05;
+    const now = l ? (ok ? 'stands' : 'sliding') : 'not on';
+    if (now !== was) bot.note(`OUTBOUND LEVER ${now} at ${railAt() - t0} ticks`);
+    was = now;
+    if (!ok) since = -1;
+    else if (since < 0) since = railAt();
+    return ok && railAt() - since >= 100;
+  };
   if (!outward()) console.log(levers0());
-  await until(() => !!outward(), 'the outbound Railhead lever stands', 60000).catch((error: unknown) => {
+  await until(steady, 'the outbound Railhead lever stands', 600000).catch((error: unknown) => {
     console.log(levers0());
     throw error;
   });
-  bot.note(`OUTBOUND LEVER stands ${railAt() - t0} ticks after the ride was asked for`);
+  bot.note(`OUTBOUND LEVER steady from ${since - t0} ticks after the ride was asked for`);
   const train = await rideFrom(
     {
       name: 'Railhead',
