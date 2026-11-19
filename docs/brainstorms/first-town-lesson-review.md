@@ -20,8 +20,8 @@ calls depend on (`src/place/town-plan.ts`, `src/entities/town/plots.ts`, `src/si
 ## The short version
 
 The second plot's **identity is already decided and built**: the owner ruled on 16 November that it is the loader
-yard (no riders; its arm loads footings onto every line 2 train), and it shipped through #1975/#1977. So the state
-file's "the second plot waits for the designer's review" is stale on that point. What is still open, and what this
+yard (no riders; its arm loads footings onto every line 2 train), and it shipped through #1975/#1977. So what the
+state file called "waits for the designer's review" was already settled on that point. What is still open, and what this
 review is about, is **the building the Round puts on that plot**. Today it is the same house shell as plot 1, with a
 small yellow jib on its porch (stills below). The rule teaches "a works building helps the line and brings no
 riders"; the building says "another house". **Recommendation: the Round's second plot is rebuilt as a works yard**
@@ -76,9 +76,10 @@ fact counts only rider-bearing houses (`town-facts.ts`), so the 16 November susp
 choice is asked of the first town ([first island teaches](../decisions-core-loop.md#d-2026-11-16-first-island-teaches)).
 Grant's "errands with no real decisions" is answered by the hubs and the garage, not by this town.
 
-**F5. Stale state, for the orchestrator.** `docs/agents/orchestrator-state.md` lines 53 and 80 say the second plot
-waits for this review; its identity was settled on 16 November and built. I did not edit the state file (out of
-scope for this job); the orchestrator should replace the line with this proposal's question 1.
+**F5. For the orchestrator.** Before 18 November's decisions-page commit (#2227) the state file said the second
+plot waited for this review; its identity was settled on 16 November and built. That line is gone on main; the job
+row in `docs/agents/orchestrator-state.md` can point at this proposal's question 1. I did not edit the state file
+(out of scope for this job).
 
 ## Recommended second plot: the loader yard, built as a yard
 
