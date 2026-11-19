@@ -6,16 +6,42 @@ import { RAILWAY_CAPACITY as CAPACITY } from '../sim/railway-layout.ts';
 import { merged } from './part-geometry.ts';
 import { sideCarryOffset } from './head-clearance.ts';
 import { makeProp } from './prop-kit.ts';
+import { DEFAULT_FIT, bundleBack, bundleRest, shownOf, type BundleFit } from './haul-bundle.ts';
 
 /** The most stone a back holds (with the breaker), and the most rails: each kind has its own row (separate
  * capacities, owner 17 November 2026). */
 const MAX_STONE = CAPACITY.stoneBreaker;
 const MAX_RAILS = CAPACITY.rails;
-/** The heap's lowest stones' centres on the back socket, and how far a stone sinks into what it rests on. */
+/** The heap's stones on the back socket: four across a row (inside the pack's rail banks, x +-0.38), rows back from
+ * the first, a tier's height, centres on the shelf, and a stone's centre above the logs it rests on. */
+const STONE_ACROSS = 4;
+const STONE_FRONT = 0.5;
+const STONE_ROW = 0.18;
+const STONE_TIER = 0.2;
 const STONE_BASE = 0.3;
-const STONE_REST = 0.1;
-/** The stone heap's lift for a log bundle whose top stands `top` m up its frame (0 for no logs, bundleTop). */
-export const stoneOn = (top: number) => (top > 0 ? Math.max(0, top + STONE_REST - STONE_BASE) : 0);
+const STONE_CLEAR = 0.1;
+const STONE_ROWS = 4;
+
+/** The heap's seats in fill order: each stone takes the lowest open spot, on the shelf or on the logs under it, in
+ * two rows or as far back as the log bundle reaches. A full heap settles down the bundle's back rather than standing
+ * on its top (owner, 18 November 2026: "Seat the heap lower on the frame"); with no logs it is the shelf's two tiers. */
+function stoneSeats(logs: number, fit: BundleFit): [number, number, number][] {
+  const back = bundleBack(logs, fit);
+  const rows: { z: number; floor: number; n: number }[] = [];
+  for (let r = 0; r < STONE_ROWS; r++) {
+    const z = STONE_FRONT + r * STONE_ROW;
+    if (r >= 2 && z > back) break;
+    rows.push({ z, floor: Math.max(STONE_BASE, bundleRest(logs, fit, z, STONE_CLEAR)), n: 0 });
+  }
+  const at = (row: (typeof rows)[number]) => row.floor + Math.floor(row.n / STONE_ACROSS) * STONE_TIER;
+  const seats: [number, number, number][] = [];
+  for (let k = 0; k < MAX_STONE; k++) {
+    const row = rows.reduce((low, r) => (at(r) < at(low) - 1e-6 ? r : low));
+    seats.push([(row.n % STONE_ACROSS) * 0.14 - 0.21, at(row), row.z]);
+    row.n++;
+  }
+  return seats;
+}
 
 export type CargoKind = 'logs' | 'rails' | 'stone' | 'beam' | 'boiler';
 export const cargoCapacity = (kind: CargoKind, frame: boolean): number =>
@@ -89,18 +115,24 @@ export function makeCarryModels() {
   stone.name = 'wear_carried_stone';
   stone.frustumCulled = false;
   stone.count = 0;
-  // A low heap, four across and two deep a tier (two tiers for 16): it stays inside the pack's rail banks
-  // (x +-0.38) and, lifted by `stoneOn`, rides on top of a log bundle rather than through it.
-  for (let k = 0; k < MAX_STONE; k++) {
-    worn.rotation.set(k, k * 2, 0);
-    worn.position.set(
-      (k % 4) * 0.14 - 0.21,
-      STONE_BASE + Math.floor(k / 8) * 0.2,
-      0.5 + (Math.floor(k / 4) % 2) * 0.18,
-    );
-    worn.updateMatrix();
-    stone.setMatrixAt(k, worn.matrix);
+  let seatedShown = -1,
+    seatedFit: BundleFit | undefined;
+  /** Seats the heap on the shelf, or on the back of `logs` logs in a bundle fitted by `fit`; only the logs shown count. */
+  function seatStone(logs: number, fit: BundleFit = DEFAULT_FIT) {
+    const shown = shownOf(Math.max(0, logs));
+    if (shown === seatedShown && fit === seatedFit) return;
+    seatedShown = shown;
+    seatedFit = fit;
+    stoneSeats(logs, fit).forEach(([x, y, z], k) => {
+      worn.rotation.set(k, k * 2, 0);
+      worn.position.set(x, y, z);
+      worn.scale.set(1, 1, 1);
+      worn.updateMatrix();
+      stone.setMatrixAt(k, worn.matrix);
+    });
+    stone.instanceMatrix.needsUpdate = true;
   }
+  seatStone(0);
   const beam = new THREE.Mesh(
     new THREE.CylinderGeometry(0.2, 0.26, 5.4, 8).rotateX(Math.PI / 2),
     flat('#7a5430').clone(),
@@ -123,6 +155,7 @@ export function makeCarryModels() {
     beam,
     boiler,
     setRails,
+    seatStone,
     setCargo(kind: CargoKind, amount: number, frame: boolean) {
       const n = Number.isFinite(amount) ? Math.min(cargoCapacity(kind, frame), Math.max(0, Math.floor(amount))) : 0;
       setRails(kind === 'rails' ? n : 0, frame);

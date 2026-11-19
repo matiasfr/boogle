@@ -299,6 +299,22 @@ squares). Each step leaves `node dev/ship-check.ts` green; the heavier proofs ar
     the heap stands above Buddy's head from behind and starts at the rails' tops from the side. Not seen: a remote
     player's back, the flourish itself, and rails without the pack (by the code they lie crosswise in the logs' space, as
     before this plan; not looked at).
+  - **As built: the heap seated lower (18 November, owner: "Seat the heap lower on the frame";
+    [decision](../decisions-core-loop.md#d-2026-11-18-decisions-page-core-loop)).** The heap no longer rides on the
+    bundle's top. Each stone takes the lowest open spot, four across a row: on the shelf, or resting on the logs under
+    its row (`haul-bundle.ts` `bundleRest`, a stone's centre 0.1 m off the log surface), in two rows or as far back as
+    the bundle reaches (`bundleBack`, a third row at 16 logs) (`carry-models.ts` `stoneSeats`, `seatStone`, set in
+    `line-cargo.ts`). A full heap settles down the bundle's back. In the back socket's space the 16-stone heap's top
+    falls from 1.16 m to 0.87 m with 16 logs, and from 1.16 m to 1.07 m with 12 (no third row yet: it would hang past
+    the shelf). With one log it is the shelf's two tiers behind it; with two, the front row rests on the second log and
+    the back row on the shelf. Stone only is unchanged (the same seats, in the same order); logs only are untouched.
+    Measured on a real back (`carry-seating.ts` on `works-open`, now with `--query seatLogs=2`): with 16 logs, 16
+    stone and 8 rails the heap's top is 0.98 m above Buddy's feet against his head's top at 1.14 m (on main about
+    1.27 m, 0.13 m above it); with two logs, 0.85 m against 1.16 m. Stills `seat-low-back.png`, `seat-low-side.png`,
+    `seat-low-two-back.png`, `seat-low-two-side.png`: the head shows above the heap from behind; from the side the
+    heap steps down the bundle's back, clear of the rails and the frame; with two logs it sits on the shelf. Not seen:
+    a remote player's back, phone width, 12 logs, and the eval's own drop of extra logs (the stills' run dropped them
+    by hand with the same op, so a pile shows in the two-log stills).
 - [x] **Checkpoint A (the batch).** *(18 November, before the ship: `ship-check origin/main HEAD`, `npm run loop --
   run` and `npm run checkpoints` green. Every proof below passed on main or on the bot fixes (#2189); the sim/net
   review: two independent reviews before #2152 merged, recorded in the orchestrator's state.)* `npm run check`; `npm run loop -- run`; `npm run checkpoints`;
