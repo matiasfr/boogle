@@ -10,9 +10,12 @@ import {
   RAIL_YARDS,
   ROW_LINE,
   WALL_ISLETS,
+  legFrame,
+  legRack,
   pathOf,
   sectionFromCm,
   sectionsOf,
+  simHalt,
 } from '../src/sim/railway-route.ts';
 import { WORLD_LINES, type WorldLine } from '../src/sim/railway-world-lines.ts';
 import { ORIGIN } from '../src/place/layout.ts';
@@ -178,8 +181,12 @@ test('each gate shuts the section it names and stands at that frame', () => {
     const [legId, k] = frames[g.id]!;
     const leg = RAIL_LEGS.find((l) => l.id === legId)!;
     leg.sections.forEach((s, j) => assert.equal(s.gate === gi, j === k, `${g.id} on ${legId} section ${j}`));
+    // The incline's stands on its built first frame; the Canopy barrier on its reserved spot on Bell Rock's upper deck,
+    // in view of the ramp's head (greybox-leg2.md, step 1), within 40 m of the bay row's Bell Rock stop.
+    if (g.id === 'incline') return assert.deepEqual(g.at, { ...legFrame(leg, 0), reach: 400 }, g.id);
     const p = rowPoint(row(leg.row), sectionFromCm(leg, k));
-    assert.ok(Math.hypot(g.at.x - p.x, g.at.z - p.z) <= 5, `${g.id} stands at its frame`);
+    const near = g.id === 'canopy' ? 4000 : 500;
+    assert.ok(Math.hypot(g.at.x - p.x, g.at.z - p.z) <= near, `${g.id} stands at its frame`);
   });
 });
 
@@ -193,7 +200,11 @@ test("the grants after the first stand at their leg's destination halt; `pick` o
       ['lantern', 'notch-tunnel'],
     ],
   );
-  for (const g of RAIL_GRANTS.slice(1)) {
+  // The seeds stand on Bell Rock's lower deck, at the massing's reserved spot, 4 m reach (greybox-leg2.md, step 1).
+  const seeds = RAIL_GRANTS[1]!.at,
+    bell = row('ns').halts[1]!;
+  assert.ok(Math.hypot(seeds.x - bell.x, seeds.z - bell.z) < 2000 && seeds.reach === 400, 'the seeds on the lower deck');
+  for (const g of RAIL_GRANTS.slice(2)) {
     const leg = RAIL_LEGS[g.leg]!;
     const h = row(leg.row).halts[leg.destRowHalt]!;
     assert.deepEqual(g.at, { x: h.x, z: h.z, y: h.y, reach: h.reach }, g.id);
@@ -230,4 +241,62 @@ test("the Wall cuts are the islets' true closest passes to the cave row, within 
     }
     assert.ok(Math.abs(at - cm) <= 100, `${id}: closest pass at ${Math.round(at)}, catalog has ${cm}`);
   }
+});
+
+// Greybox leg 2's catalog (docs/plans/greybox-leg2.md, step 1).
+test("leg 2's legs: the incline s 36 to 1156 in two sections of 560 m, the bay cut s 20 to 1217 in two of 598.5 m", () => {
+  const incline = RAIL_LEGS.find((l) => l.id === 'incline')!,
+    bay = RAIL_LEGS.find((l) => l.id === 'bay-cut')!;
+  assert.deepEqual([incline.fromCm, ...incline.sections.map((s) => s.toCm)], [3600, 59600, 115600]);
+  assert.deepEqual([bay.fromCm, ...bay.sections.map((s) => s.toCm)], [2000, 61850, 121700]);
+  // The ns start crossover inside the bore (s 70 to 90); the bay stop on the in half's straight, short of the kink.
+  assert.equal(row('ns').ends.find((e) => e.at === 'start')!.sCm, 8000);
+  assert.ok(row('bay').legs[0]!.toCm - row('bay').stops[1]! >= 1000 - 100, 'the bay stop stands off the kink');
+});
+
+test("every leg's railhead halt is its from halt's sim index + 1 (simHalt counts the built legs' heads)", () => {
+  for (const leg of RAIL_LEGS) assert.equal(leg.railheadHalt, simHalt(leg.row, fromHalt(leg)) + 1, leg.id);
+  // Line 2: Ring Island is its sixth halt and the stack's heads follow; the new rows start at 0.
+  assert.deepEqual(
+    RAIL_LEGS.map((l) => [l.id, l.railheadHalt]),
+    [
+      ['stack', 6],
+      ['incline', 1],
+      ['bay-cut', 1],
+      ['bell-canopy', 3],
+      ['cave', 1],
+      ['wall', 3],
+      ['notch-tunnel', 4],
+      ['causeway', 3],
+    ],
+  );
+  assert.equal(simHalt('ring', 1), 9, "line 2's High Gorge after its three stack heads");
+  assert.equal(simHalt('ns', 1), 2, "the ns line's Bell Rock after incline head 1");
+  assert.equal(simHalt('bay', 2), 3, "the bay line's Canopy Town after bay head 1");
+});
+/** A leg's from halt on its row: the halt whose stop is its fromCm. */
+function fromHalt(leg: (typeof RAIL_LEGS)[number]) {
+  return row(leg.row).stops.indexOf(leg.fromCm);
+}
+
+test("leg 2's points stand within 1 m of the plan's table (route-leg2.ts checks them against the level's reserves)", () => {
+  const near = (p: { x: number; z: number; y: number }, x: number, z: number, y: number, what: string) =>
+    assert.ok(
+      Math.hypot(p.x / 100 - x, p.z / 100 - z) <= 1 && Math.abs(p.y / 100 - y) <= 0.01,
+      `${what}: (${p.x / 100}, ${p.z / 100}, ${p.y / 100})`,
+    );
+  const incline = RAIL_LEGS.find((l) => l.id === 'incline')!,
+    bay = RAIL_LEGS.find((l) => l.id === 'bay-cut')!;
+  near(legFrame(incline, 0), -91.5, -1966.4, 3.9, 'incline frame 1');
+  near(RAIL_GATES.find((g) => g.id === 'incline')!.at, -91.5, -1966.4, 3.9, 'the incline barrier');
+  near(legFrame(incline, 1), -14, -1417, 4.9, 'incline frame 2');
+  near(legFrame(bay, 0), 801.3, -5.5, 4.9, 'bay frame 1');
+  near(legRack(bay, 0), 805.0, -0.8, 4.9, 'bay rack 1');
+  near(legFrame(bay, 1), 429, -474, 4.9, 'bay frame 2');
+  near(RAIL_GRANTS.find((g) => g.id === 'seeds')!.at, -64.7, -854.9, 4.9, 'the seeds');
+  near(RAIL_GATES.find((g) => g.id === 'canopy')!.at, -77.0, -851.2, 15.9, 'the Canopy barrier');
+  // Incline rack 1: within 15 m of frame 1 (straight line; on foot is step 4's still), on line 2's south platform.
+  const f = legFrame(incline, 0),
+    r = legRack(incline, 0);
+  assert.ok(Math.hypot(f.x - r.x, f.z - r.z) < 1500, 'incline rack 1 within 15 m of frame 1');
 });

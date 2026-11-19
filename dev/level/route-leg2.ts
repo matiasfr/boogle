@@ -12,6 +12,7 @@ import { H } from '../../src/place/terrain.ts';
 import { inside, layout, parseMapPage, type XZ as MapXZ } from '../../src/sickle/map-data.ts';
 import { ORIGIN } from '../../src/place/layout.ts';
 import { WORLD_LINES } from '../../src/sim/railway-world-lines.ts';
+import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, legFrame, legRack, sectionFromCm } from '../../src/sim/railway-route.ts';
 import type { XZ } from '../../src/entities/route-greybox/leg2-layout.ts';
 import type { Leg2Analysis, Reserve } from '../../src/content/levels/leg2.ts';
 import artifact from '../../content/built/prefabs.json' with { type: 'json' };
@@ -410,11 +411,67 @@ function gorge(entries: Entry[]) {
   reserves(entries, 'gorge');
 }
 
+/** Whether a catalog point (world cm) lies inside a reserve's rectangle (reserves' own transform, as `inRock`). */
+function inReserve(r: Reserve, p: { x: number; z: number }) {
+  const s = Math.sin(r.yaw),
+    c = Math.cos(r.yaw),
+    dx = p.x / 100 - r.x,
+    dz = p.z / 100 - r.z;
+  return Math.abs(s * dx + c * dz) <= r.d / 2 + 0.01 && Math.abs(c * dx - s * dz) <= r.w / 2 + 0.01;
+}
+/** The rules' points (docs/plans/greybox-leg2.md, step 1), read against the reserves the massing kept for them. */
+function points(entries: Entry[]) {
+  const fact = (message: string) => entries.push({ kind: 'fact', message });
+  const assertion = (passed: boolean, message: string) => entries.push({ kind: 'assertion', passed, message });
+  entries.push({ kind: 'section', message: "The rules' points (the catalog's frames, racks, seeds and barriers)" });
+  const reserve = (id: 'bell' | 'west' | 'gorge', name: string) => {
+    const r = LEG2[id].reserves.find((x) => x.id === name);
+    if (!r) throw new Error(`route-leg2: no reserve ${name}`);
+    return r;
+  };
+  const m = (p: { x: number; z: number; y: number }) => `(${f1(p.x / 100)}, ${f1(p.z / 100)}, ${f1(p.y / 100)})`;
+  const apart = (a: { x: number; z: number }, b: { x: number; z: number }) => Math.hypot(a.x - b.x, a.z - b.z) / 100;
+  const incline = RAIL_LEGS.find((l) => l.id === 'incline')!,
+    bay = RAIL_LEGS.find((l) => l.id === 'bay-cut')!;
+  const seeds = RAIL_GRANTS.find((g) => g.id === 'seeds')!.at,
+    canopy = RAIL_GATES.find((g) => g.id === 'canopy')!.at,
+    barrier = RAIL_GATES.find((g) => g.id === 'incline')!.at;
+  const mark = LEG2.bell.marks.seeds;
+  assertion(
+    apart(seeds, { x: mark.x * 100, z: mark.z * 100 }) < 1 && inReserve(reserve('bell', 'seeds spot'), seeds),
+    `the seeds post ${m(seeds)} is in the seeds spot, ${f1(apart(seeds, { x: mark.x * 100, z: mark.z * 100 }))} m from its mark (reached on foot and by a swimmer above)`,
+  );
+  assertion(
+    inReserve(reserve('bell', 'Canopy frame and barrier'), canopy),
+    `the Canopy barrier ${m(canopy)} is in its reserved spot on the upper deck`,
+  );
+  const bf = legFrame(bay, 0),
+    br = legRack(bay, 0),
+    apron = reserve('west', 'apron');
+  assertion(
+    inReserve(apron, bf) && inReserve(apron, br),
+    `the bay cut's frame 1 ${m(bf)} and rack 1 ${m(br)} are on the West landing's apron, ${f1(apart(bf, br))} m apart`,
+  );
+  const f0 = legFrame(incline, 0),
+    r0 = legRack(incline, 0);
+  assertion(
+    apart(f0, barrier) === 0 && apart(f0, r0) < 15,
+    `the incline's frame 1 and barrier ${m(f0)} on incline-s; rack 1 ${m(r0)} on line 2's south platform, ${f1(apart(f0, r0))} m from it in a straight line (under 15 m; the walk on foot is not proven: the Gorge's massing has no level artifact, step 4's still shows it)`,
+  );
+  // Ruling 1: frames stay out of the bore (s 67 to 232).
+  const inBore = incline.sections.map((_s, k) => sectionFromCm(incline, k)).filter((s) => s > 6700 && s < 23200);
+  assertion(!inBore.length, `the incline's frames stand outside the bore (s 67 to 232): ${inBore.length ? 'NOT' : 'ok'}`);
+  for (const leg of [incline, bay])
+    for (let k = 1; k < leg.sections.length; k++)
+      fact(`  ${leg.id} head ${k}: frame ${m(legFrame(leg, k))}, rack ${m(legRack(leg, k))} (over the sea; step 4 adds the head's ramp)`);
+}
+
 export function checkLeg2() {
   const entries: Entry[] = [];
   bell(entries);
   west(entries);
   gorge(entries);
+  points(entries);
   const failures = entries.filter((e) => e.kind === 'assertion' && !e.passed).length;
   return { level: 'route leg 2 (planned)', entries, failures };
 }

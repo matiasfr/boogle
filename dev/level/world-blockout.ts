@@ -43,7 +43,8 @@ const PAGE = 'docs/world/world-blockout.html';
 const STILLS = 'docs/world/world-blockout';
 
 type Leg = { id: string; reverse?: boolean };
-type HaltSpec = { name: string; place?: string; at?: 'end' | 'start'; nearPt?: XZ; deck?: number };
+/** `stopCm`: a stop fixed by a ruling, cm along the line, instead of the line's nearest point to its place. */
+type HaltSpec = { name: string; place?: string; at?: 'end' | 'start'; nearPt?: XZ; deck?: number; stopCm?: number };
 type Service = { id: string; name: string; extends?: 1; legs: Leg[]; halts: HaltSpec[]; note: string };
 type Turn = 'crossover' | 'loop' | null;
 
@@ -83,7 +84,8 @@ const SERVICES: Service[] = [
     name: 'North-south line',
     legs: [{ id: 'incline', reverse: true }, { id: 'final' }],
     halts: [
-      { name: 'High Gorge', place: 'gorge' },
+      // s 36, clear of the bore (call 118, confirmed 16 November; docs/plans/greybox-leg2.md, step 1).
+      { name: 'High Gorge', place: 'gorge', stopCm: 3600 },
       { name: 'Bell Rock', place: 'bell', deck: 4 },
       { name: 'Original Island', place: 'original' },
     ],
@@ -95,7 +97,8 @@ const SERVICES: Service[] = [
     legs: [{ id: 'bay-cut' }, { id: 'bell-canopy' }, { id: 'notch-tunnel' }],
     halts: [
       { name: 'West landing', place: 'home' },
-      { name: 'Bell Rock', place: 'bell' },
+      // 10 m back onto the in half's straight, off the 52° kink (greybox-leg2.md, step 1).
+      { name: 'Bell Rock', place: 'bell', stopCm: 121700 },
       { name: 'Canopy Town', place: 'canopy' },
       { name: 'Lantern Notch', place: 'notch' },
     ],
@@ -401,6 +404,7 @@ function build(svc: Service): Built {
     // A halt at a place stands at the line's nearest point to it (Home's at the line's own end), 20 m in from either end
     // so its platform fits.
     const stops = svc.halts.map((h, stop) => {
+      if (h.stopCm !== undefined) return h.stopCm;
       const p = A.places.find((x) => x.id === h.place);
       const v = h.nearPt
         ? nearest(cm(h.nearPt[0] + 1000), cm(h.nearPt[1]))

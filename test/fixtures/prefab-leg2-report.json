@@ -113,6 +113,43 @@
       "kind": "assertion",
       "passed": true,
       "message": "room left for the rules plan is clear of leg 2's boxes, pads and posts: ns row, incline-n lever end, incline-s lever end"
+    },
+    {
+      "kind": "section",
+      "message": "The rules' points (the catalog's frames, racks, seeds and barriers)"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "the seeds post (-64.7, -854.9, 4.9) is in the seeds spot, 0.0 m from its mark (reached on foot and by a swimmer above)"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "the Canopy barrier (-77.0, -851.1, 15.9) is in its reserved spot on the upper deck"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "the bay cut's frame 1 (801.3, -5.5, 4.9) and rack 1 (805.0, -0.8, 4.9) are on the West landing's apron, 6.0 m apart"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "the incline's frame 1 and barrier (-91.5, -1966.4, 3.9) on incline-s; rack 1 (-84.8, -1967.4, 3.9) on line 2's south platform, 6.8 m from it in a straight line (under 15 m; the walk on foot is not proven: the Gorge's massing has no level artifact, step 4's still shows it)"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "the incline's frames stand outside the bore (s 67 to 232): ok"
+    },
+    {
+      "kind": "fact",
+      "message": "  incline head 1: frame (-14.8, -1416.7, 4.9), rack (-14.1, -1426.7, 4.9) (over the sea; step 4 adds the head's ramp)"
+    },
+    {
+      "kind": "fact",
+      "message": "  bay-cut head 1: frame (429.0, -474.1, 4.9), rack (435.2, -466.2, 4.9) (over the sea; step 4 adds the head's ramp)"
     }
   ],
   "failures": 0

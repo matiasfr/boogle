@@ -7,6 +7,7 @@ import { H } from '../src/place/terrain.ts';
 import { inside, layout, parseMapPage } from '../src/sickle/map-data.ts';
 import { ORIGIN } from '../src/place/layout.ts';
 import { WORLD_LINES } from '../src/sim/railway-world-lines.ts';
+import * as route from '../src/sim/railway-route.ts';
 import artifact from '../content/built/prefabs.json' with { type: 'json' };
 import bellRaw from '../content/built/levels/bell.json' with { type: 'json' };
 import westRaw from '../content/built/levels/west.json' with { type: 'json' };
@@ -44,6 +45,7 @@ function report(level: unknown, definitions: unknown = artifact) {
       parseMapPage,
       ORIGIN,
       WORLD_LINES,
+      ...route,
       artifact: definitions,
       ...validation,
       flood,
