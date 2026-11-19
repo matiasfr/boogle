@@ -661,6 +661,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     return (pid ? carriedOf(pid) : undefined)?.carry ?? 0;
   };
   backSeam.pack = () => railRow(world()).pack;
+  backSeam.yoke = () => railRow(world()).yoke;
   backSeam.carry = () => {
     const mine = carriedOf(adapter.read.pid);
     const logs = mine?.carry ?? 0;

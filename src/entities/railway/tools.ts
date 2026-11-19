@@ -220,18 +220,23 @@ export async function createRailwayTools(
     const w = adapter.read.world();
     return adapter.read.ready() && line2PackReady(w) && !rail(w).pack;
   };
-  // The pack frame on every back, once the world has it (shared state, so a friend's is derived the same way: no
-  // presence key). It rides the avatar's back socket, the same frame the haul bundle sits in.
-  const frames = new Map<THREE.Object3D, THREE.Mesh>();
-  const wearPack = (avatar: THREE.Object3D | null | undefined, on: boolean) => {
-    if (!avatar) return;
-    let frame = frames.get(avatar);
-    if (!on) return void frame?.removeFromParent();
-    frame ??= gear.packFrameMesh();
-    frames.set(avatar, frame);
-    const back = frameOf(avatar);
-    if (frame.parent !== back) back.add(frame);
+  // The pack frame and the Rail yoke on every back, once the world has them (shared state, so a friend's is derived the
+  // same way: no presence key). They ride the avatar's back socket, the same frame the haul bundle sits in.
+  const wornOn = (make: () => THREE.Mesh) => {
+    const worn = new Map<THREE.Object3D, THREE.Mesh>();
+    const wear = (avatar: THREE.Object3D | null | undefined, on: boolean) => {
+      if (!avatar) return;
+      let mesh = worn.get(avatar);
+      if (!on) return void mesh?.removeFromParent();
+      mesh ??= make();
+      worn.set(avatar, mesh);
+      const back = frameOf(avatar);
+      if (mesh.parent !== back) back.add(mesh);
+    };
+    return { worn, wear };
   };
+  const frames = wornOn(() => gear.packFrameMesh()),
+    yokes = wornOn(gear.yokeMesh);
   const api = {
     /** A friend's card for one of these (ability-arrival.ts): the finder's name, line and model, without the rise
      * from the device or chest, or the camp resident's handoff. */
@@ -260,7 +265,8 @@ export async function createRailwayTools(
       axeChest: { x: AXE_AT.x, y: AXE_AT.y, z: AXE_AT.z, available: axeAvailable() },
       packChest: { x: packAt.x, y: packAt.y, z: packAt.z, available: packAvailable() },
       packReveals,
-      packFramesWorn: [...frames.values()].filter((f) => f.parent).length,
+      packFramesWorn: [...frames.worn.values()].filter((f) => f.parent).length,
+      yokesWorn: [...yokes.worn.values()].filter((y) => y.parent).length,
       jumpDevice: {
         x: deviceAt.x,
         y: deviceAt.y,
@@ -327,14 +333,18 @@ export async function createRailwayTools(
           lipBody = null;
         }
       }
-      const packOn = backSeam.pack?.() ?? false;
-      wearPack(me.entered ? me.avatar : null, packOn);
-      for (const r of remotes.values()) wearPack(r.visible && r.entered ? r.avatar : null, packOn);
-      for (const [avatar, frame] of frames)
-        if (!avatar.parent) {
-          frame.removeFromParent();
-          frames.delete(avatar);
-        }
+      for (const [{ worn, wear }, on] of [
+        [frames, backSeam.pack?.() ?? false],
+        [yokes, backSeam.yoke?.() ?? false],
+      ] as const) {
+        wear(me.entered ? me.avatar : null, on);
+        for (const r of remotes.values()) wear(r.visible && r.entered ? r.avatar : null, on);
+        for (const [avatar, mesh] of worn)
+          if (!avatar.parent) {
+            mesh.removeFromParent();
+            worn.delete(avatar);
+          }
+      }
       for (const object of [ring, ring2, core]) object.visible = !rail(w).jump;
       // Keep the faint unclaimed locator; acquiring the power never expands it into a screen-filling beam.
       shaft.visible = !rail(w).jump;
@@ -410,8 +420,10 @@ export async function createRailwayTools(
       if (disposed) return;
       disposed = true;
       offAccepted();
-      for (const frame of frames.values()) frame.removeFromParent();
-      frames.clear();
+      for (const { worn } of [frames, yokes]) {
+        for (const mesh of worn.values()) mesh.removeFromParent();
+        worn.clear();
+      }
       root.removeFromParent();
       for (const geometry of geometries) geometry.dispose();
       material.dispose();

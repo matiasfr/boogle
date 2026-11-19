@@ -11,7 +11,7 @@ export type CarryReadout = {
   rails: number;
   stone: number;
   big: 'beam' | 'boiler' | 'footing' | null;
-  /** Each kind's row on the back: logs 8 or 16, stone 8 or 16, rails 8. */
+  /** Each kind's row on the back: logs 8 or 16, stone 8 or 16, rails 8 or 16. */
   capacity: Record<CarryKind, number>;
   flyingLogs: number;
   attention: boolean;
@@ -26,6 +26,8 @@ export const backSeam = {
   carry: null as (() => CarryReadout) | null,
   /** Whether every back wears the carry frame (the railway's shared pack); null where no owner draws one. */
   pack: null as (() => boolean) | null,
+  /** Whether every back wears the Rail yoke (the railway's shared `Rail.yoke`); null where no owner draws one. */
+  yoke: null as (() => boolean) | null,
 };
 /** Where the next piece onto your bundle goes, holding `n` now: its world position and the bundle's world rotation. */
 export function myBundleNext(n: number, out: THREE.Vector3, rot: THREE.Quaternion): boolean {

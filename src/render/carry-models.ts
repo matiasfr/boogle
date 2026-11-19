@@ -7,11 +7,12 @@ import { merged } from './part-geometry.ts';
 import { sideCarryOffset } from './head-clearance.ts';
 import { makeProp } from './prop-kit.ts';
 import { DEFAULT_FIT, bundleBack, bundleRest, shownOf, type BundleFit } from './haul-bundle.ts';
+import { YOKE_BANK, YOKE_PITCH } from './gear-models.ts';
 
-/** The most stone a back holds (with the breaker), and the most rails: each kind has its own row (separate
- * capacities, owner 17 November 2026). */
+/** The most stone a back holds (with the breaker), and the most rails (with the Rail yoke): each kind has its own row
+ * (separate capacities, owner 17 November 2026). */
 const MAX_STONE = CAPACITY.stoneBreaker;
-const MAX_RAILS = CAPACITY.rails;
+const MAX_RAILS = CAPACITY.railsYoke;
 /** The heap's stones on the back socket: four across a row (inside the pack's rail banks, x +-0.38), rows back from
  * the first, a tier's height, centres on the shelf, and a stone's centre above the logs it rests on. */
 const STONE_ACROSS = 4;
@@ -44,11 +45,13 @@ function stoneSeats(logs: number, fit: BundleFit): [number, number, number][] {
 }
 
 export type CargoKind = 'logs' | 'rails' | 'stone' | 'beam' | 'boiler';
-export const cargoCapacity = (kind: CargoKind, frame: boolean): number =>
+export const cargoCapacity = (kind: CargoKind, frame: boolean, yoke = false): number =>
   kind === 'beam' || kind === 'boiler'
     ? 1
     : kind === 'rails'
-      ? MAX_RAILS
+      ? yoke
+        ? CAPACITY.railsYoke
+        : CAPACITY.rails
       : kind === 'stone'
         ? MAX_STONE
         : frame
@@ -84,12 +87,20 @@ export function makeCarryModels() {
   railSeat.name = 'wear_carried_rail_seat';
   railSeat.position.set(0, 0.14, 0.51);
   const worn = new THREE.Object3D();
-  let packed: boolean | undefined;
-  function setRails(amount: number, frame: boolean) {
-    if (packed !== frame) {
-      packed = frame;
+  let seated: 'yoke' | 'frame' | 'bare' | undefined;
+  /** `yoke`: the Rail yoke is worn (gear-models.ts `yokeMesh`, on the same socket), with or without the frame. */
+  function setRails(amount: number, frame: boolean, yoke = false) {
+    const seat = yoke ? 'yoke' : frame ? 'frame' : 'bare';
+    if (seated !== seat) {
+      seated = seat;
       for (let k = 0; k < MAX_RAILS; k++) {
-        if (frame) {
+        if (yoke) {
+          // Upright steel hangs in the yoke's stirrups in two banks of up to 8, both sides filling alike.
+          const [x, y, z] = YOKE_BANK;
+          worn.position.set(k % 2 ? x : -x, y, z + Math.floor(k / 2) * YOKE_PITCH);
+          worn.rotation.set(0, 0, 0);
+          worn.scale.set(1, 1, 0.45);
+        } else if (frame) {
           // Upright steel rests on the pack shelf in two banks beside the log bundle.
           worn.position.set(k % 2 ? 0.38 : -0.38, 0.505, 0.29 + Math.floor(k / 2) * 0.065);
           worn.rotation.set(0, 0, 0);
@@ -105,10 +116,10 @@ export function makeCarryModels() {
       rails.instanceMatrix.needsUpdate = true;
     }
     rails.count = Number.isFinite(amount)
-      ? Math.min(cargoCapacity('rails', frame), Math.max(0, Math.floor(amount)))
+      ? Math.min(cargoCapacity('rails', frame, yoke), Math.max(0, Math.floor(amount)))
       : 0;
     rails.visible = rails.count > 0;
-    railSeat.visible = frame && rails.visible;
+    railSeat.visible = frame && !yoke && rails.visible;
   }
   setRails(0, false);
   const stone = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(0.16, 0), material('stone').clone(), MAX_STONE);

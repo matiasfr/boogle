@@ -1,4 +1,4 @@
-> **Status: steps 1 and 2 on main (#2300, 2026-11-19, world `v64`); steps 3 to 6 not built.** Backlog row (P3): "The rails' own capacity upgrade: rails start at 8 on
+> **Status: steps 1 and 2 on main (#2300, 2026-11-19, world `v64`); step 3 built on `claude/rail-yoke-back` (2026-11-19); steps 4 to 6 not built.** Backlog row (P3): "The rails' own capacity upgrade: rails start at 8 on
 > everyone's back, and a later upgrade raises them". Brief: [rails-capacity-upgrade](../brainstorms/rails-capacity-upgrade.md).
 > Decision: [rewards, 18 November](../decisions-rewards.md#d-2026-11-18-decisions-page-rewards). Base: `origin/main`
 > `99207c548`, world `v62`. Steps 1 and 2 change rules, wire, save and seeds (one `WORLD_NS` bump, independent review).
@@ -311,7 +311,7 @@ disposable production room.
     `railwayAtQ2` moved, and every moved assertion is checked against its reason. Steps 1 and 2 may share one review
     and one ship.*
 
-- [ ] **3. The yoke on the back** (Local only). Before starting, run `npm run inflight` again (see open question 3).
+- [x] **3. The yoke on the back** (Local only). Before starting, run `npm run inflight` again (see open question 3).
   - `src/render/carry-models.ts`: `MAX_RAILS = CAPACITY.railsYoke`. `cargoCapacity('rails', frame, yoke)` and
     `setRails(amount, frame, yoke)`: with the yoke, rails hang in two banks from the yoke's arms (up to 8 a side, the
     first 8 as 4 a side). Without it, the seating is unchanged. The yoke mesh: an iron bar across the shoulders with
@@ -330,6 +330,19 @@ disposable production room.
     view, or clash with the glider roll or the log bundle. Allow up to three rounds of tuning (verification.md).
   - Update `docs/game-design/place.md`'s pack line ("rails stay 8" becomes the yoke's) and its worn-load paragraph.
   - *Risk: low. Self-review on the stills.*
+  - **Built 19 November 2026** (`claude/rail-yoke-back`, view only): `yokeParts`/`yokeMesh` in `src/render/gear-models.ts`
+    (darker `#56616b` iron bar over `#69472e` shoulder pads, arms at `x ±0.42`, `y 0.80`, hung stirrups), `setRails` and
+    `cargoCapacity` in `src/render/carry-models.ts` (hiding the pack's `railSeat` while the yoke holds the rails),
+    `backSeam.yoke` in `src/player/haul-back.ts`, wired in `src/entities/railway/sources.ts`, `line-cargo.ts` and
+    `tools.ts` (`wornOn` helper shared with the pack frame, `inspect().yokesWorn`), and `pack-frame.ts` (`yokeOn`,
+    `railLoad`, `stoneLoad`, `packCam=follow`). **Stills** ([rail-yoke/](rail-yoke/), `q2-stocked` because no `q2-done`
+    seed exists, and `q6-done` for the glider): `step3-y8-pack-back.png`, `step3-y16-pack-back.png`,
+    `step3-y16-pack-side.png`, `step3-y16-bare-back.png`, `step3-48-back.png`, `step3-48-side.png`,
+    `step3-follow-16.png`, `step3-glider-back.png`. All cases read as an iron yoke with two rail banks, clear of the
+    head in follow view and clear of the glider roll and log bundle. Weakest read: from behind with the pack frame worn,
+    the pack's shoulder straps and log bundle mostly hide the yoke's cross-bar (it reads clearly on bare shoulders and
+    from the side). **Not verified:** a remote player's avatar wearing the yoke in a two-page look, motion while running
+    or riding, phone width; not tested on a device.
 
 - [ ] **4. The yoke waits at the rack, and Q1's board shows it** (Local, plus one placed prop).
   - `reward-glyph.ts`: the `'yoke'` kind. `stations.ts`'s `RewardMark` kind widens to include it.

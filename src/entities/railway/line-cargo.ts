@@ -214,7 +214,7 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
       // With logs on the back the heap settles on their bundle's back, never through it.
       if (avatar && account.stone) model.seatStone(account.carry, fitOf(avatar));
       // Rails have their own capacity and their own mesh, with its own count and lifetime, including after logs unload.
-      model.setRails(account.rails, rail(world()).pack);
+      model.setRails(account.rails, rail(world()).pack, rail(world()).yoke);
       let drag = drags.get(account.pid);
       if (!beamHeld || !avatar) {
         model.beam.visible = false;
