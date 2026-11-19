@@ -100,6 +100,14 @@ Split by topic on 10 November 2026 (see [decisions.md](decisions.md#recording-a-
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 2026-11-19 | New: the driver's table is a railway-only train set (track, halts, trains, green baseboard, larger scale), distinct from the museum's whole-place miniature, which stays | [first-house-resident](brainstorms/first-house-resident.md#design-review-2026-11-19), call 8, question 1 | Brainstorm (design review) | The museum already shows the whole place live (`museum.ts`); a second identical map would make his room a repeat | open |
+| 2026-11-19 | New: the open line's next unlaid stretch is drawn in pencil on the driver's table | [first-house-resident](brainstorms/first-house-resident.md#design-review-2026-11-19), call 9, question 3 | Brainstorm (design review) | DESIGN 7, the next connection visible; bends "the lines built so far" | open |
+| 2026-11-19 | Default: the driver is home the moment the first house finishes building; no arrival by train in the first build | [first-house-resident](brainstorms/first-house-resident.md#design-review-2026-11-19), call 5, question 2 | Brainstorm (design review) | Cheapest true version; the train arrival is parked | open |
+| 2026-11-19 | Default: a warm lamp comes on in the first house's window when the driver moves in | [first-house-resident](brainstorms/first-house-resident.md#design-review-2026-11-19), call 6 | Brainstorm (design review) | Passenger-trade section 1's "a lamp comes on in the window"; draws players to the door | open |
+| 2026-11-19 | Default: the driver stands at the back of his front room beside the table, facing the door, and never leaves it | [first-house-resident](brainstorms/first-house-resident.md#design-review-2026-11-19), call 7, question 5 | Brainstorm (design review) | The residents' fixed-spot rule (`residents.ts`) | open |
+| 2026-11-19 | Default: the newest laid stretch looks fresh on the table for a while after its completion tick | [first-house-resident](brainstorms/first-house-resident.md#design-review-2026-11-19), call 10 | Brainstorm (design review) | Shows what changed (DESIGN 11); the same for every player; length a tunable | open |
+| 2026-11-19 | Default: the driver's notices key on the existing rail facts, once per player (placeholder lines) | [first-house-resident](brainstorms/first-house-resident.md#design-review-2026-11-19), call 11 | Brainstorm (design review) | The residents' notice rule; lines are the owner's | open |
+| 2026-11-19 | Default: the driver's baseboard is about 3 × 2 m, its scale fitted to the lines' extent | [first-house-resident](brainstorms/first-house-resident.md#design-review-2026-11-19), call 12 | Brainstorm (design review) | Fits the 7.4 m room with the door lane clear; the builder measures | open |
 
 ## Graphics, water, sky and devices
 
