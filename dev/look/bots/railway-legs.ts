@@ -286,9 +286,13 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
       await feedSection(slot, k, `${name} section ${k + 1}`);
       await checkpoint(`${name} section ${k + 1} laid`);
       const last = at() >= m;
-      const dest = last ? rowHalt(leg.row, leg.destRowHalt) : legFrame(leg, at());
-      await rowRide(leg.line, k === 0 ? fromStop(leg) : leg.railheadHalt + k - 1, leg.railheadHalt + at() - 1, name);
-      await hopTo(dest.x / 100, dest.z / 100, last ? `stepped off at ${name}'s end` : `stepped off at ${name} head`);
+      const stop = leg.railheadHalt + at() - 1;
+      await rowRide(leg.line, k === 0 ? fromStop(leg) : leg.railheadHalt + k - 1, stop, name);
+      // Off the car onto the platform: the next frame at a head, the outward platform at the lever's spot at the end
+      // (the catalog halt's point is on the track, where the car stands).
+      const frameNext = legFrame(leg, at()),
+        dest = last ? rowLever(leg.line, stop) : { x: frameNext.x / 100, z: frameNext.z / 100 };
+      await hopTo(dest.x, dest.z, last ? `stepped off onto ${name}'s end platform` : `stepped off at ${name} head`);
       await until(() => me.coyote > 0 && !me.swimming, `standing on ${name}'s new platform`, 10000);
     }
   };
