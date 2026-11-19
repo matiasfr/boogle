@@ -735,6 +735,30 @@ the `unproven-*` files in [docs/reports/garage-moment-checkpoint/](../reports/ga
 **Copy seen, unchanged:** "Keep holding", "Install", "Installed", "Ready", "Skip", "Free: the reward for reaching
 steel", "Look at the engine" (still at the post after the install).
 
+**Fixed, 18 November 2026 (night), branch `claude/garage-deck-friend`: both defects.** The deck carries whoever stands
+on it as a turn starts: a kinematic copy of the deck on that player's own tab (`createTableRide` in
+`src/entities/railway/railhead-state.ts`, on `car.ts`'s carry, as the railhead's deck), led by the drawn yaw; off its
+footprint the ride ends and they drop as before. When the deck's boxes come back, a player inside them is moved to its
+nearest side (`siteExit`), never lifted. This reverses the "carried" part of call 23 below (logged in
+[agent-calls](../agent-calls.md)); the engine copy still passes through a friend. On a phone the touch stick and buttons
+hide while the garage is open. `garage-deck.ts` now fails unless the friend is carried within 20° of the deck, drops
+under 0.3 m and ends on the deck's top. Proof on HOTBOX (`.look/gdf-*`, not committed):
+
+- **Deck** (`--players 2 --real --rail-seed steel-home --hud --video`, load 4.7 to 2.7): the deck turned 360°, the friend
+  went 359° round, within 2° of it at every 0.5 s sample; height 18.8 throughout (dropped 0 m); ended at r 6.6 on the
+  deck's top, 0 m under it a second later. Stills: `deck-friend-carried-sheet.png` (the friend's camera turning with the
+  deck), `deck-friend-carried-after.png` (the installer's page: the friend on the deck by the engine).
+- **The ordinary table turn**, one player at `cradle-fitted` stood on the deck 1.2 m from the handle, pressing Turn the
+  table: accepted (table 0 to 1), the deck stays on road 0 as designed until the roll-out, the player did not move
+  (largest frame step 0.00 m, height unchanged). The roll-out's turn with a rider aboard was not run.
+- **Touch** (`--real --touch --size 390x844 --rail-seed steel-home --hud`, load 6.7 to 2.3): Install held by touch,
+  press-to-drop 1406 ms, Line 2's boiler 1 to 2; no stick or buttons over the rail in any frame. Still:
+  `touch-rail-clear-sheet.png`.
+
+Not proven: how the carried friend looks from the installer's tab mid-turn (presence, not a shared platform, so they
+may trail the deck a little), the roll-out turn with a rider, and sound (still unheard). The checkpoint box stays
+unticked for sound. Not tested on a device.
+
 ## 7. Now, and what truly waits for the flip
 
 | Ships now, kept after the flip | Waits for the flip |

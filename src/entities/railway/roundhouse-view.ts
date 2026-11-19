@@ -46,6 +46,9 @@ import { account, shed, trains, works as worksRow, type ReadWorld } from '../../
 import { ROTUNDA_BLOCK, ROTUNDA_KIT } from '../../place/rotunda.ts';
 import { createRotundaView } from './rotunda-view.ts';
 import { BRIDGE, bridgeHalf, bridgeHandle, clearOfBridge } from './table-bridge.ts';
+import { createTableRide } from './railhead-state.ts';
+import { siteExit } from '../../place/site-clearance.ts';
+import { outOf } from '../../place/sites.ts';
 import { rotundaServing, rotundaStage } from './rotunda-stage.ts';
 import { bayFrame, rotundaBays } from '../../place/rotunda.ts';
 import { cameraHeld } from '../../render/buddy-frame.ts';
@@ -199,6 +202,7 @@ export async function createRailwayRoundhouse(
   let stageShown = 0;
   let stageRise: { from: number; to: number; seconds: number } | null = null;
   const deckBodies: Body[] = [];
+  const ride = createTableRide(owner, table, R, tableY + 0.05);
   const lowering: { site: 0 | 1; slot: number; from: THREE.Vector3; t: number }[] = [];
   const bolts: { k: number; t: number }[] = []; // cradle pieces dropping on: k < 2 seats, else rail arms
   const m = new THREE.Matrix4(),
@@ -481,17 +485,18 @@ export async function createRailwayRoundhouse(
     // A handle on the bridge's end that travels with it: what you turn.
     const handle = handleAt(drawn);
     batch.box(handle.x, tableY + 0.6, handle.z, 0.16, 1, 0.16, BRASS, drawn);
-    // The deck is solid where it rests, never while it turns (a turning deck would shove whoever stands by it): it
-    // is taken away with the first step of a turn and put back at the yaw it stops at, once this tab's player is
-    // clear of its volume (someone who dropped into the pit during the turn is never lifted through it).
+    // The deck is solid where it rests; for a turn its boxes go (a turning deck would shove whoever stands by it), and
+    // whoever stands on it as the turn starts rides it round instead (./railhead-state.ts, createTableRide). They come
+    // back at the yaw it stops at; a player inside them then (dropped into the pit, or walked under it) is moved clear
+    // to the deck's nearest side first (../../place/site-clearance.ts), never lifted through it.
     const still = !tableTurning && drawn === deckDrawn;
     deckDrawn = drawn;
     if (deckBodies.length && (!still || drawn !== deckBodyYaw)) {
       for (const body of deckBodies) owner.removeBody(body);
       deckBodies.length = 0;
     }
-    if (still && !deckBodies.length && clearOfBridge(table, R, drawn, deckTop, me.body?.position)) {
-      for (const part of [
+    if (still && !deckBodies.length) {
+      const parts = [
         { x: 0, z: 0, y: deckY, half: bridgeHalf(R) },
         ...[-1, 1].map((end) => ({
           x: 0,
@@ -505,7 +510,15 @@ export async function createRailwayRoundhouse(
           y: deckTop - 0.45,
           half: { hx: 0.12, hy: 0.45, hz: length / 2 },
         })),
-      ])
+      ];
+      const b = me.body;
+      if (b && !clearOfBridge(table, R, drawn, deckTop, b.position)) {
+        const foot = { x: table.x, z: table.z, c: Math.cos(drawn), s: Math.sin(drawn), hw: DECK.w / 2, hd: R };
+        const solids = parts.map((part) => ({ dx: part.x, dy: part.y, dz: part.z, ...part.half }));
+        const exit = siteExit(b.position, foot, 0, solids, outOf, undefined, 0.05);
+        if (exit) b.position.set(exit.x, b.position.y, exit.z);
+      }
+      for (const part of parts)
         deckBodies.push(
           addStatic(
             { kind: 'box', ...part.half },
@@ -521,6 +534,7 @@ export async function createRailwayRoundhouse(
         );
       deckBodyYaw = drawn;
     }
+    ride.update(drawn, !deckBodies.length, dt);
   }
   /**
    * Where the wagon and shunter stand and how far the deck has turned, from `ready` and the mover clock alone (so a
