@@ -8,12 +8,12 @@
 import type * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { signBoard, type SignBoard } from '../../render/sign-board.ts';
-import { LINE2 } from '../../sim/railway-lines.ts';
+import { RAIL_LINES } from '../../sim/railway-lines.ts';
 import { LINE_SLOTS } from '../../sim/railway-trains.ts';
 import { TRAIN_PHASE, trainAlong } from '../../sim/railway-train.ts';
 import { RAIL_LEGS } from '../../sim/railway-route.ts';
 import { trainStops } from '../../sim/railway-queries-trains.ts';
-import { legKitStop, legRow, openLeg } from '../../sim/railway-queries-route.ts';
+import { legKitDrop, legRow, legsServed, legYard } from '../../sim/railway-queries-route.ts';
 import { aperture, rail, train, type ReadWorld } from '../../sim/railway-rows.ts';
 
 export const PLATE_LOOK = { ground: '#fff3d6', ink: '#2a1c10' };
@@ -61,35 +61,40 @@ export function paintPlate(
   sign.painted();
 }
 
-/** Each line 2 train's kit mark by RAIL_TRAINS slot, from the rows alone (a reload and a late joiner read the same):
- * none before the rivet, in the shed or with no logs or rails aboard; `S` for the steel works' kit (cargo that is not
- * a leg's: `Train.legKit` unset); else the number of the section its leg kit is for. The open leg's sections are
- * filled in order: first by what is fed, on the rack and lifted onto backs, then by each carrier in the order it
- * will reach the rack (a train outbound is ahead of one homeward). A carrier's number is the first section its
- * logs or rails still fill, so the train whose number is the rack's plate's is the one that will unload there.
- * Kit no section lacks (it goes home at the Village) carries no mark. */
+/** Each train's kit mark by RAIL_TRAINS slot, from the rows alone (a reload and a late joiner read the same): none
+ * before the rivet, in the shed or with no logs or rails aboard; `S` for the steel works' kit (cargo that is not a
+ * leg's: `Train.legKit` unset); else the number of the section its leg kit is for. Each line's marks are for the open
+ * leg its trains serve (legsServed: line 2's stack, then the incline's kit it brings to High Gorge; the `ns` line's
+ * incline; the `bay` line's bay cut). That leg's sections are filled in order: first by what is fed, on the rack and
+ * lifted onto backs, and (for a yard leg seen from the line that brings it) by its yard and its own line's trains,
+ * then by each of this line's carriers in the order it will reach its drop (a train outbound is ahead of one
+ * homeward). A carrier's number is the first section its logs or rails still fill, so the train whose number is the
+ * rack's plate's is the one that will unload there. Kit no section lacks (it goes home) carries no mark. */
 export function kitMarks(w: ReadWorld, tick: number): Map<number, string> {
   const out = new Map<number, string>();
   if (aperture(w).joined < 0) return out;
-  const k = openLeg(w, LINE2),
+  RAIL_LINES.forEach((_l, line) => lineMarks(w, tick, line, out));
+  return out;
+}
+function lineMarks(w: ReadWorld, tick: number, line: number, out: Map<number, string>) {
+  const k = legsServed(w, line)[0] ?? -1,
     carriers: { slot: number; logs: number; rails: number; eta: number }[] = [];
-  const rackS = k < 0 ? 0 : (trainStops(w, LINE2)[legKitStop(w, k)] ?? 0);
-  for (const slot of LINE_SLOTS[LINE2]!) {
+  const rackS = k < 0 ? 0 : (trainStops(w, line)[legKitDrop(w, line, k)] ?? 0);
+  for (const slot of LINE_SLOTS[line]!) {
     const t = train(w, slot);
     if (t.phase === TRAIN_PHASE.SHED || t.logs + t.rails <= 0) continue;
     if (!t.legKit) {
       out.set(slot, STEEL_MARK);
       continue;
     }
-    const along = trainAlong(t, LINE2, tick);
+    const along = trainAlong(t, line, tick);
     carriers.push({ slot, logs: t.logs, rails: t.rails, eta: t.track ? along + rackS : Math.max(0, rackS - along) });
   }
-  if (k < 0 || !carriers.length) return out;
-  const row = legRow(w, k),
+  if (k < 0 || !carriers.length) return;
+  const leg = RAIL_LEGS[k]!,
+    row = legRow(w, k),
     stock = rail(w),
-    lack = RAIL_LEGS[k]!.sections.map((s, j) =>
-      j < row.laid ? { logs: 0, rails: 0 } : { logs: s.logs, rails: s.rails },
-    );
+    lack = leg.sections.map((s, j) => (j < row.laid ? { logs: 0, rails: 0 } : { logs: s.logs, rails: s.rails }));
   /** Takes `n` units of `key` off the sections' lack from section `from` on. */
   const fill = (key: 'logs' | 'rails', n: number, from: number) => {
     for (let j = from; j < lack.length && n > 0; j++) {
@@ -100,6 +105,18 @@ export function kitMarks(w: ReadWorld, tick: number): Map<number, string> {
   };
   fill('logs', row.logs + stock.depot + row.heldLogs, row.laid);
   fill('rails', row.rails + stock.depotRails + row.heldRails, row.laid);
+  // A yard leg's kit this line brings (line 2's to High Gorge) is behind its yard and its own line's trains.
+  if (leg.line !== line) {
+    const yard = legYard(w, k);
+    fill('logs', yard.logs, row.laid);
+    fill('rails', yard.rails, row.laid);
+    for (const slot of LINE_SLOTS[leg.line]!) {
+      const t = train(w, slot);
+      if (!t.legKit) continue;
+      fill('logs', t.logs, row.laid);
+      fill('rails', t.rails, row.laid);
+    }
+  }
   carriers.sort((a, b) => a.eta - b.eta || a.slot - b.slot);
   for (const c of carriers) {
     const j = lack.findIndex((l) => (c.logs > 0 && l.logs > 0) || (c.rails > 0 && l.rails > 0));
@@ -108,9 +125,7 @@ export function kitMarks(w: ReadWorld, tick: number): Map<number, string> {
     fill('logs', c.logs, j);
     fill('rails', c.rails, j);
   }
-  return out;
 }
-
 /** A kit car's board: one badge on a post at the car's rear end, over the load, its two faces to the platforms
  * either side. `parent` is the car's frame (origin on the rails, z along the car), `top` its deck. Hidden until
  * `set` gives it a mark. */
