@@ -160,8 +160,9 @@ export function placeDeck(
 // down in the pit, keeps the old way: nothing there to stand on until the deck stops. Local: each tab carries its own
 // player; a friend's tab shows them by presence.
 type XZ = { x: number; z: number };
-/** Feet this far under the deck's top still stand on it; this far over it (a jump) still rides it. */
-const ON = { below: 0.3, above: 3 };
+/** Feet this far over the deck's top (a jump) still ride it; under it, as far as the carry counts (CARRY.below). */
+const ABOVE = 3,
+  PARKED = -60; // m: the parked deck waits under the land, as a train not yet needed does
 
 export function createTableRide(owner: OwnedView, table: XZ, r: number, top: number) {
   const half = bridgeHalf(r);
@@ -172,14 +173,14 @@ export function createTableRide(owner: OwnedView, table: XZ, r: number, top: num
   const car = makeCar({ hx: half.hx, hz: half.hz, top: BOTTOM + BRIDGE.h }, new Group(), drive, {}, owner);
   // A show-off turn peaks at about π rad/s; the deck is drawn at its yaw, so the body follows it exactly.
   car.spinLimit = 2 * Math.PI;
-  car.spinGain = Infinity;
-  car.y = -60;
+  car.spinGain = 1 / FIXED;
+  car.y = PARKED;
   snapCar(car);
   /** Every fixed step, before the carry: the deck's pose, led by its turn since the frame drew it (physics steps
    * before the views draw, so without the lead the rider would trail the drawn deck by a frame). */
   function drive() {
     if (!riding) {
-      car.y = -60;
+      car.y = PARKED;
       return;
     }
     since += FIXED;
@@ -200,8 +201,8 @@ export function createTableRide(owner: OwnedView, table: XZ, r: number, top: num
     return (
       Math.abs(across) <= half.hx + CARRY.edge &&
       Math.abs(along) <= half.hz + CARRY.edge &&
-      feet >= -ON.below &&
-      feet <= ON.above
+      feet >= -CARRY.below &&
+      feet <= ABOVE
     );
   }
   return {
@@ -216,12 +217,11 @@ export function createTableRide(owner: OwnedView, table: XZ, r: number, top: num
         snapCar(car);
       } else if (riding && (!turning || !over(yawOf(car.body.quaternion)))) {
         riding = false;
-        car.y = -60;
+        car.y = PARKED;
       }
       rate = riding && dt > 0 ? Math.atan2(Math.sin(drawn - yaw), Math.cos(drawn - yaw)) / dt : 0;
       yaw = drawn;
       since = 0;
     },
-    riding: () => riding,
   };
 }
