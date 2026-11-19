@@ -20,7 +20,6 @@ const { routeAreas } = (await import(
   '/src/entities/route-greybox/state.ts' as string
 )) as typeof import('../../../src/entities/route-greybox/state.ts');
 
-const game = (window as unknown as { boogle: { prof: { last: { frames: number } } } }).boogle;
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const q = new URLSearchParams(location.search);
 const at = (q.get('countAt') ?? '').split(',').map(Number),
@@ -43,20 +42,23 @@ for (let k = 0; !settled(); k++) {
   me.body!.velocity.set(0, 0, 0);
   await wait(100);
 }
-const frame = () =>
-  new Promise<{ drawCalls: number; triangles: number }>((resolve, reject) => {
-    const from = game.prof.last.frames,
-      deadline = performance.now() + 30000;
-    const t = setInterval(() => {
-      if (game.prof.last.frames > from + 2) {
-        clearInterval(t);
-        resolve({ drawCalls: renderer.info.render.drawCalls, triangles: renderer.info.render.triangles });
-      } else if (performance.now() > deadline) {
-        clearInterval(t);
-        reject(new Error('leg2-counts: no game frame in 30 s'));
-      }
-    }, 10);
-  });
+const { onFrame } = (await import('/src/loop.ts' as string)) as typeof import('../../../src/loop.ts');
+// The render comes after the frame's hooks in the same callback, so the counts are read in a microtask after it (as
+// src/debug/device/frames.ts does): read anywhere else they are the reset zeros.
+let lastDraw = { drawCalls: 0, triangles: 0, frame: 0 };
+onFrame(
+  () =>
+    queueMicrotask(() => {
+      const r = renderer.info.render;
+      if (r.drawCalls > 0) lastDraw = { drawCalls: r.drawCalls, triangles: r.triangles, frame: lastDraw.frame + 1 };
+    }),
+  { phase: 'late', order: 91, name: 'leg2 counts' },
+);
+const frame = async () => {
+  const from = lastDraw.frame;
+  await until(() => lastDraw.frame > from + 2, 'three drawn frames', 30000);
+  return { drawCalls: lastDraw.drawCalls, triangles: lastDraw.triangles };
+};
 await wait(1000);
 const drawn = await frame();
 let meshes = 0;
