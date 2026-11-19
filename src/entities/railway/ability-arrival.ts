@@ -307,9 +307,8 @@ export function createAbilityArrival(
       if (ability.key === 'jump') seen.add('jump-taught');
       return;
     }
-    // The boiler's card is owed from boiler-view.ts's live trains edge, on every page (`showing`).
-    if (ability.key === 'boiler') return;
-    // A state-edge card (the wake's) is owed as the state turns (update).
+    // A state-edge card (the wake's) is owed as the state turns (update); the boiler's (no `card` flag) is owed by
+    // boiler-view.ts's live trains edge instead, on every page (`showing`).
     if (ability.atState) return void heard.set(ability.key, 0);
     owe(ability.key);
   });
@@ -392,7 +391,7 @@ export function createAbilityArrival(
         !momentBusy();
       // A friend's card: one per free frame (the reveal's own queue makes the next wait for this one's dismissal); one
       // whose show is still queued waits for it (a playing show is momentBusy).
-      const next = free ? owed.findIndex((k) => !showing.has(k)) : -1;
+      const next = free && owed.length ? owed.findIndex((k) => !showing.has(k)) : -1;
       const due = next >= 0 ? owed.splice(next, 1)[0] : undefined;
       const got = due ? env.card(due) : null;
       // The reveal refuses a key it has already shown this session (a fresh start since): the flourish stands in.

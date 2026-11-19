@@ -73,14 +73,14 @@ export async function createRailwayReward(
     busy: reveal.gettingItem,
     seated: () => riderSeated(),
     youGot: reveal.youGot,
-    card: (key) =>
-      key === 'glide'
-        ? { key, name: GLIDE_REWARD.name, line: GLIDE_REWARD.line, model: new THREE.Mesh(glidePrize, glideMat) }
-        : key === 'hook'
-          ? { key, name: HOOK_REWARD.name, line: HOOK_REWARD.line, model: new THREE.Mesh(hookPrize, glideMat) }
-          : key === 'boiler'
-            ? { key, ...BOILER_REWARD, model: boilerBadge.clone() }
-            : tools.cardFor(key),
+    card: (key) => {
+      if (key === 'glide')
+        return { key, name: GLIDE_REWARD.name, line: GLIDE_REWARD.line, model: new THREE.Mesh(glidePrize, glideMat) };
+      if (key === 'hook')
+        return { key, name: HOOK_REWARD.name, line: HOOK_REWARD.line, model: new THREE.Mesh(hookPrize, glideMat) };
+      if (key === 'boiler') return { key, ...BOILER_REWARD, model: boilerBadge.clone() };
+      return tools.cardFor(key);
+    },
     jump: () => tools.inspect(),
     axeModel: (key) =>
       key === 'glide' ? new THREE.Mesh(glidePrize, glideMat) : key === 'boiler' ? boilerBadge : tools.axeModel(key),

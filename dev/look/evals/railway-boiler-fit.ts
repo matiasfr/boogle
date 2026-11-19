@@ -68,10 +68,22 @@ const guys = () =>
   (read().line2View as unknown as { bolting: { left: number; guys: number; here: number } | null }).bolting;
 /** The boiler's "Steam" card is up on this page. */
 const steamUp = () => !!read().reward.showing && arrival().cards.includes('boiler');
-const putAway = () => {
+/** This page's Steam card: it comes up within `ms` once the show has handed back, holds input, and is put away with
+ * Interact after `hold` ms, once. */
+async function takeSteam(who: string, ms: number, hold: number) {
+  const from = performance.now();
+  await until(steamUp, `the ${who}'s Steam card comes up`, ms);
+  console.log(
+    `BOILER ${who.toUpperCase()} CARD ${JSON.stringify({ after: Math.round(performance.now() - from), held: inputState.held })}`,
+  );
+  check(!(camera().kind === 'boiler' && camera().active), `the ${who}'s card comes after the show`);
+  check(inputState.held, `the ${who}'s card holds input`);
+  await wait(hold);
   window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
   window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
-};
+  await until(() => !read().reward.showing && !inputState.held, `the ${who}'s card put away, input free`, 5000);
+  check(arrival().cards.filter((k) => k === 'boiler').length === 1, `one Steam card for the ${who}`);
+}
 function check(ok: unknown, label: string) {
   console.log(`BOILER ${ok ? 'PASS' : 'FAIL'} ${label}`);
   if (!ok) throw new Error(`BOILER FAIL ${label}`);
@@ -181,7 +193,9 @@ async function fit() {
   clearInterval(watch);
   clearInterval(boltWatch);
   if (hereAtTrains < 0) hereAtTrains = mostHere;
-  console.log(`BOILER BOLT TRACE ${JSON.stringify({ hereAtTrains, trains: Math.round(performance.now() - boltFrom), bolts })}`);
+  console.log(
+    `BOILER BOLT TRACE ${JSON.stringify({ hereAtTrains, trains: Math.round(performance.now() - boltFrom), bolts })}`,
+  );
   await bot.until(() => !boiler().fitting, 3000, 'landed');
   const f = boiler().lastFit;
   console.log(
@@ -203,13 +217,7 @@ async function fit() {
     `BOILER FITTER ${JSON.stringify({ flourishes: a.flourishes, late: a.late, keys: a.keys, seen: a.seen })}`,
   );
   check(a.seen.includes('boiler') && !a.keys.includes('boiler'), 'the fitter is marked as shown, with no flourish');
-  await until(steamUp, "the fitter's Steam card comes up", 30000);
-  check(!(camera().kind === 'boiler' && camera().active), "the fitter's card comes after the show");
-  console.log(`BOILER FITTER CARD ${JSON.stringify({ cards: arrival().cards, held: inputState.held })}`);
-  await wait(Number(query.get('fitterCardMs')) || 1600);
-  putAway();
-  await until(() => !read().reward.showing && !inputState.held, "the fitter's card put away, input free", 5000);
-  check(arrival().cards.filter((k) => k === 'boiler').length === 1, 'one Steam card for the fitter');
+  await takeSteam('fitter', 30000, Number(query.get('fitterCardMs')) || 1600);
 }
 
 async function friend() {
@@ -255,7 +263,11 @@ async function friend() {
   await until(() => trainsOn(), 'friend sees trains on', 120000);
   watchCall(performance.now(), 'friend');
   const turns = camera().forgeTurns;
-  await until(() => camera().kind === 'boiler' && camera().active, 'the boiler show is queued on the trains edge', 1000);
+  await until(
+    () => camera().kind === 'boiler' && camera().active,
+    'the boiler show is queued on the trains edge',
+    1000,
+  );
   let longest = 0;
   while (camera().kind === 'boiler' && camera().active) {
     longest = Math.max(longest, camera().seconds);
@@ -264,13 +276,7 @@ async function friend() {
   console.log(`BOILER SHOW ${JSON.stringify({ longest: +longest.toFixed(2), turns: camera().forgeTurns - turns })}`);
   check(longest > 4.6, 'the show played on past the train into the forge cut');
   check(camera().forgeTurns === turns + 1, 'the camera came home facing the forge');
-  const shown = performance.now();
-  await until(steamUp, "the friend's Steam card comes up after the show", 5000);
-  console.log(`BOILER FRIEND CARD ${JSON.stringify({ after: Math.round(performance.now() - shown), held: inputState.held })}`);
-  check(inputState.held, "the friend's card holds input");
-  await wait(1600);
-  putAway();
-  await until(() => !read().reward.showing && !inputState.held, "the friend's card put away, input free", 5000);
+  await takeSteam('friend', 5000, 1600);
   const moving = { x: me.body!.position.x, z: me.body!.position.z };
   await walking;
   await bot.walk(home.x - 4, home.z - 3, 1, { limit: 6000 });
@@ -280,8 +286,10 @@ async function friend() {
   console.log(`BOILER TRACE ${JSON.stringify(rows)}`);
   const a = arrival();
   console.log(`BOILER AFTER ${JSON.stringify({ flourishes: a.flourishes, late: a.late, keys: a.keys, seen: a.seen })}`);
-  check(!a.keys.includes('boiler') && a.seen.includes('boiler') && a.late === before.late, 'no flourish, the show played');
-  check(a.cards.filter((k) => k === 'boiler').length === 1, 'one Steam card for the friend');
+  check(
+    !a.keys.includes('boiler') && a.seen.includes('boiler') && a.late === before.late,
+    'no flourish, the show played',
+  );
   if (!query.has('boilerReload')) return;
   sessionStorage.setItem(RELOAD, '1');
   location.reload();
