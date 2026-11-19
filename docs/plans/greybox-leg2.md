@@ -213,7 +213,7 @@ landing", "Ride the bay line to Bell Rock". No Boogler line is written or change
 Each step leaves `node dev/ship-check.ts` green. **Steps 1 to 3 ship together as the leg's bump** (as leg 1's 3 to 5
 did); 4 and 5 ship on their own after it.
 
-- [ ] **1. The catalog (S; HOTBOX).** `dev/level/world-blockout.ts`: the `ns` row's Gorge stop to s 36 and its start
+- [x] **1. The catalog (S; HOTBOX).** `dev/level/world-blockout.ts`: the `ns` row's Gorge stop to s 36 and its start
       crossover to s 70 to 90; Bell Rock's `bay` stop to s 1217. Regenerate (`node --import ./dev/sim/hooks.ts
       dev/level/world-blockout.ts`): `src/sim/railway-world-lines.ts`, `docs/world/world-blockout.html`,
       `rail-map.html`. `src/sim/railway-route.ts`: `simHalt`, `railheadHalt` by it, the explicit section 1 frames and
