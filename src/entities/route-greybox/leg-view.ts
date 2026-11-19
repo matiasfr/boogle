@@ -15,8 +15,9 @@
 //   the prompts   Feed the frame, Take logs, Take rails, the pickup and the barrier
 //
 // Grey boxes and placeholder labels (none is The Boogler's), no effects and no sound (owner-calls, "mechanisms,
-// systems, greybox, details"). The objective line's four texts go to the play record (src/proto/mark.ts): the route
-// has no on-screen objective line and this adds no HUD element.
+// systems, greybox, details"). The objective line's texts go to the play record (src/proto/mark.ts): the route has no
+// on-screen objective line and this adds no HUD element. Until line 2 wears the longer boiler, the line names the
+// steel loop's step (STEEL_OBJECTIVES, from the Steel, Shed and Line rows); then the leg's.
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -31,7 +32,7 @@ import { LINE_SLOTS } from '../../sim/railway-trains.ts';
 import { TRAIN_PHASE } from '../../sim/railway-train.ts';
 import { RING_S_HEAD } from '../../sim/railway-ring-layout.ts';
 import { LEG_TUNE, RAIL_LEGS, legFrame, legRack, legS } from '../../sim/railway-route.ts';
-import { account, aperture, rail, train } from '../../sim/railway-rows.ts';
+import { account, aperture, line, rail, shed, steel, train } from '../../sim/railway-rows.ts';
 import { heldBig, LOGS, roomOf } from '../../sim/railway-queries.ts';
 import { RAILS } from '../../sim/railway-line2-layout.ts';
 import { gateLeg, legDone, legOpen, legReached, legRow, routeRow } from '../../sim/railway-queries-route.ts';
@@ -64,6 +65,14 @@ export const LEG_OBJECTIVES = {
   next: (n: number, of: number) => `Build the line to High Gorge: section ${n} of ${of}. Ride line 2 to the railhead.`,
   open: 'High Gorge is open. Ride line 2 to its end and climb the stair.',
   gate: "Open the barrier behind High Gorge's south platform.",
+} as const;
+/** The steel loop's steps, from the rivet to the longer boiler (docs/plans/ring-island-build2.md, section 1). Draft
+ * copy for the owner to reword (docs/agent-calls.md; decision d-2026-11-18-decisions-page-rail). */
+const STEEL_OBJECTIVES = {
+  kit: "Light Ring Island's steel works. Ride line 2 to the island; the train brings its kit.",
+  feed: "Light the steel works: carry the kit from Ring Island's yard into the shed.",
+  cast: 'The steel works is casting. Line 2 carries its steel Home to the Roundhouse.',
+  install: 'Steel is in the Roundhouse bay. Hold Install at the table for the longer boiler.',
 } as const;
 
 const GREY = '#9c9ea1',
@@ -350,7 +359,16 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       rack: open ? { logs: stock.depot, rails: stock.depotRails } : { logs: 0, rails: 0 },
       pick: !!(route.grants & 1),
       gate: !!(route.gates & 1),
+      steelStep: steelStep(wd),
     };
+  }
+  /** The steel loop's step, or null before the rivet and once line 2 wears the longer boiler (BOILER_SPEED row 2). */
+  function steelStep(wd: ReturnType<typeof adapter.read.world>): keyof typeof STEEL_OBJECTIVES | null {
+    if (aperture(wd).joined < 0 || line(wd, LINE2).boiler >= 2) return null;
+    const s = steel(wd);
+    if (shed(wd).steel > 0) return 'install';
+    if (s.lit >= 0) return 'cast';
+    return s.yardLogs + s.yardRails + s.logs + s.rails > 0 ? 'feed' : 'kit';
   }
   /** A train of line 2 held at the block signal at `s` metres (standing at no halt, within a train's length of it). */
   const heldAt = (wd: ReturnType<typeof adapter.read.world>, s: number) =>
@@ -549,7 +567,9 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     const text = !r.reached
       ? ''
       : !r.done
-        ? laid === 0
+        ? r.steelStep
+          ? STEEL_OBJECTIVES[r.steelStep]
+          : laid === 0
           ? LEG_OBJECTIVES.first
           : LEG_OBJECTIVES.next(laid + 1, SECTIONS)
         : !r.pick
