@@ -305,13 +305,15 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
     const watch = watchTrains(line, from);
     try {
       check(await bot.walk(lever.x, lever.z, 1.2), `walked to ${name}'s lever at stop ${from}`);
-      // The train a lay asks for may already be coming: give it a while, then ask by the lever, again if none comes.
-      for (let ask = 0; standing() < 0; ask++) {
-        check(ask < 30, `a ${name} train toward stop ${to} stands at stop ${from}`);
-        if (ask > 0 && !(await bot.use(lever.x, lever.z, `request a ${name} train`, /^Request stop/)))
-          check(false, `request a ${name} train offered at stop ${from}`);
-        await bot.until(() => standing() >= 0, 60000);
+      // The train a lay asks for may already be coming. Pull the lever whenever it is free to pull; while it shows the
+      // stop requested ("Stop requested", blocked), a train is on its way: wait for it.
+      const waitEnd = performance.now() + 2400000;
+      while (standing() < 0 && performance.now() < waitEnd) {
+        const t = interactTarget();
+        if (t && /^Request stop/.test(t.verb) && t.run && !t.blocked) bot.press();
+        await bot.until(() => standing() >= 0, 20000);
       }
+      check(standing() >= 0, `a ${name} train toward stop ${to} stands at stop ${from}`);
       const slot = standing();
       const train = () => view().trains.find((t) => t.slot === slot)!;
       const aboard = () => train().cars.some((car) => car.riding);
