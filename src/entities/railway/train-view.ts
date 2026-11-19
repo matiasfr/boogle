@@ -510,8 +510,12 @@ export async function createRailwayTrains(
     else clock += FIXED * 10 + Math.max(-0.02, Math.min(0.02, (target - clock) * 0.05));
     const coupled = wagonTrain();
     trains.forEach((tr) => {
+      // A train on a row with no drawn line yet (the greybox route's ns and bay rows, until greybox-leg2 step 4)
+      // stays parked under the land, where makeCar put it.
+      const link = layout.LINKS[tr.line];
+      if (!link) return;
       const row = trainRow(w, tr.slot),
-        line = layout.LINKS[tr.line]!.line;
+        line = link.line;
       // Asleep, a row stands at its home; awake, wherever the room's clock puts it.
       const along = trainAlong(row, tr.line, clock) / 100;
       tr.speed = on ? Math.abs(trainAlong(row, tr.line, clock + 0.1) - trainAlong(row, tr.line, clock)) : 0;
