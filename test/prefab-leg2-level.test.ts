@@ -147,3 +147,17 @@ for (const mutation of ['remove', 'move'] as const)
     assert.ok(result.failures > 0);
     assert.ok(result.entries.some((e) => e.kind === 'assertion' && !e.passed && /widest unsolid rim/.test(e.message)));
   });
+
+test('review (greybox leg 2 step 4): a body on the bore floor fits under the incline deck a lay makes solid', async () => {
+  // The bore is open (and its floor walkable) before the incline's first lay; that lay makes route-greybox/leg-view.ts
+  // solidDeck's slabs (land.ts slab: 0.4 m thick, top at rail height, 7.6 m wide in an 8 m bore) solid at once, with no
+  // hold for a body inside them (only the standing pieces wait: leg-view.ts inBox). Buddy is 1.7 m tall
+  // (two PLAYER_R spheres HEAD_OFFSET apart), so a body standing on the floor then has the slab through it.
+  const { rowY } = await import('../src/entities/railway/row-path.ts');
+  const { INCLINE_BORE } = await import('../src/entities/route-greybox/massing.ts');
+  const { PLAYER_R, HEAD_OFFSET } = await import('../src/constants.ts');
+  const body = 2 * PLAYER_R + HEAD_OFFSET;
+  let tight = Infinity;
+  for (let s = 72; s <= 227; s += 1) tight = Math.min(tight, rowY(route.ROW_LINE.ns, s) - 0.4 - INCLINE_BORE.floor);
+  assert.ok(tight >= body, `the gap under the deck in the bore is ${tight.toFixed(2)} m, Buddy ${body.toFixed(2)} m`);
+});
