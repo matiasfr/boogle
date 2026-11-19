@@ -28,6 +28,7 @@ import {
   cart,
   chopTo,
   forge,
+  haltYard,
   invariant,
   job,
   qjob,
@@ -250,6 +251,113 @@ test('line host: hook and glider each require their own device; both shared take
     await host.whenReady();
     assert.equal(rail(world()).hook, true, 'a save with the hook taken loads as it was');
     assert.equal(rail(world()).glide, true, 'the glider survives an orderly restart');
+    assert.equal(invariant(world()), null);
+  } finally {
+    await host.close({ save: false }).catch(() => {});
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('line host: a halt yard judged at its bay, closed until its stretch is laid; its row and the back survive a restart', async () => {
+  const { HALT_YARDS } = await import('../../src/sim/railway-yard-layout.ts');
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-line-host-yard-'));
+  const store = createStore({ dataDir: dir, maxRooms: 2 });
+  await store.init();
+  let now = 1800000000000;
+  const sent: Obj[] = [];
+  const create = () => {
+    const value = createRailwayWorldHost({
+      roomId: railwayRoomId('line-host-yard'),
+      store,
+      tick: false,
+      now: () => now,
+      pidOf: (sid) => sid,
+    });
+    value.onSend((message) => sent.push(message));
+    return value;
+  };
+  let host = create();
+  const world = () => host.rules.railway.world(); // read again each time: a restart replaces it
+  const ticks = async (n: number) => {
+    for (let i = 0; i < n; i++) {
+      now += 100;
+      host.step(0.1);
+    }
+    await host.sync.whenDurable();
+  };
+  let session = { epoch: 0, request: 0 };
+  const open = async () => {
+    host.deliver({ t: 'r:open' }, 'a');
+    await ticks(3);
+    const m = sent.findLast((x) => x.t === 'r:session' && x.to === 'a');
+    assert.ok(m);
+    session = { epoch: Number(m.epoch), request: Number(m.next) - 1 };
+  };
+  /** A real `r:edit` from where its actor stands (cm); resolves to the recorded outcome. */
+  const edit = async (e: Obj, at: [number, number, number]) => {
+    now += 1000; // past every cadence
+    const request = ++session.request;
+    host.deliver({ t: 'r:edit', e: { ...e, epoch: session.epoch, request, at, ms: now - 1800000000000 } }, 'a');
+    await ticks(3);
+    assert.equal(invariant(world()), null);
+    return host.rules.railway.outcome('a', session.epoch, request)!;
+  };
+  const row = (k: number) => {
+    const y = haltYard(world(), k);
+    return [y.logs, y.stone, y.rails];
+  };
+  const bay = (k: number): [number, number, number] => [HALT_YARDS[k]!.x, 2400, HALT_YARDS[k]!.z];
+  const QUARRY = 2,
+    FAR_HEAD = 3;
+  try {
+    await host.whenReady();
+    const w = buildSeedWorld('q3-done');
+    while (host.sync.world.tick <= w.t) await ticks(1);
+    world().load(JSON.parse(JSON.stringify(w.w.snapshot())), railwayCheck);
+    host.rules.railway.touchAll();
+    await open();
+    // The back's logs and rails come through real ops: chops at a standing tree, then the forge rack.
+    const k = trees(world()).findIndex((t) => t.left > 0);
+    const [id, tx, tz] = RAILWAY_SOURCES[k]!;
+    for (let hit = 0; host.rules.railway.account('a')!.carry < 4; hit++) {
+      assert.ok(hit < 8, 'four logs chopped in eight hits');
+      const chop = await edit({ op: 'rail.chop', id, yaw: 0, collapsed: false }, [tx, 2400, tz]);
+      assert.equal(chop.status, 'accepted', 'a chop at the tree');
+    }
+    const take = await edit({ op: 'rail.forgeTake' }, [LINE2_FORGE.rackX, 0, LINE2_FORGE.rackZ]);
+    assert.equal(take.status, 'accepted');
+    const back = () => host.rules.railway.account('a')!;
+    const [logs, rails] = [back().carry, back().rails];
+    const q4 = LINE2_STATIONS[3]!;
+    const put = { op: 'rail.haltPut', yard: QUARRY, kind: 0 };
+    assert.equal((await edit(put, [q4.x, 2400, q4.z])).status, 'rejected', "out of reach at Q4's frame");
+    assert.deepEqual(row(QUARRY), [0, 0, 0]);
+    const left = await edit(put, bay(QUARRY));
+    assert.deepEqual([left.status, left.accepted], ['accepted', logs]);
+    assert.equal((await edit({ ...put, kind: 2 }, bay(QUARRY))).status, 'accepted');
+    assert.deepEqual(row(QUARRY), [logs, 0, rails], 'the row moved');
+    assert.deepEqual([back().carry, back().rails], [0, 0]);
+    assert.equal(
+      (await edit({ op: 'rail.haltTake', yard: FAR_HEAD, kind: 0 }, bay(FAR_HEAD))).status,
+      'rejected',
+      'Far Head is closed before Q5 is laid',
+    );
+    const got = await edit({ op: 'rail.haltTake', yard: QUARRY, kind: 2 }, bay(QUARRY));
+    assert.deepEqual([got.status, got.accepted], ['accepted', rails]);
+    // Malformed yards are refused and the room keeps running.
+    for (const yard of [-1, 4, 'x'])
+      assert.equal((await edit({ ...put, yard }, bay(QUARRY))).status, 'rejected', `yard ${String(yard)}`);
+    await ticks(10);
+    // Nothing duplicated or lost (the invariant checks the logs and stone on every edit; the lit forge pours on).
+    const counts = railCounts(world());
+    assert.equal(counts.rails.total, counts.rails.poured, 'every rail poured is somewhere');
+    assert.deepEqual(row(QUARRY), [logs, 0, 0]);
+    // An orderly restart keeps the row and the back.
+    await host.close({ save: true });
+    host = create();
+    await host.whenReady();
+    assert.deepEqual(row(QUARRY), [logs, 0, 0], 'the row survives a restart');
+    assert.deepEqual([back().carry, back().rails], [0, rails], 'the back survives it too');
     assert.equal(invariant(world()), null);
   } finally {
     await host.close({ save: false }).catch(() => {});

@@ -56,6 +56,8 @@ export type RailAction = RailRequest & {
   tk?: number;
   /** rail.legStock: the greybox route's leg (a RAIL_LEGS index) whose frame it feeds. */
   leg?: number;
+  /** rail.haltPut, rail.haltTake: the halt yard (a HALT_YARDS index, ./railway-yard-layout.ts). */
+  yard?: number;
 };
 export const railInt = (v: unknown, max = RAILWAY_MAX_INT, min = 0): v is number =>
   typeof v === 'number' && Number.isSafeInteger(v) && v >= min && v <= max && !Object.is(v, -0);

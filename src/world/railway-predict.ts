@@ -9,8 +9,8 @@
 //   RAIL_PREDICTED                    the ops a client predicts (chop, mine, take, rack take, drop, deposit, forge,
 //                                     depot and shelf takes, wake, lever, summit switch, pack, the kiln, footings and
 //                                     the cradle, the glider take, the steel works' yard take and feed, the greybox
-//                                     route's frame feed); the rest wait for the server as in R1a (the route's grant,
-//                                     gate and arrive among them)
+//                                     route's frame feed, the halt yards' put and take); the rest wait for the server
+//                                     as in R1a (the route's grant, gate and arrive among them)
 //   railPredict(w, pid, e, tick)      apply e to w (a clone) as the server would at tick, keeping thresholds for the
 //                                     server: a bill it completes shows full but is funded only when confirmed, a forge it
 //                                     fills is lit only when confirmed, and so are the Works' thresholds (the kiln lit,
@@ -31,6 +31,7 @@ import { LINE_TIMING } from '../sim/railway-line.ts';
 import { railApply } from '../sim/railway-systems.ts';
 import { LINE2 } from '../sim/railway-lines.ts';
 import { LINE_SLOTS } from '../sim/railway-trains.ts';
+import { haltYardStock } from '../sim/railway-queries-yard.ts';
 import {
   Account,
   Aperture,
@@ -77,6 +78,9 @@ export const RAIL_PREDICTED: ReadonlySet<string> = new Set([
   // The greybox route's frame feed (ruling F): pressed some eight times a section by everyone. Its threshold, the
   // section starting to lay, is the server's (held back below, as a funded bill is).
   'rail.legStock',
+  // The halt yards (docs/plans/halt-yard.md): no threshold; a raced take is corrected by replication.
+  'rail.haltPut',
+  'rail.haltTake',
 ]);
 /** Swing and unload cadence on the actor's own action clock (replication revision 1): the server refuses an action
  * closer than `ms - RAIL_CADENCE_SLACK_MS` to the last of its kind, and a client predicts the same check. */
@@ -149,6 +153,8 @@ export function railEffect(w: World, pid: string, e: RailAction, before: Map<num
     const st = w.get(Steel, w.single(Steel))!;
     effect.level = e.op === 'rail.steel' ? st.logs + st.rails : e.kind === 1 ? st.yardRails : st.yardLogs;
   }
+  // A halt yard: its bin's count of the kind moved, after the op.
+  if (e.op === 'rail.haltPut' || e.op === 'rail.haltTake') effect.level = haltYardStock(w, e.yard!, kind);
   if (e.op === 'rail.drop') {
     let hit = 0;
     w.each([Pile], (id, p) => {

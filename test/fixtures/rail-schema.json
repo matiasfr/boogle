@@ -1,5 +1,5 @@
 {
-  "worldNs": "v64",
+  "worldNs": "v65",
   "components": [
     {
       "kind": "rail",
@@ -622,6 +622,20 @@
         ["grants", "int"],
         ["gates", "int"],
         ["arrived", "int"]
+      ]
+    },
+    {
+      "kind": "haltYard",
+      "key": "slot",
+      "replicate": true,
+      "track": true,
+      "requires": [],
+      "defaults": {},
+      "fields": [
+        ["slot", "int"],
+        ["logs", "int"],
+        ["stone", "int"],
+        ["rails", "int"]
       ]
     }
   ]

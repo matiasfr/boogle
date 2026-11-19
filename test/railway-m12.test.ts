@@ -1,3 +1,5 @@
+// 2026-11-19 v65 halt yards: four empty HaltYard rows push later entity ids on by 4; all 1,326 hashes move, and every
+// key, frame count and mark count stays (keyed comparison with the v64 fixture, docs/plans/halt-yard.md step 1).
 // 2026-11-15 v49 integration: refresh main's fly-first oracle for heavy-load acceptance. All 82 trace lengths
 // stay equal; 78 final hashes and 1,069 marks change. Old comfort-only free() reproduces the old oracle exactly;
 // disabling reservations or using v48 changes no trace. Audit: docs/plans/heavy-load-final.md.

@@ -28,6 +28,7 @@ import {
   check,
   cloneWorld,
   forge,
+  haltYard,
   job,
   line2Jobs,
   lines,
@@ -809,6 +810,47 @@ test('a steel kit take a friend beat you to comes back as onCorrected', () => {
   );
   adapter.dispose();
   agree(r, 'a');
+});
+
+test("a halt yard's Leave it here is predicted, confirmed once, and seen by a friend and a late joiner", () => {
+  const r = seeded(buildSeedWorld('q3-done'));
+  r.join('b');
+  r.pump();
+  assert.equal(serverAct(r, 'a', { op: 'rail.forgeTake' }).status, 'accepted');
+  const rails = r.api.account('a')!.rails;
+  // a's adapter on a fresh mirror session (it syncs on a whole state), standing at the Quarry's bay.
+  r.join('a2');
+  const { adapter, sent, corrections, effects } = predictor(
+    r,
+    'a2',
+    { x: 1077, y: 24, z: 51 },
+    r.api.account('a')!.request + 1,
+  );
+  const row = (w: World) => haltYard(w, 2);
+  assert.equal(adapter.haltPut(2, 2), true, 'predicted on the press');
+  assert.equal(account(adapter.read.world(), 'a')!.rails, 0);
+  assert.equal(row(adapter.read.world()).rails, rails, 'the bin shows them at once');
+  assert.equal(row(r.mirrors.get('a2')!.confirmed()).rails, 0, 'the confirmed mirror waits for the server');
+  const e = sent.at(-1)!;
+  assert.deepEqual([e.op, e.yard, e.kind], ['rail.haltPut', 2, 2]);
+  // As the host answers it: the receipt and its count, to the session that sent it.
+  const result = r.api.act('a', e as RailAction, anywhere);
+  assert.deepEqual([result.status, result.accepted], ['accepted', rails]);
+  r.replication.ack('a2', e.epoch as number, e.request as number);
+  r.replication.accepted('a2', e.epoch as number, e.request as number, result.accepted);
+  r.pump();
+  assert.equal(adapter.read.pending(), 0);
+  assert.equal(corrections.length, 0);
+  assert.equal(effects.filter((x) => x.op === 'rail.haltPut').length, 1, 'it plays once, on the press');
+  assert.equal(effects.find((x) => x.op === 'rail.haltPut')!.level, rails, "the effect reads the bin's count");
+  assert.equal(row(r.mirrors.get('b')!.confirmed()).rails, rails, 'a friend sees the stack');
+  adapter.dispose();
+  agree(r, 'a2');
+  agree(r, 'b');
+  r.join('c');
+  r.pump();
+  agree(r, 'c');
+  assert.equal(row(r.mirrors.get('c')!.confirmed()).rails, rails, 'a late joiner sees it too');
 });
 
 test('a late joiner sees the fitted boiler cold while the cart returns', () => {

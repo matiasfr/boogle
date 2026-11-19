@@ -694,6 +694,7 @@ const FIELDS = [
   'part',
   'tk',
   'leg',
+  'yard',
 ] as const satisfies readonly (keyof RailAction)[];
 type Unlisted = Exclude<keyof RailAction, (typeof FIELDS)[number] | 'op' | 'epoch' | 'request'>;
 const everyField: [Unlisted] extends [never] ? true : Unlisted = true;

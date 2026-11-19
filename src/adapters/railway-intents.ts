@@ -11,6 +11,7 @@ import { BOILER_MAX, LINE_HALTS } from '../sim/railway-train.ts';
 import { LINE2, RAIL_TRAINS } from '../sim/railway-lines.ts';
 import { RAIL_ROCKS, installPart, type InstallPart } from '../sim/railway-works-layout.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS } from '../sim/railway-route.ts';
+import { HALT_YARDS } from '../sim/railway-yard-layout.ts';
 import { Pile } from '../sim/railway-components.ts';
 import { activeStation } from '../sim/railway-queries.ts';
 import { railBeamChoppable } from '../sim/railway-queries-line1.ts';
@@ -49,6 +50,7 @@ export type RailwayIntent =
   | { op: 'rail.turn'; to: 0 | 1; revision: number }
   | { op: 'rail.steelTake'; kind: 0 | 1 }
   | { op: 'rail.legStock'; leg: number }
+  | { op: 'rail.haltPut' | 'rail.haltTake'; yard: number; kind: 0 | 1 | 2 }
   | { op: 'rail.grant' | 'rail.gate'; id: number }
   | { op: 'rail.install'; line: number; part: InstallPart; revision: number }
   | { op: 'rail.boilerTake' | 'rail.boilerFit'; revision: number }
@@ -78,6 +80,13 @@ export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
     return { op: e.op, line: LINE2, part: e.part, revision: e.revision };
   // The greybox route (docs/plans/greybox-route.md, leg 1 step 4): catalog indexes.
   if (e.op === 'rail.legStock' && railInt(e.leg, RAIL_LEGS.length - 1)) return { op: e.op, leg: e.leg };
+  // The halt yards: a HALT_YARDS index and a kind (0 logs, left out of the event; 1 stone; 2 rails).
+  if (
+    (e.op === 'rail.haltPut' || e.op === 'rail.haltTake') &&
+    railInt(e.yard, HALT_YARDS.length - 1) &&
+    (e.kind === undefined || railInt(e.kind, 2))
+  )
+    return { op: e.op, yard: e.yard, kind };
   if (e.op === 'rail.grant' && railInt(e.id, RAIL_GRANTS.length - 1)) return { op: e.op, id: e.id };
   if (e.op === 'rail.gate' && railInt(e.id, RAIL_GATES.length - 1)) return { op: e.op, id: e.id };
   if (e.op === 'rail.strike' && railInt(e.id, 2)) return { op: e.op, id: e.id };
@@ -173,6 +182,7 @@ export const TAKES: ReadonlySet<string> = new Set([
   'rail.depotRailTake',
   'rail.footTake',
   'rail.steelTake',
+  'rail.haltTake',
 ]);
 /** The ops that never move material, so a held beam does not block them. */
 export const NOT_MATERIAL: ReadonlySet<string> = new Set([
@@ -210,6 +220,8 @@ export const NOT_WHILE_HAULING: ReadonlySet<string> = new Set(['rail.breaker', '
  * predicts, sends and plays it. `view` is the world the views see now. */
 export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: () => World) => {
   const pileIn = (id: number) => view().get(Pile, id);
+  const halt = (op: 'rail.haltPut' | 'rail.haltTake') => (yard: number, kind: 0 | 1 | 2) =>
+    railInt(yard, HALT_YARDS.length - 1) && railInt(kind, 2) && submit({ op, yard, kind });
   return {
     wake: () => submit({ op: 'rail.wake' }),
     buy: (slot: number) => pricedPlot(slot) && submit({ op: 'rail.buy', id: slot }),
@@ -289,6 +301,10 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
      * and rails into its bill. */
     steelTake: (kind: 0 | 1) => railInt(kind, 1) && submit({ op: 'rail.steelTake', kind }),
     feedSteel: () => submit({ op: 'rail.steel' }),
+    /** A halt yard (a HALT_YARDS index): Leave it here puts everything of `kind` (0 logs, 1 stone, 2 rails) off your back
+     * into it; Pick up fills your back's room for `kind` from it. */
+    haltPut: halt('rail.haltPut'),
+    haltTake: halt('rail.haltTake'),
     /** Install at Home on the shared revision of line 2's boiler and cradle fits. */
     installBoiler: (revision: number, part: InstallPart = 2) =>
       railInt(revision, BOILER_MAX + 1) && submit({ op: 'rail.install', line: LINE2, part, revision }),

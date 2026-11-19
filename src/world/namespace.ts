@@ -135,7 +135,9 @@
 // saved tune and the job rows' default timing change, so live rooms take the new start. No migration.
 // v64 (2026-11-19): the Rail yoke: `Rail.yoke` and `rail.yoke`, rails 8 -> 16 once taken
 // (docs/plans/rail-yoke.md); no migration.
-export const WORLD_NS = 'v64';
+// v65 (2026-11-19): halt yards (docs/plans/halt-yard.md): `HaltYard` rows and `rail.haltPut`/`rail.haltTake`;
+// abandoned logs and stone recover to the nearest open yard; no migration.
+export const WORLD_NS = 'v65';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

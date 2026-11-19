@@ -53,7 +53,8 @@ const pileKind = (kind: unknown) => (kind === 1 || kind === RAILS || kind === FO
 const pileCap = (kind: number) => (kind === FOOT ? 1 : LOOSE_PILE_MAX);
 // Confirmed ids precede temporary -request ids; ties at the same point follow creation order on both peers.
 const pileOrder = (id: number) => (id < 0 ? RAILWAY_MAX_INT - id : id);
-function credit(a: AccountRow, kind: number, n: number) {
+/** n of `kind` onto back a (negative: off it). */
+export function credit(a: AccountRow, kind: number, n: number) {
   if (kind === STONE) a.stone += n;
   else if (kind === RAILS) a.rails += n;
   else if (kind === FOOT) a.foot += n;
@@ -171,8 +172,12 @@ export const deposit = defineSystem(
   },
 );
 /** Logs or rails put down are no longer a leg rack's units on a back (legKitPut: they are owed again). */
-const putDown = (w: World, aid: number, kind: number, n: number) =>
+export const putDown = (w: World, aid: number, kind: number, n: number) =>
   legKitPut(w, aid, kind ? 0 : n, kind === RAILS ? n : 0);
+/** A West landing stand-in's lost units, taken up again, count held again (greybox leg 2, the second re-check). */
+export function pickedUp(w: World, aid: number, kind: number, n: number) {
+  if (n > 0 && (kind === 0 || kind === RAILS)) legKitRetaken(w, aid, kind === 0 ? n : 0, kind === RAILS ? n : 0);
+}
 export const drop = defineSystem(
   'rail.drop',
   { reads: [Aperture, Rail], writes: [Pile, Account, Leg], phase: 'act', order: 5 },
@@ -225,8 +230,7 @@ export const take = defineSystem(
     p.n -= n;
     credit(a, kind, n);
     if (!p.n) w.despawn(e.id!);
-    // A West landing stand-in's lost units, taken up again, count held again (greybox leg 2, the second re-check).
-    if (n > 0 && (kind === 0 || kind === RAILS)) legKitRetaken(w, aid, kind === 0 ? n : 0, kind === RAILS ? n : 0);
+    pickedUp(w, aid, kind, n);
     return n;
   },
 );

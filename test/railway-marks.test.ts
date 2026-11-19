@@ -21,6 +21,8 @@ test('accepted railway actions map amounts and material without identifying the 
     { op: 'rail.breaker' },
     { op: 'rail.boilerFit', revision: 2 },
     { op: 'rail.call', id: 4, dir: 1 },
+    { op: 'rail.haltPut', yard: 2, kind: 2 },
+    { op: 'rail.haltTake', yard: 0, kind: 0 },
   ] as const) {
     const marks = railwayActionMarks(intent, 1, true);
     assert.equal(marks.length, 1);
@@ -28,6 +30,9 @@ test('accepted railway actions map amounts and material without identifying the 
     assert.deepEqual(railwayActionMarks(intent, 0, true), []);
   }
   assert.equal(railwayActionMarks({ op: 'rail.call', id: 4, dir: 1 }, 1, false)[0]![1].halt, 4);
+  assert.deepEqual(railwayActionMarks({ op: 'rail.haltPut', yard: 2, kind: 2 }, 6, true), [
+    ['yard left', { by: 6, mine: true, authority: 'server', material: 'rails', yard: 2 }],
+  ]);
   const ops = [
     'wake',
     'chop',

@@ -7,7 +7,7 @@
 //                                  forge(+forgeClock), rail(+railClock), cart, boiler, train, works(+worksClock), shed,
 //                                  outcome, line, aperture (v27), yard(+yardClock), town(+townClock), till (slice 5),
 //                                  steel(+steelClock) (ring-island-build2, R1), leg, legYard, route (the greybox
-//                                  route); RAIL_REPLICATED is the wire
+//                                  route), haltYard (the halt yards); RAIL_REPLICATED is the wire
 //   createRailwayWorld(opts)       the fresh railway: one entity per catalog thing, spawned in catalog order
 import { createWorld, defineComponent, type AnyComponent } from '../ecs/index.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from './railway-layout.ts';
@@ -19,6 +19,7 @@ import { TRAIN_PHASE, TRAIN_STOPS } from './railway-train.ts';
 import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { TRADE, TRADE_TOWNS } from './railway-trade-layout.ts';
 import { RAIL_LEGS, RAIL_YARDS } from './railway-route.ts';
+import { HALT_YARDS } from './railway-yard-layout.ts';
 import type { RailResult } from './railway.ts';
 
 /** A job's timing fields, in wire order (the job's schedule reads them: railway-line-schedule.ts). */
@@ -363,6 +364,14 @@ export const Route = defineComponent(
   { grants: 'int', gates: 'int', arrived: 'int' },
   { defaults: { arrived: -1 } },
 );
+/** A halt yard by HALT_YARDS slot (docs/plans/halt-yard.md; rules in ./railway-sys-yard.ts): the logs, stone and rails
+ * left in its bay, never capped. The Village's (slot 0) logs and stone are the recovery rack's (`Rail.rack`,
+ * `Rail.stoneRack`), so its row holds only rails; a closed yard holds nothing. */
+export const HaltYard = defineComponent(
+  'haltYard',
+  { slot: 'int', logs: 'int', stone: 'int', rails: 'int' },
+  { key: 'slot' },
+);
 export const RAIL_COMPONENTS: readonly AnyComponent[] = [
   Rail,
   RailClock,
@@ -400,6 +409,8 @@ export const RAIL_COMPONENTS: readonly AnyComponent[] = [
   Leg,
   LegYard,
   Route,
+  // The halt yards.
+  HaltYard,
 ];
 /** What a client is sent: the replicated components (the wire schema, one source with the save). */
 export const RAIL_REPLICATED = RAIL_COMPONENTS.filter((c) => c.replicate);
@@ -440,5 +451,7 @@ export function createRailwayWorld(opts: { audit?: boolean } = {}) {
   RAIL_YARDS.forEach((_y, slot) => w.spawn([LegYard, { slot }]));
   w.spawn([Route, {}]);
   TRADE.plots.forEach((plots, town) => plots.forEach((_p, k) => w.spawn([Plot, { slot: town * 16 + k }])));
+  // The halt yards, last, in catalog order: empty.
+  HALT_YARDS.forEach((_y, slot) => w.spawn([HaltYard, { slot }]));
   return w;
 }

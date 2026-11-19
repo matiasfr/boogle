@@ -24,6 +24,7 @@ import {
   Cart,
   Forge,
   ForgeClock,
+  HaltYard,
   Hardwood,
   Job,
   JobRun,
@@ -114,6 +115,8 @@ export const rock = slotted(Rock);
 export const train = slotted(Train);
 export const line = slotted(Line);
 export const leg = slotted(Leg);
+/** A halt yard by HALT_YARDS slot (docs/plans/halt-yard.md). */
+export const haltYard = slotted(HaltYard);
 
 export const jobs = listed(job, LINE1_STATIONS.length);
 export const qjobs = listed(qjob, LINE2_STATIONS.length);
