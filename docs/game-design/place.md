@@ -243,10 +243,13 @@ of sleepers: the spur off road 2, the leg off line 1 and onto road 2, and each l
 the through track's sleepers, carried on as long timbers until the tracks are clear of each other; the branch's rails
 start beside the through track's. Every junction at Home is drawn as points from the two centrelines
 (docs/plans/turnouts.md, steps 1 and 3): the spur's (J1), the leg's at both ends (J2, J3) and where each line's offset
-track leaves (J4, J6) have an open blade, wing and check rails and long timbers under both roads; the leg's parts come
-with the leg. The offset track's frogs are uncut crossings (its rails are the pairs the gantry carries), the leg's and
-the spur's are cut. The points are set for the through road and do not move yet, and the levers do not work (turnouts
-step 6). At the table's rim (turnouts step 5) the deck, the spur and every stall road share one rail height; each road's
+track leaves (J4, J6) have two switch blades, wing and check rails and long timbers under both roads; the leg's parts
+come with the leg. The offset track's frogs are uncut crossings (its rails are the pairs the gantry carries), the leg's
+and the spur's are cut. The points move by themselves (turnouts step 6): they lie for the road the next train takes
+(a homeward train within 60 m sets Home's for the offset track, the shunt on the spur sets J1's, the cart on or near
+the leg sets J2's and J3's) and rest for the through road with nothing near, easing over in 0.4 s with a clank; a tie
+bar joins the blades' tips and a rod runs to the lever, whose brass arm leans away from the track for the through road
+and toward it for the other. Home's three levers are the station's boxes; nobody throws them by hand. At the table's rim (turnouts step 5) the deck, the spur and every stall road share one rail height; each road's
 rails stop 3 cm outside the rim and the deck's 3 cm inside it, so a resting deck meets a road across a 6 cm gap square
 to it, and each road's rail ends lie on a timber across the pit's stone kerb (its first sleeper, stretched down). Each ruin's floor and near wall stop 0.3 m short of the built
 stall's eave. The garage's stand, jib, lever post and crew stand on the yard's ground beside the table (they hung
@@ -1130,8 +1133,10 @@ stub turnout at each end, so the turntable, both Village platforms, the Camp end
 has a departure crossover at s 490–512, original track to offset, while it is line 2's end. Every place the two tracks
 part is drawn as points ([turnouts](../plans/turnouts.md), steps 3 and 4): Home's two (J4, J6), the Camp end (J5), the
 pier's root (J9, taken up with the old merge when Q7 relays the pier) and both ends of Far Head's crossover (J7, J8),
-each with long timbers under both roads, wing and check rails and an uncut frog. The crossover's ends have an open
-blade; at J5 and J9 the offset track's rails close on the through road's from the toe. The points do not move yet. On the ridge, gorge and sea trestles
+each with long timbers under both roads, wing and check rails and an uncut frog. Each has two switch blades that lie
+for the road the next train through its toe takes, a homeward train's or a crossing one's, and rest for the through
+road otherwise (turnouts step 6), with a lever on its headblocks abeam the toe (J8's stands across the track, Far
+Head's platform being on its headblocks' side). After Q7's relay J9 is plain double track again. On the ridge, gorge and sea trestles
 the deck spans both tracks (7.6 m) on bents that reach out under the offset track. The track layer lays both tracks of
 each panel in one trip: the gantry lifts the top two pairs off its stack, seats today's track's pair, lets go, crosses
 4 m and sets the offset track's pair down, so its stack empties by two a panel (bills, panel counts and timing are

@@ -194,6 +194,7 @@ export async function collectTrackGeometry() {
       '../../place/home-station.ts': home,
       '../../place/rotunda.ts': { ROTUNDA_KIT, bayFrame },
       '../../place/sites.ts': { addFoot() {} },
+      '../../place/junctions.ts': { junctions },
       './home-yard.ts': { layHomeYard: () => ({ draw: () => ({ showLater() {} }) }) },
     },
   );

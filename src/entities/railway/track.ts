@@ -17,8 +17,8 @@ import {
   type LineSpec,
 } from '../../place/layout.ts';
 import { dropSet, type DropSet } from '../../place/pieces.ts';
-import { junctions, spanAcross } from '../../place/junctions.ts';
-import { KIT, turnout, wholeSteps } from '../../place/turnout.ts';
+import { junctions, spanAcross, type Junction } from '../../place/junctions.ts';
+import { KIT, turnout, wholeSteps, type Turnout, type XZY } from '../../place/turnout.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { chunkOf } from './track-chunks.ts';
 import { lookTrack } from '../../place/look-kit.ts';
@@ -74,6 +74,18 @@ export type Track = {
   /** The deck's plank pieces as drawn (boxes.ts: a place and a local matrix over the unit box), for what stands on
    * them (path-refuge.ts plankTops). */
   planks: () => { x: number; y: number; z: number; local: THREE.Matrix4 }[];
+  /** The junctions whose through road this line draws, their blades cut out of its rails (./turnout-blades.ts draws
+   * them moving). */
+  points: TrackPoint[];
+};
+/** A junction on a line's track: its turnout, where its blades' cut starts (metres from the toe), whether the rail
+ * they are cut from is down, and whether the relay has taken its diverging road up (J9 at Q7). */
+export type TrackPoint = {
+  j: Junction;
+  t: Turnout;
+  from: number;
+  laid: () => boolean;
+  retired: () => boolean;
 };
 /** A `timber` is a turnout's long sleeper (the kit's sleeper stretched, without tie plates), under one of the line's. */
 type PieceKind = 'sleeper' | 'timber' | 'plank' | 'rail' | 'cap' | 'stringer' | 'leg' | 'brace';
@@ -131,6 +143,10 @@ export function buildTrack(
     pre.push(frontier(s) === -Infinity);
   };
   const q = { x: 0, z: 0 };
+  /** Each plain rail piece of a line track, as laid: which track, which side (`r` across it, as `lateral`), its
+   * stretch along the line (placed at its middle). The turnouts' blades are cut out of these (`cutPoints`). */
+  type LineRail = { k: number; track: 'today' | 'up' | 'cross'; r: number; s0: number; s1: number };
+  const lineRails: LineRail[] = [];
   const bed = (s: number) => {
     lineAt(line, s, P);
     lateral(0, q);
@@ -277,6 +293,7 @@ export function buildTrack(
             -2.2,
             0.8,
           );
+          lineRails.push({ k: boxes.length - 1, track: 'today', r, s0: s - length / 2, s1: s + length / 2 });
         }
       }
     }
@@ -295,21 +312,9 @@ export function buildTrack(
     lineAt(line, s, P);
     return lateral(l, out);
   };
-  /** A box from world point `a` to `b` (`y` their rail heights) along its own heading, `dy` over them, placed in
-   * the laying order at the line's `s`; `d` its length if not theirs. */
-  const boxBetween = (
-    kind: PieceKind,
-    s: number,
-    a: { x: number; z: number; y: number },
-    b: { x: number; z: number; y: number },
-    w: number,
-    h: number,
-    dy: number,
-    color: string,
-    lead: number,
-    fall: number,
-    d?: number,
-  ) => {
+  /** A box from world point `a` to `b` (`y` their rail heights) along its own heading, `dy` over them; `d` its
+   * length if not theirs. */
+  const between = (a: XZY, b: XZY, w: number, h: number, dy: number, d?: number) => {
     const dx = b.x - a.x,
       dz = b.z - a.z,
       len = Math.hypot(dx, dz);
@@ -323,7 +328,24 @@ export function buildTrack(
       Math.atan2(dx, dz),
       new THREE.Euler(-Math.atan2(b.y - a.y, len), 0, 0),
     );
-    add(s, kind, (a.x + b.x) / 2, (a.z + b.z) / 2, (a.y + b.y) / 2 + dy, local, color, lead, fall);
+    return { x: (a.x + b.x) / 2, z: (a.z + b.z) / 2, y: (a.y + b.y) / 2 + dy, local };
+  };
+  /** `between`, placed in the laying order at the line's `s`. */
+  const boxBetween = (
+    kind: PieceKind,
+    s: number,
+    a: XZY,
+    b: XZY,
+    w: number,
+    h: number,
+    dy: number,
+    color: string,
+    lead: number,
+    fall: number,
+    d?: number,
+  ) => {
+    const g = between(a, b, w, h, dy, d);
+    add(s, kind, g.x, g.z, g.y, g.local, color, lead, fall);
   };
   /** A box from (sa, la) to (sb, lb) along its own heading: a rail or a sleeper on a turnout's curve. */
   const offsetBox = (
@@ -381,27 +403,47 @@ export function buildTrack(
     return la < -0.12 || lb < -0.12 ? { a, b, la, lb } : null;
   };
   // The turnouts where the up track leaves this line (docs/plans/turnouts.md, steps 3 and 4), from the one list. The
-  // up track's plain rails stay whole through the frog (the gantry carries them), so each turnout adds its open blade,
-  // wing and check rails up to and round them, and a long timber under each of today's sleepers in its zone, where the
-  // up track lays none of its own.
-  const zones = junctions()
-    .filter((j) => j.line === spec.id && j.kind !== 'spur')
+  // up track's plain rails stay whole through the frog (the gantry carries them), so each turnout adds its wing and
+  // check rails round them, and a long timber under each of today's sleepers in its zone, where the up track lays none
+  // of its own. Every junction whose through road is this line's (the yard's spur and leg too) has its blades cut out
+  // of the line's rails (below).
+  /** A blade's heel stops no nearer a rail joint than this, or runs on to it. */
+  const SLIVER = 0.5;
+  const points = junctions()
+    .filter((j) => j.line === spec.id)
     .map((j) => {
       // Where the up track's own rails begin, metres from the toe: the end of each of its rail pieces nearer the toe.
-      // The crossover's rails run from its toes (Far Head, J7 and J8).
+      // The crossover's rails run from its toes (Far Head, J7 and J8); the yard's roads are not this line's.
       const first =
-        j.kind === 'crossover'
-          ? 0
-          : Math.min(
-              ...pieces
-                .map(([s0, s1]) => {
-                  const up = upSpan(s0, s1);
-                  return up ? ((j.dir > 0 ? up.a : up.b) - j.s) * j.dir : Infinity;
-                })
-                .filter((d) => d >= -1),
-            );
-      return { j, t: turnout(j.through, j.diverging, j.lever, first) };
+        j.kind === 'spur'
+          ? undefined
+          : j.kind === 'crossover'
+            ? 0
+            : Math.min(
+                ...pieces
+                  .map(([s0, s1]) => {
+                    const up = upSpan(s0, s1);
+                    return up ? ((j.dir > 0 ? up.a : up.b) - j.s) * j.dir : Infinity;
+                  })
+                  .filter((d) => d >= -1),
+              );
+      const t = turnout(j.through, j.diverging, j.lever, first);
+      // A blade's heel a little short of a rail joint would leave a sliver of rail past it, so it runs on to the
+      // joint, or stops short by a useful length (the yard draws its own roads' parts from the plain length).
+      const joint = Math.min(...pieces.flatMap((p) => p.map((s) => (s - j.s) * j.dir)).filter((d) => d > t.bladeLen));
+      const heel =
+        panelled && j.kind !== 'spur' && joint - t.bladeLen < SLIVER
+          ? joint <= KIT.bladeMax + 0.3 || joint - SLIVER < KIT.bladeMin
+            ? joint
+            : joint - SLIVER
+          : t.bladeLen;
+      return {
+        j,
+        t: heel === t.bladeLen ? t : turnout(j.through, j.diverging, j.lever, first, heel),
+        from: Math.max(0, first ?? 0),
+      };
     });
+  const zones = points.filter(({ j }) => j.kind !== 'spur');
   /** The timber across today's track at `s`: its two ends, metres to the line's right (as `lateral`), the union where
    * zones overlap; null outside every zone. */
   const timberAt = (s: number) => {
@@ -446,9 +488,11 @@ export function buildTrack(
   };
   /** How fast a lateral `lat` changes along the line at `s`, metres a metre. */
   const slopeOf = (lat: (s: number) => number | null, s: number) => ((lat(s + 0.1) ?? 0) - (lat(s - 0.1) ?? 0)) / 0.2;
-  /** The crossover's inner rail at each toe is its open blade, a throw off the through road's far rail at the tip:
-   * its rails are not the gantry's, so the rail itself is set over (`r`: the rail's side, as `lateral`). */
+  /** Continuous track (the level tools' copy) has no moving blades: there the crossover's inner rail at each toe is
+   * its open blade, set over a throw off the through road's far rail at the tip (`r`: the rail's side, as `lateral`).
+   * Laid in panels, the blade is cut out of it and drawn moving (`cutPoints`). */
   const bladeAt = (s: number, r: number) => {
+    if (panelled) return 0;
     let lat = 0;
     for (const { j, t } of zones)
       if (j.kind === 'crossover' && Math.sign(r) === -j.dir * t.hand)
@@ -562,6 +606,7 @@ export function buildTrack(
       for (const r of [-0.5, 0.5]) {
         offsetBox('rail', a, la + r, b, lb + r, 0.1, 0.12, TOP, '#4c5058', -2.2, 0.8);
         upRails.add(boxes.length - 1);
+        lineRails.push({ k: boxes.length - 1, track: 'up', r, s0: a, s1: b });
         // A rail piece that is not on the straight up track (OFFSET_LAT) at one end is in the merge turnout.
         if (a > formation.to - 60 && (la > OFFSET_LAT + 0.01 || lb > OFFSET_LAT + 0.01))
           merge.push({ k: boxes.length - 1, from: a });
@@ -587,6 +632,7 @@ export function buildTrack(
           0.8,
         );
         crossRails.add(boxes.length - 1);
+        lineRails.push({ k: boxes.length - 1, track: 'cross', r, s0: ca, s1: cb });
       }
   }
 
@@ -665,6 +711,120 @@ export function buildTrack(
       turnoutRails.add(boxes.length - 1);
       if (j.when === 'merge') merge.push({ k: boxes.length - 1, from: s - 1.5 });
     }
+
+  // The blades (docs/plans/turnouts.md, step 6) are each junction's two inner rails from the toe to the heel, drawn
+  // moving by ./turnout-blades.ts, so the plain rails they lie in are cut there: the through road's inner rail, and
+  // the diverging road's where it is this line's (the up track or the crossover; the yard draws its own). A cut piece
+  // keeps its index (the gantry's pairs and seats, `upRails`, the relay's `merge` and the z-fight baseline read
+  // indices), shortened to what is left of it; a second remnant is a turnout rail after every other piece; a piece a
+  // blade covers whole is left a millimetre speck. The gantry still carries and seats the whole piece (`seatOf`), and
+  // the blade lies where the rest of it was. Continuous track (the level tools' copy) has no moving blades and no cut.
+  const seatOf = new Map<number, (typeof boxes)[number]>();
+  /** A point on `rail`'s line at the line's `s` (rail height, the rail's centre). */
+  const railPoint = (rail: Pick<LineRail, 'track' | 'r'>, s: number): XZY => {
+    const lat = rail.track === 'today' ? 0 : rail.track === 'up' ? (upAt(s) ?? 0) : (crossLat(formation, s) ?? 0);
+    offsetAt(s, lat + rail.r, wa);
+    return { x: wa.x, z: wa.z, y: railY(line, s) };
+  };
+  /** The line's `s` where `rail` passes abeam world point `p` (`s` the first guess). */
+  const abeam = (rail: Pick<LineRail, 'track' | 'r'>, p: XZY, s: number) => {
+    for (let i = 0; i < 6; i++) {
+      const a = railPoint(rail, s - 0.05),
+        b = railPoint(rail, s + 0.05),
+        c = railPoint(rail, s);
+      const dx = b.x - a.x,
+        dz = b.z - a.z,
+        len = Math.hypot(dx, dz);
+      s += (((p.x - c.x) * dx + (p.z - c.z) * dz) / len / len) * 0.1;
+    }
+    return s;
+  };
+  /** A plain rail piece of `rail`'s from the line's `s0` to `s1`, built as its own pieces are. */
+  const plainRail = (rail: LineRail, s0: number, s1: number) => {
+    if (rail.track !== 'today')
+      return between(railPoint(rail, s0), railPoint(rail, s1), 0.1, 0.12, rail.track === 'cross' ? TOP + 0.005 : TOP);
+    const s = (s0 + s1) / 2;
+    lineAt(line, s, P);
+    const yaw = Math.atan2(P.ux, P.uz),
+      pitch = Math.atan2(railY(line, s + 1) - railY(line, s - 1), 2);
+    lateral(rail.r, q);
+    return {
+      x: q.x,
+      z: q.z,
+      y: railY(line, s) + TOP,
+      local: place(0, 0, 0, 0.1, 0.12, s1 - s0, yaw, new THREE.Euler(-pitch, 0, 0)),
+    };
+  };
+  /** What is left of each cut piece, as stretches of the line. */
+  const left = new Map<number, [number, number][]>();
+  /** Shorter than this, what a cut leaves of a piece is not drawn. */
+  const SPECK = 0.08;
+  const cutPoints = points.map(({ j, t: tt, from }): TrackPoint => {
+    const sides: { blade: Turnout['blades'][number]; track: LineRail['track']; r: number }[] = [
+      { blade: tt.blades[0], track: j.off ? 'up' : 'today', r: (j.dir * tt.hand) / 2 },
+      ...(j.kind === 'spur'
+        ? []
+        : [
+            {
+              blade: tt.blades[1],
+              track: j.kind === 'crossover' ? ('cross' as const) : ('up' as const),
+              r: (-j.dir * tt.hand) / 2,
+            },
+          ]),
+    ];
+    const cut = sides.map(({ blade, track, r }) => {
+      if (!panelled) return [];
+      const rail = { track, r },
+        a = abeam(rail, blade.plain(from), j.s + j.dir * from),
+        b = abeam(rail, blade.plain(blade.to), j.s + j.dir * blade.to),
+        lo = Math.min(a, b),
+        hi = Math.max(a, b);
+      const hit = lineRails.filter((l) => l.track === track && l.r === r && l.s1 > lo + SPECK && l.s0 < hi - SPECK);
+      for (const l of hit)
+        left.set(
+          l.k,
+          (left.get(l.k) ?? [[l.s0, l.s1]]).flatMap(
+            ([s0, s1]): [number, number][] =>
+              [
+                [s0, Math.min(s1, lo)],
+                [Math.max(s0, hi), s1],
+              ].filter(([p0, p1]) => p1! - p0! > SPECK) as [number, number][],
+          ),
+        );
+      return hit;
+    });
+    // The through rail's piece nearest the toe: its laying shows the blades. Continuous track has no cut (the level
+    // tools' copy): nothing to draw there.
+    const toToe = (l: LineRail) => Math.abs((l.s0 + l.s1) / 2 - j.s);
+    const shows = cut[0]!.reduce<LineRail | undefined>((n, l) => (n && toToe(n) <= toToe(l) ? n : l), undefined),
+      diverging = cut[1] ?? [];
+    return {
+      j,
+      t: tt,
+      from,
+      laid: () => !!shows && (pre[shows.k]! || us[shows.k]! <= t.head),
+      retired: () => diverging.some((l) => retired.has(l.k)),
+    };
+  });
+  const railOf = new Map(lineRails.map((l) => [l.k, l]));
+  for (const [k, parts] of left) {
+    const rail = railOf.get(k)!,
+      old = boxes[k]!;
+    seatOf.set(k, old);
+    const [keep, ...rest] = parts.sort((a, b) => b[1] - b[0] - (a[1] - a[0]));
+    const g = keep
+      ? plainRail(rail, keep[0], keep[1])
+      : { x: old.x, z: old.z, y: old.y, local: place(0, 0, 0, 0.001, 0.001, 0.001, 0) };
+    boxes[k] = box(g.x, g.z, g.local, '#4c5058');
+    boxes[k]!.y = g.y;
+    const merged = merge.find((m) => m.k === k);
+    for (const [s0, s1] of rest) {
+      const r = plainRail(rail, s0, s1);
+      add((rail.s0 + rail.s1) / 2, 'rail', r.x, r.z, r.y, r.local, '#4c5058', -2.2, 0.8);
+      turnoutRails.add(boxes.length - 1);
+      if (merged) merge.push({ k: boxes.length - 1, from: merged.from });
+    }
+  }
   const set = lookTrack(
     dropSet(
       boxes,
@@ -767,12 +927,12 @@ export function buildTrack(
     const [a, b] = pair;
     mid.set(0, 0, 0);
     for (const k of [a, b]) {
-      const box = boxes[k!]!;
+      const box = seatOf.get(k!) ?? boxes[k!]!;
       mid.x += box.x / 2;
       mid.y += box.y / 2;
       mid.z += box.z / 2;
     }
-    const local = boxes[a!]!.local.elements;
+    const local = (seatOf.get(a!) ?? boxes[a!]!).local.elements;
     dirOut.set(local[8]!, local[9]!, local[10]!).normalize();
     const panel = panels[index]!;
     lineAt(line, dir > 0 ? panel.from : line.len - panel.from, P);
@@ -892,6 +1052,7 @@ export function buildTrack(
     },
     update: (dt) => set.update(dt),
     planks: () => boxes.filter((_, k) => kinds[k] === 'plank'),
+    points: cutPoints,
     retire(on) {
       for (const { k } of merge) {
         if (on) {

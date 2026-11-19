@@ -5,8 +5,16 @@
 // on the table and the spur, the line's `railY` on road 2. Local.
 import { BUFFERS, SHUNT_CUSP_S, STALLS, TABLE, roadAt, shuntPath, stallFrame } from '../../place/home-station.ts';
 import { LINES, ORIGIN, railY } from '../../place/layout.ts';
-import { WAGON_S } from '../../sim/railway-works-layout.ts';
+import { smoothstep } from '../../math-pure.ts';
+import { WAGON_S, WORKS } from '../../sim/railway-works-layout.ts';
+import { shed, trains, type ReadWorld } from '../../sim/railway-rows.ts';
 import { SHUNT, TABLE_RAIL, shuntPose, stallRoadY } from './works-shape.ts';
+
+/** The roll-out's turn, as fractions of `WORKS.rollTicks`: push on, turn, back down the spur and push off. */
+const ROLL = { turn: [0.34, 0.7] } as const;
+/** The shunter's way home after the wagon waits on line 2 (ticks), and its turn back as fractions of it. */
+const BACK_TICKS = 130;
+const BACK = { turn: [0.3, 0.5] } as const;
 
 type P3 = { x: number; y: number; z: number };
 /** Along the stall's length from its middle (the door at -4.5): the wagon parks at the door end, the shunter `gap`
@@ -124,4 +132,57 @@ export function createShuntPath() {
     return shuntPose(pairAt(wagon, c + SHUNT.bogie, deckK, front), pairAt(wagon, c - SHUNT.bogie, deckK, rear));
   }
   return { PARKED_A, TABLE_A, OUT_A, cuspA, turnBy, pairAt, poseAt };
+}
+export type ShuntPath = ReturnType<typeof createShuntPath>;
+
+/**
+ * Where the wagon and shunter stand and how far the deck has turned, from the shed's `ready` and a tick alone (so a
+ * reload or a late joiner lands in the same pose; the Roundhouse view and the spur's points both read it). The
+ * roll-out, `rollTicks` up to `ready`: the shunter pushes the wagon onto the deck, the deck turns with both on it, and it
+ * pushes the wagon off to its wait on line 2. Then, over BACK_TICKS, the shunter backs onto the deck alone, the deck
+ * turns back to the stall road and it reverses home. k is null before the roll-out: an accepted table turn arms the
+ * upgrade, while the deck stays on road 0. `hidden`: the wagon has coupled to a train.
+ */
+export function shuntTargets(
+  path: ShuntPath,
+  w: ReadWorld,
+  tick: number,
+): { wagon: number; shunter: number; k: number | null; hidden: boolean } {
+  const { PARKED_A, TABLE_A, OUT_A, cuspA } = path,
+    ready = shed(w).ready,
+    hidden = trains(w).some((r) => r.wagon);
+  const home = PARKED_A - PARK.gap,
+    seated = TABLE_A + PARK.gap / 2; // the wagon's centre on the deck, the shunter's as far behind the middle
+  if (ready < 0) return { wagon: PARKED_A, shunter: home, k: hidden ? 0 : null, hidden };
+  const phase = (u: number, from: number, to: number) => smoothstep(from, to, u);
+  /** From `a0` to `a1` over `from`..`to`; by way of `cusp`, coming to rest there before it reverses. */
+  const run = (u: number, from: number, to: number, a0: number, a1: number, cusp: number) => {
+    const split = from + ((to - from) * Math.abs(cusp - a0)) / (Math.abs(cusp - a0) + Math.abs(a1 - cusp));
+    return u < split ? a0 + (cusp - a0) * phase(u, from, split) : cusp + (a1 - cusp) * phase(u, split, to);
+  };
+  // The shunter turns back where it sat on the deck on the way out.
+  const deckStop = TABLE_A - PARK.gap / 2;
+  const u = (tick - (ready - WORKS.rollTicks)) / WORKS.rollTicks;
+  if (u < 0) return { wagon: PARKED_A, shunter: home, k: null, hidden };
+  if (u < 1) {
+    const a =
+      u < ROLL.turn[0]
+        ? PARKED_A + (seated - PARKED_A) * phase(u, 0, ROLL.turn[0])
+        : run(u, ROLL.turn[1], 1, seated, OUT_A, cuspA);
+    return { wagon: a, shunter: a - PARK.gap, k: phase(u, ROLL.turn[0], ROLL.turn[1]), hidden };
+  }
+  const v = (tick - ready) / BACK_TICKS,
+    out = OUT_A - PARK.gap;
+  const shunter =
+    v < BACK.turn[0]
+      ? run(v, 0, BACK.turn[0], out, deckStop, cuspA - PARK.gap)
+      : deckStop + (home - deckStop) * phase(v, BACK.turn[1], 1);
+  return { wagon: OUT_A, shunter, k: 1 - phase(v, BACK.turn[0], BACK.turn[1]), hidden };
+}
+/** Whether either vehicle of the shunt is on the spur's side of its points: off the deck, down the spur and on road 2
+ * short of the cusp, where it turns back (the wagon's distance; the shunter's is `PARK.gap` behind). Its points (J1)
+ * lie for the spur while it is. */
+export function shuntOnSpur(path: ShuntPath, at: { wagon: number; shunter: number }) {
+  const spur = (a: number) => a > path.TABLE_A + PARK.gap / 2 && a <= path.cuspA;
+  return spur(at.wagon) || spur(at.shunter + PARK.gap);
 }

@@ -7,6 +7,10 @@
 //   at=throat-top  Home's throat from high above: J2 and J6 on road 2, J4 and J3 on line 1
 //   at=throat      Home's throat from a player's eye, on the island's end looking out along both lines
 //   at=top&id=J4   any junction from straight above at 13 m, as spur-top
+//   at=toe&id=J4   any junction's blades, tie bar and rod from straight above at 5 m (step 6)
+//   at=toe-eye&id=J4  a crouching eye beside a junction's blade tips (step 6)
+//   at=ramp        J4 from a player's eye on Home's island end ramp, narrowed onto its toe (step 6's clip; with
+//                  --until "window.__homewardNearJ4?.()" the warm-up ends as a homeward line 1 train comes)
 //   at=eye&id=J4   any junction from a player's eye behind its toe, as spur
 //   at=back&id=J6  any junction from a player's eye between its roads past the frog, looking back at the toe
 //                  (top, eye and back mirror to the side the junction's diverging road leaves on)
@@ -82,6 +86,20 @@ if (at === 'spur') {
   eye = f(5.49, -1.2, 13);
   look = f(5.5, -1.2, 0);
   fov = 50;
+} else if (at === 'toe') {
+  // Step 6: the blades, tie bar and rod from straight above at 5 m, the toe a little below the middle.
+  const f = mirrored;
+  stand = f(-2, 3.2);
+  eye = f(1.39, -0.3, 5);
+  look = f(1.4, -0.3, 0);
+  fov = 50;
+} else if (at === 'toe-eye') {
+  // Step 6: a crouching eye beside the tips on the lever's side, looking along the blades to their heels.
+  const f = mirrored;
+  stand = f(-3, 3);
+  eye = f(-1.6, 1.4, 0.7);
+  look = f(2.2, -0.4, 0.1);
+  fov = 55;
 } else if (at === 'eye') {
   const f = mirrored;
   stand = f(0, 2.6);
@@ -112,6 +130,25 @@ if (at === 'spur') {
   eye = by('J4')(-5, 1.6, 1.7);
   look = by('J4')(9, -0.6, 0);
   fov = 62;
+} else if (at === 'ramp') {
+  // Step 6's clip: on the island's end ramp at Home, looking out along line 1 at J4 (its points throw for a homeward
+  // train; `window.__homewardNearJ4`, below, ends the warm-up as one comes).
+  const home = (await import(
+    '/src/place/home-station.ts' as string
+  )) as typeof import('../../../src/place/home-station.ts');
+  const { ORIGIN } = (await import('/src/place/layout.ts' as string)) as typeof import('../../../src/place/layout.ts');
+  const onAxis = (a: number, up: number): V => {
+    const p = home.axisPoint(a, home.ISLAND_C),
+      x = p.x + ORIGIN.x;
+    return { x, y: land.H(x, p.z) + up, z: p.z };
+  };
+  const ramp = (home.ISLAND_A.deck1 + home.ISLAND_A.foot) / 2;
+  // Buddy stands behind the camera, on the ramp's upper end; the eye is a standing player's at its foot, narrowed onto
+  // the toe so the blades read at 13 m.
+  stand = onAxis(ramp - 3.5, 0);
+  eye = onAxis(ramp + 1, 1.9);
+  look = by('J4')(1.6, 0, 0);
+  fov = 30;
 } else if (at === 'farhead') {
   // On Far Head's platform (s 513 to 535, 2.9 m right of line 2) by its end ramp, 2 m past J8's toe, looking back
   // along the crossover: J8's points near, the up track's J7 beyond. J8's through road runs against the line, so
@@ -148,6 +185,17 @@ if (at === 'spur') {
     'Choose at=spur|spur-top|spur-frog|throat-top|throat|top|eye|back|farhead|table|table-top|table-join',
   );
 
+// Step 6: true while a line 1 train coming home is 62 to 90 m short of J4's zone, for --until (any framing).
+const R = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
+const { pointsTrains } = (await import(
+  '/src/entities/railway/turnout-route.ts' as string
+)) as typeof import('../../../src/entities/railway/turnout-route.ts');
+(window as Window & { __homewardNearJ4?: () => boolean }).__homewardNearJ4 = () => {
+  if (!R.railRead()?.ready()) return false;
+  return pointsTrains(R.rw(), R.railAt()).some(
+    (t) => t.line === 0 && t.dir < 0 && t.s > 47 + 13 + 62 && t.s < 47 + 13 + 90,
+  );
+};
 const body = me.body;
 if (!body) throw new Error('turnouts look: no player body');
 await wait(500);

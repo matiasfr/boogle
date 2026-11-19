@@ -42,7 +42,7 @@ import { roomFacts } from './garage-state.ts';
 import { playSharedMoment } from './shared-moment.ts';
 import { showMomentBanner } from '../../ui/moment-banner.ts';
 import { garageRow, mastFrom, polarAt } from './garage-geo.ts';
-import { PARK, createShuntPath } from './shunt-path.ts';
+import { PARK, createShuntPath, shuntTargets } from './shunt-path.ts';
 import { account, shed, trains, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
 import { ROTUNDA_BLOCK, ROTUNDA_KIT } from '../../place/rotunda.ts';
 import { createRotundaView } from './rotunda-view.ts';
@@ -64,11 +64,6 @@ const FLOOR = 18.05,
   RAIL = STALL_RAIL;
 /** Rule ticks per second (the railway sim runs at 10 Hz, as cart-view.ts says). */
 const TICKS_PER_S = 10;
-/** The roll-out's turn, as fractions of `WORKS.rollTicks`: push on, turn, back down the spur and push off. */
-const ROLL = { turn: [0.34, 0.7] } as const;
-/** The shunter's way home after the wagon waits on line 2 (ticks), and its turn back as fractions of it. */
-const BACK_TICKS = 130;
-const BACK = { turn: [0.3, 0.5] } as const;
 /** The longer boiler's banner for a player away from the table (placeholder lines, on main since build 2; none is The
  * Boogler's), and how far "away" is, in metres from the table's centre. */
 const BANNER = ['Longer boiler installed', 'Line 2’s trains take it at the Village'] as const,
@@ -158,7 +153,8 @@ export async function createRailwayRoundhouse(
 
   // ---------------------------------------------------------------- the shunt path: stall, door, table, line 2
   // Pure geometry (./shunt-path.ts): the stall road at the heights it is drawn at, the deck's turn, the spur, road 2.
-  const { PARKED_A, TABLE_A, OUT_A, cuspA: CUSP_A, turnBy, ...shuntPath } = createShuntPath();
+  const path = createShuntPath();
+  const { PARKED_A, TABLE_A, OUT_A, turnBy, ...shuntPath } = path;
   // The deck carries what stands on it (works-late-game step 5). `deckK` is the turn done (0..1) while the
   // choreography runs, null while the deck waits on road 0 for the upgrade and its hold.
   const wrap = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
@@ -548,45 +544,9 @@ export async function createRailwayRoundhouse(
     }
     ride.update(drawn, dt);
   }
-  /**
-   * Where the wagon and shunter stand and how far the deck has turned, from `ready` and the mover clock alone (so a
-   * reload or a late joiner lands in the same pose). The roll-out, `rollTicks` up to `ready`: the shunter pushes the
-   * wagon onto the deck, the deck turns with both on it, and it pushes the wagon off to its wait on line 2. Then, over
-   * BACK_TICKS, the shunter backs onto the deck alone, the deck turns back to the stall road and it reverses home.
-   * k is null before the roll-out: an accepted table turn arms the upgrade, while the deck stays on road 0.
-   */
-  function shuntTargets(tick: number): { wagon: number; shunter: number; k: number | null; hidden: boolean } {
-    const sh = shed(wd),
-      hidden = trains(wd).some((r) => r.wagon);
-    const home = PARKED_A - PARK.gap,
-      seated = TABLE_A + PARK.gap / 2; // the wagon's centre on the deck, the shunter's as far behind the middle
-    if (sh.ready < 0) return { wagon: PARKED_A, shunter: home, k: hidden ? 0 : null, hidden };
-    const phase = (u: number, from: number, to: number) => smooth(Math.min(1, Math.max(0, (u - from) / (to - from))));
-    /** From `a0` to `a1` over `from`..`to`; by way of `cusp`, coming to rest there before it reverses. */
-    const run = (u: number, from: number, to: number, a0: number, a1: number, cusp: number) => {
-      const split = from + ((to - from) * Math.abs(cusp - a0)) / (Math.abs(cusp - a0) + Math.abs(a1 - cusp));
-      return u < split ? a0 + (cusp - a0) * phase(u, from, split) : cusp + (a1 - cusp) * phase(u, split, to);
-    };
-    const cuspA = CUSP_A;
-    // The shunter turns back where it sat on the deck on the way out.
-    const deckStop = TABLE_A - PARK.gap / 2;
-    const u = (tick - (sh.ready - WORKS.rollTicks)) / WORKS.rollTicks;
-    if (u < 0) return { wagon: PARKED_A, shunter: home, k: null, hidden };
-    if (u < 1) {
-      const a =
-        u < ROLL.turn[0]
-          ? PARKED_A + (seated - PARKED_A) * phase(u, 0, ROLL.turn[0])
-          : run(u, ROLL.turn[1], 1, seated, OUT_A, cuspA);
-      return { wagon: a, shunter: a - PARK.gap, k: phase(u, ROLL.turn[0], ROLL.turn[1]), hidden };
-    }
-    const v = (tick - sh.ready) / BACK_TICKS,
-      out = OUT_A - PARK.gap;
-    const shunter =
-      v < BACK.turn[0]
-        ? run(v, 0, BACK.turn[0], out, deckStop, cuspA - PARK.gap)
-        : deckStop + (home - deckStop) * phase(v, BACK.turn[1], 1);
-    return { wagon: OUT_A, shunter, k: 1 - phase(v, BACK.turn[0], BACK.turn[1]), hidden };
-  }
+  /** Where the wagon and shunter stand and how far the deck has turned, from `ready` and the mover clock alone
+   * (./shunt-path.ts `shuntTargets`, which the spur's points read too). */
+  const shuntAt = (tick: number) => shuntTargets(path, wd, tick);
   const smooth = (u: number) => u * u * (3 - 2 * u);
   let hidden = false,
     puffs = 0,
@@ -608,7 +568,7 @@ export async function createRailwayRoundhouse(
     return shownTick;
   }
   function drawShunt(dt: number, snapTo: boolean) {
-    const t = shuntTargets(shuntClock(dt, snapTo));
+    const t = shuntAt(shuntClock(dt, snapTo));
     deckK = t.k;
     if (snapTo) {
       wagonA = t.wagon;
@@ -728,7 +688,7 @@ export async function createRailwayRoundhouse(
 
     lastCradle = shed(wd).cradle;
     lastRails = shed(wd).cradleRails;
-    const t = shuntTargets(shuntClock(0, true));
+    const t = shuntAt(shuntClock(0, true));
     wagonA = t.wagon;
     shunterA = t.shunter;
     deckK = t.k;

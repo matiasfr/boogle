@@ -20,7 +20,7 @@ export function collectBridgeGeometry(): Face[] {
   if (a < 0 || b <= a || source.indexOf(start, a + start.length) !== -1)
     throw new Error('Roundhouse bridge geometry boundary changed');
   const createBatch = sourceFunction<(owner: { add: (mesh: THREE.Object3D) => void }, max: number) => BoxBatch>(
-    'src/entities/railway/works-box-view.ts',
+    'src/entities/railway/box-batch.ts',
     'createBoxBatch',
     { THREE, material },
   );

@@ -1,16 +1,18 @@
 // A turnout's parts from the two track centrelines that part at it (docs/plans/turnouts.md, "(b) Geometry from the two
 // centrelines"): where the frog is, the rails a pair of plain tracks does not draw (the diverging road's stock rail
-// from the toe, its open blade, its closure rail cut for the through rail's flangeway, the vee's leg, two wing rails
-// and two check rails) and how long each shared timber is. Drawn for the through road: the through road's own rails
-// are whole, so nothing here cuts them. Pure, no three.js; Local and cosmetic. Proportions are general railway
-// practice scaled to the 1 m gauge, the blade's throw exaggerated so it reads from a platform.
+// from the toe, its closure rail cut for the through rail's flangeway, the vee's leg, two wing rails and two check
+// rails), how long each shared timber is, and the moving parts (step 6): the two switch blades, each posed for the road
+// the points are set for, and where a line's points lever stands. The blades are the first metres of the two inner
+// rails, so whoever draws those rails cuts them out (track.ts) and src/entities/railway/turnout-blades.ts draws them.
+// Pure, no three.js; Local and cosmetic. Proportions are general railway practice scaled to the 1 m gauge, the blade's
+// throw exaggerated so it reads from a platform.
 
 export type XZY = { x: number; z: number; y: number };
 /** A track's centreline by metres from the toe (world metres; `y` its rail height, layout.railY). Behind the toe
  * (d < 0) both roads are the one track. */
 export type Centre = (d: number) => XZY;
 export type RailPiece = {
-  role: 'stock' | 'blade' | 'closure' | 'vee' | 'wing' | 'check';
+  role: 'stock' | 'closure' | 'vee' | 'wing' | 'check';
   /** Whose rail it lies beside or belongs to: a through-road part goes down with the through road's track. */
   road: 'through' | 'diverging';
   a: XZY;
@@ -20,7 +22,20 @@ export type RailPiece = {
   /** Its width, as a share of a plain rail's (a blade is planed thin toward its tip). */
   w: number;
 };
+/** A switch blade: an inner rail's first metres from its tip, which lies against the other road's stock rail when the
+ * points are set for its own road and stands off it by the throw when they are not. */
+export type Blade = {
+  /** Its heel, metres from the toe (its tip) along its road; the plain rail goes on from there. */
+  to: number;
+  /** Its centre at d (0..to), the points set `k` of the way over to the diverging road (0 the through road, 1 the
+   * diverging road; between while they move). A straight blend in `k`: the point moves on a line. */
+  at: (d: number, k: number) => XZY;
+  /** Its centre where nothing moves it: the plain inner rail it was cut from (no turnout there yet, or none now). */
+  plain: (d: number) => XZY;
+};
 export type Turnout = {
+  /** The toe: where the two roads part. */
+  toe: XZY;
   /** +1: the diverging road leaves to the right of the through road, looking from the toe; -1: to the left. */
   hand: 1 | -1;
   /** Where the two inner rails cross, metres from the toe: the first d with the centres a gauge apart. */
@@ -44,6 +59,10 @@ export type Turnout = {
    * outside the turnout. */
   span: (d: number) => readonly [number, number] | null;
   rails: RailPiece[];
+  /** [the through road's blade, the diverging road's]; a tie bar joins their tips. */
+  blades: readonly [Blade, Blade];
+  /** Where a line's points lever stands (on the headblocks, on the lever's side), and the through road's heading. */
+  lever: XZY & { yaw: number };
 };
 
 export const KIT = {
@@ -57,6 +76,9 @@ export const KIT = {
   bladeMax: 2.4,
   /** How far the open blade's tip stands off its stock rail, centre to centre. */
   throw: 0.14,
+  /** A blade's width at its tip and heel, as a share of a rail's: it is planed thin to lie against the stock rail. */
+  bladeTip: 0.45,
+  bladeHeel: 0.75,
   /** Clear between a running rail and the wing or check rail beside it. */
   flangeway: 0.08,
   wingPast: 0.9,
@@ -67,6 +89,10 @@ export const KIT = {
   /** The headblocks: timbers this far back from the toe, longer by `headblock` on the lever's side. */
   head: 1.5,
   headblock: 1.2,
+  /** A line's points lever: this far out from the through road's centre, abeam the toe (designer call 3), on the
+   * headblock behind it. */
+  leverOut: 2.0,
+  leverBack: 0.2,
 } as const;
 
 const EPS = 0.05;
@@ -117,15 +143,16 @@ function reach(f: (d: number) => number, target: number, from: number, to: numbe
 /** The turnout where `diverging` leaves `through`. `lever` is the side the points lever stands on (+1 the through
  * road's right), which the headblocks run out to. `plain`: where the diverging road's own plain rails already begin
  * (metres along it), when they are a line's and run on unbroken through the frog (track.ts: the gantry carries them).
- * Then the frog is an uncut crossing: `rails` holds only the open blade up to them, the wing and the check rails, and
- * no stock rail where it would lie on the through road's own. */
-export function turnout(through: Centre, diverging: Centre, lever: 1 | -1, plain?: number): Turnout {
+ * Then the frog is an uncut crossing: `rails` holds only the wing and the check rails, and no stock rail where it
+ * would lie on the through road's own. `blade`: the blades' length where the rails they are cut from want one (a heel
+ * on a rail joint leaves no sliver of rail: track.ts); `KIT.blade` of the lead otherwise. */
+export function turnout(through: Centre, diverging: Centre, lever: 1 | -1, plain?: number, blade?: number): Turnout {
   const REACH = 60;
   const offset = (d: number) => locate(through, diverging(d), d).lat;
   const hand: 1 | -1 = offset(reach((d) => Math.abs(offset(d)), 0.2, 0, REACH)) > 0 ? 1 : -1;
   const frogD = reach((d) => Math.abs(offset(d)), KIT.gauge, 0, REACH),
     clearD = reach((d) => Math.abs(offset(d)), KIT.sleeper, frogD, REACH);
-  const bladeLen = Math.min(KIT.bladeMax, Math.max(KIT.bladeMin, KIT.blade * frogD));
+  const bladeLen = blade ?? Math.min(KIT.bladeMax, Math.max(KIT.bladeMin, KIT.blade * frogD));
   const half = KIT.gauge / 2,
     // A wing or check rail's centre from the running rail's.
     gap = KIT.rail + KIT.flangeway;
@@ -175,14 +202,8 @@ export function turnout(through: Centre, diverging: Centre, lever: 1 | -1, plain
     const from = reach((d) => Math.abs(offset(d)), KIT.rail, 0, REACH);
     if (plain - from >= 0.5) run('stock', 'diverging', at(hand * half), from, plain);
   }
-  // Its inner rail starts as the open blade, its tip a throw off the through road's far rail, thin at the tip.
+  // Its inner rail starts as a blade (`blades`, below), then the closure rail.
   const throwAt = (d: number) => (d >= 0 && d < bladeLen ? KIT.throw * (1 - d / bladeLen) : 0);
-  const open = (d: number) => -hand * half + hand * throwAt(d);
-  // Where the plain rails begin within a blade's least length of the toe (line 2's J9) there is no room for one: the
-  // plain rail would meet its end a step off.
-  const bladeTo = plain !== undefined && plain < KIT.bladeMin ? 0 : Math.min(bladeLen, plainD);
-  run('blade', 'diverging', open, 0, bladeTo / 2, 0.45);
-  run('blade', 'diverging', open, bladeTo / 2, bladeTo, 0.75);
   // The closure rail stops a flangeway short of the through rail it would cross, and takes up again past it as the
   // vee's leg (the through rail itself is the vee's other leg).
   const closureEnd = reach(inner, half - gap, bladeLen, REACH);
@@ -228,7 +249,40 @@ export function turnout(through: Centre, diverging: Centre, lever: 1 | -1, plain
     return [lo, hi];
   };
 
+  // The blades. Near the toe each inner rail runs within a rail's width of the other road's stock rail (all four rails
+  // start as two), so a closed blade keeps that far in from it, never one rail inside another; open, it stands the
+  // throw in from it at the tip, easing to its own line at the heel. Both move together (a tie bar joins the tips).
+  const clear = (KIT.rail + KIT.rail * KIT.bladeTip) / 2 + 0.005;
+  /** How far a blade at d keeps in from its stock rail, closed and open. */
+  const gaps = (d: number) => {
+    const inset = Math.max(0, clear - Math.abs(offset(d)));
+    return { closed: inset, open: Math.max(throwAt(d), inset) };
+  };
+  const blades: readonly [Blade, Blade] = [
+    {
+      to: bladeLen,
+      at: (d, k) => {
+        const g = gaps(d);
+        return beside(through, d, hand * (half - g.closed - (g.open - g.closed) * k));
+      },
+      plain: (d) => beside(through, d, hand * half),
+    },
+    {
+      to: bladeLen,
+      at: (d, k) => {
+        const g = gaps(d);
+        return beside(diverging, d, -hand * (half - g.open + (g.open - g.closed) * k));
+      },
+      plain: (d) => beside(diverging, d, -hand * half),
+    },
+  ];
+  const heading = (d: number) => {
+    const t = frame(through, d).t;
+    return Math.atan2(t.x, t.z);
+  };
+
   return {
+    toe: through(0),
     hand,
     frogD,
     frogAngle,
@@ -240,5 +294,7 @@ export function turnout(through: Centre, diverging: Centre, lever: 1 | -1, plain
     throwAt,
     span,
     rails,
+    blades,
+    lever: { ...beside(through, -KIT.leverBack, lever * KIT.leverOut), yaw: heading(-KIT.leverBack) },
   };
 }

@@ -22,14 +22,16 @@ const STONE = '#c8c0b0',
   PLANK = '#b98a52';
 
 export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedView) {
-  const [{ H }, layout, home, { addFoot }, { layHomeYard }, { ROTUNDA_KIT, bayFrame }] = await Promise.all([
-    import('../../place/land.ts'),
-    import('../../place/layout.ts'),
-    import('../../place/home-station.ts'),
-    import('../../place/sites.ts'),
-    import('./home-yard.ts'),
-    import('../../place/rotunda.ts'),
-  ]);
+  const [{ H }, layout, home, { addFoot }, { layHomeYard }, { ROTUNDA_KIT, bayFrame }, { junctions }] =
+    await Promise.all([
+      import('../../place/land.ts'),
+      import('../../place/layout.ts'),
+      import('../../place/home-station.ts'),
+      import('../../place/sites.ts'),
+      import('./home-yard.ts'),
+      import('../../place/rotunda.ts'),
+      import('../../place/junctions.ts'),
+    ]);
   const world = (p: { x: number; z: number }): WorksPoint => ({ x: p.x + layout.ORIGIN.x, z: p.z });
   const ground = (p: WorksPoint) => H(p.x, p.z);
   const at = (a: number, c: number) => world(home.axisPoint(a, c));
@@ -181,16 +183,12 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
   }
 
   // ---------------------------------------------------------------- the spur and the stall roads
-  const lever = (p: WorksPoint, heading: number) => {
-    add(box(p.x, ground(p) + 0.18, p.z, 0.5, 0.36, 0.8, heading), POST, true);
-    add(box(p.x, ground(p) + 0.75, p.z, 0.08, 0.9, 0.08, heading), BRASS);
-  };
-  const side = (road: 0 | 1, s: number, lat: number) => {
-    const p = home.roadAt(road, s);
-    const n = { x: Math.cos((p.bearing * Math.PI) / 180), z: Math.sin((p.bearing * Math.PI) / 180) };
-    return world({ x: p.x + n.x * lat, z: p.z + n.z * lat });
-  };
-  lever(side(1, home.SPUR.s - 1.5, 2.4), yaw);
+  // The points levers' boxes (src/place/junctions.ts `stand`); each lever's arm throws with its blades
+  // (./turnout-blades.ts).
+  const stands = new Map(junctions().map((j) => [j.id, j.stand!]));
+  const stand = (id: string) => stands.get(id)!;
+  const j1 = stand('J1');
+  add(box(j1.x, ground(j1) + 0.18, j1.z, 0.5, 0.36, 0.8, yaw), POST, true);
   // Each bay's road is yard track (./home-yard.ts); the bays are the Roundhouse's to draw. The little guys walk round
   // the arc the rotunda stands in from arrival, built or a ruin (five bays: the site's second stage), by footprints.
   for (const bay of home.ROTUNDA_HOME.order.slice(0, home.ROTUNDA_HOME.stages[2])) {
@@ -207,10 +205,11 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
   const yardTrack = await yard.draw(owner);
   const legMesh = await drawWorksBoxes(
     owner,
-    [side(0, home.LEG.from + 1.5, -2.4), side(1, home.LEG.to + 1.5, 2.4)].flatMap((p): WorksBox[] => [
-      { ...box(p.x, ground(p) + 0.18, p.z, 0.5, 0.36, 0.8, yaw), colour: POST, solid: false },
-      { ...box(p.x, ground(p) + 0.75, p.z, 0.08, 0.9, 0.08, yaw), colour: BRASS, solid: false },
-    ]),
+    [stand('J3'), stand('J2')].map((p): WorksBox => ({
+      ...box(p.x, ground(p) + 0.18, p.z, 0.5, 0.36, 0.8, yaw),
+      colour: POST,
+      solid: false,
+    })),
   );
   legMesh.castShadow = true;
   const legLaid = () => line2Completed(adapter.read.world()) >= 1;
