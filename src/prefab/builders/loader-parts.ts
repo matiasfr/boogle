@@ -55,20 +55,9 @@ registerBuilder('railway.loader-parts', (p) => {
     // The town yard's jib, in its plot's frame (yard-shape.ts): the Works arm's paint and iron, a mast taller than the
     // shed, the boom out over the footings. It never moves; the view repaints `paint` with the Works arm's.
     const { jib, floor } = YARD;
-    // JIB_SOLIDS order: base, mast, boom, counterweight, pinnacle. The paint parts share one material the view repaints.
-    JIB_SOLIDS.forEach((b, i) =>
-      box(
-        root,
-        ['base', 'mast', 'boom', 'counterweight', 'pinnacle'][i]!,
-        b.dx,
-        b.dy,
-        b.dz,
-        b.hx * 2,
-        b.hy * 2,
-        b.hz * 2,
-        i === 1 || i === 2 || i === 4 ? paint : iron,
-      ),
-    );
+    // The paint parts share one material the view repaints through the mast.
+    for (const b of JIB_SOLIDS)
+      box(root, b.name, b.dx, b.dy, b.dz, b.hx * 2, b.hy * 2, b.hz * 2, b.paint ? paint : iron);
     box(root, 'slew', jib.x, jib.top - 0.08, jib.z, 0.62, 0.16, 0.62, iron);
     // Ties from the pinnacle to the boom's ends, thin iron like the arm's rope.
     for (const end of [jib.boomX0 + 0.15, jib.boomX1 - 0.15]) {

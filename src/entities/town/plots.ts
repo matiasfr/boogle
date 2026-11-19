@@ -18,7 +18,7 @@ import { advanceHold } from '../../components/hold/view.ts';
 import { railwayCommands, railwayWorldRead, onRailwayCommands } from '../railway/state.ts';
 import { Plot, Till } from '../../sim/railway-components.ts';
 import { loaderBuilt, plotPrice } from '../../sim/railway-queries-trade.ts';
-import { JIB_SOLIDS, LOADER_PAINT, YARD, shedCentre, yardHulls, type YardBox } from '../../place/yard-shape.ts';
+import { JIB_SOLIDS, LOADER_PAINT, YARD, footingHulls, shedEnvelope, type YardBox } from '../../place/yard-shape.ts';
 import { TOWN_BOARD, townPlotBoard } from '../../place/town-plan.ts';
 import { me } from '../../player/state.ts';
 import { type Interactable } from '../../player/hands.ts';
@@ -216,18 +216,11 @@ export function createTownPlots(owner: OwnedView) {
       const frame = new Matrix4()
         .makeTranslation(params.x, params.y, params.z)
         .multiply(new Matrix4().makeRotationY(building.yaw));
-      const { shed, jib: j, floor } = YARD;
-      const roof = shed.high + shed.beam + shed.board;
+      const { jib: j, floor } = YARD;
       const outlines: YardBox[] = [
-        {
-          dx: shedCentre.x,
-          dy: roof / 2,
-          dz: shedCentre.z,
-          hx: (shed.x1 - shed.x0) / 2 + shed.eave,
-          hy: roof / 2,
-          hz: (shed.z1 - shed.z0) / 2 + shed.eave,
-        },
-        ...yardHulls().slice(-YARD.footings.length - JIB_SOLIDS.length),
+        shedEnvelope(),
+        ...footingHulls(),
+        ...JIB_SOLIDS,
         {
           dx: j.hookX,
           dy: (floor + j.hookY + j.top) / 2,
@@ -370,6 +363,8 @@ export function createTownPlots(owner: OwnedView) {
           next = k;
           break;
         }
+      // The Works arm's own test, once a frame for every jib.
+      const yardBuilt = !!w && loaderBuilt(w, tick);
       for (const p of plots) {
         const id = w?.lookup(Plot, p.k),
           row = id === undefined ? undefined : w?.get(Plot, id);
@@ -388,10 +383,9 @@ export function createTownPlots(owner: OwnedView) {
         // The jib stands once the yard's frame is up and solid (its solids are the site's), bare until the yard is
         // built, then in the Works arm's yellow at the same tick. It never swings: nothing loads in town.
         p.jib?.setEnabled(p.site.bodies.length > 0);
-        const painted = !!w && loaderBuilt(w, tick);
-        if (p.jibPaint && painted !== p.painted) {
-          p.painted = painted;
-          p.jibPaint.color.set(painted ? LOADER_PAINT.built : LOADER_PAINT.bare);
+        if (p.jibPaint && yardBuilt !== p.painted) {
+          p.painted = yardBuilt;
+          p.jibPaint.color.set(yardBuilt ? LOADER_PAINT.built : LOADER_PAINT.bare);
         }
         if (holding === p.k) {
           if (!offered || money < price || !near(p.at)) release();

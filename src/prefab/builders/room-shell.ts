@@ -55,16 +55,16 @@ export function roomShell(p: JsonObject): ConstructionBuild {
 registerBuilder('town.room-shell', roomShell);
 
 // The loader yard's shed and footings (yard-shape.ts): one plan per frame, both phases, like a plot house's shell.
-const yards = new Map<string, Plan>();
+let yardKey = '',
+  yard: Plan | undefined;
 registerBuilder('town.yard-shell', (p): ConstructionBuild => {
   for (const key of ['x', 'y', 'z', 'yaw'] as const)
     if (typeof p[key] !== 'number' || !Number.isFinite(p[key])) throw new Error('yard: missing runtime frame');
   if (p.phase !== 'scaffold' && p.phase !== 'pieces') throw new Error('yard: unknown construction phase');
   const signature = JSON.stringify([p.x, p.y, p.z, p.yaw]);
-  let plan = yards.get(signature);
-  if (!plan) {
-    plan = yardPlan({ x: p.x as number, z: p.z as number, yaw: p.yaw as number }, p.y as number);
-    yards.set(signature, plan);
+  if (!yard || signature !== yardKey) {
+    yard = yardPlan({ x: p.x as number, z: p.z as number, yaw: p.yaw as number }, p.y as number);
+    yardKey = signature;
   }
-  return { construction: { plan, phase: p.phase, parts: plan[p.phase] } };
+  return { construction: { plan: yard, phase: p.phase, parts: yard[p.phase] } };
 });

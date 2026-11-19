@@ -1,7 +1,7 @@
 // Shared construction plans with explicit ground height, no world or game lifecycle.
 import * as THREE from 'three/webgpu';
 import { boxAt, place, type Box } from '../render/box-plan.ts';
-import { FOOTING_H, YARD, shedCentre, shedPosts, yardHulls } from './yard-shape.ts';
+import { FOOTING_H, SHED_TOP, YARD, shedCentre, shedPosts, yardHulls } from './yard-shape.ts';
 // ---------------------------------------------------------------- the plan of a building
 export type Hull = { dx: number; dy: number; dz: number; hx: number; hy: number; hz: number; room?: boolean };
 export type Plan = {
@@ -425,7 +425,8 @@ export function yardPlan(s: { x: number; z: number; yaw: number }, ground: numbe
     for (const side of [-1, 1])
       pieces.push(stonePart(fx + side * 0.27, base + footing.body, fz, 0.26, footing.shoulder, footing.w, '#d6cfbf'));
   }
-  const top = shed.high + shed.beam + shed.board;
+  const top = SHED_TOP,
+    poleTop = top + 0.8;
   return {
     x,
     y,
@@ -433,7 +434,7 @@ export function yardPlan(s: { x: number; z: number; yaw: number }, ground: numbe
     yaw,
     scaffold: [
       stonePart(0, -1, 0, YARD.w + 1.6, floor + 1, YARD.d + 1.6, '#b2ad9f'),
-      ...poles(timber, YARD.w, YARD.d, top + 0.8, 1.8),
+      ...poles(timber, YARD.w, YARD.d, poleTop, 1.8),
     ],
     pieces,
     FRAME,
@@ -442,7 +443,7 @@ export function yardPlan(s: { x: number; z: number; yaw: number }, ground: numbe
     hulls: yardHulls(),
     // Open sides: a shed going up round you moves you off the whole plot, like an open room shell.
     keepOut: { dx: 0, dy: top / 2, dz: 0, hx: YARD.w / 2 + 0.1, hy: top / 2, hz: YARD.d / 2 + 0.1 },
-    poles: poleHulls(YARD.w, YARD.d, top + 0.8, 1.8),
+    poles: poleHulls(YARD.w, YARD.d, poleTop, 1.8),
     hw: YARD.w / 2 + 0.8,
     hd: YARD.d / 2 + 0.8,
     smoke: null,

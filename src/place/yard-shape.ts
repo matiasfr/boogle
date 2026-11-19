@@ -1,6 +1,7 @@
 // The Round's loader yard, in its plot's frame (+z faces the ring road): an open shed, a jib and a stack of footings.
-// One table for the construction recipe, the solid record and the ghost, so what looks solid is solid. No imports.
-export type YardBox = { dx: number; dy: number; dz: number; hx: number; hy: number; hz: number };
+// One table for the construction recipe, the solid record and the ghost, so what looks solid is solid. Type imports only.
+import type { Hull } from './building-plans.ts';
+export type YardBox = Hull;
 
 /** Same 7.4 m square plot and 9 m plinth as a house; a low slab you walk onto. */
 export const YARD = {
@@ -31,13 +32,44 @@ export const shedPosts = (): [number, number][] =>
 export const shedCentre = { x: (shed.x0 + shed.x1) / 2, z: (shed.z0 + shed.z1) / 2 };
 /** The footing's layer height: its body plus the shoulders the next one sits on. */
 export const FOOTING_H = footing.body + footing.shoulder;
+/** The top of the shed's roof boards above the plot's ground. */
+export const SHED_TOP = shed.high + shed.beam + shed.board;
+/** The shed's whole envelope, ground to roof: the ghost's outline of it. */
+export const shedEnvelope = (): YardBox => ({
+  dx: shedCentre.x,
+  dy: SHED_TOP / 2,
+  dz: shedCentre.z,
+  hx: (shed.x1 - shed.x0) / 2 + shed.eave,
+  hy: SHED_TOP / 2,
+  hz: (shed.z1 - shed.z0) / 2 + shed.eave,
+});
+export const footingHulls = (): YardBox[] =>
+  YARD.footings.map(([x, layer, z]) => ({
+    dx: x,
+    dy: floor + (layer + 0.5) * FOOTING_H,
+    dz: z,
+    hx: footing.w / 2 + 0.01,
+    hy: FOOTING_H / 2,
+    hz: footing.w / 2 + 0.01,
+  }));
 
-/** The jib's solid parts: base, mast, boom, counterweight, pinnacle (the rope, hook and ties stay open, like the
+/** The jib's solid parts; `paint` ones wear the Works arm's colours (the rope, hook and ties stay open, like the
  * Works arm's). */
-export const JIB_SOLIDS: YardBox[] = [
-  { dx: jib.x, dy: floor + 0.25, dz: jib.z, hx: 0.55, hy: 0.25, hz: 0.55 },
-  { dx: jib.x, dy: (floor + 0.5 + jib.top) / 2, dz: jib.z, hx: 0.21, hy: (jib.top - floor - 0.5) / 2, hz: 0.21 },
+export const JIB_SOLIDS: (YardBox & { name: string; paint: boolean })[] = [
+  { name: 'base', paint: false, dx: jib.x, dy: floor + 0.25, dz: jib.z, hx: 0.55, hy: 0.25, hz: 0.55 },
   {
+    name: 'mast',
+    paint: true,
+    dx: jib.x,
+    dy: (floor + 0.5 + jib.top) / 2,
+    dz: jib.z,
+    hx: 0.21,
+    hy: (jib.top - floor - 0.5) / 2,
+    hz: 0.21,
+  },
+  {
+    name: 'boom',
+    paint: true,
     dx: (jib.boomX0 + jib.boomX1) / 2,
     dy: jib.top + 0.21,
     dz: jib.z,
@@ -45,8 +77,17 @@ export const JIB_SOLIDS: YardBox[] = [
     hy: 0.21,
     hz: 0.21,
   },
-  { dx: jib.boomX1 - 0.24, dy: jib.top - 0.35, dz: jib.z, hx: 0.23, hy: 0.35, hz: 0.45 },
-  { dx: jib.x, dy: jib.top + 0.9, dz: jib.z, hx: 0.1, hy: 0.48, hz: 0.1 },
+  {
+    name: 'counterweight',
+    paint: false,
+    dx: jib.boomX1 - 0.24,
+    dy: jib.top - 0.35,
+    dz: jib.z,
+    hx: 0.23,
+    hy: 0.35,
+    hz: 0.45,
+  },
+  { name: 'pinnacle', paint: true, dx: jib.x, dy: jib.top + 0.9, dz: jib.z, hx: 0.1, hy: 0.48, hz: 0.1 },
 ];
 
 /** Every solid box, centre and half extents above the plot's ground. The first is the slab. */
@@ -82,15 +123,8 @@ export function yardHulls(): YardBox[] {
       hy: YARD.stack.h / 2,
       hz: YARD.stack.d / 2,
     },
-    ...YARD.footings.map(([x, layer, z]) => ({
-      dx: x,
-      dy: floor + (layer + 0.5) * FOOTING_H,
-      dz: z,
-      hx: footing.w / 2 + 0.01,
-      hy: FOOTING_H / 2,
-      hz: footing.w / 2 + 0.01,
-    })),
-    ...JIB_SOLIDS,
+    ...footingHulls(),
+    ...JIB_SOLIDS.map(({ dx, dy, dz, hx, hy, hz }) => ({ dx, dy, dz, hx, hy, hz })),
   ];
 }
 
