@@ -128,8 +128,6 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   trains.holdBoiler(line2.boilerFlying);
   const halts = await createRailwayHalts(adapter, owner);
   const homeStation = await import('./home-station-view.ts').then((m) => m.createHomeStation(adapter, owner));
-  // Every junction's moving blades and levers, cut out of both lines' rails.
-  const points = createTurnoutBlades(adapter, owner, [...track.points, ...line2.points]);
   const flying = () => ({
     logs: cart.flying().logs + trains.trainFlying().logs,
     rails: cart.flying().rails + trains.trainFlying().rails,
@@ -151,6 +149,8 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       )
     : null;
   if (works) trains.footPlaces(works.footPlaces);
+  // Every junction's moving blades and levers, cut out of both lines' rails and the railhead's and the stack's.
+  const points = createTurnoutBlades(adapter, owner, [...track.points, ...line2.points, ...(works?.points ?? [])]);
   if (look.LOOK.contact)
     kit.installContact(
       [machine.flatbed, machine.loco],

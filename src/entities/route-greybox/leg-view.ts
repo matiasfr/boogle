@@ -7,7 +7,9 @@
 //
 //   the deck      a slab, two tracks and sea bents as far as the line's end (each section's end; a section laying grows
 //                 over its lay clock), with the buffers and the end board at that end. The stack line runs on from Ring
-//                 Island's platforms along line 2 (at stage 0 its end is the island's run-off); the incline and the
+//                 Island's platforms along line 2 (at stage 0 its end is the island's run-off), with a crossover at
+//                 each head and before High Gorge's platforms (J12, src/place/junctions.ts: timbers, wing and check
+//                 rails, the blades cut out of its rails, which railway/turnout-blades.ts draws moving); the incline and the
 //                 bay cut are lines of their own (railway/row-path.ts), with buffers at their start and their turnouts
 //   the site      the current section's frame, its bill sign, the rack and its plate (on Ring Island's west platform,
 //                 High Gorge's and the West landing's for section 1, then at each railhead), and High Gorge's yard
@@ -54,6 +56,9 @@ import { createBoxBatch } from '../railway/works-box-view.ts';
 import { legKitFlight, paintPlate } from '../railway/kit-board.ts';
 import { legYardFlight, legYardSpot } from '../railway/leg-yard.ts';
 import { LINE2_END_S, line2At, line2World, line2Y } from '../railway/line2-path.ts';
+import type { TrackPoint } from '../railway/track.ts';
+import { crossoverPlan, seaCrossovers, uncut, type RailCut } from '../../place/junctions.ts';
+import { KIT } from '../../place/turnout.ts';
 import {
   BAY_KINK,
   ROW_PLATFORM,
@@ -122,6 +127,7 @@ const GREY = '#9c9ea1',
   RAIL = '#45474b',
   BED = '#77705f',
   DANGER = '#c8402c',
+  TIMBER = '#5e574a',
   CLEAR = '#3c8f4a';
 const SEG = 10,
   SEA_BED = -8;
@@ -433,18 +439,53 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         -pitch,
       );
     }
-    /** A track from (`s0`, `lat0`) to (`s1`, `lat1`): its bed and two rails. */
-    function track(s0: number, s1: number, lat0: number, lat1: number) {
+    /** A track from (`s0`, `lat0`) to (`s1`, `lat1`): its bed and two rails, less the blades `cuts` takes out. */
+    function track(s0: number, s1: number, lat0: number, lat1: number, cuts: readonly RailCut[] = []) {
       along(s0, s1, lat0, lat1, 0.13, 2.4, 0.1, BED);
-      for (const r of [-0.5, 0.5]) along(s0, s1, lat0 + r, lat1 + r, 0.29, 0.12, 0.14, RAIL);
+      for (const r of [-0.5, 0.5])
+        for (const [a, b] of lat0 === lat1 ? uncut(s0, s1, lat0 + r, cuts) : [[s0, s1]])
+          along(a!, b!, lat0 + r, lat1 + r, 0.29, 0.12, 0.14, RAIL);
+    }
+    // The stack's crossovers (J12): each drawn once the deck reaches past its far toe's headblocks, its two toes'
+    // blades cut out of the plain rails from then on.
+    const crossings = sp.row
+      ? []
+      : seaCrossovers()
+          .filter((c) => c.view === 'stack')
+          .map((c) => ({ c, plan: crossoverPlan(c), reach: c.s1 + KIT.head }));
+    /** One crossover's timbers (on the beds, under the rails), its two rails, and its wing and check rails. */
+    function crossover({ plan }: (typeof crossings)[number]) {
+      for (const t of plan.timbers) {
+        const mid = (t.lo + t.hi) / 2;
+        along(t.s - 0.15, t.s + 0.15, mid, mid, 0.17, t.hi - t.lo, 0.08, TIMBER);
+      }
+      for (const r of plan.rails) along(r.a.s, r.b.s, r.a.lat, r.b.lat, 0.29, 0.12, 0.14, RAIL);
+      for (const { a, b, w } of [...plan.ta.rails, ...plan.tb.rails]) {
+        const run = Math.hypot(b.x - a.x, b.z - a.z);
+        // A rail piece's centre is TOP (0.1 m) over its centreline (junctions.ts puts that 0.12 m over line2Y).
+        deck.box(
+          (a.x + b.x) / 2,
+          (a.y + b.y) / 2 + 0.1,
+          (a.z + b.z) / 2,
+          0.12 * w,
+          0.14,
+          Math.hypot(run, b.y - a.y),
+          RAIL,
+          Math.atan2(b.x - a.x, b.z - a.z),
+          -Math.atan2(b.y - a.y, run),
+        );
+      }
     }
     const bentFree = (s: number) => !sp.noBents.some(([a, b]) => s >= a && s <= b);
     /** Into the shared deck batch: the deck to `end`, and (a row's) the turnouts the line uses at `laid`. */
     function drawDeck(end: number, laid: number) {
+      const down = crossings.filter((x) => end >= x.reach),
+        cuts = down.flatMap((x) => x.plan.cuts);
+      for (const x of down) crossover(x);
       for (let s0 = sp.from; s0 < end - 1e-6; s0 += SEG) {
         const s1 = Math.min(end, s0 + SEG);
         along(s0, s1, mid, mid, 0, sp.width, 0.5, GREY);
-        for (const t of tracks) track(s0, s1, t, t);
+        for (const t of tracks) track(s0, s1, t, t, cuts);
         // A bent every 20 m where the deck stands clear of the ground: two posts to the sea bed and a cap.
         if (Math.round((s0 - sp.from) / SEG) % 2 === 0 && bentFree(s0)) {
           const y = geo.y(s0);
@@ -607,8 +648,16 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         const t = train(wd, slot);
         return t.phase === TRAIN_PHASE.STAND && t.at < 0 && Math.abs(t.from / 100 - s) < 80;
       });
+    /** Its crossovers' toes for turnout-blades.ts: laid while the deck as drawn reaches past them. */
+    const points: TrackPoint[] = crossings.flatMap((x) =>
+      [
+        { j: x.c.a, t: x.plan.ta },
+        { j: x.c.b, t: x.plan.tb },
+      ].map((p) => ({ ...p, from: 0, laid: () => deckEnd >= x.reach, retired: () => false })),
+    );
     return {
       sp,
+      points,
       endBoard,
       signalPlates,
       departures,
@@ -1021,6 +1070,8 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
   const v3 = (p: { x: number; z: number }, y: number) => new THREE.Vector3(p.x, y, p.z);
   draw();
   return {
+    /** The stack's crossovers' toes (J12), for railway/turnout-blades.ts. */
+    points: legs.flatMap((l) => l.points),
     restore: draw,
     update: draw,
     accepted() {},

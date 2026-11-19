@@ -43,7 +43,8 @@ const blend = (a: XZY, b: XZY, k: number): XZY => ({
   z: lerp(a.z, b.z, k),
 });
 
-/** `points`: every line junction from both lines' tracks (track.ts `points`), J1 to J9. */
+/** `points`: every junction whose parts are drawn: both lines' (track.ts `points`, J1 to J9), the railhead's (J10,
+ * moving with the head) and the greybox stack's (J12). */
 export function createTurnoutBlades(adapter: RailwayAdapter, owner: OwnedView, points: readonly TrackPoint[]) {
   const read = adapter.read;
   const shuntPath = createShuntPath();
@@ -68,19 +69,23 @@ export function createTurnoutBlades(adapter: RailwayAdapter, owner: OwnedView, p
       from: 0,
       to: 0 as 0 | 1,
       u: 1,
+      /** Metres along its line it stands from where its turnout was built (TrackPoint.moved), as last drawn. */
+      ds: 0,
     };
   });
   let settled = false;
 
+  /** Where the junction being drawn has moved to (TrackPoint.moved): added to every point of it. */
+  const by = { x: 0, y: 0, z: 0 };
   /** A box from `a` to `b` (world, centres), `w` wide and `h` high, `dy` over them. */
   const span = (a: XZY, b: XZY, w: number, h: number, dy: number, colour: string) => {
     const dx = b.x - a.x,
       dz = b.z - a.z,
       len = Math.hypot(dx, dz);
     batch.box(
-      (a.x + b.x) / 2,
-      (a.y + b.y) / 2 + dy,
-      (a.z + b.z) / 2,
+      (a.x + b.x) / 2 + by.x,
+      (a.y + b.y) / 2 + dy + by.y,
+      (a.z + b.z) / 2 + by.z,
       w,
       h,
       len,
@@ -93,7 +98,13 @@ export function createTurnoutBlades(adapter: RailwayAdapter, owner: OwnedView, p
     batch.begin();
     for (const s of junctions) {
       if (s.shown === 'hidden') continue;
-      const { t, from } = s.point;
+      const { j, t, from } = s.point;
+      // A moving junction's parts translate along its straight, evenly graded line.
+      const c0 = j.through(0),
+        c1 = s.ds ? j.through(j.dir * s.ds) : c0;
+      by.x = c1.x - c0.x;
+      by.y = c1.y - c0.y;
+      by.z = c1.z - c0.z;
       if (s.shown === 'plain') {
         // No turnout here (yet, or any more): the cut is plain rail again, the through road's inner rail.
         const rail = t.blades[0];
@@ -113,13 +124,13 @@ export function createTurnoutBlades(adapter: RailwayAdapter, owner: OwnedView, p
       span(a, b, 0.08, 0.03, 0.06, IRON);
       const near = (a.x - b.x) * (pivot.x - b.x) + (a.z - b.z) * (pivot.z - b.z) > 0 ? a : b;
       span(near, { ...pivot, y: near.y }, 0.05, 0.03, 0.06, IRON);
-      if (own) batch.box(pivot.x, pivot.y - 0.15, pivot.z, 0.5, 0.3, 0.8, POST, yaw);
+      if (own) batch.box(pivot.x + by.x, pivot.y - 0.15 + by.y, pivot.z + by.z, 0.5, 0.3, 0.8, POST, yaw);
       // The arm leans away from the track for the through road and toward it for the diverging road.
       const lean = toward * LEAN * (1 - 2 * k);
       batch.box(
-        pivot.x - Math.sin(lean) * Math.cos(yaw) * (ARM / 2),
-        pivot.y + Math.cos(lean) * (ARM / 2),
-        pivot.z + Math.sin(lean) * Math.sin(yaw) * (ARM / 2),
+        pivot.x - Math.sin(lean) * Math.cos(yaw) * (ARM / 2) + by.x,
+        pivot.y + Math.cos(lean) * (ARM / 2) + by.y,
+        pivot.z + Math.sin(lean) * Math.sin(yaw) * (ARM / 2) + by.z,
         0.08,
         ARM,
         0.08,
@@ -141,7 +152,12 @@ export function createTurnoutBlades(adapter: RailwayAdapter, owner: OwnedView, p
     for (const s of junctions) {
       const p = s.point;
       const shown: Shown = !p.laid() ? 'hidden' : p.retired() || (p.j.when === 'leg' && !legLaid) ? 'plain' : 'live';
-      const to = shown === 'live' ? routeOf(p, rows) : 0;
+      const ds = p.moved?.() ?? 0;
+      if (ds !== s.ds) {
+        s.ds = ds;
+        dirty = true;
+      }
+      const to = shown === 'live' ? routeOf(ds ? { j: { ...p.j, s: p.j.s + ds }, t: p.t } : p, rows) : 0;
       // Points that come into view, or a first or restored frame, are simply where they lie; a live change throws.
       const snap = !settled || shown !== s.shown;
       if (shown !== s.shown) dirty = true;
@@ -150,7 +166,7 @@ export function createTurnoutBlades(adapter: RailwayAdapter, owner: OwnedView, p
         s.from = lerp(s.from, s.to, smoothstep(0, 1, s.u));
         s.to = to;
         s.u = snap ? 1 : 0;
-        if (!snap) clank(p.t.toe.x, p.t.toe.z);
+        if (!snap) clank(p.j.through(p.j.dir * ds).x, p.j.through(p.j.dir * ds).z);
         dirty = true;
       } else if (snap) s.u = 1;
       if (s.u < 1) {

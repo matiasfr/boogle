@@ -5,6 +5,8 @@
 //  - Q7's deck: the double deck over bents 1-6 (the bents are ./crossing-view.ts's), laid a panel at a time as the job
 //    lays them (`linePanelCount`), planks, both tracks' rails, stringers, and the plank footway on its east edge from
 //    the pad to where the railhead's walkway begins. Solid as it is laid (one slab a panel); the sim reads none of it.
+//    Once the railhead opens, the two inner rails past INNER_FROM are railhead-view.ts's: the first heads' crossovers
+//    (J10) stand on this deck, and that view cuts their blades out of them as the head moves.
 // Local view over the read facade (`adapter.read`); a restore shows what is laid without dropping it.
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -16,6 +18,7 @@ import { linePanelCount } from '../../sim/railway-line-schedule.ts';
 import { line2Jobs, q7Laid, timingOf } from '../../sim/railway-queries.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { createBoxBatch } from './works-box-view.ts';
+import { INNER_FROM } from './railhead-shape.ts';
 import { RING_S, line2At, line2World, line2Y } from './line2-path.ts';
 
 /** The formation: lat -5.8 to +1.8, the down track at 0 and the up track at OFFSET_LAT (src/sim/railway-ring-layout.ts
@@ -50,6 +53,8 @@ type Piece = {
   group: 'relay' | number;
   /** Its metre along the line, for the sweep. */
   at: number;
+  /** One of the two inner rails past INNER_FROM, which railhead-view.ts draws once the railhead is open. */
+  taken?: true;
   x: number;
   y: number;
   z: number;
@@ -63,6 +68,8 @@ type Piece = {
   /** Seconds on the view's clock it showed (-Infinity: settled). */
   born: number;
 };
+
+type Laid = { relay: boolean; panels: number; open: boolean };
 
 export function createRingDeck(adapter: RailwayAdapter, owner: OwnedView, track: { retire(on: boolean): number }) {
   const pieces: Piece[] = [];
@@ -150,7 +157,10 @@ export function createRingDeck(adapter: RailwayAdapter, owner: OwnedView, track:
   for (let s = DECK_FROM; s < DECK_TO - 1e-6; s += PANEL_M / 2) {
     const g = panelOf(s + 0.1);
     for (const track of [0, OFFSET_LAT])
-      for (const r of [-0.5, 0.5]) put(g, s + PANEL_M / 4, track + r, TOP, 0.1, 0.12, PANEL_M / 2, COLOURS.rail);
+      for (const r of [-0.5, 0.5]) {
+        put(g, s + PANEL_M / 4, track + r, TOP, 0.1, 0.12, PANEL_M / 2, COLOURS.rail);
+        if ((track === 0) === r < 0 && s >= RING_S + INNER_FROM - 1e-6) pieces.at(-1)!.taken = true;
+      }
     // The footway's bearers, out from the deck's edge under its planks.
     if (s + PANEL_M / 4 > WALK.from && s + PANEL_M / 4 < WALK.to)
       put(
@@ -172,7 +182,7 @@ export function createRingDeck(adapter: RailwayAdapter, owner: OwnedView, track:
   const batch = createBoxBatch(owner, pieces.length + 8);
   const bodies = new Map<string, ReturnType<typeof slab>>();
   let clock = 0,
-    shown = { relay: false, panels: 0 },
+    shown: Laid = { relay: false, panels: 0, open: false },
     settle = true,
     animating = 0;
   const wantSolid = (key: string, on: boolean, make: () => ReturnType<typeof slab>) => {
@@ -213,19 +223,21 @@ export function createRingDeck(adapter: RailwayAdapter, owner: OwnedView, track:
       });
     }
   }
-  /** What the room has laid: whether the relay is down, and how many of Q7's panels. */
-  function laid(): { relay: boolean; panels: number } {
+  /** What the room has laid: whether the relay is down, how many of Q7's panels, and whether the railhead is open
+   * (railhead-view.ts `opened`: it draws the inner rails past INNER_FROM). */
+  function laid(): Laid {
     const wd = adapter.read.world();
-    if (!adapter.read.ready() || !line2Trains(wd)) return { relay: false, panels: 0 };
-    if (q7Laid(wd)) return { relay: true, panels: LINE2_STATIONS[Q7]!.panels };
+    if (!adapter.read.ready() || !line2Trains(wd)) return { relay: false, panels: 0, open: false };
+    if (q7Laid(wd)) return { relay: true, panels: LINE2_STATIONS[Q7]!.panels, open: adapter.read.whole() };
     const { job, run } = line2Jobs(wd, adapter.read.tick())[Q7]!;
     return {
       relay: false,
+      open: false,
       panels: job.start < 0 ? 0 : linePanelCount(LINE2_STATIONS[Q7]!, run.elapsed, timingOf(job)),
     };
   }
-  const visible = (p: Piece, now: { relay: boolean; panels: number }) =>
-    p.group === 'relay' ? now.relay : p.group < now.panels;
+  const visible = (p: Piece, now: Laid) =>
+    (p.group === 'relay' ? now.relay : p.group < now.panels) && !(p.taken && now.open);
   function draw() {
     batch.begin();
     for (const p of pieces) {
@@ -241,7 +253,7 @@ export function createRingDeck(adapter: RailwayAdapter, owner: OwnedView, track:
   function update(dt: number) {
     clock += dt;
     const now = laid();
-    if (now.relay !== shown.relay || now.panels !== shown.panels) {
+    if (now.relay !== shown.relay || now.panels !== shown.panels || now.open !== shown.open) {
       // A live edge: what is new drops in (the relay in a sweep from the old merge outward), what went (a rewind) goes.
       for (const p of pieces) {
         const was = visible(p, shown),
@@ -272,7 +284,7 @@ export function createRingDeck(adapter: RailwayAdapter, owner: OwnedView, track:
   function restore() {
     settle = true;
     for (const p of pieces) p.born = -Infinity;
-    shown = { relay: false, panels: 0 };
+    shown = { relay: false, panels: 0, open: false };
     track.retire(false);
     for (const key of [...bodies.keys()]) wantSolid(key, false, () => null as never);
     const now = laid();
