@@ -22,6 +22,7 @@ import { createGarageSelection, type Focus } from './garage-selection.ts';
 import {
   BOILERS,
   INSTALL_ID,
+  momentFrom,
   INSTALL_PART,
   isInstall,
   MOMENT,
@@ -818,7 +819,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     if (part === 4) cradleCopy.root.visible = false;
     pipe.visible = part === 2;
     for (const b of bolts) b.visible = false;
-    spinRate = part === 4 ? today() : speedMs(BOILERS[part === 1 ? 'boiler' : part === 3 ? 'long' : 'table'].speed);
+    spinRate = part === 4 ? today() : speedMs(BOILERS[momentFrom(momentPart)].speed);
     phase = 'moment';
     partGroup.visible = true;
     if (hanging) ms = Math.min(ms, MOMENT.quiet - 0.001);
@@ -1060,12 +1061,12 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
         ? Math.sin((ms - MOMENT.answer) / 28) * 0.026 * Math.max(0, 1 - (ms - MOMENT.answer) / 300)
         : 0;
 
-    // Wheels and chuff at the room's fit. Through a moment the wheels run up from the standard boiler's rate (the
+    // Wheels and chuff at the room's fit. Through a moment the wheels run up from the boiler the part replaces (the
     // rows may already say fitted).
     const spin =
       phase === 'moment'
         ? THREE.MathUtils.lerp(
-            speedMs(BOILERS[momentPart === 'blast' ? 'boiler' : 'table'].speed),
+            speedMs(BOILERS[momentFrom(momentPart)].speed),
             spinRate,
             answered ? Math.min(1, (ms - MOMENT.answer) / 600) : 0,
           )
