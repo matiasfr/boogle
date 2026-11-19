@@ -485,10 +485,10 @@ export async function createRailwayRoundhouse(
     // A handle on the bridge's end that travels with it: what you turn.
     const handle = handleAt(drawn);
     batch.box(handle.x, tableY + 0.6, handle.z, 0.16, 1, 0.16, BRASS, drawn);
-    // The deck is solid where it rests; for a turn its boxes go (a turning deck would shove whoever stands by it), and
-    // whoever stands on it as the turn starts rides it round instead (./railhead-state.ts, createTableRide). They come
-    // back at the yaw it stops at; a player inside them then (dropped into the pit, or walked under it) is moved clear
-    // to the deck's nearest side first (../../place/site-clearance.ts), never lifted through it.
+    // The deck is solid where it rests; for a turn its boxes go (a turning deck would shove whoever is in the pit), and
+    // whoever stands on it rides it round instead (./railhead-state.ts, createTableRide). They come back at the yaw it
+    // stops at; a player inside them then (in the pit under it) is first moved out of its nearest side, at their own
+    // height, still in the pit (../../place/site-clearance.ts).
     const still = !tableTurning && drawn === deckDrawn;
     deckDrawn = drawn;
     if (deckBodies.length && (!still || drawn !== deckBodyYaw)) {
@@ -515,7 +515,10 @@ export async function createRailwayRoundhouse(
       if (b && !clearOfBridge(table, R, drawn, deckTop, b.position)) {
         const foot = { x: table.x, z: table.z, c: Math.cos(drawn), s: Math.sin(drawn), hw: DECK.w / 2, hd: R };
         const solids = parts.map((part) => ({ dx: part.x, dy: part.y, dz: part.z, ...part.half }));
-        const exit = siteExit(b.position, foot, 0, solids, outOf, undefined, 0.05);
+        // Out of the deck's sides only, at their own height: stretched along, the foot leaves no way out of its ends
+        // (past the end they would be put over the pit's wall onto the kerb).
+        const sideways: typeof outOf = (f, at, r) => outOf({ ...f, hd: f.hd + 50 }, at, r);
+        const exit = siteExit(b.position, foot, 0, solids, sideways, undefined, 0.05);
         if (exit) b.position.set(exit.x, b.position.y, exit.z);
       }
       for (const part of parts)
@@ -534,7 +537,7 @@ export async function createRailwayRoundhouse(
         );
       deckBodyYaw = drawn;
     }
-    ride.update(drawn, !still, dt);
+    ride.update(drawn, dt);
   }
   /**
    * Where the wagon and shunter stand and how far the deck has turned, from `ready` and the mover clock alone (so a
