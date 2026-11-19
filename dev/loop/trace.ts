@@ -57,6 +57,7 @@ const ABILITY: Record<string, string> = {
   glide: 'glider gained',
   axe: 'proper axe gained',
   pack: 'pack gained',
+  yoke: 'yoke gained',
 };
 function current(e: Ev): Ev {
   const n = str(e.n);

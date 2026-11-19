@@ -21,6 +21,7 @@ import { legKitLifted } from './railway-sys-route-kit.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { RAILWAY_MAX_INT } from './railway.ts';
 import { railPos } from './railway-route.ts';
+import { line2YokeReady } from './railway-queries-line2.ts';
 import {
   Account,
   Aperture,
@@ -303,6 +304,13 @@ export const depotRailTake = defineSystem(
 export const pack = defineSystem('rail.pack', { reads: [Forge], writes: [Rail], phase: 'act', order: 26 }, (w) => {
   if (w.get(Forge, forgeId(w))!.used < FORGE.bills[0] || w.get(Rail, railId(w))!.pack) return 0;
   w.mut(Rail, railId(w))!.pack = true;
+  return 1;
+});
+/** The Rail yoke: made at the forge rail rack once Q1's bill is in (forge-made rewards); one take gives every back
+ * RAILWAY_CAPACITY.railsYoke rails instead of 8. */
+export const yoke = defineSystem('rail.yoke', { reads: [QJob], writes: [Rail], phase: 'act', order: 27 }, (w) => {
+  if (!line2YokeReady(w) || w.get(Rail, railId(w))!.yoke) return 0;
+  w.mut(Rail, railId(w))!.yoke = true;
   return 1;
 });
 // Before Q3 the drive is uncoupled: a pull does nothing, even from a jump onto the apron.

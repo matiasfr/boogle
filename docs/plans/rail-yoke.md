@@ -1,4 +1,4 @@
-> **Status: planned (2026-11-19), not built.** Backlog row (P3): "The rails' own capacity upgrade: rails start at 8 on
+> **Status: steps 1 and 2 built (2026-11-19, world `v64`, branch `claude/rail-yoke-rules`); steps 3 to 6 not built.** Backlog row (P3): "The rails' own capacity upgrade: rails start at 8 on
 > everyone's back, and a later upgrade raises them". Brief: [rails-capacity-upgrade](../brainstorms/rails-capacity-upgrade.md).
 > Decision: [rewards, 18 November](../decisions-rewards.md#d-2026-11-18-decisions-page-rewards). Base: `origin/main`
 > `99207c548`, world `v62`. Steps 1 and 2 change rules, wire, save and seeds (one `WORLD_NS` bump, independent review).
@@ -210,15 +210,15 @@ the server's own `rail-<WORLD_NS>-`.
   for `rail-<next>-…`. The old server doesn't host it, so the tab can't join the railway room until the server
   deploys. It retries; I did not verify what it shows meanwhile. Tabs already joined to the old room keep playing the
   old world.
-- **Old client, new server:** the old tab's `rail-v62-…` is no longer a current room, so it is refused. The update
-  notice (`version.json`) brings it onto the new build. Boot cleanup retires the v62 saves: the world reset the
+- **Old client, new server:** the old tab's `rail-v63-…` is no longer a current room, so it is refused. The update
+  notice (`version.json`) brings it onto the new build. Boot cleanup retires the v63 saves: the world reset the
   decision accepted.
 - **Ship order:** steps 1 and 2 in one ship (one review), with nothing ordered by hand. Pages and the server deploy
   from the same merge. For about 20 minutes new tabs wait for the server; that gap is accepted under "No old builds in
   development". No compatibility code. Steps 3 to 6 are client and dev only and ship on their own. Until step 4 ships,
   nothing in the live room offers the yoke, so live backs stay at 8 rails; seeded jump-ins from `q2` on already have it.
 
-`WORLD_NS`: **the next free version** (v63 if nothing takes it first), with a dated history line in
+`WORLD_NS`: **the next free version**, `v64` (the track layer's slower start took v63 first), with a dated history line in
 `src/world/namespace.ts`: "the Rail yoke: `Rail.yoke` and `rail.yoke`, rails 8 → 16 once taken
 (docs/plans/rail-yoke.md); no migration."
 
@@ -227,7 +227,7 @@ the server's own `rail-<WORLD_NS>-`.
 Each step leaves `node dev/ship-check.ts` green. The extra checks named for a step are its builder's. Looks use a
 disposable production room.
 
-- [ ] **1. The rule, the wire, the save and the world bump.** Seeds unchanged.
+- [x] **1. The rule, the wire, the save and the world bump.** Seeds unchanged.
   - `src/sim/railway-layout.ts`: `railsYoke: 16`.
   - `src/sim/railway-components.ts`: `Rail` gains `yoke: 'bool'`, appended after `shelfOut`.
   - `src/sim/railway-line2-layout.ts`: `LINE2_YOKE`, with its comment (Place's `PROPS.yoke`, pinned by
@@ -243,7 +243,7 @@ disposable production room.
   - `src/adapters/railway-intents.ts`, `railway-effects.ts`, `railway-marks.ts`: the union, validator, `NOT_MATERIAL`,
     `takeYoke`, the done check and the mark.
   - `dev/playtest/beats.ts`, `dev/loop/trace.ts`, `dev/peer-test/ws-page.ts`: the mark, the beat and the case.
-  - `src/world/namespace.ts`: the next free version and its line.
+  - `src/world/namespace.ts`: the next free version (`v64`) and its line.
   - `src/sim/railway-seed-route.ts`: split `railwayAtQ2` into two exported helpers, neither of them a stage:
     - `railwayAtQ1Last(): Seed`: forge lit, axe taken, Q1's 16 logs and 5 of its 6 rails in, `a` still carrying rails;
     - `railwayAtQ1Funded(): Seed`: the same plus the last rail, then `need(qjob(w, 0).start >= 0, "Q1's bill in")`.
@@ -274,14 +274,14 @@ disposable production room.
     `test/fixtures/railway-m12-trace.json`, `test/fixtures/railway-tick-order-heads.json` and
     `server/test/fixtures/world-host-trace.jsonl.gz`. Each gets its dated note: `test/railway-m12.test.ts`'s header,
     `server/test/world-host-trace.test.ts`'s header, and `test/railway-ops.test.ts`'s first line. Before regenerating,
-    a keyed comparison against the v62 fixtures must show only a `false` `yoke` column added and the hashes that
+    a keyed comparison against the v63 fixtures (main's when built; the plan was written at v62) must show only a `false` `yoke` column added and the hashes that
     follow from it. No tick, length, input or result may change, because no seed takes the yoke yet.
   - **Check:** ship-check. Then the whole server suite (`cd server && npm test`), `npm run test:net` (goldens moved),
     `npm run level-check`, and `npm run loop -- run` (unchanged order, no softlock).
   - *Risk: **high** (rule, wire, save and server validation). **Independent review required**: room-safety "Don't",
     mixed-builds, the keyed fixture comparison and the host test.*
 
-- [ ] **2. The seeds and the loop take the yoke** (seed data only: no bump,
+- [x] **2. The seeds and the loop take the yoke** (seed data only: no bump,
   [seed goldens](../agents/owner-calls.md#seed-goldens)).
   - `src/sim/railway-seed-route.ts`: in `railwayAtQ2`, straight after `railwayAtQ1Funded()`, add
     `need(act(s, 'a', 'rail.yoke') === 1, 'the rail yoke')`. `act` returns 0 silently on a refusal, so the `need` is

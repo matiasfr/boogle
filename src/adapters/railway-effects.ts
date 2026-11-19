@@ -109,14 +109,16 @@ export const holds = (w: World, op: string, event?: RailwayIntent) =>
             ? railRow(w).sea
             : op === 'rail.pack'
               ? railRow(w).pack
-              : op === 'rail.glide'
-                ? railRow(w).glide
-                : op === 'rail.strike' && event?.op === 'rail.strike'
-                  ? event.id === 2
-                    ? aperture(w).joined >= 0
-                    : !!(worksRow(w).seams & (event.id ? 2 : 1))
-                  : op === 'rail.brace'
-                    ? aperture(w).brace !== 1
-                    : op === 'rail.turn' && event?.op === 'rail.turn'
-                      ? shedRow(w).table === event.to
-                      : false;
+              : op === 'rail.yoke'
+                ? railRow(w).yoke
+                : op === 'rail.glide'
+                  ? railRow(w).glide
+                  : op === 'rail.strike' && event?.op === 'rail.strike'
+                    ? event.id === 2
+                      ? aperture(w).joined >= 0
+                      : !!(worksRow(w).seams & (event.id ? 2 : 1))
+                    : op === 'rail.brace'
+                      ? aperture(w).brace !== 1
+                      : op === 'rail.turn' && event?.op === 'rail.turn'
+                        ? shedRow(w).table === event.to
+                        : false;

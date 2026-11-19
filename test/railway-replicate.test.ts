@@ -12,7 +12,7 @@ import { Account, Job, Rail, Tree } from '../src/sim/railway-components.ts';
 import type { RailAction } from '../src/sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { LINE1_STATIONS, LINE1_INITIAL } from '../src/sim/railway-line-layout.ts';
-import { LINE2_STATIONS, Q6 } from '../src/sim/railway-line2-layout.ts';
+import { LINE2_STATIONS, Q6, RAILS } from '../src/sim/railway-line2-layout.ts';
 import { railPredict, RAIL_PREDICTED } from '../src/world/railway-predict.ts';
 import type { World } from '../src/ecs/index.ts';
 import {
@@ -343,7 +343,7 @@ test('the railway state is checkpointed by the host and restores its session acc
   assert.equal(again.api.account('alice')?.epoch, 1);
 });
 
-test('a scripted run through line one, the pack and line two to Q6 replicates exactly, live and to a late joiner', () => {
+test('a scripted run through line one, the pack, the yoke and line two to Q6 replicates exactly, live and to a late joiner', () => {
   const r = room();
   r.join('a');
   const w = () => r.api.world(); // taken again at every use: a published world is never held
@@ -533,7 +533,20 @@ test('a scripted run through line one, the pack and line two to Q6 replicates ex
         } else logs('a', spec.id, Math.min(8, spec.bill[0] - qjob(w(), k).stock));
       }
     } else logs('a', spec.id, spec.bill[0]);
+    if (k === 0) assert.equal(act('a', 'rail.yoke'), 0, "no rail yoke before Q1's bill");
     if (qjob(w(), k).start < 0) rails('a', spec.id, spec.bill[1] - qjob(w(), k).railStock);
+    if (k === 0) {
+      // The Rail yoke, predicted on a's own copy of its mirror as the pack is: one take, every back holds 16 rails.
+      const predicted = shownOf(mirror.confirmed());
+      const press = railPredict(predicted, 'a', { op: 'rail.yoke', epoch: 1, request: (req.get('a') ?? 0) + 1 }, 0);
+      assert.equal(press.n, 1, 'the press is shown at once');
+      assert.equal(rail(predicted).yoke, true);
+      assert.equal(capacityOf(predicted, RAILS), 16);
+      assert.equal(rail(mirror.confirmed()).yoke, false, 'the confirmed mirror waits for the server');
+      assert.equal(act('a', 'rail.yoke'), 1);
+      assert.equal(act('b', 'rail.yoke'), 0, 'one yoke for two takers');
+      assert.equal(capacityOf(mirror.confirmed(), RAILS), 16, 'the mirror permits 16 rails once confirmed');
+    }
     advance(2000);
     assert.equal(qjob(w(), k).completion, 1, `Q${k + 1} complete`);
     if (k === 1) assert.equal(act('a', 'rail.hook'), 1);
@@ -561,6 +574,8 @@ test('a scripted run through line one, the pack and line two to Q6 replicates ex
   assert.equal(rail(joined).lever, true);
   assert.equal(rail(joined).sea, true, 'a late joiner gets the sea switch');
   assert.equal(rail(joined).pack, true, 'a late joiner gets the pack');
+  assert.equal(rail(joined).yoke, true, 'a late joiner gets the yoke');
+  assert.equal(capacityOf(joined, RAILS), 16);
   assert.equal(rail(joined).glide, true, 'a late joiner sees the glider taken');
   assert.equal(capacityOf(joined, LOGS), 16);
   const counts = railCounts(joined, r.sync.world.tick); // a client's world is read at the server's tick
@@ -630,11 +645,15 @@ test('Q6 prediction keeps train rails aboard until funding is confirmed', () => 
   assert.equal(train(w.w, 1).rails, 32);
   seedAct(w, 'a', 'rail.pack');
   seedLogs(w, 'a', 'Q6', 32);
-  // Rails are 8 a back: all but the last row's worth by hand, then the last 8 that fund it.
+  // All but the last 8 by hand, then a rack take (16 a back with the yoke, which the seeds take at Q1) whose first 8
+  // fund it.
   seedRails(w, 'b', 'Q6', 24);
   seedAdvance(w, 80);
-  assert.ok(seedAct(w, 'b', 'rail.forgeTake') > 0);
-  assert.equal(account(w.w, 'b')!.rails, 8);
+  const [rack, held] = [forge(w.w).rack, account(w.w, 'b')!.rails];
+  const took = seedAct(w, 'b', 'rail.forgeTake');
+  assert.equal(took, Math.min(rack, 16 - held));
+  assert.ok(held + took >= 8, 'at least the last 8');
+  assert.equal(account(w.w, 'b')!.rails, held + took);
   const shown = shownOf(w.w),
     beforeRack = forge(shown).rack,
     beforeTrains = structuredClone(trains(shown));

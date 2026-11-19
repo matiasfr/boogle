@@ -316,9 +316,11 @@ test('steel host: the yard take at the yard, the feed at the works, each refused
     assert.equal(await r.action({ op: 'rail.steelTake', kind: 1 }, away(RING_STEEL_YARD)), 'rejected');
     assert.equal(await r.action({ op: 'rail.steelTake', kind: 1 }, spot(RING_STEEL_YARD)), 'accepted');
     assert.ok(steel(r.w).yardRails < STEEL.rails, 'rails off the yard');
-    // Separate capacities: the rails row is full at 8, so more rails are refused and logs still fit beside them.
-    assert.equal(steel(r.w).yardRails, STEEL.rails - 8, 'a row of 8 rails');
-    assert.equal(await r.action({ op: 'rail.steelTake', kind: 1 }, spot(RING_STEEL_YARD)), 'noop', 'rails full');
+    // Separate capacities: with the yoke (the seeds take it at Q1) the rails row holds 16, so the kit's 12 rails come
+    // off in one take, and the logs still fit beside them.
+    assert.equal(steel(r.w).yardRails, 0, 'all 12 rails in one row of 16');
+    assert.equal(account(r.w, 'a')!.rails, STEEL.rails);
+    assert.equal(await r.action({ op: 'rail.steelTake', kind: 1 }, spot(RING_STEEL_YARD)), 'noop', 'no rails left');
     assert.equal(await r.action({ op: 'rail.steelTake', kind: 0 }, spot(RING_STEEL_YARD)), 'accepted');
     assert.equal(steel(r.w).yardLogs, 0, 'all eight logs beside the rails');
     assert.equal(await r.action({ op: 'rail.steel' }, spot(RING_STEEL_YARD)), 'rejected', 'not at the works');
@@ -859,18 +861,20 @@ test('hold host: a lever ask assigned to a held train releases it', async () => 
 // Review of the carrier-leaves net case (Checkpoint A): a leaver who never comes back holds the yard's kit for good (no
 // carry grace covers it). The island must not stall: the bill's need counts no back, so line 2 brings the kit again and
 // a present player lights the works with the leaver still gone.
-test('steel host (review): a leaver holding 8 logs and 8 rails forever does not stall the works', async () => {
+test("steel host (review): a leaver holding the kit's 8 logs and 12 rails forever does not stall the works", async () => {
   const r = await host('kit-leaver', fixture('steel-kit'), { s: 'a', t: 'b' });
   try {
     assert.equal(await r.action({ op: 'rail.steelTake', kind: 1 }, spot(RING_STEEL_YARD), 't'), 'accepted');
     assert.equal(await r.action({ op: 'rail.steelTake', kind: 0 }, spot(RING_STEEL_YARD), 't'), 'accepted');
     const held = account(r.w, 'b')!;
-    assert.deepEqual({ logs: held.carry, rails: held.rails }, { logs: STEEL.logs, rails: 8 }, 'all logs, 8 rails');
+    // With the yoke (16 rails a back) one take lifts the kit's 12 rails: the leaver holds the whole kit.
+    const kit = { logs: STEEL.logs, rails: STEEL.rails };
+    assert.deepEqual({ logs: held.carry, rails: held.rails }, kit, 'all logs, all rails');
     r.depart('t');
     r.later(r.grace());
     await r.ticks(3);
-    assert.deepEqual({ logs: account(r.w, 'b')!.carry, rails: account(r.w, 'b')!.rails }, { logs: 8, rails: 8 });
-    assert.deepEqual(steelNeed(r.w), { logs: STEEL.logs, rails: 8 }, 'owed again with the leaver gone');
+    assert.deepEqual({ logs: account(r.w, 'b')!.carry, rails: account(r.w, 'b')!.rails }, kit);
+    assert.deepEqual(steelNeed(r.w), kit, 'owed again with the leaver gone');
     for (let k = 0; steel(r.w).lit < 0; k++) {
       assert.ok(
         k < 200,
@@ -882,11 +886,7 @@ test('steel host (review): a leaver holding 8 logs and 8 rails forever does not 
       }
       await r.ticks(50);
     }
-    assert.deepEqual(
-      { logs: account(r.w, 'b')!.carry, rails: account(r.w, 'b')!.rails },
-      { logs: 8, rails: 8 },
-      'still on the leaver',
-    );
+    assert.deepEqual({ logs: account(r.w, 'b')!.carry, rails: account(r.w, 'b')!.rails }, kit, 'still on the leaver');
     assert.equal(invariant(r.w), null);
   } finally {
     await r.done();

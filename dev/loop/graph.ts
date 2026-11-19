@@ -12,6 +12,7 @@ import {
   LINE2_AXE,
   LINE2_FORGE,
   LINE2_PACK,
+  LINE2_YOKE,
   depotOffset,
   type Line2Station,
   LINE2_LEVER,
@@ -60,6 +61,7 @@ export type NodeId =
   | 'axe'
   | 'pack'
   | 'Q1'
+  | 'yoke'
   | 'Q2'
   | 'hook'
   | 'Q3'
@@ -449,6 +451,20 @@ export const NODES: readonly LoopNode[] = [
     optional: true,
   },
   quarryStation('Q1', [dec('forge', 'rules', `${RULES_LINE2} deposit2: forge lit + turnTicks`)]),
+  {
+    id: 'yoke',
+    label: 'Take the Rail yoke',
+    area: 'line 2',
+    at: p(LINE2_YOKE),
+    bill: {},
+    supply: {},
+    ops: ['rail.yoke'],
+    reached: { mark: 'yoke gained' },
+    stops: [],
+    requires: [dec('Q1', 'rules', `${RULES_LINE2} yoke: Q1's bill in (line2YokeReady: QJob.start)`)],
+    cue: [unbuilt('the yoke on its block beside the forge rail rack', 'docs/plans/rail-yoke.md, step 4')],
+    optional: true,
+  },
   quarryStation('Q2', [dec('Q1', 'rules', `${RULES_QUERIES} qActive()`)]),
   {
     id: 'hook',
@@ -1018,14 +1034,14 @@ export const cm = (a: Point, b: Point) =>
 export const hasCue = (n: LoopNode) =>
   n.cue.some((c) => c.kind === 'world' && (c.state === 'on-main' || c.state === 'observed'));
 
-/** The room's capacity steps a node is reached with (canonical order: the pack right after the forge, the breaker
- * before the throat and the kiln). */
-export type Upgrades = { pack: boolean; breaker: boolean };
+/** The room's capacity steps a node is reached with (canonical order: the pack right after the forge, the yoke right
+ * after Q1, the breaker before the throat and the kiln). */
+export type Upgrades = { pack: boolean; breaker: boolean; yoke: boolean };
 /** Units one carry holds of a material (separate capacities): logs 8, 16 with the pack; stone 8, 16 with the breaker;
- * rails 8; one beam, boiler or footing fills a back. */
-export function carryOf(material: Material, { pack, breaker }: Upgrades) {
+ * rails 8, 16 with the yoke; one beam, boiler or footing fills a back. */
+export function carryOf(material: Material, { pack, breaker, yoke }: Upgrades) {
   if (material === 'beam' || material === 'boiler' || material === 'footings') return 1;
-  if (material === 'rails') return RAILWAY_CAPACITY.rails;
+  if (material === 'rails') return yoke ? RAILWAY_CAPACITY.railsYoke : RAILWAY_CAPACITY.rails;
   if (material === 'stone') return breaker ? RAILWAY_CAPACITY.stoneBreaker : RAILWAY_CAPACITY.stone;
   return pack ? RAILWAY_CAPACITY.logsPack : RAILWAY_CAPACITY.logs;
 }

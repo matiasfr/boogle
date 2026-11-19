@@ -59,6 +59,7 @@ import {
   line2Tick,
   pack,
   seaSwitch,
+  yoke,
 } from './railway-sys-line2.ts';
 import { call, trainTick } from './railway-sys-trains.ts';
 import { breaker, cradle, footRelease, footSet, footTake, kiln, strike, turn, worksTick } from './railway-sys-works.ts';
@@ -96,6 +97,7 @@ const OPS: Record<string, readonly System<never, number>[]> = {
   'rail.glide': [glide],
   'rail.depotRailTake': [depotRailTake],
   'rail.pack': [pack],
+  'rail.yoke': [yoke],
   'rail.boilerTake': [boilerTake],
   'rail.boilerDrop': [boilerDrop],
   'rail.boilerFit': [boilerFit],

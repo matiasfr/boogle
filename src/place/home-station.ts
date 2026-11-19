@@ -305,6 +305,9 @@ export const PROPS = {
   // sleeper ends, 1.55 m off the cart, off the island (owner, 17 November: the fallback of the backlog row's answer 1).
   // LINE2_FORGE.rackX/rackZ are its world centimetres (test/home-station.test.ts pins them together).
   rack: { ...axisPoint(-2.95, 11.2), yaw: rad(90 - AXIS.bearing) },
+  // The Rail yoke's block (docs/plans/rail-yoke.md): on the rack's outer side, square to it, 1.7 m past its rails'
+  // ends; 3.0 m from the rack, 5.6 m from Q1's frame, 6.6 m from road 2. LINE2_YOKE is its world centimetres.
+  yoke: { ...axisPoint(-2.95, 14.2), yaw: rad(90 - AXIS.bearing) },
   greeter: { x: -95.86, z: 9.65 },
   pedestal: { x: -78.0, z: -1.17 }, // the existing 3.5 m rail clearance, including the pedestal's footprint
   crane: { x: -72.4, z: -3.1 },

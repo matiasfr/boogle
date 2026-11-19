@@ -133,7 +133,9 @@
 // and the bay's Bell Rock stop at s 1217; the incline's kit relays through the Gorge yard. No migration.
 // v63 (2026-11-19): a laying machine eases out of its stop over 50 ticks (railDepartureTicks 20 -> 50, G31/G32): the
 // saved tune and the job rows' default timing change, so live rooms take the new start. No migration.
-export const WORLD_NS = 'v63';
+// v64 (2026-11-19): the Rail yoke: `Rail.yoke` and `rail.yoke`, rails 8 -> 16 once taken
+// (docs/plans/rail-yoke.md); no migration.
+export const WORLD_NS = 'v64';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

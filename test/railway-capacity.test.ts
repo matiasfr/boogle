@@ -8,7 +8,7 @@ import type { RailAction } from '../src/sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../src/sim/railway-layout.ts';
 import { LINE1_STATIONS } from '../src/sim/railway-line-layout.ts';
 import { RAILS } from '../src/sim/railway-line2-layout.ts';
-import { Account, Pile } from '../src/sim/railway-components.ts';
+import { Account, Pile, Rail } from '../src/sim/railway-components.ts';
 import { WORKS_ROCKS } from '../src/sim/railway-works-layout.ts';
 import { LOOSE_PILE_CAPACITY } from '../src/sim/railway-supply.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
@@ -20,6 +20,7 @@ import {
   account,
   apply,
   beam,
+  forge,
   buildSeedWorld,
   capacityOf,
   hitYield,
@@ -141,7 +142,7 @@ test('capacities: a hit gives 1 through Station 2 and Station 3 until it is fund
   assert.equal(invariant(s.w), null);
 });
 
-test('capacities: the pack lifts logs to 16 and the breaker stone to 16; rails stay 8; the axe gives 5 on trees', () => {
+test('capacities: the pack lifts logs to 16 and the breaker stone to 16, each its own step; the axe gives 5 on trees', () => {
   const forge = buildSeedWorld('forge-frame-last');
   assert.deepEqual(caps(forge.w), [8, 8, 8]);
   assert.equal(send(forge, 'a', 'rail.deposit', { station: 'F', kind: 0, n: 1 }), 1);
@@ -149,11 +150,34 @@ test('capacities: the pack lifts logs to 16 and the breaker stone to 16; rails s
   assert.deepEqual(caps(forge.w), [16, 8, 8], 'the pack is the logs step only');
   const works = buildSeedWorld('works-arrive');
   if (!rail(works.w).axe) assert.equal(send(works, 'a', 'rail.axe'), 1);
-  assert.deepEqual(caps(works.w), [16, 8, 8]);
+  assert.deepEqual(caps(works.w), [16, 8, 16], 'the seeds take the yoke at Q1');
   assert.equal(chop(works), 5, 'the proper axe: 5 a hit on a tree');
   assert.equal(send(works, 'a', 'rail.breaker'), 1);
-  assert.deepEqual(caps(works.w), [16, 16, 8], 'the breaker is the stone step only');
+  assert.deepEqual(caps(works.w), [16, 16, 16], 'the breaker is the stone step only');
   assert.equal(invariant(works.w), null);
+});
+
+// Built at module scope, outside the 5 s test timeout (as the golden shards do); the test gets its own copy.
+buildSeedWorld('q1-last');
+test("capacities: the rail yoke lifts rails to 16 once Q1's bill is in", () => {
+  const s = buildSeedWorld('q1-last');
+  assert.deepEqual(caps(s.w), [8, 8, 8]);
+  assert.equal(send(s, 'a', 'rail.yoke'), 0, "no yoke before Q1's bill");
+  assert.equal(rail(s.w).yoke, false);
+  assert.equal(send(s, 'a', 'rail.deposit', { station: 'Q1', kind: 2, n: 1 }), 1, 'the last rail');
+  assert.equal(send(s, 'a', 'rail.yoke'), 1);
+  assert.deepEqual(caps(s.w), [8, 8, 16], 'the yoke is the rails step only');
+  assert.equal(send(s, 'b', 'rail.yoke'), 0, 'one yoke for two openers');
+  // The forge rack gives up to a back's 16 rails, its count permitting.
+  while (forge(s.w).rack < 16) advance(s, 1);
+  const before = account(s.w, 'a')!.rails;
+  assert.equal(send(s, 'a', 'rail.forgeTake'), 16 - before);
+  assert.equal(account(s.w, 'a')!.rails, 16);
+  assert.equal(invariant(s.w), null);
+  const saved = restore(s.w);
+  assert.equal(account(saved, 'a')!.rails, 16, 'a save with 16 rails on a back loads');
+  saved.mut(Rail, saved.single(Rail))!.yoke = false;
+  assert.throws(() => railwayCheck(saved), /accounts/, '16 rails without the yoke');
 });
 
 test('capacities: a kiln feed of 16 logs and 16 stone is one accepted action, inside the wire bound', () => {

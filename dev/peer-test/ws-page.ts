@@ -466,6 +466,8 @@ function startWorld(room: Room) {
           return adapter.depotRailTake();
         case 'rail.pack':
           return adapter.openPack();
+        case 'rail.yoke':
+          return adapter.takeYoke();
         case 'rail.boilerTake':
           return adapter.takeBoiler(intent.revision);
         case 'rail.boilerDrop':

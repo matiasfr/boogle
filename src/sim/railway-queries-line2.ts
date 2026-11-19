@@ -55,6 +55,11 @@ export const line2Open = (w: World) => !!w.get(Job, jobId(w, 2))!.completion;
 export const line2Lit = (w: World) => w.get(Forge, forgeId(w))!.lit >= 0;
 /** The pack chest is there: the forge has taken its first bill. */
 export const line2PackReady = (w: World) => w.get(Forge, forgeId(w))!.used >= FORGE.bills[0];
+/** The Rail yoke is made: Q1's bill is in (its stretch funded or laid). */
+export const line2YokeReady = (w: World) => {
+  const j = w.get(QJob, qjobId(w, 0))!;
+  return j.start >= 0 || !!j.completion;
+};
 /** Completed Q stretches, 0-7. */
 export const line2Completed = (w: World) =>
   LINE2_STATIONS.filter((_s, k) => w.get(QJob, qjobId(w, k))!.completion).length;

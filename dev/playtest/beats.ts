@@ -52,6 +52,7 @@ const RAILWAY_BEATS: [string, RegExp][] = [
   ['reached Needle Bell summit', /^needle bell summit reached$/],
   ['pulled the quarry lever', /^quarry lever pulled$/],
   ['gained the pack', /^pack gained$/],
+  ['gained the rail yoke', /^yoke gained$/],
   ['called the cart', /^cart called$/],
   ['rode the cart', /^cart ride$/],
   ['picked up at the depot', /^depot pick up$/],

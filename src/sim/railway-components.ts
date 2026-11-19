@@ -68,6 +68,7 @@ export const Rail = defineComponent(
     pack: 'bool',
     depotRails: 'int',
     shelfOut: 'int',
+    yoke: 'bool',
   },
   { requires: [RailClock], defaults: { awake: -1, trains: -1 } },
 );
