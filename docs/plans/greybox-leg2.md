@@ -493,17 +493,19 @@ for 1 to 4 players (allowance 72), Bell Rock 12 / 14 / 14 / 14 (allowance 30), t
 solo with the two stand-ins). A lower bound: the loop walks Bell Rock to the West landing in a straight line over the
 sea and rides no train.
 
-`npm run playthrough -- --from gorge-reached --to bay --wall 3600 --stall 1800`: **pass**, three runs. The first stopped
-at head 1: the bot gave up on the train the lay had already asked for after a minute of page time (a bot defect, fixed).
-The second passed but ended in the bay train's open car: its step-off aimed at the halt's point, which is on the track
-(fixed: the last step-off lands on the outward platform at the lever's spot). The third (`fac0261a`, load 1.77 → 3.76,
-not under load) passed with no recovery: fifteen checkpoints in order, ending on Bell Rock's upper platform by the bay
-lever. Room ticks, one bot run (not evidence of feel or timing): the pick 50 s after the Gorge, the incline 3.1 min from
-the barrier to Bell Rock, **the ride home 4.9 min** (the seeds to the Village; the plan's arithmetic said 6 to 7 with
-the walk), the bay cut 3.2 min from the West landing's frame to Bell Rock's upper platform, 12.9 min from the Gorge to
-the bay reached. Findings: twice a run, aboard line 2, the cord offered a stop the server then refused (`rail.call`:
-"Request stop: Ring Island", "Request stop: Stack head 3", a head closed behind); the longest wait, 4 min 13 s at bay
-head 1, was for the train the last lay asked for.
+`npm run playthrough -- --from gorge-reached --to bay --wall 3600 --stall 1800`: **pass** on the rebased branch
+(`077ba8fa`, load 1.32 → 1.35, not under load), five runs in all. The first stopped at head 1: the bot gave up on the
+train the lay had already asked for after a minute of page time (a bot defect, fixed). The second passed but ended in
+the bay train's open car: its step-off aimed at the halt's point, which is on the track (fixed: the last step-off lands
+on the outward platform at the lever's spot). The third passed (`fac0261a`). The fourth, on the rebased branch, ran out
+of `bot.walk`'s default budget 40.8 m short of the pick: the switchback walks about three times its straight distance
+(fixed: the climb and the way down get four minutes). The fifth passed with no recovery: fifteen checkpoints in order,
+ending on Bell Rock's upper platform by the bay lever. Room ticks, one bot run (not evidence of feel or timing): the
+pick 18 s after the Gorge, the incline 3.1 min from the barrier to Bell Rock, **the ride home 4.9 min** (the seeds to
+the Village; the plan's arithmetic said 6 to 7 with the walk), the bay cut 3.2 min from the West landing's frame to
+Bell Rock's upper platform, 12.0 min from the Gorge to the bay reached. Findings: twice a run, aboard line 2, the cord
+offered a stop the server then refused (`rail.call`: "Request stop: Ring Island", "Request stop: Stack head 3", a head
+closed behind); the longest wait, 3 to 4 min at bay head 1, was for the train the last lay asked for.
 
 **Step 4's re-check P3s.** (1) The bore's bed is 0.15 m under the row's straight grade, not the drawn rail: the smoothed
 rail runs up to 0.103 m under those pieces, so the bed's top is 0.045 to 0.17 m under the drawn rail, least at the grade
