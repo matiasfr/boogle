@@ -319,10 +319,19 @@ held (`legRackNeed`): every lift off the West landing's first rack restocked it 
 Gorge a line 2 train racked section 2's kit while section 1's was carried, skipping the `ns` relay (P3).
 `legRackNeed` now counts held units (as `legKitNeed` does), for every leg. **And the stand-in mints its section's kit
 once** (its loaded counts never pass the bill; the load check refuses one that does): a unit put down at the West
-landing is taken up again from its pile, and a leaver's are made up by hand (chopped logs, rails off the forge rack),
-not minted again. That narrows "a unit lifted off a rack and lost is owed again" for the stand-in alone, where no train
-bounds the rate; leg 1's and the incline's racks keep the rule. No hash golden moved (the seeds hold nothing across a
-tick boundary where it matters) and the leg 2 fuzz figures are unchanged.
+landing is taken up again from its pile, not minted again. No hash golden moved (the seeds hold nothing across a tick
+boundary where it matters) and the leg 2 fuzz figures are unchanged.
+
+**Re-check fix (18 November, P1).** Rails cannot be made up by hand at this stage: `rail.forgeTake` gives none once
+the cradle is fitted, and a room that played in order has the steel works lit with its yard empty. So a rail the
+stand-in loaded that leaves the leg's books is owed again, and only then: a leaver's rails released after the grace
+(`legKitRelease`), and put-down rails the supply pulse returns to the forge rack (`legKitRecovered`, at most what the
+stand-in has lost: loaded less racked, held and fed) come off `Leg.loadedRails`, and the stand-in stocks them again
+from the forge rack, exactly as many. Loaded still never passes the bill, so the load check's bound stands as it was;
+no state was added (the same accounting `kitHome` uses when rails go back to the forge rack). Logs need none of it: a
+leaver's are made up by chopping, and recovered logs go to the recovery rack, which anyone takes from. So "a unit
+lifted off a rack and lost is owed again" holds for the stand-in too, bounded by what was lost rather than by a train's
+rate; leg 1's and the incline's racks are unchanged. Again no hash golden moved, and the leg 2 fuzz is unchanged.
 
 **Checkpoint B (leg 2 playable).** Named proofs, run once: `npm run loop -- run` for one to three players with idle
 seconds per wait; the bot segment `--from gorge-reached --to bay`; `npm run test:net`; `npm run scenario --

@@ -143,10 +143,14 @@ export function legYardHome(w: World, k: number) {
 /** The stand-in (greybox-leg2.md, "the bay cut's first kit is stocked", open question 2): an open leg minted at its
  * own line's home with nothing laid, on a line with no track yet (no train can bring its first kit), has its rack
  * stocked from Home's stock: what the section lacks (fed, racked and held counted: legRackNeed), logs minted, rails off
- * the forge rack as they are there (as kit loading waits for them). It stands in for one train's load, so it mints the
- * section's kit once: what it has loaded never passes the bill (the review of greybox leg 2, P2). A unit put down there
- * is taken up again from its pile, and a leaver's are made up by hand (chopped logs, rails off the forge rack), not
- * minted again. How goods cross Home to the West landing is still open (greybox-route section 3). */
+ * the forge rack as they are there (as kit loading waits for them). It stands in for one train's load, so what it has
+ * loaded never passes the bill (the review of greybox leg 2, P2): a unit put down there is taken up again from its pile,
+ * not minted again. A lost unit is owed again only when it leaves the leg's books, and only its rails (no player can
+ * take rails by hand at this stage: rail.forgeTake gives none once the cradle is fitted), as the re-check's P1 asked:
+ * a leaver's rails released after the grace (legKitRelease) and put-down rails the supply pulse returns to the forge
+ * rack (legKitRecovered) come off its loaded count (legStandInLost), so it stocks them again. A leaver's logs are made
+ * up by chopping, and recovered logs go to the recovery rack, where anyone takes them. How goods cross Home to the
+ * West landing is still open (greybox-route section 3). */
 export function legKitStock(w: World) {
   for (const k of STOCKED_LEGS) {
     if (legRow(w, k).laid > 0 || !legOpen(w, k)) continue;
@@ -325,12 +329,35 @@ export const legKitRelease = defineSystem(
     const a = id === undefined ? undefined : w.get(Account, id)!;
     const k = heldLeg(w);
     if (!a || a.epoch !== q.epoch || k < 0 || a.legLogs + a.legRails <= 0) return 0;
-    const n = a.legLogs + a.legRails;
+    const n = a.legLogs + a.legRails,
+      rails = a.legRails;
     moveHeld(w, id!, k, -a.legLogs, -a.legRails);
+    // The stand-in's rails gone with a leaver are owed again (the re-check of greybox leg 2, P1).
+    if (standing(w, k)) w.mut(Leg, legId(w, k))!.loadedRails -= rails;
     return n;
   },
 );
 export const railLegKitRelease = (w: World, pid: string, epoch: number): number => w.run(legKitRelease, { pid, epoch });
+/** Stocked leg k is standing in (legKitStock): open with nothing laid. */
+const standing = (w: World, k: number) => STOCKED_LEGS.includes(k) && legRow(w, k).laid === 0 && legOpen(w, k);
+/** Rails the supply pulse returned to the forge rack from abandoned piles: an open stand-in's rails that are lost (put
+ * down and not taken up again: legStandInLost) come off its loaded count, as many as were returned and no more, so it
+ * stocks them again from the forge rack they are back on (the re-check of greybox leg 2, P1). */
+export function legKitRecovered(w: World, rails: number) {
+  for (const k of STOCKED_LEGS) {
+    if (rails <= 0 || !standing(w, k)) continue;
+    const back = Math.min(rails, legStandInLost(w, k));
+    if (back <= 0) continue;
+    w.mut(Leg, legId(w, k))!.loadedRails -= back;
+    rails -= back;
+  }
+}
+/** Rails stand-in leg k has loaded that are not on its rack, counted held on a back, or fed: put down, or a leaver's
+ * before the grace. Never under 0 (the rack may hold the leg before's leftovers). */
+export function legStandInLost(w: World, k: number) {
+  const row = legRow(w, k);
+  return Math.max(0, row.loadedRails - w.get(Rail, w.single(Rail))!.depotRails - row.heldRails - row.rails);
+}
 /** Who carries units lifted off a leg's rack, and in which session (the host's leaver check; accepted state only). */
 export function railLegKitHolders(w: World) {
   const out: { pid: string; epoch: number }[] = [];

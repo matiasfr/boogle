@@ -60,6 +60,7 @@ import {
 import { STEEL } from './railway-ring-layout.ts';
 import { jobClock } from './railway-sys-core.ts';
 import { layLine1 } from './railway-sys-line1.ts';
+import { legKitRecovered } from './railway-sys-route-kit.ts';
 import { boilerPedestal, cartMint, cartTakeRails, cartUnload, layLine2 } from './railway-sys-line2.ts';
 import { yardsAway } from './railway-sys-trade.ts';
 import { sackCap, tillRate } from './railway-queries-trade.ts';
@@ -217,7 +218,7 @@ const progressUnits = (marker: number, minutes: number, interval: number, units:
 /** Idempotent accepted event. Nearby/unknown players are excluded by the host before it stamps recover ids. */
 export const supply = defineSystem(
   'rail.supply',
-  { writes: [Rail, RailClock, Pile, Forge, Tree, Rock, Beam, Boiler, Works], phase: 'supply', order: 0 },
+  { writes: [Rail, RailClock, Pile, Forge, Tree, Rock, Beam, Boiler, Works, Leg], phase: 'supply', order: 0 },
   (w, { e, intervals }: { e: SupplyPulse; intervals: SupplyIntervals }) => {
     const rid = railId(w);
     const clock = w.get(RailClock, rid)!;
@@ -228,7 +229,8 @@ export const supply = defineSystem(
     const recover = progressUnits(marker, minutes, intervals.recover, RECOVERY_MINUTES);
     w.mut(RailClock, rid)!.supplyMarker = e.marker;
     const rail = w.mut(Rail, rid)!;
-    let moved = 0;
+    let moved = 0,
+      rails = 0;
     w.each(
       [Pile],
       (id, pile) => {
@@ -241,6 +243,7 @@ export const supply = defineSystem(
             // Keep the aged pile until the whole transfer fits the checkpoint's rack domain.
             if (f.rack + pile.n > 4096) return;
             f.rack += pile.n;
+            rails += pile.n;
           }
           // An abandoned footing goes back to the Works rack (past its cap if it must).
           else if (pile.kind === FOOT) w.mut(Works, worksId(w))!.rack += pile.n;
@@ -252,6 +255,8 @@ export const supply = defineSystem(
       },
       [Pile],
     );
+    // Rails back on the forge rack that a West landing stand-in had lost are owed to it again (greybox leg 2, P1).
+    legKitRecovered(w, rails);
     w.each(
       [Tree],
       (_id, t) => {
