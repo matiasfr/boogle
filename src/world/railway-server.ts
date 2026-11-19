@@ -11,7 +11,7 @@ import { railInt, railYaw, railSource, RAILWAY_MAX_INT, type RailAction, type Ra
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../sim/railway-layout.ts';
 import { MAX_KIND_CAPACITY } from '../sim/railway-queries.ts';
 import { LINE1_STATIONS, LINE1_GREAT_TREE, LINE1_HARDWOODS, LINE1_JUMP_DEVICE } from '../sim/railway-line-layout.ts';
-import { LINE_TIMING } from '../sim/railway-line.ts';
+import { lineTiming } from '../sim/railway-line.ts';
 import {
   LINE2_FORGE,
   LINE2_STATIONS,
@@ -360,12 +360,7 @@ export function install(
   for (const p of worldProjections(() => world, cells, GLOBAL_CELL)) replication.define(p);
   // Every write ends in a commit: what the systems marked goes to the replicator.
   const commit = () => touchChanges(world, touch);
-  const timing = () => ({
-    ...LINE_TIMING,
-    feedIntervalMs: rules.railTune.get('railFeedMs'),
-    cruiseCmPerTick: rules.railTune.get('railLaySpeed'),
-    departureTicks: rules.railTune.get('railDepartureTicks'),
-  });
+  const timing = () => lineTiming(rules.railTune);
   // Saved as the world's schema snapshot (accounts and the beam holder by pid); loaded all or nothing through the
   // railway's own check.
   sync.registerState(

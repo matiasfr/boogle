@@ -17,10 +17,10 @@ import { apply, createRailway, invariant, railSession, rocks } from './helpers/r
 import { railCounts } from '../src/sim/railway-queries-line2.ts';
 import { lineFeed, lineLayDistance, lineSchedule, type LineTiming } from '../src/sim/railway-line-schedule.ts';
 import { LINE_TIMING } from '../src/sim/railway-line.ts';
-import { TUNABLES } from '../src/sim/tune.ts';
+import { specOf } from '../src/sim/tune.ts';
 
 // Accepted Place inputs in milliseconds/10 Hz ticks, supplied as room settings at the funding boundary.
-const timing: LineTiming = { ...LINE_TIMING };
+const timing: LineTiming = LINE_TIMING;
 
 test('line 1 preserves source identity, exact bills and the one twelve-panel allowance', () => {
   assert.deepEqual(
@@ -158,8 +158,8 @@ test('rail pairs commit on the first tick reaching their contact; fixed schedule
 
 test('a layer eases out of its stop over the room default, 50 ticks, at an unchanged cruise (G31, G32)', () => {
   // One owner: the default timing's ease is the room tune's default, so seeds and untuned rooms fund the same stretch.
-  assert.equal(TUNABLES.find((t) => t.key === 'railDepartureTicks')!.def, 50);
-  assert.equal(LINE_TIMING.departureTicks, 50);
+  assert.equal(specOf('railDepartureTicks')!.def, 50);
+  assert.equal(LINE_TIMING.departureTicks, specOf('railDepartureTicks')!.def);
   assert.equal(LINE_TIMING.cruiseCmPerTick, 50, 'cruise kept');
   const stretches = [
     ...LINE1_STATIONS.map((station) => ({ station, cruise: LINE_TIMING.cruiseCmPerTick })),

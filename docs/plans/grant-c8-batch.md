@@ -244,7 +244,7 @@ G33 (running uphill is faster, he liked it) and G35 (the free shop's "$0" never 
   settled 1,061, growing 1,201 against 1,350 and 1,600); line 2 lever waits move by about a second each way.
   *Proof look:* `dev/look/evals/departure-ease.ts` on `--rail-seed q5-carry`, real time: the last logs fund Q5,
   a player waiting 3 m behind the layer (placed there; the bot's planner is slow round the frame) runs and jumps on
-  ordinary input and is aboard 23 ticks into laying, the layer then at 6.4 m/s, still aboard 4 s later
+  ordinary input and is aboard 23 and 30 ticks into laying in two runs, the layer then at 6.4 and 7.6 m/s, still aboard 4 s later
   (`docs/world/grant-c8/g32-departure-ease-boarding.png`). Not tested on a device; boarding by a person at a
   sprint not tried.
 

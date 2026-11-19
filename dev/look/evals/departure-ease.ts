@@ -20,7 +20,7 @@ if (job().start >= 0 || job().railStock !== 24 || job().stock !== 0)
   fail('needs q5-carry: rails in, no logs, unfunded');
 const frame = view().frames[4]!;
 // The frame unloads a back on its own; carry loads in until only the last one is left, and keep it at the rack.
-for (let trip = 0; job().stock + R.railBack().carry < 24; trip++) {
+for (let trip = 0; ; trip++) {
   if (trip > 4) fail('too many depot trips');
   const depot = view().depot ?? fail('no depot rack');
   if (!(await bot.use(depot[0]!, depot[2]!, 'take Q5 depot logs', /^Pick up$/))) fail('depot rack not offered');
