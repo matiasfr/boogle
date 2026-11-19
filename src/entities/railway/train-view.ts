@@ -312,9 +312,10 @@ export async function createRailwayTrains(
       deck: crateDeck,
       goods: TRADE.yards.find((yard) => yard.line === line)?.goods,
       solid: solidLoad,
-      // Line 2's kit car says whose kit it carries (./kit-board.ts; the greybox route's step 4 review, answer j).
+      // A kit car says whose kit it carries (./kit-board.ts; the greybox route's step 4 review, answer j): line 2's and
+      // the greybox route's own lines' (greybox-leg2.md, step 4: "the kit board's number").
       board:
-        line === LINE2
+        line === LINE2 || isRowLine(line)
           ? createKitBoard(owner, meshByRole('kit'), carByRole('kit').spec.top, carByRole('kit').spec.hz)
           : null,
       boiler,
@@ -1316,10 +1317,16 @@ export async function createRailwayTrains(
             keep = Math.ceil((row.logs + row.rails) / 8),
             count = tr.count - keep;
           if (logs >= 0 && rails >= 0 && logs + rails > 0 && count > 0) {
+            // A yard leg's rack stands at this drop (its feeder's destination) only while nothing is laid; then line 2
+            // sets on it what it gained this frame (the sim's legKitRoom: the rack's lack first, then the yard). Once a
+            // section is laid the rack is at the leg's head, and line 2's whole unload goes into the yard.
             const yardLeg = RAIL_LEGS[leg]!.line !== tr.line,
-              onRack = yardLeg
-                ? { logs: Math.min(logs, rackGain.logs), rails: Math.min(rails, rackGain.rails) }
-                : { logs, rails };
+              rackHere = !yardLeg || legRow(w, leg).laid === 0,
+              onRack = !rackHere
+                ? { logs: 0, rails: 0 }
+                : yardLeg
+                  ? { logs: Math.min(logs, rackGain.logs), rails: Math.min(rails, rackGain.rails) }
+                  : { logs, rails };
             rackGain.logs -= onRack.logs;
             rackGain.rails -= onRack.rails;
             const toYard = { logs: logs - onRack.logs, rails: rails - onRack.rails },
@@ -1332,14 +1339,15 @@ export async function createRailwayTrains(
             // A rack across a track (Ring Island's, 8.4 m over the up track; High Gorge's, over line 2's up track):
             // the arc tops out HOP_OVER above the rails, so a tumbling crate (0.71 m to its far corner) clears a cab
             // roof (3.3 m) standing under it.
-            const kitCar = tr.carByRole('kit'),
-              far = Math.hypot(rack.x / 100 - kitCar.x, rack.z / 100 - kitCar.z) > 6,
-              over = far ? kitCar.y - (BOTTOM + kitCar.hy) + HOP_OVER : undefined;
             // The crates split as the units do: the rack's share first, then the yard's.
             const rackCrates =
               toYard.logs + toYard.rails > 0
                 ? Math.round((count * (onRack.logs + onRack.rails)) / (logs + rails))
                 : count;
+            const kitCar = tr.carByRole('kit'),
+              aim = rackCrates > 0 || !yard ? { x: rack.x / 100, z: rack.z / 100 } : yard,
+              far = Math.hypot(aim.x - kitCar.x, aim.z - kitCar.z) > 6,
+              over = far ? kitCar.y - (BOTTOM + kitCar.hy) + HOP_OVER : undefined;
             for (let i = 0; i < count; i++) {
               const first = i < rackCrates,
                 there = first ? onRack : toYard,
