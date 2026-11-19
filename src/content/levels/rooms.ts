@@ -1,6 +1,6 @@
 import { defineLevel, type Placement, type PrefabKey } from '../../prefab/types.ts';
 // Counts pin the existing shared construction recipe's stable piece order.
-const counts = { house: [79, 18], shop: [94, 18], museum: [136, 22], gate: [56, 18] } as const;
+const counts = { house: [79, 18], shop: [94, 18], museum: [136, 22], gate: [56, 18], plot3: [74, 18] } as const;
 export const levels = Object.entries(counts).map(([id, [pieces, scaffold]]) => {
   const placements: Placement[] = [];
   for (const [phase, count] of [

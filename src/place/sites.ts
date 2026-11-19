@@ -173,6 +173,11 @@ function solid(site: Site, on: boolean) {
       site.poleBodies.push(...part.bodies);
     }
 }
+/** m: a resting contact is not an overlap (site-clearance.ts). */
+const CONTACT = 0.02;
+/** m: a solid whose top is no higher than this over the site's ground is a slab you step onto (a room's floor and
+ * apron), so standing beside the walls on it, or on the doorstep, leaves you where you are. */
+const STEP_ON = 0.2;
 function pushOut(site: Site) {
   const { y, hulls, poles, keepOut } = site.plan;
   if (!me.body) return;
@@ -180,9 +185,10 @@ function pushOut(site: Site) {
     me.body.position,
     site.foot,
     y,
-    site.state === 'building' ? [...hulls, ...poles] : hulls,
+    (site.state === 'building' ? [...hulls, ...poles] : hulls).filter((h) => h.dy + h.hy > STEP_ON),
     outOf,
     keepOut ?? hulls[0],
+    CONTACT,
   );
   if (exit) {
     teleport(me.body, exit.x, H(exit.x, exit.z) + PLAYER_R + 0.2, exit.z);

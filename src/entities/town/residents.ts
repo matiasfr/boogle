@@ -22,7 +22,7 @@ import { babble } from '../../place/chatter.ts';
 import { addResident, folk, type Guy, type Mood } from '../../place/folk.ts';
 import { VILLAGE, toWorld, type RoomId } from '../../place/layout.ts';
 import type { Room, Rooms } from './rooms.ts';
-import { roomToWorld } from './rooms.ts';
+import { DOOR, roomToWorld, worldToRoom } from './rooms.ts';
 import { startTalk, type Answer, type Beat } from '../../place/talk.ts';
 import {
   BYE,
@@ -45,6 +45,9 @@ type Cast = {
   color: string;
   voice: VoiceSpec;
   up?: number; // stands on something, so you can see them over the furniture
+  /** His `…` shows from the street as well, not only once you're in his room: within the cue's 24 m, while the camera
+   * sees his spot through the doorway, so it never hangs on a wall. */
+  street?: true;
 };
 /** Room space; `yaw` 0 faces the door. Fixed spots, out of the way of the door: nobody has to walk round a shared little guy. */
 const CAST: Record<ResidentId, Cast> = {
@@ -86,6 +89,19 @@ const CAST: Record<ResidentId, Cast> = {
     act: 'idle',
     color: '#f0c030',
     voice: voice(350, 42, 1.28, 4300),
+  },
+  // The driver at the back of his front room, just off the door lane and facing the door, at the end of the clear
+  // floor his table will stand on (room +x, about 3 x 2 m from the back wall towards the lamp's window). His colour
+  // and voice are placeholders from the kit, like his lines: his look is the owner's.
+  driver: {
+    room: 'plot3',
+    x: 0.6,
+    z: -2.7,
+    yaw: 0,
+    act: 'idle',
+    color: '#b5652e',
+    voice: voice(205, 24, 1.0, 2900),
+    street: true,
   },
 };
 const IDS = Object.keys(CAST) as ResidentId[];
@@ -137,7 +153,7 @@ export type ResidentsEnv = {
 /** This player's memory of the residents: `load` may return anything (it's checked); `save` after every change. */
 export type ResidentsMemory = { load(): unknown; save(s: Seen): void };
 
-/** The five residents in their rooms, their Talk, and the barks, owned by `owner`. Call `update(dt)` every frame, after
+/** The six residents in their rooms, their Talk, and the barks, owned by `owner`. Call `update(dt)` every frame, after
  * the rooms'. */
 export function createResidents(owner: OwnedView, rooms: Rooms, env: ResidentsEnv, memory: ResidentsMemory) {
   const V = new THREE.Vector3();
@@ -348,16 +364,26 @@ export function createResidents(owner: OwnedView, rooms: Rooms, env: ResidentsEn
     remember();
     bark(best, line);
   }
+  /** The camera's line to `id`'s spot crosses their room's front through the doorway. */
+  function throughDoor(id: ResidentId) {
+    const c = CAST[id],
+      r = rooms.rooms[c.room],
+      cam = worldToRoom(r, camera.position.x, camera.position.z);
+    if (cam.z <= r.d / 2) return false;
+    const t = (cam.z - r.d / 2) / (cam.z - c.z);
+    return Math.abs(cam.x + (c.x - cam.x) * t) < DOOR.w / 2;
+  }
   function lateUpdate() {
+    const room = rooms.indoors.room?.id;
     for (const [id, cue] of cues) {
       const g = guys[id];
       cue.at.set(g.x, (g.fy ?? g.y) + 1.5, g.z);
       cue.update(
         g.on &&
-          rooms.indoors.room?.id === CAST[id].room &&
           !env.hush() &&
           !conversation.open &&
-          (!seen.met[id] || noticeFor(id) !== null),
+          (!seen.met[id] || noticeFor(id) !== null) &&
+          (room === CAST[id].room || (!room && !!CAST[id].street && throughDoor(id))),
       );
     }
   }

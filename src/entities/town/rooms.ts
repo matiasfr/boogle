@@ -30,10 +30,12 @@ import houseShell from '../../../content/built/levels/room-house.json' with { ty
 import shopShell from '../../../content/built/levels/room-shop.json' with { type: 'json' };
 import museumShell from '../../../content/built/levels/room-museum.json' with { type: 'json' };
 import gateShell from '../../../content/built/levels/room-gate.json' with { type: 'json' };
+import plot3Shell from '../../../content/built/levels/room-plot3.json' with { type: 'json' };
 import { merged } from '../../render/part-geometry.ts';
 import { ROOM_GROUP } from '../../place/land.ts';
 import { H } from '../../place/terrain.ts';
-import { ROOM_FLOOR, ROOM_PLOTS, toWorld, type RoomId } from '../../place/layout.ts';
+import { ROOM_FLOOR, ROOMS, toWorld, type RoomId } from '../../place/layout.ts';
+import { TRADE } from '../../sim/railway-trade-layout.ts';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { paintBoard, woodV } from '../../place/signs.ts';
 import {
@@ -47,7 +49,11 @@ import {
   type Site,
 } from '../../place/sites.ts';
 
-const shellLevels = { house: houseShell, shop: shopShell, museum: museumShell, gate: gateShell };
+const shellLevels = { house: houseShell, shop: shopShell, museum: museumShell, gate: gateShell, plot3: plot3Shell };
+/** s: a bought plot's build, buy to last piece, on the shared clock. */
+const PLOT_BUILD_S = TRADE.buildTicks / 10;
+/** A bought plot's room builds at a plot's pace (./plots.ts): sites.ts `doneAt` is 9.1 paces plus 0.3 s. */
+const PACE: Partial<Record<RoomId, number>> = { museum: 1.6, plot3: (PLOT_BUILD_S - 0.3) / 9.1 };
 
 export const ROOM_CAM = {
   enter: 0.75, // m outside the door where the show starts, and past which it can end
@@ -179,11 +185,16 @@ function write(r: Room, g: Face) {
   for (const k of r.pieces[g]) writePiece(k, t, travel);
 }
 /** The buildings, their stake boards, the cutaway and the indoor camera, owned by `owner`. Which rooms stand comes
- * from `env.up`; the house and gate cottage are there from the start. Call `snap()` once the drop set is built
- * (./sites.ts `buildSites`), and `update(dt)` every frame. */
-export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) {
+ * from `env.up`; the house and gate cottage are there from the start. A room whose build keeps the shared clock (a
+ * bought plot's) says how long ago it began with `env.since`, in seconds: everyone sees the same beat, and a late
+ * arrival picks it up where it is. Call `snap()` once the drop set is built (./sites.ts `buildSites`), and
+ * `update(dt)` every frame. */
+export function createRooms(
+  owner: OwnedView,
+  env: { up(id: RoomId): boolean; since?(id: RoomId): number | undefined },
+) {
   function makeRoom(id: RoomId): Room {
-    const p = ROOM_PLOTS[id],
+    const p = ROOMS[id],
       x = toWorld(p.x),
       y0 = H(x, p.z);
     const shellOwner = createOwnedView();
@@ -224,7 +235,7 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
       hulls: hulls('hulls'),
       poles: hulls('poles'),
     };
-    const site = addSite(`room-${id}`, plan, id === 'museum' ? 1.6 : 1, {
+    const site = addSite(`room-${id}`, plan, PACE[id] ?? 1, {
       hulls: phase('hulls').map((r) => r.instance),
       poles: phase('poles').map((r) => r.instance),
     });
@@ -295,7 +306,7 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
       ready: false,
     };
   }
-  const rooms = Object.fromEntries((Object.keys(ROOM_PLOTS) as RoomId[]).map((id) => [id, makeRoom(id)])) as Record<
+  const rooms = Object.fromEntries((Object.keys(ROOMS) as RoomId[]).map((id) => [id, makeRoom(id)])) as Record<
     RoomId,
     Room
   >;
@@ -347,12 +358,24 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
   }
 
   // ---------------------------------------------------------------- standing, or not
-  /** Start over, a reload or a co-op snapshot: each as the state says, with no show, and every piece back in its place. */
+  /** Up it goes: on the shared clock when the room keeps it, finished with no show once that build is over. */
+  function raise(r: Room, since = env.since?.(r.id)) {
+    if (since === undefined) return void startSite(r.site, r.id === 'museum' ? 3 : 1.2);
+    if (since >= PLOT_BUILD_S) snapSite(r.site, true);
+    else startSite(r.site, -since);
+  }
+  /** Start over, a reload or a co-op snapshot: each as the state says, with no show, and every piece back in its place.
+   * A shared-clock build still under way resumes where it is (as ./plots.ts's sites do). */
   function snap() {
     for (const r of LIST) {
       const up = env.up(r.id);
       r.up = up;
-      snapSite(r.site, up);
+      const since = up ? env.since?.(r.id) : undefined;
+      if (since === undefined) snapSite(r.site, up);
+      else {
+        snapSite(r.site, false);
+        raise(r, since);
+      }
       setStake(r, !up);
       for (const g of FACES) r.t[g] = r.shown[g] = 0;
       for (const c of r.corners) c.shown = 0;
@@ -405,12 +428,14 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
       if (want && !r.up) {
         r.up = true;
         setStake(r, false);
-        startSite(r.site, r.id === 'museum' ? 3 : 1.2);
+        raise(r);
       } else if (!want && r.up) {
         r.up = false;
         snapSite(r.site, false);
         setStake(r, true);
-      }
+      } else if (want && r.site.state === 'building' && (env.since?.(r.id) ?? 0) >= PLOT_BUILD_S)
+        // The shared clock says it's built: a beat that's fallen behind it (a slow frame, a hidden tab) finishes now.
+        snapSite(r.site, true);
       const ready = r.site.state === 'done';
       if (ready !== r.ready) {
         r.ready = ready;
@@ -426,7 +451,11 @@ export function createRooms(owner: OwnedView, env: { up(id: RoomId): boolean }) 
       cz = camera.position.z;
     if (room) {
       const l = worldToRoom(room, p.x, p.z);
-      const stillIn = Math.abs(l.x) < room.w / 2 + 0.2 && l.z < room.d / 2 + ROOM_CAM.enter && l.z > -room.d / 2 - 0.2;
+      // Wider than the way in on every side, out of the door as well: standing on the line never toggles the show.
+      const stillIn =
+        Math.abs(l.x) < room.w / 2 + 0.2 &&
+        l.z < room.d / 2 + ROOM_CAM.enter + 0.2 + ROOM_CAM.lateralExitMargin &&
+        l.z > -room.d / 2 - 0.2;
       if (indoors.inside !== room && stillIn && l.z < room.d / 2) {
         indoors.inside = room;
         for (const fn of enterFns) fn(room, true);

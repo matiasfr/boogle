@@ -1,4 +1,4 @@
-> **Status: proposed (2026-11-19).** Light brainstorm (one pass, three lenses). Nothing built. Who moves in is
+> **Status: building (2026-11-19).** Light brainstorm (one pass, three lenses). Steps 1 to 3 on `claude/first-house-open`. Who moves in is
 > decided: the retired engine driver ([entry](../decisions-characters.md#d-2026-11-19-first-house-resident)). His
 > name, look, quirks and every line he says are the owner's
 > ([11 November](../decisions-characters.md#d-2026-11-11-the-story-and-characters-are-the-owner-s)): this brief

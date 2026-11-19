@@ -68,7 +68,7 @@ function plotsView(adapter: RailwayAdapter) {
         targets: () => o.handlers?.['town.plot-buy']?.() ?? [],
       };
     },
-    addSite: () => ({ state: 'none', bodies: [] }),
+    addSite: (_id: string, plan: unknown) => ({ state: 'none', bodies: [], plan }),
     startSite: (s: { state: string }) => void (s.state = 'building'),
     snapSite: (s: { state: string }, on: boolean) => void (s.state = on ? 'done' : 'none'),
     railwayCommands: () => adapter,

@@ -98,7 +98,7 @@ minute, their current price and the shared box's balance. An affordable plot dra
 kiln/cradle material, half opaque and breathing slowly like every gold ghost (below, the kiln's ghosts). Its roof is visible from the island platform above the curio shelf; the lower outline is
 occluded there. A one-second Interact hold queues the buy; only an accepted Plot row clears the pile and starts
 construction. The existing site builder finishes at the purchase tick plus 100; a late arrival sees the completed
-closed shell with its door mark and three solid hulls. Missing plot/till rows hide the view and recover on refill.
+closed shell with its door mark and three solid hulls (the first house now stands open: [trade](trade.md#buying-and-building)). Missing plot/till rows hide the view and recover on refill.
 An unaffordable board shows its shortfall through the ordinary blocked prompt. Session loss/refill releases a pending hold without claiming success; only the matching plot refusal releases it otherwise. Mid-build returns place already-landed pieces silently, then play the remaining landings. Shared pure board anchors allow
 server validation within 3.2 m, with no new saved state or namespace bump. The two tooling landings now stand
 clear of the board post and statue. New words are placeholders for The Boogler (listed in the plan); existing copy

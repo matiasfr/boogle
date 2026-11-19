@@ -703,15 +703,28 @@ export const TOWN: {
 };
 /** The buildings you can walk into (./rooms.ts). Their doors are local +z, so `yaw` turns each door to face the street. Sizes
  * are the outside; docs/research/town-interiors.md, "How little room is enough?". */
-export type RoomId = 'house' | 'shop' | 'museum' | 'gate';
+export type RoomId = 'house' | 'shop' | 'museum' | 'gate' | PlotRoomId;
+/** Rooms on the town's bought trade plots: trade plot 0 (town slot `plot3`, board "Plot 1") once it is bought and built. */
+export type PlotRoomId = 'plot3';
+type RoomPlot = { x: number; z: number; yaw: number; w: number; d: number; high: number };
 /** The shells' slab top above their ground datum; door grading and the room view share it. */
 export const ROOM_FLOOR = 0.14;
-export const ROOM_PLOTS: Record<RoomId, { x: number; z: number; yaw: number; w: number; d: number; high: number }> = {
+/** The occupied rooms. Their rows also keep the shared tree catalogue's trees and return poses out, and stand in for
+ * their slot in the blockout, so a bought plot's room is not one of them. */
+export const ROOM_PLOTS: Record<Exclude<RoomId, PlotRoomId>, RoomPlot> = {
   house: { ...townBuilding('house'), high: 3.7 },
   shop: { ...townBuilding('shop'), high: 3.9 },
   museum: { ...townBuilding('museum'), high: 5 },
   gate: { ...townBuilding('gate'), high: 3 },
 };
+/** The bought plots that open as walk-in rooms on their kit (docs/brainstorms/first-house-resident.md, step 1), each
+ * with its trade plot index (`TRADE.plots`). The slot keeps its blockout outline, its stakes and board
+ * (src/entities/town/plots.ts). */
+export const PLOT_ROOMS: Record<PlotRoomId, RoomPlot & { plot: number }> = {
+  plot3: { ...townBuilding('plot3'), high: 3.7, plot: 0 },
+};
+/** Every room the town draws (src/entities/town/rooms.ts), and every door the ground grades to. */
+export const ROOMS: Record<RoomId, RoomPlot> = { ...ROOM_PLOTS, ...PLOT_ROOMS };
 /** The blockout's eaves above the ground, read from the kits so what can be climbed is what the real building will
  * allow: a house's slab and wall (`ROOM_FLOOR` + `ROOM_PLOTS.house.high`), a cottage's wall (`planOf`'s `high`).
  * Literals, because the level's records hold authored numbers; test/town-plan.test.ts ties them to the kits. */

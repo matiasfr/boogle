@@ -16,6 +16,7 @@ import {
   townPopulation,
   type TownRead,
 } from '../../sim/town-facts.ts';
+import type { PlotRoomId, RoomId } from '../../place/layout.ts';
 import { LINE1_STATIONS } from '../../sim/railway-line-layout.ts';
 import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 import { inspectWardrobe, wardrobe } from '../wardrobe/state.ts';
@@ -51,17 +52,19 @@ const GREAT_TREE = 28;
 export async function createTownView(read: () => TownLook | null) {
   const owner = createOwnedView();
   owner.root.name = 'town';
-  const [roomKit, houseKit, shopKit, sites, lines, residentKit, museumKit, plans, layout] = await Promise.all([
-    import('./rooms.ts'),
-    import('./house.ts'),
-    import('./shop.ts'),
-    import('../../place/sites.ts'),
-    import('./town-lines.ts'),
-    import('./residents.ts'),
-    import('./museum.ts'),
-    import('../../place/opening-plans.ts'),
-    import('../../place/layout.ts'),
-  ]);
+  const [roomKit, houseKit, shopKit, sites, lines, residentKit, museumKit, plans, layout, firstHouse] =
+    await Promise.all([
+      import('./rooms.ts'),
+      import('./house.ts'),
+      import('./shop.ts'),
+      import('../../place/sites.ts'),
+      import('./town-lines.ts'),
+      import('./residents.ts'),
+      import('./museum.ts'),
+      import('../../place/opening-plans.ts'),
+      import('../../place/layout.ts'),
+      import('./first-house.ts'),
+    ]);
   let facts: TownRead = { path: false, forge: false, completed: 0, trains: false };
   let score = 0;
   let railway: TownLook | null = null;
@@ -88,18 +91,25 @@ export async function createTownView(read: () => TownLook | null) {
     hush: () => conversation.open || rewardUp,
   };
   // The house and gate cottage stand from the start; Fine Prices and the museum open on the first path (T5, T3). The shop needs this
-  // player's wardrobe, which the wardrobe entity starts on the production railway.
+  // player's wardrobe, which the wardrobe entity starts on the production railway. A bought plot's room (the first
+  // house, trade plot 0) goes up from its accepted buy, on the shared clock the plots read (./plots.ts).
   const clothes = wardrobe();
+  const plotRooms = Object.entries(layout.PLOT_ROOMS) as [PlotRoomId, (typeof layout.PLOT_ROOMS)[PlotRoomId]][];
+  const boughtSince = (id: RoomId) =>
+    id in layout.PLOT_ROOMS ? plots.since(layout.PLOT_ROOMS[id as PlotRoomId].plot) : undefined;
   const rooms = roomKit.createRooms(owner, {
     up: (id) =>
       id === 'house' ||
       id === 'gate' ||
       (id === 'museum' && env.has('path')) ||
-      (id === 'shop' && !!clothes && env.has('path')),
+      (id === 'shop' && !!clothes && env.has('path')) ||
+      boughtSince(id) !== undefined,
+    since: boughtSince,
   });
   rooms.stakeBoard(rooms.rooms.shop, lines.BOARDS.shopPlot);
   rooms.stakeBoard(rooms.rooms.museum, lines.BOARDS.museumPlot);
   const house = houseKit.createHouse(owner, rooms.rooms.house, env);
+  firstHouse.createFirstHouseLamp(rooms.rooms.plot3);
   const memory = createTownMemory();
   const residents = residentKit.createResidents(owner, rooms, env, memory);
   addEventListener('pagehide', memory.flush);
@@ -138,7 +148,9 @@ export async function createTownView(read: () => TownLook | null) {
   const museum = museumKit.createMuseum(owner, rooms, {
     *buildings() {
       yield* opening;
+      // The bought plots' rooms stay off the table, as their closed houses were.
       for (const r of Object.values(rooms.rooms)) {
+        if (r.id in layout.PLOT_ROOMS) continue;
         const q = r.site;
         if (q.state !== 'none') yield { plan: q.plan, grow: q.state === 'done' ? 1 : q.t / q.doneAt };
       }
@@ -168,7 +180,7 @@ export async function createTownView(read: () => TownLook | null) {
   // Empty plot outlines and mats, the monument, and the delivered freight at the priced plots.
   createTownBlockout(owner);
   createTownStreets(owner);
-  const plots = createTownPlots(owner);
+  const plots = createTownPlots(owner, new Map(plotRooms.map(([id, row]) => [row.plot, rooms.rooms[id].site])));
   const siteView = sites.buildSites(owner);
   plots.update(read()?.plots ?? null);
   rooms.snap();
@@ -223,7 +235,13 @@ export async function createTownView(read: () => TownLook | null) {
       newest: newestTownFact(facts),
       level: townLevel(facts),
       population: townPopulation(facts),
-      rooms: { house: room('house'), shop: room('shop'), museum: room('museum'), gate: room('gate') },
+      rooms: {
+        house: room('house'),
+        shop: room('shop'),
+        museum: room('museum'),
+        gate: room('gate'),
+        plot3: room('plot3'),
+      },
       indoors: { room: rooms.indoors.room?.id ?? null, inside: rooms.indoors.inside?.id ?? null },
       houseStage: house.stage(),
       museumBits: museum.shown(),

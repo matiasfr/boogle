@@ -16,7 +16,7 @@ type XZ = { x: number; z: number };
 /** A linear heightfield triangle reaches its maximum over a rectangle at a triangle/rectangle vertex.
  * Include grid vertices inside the footprint, its corners, and intersections with all three grid edge families.
  * The Round rooms are outside the fine cove patch, so this covers the rendered surface exactly. */
-function footprintSamples(room: (typeof layout.ROOM_PLOTS)['house']): XZ[] {
+function footprintSamples(room: (typeof layout.ROOMS)['house']): XZ[] {
   const corners = [
     [-1, -1],
     [1, -1],
@@ -61,7 +61,7 @@ function footprintSamples(room: (typeof layout.ROOM_PLOTS)['house']): XZ[] {
   }
   return points;
 }
-for (const [id, room] of Object.entries(layout.ROOM_PLOTS)) {
+for (const [id, room] of Object.entries(layout.ROOMS)) {
   test(`${id}: terrain never enters the occupied room interior`, () => {
     const floor = H(room.x + layout.ORIGIN.x, room.z) + FLOOR;
     let highest = -Infinity;
@@ -71,11 +71,14 @@ for (const [id, room] of Object.entries(layout.ROOM_PLOTS)) {
       `${id}: terrain ${highest.toFixed(3)}, floor ${floor.toFixed(3)}, intrusion ${(highest - floor).toFixed(3)} m`,
     );
   });
-  test(`${id}: the ground at the door is within 5 cm of the actual floor`, () => {
+  test(`${id}: the ground at the door meets the actual floor`, () => {
     const floor = H(room.x + layout.ORIGIN.x, room.z) + FLOOR;
     const p = townLocal(room, 0, room.d / 2);
     const ground = surfaceHeight(p.x + layout.ORIGIN.x, p.z);
-    assert.ok(Math.abs(floor - ground) <= 0.05, `${id}: floor ${floor.toFixed(3)}, door ground ${ground.toFixed(3)}`);
+    // A bought plot's room stands on the plot's level pad, ungraded so the slot's outline stays on its ground: its
+    // doorstep is the slab's own height, one small step up.
+    const step = Object.hasOwn(layout.PLOT_ROOMS, id) ? FLOOR + 0.005 : 0.05;
+    assert.ok(Math.abs(floor - ground) <= step, `${id}: floor ${floor.toFixed(3)}, door ground ${ground.toFixed(3)}`);
   });
 }
 

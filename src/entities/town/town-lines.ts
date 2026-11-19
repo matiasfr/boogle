@@ -10,7 +10,7 @@ export type Fact = 'path' | 'forge' | 'depot' | 'head' | 'trains' | 'town' | 'st
  * town entity reads it from the railway's state; Place never raises it. */
 export const WORKS_FACTS = ['breaker'] as const;
 
-export type ResidentId = 'pip' | 'button' | 'nell' | 'moss' | 'wren';
+export type ResidentId = 'pip' | 'button' | 'nell' | 'moss' | 'wren' | 'driver';
 export type ResidentLines = {
   name: string;
   /** First time you talk to them: a panel or two. */
@@ -155,6 +155,34 @@ export const RESIDENTS: Record<ResidentId, ResidentLines> = {
     },
     asks: [{ ask: 'Did he really?', say: "Moss says no. Moss also says it's a stone." }],
     rumour: ["He's no prophet. No mystic. He's got powers. You can tell, because nobody's ever seen them."],
+  },
+  // The retired engine driver, in the first bought house (docs/decisions-characters.md,
+  // d-2026-11-19-first-house-resident). His name, look, quirks and every line are the owner's: each field here is a
+  // marked placeholder saying what the line must do, until he writes them (docs/brainstorms/first-house-resident.md).
+  driver: {
+    name: "[owner's line: his name]",
+    intro: [
+      "[owner's line: who he is, a retired engine driver who has just moved in]",
+      "[owner's line: points at the table where his train set will go]",
+    ],
+    hello: "[owner's line: says hello as you come in and points at the table]",
+    ordinary: [
+      "[owner's line: an ordinary line about the railway or the house]",
+      "[owner's line: a second ordinary line, said in turn]",
+    ],
+    notice: {
+      town: "[owner's line: notices the new neighbours, the riders from his house]",
+      stone: "[owner's line: notices the town building in stone]",
+      pier: "[owner's line: notices the pier is laid and is on his table]",
+      breaker: "[owner's line: notices the breaker taken off its pedestal]",
+    },
+    asks: [
+      {
+        ask: "[owner's line: a question about his railway days]",
+        say: "[owner's line: his answer]",
+      },
+    ],
+    rumour: ["[owner's line: his impression of The Boogler, like the other residents' rumours]"],
   },
 };
 
