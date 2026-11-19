@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-18 · Decisions page (controls): keyboard E's hold-only plot buy and no modifier+E kept; account page: "Sign in" main, "Switch account", the island hidden on an expired session; the footing tile shows its live count; the shop's kept line names the item and T1 drops "breaks rocks"; the other listed strings stay ([entry](#d-2026-11-18-decisions-page-controls))
 - 2026-11-16 · Keep the turn toward the forge; the pier's cut shows the breaker waiting, not being cast ([entry](#d-2026-11-16-batch2-pier-shot-shows-waiting-breaker))
 - 2026-11-16 · The 10 batch-2 bulk calls in this topic are confirmed as logged, subject to later explicit owner decisions ([entry](#d-2026-11-16-batch2-bulk-confirmed))
 
@@ -38,6 +39,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-11-01 · first visit and returning visit are different ([entry](#d-2026-11-01-first-visit-and-returning-visit-are))
 
 ## Decided
+
+- <a id="d-2026-11-18-decisions-page-controls"></a>**2026-11-18, decisions page: keyboard E, the account page and the strings** (owner, 18 November 2026 (19 November UTC), his picks on the orchestrator's decisions page ([page](https://claude.ai/artifact/6BfvBJTeqtKCN3GFWYZrt7)), pasted back in chat). His picks, word for word: the keyboard E changes "Keep both"; the pointer after closing the garage "Leave it"; boxes on plinths "Keep"; the account page's expired session "Make "Sign in" the main button; drop the reload"; a signed-in player's "Sign in" ""Switch account""; the classic island behind an expired session "Hide the island" (not the recommendation); "Logs full", "Stone full", "Rails full" and "Carrying" "Keep"; "Change what you wear in Pause" "Keep"; the footing wagon tile "Show the live number (6 or 10)"; "Look at the engine" and "It runs faster and pulls one more car" "Keep both"; the town placeholders "Keep them all"; the shop strings "Fix both to match". The rules: a tap of E at a plot board does not buy (the hold is kept), and Ctrl, Cmd or Alt with E does not interact; closing the garage leaves the pointer unlocked until a click; a raised box opens from against its plinth; with an expired or replaced session the account page's main button is "Sign in" and the reload goes, a signed-in player's account switch reads "Switch account", and the classic island is hidden behind the expired-session menu; the footing wagon tile shows the live count (6, or 10 with the bigger cradle); `SHOP.kept[0]` names the item kept instead of "the hat", and T1 no longer promises rocks before rocks exist; every other listed string stays as it is.
 
 - <a id="d-2026-11-16-batch2-pier-shot-shows-waiting-breaker"></a>**2026-11-16, the pier shot shows the breaker waiting** (owner, 16 November 2026, in chat: "Answered recs on the flags"). Accepted recommendations: **HU-002:** keep the turn toward the forge; the pier's cut shows the breaker waiting, not being cast. The rest of each original row stands except the named change or retirement; full rows are in the [archive](decisions-archive.md#b2-rest-controls). Basis: [docs/decisions-core-loop.md#d-2026-11-15-works-flow](decisions-core-loop.md#d-2026-11-15-works-flow). No player or character copy is authored by this entry.
 

@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-18 · The boiler's guide is the forge crew's foreman (placeholder lines until he writes them); The Boogler's overhead mark and edge pointer show only within 24 m, like the little guys' "…" ([entry](#d-2026-11-18-decisions-page-characters))
 - 2026-11-16 · Keep the wardrobe's setting placements and paper rows; remove the lighter dim behind You ([entry](#d-2026-11-16-batch2-wardrobe-small-calls-without-dim))
 - 2026-11-16 · The 12 batch-2 bulk calls in this topic are confirmed as logged, subject to later explicit owner decisions ([entry](#d-2026-11-16-batch2-bulk-confirmed))
 
@@ -31,6 +32,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · Art: a painted concept per era, then a building kit and a vehicle kit per era. ([entry](#d-undated-art))
 
 ## Decided
+
+- <a id="d-2026-11-18-decisions-page-characters"></a>**2026-11-18, the boiler's guide is the forge foreman; The Boogler's marks only nearby** (owner, 18 November 2026 (19 November UTC), his picks on the orchestrator's decisions page ([page](https://claude.ai/artifact/6BfvBJTeqtKCN3GFWYZrt7)), pasted back in chat; and in chat the same day: "The Bugler's locator should not show at any distance. It should show only when nearby, similar to the little guys."). His picks, word for word: who guides at the boiler "The forge crew's foreman"; The Boogler's off-screen edge pointer "Cut it to 24 m too". The rules: the forge crew's foreman, one of the three little guys who wave at the pedestal, stands at the boiler with a one-line bubble on first approach in each stage, then Talk, until the first seam is struck, with marked placeholder lines until he writes them ([brief](brainstorms/boiler-guide.md)); The Boogler's overhead mark shows only within 24 m, like the little guys' "…" (#2221), and his off-screen edge pointer fades out by the same 24 m.
 
 - <a id="d-2026-11-16-batch2-wardrobe-small-calls-without-dim"></a>**2026-11-16, wardrobe small calls without a dim** (owner, 16 November 2026, in chat: "Answered recs on the flags"). Accepted recommendations: **CH-011:** confirm, minus the lighter dim. The rest of each original row stands except the named change or retirement; full rows are in the [archive](decisions-archive.md#b2-rest-characters). Basis: [docs/decisions-characters.md#d-2026-11-10-no-dim-behind-the-pause-view-s-you](decisions-characters.md#d-2026-11-10-no-dim-behind-the-pause-view-s-you).
 

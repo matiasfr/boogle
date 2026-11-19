@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-18 · Decisions page (core loop): a full stone heap seats lower; dropped piles stay the room's; the slower finish stands until the rails' upgrade; no early-chop buffer (G34 closed); glider 10 m/s and cosmetic wearables confirmed; G28's bench is near the first bend towards the valley ([entry](#d-2026-11-18-decisions-page-core-loop))
 - 2026-11-17 · separate capacities answers: 2 a hit once Station 3 is funded (its 40 logs may come down), pack raises logs and the breaker stone, rails start at 8 with their own later upgrade ([entry](#d-2026-11-17-separate-capacities-answers))
 
 - 2026-11-17 · separate wood and stone capacities, no heavy load, 1 per chop to start, squares on the back ([entry](#d-2026-11-17-separate-capacities))
@@ -123,6 +124,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · The ending: back on the original island with The Boogler (the Design Table call, top of this section). ([entry](#d-undated-the-ending)) _At Alpha: the ride, the meeting, one shared moment, a thanks card (undecided) ("Campaign outline answered")._
 
 ## Decided
+
+- <a id="d-2026-11-18-decisions-page-core-loop"></a>**2026-11-18, decisions page: separate capacities' follow-ups, no early-chop buffer, the glider and wearables** (owner, 18 November 2026 (19 November UTC), his picks on the orchestrator's decisions page ([page](https://claude.ai/artifact/6BfvBJTeqtKCN3GFWYZrt7)), pasted back in chat). His picks, word for word: a full back of 16 stone "Seat the heap lower on the frame"; dropped piles "Keep it shared"; the slower finish "Accept until the rails' upgrade exists"; G34 "No buffer" (not the recommendation); the glider's speed and wearables' purpose "Agree with both". For G28 he picked no option and wrote: "Near the first bend towards the valley I think". The rules: a full stone heap sits lower on the frame so it does not stand above Buddy's head from behind; anyone can pick up from a dropped pile, as friends hand cargo over; the model's slower finishes (one player 44:50 → 46:03, two 39:18 → 42:04, three 38:40 → 42:25) stand until the rails' upgrade; a Chop pressed before you are in reach does nothing, as today, and G34 is closed; glide speed stays 10 m/s until he has flown it, updrafts and the bird stay parked, and wearables stay cosmetic personal finds; the oversized cliff bench (G28) is looked for near the first bend towards the valley.
 
 - <a id="d-2026-11-17-separate-capacities-answers"></a>**2026-11-17, separate capacities: the three open questions** (owner, 17 November 2026, answering the three questions of [separate-capacities](plans/separate-capacities.md)). (1) When a hit becomes 2: "3 but maybe reduce logs from 40" — the yield doubles for the room once Station 3 is funded, and Station 3's 40-log bill may come down (the amount is proposed by the plan, measured, and logged). (2) What upgrades each capacity: "Pack + breaker (Recommended)" — the pack chest raises logs 8 → 16 where it stands today; taking the breaker raises stone 8 → 16; both shared, no new chests. (3) Rails: "8, own upgrade later" — rails start at 8, with their own upgrade designed later; line 2 is heavier until it exists.
 
