@@ -54,6 +54,7 @@ const opt: {
   clockUrl?: string;
   island: boolean;
   reducedMotion: boolean;
+  touch: boolean;
 } = {
   view: 'hill',
   cam: null,
@@ -86,6 +87,7 @@ const opt: {
   players: 1,
   island: false,
   reducedMotion: false,
+  touch: false,
 };
 const argv = process.argv.slice(2);
 for (let k = 0; k < argv.length; k++) {
@@ -125,6 +127,8 @@ for (let k = 0; k < argv.length; k++) {
     opt.query = v(); // URL params for the page, like BOOGLE_QUERY; a Codex rule can't see past an environment variable
   else if (a === '--hud')
     opt.hud = true; // keep the HUD in the picture
+  else if (a === '--touch')
+    opt.touch = true; // every page is a phone (touch events, coarse pointer); evals get window.__touch (below)
   else if (a === '--reduced-motion')
     opt.reducedMotion = true; // every page emulates prefers-reduced-motion: reduce
   else if (a === '--island')
@@ -166,6 +170,8 @@ for (let k = 0; k < argv.length; k++) {
   [--rail-seed awake]                       start from an accepted railway server save (dev/look/rail-seed.ts)
   [--island]                                start on the classic island (the original island at the origin)
   [--reduced-motion]                        every page emulates prefers-reduced-motion: reduce
+  [--touch]                                 every page a phone (pair with --size 390x844); evals can press real touches
+                                            with await window.__touch('touchStart'|'touchEnd', x, y) (CSS px)
   [--until "window.__placeDone"] [--real]   the warm-up runs warped; --until ends it early; --real keeps it in real time
   [--wall 1200]                             hard limit on the whole run once it holds the bot slot (seconds): verdict "timeout", exit 4
   [--at "forge lit"]                        start at a beat of the last playthrough; --at list names them
@@ -272,6 +278,17 @@ async function wallFired() {
   process.exit(TIMEOUT_EXIT);
 }
 let coopWarp: Awaited<ReturnType<typeof startCoopWarp>> | undefined;
+/** --touch: `window.__touch(type, x, y)` sends one real touch point through the browser (CDP), so the page sees
+ * trusted touch and pointer events, a press held for as long as the eval waits between touchStart and touchEnd. */
+async function touchDriver(g: Game) {
+  const cdp = await g.ctx.newCDPSession(g.page);
+  await g.page.exposeFunction(
+    '__touch',
+    async (type: 'touchStart' | 'touchMove' | 'touchEnd', x: number, y: number) => {
+      await cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] });
+    },
+  );
+}
 async function pageScript(g: Game, file: string) {
   let body = fs.readFileSync(path.resolve(file), 'utf8');
   // TS evals are modules (top-level await); remove the module marker after stripping types for page evaluation.
@@ -294,6 +311,7 @@ try {
     sourceImports: !!(opt.curves || save || opt.eval || opt.action || opt.until || opt.island),
     island: opt.island,
     reducedMotion: opt.reducedMotion,
+    touch: opt.touch,
     out: opt.out,
     size: opt.size,
     hud: opt.hud,
@@ -308,6 +326,7 @@ try {
     warp: opt.warp,
   });
   pages.push(g);
+  if (opt.touch) await touchDriver(g);
   // What an eval says as it goes (PLAY ..., RIDE ...): here as it happens, so a long run can be read without its still.
   g.page.on('console', (m) => /^[A-Z]{3,} /.test(m.text()) && console.log(m.text()));
   console.log(
@@ -321,6 +340,7 @@ try {
           sourceImports: !!(opt.curves || save || opt.eval || opt.action || opt.until || opt.island),
           island: opt.island,
           reducedMotion: opt.reducedMotion,
+          touch: opt.touch,
           out: opt.out,
           size: opt.size,
           hud: opt.hud,
@@ -332,6 +352,7 @@ try {
         })
       : null;
   if (g2) pages.push(g2);
+  if (g2 && opt.touch) await touchDriver(g2);
   g2?.page.on('console', (m) => /^[A-Z]{3,} /.test(m.text()) && console.log(`[2] ${m.text()}`));
   if (g2) {
     coopWarp = await startCoopWarp(
