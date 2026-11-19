@@ -297,7 +297,9 @@ test('authored layouts reject malformed geometry and mixed expanded data before 
     /coexist/,
   );
   const resolved = validation.loadLevelArtifact(bell, definitions);
-  assert.equal(resolved.placements.length, 70); // two separate visual undersides retain the original colliders
+  // Two separate visual undersides retain the original colliders; greybox leg 2 step 4 adds the bay row's two bed
+  // pieces on the rock (bay-bed-on, bay-bed-climb).
+  assert.equal(resolved.placements.length, 72);
   assert.ok(!('layout' in resolved));
   assert.deepEqual(
     { ...metadata, format: 'boogle-level', place: 'empty', placements: [] },

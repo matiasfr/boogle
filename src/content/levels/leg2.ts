@@ -62,6 +62,12 @@ function bell() {
     // when the track plan eases the 52 degree kink (about 11 m south at a 100 m radius), so they get no polish.
     { ...bayIn.box('bay-bed-in', -4, 70, -BED, BED, BAY_RAIL - 0.1, sub(BAY_RAIL - 0.1, ROCK), 'dark'), over: true },
     { ...bayOut.box('bay-bed-out', -4, 70, -BED, BED, BAY_RAIL - 0.1, sub(BAY_RAIL - 0.1, ROCK), 'dark'), over: true },
+    // The bay row climbs onto the rock east of the in half's bed (t 70 to 94; the row's grade knots are at t 79.793,
+    // rail 15, and t 99.738, rail 14.22): its unlaid bed carries on there 0.15 m under the rail (the smoothed deck is
+    // within 0.1 m of the row's straight pieces), so the bay cut's last lay only lifts a body standing on the rock. Past
+    // t 94 the rail is within a body sphere's radius (0.45 m) of the rock's top. Each down into the rock (0.85 m).
+    bayIn.box('bay-bed-on', 70, 79.793, -BED, BED, sub(BAY_RAIL, 0.15), 0.85, 'dark'),
+    { ...bayIn.ramp('bay-bed-climb', 79.793, sub(BAY_RAIL, 0.15), 94, 14.29, -BED, BED, 'dark'), h: 0.85 },
     // The two on the inside of the kink start at t 2: from t -3 their corners stood in the other half's bed.
     // Keep the original collision volume and walkable top. Only the drawn underside is inset 1 cm
     // from the other bay's bed, whose bottom also lies at ROCK.
@@ -403,6 +409,41 @@ const STACK_S = {
     STACK_S.along.t1 * TA - TC * 5 < 120;
   if (bad) throw new Error('leg2: the south stack collider enters the bore');
 }
+/** The bore's unlaid bed (as Bell Rock's and the West landing's are), its floor across the deck's 7.6 m: 0.15 m under
+ * the row's rail, so the deck a lay makes solid only steps a body standing on it up (the drawn deck, smoothed, is
+ * within 0.103 m of the row's straight pieces here, so the bed never shows through it), and solid down to the floor's
+ * level (`BED_FOOT`, where the floor's edge strips beside the walls have their top), so nothing standable is left under
+ * the deck. In 0.95 m strips, each from the split's wall to the east face (reaching both faces for the whole strip:
+ * at most 1.2 m past one corner): [l0, l1, t at the wall, its top there, t at the face]. The top then follows the
+ * row's grade: up to the knot at t 79.128, on to the one at t 217.598, then level. Checked at load against the row's
+ * knots and the stack's faces. */
+const BED_FOOT = INCLINE_BORE.floor;
+const BED_KNOTS = [
+  [56.001, 2.85],
+  [79.128, 3.75],
+  [217.598, 3.85],
+] as const;
+const BORE_BED = [
+  [-3.8, -2.85, 70.05, 3.4, 228.65],
+  [-2.85, -1.9, 68.95, 3.36, 229.75],
+  [-1.9, -0.95, 67.95, 3.32, 230.85],
+  [-0.95, 0, 66.85, 3.27, 232.05],
+  [0, 0.95, 65.85, 3.24, 233.15],
+  [0.95, 1.9, 64.75, 3.19, 234.35],
+  [1.9, 2.85, 63.75, 3.15, 235.45],
+  [2.85, 3.8, 62.65, 3.11, 236.65],
+] as const;
+for (const [l0, l1, t0, y0, t1] of BORE_BED) {
+  const [[ka, ya], [kb, yb]] = BED_KNOTS,
+    grade = ya + ((yb - ya) * (t0 - ka)) / (kb - ka);
+  if (
+    t0 > Math.min(wallT(l0), wallT(l1)) ||
+    t1 < Math.max(faceT(l0), faceT(l1)) ||
+    t0 < ka ||
+    Math.abs(y0 - grade) > 0.01
+  )
+    throw new Error(`leg2: the bore's bed at l ${l0} has moved`);
+}
 /** A pale, drawn-only box in the split's a/c frame: a part of a bore mouth's frame. */
 const mouthMark = (id: string, a: readonly number[], c: readonly number[], y: Scalar, h: Scalar) => ({
   ...ac.box(id, a[0]!, a[1]!, c[0]!, c[1]!, y, h, 'pale'),
@@ -427,9 +468,13 @@ function bore() {
     const e = boreEnds(l + 0.5);
     pieces.push(tl.box(`bore-roof-${l + B.half}`, e.wall, e.face, l, l + 1, top, B.slab, 'black'));
   }
-  for (let l = -B.half; l < B.half; l += 2) {
-    const e = boreEnds(l + 1);
-    pieces.push(tl.box(`bore-floor-${l + B.half}`, e.wall, e.face, l, l + 2, B.floor, B.slab, 'black'));
+  // The floor's edge strips, between the bed (BORE_BED, below) and each wall.
+  for (const [id, l0, l1, at] of [
+    ['bore-floor-s', 3.8, B.half, B.half],
+    ['bore-floor-n', -B.half, -3.8, -B.half],
+  ] as const) {
+    const e = boreEnds(at);
+    pieces.push(tl.box(id, e.wall, e.face, l0, l1, B.floor, B.slab, 'black'));
   }
   // The mouth marks: a pale frame round each opening (the split's lintel is the old portal, in gorge()). Each frame
   // stands clear of the roof's slab it meets in plan: its lintel 0.1 m over the slab's top.
@@ -451,6 +496,12 @@ function bore() {
   S.east.forEach(([a0, a1, c], j) =>
     pieces.push(hidden(ac.box(`stack-s-east-${j}`, a0, a1, 45, c, top, band, 'black'))),
   );
+  const [, [kb, yb], [kc, yc]] = BED_KNOTS;
+  BORE_BED.forEach(([l0, l1, t0, y0, t1], k) => {
+    pieces.push({ ...tl.ramp(`bore-bed-${k}-a`, t0, y0, kb, yb, l0, l1, 'dark'), h: sub(y0, BED_FOOT) });
+    pieces.push({ ...tl.ramp(`bore-bed-${k}-b`, kb, yb, kc, yc, l0, l1, 'dark'), h: sub(yb, BED_FOOT) });
+    pieces.push(tl.box(`bore-bed-${k}-c`, kc, t1, l0, l1, yc, sub(yc, BED_FOOT), 'dark'));
+  });
   return pieces;
 }
 

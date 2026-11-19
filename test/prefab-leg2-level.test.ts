@@ -148,16 +148,42 @@ for (const mutation of ['remove', 'move'] as const)
     assert.ok(result.entries.some((e) => e.kind === 'assertion' && !e.passed && /widest unsolid rim/.test(e.message)));
   });
 
-test('review (greybox leg 2 step 4): a body on the bore floor fits under the incline deck a lay makes solid', async () => {
-  // The bore is open (and its floor walkable) before the incline's first lay; that lay makes route-greybox/leg-view.ts
-  // solidDeck's slabs (land.ts slab: 0.4 m thick, top at rail height, 7.6 m wide in an 8 m bore) solid at once, with no
-  // hold for a body inside them (only the standing pieces wait: leg-view.ts inBox). Buddy is 1.7 m tall
-  // (two PLAYER_R spheres HEAD_OFFSET apart), so a body standing on the floor then has the slab through it.
-  const { rowY } = await import('../src/entities/railway/row-path.ts');
-  const { INCLINE_BORE } = await import('../src/entities/route-greybox/massing.ts');
+test('review (greybox leg 2 step 4): no standable surface under a leg 2 deck leaves a body less than its height', async () => {
+  // A lay makes route-greybox/leg-view.ts solidDeck's slabs solid at once (land.ts slab: 0.4 m thick, top at rail
+  // height, 7.6 m wide), with no hold for a body inside them (only the standing pieces wait: leg-view.ts inBox). So
+  // under every metre of each new line's deck, the highest level surface (an upward face of a compiled collider) must
+  // either sit within a sphere's radius under the rail, so the deck only lifts a body standing there, or leave a whole body (two
+  // PLAYER_R spheres HEAD_OFFSET apart) under the slab. Open sea is not a level surface. The incline's bore floor, open
+  // before the first lay, failed this (0.4 to 1.1 m under the slab) until its unlaid bed filled it.
+  const { rowWorld, rowY } = await import('../src/entities/railway/row-path.ts');
   const { PLAYER_R, HEAD_OFFSET } = await import('../src/constants.ts');
-  const body = 2 * PLAYER_R + HEAD_OFFSET;
-  let tight = Infinity;
-  for (let s = 72; s <= 227; s += 1) tight = Math.min(tight, rowY(route.ROW_LINE.ns, s) - 0.4 - INCLINE_BORE.floor);
-  assert.ok(tight >= body, `the gap under the deck in the bore is ${tight.toFixed(2)} m, Buddy ${body.toFixed(2)} m`);
+  const body = 2 * PLAYER_R + HEAD_OFFSET,
+    SLAB = 0.4,
+    // A body overlapped from below by less than a sphere's radius has its centre over the slab: the deck lifts it.
+    STEP_UP = PLAYER_R;
+  // A collider's top faces: its near-level triangles above its centre.
+  const up = (level: LevelArtifact) =>
+    placed
+      .resolvePlacedColliders(level, artifact.prefabs as unknown as Readonly<Record<string, PrefabDef>>)
+      .colliders.flatMap(({ volume }) =>
+        volume.triangles.filter((t) => {
+          const n = new Vector3().subVectors(t.b, t.a).cross(new Vector3().subVectors(t.c, t.a)).normalize();
+          return Math.abs(n.y) > 0.5 && (t.a.y + t.b.y + t.c.y) / 3 > volume.centre.y;
+        }),
+      );
+  const floors = [gorge, bell, west].flatMap(up);
+  const bad: string[] = [];
+  for (const [line, from, to] of [
+    [route.ROW_LINE.ns, 16, 1172],
+    [route.ROW_LINE.bay, 0.5, 1229],
+  ] as const)
+    for (let s = from; s <= to; s += 1)
+      for (let lat = -3.6; lat <= 3.6 + 1e-9; lat += 0.6) {
+        const p = rowWorld(line, s, lat, { x: 0, z: 0 }),
+          rail = rowY(line, s),
+          top = placed.heightAt(floors, p, rail);
+        if (top === null || rail - top <= STEP_UP || rail - SLAB - top >= body) continue;
+        bad.push(`line ${line} s ${s} lat ${lat.toFixed(1)}: surface ${top.toFixed(2)} m, rail ${rail.toFixed(2)} m`);
+      }
+  assert.equal(bad.length, 0, `${bad.length} spots, first: ${bad.slice(0, 3).join('; ')}`);
 });

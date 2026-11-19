@@ -28,7 +28,8 @@ export const PICK_AT = metres(RAIL_GRANTS[0]!.at),
   GATE_AT = metres(RAIL_GATES[0]!.at);
 /** The incline's bore through the south stack (docs/plans/greybox-leg2.md, step 4; call 116): the `ns` row from the
  * split's wall (s 67) to the stack's east face (s 232), 8 m clear between its dark lining's walls (`half` either side
- * of the row, each `wall` thick), its floor's top at `floor` and its roof's underside at `roof` (7 m over the 4.0 m
- * rail at least), each lining slab `slab` thick. content/levels/gorge.ts and leg2.ts split the stack's hidden collider
- * round it and line it; the horizon's mesh (sickle-backdrop/view.ts) is open at its two mouths. */
+ * of the row, each `wall` thick), its floor's top at `floor` and its roof's underside at `roof` (the rail climbs from
+ * about 3.2 m at the split's mouth to 4.0 m, so the roof is at least 7 m over it), each lining slab `slab` thick; an
+ * unlaid bed 0.15 m under the rail fills it from the floor to the deck. content/levels/gorge.ts and leg2.ts split the
+ * stack's hidden collider round it and line it; the horizon's mesh (sickle-backdrop/view.ts) is open at its two mouths. */
 export const INCLINE_BORE = { half: 4, wall: 1, floor: 2.5, roof: 11, slab: 0.5 } as const;
