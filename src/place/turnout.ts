@@ -172,7 +172,9 @@ export function turnout(through: Centre, diverging: Centre, lever: 1 | -1, plain
   }
   // Its inner rail starts as the open blade, its tip a throw off the through road's far rail, thin at the tip.
   const open = (d: number) => -hand * half + hand * KIT.throw * (1 - d / bladeLen);
-  const bladeTo = Math.min(bladeLen, plainD);
+  // Where the plain rails begin within a blade's least length of the toe (line 2's J9) there is no room for one: the
+  // plain rail would meet its end a step off.
+  const bladeTo = plain !== undefined && plain < KIT.bladeMin ? 0 : Math.min(bladeLen, plainD);
   run('blade', 'diverging', open, 0, bladeTo / 2, 0.45);
   run('blade', 'diverging', open, bladeTo / 2, bladeTo, 0.75);
   // The closure rail stops a flangeway short of the through rail it would cross, and takes up again past it as the

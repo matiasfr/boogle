@@ -384,7 +384,7 @@ export function buildTrack(
   // up track's plain rails stay whole through the frog (the gantry carries them), so each turnout adds its open blade,
   // wing and check rails up to and round them, and a long timber under each of today's sleepers in its zone, where the
   // up track lays none of its own.
-  const DRAWN = new Set(['J4', 'J5', 'J6', 'J7', 'J8']);
+  const DRAWN = new Set(['J4', 'J5', 'J6', 'J7', 'J8', 'J9']);
   const zones = junctions()
     .filter((j) => j.line === spec.id && DRAWN.has(j.id))
     .map((j) => {
@@ -644,7 +644,9 @@ export function buildTrack(
   // The turnouts' pieces come after every other, so no piece's index changes; each lands with the panel at its place.
   // A timber lies a centimetre under today's sleeper and is thinner, so the sleeper and its tie plates stay on top; it
   // runs a centimetre past each end, so an end that comes out at the sleeper's end never shares its face.
+  // The turnout at the up track's old merge (line 2's J9, at the pier's root) goes with it when Q7 relays the pier.
   const turnoutRails = new Set<number>();
+  const merged = zones.filter(({ j }) => j.s === formation.to);
   for (const st of stations) {
     const span = timberAt(st.s);
     if (!span) continue;
@@ -652,11 +654,15 @@ export function buildTrack(
     lateral((span[0] + span[1]) / 2, q);
     const local = place(0, 0, 0, span[1] - span[0] + 0.02, 0.12, st.depth - 0.02, st.yaw, st.lean);
     add(st.s, 'timber', q.x, q.z, st.y - 0.03, local, '#8a6236', 0, 1.1);
+    if (merged.some(({ j, t }) => spanAcross(j, t, st.s)))
+      merge.push({ k: boxes.length - 1, from: st.s - st.depth / 2 });
   }
   for (const { j, t } of zones)
     for (const r of t.rails) {
-      boxBetween('rail', j.s + j.dir * r.d, r.a, r.b, 0.1 * r.w, 0.12, TOP, '#4c5058', -2.2, 0.8);
+      const s = j.s + j.dir * r.d;
+      boxBetween('rail', s, r.a, r.b, 0.1 * r.w, 0.12, TOP, '#4c5058', -2.2, 0.8);
       turnoutRails.add(boxes.length - 1);
+      if (j.s === formation.to) merge.push({ k: boxes.length - 1, from: s - 1.5 });
     }
   const set = lookTrack(
     dropSet(
