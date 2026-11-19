@@ -30,8 +30,9 @@ export type Junction = {
   kind: 'stub' | 'crossover' | 'spur';
   /** The side its points lever stands on: +1 the through road's right, looking from the toe. */
   lever: 1 | -1;
-  /** Shown only with this part of the yard: the leg's two ends stand while the leg does. */
-  when?: 'leg';
+  /** Shown only with this part of the yard: the leg's two ends stand while the leg does. `merge`: taken up with the up
+   * track's old merge when Q7 relays the pier (track.ts `retire`). */
+  when?: 'leg' | 'merge';
   /** The through road's lateral off its line, metres to the line's right: Far Head's crossover leaves the up track
    * at J7. 0 when omitted. */
   off?: number;
@@ -110,6 +111,7 @@ export function junctions(): Junction[] {
     lever: 1 | -1,
     through: (s: number) => number,
     diverging: (s: number) => number,
+    when?: Junction['when'],
   ): Junction => {
     const l = lineId === 'timber' ? LINES.north : LINES.east;
     return {
@@ -120,6 +122,7 @@ export function junctions(): Junction[] {
       kind,
       lever,
       off: through(s),
+      ...(when && { when }),
       through: along(l, s, dir, through),
       diverging: along(l, s, dir, diverging),
     };
@@ -156,6 +159,6 @@ export function junctions(): Junction[] {
     line('J6', 'quarry', two.from, 1, 'stub', 1, today, up(two)),
     line('J7', 'quarry', two.crossover![0], 1, 'crossover', -1, () => OFFSET_LAT, cross),
     line('J8', 'quarry', two.crossover![1], -1, 'crossover', -1, today, cross),
-    line('J9', 'quarry', two.to, -1, 'stub', -1, today, up(two)),
+    line('J9', 'quarry', two.to, -1, 'stub', -1, today, up(two), 'merge'),
   ];
 }

@@ -18,7 +18,7 @@ import {
 } from '../../place/layout.ts';
 import { dropSet, type DropSet } from '../../place/pieces.ts';
 import { junctions, spanAcross } from '../../place/junctions.ts';
-import { KIT, turnout } from '../../place/turnout.ts';
+import { KIT, turnout, wholeSteps } from '../../place/turnout.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { chunkOf } from './track-chunks.ts';
 import { lookTrack } from '../../place/look-kit.ts';
@@ -384,9 +384,8 @@ export function buildTrack(
   // up track's plain rails stay whole through the frog (the gantry carries them), so each turnout adds its open blade,
   // wing and check rails up to and round them, and a long timber under each of today's sleepers in its zone, where the
   // up track lays none of its own.
-  const DRAWN = new Set(['J4', 'J5', 'J6', 'J7', 'J8', 'J9']);
   const zones = junctions()
-    .filter((j) => j.line === spec.id && DRAWN.has(j.id))
+    .filter((j) => j.line === spec.id && j.kind !== 'spur')
     .map((j) => {
       // Where the up track's own rails begin, metres from the toe: the end of each of its rail pieces nearer the toe.
       // The crossover's rails run from its toes (Far Head, J7 and J8).
@@ -417,11 +416,17 @@ export function buildTrack(
     if (hi <= lo) return null;
     // A timber that reaches part way under the up track's sleeper (Far Head's crossover, past J8's frog, where the up
     // track is not one of its roads) runs on in whole steps to carry the up track too, so the two never overlap.
-    const ul = upAt(s);
-    if (ul !== null && lo > ul - 1.15 && lo < ul + 1.15)
-      lo = hi - KIT.sleeper - Math.ceil((hi - (ul - KIT.sleeper / 2) - KIT.sleeper) / KIT.step - 1e-9) * KIT.step;
+    const ul = upAt(s),
+      end = KIT.sleeper / 2;
+    if (ul !== null && lo > ul - end && lo < ul + end)
+      lo = hi - KIT.sleeper - wholeSteps(hi - (ul - end) - KIT.sleeper);
     return [lo, hi] as const;
   };
+  /** Each of today's stations that has a timber, and its span. */
+  const timbered = stations.flatMap((st) => {
+    const span = timberAt(st.s);
+    return span ? [{ st, span }] : [];
+  });
   /** Whether a timber lies under a sleeper centred `l` to the line's right at `s` and square to a track whose
    * lateral changes by `slope` a metre: then that sleeper is not drawn (the timber carries its track there). */
   const under = (s: number, l: number, slope: number) => {
@@ -431,9 +436,9 @@ export function buildTrack(
     if (own && own[0] < own[1]) return true;
     // Past a zone's end a timber on one of today's stations can still lie across it: where the sleeper's centre line
     // crosses the timber's reach, along the line, against the timber's own depth.
-    return stations.some((st) => {
-      const a = across(timberAt(st.s));
-      if (!a || a[0] >= a[1]) return false;
+    return timbered.some(({ st, span }) => {
+      const a = across(span)!;
+      if (a[0] >= a[1]) return false;
       const s0 = s - slope * (a[0] - l),
         s1 = s - slope * (a[1] - l);
       return Math.max(s0, s1) + half > st.s - st.depth / 2 && Math.min(s0, s1) - half < st.s + st.depth / 2;
@@ -441,16 +446,13 @@ export function buildTrack(
   };
   /** How fast a lateral `lat` changes along the line at `s`, metres a metre. */
   const slopeOf = (lat: (s: number) => number | null, s: number) => ((lat(s + 0.1) ?? 0) - (lat(s - 0.1) ?? 0)) / 0.2;
-  const crossZones = zones.filter(({ j }) => j.kind === 'crossover');
   /** The crossover's inner rail at each toe is its open blade, a throw off the through road's far rail at the tip:
    * its rails are not the gantry's, so the rail itself is set over (`r`: the rail's side, as `lateral`). */
   const bladeAt = (s: number, r: number) => {
     let lat = 0;
-    for (const { j, t } of crossZones) {
-      const d = (s - j.s) * j.dir;
-      if (r === (-j.dir * t.hand * KIT.gauge) / 2 && d >= 0 && d < t.bladeLen)
-        lat += j.dir * t.hand * KIT.throw * (1 - d / t.bladeLen);
-    }
+    for (const { j, t } of zones)
+      if (j.kind === 'crossover' && Math.sign(r) === -j.dir * t.hand)
+        lat += j.dir * t.hand * t.throwAt((s - j.s) * j.dir);
     return lat;
   };
   // Sleepers. On a turnout the two tracks share them (one set through the overlap, not two interleaved): the up track
@@ -644,12 +646,11 @@ export function buildTrack(
   // The turnouts' pieces come after every other, so no piece's index changes; each lands with the panel at its place.
   // A timber lies a centimetre under today's sleeper and is thinner, so the sleeper and its tie plates stay on top; it
   // runs a centimetre past each end, so an end that comes out at the sleeper's end never shares its face.
-  // The turnout at the up track's old merge (line 2's J9, at the pier's root) goes with it when Q7 relays the pier.
+  // The turnout at the up track's old merge (line 2's J9, at the pier's root, `when: 'merge'`) goes with it when Q7
+  // relays the pier.
   const turnoutRails = new Set<number>();
-  const merged = zones.filter(({ j }) => j.s === formation.to);
-  for (const st of stations) {
-    const span = timberAt(st.s);
-    if (!span) continue;
+  const merged = zones.filter(({ j }) => j.when === 'merge');
+  for (const { st, span } of timbered) {
     lineAt(line, st.s, P);
     lateral((span[0] + span[1]) / 2, q);
     const local = place(0, 0, 0, span[1] - span[0] + 0.02, 0.12, st.depth - 0.02, st.yaw, st.lean);
@@ -662,7 +663,7 @@ export function buildTrack(
       const s = j.s + j.dir * r.d;
       boxBetween('rail', s, r.a, r.b, 0.1 * r.w, 0.12, TOP, '#4c5058', -2.2, 0.8);
       turnoutRails.add(boxes.length - 1);
-      if (j.s === formation.to) merge.push({ k: boxes.length - 1, from: s - 1.5 });
+      if (j.when === 'merge') merge.push({ k: boxes.length - 1, from: s - 1.5 });
     }
   const set = lookTrack(
     dropSet(

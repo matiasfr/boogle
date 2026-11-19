@@ -19,6 +19,7 @@ const land = (await import('/src/place/land.ts' as string)) as typeof import('..
 const { junctions } = (await import(
   '/src/place/junctions.ts' as string
 )) as typeof import('../../../src/place/junctions.ts');
+const { turnout } = (await import('/src/place/turnout.ts' as string)) as typeof import('../../../src/place/turnout.ts');
 
 type V = { x: number; y: number; z: number };
 const query = new URLSearchParams(location.search);
@@ -44,14 +45,10 @@ const by =
   };
 const j1 = by('J1');
 const id = query.get('id') ?? 'J4';
-/** +1 where junction `id`'s diverging road leaves to its through road's right, -1 to its left. */
-const side = (() => {
-  const j = pick(id),
-    p = by(id)(6, 1),
-    q = j.through(6),
-    o = j.diverging(6);
-  return (o.x - q.x) * (p.x - q.x) + (o.z - q.z) * (p.z - q.z) > 0 ? 1 : -1;
-})();
+/** Junction `id`'s frame mirrored so its diverging road leaves to the left, as J4's does: the framings below are
+ * J4's. */
+const hand = (({ through, diverging, lever }) => turnout(through, diverging, lever).hand)(pick(id));
+const mirrored = (d: number, lat: number, up = 0) => by(id)(d, -hand * lat, up);
 
 let stand: V, eye: V, look: V;
 let fov = 60;
@@ -70,23 +67,23 @@ if (at === 'spur') {
   look = j1(5.2, 0.6, 0);
   fov = 55;
 } else if (at === 'top') {
-  const f = by(id);
-  stand = f(0, -3.2 * side);
-  eye = f(5.49, 1.2 * side, 13);
-  look = f(5.5, 1.2 * side, 0);
+  const f = mirrored;
+  stand = f(0, 3.2);
+  eye = f(5.49, -1.2, 13);
+  look = f(5.5, -1.2, 0);
   fov = 50;
 } else if (at === 'eye') {
-  const f = by(id);
-  stand = f(0, -2.6 * side);
-  eye = f(-4, -0.3 * side, 1.6);
-  look = f(6.5, 0.8 * side, 0);
+  const f = mirrored;
+  stand = f(0, 2.6);
+  eye = f(-4, 0.3, 1.6);
+  look = f(6.5, -0.8, 0);
 } else if (at === 'back') {
   // From a player's eye between the two roads past the frog, looking back at the toe: where a standing train hides
   // the view from behind the toe.
-  const f = by(id);
-  stand = f(15, 1.9 * side);
-  eye = f(13, 1.9 * side, 1.6);
-  look = f(4.5, 0.2 * side, 0);
+  const f = mirrored;
+  stand = f(15, -1.9);
+  eye = f(13, -1.9, 1.6);
+  look = f(4.5, -0.2, 0);
 } else if (at === 'throat-top') {
   // Over the middle of the four toes, the screen's up toward the east so line 1's run south lies across it.
   const toes = ['J2', 'J3', 'J4', 'J6'].map((j) => pick(j).through(5));

@@ -8,7 +8,7 @@ import { dequantize } from '@gltf-transform/functions';
 import { MeshoptDecoder } from 'meshoptimizer';
 import { sourceModule, sourceFunction } from './source.ts';
 import { junctions, spanAcross } from '../../src/place/junctions.ts';
-import { KIT, turnout } from '../../src/place/turnout.ts';
+import { KIT, turnout, wholeSteps } from '../../src/place/turnout.ts';
 import {
   CRANE,
   FORMATION,
@@ -461,6 +461,7 @@ export async function checkMachineClearance() {
       spanAcross,
       turnout,
       KIT,
+      wholeSteps,
       box: sourceFunction('src/render/boxes.ts', 'box', { boxAt, groundHeight: H }),
       dropSet: () => ({}),
       lookTrack: () => ({}),
