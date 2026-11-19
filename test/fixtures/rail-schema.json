@@ -1,5 +1,5 @@
 {
-  "worldNs": "v61",
+  "worldNs": "v63",
   "components": [
     {
       "kind": "rail",
@@ -114,7 +114,7 @@
         "stoneFlightMs": 450,
         "beamFlightMs": 900,
         "cruiseCmPerTick": 50,
-        "departureTicks": 20
+        "departureTicks": 50
       },
       "fields": [
         ["slot", "int"],
@@ -166,7 +166,7 @@
         "stoneFlightMs": 450,
         "beamFlightMs": 900,
         "cruiseCmPerTick": 50,
-        "departureTicks": 20
+        "departureTicks": 50
       },
       "fields": [
         ["slot", "int"],

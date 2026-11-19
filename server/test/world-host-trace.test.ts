@@ -45,6 +45,10 @@
 // train rows equal the v61 fixture in every column and every other column is exact. 205 namespace/hash/checksum
 // envelopes and 5,671 snapBytes samples follow. All 8,604 records keep their inputs, results, messages and replica
 // packets (keyed comparison with the v61 fixture before the writer regenerated it; docs/plans/greybox-leg2.md).
+// v63 departure ease (G31/G32): the trace funds no stretch. 205 checkpoints change only railTune's railDepartureTicks
+// and the 3 job and 7 qjob rows' default departureTicks (20 -> 50), with namespace/hash/checksum; 3,016 snapBytes
+// samples follow. All 8,604 records keep their inputs, results, messages and replica packets (keyed comparison with the
+// v62 fixture before the writer regenerated it).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';

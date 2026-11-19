@@ -210,6 +210,8 @@ G33 (running uphill is faster, he liked it) and G35 (the free shop's "$0" never 
   [batch 2](../decisions-rail.md#d-2026-11-16-batch2-bulk-confirmed)).
 - **Decided: speed stays.** Grant's note after the swing fix is new evidence, so it goes to the owner with G32
   (question 2). Nothing is built here.
+- [x] **Answered with G32 (owner, 18 November: "Departure 20 → 50 ticks (about 5 s)"; built 19 November, world
+  v63).** Cruise and laying speed are unchanged; only the start eases longer. See G32.
 
 ### G32. Couldn't catch the track-laying train to ride it; the bridge is narrow
 
@@ -222,6 +224,29 @@ G33 (running uphill is faster, he liked it) and G35 (the free shop's "$0" never 
   step aboard. Cruise speed is kept, as decided. Changing the default in `src/sim/tune.ts` would be sim and
   mixed-builds work, so a planner would have to check it. The narrow bridge: no fall was recorded; not measured.
 - **Calls:** New (a longer departure ease, so the layer can be boarded). **Waits on the owner** (question 2).
+- [x] **Built, 19 November 2026 (world v63), on the owner's pick of 18 November**
+  ([entry](../decisions-rail.md#d-2026-11-18-decisions-page-rail)): `railDepartureTicks` defaults to 50
+  (`src/sim/tune.ts`), and `LINE_TIMING` (`src/sim/railway-line.ts`) now reads that default instead of its own 20,
+  so the seeds and a fresh world's job rows agree with the server. The tune was always one value for every laying
+  job, so it eases **both lines' layer**: T1 to T3 and Q1 to Q7. Nothing else reads it: the passenger and freight
+  trains (`TrainKin` accel), the footing wagon (a line 2 train), the depot cart (`CART`), the Works shunter and leg 2's
+  ns and bay trains have their own kinematics, and the greybox legs lay on `LEG_TUNE.layTicks`. World v63 because
+  the tune is saved with every value and the job rows carry the default timing (the schema golden pins it).
+  *Measured:* every stretch lays exactly 10 ticks (1 s) longer: T1 89 → 99 lay ticks, T2 75 → 85, T3 179 → 189,
+  Q1 77 → 87, Q2 140 → 150, Q3 100 → 110, Q4 142 → 152, Q5 296 → 306, Q6 225 → 235, Q7 140 → 150. In its first
+  5 s a line 2 layer covers two thirds of 5 s at its cruise (16.7 to 30 m) and only then cruises; on Q5 to Q7
+  (9 m/s) it reaches 5.6 m/s after about 2 s instead of under 1 s. The whole route in
+  `npm run loop -- run` (sim time, walking stand-ins): 1 player 38:56 → 39:03, 2 players 35:28 → 35:33, 3 players
+  34:33 → 34:40. The footing wagon's 16 trips from `wagon-on` to `ring-joined` keep their stops and spacing, all
+  shifted +20 ticks before Q7 and +10 after, as do the pier's and the railhead's rack fills, the ring footings set
+  and the Works' 28 casts: no wait grows trip over trip. The gates: pier twelve 112 s both; ring eighteen 193.2 →
+  192.2 s; first ring footings on the railhead rack 65.2 s both; leg 2's waits identical on all four seeds (worst
+  settled 1,061, growing 1,201 against 1,350 and 1,600); line 2 lever waits move by about a second each way.
+  *Proof look:* `dev/look/evals/departure-ease.ts` on `--rail-seed q5-carry`, real time: the last logs fund Q5,
+  a player waiting 3 m behind the layer (placed there; the bot's planner is slow round the frame) runs and jumps on
+  ordinary input and is aboard 23 and 30 ticks into laying in two runs, the layer then at 6.4 and 7.6 m/s, still aboard 4 s later
+  (`docs/world/grant-c8/g32-departure-ease-boarding.png`). Not tested on a device; boarding by a person at a
+  sprint not tried.
 
 ### G34. Presses just out of reach
 
@@ -314,7 +339,7 @@ Run on this plan by its author, as the design-review skill says. Reread from the
 | Updrafts and the bird parked | New | no-lift rule; route contract |
 | A raised box opens only from within 0.3 m below, no slope | Default | G27; extends the 10 November rule |
 | Line 2's laying speed stays | Decided | confirmed 16 November (batch 2) |
-| Departure ease 20 to 50 ticks, as a room tune | New | G32; waits on the owner |
+| Departure ease 20 to 50 ticks, as a room tune | Decided | G32; the owner's pick of 18 November, built on v63 |
 
 **Findings.**
 1. *First meeting (G27):* the lookout is the first secret on the road, and 2:09 is before the double jump, so the scarf

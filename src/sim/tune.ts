@@ -8,7 +8,9 @@ export const TUNABLES = [
   { key: 'railRecoveryMinutes', def: 21, min: 1, max: 1440, label: 'Railway drop recovery (minutes)' },
   { key: 'railFeedMs', def: 70, min: 10, max: 1000, label: 'Railway feed interval (milliseconds)' },
   { key: 'railLaySpeed', def: 50, min: 1, max: 200, label: 'Railway laying speed (centimetres per tick)' },
-  { key: 'railDepartureTicks', def: 20, min: 0, max: 100, label: 'Railway departure easing (ticks)' },
+  // 50 ticks (5 s) so a player at the frame can step aboard a starting layer (G31/G32, the owner's pick of 18 November:
+  // docs/decisions-rail.md, d-2026-11-18-decisions-page-rail); cruise and laying speed are unchanged.
+  { key: 'railDepartureTicks', def: 50, min: 0, max: 100, label: 'Railway departure easing (ticks)' },
   { key: 'railBeamSoloSpeed', def: 220, min: 10, max: 1000, label: 'Railway solo beam speed (centimetres per second)' },
   {
     key: 'railBeamHelpSpeed',
