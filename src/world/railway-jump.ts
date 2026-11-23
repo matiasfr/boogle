@@ -295,6 +295,10 @@ export const JUMPS: readonly Jump[] = [
     label: 'Bay cut laid',
     line: 'Both new lines run to Bell Rock; Home is a minute away',
   },
+  // Placeholder tooling copy for the owner. Landings are measured in step 6.
+  { stage: 'canopy-open', menu: false, label: 'Canopy gate open', line: 'The first kit is on the Bell Rock rack' },
+  { stage: 'canopy-mid', menu: false, label: 'Canopy line building', line: 'The second kit is aboard a bay train' },
+  { stage: 'canopy-reached', menu: false, label: 'Canopy reached', line: 'The cloth waits at Canopy Town' },
 ];
 /** The rows a menu lists: every row but the tooling-only ones. */
 export const MENU_JUMPS: readonly Jump[] = JUMPS.filter((j) => j.menu !== false);

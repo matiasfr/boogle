@@ -33,13 +33,17 @@ export const LEG_STAGES = [
   'bay-open',
   'bay-mid',
   'bay-reached',
+  'canopy-open',
+  'canopy-mid',
+  'canopy-reached',
 ] as const;
 export type LegStage = (typeof LEG_STAGES)[number];
 
 /** The legs' slots in RAIL_LEGS. */
 const STACK = RAIL_LEGS.findIndex((l) => l.id === 'stack'),
   INCLINE = RAIL_LEGS.findIndex((l) => l.id === 'incline'),
-  BAY = RAIL_LEGS.findIndex((l) => l.id === 'bay-cut');
+  BAY = RAIL_LEGS.findIndex((l) => l.id === 'bay-cut'),
+  CANOPY = RAIL_LEGS.findIndex(l => l.id === 'bell-canopy');
 
 // Share only a serialized source fixture through restore, never a mutable world between callers.
 const cache = new Map<LegStage, Seed>();
@@ -134,6 +138,17 @@ function build(s: Seed, stage: LegStage): Seed {
     case 'bay-reached':
       while (legRow(w, BAY).laid < RAIL_LEGS[BAY]!.sections.length) laySection(s, BAY);
       advance(s, 900);
+      break;
+    case 'canopy-open':
+      need(act(s, 'a', 'rail.gate', { id: RAIL_GATES.findIndex(g => g.id === 'canopy') }), 'Canopy barrier open');
+      until(s, () => racked(s, CANOPY), 6000, 'first Canopy kit on Bell Rock rack');
+      break;
+    case 'canopy-mid':
+      laySection(s, CANOPY);
+      until(s, () => aboard(s, CANOPY), 6000, 'second Canopy kit aboard');
+      break;
+    case 'canopy-reached':
+      while (legRow(w, CANOPY).laid < RAIL_LEGS[CANOPY]!.sections.length) laySection(s, CANOPY);
       break;
   }
   return s;

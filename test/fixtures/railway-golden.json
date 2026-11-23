@@ -316,6 +316,21 @@
    "tick": 20663,
    "stage": 142897866,
    "after": 1742221594
+  },
+  "canopy-open": {
+   "tick": 20679,
+   "stage": 1328399906,
+   "after": 4088144273
+  },
+  "canopy-mid": {
+   "tick": 20979,
+   "stage": 3262123336,
+   "after": 3887320564
+  },
+  "canopy-reached": {
+   "tick": 23222,
+   "stage": 1870506293,
+   "after": 83172025
   }
  }
 }

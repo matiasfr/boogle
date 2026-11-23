@@ -566,11 +566,12 @@ rides with it. Steps 6 and 7 ship on their own after it.
       - settled 5eed: 1463/1442 (1.015x), 1463/1442 (1.015x), 1675/1442 (1.162x), 1581/1442 (1.096x), 1452/1442 (1.007x), 1660/1442 (1.151x).
 
       Line 2 boiler handover at both 0% and 75%: b011e7 waited 1155/988 (1.169x) and 1159/988 (1.173x); 5eed25 waited 995/988 (1.007x) and 1043/988 (1.056x). All were served. The maturity correction changes the test budget only.
-- [ ] **4. Seeds and stages (S; HOTBOX).** `src/sim/railway-seed-legs.ts` from `bay-reached`, accepted ops only:
+- [x] **4. Seeds and stages (S; HOTBOX).** `src/sim/railway-seed-legs.ts` from `bay-reached`, accepted ops only:
       `canopy-open` (barrier open, section 1's kit on Bell Rock's rack), `canopy-mid` (section 1 laid, section 2's kit
       aboard a bay train), `canopy-reached` (leg 3 laid, cloth not taken). `SEED_STAGES` and its golden shard;
       `src/world/railway-jump.ts` rows without a `land` (leg 2's step 3 reason: lands wait for step 6's stills).
       Verify: `test/railway-jump.test.ts`; each stage's invariant check.
+      The clean replay and jump suite passed all 76 checks, including the three v66 stage snapshots.
 - [ ] **5. Bell Rock on the eased line (S to M; Mac).** `src/content/levels/leg2.ts`: the upper level re-placed as
       [above](#the-massing-steps-5-and-6), the reserves moved with it (the Canopy frame's reserve now frame 1's), the
       level artifact rebuilt. `src/entities/route-greybox/leg-view.ts` (as leg 2's views left it): the `canopy`

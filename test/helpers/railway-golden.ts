@@ -74,6 +74,9 @@ export const SHARDS: readonly (readonly SeedStage[])[] = [
     'bay-open',
     'bay-mid',
     'bay-reached',
+    'canopy-open',
+    'canopy-mid',
+    'canopy-reached',
     // The Rail yoke (docs/plans/rail-yoke.md, step 2): look only, Q1 one rail short.
     'q1-last',
   ],
