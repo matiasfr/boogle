@@ -399,7 +399,7 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
   }
   const t0 = s.t,
     rand = mulberry32(seed),
-    health = new ServiceHealth([NS, BAYL]);
+    health = new ServiceHealth([NS, BAYL], s.w);
   for (let k = 0; k < FUZZ; k++) {
     if (rand() < 0.05) {
       const pool = askPool(s.w),

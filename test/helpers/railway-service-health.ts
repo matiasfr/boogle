@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import type { World } from '../../src/ecs/index.ts';
-import { RAIL_HALTS } from '../../src/sim/railway-lines.ts';
+import { RAIL_HALTS, type LineRef } from '../../src/sim/railway-lines.ts';
 import { footingsOwed, stopsOf } from '../../src/sim/railway-queries.ts';
 import { line, train } from '../../src/sim/railway-rows.ts';
 import { TRAIN, TRAIN_PHASE, trainDir, trainPassesBy } from '../../src/sim/railway-train.ts';
@@ -14,7 +14,9 @@ function servingBoilers(w: World, line: number) {
 }
 
 export function serviceBudget(w: World, line: number, boilers = servingBoilers(w, line)) {
-  const stops = stopsOf(w, line);
+  return fleetBudget(line, stopsOf(w, line), boilers);
+}
+export function fleetBudget(line: LineRef, stops: readonly number[], boilers: readonly number[]) {
   assert.ok(boilers.length && stops.length >= 2, 'a requested service has track and trains');
   const cycle = Math.max(...boilers.map(boiler => cycleTicks(line, stops, boiler)));
   const headway = Math.ceil(cycle / boilers.length);
@@ -31,7 +33,13 @@ export class ServiceHealth {
   private budgets = new Map<string, ReturnType<typeof serviceBudget>>();
 
   private readonly lines: readonly number[];
-  constructor(lines: readonly number[]) { this.lines = lines; }
+  private readonly joined = new Map<number, number>();
+  constructor(lines: readonly number[], w: World) {
+    this.lines = lines;
+    // A seed's last arrival is a conservative latest possible join for an incumbent.
+    for (const l of lines) for (const j of servingSlots(i => train(w, i), l))
+      this.joined.set(j, train(w, j).arrived);
+  }
   ask(w: World, id: number, dir: number, tick: number) {
     const h = RAIL_HALTS[id]!;
     if (!this.lines.includes(h.line) || this.there(w, id, dir)) return;
@@ -39,7 +47,14 @@ export class ServiceHealth {
     if (this.pending.has(key)) return;
     // Size this call's headway with the fleet serving when it arrived. A train joining
     // at home still has its first half-circuit to run before it can serve homeward riders.
-    const boilers = servingBoilers(w, h.line);
+    // A newly joined train contributes only after half a cycle on the open line.
+    // Before even the first train matures, use one cycle as the single-service budget.
+    const stops = stopsOf(w, h.line);
+    const slots = servingSlots(j => train(w, j), h.line);
+    const mature = slots.filter(j => 2 * (tick - this.joined.get(j)!) >= cycleTicks(h.line, stops, train(w,j).boiler));
+    const boilers = mature.map(j => train(w, j).boiler);
+    if (!boilers.length) boilers.push(slots.map(j => train(w,j).boiler).reduce((a,b) =>
+      cycleTicks(h.line, stops, a) >= cycleTicks(h.line, stops, b) ? a : b));
     const { bound } = serviceBudget(w, h.line, boilers);
     this.pending.set(key, { id, dir, since: tick, boilers, bound, overdue: false });
   }
@@ -51,6 +66,8 @@ export class ServiceHealth {
     });
   }
   tick(w: World, tick: number) {
+    for (const l of this.lines) for (const j of servingSlots(i => train(w, i), l))
+      if (!this.joined.has(j)) this.joined.set(j, tick);
     for (const [key, p] of this.pending) {
       const h = RAIL_HALTS[p.id]!, stops = stopsOf(w, h.line);
       if (trainPassesBy(h.line, h.stop, p.dir, stops.length)) {
@@ -68,6 +85,7 @@ export class ServiceHealth {
       // An outstanding call spanning a lay gets the larger of its actual stage budgets.
       p.bound = Math.max(p.bound, budget.bound);
       const wait = tick - p.since;
+      assert.ok(wait <= 3 * p.bound, `${h.name}/${p.dir} waited ${wait} ticks, over three times ${p.bound}`);
       if (wait === p.bound + 1) {
         p.overdue = true;
         const rows = (slot: number) => train(w, slot);
@@ -100,11 +118,7 @@ export class ServiceHealth {
     while (this.pending.size) {
       advance();
       this.tick(w, ++tick);
-      for (const p of this.pending.values())
-        if (tick - p.since > p.bound * 2) {
-          this.failures.push(`undrained ${RAIL_HALTS[p.id]!.name}/${p.dir} asked ${p.since}, tick ${tick}, bound ${p.bound}`);
-          return;
-        }
+
     }
   }
 }

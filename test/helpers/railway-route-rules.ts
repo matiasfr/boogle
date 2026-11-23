@@ -736,7 +736,7 @@ export function routeRulesShard(shard: number) {
     test(`fuzz ${seed.toString(16)} at ${headPct}%: the leg played while lever and rider asks run, restores; spacing, end blocks, the worst wait`, (t) => {
       let s = unaudited(copy(JOINED));
       const rand = mulberry32(seed);
-      const health = new ServiceHealth([LINE2]);
+      const health = new ServiceHealth([LINE2], s.w);
       const asked = new Map<string, number>(),
         worst = new Map<string, number>(),
         over: string[] = [],
@@ -1032,7 +1032,7 @@ export function routeRulesShard(shard: number) {
    * restores, nothing fed; line 2's served waits, the worst and the mean. Spacing checked as it runs. */
   function leverWaits(base: Seed, seed: number, headPct: number, ticks: number) {
     let s = unaudited({ w: restore(base.w), t: base.t });
-    const health = new ServiceHealth([LINE2]);
+    const health = new ServiceHealth([LINE2], s.w);
     const rand = mulberry32(seed),
       asked = new Map<string, number>(),
       waits: number[] = [],
