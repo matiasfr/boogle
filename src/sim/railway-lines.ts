@@ -567,7 +567,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
     'bell-canopy',
     'Canopy head',
     236000,
-    [2, 3, 3, 4],
+    [2, 2, 3, 3],
   ),
   rowLine('cave'),
 ];

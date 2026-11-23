@@ -23,6 +23,7 @@
 // Every `line` is a LineRef: a catalog index, or a test's fixture line (./railway-lines.ts).
 import {
   RAIL_LINES,
+  BALANCE_MAX_TICKS,
   RAIL_TRAINS,
   TRAIN_EXTENT,
   balanceOk,
@@ -456,6 +457,29 @@ function endStanding(line: LineRef, stops: readonly number[], r: Readonly<RailTr
   for (const b of endBlocks(line, stops)) if (b.dir === -dir && within(b, r.from)) return b.stop;
   return -1;
 }
+/** Release an end hold for its assigned rider or a follower standing at its approach signal. */
+export function endHoldPressure(rows: Rows, line: LineRef, stops: readonly number[], slot: number, from: number, req: number, tick: number) {
+  const last = stops.length - 1;
+  const block = endBlocks(line, stops)[from === 0 ? 0 : 1];
+  for (const other of servingSlots(rows, line)) {
+    const r = rows(other);
+    if (other !== slot && r.phase === TRAIN_PHASE.STAND && r.at === -1 &&
+        r.from === block.signal && r.track === (block.dir > 0 ? 0 : 1)) return true;
+  }
+  for (let stop = 0; stop <= last; stop++) {
+    if (stop === from) continue;
+    for (const dir of stop === 0 ? [-1] : stop === last ? [1] : [1, -1])
+      if (reqHas(req, stop, dir, stops.length) && trainServes(rows, line, stops, stop, dir, tick) === slot) return true;
+  }
+  return false;
+}
+
+function greyboxSpacing(line: LineRef, stops: readonly number[]) {
+  const def = lineDef(line);
+  // The stack runs on line 2 after the rivet opens Ring Island.
+  return !!def.fleet && (def.id !== 'line2' || !!def.halts[stops.length - 1]?.ring);
+}
+
 /** The balanced hold (a line's `balance`, ring-island-build1 R3b, call 47): a train ready to leave open end `from`
  * waits while the gap to the train ahead of it round the circuit is shorter than the gap to the one behind, so trains
  * that bunched under demand spread out again. It reads only the rows' poses (as blockFree does), costs nothing when
@@ -479,12 +503,16 @@ export function balancedHold<L extends LineRef>(
   from: number,
   tick: number,
 ) {
-  const cap = lineDef(line).balance,
-    r = io.row(slot);
+  const def = lineDef(line), r = io.row(slot);
+  const greybox = greyboxSpacing(line, stops);
+  const fleet = servingSlots(io.row, line);
+  if (fleet.length < 2) return false;
+  const cap = greybox ? Math.max(1, Math.min(BALANCE_MAX_TICKS,
+    Math.floor(cycleTicks(line, stops, r.boiler) / fleet.length))) : def.balance;
   if (cap === undefined || !balanceOk(cap) || io.headExempt(slot)) return false;
   if (tick >= r.arrived + (r.at >= 0 ? TRAIN.dwellTicks : 0) + cap) return false;
-  const others = servingSlots(io.row, line).filter((k) => k !== slot);
-  if (!others.length) return false;
+  if (greybox && endHoldPressure(io.row, line, stops, slot, from, io.line(line).req, tick)) return false;
+  const others = fleet.filter((k) => k !== slot);
   const b = endBlocks(line, stops)[from === 0 ? 0 : 1],
     inbound = b.dir > 0 ? 0 : 1;
   for (const k of others) {
@@ -584,10 +612,7 @@ export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: 
       if (hold === 'again') continue;
       if (hold === 'hold') break;
       // A halt's dwell (a signal has none: the train goes the tick its block clears), and the wake.
-      // Once the bay runs past Bell Rock (stop 2), its boarding dwell is 15 ticks.
-      // The departure headway and cargo deadlines retain their own timing.
-      const boardingTicks = lineDef(line).id === 'bay' && n > 3 ? 15 : TRAIN.dwellTicks;
-      if ((r.at >= 0 && tick < r.depart + boardingTicks) || tick < trainWakeAt(line, io.awake) + TRAIN.wakeTicks)
+      if ((r.at >= 0 && tick < r.depart + TRAIN.dwellTicks) || tick < trainWakeAt(line, io.awake) + TRAIN.wakeTicks)
         break;
       // The halt it leaves: its own, or the end whose block it stands in on the way out (a train the railhead's stop
       // moved on from: stopMoved), which it leaves as from that end.
@@ -595,7 +620,8 @@ export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: 
         end = from >= 0 && atEnd(from, stops);
       const head = headTicks(line, stops, io.headPct, r.boiler ?? 0, serving.length),
         left = from === 0 ? io.line(line).left0 : io.line(line).left1;
-      if (end && head > 0 && left >= 0 && tick < left + head && !io.headExempt(slot)) break;
+      if (end && head > 0 && left >= 0 && tick < left + head && !io.headExempt(slot) &&
+          !(greyboxSpacing(line, stops) && endHoldPressure(io.row, line, stops, slot, from, io.line(line).req, tick))) break;
       if (end && balancedHold(io, line, stops, slot, from, tick)) break;
       if (!end && controlHold(io, line, stops, slot, tick)) break;
       const reasons = trainReasons(

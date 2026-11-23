@@ -23,7 +23,9 @@ import { deckHeld } from './railway-queries-trade.ts';
 import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
 import { RAIL_LEGS, legRack } from './railway-route.ts';
 import { RAILS } from './railway-line2-layout.ts';
-import { steelNeed } from './railway-queries.ts';
+import { steelNeed, stopsOf } from './railway-queries.ts';
+import { endHoldPressure } from './railway-trains.ts';
+import { line as lineRow, train } from './railway-rows.ts';
 import { TRAIN, TRAIN_PHASE, kitBills, type RailTrain, type ServiceStop } from './railway-train.ts';
 import { Account, Aperture, Forge, Leg, LegYard, Pile, Rail, Train } from './railway-components.ts';
 import {
@@ -252,7 +254,7 @@ function yardLoad(w: World, slot: number): 'on' {
   return 'on';
 }
 /** A second bill rides onward when the next head opens. Only the current end can hold a train. */
-export function legRailheadHold(w: World, slot: number, tick: number): 'hold' | 'on' {
+export function legRailheadHold(w: World, slot: number, tick: number): 'hold' | 'yield' | 'on' {
   const r = w.get(Train, trainOf(w, slot))!;
   if (r.phase !== TRAIN_PHASE.STAND || !r.legKit || kitBills(r.boiler) < 2) return 'on';
   const line = RAIL_TRAINS[slot]!.line;
@@ -260,7 +262,10 @@ export function legRailheadHold(w: World, slot: number, tick: number): 'hold' | 
     const leg = RAIL_LEGS[k]!, g = legRow(w, k);
     if (leg.line !== line || g.laid + 1 >= leg.sections.length || r.at !== legKitDrop(w, line, k)) continue;
     if (legKitFits(w, line, k, r)) continue;
-    if (g.start >= 0 || tick < r.depart + TRAIN.dwellTicks + TRAIN.railheadHoldTicks) return 'hold';
+    if (g.start >= 0 || tick < r.depart + TRAIN.dwellTicks + TRAIN.railheadHoldTicks) {
+      return endHoldPressure(j => train(w, j), line, stopsOf(w, line), slot, r.at, lineRow(w, line).req, tick)
+        ? 'yield' : 'hold';
+    }
   }
   return 'on';
 }
