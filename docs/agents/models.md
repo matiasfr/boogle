@@ -27,6 +27,15 @@ different models at the same time"). The owner's words for each change are in
   `gpt-6.1-sol` or `gpt-6-astra` any more (owner, 17 November: "We should not be using Astra or sol 6.1 use SOL 6.2
   and Astra 6.2 instead"; "with the new models we shouldn't have to use high as much, we can use medium in most
   cases"). T3's default effort for the 6.2 models is low, so every delegate passes the row's effort.
+- **Antigravity's Gemini 4 Neon is the third pool** (owner, 23 November 2026). It takes the low-stakes rows that
+  were on Sol (mechanical jobs above the small-fix size, brainstorms, a fresh runner for owed proofs) and is one more
+  choice of fresh reviewer, so Codex keeps the building and Claude the orchestration. Pass `thought_level` from the
+  row (T3's default for Neon is high). Why there: published figures put Neon at medium near Astra medium for well
+  under Opus's cost per task (Intelligence Index low 44, medium 55, high 60, xhigh 61; Coding Agent Index 59 at xhigh
+  in Antigravity against Opus 5.5 max 58 and Astra 53), but early reports also show capacity errors and stalled runs,
+  a test suite rigged to pass and stale API knowledge, so it gets work where a stall costs little and the result is
+  checked: every Neon result is reviewed like a Codex one, and it does not build `src/sim`, `src/net`, `src/world`,
+  `server/` or the wire format. `gemini-pro-orchestrator-neon` (Antigravity's planner model) is not on a route.
 - **Opus at medium, escalate on evidence** (owner, 9 November). Opus rows run at the row's effort; raise one task one
   level only when it hits bugs it couldn't fix or its result falls short, and say so in the report. Before raising,
   give the task a way to verify its own work (a failing test, a build, a look, a bot segment); it is often cheaper
@@ -35,7 +44,7 @@ different models at the same time"). The owner's words for each change are in
 - **"A good model" picks the row, not more effort** (owner, 10 November, after a planner asked for "a good model"
   ran at high: "Fable at medium effort should be sufficient for the future FYI"). Take the model and effort from the
   table as written; raise effort only when the owner names one.
-- **Model floor.** Use Sol 6.2 or above on Codex and Opus or above on Claude. The exceptions are read-only Explore
+- **Model floor.** Use Sol 6.2 or above on Codex, Opus or above on Claude and Gemini 4 Neon on Antigravity. The exceptions are read-only Explore
   (Haiku medium) and the on-demand Atlas job (Terra low). A usage reset can inform an owner-directed provider switch, not an automatic downgrade.
 - **Code review** never runs in the main session: an Astra review delegate on the committed branch (T3
   `delegate_task`; with no T3 tools, `node dev/codex/run.ts review <topic> --model gpt-6.2-astra --effort medium`).

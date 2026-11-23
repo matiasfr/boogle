@@ -10,6 +10,9 @@ The one record of who is running what, and what the five-job limit is counted fr
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
+| Build: greybox leg 3 steps 1 to 5 (catalog, rules, the hold, seeds, Bell Rock; world v66) | The greybox route (P2) | `codex/greybox-leg3` | owner's wrap-up session (Claude Opus medium); builder Codex Astra 6.2 medium | 23 November 01:30 | running; independent review before merge |
+| Build: the halt yard steps 3 to 5 (stacks, flights, the Village shelf; recovery reads; the checkpoint) | The halt yard (P2) | `codex/halt-yard-stacks` | owner's wrap-up session (Claude Opus medium); builder Codex Astra 6.2 medium | 23 November 01:30 | running |
+| Build: the Rail yoke steps 4 to 6 (it waits at the rack with Q1's board mark; the little guy makes it; the bot takes it) | The rails' own capacity upgrade (P3) | `codex/rail-yoke-rack` | owner's wrap-up session (Claude Opus medium); builder Codex Astra 6.2 medium | 23 November 01:30 | running |
 
 ## Where the work stands
 
@@ -18,25 +21,12 @@ The one record of who is running what, and what the five-job limit is counted fr
 - **Next work by rank** (17 November handover; the backlog rows carry the detail): the town's sack on the counter (C2 and K1 shipped 17 November; K3 closed 17 November with the away host test, independently reviewed; left on the row are the designer’s items and the P2 gold-outline follow-up); garage choices: step 3 (steel spent) is on main (#2029, v59, independently reviewed); the designer's Quick or Strong rebalance, owed before step 4 is briefed now that an extra car can mean rider capacity, is on main as a proposal (see Open owner questions; step 4 waits for playable stage-4 lines); the gate cottage opening (home-flip D1) shipped 17 November (independently reviewed twice; the push-out fix in `src/place/sites.ts` is not pinned by a test, by the test diet); D2, the green and the kerb, shipped 17 November (view only; phone width and motion not looked at); D3, the forge's west door, shipped 18 November (#2049, view only, three independent reviews; the camera fix is proven by test, not by a look); then riders walking to the coach's doors instead of popping into seats (needs a short plan); a reliable frame-cost measurement of the coach (R4's timings are provisional: find the two 404 errors first); the P3 row of small fixes.
 - **Proof debts and leftovers:** [orchestrator-leftovers](orchestrator-leftovers.md). Nothing from 16 or 17 November was tested on a device.
 
-## Codex at its usage limit (18 November)
+## Wrap-up session, heartbeat still paused (23 November UTC)
 
-The owner, 18 November 2026 about 06:20 UTC, after the ChatGPT usage limit stopped three Codex jobs: "Can we pivot to Claude?" Orchestrator's reading: until Codex usage returns, the Codex rows of `npm run models` (building, fixes, runners, reviews) run on Claude Opus at medium effort (high for tricky work), Fable kept for the heartbeat as before; the three paused jobs resume on Claude in their existing worktrees. When Codex is back, new jobs go back to the table as written. If he meant a permanent switch, the table in `dev/models.ts` is his to edit. **The heartbeat too** (owner, 18 November 2026 04:59 UTC, in the heartbeat's thread, answering a run that listed the Codex limit as waiting on him: "Use Claude"). Orchestrator's reading: while this section stands, a heartbeat run reviews, fixes, ships and starts jobs on Claude delegates at the same models and efforts (Opus medium, high for tricky work; an independent reviewer is still a fresh delegate), within the five-job limit and its other limits; it does not pause for the Codex limit. A Claude usage limit still means pause and tell him. Delete this section when Codex usage is back.
+Claude and Codex usage is back. The owner, 23 November 2026 about 01:20 UTC: "I want you to wrap up the tasks that were in flight but not reactivate the full heartbeat. Wind down the in progress tasks when finished. Use no higher than opus medium or Astra 6.2 medium for this session." Orchestrator's reading: the owner's session finishes the three rows the 19 November pause stopped partway (the jobs above) and starts nothing else; every delegate runs at medium or below (Opus, Astra 6.2, Sol 6.2 or Neon), with no escalation to high while this section stands. `Boogle heartbeat` and `Boogle daily tidy` stay disabled; nothing re-enables them but his word. When the three jobs merge, the session deletes their rows and ends with this section saying what is next.
 
-## Paused at Claude and Codex usage limits (19 November)
-
-Both Codex and Claude reached usage limits on 19 November 2026 (Claude 7-day limit resets 22 November, 5am Pacific). On the owner's request, all unattended orchestration on HOTBOX is paused cleanly until he chooses to resume:
-
-- **Scheduled tasks paused (`enabled: false`):** `Boogle heartbeat` (`scheduled-task:ae9bad7f-91a5-4e85-bf10-3472d12db915`), `Boogle daily tidy` (`scheduled-task:command:mcp:ed5088fa-9bef-40fd-b263-6fa7487d6d6d:schedule-task:boogle-tidy-windows-2026-11-17`). Stale queued wakes on the `Boogle orchestrator` thread were cancelled, the owner turned off the T3 UI usage-limit auto-resumes, and the 5 finished/dropped delegate threads were settled.
-- **Wound down and shipped to `main` (CI, Pages deploy and Smoke all green):**
-  - **The halt yard, step 2** (#2319, view only, 6 stills, `ship-check` 691/691, prefabs 81/81, boot probe PASS; `claude/halt-yard-bay` worktree and branch removed).
-  - **Turnouts Checkpoint B** (#2320, docs and proofs only; quiet-machine `perf` + `--hardware`, `level-check`, `checkpoints -- trains-on`, `test:net` 268/268, Q1 lay + 1920 px gantry motion sheet, 8 `at=` stills; ticked in [turnouts](../plans/turnouts.md)).
-  - **The Rail yoke, step 3** (#2321, view only, glider stills added, 8 curated stills + `place.md` + `rail-yoke.md` + `agent-calls.md`, `ship-check` 636/636).
-- **Released cleanly (0 edits, 0 commits):** **greybox leg 3, steps 1 to 5** (`claude/greybox-leg3`, empty worktree and branch removed). Ready to start fresh on resume.
-- **Jobs in flight:** 0.
-- **How to resume when ready:**
-  1. Re-enable `Boogle heartbeat` (`scheduled-task:ae9bad7f-91a5-4e85-bf10-3472d12db915`) and `Boogle daily tidy` (`scheduled-task:command:mcp:ed5088fa-9bef-40fd-b263-6fa7487d6d6d:schedule-task:boogle-tidy-windows-2026-11-17`) with `schedule_task(enabled: true)`, and delete this section (and the Codex section above once Codex usage is back).
-  2. Next startable backlog steps: **greybox leg 3 steps 1 to 5** (world bump `v66`, independent review), **the halt yard step 3** (bin stacks, flights and Village shelf, view only), and **the Rail yoke step 4** (yoke waiting at rack + Q1 board mark, view only).
-  3. Cleanup notes for the next tidy/heartbeat pass: `t3-b7b726fe-5ca724dc7efa3333` (`claude/turnouts-checkpoint-b`) and `t3-1629fbf1-a374228dddfff5f1` (`claude/rail-yoke-back`) are cleanly merged and can be removed; `t3-6c28e87f-7e89ea954491738b` (`claude/recheck-cutscenes-friend-card`, 1 uncommitted edit in `test/ability-arrival.test.ts` from 18 November) was left untouched.
+- **To resume the heartbeat:** re-enable `Boogle heartbeat` (`scheduled-task:ae9bad7f-91a5-4e85-bf10-3472d12db915`) and `Boogle daily tidy` (`scheduled-task:command:mcp:ed5088fa-9bef-40fd-b263-6fa7487d6d6d:schedule-task:boogle-tidy-windows-2026-11-17`) with `schedule_task(enabled: true)`, and delete this section.
+- **Cleanup for the next tidy:** `t3-6c28e87f-7e89ea954491738b` (`claude/recheck-cutscenes-friend-card`, one stale uncommitted edit in `test/ability-arrival.test.ts` from 18 November; its work shipped in #2247) is left for the owner or the tidy; the merged turnouts and Rail yoke worktrees are already gone.
 
 ## Open owner questions
 
