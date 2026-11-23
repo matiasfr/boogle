@@ -337,6 +337,60 @@ rides with it. Steps 6 and 7 ship on their own after it.
       request was served. Leg 2 with the kit ahead stayed within the bounds
       in the initial trial (bay maxima 1,075 settled and 1,467 growing). The Canopy relay check
       and `npm run loop -- run` passed. Step 2 remains open pending a gameplay decision.
+
+      **23 November diagnosis.** Times below are ticks from the start of each wait trial. Positions
+      are metres along the bay line, rounded to the nearest metre. Bell Rock is at 1,217 m.
+
+      - Settled `5eed`, outward, +14,438 to +16,088. Slot 9 was outward at 1,197 m, inside the
+        braking distance at 2 m/tick. Slots 10 and 11 were homeward at 1,419 and 2,176 m;
+        slot 12 was outward at 1,876 m. All four occupied the outer half of the line. Slot 10
+        was next for the outward platform. It arrived homeward at Bell Rock at +14,568,
+        Bay head 1 at +14,980, and West landing at +15,382. It dwelt 50 ticks at each,
+        departed West at +15,432 and reached Bell Rock outward at +16,088. Of the 1,650 ticks,
+        150 were boarding dwells; the balance was running, including braking and acceleration.
+      - Growing `777`, homeward, +1,308 to +2,955. Slot 10 was already past Bell Rock,
+        homeward at 1,096 m. Slot 9 was outward at Bay head 1 (609 m), slot 11 was at West
+        landing (20 m) waiting for its departure gap, and slot 12 was still in the shed.
+        Slot 9 served the request after calls outward at Bell Rock (+1,672) and head 1
+        (+2,038), then turned at head 2 (+2,347). It left there at +2,397. Slot 12
+        joined at West landing at +2,647, too far behind to serve this request.
+      - The through halt accepts both directions. Neither serving train waited on Bell Rock's
+        crossover or a Strong hold. Train motion has no curve-speed cap. The missed braking
+        window and the gap behind it dominate the settled wait; extension of the line ahead
+        of slot 9 lengthens the growing return journey.
+      - The repeated 1,413 on `c0ffee` was a Bay head 1 homeward call. At +10,195 slot 10
+        was outward at head 2, 46 ticks into its dwell, in both fleet sizes. Slot 9 was
+        already homeward past Bay head 1. The fourth slot was just departing Bay head 1
+        outward; it could not answer the opposite platform before slot 10. Slot 10 served
+        the same call at +11,608 in both runs.
+
+      **Retry method.** Each configuration used the same four seeds and random call generator,
+      20,000 ticks per mode per seed, the existing 75% departure headway calculation, and both
+      spacing and save/restore invariant checks. Dwell changes started when the bay line first
+      extended beyond Bell Rock. Signal trials added intermediate places to wait without changing
+      the clearance rule. End balancing used the existing gap comparison with a 300-tick cap.
+      Each pair below is the maximum settled / growing bay wait over all four seeds, in ticks.
+
+      | Trial | Three final trains | Four final trains |
+      | --- | ---: | ---: |
+      | 50-tick dwell, extra signals every 150 m | — | 1,650 / 1,647 |
+      | 35-tick dwell, extra signals every 250 m | 1,853 / 1,706 | 1,544 / 1,580 |
+      | 25-tick dwell, extra signals every 150 m | 1,769 / 1,715 | 1,518 / 1,531 |
+      | 25-tick dwell, catalog signals | — | 1,518 / 1,531 |
+      | 20-tick dwell, catalog signals | 1,737 / 1,752 | 1,492 / 1,500 |
+      | 50-tick dwell, end balancing | — | 1,675 / 1,647 |
+      | 35-tick dwell, end balancing | — | 1,600 / 1,592 |
+      | 25-tick dwell, end balancing | 1,550 / 1,586 | — |
+      | 15-tick dwell, catalog signals | 1,752 / 1,639 | 1,367 / 1,463 |
+      | 15-tick dwell, extra signals every 150 m | — | 1,367 / 1,463 |
+      | 15-tick through dwell, 35 ticks at termini | 1,752 / 1,726 | 1,417 / 1,491 |
+
+      **Blocked after retry.** The closest result used four final trains and a 15-tick boarding dwell.
+      In seed order `c0ffee`, `777`, `5eed`, `badd`, its settled bay waits were
+      1,367, 1,293, 1,327 and 1,330. Growing waits were 1,303, 1,441, 1,095 and 1,463.
+      The settled limit missed by 17 ticks even with boarding reduced from five seconds to 1.5.
+      None of the 16 trial configurations qualified. They were measured in isolation and none was
+      adopted. The four-train baseline remains on the branch with step 2 open.
 - [ ] **3. The hold (M; HOTBOX). For garage step 4.** `src/sim/railway-train.ts`: rows 4 and 5, `BOILER_CARS`,
       `boilerCars`, `kitBills`, `TRAIN.railheadHoldTicks`. `railway-queries-route.ts`: `legKitCap`'s `bills`.
       `railway-sys-route-kit.ts`: `legKitLoad` and `yardLoad` by bills; `legRailheadHold`. `railway-sys-trains.ts`:
