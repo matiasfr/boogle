@@ -414,6 +414,14 @@ disposable production room.
 4. Two rejoin looks: once with the yoke waiting (the block, the glimmer, no errand, no card), and once after the take
    (the worn yoke, no card).
 
+### Branch measurements
+
+- The solo browser bot finished at Q3. On the bot clock Q1 was paid at 776.4 s, the yoke was taken and its card dismissed by 779.8 s, and Q1 was laid at 789.4 s. Q2 was laid at 902.0 s (1:53 after Q1). Q3 was laid at 1089.4 s (3:07 after Q2, including the hook and glider route, or 2:02 from gliding home). The replay is in `.look/yoke-solo/report.txt`.
+- The solo browser recorded 12 rail deposits at each frame. Q2 received 4 then 8 during depot deliveries. Q3 received 4 around the log deliveries and the remaining 8 in one later delivery. The current depot supplies rails alongside logs, so this run does not establish a two-to-one forge-trip saving or a browser before/after time delta.
+- At the same point between rack and block, turning selected “Take rails” or “[Take]”. The accepted card opened and the rails row displayed 16 squares. Both saved states restored with zero errands, a fully hooked yoke, no worker and no card. Only the unclaimed stand was visible.
+- The revised maker sheet runs 14.010 s. The blue-capped worker is at the front of the block by 7.542 s, the hooks are upright by 8.618 s, and Q1's frame folds by 11.857 s. The pack control still shows its worker and the straps appearing on the frame. Motion at normal playback speed and the clank are unverified.
+- `npm run check` passed with 2,250 unit passes, one TODO and a successful production build. The change-scoped gate passed 1,332 tests in 152 files. The additional server stage of `check:full` had 406 passes, two skips and one Windows failure in the accounts crash test: the child process returned a null signal where the test expects SIGKILL.
+
 `npm run perf` is not needed: one small model, one instanced count raised from 8 to 16, and no light.
 
 ## Level findings

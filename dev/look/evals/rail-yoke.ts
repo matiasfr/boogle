@@ -38,6 +38,10 @@ const aim = () =>
   window.__debugCam?.set([frame.x + 3, H(frame.x, frame.z) + 3, frame.z + 5], [yoke.x, H(yoke.x, yoke.z) + 1, yoke.z]);
 if (reload && sessionStorage.getItem('yoke-look-reload')) {
   const taken = mode === 'reload-taken';
+  await until(() => {
+    if (!me.entered) document.querySelector<HTMLButtonElement>('#enter:not([disabled])')?.click();
+    return me.entered && !document.querySelector('.splash:not(.gone), .railway-return-veil.on');
+  }, 'returned to play');
   await until(() => !!R.inspectRailway()?.line2View.forgeRewards && R.rail(R.rw()).yoke === taken, 'restored world');
   move(yoke.x + 2, yoke.z + 2);
   aim();
