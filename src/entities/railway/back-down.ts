@@ -85,6 +85,22 @@ export function setDown(adapter: RailwayAdapter, away?: { x: number; z: number }
   else finish();
   return true;
 }
+/** One press, one predicted transfer per kind, spaced on the host's unload clock. */
+export function leaveLoad(adapter: RailwayAdapter, yard: number, kinds: readonly (0 | 1 | 2)[]) {
+  if (busy || !kinds.length || !adapter.haltPut(yard, kinds[0]!)) return false;
+  busy = true;
+  let index = 1;
+  const next = () => {
+    if (!adapter.read.ready() || !adapter.haltPut(yard, kinds[index++]!)) {
+      after = null;
+      finish();
+    } else if (index === kinds.length) finish();
+    else setTimeout(next, DROP_GAP_MS);
+  };
+  if (index === kinds.length) finish();
+  else setTimeout(next, DROP_GAP_MS);
+  return true;
+}
 function finish() {
   busy = false;
   const then = after;

@@ -2,9 +2,7 @@
 // beside the foot of each halt's back ramp, with a log cradle, a rails shelf and a stone bin. It stands, solid where it
 // looks solid, once its yard opens (`haltYardOpen`): it drops in with the halt kit's drop-set when it opens near you,
 // and is simply there when you load a world where it is open. Each bin offers Pick up or Leave it here (owner
-// question 2) and sends the real `rail.haltTake` or `rail.haltPut`. What a bin holds, its flights and the Village's
-// shelf are step 3's; the Village yard is the recovery rack (./sources.ts). Local view over accepted rows. The bay's
-// pieces and its collider record are one table (haltYardBay, src/content/prefabs/halts.ts).
+// question 2) and sends the real yard ops. Bins follow the shared stock, with Local flights over accepted effects.
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -17,8 +15,22 @@ import { HALT_YARDS, HALT_YARD_REACH, type HaltYardId } from '../../sim/railway-
 import { haltYardOpen, haltYardStock } from '../../sim/railway-queries-yard.ts';
 import { balanceOf, railAccount, roomOf, LOGS, STONE } from '../../sim/railway-queries.ts';
 import { RAILS } from '../../sim/railway-line2-layout.ts';
-import { bayBin, bayKey, haltYardBay, type BayHand } from '../../content/prefabs/halts.ts';
+import { LINE2_FORGE, LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
+import { forge } from '../../sim/railway-rows.ts';
+import {
+  bayBin,
+  bayKey,
+  haltYardBay,
+  yardShelf,
+  yardPointer,
+  type BayBox,
+  type BayHand,
+} from '../../content/prefabs/halts.ts';
 import { inReach } from './tools.ts';
+import { yardStock, stockKit } from './halt-yard-stock.ts';
+import { outOf } from '../../place/sites.ts';
+import { leaveLoad } from './back-down.ts';
+import { yardFlights, type YardSources, type Bin } from './halt-yard-flights.ts';
 
 type Box = import('../../render/boxes.ts').Box;
 type Kind = 0 | 1 | 2;
@@ -35,14 +47,14 @@ const REACH_SLACK = 0.3;
 /** m: a yard that opens nearer than this drops in; farther off it is simply there when you come. */
 const SEEN = 80;
 
-export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView) {
-  const [{ H }, { box, place }, { dropSet, dustRing }, { haltFrame }, { siteExit }, { outOf }] = await Promise.all([
+export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView, sources: YardSources) {
+  const [{ H }, { box, place }, { dropSet, dustRing }, { haltFrame }, { siteExit }, kit] = await Promise.all([
     import('../../place/terrain.ts'),
     import('../../render/boxes.ts'),
     import('../../place/pieces.ts'),
     import('../../prefab/halt-deck.ts'),
     import('../../place/site-clearance.ts'),
-    import('../../place/sites.ts'),
+    stockKit(owner),
   ]);
   const boxes: Box[] = [];
   const bays = HALT_YARDS.flatMap((spec, k) => {
@@ -85,6 +97,7 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView)
         x,
         y,
         z,
+        yaw,
         k0,
         k1: boxes.length,
         solid,
@@ -100,6 +113,62 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView)
     ];
   });
   type Bay = (typeof bays)[number];
+  const village = HALT_YARDS[0]!;
+  const railBase = sources.villageBins[RAILS]!;
+  // Use the same short bearers and legs as the out-halt shelf.
+  const shelfStart = boxes.length;
+  function accessory(
+    key: 'railway.yard-pointer' | 'railway.yard-shelf',
+    id: string,
+    parts: BayBox[],
+    x: number,
+    y: number,
+    z: number,
+    yaw: number,
+  ) {
+    const start = boxes.length;
+    for (const [lx, ly, lz, w, h, d, color] of parts) {
+      const b = box(x, z, place(lx / 100, (ly - h / 2) / 100, lz / 100, w / 100, h / 100, d / 100, yaw), color);
+      b.y = y;
+      boxes.push(b);
+    }
+    const solid = instantiate(key, { id, prefab: key, pos: [x, y, z], rot: [yaw, 0, 0] }, { owner });
+    return { start, end: boxes.length, solid };
+  }
+  accessory('railway.yard-shelf', 'village-yard-shelf', yardShelf, railBase.x, railBase.y - 0.47, railBase.z, 0);
+  // The workshop wall hides the rack at the old forge frame. Place the arm at the outside corner.
+  const finger = (id: string, yard: number, x: number, z: number) => {
+    const dest = HALT_YARDS[yard]!;
+    const piece = accessory(
+      'railway.yard-pointer',
+      id,
+      yardPointer,
+      x,
+      H(x, z),
+      z,
+      Math.atan2(dest.x / 100 - x, dest.z / 100 - z),
+    );
+    piece.solid.setEnabled(false);
+    return { ...piece, yard, shown: false };
+  };
+  const q5 = LINE2_STATIONS[4]!;
+  const pointers = [
+    finger('forge-yard-pointer', 0, 919, -10),
+    finger('q5-yard-pointer', 3, q5.x / 100 + 3.8, q5.z / 100 - 4),
+  ];
+  const bins: Bin[][] = [
+    sources.villageBins,
+    ...bays.map((b) => b.at.map((p, kind) => p.clone().setY(b.y + [0.26, 0.12, 0.47][kind]!))),
+  ].map((base, yard) =>
+    KINDS.map((kind) => {
+      const yaw = (bays.find((b) => b.k === yard)?.yaw ?? 0) + (kind === RAILS ? Math.PI / 2 : 0);
+      return {
+        stock: yardStock(owner, base[kind]!, yaw, kind, kit),
+        flights: [],
+      };
+    }),
+  );
+  yardFlights(adapter, owner, bins, sources);
   let landed = 0;
   const set = dropSet(
     boxes,
@@ -110,7 +179,7 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView)
     },
     owner,
   );
-  boxes.forEach((_, k) => set.snap(k, false));
+  boxes.forEach((_, k) => set.snap(k, k >= shelfStart && k < pointers[0]!.start));
 
   /** Before the solids come in, a player standing in them is moved clear by the shared clearance; one resting against
    * them or on the ground they touch stays put. */
@@ -134,6 +203,13 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView)
     if (!adapter.read.ready()) return;
     const w = adapter.read.world(),
       p = me.body?.position;
+    for (const pointer of pointers) {
+      const shown = pointer.yard === 0 ? forge(w).used >= LINE2_FORGE.logs : haltYardOpen(w, pointer.yard);
+      if (shown === pointer.shown) continue;
+      pointer.shown = shown;
+      for (let k = pointer.start; k < pointer.end; k++) set.snap(k, shown);
+      pointer.solid.setEnabled(shown);
+    }
     for (const bay of bays) {
       const open = haltYardOpen(w, bay.k);
       if (open === bay.shown) continue;
@@ -144,16 +220,35 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView)
         else set.snap(k, open);
       standUp(bay, open);
     }
+    bins.forEach((row, yard) =>
+      row.forEach((bin, kind) => {
+        let incoming = 0;
+        for (let i = bin.flights.length - 1; i >= 0; i--) {
+          const f = bin.flights[i]!;
+          if (!f.active()) bin.flights.splice(i, 1);
+          else if (f.incoming) incoming++;
+        }
+        bin.stock.draw(Math.max(0, haltYardStock(w, yard, kind) - incoming));
+      }),
+    );
     seen = true;
   }, 0);
 
   /** One target a bin (owner question 2): Pick up when it has stock, you carry none of its kind and have room for it;
    * otherwise Leave it here when you carry anything the yard takes, which puts all of it down in one press. A closed
    * yard has no bay, so it offers nothing. */
+  const villageBay = {
+    k: 0,
+    x: village.x / 100,
+    z: village.z / 100,
+    shown: true,
+    at: sources.villageBins.map((p) => p.clone().setY(railBase.y + 0.5)),
+  };
+  const promptBays = [villageBay, ...bays];
   function targets(): Interactable[] {
     if (!adapter.read.ready() || !me.body) return NO_TARGETS;
     const p = me.body.interpolatedPosition;
-    const near = bays.filter(
+    const near = promptBays.filter(
       (bay) => bay.shown && Math.hypot(p.x - bay.x, p.z - bay.z) <= HALT_YARD_REACH / 100 - REACH_SLACK,
     );
     if (!near.length) return NO_TARGETS;
@@ -164,22 +259,35 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView)
     let out: Interactable[] | null = null;
     for (const bay of near)
       for (const kind of KINDS) {
+        if (bins[bay.k]!.some((bin) => bin.flights.some((f) => f.active()))) continue;
         const at = bay.at[kind]!;
         if (!inReach(at)) continue;
         const stock = haltYardStock(w, bay.k, kind);
-        const id = `halt-yard-${bay.k}-${kind}`;
+        const rack = bay.k === 0 && kind !== RAILS;
+        if (rack && Math.hypot(p.x - bay.x, p.z - bay.z) > 2.8) continue;
+        const id = rack
+          ? kind === LOGS
+            ? 'railway-recovery-rack'
+            : 'railway-recovery-stone'
+          : `halt-yard-${bay.k}-${kind}`;
         // A Pick up names what the bin holds, as a pile's does; Leave it here needs no count.
         const note = `${stock} ${NOUN[kind]}`;
         let target: Interactable;
         if (stock > 0 && mine[kind] === 0 && account && roomOf(w, account, kind) > 0)
-          target = { id, at, note, verb: 'Pick up', run: () => void adapter.haltTake(bay.k, kind) };
+          target = {
+            id,
+            at,
+            note,
+            verb: 'Pick up',
+            run: () => void (rack ? adapter.rackTake(kind) : adapter.haltTake(bay.k, kind)),
+          };
         else if (carried.length)
           target = {
             id,
             at,
             verb: 'Leave it here', // draft, for the owner (docs/plans/halt-yard.md, question 3)
             run: () => {
-              for (const c of carried) adapter.haltPut(bay.k, c);
+              leaveLoad(adapter, bay.k, carried);
             },
           };
         else if (stock > 0) target = { id, at, note, verb: 'Pick up', blocked: KIND_FULL[kind]! };

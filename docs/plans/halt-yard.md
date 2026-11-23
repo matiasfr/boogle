@@ -1,4 +1,4 @@
-> **Status: step 1 built (2026-11-19, `claude/halt-yard-store`, world v65); step 2 built (2026-11-19, `claude/halt-yard-bay`, view only); steps 3 to 5 not built.** Read at `origin/main` `c0c993ff7` (world v62). Station-deposit
+> **Status: step 1 built (2026-11-19, `claude/halt-yard-store`, world v65); step 2 built (2026-11-19, `claude/halt-yard-bay`, view only); steps 3 to 5 in verification on `codex/halt-yard-stacks`.** Read at `origin/main` `c0c993ff7` (world v62). Station-deposit
 > build 1. Step 1 changes rules, wire, save and server validation: one `WORLD_NS` bump (**the next free
 > version**), one independent review. Build 2 (cargo cars carry a yard's goods) is out of scope: it waits for the
 > cargo trains row.
@@ -281,7 +281,18 @@ first; owner-calls "Nothing waits on a world bump").
     one from the play camera on the approach).
   - *Review stamp: no independent review.*
 
-- [ ] **3. Stacks, bundles, flights, the Village shelf and the pointer check.**
+- [x] **3. Stacks, bundles, flights, the Village shelf and the pointer check.**
+  - Two local clients saw 10 logs and 4 rails from the same press at Quarry. Both replicas were at tick 1992.
+    Picking up the logs returned 10 to the back and left 4 rails on the shelf. A separate run stacked 40 logs.
+    The two kinds go 100 ms apart to respect the host's unload interval. These are client transfers over world v65.
+    Local evidence in `.look/`: `yard-pair-still.png`, `p2-yard-pair-still.png`, `yard-flights-realtime.webm`,
+    `yard-flights-motion.png`, `yard-bundles-final-still.png`, `yard-transfer-motion.png` and `yard-village-still.png`.
+  - From T1, Q4 and the Q6 rack the bay shows. The workshop hides the Village rack from the forge frame, and Far Head
+    is indistinct from Q5. Those two turns have a wordless arm. Five approach stills and both resulting arms were opened.
+    The final Quarry still has six loose courses of four and two separately bound eights. In the 10-second clip the stock
+    settles by 0.69 s and pickup is visible by 2.08 s. Smoothness on a device is unverified.
+  - The targeted gate passed. A two-second production render sample reported mean CPU frame 12.13 ms, p95 28.8 ms,
+    mean railway update 1.56 ms, and zero graphics errors. This sample covers the entire entry view.
   - **Files:** `halt-yard-view.ts`, `sources.ts` (the Village shelf and the rack's Leave it here),
     `dev/look/evals/halt-yard.ts` (new). The eval gets its materials by real accepted ops (chop, the Q4 depot rack,
     `forgeTake`). Teleports isolate the prompt; they prove no reach.
