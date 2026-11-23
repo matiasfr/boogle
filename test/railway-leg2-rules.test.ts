@@ -1,3 +1,4 @@
+import { ServiceHealth } from './helpers/railway-service-health.ts';
 // Greybox leg 2's rules (docs/plans/greybox-leg2.md, step 2): the incline from High Gorge to Bell Rock on the `ns` line
 // and the bay cut from Home's West landing to Bell Rock on the `bay` line. The barrier, the Gorge rack and yard relay,
 // the seeds, the bay cut's stocked first rack (the stand-in), both lines' fleets and stops, the yard's completion, the
@@ -6,25 +7,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { World } from '../src/ecs/index.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
-import { Account, Forge, Leg, LegYard, Rail, Route } from '../src/sim/railway-components.ts';
+import { Account, Forge, Leg, LegYard, Line, Rail, Route, Train } from '../src/sim/railway-components.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
 import { LINE2, RAIL_HALTS, RAIL_LINES } from '../src/sim/railway-lines.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, ROW_LINE, legFrame, legRack } from '../src/sim/railway-route.ts';
-import { TRAIN_PHASE, fleetOf, lineStagesOf, trainDir, trainPassesBy } from '../src/sim/railway-train.ts';
+import { TRAIN, TRAIN_PHASE, fleetOf, lineStagesOf, trainDir, trainPassesBy } from '../src/sim/railway-train.ts';
 import { LINE_SLOTS, servingSlots, trainSpacing } from '../src/sim/railway-trains.ts';
 import { railTick } from '../src/sim/railway-systems.ts';
 import { account, forge, rail, train, trains } from '../src/sim/railway-rows.ts';
 import { LOGS, roomOf, stopsOf } from '../src/sim/railway-queries.ts';
 import { RAILS } from '../src/sim/railway-line2-layout.ts';
-import {
-  legKitNeed,
-  legOpen,
-  legRow,
-  legYard,
-  legYardDrop,
-  routeRow,
-} from '../src/sim/railway-queries-route.ts';
-import { legYardHome, railLegKitRelease } from '../src/sim/railway-sys-route-kit.ts';
+import { legKitNeed, legOpen, legRow, legYard, legYardDrop, routeRow } from '../src/sim/railway-queries-route.ts';
+import { legRailheadHold, legYardHome, railLegKitRelease } from '../src/sim/railway-sys-route-kit.ts';
 import { railValid, type Actor } from '../src/world/railway-server.ts';
 import { act, advance, apply, buildSeedWorld, invariant, restore, unaudited, type Seed } from './helpers/rail.ts';
 import { routeTicks } from './helpers/fuzz.ts';
@@ -80,7 +74,12 @@ function kitLedger(w: World) {
     loadedRails = 0;
   RAIL_LEGS.forEach((leg, k) => {
     const g = legRow(w, k);
-    [logs, rails, loadedLogs, loadedRails] = [logs + g.logs, rails + g.rails, loadedLogs + g.loadedLogs, loadedRails + g.loadedRails];
+    [logs, rails, loadedLogs, loadedRails] = [
+      logs + g.logs,
+      rails + g.rails,
+      loadedLogs + g.loadedLogs,
+      loadedRails + g.loadedRails,
+    ];
     for (const sec of leg.sections.slice(0, g.laid)) [logs, rails] = [logs + sec.logs, rails + sec.rails];
   });
   for (const r of trains(w)) if (r.legKit) [logs, rails] = [logs + r.logs, rails + r.rails];
@@ -100,10 +99,17 @@ test("leg 2's catalog lines: ns and bay open by their legs' sections, fleets 0, 
       [0, 1, 2],
       `${l.id}: a train per section laid`,
     );
-    assert.deepEqual(l.signals, [RAIL_LEGS[leg]!.sections[0]!.toCm], `${l.id}: a block signal at section 1's end`);
+    assert.deepEqual(l.signals, [
+      RAIL_LEGS[leg]!.sections[0]!.toCm,
+      ...(line === BAYL ? RAIL_LEGS[3]!.sections.slice(0, -1).map((s) => s.toCm) : []),
+    ]);
     for (const { stops, trains } of lineStagesOf(line)) {
-      assert.deepEqual(stops, l.halts.slice(0, stops.length).map((h) => h.s), `${l.id}: the stops a prefix`);
-      assert.equal(trains, Math.max(0, stops.length - 1), `${l.id}: ${trains} trains over ${stops.length} stops`);
+      assert.deepEqual(
+        stops,
+        l.halts.slice(0, stops.length).map((h) => h.s),
+        `${l.id}: the stops a prefix`,
+      );
+      assert.equal(trains, [0, 0, 1, 2, 2, 3, 3][stops.length], `${l.id}: ${trains} trains over ${stops.length} stops`);
     }
     // Right-hand running (owner, 18 November): each halt's outward platform right of the row going out, its homeward
     // one left, 11.6 m apart.
@@ -135,9 +141,47 @@ test('the barrier: rail.legStock is refused while it is shut; it opens only with
   const a = acc(mid, 'a');
   const r = apply(mid.w, 'a', { op: 'rail.gate', epoch: a.epoch, request: a.request + 1, id: BARRIER } as never, mid.t);
   assert.ok(!r.accepted, 'the incline is not open');
-  // The Canopy barrier stands shut: leg 3's rules are not built (it refuses with the seeds held too).
+  // The Canopy barrier refuses the seeds until the bay cut is laid.
   const bell = copy('bay-open');
   assert.equal(act(bell, 'a', 'rail.gate', { id: CANOPY }), 0, 'the Canopy barrier waits for leg 3');
+});
+
+test('Canopy kit rides ahead, the barrier guards the frame, and the cloth unlocks only after three lays', () => {
+  const s = unaudited(copy('bay-mid')),
+    k = 3;
+  const cloth = RAIL_GRANTS.findIndex((g) => g.id === 'cloth'),
+    notch = RAIL_GATES.findIndex((g) => g.id === 'notch');
+  // Keep the bay cut's last frame waiting while its kit is racked and its train returns to the West landing.
+  for (let i = 0; legRow(s.w, k).loadedLogs === 0 || legRow(s.w, k).loadedRails === 0; i++) {
+    assert.ok(i < 6000, 'Canopy kit loaded before the last bay-cut lay');
+    advance(s, 1);
+  }
+  assert.ok(!legOpen(s.w, k));
+  assert.equal(act(s, 'a', 'rail.gate', { id: CANOPY }), 0);
+  feedSection(s, BAY);
+  assert.equal(act(s, 'a', 'rail.grant', { id: cloth }), 0);
+  for (let i = 0; rail(s.w).depot === 0; i++) {
+    assert.ok(i < 6000, 'kit at Bell Rock');
+    advance(s, 1);
+  }
+  assert.ok(act(s, 'a', 'rail.depotTake') > 0);
+  assert.equal(act(s, 'a', 'rail.legStock', { leg: k }), 0);
+  assert.equal(act(s, 'a', 'rail.gate', { id: CANOPY }), 1);
+  for (let i = 0; i < 3; i++) {
+    assert.deepEqual(kitLedger(s.w), [0, 0]);
+    feedSection(s, k);
+    assert.deepEqual(kitLedger(s.w), [0, 0]);
+    const n = stopsOf(s.w, BAYL).length;
+    assert.equal(n, 4 + i);
+    for (const dir of [-1, 1]) {
+      assert.equal(trainPassesBy(BAYL, 3, dir, n), i === 2);
+      assert.equal(trainPassesBy(BAYL, 4, dir, n), false);
+    }
+  }
+  assert.equal(act(s, 'a', 'rail.grant', { id: cloth }), 1);
+  assert.equal(act(s, 'a', 'rail.grant', { id: cloth }), 0);
+  assert.equal(act(s, 'a', 'rail.gate', { id: notch }), 0);
+  assert.equal(invariant(s.w), null);
 });
 
 test('the relay conserves every unit: line 2 to the Gorge rack and yard, the ns trains out of the yard to head 1', () => {
@@ -162,7 +206,10 @@ test('the relay conserves every unit: line 2 to the Gorge rack and yard, the ns 
   assert.ok(yardMost > 0, 'line 2 unloaded into the Gorge yard');
   assert.ok(nsCarried > 0, 'an ns train carried kit out of the yard');
   assert.ok(headRacked > 0, "head 1's rack was stocked by the ns train");
-  assert.equal(legYardDrop(INCLINE), RAIL_LINES[LINE2]!.halts.findIndex((h) => h.name === 'High Gorge'));
+  assert.equal(
+    legYardDrop(INCLINE),
+    RAIL_LINES[LINE2]!.halts.findIndex((h) => h.name === 'High Gorge'),
+  );
   railwayCheck(s.w);
 });
 
@@ -305,10 +352,6 @@ test("the server judges leg 2's ops at the new points; a malformed one is refuse
 });
 
 // ---------------------------------------------------------------- the waits (the WAIT_BOUND method)
-/** The settled and growing bounds on the greybox lines (decided 16 November): a fixed stage's worst wait at most
- * 1,350 ticks; while the leg grows, at most 1,600. */
-const SETTLED = 1350,
-  GROWING = 1600;
 const FUZZ = routeTicks();
 /** The halts a lever ask may name now (open, not closed behind), by RAIL_HALTS id: the route rules' askPool. */
 function askPool(w: World) {
@@ -323,22 +366,46 @@ function ask(s: Seed, f: Record<string, unknown>) {
 }
 /** Asks at 5% a tick from askPool, riders' asks and junk calls, restores; with `feed`, the open leg fed every tick and
  * the seeds taken once the incline is laid. The worst served wait on each new line. */
-function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: boolean) {
+function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: boolean, canopy = false, strong = false) {
   let s = unaudited(copy(stage));
+  let mixedTicks = 0, heldTicks = 0, layingHoldTicks = 0, yieldedTicks = 0;
+  let thirdEligible = -1, thirdServing = -1;
+  if (strong && canopy) {
+    Object.assign(s.w.mut(Line, s.w.lookup(Line, BAYL)!)!, { boiler: 5, fitted: s.t });
+    const first = LINE_SLOTS[BAYL]![0]!;
+    for (let t = 0; train(s.w, first).logs < 40 || train(s.w, first).rails < 40; t++) {
+      assert.ok(t < 8000, 'two bills ahead of the last bay-cut lay');
+      advance(s, 1);
+    }
+    // The garage command comes later. Keep this one adopted Strong and have every
+    // following shed train enter service with the standard fit during the mixed trial.
+    Object.assign(s.w.mut(Line, s.w.lookup(Line, BAYL)!)!, { boiler: 0, fitted: -1 });
+    feedSection(s, BAY);
+  }
+  if (strong && !canopy) {
+    const fit = s.w.mut(Line, s.w.lookup(Line, BAYL)!)!;
+    Object.assign(fit, { boiler: 5, fitted: s.t });
+    if (!feed) {
+      for (let k = 0; !LINE_SLOTS[BAYL]!.some(j => train(s.w, j).boiler === 5); k++) {
+        assert.ok(k < 8000, 'the first train adopts Strong at home');
+        advance(s, 1);
+      }
+      Object.assign(fit, { boiler: 0, fitted: -1 });
+    }
+  }
+  if (canopy) {
+    assert.equal(act(s, 'a', 'rail.gate', { id: CANOPY }), 1);
+    if (!feed) while (legRow(s.w, 3).laid < RAIL_LEGS[3]!.sections.length) feedSection(s, 3);
+  }
   const t0 = s.t,
     rand = mulberry32(seed),
-    asked = new Map<string, number>(),
-    worst = new Map<number, number>([
-      [NS, 0],
-      [BAYL, 0],
-    ]),
-    long: string[] = [];
+    health = new ServiceHealth([NS, BAYL], s.w);
   for (let k = 0; k < FUZZ; k++) {
     if (rand() < 0.05) {
       const pool = askPool(s.w),
         id = pool[Math.floor(rand() * pool.length)]!,
         dir = rand() < 0.5 ? -1 : 1;
-      if (id !== undefined && ask(s, { id, dir }) && !asked.has(`${id}/${dir}`)) asked.set(`${id}/${dir}`, s.t);
+      if (id !== undefined && ask(s, { id, dir })) health.ask(s.w, id, dir, s.t);
     }
     for (const line of [NS, BAYL]) {
       const n = stopsOf(s.w, line).length;
@@ -359,27 +426,28 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
       const open = RAIL_LEGS.findIndex((_l, j) => legOpen(s.w, j));
       if (open >= 0 && legRow(s.w, open).start < 0) stock(s, open);
       if (legRow(s.w, INCLINE).laid === 2 && !(routeRow(s.w).grants & (1 << SEEDS)))
-        apply(s.w, 'a', { op: 'rail.grant', epoch: acc(s, 'a').epoch, request: acc(s, 'a').request + 1, id: SEEDS }, s.t);
+        apply(
+          s.w,
+          'a',
+          { op: 'rail.grant', epoch: acc(s, 'a').epoch, request: acc(s, 'a').request + 1, id: SEEDS },
+          s.t,
+        );
     }
     railTick(s.w, ++s.t, 75);
-    for (const [key, since] of asked) {
-      const [id, dir] = key.split('/').map(Number) as [number, number];
-      const h = RAIL_HALTS[id]!;
-      if (askPool(s.w).indexOf(id) < 0) {
-        asked.delete(key);
-        continue;
+    if (strong) {
+      const fleet = servingSlots((j) => train(s.w, j), BAYL);
+      if (!canopy && feed && fleet.some(j => train(s.w, j).boiler === 5))
+        Object.assign(s.w.mut(Line, s.w.lookup(Line, BAYL)!)!, { boiler: 0, fitted: -1 });
+      if (thirdEligible < 0 && legRow(s.w, 3).laid > 0) thirdEligible = s.t - t0;
+      if (thirdServing < 0 && fleet.length >= 3) thirdServing = s.t - t0;
+      if (fleet.length > 1 && fleet.filter(j => train(s.w, j).boiler === 5).length === 1) mixedTicks++;
+      if (fleet.some(j => legRailheadHold(s.w, j, s.t) === 'hold')) {
+        heldTicks++;
+        if (legRow(s.w, 3).start >= 0) layingHoldTicks++;
       }
-      const there = LINE_SLOTS[h.line]!.some((j) => {
-        const r = train(s.w, j);
-        return r.phase === TRAIN_PHASE.STAND && r.at === h.stop && trainDir(r) === dir;
-      });
-      if (!there) continue;
-      asked.delete(key);
-      if (!worst.has(h.line)) continue;
-      const v = s.t - since;
-      worst.set(h.line, Math.max(worst.get(h.line)!, v));
-      if (v > SETTLED) long.push(`${h.name} ${dir > 0 ? 'out' : 'home'} asked +${since - t0}: ${v}`);
+      if (fleet.some(j => legRailheadHold(s.w, j, s.t) === 'yield')) yieldedTicks++;
     }
+    health.tick(s.w, s.t);
     if (k % 10 === 0)
       assert.equal(
         trainSpacing(
@@ -393,25 +461,79 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
     if (k % 500 === 0) assert.equal(invariant(s.w), null, `invariant at ${s.t}`);
     if (rand() < 0.002) s = unaudited({ w: restore(s.w), t: s.t });
   }
-  // An ask still unserved at the end counts as waiting until then.
-  for (const [key, since] of asked) {
-    const line = RAIL_HALTS[Number(key.split('/')[0])]!.line;
-    if (worst.has(line)) worst.set(line, Math.max(worst.get(line)!, s.t - since));
-  }
+  health.drain(s.w, s.t, () => railTick(s.w, ++s.t, 75));
   assert.equal(invariant(s.w), null);
-  return { ns: worst.get(NS)!, bay: worst.get(BAYL)!, long, laid: [legRow(s.w, INCLINE).laid, legRow(s.w, BAY).laid] };
+  if (strong) {
+    assert.ok(mixedTicks > 0, 'one Strong in service among standard trains');
+    if (feed && canopy) assert.ok(heldTicks + yieldedTicks > 0, 'the growing fuzz exercised a Strong hold or release');
+  }
+  return {
+    ns: health.worst.get(NS) ?? 0, bay: health.worst.get(BAYL) ?? 0, health, mixedTicks, heldTicks, layingHoldTicks,
+    thirdEligible, thirdServing, laid: [legRow(s.w, INCLINE).laid, legRow(s.w, BAY).laid],
+  };
 }
 const SEED_LIST = [0xc0ffee, 0x777, 0x5eed, 0xbadd] as const;
-test(`the new lines' waits, four seeds at 75%: settled (bay-reached) at most ${SETTLED}, growing (fed from incline-open) at most ${GROWING}`, { timeout: 1800000 }, (t) => {
-  for (const seed of SEED_LIST) {
-    const settled = waits('bay-reached', seed, false);
-    const growing = waits('incline-open', seed, true);
-    t.diagnostic(
-      `${seed.toString(16)}: settled ns ${settled.ns}, bay ${settled.bay}; growing ns ${growing.ns}, bay ${growing.bay} (laid ${growing.laid.join(', ')} in ${FUZZ} ticks); over ${SETTLED}: ${[...settled.long, ...growing.long].join('; ') || 'none'}`,
-    );
-    assert.ok(settled.ns <= SETTLED && settled.bay <= SETTLED, `${seed.toString(16)}: settled ${settled.ns}, ${settled.bay}`);
-    assert.ok(growing.ns <= GROWING && growing.bay <= GROWING, `${seed.toString(16)}: growing ${growing.ns}, ${growing.bay}`);
+for (const [label, canopy, strong] of [
+  ['leg 2 standard', false, false], ['leg 2 mixed', false, true],
+  ['Canopy standard', true, false], ['Canopy mixed', true, true],
+] as const) {
+  test(`${label} service health at 75% headway`, { timeout: 1800000 }, t => {
+    const failures: string[] = [];
+    for (const seed of SEED_LIST) {
+      for (const feed of [false, true]) {
+        const stage = strong && canopy ? 'bay-mid' : feed && !canopy ? 'incline-open' : 'bay-reached';
+        const r = waits(stage, seed, feed, canopy, strong);
+        const mode = feed ? 'growing' : 'settled';
+        t.diagnostic(`${seed.toString(16)} ${mode} ns ${r.ns} bay ${r.bay}; ${[...r.health.stages].join('; ')}; held ${r.heldTicks}`);
+        if (r.health.failures.length) failures.push(`${seed.toString(16)} ${mode}: ${r.health.failures[0]}`);
+      }
+    }
+    assert.deepEqual(failures, []);
+  });
+}
+
+// Matched random demand on the same mixed-fleet save. The control keeps the original
+// Strong hold at Bell Rock for the departure tick only, restoring its dwell clock afterward.
+test('mixed bay riders: early departures and the delay to the second full rack', t => {
+  const base = unaudited(copy('bay-mid')), slot = LINE_SLOTS[BAYL]![0]!;
+  Object.assign(base.w.mut(Line, base.w.lookup(Line, BAYL)!)!, { boiler: 5, fitted: base.t });
+  const baseFit = base.t;
+  while (train(base.w, slot).logs < 40 || train(base.w, slot).rails < 40) {
+    assert.ok(base.t - baseFit < 8000);
+    advance(base, 1);
   }
+  Object.assign(base.w.mut(Line, base.w.lookup(Line, BAYL)!)!, { boiler: 0, fitted: -1 });
+  feedSection(base, BAY);
+  assert.ok(act(base, 'a', 'rail.gate', { id: CANOPY }));
+  const halts = RAIL_HALTS.flatMap((h,id) => h.line === BAYL && h.stop <= 2 ? [id] : []);
+  function trial(seed: number, retain: boolean) {
+    const s = unaudited({ w: restore(base.w), t: base.t }), rand = mulberry32(seed);
+    let departures = 0;
+    for (let k = 0; k < 10000; k++) {
+      if (rand() < 0.05) ask(s, { id: halts[Math.floor(rand() * halts.length)], dir: rand() < 0.5 ? -1 : 1 });
+      if (legRow(s.w,3).laid === 0) stock(s, 3);
+      else if (rail(s.w).depot >= 20 && rail(s.w).depotRails >= 20) return { departures, delivery: k };
+      const r = train(s.w,slot), depart = r.depart;
+      const yielding = legRailheadHold(s.w,slot,s.t + 1) === 'yield' && legRow(s.w,3).laid === 0;
+      const delay = retain && yielding && s.t + 1 >= depart + TRAIN.dwellTicks;
+      const id = s.w.lookup(Train,slot)!;
+      if (delay) s.w.mut(Train,id)!.depart = s.t + 2 - TRAIN.dwellTicks;
+      railTick(s.w, ++s.t, 75);
+      const after = train(s.w,slot);
+      if (delay && after.phase === TRAIN_PHASE.STAND && after.at === 2) s.w.mut(Train,id)!.depart = depart;
+      if (yielding && after.phase === TRAIN_PHASE.RUN && after.track === 1 && after.legKit) departures++;
+      assert.equal(trainSpacing(j => train(s.w,j), l => stopsOf(s.w,l), s.t), null);
+    }
+    assert.fail('second rack never filled');
+  }
+  let released = 0;
+  for (const seed of SEED_LIST) {
+    const live = trial(seed,false), control = trial(seed,true);
+    released += live.departures;
+    assert.equal(control.departures, 0);
+    t.diagnostic(`${seed.toString(16)} releases ${live.departures}, second bill ${live.delivery} vs ${control.delivery} ticks, extra ${live.delivery-control.delivery}`);
+  }
+  assert.ok(released > 0);
 });
 
 test('replay: the same leg 2 ops from the same seed give the same hash, through a save', () => {

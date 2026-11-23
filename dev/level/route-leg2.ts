@@ -442,8 +442,10 @@ function points(entries: Entry[]) {
     `the seeds post ${m(seeds)} is in the seeds spot, ${f1(apart(seeds, { x: mark.x * 100, z: mark.z * 100 }))} m from its mark (reached on foot and by a swimmer above)`,
   );
   assertion(
-    inReserve(reserve('bell', 'Canopy frame and barrier'), canopy),
-    `the Canopy barrier ${m(canopy)} is in its reserved spot on the upper deck`,
+    inReserve(reserve('bell', 'Canopy frame and barrier'), canopy) &&
+      inReserve(reserve('bell', 'Canopy frame and barrier'), legFrame(RAIL_LEGS[3]!, 0)) &&
+      inReserve(reserve('bell', 'Canopy rack'), legRack(RAIL_LEGS[3]!, 0)),
+    `the Canopy barrier ${m(canopy)} and first frame and rack are in their upper platform reserves`,
   );
   const bf = legFrame(bay, 0),
     br = legRack(bay, 0),

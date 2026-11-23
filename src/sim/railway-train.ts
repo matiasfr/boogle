@@ -24,6 +24,7 @@ export const TRAIN = {
   wakeTicks: 60,
   answerTicks: 270,
   kitWaitTicks: 60,
+  railheadHoldTicks: 1200,
   /** The block rule's gap round the circuit (27.4 m, set as the footing wagon's 7.4 m, v32's RIDER_SPAN, plus 20 m; kept at v33). Since
    * v31's 8.2 m extent ahead of the pose (TRAIN_EXTENT), and v57's 16.1 m behind it (the steel car on the coach train),
    * the nose-to-tail clearance at this floor is 3.1 m. */
@@ -38,7 +39,12 @@ export const BOILER = [
   { speed: 200, accel: 3.5, brake: 3.5 },
   { speed: 250, accel: 3.5, brake: 3.5 },
   { speed: 300, accel: 3.5, brake: 3.5 },
+  { speed: 250, accel: 3.5, brake: 3.5 },
+  { speed: 200, accel: 3.5, brake: 3.5 },
 ] as const;
+export const BOILER_CARS = [0, 0, 0, 0, 0, 1] as const;
+export const boilerCars = (row: number) => BOILER_CARS[row] ?? 0;
+export const kitBills = (row: number) => 1 + boilerCars(row);
 export const BOILER_SPEED = BOILER.map((row) => row.speed);
 /** The last boiler row. */
 export const BOILER_MAX = BOILER_SPEED.length - 1;
@@ -87,7 +93,7 @@ export const trainStopsOf = (
 /** The trains line `line` runs with `legs` laid: its fleet's at its leg's sections laid, else `trains`. */
 export function fleetOf(line: LineRef, legs: LegsLaid = NO_LEGS, stops: readonly number[] = trainStopsOf(line, 0)) {
   const l = lineDef(line);
-  const f = l.fleet;
+  const f = l.fleet?.findLast((f) => (legs[f.leg] ?? 0) > 0) ?? l.fleet?.[0];
   if (!f) return l.trains;
   return Math.max(
     f.trains[Math.min(f.trains.length - 1, legs[f.leg] ?? 0)]!,
@@ -100,34 +106,33 @@ export function lineStagesOf(line: LineRef): { stops: readonly number[]; trains:
   const halts = lineDef(line).halts,
     top = Math.max(0, ...halts.map((h) => h.opens + 1)),
     heads = Math.max(1, ...halts.map((h) => (h.leg ? 1 : (h.heads?.length ?? 1))));
-  // The legs on this line, each laid 0 to its last halt's section + 1 (one leg a line today: the product is its count).
+  // Enumerate completed prefixes in route order, extending only the fully laid predecessor.
   const legs: number[][] = [[]];
   for (const slot of [...new Set(halts.flatMap((h) => (h.leg ? [h.leg.slot] : [])))]) {
     const most = Math.max(...halts.flatMap((h) => (h.leg?.slot === slot ? [h.leg.section + 1] : [])));
-    legs.splice(
-      0,
-      legs.length,
-      ...legs.flatMap((l) =>
-        Array.from({ length: most + 1 }, (_v, n) => {
-          const next = [...l];
-          next[slot] = n;
-          return next;
-        }),
-      ),
-    );
+    const prefix = legs.at(-1)!;
+    for (let n = 1; n <= most; n++) {
+      const next = [...prefix];
+      next[slot] = n;
+      legs.push(next);
+    }
   }
   // A leg is laid only once every halt before its first is open (its `after` needs the line built to it).
-  const first = (slot: number) => halts.findIndex((h) => h.leg?.slot === slot);
   const out: { stops: readonly number[]; trains: number }[] = [];
   for (let laid = 0; laid <= top; laid++)
     for (let head = 0; head < heads; head++)
       for (const joined of [false, true]) {
-        const base = trainStopsOf(line, laid, { head, joined }).length;
-        for (const l of legs)
-          if (l.every((n, slot) => !n || base === first(slot))) {
-            const stops = trainStopsOf(line, laid, { head, joined }, l);
+        for (const l of legs) {
+          const stops = trainStopsOf(line, laid, { head, joined }, l);
+          if (
+            l.every(
+              (n, slot) =>
+                !n || halts.slice(0, stops.length).some((h) => h.leg?.slot === slot && h.leg.section === n - 1),
+            )
+          ) {
             out.push({ stops, trains: fleetOf(line, l, stops) });
           }
+        }
       }
   return out;
 }
@@ -184,6 +189,8 @@ export type RailTrain = {
   /** Running on track 0 to `to`, it turns back there though that halt is no longer an open end: it was on the end's
    * crossover when the line was extended past it (Far Head's, as Q6 opens the pier), so it has already crossed. */
   turn: boolean;
+  /** This stand served riders, a platform call or cargo before arrival cleared the service reason. */
+  serviceStand?: boolean;
   /** Far-end departure stop in cm, or 0: retained through replans and signal holds until the next halt.
    * Server-owned so a late join/save draws the same departure track, including a moving railhead. */
   origin: number;

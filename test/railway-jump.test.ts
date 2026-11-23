@@ -160,6 +160,9 @@ test('the menu lists the rows it always did: the house and leg 1 stages are tool
     'bell-reached',
     'bay-open',
     'bay-reached',
+    'canopy-open',
+    'canopy-mid',
+    'canopy-reached',
   ];
   assert.equal(MENU_JUMPS.length, JUMPS.length - tooling.length);
   assert.deepEqual(
@@ -168,7 +171,7 @@ test('the menu lists the rows it always did: the house and leg 1 stages are tool
   );
   for (const stage of tooling) {
     // Leg 2's rows land at the usual spawn until step 4's stills check a landing (greybox-leg2.md).
-    if (!['incline-open', 'bell-reached', 'bay-open', 'bay-reached'].includes(stage))
+    if (!['incline-open', 'bell-reached', 'bay-open', 'bay-reached', 'canopy-open', 'canopy-mid', 'canopy-reached'].includes(stage))
       assert.ok(jumpOf(stage)?.land, `${stage} resolves with its landing`);
     assert.ok(OFFERED_STAGES.includes(stage as never), `${stage} stays buildable by ?from=`);
   }

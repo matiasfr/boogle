@@ -76,7 +76,7 @@
     {
       "kind": "assertion",
       "passed": true,
-      "message": "room left for the rules plan is clear of leg 2's boxes, pads and posts: ns row, bay row, in, bay row, out, seeds spot, Canopy frame and barrier, lower-east lever end, lower-west lever end, upper-in-n lever end, upper-in-s lever end, upper-out-n lever end, upper-out-s lever end"
+      "message": "room left for the rules plan is clear of leg 2's boxes, pads and posts: ns row, bay approach, bay track 0, bay track 1, bay track 2, bay track 3, bay exit curve, bay exit, seeds spot, Canopy frame and barrier, Canopy rack, lower-east lever end, lower-west lever end, upper-in-n lever end, upper-in-s lever end, upper-out-n lever end, upper-out-s lever end"
     },
     {
       "kind": "section",
@@ -141,7 +141,7 @@
     {
       "kind": "assertion",
       "passed": true,
-      "message": "the Canopy barrier (-77.0, -851.1, 15.9) is in its reserved spot on the upper deck"
+      "message": "the Canopy barrier (-54.1, -848.2, 15.9) and first frame and rack are in their upper platform reserves"
     },
     {
       "kind": "assertion",

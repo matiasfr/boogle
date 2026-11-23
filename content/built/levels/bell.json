@@ -50,42 +50,42 @@
           },
           "upper-in-n-end": {
             "at": [
-              24.5,
-              5.8
+              -4,
+              0
             ],
             "compute": "point",
             "frame": {
-              "operand": 1
+              "operand": 3
             }
           },
           "upper-in-s-end": {
             "at": [
-              24.5,
-              -5.8
+              -4,
+              0
             ],
             "compute": "point",
             "frame": {
-              "operand": 1
+              "operand": 4
             }
           },
           "upper-out-n-end": {
             "at": [
-              34.5,
-              5.8
+              21.54,
+              0
             ],
             "compute": "point",
             "frame": {
-              "operand": 2
+              "operand": 7
             }
           },
           "upper-out-s-end": {
             "at": [
-              34.5,
-              -5.8
+              18.35,
+              0
             ],
             "compute": "point",
             "frame": {
-              "operand": 2
+              "operand": 8
             }
           },
           "upper-step": {
@@ -201,42 +201,42 @@
         },
         "upperInN": {
           "at": [
-            10,
-            5.8
+            5.47,
+            0
           ],
           "compute": "point",
           "frame": {
-            "operand": 1
+            "operand": 3
           }
         },
         "upperInS": {
           "at": [
-            10,
-            -5.8
+            4.53,
+            0
           ],
           "compute": "point",
           "frame": {
-            "operand": 1
+            "operand": 4
           }
         },
         "upperOutN": {
           "at": [
-            15,
-            5.8
+            8.77,
+            0
           ],
           "compute": "point",
           "frame": {
-            "operand": 2
+            "operand": 7
           }
         },
         "upperOutS": {
           "at": [
-            15,
-            -5.8
+            7.175,
+            0
           ],
           "compute": "point",
           "frame": {
-            "operand": 2
+            "operand": 8
           }
         },
         "westRock": {
@@ -522,10 +522,346 @@
         },
         {
           "bounds": [
-            -4,
-            70,
-            -3.8,
-            3.8
+            -0.35,
+            40.9,
+            -4.3,
+            4.3
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 9.85,
+              "z": -813.67
+            },
+            "u": {
+              "axis": {
+                "x": -34.66,
+                "z": -21.04
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -34.66,
+                  "z": -21.04
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 14.9,
+            "b": 13.98,
+            "compute": "sub"
+          },
+          "id": "bay-bed-chord-0",
+          "over": true,
+          "tone": "dark",
+          "top": 14.9
+        },
+        {
+          "bounds": [
+            -0.35,
+            8.35,
+            -4.3,
+            4.3
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -24.81,
+              "z": -834.71
+            },
+            "u": {
+              "axis": {
+                "x": -7.09,
+                "z": -3.69
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -7.09,
+                  "z": -3.69
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 14.9,
+            "b": 13.98,
+            "compute": "sub"
+          },
+          "id": "bay-bed-chord-1",
+          "over": true,
+          "tone": "dark",
+          "top": 14.9
+        },
+        {
+          "bounds": [
+            -0.35,
+            8.35,
+            -4.3,
+            4.3
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -31.9,
+              "z": -838.4
+            },
+            "u": {
+              "axis": {
+                "x": -7.52,
+                "z": -2.72
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -7.52,
+                  "z": -2.72
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 14.9,
+            "b": 13.98,
+            "compute": "sub"
+          },
+          "id": "bay-bed-chord-2",
+          "over": true,
+          "tone": "dark",
+          "top": 14.9
+        },
+        {
+          "bounds": [
+            -0.35,
+            8.35,
+            -4.3,
+            4.3
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -39.42,
+              "z": -841.12
+            },
+            "u": {
+              "axis": {
+                "x": -7.81,
+                "z": -1.69
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -7.81,
+                  "z": -1.69
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 14.9,
+            "b": 13.98,
+            "compute": "sub"
+          },
+          "id": "bay-bed-chord-3",
+          "over": true,
+          "tone": "dark",
+          "top": 14.9
+        },
+        {
+          "bounds": [
+            -0.35,
+            8.35,
+            -4.3,
+            4.3
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -47.23,
+              "z": -842.81
+            },
+            "u": {
+              "axis": {
+                "x": -7.97,
+                "z": -0.64
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -7.97,
+                  "z": -0.64
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 14.9,
+            "b": 13.98,
+            "compute": "sub"
+          },
+          "id": "bay-bed-chord-4",
+          "over": true,
+          "tone": "dark",
+          "top": 14.9
+        },
+        {
+          "bounds": [
+            -0.35,
+            8.35,
+            -4.3,
+            4.3
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -55.2,
+              "z": -843.45
+            },
+            "u": {
+              "axis": {
+                "x": -7.98,
+                "z": 0.42
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -7.98,
+                  "z": 0.42
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 14.9,
+            "b": 13.98,
+            "compute": "sub"
+          },
+          "id": "bay-bed-chord-5",
+          "over": true,
+          "tone": "dark",
+          "top": 14.9
+        },
+        {
+          "bounds": [
+            -0.35,
+            8.35,
+            -4.3,
+            4.3
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -63.18,
+              "z": -843.03
+            },
+            "u": {
+              "axis": {
+                "x": -7.86,
+                "z": 1.48
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -7.86,
+                  "z": 1.48
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 14.9,
+            "b": 13.98,
+            "compute": "sub"
+          },
+          "id": "bay-bed-chord-6",
+          "over": true,
+          "tone": "dark",
+          "top": 14.9
+        },
+        {
+          "bounds": [
+            -0.35,
+            8.35,
+            -4.3,
+            4.3
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -71.04,
+              "z": -841.55
+            },
+            "u": {
+              "axis": {
+                "x": -7.59,
+                "z": 2.49
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -7.59,
+                  "z": 2.49
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 14.9,
+            "b": 13.98,
+            "compute": "sub"
+          },
+          "id": "bay-bed-chord-7",
+          "over": true,
+          "tone": "dark",
+          "top": 14.9
+        },
+        {
+          "bounds": [
+            -0.35,
+            39.7,
+            -4.3,
+            4.3
           ],
           "compute": "rect",
           "frame": {
@@ -533,31 +869,10 @@
           },
           "h": {
             "a": 14.9,
-            "b": 14,
+            "b": 13.98,
             "compute": "sub"
           },
-          "id": "bay-bed-in",
-          "over": true,
-          "tone": "dark",
-          "top": 14.9
-        },
-        {
-          "bounds": [
-            -4,
-            70,
-            -3.8,
-            3.8
-          ],
-          "compute": "rect",
-          "frame": {
-            "operand": 2
-          },
-          "h": {
-            "a": 14.9,
-            "b": 14,
-            "compute": "sub"
-          },
-          "id": "bay-bed-out",
+          "id": "bay-bed-chord-8",
           "over": true,
           "tone": "dark",
           "top": 14.9
@@ -571,7 +886,7 @@
           ],
           "compute": "rect",
           "frame": {
-            "operand": 1
+            "operand": 2
           },
           "h": 0.85,
           "id": "bay-bed-on",
@@ -591,7 +906,7 @@
           ],
           "compute": "rect",
           "frame": {
-            "operand": 1
+            "operand": 2
           },
           "h": 0.85,
           "id": "bay-bed-climb",
@@ -613,201 +928,251 @@
         },
         {
           "bounds": [
-            -3,
-            20,
-            3.8,
-            7.8
+            -0.2,
+            11.14,
+            -1.55,
+            2
           ],
           "compute": "rect",
           "frame": {
-            "operand": 1
+            "operand": 3
           },
           "h": {
             "a": 15.9,
             "b": 14,
             "compute": "sub"
           },
-          "hidden": true,
-          "id": "upper-in-n-collider",
+          "id": "upper-in-n-0",
           "over": true,
-          "provisional": true,
           "tone": "light",
           "top": 15.9
         },
         {
           "bounds": [
-            -3,
-            20,
-            3.8,
-            7.8
+            0,
+            -4,
+            -1.55,
+            2
           ],
           "compute": "rect",
           "frame": {
-            "operand": 1
-          },
-          "h": {
-            "a": 15.9,
-            "b": 14.01,
-            "compute": "sub"
-          },
-          "id": "upper-in-n",
-          "over": true,
-          "provisional": true,
-          "solid": false,
-          "tone": "light",
-          "top": 15.9
-        },
-        {
-          "bounds": [
-            2,
-            20,
-            -7.8,
-            -3.8
-          ],
-          "compute": "rect",
-          "frame": {
-            "operand": 1
-          },
-          "h": {
-            "a": 15.9,
-            "b": 14,
-            "compute": "sub"
-          },
-          "id": "upper-in-s",
-          "over": true,
-          "provisional": true,
-          "tone": "light",
-          "top": 15.9
-        },
-        {
-          "bounds": [
-            -3,
-            30,
-            3.8,
-            7.8
-          ],
-          "compute": "rect",
-          "frame": {
-            "operand": 2
-          },
-          "h": {
-            "a": 15.9,
-            "b": 14,
-            "compute": "sub"
-          },
-          "hidden": true,
-          "id": "upper-out-n-collider",
-          "over": true,
-          "provisional": true,
-          "tone": "light",
-          "top": 15.9
-        },
-        {
-          "bounds": [
-            -3,
-            30,
-            3.8,
-            7.8
-          ],
-          "compute": "rect",
-          "frame": {
-            "operand": 2
-          },
-          "h": {
-            "a": 15.9,
-            "b": 14.01,
-            "compute": "sub"
-          },
-          "id": "upper-out-n",
-          "over": true,
-          "provisional": true,
-          "solid": false,
-          "tone": "light",
-          "top": 15.9
-        },
-        {
-          "bounds": [
-            2,
-            30,
-            -7.8,
-            -3.8
-          ],
-          "compute": "rect",
-          "frame": {
-            "operand": 2
-          },
-          "h": {
-            "a": 15.9,
-            "b": 14,
-            "compute": "sub"
-          },
-          "id": "upper-out-s",
-          "over": true,
-          "provisional": true,
-          "tone": "light",
-          "top": 15.9
-        },
-        {
-          "bounds": [
-            20,
-            24,
-            3.8,
-            7.8
-          ],
-          "compute": "rect",
-          "frame": {
-            "operand": 1
+            "operand": 3
           },
           "h": 0.3,
           "id": "upper-in-n-end",
           "over": true,
-          "provisional": true,
           "rise": {
-            "a": 14,
-            "b": 15.9,
+            "a": 15.9,
+            "b": 14,
             "compute": "sub"
           },
           "tone": "grey",
+          "top": 14
+        },
+        {
+          "bounds": [
+            -0.2,
+            9.26,
+            -2,
+            1.55
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 4
+          },
+          "h": {
+            "a": 15.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "upper-in-s-0",
+          "over": true,
+          "tone": "light",
           "top": 15.9
         },
         {
           "bounds": [
-            20,
-            24,
-            -7.8,
-            -3.8
+            0,
+            -4,
+            -2,
+            1.55
           ],
           "compute": "rect",
           "frame": {
-            "operand": 1
+            "operand": 4
           },
           "h": 0.3,
           "id": "upper-in-s-end",
           "over": true,
-          "provisional": true,
           "rise": {
-            "a": 14,
-            "b": 15.9,
+            "a": 15.9,
+            "b": 14,
             "compute": "sub"
           },
           "tone": "grey",
+          "top": 14
+        },
+        {
+          "bounds": [
+            -0.2,
+            11.16,
+            -1.55,
+            2
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -30.66,
+              "z": -844.18
+            },
+            "u": {
+              "axis": {
+                "x": -1043,
+                "z": -337
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -1043,
+                  "z": -337
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "h": {
+            "a": 15.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "upper-in-n-1",
+          "over": true,
+          "tone": "light",
           "top": 15.9
         },
         {
           "bounds": [
-            30,
-            34,
-            3.8,
-            7.8
+            -0.2,
+            9.21,
+            -2,
+            1.55
           ],
           "compute": "rect",
           "frame": {
-            "operand": 2
+            "o": {
+              "x": -34.98,
+              "z": -833.42
+            },
+            "u": {
+              "axis": {
+                "x": -857,
+                "z": -279
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -857,
+                  "z": -279
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "h": {
+            "a": 15.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "upper-in-s-1",
+          "over": true,
+          "tone": "light",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            -0.2,
+            17.62,
+            -1.55,
+            2
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 5
+          },
+          "h": {
+            "a": 15.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "upper-out-n-2",
+          "over": true,
+          "tone": "light",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            -0.2,
+            14.69,
+            -2,
+            1.55
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 6
+          },
+          "h": {
+            "a": 15.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "upper-out-s-2",
+          "over": true,
+          "tone": "light",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            -0.2,
+            17.74,
+            -1.55,
+            2
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 7
+          },
+          "h": {
+            "a": 15.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "upper-out-n-3",
+          "over": true,
+          "tone": "light",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            17.54,
+            21.54,
+            -1.55,
+            2
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 7
           },
           "h": 0.3,
           "id": "upper-out-n-end",
           "over": true,
-          "provisional": true,
           "rise": {
             "a": 14,
             "b": 15.9,
@@ -818,19 +1183,39 @@
         },
         {
           "bounds": [
-            30,
-            34,
-            -7.8,
-            -3.8
+            -0.2,
+            14.55,
+            -2,
+            1.55
           ],
           "compute": "rect",
           "frame": {
-            "operand": 2
+            "operand": 8
+          },
+          "h": {
+            "a": 15.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "upper-out-s-3",
+          "over": true,
+          "tone": "light",
+          "top": 15.9
+        },
+        {
+          "bounds": [
+            14.35,
+            18.35,
+            -2,
+            1.55
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 8
           },
           "h": 0.3,
           "id": "upper-out-s-end",
           "over": true,
-          "provisional": true,
           "rise": {
             "a": 14,
             "b": 15.9,
@@ -842,7 +1227,7 @@
         {
           "bounds": [
             -30,
-            3,
+            1,
             -46,
             -24
           ],
@@ -856,7 +1241,6 @@
             "compute": "sub"
           },
           "id": "upper-deck",
-          "provisional": true,
           "tone": "grey",
           "top": 15.9
         },
@@ -975,22 +1359,7 @@
         },
         {
           "bounds": [
-            0,
-            70,
-            -3.8,
-            3.8
-          ],
-          "compute": "rect",
-          "frame": {
-            "operand": 1
-          },
-          "id": "bay row, in",
-          "y0": 14.9,
-          "y1": 20
-        },
-        {
-          "bounds": [
-            0,
+            30.5,
             70,
             -3.8,
             3.8
@@ -999,8 +1368,203 @@
           "frame": {
             "operand": 2
           },
-          "id": "bay row, out",
-          "y0": 14.9,
+          "id": "bay approach",
+          "y0": 15,
+          "y1": 20
+        },
+        {
+          "bounds": [
+            0,
+            10,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -23.95,
+              "z": -834.19
+            },
+            "u": {
+              "axis": {
+                "x": -887,
+                "z": -461
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -887,
+                  "z": -461
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "id": "bay track 0",
+          "y0": 15,
+          "y1": 20
+        },
+        {
+          "bounds": [
+            0,
+            9.99,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -32.82,
+              "z": -838.8
+            },
+            "u": {
+              "axis": {
+                "x": -950,
+                "z": -308
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -950,
+                  "z": -308
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "id": "bay track 1",
+          "y0": 15,
+          "y1": 20
+        },
+        {
+          "bounds": [
+            0,
+            15.95,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -42.32,
+              "z": -841.88
+            },
+            "u": {
+              "axis": {
+                "x": -1588,
+                "z": -154
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -1588,
+                  "z": -154
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "id": "bay track 2",
+          "y0": 15,
+          "y1": 20
+        },
+        {
+          "bounds": [
+            0,
+            15.95,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -58.2,
+              "z": -843.42
+            },
+            "u": {
+              "axis": {
+                "x": -1572,
+                "z": 269
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -1572,
+                  "z": 269
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": -1
+            }
+          },
+          "id": "bay track 3",
+          "y0": 15,
+          "y1": 20
+        },
+        {
+          "bounds": [
+            0,
+            5,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -73.92,
+              "z": -840.73
+            },
+            "u": {
+              "axis": {
+                "x": -4.71,
+                "z": 1.67
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -4.71,
+                  "z": 1.67
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "bay exit curve",
+          "y0": 15,
+          "y1": 20
+        },
+        {
+          "bounds": [
+            0,
+            39.35,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "id": "bay exit",
+          "y0": 15,
           "y1": 20
         },
         {
@@ -1019,19 +1583,24 @@
           "y1": 7.9
         },
         {
-          "bounds": [
-            -2,
-            3,
-            -30,
-            -24
-          ],
-          "compute": "rect",
-          "frame": {
-            "operand": 0
-          },
+          "d": 2,
           "id": "Canopy frame and barrier",
+          "w": 2,
+          "x": -54.1,
           "y0": 15.9,
-          "y1": 18.9
+          "y1": 18.9,
+          "yaw": 0,
+          "z": -848.23
+        },
+        {
+          "d": 2,
+          "id": "Canopy rack",
+          "w": 2,
+          "x": -43.36,
+          "y0": 15.9,
+          "y1": 18.9,
+          "yaw": 0,
+          "z": -847.01
         },
         {
           "bounds": [
@@ -1065,14 +1634,14 @@
         },
         {
           "bounds": [
-            17,
-            20,
-            3.8,
-            7.8
+            0,
+            3,
+            -1.55,
+            2
           ],
           "compute": "rect",
           "frame": {
-            "operand": 1
+            "operand": 3
           },
           "id": "upper-in-n lever end",
           "y0": 15.9,
@@ -1080,14 +1649,14 @@
         },
         {
           "bounds": [
-            17,
-            20,
-            -7.8,
-            -3.8
+            0,
+            3,
+            -2,
+            1.55
           ],
           "compute": "rect",
           "frame": {
-            "operand": 1
+            "operand": 4
           },
           "id": "upper-in-s lever end",
           "y0": 15.9,
@@ -1095,14 +1664,14 @@
         },
         {
           "bounds": [
-            -3,
             0,
-            3.8,
-            7.8
+            3,
+            -1.55,
+            2
           ],
           "compute": "rect",
           "frame": {
-            "operand": 2
+            "operand": 5
           },
           "id": "upper-out-n lever end",
           "y0": 15.9,
@@ -1110,14 +1679,14 @@
         },
         {
           "bounds": [
-            2,
-            5,
-            -7.8,
-            -3.8
+            0,
+            3,
+            -2,
+            1.55
           ],
           "compute": "rect",
           "frame": {
-            "operand": 2
+            "operand": 6
           },
           "id": "upper-out-s lever end",
           "y0": 15.9,
@@ -1155,6 +1724,30 @@
       },
       {
         "o": {
+          "x": -78.63,
+          "z": -839.06
+        },
+        "u": {
+          "axis": {
+            "x": -36.75,
+            "z": 14.07
+          },
+          "compute": "unit"
+        },
+        "v": {
+          "axis": {
+            "axis": {
+              "x": -36.75,
+              "z": 14.07
+            },
+            "compute": "unit"
+          },
+          "compute": "perp",
+          "sign": 1
+        }
+      },
+      {
+        "o": {
           "x": -50,
           "z": -850
         },
@@ -1179,21 +1772,141 @@
       },
       {
         "o": {
-          "x": -50,
-          "z": -850
+          "x": -20.95,
+          "z": -839.15
         },
         "u": {
           "axis": {
-            "x": -0.934,
-            "z": 0.357
+            "x": -971,
+            "z": -503
           },
           "compute": "unit"
         },
         "v": {
           "axis": {
             "axis": {
-              "x": -0.934,
-              "z": 0.357
+              "x": -971,
+              "z": -503
+            },
+            "compute": "unit"
+          },
+          "compute": "perp",
+          "sign": -1
+        }
+      },
+      {
+        "o": {
+          "x": -26.95,
+          "z": -829.23
+        },
+        "u": {
+          "axis": {
+            "x": -803,
+            "z": -419
+          },
+          "compute": "unit"
+        },
+        "v": {
+          "axis": {
+            "axis": {
+              "x": -803,
+              "z": -419
+            },
+            "compute": "unit"
+          },
+          "compute": "perp",
+          "sign": -1
+        }
+      },
+      {
+        "o": {
+          "x": -41.09,
+          "z": -847.55
+        },
+        "u": {
+          "axis": {
+            "x": -1734,
+            "z": -167
+          },
+          "compute": "unit"
+        },
+        "v": {
+          "axis": {
+            "axis": {
+              "x": -1734,
+              "z": -167
+            },
+            "compute": "unit"
+          },
+          "compute": "perp",
+          "sign": -1
+        }
+      },
+      {
+        "o": {
+          "x": -43.55,
+          "z": -836.21
+        },
+        "u": {
+          "axis": {
+            "x": -1442,
+            "z": -141
+          },
+          "compute": "unit"
+        },
+        "v": {
+          "axis": {
+            "axis": {
+              "x": -1442,
+              "z": -141
+            },
+            "compute": "unit"
+          },
+          "compute": "perp",
+          "sign": -1
+        }
+      },
+      {
+        "o": {
+          "x": -58.43,
+          "z": -849.22
+        },
+        "u": {
+          "axis": {
+            "x": -1729,
+            "z": 298
+          },
+          "compute": "unit"
+        },
+        "v": {
+          "axis": {
+            "axis": {
+              "x": -1729,
+              "z": 298
+            },
+            "compute": "unit"
+          },
+          "compute": "perp",
+          "sign": -1
+        }
+      },
+      {
+        "o": {
+          "x": -57.97,
+          "z": -837.62
+        },
+        "u": {
+          "axis": {
+            "x": -1415,
+            "z": 240
+          },
+          "compute": "unit"
+        },
+        "v": {
+          "axis": {
+            "axis": {
+              "x": -1415,
+              "z": 240
             },
             "compute": "unit"
           },

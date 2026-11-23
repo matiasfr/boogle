@@ -7,7 +7,7 @@ import { LINE2_KIT } from './railway-line2-layout.ts';
 import { CART_PHASE } from './railway-cart.ts';
 import { TRAIN, TRAIN_PHASE, reqAdd, reqHas, trainDir, trainPassesBy, type ServiceStop } from './railway-train.ts';
 import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
-import { LINE_SLOTS, atEnd, trainStepLine, type TrainHold, type TrainIO, type TrainMoveIO } from './railway-trains.ts';
+import { LINE_SLOTS, atEnd, trainStepLine, type TrainIO, type TrainMoveIO } from './railway-trains.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { railInt } from './railway.ts';
 import {
@@ -55,10 +55,10 @@ import {
 } from './railway-queries.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 import { freightArrives, freightLoads, ridersArrive, ridersBoard } from './railway-sys-trade.ts';
-import { deckHeld, footCap, footCarrier, freightStop, holdOff } from './railway-queries-trade.ts';
+import { deckHeld, footCap, footCarrier, freightStop } from './railway-queries-trade.ts';
 import type { TradePct } from './railway-trade-layout.ts';
 import { boilerAdopt, steelArrives, steelLoads, steelService } from './railway-sys-steel.ts';
-import { legKitArrive, legKitLoad, legKitService } from './railway-sys-route-kit.ts';
+import { legKitArrive, legKitLoad, legKitService, legRailheadHold } from './railway-sys-route-kit.ts';
 import { fleetOf } from './railway-train.ts';
 import { legsLaid } from './railway-queries-route.ts';
 
@@ -177,7 +177,7 @@ export function trainMoveIO(w: World): TrainMoveIO {
 /** The world's side of the trains' step (./railway-trains.ts): rows, stops, every line's yard freight (slice 5,
  * ./railway-sys-trade.ts), and line 2's cargo, wagon and the cart's hold on line 1. Transfers and phase changes are
  * atomic inside this tick apply. */
-function trainIO(w: World, headPct: number, pct: TradePct, hold: TrainHold, tick: number): TrainIO {
+function trainIO(w: World, headPct: number, pct: TradePct, tick: number): TrainIO {
   const row = (slot: number) => w.get(Train, trainId(w, slot))!;
   const line2 = (slot: number) => RAIL_TRAINS[slot]!.line === LINE2;
   return {
@@ -188,7 +188,6 @@ function trainIO(w: World, headPct: number, pct: TradePct, hold: TrainHold, tick
     stops: (line) => stopsOf(w, line),
     awake: w.get(Rail, railId(w))!.trains,
     headPct,
-    hold,
     service: (slot) => serviceOf(w, slot, row(slot), tick),
     arrive(slot) {
       freightArrives(w, slot);
@@ -229,7 +228,7 @@ function trainIO(w: World, headPct: number, pct: TradePct, hold: TrainHold, tick
       // retains its own boiler row; the platform beat must not overlap the wagon's rollout.
       if (r.at === 0) boilerAdopt(w, trainId(w, slot), RAIL_TRAINS[slot]!.line);
       if (!line2(slot)) {
-        if (legKitLoad(w, slot, tick) === 'hold') return 'hold';
+        if (legKitLoad(w, slot, tick) === 'hold' || legRailheadHold(w, slot, tick) === 'hold') return 'hold';
         // The cart's hold is line 1's alone (its trains meet the cart); the greybox route's lines never wait for it.
         if (RAIL_TRAINS[slot]!.line !== LINE1) return 'on';
         return w.get(Cart, cartId(w))!.phase !== CART_PHASE.REST ? 'hold' : 'on';
@@ -268,15 +267,13 @@ function trainIO(w: World, headPct: number, pct: TradePct, hold: TrainHold, tick
     headExempt: (slot) => row(slot).wagon && footingsOwed(w, RAIL_TRAINS[slot]!.line),
     // The greybox route: the trains a line runs at its legs' stage (its fleet).
     fleet: (line) => fleetOf(line, legsLaid(w), stopsOf(w, line)),
-    // The Ring Island hold is off for a train on an errand (./railway-queries-trade.ts, holdOff).
-    controlOff: (line, slot) => holdOff(w, line, row(slot)),
   };
 }
 /** Line 1's index: the line whose trains meet the cart. */
 const LINE1 = RAIL_LINES.findIndex((l) => l.id === 'line1');
-function trainStep(w: World, tick: number, headPct: number, pct: TradePct, hold: TrainHold) {
+function trainStep(w: World, tick: number, headPct: number, pct: TradePct) {
   if (w.get(Rail, railId(w))!.trains < 0) return;
-  const io = trainIO(w, headPct, pct, hold, tick);
+  const io = trainIO(w, headPct, pct, tick);
   for (let line = 0; line < RAIL_LINES.length; line++) trainStepLine(io, line, tick);
 }
 export const trainTick = defineSystem(
@@ -287,6 +284,6 @@ export const trainTick = defineSystem(
     phase: 'tick',
     order: 3,
   },
-  (w, { tick, headPct, farePct, riderPct, pricePct, holdCap, holdPct }: Tick) =>
-    trainStep(w, tick, headPct, { farePct, riderPct, pricePct }, { cap: holdCap, pct: holdPct }),
+  (w, { tick, headPct, farePct, riderPct, pricePct }: Tick) =>
+    trainStep(w, tick, headPct, { farePct, riderPct, pricePct }),
 );

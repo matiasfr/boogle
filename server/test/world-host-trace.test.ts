@@ -63,6 +63,11 @@
 // two outcomes); with ids remapped every other row is exact. Namespace/hash/checksum envelopes and 5,673 snapBytes
 // samples follow; no recovery lands in a halt yard. Keyed comparison with the v64 fixture before the writer regenerated
 // it: 8,616 records.
+// v66 greybox leg 3: against v65, each of 205 checkpoints adds one shed bay train (slot 11), shifts later entity
+// ids by one, and records serviceStand=false on all 12 trains (2,460 values). railTune drops railTrainHoldCap and
+// railTrainHoldPct. Namespace, hash, checksum and 5,677 snapBytes samples follow. The intermediate v66 fixture
+// instead had one extra bay train (slot 12). Keyed comparisons against both fixtures account for all 8,616 records:
+// 57 inputs, 2,220 messages and 457 replica packets match exactly. Dispatch never moves a train in this trace.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';

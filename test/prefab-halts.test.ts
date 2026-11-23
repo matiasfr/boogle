@@ -319,8 +319,8 @@ test('halt kit placements, colliders, lever plaques and ordered prompts match th
   const requests = 'test/fixtures/prefab-halt-requests.json';
   if (process.env.GOLDEN === '1') fs.writeFileSync(requests, JSON.stringify(calls, null, 2) + '\n');
   assert.deepEqual(calls, JSON.parse(fs.readFileSync(requests, 'utf8')));
-  // 20 on lines 1 and 2, and the ns and bay lines' 8 (greybox leg 2 step 4).
-  assert.equal(levers.length, 28);
+  // Leg 3 adds both directions at two heads and one homeward lever at Canopy.
+  assert.equal(levers.length, 33);
   owner.dispose();
   assert.equal(active.size, 0);
 });

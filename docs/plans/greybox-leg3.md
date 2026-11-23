@@ -76,7 +76,7 @@ This plan builds the hold's whole sim side, so step 4 adds only how a room gets 
 | Garage step 4 needs | Leg 3 provides | Where |
 | --- | --- | --- |
 | **The rows** | `BOILER[4]` Quick `{ speed: 250, accel: 3.5, brake: 3.5 }` and `BOILER[5]` Strong `{ speed: 200, accel: 3.5, brake: 3.5 }` (garage-step4's own numbers), `boilerCars(row)` (1 for Strong, else 0) and `kitBills(row)` (`1 + boilerCars`), appended after row 3 | Step 3 |
-| **The rules** | A Strong train loads up to two sections' bills of one leg; standing at its leg's railhead with the next section's kit aboard it **holds** until the section lays, at most `TRAIN.railheadHoldTicks` (1,200) past its dwell and always while it lays; then rides on and unloads at the new head. Standard and Quick trains never hold | Step 3 |
+| **The rules** | A Strong train loads up to two sections' bills of one leg; standing at its leg's railhead with the next section's kit aboard it **holds** until the section lays, at most `TRAIN.railheadHoldTicks` (1,200) past its dwell and while it lays if service permits; then rides on and unloads at the new head. Standard and Quick trains never hold | Step 3 |
 | **The checks** | A trade line's row in {0, 4, 5}; line 2's in {0 to 3}; line 1's in {0, 1}; a train's leg-kit cargo at most `kitBills(row)` × a section's bill | Step 3 |
 | **The lengths** | Leg 3 in three sections (about 533, 400 and 255 m, re-measured after the Bell Rock arc); the West landing to Bell Rock 1,197 m; the West landing to Canopy Town about 2,385 m, where Quick saves about 22 s a ride (arithmetic), so the ten-second rule passes the whole bay line | Step 1 |
 | **Where Strong is felt** | Only on the bay line, only while leg 3 is built: one hold per two-section load, between Bell Rock and head 1 or head 1 and head 2. Nowhere else on the built route: the `ns` line's next leg (the causeway) and the bay line's after this (the Notch) are one section each, and the cave line is its own plan | Checkpoint G measures it |
@@ -199,10 +199,7 @@ halt ids (the cave line's), covered by the bump. **Prediction:** `rail.legStock`
   halt; Bell Rock's bay halt gains its homeward platform once it is a through halt.
 - **The fleet grows across legs.** `RailLineDef.fleet` becomes a list in leg order (`{ leg, trains, opens? }[]`; line 2,
   `ns` and `cave` become one-element lists): the bay line runs `[0, 1, 2]` over the bay cut, then **`[2, 2, 3, 3]`**
-  over leg 3 (a third train from section 2 laid). Sized by the decided limits (1,350 settled, 1,600 growing): by leg 2's
-  measured bay line (cycle 1,412 ticks, worst 1,075 over 1,197 m), two trains on the 2.1 km line to head 2 would wait
-  about 1,800 ticks and three on the 2.4 km line about 1,330, under the bound by little. **The fuzz sets the ladder:**
-  the fewest trains that meet both bounds at every stage, a fourth at the last stage if three fail. One new
+  over leg 3. The third train joins after section 2. The normal boarding dwell is 50 ticks. One new
   `RAIL_TRAINS` shed row (two if a fourth is needed), appended after every existing slot. `fleetOf` reads the last
   reached leg's stage; `trainPlaces` checks every stage at load, as today.
 - **The kit.** The bay line's rules stand (kit loads at its home, the West landing: logs minted, rails off the forge
@@ -227,7 +224,7 @@ halt ids (the cave line's), covered by the bump. **Prediction:** `rail.legStock`
 - **Two bills.** `legKitCap(w, k, bills = 1)`: the bills of the next `bills` sections of leg k from the current one,
   never past the leg's last (never across legs). `legKitLoad` and `yardLoad` pass `kitBills(r.boiler)`. "One kit a
   train" becomes "one kit a train, two on a Strong train".
-- **The hold** (`legRailheadHold(w, slot, tick): 'hold' | 'on'`, in `railway-sys-route-kit.ts`, called from
+- **The hold** (`legRailheadHold(w, slot, tick): 'hold' | 'yield' | 'on'`, in `railway-sys-route-kit.ts`, called from
   `standing` for any line's train after `legKitLoad`): a train holds when **all** hold: `kitBills(r.boiler) >= 2`;
   it carries leg kit; it stands at the drop halt (`legKitDrop`) of an open leg k its line serves; that halt is its
   line's last open stop (the railhead); after unloading, what it still carries is for a later section of k (the rack
@@ -240,8 +237,7 @@ halt ids (the cave line's), covered by the bump. **Prediction:** `rail.legStock`
 - **Checks** (`railway-check-steel.ts`): line 1's row in {0, 1}, line 2's in {0 to 3}, a trade line's (`ns`, `bay`) in
   {0, 4, 5}, the cave line's 0, every train's row one its line allows. The train load check: leg-kit cargo at most
   `kitBills(row)` × its leg's section bill.
-- **Who it blocks.** A held train stands at the line's end platform; a following train waits at the last block signal
-  (the end has one platform for both ways). That wait counts against the 1,600 growing bound in the fuzz.
+- **When it yields.** Even during a lay, Strong releases the platform when assigned a waiting call elsewhere or when a follower stands at its approach signal. Its remaining bill can travel round the circuit. The end block still controls departure.
 
 ### Controls and copy
 
@@ -282,7 +278,7 @@ Each step leaves `node dev/ship-check.ts` green. **Steps 1 to 5 ship together as
 did): the arc moves track that leg 2's views draw through Bell Rock's provisional platforms, so the Bell Rock rework
 rides with it. Steps 6 and 7 ship on their own after it.
 
-- [ ] **1. The catalog (M; HOTBOX).** `dev/level/world-blockout.ts`: the fillet (`curves` on a service; arc points at
+- [x] **1. The catalog (M; HOTBOX).** `dev/level/world-blockout.ts`: the fillet (`curves` on a service; arc points at
       chords of at most 2 m, tangent to both spans; the deck profile unchanged on the rock at 15 m); the bay service's
       Canopy halt `stopCm` (the kink's cm less 2,500), its end crossover. Regenerate (`node --import ./dev/sim/hooks.ts
       dev/level/world-blockout.ts`): `src/sim/railway-world-lines.ts`, `docs/world/world-blockout.html`,
@@ -296,7 +292,16 @@ rides with it. Steps 6 and 7 ship on their own after it.
       on grade 0; points within 1 m); `test/world-lines.test.ts` (the arc's tangents and its 60 m radius; no future
       span over 4%); `npm run level-check`: the bay row's s 1227 kink gone from "planned, would fail", no kink over 2°
       and no radius under 40 m on the bay row through Bell Rock, no new report.
-- [ ] **2. The rules and the bump (L; HOTBOX).** `src/sim/railway-lines.ts`: `builtLine` over every built leg of a row;
+      **Catalog measurements (22 November).** The eased Canopy stop is s 2400.93. Sections measure 526.23,
+      402.90 and 254.80 m. The two head platforms are level at 4 and 13 m. Bell Rock's rack is 6.64 m from the
+      kit car's catalog position and 10.81 m from its frame. The minimum platform-to-tip clearances are 9.45 m
+      north and 43.10 m south. The owner confirmed call 20's 10 m separation. The original cloth coordinates
+      measured 19.78 m from the barrier. The post now stands 2 m before the kink, 9.8 m to the homeward side,
+      at (−1091.99, −294.01), 13.90 m high, with 4 m reach and **10.02 m** to the barrier.
+      The post is beyond the approach platform's end. Its deck collider is step 6's proof.
+      The collider regression found 35 samples with insufficient overhead room beneath a newly laid bay deck.
+      The nine upper-bed chords moved forward from step 5 and the same check now finds zero.
+- [x] **2. The rules and the bump (L; HOTBOX).** `src/sim/railway-lines.ts`: `builtLine` over every built leg of a row;
       the fleet list; the new shed row(s); the load checks over every built leg. `src/sim/railway-train.ts`: `fleetOf`
       on the list. `railway-queries-route.ts`: nothing new beyond the list's reads (the roles derive from `legBuilt`).
       `railway-check-route.ts`: the heads' prefix and fleet checks. `src/world/namespace.ts`: the bump and a dated line.
@@ -306,11 +311,161 @@ rides with it. Steps 6 and 7 ship on their own after it.
       rack; the relay conserves every unit (West landing to Bell Rock, head 1 and head 2); leg 3's kit rides ahead
       during the bay cut's last section; `cloth` refused before the leg is laid and taken once after; the `notch`
       barrier refuses with `cloth` held; head 1 closes on Canopy's opening and head 2 does not; the bay line's stops a
-      prefix at every stage and its fleet by the list. Fuzz, the WAIT_BOUND method (`askPool`), four seeds at 75%: the
-      bay line settled at `canopy-reached` at most 1,350 and growing from `bay-reached` at most 1,600 ticks; `ns`
-      unchanged; leg 2's bay waits re-measured with leg 3's kit ahead (it changes what the bay trains carry during the
-      bay cut); the long mode (`ROUTE_GATES=1`) run and its output pasted before the bump ships. `npm run loop -- run`.
-- [ ] **3. The hold (M; HOTBOX). For garage step 4.** `src/sim/railway-train.ts`: rows 4 and 5, `BOILER_CARS`,
+      prefix at every stage and its fleet by the list. Fuzz accepted lever calls at 75% across four seeds in both modes with standard and mixed fleets. Check every live call is served within its stage budget, plus spacing and end-block safety. Re-measure leg 2 with kit ahead. Run the long mode (`ROUTE_GATES=1`) run and its output pasted before the bump ships. `npm run loop -- run`.
+
+      **23 November service check, blocked on the stack.** Four seeds (`c0ffee`, `777`, `5eed`, `badd`), 75% headway, 20,000 ticks per leg/fleet/mode. Each pair below is the worst served wait in ticks, settled / growing. The old column records fixed-gate measurements, not design targets.
+
+      | Line and fleet | Old trial [2,3,3,4] | End spacing [2,2,3,3] |
+      | --- | ---: | ---: |
+      | Leg 2 bay, standard | 1075 / 1467 | 901 / 1467 |
+      | Leg 2 bay, mixed | — | 1197 / 1468 |
+      | Canopy bay, standard | 1545 / 1400 | 1725 / 1675 |
+      | Canopy bay, mixed | 1550 / 1799 | 1772 / 1579 |
+      | Leg 2 ns, standard and mixed | — | 819 / 1201 |
+      | Canopy ns, standard | — | 793 / 813 |
+      | Canopy ns, mixed | — | 796 / 772 |
+
+      The earlier four-train ladder [2,2,3,4] measured 1367 / 1463 on standard bay. With spacing, actual trains in service determine the budget. Pairs below give even headway / wait budget in ticks.
+
+      | Line or stage | Observed headway / budget |
+      | --- | --- |
+      | ns | Short, one train 766/1532. Full, one 1336/2722 and two 668/1386 |
+      | Bay cut | Short, one 804/1608. Bell Rock, one 1412/2874 and two 706/1462 |
+      | Canopy extension | Head 1, two 964/2028. Head 2, three 778/1706. Canopy, two 1298/2746 and three 866/1882 |
+      | Stack | Ring Island, three 463/1126. First head, three through six 628/1506, 471/1192, 377/1004, 314/878. Next heads and Gorge, six 399/1098, 484/1268, 571/1442 |
+
+      The long stack stage sweep's settled maxima by seed were 1269, 1333, 1293 and 1287. Four stack tests failed, including the separate unfed Ring Island test. On growing seed 777, Pier homeward asked at 13607, exceeded its 1192 budget at 14800 and boarded at 15025 (1418 ticks). At 14800, slots 1–6 occupied 171672, 2165, 99200, 115334, 60686 and 18975 cm. Only slot 3 was on the homeward track and it was standing at stop 4. Five were outward. Settled Ring Island also failed: c0ffee Pier homeward asked at 25673 and boarded at 26867 (1194 vs 1126). End spacing alone still leaves long directional service gaps. Steps 2 and 3 remain open. Seeds and Bell Rock views await the dispatch review.
+
+      **23 November, middle service stops.** A train may balance its gaps after serving a platform call,
+      its riders or cargo. A block-only stop does not qualify. The arrival records the service reason
+      before unloading. A signal stand never qualifies. The old Ring Island spacing-only stop is
+      removed. Both end and middle spacing yield to service pressure. The wait budget is unchanged.
+
+      Four seeds at 75%, 20,000 ticks per mode. Worst bay waits, settled / growing, were 901 / 1467
+      and 1058 / 1468 for leg 2 standard and mixed, and 1675 / 1486 and 1632 / 1579 for Canopy.
+      All four suites passed. The long stack stage sweep and the unfed Ring Island test passed.
+      Three growing stack seeds failed. On 777, the same Pier homeward request at 13607 boarded at
+      15025 (1418 ticks, bound 1192). In that interval the actual dispatch branch held slot 2 at
+      middle stop 1 for 115 ticks and at the home end for 229 ticks. Slot 3 yielded at stops 4, 5
+      and 6 and took zero spacing-hold ticks. At 14800, slot 3 was assigned the call and serving
+      its boarding dwell at stop 4. Slots 1, 4, 5 and 6 were running outward, and slot 2 was held at
+      home. Positions by slot in cm were 171672, 2165, 99200, 115334, 60686 and 18975.
+      The fourth through sixth trains entered at 13528, 13881 and 14163. Joining at home added
+      outward service immediately, while the homeward rider depended on a train returning from
+      the far end. Middle holds improved settled Ring Island service but did not close that gap.
+      On badd, Ring Island homeward waited 1224 against 1192. On c0ffee, Far Head homeward waited
+      1160 against 1098. This is the stop condition for further implementation.
+
+      The eight solo offsets gave mean Quick / Strong leg times of 3016 / 2881 from bay-mid
+      and 2326 / 2505 from bay-reached. None of the 16 scripted solo Strong runs recorded a
+      pressure departure with its second bill. Random-demand second-bill delivery remains unmeasured.
+
+      **23 November, growing-stack retry with the fleet at call time.** Each accepted call keeps
+      the count and boiler fits serving when it arrived. A subsequent lay can lengthen its route,
+      but later fleet joins cannot shorten its headway. The factor remains two, plus intermediate
+      dwells. Four seeds ran for 20,000 ticks each at 75%. The worst served waits were 1418
+      (`777`, pass), 1334 (`5eed`, pass), 1224 (`badd`, pass) and 1160 (`c0ffee`, fail on a
+      separate call that was withdrawn). On `c0ffee`, slots 4–6 joined at 13463, 13680 and 14068.
+      Stack head 1 homeward was requested at 14205 with all six already serving. At 15304 the call
+      had waited 1099 ticks against a 1098-tick bound (399-tick headway, 300 ticks of dwells).
+      All six trains were moving. Slots 1 and 3 were homeward at 196534 and 31714 cm, slots
+      2, 4, 5 and 6 outward at 25686, 184518, 125442 and 90444 cm. Slot 1 was assigned to the
+      rider and running toward stop 6. At 15413 the lay closed the platform and withdrew the
+      still-unserved call after 1208 ticks. The remaining failure occurred before closure.
+
+      **Historical fixed-gate experiments (22–23 November, superseded).** With three final bay trains, seed
+      `c0ffee` reached 1,413 ticks settled and 1,752 growing against limits of 1,350 and 1,600.
+      With the approved fourth train at the final stage, the long run measured the following maxima
+      over 20,000 ticks per seed per mode at 75% headway. Spacing and world invariants held.
+
+      | Seed | Settled ns | Settled bay | Growing ns | Growing bay |
+      | --- | ---: | ---: | ---: | ---: |
+      | c0ffee | 990 | 1,413 | 967 | 1,279 |
+      | 777 | 1,017 | 1,575 | 861 | 1,647 |
+      | 5eed | 997 | 1,650 | 924 | 1,085 |
+      | badd | 992 | 1,609 | 885 | 1,200 |
+
+      Both worst requests were at Bell Rock. The outward request at +14,438 waited 1,650 ticks and
+      the homeward request at +1,308 waited 1,647. All four bay trains were in service when each
+      request was served. Leg 2 with the kit ahead stayed within the bounds
+      in the initial trial (bay maxima 1,075 settled and 1,467 growing). The Canopy relay check
+      and `npm run loop -- run` passed. Step 2 remains open pending a gameplay decision.
+
+      **23 November diagnosis.** Times below are ticks from the start of each wait trial. Positions
+      are metres along the bay line, rounded to the nearest metre. Bell Rock is at 1,217 m.
+
+      - Settled `5eed`, outward, +14,438 to +16,088. Slot 9 was outward at 1,197 m, inside the
+        braking distance at 2 m/tick. Slots 10 and 11 were homeward at 1,419 and 2,176 m;
+        slot 12 was outward at 1,876 m. All four occupied the outer half of the line. Slot 10
+        was next for the outward platform. It arrived homeward at Bell Rock at +14,568,
+        Bay head 1 at +14,980, and West landing at +15,382. It dwelt 50 ticks at each,
+        departed West at +15,432 and reached Bell Rock outward at +16,088. Of the 1,650 ticks,
+        150 were boarding dwells; the balance was running, including braking and acceleration.
+      - Growing `777`, homeward, +1,308 to +2,955. Slot 10 was already past Bell Rock,
+        homeward at 1,096 m. Slot 9 was outward at Bay head 1 (609 m), slot 11 was at West
+        landing (20 m) waiting for its departure gap, and slot 12 was still in the shed.
+        Slot 9 served the request after calls outward at Bell Rock (+1,672) and head 1
+        (+2,038), then turned at head 2 (+2,347). It left there at +2,397. Slot 12
+        joined at West landing at +2,647, too far behind to serve this request.
+      - The through halt accepts both directions. Neither serving train waited on Bell Rock's
+        crossover or a Strong hold. Train motion has no curve-speed cap. The missed braking
+        window and the gap behind it dominate the settled wait; extension of the line ahead
+        of slot 9 lengthens the growing return journey.
+      - The repeated 1,413 on `c0ffee` was a Bay head 1 homeward call. At +10,195 slot 10
+        was outward at head 2, 46 ticks into its dwell, in both fleet sizes. Slot 9 was
+        already homeward past Bay head 1. The fourth slot was just departing Bay head 1
+        outward; it could not answer the opposite platform before slot 10. Slot 10 served
+        the same call at +11,608 in both runs.
+
+      **Retry method.** Each configuration used the same four seeds and random call generator,
+      20,000 ticks per mode per seed, the existing 75% departure headway calculation, and both
+      spacing and save/restore invariant checks. Dwell changes started when the bay line first
+      extended beyond Bell Rock. Signal trials added intermediate places to wait without changing
+      the clearance rule. End balancing used the existing gap comparison with a 300-tick cap.
+      Each pair below is the maximum settled / growing bay wait over all four seeds, in ticks.
+
+      | Trial | Three final trains | Four final trains |
+      | --- | ---: | ---: |
+      | 50-tick dwell, extra signals every 150 m | — | 1,650 / 1,647 |
+      | 35-tick dwell, extra signals every 250 m | 1,853 / 1,706 | 1,544 / 1,580 |
+      | 25-tick dwell, extra signals every 150 m | 1,769 / 1,715 | 1,518 / 1,531 |
+      | 25-tick dwell, catalog signals | — | 1,518 / 1,531 |
+      | 20-tick dwell, catalog signals | 1,737 / 1,752 | 1,492 / 1,500 |
+      | 50-tick dwell, end balancing | — | 1,675 / 1,647 |
+      | 35-tick dwell, end balancing | — | 1,600 / 1,592 |
+      | 25-tick dwell, end balancing | 1,550 / 1,586 | — |
+      | 15-tick dwell, catalog signals | 1,752 / 1,639 | 1,367 / 1,463 |
+      | 15-tick dwell, extra signals every 150 m | — | 1,367 / 1,463 |
+      | 15-tick through dwell, 35 ticks at termini | 1,752 / 1,726 | 1,417 / 1,491 |
+
+      **Blocked after retry.** The closest result used four final trains and a 15-tick boarding dwell.
+      In seed order `c0ffee`, `777`, `5eed`, `badd`, its settled bay waits were
+      1,367, 1,293, 1,327 and 1,330. Growing waits were 1,303, 1,441, 1,095 and 1,463.
+      The settled limit missed by 17 ticks even with boarding reduced from five seconds to 1.5.
+      None of the 16 trial configurations qualified. They were measured in isolation and none was
+      adopted before the owner reviewed the result.
+
+      **Earlier owner decision, superseded later on 23 November.** “Accept 1,367 for this line”. Adopt four final bay trains,
+      with a 15-tick boarding dwell once the first Canopy section opens. The bay's growing limit
+      stays at 1,600. The exception covers only the bay's settled wait. [Decision](../decisions-rail.md#d-2026-11-23-greybox-service-health)
+
+      **Accepted run.** `ROUTE_GATES=1`, four seeds, 75% headway, 20,000 ticks per mode.
+      Each cell gives settled / growing ticks. Both long suites passed (13 and 12 tests),
+      as did the loop and the branch ship-check (199 affected files, 1,844 passing tests).
+
+      | Seed | Leg 2 ns | Leg 2 bay | Leg 3 ns | Leg 3 bay |
+      | --- | ---: | ---: | ---: | ---: |
+      | c0ffee | 1023 / 979 | 1075 / 1108 | 999 / 967 | 1367 / 1303 |
+      | 777 | 857 / 1199 | 1061 / 1250 | 976 / 861 | 1293 / 1441 |
+      | 5eed | 943 / 1201 | 1002 / 1039 | 885 / 924 | 1327 / 1095 |
+      | badd | 1005 / 990 | 1068 / 1467 | 1047 / 885 | 1330 / 1463 |
+
+      **Reopened on the earlier-third-train retry.** The accepted run above used
+      `[2, 2, 3, 4]`. With `[2, 3, 3, 4]`, the standard fleet's settled wait reached
+      1,545 ticks on `badd` at Canopy head 2 homeward (asked +10,869, four serving).
+      All standard growing waits passed. Leg 2 reproduced every value in the table above.
+      The step 3 retry table records both fleets on the new ladder.
+- [x] **3. The hold (M; HOTBOX). For garage step 4.** `src/sim/railway-train.ts`: rows 4 and 5, `BOILER_CARS`,
       `boilerCars`, `kitBills`, `TRAIN.railheadHoldTicks`. `railway-queries-route.ts`: `legKitCap`'s `bills`.
       `railway-sys-route-kit.ts`: `legKitLoad` and `yardLoad` by bills; `legRailheadHold`. `railway-sys-trains.ts`:
       the hold in `standing`. `railway-check-steel.ts` and the train load check: the allowed rows and the cargo bound.
@@ -319,23 +474,143 @@ rides with it. Steps 6 and 7 ship on their own after it.
       Rock and holds; leaves on the lay and unloads section 2 at head 1; with nobody feeding it leaves after 1,200
       ticks and holds again on its next arrival; never holds at a middle halt; a standard or Quick train never holds;
       a train adopting Strong at the West landing with one section aboard tops up to two; units conserved; mixed
-      fleets (one Strong among standard) under random lever asks keep the block rule, every invariant and 1,600
+      fleets (one Strong among standard) under random lever asks keep the block rule, every invariant and the stage-specific service bound while
       growing. New `dev/sim/leg3-trade.ts` (kept: it is Checkpoint G's proof): from `bay-mid` and from `bay-reached`,
       for rows 0, 4 and 5, with players `a` and `b` feeding the moment a rack is full (as `laySection` does), prints per
       section the ticks from the lay before to the kit racked, and the leg's ticks, for one and two feeders, over eight
       start offsets. Verify: the test; the script's table pasted into this plan's as-built notes.
-- [ ] **4. Seeds and stages (S; HOTBOX).** `src/sim/railway-seed-legs.ts` from `bay-reached`, accepted ops only:
+
+      **Step 3 trade measurement.** Each row covers eight fit offsets, 0 to 525 ticks in steps of 75.
+      Rack columns give the minimum and maximum ticks from opening the gate or the previous lay until
+      that section's full bill was racked. The total runs from opening the gate to the third lay.
+      The script prints each of the 96 individual runs.
+
+      | Fitted at | Fit | Feeders | Rack 1 | Rack 2 | Rack 3 | Total ticks | Mean total |
+      | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+      | bay-mid | Standard | 1 | 792–915 | 451 | 856 | 3002–3125 | 3103.6 |
+      | bay-mid | Standard | 2 | 793–916 | 452 | 857 | 3002–3125 | 3103.6 |
+      | bay-mid | Quick | 1 | 700–823 | 1159 | 465 | 3227–3350 | 3323.0 |
+      | bay-mid | Quick | 2 | 701–824 | 1160 | 466 | 3227–3350 | 3323.0 |
+      | bay-mid | Strong | 1 | 822–945 | 331 | 274 | 2330–2453 | 2427.9 |
+      | bay-mid | Strong | 2 | 823–946 | 331 | 274 | 2328–2451 | 2425.9 |
+      | bay-reached | Standard | 1 | 0–16 | 392–1273 | 623–856 | 2151–2799 | 2511.9 |
+      | bay-reached | Standard | 2 | 0–16 | 393–1274 | 624–857 | 2150–2798 | 2510.8 |
+      | bay-reached | Quick | 1 | 0–16 | 392–1130 | 465–673 | 1968–2498 | 2240.4 |
+      | bay-reached | Quick | 2 | 0–16 | 393–1131 | 466–674 | 1967–2497 | 2239.2 |
+      | bay-reached | Strong | 1 | 0–16 | 392–1273 | 623–856 | 2151–2799 | 2511.9 |
+      | bay-reached | Strong | 2 | 0–16 | 393–1274 | 624–857 | 2150–2798 | 2510.8 |
+
+      Strong fitted at bay-mid saved 89.5 s solo against Quick on average. Fitted at bay-reached,
+      its solo total matched standard at all eight offsets and averaged 27.2 s longer than Quick.
+      Garage step 4's offer timing goes to the owner under open question 1.
+
+      **Step 3 blocked, 23 November.** The two-bill train held at Bell Rock, released at its
+      deadline with no feeder, held again on its return, and racked the next bill at head 1
+      331 ticks after the lay in the fed trial. For the mixed-fleet wait check the first bay
+      train adopted Strong at West landing and loaded two Canopy bills before the bay cut's
+      final lay. The fixture selected standard for the following trains. Requests ran from
+      opening the Canopy gate, with the same four seeds, 75% headway and 20,000 ticks each.
+      Each run exercised the hold and passed the spacing and save checks.
+
+      | Seed | Growing ns | Growing bay | Bay limit |
+      | --- | ---: | ---: | ---: |
+      | c0ffee | 824 | 1786 | 1600 |
+      | 777 | 808 | 1799 | 1600 |
+      | 5eed | 944 | 1299 | 1600 |
+      | badd | 964 | 1711 | 1600 |
+
+      The 1,367 exception applies only to settled bay waits. The mixed-fleet growing gate
+      remains open; the owner requested a stop on another failed gate.
+      All three failures were Bay head 1 homeward calls served at +2,255, with three trains
+      in service. They arrived at +469, +456 and +544 respectively. Each long run had 300
+      held ticks; a tick-by-tick check of the opening 3,000 ticks counted 299 of those while
+      the section was laying. The idle timeout never accounted for a two-minute wait here.
+      The branch ship-check passed 1,846 tests and failed the mixed-fleet growing check.
+
+      **Earlier third train, 23 November.** Call 18 now permits the third bay train when the
+      first Canopy section lays. The fourth still joins at Canopy Town. Four seeds at 75%
+      headway ran for 20,000 ticks per mode per fleet with the original Strong hold.
+      Each cell gives settled / growing ticks.
+
+      | Seed | Standard bay | Mixed bay | Standard ns | Mixed ns |
+      | --- | ---: | ---: | ---: | ---: |
+      | c0ffee | 1094 / 1132 | 1411 / 1786 | 999 / 967 | 1031 / 824 |
+      | 777 | 920 / 1034 | 1519 / 1799 | 976 / 861 | 983 / 808 |
+      | 5eed | 1176 / 1095 | 1550 / 1453 | 885 / 924 | 975 / 944 |
+      | badd | 1545 / 1400 | 1474 / 1711 | 1047 / 885 | 955 / 964 |
+
+      All four mixed settled runs exceeded 1,367. The three mixed growing failures
+      were the same Bay head 1 homeward requests as before, all served at +2,255.
+      Across all four mixed growing seeds the third train became eligible and entered
+      service at +1,216, after those calls arrived at +469, +456 and +544.
+      All runs passed the spacing and save checks. The ladder retry stops here.
+
+      **23 November, pressure-yield trade.** Across eight offsets at each start (0 to 525 by 75), Strong yielded with a second bill aboard on 0/16 solo runs. No extra circuit or delivery penalty was observed in that sample. Mean total leg ticks, rounded to the nearest tick:
+
+      | Start | Quick solo | Strong solo | Quick pair | Strong pair |
+      | --- | ---: | ---: | ---: | ---: |
+      | bay-mid | 3016 | 2498 | 3016 | 2496 |
+      | bay-reached | 2326 | 2505 | 2325 | 2504 |
+
+      These scripted feeds do not generate the random platform demand of the service fuzz. The stack health failure above stops step 3 before the visual and stage work.
+
+      **23 November, final service sweep.** Four seeds per mode at 75%, 20,000 ticks. Standard growing stack passed after counting joins only after half a cycle at request time. Leg 2 and Canopy passed in both fleets. Strong left early once on each random-demand seed. Second-bill delivery (live / retained) was 2148/2148, 1822/2032, 2032/2032 and 2000/2033 ticks for c0ffee, 777, 5eed and badd. The quiet timeout still holds. Live traffic released Strong 610 ticks early.
+
+      Completed waits above budget in the mixed stack, grouped by seed (wait/bound, ratio):
+
+      - growing 777: 1474/1442 (1.022x), 1451/1442 (1.006x), 1457/1442 (1.010x), 1548/1442 (1.074x), 1597/1442 (1.107x), 1757/1442 (1.218x), 1678/1442 (1.164x), 1720/1442 (1.193x), 1715/1442 (1.189x), 1754/1442 (1.216x), 1907/1442 (1.322x), 1857/1442 (1.288x), 1585/1442 (1.099x), 1486/1442 (1.031x), 1918/1442 (1.330x), 1939/1442 (1.345x), 1680/1442 (1.165x), 1541/1442 (1.069x), 1588/1442 (1.101x).
+      - growing 5eed: 1620/1442 (1.123x).
+      - growing badd: 1571/1442 (1.089x), 1458/1442 (1.011x), 1531/1442 (1.062x), 1443/1442 (1.001x), 1704/1442 (1.182x), 1545/1442 (1.071x), 1447/1442 (1.003x), 1468/1442 (1.018x), 1547/1442 (1.073x), 1524/1442 (1.057x), 1614/1442 (1.119x), 1498/1442 (1.039x), 1596/1442 (1.107x), 1708/1442 (1.184x).
+      - settled c0ffee: 1518/1442 (1.053x).
+      - settled 777: 1568/1442 (1.087x).
+      - settled 5eed: 1463/1442 (1.015x), 1463/1442 (1.015x), 1675/1442 (1.162x), 1581/1442 (1.096x), 1452/1442 (1.007x), 1660/1442 (1.151x).
+
+      Line 2 boiler handover at both 0% and 75%: b011e7 waited 1155/988 (1.169x) and 1159/988 (1.173x); 5eed25 waited 995/988 (1.007x) and 1043/988 (1.056x). All were served. The maturity correction changes the test budget only.
+
+      **Final Strong trade, middle spacing active.** Eight offsets at each start, solo and paired. Mean ticks to complete leg 3:
+
+      | Fit time | Quick solo | Strong solo | Quick pair | Strong pair |
+      | --- | ---: | ---: | ---: | ---: |
+      | bay-mid | 3016 | 2881 | 3016 | 2880 |
+      | bay-reached | 2326 | 2505 | 2325 | 2504 |
+
+      Strong carried its second bill away early on 0/16 solo offsets. The four random-demand comparisons above measure the time until the next rack has its full bill; an individual log or rail has no persistent identity. A follower standing at the Bell Rock approach signal is asserted at the early departure in the hold test.
+
+      **Long run, final line budgets.** At mature full fleet the even headway / bound in ticks was 668/1386 on ns, 706/1462 at Bell Rock, 866/1882 at Canopy Town and 571/1442 at High Gorge. At Ring Island, three trains on the longer boiler have a headway of 394 and bound of 988 (four intermediate dwells). Standard growing stack maxima were 1418 (777), 1334 (5eed), 1224 (badd) and 1160 (c0ffee). On Canopy the old four-train standard trial recorded 1367/1463 settled/growing; final three-train standard recorded 1675/1486 and mixed recorded 1632/1579. Leg 2 bay standard recorded 901/1467 and mixed 1058/1468. No live ask remained after the drain.
+
+      **23 November, independent review.** The general spacing rule replaces the Ring Island hold. Its cap/share settings, catalog marker and errand plumbing are retired in v66. The replacement host test disables the separate minimum departure interval, saves and restarts the room, observes a train waiting with a shorter forward gap at Ring Island, and follows it through departure while checking separation.
+
+      The health fuzz counts all seed trains immediately. A later join counts after its first half-cycle. The mixed-stack harness forces a permanently slow leader by undoing its boiler adoption at Home. Players cannot maintain that fleet. All calls drained in the 20,000-tick run; all spacing and stall checks passed. The 43 completed waits above the ordinary budget are diagnostic. Worst waits by seed, growing / settled, were c0ffee 1351/1518, 777 1939/1568, 5eed 1620/1675 and badd 1708/1378.
+
+      Line 2 handover uses safety checks for calls arriving in the first pre-install-speed circuit, ticks 13954 through 15341. Later calls keep the ordinary health assertion. Seed 5eed25 passed. On b011e7, Quarry homeward asked at 18992 and boarded at 20147 (1155/988, 1.169x); Quarry outward asked at 19399 and boarded at 20558 (1159/988, 1.173x). Both repeated at 0% and 75%. The fleet had already adopted the longer boiler. The all-standard leg 2, Canopy and growing stack sweeps passed at 75%. The review ship-check passed 1858/1860 affected tests; only the two b011e7 handover runs failed. The separate steel-host suite passed 19/19, including restart with a nondefault departure interval. All four rail-tuning replication tests passed. The deployed v65 namespace and its saved tune schema remain isolated from v66. No stalled open request, deadlock or wait above three budgets was observed.
+
+      **23 November, Quarry comparison.** At `steel-home`, seed `b011e7`, 75%, both versions installed at tick 13954. Times below are ticks after install. The same random inputs can produce different accepted calls when trains arrive at different times. On main (`ad465e4c6a`), the homeward Quarry call at +5038 boarded at +6012 (974 ticks). At +5445 an outward call from +5257 was pending and boarded at +5618 (361 ticks). Main's route-wide maximum was 980 over 20000 ticks. On this branch the +5038 and +5445 calls boarded at +6193 and +6604, both on train 3 (1155 and 1159 against 988).
+
+      At +5038 main had slots 1/2/3 at 17400 cm outward, 16628 homeward and 108521 outward. This branch had 24794 outward, 17258 homeward and 99200 outward. At +5445 main had 68971 outward, 2165 outward and 89129 homeward. This branch had 93361 outward, 18408 outward and 104492 homeward. Main balanced train 2 at the Village from +5239 to +5486. This branch released it at +5239 as the pick for the pending Quarry outward call. It boarded that call at +5371 and had passed Quarry before the next ask at +5445. Train 3 left Ring at +5348 here versus +5167 on main, then served Quarry homeward, turned at the Village and served Quarry outward.
+
+      Candidate A disabled middle balancing on original line 2 through Ring Island. It removed train 2's Far Head hold (+5693 to +5896) and train 1's Railhead hold (+5976 to +6074). Both Quarry boardings stayed at the same ticks. Its route-wide maximum was 1264/988 at Far Head outward. Candidate B held a middle service stop only while twice the forward gap was less than the rear gap. It removed the same two holds, then held train 2 at the Railhead homeward from +6433 to +6562. Both Quarry boardings again stayed at the same ticks. Its maximum was 1192/988 at the Pier homeward. Both trials retained the Village pressure yield. Neither trial was adopted.
+
+      Candidate C kept the terminal departure interval and terminal balancing under an assigned ask. Middle service holds and Strong's railhead hold still yield to rider demand. On b011e7 at both 0% and 75%, Quarry peaked at 886 ticks homeward and 711 outward, with 886 the route-wide maximum against 988. Each run served 289 measured asks, averaging 369.6 ticks. All 129 long-run cases passed. The four-seed bay maxima (settled/growing) were 901/1467 on leg 2 standard, 1058/1468 on leg 2 mixed, 1675/1486 on Canopy standard and 1632/1579 on Canopy mixed. The forced mixed stack served every open call, with ten waits above the ordinary budget and a maximum of 1604/1442. Strong released once on each of four matched random-demand seeds, with zero extra ticks to the second bill. Rounded solo Quick/Strong means were 3016/2881 at bay-mid and 2326/2505 at bay-reached. The revised departures changed the replay hashes of eleven seeded worlds from gorge-mid onward and the Village calling flag at gorge-mid. Their stage ticks held.
+
+- [x] **4. Seeds and stages (S; HOTBOX).** `src/sim/railway-seed-legs.ts` from `bay-reached`, accepted ops only:
       `canopy-open` (barrier open, section 1's kit on Bell Rock's rack), `canopy-mid` (section 1 laid, section 2's kit
       aboard a bay train), `canopy-reached` (leg 3 laid, cloth not taken). `SEED_STAGES` and its golden shard;
       `src/world/railway-jump.ts` rows without a `land` (leg 2's step 3 reason: lands wait for step 6's stills).
       Verify: `test/railway-jump.test.ts`; each stage's invariant check.
-- [ ] **5. Bell Rock on the eased line (S to M; Mac).** `src/content/levels/leg2.ts`: the upper level re-placed as
+      The clean replay and jump suite passed all 76 checks, including the three v66 stage snapshots.
+- [x] **5. Bell Rock on the eased line (S to M; Mac).** `src/content/levels/leg2.ts`: the upper level re-placed as
       [above](#the-massing-steps-5-and-6), the reserves moved with it (the Canopy frame's reserve now frame 1's), the
       level artifact rebuilt. `src/entities/route-greybox/leg-view.ts` (as leg 2's views left it): the `canopy`
       barrier drawn at its new point. `dev/level/route-leg2.ts`: its points from the catalog. Verify: `npm run
       level-check`, Bell Rock's lines all "ok" as before (on foot from either level, every swimmer's climb-out, rims,
       reserves clear); `.look/` stills: the arc from the ramp's head, a bay train standing at Bell Rock's upper platform
       on the curve, frame 1 with the barrier and rack 1 from the platform.
+
+      **As built, 23 November.** The level checker reached all four upper platforms and both levels on foot. All ramp feet, swimmer exits, reserves and the rock rim passed (0.0 m unsolid). Bell Rock resolves to 81 placements. The nine bed chords and eight platform boxes follow the catalog bend. The inner edges of the platform boxes have a 45 cm inset to keep the square joints clear of the 7.6 m wide rail reserve. The upper deck ends at n=1. The lever fixture follows the complete eased path beyond Bell Rock, and the placement and collider fixtures record the new platform and ramp transforms.
+
+      Opened three WebGPU stills in the worktree. In `.look/leg3-ramp-view-still.png` the upper crossing is nearly edge-on above the lower tracks. In `.look/leg3-train-view-still.png` slot 10 was standing at Bell Rock alongside the loaded rack. In `.look/leg3-frame-view-still.png` the track bends left past the rack, with the raised green barrier on frame 1 in sight behind it. These captures verify the staging; they do not measure frame rate or player handling.
+
+      Final rebased ship-check: registry, lint, typecheck and prefab freshness passed. Of 1857 affected tests, 1853 passed. The four failures were the line 2 boiler handover health cases listed above, at 0% and 75%. The separate long mixed-stack run had 42 over-budget requests across six seed/mode combinations, all served. The full level check completed 22 reports and the loop run completed. Its optional drawn-surface scan reported 39 new pairs relative to its baseline; the three reviewed stills are static views. Not tested on a device.
 
 ### Checkpoint G (garage step 4 may start)
 
@@ -444,9 +719,7 @@ over the catalog (`rowPoint`, `rowSide`) and are read against the report:
   with its dated line. Golden shards and fixtures regenerated in the same commit.
 - **The arc moves built track.** The bay cut's last 10 m now end on the curve: leg 2's seeds, its jump rows and its
   views' drawn track all move a few metres. Regenerate, then check `bay-reached`'s stills from step 5.
-- **The hold can stall a line for two minutes** at the railhead, with the following train waiting at the last signal.
-  Bounded by `railheadHoldTicks` and measured by the fuzz against 1,600 growing; a hold that breaks the bound shortens,
-  and the change goes in the as-built notes.
+- **The second bill may ride round the circuit** when Strong yields. Measure early departures and the time to the next rack.
 - **The kit ahead changes leg 2's bay timing** (as it changed leg 1's for the incline). Re-measured, never loosened past
   what is measured; a broken gate goes to the owner with choices.
 - **Hot files.** `railway-lines.ts`, `railway-train.ts`, `railway-sys-trains.ts`, `railway-check-steel.ts` (garage step 4
@@ -478,7 +751,7 @@ the map data and the catalog, which is why steps 5 and 6 list their stills.
   early and every post refuses; a glider skips water, never a bill.
 - *Nobody is stranded.* Head 1 has a sea ramp; the isle has beaches all round; head 2 stays a request stop; trains run
   both ways from every open halt; the keys are the room's, so a leaver loses nothing. A held Strong train is at most
-  two minutes of wait for someone who wants to leave the railhead (measured against 1,600).
+  a delay at the railhead while service permits.
 - *Lenses.* "A world that shortens behind you": Canopy is one ride from Home on the line the bay cut started, so the
   shortcut pays twice. "The key in sight of the lock": the cloth and the Notch barrier are 10 m apart, and the lock
   refuses (finding 4). "Ending a beat facing the next": the ride home ends at the West landing, where leg 4 will start.
@@ -489,27 +762,27 @@ the map data and the catalog, which is why steps 5 and 6 list their stills.
 | # | Call | Kind | Source or recommendation |
 | --- | --- | --- | --- |
 | 1 | 20 logs + 20 rails a section, about 30 s to lay; sections end at a place, up to about 900 m | Decided | [16 November](../decisions-rail.md#d-2026-11-16-batch2-greybox-section-length-and-lay-time) (head 1 is mid-strait, as legs 1 and 2's sea heads are; call 14) |
-| 2 | Strong is a hold: two sections' kit, waiting at the railhead; built with leg 3; Strong while building, Quick after | Decided | [19 November](../decisions-rewards.md#d-2026-11-19-garage-step4-waits-for-leg3) (the orchestrator's call, his to overrule) |
+| 2 | Strong is a hold: two sections' kit, waiting at the railhead while service permits; built with leg 3; Strong while building, Quick after | Decided | [19 November](../decisions-rewards.md#d-2026-11-19-garage-step4-waits-for-leg3) (the orchestrator's call, his to overrule) |
 | 3 | Quick 25 m/s with the same cars; Strong 20 m/s with one more car | Decided | [15 November garage trade answers](../decisions-core-loop.md#d-2026-11-15-garage-trade-answers) |
 | 4 | One fixed order through Bell Rock; Canopy after the bay cut | Decided | [16 November](../decisions-rail.md#d-2026-11-16-batch2-fixed-order-branch-wayfinding); [campaign outline answered](../decisions-core-loop.md#d-2026-11-12-campaign-outline-answered) |
 | 5 | Canopy's stall at Bell Rock rises with its leg, on the bay line's level | Decided | [12 November](../decisions-rewards.md#d-2026-11-12-cargo-trains-and-hub-towns-answered) (5), the market's fixed table |
 | 6 | Trains stop on request; a lever at each platform side | Decided | [10 November](../decisions-rail.md#d-2026-11-10-trains-stop-on-request-at-the) |
 | 7 | Right-hand running on the bay line's new halts | Decided | Owner, [18 November](../decisions-rail.md#d-2026-11-18-decisions-page-rail) |
-| 8 | Waits at most 1,350 settled and 1,600 growing; fleets sized by those limits | Decided | [16 November](../decisions-rail.md#d-2026-11-16-batch2-waits-use-owner-limits) (RC-263, RC-294) |
+| 8 | Greybox asks must be served within two even-spacing headways plus intermediate dwells, with safe spacing at every tick. | Decided | [23 November](../decisions-rail.md#d-2026-11-23-greybox-service-health) |
 | 9 | `rail.legStock` predicted; grant and gate server-confirmed | Decided | [16 November](../decisions-rail.md#d-2026-11-16-batch2-greybox-stock-is-predicted) |
 | 10 | Live for everyone, grey and labelled, the leg shipped whole | Decided | [12 November](../decisions-rail.md#d-2026-11-12-ring-island-build-2-and-the-greybox-route-answered) (4) |
 | 11 | Mechanisms on blockout: Canopy's town stays a flat deck, no folk or bespoke props; the sling stays out | Decided | Owner call [greybox before detail](../agents/owner-calls.md#mechanisms-systems-greybox-details), 11 November; greybox-route's stand-ins |
-| 12 | **The hold is Strong's alone**: a standard or Quick train carrying the next section's kit runs its circuit; a held Strong train keeps the following train at the last signal up to two minutes | **New** | Otherwise Strong is dead again; the fuzz bounds the cost. Recommended as planned |
+| 12 | Only Strong holds a later bill at the head. It yields to an assigned rider elsewhere or a follower waiting at its signal. | Decided | [23 November](../decisions-rail.md#d-2026-11-23-greybox-service-health) |
 | 13 | **The kit ahead runs into leg 3**, so its first kits ride standard trains before the bay trade is offered | **New** | Leg 2's rule for every same-line successor (its call 10, open). Keep it for now; Checkpoint G measures what is left for Strong. Open question 1 |
 | 14 | Three sections cut at the strait's level middle (s ~1750) and 33 m onto the isle (s ~2150), the last to Canopy's stop: about 533, 400 and 255 m | Default | Level finding 2: equal thirds put both heads on grades. Open question 2 |
 | 15 | Bell Rock's kink eased with a 60 m arc; the stop stays at s 1217, on the curve; the upper platforms as chords | Default | The track report; the smallest move that passes it. Open question 4 |
 | 16 | Canopy's stop 25 m short of its kink, a crossover before, buffers 2 m short; no loop end | Default | No train crosses a 102° kink; a loop does not fit the 71 m cleft (finding 5) |
 | 17 | The Canopy barrier moves from the upper deck's reserve to frame 1 on the outward platform; rack 1 abreast of the kit car | Default | Leg 2's call 11 (the frame is where it reads as a gate); Q7's last carry under 15 m |
-| 18 | The bay fleet `[2, 2, 3, 3]` over leg 3, a fourth at the last stage only if the fuzz needs it | Default | Call 8; leg 2's measured bay line scaled; the owner's "too many trains" (14 November) |
+| 18 | Bay fleets `[2, 2, 3, 3]`, 50-tick normal dwell. Both fleets passed at Canopy with three trains. | Measured | Step 2 |
 | 19 | Head 1 closes once Canopy opens; head 2 stays a request stop both ways | Default | The stack's `closesAt` rule; head 2 is a place to get off into the forest |
 | 20 | The cloth post on Canopy's homeward deck round the buffers (reach 4 m), taken once the leg is laid; the Notch barrier across the row at the kink, 10 m from it | Default | The key beside the lock it will open; the halt's map point is already the kink |
 | 21 | The Notch barrier refuses "No line beyond yet" with the cloth held; a board "LINE TO LANTERN NOTCH / LATER" beside it | Default | DESIGN 7; finding 4 |
-| 22 | The hold's bound: until the section lays, at most 1,200 ticks past the dwell, always while laying, never at a middle halt | Default | A solo feed and lay is about 60 s; the fuzz may shorten it |
+| 22 | The hold's bound: until the section lays, at most 1,200 ticks past the dwell, during a lay while service permits, only at open ends | Default | A solo feed and lay is about 60 s; the fuzz may shorten it |
 | 23 | A Strong train carries two sections of one leg, never across legs | Default | The next leg on the bay line is not built, and kit for a closed leg cannot unload |
 | 24 | Canopy's stand-in: the isle as a slab with beaches, five mother trunks, the two chalk walls with the cleft open, a deck at the halt; head 1 a sea ramp, head 2 steps | Default | level-design rec 3; leg 2's massing pattern |
 | 25 | Prompt "Take the glider cloth" and its block, four objective texts, the end boards | Default | Placeholder copy, none The Boogler's |

@@ -1,3 +1,4 @@
+import { ServiceHealth, fleetBudget } from './helpers/railway-service-health.ts';
 // Several trains on a line (docs/plans/generic-lines.md, step 4a): the block rule, the end blocks and their signals,
 // the headway hold, who serves a lever ask, a rider's own ask, the wagon's exemption, the pier opening mid-run, and
 // the worst wait for a train each way at every halt under random asks. The fuzz, the signal-to-signal leg and the
@@ -12,7 +13,6 @@ import {
   RAIL_TRAINS,
   TRAIN_EXTENT,
   circuitLen,
-  type RailLineDef,
 } from '../src/sim/railway-lines.ts';
 import {
   TRAIN,
@@ -42,12 +42,10 @@ import {
   trainStepLine,
   trainServes,
   trainSpacing,
-  type TrainIO,
 } from '../src/sim/railway-trains.ts';
 import { line2Completed } from '../src/sim/railway-queries-line2.ts';
 import { trainStops } from '../src/sim/railway-queries-trains.ts';
-import { Line, Rail, Train, Works } from '../src/sim/railway-components.ts';
-import { holdOff } from '../src/sim/railway-queries-trade.ts';
+import { Line, Train } from '../src/sim/railway-components.ts';
 import { WORKS } from '../src/sim/railway-works-layout.ts';
 import { footingTotal } from '../src/sim/railway-queries-works.ts';
 import { FixtureLine, LINE2_ROWS, standingAt, line2Stops } from './helpers/rail-rows.ts';
@@ -159,10 +157,6 @@ function awake(stage: 'trains-on' | 'q6-done' = 'trains-on', audit = true) {
 }
 
 // ---------------------------------------------------------------- spacing and the worst wait
-/** The worst wait test's flat bound on line 2 (orchestrator, 10 November): 105 s, from the review's long fuzz (91-97
- * s at the default hold over 5 seeds × 40,000 ticks). Two trains do NOT meet the design's one-minute bound under heavy
- * random asks; v27's third train (or an even-spacing hold) is to. */
-const WAIT_BOUND = 1050;
 const FUZZ_TICKS = fuzzTicks(3000);
 /** Q6's kit off the train and its logs and rails into the frame, so the pier opens a few hundred ticks on. */
 function fundQ6(w: Seed) {
@@ -181,6 +175,7 @@ for (const stage of FUZZ_STAGES)
       let w = unaudited(stage === 'q6-stocked' ? railwayAtTrains('q6-stocked') : buildSeedWorld(stage));
       for (let k = 0; k < TRAIN.wakeTicks; k++) railTick(w.w, ++w.t, headPct);
       const rand = mulberry32(seed);
+      const health = new ServiceHealth([LINE2], w.w);
       const packAt = Math.floor(rand() * Math.min(3000, FUZZ_TICKS / 2));
       let pierAt = -1,
         restores = 0,
@@ -203,8 +198,10 @@ for (const stage of FUZZ_STAGES)
           const id = Math.floor(rand() * RAIL_HALTS.length),
             dir = rand() < 0.5 ? -1 : 1;
           const h = RAIL_HALTS[id]!;
-          if (h.stop < trainStops(w.w, h.line).length && lever(w, id, dir) && !asked.has(`${id}/${dir}`))
+          if (h.stop < trainStops(w.w, h.line).length && lever(w, id, dir) && !asked.has(`${id}/${dir}`)) {
             asked.set(`${id}/${dir}`, w.t);
+            health.ask(w.w, id, dir, w.t);
+          }
         }
         if (!LIGHT && rand() < 0.03) {
           const slot = LINE_SLOTS[LINE2]![Math.floor(rand() * 2)]!,
@@ -221,6 +218,7 @@ for (const stage of FUZZ_STAGES)
           act(w, 'a', 'rail.call', { id: Math.floor(rand() * 8) - 1, dir: rand() < 0.5 ? -1 : 2, train } as never);
         }
         step(w, headPct);
+        health.tick(w.w, w.t);
         trains(w.w).forEach((r, slot) => {
           if (r.phase !== TRAIN_PHASE.STAND) return void standSince.delete(slot);
           if (!standSince.has(slot)) standSince.set(slot, w.t);
@@ -263,12 +261,8 @@ for (const stage of FUZZ_STAGES)
       t.diagnostic(`line 2 lever waits: ${waits.length} served, mean ${(mean / 10).toFixed(1)} s`);
       t.diagnostic(`worst rider waits (slot/stop): ${[...riderWorst].map(([k, v]) => `${k} ${v / 10} s`).join('; ')}`);
       t.diagnostic(`longest line-2 stand: ${JSON.stringify(longest)}`);
-      for (const [key, ticks] of worst)
-        if (RAIL_HALTS[Number(key.split('/')[0])]!.line === LINE2)
-          assert.ok(
-            ticks <= (stage === 'q6-stocked' ? 1350 : WAIT_BOUND),
-            `line 2 ${key}: waited ${ticks} ticks (early bound 1350, later ${WAIT_BOUND})`,
-          );
+      health.drain(w.w, w.t, () => step(w, headPct));
+      assert.deepEqual(health.failures, []);
       if (stage === 'q6-stocked') assert.ok(pierAt >= 0, 'the pier opened');
       assert.ok(longest.ticks < 1200, 'no line-2 train stands two minutes');
       assert.equal(invariant(w.w), null);
@@ -659,6 +653,11 @@ test('the balanced hold: an end waits while the gap ahead is the shorter, never 
   const cap = V.balance!;
   assert.equal(cap, 600);
   assert.equal(balancedHold(f.io(), V, stops, 0, 0, 100), true, 'bunched behind train 1: it waits');
+  const route = { ...V, fleet: RAIL_LINES[LINE2]!.fleet };
+  f.lineRow.req = reqAdd(0, 1, 1, stops.length);
+  assert.equal(trainServes(f.io().row, route, stops, 1, 1, 100), 0);
+  assert.equal(balancedHold(f.io(), route, stops, 0, 0, 100), true, 'the assigned Quarry ask keeps its Village departure gap');
+  f.lineRow.req = 0;
   assert.equal(balancedHold(f.io(), V, stops, 0, 0, TRAIN.dwellTicks + cap - 1), true, 'the last tick of its cap');
   assert.equal(balancedHold(f.io(), V, stops, 0, 0, TRAIN.dwellTicks + cap), false, 'the cap: 60 s past its dwell');
   assert.equal(balancedHold(f.io(), { ...V, balance: undefined }, stops, 0, 0, 100), false, 'a line without it');
@@ -919,8 +918,9 @@ for (const [seed, headPct] of ISLAND_SEEDS)
     t.diagnostic(`${FUZZ_TICKS} ticks; restores ${restores}`);
     t.diagnostic(`worst lever waits: ${waitTable(worst)}`);
     t.diagnostic(`worst rider waits (slot/stop): ${[...riderWorst].map(([k, v]) => `${k} ${v / 10} s`).join('; ')}`);
+    const { bound } = fleetBudget(ISLAND_LINE, line2Stops(7, 7, true), Array(ISLAND_LINE.trains).fill(0));
     for (const [key, ticks] of worst)
-      assert.ok(ticks <= WAIT_BOUND, `${key}: waited ${ticks} ticks (bound ${WAIT_BOUND})`);
+      assert.ok(ticks <= bound, `${key}: waited ${ticks} ticks (bound ${bound})`);
     // The Pier's up way is never asked: the lever refuses it.
     assert.ok(![...worst.keys()].includes(`${PIER}/1`));
   });
@@ -989,25 +989,11 @@ test('the load check refuses an up train standing at the homeward-only Pier; a l
   assert.equal(f.broken(), null);
 });
 
-// ---------------------------------------------------------------- review (spacing/six-hold): the control halt and an end's ask
-// Independent review of the Ring Island hold (docs/plans/short-turn.md, step 2 as built). The fixture line with the
-// Railhead as its control halt (a middle halt once the island is open), the room's defaults (cap 200, on 15%), no
-// train on an errand. controlFree takes the hold off "a train a lever ask is assigned to" by asking trainServes about
-// every ask both ways; an end's ask is one digit that reads set both ways (reqIndex), and asked the way out
-// trainServes has no `braking` clause for the train running into that end, so on the ticks that train is inside its
-// braking distance at the plain rate the ask is "assigned" to the train behind it, which the sim never stops for it
-// (trainReasons asks the train's own way: the train braking into the end keeps it).
-const CONTROL: typeof V = {
-  ...V,
-  id: 'line2-control',
-  halts: V.halts.map((h, k) => (k === HEAD ? { ...h, control: true as const } : h)),
-};
 function controlLine(stops: readonly number[], rows: RailTrain[], req: number) {
-  const f = new FixtureLine(stops, 0, TRAIN_HEAD_PCT, CONTROL);
+  const f = new FixtureLine(stops, 0, TRAIN_HEAD_PCT, V);
   f.rows = rows;
   f.lineRow = { req, left0: -1, left1: -1 };
-  const io = () => ({ ...f.io(), hold: { cap: 200, pct: 15 }, controlOff: () => false });
-  return { f, step: (t: number) => trainStepLine(io(), CONTROL, t) };
+  return { f, step: (t: number) => trainStepLine(f.io(), V, t) };
 }
 
 test("review (six-hold): the island's lever ask, which the train running into the island serves, does not release the train held at the control halt behind it", () => {
@@ -1015,129 +1001,45 @@ test("review (six-hold): the island's lever ask, which the train running into th
     n = stops.length;
   // Train 0 runs into the island from a block's gap past the Railhead; train 1 stands at the Railhead going up, its
   // dwell done at 50, the gap ahead far the shorter (train 2 is parked at Far Head going down): held to its cap.
-  const left = (req: number) => {
-    const { f, step } = controlLine(
-      stops,
-      [
-        runRow(stops[HEAD]! + TRAIN.sepCm, ISLAND, stops[ISLAND]!, 40),
-        standingAt(stops, HEAD, 0, 0),
-        standingAt(stops, 2, 1, 1e6),
-      ],
-      req,
-    );
-    for (let t = 41; t < 400; t++) {
-      const rows = (k: number) => f.rows[k]!;
-      // The sim's own answer all along: the island's ask is train 0's (running into it its way, then standing there).
-      if (reqHas(f.lineRow.req, ISLAND, -1, n))
-        assert.equal(
-          trainServes(rows, CONTROL, stops, ISLAND, trainDir(f.rows[0]!), t),
-          0,
-          `the ask is train 0's (${t})`,
-        );
-      step(t);
-      if (f.rows[1]!.phase === TRAIN_PHASE.RUN) return t;
-    }
-    return -1;
-  };
-  assert.equal(left(0), TRAIN.dwellTicks + 200, 'nothing asked: held to its cap');
-  assert.equal(
-    left(reqAdd(0, ISLAND, -1, n)),
-    TRAIN.dwellTicks + 200,
-    "the island's ask is not its to serve: still held",
-  );
+  const { f } = controlLine(stops, [
+    runRow(stops[HEAD]! + TRAIN.sepCm, ISLAND, stops[ISLAND]!, 40),
+    { ...standingAt(stops, HEAD, 0, 0), serviceStand: true },
+    standingAt(stops, 2, 1, 1e6),
+  ], reqAdd(0, ISLAND, -1, n));
+  assert.equal(trainServes(f.io().row, V, stops, ISLAND, 1, 50), 0);
+  assert.ok(balancedHold(f.io(), V, stops, 1, HEAD, 50));
 });
 
-test("review (six-hold): the island's lever ask does not flip the leg of a train bound for the control halt tick by tick", () => {
-  const stops = line2Stops(7, 7, true),
-    n = stops.length;
-  // Train 0 leaves the Railhead for the island; train 1 follows from Far Head and is stopped at the Railhead by the
-  // hold (train 2 parked at Far Head going down). Its `to` changes are counted until it stands at the Railhead.
-  const changes = (req: number) => {
-    const { f, step } = controlLine(
-      stops,
-      [standingAt(stops, HEAD, 0, 0), standingAt(stops, 2, 0, 0), standingAt(stops, 2, 1, 1e6)],
-      req,
-    );
-    let count = 0;
-    for (let t = 51; !standF(f, 1, HEAD); t++) {
-      assert.ok(t < 700, 'train 1 reaches the Railhead');
-      const to = f.rows[1]!.to;
-      step(t);
-      if (f.rows[1]!.phase === TRAIN_PHASE.RUN && f.rows[1]!.to !== to) count++;
-    }
-    return count;
-  };
-  const quiet = changes(0);
-  assert.ok(quiet <= 2, `nothing asked: it plans its leg and is stopped by the hold (${quiet} changes)`);
-  assert.equal(changes(reqAdd(0, ISLAND, -1, n)), quiet, "the island's ask changes nothing for it");
-});
-
-// ---------------------------------------------------------------- the Ring Island hold's clauses (the review's P2-2)
-// The review's fixture: train 1 stands at the control halt going up, its dwell done at 50, the gap ahead far the
-// shorter (train 0 running into the island, train 2 parked at Far Head going down). Each clause of controlFree that
-// takes the hold off a train sends it on at its dwell instead; with none, the hold stands it to its cap.
-function heldLeaves(io: Partial<TrainIO<RailLineDef>> = {}, req = 0) {
+// 23 November greybox service decision: only an existing service stand can balance gaps.
+test('a train passes the former control halt without an ask or cargo', () => {
   const stops = line2Stops(7, 7, true);
-  const { f } = controlLine(
-    stops,
-    [
-      runRow(stops[HEAD]! + TRAIN.sepCm, ISLAND, stops[ISLAND]!, 40),
-      standingAt(stops, HEAD, 0, 0),
-      standingAt(stops, 2, 1, 1e6),
-    ],
-    req,
-  );
-  for (let t = 41; t < 600; t++) {
-    trainStepLine({ ...f.io(), hold: { cap: 200, pct: 15 }, controlOff: () => false, ...io }, CONTROL, t);
-    if (f.rows[1]!.phase === TRAIN_PHASE.RUN) return t;
+  const { f, step } = controlLine(stops, [
+    standingAt(stops, HEAD, 0, 0), standingAt(stops, 2, 0, 0), standingAt(stops, 2, 1, 1e6),
+  ], 0);
+  for (let t = 51; t < 1500; t++) {
+    step(t);
+    assert.ok(!standF(f, 1, HEAD));
+    if (standF(f, 1, ISLAND)) return;
   }
-  return -1;
-}
-const AT_DWELL = TRAIN.dwellTicks,
-  CAPPED = AT_DWELL + 200;
-/** With no hold the train goes once the block ahead clears (train 0 still in the island's end block at its dwell). */
-const FREE = heldLeaves({ hold: undefined });
-
-test('six-hold: the hold stands a train at the control halt to its cap (arrived + dwell + cap); each controlFree clause sends it at its dwell', () => {
-  assert.ok(FREE >= AT_DWELL && FREE < CAPPED - 50, `with no hold it goes at ${FREE}`);
-  const n = line2Stops(7, 7, true).length;
-  for (const [io, req, leaves, why] of [
-    [{}, 0, CAPPED, 'cap 200'],
-    [{ hold: { cap: 120, pct: 15 } }, 0, AT_DWELL + 120, 'cap 120'],
-    [{ hold: { cap: 0, pct: 15 } }, 0, FREE, 'cap 0: off'],
-    [{ hold: { cap: 200, pct: 0 } }, 0, FREE, 'share 0: off'],
-    [{ fleet: () => 3 }, 0, CAPPED, 'the fleet all running: held'],
-    [{ fleet: () => 4 }, 0, FREE, 'one waits in the shed to join: not held'],
-    [{ headExempt: (slot: number) => slot === 1 }, 0, FREE, 'the headway-exempt train is never held'],
-    [{ headExempt: (slot: number) => slot !== 1 }, 0, CAPPED, 'another exempt: held'],
-    [{ controlOff: (_l: unknown, slot: number) => slot === 1 }, 0, FREE, 'a train on an errand is never held'],
-    [{ controlOff: (_l: unknown, slot: number) => slot !== 1 }, 0, CAPPED, 'another on an errand: held'],
-    [{ controlOff: undefined }, 0, FREE, 'no controlOff in the IO: off'],
-    [{}, reqAdd(0, HEAD, 1, n), CAPPED, 'the ask at its own platform its way does not release it'],
-    [{}, reqAdd(0, 2, -1, n), CAPPED, "Far Head homeward is train 2's: held"],
-  ] as [Partial<TrainIO<RailLineDef>>, number, number, string][])
-    assert.equal(heldLeaves(io, req), leaves, why);
-});
-test('six-hold: the errand list (holdOff): footings owed, a kit aboard that can unload, a kit owed; a waiting kit is none', () => {
-  const base = buildSeedWorld('steel-home');
-  const slots = LINE_SLOTS[LINE2]!;
-  const empty = { ...train(base.w, slots[0]!), logs: 0, rails: 0, legKit: false };
-  const fresh = () => restore(base.w);
-  assert.equal(holdOff(fresh(), LINE2, empty), false, 'an empty train, two kits already aboard others: no errand');
-  const footing = fresh();
-  footing.mut(Works, footing.single(Works))!.pierSet = 0;
-  assert.equal(holdOff(footing, LINE2, empty), true, 'footings owed');
-  assert.equal(holdOff(fresh(), LINE2, { ...empty, rails: 1 }), true, 'a kit aboard that can unload');
-  // A leg's kit with nothing for it at an open halt (the rack holds the current section's whole lack): it waits.
-  const waiting = fresh();
-  Object.assign(waiting.mut(Rail, waiting.single(Rail))!, { depot: 1000, depotRails: 1000 });
-  assert.equal(holdOff(waiting, LINE2, { ...empty, rails: 1, legKit: true }), false, 'a leg kit that waits: no errand');
-  // Owed a leg kit: no train carries one, so the leg's kit is still to load.
-  const owed = fresh();
-  for (const k of slots) Object.assign(owed.mut(Train, owed.lookup(Train, k)!)!, { logs: 0, rails: 0, legKit: false });
-  assert.equal(holdOff(owed, LINE2, empty), true, 'owed a kit');
+  assert.fail('the following train should reach the island');
 });
 
+test('a middle service stand shares the cycle-derived cap and yields to an assigned call', () => {
+  const stops = line2Stops(7, 7, true);
+  const { f } = controlLine(stops, [
+    standingAt(stops, ISLAND, 1, 0), standingAt(stops, HEAD, 0, 0), standingAt(stops, 2, 1, 0),
+  ], 0);
+  const held = (tick: number) => balancedHold(f.io(), V, stops, 1, HEAD, tick);
+  assert.equal(held(50), false, 'block-only stop');
+  f.rows[1]!.serviceStand = true;
+  const limit = TRAIN.dwellTicks + Math.floor(cycleTicks(V, stops) / 3);
+  assert.equal(held(limit - 1), true);
+  assert.equal(held(limit), false);
+  f.rows[0] = standingAt(stops, 2, 0, 0);
+  f.lineRow.req = reqAdd(0, ISLAND, 1, stops.length);
+  assert.equal(trainServes(f.io().row, V, stops, ISLAND, 1, 50), 1);
+  assert.equal(held(50), false);
+});
 // Review of separate-capacities (18 November 2026): the stub-extension sweep that guarded e9125afc's train fix (a
 // stub that opens ahead while a loaded train arrives is a through stop: `runsOn` in trainStepLine) lived in the
 // deleted test/review-heavy-load-arrival.test.ts. The fix has nothing to do with the heavy load and stays, so its

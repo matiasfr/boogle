@@ -134,6 +134,10 @@ const WALL_S2 = WALL_ISLETS['wall-s2'];
 const WALL_S1 = WALL_ISLETS['wall-s1'];
 const WALL_N2 = WALL_ISLETS['wall-n2'];
 const WALL_N1 = WALL_ISLETS['wall-n1'];
+// Midway across the strait's level deck; 33 m beyond the top of the climb onto Canopy isle.
+export const CANOPY_STRAIT = 174323,
+  CANOPY_EDGE = 214613;
+const CANOPY_KINK = row('bay').legs[1]!.toCm;
 
 const BILL = { logs: 20, rails: 20 } as const; // one train load, Q7's bill (call 21)
 const BILL_END = { logs: 6, rails: 6 } as const; // the ending's two
@@ -200,11 +204,12 @@ const SPECS: readonly Spec[] = [
     row: 'bay',
     from: 1,
     dest: 2,
-    cuts: sectionsOf(span('bay', 1, 2), 3),
+    cuts: [CANOPY_STRAIT, CANOPY_EDGE, stopCm('bay', 2)],
     bill: BILL,
     gated: [[0, 1]],
     after: 2,
     kit: 'home',
+    built: true,
   },
   {
     // The cave, the Saltpan, the quay. The cave's far mouth is not in the map data: the first span (West landing to the
@@ -297,7 +302,7 @@ export const RAIL_GRANTS: readonly { id: string; label: string; leg: number; at:
   { id: 'pick', label: 'Powered pick', leg: 0, at: { x: -7435, z: -203262, y: 8500, reach: 400 } },
   // Bell Rock's reserved seeds spot on the lower deck (src/content/levels/leg2.ts, marks.seeds: ne.at(-4, -15)).
   { id: 'seeds', label: 'Crystal seeds', leg: 1, at: { x: -6473, z: -85491, y: 490, reach: 400 } },
-  { id: 'cloth', label: 'Glider cloth', leg: 3, at: haltAt('bay', 2) },
+  { id: 'cloth', label: 'Glider cloth', leg: 3, at: rowSide('bay', CANOPY_KINK - 200, -980, 90, 400) },
   { id: 'lantern', label: 'Lantern', leg: 6, at: haltAt('bay', 3) },
 ];
 const grant = (id: string) => RAIL_GRANTS.findIndex((g) => g.id === id);
@@ -308,11 +313,11 @@ export const RAIL_GATES: readonly { id: string; label: string; needs: number; at
   // At the incline's first frame on incline-s (greybox-leg2.md, step 1): t 24, 1 m in from its edge.
   { id: 'incline', label: "The incline's first frame", needs: grant('pick'), at: rowSide('ns', 2400, -480, 90, 400) },
   {
-    // The reserved Canopy frame spot on Bell Rock's upper deck (leg2.ts, "Canopy frame and barrier": ne.at(0.5, -27)).
+    // The first frame stands past the bay-cut buffers on the outward platform.
     id: 'canopy',
     label: "Bell Rock to Canopy's first frame",
     needs: grant('seeds'),
-    at: { x: -7698, z: -85115, y: 1590, reach: 400 },
+    at: rowSide('bay', 122900, 480, 90, 400),
   },
   { id: 'plug', label: 'The sea-cave plug', needs: grant('pick'), at: haltAt('cave', 0) },
   {
@@ -321,7 +326,12 @@ export const RAIL_GATES: readonly { id: string; label: string; needs: number; at
     needs: grant('seeds'),
     at: pointAt('cave', WALL_N1),
   },
-  { id: 'notch', label: 'The Notch frame', needs: grant('cloth'), at: haltAt('bay', 2) },
+  {
+    id: 'notch',
+    label: 'The Notch frame',
+    needs: grant('cloth'),
+    at: { ...pointAt('bay', CANOPY_KINK), y: 1390, reach: 400 },
+  },
   { id: 'causeway', label: "The causeway's first frame", needs: grant('lantern'), at: haltAt('ns', 1) },
 ];
 
@@ -428,8 +438,17 @@ const FIRST_SITE: Readonly<Record<string, { frame: RailPlatform; rack: RailPlatf
     frame: rowSide('bay', 1200, 980, 90, LEG_SITE_REACH),
     rack: rowSide('bay', 600, 980, 90, LEG_SITE_REACH),
   },
+  'bell-canopy': {
+    frame: RAIL_GATES[1]!.at,
+    rack: rowSide('bay', 121900, 480, 90, LEG_SITE_REACH),
+  },
 };
-if (Object.keys(FIRST_SITE).join() !== SPECS.filter((sp) => sp.built).map((sp) => sp.id).join())
+if (
+  Object.keys(FIRST_SITE).join() !==
+  SPECS.filter((sp) => sp.built)
+    .map((sp) => sp.id)
+    .join()
+)
   throw new Error('railway-route: every built leg names its first frame and rack, in order');
 /** Section k's frame, where `rail.legStock` is judged: a built leg's first is its FIRST_SITE; the others stand 8 m short
  * of the railhead (the section's first centimetre), 4.8 m to the right going out, 90 cm over the deck (step 4's

@@ -112,6 +112,9 @@ export const SEED_STAGES = [
   'bay-open',
   'bay-mid',
   'bay-reached',
+  'canopy-open',
+  'canopy-mid',
+  'canopy-reached',
 ] as const;
 export type SeedStage = (typeof SEED_STAGES)[number];
 const Q5_STAGES: readonly string[] = ['q4-done', 'sea-open', 'q5-stocked', 'q5-finishing', 'q5-done'];

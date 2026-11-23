@@ -30,7 +30,7 @@ import {
   legFrame,
   legRack,
 } from '../../src/sim/railway-route.ts';
-import { haltHead, legKitNeed, legRow, routeRow } from '../../src/sim/railway-queries-route.ts';
+import { legKitNeed, legRow, routeRow } from '../../src/sim/railway-queries-route.ts';
 import { act, apply, railTick, restore, trees } from '../../test/helpers/rail.ts';
 import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
 import { railApply } from '../../src/sim/railway-systems.ts';
@@ -43,15 +43,14 @@ import { currentRoomId, roomNamespaces } from '../src/room-ids.ts';
 import { railwayRequestEdit } from '../src/host/railway-requests.ts';
 import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
 import { train } from '../../src/sim/railway-rows.ts';
-import { LINE_SLOTS, trainServes } from '../../src/sim/railway-trains.ts';
-import { TRAIN, TRAIN_PHASE, trainAlong } from '../../src/sim/railway-train.ts';
+import { LINE_SLOTS, balancedHold, trainGaps, trainSpacing } from '../../src/sim/railway-trains.ts';
+import { BOILER_MAX, TRAIN, TRAIN_PHASE, trainAlong } from '../../src/sim/railway-train.ts';
 import { railLinePoint } from '../../src/sim/railway-line-path.ts';
-import { LINE2, RAIL_HALTS, RAIL_LINES, haltPlatform, trainPassesBy } from '../../src/sim/railway-lines.ts';
-import { LOGS, ringHead, roomOf, steelNeed, stopsOf } from '../../src/sim/railway-queries.ts';
+import { LINE2, RAIL_HALTS, RAIL_LINES, trainPassesBy } from '../../src/sim/railway-lines.ts';
+import { LOGS, roomOf, steelNeed, stopsOf } from '../../src/sim/railway-queries.ts';
 import { RAILS } from '../../src/sim/railway-line2-layout.ts';
 import { ringRivetSequence } from '../../test/helpers/railway-rivet-sequence.ts';
-import { setTune, type TuneKey } from '../../src/sim/tune.ts';
-import { TRADE_PCT } from '../../src/sim/railway-trade-layout.ts';
+import { setTune } from '../../src/sim/tune.ts';
 
 type Obj = Record<string, unknown>;
 type At = [number, number, number];
@@ -121,11 +120,7 @@ async function host(name: string, fixture: Seed, players: Record<string, string>
     later(ms: number) {
       now += ms;
     },
-    /** A room tunable set as an applied tune.set lands (the room's controller's). */
-    tune(key: TuneKey, v: number) {
-      setTune(h.rules.railTune.tune, key, v);
-    },
-    tuned: (key: TuneKey) => h.rules.railTune.get(key),
+    get tune() { return h.rules.railTune.tune; },
     /** An orderly restart (a deploy): the room saves on close and comes back from its save. */
     async restart() {
       await h.close({ save: true });
@@ -405,7 +400,7 @@ test('steel host: malformed kinds, lines, parts and revisions refused without a 
       assert.equal(await r.action(install(0, l as number), spot(SHED_TABLE)), 'rejected', `line ${l}`);
     for (const part of [0, 5, '1', null])
       assert.equal(await r.action(install(0, 1, part as number), spot(SHED_TABLE)), 'rejected', `part ${part}`);
-    for (const revision of [5, -1, 0.5, '0', null, undefined])
+    for (const revision of [BOILER_MAX + 2, -1, 0.5, '0', null, undefined])
       assert.equal(
         await r.action({ op: 'rail.install', line: 1, part: 2, revision }, spot(SHED_TABLE)),
         'rejected',
@@ -728,132 +723,35 @@ test('railwayRequestEdit: every field an op validates or applies survives the re
   assert.deepEqual([...new Set(missing)], [], 'fields the request drops');
 });
 
-// ---------------------------------------------------------------- the Ring Island hold (short-turn's ruling, step 2)
-// Six trains on leg 1 laid to its end with nothing asked: a train standing at Ring Island past its dwell that the same
-// world with the hold off (railTrainHoldCap and railTrainHoldPct at 0) would send on is held by the hold. Through a
-// late joiner's snapshot and a restart it stands, then leaves on its cap (arrived + dwell + cap, no saved field); a
-// lever ask assigned to it releases it.
-const RING = RAIL_LINES[LINE2]!.halts.findIndex((h) => h.name === 'Ring Island');
-/** Ticks until a line 2 train is held at Ring Island by the hold: its slot. */
-async function heldAtRing(r: Awaited<ReturnType<typeof host>>) {
-  for (let t = 0; ; t++) {
-    assert.ok(t < 6000, 'a train held at Ring Island');
-    const standing = LINE_SLOTS[LINE2]!.filter((k) => {
-      const x = train(r.w, k);
-      return x.phase === TRAIN_PHASE.STAND && x.at === RING && r.tick + 1 >= x.depart + TRAIN.dwellTicks;
-    });
-    const off = standing.length ? restore(r.w) : undefined;
-    if (off) railTick(off, r.tick + 1, 75, TRADE_PCT, { cap: 0, pct: 0 });
-    await r.ticks(1);
-    const k = standing.find(
-      (q) => train(r.w, q).phase === TRAIN_PHASE.STAND && train(off!, q).phase === TRAIN_PHASE.RUN,
-    );
-    if (k !== undefined) return k;
-  }
-}
-/** Ticks until train `k` leaves: the tick it left. */
-async function leaves(r: Awaited<ReturnType<typeof host>>, k: number) {
-  for (let t = 0; train(r.w, k).phase === TRAIN_PHASE.STAND; t++) {
-    assert.ok(t < 2000, 'the held train leaves');
-    await r.ticks(1);
-  }
-  return train(r.w, k).depart;
-}
-
-test("hold host: a train held at Ring Island survives restart, stands in a late joiner's snapshot, then leaves on its cap", async () => {
-  const r = await host('hold-join', legLaid());
+test('spacing host: Ring Island holds while the gap ahead is short, then dispatches', async () => {
+  const r = await host('ring-spacing', fixture('steel-home'));
   try {
-    r.tune('railTrainHoldCap', 100);
-    const k = await heldAtRing(r);
-    const arrived = train(r.w, k).arrived;
+    // Isolate general spacing from the minimum departure interval. The retained room setting survives a checkpoint.
+    setTune(r.tune, 'railTrainHeadPct', 0);
     await r.restart();
-    assert.deepEqual(
-      [train(r.w, k).phase, train(r.w, k).at, train(r.w, k).arrived],
-      [TRAIN_PHASE.STAND, RING, arrived],
-      'restored standing at Ring Island',
-    );
-    assert.equal(r.tuned('railTrainHoldCap'), 100, 'the cap came back from the save');
-    const joiner = r.connect('late');
-    await r.ticks(3);
-    assert.ok(joiner(), "the joiner's snapshot is whole");
-    const seen = train(joiner()!, k);
-    assert.deepEqual([seen.phase, seen.at, seen.arrived], [TRAIN_PHASE.STAND, RING, arrived], 'it stands there');
-    assert.ok(r.tick > arrived + TRAIN.dwellTicks, 'past its dwell');
-    for (const q of LINE_SLOTS[LINE2]!)
-      assert.deepEqual(train(joiner()!, q), train(r.w, q), `train ${q}: the joiner's row is the host's`);
-    assert.equal(await leaves(r, k), arrived + TRAIN.dwellTicks + 100, 'it leaves on the cap');
-    await r.ticks(2);
-    assert.equal(train(joiner()!, k).phase, TRAIN_PHASE.RUN, 'the joiner sees it leave');
-  } finally {
-    await r.done();
-  }
-});
-
-test('hold host: only the first platform call extends dwell; a repeated ask cannot delay the Ring cap', async () => {
-  const r = await host('hold-refresh', legLaid());
-  try {
-    r.tune('railTrainHoldCap', 100);
-    const k = await heldAtRing(r),
-      arrived = train(r.w, k).arrived,
-      id = RAIL_HALTS.findIndex((h) => h.line === LINE2 && h.stop === RING),
-      dir = train(r.w, k).track ? -1 : 1,
-      at = spot(haltPlatform(RAIL_HALTS[id]!, dir, 0));
-    assert.equal(await r.action({ op: 'rail.call', id, dir }, at), 'accepted');
-    const cap = arrived + TRAIN.dwellTicks + 100;
-    await r.ticks(cap - 10 - r.tick);
-    assert.equal(train(r.w, k).phase, TRAIN_PHASE.STAND);
-    const first = train(r.w, k).depart;
-    assert.equal(await r.action({ op: 'rail.call', id, dir }, at), 'noop', 'pending ask cannot re-extend');
-    assert.equal(train(r.w, k).depart, first);
-    assert.equal(train(r.w, k).arrived, arrived, 'hold cap still anchored to original arrival');
-    assert.equal(await leaves(r, k), cap, 'the later call cannot delay departure beyond the original cap');
-  } finally {
-    await r.done();
-  }
-});
-
-test('hold host: a lever ask assigned to a held train releases it', async () => {
-  const r = await host('hold-ask', legLaid());
-  try {
-    // A platform's lever whose ask is for the held train: one between it and the train ahead, found as the train ahead
-    // runs on past one while the hold lasts (an outward hold has none: the stack heads it passes and the Gorge's way in
-    // take no ask, so the next hold is tried).
-    let k = -1;
-    const served = () => {
-      if (train(r.w, k).phase !== TRAIN_PHASE.STAND) return undefined;
-      const stops = stopsOf(r.w, LINE2),
-        rows = (q: number) => train(r.w, q);
-      for (let s = 0; s < stops.length; s++)
-        for (const dir of [1, -1])
-          if (s !== RING && trainServes(rows, LINE2, stops, s, dir, r.tick) === k) {
-            const id = RAIL_HALTS.findIndex((h) => h.line === LINE2 && h.stop === s);
-            return { id, dir, at: spot(haltPlatform(id, dir, haltHead(r.w, id, ringHead(r.w)))) };
-          }
-      return undefined;
-    };
-    let ask: ReturnType<typeof served>;
-    for (let held = 0; !ask; held++) {
-      assert.ok(held < 12, 'a hold with an ask the held train serves');
-      k = await heldAtRing(r);
-      ask = served();
-      while (!ask && train(r.w, k).phase === TRAIN_PHASE.STAND) {
-        await r.ticks(1);
-        ask = served();
+    assert.equal(r.tune.v.railTrainHeadPct, 0);
+    const stops = stopsOf(r.w, LINE2);
+    const ring = stops.length - 1;
+    assert.equal(RAIL_LINES[LINE2]!.halts[ring]!.name, 'Ring Island');
+    let held = -1;
+    for (let t = 0; t < 4000; t++) {
+      const rows = (slot: number) => train(r.w, slot);
+      const slot = LINE_SLOTS[LINE2]!.find(j => {
+        const x = rows(j);
+        return x.phase === TRAIN_PHASE.STAND && x.at === ring &&
+          r.tick + 1 >= x.depart + TRAIN.dwellTicks &&
+          balancedHold({ row: rows, line: l => line(r.w, l), headExempt: () => false }, LINE2, stops, j, ring, r.tick + 1);
+      });
+      await r.ticks(1);
+      assert.equal(trainSpacing(rows, l => stopsOf(r.w, l), r.tick), null);
+      if (held >= 0 && rows(held).phase === TRAIN_PHASE.RUN) return;
+      if (slot !== undefined && rows(slot).phase === TRAIN_PHASE.STAND) {
+        const gaps = trainGaps(rows, LINE2, stops, slot, r.tick)!;
+        assert.ok(gaps.ahead < gaps.behind);
+        held = slot;
       }
     }
-    const arrived = train(r.w, k).arrived;
-    // Still held a tick on with nothing asked.
-    const quiet = restore(r.w);
-    railTick(quiet, r.tick + 1);
-    assert.equal(train(quiet, k).phase, TRAIN_PHASE.STAND, 'the hold would stand it on');
-    assert.equal(
-      await r.action({ op: 'rail.call', id: ask.id, dir: ask.dir }, ask.at),
-      'accepted',
-      'asked at its lever',
-    );
-    await r.ticks(1);
-    assert.equal(train(r.w, k).phase, TRAIN_PHASE.RUN, 'released: it leaves for the ask');
-    assert.ok(train(r.w, k).depart < arrived + TRAIN.dwellTicks + 200, 'before the cap');
+    assert.fail('Ring Island must hold for spacing and release within the run');
   } finally {
     await r.done();
   }

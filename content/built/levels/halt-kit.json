@@ -1671,10 +1671,75 @@
           "up": false
         },
         "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-row-lever-19-down",
+        "params": {
+          "piece": "lever",
+          "plaque": 1,
+          "ring": true,
+          "row": 19,
+          "side": 1,
+          "up": false
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-row-lever-19-up",
+        "params": {
+          "piece": "lever",
+          "plaque": 1,
+          "ring": true,
+          "row": 19,
+          "side": -1,
+          "up": true
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-row-lever-20-down",
+        "params": {
+          "piece": "lever",
+          "plaque": 1,
+          "ring": true,
+          "row": 20,
+          "side": 1,
+          "up": false
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-row-lever-20-up",
+        "params": {
+          "piece": "lever",
+          "plaque": 1,
+          "ring": true,
+          "row": 20,
+          "side": -1,
+          "up": true
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
+        "id": "halt-row-lever-21-down",
+        "params": {
+          "piece": "lever",
+          "plaque": 1,
+          "ring": true,
+          "row": 21,
+          "side": 1,
+          "up": false
+        },
+        "prefab": "railway.halt-lever"
       }
     ],
     "kind": "halt-kit",
-    "sourceFingerprint": "abe00fb875a70f6e19613c685b6da5ccf4a684f5bde8aee57e04e5d2d54d5583"
+    "sourceFingerprint": "2b62b8f737f2b13d23d995a840e0cfb0dc6019e167179a9586983f251d8c81cf"
   },
   "place": "halt-kit",
   "placements": [],
