@@ -73,7 +73,7 @@ function bellBed() {
         -4.3,
         4.3,
         BAY_RAIL - 0.1,
-        sub(BAY_RAIL - 0.1, ROCK),
+        sub(BAY_RAIL - 0.1, ROCK - 0.02),
         'dark',
       ),
       over: true,
@@ -229,9 +229,15 @@ function bell() {
     ],
     reserves: [
       ne.reserve('ns row', -60, 60, -BED, BED, NS_RAIL - 0.1, NS_RAIL + LOADING),
-      bayIn.reserve('bay approach', 36, 70, -BED, BED, BAY_RAIL, BAY_RAIL + LOADING),
+      bayIn.reserve('bay approach', 30.5, 70, -BED, BED, BAY_RAIL, BAY_RAIL + LOADING),
       ...bellChords.map((c, i) =>
         c.track.frame.reserve('bay track ' + i, 0, c.track.lengthCm / 100, -BED, BED, BAY_RAIL, BAY_RAIL + LOADING),
+      ),
+      frame({ x: -73.92, z: -840.73 }, unit(-4.71, 1.67), perp(unit(-4.71, 1.67))).reserve(
+        'bay exit curve', 0, 5, -BED, BED, BAY_RAIL, BAY_RAIL + LOADING,
+      ),
+      frame({ x: -78.63, z: -839.06 }, unit(-36.75, 14.07), perp(unit(-36.75, 14.07))).reserve(
+        'bay exit', 0, 39.35, -BED, BED, BAY_RAIL, BAY_RAIL + LOADING,
       ),
       ne.reserve('seeds spot', -5.5, -2.5, -16.5, -13.5, LOWER, LOWER + CLEAR),
       { id: 'Canopy frame and barrier', x: -54.1, z: -848.23, yaw: 0, w: 2, d: 2, y0: UPPER, y1: UPPER + CLEAR },
