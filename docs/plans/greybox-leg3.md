@@ -566,19 +566,37 @@ rides with it. Steps 6 and 7 ship on their own after it.
       - settled 5eed: 1463/1442 (1.015x), 1463/1442 (1.015x), 1675/1442 (1.162x), 1581/1442 (1.096x), 1452/1442 (1.007x), 1660/1442 (1.151x).
 
       Line 2 boiler handover at both 0% and 75%: b011e7 waited 1155/988 (1.169x) and 1159/988 (1.173x); 5eed25 waited 995/988 (1.007x) and 1043/988 (1.056x). All were served. The maturity correction changes the test budget only.
+
+      **Final Strong trade, middle spacing active.** Eight offsets at each start, solo and paired. Mean ticks to complete leg 3:
+
+      | Fit time | Quick solo | Strong solo | Quick pair | Strong pair |
+      | --- | ---: | ---: | ---: | ---: |
+      | bay-mid | 3016 | 2881 | 3016 | 2880 |
+      | bay-reached | 2326 | 2505 | 2325 | 2504 |
+
+      Strong carried its second bill away early on 0/16 solo offsets. The four random-demand comparisons above measure the time until the next rack has its full bill; an individual log or rail has no persistent identity. A follower standing at the Bell Rock approach signal is asserted at the early departure in the hold test.
+
+      **Long run, final line budgets.** At mature full fleet the even headway / bound in ticks was 668/1386 on ns, 706/1462 at Bell Rock, 866/1882 at Canopy Town and 571/1442 at High Gorge. At Ring Island, three trains on the longer boiler have a headway of 394 and bound of 988 (four intermediate dwells). Standard growing stack maxima were 1418 (777), 1334 (5eed), 1224 (badd) and 1160 (c0ffee). On Canopy the old four-train standard trial recorded 1367/1463 settled/growing; final three-train standard recorded 1675/1486 and mixed recorded 1632/1579. Leg 2 bay standard recorded 901/1467 and mixed 1058/1468. No live ask remained after the drain.
+
 - [x] **4. Seeds and stages (S; HOTBOX).** `src/sim/railway-seed-legs.ts` from `bay-reached`, accepted ops only:
       `canopy-open` (barrier open, section 1's kit on Bell Rock's rack), `canopy-mid` (section 1 laid, section 2's kit
       aboard a bay train), `canopy-reached` (leg 3 laid, cloth not taken). `SEED_STAGES` and its golden shard;
       `src/world/railway-jump.ts` rows without a `land` (leg 2's step 3 reason: lands wait for step 6's stills).
       Verify: `test/railway-jump.test.ts`; each stage's invariant check.
       The clean replay and jump suite passed all 76 checks, including the three v66 stage snapshots.
-- [ ] **5. Bell Rock on the eased line (S to M; Mac).** `src/content/levels/leg2.ts`: the upper level re-placed as
+- [x] **5. Bell Rock on the eased line (S to M; Mac).** `src/content/levels/leg2.ts`: the upper level re-placed as
       [above](#the-massing-steps-5-and-6), the reserves moved with it (the Canopy frame's reserve now frame 1's), the
       level artifact rebuilt. `src/entities/route-greybox/leg-view.ts` (as leg 2's views left it): the `canopy`
       barrier drawn at its new point. `dev/level/route-leg2.ts`: its points from the catalog. Verify: `npm run
       level-check`, Bell Rock's lines all "ok" as before (on foot from either level, every swimmer's climb-out, rims,
       reserves clear); `.look/` stills: the arc from the ramp's head, a bay train standing at Bell Rock's upper platform
       on the curve, frame 1 with the barrier and rack 1 from the platform.
+
+      **As built, 23 November.** The level checker reached all four upper platforms and both levels on foot. All ramp feet, swimmer exits, reserves and the rock rim passed (0.0 m unsolid). Bell Rock resolves to 81 placements. The nine bed chords and eight platform boxes follow the catalog bend. The inner edges of the platform boxes have a 45 cm inset to keep the square joints clear of the 7.6 m wide rail reserve. The upper deck ends at n=1. The lever fixture follows the complete eased path beyond Bell Rock, and the placement and collider fixtures record the new platform and ramp transforms.
+
+      Opened three WebGPU stills in the worktree. In `.look/leg3-ramp-view-still.png` the upper crossing is nearly edge-on above the lower tracks. In `.look/leg3-train-view-still.png` slot 10 was standing at Bell Rock alongside the loaded rack. In `.look/leg3-frame-view-still.png` the track bends left past the rack, with the raised green barrier on frame 1 in sight behind it. These captures verify the staging; they do not measure frame rate or player handling.
+
+      Final rebased ship-check: registry, lint, typecheck and prefab freshness passed. Of 1857 affected tests, 1853 passed. The four failures were the line 2 boiler handover health cases listed above, at 0% and 75%. The separate long mixed-stack run had 42 over-budget requests across six seed/mode combinations, all served. The full level check completed 22 reports and the loop run completed. Its optional drawn-surface scan reported 39 new pairs relative to its baseline; the three reviewed stills are static views. Not tested on a device.
 
 ### Checkpoint G (garage step 4 may start)
 
