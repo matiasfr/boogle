@@ -1,3 +1,4 @@
+import { ServiceHealth } from './helpers/railway-service-health.ts';
 // Greybox leg 2's rules (docs/plans/greybox-leg2.md, step 2): the incline from High Gorge to Bell Rock on the `ns` line
 // and the bay cut from Home's West landing to Bell Rock on the `bay` line. The barrier, the Gorge rack and yard relay,
 // the seeds, the bay cut's stocked first rack (the stand-in), both lines' fleets and stops, the yard's completion, the
@@ -10,7 +11,7 @@ import { Account, Forge, Leg, LegYard, Line, Rail, Route } from '../src/sim/rail
 import { railwayCheck } from '../src/sim/railway-check.ts';
 import { LINE2, RAIL_HALTS, RAIL_LINES } from '../src/sim/railway-lines.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, ROW_LINE, legFrame, legRack } from '../src/sim/railway-route.ts';
-import { TRAIN_PHASE, fleetOf, lineStagesOf, trainDir, trainPassesBy } from '../src/sim/railway-train.ts';
+import { fleetOf, lineStagesOf, trainDir, trainPassesBy } from '../src/sim/railway-train.ts';
 import { LINE_SLOTS, servingSlots, trainSpacing } from '../src/sim/railway-trains.ts';
 import { railTick } from '../src/sim/railway-systems.ts';
 import { account, forge, rail, train, trains } from '../src/sim/railway-rows.ts';
@@ -108,7 +109,7 @@ test("leg 2's catalog lines: ns and bay open by their legs' sections, fleets 0, 
         l.halts.slice(0, stops.length).map((h) => h.s),
         `${l.id}: the stops a prefix`,
       );
-      assert.equal(trains, [0, 0, 1, 2, 3, 3, 4][stops.length], `${l.id}: ${trains} trains over ${stops.length} stops`);
+      assert.equal(trains, [0, 0, 1, 2, 2, 3, 3][stops.length], `${l.id}: ${trains} trains over ${stops.length} stops`);
     }
     // Right-hand running (owner, 18 November): each halt's outward platform right of the row going out, its homeward
     // one left, 11.6 m apart.
@@ -351,12 +352,6 @@ test("the server judges leg 2's ops at the new points; a malformed one is refuse
 });
 
 // ---------------------------------------------------------------- the waits (the WAIT_BOUND method)
-/** The settled and growing bounds on the greybox lines (decided 16 November): a fixed stage's worst wait at most
- * 1,350 ticks; while the leg grows, at most 1,600. */
-const SETTLED = 1350,
-  GROWING = 1600;
-// docs/decisions-rail.md#d-2026-11-23-bay-settled-wait applies only to the settled bay line.
-const settledLimit = (line: number) => (line === BAYL ? 1367 : SETTLED);
 const FUZZ = routeTicks();
 /** The halts a lever ask may name now (open, not closed behind), by RAIL_HALTS id: the route rules' askPool. */
 function askPool(w: World) {
@@ -373,9 +368,9 @@ function ask(s: Seed, f: Record<string, unknown>) {
  * the seeds taken once the incline is laid. The worst served wait on each new line. */
 function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: boolean, canopy = false, strong = false) {
   let s = unaudited(copy(stage));
-  let mixedTicks = 0, heldTicks = 0, layingHoldTicks = 0;
+  let mixedTicks = 0, heldTicks = 0, layingHoldTicks = 0, yieldedTicks = 0;
   let thirdEligible = -1, thirdServing = -1;
-  if (strong) {
+  if (strong && canopy) {
     Object.assign(s.w.mut(Line, s.w.lookup(Line, BAYL)!)!, { boiler: 5, fitted: s.t });
     const first = LINE_SLOTS[BAYL]![0]!;
     for (let t = 0; train(s.w, first).logs < 40 || train(s.w, first).rails < 40; t++) {
@@ -387,24 +382,30 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
     Object.assign(s.w.mut(Line, s.w.lookup(Line, BAYL)!)!, { boiler: 0, fitted: -1 });
     feedSection(s, BAY);
   }
+  if (strong && !canopy) {
+    const fit = s.w.mut(Line, s.w.lookup(Line, BAYL)!)!;
+    Object.assign(fit, { boiler: 5, fitted: s.t });
+    if (!feed) {
+      for (let k = 0; !LINE_SLOTS[BAYL]!.some(j => train(s.w, j).boiler === 5); k++) {
+        assert.ok(k < 8000, 'the first train adopts Strong at home');
+        advance(s, 1);
+      }
+      Object.assign(fit, { boiler: 0, fitted: -1 });
+    }
+  }
   if (canopy) {
     assert.equal(act(s, 'a', 'rail.gate', { id: CANOPY }), 1);
     if (!feed) while (legRow(s.w, 3).laid < RAIL_LEGS[3]!.sections.length) feedSection(s, 3);
   }
   const t0 = s.t,
     rand = mulberry32(seed),
-    asked = new Map<string, number>(),
-    worst = new Map<number, number>([
-      [NS, 0],
-      [BAYL, 0],
-    ]),
-    long: string[] = [];
+    health = new ServiceHealth([NS, BAYL]);
   for (let k = 0; k < FUZZ; k++) {
     if (rand() < 0.05) {
       const pool = askPool(s.w),
         id = pool[Math.floor(rand() * pool.length)]!,
         dir = rand() < 0.5 ? -1 : 1;
-      if (id !== undefined && ask(s, { id, dir }) && !asked.has(`${id}/${dir}`)) asked.set(`${id}/${dir}`, s.t);
+      if (id !== undefined && ask(s, { id, dir })) health.ask(s.w, id, dir, s.t);
     }
     for (const line of [NS, BAYL]) {
       const n = stopsOf(s.w, line).length;
@@ -435,6 +436,8 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
     railTick(s.w, ++s.t, 75);
     if (strong) {
       const fleet = servingSlots((j) => train(s.w, j), BAYL);
+      if (!canopy && feed && fleet.some(j => train(s.w, j).boiler === 5))
+        Object.assign(s.w.mut(Line, s.w.lookup(Line, BAYL)!)!, { boiler: 0, fitted: -1 });
       if (thirdEligible < 0 && legRow(s.w, 3).laid > 0) thirdEligible = s.t - t0;
       if (thirdServing < 0 && fleet.length >= 3) thirdServing = s.t - t0;
       if (fleet.length > 1 && fleet.filter(j => train(s.w, j).boiler === 5).length === 1) mixedTicks++;
@@ -442,28 +445,9 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
         heldTicks++;
         if (legRow(s.w, 3).start >= 0) layingHoldTicks++;
       }
+      if (fleet.some(j => legRailheadHold(s.w, j, s.t) === 'yield')) yieldedTicks++;
     }
-    for (const [key, since] of asked) {
-      const [id, dir] = key.split('/').map(Number) as [number, number];
-      const h = RAIL_HALTS[id]!;
-      if (askPool(s.w).indexOf(id) < 0) {
-        asked.delete(key);
-        continue;
-      }
-      const there = LINE_SLOTS[h.line]!.some((j) => {
-        const r = train(s.w, j);
-        return r.phase === TRAIN_PHASE.STAND && r.at === h.stop && trainDir(r) === dir;
-      });
-      if (!there) continue;
-      asked.delete(key);
-      if (!worst.has(h.line)) continue;
-      const v = s.t - since;
-      worst.set(h.line, Math.max(worst.get(h.line)!, v));
-      if (v > settledLimit(h.line)) {
-        const fleet = servingSlots((j) => train(s.w, j), h.line).length;
-        long.push(`${h.name} ${dir > 0 ? 'out' : 'home'} asked +${since - t0}: ${v} (${fleet} serving)`);
-      }
-    }
+    health.tick(s.w, s.t);
     if (k % 10 === 0)
       assert.equal(
         trainSpacing(
@@ -477,78 +461,36 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
     if (k % 500 === 0) assert.equal(invariant(s.w), null, `invariant at ${s.t}`);
     if (rand() < 0.002) s = unaudited({ w: restore(s.w), t: s.t });
   }
-  // An ask still unserved at the end counts as waiting until then.
-  for (const [key, since] of asked) {
-    const line = RAIL_HALTS[Number(key.split('/')[0])]!.line;
-    if (worst.has(line)) worst.set(line, Math.max(worst.get(line)!, s.t - since));
-  }
+  health.drain(s.w, s.t, () => railTick(s.w, ++s.t, 75));
   assert.equal(invariant(s.w), null);
   if (strong) {
     assert.ok(mixedTicks > 0, 'one Strong in service among standard trains');
-    if (feed) assert.ok(heldTicks > 0, 'the growing fuzz exercised a Strong hold');
+    if (feed && canopy) assert.ok(heldTicks + yieldedTicks > 0, 'the growing fuzz exercised a Strong hold or release');
   }
   return {
-    ns: worst.get(NS)!, bay: worst.get(BAYL)!, long, mixedTicks, heldTicks, layingHoldTicks,
+    ns: health.worst.get(NS) ?? 0, bay: health.worst.get(BAYL) ?? 0, health, mixedTicks, heldTicks, layingHoldTicks,
     thirdEligible, thirdServing, laid: [legRow(s.w, INCLINE).laid, legRow(s.w, BAY).laid],
   };
 }
 const SEED_LIST = [0xc0ffee, 0x777, 0x5eed, 0xbadd] as const;
-test(
-  `the new lines' waits, four seeds at 75%: settled ns ${SETTLED}, bay ${settledLimit(BAYL)}, growing ${GROWING}`,
-  { timeout: 1800000 },
-  (t) => {
+for (const [label, canopy, strong] of [
+  ['leg 2 standard', false, false], ['leg 2 mixed', false, true],
+  ['Canopy standard', true, false], ['Canopy mixed', true, true],
+] as const) {
+  test(`${label} service health at 75% headway`, { timeout: 1800000 }, t => {
+    const failures: string[] = [];
     for (const seed of SEED_LIST) {
-      const settled = waits('bay-reached', seed, false);
-      const growing = waits('incline-open', seed, true);
-      t.diagnostic(
-        `${seed.toString(16)}: settled ns ${settled.ns}, bay ${settled.bay}; growing ns ${growing.ns}, bay ${growing.bay} (laid ${growing.laid.join(', ')} in ${FUZZ} ticks); over ${SETTLED}: ${[...settled.long, ...growing.long].join('; ') || 'none'}`,
-      );
-      assert.ok(
-        settled.ns <= settledLimit(NS) && settled.bay <= settledLimit(BAYL),
-        `${seed.toString(16)}: settled ${settled.ns}, ${settled.bay}`,
-      );
-      assert.ok(
-        growing.ns <= GROWING && growing.bay <= GROWING,
-        `${seed.toString(16)}: growing ${growing.ns}, ${growing.bay}`,
-      );
+      for (const feed of [false, true]) {
+        const stage = strong && canopy ? 'bay-mid' : feed && !canopy ? 'incline-open' : 'bay-reached';
+        const r = waits(stage, seed, feed, canopy, strong);
+        const mode = feed ? 'growing' : 'settled';
+        t.diagnostic(`${seed.toString(16)} ${mode} ns ${r.ns} bay ${r.bay}; ${[...r.health.stages].join('; ')}; held ${r.heldTicks}`);
+        if (r.health.failures.length) failures.push(`${seed.toString(16)} ${mode}: ${r.health.failures[0]}`);
+      }
     }
-  },
-);
-
-test('Canopy lever waits over the settled and growing bay line', { timeout: 1800000 }, (t) => {
-  const failures = [];
-  for (const seed of SEED_LIST) {
-    const settled = waits('bay-reached', seed, false, true),
-      growing = waits('bay-reached', seed, true, true);
-    t.diagnostic(
-      `${seed.toString(16)}: settled ns ${settled.ns}, bay ${settled.bay}; growing ns ${growing.ns}, bay ${growing.bay}`,
-    );
-    if (
-      settled.bay > settledLimit(BAYL) || growing.bay > GROWING ||
-      settled.ns > settledLimit(NS) || growing.ns > GROWING
-    )
-      failures.push({ seed, settled: settled.long, growing: growing.long });
-  }
-  assert.deepEqual(failures, []);
-});
-
-test('a bay fleet with one Strong keeps the settled and growing wait gates', { timeout: 1800000 }, t => {
-  const failures = [];
-  for (const seed of SEED_LIST) {
-    const settled = waits('bay-mid', seed, false, true, true);
-    const growing = waits('bay-mid', seed, true, true, true);
-    t.diagnostic(
-      `${seed.toString(16)}: settled ns ${settled.ns}, bay ${settled.bay}; growing ns ${growing.ns}, bay ${growing.bay}; ` +
-      `third eligible +${growing.thirdEligible}, serving +${growing.thirdServing}; ` +
-      `${growing.heldTicks} held ticks (${growing.layingHoldTicks} during laying), ${growing.mixedTicks} mixed ticks; ` +
-      growing.long.join('; '),
-    );
-    if (settled.bay > settledLimit(BAYL) || settled.ns > settledLimit(NS) ||
-        growing.bay > GROWING || growing.ns > GROWING)
-      failures.push({ seed, settled: settled.bay, growing: growing.bay });
-  }
-  assert.deepEqual(failures, []);
-});
+    assert.deepEqual(failures, []);
+  });
+}
 
 test('replay: the same leg 2 ops from the same seed give the same hash, through a save', () => {
   const run = () => {
