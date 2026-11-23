@@ -6,7 +6,8 @@ import { RAIL_GATES, ROW_LINE } from '../src/sim/railway-route.ts';
 import { rail, train } from '../src/sim/railway-rows.ts';
 import { laySection } from '../src/sim/railway-seed-legs.ts';
 import { TRAIN, TRAIN_PHASE, boilerCars, kitBills } from '../src/sim/railway-train.ts';
-import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
+import { stopsOf } from '../src/sim/railway-queries.ts';
+import { endBlocks, LINE_SLOTS } from '../src/sim/railway-trains.ts';
 import { legRailheadHold } from '../src/sim/railway-sys-route-kit.ts';
 import { act, advance, buildSeedWorld, invariant, restore, unaudited, type Seed } from './helpers/rail.ts';
 
@@ -52,6 +53,11 @@ test('Strong loads two bills, holds at Bell Rock and unloads at the next head', 
   assert.equal(legRailheadHold(idle.w, slot, deadline - 1), 'hold');
   assert.equal(legRailheadHold(idle.w, slot, deadline), 'on');
   until(idle, () => legRailheadHold(idle.w, slot, idle.t) === 'yield', 'pressure before timeout');
+  const signal = endBlocks(BAY, stopsOf(idle.w, BAY))[1].signal;
+  assert.ok(LINE_SLOTS[BAY]!.some(other => {
+    const follower = train(idle.w, other);
+    return other !== slot && follower.phase === TRAIN_PHASE.STAND && follower.at === -1 && follower.from === signal;
+  }), 'a following bay train is standing at the approach signal');
   assert.ok(idle.t < deadline);
   assert.equal(train(idle.w, slot).logs, 20);
   until(idle, () => train(idle.w, slot).phase === TRAIN_PHASE.RUN, 'Strong leaves under pressure');
