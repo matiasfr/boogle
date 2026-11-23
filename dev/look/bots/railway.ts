@@ -269,11 +269,25 @@ export async function seaToFarHead(
     'B4 Local views missing: line2View.sea, seaGateSolid, farHead, trestleLamps (job B required)',
   );
   check(R.line2Station(3).completion === 1, 'B4 starts with Q4 laid');
+  const { LINKS, ORIGIN, lineAt } = await import('../../../src/place/layout.ts');
+  const q5 = view().frames[4]!;
+  check(q5, 'Q5 frame exists');
+  async function stepOffAtQ5() {
+    const off = lineAt(LINKS[1]!.line, 274, { x: 0, z: 0, ux: 0, uz: 1 });
+    const x = off.x + ORIGIN.x;
+    const side = Math.sign(-off.uz * (q5.x - x) + off.ux * (q5.z - off.z)) || 1;
+    check(
+      await bot.straight(x - off.uz * side * 4.5, off.z + off.ux * side * 4.5, 0.6, 8000),
+      'stepped off the track beside Q5',
+    );
+  }
   if (from === 'sea') {
-    const { LINKS, ORIGIN, lineAt } = await import('../../../src/place/layout.ts');
     const deck = lineAt(LINKS[1]!.line, quarryFrom, { x: 0, z: 0, ux: 0, uz: 1 });
     await walk(deck.x + ORIGIN.x, deck.z, 1);
     await walkQuarry(quarryFrom, 274);
+    // The parked machine blocks the track ahead. Approach the ring from the Q5 apron, within the 24 m reach.
+    await stepOffAtQ5();
+    await walk(q5.x, q5.z);
     const sea = view().sea!;
     await hookTo(bot, 'sea-jamb');
     await walk(sea.x + 1.2, sea.z, 0.8);
@@ -287,9 +301,6 @@ export async function seaToFarHead(
     check(await bot.straight(frame.x, frame.z, 2.4, 15000), 'dropped from the jamb beside Q5');
   }
   check(R.line2SeaOpen(R.rw()), 'Q5 seed or jamb pull opens the sea gate');
-  const q5 = view().frames[4]!;
-  check(q5, 'Q5 frame exists');
-  const { LINKS, ORIGIN, lineAt } = await import('../../../src/place/layout.ts');
   {
     // Always use the laid track: the general terrain planner can falsely connect the gorge banks.
     const entry = from === 'sea' ? 274 : quarryFrom;
@@ -298,13 +309,7 @@ export async function seaToFarHead(
     const home = [CART_PHASE.HOME, CART_PHASE.REST, CART_PHASE.LOAD] as number[];
     await until(() => home.includes(R.cart(R.rw()).phase), 'the cart is off the quarry track');
     await walkQuarry(entry, 274);
-    const off = lineAt(LINKS[1]!.line, 274, { x: 0, z: 0, ux: 0, uz: 1 });
-    const x = off.x + ORIGIN.x;
-    const side = Math.sign(-off.uz * (q5.x - x) + off.ux * (q5.z - off.z)) || 1;
-    check(
-      await bot.straight(x - off.uz * side * 4.5, off.z + off.ux * side * 4.5, 0.6, 8000),
-      'stepped off the track beside Q5',
-    );
+    await stepOffAtQ5();
   }
   await walk(q5.x, q5.z);
   const job = () => R.line2Station(4);

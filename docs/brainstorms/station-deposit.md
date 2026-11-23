@@ -1,5 +1,5 @@
-> **Status: proposed (2026-11-10); the owner answered all five questions on 10 November, each as recommended, with the Drop control labelled in his words (below).** Light brainstorm (one agent, three lenses: play designer, systems architect,
-> creative director), designer-reviewed (below). Not built.
+> **Status: approved 2026-11-10. The owner answered all five questions on 10 November, each as recommended, with the Drop control labelled in his words (below).** Light brainstorm (one agent, three lenses: play designer, systems architect,
+> creative director), designer-reviewed (below). Build 1 is implemented on the halt-yard branch. Deployment is pending.
 
 # Spares at the station (station-deposit)
 
