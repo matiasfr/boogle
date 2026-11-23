@@ -28,6 +28,7 @@ import { splitRockToCrossing } from './railway-works.ts';
 export { splitRockToCrossing };
 import { LINE2_BOILER, RAILS } from '../../../src/sim/railway-line2-layout.ts';
 import { ISLAND_C, axisPoint } from '../../../src/place/home-station.ts';
+import { YOKE_VERB } from '../../../src/entities/railway/reward-data.ts';
 import { toWorld } from '../../../src/place/layout.ts';
 
 /** Home's apron, off the buffers between the roads (where the forge rack stood until 17 November): the station's hub
@@ -1712,6 +1713,18 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       mark(`${beat} (the cart unloaded at the rack)`);
     };
     const walkQuarry = (from: number, to: number) => walkQuarryRail(bot, from, to);
+    const friendTakesYoke = coop && query.get('yokeTaker') === 'friend';
+    const openYoke = async () => {
+      await until(() => read().reward.tools.yokeStand.available, 'Q1 releases the yoke', 1800000);
+      const stand = read().reward.tools.yokeStand;
+      await walk(stand.x, stand.z, 1.2);
+      const verb = new RegExp('^' + YOKE_VERB.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$');
+      require(await bot.use(stand.x, stand.z, 'take the rail yoke', verb), 'yoke offered');
+      require(await bot.work(() => R.rail(R.rw()).yoke && read().pending === 0, 5000, 380), 'yoke accepted');
+      await dismiss('rail yoke reveal');
+      require(R.capacityOf(R.rw(), RAILS) === 16, 'every back holds 16 rails');
+      await checkpoint('yoke');
+    };
     if (second) {
       // The friend stays in the room through line two; the leader plays it. Both peers report hashes per beat.
       // The leader opens the pack (at the forge, or after the lever under botOrder=legacy): the friend's back carries
@@ -1726,6 +1739,20 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         await checkpoint('pack');
       };
       if (!legacy) await friendPack();
+      if (friendTakesYoke) await openYoke();
+      else {
+        await until(() => R.rail(R.rw()).yoke, 'leader takes the rail yoke', 1800000);
+        await until(() => shown('yoke') && !read().reward.showing, "friend's yoke card shown and put away", 30000);
+        require(read().reward.arrival.cards.filter((key) => key === 'yoke').length ===
+          1, 'one yoke card for the friend');
+        friendOnce.push('yoke');
+        require(R.capacityOf(R.rw(), RAILS) === 16, "the friend's back holds 16 rails");
+        await checkpoint('yoke');
+      }
+      if (stopAt === 'Q3 laid') {
+        await until(() => R.line2Station(2).completion === 1, 'leader lays Q3', 1800000);
+        await checkpoint('Q3 laid');
+      }
       await until(() => R.line2GateOpen(R.rw()), 'leader opens the quarry gate', 1800000);
       require(hookSeen.size >= 5, `friend saw ${hookSeen.size} distinct hook ring ids`);
       require(remoteCableSeen, 'friend saw a remote hook cable');
@@ -1885,6 +1912,12 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await deliver(0, q1);
     await until(() => R.line2Station(0).start >= 0, 'Q1 funded from logs and rails');
     await checkpoint('Q1 funded');
+    if (friendTakesYoke) {
+      await until(() => R.rail(R.rw()).yoke, 'friend takes the rail yoke', 1800000);
+      await friendCard('yoke', 'rail yoke');
+      require(R.capacityOf(R.rw(), RAILS) === 16, 'every back holds 16 rails');
+      await checkpoint('yoke');
+    } else await openYoke();
     await until(() => R.line2Station(0).completion === 1, 'Q1 laid once', LAYING_MS);
     await checkpoint('Q1 laid');
     // Q2 and Q3: logs from the depot rack by the frame, rails from the forge by hand.

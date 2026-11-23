@@ -1,4 +1,4 @@
-> **Status: steps 1 and 2 on main (#2300, 2026-11-19, world `v64`); step 3 built on `claude/rail-yoke-back` (2026-11-19); steps 4 to 6 not built.** Backlog row (P3): "The rails' own capacity upgrade: rails start at 8 on
+> **Status: steps 1–3 on main (#2300, #2321). Steps 4–6 implemented on `codex/rail-yoke-rack`; verification below.** Backlog row (P3): "The rails' own capacity upgrade: rails start at 8 on
 > everyone's back, and a later upgrade raises them". Brief: [rails-capacity-upgrade](../brainstorms/rails-capacity-upgrade.md).
 > Decision: [rewards, 18 November](../decisions-rewards.md#d-2026-11-18-decisions-page-rewards). Base: `origin/main`
 > `99207c548`, world `v62`. Steps 1 and 2 change rules, wire, save and seeds (one `WORLD_NS` bump, independent review).
@@ -386,7 +386,8 @@ disposable production room.
   - Update place.md's Q1 and forge-reward paragraphs.
   - *Risk: low to medium (the shared crew global). Self-review against the restore rules.*
 
-- [ ] **6. The bot takes it** (dev only).
+- [x] **6. The bot takes it** (dev only).
+  - The bot walks to the block after Q1 funding, uses the offered verb, dismisses the card and checks 16 rails. The second player checks their card and capacity. A two-player Q3 stop and `yokeTaker=friend` exercise the other pickup order. Node canonical runs took 1:21 / 0:51 for Q2 / Q3 solo and 0:45 / 1:07 with two players. All five alternate orders finished in the solo run. These are rule-run times.
   - `dev/look/bots/railway.ts`, after `checkpoint('Q1 funded')` (`:1886`): an `openYoke()` like `openPack()`:
     - walk to `read().reward.tools.yokeStand`;
     - `require(await bot.use(x, z, 'take the rail yoke', new RegExp('^' + escape(YOKE_VERB))))`;
