@@ -7,11 +7,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { World } from '../src/ecs/index.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
-import { Account, Forge, Leg, LegYard, Line, Rail, Route } from '../src/sim/railway-components.ts';
+import { Account, Forge, Leg, LegYard, Line, Rail, Route, Train } from '../src/sim/railway-components.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
 import { LINE2, RAIL_HALTS, RAIL_LINES } from '../src/sim/railway-lines.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, ROW_LINE, legFrame, legRack } from '../src/sim/railway-route.ts';
-import { fleetOf, lineStagesOf, trainDir, trainPassesBy } from '../src/sim/railway-train.ts';
+import { TRAIN, TRAIN_PHASE, fleetOf, lineStagesOf, trainDir, trainPassesBy } from '../src/sim/railway-train.ts';
 import { LINE_SLOTS, servingSlots, trainSpacing } from '../src/sim/railway-trains.ts';
 import { railTick } from '../src/sim/railway-systems.ts';
 import { account, forge, rail, train, trains } from '../src/sim/railway-rows.ts';
@@ -491,6 +491,50 @@ for (const [label, canopy, strong] of [
     assert.deepEqual(failures, []);
   });
 }
+
+// Matched random demand on the same mixed-fleet save. The control keeps the original
+// Strong hold at Bell Rock for the departure tick only, restoring its dwell clock afterward.
+test('mixed bay riders: early departures and the delay to the second full rack', t => {
+  const base = unaudited(copy('bay-mid')), slot = LINE_SLOTS[BAYL]![0]!;
+  Object.assign(base.w.mut(Line, base.w.lookup(Line, BAYL)!)!, { boiler: 5, fitted: base.t });
+  const baseFit = base.t;
+  while (train(base.w, slot).logs < 40 || train(base.w, slot).rails < 40) {
+    assert.ok(base.t - baseFit < 8000);
+    advance(base, 1);
+  }
+  Object.assign(base.w.mut(Line, base.w.lookup(Line, BAYL)!)!, { boiler: 0, fitted: -1 });
+  feedSection(base, BAY);
+  assert.ok(act(base, 'a', 'rail.gate', { id: CANOPY }));
+  const halts = RAIL_HALTS.flatMap((h,id) => h.line === BAYL && h.stop <= 2 ? [id] : []);
+  function trial(seed: number, retain: boolean) {
+    const s = unaudited({ w: restore(base.w), t: base.t }), rand = mulberry32(seed);
+    let departures = 0;
+    for (let k = 0; k < 10000; k++) {
+      if (rand() < 0.05) ask(s, { id: halts[Math.floor(rand() * halts.length)], dir: rand() < 0.5 ? -1 : 1 });
+      if (legRow(s.w,3).laid === 0) stock(s, 3);
+      else if (rail(s.w).depot >= 20 && rail(s.w).depotRails >= 20) return { departures, delivery: k };
+      const r = train(s.w,slot), depart = r.depart;
+      const yielding = legRailheadHold(s.w,slot,s.t + 1) === 'yield' && legRow(s.w,3).laid === 0;
+      const delay = retain && yielding && s.t + 1 >= depart + TRAIN.dwellTicks;
+      const id = s.w.lookup(Train,slot)!;
+      if (delay) s.w.mut(Train,id)!.depart = s.t + 2 - TRAIN.dwellTicks;
+      railTick(s.w, ++s.t, 75);
+      const after = train(s.w,slot);
+      if (delay && after.phase === TRAIN_PHASE.STAND && after.at === 2) s.w.mut(Train,id)!.depart = depart;
+      if (yielding && after.phase === TRAIN_PHASE.RUN && after.track === 1 && after.legKit) departures++;
+      assert.equal(trainSpacing(j => train(s.w,j), l => stopsOf(s.w,l), s.t), null);
+    }
+    assert.fail('second rack never filled');
+  }
+  let released = 0;
+  for (const seed of SEED_LIST) {
+    const live = trial(seed,false), control = trial(seed,true);
+    released += live.departures;
+    assert.equal(control.departures, 0);
+    t.diagnostic(`${seed.toString(16)} releases ${live.departures}, second bill ${live.delivery} vs ${control.delivery} ticks, extra ${live.delivery-control.delivery}`);
+  }
+  assert.ok(released > 0);
+});
 
 test('replay: the same leg 2 ops from the same seed give the same hash, through a save', () => {
   const run = () => {

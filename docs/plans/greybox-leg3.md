@@ -301,7 +301,7 @@ rides with it. Steps 6 and 7 ship on their own after it.
       The post is beyond the approach platform's end. Its deck collider is step 6's proof.
       The collider regression found 35 samples with insufficient overhead room beneath a newly laid bay deck.
       The nine upper-bed chords moved forward from step 5 and the same check now finds zero.
-- [ ] **2. The rules and the bump (L; HOTBOX).** `src/sim/railway-lines.ts`: `builtLine` over every built leg of a row;
+- [x] **2. The rules and the bump (L; HOTBOX).** `src/sim/railway-lines.ts`: `builtLine` over every built leg of a row;
       the fleet list; the new shed row(s); the load checks over every built leg. `src/sim/railway-train.ts`: `fleetOf`
       on the list. `railway-queries-route.ts`: nothing new beyond the list's reads (the roles derive from `legBuilt`).
       `railway-check-route.ts`: the heads' prefix and fleet checks. `src/world/namespace.ts`: the bump and a dated line.
@@ -465,7 +465,7 @@ rides with it. Steps 6 and 7 ship on their own after it.
       1,545 ticks on `badd` at Canopy head 2 homeward (asked +10,869, four serving).
       All standard growing waits passed. Leg 2 reproduced every value in the table above.
       The step 3 retry table records both fleets on the new ladder.
-- [ ] **3. The hold (M; HOTBOX). For garage step 4.** `src/sim/railway-train.ts`: rows 4 and 5, `BOILER_CARS`,
+- [x] **3. The hold (M; HOTBOX). For garage step 4.** `src/sim/railway-train.ts`: rows 4 and 5, `BOILER_CARS`,
       `boilerCars`, `kitBills`, `TRAIN.railheadHoldTicks`. `railway-queries-route.ts`: `legKitCap`'s `bills`.
       `railway-sys-route-kit.ts`: `legKitLoad` and `yardLoad` by bills; `legRailheadHold`. `railway-sys-trains.ts`:
       the hold in `standing`. `railway-check-steel.ts` and the train load check: the allowed rows and the cargo bound.
@@ -553,6 +553,19 @@ rides with it. Steps 6 and 7 ship on their own after it.
       | bay-reached | 2326 | 2505 | 2325 | 2504 |
 
       These scripted feeds do not generate the random platform demand of the service fuzz. The stack health failure above stops step 3 before the visual and stage work.
+
+      **23 November, final service sweep.** Four seeds per mode at 75%, 20,000 ticks. Standard growing stack passed after counting joins only after half a cycle at request time. Leg 2 and Canopy passed in both fleets. Strong left early once on each random-demand seed. Second-bill delivery (live / retained) was 2148/2148, 1822/2032, 2032/2032 and 2000/2033 ticks for c0ffee, 777, 5eed and badd. The quiet timeout still holds. Live traffic released Strong 610 ticks early.
+
+      Completed waits above budget in the mixed stack, grouped by seed (wait/bound, ratio):
+
+      - growing 777: 1474/1442 (1.022x), 1451/1442 (1.006x), 1457/1442 (1.010x), 1548/1442 (1.074x), 1597/1442 (1.107x), 1757/1442 (1.218x), 1678/1442 (1.164x), 1720/1442 (1.193x), 1715/1442 (1.189x), 1754/1442 (1.216x), 1907/1442 (1.322x), 1857/1442 (1.288x), 1585/1442 (1.099x), 1486/1442 (1.031x), 1918/1442 (1.330x), 1939/1442 (1.345x), 1680/1442 (1.165x), 1541/1442 (1.069x), 1588/1442 (1.101x).
+      - growing 5eed: 1620/1442 (1.123x).
+      - growing badd: 1571/1442 (1.089x), 1458/1442 (1.011x), 1531/1442 (1.062x), 1443/1442 (1.001x), 1704/1442 (1.182x), 1545/1442 (1.071x), 1447/1442 (1.003x), 1468/1442 (1.018x), 1547/1442 (1.073x), 1524/1442 (1.057x), 1614/1442 (1.119x), 1498/1442 (1.039x), 1596/1442 (1.107x), 1708/1442 (1.184x).
+      - settled c0ffee: 1518/1442 (1.053x).
+      - settled 777: 1568/1442 (1.087x).
+      - settled 5eed: 1463/1442 (1.015x), 1463/1442 (1.015x), 1675/1442 (1.162x), 1581/1442 (1.096x), 1452/1442 (1.007x), 1660/1442 (1.151x).
+
+      Line 2 boiler handover at both 0% and 75%: b011e7 waited 1155/988 (1.169x) and 1159/988 (1.173x); 5eed25 waited 995/988 (1.007x) and 1043/988 (1.056x). All were served. The maturity correction changes the test budget only.
 - [ ] **4. Seeds and stages (S; HOTBOX).** `src/sim/railway-seed-legs.ts` from `bay-reached`, accepted ops only:
       `canopy-open` (barrier open, section 1's kit on Bell Rock's rack), `canopy-mid` (section 1 laid, section 2's kit
       aboard a bay train), `canopy-reached` (leg 3 laid, cloth not taken). `SEED_STAGES` and its golden shard;

@@ -1030,7 +1030,7 @@ export function routeRulesShard(shard: number) {
   }
   /** The lever waits the WAIT_BOUND way (test/railway-trains.test.ts): asks at 5% a tick from askPool, riders' asks, junk calls and
    * restores, nothing fed; line 2's served waits, the worst and the mean. Spacing checked as it runs. */
-  function leverWaits(base: Seed, seed: number, headPct: number, ticks: number) {
+  function leverWaits(base: Seed, seed: number, headPct: number, ticks: number, mixed?: "growing" | "settled") {
     let s = unaudited({ w: restore(base.w), t: base.t });
     const health = new ServiceHealth([LINE2], s.w);
     const rand = mulberry32(seed),
@@ -1045,7 +1045,9 @@ export function routeRulesShard(shard: number) {
         );
       waits.push(v);
     };
+    let mixedTicks = 0;
     for (let k = 0; k < ticks; k++) {
+      if (mixed === "growing" && k % 30 === 0) stock(s);
       const n2 = stopsOf(s.w, LINE2).length;
       if (rand() < 0.05) {
         const id = askPool(s.w)[Math.floor(rand() * askPool(s.w).length)]!,
@@ -1065,6 +1067,15 @@ export function routeRulesShard(shard: number) {
         ask(s, { id: Math.floor(rand() * 12) - 1, dir: rand() < 0.5 ? -1 : 2, train: tr } as never);
       }
       railTick(s.w, ++s.t, headPct);
+      if (mixed) {
+        // As in the installation fuzz, keep one train standard at the home fitting point.
+        const slot = LINE_SLOTS[LINE2]![0]!;
+        if (train(s.w, slot).boiler === 2) {
+          assert.equal(train(s.w, slot).from, stopsOf(s.w, LINE2)[0]);
+          s.w.mut(Train, s.w.lookup(Train, slot)!)!.boiler = 1;
+        }
+        if (servingSlots(j => train(s.w,j), LINE2).some(j => train(s.w,j).boiler === 2)) mixedTicks++;
+      }
       health.tick(s.w, s.t);
       for (const [key, since] of asked) {
         const [id, dir] = key.split('/').map(Number) as [number, number];
@@ -1100,7 +1111,7 @@ export function routeRulesShard(shard: number) {
     health.drain(s.w, s.t, () => railTick(s.w, ++s.t, headPct));
     assert.equal(invariant(s.w), null);
     return {
-      health, long,
+      health, long, mixedTicks, laid: legRow(s.w, STACK).laid,
       over1050: waits.filter((v) => v > 1050).length,
       worst: Math.max(0, ...waits),
       mean: Math.round(waits.reduce((a, b) => a + b, 0) / Math.max(1, waits.length)),
@@ -1109,6 +1120,22 @@ export function routeRulesShard(shard: number) {
     };
   }
   const SEEDS = [0xc0ffee, 0x777, 0x5eed, 0xbadd] as const;
+  test('mixed stack service health, growing and settled at 75%', t => {
+    const errors: string[] = [];
+    for (const mode of ['growing', 'settled'] as const) {
+      const base = unaudited(copy(buildSeedWorld('steel-home')));
+      if (mode === 'settled') while (legRow(base.w, STACK).laid < N) feedSection(base);
+      assert.equal(act(base, 'a', 'rail.install', { line: LINE2, part: 2, revision: 1 }), 1);
+      for (const seed of SEEDS) {
+        const r = leverWaits(base, seed, 75, FUZZ, mode);
+        assert.ok(r.mixedTicks > 0);
+        if (ROUTE_GATES) assert.equal(r.laid, N);
+        t.diagnostic(`${mode} ${seed.toString(16)} mixed ${r.mixedTicks}, worst served ${r.health.worst.get(LINE2)}`);
+        errors.push(...r.health.failures.map(f => `${mode} ${seed.toString(16)}: ${f}`));
+      }
+    }
+    assert.deepEqual(errors, []);
+  });
   const SETTLED_FUZZ = routeTicks();
 
   test('gate 9, stage 0: the leg open and nobody feeding, four seeds at 75%: service health; the mean and the share over 1,050 printed', (t) => {
