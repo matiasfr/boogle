@@ -643,7 +643,7 @@ export const NODES: readonly LoopNode[] = [
     reached: { mark: 'yoke gained' },
     stops: [],
     requires: [dec('Q1', 'rules', `${RULES_LINE2} yoke: Q1's bill in (line2YokeReady: QJob.start)`)],
-    cue: [unbuilt('the yoke on its block beside the forge rail rack', 'docs/plans/rail-yoke.md, step 4')],
+    cue: [onMain('world', 'the yoke on its block beside the forge rail rack', 'src/entities/railway/forge-rewards.ts')],
     optional: true,
   },
   quarryStation('Q2', [dec('Q1', 'rules', `${RULES_QUERIES} qActive()`)]),

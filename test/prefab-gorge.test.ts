@@ -57,6 +57,7 @@ test('Gorge collider and placement values match the old massing', async (t) => {
   builders.set('railway.halt-lever', () => new THREE.Group());
   builders.set('railway.halt-attachment', () => new THREE.Group());
   builders.set('railway.till-parts', () => new THREE.Group());
+  builders.set('railway.yoke-block', () => new THREE.Group());
   builders.set('railway.loader-parts', () => new THREE.Group());
   builders.set('roundhouse.bay', () => new THREE.Group());
   builders.set('roundhouse.table', () => new THREE.Group());

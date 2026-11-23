@@ -1312,6 +1312,7 @@ export async function createRailwayLine2(
         frame.setTag(
           now && k === active && job.start < 0 && !owed,
           waiting ? `Pull the ${spec.gate === 'quarry' ? 'lever' : 'switch'} to start` : kit,
+          k === 0 && job.start < 0 ? [{ kind: 'yoke', ready: false }] : [],
         );
         // Station 7's rack gives off the works' gold motes while the frame still wants the logs lying on it (the
         // shelf does the same for rails, shelf-view.ts). Off under reduced motion.
@@ -1434,7 +1435,7 @@ export async function createRailwayLine2(
         completed = line2Completed(w),
         quarryRoute = line2Routes(completed).quarry;
       const out: Interactable[] = [...seaGate.targets(p, stock.sea), ...glideDevice.targets(p)];
-      out.push(...boiler.targets());
+      out.push(...boiler.targets(), ...rewards.yokeTargets());
       // Step 3's second half, built off: the rack answers a press with a reason while its rails go by train and the
       // boiler waits. The words are the owner's (RACK_WAIT_REASON).
       if (

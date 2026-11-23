@@ -344,7 +344,8 @@ disposable production room.
     from the side). **Not verified:** a remote player's avatar wearing the yoke in a two-page look, motion while running
     or riding, phone width; not tested on a device.
 
-- [ ] **4. The yoke waits at the rack, and Q1's board shows it** (Local, plus one placed prop).
+- [x] **4. The yoke waits at the rack, and Q1's board shows it** (Local, plus one placed prop).
+  - Built on `codex/rail-yoke-rack`. Opened `.look/yoke-board-still.png` (16/16 logs, 5/6 rails, two-hook outline) and `.look/yoke-wait-still.png` (glimmering iron on the block across the paid frame). Level check reported 21 reports, the yoke reachable, and 5,244 grounding placements with zero problems. The prefab owns the interaction. Its reach is 3.4 m. Both objects use point scoring for the facing pick.
   - `reward-glyph.ts`: the `'yoke'` kind. `stations.ts`'s `RewardMark` kind widens to include it.
   - `line2-view.ts:1310`: Q1's marks.
   - `forge-rewards.ts`: the yoke's block and model at `PROPS.yoke`, shown once `line2YokeReady` and `!rail.yoke`, with

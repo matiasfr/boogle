@@ -15,6 +15,7 @@ import { H } from '../../src/place/terrain.ts';
 import { SEA } from '../../src/constants.ts';
 import { TREE_SOURCES } from '../../src/place/tree-sources.ts';
 import { RECOVERY_RACK } from '../../src/sim/railway-supply.ts';
+import { PROPS } from '../../src/place/home-station.ts';
 import { boxFootprint, sampleFootprint, type Footprint } from '../../src/place/support.ts';
 import { merged } from '../../src/render/part-geometry.ts';
 import { T1_CRATE_PARTS } from '../../src/render/t1-reward-parts.ts';
@@ -357,6 +358,13 @@ export async function checkPropGrounding() {
       supports: ['terrain'],
     });
   }
+  const block = PROPS.yoke;
+  const bx = ORIGIN.x + block.x,
+    by = H(bx, block.z);
+  rows.push({
+    ...measure('forge/yoke-block', boxFootprint(bx, block.z, 2, 1.2, block.yaw), by, by + 0.7),
+    supports: ['terrain'],
+  });
   crate.dispose();
   pict.geometry.dispose();
   pict.dispose();

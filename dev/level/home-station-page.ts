@@ -33,7 +33,7 @@ async function part() {
   const home = await import('../../src/place/home-station.ts');
   const { consistOf } = await import('../../src/entities/railway/cars.ts');
   const { TRAIN_STOPS } = await import('../../src/sim/railway-train.ts');
-  const { LINE2_AXE, LINE2_FORGE, LINE2_BOILER, LINE2_PACK, LINE2_STATIONS } =
+  const { LINE2_AXE, LINE2_FORGE, LINE2_BOILER, LINE2_PACK, LINE2_STATIONS, LINE2_YOKE } =
     await import('../../src/sim/railway-line2-layout.ts');
   const { WAGON_S, WORKS_SEAMS } = await import('../../src/sim/railway-works-layout.ts');
   const { RAIL_LINES } = await import('../../src/sim/railway-lines.ts');
@@ -91,6 +91,7 @@ async function part() {
     forgeRack: pt(cm({ x: LINE2_FORGE.rackX, z: LINE2_FORGE.rackZ })),
     pedestal: pt(cm(LINE2_BOILER)),
     chest: pt(cm(LINE2_PACK)),
+    yoke: pt(cm(LINE2_YOKE)),
     axe: pt(cm(LINE2_AXE)),
     shelf: pt(layout.SHELF),
     cartStop: pt(home.cartRoadAt(CART_ROAD.forgeCm / 100, LINES)),

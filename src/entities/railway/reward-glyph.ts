@@ -4,7 +4,7 @@
 // mark (stock-sign.ts), once it waits to be claimed. Canvas 2D only; no three.js. Local.
 import { GOLD_ROPE } from '../../render/gold-rope.ts';
 
-export type RewardKind = 'pack' | 'axe';
+export type RewardKind = 'pack' | 'axe' | 'yoke';
 type G = CanvasRenderingContext2D;
 type Shape = { path: (g: G) => void; fill: string };
 
@@ -33,6 +33,13 @@ const PACK: Shape[] = [
     },
     fill: STRAP,
   })),
+];
+const YOKE: Shape[] = [
+  { path: rect(0, -0.24, 0.84, 0.1), fill: STEEL },
+  ...[-1, 1].flatMap((side) => [
+    { path: rect(side * 0.36, 0, 0.1, 0.54), fill: STEEL },
+    { path: rect(side * 0.29, 0.24, 0.24, 0.1), fill: STEEL },
+  ]),
 ];
 /** The proper axe, leaning: a haft and a broad head with a curved edge. */
 const AXE: Shape[] = [
@@ -79,7 +86,7 @@ export function drawRewardGlyph(g: G, kind: RewardKind, x: number, y: number, si
   const s = size * (ready ? 0.78 : 0.9);
   g.scale(s, s);
   g.lineJoin = 'round';
-  const shapes = kind === 'pack' ? PACK : AXE;
+  const shapes = { pack: PACK, axe: AXE, yoke: YOKE }[kind];
   g.strokeStyle = INK;
   g.lineWidth = (ready ? 0.045 : 0.07) * 2;
   for (const shape of shapes) {

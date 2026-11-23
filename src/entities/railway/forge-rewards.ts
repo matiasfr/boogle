@@ -17,12 +17,28 @@ import { merged } from '../../render/part-geometry.ts';
 import { flat } from '../../render/flat.ts';
 import { softGlow } from '../../place/look.ts';
 import { H } from '../../place/terrain.ts';
-import { packParts } from '../../render/gear-models.ts';
+import { packParts, yokeMesh } from '../../render/gear-models.ts';
+import { instantiate } from '../../prefab/instantiate.ts';
+import { compiled } from '../../prefab/catalogue.ts';
+import { loadLevelArtifact } from '../../prefab/validate.ts';
+import kit from '../../../content/built/levels/railway-yoke.json' with { type: 'json' };
+import { PROPS } from '../../place/home-station.ts';
+import { me } from '../../player/state.ts';
+import { YOKE_VERB } from './reward-data.ts';
 import { makeAxeModel } from '../../render/axe-models.ts';
-import { LINE2_AXE, LINE2_BOILER, LINE2_FORGE, LINE2_PACK } from '../../sim/railway-line2-layout.ts';
+import { LINE2_AXE, LINE2_BOILER, LINE2_FORGE, LINE2_PACK, LINE2_YOKE } from '../../sim/railway-line2-layout.ts';
 import { LINE1_HARDWOODS } from '../../sim/railway-line-layout.ts';
 import { boiler, forge, rail, works, type ReadWorld } from '../../sim/railway-rows.ts';
-import { line2PackReady } from '../../sim/railway-queries-line2.ts';
+import { line2PackReady, line2YokeReady } from '../../sim/railway-queries-line2.ts';
+export function yokeAt() {
+  const x = LINE2_YOKE.x / 100,
+    z = LINE2_YOKE.z / 100;
+  return new THREE.Vector3(x, H(x, z), z);
+}
+export const yokeAvailable = (adapter: RailwayAdapter) => {
+  const w = adapter.read.world();
+  return adapter.read.ready() && line2YokeReady(w) && !rail(w).yoke;
+};
 
 /** The errand's timings, in seconds: the hammering at the pack, a leg that counts as arrived (the walk to the offcut
  * gets longer, as the nearest stroller can start across the yard), the whole errand's cap, and how long the pack takes
@@ -159,6 +175,38 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
   pack.add(glimmerMesh);
   pack.visible = false;
   owner.add(pack);
+  const base = yokeAt();
+  const record = loadLevelArtifact(kit, compiled.prefabs).placements[0]!;
+  const yoke = instantiate(
+    record.prefab,
+    { ...record, pos: [base.x, base.y, base.z], rot: [PROPS.yoke.yaw, 0, 0] },
+    {
+      owner,
+      handlers: {
+        'railway.take-yoke': () => {
+          const p = me.body?.interpolatedPosition;
+          if (
+            !p ||
+            !yokeAvailable(adapter) ||
+            Math.hypot(p.x - base.x, p.z - base.z) > LINE2_YOKE.reach / 100 ||
+            Math.abs(p.y - base.y) > 3
+          )
+            return [];
+          // The rack and block are point targets. Reach is checked above; pick radius would bias every facing toward the yoke.
+          return [{ id: 'railway-yoke', at: target, verb: YOKE_VERB, run: () => void adapter.takeYoke() }];
+        },
+      },
+    },
+  );
+  const target: THREE.Vector3 = yoke.attach('pickup').at;
+  const iron = yokeMesh();
+  iron.geometry.computeBoundingBox();
+  const bounds = iron.geometry.boundingBox!;
+  iron.scale.setScalar(2);
+  iron.position.set(0, 0.7 - 2 * bounds.min.y, -(bounds.min.z + bounds.max.z));
+  const halo = glimmerMesh.clone();
+  halo.position.set(0, 0, -mid);
+  yoke.root.add(iron, halo);
   /** Where the card flies from and the prompt points: the pack's head. */
   const head = at.clone().add(new THREE.Vector3(0, PACK_HEAD_Y, 0));
 
@@ -322,6 +370,7 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
     },
     axeArrives,
     /** The pack's spot on the ground, and its head (the prompt's point and the card's `from`). */
+    yokeTargets: yoke.targets,
     packAt: () => at,
     packTarget: () => head,
     update(dt: number) {
@@ -346,7 +395,8 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
       const ready = line2PackReady(w),
         claimed = rail(w).pack;
       pack.visible = ready && !claimed;
-      if (pack.visible) glimmer.strength.value = 0.4 + 0.06 * Math.sin(performance.now() * 0.0025);
+      yoke.setEnabled(yokeAvailable(adapter));
+      if (pack.visible || yoke.root.visible) glimmer.strength.value = 0.4 + 0.06 * Math.sin(performance.now() * 0.0025);
       // A crossing counts once the view is the confirmed world (nothing of yours pending): never on prediction.
       if (rd.pending() === 0) {
         if (ready && !readyShown && !claimed) start();
