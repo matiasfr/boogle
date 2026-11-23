@@ -1,5 +1,5 @@
 {
-  "worldNs": "v65",
+  "worldNs": "v66",
   "components": [
     {
       "kind": "rail",
@@ -356,6 +356,7 @@
         ["v0", "int"],
         ["dest", "int"],
         ["turn", "bool"],
+        ["serviceStand", "bool"],
         ["origin", "int"],
         ["logs", "int"],
         ["rails", "int"],

@@ -24,7 +24,7 @@ import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
 import { RAIL_LEGS, legRack } from './railway-route.ts';
 import { RAILS } from './railway-line2-layout.ts';
 import { steelNeed, stopsOf } from './railway-queries.ts';
-import { endHoldPressure } from './railway-trains.ts';
+import { platformHoldPressure } from './railway-trains.ts';
 import { line as lineRow, train } from './railway-rows.ts';
 import { TRAIN, TRAIN_PHASE, kitBills, type RailTrain, type ServiceStop } from './railway-train.ts';
 import { Account, Aperture, Forge, Leg, LegYard, Pile, Rail, Train } from './railway-components.ts';
@@ -263,7 +263,7 @@ export function legRailheadHold(w: World, slot: number, tick: number): 'hold' | 
     if (leg.line !== line || g.laid + 1 >= leg.sections.length || r.at !== legKitDrop(w, line, k)) continue;
     if (legKitFits(w, line, k, r)) continue;
     if (g.start >= 0 || tick < r.depart + TRAIN.dwellTicks + TRAIN.railheadHoldTicks) {
-      return endHoldPressure(j => train(w, j), line, stopsOf(w, line), slot, r.at, lineRow(w, line).req, tick)
+      return platformHoldPressure(j => train(w, j), line, stopsOf(w, line), slot, r.at, lineRow(w, line).req, tick)
         ? 'yield' : 'hold';
     }
   }

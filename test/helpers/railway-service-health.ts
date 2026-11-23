@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import type { World } from '../../src/ecs/index.ts';
 import { RAIL_HALTS } from '../../src/sim/railway-lines.ts';
-import { stopsOf } from '../../src/sim/railway-queries.ts';
-import { train } from '../../src/sim/railway-rows.ts';
+import { footingsOwed, stopsOf } from '../../src/sim/railway-queries.ts';
+import { line, train } from '../../src/sim/railway-rows.ts';
 import { TRAIN, TRAIN_PHASE, trainDir, trainPassesBy } from '../../src/sim/railway-train.ts';
-import { cycleTicks, servingSlots, trainPose } from '../../src/sim/railway-trains.ts';
+import { balancedHold, cycleTicks, platformHoldPressure, servingSlots, trainGaps, trainPose, trainServes } from '../../src/sim/railway-trains.ts';
 
 // A missed braking window can cost one headway. Allow another for uneven demand,
 // plus one boarding dwell per open intermediate platform on the trip.
@@ -61,11 +61,24 @@ export class ServiceHealth {
       p.bound = Math.max(p.bound, budget.bound);
       const wait = tick - p.since;
       if (wait === p.bound + 1) {
+        const rows = (slot: number) => train(w, slot);
+        const req = line(w, h.line).req;
+        const pick = trainServes(rows, h.line, stops, h.stop, p.dir, tick);
         const poses = fleet.map(j => {
           const r = train(w, j);
-          return `#${j} ${Math.round(trainPose(r,h.line,stops,tick).s)}cm track${r.track} to${r.to} phase${r.phase}`;
+          const gap = trainGaps(rows, h.line, stops, j, tick);
+          let state = 'running';
+          if (r.phase === TRAIN_PHASE.STAND) {
+            if (r.at < 0) state = 'waiting at signal';
+            else if (tick < r.depart + TRAIN.dwellTicks) state = 'boarding dwell';
+            else if (platformHoldPressure(rows, h.line, stops, j, r.at, req, tick)) state = 'spacing yields';
+            else if (balancedHold({ row: rows, line: k => line(w, k), headExempt: slot => rows(slot).wagon && footingsOwed(w, h.line) },
+              h.line, stops, j, r.at, tick)) state = 'spacing hold';
+            else state = 'standing, spacing off';
+          }
+          return `#${j} ${trainPose(r, h.line, stops, tick).s}cm track${r.track} to${r.to} ${state} gaps ${gap?.ahead}/${gap?.behind}`;
         });
-        this.failures.push(`${h.name}/${p.dir} asked ${p.since}, tick ${tick}, bound ${p.bound}; ${poses.join(', ')}`);
+        this.failures.push(`${h.name}/${p.dir} asked ${p.since}, tick ${tick}, bound ${p.bound}, assigned #${pick}; ${poses.join(', ')}`);
       }
       if (this.there(w, p.id, p.dir)) {
         if (wait > p.bound) this.failures.push(`${h.name}/${p.dir} served ${tick}, waited ${wait} (bound ${p.bound})`);

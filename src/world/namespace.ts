@@ -138,7 +138,8 @@
 // v65 (2026-11-19): halt yards (docs/plans/halt-yard.md): `HaltYard` rows and `rail.haltPut`/`rail.haltTake`;
 // abandoned logs and stone recover to the nearest open yard; no migration.
 // v66 (2026-11-22): the bay line runs through Bell Rock to Canopy. The eased row, halt indices,
-// and fleet slots change the meaning of saved railway rows.
+// and fleet slots change the meaning of saved railway rows. A train records a middle service
+// stand before unloading so a restored room can finish the same spacing hold.
 export const WORLD_NS = 'v66';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps

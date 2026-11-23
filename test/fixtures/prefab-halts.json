@@ -29390,7 +29390,7 @@
           "y": 19.02,
           "z": 3.7483031527528383,
           "up": true,
-          "calling": true,
+          "calling": false,
           "cue": false,
           "lever": [
             {

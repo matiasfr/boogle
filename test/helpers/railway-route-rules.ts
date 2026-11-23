@@ -243,13 +243,12 @@ export function routeRulesShard(shard: number) {
         [3, true],
         [3, true],
         [3, true],
-        [3, true],
       ],
     );
     const w = createRailwayWorld();
     assert.deepEqual(
       trains(w).map((r) => r.phase),
-      [0, 0, ...Array.from({ length: 11 }, () => TRAIN_PHASE.SHED)],
+      [0, 0, ...Array.from({ length: 10 }, () => TRAIN_PHASE.SHED)],
     );
     // Spawned last, in catalog order, nothing laid.
     assert.equal(w.count(Leg), RAIL_LEGS.length);
