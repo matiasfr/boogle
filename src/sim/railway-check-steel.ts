@@ -12,6 +12,7 @@ import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { STEEL } from './railway-ring-layout.ts';
 import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
 import { BOILER_MAX } from './railway-train.ts';
+import { ROW_LINE } from './railway-route.ts';
 import { Leg } from './railway-components.ts';
 import { cart, lines, rail, shed, steel, steelClock, trains } from './railway-rows.ts';
 import { aboard, ringJoined } from './railway-queries.ts';
@@ -67,6 +68,10 @@ export function checkSteel(w: World) {
   if (s.poured !== s.rack + ts.reduce((n, r) => n + r.steel, 0) + bay) bad('steel conservation');
   // Landed steel remains the gate even after the pool empties. Every bought fit accounts for its steel once.
   const ls = lines(w);
+  const allowed = (line: number, row: number) => {
+    if (line === ROW_LINE.ns || line === ROW_LINE.bay) return row === 0 || row === 4 || row === 5;
+    return railInt(row, line === LINE2 ? 3 : line === 0 ? 1 : 0);
+  };
   if (
     ls.some((l) => !railInt(l.boiler, BOILER_MAX) || !railInt(l.fitted, RAILWAY_MAX_INT, -1) || !railInt(l.cradle, 1))
   )
@@ -77,14 +82,17 @@ export function checkSteel(w: World) {
     ls.some(
       (l, line) =>
         l.boiler > 0 !== l.fitted >= 0 ||
-        (line <= LINE2
-          ? l.boiler >= 1 !== shed(w).ready >= 0 || (l.boiler >= 1 && shed(w).table !== 1)
-          : l.boiler !== 0) ||
-        (l.boiler >= 2 && (line !== LINE2 || bay < 1)) ||
+        !allowed(line, l.boiler) ||
+        (line <= LINE2 &&
+          (l.boiler >= 1 !== shed(w).ready >= 0 || (l.boiler >= 1 && shed(w).table !== 1))) ||
+        (line === LINE2 && l.boiler >= 2 && bay < 1) ||
         (l.boiler === 3 && !legDone(w, 0)) ||
         (l.cradle > 0 && (line !== LINE2 || l.boiler < 1 || bay < 1)),
     )
   )
     bad('boiler fit');
-  if (ts.some((r, slot) => !railInt(r.boiler, ls[RAIL_TRAINS[slot]!.line]!.boiler))) bad('boiler aboard');
+  if (ts.some((r, slot) => {
+    const line = RAIL_TRAINS[slot]!.line;
+    return !allowed(line, r.boiler) || (line <= LINE2 && r.boiler > ls[line]!.boiler);
+  })) bad('boiler aboard');
 }

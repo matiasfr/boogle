@@ -58,7 +58,7 @@ import { freightArrives, freightLoads, ridersArrive, ridersBoard } from './railw
 import { deckHeld, footCap, footCarrier, freightStop, holdOff } from './railway-queries-trade.ts';
 import type { TradePct } from './railway-trade-layout.ts';
 import { boilerAdopt, steelArrives, steelLoads, steelService } from './railway-sys-steel.ts';
-import { legKitArrive, legKitLoad, legKitService } from './railway-sys-route-kit.ts';
+import { legKitArrive, legKitLoad, legKitService, legRailheadHold } from './railway-sys-route-kit.ts';
 import { fleetOf } from './railway-train.ts';
 import { legsLaid } from './railway-queries-route.ts';
 
@@ -229,7 +229,7 @@ function trainIO(w: World, headPct: number, pct: TradePct, hold: TrainHold, tick
       // retains its own boiler row; the platform beat must not overlap the wagon's rollout.
       if (r.at === 0) boilerAdopt(w, trainId(w, slot), RAIL_TRAINS[slot]!.line);
       if (!line2(slot)) {
-        if (legKitLoad(w, slot, tick) === 'hold') return 'hold';
+        if (legKitLoad(w, slot, tick) === 'hold' || legRailheadHold(w, slot, tick) === 'hold') return 'hold';
         // The cart's hold is line 1's alone (its trains meet the cart); the greybox route's lines never wait for it.
         if (RAIL_TRAINS[slot]!.line !== LINE1) return 'on';
         return w.get(Cart, cartId(w))!.phase !== CART_PHASE.REST ? 'hold' : 'on';

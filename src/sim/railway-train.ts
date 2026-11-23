@@ -24,6 +24,7 @@ export const TRAIN = {
   wakeTicks: 60,
   answerTicks: 270,
   kitWaitTicks: 60,
+  railheadHoldTicks: 1200,
   /** The block rule's gap round the circuit (27.4 m, set as the footing wagon's 7.4 m, v32's RIDER_SPAN, plus 20 m; kept at v33). Since
    * v31's 8.2 m extent ahead of the pose (TRAIN_EXTENT), and v57's 16.1 m behind it (the steel car on the coach train),
    * the nose-to-tail clearance at this floor is 3.1 m. */
@@ -38,7 +39,12 @@ export const BOILER = [
   { speed: 200, accel: 3.5, brake: 3.5 },
   { speed: 250, accel: 3.5, brake: 3.5 },
   { speed: 300, accel: 3.5, brake: 3.5 },
+  { speed: 250, accel: 3.5, brake: 3.5 },
+  { speed: 200, accel: 3.5, brake: 3.5 },
 ] as const;
+export const BOILER_CARS = [0, 0, 0, 0, 0, 1] as const;
+export const boilerCars = (row: number) => BOILER_CARS[row] ?? 0;
+export const kitBills = (row: number) => 1 + boilerCars(row);
 export const BOILER_SPEED = BOILER.map((row) => row.speed);
 /** The last boiler row. */
 export const BOILER_MAX = BOILER_SPEED.length - 1;

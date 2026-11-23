@@ -71,10 +71,10 @@ const billOf = (k: number, from: number, to: number) => {
   for (const s of RAIL_LEGS[k]!.sections.slice(from, to)) [logs, rails] = [logs + s.logs, rails + s.rails];
   return { logs, rails };
 };
-/** One kit (one train's): the current section's bill. */
-export function legKitCap(w: World, k: number) {
-  const s = RAIL_LEGS[k]!.sections[legRow(w, k).laid];
-  return s ? { logs: s.logs, rails: s.rails } : { logs: 0, rails: 0 };
+/** Capacity ends with the last bill of this leg, even with a second kit car. */
+export function legKitCap(w: World, k: number, bills = 1) {
+  const from = legRow(w, k).laid;
+  return billOf(k, from, from + bills);
 }
 /** Leg kit units aboard `line`'s trains (a train's `legKit` cargo; the steel works' kit is not a leg's), less train
  * `skip`'s. */

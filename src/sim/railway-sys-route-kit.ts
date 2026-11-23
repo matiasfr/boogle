@@ -24,7 +24,7 @@ import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
 import { RAIL_LEGS, legRack } from './railway-route.ts';
 import { RAILS } from './railway-line2-layout.ts';
 import { steelNeed } from './railway-queries.ts';
-import { TRAIN, type RailTrain, type ServiceStop } from './railway-train.ts';
+import { TRAIN, TRAIN_PHASE, kitBills, type RailTrain, type ServiceStop } from './railway-train.ts';
 import { Account, Aperture, Forge, Leg, LegYard, Pile, Rail, Train } from './railway-components.ts';
 import {
   heldKit,
@@ -194,8 +194,9 @@ export function legKitLoad(w: World, slot: number, tick: number): 'hold' | 'on' 
   const ch = legMintChain(w, line),
     first = ch.legs.findIndex((_k, i) => ch.loading[i] && ch.owed[i]!.logs + ch.owed[i]!.rails > 0);
   if (first < 0) return 'on';
-  const cap = legKitCap(w, ch.legs[first]!),
-    want = sum(ch.owed),
+  const bills = kitBills(r.boiler);
+  const cap = legKitCap(w, ch.legs[first]!, bills),
+    want = bills > 1 ? ch.owed[first]! : sum(ch.owed),
     forge = w.get(Forge, w.single(Forge))!;
   let logs = Math.max(0, Math.min(cap.logs - r.logs, want.logs)),
     rails = Math.max(0, Math.min(cap.rails - r.rails, want.rails, forge.rack));
@@ -235,7 +236,7 @@ function yardLoad(w: World, slot: number): 'on' {
     r = w.get(Train, trainOf(w, slot))!;
   if (k < 0 || (r.logs + r.rails > 0 && !r.legKit)) return 'on';
   if (r.logs + r.rails === 0 && legKitCarriers(w, line) >= legKitTrains(w, line)) return 'on';
-  const cap = legKitCap(w, k),
+  const cap = legKitCap(w, k, kitBills(r.boiler)),
     owe = legYardOwed(w, k),
     y = legYard(w, k),
     logs = Math.max(0, Math.min(cap.logs - r.logs, owe.logs, y.logs)),
@@ -248,6 +249,19 @@ function yardLoad(w: World, slot: number): 'on' {
   m.logs += logs;
   m.rails += rails;
   m.legKit = true;
+  return 'on';
+}
+/** A second bill rides onward when the next head opens. Only the current end can hold a train. */
+export function legRailheadHold(w: World, slot: number, tick: number): 'hold' | 'on' {
+  const r = w.get(Train, trainOf(w, slot))!;
+  if (r.phase !== TRAIN_PHASE.STAND || !r.legKit || kitBills(r.boiler) < 2) return 'on';
+  const line = RAIL_TRAINS[slot]!.line;
+  for (const k of legsServed(w, line)) {
+    const leg = RAIL_LEGS[k]!, g = legRow(w, k);
+    if (leg.line !== line || g.laid + 1 >= leg.sections.length || r.at !== legKitDrop(w, line, k)) continue;
+    if (legKitFits(w, line, k, r)) continue;
+    if (g.start >= 0 || tick < r.depart + TRAIN.dwellTicks + TRAIN.railheadHoldTicks) return 'hold';
+  }
   return 'on';
 }
 // ---------------------------------------------------------------- the rack's units on backs (review of step 3, P2-2)

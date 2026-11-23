@@ -10,7 +10,7 @@ import type { World } from '../ecs/index.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { LINE2, RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { lineBlocksBroken, lineReqOk, servingSlots, trainRowBroken } from './railway-trains.ts';
-import { TRAIN_PHASE, fleetOf, trainIdle } from './railway-train.ts';
+import { TRAIN_PHASE, fleetOf, kitBills, trainIdle } from './railway-train.ts';
 import { SERVED_LEGS, legsLaid } from './railway-queries-route.ts';
 import { RAIL_LEGS } from './railway-route.ts';
 import { lines, rail, trains } from './railway-rows.ts';
@@ -70,7 +70,7 @@ export function checkTrains(w: World) {
     const asleep =
       !awake &&
       !!(r.phase || r.at !== home || r.to !== home || r.track !== track || r.depart || r.req || r.logs || r.rails);
-    const broken = trainRowBroken(r, line, stops(line), cargoOf(line), asleep);
+    const broken = trainRowBroken(r, line, stops(line), cargoOf(line) * (r.legKit ? kitBills(r.boiler) : 1), asleep);
     // Any message trainRowBroken returns is a refusal ('railway: train' or 'railway: rider ask' today), so a new one
     // can never pass the check unnoticed.
     if (broken) throw new Error(broken);

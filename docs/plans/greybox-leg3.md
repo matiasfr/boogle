@@ -420,6 +420,53 @@ rides with it. Steps 6 and 7 ship on their own after it.
       for rows 0, 4 and 5, with players `a` and `b` feeding the moment a rack is full (as `laySection` does), prints per
       section the ticks from the lay before to the kit racked, and the leg's ticks, for one and two feeders, over eight
       start offsets. Verify: the test; the script's table pasted into this plan's as-built notes.
+
+      **Step 3 trade measurement.** Each row covers eight fit offsets, 0 to 525 ticks in steps of 75.
+      Rack columns give the minimum and maximum ticks from opening the gate or the previous lay until
+      that section's full bill was racked. The total runs from opening the gate to the third lay.
+      The script prints each of the 96 individual runs.
+
+      | Fitted at | Fit | Feeders | Rack 1 | Rack 2 | Rack 3 | Total ticks | Mean total |
+      | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+      | bay-mid | Standard | 1 | 792–915 | 451 | 856 | 3002–3125 | 3103.6 |
+      | bay-mid | Standard | 2 | 793–916 | 452 | 857 | 3002–3125 | 3103.6 |
+      | bay-mid | Quick | 1 | 700–823 | 1159 | 465 | 3227–3350 | 3323.0 |
+      | bay-mid | Quick | 2 | 701–824 | 1160 | 466 | 3227–3350 | 3323.0 |
+      | bay-mid | Strong | 1 | 822–945 | 331 | 274 | 2330–2453 | 2427.9 |
+      | bay-mid | Strong | 2 | 823–946 | 331 | 274 | 2328–2451 | 2425.9 |
+      | bay-reached | Standard | 1 | 0–16 | 392–1273 | 623–856 | 2151–2799 | 2511.9 |
+      | bay-reached | Standard | 2 | 0–16 | 393–1274 | 624–857 | 2150–2798 | 2510.8 |
+      | bay-reached | Quick | 1 | 0–16 | 392–1130 | 465–673 | 1968–2498 | 2240.4 |
+      | bay-reached | Quick | 2 | 0–16 | 393–1131 | 466–674 | 1967–2497 | 2239.2 |
+      | bay-reached | Strong | 1 | 0–16 | 392–1273 | 623–856 | 2151–2799 | 2511.9 |
+      | bay-reached | Strong | 2 | 0–16 | 393–1274 | 624–857 | 2150–2798 | 2510.8 |
+
+      Strong fitted at bay-mid saved 89.5 s solo against Quick on average. Fitted at bay-reached,
+      its solo total matched standard at all eight offsets and averaged 27.2 s longer than Quick.
+      Garage step 4's offer timing goes to the owner under open question 1.
+
+      **Step 3 blocked, 23 November.** The two-bill train held at Bell Rock, released at its
+      deadline with no feeder, held again on its return, and racked the next bill at head 1
+      331 ticks after the lay in the fed trial. For the mixed-fleet wait check the first bay
+      train adopted Strong at West landing and loaded two Canopy bills before the bay cut's
+      final lay. The fixture selected standard for the following trains. Requests ran from
+      opening the Canopy gate, with the same four seeds, 75% headway and 20,000 ticks each.
+      Each run exercised the hold and passed the spacing and save checks.
+
+      | Seed | Growing ns | Growing bay | Bay limit |
+      | --- | ---: | ---: | ---: |
+      | c0ffee | 824 | 1786 | 1600 |
+      | 777 | 808 | 1799 | 1600 |
+      | 5eed | 944 | 1299 | 1600 |
+      | badd | 964 | 1711 | 1600 |
+
+      The 1,367 exception applies only to settled bay waits. The mixed-fleet growing gate
+      remains open; the owner requested a stop on another failed gate.
+      All three failures were Bay head 1 homeward calls served at +2,255, with three trains
+      in service. They arrived at +469, +456 and +544 respectively. Each long run had 300
+      held ticks; a tick-by-tick check of the opening 3,000 ticks counted 299 of those while
+      the section was laying. The idle timeout never accounted for a two-minute wait here.
+      The branch ship-check passed 1,846 tests and failed the mixed-fleet growing check.
 - [ ] **4. Seeds and stages (S; HOTBOX).** `src/sim/railway-seed-legs.ts` from `bay-reached`, accepted ops only:
       `canopy-open` (barrier open, section 1's kit on Bell Rock's rack), `canopy-mid` (section 1 laid, section 2's kit
       aboard a bay train), `canopy-reached` (leg 3 laid, cloth not taken). `SEED_STAGES` and its golden shard;

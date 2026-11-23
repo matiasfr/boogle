@@ -23,7 +23,7 @@ import { Account, Aperture, Boiler, Forge, Leg, LegYard, Line, QJob, Rail, Route
 import { boilerHeld, stopsOf } from './railway-queries.ts';
 import { gateLeg, legDone, legId, legKitStop, legOpen, legRow, routeId, routeRow } from './railway-queries-route.ts';
 import { trainMoveIO } from './railway-sys-trains.ts';
-import { legKitPut, legKitStock, legYardHome, trimLegHeld } from './railway-sys-route-kit.ts';
+import { legKitPut, legKitStock, legRailheadHold, legYardHome, trimLegHeld } from './railway-sys-route-kit.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 
 const bit = (k: number) => 1 << k;
@@ -64,6 +64,12 @@ function lay(w: World, k: number, tick: number) {
   const leg = RAIL_LEGS[k]!,
     n = leg.sections.length,
     from = legKitStop(w, k); // the rack's halt before this section: the line's end
+  // The bay's destination crossover is behind its outward platform. A held Strong train
+  // there can continue straight on when track opens beyond it. Read its hold before the lay.
+  const held = LINE_SLOTS[leg.line]!.find(slot => {
+    const r = w.get(Train, w.lookup(Train, slot)!)!;
+    return r.phase === TRAIN_PHASE.STAND && r.at === from && legRailheadHold(w, slot, tick) === 'hold';
+  });
   const m = w.mut(Leg, legId(w, k))!;
   m.laid++;
   m.logs = m.rails = 0;
@@ -80,10 +86,10 @@ function lay(w: World, k: number, tick: number) {
   // A train standing at an old head (a stub: its two tracks are one) runs on rather than home (call 88: "that train
   // runs on"): it had turned onto the down track on arriving at the end, and turns back up.
   const end = RAIL_LINES[leg.line]!.halts[from]!.end;
-  if (end?.kind === 'stub')
+  if (end?.kind === 'stub' || held !== undefined)
     for (const slot of LINE_SLOTS[leg.line]!) {
       const r = io.row(slot);
-      if (r.phase === TRAIN_PHASE.STAND && r.at === from && r.track === 1)
+      if ((end?.kind === 'stub' || slot === held) && r.phase === TRAIN_PHASE.STAND && r.at === from && r.track === 1)
         // Give the builder a full boarding dwell; arrived still anchors the holds' caps.
         io.set(slot, { track: 0, origin: 0, depart: tick, req: reqOnly(r.req, stopsOf(w, leg.line).length, 1) });
     }
