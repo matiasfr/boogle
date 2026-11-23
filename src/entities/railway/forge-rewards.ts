@@ -17,7 +17,7 @@ import { merged } from '../../render/part-geometry.ts';
 import { flat } from '../../render/flat.ts';
 import { softGlow } from '../../place/look.ts';
 import { H } from '../../place/terrain.ts';
-import { packParts, yokeMesh } from '../../render/gear-models.ts';
+import { packParts, yokeAssembly } from '../../render/gear-models.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
 import { compiled } from '../../prefab/catalogue.ts';
 import { loadLevelArtifact } from '../../prefab/validate.ts';
@@ -199,9 +199,16 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
     },
   );
   const target: THREE.Vector3 = yoke.attach('pickup').at;
-  const iron = yokeMesh();
-  iron.geometry.computeBoundingBox();
-  const bounds = iron.geometry.boundingBox!;
+  const assembly = yokeAssembly();
+  const iron = new THREE.Group();
+  const bar = new THREE.Mesh(keep(merged(assembly.bar)), material);
+  const hooks = new THREE.Mesh(keep(merged(assembly.hooks)), material);
+  for (const piece of [bar, hooks]) {
+    piece.castShadow = piece.receiveShadow = true;
+    iron.add(piece);
+  }
+  const bounds = new THREE.Box3().setFromObject(iron);
+  const bareBottom = new THREE.Box3().setFromObject(bar).min.y;
   iron.scale.setScalar(2);
   iron.position.set(0, 0.7 - 2 * bounds.min.y, -(bounds.min.z + bounds.max.z));
   const halo = glimmerMesh.clone();
@@ -259,8 +266,10 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
     arrivals++;
     clank(AXE_AT.x, AXE_AT.z);
     if (reducedMotion) return;
-    const head = axeHeadAt(!!leaning, new THREE.Vector3());
-    for (let n = 0; n < 12; n++) {
+    sparksAt(axeHeadAt(!!leaning, new THREE.Vector3()), 12);
+  }
+  function sparksAt(head: THREE.Vector3, count: number) {
+    for (let n = 0; n < count; n++) {
       const a = Math.random() * Math.PI * 2,
         out = 1.2 + Math.random() * 1.8;
       emit({
@@ -280,81 +289,194 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
     }
   }
 
+  function makeErrand({
+    at,
+    fetchAt,
+    workAt,
+    fittings,
+    readyNow,
+    length,
+    colour,
+    offcutYaw,
+    carryLeg,
+    done,
+  }: {
+    at: THREE.Vector3;
+    fetchAt: { x: number; z: number };
+    workAt: { x: number; z: number };
+    fittings: THREE.Object3D;
+    readyNow: typeof line2PackReady;
+    length: number;
+    colour: string;
+    offcutYaw: number;
+    carryLeg: number;
+    done: () => void;
+  }) {
+    const offcut = new THREE.Mesh(keep(new THREE.BoxGeometry(0.16, 0.16, length)), flat(colour, 0.9));
+    offcut.castShadow = true;
+    offcut.visible = false;
+    owner.add(offcut);
+    const lie = () => {
+      offcut.position.set(fetchAt.x, H(fetchAt.x, fetchAt.z) + 0.08, fetchAt.z);
+      offcut.rotation.set(0, offcutYaw, 0);
+    };
+
+    let errand: Errand = 'done',
+      leg = 0,
+      total = 0,
+      wait = 0,
+      crewMine = false,
+      carried = false,
+      errands = 0,
+      readyShown = readyNow(rd.world());
+    const guyAt = { x: 0, z: 0 };
+    let guyYaw = 0;
+    const endCrew = () => {
+      if (crewMine) folk.crewEnd();
+      crewMine = false;
+    };
+    const send = (to: { x: number; z: number }, carrying: boolean) => {
+      leg = 0;
+      folk.crewSend([to], carrying, carrying || errand === 'fetch' ? to : at);
+    };
+    /** The straps are on: done, with a wooden knock and a small ring of dust when it was played. */
+    function finish(played: boolean) {
+      errand = 'done';
+      endCrew();
+      carried = false;
+      offcut.visible = false;
+      fittings.visible = true;
+      if (played) done();
+    }
+    function start() {
+      errands++;
+      fittings.visible = false;
+      total = 0;
+      if (reducedMotion) return finish(false);
+      lie();
+      offcut.visible = true;
+      crewMine = !folk.crewState() && folk.crewStart(fetchAt.x, fetchAt.z, 1, false) > 0;
+      const guy = crewMine ? folk.crewState()?.[0] : null;
+      if (guy && Math.hypot(guy.x - fetchAt.x, guy.z - fetchAt.z) > FORGE_REWARDS.near) endCrew();
+      if (crewMine) {
+        errand = 'fetch';
+        send(fetchAt, false);
+      } else {
+        errand = 'self';
+        wait = FORGE_REWARDS.packSelf;
+      }
+    }
+    function update(dt: number, ready: boolean, claimed: boolean, offered: boolean) {
+      // A crossing counts once the view is the confirmed world (nothing of yours pending): never on prediction.
+      if (rd.pending() === 0) {
+        if (ready && !readyShown && !claimed) start();
+        readyShown = ready;
+      }
+      if (!offered && errand !== 'done') {
+        if (rd.pending() === 0) finish(false);
+        return;
+      }
+      if (errand === 'done') return;
+      total += dt;
+      leg += dt;
+      wait -= dt;
+      const crew = crewMine ? folk.crewState() : null;
+      if (crewMine && !crew) crewMine = false; // someone else took the crew (the roof show): finish now
+      const guy = crew?.[0];
+      if (guy) {
+        if (Math.hypot(guy.x - guyAt.x, guy.z - guyAt.z) > 0.01) guyYaw = Math.atan2(guy.x - guyAt.x, guy.z - guyAt.z);
+        guyAt.x = guy.x;
+        guyAt.z = guy.z;
+      }
+      const here = !guy || guy.here;
+      const arrived = here || leg > (errand === 'fetch' ? FORGE_REWARDS.fetchLeg : carryLeg);
+      if (total > FORGE_REWARDS.packCap || (errand !== 'self' && !crewMine)) return finish(true);
+      if (errand === 'self' && wait <= 0) return finish(true);
+      if (errand === 'fetch' && arrived) {
+        // A walk that ran out leaves the offcut where it lies (never a jump onto his shoulder); it goes as the straps do.
+        carried = here;
+        errand = 'carry';
+        send(workAt, carried);
+      } else if (errand === 'carry' && arrived) {
+        if (carried) {
+          offcut.visible = false;
+          thump(workAt.x, workAt.z);
+        }
+        carried = false;
+        errand = 'hammer';
+        wait = FORGE_REWARDS.hammer;
+        send(workAt, false);
+      } else if (errand === 'hammer' && wait <= 0) return finish(true);
+      if (carried && guy) {
+        // On his shoulder, along the way he walks (forge-finish.ts's carried beams).
+        offcut.position.set(guy.x, guy.y + 0.95, guy.z);
+        offcut.rotation.set(0, guyYaw, 0);
+      }
+    }
+    return {
+      update,
+      restore() {
+        readyShown = readyNow(rd.world());
+        finish(false);
+      },
+      endCrew,
+      inspect: () => ({ errand, errands, crew: crewMine ? folk.crewState() : null }),
+    };
+  }
   // The offcut: one timber left over from the frame, lying at the frame's foot on the pack's side.
   const toPack = new THREE.Vector2(at.x - LINE2_FORGE.x / 100, at.z - LINE2_FORGE.z / 100).normalize();
   // At the frame's foot on the pack's side, kept east of the bill board (1.8 m west, 2.4 m south of the frame).
   const fetchAt = { x: LINE2_FORGE.x / 100 + 0.8, z: LINE2_FORGE.z / 100 - 2.8 };
   const workAt = { x: at.x - toPack.x * 1.2, z: at.z - toPack.y * 1.2 };
-  const offcut = new THREE.Mesh(keep(new THREE.BoxGeometry(0.16, 0.16, OFFCUT)), flat('#a07444', 0.9));
-  offcut.castShadow = true;
-  offcut.visible = false;
-  owner.add(offcut);
-  const lie = () => {
-    offcut.position.set(fetchAt.x, H(fetchAt.x, fetchAt.z) + 0.08, fetchAt.z);
-    offcut.rotation.set(0, Math.atan2(toPack.y, -toPack.x), 0);
-  };
 
-  let errand: Errand = 'done',
-    leg = 0,
-    total = 0,
-    wait = 0,
-    crewMine = false,
-    carried = false,
-    errands = 0,
-    readyShown = line2PackReady(rd.world());
-  const guyAt = { x: 0, z: 0 };
-  let guyYaw = 0;
-  const endCrew = () => {
-    if (crewMine) folk.crewEnd();
-    crewMine = false;
-  };
-  const send = (to: { x: number; z: number }, carrying: boolean) => {
-    leg = 0;
-    folk.crewSend([to], carrying, carrying || errand === 'fetch' ? to : at);
-  };
-  /** The straps are on: done, with a wooden knock and a small ring of dust when it was played. */
-  function finish(played: boolean) {
-    errand = 'done';
-    endCrew();
-    carried = false;
-    offcut.visible = false;
-    strapped.visible = true;
-    if (played) {
+  const packErrand = makeErrand({
+    at,
+    fetchAt,
+    workAt,
+    fittings: strapped,
+    readyNow: line2PackReady,
+    length: OFFCUT,
+    colour: '#a07444',
+    offcutYaw: Math.atan2(toPack.y, -toPack.x),
+    carryLeg: FORGE_REWARDS.leg,
+    done() {
       thump(at.x, at.z);
       dustRing(at.x, at.y + 0.1, at.z, 8, 1.1, 0.2);
-    }
-  }
-  function start() {
-    errands++;
-    strapped.visible = false;
-    total = 0;
-    if (reducedMotion) return finish(false);
-    lie();
-    offcut.visible = true;
-    crewMine = folk.crewStart(fetchAt.x, fetchAt.z, 1, false) > 0;
-    const guy = crewMine ? folk.crewState()?.[0] : null;
-    if (guy && Math.hypot(guy.x - fetchAt.x, guy.z - fetchAt.z) > FORGE_REWARDS.near) endCrew();
-    if (crewMine) {
-      errand = 'fetch';
-      send(fetchAt, false);
-    } else {
-      errand = 'self';
-      wait = FORGE_REWARDS.packSelf;
-    }
-  }
+    },
+  });
+  const rackX = LINE2_FORGE.rackX / 100,
+    rackZ = LINE2_FORGE.rackZ / 100;
+  const out = new THREE.Vector2(base.x - rackX, base.z - rackZ).normalize();
+  const yokeErrand = makeErrand({
+    at: base,
+    fetchAt: { x: rackX + out.x * 1.3, z: rackZ + out.y * 1.3 },
+    // Hammer from Q1's side of the block, where the timber cannot hide the maker.
+    workAt: { x: base.x + out.y * 1.25, z: base.z - out.x * 1.25 },
+    fittings: hooks,
+    readyNow: line2YokeReady,
+    length: 1,
+    colour: '#48525a',
+    offcutYaw: PROPS.yoke.yaw,
+    carryLeg: FORGE_REWARDS.fetchLeg,
+    done() {
+      clank(base.x, base.z);
+      sparksAt(target, 8);
+    },
+  });
   /** `crossing`: line two's restore as the machine crosses, a few seconds after the lighting: an arrival under way
    * (waiting for its cut or its fallback, or cooling) keeps going, clank and sparks included. Any other restore (a
    * reload, a late join, a resync) finds the axe cool. */
   function restore(crossing = false) {
-    readyShown = line2PackReady(rd.world());
-    finish(false);
+    packErrand.restore();
+    yokeErrand.restore();
     if (crossing && heat !== 'cool') return;
     heat = 'cool';
     glow(0);
   }
   restore();
   owner.cleanup(() => {
-    endCrew();
+    packErrand.endCrew();
+    yokeErrand.endCrew();
     for (const g of geometries) g.dispose();
     material.dispose();
     glimmer.mat.dispose();
@@ -395,57 +517,18 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
       const ready = line2PackReady(w),
         claimed = rail(w).pack;
       pack.visible = ready && !claimed;
-      yoke.setEnabled(yokeAvailable(adapter));
+      const yokeReady = line2YokeReady(w);
+      yoke.setEnabled(yokeReady && !rail(w).yoke);
       if (pack.visible || yoke.root.visible) glimmer.strength.value = 0.4 + 0.06 * Math.sin(performance.now() * 0.0025);
-      // A crossing counts once the view is the confirmed world (nothing of yours pending): never on prediction.
-      if (rd.pending() === 0) {
-        if (ready && !readyShown && !claimed) start();
-        readyShown = ready;
-      }
-      if (!pack.visible && errand !== 'done') return finish(false);
-      if (errand === 'done') return;
-      total += dt;
-      leg += dt;
-      wait -= dt;
-      const crew = crewMine ? folk.crewState() : null;
-      if (crewMine && !crew) crewMine = false; // someone else took the crew (the roof show): finish now
-      const guy = crew?.[0];
-      if (guy) {
-        if (Math.hypot(guy.x - guyAt.x, guy.z - guyAt.z) > 0.01) guyYaw = Math.atan2(guy.x - guyAt.x, guy.z - guyAt.z);
-        guyAt.x = guy.x;
-        guyAt.z = guy.z;
-      }
-      const here = !guy || guy.here;
-      const arrived = here || leg > (errand === 'fetch' ? FORGE_REWARDS.fetchLeg : FORGE_REWARDS.leg);
-      if (total > FORGE_REWARDS.packCap || (errand !== 'self' && !crewMine)) return finish(true);
-      if (errand === 'self' && wait <= 0) return finish(true);
-      if (errand === 'fetch' && arrived) {
-        // A walk that ran out leaves the offcut where it lies (never a jump onto his shoulder); it goes as the straps do.
-        carried = here;
-        errand = 'carry';
-        send(workAt, carried);
-      } else if (errand === 'carry' && arrived) {
-        if (carried) {
-          offcut.visible = false;
-          thump(workAt.x, workAt.z);
-        }
-        carried = false;
-        errand = 'hammer';
-        wait = FORGE_REWARDS.hammer;
-        send(workAt, false);
-      } else if (errand === 'hammer' && wait <= 0) return finish(true);
-      if (carried && guy) {
-        // On his shoulder, along the way he walks (forge-finish.ts's carried beams).
-        offcut.position.set(guy.x, guy.y + 0.95, guy.z);
-        offcut.rotation.set(0, guyYaw, 0);
-      }
+      packErrand.update(dt, ready, claimed, pack.visible);
+      yokeErrand.update(dt, yokeReady, rail(w).yoke, yoke.root.visible);
+      iron.position.y = 0.7 - 2 * (hooks.visible ? bounds.min.y : bareBottom);
     },
     inspect: () => ({
       axe: { shown: axe.visible, leaning: !!leaning, heat, arrivals },
       pack: { x: at.x, y: at.y, z: at.z, shown: pack.visible, strapped: strapped.visible },
-      errand,
-      errands,
-      crew: crewMine ? folk.crewState() : null,
+      yoke: { shown: yoke.root.visible, hooked: hooks.visible, ...yokeErrand.inspect() },
+      ...packErrand.inspect(),
     }),
   };
 }

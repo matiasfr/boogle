@@ -369,7 +369,8 @@ disposable production room.
     - Take it: the opener's card, then the 16-square rails row.
   - *Risk: low to medium (a reach target in a busy yard). Self-review, plus the level check.*
 
-- [ ] **5. The forge's little guy makes it** (Local).
+- [x] **5. The forge's little guy makes it** (Local).
+  - The pack and yoke share the fetch, carry, hammer and self-finish sequence. The yoke's offcut is 1 m, its hammer time 1.4 s, and its finishing burst eight sparks. The 14.005 s Q1 motion sheet showed the bare bar first, then both hooks, with the machine advancing behind it. The first camera hid most of the worker behind the block. His hammer position moved to the Q1 side. The reduced-motion still shows the complete yoke as Q1 starts laying.
   - `forge-rewards.ts`: generalise the pack errand into one `errand({ at, fetchAt, carried, hammer, done })` used by
     both, so there is no second copy. Wire the yoke's live edge, its fallbacks and `restore()`.
   - `src/place/folk.ts`: nothing new (`crewStart(x, z, 1, false)` exists).
