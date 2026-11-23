@@ -220,7 +220,6 @@
         "signalCm": 112880
       },
       "ring": true,
-      "control": true,
       "line": 1,
       "stop": 5
     },

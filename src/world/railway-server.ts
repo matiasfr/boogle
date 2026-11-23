@@ -403,7 +403,6 @@ export function install(
         riderPct: rules.railTune.get('railRiderPct'),
         pricePct: rules.railTune.get('railPricePct'),
       },
-      { cap: rules.railTune.get('railTrainHoldCap'), pct: rules.railTune.get('railTrainHoldPct') },
     );
     commit();
   }, 'railway');

@@ -140,6 +140,7 @@
 // v66 (2026-11-22): the bay line runs through Bell Rock to Canopy. The eased row, halt indices,
 // and fleet slots change the meaning of saved railway rows. A train records a middle service
 // stand before unloading so a restored room can finish the same spacing hold.
+// The v66 tune snapshot also retires both Ring Island hold settings (23 November).
 export const WORLD_NS = 'v66';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps

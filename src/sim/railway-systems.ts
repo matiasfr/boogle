@@ -19,7 +19,7 @@
 import { createSchedule, type System, type World } from '../ecs/index.ts';
 import { LINE_TIMING } from './railway-line.ts';
 import type { LineTiming } from './railway-line-schedule.ts';
-import { TRAIN_HEAD_PCT, TRAIN_HOLD, type TrainHold } from './railway-trains.ts';
+import { TRAIN_HEAD_PCT } from './railway-trains.ts';
 import type { RailAction } from './railway.ts';
 import type { RailResult } from './railway.ts';
 import { Account } from './railway-components.ts';
@@ -175,13 +175,12 @@ export const RAIL_TICK: readonly System<never, unknown>[] = [
 ];
 const TICK = createSchedule(RAIL_TICK);
 /** The rule tick; `headPct` is the room's railTrainHeadPct (the trains' headway hold), `trade` its railFarePct and
- * railRiderPct (slice 5 R3), `hold` its railTrainHoldCap and railTrainHoldPct (the Ring Island hold). */
+ * railRiderPct (slice 5 R3). */
 export function railTick(
   w: World,
   tick: number,
   headPct = TRAIN_HEAD_PCT,
   trade: TradePct = TRADE_PCT,
-  hold: TrainHold = TRAIN_HOLD,
 ) {
   TICK.run(w, 'tick', {
     tick,
@@ -189,8 +188,6 @@ export function railTick(
     farePct: trade.farePct,
     riderPct: trade.riderPct,
     pricePct: trade.pricePct ?? TRADE_PCT.pricePct,
-    holdCap: hold.cap,
-    holdPct: hold.pct,
   });
 }
 /** The systems the server and the host call by name (lifecycle, the request history and absent carriers). The job

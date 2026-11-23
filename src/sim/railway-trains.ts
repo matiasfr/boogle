@@ -61,12 +61,6 @@ import {
 export type RailLineRow = { req: number; left0: number; left1: number };
 /** The headway hold's default share of an even split, in percent (the room tunable railTrainHeadPct). */
 export const TRAIN_HEAD_PCT = 75;
-/** The Ring Island hold (the room tunables railTrainHoldCap and railTrainHoldPct; docs/plans/short-turn.md, the
- * ruling on step 1's sheet): the most ticks past its dwell a train stands at a control halt, and the gap difference
- * that stops it, in percent of an even split. Either at 0: no hold. */
-export type TrainHold = { cap: number; pct: number };
-/** The hold's defaults, as measured (train-spacing Results, E3; short-turn's step 1 sheet): cap 200, on 15%. */
-export const TRAIN_HOLD: TrainHold = { cap: 200, pct: 15 };
 /** Train rows by slot. */
 export type Rows = (slot: number) => Readonly<RailTrain>;
 /** Each line's train slots, in slot order. */
@@ -332,8 +326,6 @@ export type TrainIO<L extends LineRef = number> = {
   awake: number;
   /** The headway hold's percent (the room's railTrainHeadPct). */
   headPct: number;
-  /** The Ring Island hold (the room's railTrainHoldCap and railTrainHoldPct). Absent (a test's fixture IO): no hold. */
-  hold?: TrainHold;
   /** Service stops for this train now (cargo, the footing wagon). */
   service(slot: number): ServiceStop;
   /** It has just come to a stand at a halt: unload or load what arrives with it. */
@@ -346,8 +338,6 @@ export type TrainIO<L extends LineRef = number> = {
   /** The trains the line runs at its stage now (railway-train.ts, fleetOf; the greybox route, step 3). Absent (a test's
    * fixture IO): no train ever joins from the shed. */
   fleet?(line: L): number;
-  /** The hold is off for this train now (footings owed, an errand: railway-sys-trains.ts). Absent: always off. */
-  controlOff?(line: L, slot: number): boolean;
 };
 /** A running train's leg, judged again from its pose now: shortened for a reason it can still brake for, or
  * lengthened past a hold the train ahead has moved off. The pose stays continuous (`from` is where it is now). */

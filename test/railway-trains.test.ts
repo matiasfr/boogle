@@ -45,8 +45,7 @@ import {
 } from '../src/sim/railway-trains.ts';
 import { line2Completed } from '../src/sim/railway-queries-line2.ts';
 import { trainStops } from '../src/sim/railway-queries-trains.ts';
-import { Line, Rail, Train, Works } from '../src/sim/railway-components.ts';
-import { holdOff } from '../src/sim/railway-queries-trade.ts';
+import { Line, Train } from '../src/sim/railway-components.ts';
 import { WORKS } from '../src/sim/railway-works-layout.ts';
 import { footingTotal } from '../src/sim/railway-queries-works.ts';
 import { FixtureLine, LINE2_ROWS, standingAt, line2Stops } from './helpers/rail-rows.ts';
@@ -985,25 +984,11 @@ test('the load check refuses an up train standing at the homeward-only Pier; a l
   assert.equal(f.broken(), null);
 });
 
-// ---------------------------------------------------------------- review (spacing/six-hold): the control halt and an end's ask
-// Independent review of the Ring Island hold (docs/plans/short-turn.md, step 2 as built). The fixture line with the
-// Railhead as its control halt (a middle halt once the island is open), the room's defaults (cap 200, on 15%), no
-// train on an errand. controlFree takes the hold off "a train a lever ask is assigned to" by asking trainServes about
-// every ask both ways; an end's ask is one digit that reads set both ways (reqIndex), and asked the way out
-// trainServes has no `braking` clause for the train running into that end, so on the ticks that train is inside its
-// braking distance at the plain rate the ask is "assigned" to the train behind it, which the sim never stops for it
-// (trainReasons asks the train's own way: the train braking into the end keeps it).
-const CONTROL: typeof V = {
-  ...V,
-  id: 'line2-control',
-  halts: V.halts.map((h, k) => (k === HEAD ? { ...h, control: true as const } : h)),
-};
 function controlLine(stops: readonly number[], rows: RailTrain[], req: number) {
-  const f = new FixtureLine(stops, 0, TRAIN_HEAD_PCT, CONTROL);
+  const f = new FixtureLine(stops, 0, TRAIN_HEAD_PCT, V);
   f.rows = rows;
   f.lineRow = { req, left0: -1, left1: -1 };
-  const io = () => ({ ...f.io(), hold: { cap: 200, pct: 15 }, controlOff: () => false });
-  return { f, step: (t: number) => trainStepLine(io(), CONTROL, t) };
+  return { f, step: (t: number) => trainStepLine(f.io(), V, t) };
 }
 
 test("review (six-hold): the island's lever ask, which the train running into the island serves, does not release the train held at the control halt behind it", () => {
@@ -1016,8 +1001,8 @@ test("review (six-hold): the island's lever ask, which the train running into th
     { ...standingAt(stops, HEAD, 0, 0), serviceStand: true },
     standingAt(stops, 2, 1, 1e6),
   ], reqAdd(0, ISLAND, -1, n));
-  assert.equal(trainServes(f.io().row, CONTROL, stops, ISLAND, 1, 50), 0);
-  assert.ok(balancedHold(f.io(), CONTROL, stops, 1, HEAD, 50));
+  assert.equal(trainServes(f.io().row, V, stops, ISLAND, 1, 50), 0);
+  assert.ok(balancedHold(f.io(), V, stops, 1, HEAD, 50));
 });
 
 // 23 November greybox service decision: only an existing service stand can balance gaps.
@@ -1039,37 +1024,17 @@ test('a middle service stand shares the cycle-derived cap and yields to an assig
   const { f } = controlLine(stops, [
     standingAt(stops, ISLAND, 1, 0), standingAt(stops, HEAD, 0, 0), standingAt(stops, 2, 1, 0),
   ], 0);
-  const held = (tick: number) => balancedHold(f.io(), CONTROL, stops, 1, HEAD, tick);
+  const held = (tick: number) => balancedHold(f.io(), V, stops, 1, HEAD, tick);
   assert.equal(held(50), false, 'block-only stop');
   f.rows[1]!.serviceStand = true;
-  const limit = TRAIN.dwellTicks + Math.floor(cycleTicks(CONTROL, stops) / 3);
+  const limit = TRAIN.dwellTicks + Math.floor(cycleTicks(V, stops) / 3);
   assert.equal(held(limit - 1), true);
   assert.equal(held(limit), false);
   f.rows[0] = standingAt(stops, 2, 0, 0);
   f.lineRow.req = reqAdd(0, ISLAND, 1, stops.length);
-  assert.equal(trainServes(f.io().row, CONTROL, stops, ISLAND, 1, 50), 1);
+  assert.equal(trainServes(f.io().row, V, stops, ISLAND, 1, 50), 1);
   assert.equal(held(50), false);
 });
-test('six-hold: the errand list (holdOff): footings owed, a kit aboard that can unload, a kit owed; a waiting kit is none', () => {
-  const base = buildSeedWorld('steel-home');
-  const slots = LINE_SLOTS[LINE2]!;
-  const empty = { ...train(base.w, slots[0]!), logs: 0, rails: 0, legKit: false };
-  const fresh = () => restore(base.w);
-  assert.equal(holdOff(fresh(), LINE2, empty), false, 'an empty train, two kits already aboard others: no errand');
-  const footing = fresh();
-  footing.mut(Works, footing.single(Works))!.pierSet = 0;
-  assert.equal(holdOff(footing, LINE2, empty), true, 'footings owed');
-  assert.equal(holdOff(fresh(), LINE2, { ...empty, rails: 1 }), true, 'a kit aboard that can unload');
-  // A leg's kit with nothing for it at an open halt (the rack holds the current section's whole lack): it waits.
-  const waiting = fresh();
-  Object.assign(waiting.mut(Rail, waiting.single(Rail))!, { depot: 1000, depotRails: 1000 });
-  assert.equal(holdOff(waiting, LINE2, { ...empty, rails: 1, legKit: true }), false, 'a leg kit that waits: no errand');
-  // Owed a leg kit: no train carries one, so the leg's kit is still to load.
-  const owed = fresh();
-  for (const k of slots) Object.assign(owed.mut(Train, owed.lookup(Train, k)!)!, { logs: 0, rails: 0, legKit: false });
-  assert.equal(holdOff(owed, LINE2, empty), true, 'owed a kit');
-});
-
 // Review of separate-capacities (18 November 2026): the stub-extension sweep that guarded e9125afc's train fix (a
 // stub that opens ahead while a loaded train arrives is a through stop: `runsOn` in trainStepLine) lived in the
 // deleted test/review-heavy-load-arrival.test.ts. The fix has nothing to do with the heavy load and stays, so its

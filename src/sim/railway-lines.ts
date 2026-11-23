@@ -69,11 +69,6 @@ export type RailHalt = {
   headPlatforms?: readonly RailPlatform[];
   /** A catalog halt a later leg's rules open: shut at every stage until then. */
   shut?: true;
-  /** A control halt (train spacing, candidate B: docs/plans/train-spacing.md 2B; short-turn's ruling, step 2): while it
-   * is a middle halt, a train with much less room ahead than behind stops and stands there (./railway-trains.ts,
-   * controlStop and controlHold), by the room's railTrainHoldCap and railTrainHoldPct. Never a line's first or last
-   * halt (checked at load). */
-  control?: true;
   /** Closed behind (the orchestrator's ruling on call 88): once its line has this many open stops it passes both ways,
    * a stop no train makes and nobody asks for, though it stays in the line's halts (open stops stay a prefix). A passed
    * head of the stack line closes when the section after next lays, so the lay's ride-on (call 88) is over first. */
@@ -531,8 +526,6 @@ export const RAIL_LINES: readonly RailLineDef[] = [
         platforms: [RING_HALT.down, RING_HALT.up],
         end: railEnd('crossover', RING_END.mergeCm, 1),
         ring: true,
-        // The Ring Island hold (short-turn's ruling on step 1's sheet, call 7): a middle halt once leg 1 opens.
-        control: true,
       },
       // The greybox route (step 3): the stack railhead and High Gorge.
       ...STACK_HALTS,
@@ -695,11 +688,6 @@ RAIL_LINES.forEach((l) => {
     )
       throw new Error(`railway: line ${l.id} has a bad fleet`);
   }
-});
-// A control halt (RailHalt.control) is a middle halt of its line's whole catalog: never its first or last.
-RAIL_LINES.forEach((l) => {
-  if (l.halts.some((h, k) => h.control && (k === 0 || k === l.halts.length - 1)))
-    throw new Error(`railway: line ${l.id} has a control halt at an end`);
 });
 /** Whether leg k's rules are built: its sim line holds its railhead (step 3 builds the stack leg's only). A leg that is
  * not built is never open, whatever its `after` (./railway-queries-route.ts, legOpen). */

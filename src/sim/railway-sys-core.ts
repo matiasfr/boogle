@@ -10,15 +10,13 @@ import { Account, Beam, Boiler, Job, JobRun, Outcome, QJob, QJobRun, Rail, RAIL_
 import { beamId, boilerHeld, boilerId, held, railId } from './railway-queries.ts';
 
 /** The tick systems' one input: the tick, the room's railTrainHeadPct (the trains' headway hold), its trade
- * tunables (slice 5 R3: railFarePct, railRiderPct) and the Ring Island hold's (railTrainHoldCap, railTrainHoldPct). */
+ * tunables (slice 5 R3: railFarePct, railRiderPct). */
 export type Tick = {
   tick: number;
   headPct: number;
   farePct: number;
   riderPct: number;
   pricePct: number;
-  holdCap: number;
-  holdPct: number;
 };
 /** What an op system is given: the actor's account id, the action, the tick and the room's timing. */
 export type Act = { a: number; e: RailAction; tick: number; timing: LineTiming; pricePct: number };
