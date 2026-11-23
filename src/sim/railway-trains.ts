@@ -584,7 +584,10 @@ export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: 
       if (hold === 'again') continue;
       if (hold === 'hold') break;
       // A halt's dwell (a signal has none: the train goes the tick its block clears), and the wake.
-      if ((r.at >= 0 && tick < r.depart + TRAIN.dwellTicks) || tick < trainWakeAt(line, io.awake) + TRAIN.wakeTicks)
+      // Once the bay runs past Bell Rock (stop 2), its boarding dwell is 15 ticks.
+      // The departure headway and cargo deadlines retain their own timing.
+      const boardingTicks = lineDef(line).id === 'bay' && n > 3 ? 15 : TRAIN.dwellTicks;
+      if ((r.at >= 0 && tick < r.depart + boardingTicks) || tick < trainWakeAt(line, io.awake) + TRAIN.wakeTicks)
         break;
       // The halt it leaves: its own, or the end whose block it stands in on the way out (a train the railhead's stop
       // moved on from: stopMoved), which it leaves as from that end.

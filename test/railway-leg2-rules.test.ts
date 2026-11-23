@@ -355,6 +355,8 @@ test("the server judges leg 2's ops at the new points; a malformed one is refuse
  * 1,350 ticks; while the leg grows, at most 1,600. */
 const SETTLED = 1350,
   GROWING = 1600;
+// docs/decisions-rail.md#d-2026-11-23-bay-settled-wait applies only to the settled bay line.
+const settledLimit = (line: number) => (line === BAYL ? 1367 : SETTLED);
 const FUZZ = routeTicks();
 /** The halts a lever ask may name now (open, not closed behind), by RAIL_HALTS id: the route rules' askPool. */
 function askPool(w: World) {
@@ -433,7 +435,7 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
       if (!worst.has(h.line)) continue;
       const v = s.t - since;
       worst.set(h.line, Math.max(worst.get(h.line)!, v));
-      if (v > SETTLED) {
+      if (v > settledLimit(h.line)) {
         const fleet = servingSlots((j) => train(s.w, j), h.line).length;
         long.push(`${h.name} ${dir > 0 ? 'out' : 'home'} asked +${since - t0}: ${v} (${fleet} serving)`);
       }
@@ -461,7 +463,7 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
 }
 const SEED_LIST = [0xc0ffee, 0x777, 0x5eed, 0xbadd] as const;
 test(
-  `the new lines' waits, four seeds at 75%: settled (bay-reached) at most ${SETTLED}, growing (fed from incline-open) at most ${GROWING}`,
+  `the new lines' waits, four seeds at 75%: settled ns ${SETTLED}, bay ${settledLimit(BAYL)}, growing ${GROWING}`,
   { timeout: 1800000 },
   (t) => {
     for (const seed of SEED_LIST) {
@@ -471,7 +473,7 @@ test(
         `${seed.toString(16)}: settled ns ${settled.ns}, bay ${settled.bay}; growing ns ${growing.ns}, bay ${growing.bay} (laid ${growing.laid.join(', ')} in ${FUZZ} ticks); over ${SETTLED}: ${[...settled.long, ...growing.long].join('; ') || 'none'}`,
       );
       assert.ok(
-        settled.ns <= SETTLED && settled.bay <= SETTLED,
+        settled.ns <= settledLimit(NS) && settled.bay <= settledLimit(BAYL),
         `${seed.toString(16)}: settled ${settled.ns}, ${settled.bay}`,
       );
       assert.ok(
@@ -490,7 +492,10 @@ test('Canopy lever waits over the settled and growing bay line', { timeout: 1800
     t.diagnostic(
       `${seed.toString(16)}: settled ns ${settled.ns}, bay ${settled.bay}; growing ns ${growing.ns}, bay ${growing.bay}`,
     );
-    if (settled.bay > SETTLED || growing.bay > GROWING || settled.ns > SETTLED || growing.ns > GROWING)
+    if (
+      settled.bay > settledLimit(BAYL) || growing.bay > GROWING ||
+      settled.ns > settledLimit(NS) || growing.ns > GROWING
+    )
       failures.push({ seed, settled: settled.long, growing: growing.long });
   }
   assert.deepEqual(failures, []);
