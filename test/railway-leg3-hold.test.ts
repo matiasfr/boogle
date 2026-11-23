@@ -48,12 +48,14 @@ test('Strong loads two bills, holds at Bell Rock and unloads at the next head', 
   }
   const idle = unaudited({ w: restore(s.w), t: s.t });
   const deadline = row().depart + TRAIN.dwellTicks + TRAIN.railheadHoldTicks;
-  advance(idle, deadline - idle.t - 1);
-  assert.equal(legRailheadHold(idle.w, slot, idle.t), 'hold');
-  advance(idle, 1);
-  assert.equal(legRailheadHold(idle.w, slot, idle.t), 'on', 'timeout releases the hold');
-  until(idle, () => train(idle.w, slot).phase === TRAIN_PHASE.RUN, 'depart after timeout');
-  until(idle, () => legRailheadHold(idle.w, slot, idle.t) === 'hold', 'hold again on the next arrival');
+  // Isolate the timeout on the quiet arrival snapshot; live traffic can release it sooner.
+  assert.equal(legRailheadHold(idle.w, slot, deadline - 1), 'hold');
+  assert.equal(legRailheadHold(idle.w, slot, deadline), 'on');
+  until(idle, () => legRailheadHold(idle.w, slot, idle.t) === 'yield', 'pressure before timeout');
+  assert.ok(idle.t < deadline);
+  assert.equal(train(idle.w, slot).logs, 20);
+  until(idle, () => train(idle.w, slot).phase === TRAIN_PHASE.RUN, 'Strong leaves under pressure');
+  t.diagnostic(`pressure departure at ${idle.t}, deadline ${deadline}`);
   laySection(s, CANOPY);
   const laid = s.t;
   assert.equal(legRow(s.w, CANOPY).laid, 1);
