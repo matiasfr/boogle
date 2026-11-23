@@ -301,9 +301,8 @@ test('authored layouts reject malformed geometry and mixed expanded data before 
     /coexist/,
   );
   const resolved = validation.loadLevelArtifact(bell, definitions);
-  // Two separate visual undersides retain the original colliders; greybox leg 2 step 4 adds the bay row's two bed
-  // pieces on the rock (bay-bed-on, bay-bed-climb).
-  assert.equal(resolved.placements.length, 72);
+  // The eased Bell Rock bed replaces its two straight spans with nine chords.
+  assert.equal(resolved.placements.length, 79);
   assert.ok(!('layout' in resolved));
   assert.deepEqual(
     { ...metadata, format: 'boogle-level', place: 'empty', placements: [] },

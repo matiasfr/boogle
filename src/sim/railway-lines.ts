@@ -547,7 +547,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
   // in half's bed, t 25 to 45 short of the 52° kink (its buffers at the kink: leg 3 eases the bend). The cave row stays
   // shut.
   builtLine('incline', 'Incline head', 110600),
-  builtLine('bay-cut', 'Bay head', WORLD_LINES.find((l) => l.id === 'bay')!.legs[0]!.toCm - 3500),
+  builtLine('bay-cut', 'Bay head', 119248),
   rowLine('cave'),
 ];
 

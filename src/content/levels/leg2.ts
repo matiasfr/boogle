@@ -45,6 +45,44 @@ const LOWER = 4.9,
 /** The pinnacle's map point, moved 6 m east (call 117): docs/world/map-prototypes.html, landmark `bell`. */
 const PINNACLE = { x: -24, z: -870 };
 
+/** Chords of the upper bed beneath the train. Their ends overlap across the joints so a lay
+ * lifts a standing body onto the rails anywhere across the formation. */
+function bellBed() {
+  // Centimetres [along, x, z] on the catalog row, from the approach to the outward bed.
+  const cuts = [
+    [115745, 985, -81367],
+    [119800, -2481, -83471],
+    [120600, -3190, -83840],
+    [121400, -3942, -84112],
+    [122200, -4723, -84281],
+    [123000, -5520, -84345],
+    [123800, -6318, -84303],
+    [124600, -7104, -84155],
+    [125400, -7863, -83906],
+    [129335, -11538, -82499],
+  ] as const;
+  return cuts.slice(1).map(([end, x, z], i) => {
+    const [start, ax, az] = cuts[i]!;
+    const dx = (x - ax) / 100,
+      dz = (z - az) / 100,
+      along = unit(dx, dz);
+    const chord = frame({ x: ax / 100, z: az / 100 }, along, perp(along));
+    return {
+      ...chord.box(
+        `bay-bed-chord-${i}`,
+        -0.35,
+        (end - start + 35) / 100,
+        -4.3,
+        4.3,
+        BAY_RAIL - 0.1,
+        sub(BAY_RAIL - 0.1, ROCK),
+        'dark',
+      ),
+      over: true,
+    };
+  });
+}
+
 function bell() {
   const pieces: unknown[] = [
     // The lower level, in the cut (the cut is sea: everything here stands on posts).
@@ -60,8 +98,7 @@ function bell() {
     { ...ne.box('ramp-landing', -30, -26, -24, -21, UPPER, 0.4, 'grey'), posts: true },
     // The upper level. PROVISIONAL (design review, change 5): the four upper platforms and the deck's south edge move
     // when the track plan eases the 52 degree kink (about 11 m south at a 100 m radius), so they get no polish.
-    { ...bayIn.box('bay-bed-in', -4, 70, -BED, BED, BAY_RAIL - 0.1, sub(BAY_RAIL - 0.1, ROCK), 'dark'), over: true },
-    { ...bayOut.box('bay-bed-out', -4, 70, -BED, BED, BAY_RAIL - 0.1, sub(BAY_RAIL - 0.1, ROCK), 'dark'), over: true },
+    ...bellBed(),
     // The bay row climbs onto the rock east of the in half's bed (t 70 to 94; the row's grade knots are at t 79.793,
     // rail 15, and t 99.738, rail 14.22): its unlaid bed carries on there 0.15 m under the rail (the smoothed deck is
     // within 0.1 m of the row's straight pieces), so the bay cut's last lay only lifts a body standing on the rock. Past
@@ -163,7 +200,7 @@ function bell() {
       bayIn.reserve('bay row, in', 0, 70, -BED, BED, BAY_RAIL - 0.1, BAY_RAIL + LOADING),
       bayOut.reserve('bay row, out', 0, 70, -BED, BED, BAY_RAIL - 0.1, BAY_RAIL + LOADING),
       ne.reserve('seeds spot', -5.5, -2.5, -16.5, -13.5, LOWER, LOWER + CLEAR),
-      ne.reserve('Canopy frame and barrier', -2, 3, -30, -24, UPPER, UPPER + CLEAR),
+      { id: 'Canopy frame and barrier', x: -54.1, z: -848.23, yaw: 0, w: 2, d: 2, y0: UPPER, y1: UPPER + CLEAR },
       // Each platform's homeward 3 m (a lever, a board).
       ne.reserve('lower-east lever end', -20, -17, BED, 9, LOWER, LOWER + CLEAR),
       ne.reserve('lower-west lever end', -28, -25, -PLAT, -BED, LOWER, LOWER + CLEAR),

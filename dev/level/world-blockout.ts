@@ -45,7 +45,15 @@ const STILLS = 'docs/world/world-blockout';
 type Leg = { id: string; reverse?: boolean };
 /** `stopCm`: a stop fixed by a ruling, cm along the line, instead of the line's nearest point to its place. */
 type HaltSpec = { name: string; place?: string; at?: 'end' | 'start'; nearPt?: XZ; deck?: number; stopCm?: number };
-type Service = { id: string; name: string; extends?: 1; legs: Leg[]; halts: HaltSpec[]; note: string };
+type Service = {
+  id: string;
+  name: string;
+  extends?: 1;
+  legs: Leg[];
+  halts: HaltSpec[];
+  curves?: { near: XZ; radiusCm: number }[];
+  note: string;
+};
 type Turn = 'crossover' | 'loop' | null;
 
 /** Every corridor is double track (owner, 10 November): two tracks on 4 m centres. The gauge is the village's: rails 0.5 m
@@ -94,12 +102,14 @@ const SERVICES: Service[] = [
   {
     id: 'bay',
     name: 'Bay line',
+    curves: [{ near: [-50, -850], radiusCm: 6000 }],
     legs: [{ id: 'bay-cut' }, { id: 'bell-canopy' }, { id: 'notch-tunnel' }],
     halts: [
       { name: 'West landing', place: 'home' },
-      // 10 m back onto the in half's straight, off the 52° kink (greybox-leg2.md, step 1).
+      // Bell Rock keeps the bay-cut stop, now on the eased line.
       { name: 'Bell Rock', place: 'bell', stopCm: 121700 },
-      { name: 'Canopy Town', place: 'canopy' },
+      // The Canopy kink is at s 2425.93; keep the train on its level approach.
+      { name: 'Canopy Town', place: 'canopy', stopCm: 240093 },
       { name: 'Lantern Notch', place: 'notch' },
     ],
     note: "Home's West landing straight across the bay to Bell Rock (the shortcut), on through the cleft to Canopy Town and out to the Notch.",
@@ -303,6 +313,38 @@ function vertices(svc: Service): Vtx[] {
       out.push(v);
     });
   });
+  for (const { near, radiusCm } of svc.curves ?? []) {
+    const i = out.findIndex((v) => v.x === cm(near[0]) && v.z === cm(near[1]));
+    const a = out[i - 1],
+      corner = out[i],
+      b = out[i + 1];
+    if (!a || !corner || !b) throw new Error(`${svc.id}: missing curve vertex ${near}`);
+    const before = Math.atan2(corner.z - a.z, corner.x - a.x);
+    const after = Math.atan2(b.z - corner.z, b.x - corner.x);
+    const turn = Math.atan2(Math.sin(after - before), Math.cos(after - before));
+    const setback = radiusCm * Math.tan(Math.abs(turn) / 2);
+    // The authored straights include samples inside the tangent points. Remove those along with the vertex.
+    const inside = (v: Vtx) => Math.hypot(v.x - corner.x, v.z - corner.z) <= setback;
+    let first = i,
+      last = i;
+    while (first > 0 && inside(out[first - 1]!)) first--;
+    while (last + 1 < out.length && inside(out[last + 1]!)) last++;
+    const r = Math.sign(turn) * radiusCm;
+    const cx = corner.x - setback * Math.cos(before) - r * Math.sin(before);
+    const cz = corner.z - setback * Math.sin(before) + r * Math.cos(before);
+    // Keep the leg boundary at the midpoint. 1.5 m leaves room for cm rounding under the 2° turn limit.
+    const count = 2 * Math.ceil((Math.abs(turn) * radiusCm) / 300);
+    const arc = Array.from({ length: count + 1 }, (_, k) => {
+      const heading = before + (turn * k) / count;
+      return {
+        x: Math.round(cx + r * Math.sin(heading)),
+        z: Math.round(cz - r * Math.cos(heading)),
+        h: corner.h,
+        leg: k <= count / 2 ? corner.leg : b.leg,
+      };
+    });
+    out.splice(first, last - first + 1, ...arc);
+  }
   return out;
 }
 
@@ -455,7 +497,8 @@ function build(svc: Service): Built {
         full.push({
           x: Math.round(a.x + (v.x - a.x) * t),
           z: Math.round(a.z + (v.z - a.z) * t),
-          y: yCm(c),
+          // The quarter-metre corner search can land 1 cm above the bay strait's flat deck.
+          y: svc.id === 'bay' && Math.abs(yCm(c) - cm(SEA_DECK)) <= 1 ? cm(SEA_DECK) : yCm(c),
           leg: v.leg,
           s: c,
         });

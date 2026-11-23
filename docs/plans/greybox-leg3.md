@@ -282,7 +282,7 @@ Each step leaves `node dev/ship-check.ts` green. **Steps 1 to 5 ship together as
 did): the arc moves track that leg 2's views draw through Bell Rock's provisional platforms, so the Bell Rock rework
 rides with it. Steps 6 and 7 ship on their own after it.
 
-- [ ] **1. The catalog (M; HOTBOX).** `dev/level/world-blockout.ts`: the fillet (`curves` on a service; arc points at
+- [x] **1. The catalog (M; HOTBOX).** `dev/level/world-blockout.ts`: the fillet (`curves` on a service; arc points at
       chords of at most 2 m, tangent to both spans; the deck profile unchanged on the rock at 15 m); the bay service's
       Canopy halt `stopCm` (the kink's cm less 2,500), its end crossover. Regenerate (`node --import ./dev/sim/hooks.ts
       dev/level/world-blockout.ts`): `src/sim/railway-world-lines.ts`, `docs/world/world-blockout.html`,
@@ -296,6 +296,15 @@ rides with it. Steps 6 and 7 ship on their own after it.
       on grade 0; points within 1 m); `test/world-lines.test.ts` (the arc's tangents and its 60 m radius; no future
       span over 4%); `npm run level-check`: the bay row's s 1227 kink gone from "planned, would fail", no kink over 2°
       and no radius under 40 m on the bay row through Bell Rock, no new report.
+      **Catalog measurements (22 November).** The eased Canopy stop is s 2400.93. Sections measure 526.23,
+      402.90 and 254.80 m. The two head platforms are level at 4 and 13 m. Bell Rock's rack is 6.64 m from the
+      kit car's catalog position and 10.81 m from its frame. The minimum platform-to-tip clearances are 9.45 m
+      north and 43.10 m south. The owner confirmed call 20's 10 m separation. The original cloth coordinates
+      measured 19.78 m from the barrier. The post now stands 2 m before the kink, 9.8 m to the homeward side,
+      at (−1091.99, −294.01), 13.90 m high, with 4 m reach and **10.02 m** to the barrier.
+      The post is beyond the approach platform's end. Its deck collider is step 6's proof.
+      The collider regression found 35 samples with insufficient overhead room beneath a newly laid bay deck.
+      The nine upper-bed chords moved forward from step 5 and the same check now finds zero.
 - [ ] **2. The rules and the bump (L; HOTBOX).** `src/sim/railway-lines.ts`: `builtLine` over every built leg of a row;
       the fleet list; the new shed row(s); the load checks over every built leg. `src/sim/railway-train.ts`: `fleetOf`
       on the list. `railway-queries-route.ts`: nothing new beyond the list's reads (the roles derive from `legBuilt`).

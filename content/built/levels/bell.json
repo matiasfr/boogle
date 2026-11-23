@@ -522,42 +522,378 @@
         },
         {
           "bounds": [
-            -4,
-            70,
-            -3.8,
-            3.8
+            -0.35,
+            40.9,
+            -4.3,
+            4.3
           ],
           "compute": "rect",
           "frame": {
-            "operand": 1
+            "o": {
+              "x": 9.85,
+              "z": -813.67
+            },
+            "u": {
+              "axis": {
+                "x": -34.66,
+                "z": -21.04
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -34.66,
+                  "z": -21.04
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
           },
           "h": {
             "a": 14.9,
             "b": 14,
             "compute": "sub"
           },
-          "id": "bay-bed-in",
+          "id": "bay-bed-chord-0",
           "over": true,
           "tone": "dark",
           "top": 14.9
         },
         {
           "bounds": [
-            -4,
-            70,
-            -3.8,
-            3.8
+            -0.35,
+            8.35,
+            -4.3,
+            4.3
           ],
           "compute": "rect",
           "frame": {
-            "operand": 2
+            "o": {
+              "x": -24.81,
+              "z": -834.71
+            },
+            "u": {
+              "axis": {
+                "x": -7.09,
+                "z": -3.69
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -7.09,
+                  "z": -3.69
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
           },
           "h": {
             "a": 14.9,
             "b": 14,
             "compute": "sub"
           },
-          "id": "bay-bed-out",
+          "id": "bay-bed-chord-1",
+          "over": true,
+          "tone": "dark",
+          "top": 14.9
+        },
+        {
+          "bounds": [
+            -0.35,
+            8.35,
+            -4.3,
+            4.3
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -31.9,
+              "z": -838.4
+            },
+            "u": {
+              "axis": {
+                "x": -7.52,
+                "z": -2.72
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -7.52,
+                  "z": -2.72
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 14.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "bay-bed-chord-2",
+          "over": true,
+          "tone": "dark",
+          "top": 14.9
+        },
+        {
+          "bounds": [
+            -0.35,
+            8.35,
+            -4.3,
+            4.3
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -39.42,
+              "z": -841.12
+            },
+            "u": {
+              "axis": {
+                "x": -7.81,
+                "z": -1.69
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -7.81,
+                  "z": -1.69
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 14.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "bay-bed-chord-3",
+          "over": true,
+          "tone": "dark",
+          "top": 14.9
+        },
+        {
+          "bounds": [
+            -0.35,
+            8.35,
+            -4.3,
+            4.3
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -47.23,
+              "z": -842.81
+            },
+            "u": {
+              "axis": {
+                "x": -7.97,
+                "z": -0.64
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -7.97,
+                  "z": -0.64
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 14.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "bay-bed-chord-4",
+          "over": true,
+          "tone": "dark",
+          "top": 14.9
+        },
+        {
+          "bounds": [
+            -0.35,
+            8.35,
+            -4.3,
+            4.3
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -55.2,
+              "z": -843.45
+            },
+            "u": {
+              "axis": {
+                "x": -7.98,
+                "z": 0.42
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -7.98,
+                  "z": 0.42
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 14.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "bay-bed-chord-5",
+          "over": true,
+          "tone": "dark",
+          "top": 14.9
+        },
+        {
+          "bounds": [
+            -0.35,
+            8.35,
+            -4.3,
+            4.3
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -63.18,
+              "z": -843.03
+            },
+            "u": {
+              "axis": {
+                "x": -7.86,
+                "z": 1.48
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -7.86,
+                  "z": 1.48
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 14.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "bay-bed-chord-6",
+          "over": true,
+          "tone": "dark",
+          "top": 14.9
+        },
+        {
+          "bounds": [
+            -0.35,
+            8.35,
+            -4.3,
+            4.3
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -71.04,
+              "z": -841.55
+            },
+            "u": {
+              "axis": {
+                "x": -7.59,
+                "z": 2.49
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -7.59,
+                  "z": 2.49
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 14.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "bay-bed-chord-7",
+          "over": true,
+          "tone": "dark",
+          "top": 14.9
+        },
+        {
+          "bounds": [
+            -0.35,
+            39.7,
+            -4.3,
+            4.3
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -78.63,
+              "z": -839.06
+            },
+            "u": {
+              "axis": {
+                "x": -36.75,
+                "z": 14.07
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -36.75,
+                  "z": 14.07
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": {
+            "a": 14.9,
+            "b": 14,
+            "compute": "sub"
+          },
+          "id": "bay-bed-chord-8",
           "over": true,
           "tone": "dark",
           "top": 14.9
@@ -1019,19 +1355,14 @@
           "y1": 7.9
         },
         {
-          "bounds": [
-            -2,
-            3,
-            -30,
-            -24
-          ],
-          "compute": "rect",
-          "frame": {
-            "operand": 0
-          },
+          "d": 2,
           "id": "Canopy frame and barrier",
+          "w": 2,
+          "x": -54.1,
           "y0": 15.9,
-          "y1": 18.9
+          "y1": 18.9,
+          "yaw": 0,
+          "z": -848.23
         },
         {
           "bounds": [
