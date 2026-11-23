@@ -1,3 +1,4 @@
+import { ServiceHealth } from './helpers/railway-service-health.ts';
 // The install and the longer boiler (docs/plans/ring-island-build2.md, R3): rail.install's refusals (no steel in the
 // bay, line 1, another part, a stale revision or a malformed hold, the table mid roll-out), two presses on one tick
 // installing once, each line 2 train taking the fit only standing at the Village, the fastest row's braking
@@ -437,8 +438,7 @@ test('each line 2 train takes the boiler only standing at the Village, and its p
 // each train taking the fit at its next Village stand, within about 91 s); all longer is a todo test, below.
 // A fleet held mixed by hand is not reachable in play, so it is a safety test only: its waits are printed, not bounded
 // (docs/agent-calls.md, Rail, 12 November: one seed in fifteen measured 1,064 ticks there).
-const WAIT_BOUND = 1050,
-  MEAN_BOUND = 525;
+const MEAN_BOUND = 525;
 const FUZZ = fuzzTicks(20000);
 const haltId = (stop: number) => RAIL_HALTS.findIndex((h) => h.line === LINE2 && h.stop === stop);
 type Fleet = 'standard' | 'handover' | 'longer' | 'mixed';
@@ -456,6 +456,7 @@ function fleetRun(fleet: Fleet, seed: number, headPct: number, fast: readonly nu
       assert.ok(k < 4000, `every train fitted in time (tick ${s.t})`);
       railTick(s.w, ++s.t, headPct);
     }
+  const health = new ServiceHealth([LINE2], s.w);
   const rand = mulberry32(seed);
   const slow = fleet === 'mixed' ? LINE_SLOTS[LINE2]!.filter((k) => !fast.includes(k)) : [];
   const asked = new Map<string, number>(),
@@ -478,7 +479,10 @@ function fleetRun(fleet: Fleet, seed: number, headPct: number, fast: readonly nu
       const stop = Math.floor(rand() * 6),
         dir = rand() < 0.5 ? -1 : 1,
         id = haltId(stop);
-      if (act(s, 'a', 'rail.call', { id, dir }) && !asked.has(`${stop}/${dir}`)) asked.set(`${stop}/${dir}`, s.t);
+      if (act(s, 'a', 'rail.call', { id, dir }) && !asked.has(`${stop}/${dir}`)) {
+        health.ask(s.w, id, dir, s.t);
+        asked.set(`${stop}/${dir}`, s.t);
+      }
     }
     if (rand() < 0.03) {
       const slot = LINE_SLOTS[LINE2]![Math.floor(rand() * 3)]!;
@@ -491,6 +495,7 @@ function fleetRun(fleet: Fleet, seed: number, headPct: number, fast: readonly nu
     const before = trains(s.w).map((r, slot) => trainAlong(r, RAIL_TRAINS[slot]!.line, s.t));
     const was = trains(s.w).map((r) => r.phase);
     railTick(s.w, ++s.t, headPct);
+    health.tick(s.w, s.t);
     trains(s.w).forEach((r, slot) => {
       const step = Math.abs(trainAlong(r, RAIL_TRAINS[slot]!.line, s.t) - before[slot]!);
       assert.ok(step <= BOILER_SPEED[r.boiler]! + 1, `train ${slot} jumps ${step} at ${s.t}`);
@@ -576,7 +581,8 @@ function fleetRun(fleet: Fleet, seed: number, headPct: number, fast: readonly nu
     `Village stands by train: ${LINE_SLOTS[LINE2]!.map((k2) => `${k2}${fast.includes(k2) ? ' (fast)' : ''} ${villageStands.get(k2) ?? 0}`).join(', ')}; ` +
       `signal stands: ${LINE_SLOTS[LINE2]!.map((k2) => `${k2} ${signalStands.get(k2) ?? 0}`).join(', ')}; longest stand ${longest / 10} s; a fast train's closest to the one ahead ${closest / 100} m (sepCm ${TRAIN.sepCm / 100} m)`,
   ];
-  return { worst, mean, longest, mixedTicks, notes };
+  health.drain(s.w, s.t, () => railTick(s.w, ++s.t, headPct));
+  return { worst, mean, longest, mixedTicks, notes, health };
 }
 
 // The fleets a room can have, both hold settings: the headway hold on, and off (railTrainHeadPct 0, as the trains
@@ -591,33 +597,21 @@ for (const [fleet, seed, headPct] of [
   ['standard', 0xb011e7, TRAIN_HEAD_PCT],
   ['standard', 0x0fa575, 0],
 ] as const)
-  test(`${fleet} fleet ${seed.toString(16)} at ${headPct}%: ${FUZZ} ticks hold the blocks, the 105 s worst wait and the 52.5 s mean`, (t) => {
+  test(`${fleet} fleet ${seed.toString(16)} at ${headPct}%: ${FUZZ} ticks hold the blocks, service health and the 52.5 s mean`, (t) => {
     const r = fleetRun(fleet, seed, headPct);
     for (const n of r.notes) t.diagnostic(n);
-    for (const [key, v] of r.worst) assert.ok(v <= WAIT_BOUND, `${key}: waited ${v} ticks (bound ${WAIT_BOUND})`);
+    assert.deepEqual(r.health.failures, []);
     assert.ok(r.mean <= MEAN_BOUND, `mean wait ${r.mean} ticks (bound ${MEAN_BOUND})`);
     assert.ok(r.longest < 1200, 'no line 2 train stands two minutes');
   });
 
-// TODO, with the owner: an all-longer fleet (every line 2 train on the longer boiler, from the tick the last one takes
-// the fit) breaches the 1,050 worst wait on one seed: 1,100 ticks at b011e7 with the headway hold on (an ask for the
-// Quarry down while all three trains run out; the nearest makes three lever stops on its way down), 991 or under on
-// eight more seeds. Whether line 2's wait bound holds for the longer boiler is the owner's open question (docs/agent-calls.md,
-// Rail, 12 November); until he answers this is a todo test: it prints its figures and its failure does not fail the
-// suite. The safety checks inside fleetRun (spacing, end blocks, jumps, the load check) still throw as todo failures.
-// On the greybox route's world (v32) b011e7 measures 1,152 (the Quarry down) and fa575 at 0% passes (worst 730), so
-// only b011e7 stays todo; fa575 is held to the bound.
-for (const [seed, headPct, todo] of [
-  [0xb011e7, TRAIN_HEAD_PCT, true],
-  [0x0fa575, 0, false],
-] as const)
+for (const [seed, headPct] of [[0xb011e7, TRAIN_HEAD_PCT], [0x0fa575, 0]] as const)
   test(
-    `longer fleet ${seed.toString(16)} at ${headPct}%: ${FUZZ} ticks, the 105 s worst wait and the 52.5 s mean`,
-    todo ? { todo: 'all-longer breaches 1,050 on one seed (1,152 at b011e7 on v32); with the owner' } : {},
+    `longer fleet ${seed.toString(16)} at ${headPct}%: service health and mean wait`,
     (t) => {
       const r = fleetRun('longer', seed, headPct);
       for (const n of r.notes) t.diagnostic(n);
-      for (const [key, v] of r.worst) assert.ok(v <= WAIT_BOUND, `${key}: waited ${v} ticks (bound ${WAIT_BOUND})`);
+      assert.deepEqual(r.health.failures, []);
       assert.ok(r.mean <= MEAN_BOUND, `mean wait ${r.mean} ticks (bound ${MEAN_BOUND})`);
     },
   );

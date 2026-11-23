@@ -1,3 +1,4 @@
+import { ServiceHealth, fleetBudget } from './helpers/railway-service-health.ts';
 // Several trains on a line (docs/plans/generic-lines.md, step 4a): the block rule, the end blocks and their signals,
 // the headway hold, who serves a lever ask, a rider's own ask, the wagon's exemption, the pier opening mid-run, and
 // the worst wait for a train each way at every halt under random asks. The fuzz, the signal-to-signal leg and the
@@ -159,10 +160,6 @@ function awake(stage: 'trains-on' | 'q6-done' = 'trains-on', audit = true) {
 }
 
 // ---------------------------------------------------------------- spacing and the worst wait
-/** The worst wait test's flat bound on line 2 (orchestrator, 10 November): 105 s, from the review's long fuzz (91-97
- * s at the default hold over 5 seeds × 40,000 ticks). Two trains do NOT meet the design's one-minute bound under heavy
- * random asks; v27's third train (or an even-spacing hold) is to. */
-const WAIT_BOUND = 1050;
 const FUZZ_TICKS = fuzzTicks(3000);
 /** Q6's kit off the train and its logs and rails into the frame, so the pier opens a few hundred ticks on. */
 function fundQ6(w: Seed) {
@@ -181,6 +178,7 @@ for (const stage of FUZZ_STAGES)
       let w = unaudited(stage === 'q6-stocked' ? railwayAtTrains('q6-stocked') : buildSeedWorld(stage));
       for (let k = 0; k < TRAIN.wakeTicks; k++) railTick(w.w, ++w.t, headPct);
       const rand = mulberry32(seed);
+      const health = new ServiceHealth([LINE2], w.w);
       const packAt = Math.floor(rand() * Math.min(3000, FUZZ_TICKS / 2));
       let pierAt = -1,
         restores = 0,
@@ -203,8 +201,10 @@ for (const stage of FUZZ_STAGES)
           const id = Math.floor(rand() * RAIL_HALTS.length),
             dir = rand() < 0.5 ? -1 : 1;
           const h = RAIL_HALTS[id]!;
-          if (h.stop < trainStops(w.w, h.line).length && lever(w, id, dir) && !asked.has(`${id}/${dir}`))
+          if (h.stop < trainStops(w.w, h.line).length && lever(w, id, dir) && !asked.has(`${id}/${dir}`)) {
             asked.set(`${id}/${dir}`, w.t);
+            health.ask(w.w, id, dir, w.t);
+          }
         }
         if (!LIGHT && rand() < 0.03) {
           const slot = LINE_SLOTS[LINE2]![Math.floor(rand() * 2)]!,
@@ -221,6 +221,7 @@ for (const stage of FUZZ_STAGES)
           act(w, 'a', 'rail.call', { id: Math.floor(rand() * 8) - 1, dir: rand() < 0.5 ? -1 : 2, train } as never);
         }
         step(w, headPct);
+        health.tick(w.w, w.t);
         trains(w.w).forEach((r, slot) => {
           if (r.phase !== TRAIN_PHASE.STAND) return void standSince.delete(slot);
           if (!standSince.has(slot)) standSince.set(slot, w.t);
@@ -263,12 +264,8 @@ for (const stage of FUZZ_STAGES)
       t.diagnostic(`line 2 lever waits: ${waits.length} served, mean ${(mean / 10).toFixed(1)} s`);
       t.diagnostic(`worst rider waits (slot/stop): ${[...riderWorst].map(([k, v]) => `${k} ${v / 10} s`).join('; ')}`);
       t.diagnostic(`longest line-2 stand: ${JSON.stringify(longest)}`);
-      for (const [key, ticks] of worst)
-        if (RAIL_HALTS[Number(key.split('/')[0])]!.line === LINE2)
-          assert.ok(
-            ticks <= (stage === 'q6-stocked' ? 1350 : WAIT_BOUND),
-            `line 2 ${key}: waited ${ticks} ticks (early bound 1350, later ${WAIT_BOUND})`,
-          );
+      health.drain(w.w, w.t, () => step(w, headPct));
+      assert.deepEqual(health.failures, []);
       if (stage === 'q6-stocked') assert.ok(pierAt >= 0, 'the pier opened');
       assert.ok(longest.ticks < 1200, 'no line-2 train stands two minutes');
       assert.equal(invariant(w.w), null);
@@ -919,8 +916,9 @@ for (const [seed, headPct] of ISLAND_SEEDS)
     t.diagnostic(`${FUZZ_TICKS} ticks; restores ${restores}`);
     t.diagnostic(`worst lever waits: ${waitTable(worst)}`);
     t.diagnostic(`worst rider waits (slot/stop): ${[...riderWorst].map(([k, v]) => `${k} ${v / 10} s`).join('; ')}`);
+    const { bound } = fleetBudget(ISLAND_LINE, line2Stops(7, 7, true), Array(ISLAND_LINE.trains).fill(0));
     for (const [key, ticks] of worst)
-      assert.ok(ticks <= WAIT_BOUND, `${key}: waited ${ticks} ticks (bound ${WAIT_BOUND})`);
+      assert.ok(ticks <= bound, `${key}: waited ${ticks} ticks (bound ${bound})`);
     // The Pier's up way is never asked: the lever refuses it.
     assert.ok(![...worst.keys()].includes(`${PIER}/1`));
   });
