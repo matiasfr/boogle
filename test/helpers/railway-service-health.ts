@@ -98,7 +98,8 @@ export class ServiceHealth {
           if (r.phase === TRAIN_PHASE.STAND) {
             if (r.at < 0) state = 'waiting at signal';
             else if (tick < r.depart + TRAIN.dwellTicks) state = 'boarding dwell';
-            else if (platformHoldPressure(rows, h.line, stops, j, r.at, req, tick)) state = 'spacing yields';
+            else if (r.at > 0 && r.at < stops.length - 1 &&
+                platformHoldPressure(rows, h.line, stops, j, r.at, req, tick)) state = 'spacing yields';
             else if (balancedHold({ row: rows, line: k => line(w, k), headExempt: slot => rows(slot).wagon && footingsOwed(w, h.line) },
               h.line, stops, j, r.at, tick)) state = 'spacing hold';
             else state = 'standing, spacing off';

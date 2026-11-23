@@ -279,58 +279,58 @@
   },
   "gorge-mid": {
    "tick": 14652,
-   "stage": 1107681911,
-   "after": 1222026000
+   "stage": 1859187271,
+   "after": 3939782416
   },
   "gorge-reached": {
    "tick": 16878,
-   "stage": 3031513484,
-   "after": 2899551499
+   "stage": 4261706124,
+   "after": 3933662243
   },
   "incline-open": {
    "tick": 16878,
-   "stage": 807881139,
-   "after": 4231052532
+   "stage": 2386733491,
+   "after": 880627548
   },
   "incline-mid": {
    "tick": 17178,
-   "stage": 1602811973,
-   "after": 2626333722
+   "stage": 2109438021,
+   "after": 3426753450
   },
   "bell-reached": {
    "tick": 18761,
-   "stage": 1398829531,
-   "after": 1127233367
+   "stage": 3655680043,
+   "after": 3484555351
   },
   "bay-open": {
    "tick": 18761,
-   "stage": 4032805890,
-   "after": 195626094
+   "stage": 1732072786,
+   "after": 1254468462
   },
   "bay-mid": {
    "tick": 19061,
-   "stage": 168289179,
-   "after": 3119176187
+   "stage": 703842683,
+   "after": 3503979259
   },
   "bay-reached": {
    "tick": 20663,
-   "stage": 142897866,
-   "after": 1742221594
+   "stage": 2134395594,
+   "after": 219778330
   },
   "canopy-open": {
    "tick": 20679,
-   "stage": 1328399906,
-   "after": 4088144273
+   "stage": 3440438818,
+   "after": 914189713
   },
   "canopy-mid": {
    "tick": 20979,
-   "stage": 3262123336,
-   "after": 3887320564
+   "stage": 388058440,
+   "after": 576103924
   },
   "canopy-reached": {
    "tick": 23222,
-   "stage": 1870506293,
-   "after": 83172025
+   "stage": 344726837,
+   "after": 4064831161
   }
  }
 }

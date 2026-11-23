@@ -424,7 +424,9 @@ export function balancedHold<L extends LineRef>(
     Math.floor(cycleTicks(line, stops, r.boiler) / fleet.length))) : def.balance;
   if (cap === undefined || !balanceOk(cap) || io.headExempt(slot)) return false;
   if (tick >= r.arrived + (r.at >= 0 ? TRAIN.dwellTicks : 0) + cap) return false;
-  if (greybox && platformHoldPressure(io.row, line, stops, slot, from, io.line(line).req, tick)) return false;
+  // Keep the departure gap at terminals even when assigned a call. Leaving early at the Village
+  // can strand the next Quarry rider for almost a circuit (23 November service-health decision).
+  if (middle && platformHoldPressure(io.row, line, stops, slot, from, io.line(line).req, tick)) return false;
   if (!middle) {
     const b = endBlocks(line, stops)[from === 0 ? 0 : 1];
     if (fleet.some(k => k !== slot && io.row(k).to === -1 && io.row(k).dest === b.signal &&
@@ -525,8 +527,7 @@ export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: 
         end = from >= 0 && atEnd(from, stops);
       const head = headTicks(line, stops, io.headPct, r.boiler ?? 0, serving.length),
         left = from === 0 ? io.line(line).left0 : io.line(line).left1;
-      if (end && head > 0 && left >= 0 && tick < left + head && !io.headExempt(slot) &&
-          !(greyboxSpacing(line, stops) && platformHoldPressure(io.row, line, stops, slot, from, io.line(line).req, tick))) break;
+      if (end && head > 0 && left >= 0 && tick < left + head && !io.headExempt(slot)) break;
       if (from >= 0 && balancedHold(io, line, stops, slot, from, tick)) break;
       const reasons = trainReasons(
         io.row,

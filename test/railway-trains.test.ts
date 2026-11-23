@@ -653,6 +653,11 @@ test('the balanced hold: an end waits while the gap ahead is the shorter, never 
   const cap = V.balance!;
   assert.equal(cap, 600);
   assert.equal(balancedHold(f.io(), V, stops, 0, 0, 100), true, 'bunched behind train 1: it waits');
+  const route = { ...V, fleet: RAIL_LINES[LINE2]!.fleet };
+  f.lineRow.req = reqAdd(0, 1, 1, stops.length);
+  assert.equal(trainServes(f.io().row, route, stops, 1, 1, 100), 0);
+  assert.equal(balancedHold(f.io(), route, stops, 0, 0, 100), true, 'the assigned Quarry ask keeps its Village departure gap');
+  f.lineRow.req = 0;
   assert.equal(balancedHold(f.io(), V, stops, 0, 0, TRAIN.dwellTicks + cap - 1), true, 'the last tick of its cap');
   assert.equal(balancedHold(f.io(), V, stops, 0, 0, TRAIN.dwellTicks + cap), false, 'the cap: 60 s past its dwell');
   assert.equal(balancedHold(f.io(), { ...V, balance: undefined }, stops, 0, 0, 100), false, 'a line without it');
