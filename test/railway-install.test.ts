@@ -4,8 +4,8 @@ import { ServiceHealth } from './helpers/railway-service-health.ts';
 // installing once, each line 2 train taking the fit only standing at the Village, the fastest row's braking
 // boundary, the train's extent clearing every middle halt and signal, and the mixed fleet: one (or two) of line 2's trains at 25 m/s among trains at 20 for 20,000 ticks under random
 // lever and rider asks and restores, holding the block rule (sepCm round the circuit, one train an end block) and every
-// invariant; and line 2's wait bound (105 s worst, 52.5 s mean) on all standard and the real handover after an
-// install (all longer is a todo test, with the owner). FUZZ_TICKS lengthens the fuzz.
+// invariant. Ordinary service has a two-headway budget plus intermediate dwells. The handover's first circuit and
+// the forced mixed fleet keep the safety checks, including draining outstanding calls. FUZZ_TICKS lengthens the fuzz.
 //
 // What the mixed fleet proves: the real rules run it (railTick on a world), so blockFree, the end blocks, the headway
 // hold (by the leaving train's boiler) and the balanced hold all meet a faster train behind and ahead of slower ones.
@@ -41,6 +41,7 @@ import {
 import {
   LINE_SLOTS,
   TRAIN_HEAD_PCT,
+  cycleTicks,
   endBlocks,
   servingSlots,
   trainPose,
@@ -433,11 +434,6 @@ test('each line 2 train takes the boiler only standing at the Village, and its p
 });
 
 // ---------------------------------------------------------------- the fleets (the plan's P1)
-// Line 2's wait bound (greybox-route's design review of 12 November, section A): worst lever wait 1,050 ticks, mean
-// 525. It is asserted on all standard (no install) and the real handover (the install made through the accepted op,
-// each train taking the fit at its next Village stand, within about 91 s); all longer is a todo test, below.
-// A fleet held mixed by hand is not reachable in play, so it is a safety test only: its waits are printed, not bounded
-// (docs/agent-calls.md, Rail, 12 November: one seed in fifteen measured 1,064 ticks there).
 const MEAN_BOUND = 525;
 const FUZZ = fuzzTicks(20000);
 const haltId = (stop: number) => RAIL_HALTS.findIndex((h) => h.line === LINE2 && h.stop === stop);
@@ -456,6 +452,11 @@ function fleetRun(fleet: Fleet, seed: number, headPct: number, fast: readonly nu
       assert.ok(k < 4000, `every train fitted in time (tick ${s.t})`);
       railTick(s.w, ++s.t, headPct);
     }
+  // During the first circuit after install the trains fit at successive Village stops.
+  // Only calls arriving in this window use mixed-fleet safety rules. Keep tracking them to boarding.
+  // docs/decisions-rail.md#d-2026-11-23-greybox-service-health
+  const installTick = s.t;
+  const handoverEnd = fleet === 'handover' ? installTick + cycleTicks(LINE2, trainStops(s.w, LINE2), 1) : -1;
   const health = new ServiceHealth([LINE2], s.w);
   const rand = mulberry32(seed);
   const slow = fleet === 'mixed' ? LINE_SLOTS[LINE2]!.filter((k) => !fast.includes(k)) : [];
@@ -480,7 +481,7 @@ function fleetRun(fleet: Fleet, seed: number, headPct: number, fast: readonly nu
         dir = rand() < 0.5 ? -1 : 1,
         id = haltId(stop);
       if (act(s, 'a', 'rail.call', { id, dir }) && !asked.has(`${stop}/${dir}`)) {
-        health.ask(s.w, id, dir, s.t);
+        health.ask(s.w, id, dir, s.t, fleet === 'mixed' || s.t < handoverEnd);
         asked.set(`${stop}/${dir}`, s.t);
       }
     }
@@ -569,7 +570,7 @@ function fleetRun(fleet: Fleet, seed: number, headPct: number, fast: readonly nu
   const name = (stop: number) => RAIL_HALTS[haltId(stop)]!.name;
   const mean = waits.reduce((a, b) => a + b, 0) / Math.max(1, waits.length);
   const notes = [
-    `mixed ${mixedTicks} of ${FUZZ} ticks; restores ${restores}; slow trains reset ${resets} times`,
+    `start ${installTick}, handover end ${handoverEnd}; mixed ${mixedTicks} of ${FUZZ} ticks; restores ${restores}; slow trains reset ${resets} times`,
     `worst lever wait ${Math.max(0, ...worst.values())} ticks, mean ${mean.toFixed(1)} over ${waits.length} asks: ${[
       ...worst,
     ]

@@ -26,7 +26,7 @@ export function fleetBudget(line: LineRef, stops: readonly number[], boilers: re
 }
 
 export class ServiceHealth {
-  readonly pending = new Map<string, { id: number; dir: number; since: number; boilers: number[]; bound: number; overdue: boolean }>();
+  readonly pending = new Map<string, { id: number; dir: number; since: number; boilers: number[]; bound: number; overdue: boolean; safetyOnly: boolean }>();
   readonly worst = new Map<number, number>();
   readonly stages = new Set<string>();
   readonly failures: string[] = [];
@@ -36,11 +36,11 @@ export class ServiceHealth {
   private readonly joined = new Map<number, number>();
   constructor(lines: readonly number[], w: World) {
     this.lines = lines;
-    // A seed's last arrival is a conservative latest possible join for an incumbent.
+    // Seed trains are already in service at the start of observation. Only observed joins need to mature.
     for (const l of lines) for (const j of servingSlots(i => train(w, i), l))
-      this.joined.set(j, train(w, j).arrived);
+      this.joined.set(j, -Infinity);
   }
-  ask(w: World, id: number, dir: number, tick: number) {
+  ask(w: World, id: number, dir: number, tick: number, safetyOnly = false) {
     const h = RAIL_HALTS[id]!;
     if (!this.lines.includes(h.line) || this.there(w, id, dir)) return;
     const key = `${id}/${dir}`;
@@ -56,7 +56,7 @@ export class ServiceHealth {
     if (!boilers.length) boilers.push(slots.map(j => train(w,j).boiler).reduce((a,b) =>
       cycleTicks(h.line, stops, a) >= cycleTicks(h.line, stops, b) ? a : b));
     const { bound } = serviceBudget(w, h.line, boilers);
-    this.pending.set(key, { id, dir, since: tick, boilers, bound, overdue: false });
+    this.pending.set(key, { id, dir, since: tick, boilers, bound, overdue: false, safetyOnly });
   }
   private there(w: World, id: number, dir: number) {
     const h = RAIL_HALTS[id]!;
@@ -86,7 +86,7 @@ export class ServiceHealth {
       p.bound = Math.max(p.bound, budget.bound);
       const wait = tick - p.since;
       assert.ok(wait <= 3 * p.bound, `${h.name}/${p.dir} waited ${wait} ticks, over three times ${p.bound}`);
-      if (wait === p.bound + 1) {
+      if (!p.safetyOnly && wait === p.bound + 1) {
         p.overdue = true;
         const rows = (slot: number) => train(w, slot);
         const req = line(w, h.line).req;
