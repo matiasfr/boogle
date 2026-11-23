@@ -51,7 +51,19 @@ async function move(px: number, pz: number) {
 const stock = (kind: number) => haltYardStock(R.rw(), yard, kind);
 const settled = () => adapter.read.pending() === 0;
 const ready = window as Window & { __yardAction?: () => Promise<void> };
-if (pointer) {
+if (q.has('recover')) {
+  // q3-yard-recovery is q3-done with two aged piles. Move clear of both so the host can drain them.
+  await move(1020, -130);
+  await until(() => haltYardStock(R.rw(), 0, 0) === 4 && haltYardStock(R.rw(), 2, 0) === 6, 'both host recoveries');
+  console.log(
+    'YARD recovered',
+    JSON.stringify({ village: haltYardStock(R.rw(), 0, 0), quarry: haltYardStock(R.rw(), 2, 0) }),
+  );
+  const aim = () =>
+    window.__debugCam!.set(yard === 0 ? [x - 4, y + 2, z - 5] : [x - 3, y + 2.5, z - 4], [x, y + 0.6, z], 53);
+  aim();
+  setInterval(aim, 50);
+} else if (pointer) {
   const depot = view.depot;
   const eye =
     pointer === 'forge'
@@ -140,7 +152,12 @@ if (pointer) {
     async function press() {
       const before = stock(0),
         load = R.railBack();
-      interactTarget()!.run?.();
+      if (q.has('setdown')) {
+        const { setDown } = (await import(
+          '/src/entities/railway/back-down.ts' as string
+        )) as typeof import('../../../src/entities/railway/back-down.ts');
+        if (!setDown(adapter)) throw new Error('Set-down refused inside the yard');
+      } else interactTarget()!.run?.();
       await until(() => settled() && stock(0) === before + load.carry && R.railBack().rails === 0, 'deposit confirmed');
       console.log('YARD landed', JSON.stringify({ yard, logs: stock(0), rails: stock(2), back: R.railBack() }));
       await wait(850);

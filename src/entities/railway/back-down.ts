@@ -8,6 +8,8 @@ import { heldId } from '../../player/inventory.ts';
 import { PLAYER_R } from '../../constants.ts';
 import { plan, type Pile } from './back-down-plan.ts';
 import { account, beam, boiler, piles, type ReadWorld } from '../../sim/railway-rows.ts';
+import { HALT_YARDS, HALT_YARD_REACH } from '../../sim/railway-yard-layout.ts';
+import { nearestOpenYard } from '../../sim/railway-queries-yard.ts';
 
 /** How far from you the set-down lands, and the gap between neighbouring piles. */
 const REACH = 1.5,
@@ -51,6 +53,18 @@ export function setDown(adapter: RailwayAdapter, away?: { x: number; z: number }
   const body = me.body;
   if (busy || !adapter.read.ready() || !body || !total(w, pid)) return false;
   const p = body.interpolatedPosition;
+  const x = cm(p.x),
+    z = cm(p.z);
+  const yard = nearestOpenYard(w, x, z),
+    centre = HALT_YARDS[yard]!;
+  if ((x - centre.x) ** 2 + (z - centre.z) ** 2 <= HALT_YARD_REACH ** 2) {
+    const load = loadIn(w, pid);
+    return leaveLoad(
+      adapter,
+      yard,
+      ([0, 1, 2] as const).filter((kind) => load[kind] > 0),
+    );
+  }
   // Behind you when you are facing the thing, else in front of you as a tap drops it.
   let dx = -Math.sin(me.yaw),
     dz = -Math.cos(me.yaw);

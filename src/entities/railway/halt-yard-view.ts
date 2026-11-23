@@ -31,6 +31,7 @@ import { yardStock, stockKit } from './halt-yard-stock.ts';
 import { outOf } from '../../place/sites.ts';
 import { leaveLoad } from './back-down.ts';
 import { yardFlights, type YardSources, type Bin } from './halt-yard-flights.ts';
+import { yardRecoveries } from './halt-yard-recovery.ts';
 
 type Box = import('../../render/boxes.ts').Box;
 type Kind = 0 | 1 | 2;
@@ -169,6 +170,7 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView,
     }),
   );
   yardFlights(adapter, owner, bins, sources);
+  const recover = yardRecoveries(adapter, owner, bins);
   let landed = 0;
   const set = dropSet(
     boxes,
@@ -203,6 +205,7 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView,
     if (!adapter.read.ready()) return;
     const w = adapter.read.world(),
       p = me.body?.position;
+    recover(w);
     for (const pointer of pointers) {
       const shown = pointer.yard === 0 ? forge(w).used >= LINE2_FORGE.logs : haltYardOpen(w, pointer.yard);
       if (shown === pointer.shown) continue;

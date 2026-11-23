@@ -306,7 +306,12 @@ first; owner-calls "Nothing waits on a world bump").
     only.
   - *Review stamp: no independent review.*
 
-- [ ] **4. Recovery reads, and the set-down uses a yard.** Client and dev only, no bump.
+- [x] **4. Recovery reads, and the set-down uses a yard.** Client and dev only, no bump.
+  - The dev seed starts at Q3, chops and drops two real loads, and uses the supply pulse to age them to 21 minutes.
+    The live host credited 4 logs to Village and 6 to Quarry. The town-path still shows four cut ends on the rack and the Quarry still shows six in the cradle.
+    Opened `.look/yard-town-path-still.png`, `.look/yard-recovery-quarry-still.png` and `.look/yard-setdown-still.png`.
+    Using set-down in reach put 10 logs and 4 rails into the Quarry bins, clearing the back. The set-down tests
+    passed 7/7. The targeted gate passed 694 tests in 73 affected test files. World v65 remains in use.
   - `src/entities/railway/sources.ts`: a recovered pile's flight ends at the destination yard's bin (from the
     accepted `rail.supply` change, Local), not always at the rack.
   - `src/entities/railway/back-down.ts` (`setDown`): standing within `HALT_YARD_REACH` of an open yard, send

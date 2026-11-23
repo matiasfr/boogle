@@ -9,15 +9,18 @@ import { SERVER_ID } from '../../src/net/ids.ts';
 import { buildRingMidDoc, ringMidStage } from './ring-mid-seed.ts';
 import { buildStackDoc, stackStage } from './stack-seed.ts';
 import { buildLayDoc, layStage } from './lay-seed.ts';
+import { yardRecoverySeed } from './halt-yard-seed.ts';
 
 export async function writeRailSeed(dataDir: string, room: string, stage: string) {
   const mid = ringMidStage(stage);
   const stack = stackStage(stage);
   const lay = layStage(stage);
-  if (mid === null && stack === null && lay === null && !isSeedStage(stage))
+  const recovery = stage === 'q3-yard-recovery';
+  if (!recovery && mid === null && stack === null && lay === null && !isSeedStage(stage))
     throw new Error(`Unknown railway seed: ${stage}`);
-  const doc =
-    lay !== null
+  const doc = recovery
+    ? await yardRecoverySeed()
+    : lay !== null
       ? await buildLayDoc(lay)
       : stack !== null
         ? await buildStackDoc(stack)
