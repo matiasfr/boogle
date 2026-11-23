@@ -12,6 +12,12 @@ const codex = (work: string, model: string, effort: string): Route => ({
   model,
   effort,
 });
+const antigravity = (work: string, model: string, effort: string): Route => ({
+  work,
+  who: 'Antigravity (T3 delegate_task; effort is its thought_level)',
+  model,
+  effort,
+});
 const claude = (work: string, who: string, model: string, effort: string): Route => ({ work, who, model, effort });
 
 export const routes: Route[] = [
@@ -60,7 +66,7 @@ export const routes: Route[] = [
   {
     work: 'Independent review before merge of src/sim, src/net, src/world, server/ or the wire format (a failing test per suspected defect)',
     who: "a fresh reviewer with none of the author's context: a fresh Codex review delegate or a Claude delegate (T3 delegate_task)",
-    model: 'gpt-6.2-astra first, or opus',
+    model: 'gpt-6.2-astra first, or opus, or gemini-4-neon (Antigravity)',
     effort: 'medium; high for tricky work',
   },
   {
@@ -72,7 +78,7 @@ export const routes: Route[] = [
   {
     work: 'Owed proofs on a built branch (rebase, bot runs, stills, tick marks)',
     who: "the builder's own thread (T3 t3_thread_send); a fresh runner delegate only when that thread is gone, and it reports failures and changes no design or game code",
-    model: "the builder's model, or gpt-6.2-sol for a fresh runner",
+    model: "the builder's model, or gemini-4-neon (Antigravity) for a fresh runner",
     effort: "at the builder's effort, or medium",
   },
   codex('Hardest design, research or second-opinion review', 'gpt-6.2-astra', 'high'),
@@ -88,8 +94,8 @@ export const routes: Route[] = [
     'its own model',
     'at its own effort',
   ),
-  codex('Mechanical jobs above that size', 'gpt-6.2-sol', 'medium'),
-  codex('Brainstorm (light: one agent, three lenses; --panel: three panelists)', 'gpt-6.2-sol', 'medium'),
+  antigravity('Mechanical jobs above that size', 'gemini-4-neon', 'medium'),
+  antigravity('Brainstorm (light: one agent, three lenses; --panel: three panelists)', 'gemini-4-neon', 'medium'),
   codex('Images and previz (only Codex paints)', 'gpt-6.2-sol', 'medium'),
 ];
 
