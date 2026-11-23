@@ -76,6 +76,7 @@ export const RAIL_COOP_STOPS: readonly RailStop[] = [
   't2-funded',
   'T2',
   'T3',
+  'Q3',
   'Q4',
   'Q5',
   'Q6',

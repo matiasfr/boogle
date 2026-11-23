@@ -5,6 +5,9 @@ import { GLIDER_ROLL } from '../../render/gear-models.ts';
 export const T2_REWARD = cosmetic('scarf')!;
 export const AXE_REWARD = { name: 'A proper axe', line: '' };
 export const PACK_REWARD = { name: 'A pack frame', line: '' };
+// Owner copy placeholders.
+export const YOKE_REWARD = { name: '[Rail yoke]', line: '' };
+export const YOKE_VERB = '[Take]';
 export const JUMP_REWARD = { name: 'A second jump', line: 'Jump again in the air.' };
 export const HOOK_REWARD = {
   name: 'The hook shot',

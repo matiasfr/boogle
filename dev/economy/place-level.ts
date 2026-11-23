@@ -4,6 +4,7 @@
 // It floods the 2 m grid of src/place/terrain.ts at the player's walkable slope, plus what's solid to walk on (footbridges
 // and laid track). It doesn't know about props in the way, which only the play-through (the railway bot, dev/look/bots/railway.ts) tests.
 import { buildSeedWorld } from '../../src/sim/railway-seeds.ts';
+import { PROPS } from '../../src/place/home-station.ts';
 import { act } from '../../src/sim/railway-seed-route.ts';
 import { account, qjob, rail, trees } from '../../src/sim/railway-rows.ts';
 import { line2Routes, LINE2_SEA } from '../../src/sim/railway-line2-layout.ts';
@@ -194,6 +195,7 @@ export function runPlaceLevelCheck() {
     check(`stop at ${s}`, open, P.x, P.z);
   }
   check('the forge rack', open, RACK.x, RACK.z);
+  check('the rail yoke', open, PROPS.yoke.x, PROPS.yoke.z);
   const headCentre = can(start, HEAD.x, HEAD.z);
   assertion(
     !headCentre,

@@ -7,6 +7,7 @@ export interface InteractionNames {
   'seat.sit': true;
   'railway.request-stop': true;
   'railway.sack': true;
+  'railway.take-yoke': true;
   'town.shop-stock': true;
   'town.plot-buy': true;
   'town.shop-rail': true;
@@ -65,6 +66,7 @@ export const names: NameRegistry = {
     'railway.halt-lever',
     'railway.halt-attachment',
     'railway.till-parts',
+    'railway.yoke-block',
     'roundhouse.bay',
     'roundhouse.table',
     'poi.lighthouse',
@@ -95,6 +97,7 @@ export const names: NameRegistry = {
   interactions: [
     'railway.request-stop',
     'railway.sack',
+    'railway.take-yoke',
     'seat.sit',
     'town.shop-stock',
     'town.plot-buy',

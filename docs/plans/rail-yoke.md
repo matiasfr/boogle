@@ -1,4 +1,4 @@
-> **Status: steps 1 and 2 on main (#2300, 2026-11-19, world `v64`); step 3 built on `claude/rail-yoke-back` (2026-11-19); steps 4 to 6 not built.** Backlog row (P3): "The rails' own capacity upgrade: rails start at 8 on
+> **Status: steps 1–3 on main (#2300, #2321). Steps 4–6 implemented on `codex/rail-yoke-rack`; verification below.** Backlog row (P3): "The rails' own capacity upgrade: rails start at 8 on
 > everyone's back, and a later upgrade raises them". Brief: [rails-capacity-upgrade](../brainstorms/rails-capacity-upgrade.md).
 > Decision: [rewards, 18 November](../decisions-rewards.md#d-2026-11-18-decisions-page-rewards). Base: `origin/main`
 > `99207c548`, world `v62`. Steps 1 and 2 change rules, wire, save and seeds (one `WORLD_NS` bump, independent review).
@@ -344,7 +344,8 @@ disposable production room.
     from the side). **Not verified:** a remote player's avatar wearing the yoke in a two-page look, motion while running
     or riding, phone width; not tested on a device.
 
-- [ ] **4. The yoke waits at the rack, and Q1's board shows it** (Local, plus one placed prop).
+- [x] **4. The yoke waits at the rack, and Q1's board shows it** (Local, plus one placed prop).
+  - Built on `codex/rail-yoke-rack`. Opened `.look/yoke-board-still.png` (16/16 logs, 5/6 rails, two-hook outline) and `.look/yoke-wait-still.png` (glimmering iron on the block across the paid frame). Level check reported 21 reports, the yoke reachable, and 5,244 grounding placements with zero problems. The prefab owns the interaction. Its reach is 3.4 m. Both objects use point scoring for the facing pick.
   - `reward-glyph.ts`: the `'yoke'` kind. `stations.ts`'s `RewardMark` kind widens to include it.
   - `line2-view.ts:1310`: Q1's marks.
   - `forge-rewards.ts`: the yoke's block and model at `PROPS.yoke`, shown once `line2YokeReady` and `!rail.yoke`, with
@@ -368,7 +369,8 @@ disposable production room.
     - Take it: the opener's card, then the 16-square rails row.
   - *Risk: low to medium (a reach target in a busy yard). Self-review, plus the level check.*
 
-- [ ] **5. The forge's little guy makes it** (Local).
+- [x] **5. The forge's little guy makes it** (Local).
+  - The pack and yoke share the fetch, carry, hammer and self-finish sequence. The yoke's offcut is 1 m, its hammer time 1.4 s, and its finishing burst eight sparks. The 14.005 s Q1 motion sheet showed the bare bar first, then both hooks, with the machine advancing behind it. The first camera hid most of the worker behind the block. His hammer position moved to the Q1 side. The reduced-motion still shows the complete yoke as Q1 starts laying.
   - `forge-rewards.ts`: generalise the pack errand into one `errand({ at, fetchAt, carried, hammer, done })` used by
     both, so there is no second copy. Wire the yoke's live edge, its fallbacks and `restore()`.
   - `src/place/folk.ts`: nothing new (`crewStart(x, z, 1, false)` exists).
@@ -384,7 +386,8 @@ disposable production room.
   - Update place.md's Q1 and forge-reward paragraphs.
   - *Risk: low to medium (the shared crew global). Self-review against the restore rules.*
 
-- [ ] **6. The bot takes it** (dev only).
+- [x] **6. The bot takes it** (dev only).
+  - The bot walks to the block after Q1 funding, uses the offered verb, dismisses the card and checks 16 rails. The second player checks their card and capacity. A two-player Q3 stop and `yokeTaker=friend` exercise the other pickup order. Node canonical runs took 1:21 / 0:51 for Q2 / Q3 solo and 0:45 / 1:07 with two players. All five alternate orders finished in the solo run. These are rule-run times.
   - `dev/look/bots/railway.ts`, after `checkpoint('Q1 funded')` (`:1886`): an `openYoke()` like `openPack()`:
     - walk to `read().reward.tools.yokeStand`;
     - `require(await bot.use(x, z, 'take the rail yoke', new RegExp('^' + escape(YOKE_VERB))))`;
@@ -410,6 +413,16 @@ disposable production room.
    and Q3 times against the run's: this is the real solo saving the brief asked for.
 4. Two rejoin looks: once with the yoke waiting (the block, the glimmer, no errand, no card), and once after the take
    (the worn yoke, no card).
+
+### Branch measurements
+
+- The solo browser bot finished at Q3. On the bot clock Q1 was paid at 776.4 s, the yoke was taken and its card dismissed by 779.8 s, and Q1 was laid at 789.4 s. Q2 was laid at 902.0 s (1:53 after Q1). Q3 was laid at 1089.4 s (3:07 after Q2, including the hook and glider route, or 2:02 from gliding home). The replay is in `.look/yoke-solo/report.txt`.
+- The solo browser recorded 12 rail deposits at each frame. Q2 received 4 then 8 during depot deliveries. Q3 received 4 around the log deliveries and the remaining 8 in one later delivery. The current depot supplies rails alongside logs, so the run did not reproduce two dedicated forge trips becoming one at each frame.
+- The same solo bot route on base `d7903de53`, with capacity 8, also passed (`.look/playthrough/yoke-solo-before/report.txt`). Measured from the preceding laid checkpoint, Q2 took 115.5 s before and 112.6 s with the yoke (2.9 s faster). Q3 took 221.2 s before and 187.4 s with the yoke (33.8 s faster). Q2 laid to Q3 funded was **170.1 s in both runs**. All 33.8 s of the Q3 difference came after funding, while the machine laid track. These single warped-browser runs do not establish a Q3 hauling-time saving.
+- At the same point between rack and block, turning selected “Take rails” or “[Take]”. The accepted card opened and the rails row displayed 16 squares. Both saved states restored with zero errands, a fully hooked yoke, no worker and no card. The two re-entry stills (`.look/yoke-reload-yard-still.png` and `.look/yoke-reload-taken-yard-still.png`) show the offered yoke and the worn yoke respectively.
+- The revised maker sheet runs 14.010 s. The blue-capped worker is at the front of the block by 7.542 s, the hooks are upright by 8.618 s, and Q1's frame folds by 11.857 s. The pack control still shows its worker and the straps appearing on the frame. Motion at normal playback speed and the clank are unverified.
+- In the real-time two-player browser run the second player took the yoke. Both peers passed the card and capacity checks at 716.5/716.7 s. The leader laid Q2 at 786.3 s (1:10 after Q1) and both peers reached Q3 at 967.0 s (3:01 after Q2 or 1:56 after gliding home). Their mirrored hashes matched at all 1,132 sampled server steps. Report: `.look/playthrough/e52144bd5/report.txt`.
+- `npm run check` passed with 2,250 unit passes, one TODO and a successful production build. The change-scoped gate passed 1,332 tests in 152 files. The additional server stage of `check:full` had 406 passes, two skips and one Windows failure in the accounts crash test: the child process returned a null signal where the test expects SIGKILL. The standalone network suite passed 268/268.
 
 `npm run perf` is not needed: one small model, one instanced count raised from 8 to 16, and no light.
 

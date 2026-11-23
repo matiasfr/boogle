@@ -16,8 +16,8 @@ import { MULTI_AXE_REWARD } from '../../render/t1-reward-parts.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { readableUnlit, readableIntensity } from '../../render/readable-unlit.ts';
 import { emit } from '../../render/particles.ts';
-import { AXE_REWARD, JUMP_REWARD, PACK_REWARD } from './reward-data.ts';
-import { AXE_AT, PACK_HEAD_Y, axeHeadAt, axeLeans } from './forge-rewards.ts';
+import { AXE_REWARD, JUMP_REWARD, PACK_REWARD, YOKE_REWARD } from './reward-data.ts';
+import { AXE_AT, PACK_HEAD_Y, axeHeadAt, axeLeans, yokeAt, yokeAvailable } from './forge-rewards.ts';
 import { airJumpApexForce } from '../player/apex-float.ts';
 import { linePanels } from '../../sim/railway-line-layout.ts';
 import { LINE2_PACK } from '../../sim/railway-line2-layout.ts';
@@ -85,6 +85,8 @@ export async function createRailwayTools(
   const packTarget = packAt.clone().add(new THREE.Vector3(0, PACK_HEAD_Y, 0));
   const packPrize = shapes.merged(gear.packParts());
   geometries.push(packPrize);
+  const stand = yokeAt();
+  const yokeCard = () => ({ key: 'yoke', ...YOKE_REWARD, model: gear.yokeMesh() });
 
   // Only the first pillar and its original lip are promoted. Walking home never depends on taking this device.
   const pillar = tech.PILLARS[0]!;
@@ -186,6 +188,9 @@ export async function createRailwayTools(
       )
         packReveals++;
     }
+    if (event.op === 'rail.yoke' && mine(event)) {
+      reveal.youGot({ ...yokeCard(), from: stand.clone().add(new THREE.Vector3(0, 1.35, 0)) });
+    }
     if (event.op === 'rail.jump') {
       if (!mine(event)) return;
       placeSound('pickupJump', deviceAt.x, deviceAt.z);
@@ -241,6 +246,7 @@ export async function createRailwayTools(
     /** A friend's card for one of these (ability-arrival.ts): the finder's name, line and model, without the rise
      * from the device or chest, or the camp resident's handoff. */
     cardFor(key: string): Got | null {
+      if (key === 'yoke') return yokeCard();
       if (key === 'jump') return { key, ...JUMP_REWARD, model: new THREE.Mesh(jumpPrize, material) };
       if (key === 'axe') return { key, ...AXE_REWARD, model: properModel.clone(true) };
       if (key === 'pack') return { key, ...PACK_REWARD, model: new THREE.Mesh(packPrize, material) };
@@ -255,6 +261,7 @@ export async function createRailwayTools(
     },
     /** A fresh model of an axe (or the pack frame) for a friend's flourish (materials are shared with the cards). */
     axeModel(key: string): THREE.Object3D | null {
+      if (key === 'yoke') return gear.yokeMesh();
       if (key === 'axe') return properModel.clone(true);
       // The keener edge (Station 3 funded) is the same multi-axe, sharpened: its flourish shows that model.
       if (key === 'multi-axe' || key === 'edge') return new THREE.Mesh(multiPrize, material);
@@ -264,6 +271,7 @@ export async function createRailwayTools(
     inspect: () => ({
       axeChest: { x: AXE_AT.x, y: AXE_AT.y, z: AXE_AT.z, available: axeAvailable() },
       packChest: { x: packAt.x, y: packAt.y, z: packAt.z, available: packAvailable() },
+      yokeStand: { x: stand.x, y: stand.y, z: stand.z, available: yokeAvailable(adapter) },
       packReveals,
       packFramesWorn: [...frames.worn.values()].filter((f) => f.parent).length,
       yokesWorn: [...yokes.worn.values()].filter((y) => y.parent).length,

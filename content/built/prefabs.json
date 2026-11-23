@@ -3386,6 +3386,31 @@
         "none": true
       }
     },
+    "railway.yoke": {
+      "attach": {
+        "pickup": {
+          "at": [
+            0,
+            1.35,
+            0
+          ],
+          "kind": "point"
+        }
+      },
+      "colliders": [],
+      "interactions": [
+        {
+          "action": "railway.take-yoke",
+          "at": "pickup"
+        }
+      ],
+      "key": "railway.yoke",
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.yoke-block",
+        "params": {}
+      }
+    },
     "ring.board-face": {
       "attach": {
         "face": {

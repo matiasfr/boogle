@@ -91,6 +91,7 @@ const ABILITIES: {
   { key: 'edge', cue: 'pickupHook', has: ({ w }) => keenEdge(w), badge: true, atState: true },
   { key: 'axe', op: 'rail.axe', cue: 'pickupHook', has: ({ w }) => rail(w).axe, badge: true, card: true },
   { key: 'pack', op: 'rail.pack', cue: 'pickupHook', has: ({ w }) => rail(w).pack, badge: true, card: true },
+  { key: 'yoke', op: 'rail.yoke', cue: 'pickupHook', has: ({ w }) => rail(w).yoke, badge: true, card: true },
   {
     key: 'boiler',
     op: 'rail.boilerFit',
