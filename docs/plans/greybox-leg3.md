@@ -198,8 +198,8 @@ halt ids (the cave line's), covered by the bump. **Prediction:** `rail.legStock`
   section's end but the last. Right-hand running (owner, 18 November: "Yes, every line"): `legPlatforms` for every new
   halt; Bell Rock's bay halt gains its homeward platform once it is a through halt.
 - **The fleet grows across legs.** `RailLineDef.fleet` becomes a list in leg order (`{ leg, trains, opens? }[]`; line 2,
-  `ns` and `cave` become one-element lists): the bay line runs `[0, 1, 2]` over the bay cut, then **`[2, 2, 3, 4]`**
-  over leg 3 (a third train from section 2 laid and a fourth at Canopy). The original sizing estimate was that by leg 2's
+  `ns` and `cave` become one-element lists): the bay line runs `[0, 1, 2]` over the bay cut, then **`[2, 3, 3, 4]`**
+  over leg 3 (a third train from section 1 laid and a fourth at Canopy). The original sizing estimate was that by leg 2's
   measured bay line (cycle 1,412 ticks, worst 1,075 over 1,197 m), two trains on the 2.1 km line to head 2 would wait
   about 1,800 ticks and three on the 2.4 km line about 1,330, under the bound by little. **The fuzz sets the ladder:**
   the fewest trains that meet both bounds at every stage, a fourth at the last stage if three fail. One new
@@ -305,7 +305,7 @@ rides with it. Steps 6 and 7 ship on their own after it.
       The post is beyond the approach platform's end. Its deck collider is step 6's proof.
       The collider regression found 35 samples with insufficient overhead room beneath a newly laid bay deck.
       The nine upper-bed chords moved forward from step 5 and the same check now finds zero.
-- [x] **2. The rules and the bump (L; HOTBOX).** `src/sim/railway-lines.ts`: `builtLine` over every built leg of a row;
+- [ ] **2. The rules and the bump (L; HOTBOX).** `src/sim/railway-lines.ts`: `builtLine` over every built leg of a row;
       the fleet list; the new shed row(s); the load checks over every built leg. `src/sim/railway-train.ts`: `fleetOf`
       on the list. `railway-queries-route.ts`: nothing new beyond the list's reads (the roles derive from `legBuilt`).
       `railway-check-route.ts`: the heads' prefix and fleet checks. `src/world/namespace.ts`: the bump and a dated line.
@@ -406,6 +406,12 @@ rides with it. Steps 6 and 7 ship on their own after it.
       | 777 | 857 / 1199 | 1061 / 1250 | 976 / 861 | 1293 / 1441 |
       | 5eed | 943 / 1201 | 1002 / 1039 | 885 / 924 | 1327 / 1095 |
       | badd | 1005 / 990 | 1068 / 1467 | 1047 / 885 | 1330 / 1463 |
+
+      **Reopened on the earlier-third-train retry.** The accepted run above used
+      `[2, 2, 3, 4]`. With `[2, 3, 3, 4]`, the standard fleet's settled wait reached
+      1,545 ticks on `badd` at Canopy head 2 homeward (asked +10,869, four serving).
+      All standard growing waits passed. Leg 2 reproduced every value in the table above.
+      The step 3 retry table records both fleets on the new ladder.
 - [ ] **3. The hold (M; HOTBOX). For garage step 4.** `src/sim/railway-train.ts`: rows 4 and 5, `BOILER_CARS`,
       `boilerCars`, `kitBills`, `TRAIN.railheadHoldTicks`. `railway-queries-route.ts`: `legKitCap`'s `bills`.
       `railway-sys-route-kit.ts`: `legKitLoad` and `yardLoad` by bills; `legRailheadHold`. `railway-sys-trains.ts`:
@@ -467,6 +473,24 @@ rides with it. Steps 6 and 7 ship on their own after it.
       held ticks; a tick-by-tick check of the opening 3,000 ticks counted 299 of those while
       the section was laying. The idle timeout never accounted for a two-minute wait here.
       The branch ship-check passed 1,846 tests and failed the mixed-fleet growing check.
+
+      **Earlier third train, 23 November.** Call 18 now permits the third bay train when the
+      first Canopy section lays. The fourth still joins at Canopy Town. Four seeds at 75%
+      headway ran for 20,000 ticks per mode per fleet with the original Strong hold.
+      Each cell gives settled / growing ticks.
+
+      | Seed | Standard bay | Mixed bay | Standard ns | Mixed ns |
+      | --- | ---: | ---: | ---: | ---: |
+      | c0ffee | 1094 / 1132 | 1411 / 1786 | 999 / 967 | 1031 / 824 |
+      | 777 | 920 / 1034 | 1519 / 1799 | 976 / 861 | 983 / 808 |
+      | 5eed | 1176 / 1095 | 1550 / 1453 | 885 / 924 | 975 / 944 |
+      | badd | 1545 / 1400 | 1474 / 1711 | 1047 / 885 | 955 / 964 |
+
+      All four mixed settled runs exceeded 1,367. The three mixed growing failures
+      were the same Bay head 1 homeward requests as before, all served at +2,255.
+      Across all four mixed growing seeds the third train became eligible and entered
+      service at +1,216, after those calls arrived at +469, +456 and +544.
+      All runs passed the spacing and save checks. The ladder retry stops here.
 - [ ] **4. Seeds and stages (S; HOTBOX).** `src/sim/railway-seed-legs.ts` from `bay-reached`, accepted ops only:
       `canopy-open` (barrier open, section 1's kit on Bell Rock's rack), `canopy-mid` (section 1 laid, section 2's kit
       aboard a bay train), `canopy-reached` (leg 3 laid, cloth not taken). `SEED_STAGES` and its golden shard;
@@ -648,7 +672,7 @@ the map data and the catalog, which is why steps 5 and 6 list their stills.
 | 15 | Bell Rock's kink eased with a 60 m arc; the stop stays at s 1217, on the curve; the upper platforms as chords | Default | The track report; the smallest move that passes it. Open question 4 |
 | 16 | Canopy's stop 25 m short of its kink, a crossover before, buffers 2 m short; no loop end | Default | No train crosses a 102° kink; a loop does not fit the 71 m cleft (finding 5) |
 | 17 | The Canopy barrier moves from the upper deck's reserve to frame 1 on the outward platform; rack 1 abreast of the kit car | Default | Leg 2's call 11 (the frame is where it reads as a gate); Q7's last carry under 15 m |
-| 18 | Bay fleet `[2, 2, 3, 4]` over leg 3, with a 15-tick boarding dwell beyond the bay cut | Decided | [23 November bay exception](../decisions-rail.md#d-2026-11-23-bay-settled-wait) |
+| 18 | Bay fleet `[2, 3, 3, 4]` over leg 3. The third train can enter after section 1 is laid. Boarding dwell beyond the bay cut is 15 ticks. | Trial failed the wait gates | [23 November bay exception](../decisions-rail.md#d-2026-11-23-bay-settled-wait) and step 3 retry measurements |
 | 19 | Head 1 closes once Canopy opens; head 2 stays a request stop both ways | Default | The stack's `closesAt` rule; head 2 is a place to get off into the forest |
 | 20 | The cloth post on Canopy's homeward deck round the buffers (reach 4 m), taken once the leg is laid; the Notch barrier across the row at the kink, 10 m from it | Default | The key beside the lock it will open; the halt's map point is already the kink |
 | 21 | The Notch barrier refuses "No line beyond yet" with the cloth held; a board "LINE TO LANTERN NOTCH / LATER" beside it | Default | DESIGN 7; finding 4 |

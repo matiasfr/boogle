@@ -108,7 +108,7 @@ test("leg 2's catalog lines: ns and bay open by their legs' sections, fleets 0, 
         l.halts.slice(0, stops.length).map((h) => h.s),
         `${l.id}: the stops a prefix`,
       );
-      assert.equal(trains, [0, 0, 1, 2, 2, 3, 4][stops.length], `${l.id}: ${trains} trains over ${stops.length} stops`);
+      assert.equal(trains, [0, 0, 1, 2, 3, 3, 4][stops.length], `${l.id}: ${trains} trains over ${stops.length} stops`);
     }
     // Right-hand running (owner, 18 November): each halt's outward platform right of the row going out, its homeward
     // one left, 11.6 m apart.
@@ -374,6 +374,7 @@ function ask(s: Seed, f: Record<string, unknown>) {
 function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: boolean, canopy = false, strong = false) {
   let s = unaudited(copy(stage));
   let mixedTicks = 0, heldTicks = 0, layingHoldTicks = 0;
+  let thirdEligible = -1, thirdServing = -1;
   if (strong) {
     Object.assign(s.w.mut(Line, s.w.lookup(Line, BAYL)!)!, { boiler: 5, fitted: s.t });
     const first = LINE_SLOTS[BAYL]![0]!;
@@ -434,6 +435,8 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
     railTick(s.w, ++s.t, 75);
     if (strong) {
       const fleet = servingSlots((j) => train(s.w, j), BAYL);
+      if (thirdEligible < 0 && legRow(s.w, 3).laid > 0) thirdEligible = s.t - t0;
+      if (thirdServing < 0 && fleet.length >= 3) thirdServing = s.t - t0;
       if (fleet.length > 1 && fleet.filter(j => train(s.w, j).boiler === 5).length === 1) mixedTicks++;
       if (fleet.some(j => legRailheadHold(s.w, j, s.t) === 'hold')) {
         heldTicks++;
@@ -482,9 +485,12 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
   assert.equal(invariant(s.w), null);
   if (strong) {
     assert.ok(mixedTicks > 0, 'one Strong in service among standard trains');
-    assert.ok(heldTicks > 0, 'the fuzz exercised a Strong hold');
+    if (feed) assert.ok(heldTicks > 0, 'the growing fuzz exercised a Strong hold');
   }
-  return { ns: worst.get(NS)!, bay: worst.get(BAYL)!, long, mixedTicks, heldTicks, layingHoldTicks, laid: [legRow(s.w, INCLINE).laid, legRow(s.w, BAY).laid] };
+  return {
+    ns: worst.get(NS)!, bay: worst.get(BAYL)!, long, mixedTicks, heldTicks, layingHoldTicks,
+    thirdEligible, thirdServing, laid: [legRow(s.w, INCLINE).laid, legRow(s.w, BAY).laid],
+  };
 }
 const SEED_LIST = [0xc0ffee, 0x777, 0x5eed, 0xbadd] as const;
 test(
@@ -526,13 +532,22 @@ test('Canopy lever waits over the settled and growing bay line', { timeout: 1800
   assert.deepEqual(failures, []);
 });
 
-test('a growing bay fleet adopting Strong keeps the spacing, save and wait gates', { timeout: 1800000 }, t => {
-  const waitsBySeed = SEED_LIST.map(seed => {
-    const result = waits('bay-mid', seed, true, true, true);
-    t.diagnostic(`${seed.toString(16)}: growing bay ${result.bay}, ns ${result.ns}; ${result.heldTicks} held ticks (${result.layingHoldTicks} during laying), ${result.mixedTicks} mixed ticks; ${result.long.join('; ')}`);
-    return result.bay;
-  });
-  assert.ok(Math.max(...waitsBySeed) <= GROWING, waitsBySeed.join(', '));
+test('a bay fleet with one Strong keeps the settled and growing wait gates', { timeout: 1800000 }, t => {
+  const failures = [];
+  for (const seed of SEED_LIST) {
+    const settled = waits('bay-mid', seed, false, true, true);
+    const growing = waits('bay-mid', seed, true, true, true);
+    t.diagnostic(
+      `${seed.toString(16)}: settled ns ${settled.ns}, bay ${settled.bay}; growing ns ${growing.ns}, bay ${growing.bay}; ` +
+      `third eligible +${growing.thirdEligible}, serving +${growing.thirdServing}; ` +
+      `${growing.heldTicks} held ticks (${growing.layingHoldTicks} during laying), ${growing.mixedTicks} mixed ticks; ` +
+      growing.long.join('; '),
+    );
+    if (settled.bay > settledLimit(BAYL) || settled.ns > settledLimit(NS) ||
+        growing.bay > GROWING || growing.ns > GROWING)
+      failures.push({ seed, settled: settled.bay, growing: growing.bay });
+  }
+  assert.deepEqual(failures, []);
 });
 
 test('replay: the same leg 2 ops from the same seed give the same hash, through a save', () => {
