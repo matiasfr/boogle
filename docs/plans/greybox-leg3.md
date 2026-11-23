@@ -336,6 +336,30 @@ rides with it. Steps 6 and 7 ship on their own after it.
 
       The long stack stage sweep's settled maxima by seed were 1269, 1333, 1293 and 1287. Four stack tests failed, including the separate unfed Ring Island test. On growing seed 777, Pier homeward asked at 13607, exceeded its 1192 budget at 14800 and boarded at 15025 (1418 ticks). At 14800, slots 1–6 occupied 171672, 2165, 99200, 115334, 60686 and 18975 cm. Only slot 3 was on the homeward track and it was standing at stop 4. Five were outward. Settled Ring Island also failed: c0ffee Pier homeward asked at 25673 and boarded at 26867 (1194 vs 1126). End spacing alone still leaves long directional service gaps. Steps 2 and 3 remain open. Seeds and Bell Rock views await the dispatch review.
 
+      **23 November, middle service stops.** A train may balance its gaps after serving a platform call,
+      its riders or cargo. A block-only stop does not qualify. The arrival records the service reason
+      before unloading. A signal stand never qualifies. The old Ring Island spacing-only stop is
+      removed. Both end and middle spacing yield to service pressure. The wait budget is unchanged.
+
+      Four seeds at 75%, 20,000 ticks per mode. Worst bay waits, settled / growing, were 901 / 1467
+      and 1058 / 1468 for leg 2 standard and mixed, and 1675 / 1486 and 1632 / 1579 for Canopy.
+      All four suites passed. The long stack stage sweep and the unfed Ring Island test passed.
+      Three growing stack seeds failed. On 777, the same Pier homeward request at 13607 boarded at
+      15025 (1418 ticks, bound 1192). In that interval the actual dispatch branch held slot 2 at
+      middle stop 1 for 115 ticks and at the home end for 229 ticks. Slot 3 yielded at stops 4, 5
+      and 6 and took zero spacing-hold ticks. At 14800, slot 3 was assigned the call and serving
+      its boarding dwell at stop 4. Slots 1, 4, 5 and 6 were running outward, and slot 2 was held at
+      home. Positions by slot in cm were 171672, 2165, 99200, 115334, 60686 and 18975.
+      The fourth through sixth trains entered at 13528, 13881 and 14163. Joining at home added
+      outward service immediately, while the homeward rider depended on a train returning from
+      the far end. Middle holds improved settled Ring Island service but did not close that gap.
+      On badd, Ring Island homeward waited 1224 against 1192. On c0ffee, Far Head homeward waited
+      1160 against 1098. This is the stop condition for further implementation.
+
+      The eight solo offsets gave mean Quick / Strong leg times of 3016 / 2881 from bay-mid
+      and 2326 / 2505 from bay-reached. None of the 16 scripted solo Strong runs recorded a
+      pressure departure with its second bill. Random-demand second-bill delivery remains unmeasured.
+
       **Historical fixed-gate experiments (22–23 November, superseded).** With three final bay trains, seed
       `c0ffee` reached 1,413 ticks settled and 1,752 growing against limits of 1,350 and 1,600.
       With the approved fourth train at the final stage, the long run measured the following maxima
