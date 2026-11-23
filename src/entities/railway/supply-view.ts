@@ -1,4 +1,4 @@
-// The owner-chosen rack, unchanged. Its three authored logs represent accepted stock, never its full ledger.
+// The owner's rack shell and collision retain their authored triangles. The yard view draws stock on its bed.
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -18,13 +18,13 @@ export async function createRecoveryRack(
   const model = asset.instance();
   const stockParts = new Set<THREE.Object3D>();
   const stockBounds = new THREE.Box3();
-  const logs = [0, 1, 2].map((i) => {
+  for (const i of [0, 1, 2]) {
     const log = model.getObjectByName(`log_${i}`);
     if (!log) throw new Error(`Recovery rack is missing its authored log_${i}`);
     log.traverse((part) => stockParts.add(part));
     stockBounds.expandByObject(log);
-    return log;
-  });
+    log.visible = false;
+  }
   const logBase = stockBounds.getCenter(new THREE.Vector3()).add(at);
 
   // Use the loaded structural triangles, including leaning posts, sloped roof and low bed. No stock collider:
@@ -86,18 +86,11 @@ export async function createRecoveryRack(
   owner.add(model); // Clones only geometry into the view lifetime; cached authored materials remain shared.
   for (const geometry of merged) geometry.dispose(); // owner.add owns the clones from here.
   addSolid(new Float32Array(vertices), new Uint32Array(indices), at);
-  const { flat } = await import('../../render/flat.ts');
   const stoneAt = at.clone().add(new THREE.Vector3(1.3, 0.6, 0));
-  const stone = Array.from({ length: 3 }, (_, i) => {
-    const mesh = new THREE.Mesh(new THREE.DodecahedronGeometry(0.3), flat('#b0ab9d'));
-    mesh.position.copy(stoneAt).add(new THREE.Vector3((i - 1) * 0.42, -0.3, 0));
-    owner.add(mesh);
-    return mesh;
-  });
-  const setStock = (count: number, stones = 0) => {
-    logs.forEach((log, i) => (log.visible = count > i));
-    stone.forEach((mesh, i) => (mesh.visible = stones > i));
-  };
-  setStock(0);
-  return { logBase, stoneAt, setStock };
+  const bases = [
+    logBase.clone().setY(at.y + 0.39),
+    stoneAt.clone().setY(at.y),
+    at.clone().add(new THREE.Vector3(0, 0.47, -1.48)),
+  ];
+  return { logBase, stoneAt, bases };
 }

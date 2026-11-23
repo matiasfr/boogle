@@ -1,4 +1,4 @@
-> **Status: step 1 built (2026-11-19, `claude/halt-yard-store`, world v65); step 2 built (2026-11-19, `claude/halt-yard-bay`, view only); steps 3 to 5 not built.** Read at `origin/main` `c0c993ff7` (world v62). Station-deposit
+> **Status: step 1 built (2026-11-19, `claude/halt-yard-store`, world v65); step 2 built (2026-11-19, `claude/halt-yard-bay`, view only); steps 3 to 5 built and checked locally on `codex/halt-yard-stacks` (2026-11-22).** Read at `origin/main` `c0c993ff7` (world v62). Station-deposit
 > build 1. Step 1 changes rules, wire, save and server validation: one `WORLD_NS` bump (**the next free
 > version**), one independent review. Build 2 (cargo cars carry a yard's goods) is out of scope: it waits for the
 > cargo trains row.
@@ -281,7 +281,18 @@ first; owner-calls "Nothing waits on a world bump").
     one from the play camera on the approach).
   - *Review stamp: no independent review.*
 
-- [ ] **3. Stacks, bundles, flights, the Village shelf and the pointer check.**
+- [x] **3. Stacks, bundles, flights, the Village shelf and the pointer check.**
+  - Two local clients saw 10 logs and 4 rails from the same press at Quarry. Both replicas were at tick 1992.
+    Picking up the logs returned 10 to the back and left 4 rails on the shelf. A separate run stacked 40 logs.
+    The two kinds go 100 ms apart to respect the host's unload interval. These are client transfers over world v65.
+    Local evidence in `.look/`: `yard-pair-still.png`, `p2-yard-pair-still.png`, `yard-flights-realtime.webm`,
+    `yard-flights-motion.png`, `yard-bundles-final-still.png`, `yard-transfer-motion.png` and `yard-village-still.png`.
+  - From T1, Q4 and the Q6 rack the bay shows. The workshop hides the Village rack from the forge frame, and Far Head
+    is indistinct from Q5. Those two turns have a wordless arm. Five approach stills and both resulting arms were opened.
+    The final Quarry still has six loose courses of four and two separately bound eights. In the 10-second clip the stock
+    settles by 0.69 s and pickup is visible by 2.08 s. Smoothness on a device is unverified.
+  - The targeted gate passed. A two-second production render sample reported mean CPU frame 12.13 ms, p95 28.8 ms,
+    mean railway update 1.56 ms, and zero graphics errors. This sample covers the entire entry view.
   - **Files:** `halt-yard-view.ts`, `sources.ts` (the Village shelf and the rack's Leave it here),
     `dev/look/evals/halt-yard.ts` (new). The eval gets its materials by real accepted ops (chop, the Q4 depot rack,
     `forgeTake`). Teleports isolate the prompt; they prove no reach.
@@ -295,7 +306,12 @@ first; owner-calls "Nothing waits on a world bump").
     only.
   - *Review stamp: no independent review.*
 
-- [ ] **4. Recovery reads, and the set-down uses a yard.** Client and dev only, no bump.
+- [x] **4. Recovery reads, and the set-down uses a yard.** Client and dev only, no bump.
+  - The dev seed starts at Q3, chops and drops two real loads, and uses the supply pulse to age them to 21 minutes.
+    The live host credited 4 logs to Village and 6 to Quarry. The town-path still shows four cut ends on the rack and the Quarry still shows six in the cradle.
+    Opened `.look/yard-town-path-still.png`, `.look/yard-recovery-quarry-still.png` and `.look/yard-setdown-still.png`.
+    Using set-down in reach put 10 logs and 4 rails into the Quarry bins, clearing the back. The set-down tests
+    passed 7/7. The targeted gate passed 694 tests in 73 affected test files. World v65 remains in use.
   - `src/entities/railway/sources.ts`: a recovered pile's flight ends at the destination yard's bin (from the
     accepted `rail.supply` change, Local), not always at the rack.
   - `src/entities/railway/back-down.ts` (`setDown`): standing within `HALT_YARD_REACH` of an open yard, send
@@ -307,7 +323,19 @@ first; owner-calls "Nothing waits on a world bump").
     unchanged).
   - *Review stamp: no independent review (`src/entities` only), unless step 1's files are touched again.*
 
-- [ ] **5. Checkpoint: bots, seeds, boot probe and docs.**
+- [x] **5. Checkpoint: bots, seeds, boot probe and docs.**
+  - Full check passed with 2,250 tests passing and one existing TODO. The network suite passed 268/268 checks.
+    All 33 routed and offered seeds built through the host save path, along with the six named progression seeds in a
+    separate run. The offline production boot reached interactive in 18.0 seconds on NVIDIA Ampere with no page errors.
+  - The existing railway conservation assertions include yard stock through `railCounts`. The unmodified bot stopped
+    after Q4, 26.0 m from the sea-jamb ring against a 24 m hook reach. The parked machine blocked the next centerline waypoint.
+    Reusing the bot's existing Q5 apron approach let it hook the jamb and pull the switch. The solo route reached the
+    Pier at 2,783.2 game seconds in 15 min 54 s of wall time, with zero graphics or route errors.
+    After rebasing onto the Rail yoke merge (`42b8cb8a3`), the bot took the yoke and reached the Pier at 2,418.2
+    game seconds in 17 min 34 s, again with zero errors. All 33 seeds and both code gates passed on that tree.
+    The rebased production build booted offline in 10.8 seconds with no page errors.
+    Local report: `.look/playthrough/halt-yard-integrated/report.txt`. The stills and clip were checked on desktop Chromium;
+    not tested on a device.
   - `npm run check` (the checkpoint's full check). Run the railway bot (`dev/look/bots/railway.ts`: it walks past
     every halt's ramps, and its conservation line 1588 now counts yard stock) and the seed route
     (`src/sim/railway-seed-route.ts`: its drops at (1000, 30) and the Q5 depot must still be accepted, and recovery

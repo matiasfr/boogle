@@ -128,7 +128,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
   trains.holdBoiler(line2.boilerFlying);
   const halts = await createRailwayHalts(adapter, owner);
   const homeStation = await import('./home-station-view.ts').then((m) => m.createHomeStation(adapter, owner));
-  const haltYards = await import('./halt-yard-view.ts').then((m) => m.createHaltYards(adapter, owner));
+  const haltYards = await import('./halt-yard-view.ts').then((m) => m.createHaltYards(adapter, owner, sources));
   const flying = () => ({
     logs: cart.flying().logs + trains.trainFlying().logs,
     rails: cart.flying().rails + trains.trainFlying().rails,

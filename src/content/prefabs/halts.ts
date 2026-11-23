@@ -18,6 +18,25 @@ const PLANK = '#b98a52',
 export const bayKey = (hand: BayHand) => (hand < 0 ? 'railway.halt-yard-bay-a' : 'railway.halt-yard-bay-b');
 /** Where each bin's middle is along the bay (cm): logs (0), stone (1), rails (2). */
 export const bayBin = (hand: BayHand, kind: number) => (kind === 0 ? hand : kind === 1 ? -hand : 0) * 140;
+/** Both the Village's separate rails shelf and the shelf inside each bay use these same bearers and legs. */
+export const yardShelf: BayBox[] = [-45, 45].flatMap((x): BayBox[] => [
+  [x, 42, 0, 12, 10, 120, SILL],
+  ...[-45, 45].map((z): BayBox => [x, 19, z, 10, 38, 10, POST]),
+]);
+export const yardPointer: BayBox[] = [
+  [0, 64, 0, 13, 128, 13, POST],
+  [0, 119, 30, 11, 18, 72, PLANK],
+];
+const yardSolid = (key: PrefabDef['key'], parts: BayBox[]): PrefabDef => ({
+  key,
+  scope: 'owner',
+  visual: { none: true },
+  colliders: parts.map(([x, y, z, w, h, d]) => ({
+    shape: 'box',
+    at: [x / 100, y / 100, z / 100],
+    half: [w / 200, h / 200, d / 200],
+  })),
+});
 export function haltYardBay(hand: BayHand): BayBox[] {
   const out: BayBox[] = [];
   const part = (x: number, y: number, z: number, w: number, h: number, d: number, colour: string) =>
@@ -39,10 +58,7 @@ export function haltYardBay(hand: BayHand): BayBox[] {
     for (const sx of [-1, 1]) part(sx * 70, 43, cradle + dz, 10, 62, 10, POST);
   }
   // The rails shelf: two bearers along the line on short legs.
-  for (const sx of [-45, 45]) {
-    part(sx, 42, 0, 12, 10, 120, SILL);
-    for (const dz of [-45, 45]) part(sx, 19, dz, 10, 38, 10, POST);
-  }
+  out.push(...yardShelf);
   // The stone bin: a low lip on the open side and a wall toward the shelf; the end boards close its far side.
   const stone = bayBin(hand, 1);
   part(85, 24, stone, 8, 24, 120, BOARD);
@@ -86,16 +102,9 @@ export const prefabs: PrefabDef[] = [
     scope: 'owner',
   },
   // A halt yard's bay, its cradle at -z (a) or +z (b): the solids of the boxes its view draws (haltYardBay, below).
-  ...([-1, 1] as const).map((hand): PrefabDef => ({
-    key: bayKey(hand),
-    visual: { none: true },
-    colliders: haltYardBay(hand).map(([x, y, z, w, h, d]) => ({
-      shape: 'box' as const,
-      at: [x / 100, y / 100, z / 100],
-      half: [w / 200, h / 200, d / 200],
-    })),
-    scope: 'owner',
-  })),
+  ...([-1, 1] as const).map((hand) => yardSolid(bayKey(hand), haltYardBay(hand))),
+  yardSolid('railway.yard-shelf', yardShelf),
+  yardSolid('railway.yard-pointer', yardPointer),
 ];
 export function haltSolids(piece: HaltPiece, sign: number, hw: number, half: number): JsonObject[] {
   const solid = (x: Scalar, y: Scalar, z: Scalar, hx: number, hy: number, hz: number) => ({

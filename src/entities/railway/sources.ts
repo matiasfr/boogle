@@ -287,9 +287,7 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
   // The pile batches are rewritten (and uploaded) only when what they show changed: the piles read (the adapter keeps
   // the same array while every pile is equal), a flight into a pile landing or being re-keyed, or the racks.
   const drawnPiles: number[] = []; // id, x, y, z, n, kind, age of each pile as last drawn (values, never rows)
-  let drawnRack = -1,
-    drawnStoneRack = -1,
-    pilesDirty = true;
+  let pilesDirty = true;
   /** Whether the piles differ from what was drawn, compared in place (no allocation but the visit's closure). */
   function pilesChanged() {
     let i = 0,
@@ -314,21 +312,11 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
         pileFlights.splice(k, 1);
         pilesDirty = true;
       }
-    const { rack: rackLogs, stoneRack } = railRow(world());
-    if (!force && !pilesDirty && !pilesChanged()) {
-      if (drawnRack !== rackLogs || drawnStoneRack !== stoneRack) {
-        rack.setStock(rackLogs, stoneRack);
-        drawnRack = rackLogs;
-        drawnStoneRack = stoneRack;
-      }
-      return;
-    }
+    if (!force && !pilesDirty && !pilesChanged()) return;
     pilesDirty = false;
     const now = listPiles();
     drawnPiles.length = 0;
     for (const p of now) drawnPiles.push(p.id, p.x, p.y, p.z, p.n, p.kind, p.age);
-    drawnRack = rackLogs;
-    drawnStoneRack = stoneRack;
     let count = 0,
       stoneCount = 0,
       railCount = 0;
@@ -360,7 +348,6 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     fitInstanceBounds(piles);
     fitInstanceBounds(stonePiles);
     fitInstanceBounds(railPiles);
-    rack.setStock(rackLogs, stoneRack);
   }
 
   const treePoses = new Map<TreePose, number>();
@@ -465,13 +452,10 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
       drawPiles();
       return;
     }
-    if (event.op === 'rail.take' || event.op === 'rail.rackTake') {
+    if (event.op === 'rail.take') {
       const kind = event.kind ?? 0;
-      if (event.op === 'rail.take') {
-        // The pile may be gone by the end of the packet: the event carries where it stood and what it kept.
-        if (event.px === undefined || event.pz === undefined) return;
-        at.set(event.px / 100, pileHeight({ y: event.py }) + 0.3, event.pz / 100);
-      } else at.copy(kind === 1 ? rack.stoneAt : rack.logBase);
+      if (event.px === undefined || event.pz === undefined) return;
+      at.set(event.px / 100, pileHeight({ y: event.py }) + 0.3, event.pz / 100);
       // Pieces a correction already flies to this player from someone's back do not also leave the pile.
       for (let k = 0; k < event.accepted - (event.returned ?? 0); k++) {
         const flight = pieces.send(
@@ -910,35 +894,6 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
             },
       );
     }
-    if (railRow(world()).rack > 0 && Math.hypot(p.x - rackAt.x, p.z - rackAt.z) <= 2.8)
-      result.push(
-        freeCarry(LOGS) <= 0
-          ? {
-              id: 'railway-recovery-rack',
-              verb: 'Pick up',
-              note: `${railRow(world()).rack} logs`,
-              at: rack.logBase,
-              blocked: KIND_FULL[LOGS]!,
-            }
-          : {
-              id: 'railway-recovery-rack',
-              verb: 'Pick up',
-              note: `${railRow(world()).rack} logs`,
-              at: rack.logBase,
-              run: () => {
-                adapter.rackTake();
-              },
-            },
-      );
-    if (railRow(world()).stoneRack > 0 && Math.hypot(p.x - rackAt.x, p.z - rackAt.z) <= 2.8)
-      result.push({
-        id: 'railway-recovery-stone',
-        verb: 'Pick up',
-        note: `${railRow(world()).stoneRack} stone`,
-        at: rack.stoneAt,
-        run: () => void adapter.rackTake(1),
-        ...(freeCarry(STONE) <= 0 ? { blocked: KIND_FULL[STONE]! } : {}),
-      });
     result.push(...cargo.targets());
     return result;
   }
@@ -972,6 +927,8 @@ export async function createRailwaySources(adapter: RailwayAdapter, owner: Owned
     targets,
     dispose,
     bundleOrigin,
+    incomingLog: (active: () => boolean) => harvestFlights.push(active),
+    villageBins: rack.bases,
     // Read by the stable ID the tree was admitted with, as fromState and onReset do.
     inspect: () =>
       choppable.map((tree) => {
