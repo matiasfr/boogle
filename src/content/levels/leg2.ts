@@ -29,14 +29,12 @@ const BED = 3.8,
 const BELL_O = { x: -50, z: -850 },
   BELL_N = unit(-0.0612, 0.9981),
   BELL_E = perp(BELL_N),
-  IN = unit(0.855, 0.519),
-  OUT = unit(-0.934, 0.357);
+  IN = unit(0.855, 0.519);
 const ne = frame(BELL_O, BELL_N, BELL_E),
   // The same frame with `e` first, for a box whose length runs across.
   en = frame(BELL_O, BELL_E, BELL_N),
   // `lat` + on each half's north side (the outside of the 52 degree kink).
-  bayIn = frame(BELL_O, IN, perp(IN)),
-  bayOut = frame(BELL_O, OUT, perp(OUT, -1));
+  bayIn = frame(BELL_O, IN, perp(IN));
 const LOWER = 4.9,
   UPPER = 15.9,
   ROCK = 14,
@@ -83,6 +81,77 @@ function bellBed() {
   });
 }
 
+// Two chords on each half. Use the catalog's offset curve so the outside
+// platforms get the extra length they need around the bend.
+// Portable authoring samples (cm) at s 1197, 1207, 1217, 1233 and 1249 m.
+// Each row contains rowSide at the track centre and at +/-580 cm.
+const platformCuts = [
+  [
+    [-2395, -83419],
+    [-2095, -83915],
+    [-2695, -82923],
+  ],
+  [
+    [-3282, -83880],
+    [-3066, -84418],
+    [-3498, -83342],
+  ],
+  [
+    [-4232, -84188],
+    [-4109, -84755],
+    [-4355, -83621],
+  ],
+  [
+    [-5820, -84342],
+    [-5843, -84922],
+    [-5797, -83762],
+  ],
+  [
+    [-7392, -84073],
+    [-7572, -84624],
+    [-7212, -83522],
+  ],
+] as const;
+const bellChords = platformCuts.slice(1).map((end, i) => {
+  const side = (offset: 0 | 1 | 2) => {
+    const [x, z] = platformCuts[i]![offset];
+    const [bx, bz] = end[offset];
+    const dx = bx - x,
+      dz = bz - z;
+    const along = unit(dx, dz);
+    return {
+      frame: frame({ x: x / 100, z: z / 100 }, along, perp(along, -1)),
+      lengthCm: Math.round(Math.hypot(dx, dz)),
+    };
+  };
+  return { track: side(0), north: side(1), south: side(2) };
+});
+const platforms = bellChords.flatMap((c, i) =>
+  [c.north, c.south].map((p, j) => {
+    const half = i < 2 ? 'in' : 'out';
+    const id = `upper-${half}-${j ? 's' : 'n'}`;
+    // The square ends overlap on the bend. Keep their inner corners outside
+    // the full 7.6 m formation, including the two end ramps.
+    const inner = j ? -2 : -1.55;
+    const outerEdge = j ? 1.55 : 2;
+    const outer = i === 0 || i === 3;
+    const edge = i === 0 ? 0 : p.lengthCm / 100;
+    const foot = i === 0 ? -4 : (p.lengthCm + 400) / 100;
+    return {
+      piece: {
+        ...p.frame.box(`${id}-${i}`, -0.2, (p.lengthCm + 20) / 100, inner, outerEdge, UPPER, sub(UPPER, ROCK), 'light'),
+        over: true,
+      },
+      ramp: outer
+        ? { ...p.frame.ramp(id + '-end', edge, UPPER, foot, ROCK, inner, outerEdge, 'grey'), over: true }
+        : null,
+      reserve: i % 2 === 0 ? p.frame.reserve(id + ' lever end', 0, 3, inner, outerEdge, UPPER, UPPER + CLEAR) : null,
+      middle: p.frame.at(p.lengthCm / 200, 0),
+      foot: p.frame.at(foot, 0),
+    };
+  }),
+);
+
 function bell() {
   const pieces: unknown[] = [
     // The lower level, in the cut (the cut is sea: everything here stands on posts).
@@ -96,8 +165,7 @@ function bell() {
     ne.ramp('ramp', -5.6, LOWER, -26, UPPER, -24, -21, 'light'),
     { ...ne.ramp('ramp-parapet', -5.6, LOWER + 1, -26, UPPER + 1, -21.2, -21, 'pale'), h: 1 },
     { ...ne.box('ramp-landing', -30, -26, -24, -21, UPPER, 0.4, 'grey'), posts: true },
-    // The upper level. PROVISIONAL (design review, change 5): the four upper platforms and the deck's south edge move
-    // when the track plan eases the 52 degree kink (about 11 m south at a 100 m radius), so they get no polish.
+    // The bay beds and platforms follow the eased row.
     ...bellBed(),
     // The bay row climbs onto the rock east of the in half's bed (t 70 to 94; the row's grade knots are at t 79.793,
     // rail 15, and t 99.738, rail 14.22): its unlaid bed carries on there 0.15 m under the rail (the smoothed deck is
@@ -105,44 +173,8 @@ function bell() {
     // t 94 the rail is within a body sphere's radius (0.45 m) of the rock's top. Each down into the rock (0.85 m).
     bayIn.box('bay-bed-on', 70, 79.793, -BED, BED, sub(BAY_RAIL, 0.15), 0.85, 'dark'),
     { ...bayIn.ramp('bay-bed-climb', 79.793, sub(BAY_RAIL, 0.15), 94, 14.29, -BED, BED, 'dark'), h: 0.85 },
-    // The two on the inside of the kink start at t 2: from t -3 their corners stood in the other half's bed.
-    // Keep the original collision volume and walkable top. Only the drawn underside is inset 1 cm
-    // from the other bay's bed, whose bottom also lies at ROCK.
-    {
-      ...bayIn.box('upper-in-n-collider', -3, 20, BED, PLAT, UPPER, sub(UPPER, ROCK), 'light'),
-      hidden: true,
-      over: true,
-      provisional: true,
-    },
-    {
-      ...bayIn.box('upper-in-n', -3, 20, BED, PLAT, UPPER, sub(UPPER, ROCK + 0.01), 'light'),
-      solid: false,
-      over: true,
-      provisional: true,
-    },
-    { ...bayIn.box('upper-in-s', 2, 20, -PLAT, -BED, UPPER, sub(UPPER, ROCK), 'light'), over: true, provisional: true },
-    {
-      ...bayOut.box('upper-out-n-collider', -3, 30, BED, PLAT, UPPER, sub(UPPER, ROCK), 'light'),
-      hidden: true,
-      over: true,
-      provisional: true,
-    },
-    {
-      ...bayOut.box('upper-out-n', -3, 30, BED, PLAT, UPPER, sub(UPPER, ROCK + 0.01), 'light'),
-      solid: false,
-      over: true,
-      provisional: true,
-    },
-    {
-      ...bayOut.box('upper-out-s', 2, 30, -PLAT, -BED, UPPER, sub(UPPER, ROCK), 'light'),
-      over: true,
-      provisional: true,
-    },
-    { ...bayIn.ramp('upper-in-n-end', 20, UPPER, 24, ROCK, BED, PLAT, 'grey'), over: true, provisional: true },
-    { ...bayIn.ramp('upper-in-s-end', 20, UPPER, 24, ROCK, -PLAT, -BED, 'grey'), over: true, provisional: true },
-    { ...bayOut.ramp('upper-out-n-end', 30, UPPER, 34, ROCK, BED, PLAT, 'grey'), over: true, provisional: true },
-    { ...bayOut.ramp('upper-out-s-end', 30, UPPER, 34, ROCK, -PLAT, -BED, 'grey'), over: true, provisional: true },
-    { ...ne.box('upper-deck', -30, 3, -46, -24, UPPER, sub(UPPER, ROCK), 'grey'), provisional: true },
+    ...platforms.flatMap((p) => (p.ramp ? [p.piece, p.ramp] : [p.piece])),
+    ne.box('upper-deck', -30, 1, -46, -24, UPPER, sub(UPPER, ROCK), 'grey'),
     // Call 119: the deck stays 1.9 m over the rock, with a short ramp down.
     en.ramp('upper-step', -46, UPPER, -50, ROCK, -15, -11, 'grey'),
   ];
@@ -197,17 +229,17 @@ function bell() {
     ],
     reserves: [
       ne.reserve('ns row', -60, 60, -BED, BED, NS_RAIL - 0.1, NS_RAIL + LOADING),
-      bayIn.reserve('bay row, in', 0, 70, -BED, BED, BAY_RAIL - 0.1, BAY_RAIL + LOADING),
-      bayOut.reserve('bay row, out', 0, 70, -BED, BED, BAY_RAIL - 0.1, BAY_RAIL + LOADING),
+      bayIn.reserve('bay approach', 36, 70, -BED, BED, BAY_RAIL, BAY_RAIL + LOADING),
+      ...bellChords.map((c, i) =>
+        c.track.frame.reserve('bay track ' + i, 0, c.track.lengthCm / 100, -BED, BED, BAY_RAIL, BAY_RAIL + LOADING),
+      ),
       ne.reserve('seeds spot', -5.5, -2.5, -16.5, -13.5, LOWER, LOWER + CLEAR),
       { id: 'Canopy frame and barrier', x: -54.1, z: -848.23, yaw: 0, w: 2, d: 2, y0: UPPER, y1: UPPER + CLEAR },
+      { id: 'Canopy rack', x: -43.36, z: -847.01, yaw: 0, w: 2, d: 2, y0: UPPER, y1: UPPER + CLEAR },
       // Each platform's homeward 3 m (a lever, a board).
       ne.reserve('lower-east lever end', -20, -17, BED, 9, LOWER, LOWER + CLEAR),
       ne.reserve('lower-west lever end', -28, -25, -PLAT, -BED, LOWER, LOWER + CLEAR),
-      bayIn.reserve('upper-in-n lever end', 17, 20, BED, PLAT, UPPER, UPPER + CLEAR),
-      bayIn.reserve('upper-in-s lever end', 17, 20, -PLAT, -BED, UPPER, UPPER + CLEAR),
-      bayOut.reserve('upper-out-n lever end', -3, 0, BED, PLAT, UPPER, UPPER + CLEAR),
-      bayOut.reserve('upper-out-s lever end', 2, 5, -PLAT, -BED, UPPER, UPPER + CLEAR),
+      ...platforms.flatMap((p) => (p.reserve ? [p.reserve] : [])),
     ],
     /** Where the level report stands (finding 2 and the design review's change 3). */
     marks: {
@@ -225,16 +257,16 @@ function bell() {
       seaWest: ne.at(40, -16),
       seaEast: ne.at(-40, 6),
       seaOutside: ne.at(-130, 0),
-      upperInN: bayIn.at(10, 5.8),
-      upperInS: bayIn.at(10, -5.8),
-      upperOutN: bayOut.at(15, 5.8),
-      upperOutS: bayOut.at(15, -5.8),
+      upperInN: platforms[0]!.middle,
+      upperInS: platforms[1]!.middle,
+      upperOutN: platforms[6]!.middle,
+      upperOutS: platforms[7]!.middle,
       // The feet that must land well inside solid rock (change 2).
       feet: {
-        'upper-in-n-end': bayIn.at(24.5, 5.8),
-        'upper-in-s-end': bayIn.at(24.5, -5.8),
-        'upper-out-n-end': bayOut.at(34.5, 5.8),
-        'upper-out-s-end': bayOut.at(34.5, -5.8),
+        'upper-in-n-end': platforms[0]!.foot,
+        'upper-in-s-end': platforms[1]!.foot,
+        'upper-out-n-end': platforms[6]!.foot,
+        'upper-out-s-end': platforms[7]!.foot,
         'upper-step': ne.at(-13, -50.5),
         // South of the collider's face, on the walk from the in half's end ramps.
         "the pinnacle's foot": ne.at(-5, 25),

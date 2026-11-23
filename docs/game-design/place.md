@@ -1487,6 +1487,8 @@ the prefab runtime (prefab-data step 6). Its 86 placements retain 84 visible box
 old massing goldens byte for byte. The incline platforms derive from the leg-2 authoring in `src/content/levels/leg2.ts`.
 This changes no route, interaction, sign copy or resident distance.
 
+**Bell Rock upper platform (23 November 2026).** The bay line rounds a 60 m radius bend at the upper halt. The platforms and end ramps follow the bend. The Canopy barrier stands on the outward platform's first frame, beside the rack where the bay train delivers the first kit.
+
 **Greybox leg 2: Bell Rock, Home's West landing, the Gorge's incline platforms (13 November 2026;
 [greybox-leg2-massing](../archive/plans/greybox-leg2-massing.md)).** Layout only, live for everyone: grey boxes, labelled
 pads and boards, no rails, no rules, nothing to press. Every label is a placeholder.

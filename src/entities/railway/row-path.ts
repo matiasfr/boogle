@@ -1,12 +1,12 @@
 // The greybox route's own lines (the `ns` and `bay` rows, docs/plans/greybox-leg2.md, step 4) as the views stand them:
 // the catalog row smoothed (the mean of three row points 7.5 m apart, from a table every 5 m, as ./line2-path.ts reads
 // the `ring` row), in world metres. One path for the trains' cars, the deck and the sites, so they agree with each
-// other and with the sim's platforms (rowSide, on the unsmoothed row: every halt stands on a straight). Unlike line 2,
+// other and with the sim's platforms (rowSide on the unsmoothed row). Unlike line 2,
 // a row's line is its formation's centre: the outward track 2 m to its right going out, the homeward 2 m to its left
 // (right-hand running; the platforms' 5.8 m, railway-lines.ts legPlatforms). Pure numbers; no three.js.
 import type { LinePoint } from '../../place/layout.ts';
 import { RAIL_LINES } from '../../sim/railway-lines.ts';
-import { ROW_LINE, type RowId } from '../../sim/railway-route.ts';
+import { ROW_LINE } from '../../sim/railway-route.ts';
 import { WORLD_LINES } from '../../sim/railway-world-lines.ts';
 import { lerp, smoothstep } from '../../math-pure.ts';
 
@@ -20,19 +20,12 @@ const CROSS = 20,
 const STEP = 5;
 
 type RowPath = { line: number; table: Float64Array; len: number };
-/** Where a row's drawn path stops and runs on straight, cm along it: the `bay` row at its 52° kink at Bell Rock (t 0,
- * the bay line's buffers), so the smoothing never bends the in half's last metres toward the out half (leg 3 eases the
- * bend and moves this). */
-const TRIM: Partial<Record<RowId, number>> = {
-  bay: WORLD_LINES.find((l) => l.id === 'bay')!.legs[0]!.toCm,
-};
-/** The `bay` row's 52° kink at Bell Rock, metres along it: where its drawn path stops and its buffers stand. */
-export const BAY_KINK = TRIM.bay! / 100;
+export const BAY_CUT_END = WORLD_LINES.find((l) => l.id === 'bay')!.legs[0]!.toCm / 100;
 function build(id: 'ns' | 'bay'): RowPath {
   const r = WORLD_LINES.find((l) => l.id === id)!,
-    end = TRIM[id] ?? r.fromCm + r.lengthCm;
+    end = r.fromCm + r.lengthCm;
   const lens = r.pts.slice(1).map((b, i) => Math.hypot(b[0] - r.pts[i]![0], b[1] - r.pts[i]![1]));
-  // The row's point `cm` along it, unrounded; past either end (or the trim) the end span runs on straight.
+  // The row's point `cm` along it, unrounded; past either end the end span runs on straight.
   const at = (cm: number) => {
     let want = Math.min(cm, end) - r.fromCm,
       i = 0;

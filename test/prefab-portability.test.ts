@@ -301,8 +301,8 @@ test('authored layouts reject malformed geometry and mixed expanded data before 
     /coexist/,
   );
   const resolved = validation.loadLevelArtifact(bell, definitions);
-  // The eased Bell Rock bed replaces its two straight spans with nine chords.
-  assert.equal(resolved.placements.length, 79);
+  // Bell Rock has nine bed chords and two platform chords per side of each half.
+  assert.equal(resolved.placements.length, 81);
   assert.ok(!('layout' in resolved));
   assert.deepEqual(
     { ...metadata, format: 'boogle-level', place: 'empty', placements: [] },
