@@ -360,6 +360,19 @@ rides with it. Steps 6 and 7 ship on their own after it.
       and 2326 / 2505 from bay-reached. None of the 16 scripted solo Strong runs recorded a
       pressure departure with its second bill. Random-demand second-bill delivery remains unmeasured.
 
+      **23 November, growing-stack retry with the fleet at call time.** Each accepted call keeps
+      the count and boiler fits serving when it arrived. A subsequent lay can lengthen its route,
+      but later fleet joins cannot shorten its headway. The factor remains two, plus intermediate
+      dwells. Four seeds ran for 20,000 ticks each at 75%. The worst served waits were 1418
+      (`777`, pass), 1334 (`5eed`, pass), 1224 (`badd`, pass) and 1160 (`c0ffee`, fail on a
+      separate call that was withdrawn). On `c0ffee`, slots 4–6 joined at 13463, 13680 and 14068.
+      Stack head 1 homeward was requested at 14205 with all six already serving. At 15304 the call
+      had waited 1099 ticks against a 1098-tick bound (399-tick headway, 300 ticks of dwells).
+      All six trains were moving. Slots 1 and 3 were homeward at 196534 and 31714 cm, slots
+      2, 4, 5 and 6 outward at 25686, 184518, 125442 and 90444 cm. Slot 1 was assigned to the
+      rider and running toward stop 6. At 15413 the lay closed the platform and withdrew the
+      still-unserved call after 1208 ticks. The remaining failure occurred before closure.
+
       **Historical fixed-gate experiments (22–23 November, superseded).** With three final bay trains, seed
       `c0ffee` reached 1,413 ticks settled and 1,752 growing against limits of 1,350 and 1,600.
       With the approved fourth train at the final stage, the long run measured the following maxima

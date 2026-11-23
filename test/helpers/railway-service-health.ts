@@ -9,19 +9,22 @@ import { balancedHold, cycleTicks, platformHoldPressure, servingSlots, trainGaps
 // A missed braking window can cost one headway. Allow another for uneven demand,
 // plus one boarding dwell per open intermediate platform on the trip.
 const MISSED_HEADWAYS = 2;
-export function serviceBudget(w: World, line: number) {
-  const stops = stopsOf(w, line), rows = (slot: number) => train(w, slot);
-  const fleet = servingSlots(rows, line);
-  assert.ok(fleet.length && stops.length >= 2, 'a requested service has track and trains');
-  const cycle = Math.max(...fleet.map(slot => cycleTicks(line, stops, rows(slot).boiler)));
-  const headway = Math.ceil(cycle / fleet.length);
+function servingBoilers(w: World, line: number) {
+  return servingSlots(slot => train(w, slot), line).map(slot => train(w, slot).boiler);
+}
+
+export function serviceBudget(w: World, line: number, boilers = servingBoilers(w, line)) {
+  const stops = stopsOf(w, line);
+  assert.ok(boilers.length && stops.length >= 2, 'a requested service has track and trains');
+  const cycle = Math.max(...boilers.map(boiler => cycleTicks(line, stops, boiler)));
+  const headway = Math.ceil(cycle / boilers.length);
   const middle = stops.slice(1, -1).filter((_, i) =>
     !trainPassesBy(line, i + 1, 1, stops.length) || !trainPassesBy(line, i + 1, -1, stops.length)).length;
   return { headway, bound: MISSED_HEADWAYS * headway + middle * TRAIN.dwellTicks };
 }
 
 export class ServiceHealth {
-  readonly pending = new Map<string, { id: number; dir: number; since: number; bound: number }>();
+  readonly pending = new Map<string, { id: number; dir: number; since: number; boilers: number[]; bound: number; overdue: boolean }>();
   readonly worst = new Map<number, number>();
   readonly stages = new Set<string>();
   readonly failures: string[] = [];
@@ -33,7 +36,12 @@ export class ServiceHealth {
     const h = RAIL_HALTS[id]!;
     if (!this.lines.includes(h.line) || this.there(w, id, dir)) return;
     const key = `${id}/${dir}`;
-    if (!this.pending.has(key)) this.pending.set(key, { id, dir, since: tick, bound: 0 });
+    if (this.pending.has(key)) return;
+    // Size this call's headway with the fleet serving when it arrived. A train joining
+    // at home still has its first half-circuit to run before it can serve homeward riders.
+    const boilers = servingBoilers(w, h.line);
+    const { bound } = serviceBudget(w, h.line, boilers);
+    this.pending.set(key, { id, dir, since: tick, boilers, bound, overdue: false });
   }
   private there(w: World, id: number, dir: number) {
     const h = RAIL_HALTS[id]!;
@@ -46,14 +54,14 @@ export class ServiceHealth {
     for (const [key, p] of this.pending) {
       const h = RAIL_HALTS[p.id]!, stops = stopsOf(w, h.line);
       if (trainPassesBy(h.line, h.stop, p.dir, stops.length)) {
+        if (p.overdue) this.failures.push(`${h.name}/${p.dir} withdrawn at ${tick} after ${tick - p.since} ticks when the head closed`);
         this.pending.delete(key); // The lay withdrew this head's call.
         continue;
       }
-      const fleet = servingSlots(j => train(w, j), h.line);
-      const stage = `${h.line}/${stops.at(-1)}/${fleet.map(j => train(w, j).boiler).join(',')}`;
+      const stage = `${h.line}/${stops.at(-1)}/${p.boilers.join(',')}`;
       let budget = this.budgets.get(stage);
       if (!budget) {
-        budget = serviceBudget(w, h.line);
+        budget = serviceBudget(w, h.line, p.boilers);
         this.budgets.set(stage, budget);
         this.stages.add(`${stage} h${budget.headway} b${budget.bound}`);
       }
@@ -61,10 +69,11 @@ export class ServiceHealth {
       p.bound = Math.max(p.bound, budget.bound);
       const wait = tick - p.since;
       if (wait === p.bound + 1) {
+        p.overdue = true;
         const rows = (slot: number) => train(w, slot);
         const req = line(w, h.line).req;
         const pick = trainServes(rows, h.line, stops, h.stop, p.dir, tick);
-        const poses = fleet.map(j => {
+        const poses = servingSlots(rows, h.line).map(j => {
           const r = train(w, j);
           const gap = trainGaps(rows, h.line, stops, j, tick);
           let state = 'running';
@@ -78,10 +87,10 @@ export class ServiceHealth {
           }
           return `#${j} ${trainPose(r, h.line, stops, tick).s}cm track${r.track} to${r.to} ${state} gaps ${gap?.ahead}/${gap?.behind}`;
         });
-        this.failures.push(`${h.name}/${p.dir} asked ${p.since}, tick ${tick}, bound ${p.bound}, assigned #${pick}; ${poses.join(', ')}`);
+        this.failures.push(`${h.name}/${p.dir} asked ${p.since} with ${p.boilers.length} trains, tick ${tick}, bound ${p.bound}, assigned #${pick}; ${poses.join(', ')}`);
       }
       if (this.there(w, p.id, p.dir)) {
-        if (wait > p.bound) this.failures.push(`${h.name}/${p.dir} served ${tick}, waited ${wait} (bound ${p.bound})`);
+        if (p.overdue) this.failures.push(`${h.name}/${p.dir} served ${tick}, waited ${wait} (bound at service ${p.bound})`);
         this.worst.set(h.line, Math.max(this.worst.get(h.line) ?? 0, wait));
         this.pending.delete(key);
       }
