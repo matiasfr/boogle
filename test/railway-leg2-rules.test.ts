@@ -16,14 +16,7 @@ import { railTick } from '../src/sim/railway-systems.ts';
 import { account, forge, rail, train, trains } from '../src/sim/railway-rows.ts';
 import { LOGS, roomOf, stopsOf } from '../src/sim/railway-queries.ts';
 import { RAILS } from '../src/sim/railway-line2-layout.ts';
-import {
-  legKitNeed,
-  legOpen,
-  legRow,
-  legYard,
-  legYardDrop,
-  routeRow,
-} from '../src/sim/railway-queries-route.ts';
+import { legKitNeed, legOpen, legRow, legYard, legYardDrop, routeRow } from '../src/sim/railway-queries-route.ts';
 import { legYardHome, railLegKitRelease } from '../src/sim/railway-sys-route-kit.ts';
 import { railValid, type Actor } from '../src/world/railway-server.ts';
 import { act, advance, apply, buildSeedWorld, invariant, restore, unaudited, type Seed } from './helpers/rail.ts';
@@ -80,7 +73,12 @@ function kitLedger(w: World) {
     loadedRails = 0;
   RAIL_LEGS.forEach((leg, k) => {
     const g = legRow(w, k);
-    [logs, rails, loadedLogs, loadedRails] = [logs + g.logs, rails + g.rails, loadedLogs + g.loadedLogs, loadedRails + g.loadedRails];
+    [logs, rails, loadedLogs, loadedRails] = [
+      logs + g.logs,
+      rails + g.rails,
+      loadedLogs + g.loadedLogs,
+      loadedRails + g.loadedRails,
+    ];
     for (const sec of leg.sections.slice(0, g.laid)) [logs, rails] = [logs + sec.logs, rails + sec.rails];
   });
   for (const r of trains(w)) if (r.legKit) [logs, rails] = [logs + r.logs, rails + r.rails];
@@ -100,10 +98,17 @@ test("leg 2's catalog lines: ns and bay open by their legs' sections, fleets 0, 
       [0, 1, 2],
       `${l.id}: a train per section laid`,
     );
-    assert.deepEqual(l.signals, [RAIL_LEGS[leg]!.sections[0]!.toCm], `${l.id}: a block signal at section 1's end`);
+    assert.deepEqual(l.signals, [
+      RAIL_LEGS[leg]!.sections[0]!.toCm,
+      ...(line === BAYL ? RAIL_LEGS[3]!.sections.slice(0, -1).map((s) => s.toCm) : []),
+    ]);
     for (const { stops, trains } of lineStagesOf(line)) {
-      assert.deepEqual(stops, l.halts.slice(0, stops.length).map((h) => h.s), `${l.id}: the stops a prefix`);
-      assert.equal(trains, Math.max(0, stops.length - 1), `${l.id}: ${trains} trains over ${stops.length} stops`);
+      assert.deepEqual(
+        stops,
+        l.halts.slice(0, stops.length).map((h) => h.s),
+        `${l.id}: the stops a prefix`,
+      );
+      assert.equal(trains, [0, 0, 1, 2, 2, 3, 4][stops.length], `${l.id}: ${trains} trains over ${stops.length} stops`);
     }
     // Right-hand running (owner, 18 November): each halt's outward platform right of the row going out, its homeward
     // one left, 11.6 m apart.
@@ -135,9 +140,47 @@ test('the barrier: rail.legStock is refused while it is shut; it opens only with
   const a = acc(mid, 'a');
   const r = apply(mid.w, 'a', { op: 'rail.gate', epoch: a.epoch, request: a.request + 1, id: BARRIER } as never, mid.t);
   assert.ok(!r.accepted, 'the incline is not open');
-  // The Canopy barrier stands shut: leg 3's rules are not built (it refuses with the seeds held too).
+  // The Canopy barrier refuses the seeds until the bay cut is laid.
   const bell = copy('bay-open');
   assert.equal(act(bell, 'a', 'rail.gate', { id: CANOPY }), 0, 'the Canopy barrier waits for leg 3');
+});
+
+test('Canopy kit rides ahead, the barrier guards the frame, and the cloth unlocks only after three lays', () => {
+  const s = unaudited(copy('bay-mid')),
+    k = 3;
+  const cloth = RAIL_GRANTS.findIndex((g) => g.id === 'cloth'),
+    notch = RAIL_GATES.findIndex((g) => g.id === 'notch');
+  // Keep the bay cut's last frame waiting while its kit is racked and its train returns to the West landing.
+  for (let i = 0; legRow(s.w, k).loadedLogs === 0 || legRow(s.w, k).loadedRails === 0; i++) {
+    assert.ok(i < 6000, 'Canopy kit loaded before the last bay-cut lay');
+    advance(s, 1);
+  }
+  assert.ok(!legOpen(s.w, k));
+  assert.equal(act(s, 'a', 'rail.gate', { id: CANOPY }), 0);
+  feedSection(s, BAY);
+  assert.equal(act(s, 'a', 'rail.grant', { id: cloth }), 0);
+  for (let i = 0; rail(s.w).depot === 0; i++) {
+    assert.ok(i < 6000, 'kit at Bell Rock');
+    advance(s, 1);
+  }
+  assert.ok(act(s, 'a', 'rail.depotTake') > 0);
+  assert.equal(act(s, 'a', 'rail.legStock', { leg: k }), 0);
+  assert.equal(act(s, 'a', 'rail.gate', { id: CANOPY }), 1);
+  for (let i = 0; i < 3; i++) {
+    assert.deepEqual(kitLedger(s.w), [0, 0]);
+    feedSection(s, k);
+    assert.deepEqual(kitLedger(s.w), [0, 0]);
+    const n = stopsOf(s.w, BAYL).length;
+    assert.equal(n, 4 + i);
+    for (const dir of [-1, 1]) {
+      assert.equal(trainPassesBy(BAYL, 3, dir, n), i === 2);
+      assert.equal(trainPassesBy(BAYL, 4, dir, n), false);
+    }
+  }
+  assert.equal(act(s, 'a', 'rail.grant', { id: cloth }), 1);
+  assert.equal(act(s, 'a', 'rail.grant', { id: cloth }), 0);
+  assert.equal(act(s, 'a', 'rail.gate', { id: notch }), 0);
+  assert.equal(invariant(s.w), null);
 });
 
 test('the relay conserves every unit: line 2 to the Gorge rack and yard, the ns trains out of the yard to head 1', () => {
@@ -162,7 +205,10 @@ test('the relay conserves every unit: line 2 to the Gorge rack and yard, the ns 
   assert.ok(yardMost > 0, 'line 2 unloaded into the Gorge yard');
   assert.ok(nsCarried > 0, 'an ns train carried kit out of the yard');
   assert.ok(headRacked > 0, "head 1's rack was stocked by the ns train");
-  assert.equal(legYardDrop(INCLINE), RAIL_LINES[LINE2]!.halts.findIndex((h) => h.name === 'High Gorge'));
+  assert.equal(
+    legYardDrop(INCLINE),
+    RAIL_LINES[LINE2]!.halts.findIndex((h) => h.name === 'High Gorge'),
+  );
   railwayCheck(s.w);
 });
 
@@ -323,8 +369,12 @@ function ask(s: Seed, f: Record<string, unknown>) {
 }
 /** Asks at 5% a tick from askPool, riders' asks and junk calls, restores; with `feed`, the open leg fed every tick and
  * the seeds taken once the incline is laid. The worst served wait on each new line. */
-function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: boolean) {
+function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: boolean, canopy = false) {
   let s = unaudited(copy(stage));
+  if (canopy) {
+    assert.equal(act(s, 'a', 'rail.gate', { id: CANOPY }), 1);
+    if (!feed) while (legRow(s.w, 3).laid < RAIL_LEGS[3]!.sections.length) feedSection(s, 3);
+  }
   const t0 = s.t,
     rand = mulberry32(seed),
     asked = new Map<string, number>(),
@@ -359,7 +409,12 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
       const open = RAIL_LEGS.findIndex((_l, j) => legOpen(s.w, j));
       if (open >= 0 && legRow(s.w, open).start < 0) stock(s, open);
       if (legRow(s.w, INCLINE).laid === 2 && !(routeRow(s.w).grants & (1 << SEEDS)))
-        apply(s.w, 'a', { op: 'rail.grant', epoch: acc(s, 'a').epoch, request: acc(s, 'a').request + 1, id: SEEDS }, s.t);
+        apply(
+          s.w,
+          'a',
+          { op: 'rail.grant', epoch: acc(s, 'a').epoch, request: acc(s, 'a').request + 1, id: SEEDS },
+          s.t,
+        );
     }
     railTick(s.w, ++s.t, 75);
     for (const [key, since] of asked) {
@@ -378,7 +433,10 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
       if (!worst.has(h.line)) continue;
       const v = s.t - since;
       worst.set(h.line, Math.max(worst.get(h.line)!, v));
-      if (v > SETTLED) long.push(`${h.name} ${dir > 0 ? 'out' : 'home'} asked +${since - t0}: ${v}`);
+      if (v > SETTLED) {
+        const fleet = servingSlots((j) => train(s.w, j), h.line).length;
+        long.push(`${h.name} ${dir > 0 ? 'out' : 'home'} asked +${since - t0}: ${v} (${fleet} serving)`);
+      }
     }
     if (k % 10 === 0)
       assert.equal(
@@ -402,16 +460,40 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
   return { ns: worst.get(NS)!, bay: worst.get(BAYL)!, long, laid: [legRow(s.w, INCLINE).laid, legRow(s.w, BAY).laid] };
 }
 const SEED_LIST = [0xc0ffee, 0x777, 0x5eed, 0xbadd] as const;
-test(`the new lines' waits, four seeds at 75%: settled (bay-reached) at most ${SETTLED}, growing (fed from incline-open) at most ${GROWING}`, { timeout: 1800000 }, (t) => {
+test(
+  `the new lines' waits, four seeds at 75%: settled (bay-reached) at most ${SETTLED}, growing (fed from incline-open) at most ${GROWING}`,
+  { timeout: 1800000 },
+  (t) => {
+    for (const seed of SEED_LIST) {
+      const settled = waits('bay-reached', seed, false);
+      const growing = waits('incline-open', seed, true);
+      t.diagnostic(
+        `${seed.toString(16)}: settled ns ${settled.ns}, bay ${settled.bay}; growing ns ${growing.ns}, bay ${growing.bay} (laid ${growing.laid.join(', ')} in ${FUZZ} ticks); over ${SETTLED}: ${[...settled.long, ...growing.long].join('; ') || 'none'}`,
+      );
+      assert.ok(
+        settled.ns <= SETTLED && settled.bay <= SETTLED,
+        `${seed.toString(16)}: settled ${settled.ns}, ${settled.bay}`,
+      );
+      assert.ok(
+        growing.ns <= GROWING && growing.bay <= GROWING,
+        `${seed.toString(16)}: growing ${growing.ns}, ${growing.bay}`,
+      );
+    }
+  },
+);
+
+test('Canopy lever waits over the settled and growing bay line', { timeout: 1800000 }, (t) => {
+  const failures = [];
   for (const seed of SEED_LIST) {
-    const settled = waits('bay-reached', seed, false);
-    const growing = waits('incline-open', seed, true);
+    const settled = waits('bay-reached', seed, false, true),
+      growing = waits('bay-reached', seed, true, true);
     t.diagnostic(
-      `${seed.toString(16)}: settled ns ${settled.ns}, bay ${settled.bay}; growing ns ${growing.ns}, bay ${growing.bay} (laid ${growing.laid.join(', ')} in ${FUZZ} ticks); over ${SETTLED}: ${[...settled.long, ...growing.long].join('; ') || 'none'}`,
+      `${seed.toString(16)}: settled ns ${settled.ns}, bay ${settled.bay}; growing ns ${growing.ns}, bay ${growing.bay}`,
     );
-    assert.ok(settled.ns <= SETTLED && settled.bay <= SETTLED, `${seed.toString(16)}: settled ${settled.ns}, ${settled.bay}`);
-    assert.ok(growing.ns <= GROWING && growing.bay <= GROWING, `${seed.toString(16)}: growing ${growing.ns}, ${growing.bay}`);
+    if (settled.bay > SETTLED || growing.bay > GROWING || settled.ns > SETTLED || growing.ns > GROWING)
+      failures.push({ seed, settled: settled.long, growing: growing.long });
   }
+  assert.deepEqual(failures, []);
 });
 
 test('replay: the same leg 2 ops from the same seed give the same hash, through a save', () => {

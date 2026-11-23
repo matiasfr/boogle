@@ -187,13 +187,16 @@ export function routeRulesShard(shard: number) {
       assert.equal(l.id, id);
       assert.equal(l.trains, 0, `${id}: no train at first`);
       const open = trainStopsOf(ROW_LINE[id], 7, { head: 7, joined: true }, [N, 2, 2, 3, 3, 6, 1, 1]);
-      assert.equal(open.length, id === 'cave' ? 0 : 3, `${id}: open to Bell Rock`);
-      assert.ok(l.halts.slice(id === 'cave' ? 0 : 3).every((h) => h.shut), `${id}: its later halts shut`);
+      assert.equal(open.length, { ns: 3, bay: 6, cave: 0 }[id], `${id}: open through its last built leg`);
+      assert.ok(
+        l.halts.slice(open.length).every((h) => h.shut),
+        `${id}: its later halts shut`,
+      );
     }
     assert.deepEqual(
       RAIL_LEGS.map((_l, k) => legBuilt(k)),
-      [true, true, true, false, false, false, false, false],
-      'leg 2 builds the incline and the bay cut',
+      [true, true, true, true, false, false, false, false],
+      'built through Canopy',
     );
   });
 
@@ -238,12 +241,14 @@ export function routeRulesShard(shard: number) {
         [2, true],
         [3, true],
         [3, true],
+        [3, true],
+        [3, true],
       ],
     );
     const w = createRailwayWorld();
     assert.deepEqual(
       trains(w).map((r) => r.phase),
-      [0, 0, ...Array.from({ length: 9 }, () => TRAIN_PHASE.SHED)],
+      [0, 0, ...Array.from({ length: 11 }, () => TRAIN_PHASE.SHED)],
     );
     // Spawned last, in catalog order, nothing laid.
     assert.equal(w.count(Leg), RAIL_LEGS.length);
@@ -448,7 +453,12 @@ export function routeRulesShard(shard: number) {
       loadedRails = 0;
     RAIL_LEGS.forEach((leg, k) => {
       const g = legRow(w, k);
-      [logs, rails, loadedLogs, loadedRails] = [logs + g.logs, rails + g.rails, loadedLogs + g.loadedLogs, loadedRails + g.loadedRails];
+      [logs, rails, loadedLogs, loadedRails] = [
+        logs + g.logs,
+        rails + g.rails,
+        loadedLogs + g.loadedLogs,
+        loadedRails + g.loadedRails,
+      ];
       for (const sec of leg.sections.slice(0, g.laid)) [logs, rails] = [logs + sec.logs, rails + sec.rails];
     });
     w.each([LegYard], (_id, y) => ((logs += y.logs), (rails += y.rails)));

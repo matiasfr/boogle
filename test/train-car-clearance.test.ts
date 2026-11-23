@@ -257,8 +257,8 @@ test('the couplings batch holds every train of the fleet, and the seated rider a
   // Review: guard the fleet against every consist, including coach, wagon and steel car.
   // Each slot is bounded independently even though only one wagon is fitted at a time. v62 (greybox leg 2): the ns and
   // bay lines' four train rows.
-  assert.equal(RAIL_TRAINS.length, 11);
-  assert.equal(couplingCapacity(RAIL_TRAINS.length), 55);
+  assert.equal(RAIL_TRAINS.length, 13);
+  assert.equal(couplingCapacity(RAIL_TRAINS.length), 65);
   for (const wagon of [false, true])
     for (const steel of [false, true]) {
       const need = RAIL_TRAINS.reduce((n, { line }) => n + consistOf({ line, wagon, steel }).length - 1, 0);

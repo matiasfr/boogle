@@ -137,7 +137,9 @@
 // (docs/plans/rail-yoke.md); no migration.
 // v65 (2026-11-19): halt yards (docs/plans/halt-yard.md): `HaltYard` rows and `rail.haltPut`/`rail.haltTake`;
 // abandoned logs and stone recover to the nearest open yard; no migration.
-export const WORLD_NS = 'v65';
+// v66 (2026-11-22): the bay line runs through Bell Rock to Canopy. The eased row, halt indices,
+// and fleet slots change the meaning of saved railway rows.
+export const WORLD_NS = 'v66';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

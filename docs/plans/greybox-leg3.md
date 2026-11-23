@@ -319,6 +319,24 @@ rides with it. Steps 6 and 7 ship on their own after it.
       bay line settled at `canopy-reached` at most 1,350 and growing from `bay-reached` at most 1,600 ticks; `ns`
       unchanged; leg 2's bay waits re-measured with leg 3's kit ahead (it changes what the bay trains carry during the
       bay cut); the long mode (`ROUTE_GATES=1`) run and its output pasted before the bump ships. `npm run loop -- run`.
+
+      **Step 2 measurements (22 November, blocked on call 18).** With three final bay trains, seed
+      `c0ffee` reached 1,413 ticks settled and 1,752 growing against limits of 1,350 and 1,600.
+      With the approved fourth train at the final stage, the long run measured the following maxima
+      over 20,000 ticks per seed per mode at 75% headway. Spacing and world invariants held.
+
+      | Seed | Settled ns | Settled bay | Growing ns | Growing bay |
+      | --- | ---: | ---: | ---: | ---: |
+      | c0ffee | 990 | 1,413 | 967 | 1,279 |
+      | 777 | 1,017 | 1,575 | 861 | 1,647 |
+      | 5eed | 997 | 1,650 | 924 | 1,085 |
+      | badd | 992 | 1,609 | 885 | 1,200 |
+
+      Both worst requests were at Bell Rock. The outward request at +14,438 waited 1,650 ticks and
+      the homeward request at +1,308 waited 1,647. All four bay trains were in service when each
+      request was served. Leg 2 with the kit ahead stayed within the bounds
+      in the initial trial (bay maxima 1,075 settled and 1,467 growing). The Canopy relay check
+      and `npm run loop -- run` passed. Step 2 remains open pending a gameplay decision.
 - [ ] **3. The hold (M; HOTBOX). For garage step 4.** `src/sim/railway-train.ts`: rows 4 and 5, `BOILER_CARS`,
       `boilerCars`, `kitBills`, `TRAIN.railheadHoldTicks`. `railway-queries-route.ts`: `legKitCap`'s `bills`.
       `railway-sys-route-kit.ts`: `legKitLoad` and `yardLoad` by bills; `legRailheadHold`. `railway-sys-trains.ts`:

@@ -9,7 +9,7 @@ const built = process.argv.includes('--built');
 if (!built) {
   const l = RAIL_LINES[1]!;
   Object.assign(l, { trains: count, speed, accel: speed === 140 ? 2.5 : 3.5, brake: 3.5 });
-  Object.assign(l.fleet!, { trains: [count, 6, 6, 6, 6] });
+  Object.assign(l.fleet![0]!, { trains: [count, 6, 6, 6, 6] });
   let n = 0;
   for (const r of RAIL_TRAINS)
     if (r.line === 1) {

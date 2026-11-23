@@ -209,6 +209,7 @@ const SPECS: readonly Spec[] = [
     gated: [[0, 1]],
     after: 2,
     kit: 'home',
+    built: true,
   },
   {
     // The cave, the Saltpan, the quay. The cave's far mouth is not in the map data: the first span (West landing to the
@@ -442,7 +443,12 @@ const FIRST_SITE: Readonly<Record<string, { frame: RailPlatform; rack: RailPlatf
     rack: rowSide('bay', 121900, 480, 90, LEG_SITE_REACH),
   },
 };
-if (SPECS.some((sp) => sp.built && !FIRST_SITE[sp.id]))
+if (
+  Object.keys(FIRST_SITE).join() !==
+  SPECS.filter((sp) => sp.built)
+    .map((sp) => sp.id)
+    .join()
+)
   throw new Error('railway-route: every built leg names its first frame and rack, in order');
 /** Section k's frame, where `rail.legStock` is judged: a built leg's first is its FIRST_SITE; the others stand 8 m short
  * of the railhead (the section's first centimetre), 4.8 m to the right going out, 90 cm over the deck (step 4's

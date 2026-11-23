@@ -87,7 +87,7 @@ export const trainStopsOf = (
 /** The trains line `line` runs with `legs` laid: its fleet's at its leg's sections laid, else `trains`. */
 export function fleetOf(line: LineRef, legs: LegsLaid = NO_LEGS, stops: readonly number[] = trainStopsOf(line, 0)) {
   const l = lineDef(line);
-  const f = l.fleet;
+  const f = l.fleet?.findLast((f) => (legs[f.leg] ?? 0) > 0) ?? l.fleet?.[0];
   if (!f) return l.trains;
   return Math.max(
     f.trains[Math.min(f.trains.length - 1, legs[f.leg] ?? 0)]!,
@@ -100,34 +100,33 @@ export function lineStagesOf(line: LineRef): { stops: readonly number[]; trains:
   const halts = lineDef(line).halts,
     top = Math.max(0, ...halts.map((h) => h.opens + 1)),
     heads = Math.max(1, ...halts.map((h) => (h.leg ? 1 : (h.heads?.length ?? 1))));
-  // The legs on this line, each laid 0 to its last halt's section + 1 (one leg a line today: the product is its count).
+  // Enumerate completed prefixes in route order, extending only the fully laid predecessor.
   const legs: number[][] = [[]];
   for (const slot of [...new Set(halts.flatMap((h) => (h.leg ? [h.leg.slot] : [])))]) {
     const most = Math.max(...halts.flatMap((h) => (h.leg?.slot === slot ? [h.leg.section + 1] : [])));
-    legs.splice(
-      0,
-      legs.length,
-      ...legs.flatMap((l) =>
-        Array.from({ length: most + 1 }, (_v, n) => {
-          const next = [...l];
-          next[slot] = n;
-          return next;
-        }),
-      ),
-    );
+    const prefix = legs.at(-1)!;
+    for (let n = 1; n <= most; n++) {
+      const next = [...prefix];
+      next[slot] = n;
+      legs.push(next);
+    }
   }
   // A leg is laid only once every halt before its first is open (its `after` needs the line built to it).
-  const first = (slot: number) => halts.findIndex((h) => h.leg?.slot === slot);
   const out: { stops: readonly number[]; trains: number }[] = [];
   for (let laid = 0; laid <= top; laid++)
     for (let head = 0; head < heads; head++)
       for (const joined of [false, true]) {
-        const base = trainStopsOf(line, laid, { head, joined }).length;
-        for (const l of legs)
-          if (l.every((n, slot) => !n || base === first(slot))) {
-            const stops = trainStopsOf(line, laid, { head, joined }, l);
+        for (const l of legs) {
+          const stops = trainStopsOf(line, laid, { head, joined }, l);
+          if (
+            l.every(
+              (n, slot) =>
+                !n || halts.slice(0, stops.length).some((h) => h.leg?.slot === slot && h.leg.section === n - 1),
+            )
+          ) {
             out.push({ stops, trains: fleetOf(line, l, stops) });
           }
+        }
       }
   return out;
 }

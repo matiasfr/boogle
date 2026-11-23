@@ -291,13 +291,13 @@ test("every leg's railhead halt is its from halt's sim index + 1 (simHalt counts
       ['bell-canopy', 3],
       ['cave', 1],
       ['wall', 3],
-      ['notch-tunnel', 4],
+      ['notch-tunnel', 6],
       ['causeway', 3],
     ],
   );
   assert.equal(simHalt('ring', 1), 9, "line 2's High Gorge after its three stack heads");
   assert.equal(simHalt('ns', 1), 2, "the ns line's Bell Rock after incline head 1");
-  assert.equal(simHalt('bay', 2), 3, "the bay line's Canopy Town after bay head 1");
+  assert.equal(simHalt('bay', 2), 5, "Canopy Town after both Canopy heads");
 });
 /** A leg's from halt on its row: the halt whose stop is its fromCm. */
 function fromHalt(leg: (typeof RAIL_LEGS)[number]) {

@@ -12,7 +12,17 @@ import {
   RING_JOINT_UP,
   RING_PATH,
 } from './railway-ring-layout.ts';
-import { RAIL_LEGS, ROW_LINE, ROW_SHIFT, legS, legStartS, pathOf, rowHalt, rowPoint, rowSide } from './railway-route.ts';
+import {
+  RAIL_LEGS,
+  ROW_LINE,
+  ROW_SHIFT,
+  legS,
+  legStartS,
+  pathOf,
+  rowHalt,
+  rowPoint,
+  rowSide,
+} from './railway-route.ts';
 import { WORLD_LINES } from './railway-world-lines.ts';
 
 export type RailEndKind = 'stub' | 'crossover' | 'loop';
@@ -93,7 +103,7 @@ export type RailLineDef = {
   /** The greybox route (step 3): how many trains run at each stage of RAIL_LEGS[`leg`], by its sections laid
    * (`trains[0]` is `trains`). A stage's extra trains wait in the shed (TRAIN_PHASE.SHED) until they join at the line's
    * first halt (./railway-trains.ts, fleetJoin). Absent: `trains` at every stage. */
-  fleet?: { leg: number; trains: readonly number[]; opens?: readonly { stop: number; trains: number }[] };
+  fleet?: readonly { leg: number; trains: readonly number[]; opens?: readonly { stop: number; trains: number }[] }[];
   /** Block signals (the greybox route, step 3): cm along the line where a train may hold short of its goal on either
    * track, with no halt, between halts too far apart for the block rule to let a follower start (it needs the whole leg
    * clear of the train ahead). Each stands between two halts of the line, never at one. */
@@ -218,41 +228,47 @@ const legPlatforms = (id: 'ns' | 'bay', cm: number): readonly [RailPlatform, Rai
   rowSide(id, cm, 580, 90, 1260),
   rowSide(id, cm, -580, 90, 1260),
 ];
-/** A row whose first leg's rules are built (docs/plans/greybox-leg2.md, step 2): its home halt, one halt a head and the
- * destination, all opened by the leg's sections (its home halt with the first: before it the line has no track), then
- * the row's later halts shut. Fleet 0, 1, 2 by sections laid, block signals at each section's end but the last. */
-function builtLine(legId: string, headName: string, destEnd: number): RailLineDef {
+/** Insert a built leg's heads and destination after the existing open prefix. The first leg also opens
+ * the home halt. Each leg supplies its fleet stages and signals on the approach to its heads. */
+function appendLeg(
+  base: RailLineDef,
+  legId: string,
+  headName: string,
+  destEnd: number,
+  trains: readonly number[],
+): RailLineDef {
   const slot = RAIL_LEGS.findIndex((l) => l.id === legId),
     leg = RAIL_LEGS[slot]!,
     id = leg.row as 'ns' | 'bay',
-    base = rowLine(id),
     r = WORLD_LINES.find((l) => l.id === id)!,
     last = leg.sections.length - 1,
     heads = leg.sections.slice(0, -1).map((sec) => legS(leg, sec.toCm) - HEAD_BACK_CM),
     from = r.stops[0]!,
     dest = legS(leg, leg.sections[last]!.toCm);
   const halts: RailHalt[] = [
-    {
-      name: r.halts[0]!.name,
-      s: from,
-      opens: -1,
-      leg: { slot, section: 0 },
-      platforms: legPlatforms(id, from),
-      end: railEnd('crossover', r.ends.find((e) => e.at === 'start')!.sCm, -1),
-    },
+    ...(base.fleet
+      ? base.halts.slice(0, leg.railheadHalt)
+      : [
+          {
+            name: r.halts[0]!.name,
+            s: from,
+            opens: -1,
+            leg: { slot, section: 0 },
+            platforms: legPlatforms(id, from),
+            end: railEnd('crossover', r.ends.find((e) => e.at === 'start')!.sCm, -1),
+          },
+        ]),
     // One halt a head (call 88), a stub end while it is the line's last; a two-section leg's one head stays a request
     // stop both ways once passed (the stack's third head's rule: nothing lays after next to close it behind).
-    ...heads.map(
-      (at, k): RailHalt => ({
-        name: `${headName} ${k + 1}`,
-        s: at,
-        opens: -1,
-        leg: { slot, section: k },
-        platforms: legPlatforms(id, at),
-        end: railEnd('stub', at - HEAD_MERGE_CM, 1),
-        ...(k < heads.length - 1 ? { closesAt: leg.railheadHalt + k + 3 } : {}),
-      }),
-    ),
+    ...heads.map((at, k): RailHalt => ({
+      name: `${headName} ${k + 1}`,
+      s: at,
+      opens: -1,
+      leg: { slot, section: k },
+      platforms: legPlatforms(id, at),
+      end: railEnd('stub', at - HEAD_MERGE_CM, 1),
+      ...(k < heads.length - 1 ? { closesAt: leg.railheadHalt + k + 3 } : {}),
+    })),
     {
       name: r.halts[leg.destRowHalt]!.name,
       s: dest,
@@ -261,13 +277,13 @@ function builtLine(legId: string, headName: string, destEnd: number): RailLineDe
       platforms: legPlatforms(id, dest),
       end: railEnd('crossover', destEnd, 1),
     },
-    ...base.halts.slice(leg.destRowHalt + 1),
+    ...base.halts.slice(leg.railheadHalt + 1),
   ];
   return {
     ...base,
     halts,
-    fleet: { leg: slot, trains: [0, ...leg.sections.map((_s, k) => Math.min(2, k + 1))] },
-    signals: leg.sections.slice(0, -1).map((sec) => legS(leg, sec.toCm)),
+    fleet: [...(base.fleet ?? []), { leg: slot, trains }],
+    signals: [...(base.signals ?? []), ...leg.sections.slice(0, -1).map((sec) => legS(leg, sec.toCm))],
   };
 }
 
@@ -530,24 +546,29 @@ export const RAIL_LINES: readonly RailLineDef[] = [
     balance: 600,
     // The greybox route: 3, then 6 from the first section laid (ruling A.4, call 63; six from short-turn's ruling on
     // step 1's sheet, call 5: the sixth waits in the shed and joins at the Village as the fourth and fifth do).
-    fleet: {
-      leg: STACK_LEG,
-      trains: [1, 6, 6, 6, 6],
-      opens: [
-        { stop: 3, trains: 2 },
-        { stop: 4, trains: 3 },
-      ],
-    },
+    fleet: [
+      {
+        leg: STACK_LEG,
+        trains: [1, 6, 6, 6, 6],
+        opens: [
+          { stop: 3, trains: 2 },
+          { stop: 4, trains: 3 },
+        ],
+      },
+    ],
     // Block signals at the stack line's section ends but the last (10 m past each railhead stop), so a train follows
     // another up the 1.5 km from Ring Island block by block (re-measure ruling 1).
     signals: STACK.sections.slice(0, -1).map((sec) => legS(STACK, sec.toCm)),
   },
-  // The greybox route's own rows (step 3). Leg 2 (docs/plans/greybox-leg2.md, step 2) builds the incline and the bay
-  // cut: the `ns` line ends at Bell Rock on a crossover before its platforms (s 1096 to 1116); the `bay` line's on the
-  // in half's bed, t 25 to 45 short of the 52° kink (its buffers at the kink: leg 3 eases the bend). The cave row stays
-  // shut.
-  builtLine('incline', 'Incline head', 110600),
-  builtLine('bay-cut', 'Bay head', 119248),
+  // The incline ends at Bell Rock. The bay cut's crossover there serves until the line grows on to Canopy.
+  appendLeg(rowLine('ns'), 'incline', 'Incline head', 110600, [0, 1, 2]),
+  appendLeg(
+    appendLeg(rowLine('bay'), 'bay-cut', 'Bay head', 119248, [0, 1, 2]),
+    'bell-canopy',
+    'Canopy head',
+    236000,
+    [2, 2, 3, 4],
+  ),
   rowLine('cave'),
 ];
 
@@ -628,7 +649,7 @@ export function trainPlaces(line: LineRef, stops: readonly number[], n = lineDef
 /** The stops open before any QJob is complete (the pier is the last halt and opens last). */
 const FIRST_STOPS = RAIL_LINES.map((l) => l.halts.filter((h) => h.opens < 0).map((h) => h.s));
 /** The train rows a line has: its first stage's `trains`, or its fleet's most. */
-export const lineRows = (l: RailLineDef) => Math.max(l.trains, ...(l.fleet?.trains ?? []));
+export const lineRows = (l: RailLineDef) => Math.max(l.trains, ...(l.fleet ?? []).flatMap((f) => f.trains));
 /** One entry per train (its slot): its line, and the halt and track it stands at before it wakes. The first stage's
  * trains in line order, then (the greybox route, step 3) each line's fleet rows past its first stage, in line order,
  * standing in the shed (`shed`) at the line's first halt until they join. */
@@ -648,29 +669,32 @@ export const RAIL_HALTS: readonly (RailHalt & { line: number; stop: number })[] 
 // The greybox route's catalog checks, at load (a bad row throws at the first import, as trainPlaces does).
 if (RAIL_LINES[ROW_LINE.ring]?.id !== 'line2') throw new Error('railway: the ring row is not line 2');
 RAIL_LINES.forEach((l) => {
-  const f = l.fleet;
-  if (!f) return;
-  const leg = RAIL_LEGS[f.leg];
-  if (
-    !leg ||
-    RAIL_LINES[leg.line] !== l ||
-    f.trains.length !== leg.sections.length + 1 ||
-    f.trains[0] !== l.trains ||
-    // None before the first lay only on a line its leg's first section opens (it has no track until then).
-    f.trains.some((n, k) => !Number.isSafeInteger(n) || n < (k ? Math.max(1, f.trains[k - 1]!) : l.halts[0]?.leg ? 0 : 1)) ||
-    f.opens?.some(
-      (r, k) =>
-        !Number.isSafeInteger(r.stop) ||
-        r.stop < 0 ||
-        r.stop >= l.halts.length ||
-        !Number.isSafeInteger(r.trains) ||
-        r.trains < l.trains ||
-        r.trains > lineRows(l) ||
-        (k > 0 && (r.stop <= f.opens![k - 1]!.stop || r.trains < f.opens![k - 1]!.trains)),
-    ) ||
-    l.home !== 0
-  )
-    throw new Error(`railway: line ${l.id} has a bad fleet`);
+  for (const [index, f] of (l.fleet ?? []).entries()) {
+    const leg = RAIL_LEGS[f.leg];
+    if (
+      !leg ||
+      RAIL_LINES[leg.line] !== l ||
+      (index > 0 && f.leg <= l.fleet![index - 1]!.leg) ||
+      f.trains.length !== leg.sections.length + 1 ||
+      f.trains[0] !== (index ? l.fleet![index - 1]!.trains.at(-1) : l.trains) ||
+      // None before the first lay only on a line its leg's first section opens (it has no track until then).
+      f.trains.some(
+        (n, k) => !Number.isSafeInteger(n) || n < (k ? Math.max(1, f.trains[k - 1]!) : l.halts[0]?.leg ? 0 : 1),
+      ) ||
+      f.opens?.some(
+        (r, k) =>
+          !Number.isSafeInteger(r.stop) ||
+          r.stop < 0 ||
+          r.stop >= l.halts.length ||
+          !Number.isSafeInteger(r.trains) ||
+          r.trains < l.trains ||
+          r.trains > lineRows(l) ||
+          (k > 0 && (r.stop <= f.opens![k - 1]!.stop || r.trains < f.opens![k - 1]!.trains)),
+      ) ||
+      l.home !== 0
+    )
+      throw new Error(`railway: line ${l.id} has a bad fleet`);
+  }
 });
 // A control halt (RailHalt.control) is a middle halt of its line's whole catalog: never its first or last.
 RAIL_LINES.forEach((l) => {
