@@ -28,9 +28,9 @@ const APPROVED_DOOR_EXPORTS: Readonly<Record<string, readonly string[]>> = {
   'src/physics/backend-rapier.ts': ['capsuleOverlaps'],
 };
 /** The one capability binding that comes with it: the record door's import of capsuleOverlaps, which arrives with its
- * liftOrWait export. It is granted only against a base that does not have liftOrWait yet, so no later change can reuse
- * the slot once another binding retires. */
-const APPROVED_DOOR_BINDING = { file: 'src/prefab/instantiate.ts', with: 'liftOrWait' } as const;
+ * liftOrWait export. Granted once, as the decision has it: the count rising from exactly 2 to 3 as liftOrWait appears,
+ * so no later change can reuse the slot (after another binding retires, or by dropping and re-adding the export). */
+const APPROVED_DOOR_BINDING = { file: 'src/prefab/instantiate.ts', with: 'liftOrWait', from: 2, to: 3 } as const;
 
 export function comparePrefabDebt(base: PrefabDebt, head: PrefabDebt): string[] {
   const errors: string[] = [];
@@ -67,13 +67,15 @@ export function comparePrefabDebt(base: PrefabDebt, head: PrefabDebt): string[] 
       const count = counts[kind];
       if (count === undefined) continue;
       const old = base.doorCounts?.[file]?.[kind];
-      const { file: door, with: name } = APPROVED_DOOR_BINDING,
+      const { file: door, with: name, from, to } = APPROVED_DOOR_BINDING,
         granted =
           kind === 'colliders' &&
           file === door &&
+          old === from &&
+          count === to &&
           !!head.doors?.[door]?.includes(name) &&
           !base.doors?.[door]?.includes(name);
-      if (old === undefined || count > old + Number(granted))
+      if (old === undefined || (count > old && !granted))
         errors.push(
           `${PREFAB_DEBT_FILE}: door ${file}/${kind} capability bindings grew. Use src/prefab/instantiate.ts.`,
         );

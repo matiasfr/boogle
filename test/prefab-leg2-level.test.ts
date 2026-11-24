@@ -471,7 +471,7 @@ test('mounting a closed prism preserves the interior used for clearance', () => 
   const remove = built(shape);
   try {
     assert.equal(physics.capsuleOverlaps(p, PLAYER_R, HEAD_OFFSET, shape), true);
-    assert.equal(physics.capsuleOverlaps(p, PLAYER_R, HEAD_OFFSET, { mask: -1 }), true);
+    assert.equal(physics.capsuleOverlaps(p, PLAYER_R, HEAD_OFFSET, { of: { position: p } }), true);
   } finally {
     remove();
   }
@@ -508,11 +508,21 @@ test('re-check: a cave-group roof the surface body never touches does not block 
     group: CAVE_GROUP,
     shapes: [box(3000, head + 0.3, 1000, 2, 0.1, 2)],
   });
+  // A surface player's body, as src/pois/caves sets it: every group but the caves'.
+  const player = physics.createBody({
+    type: physics.BODY.DYNAMIC,
+    mass: 1,
+    mask: ~CAVE_GROUP,
+    position: { x: 3000, y: PLAYER_R, z: 1000 },
+    shapes: [{ kind: 'sphere', r: PLAYER_R }],
+  });
   physics.addBody(roof);
+  physics.addBody(player);
   try {
-    assert.equal(liftOrWait(solids([box(3000, 0.2, 1000)]).list, bodyAt(3000, 0, 1000), { lift: true }).kind, 'lifted');
+    assert.equal(liftOrWait(solids([box(3000, 0.2, 1000)]).list, player, { lift: true }).kind, 'lifted');
   } finally {
     physics.removeBody(roof);
+    physics.removeBody(player);
   }
 });
 
@@ -550,7 +560,7 @@ test('re-check: a body sunk into a heightfield overlaps it, built or not', () =>
   });
   physics.addBody(body);
   try {
-    assert.equal(physics.capsuleOverlaps(at, PLAYER_R, 0, { mask: -1 }), true, 'built');
+    assert.equal(physics.capsuleOverlaps(at, PLAYER_R, 0, { of: { position: at } }), true, 'built');
     assert.equal(
       physics.capsuleOverlaps({ x: 10, y: 4.8, z: -10 }, PLAYER_R, 0, { kind: 'heightfield', heights, cell: 10 }),
       true,

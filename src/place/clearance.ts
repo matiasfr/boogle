@@ -20,7 +20,7 @@ const SLACK = 0.005;
 const FOOT = 0.02;
 
 /** physics/engine.ts's capsuleOverlaps. */
-export type Overlaps = (at: V3, r: number, up: number, against: Shape | { mask: number }) => boolean;
+export type Overlaps = (at: V3, r: number, up: number, against: Shape | { of: object }) => boolean;
 /** A solid about to switch on: its shapes, placed in the world, and how it turns solid and drawn together. */
 export type Solid = { readonly shapes: readonly Shape[]; on(): void };
 export type Clearing<S extends Solid> = {
@@ -38,8 +38,7 @@ type Lifted = Pick<Body, 'position' | 'velocity'> & { interpolatedPosition?: Bod
  * mount-time clearance, where the view moves no one). */
 export function createLiftOrWait(overlaps: Overlaps) {
   const r = PLAYER_R - CONTACT,
-    at = { x: 0, y: 0, z: 0 },
-    world = { mask: -1 };
+    at = { x: 0, y: 0, z: 0 };
   const holds = (s: Solid, p: V3, y = p.y) => {
     at.x = p.x;
     at.y = y;
@@ -69,7 +68,7 @@ export function createLiftOrWait(overlaps: Overlaps) {
     // the way up too: the body only rises by less than its height.
     at.y = y + CONTACT;
     if (set.some((s) => s.shapes.some((shape) => overlaps(at, PLAYER_R, HEAD_OFFSET, shape)))) return false;
-    if (overlaps(at, PLAYER_R, HEAD_OFFSET, world)) return false;
+    if (overlaps(at, PLAYER_R, HEAD_OFFSET, { of: body })) return false;
     p.set(p.x, y, p.z);
     body.interpolatedPosition?.set(p.x, y, p.z);
     body.velocity.set(0, 0, 0);

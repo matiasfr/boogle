@@ -28,10 +28,12 @@
 //                                  For a camera arm, line of sight, placing
 //   capsuleOverlaps(at, r, up, against)   whether a body of two spheres of radius r, at `at` and `up` over it (taken as
 //                                  one capsule), overlaps `against`: one shape placed in the world but not built there
-//                                  (a solid about to switch on), or { mask }: every static or kinematic body in a group
-//                                  of `mask`, added this frame included (sensors and free movers don't count), by the
-//                                  same test. Touching a surface or a sphere's centre inside counts; a trimesh holds a
-//                                  point only under one of its faces (a closed prism's inside, an open land's footprint).
+//                                  (a solid about to switch on), or { of: body }: every static or kinematic body that
+//                                  body meets (groups paired both ways, as the solver pairs them; itself never),
+//                                  added this frame included (sensors and free movers don't count), by the same test.
+//                                  Touching a surface or a sphere's centre inside counts; a trimesh holds a point only
+//                                  under one of its faces (a closed prism's inside, an open land's footprint); a
+//                                  heightfield by points along the body's axis (under its surface, or within r of it).
 //                                  True for everything until physicsReady: nothing can be measured yet.
 //                                  For src/place/clearance.ts, through src/prefab/instantiate.ts
 //   physicsTime()                  seconds of simulated time
@@ -115,7 +117,7 @@ export const forEachContact: (
 ) => void = backend.forEachContact;
 export const sweepSphere: (from: V3, to: V3, r: number, o: { mask: number; thin: 'skip' | 'only' }) => number =
   backend.sweepSphere;
-export const capsuleOverlaps: (at: V3, r: number, up: number, against: Shape | { mask: number }) => boolean =
+export const capsuleOverlaps: (at: V3, r: number, up: number, against: Shape | { of: object }) => boolean =
   backend.capsuleOverlaps;
 export const rayHit: () => RayHit = backend.rayHit;
 export const raycastClosest: (from: V3, to: V3, o: { mask?: number; skipBackfaces?: boolean }, hit: RayHit) => boolean =
