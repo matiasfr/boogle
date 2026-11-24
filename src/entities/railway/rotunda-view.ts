@@ -155,53 +155,67 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
   /** Some guarded piece stands with its solid still off: settle runs each frame until none does. */
   let pending = false;
   /** Whether a set may switch on now, lifting this tab's player onto it when their feet are within a step of a top. */
-  function clear(set: (typeof pieces)[number][]) {
+  type Entry = (typeof pieces)[number];
+  /** Either of Buddy's spheres, the body's centre at `p`, overlaps a box of `entry`'s record by more than a rest. */
+  function inside(entry: Entry, p: { x: number; y: number; z: number }) {
+    const root = entry.instance.root;
+    root.updateWorldMatrix(true, false);
+    return entry.colliders.some(
+      (box) =>
+        box.shape === 'box' &&
+        [0, HEAD_OFFSET].some((up) => {
+          root.worldToLocal(point.set(p.x, p.y + up, p.z));
+          return boxGap2(point.x, point.y, point.z, box.at, box.half) < (PLAYER_R - resting) ** 2;
+        }),
+    );
+  }
+  /** Whether `coming` (a bay's pieces not yet on) may switch on now, lifting this tab's player onto one when their feet
+   * are within STEP_UP of its top and the lifted pose clears every solid on or coming on (never into a roof). */
+  function clear(coming: Entry[]) {
     // A friend's drawn pose stands where their collision proxy is (remote-player/index.ts poses both at its target).
-    const bodies = [...remotes.values()].flatMap((r) => (r.entered && r.avatar ? [r.avatar.position] : []));
-    let lift = -Infinity,
-      inside = false;
-    const mine = me.body?.position;
-    for (const { instance, colliders } of set) {
-      const root = instance.root;
-      root.updateWorldMatrix(true, false);
-      for (const box of colliders) {
-        if (box.shape !== 'box') continue;
-        const hit = (p: { x: number; y: number; z: number }) =>
-          [0, HEAD_OFFSET].some((up) => {
-            root.worldToLocal(point.set(p.x, p.y + up, p.z));
-            return boxGap2(point.x, point.y, point.z, box.at, box.half) < (PLAYER_R - resting) ** 2;
-          });
-        if (bodies.some(hit)) return false;
-        if (!mine || !hit(mine)) continue;
-        root.worldToLocal(point.set(mine.x, mine.y, mine.z));
-        const top = box.at[1] + box.half[1];
-        if (point.y - PLAYER_R >= top - STEP_UP) lift = Math.max(lift, top);
-        else inside = true;
-      }
-    }
-    if (inside) return false;
+    for (const r of remotes.values())
+      if (r.entered && r.avatar && coming.some((e) => inside(e, r.avatar!.position))) return false;
     const body = me.body;
-    if (body && lift > -Infinity) {
-      set[0]!.instance.root.localToWorld(point.set(0, lift, 0));
-      const y = point.y + PLAYER_R + resting;
-      body.position.y = y;
-      body.interpolatedPosition.set(body.position.x, y, body.position.z);
-      body.velocity.set(body.velocity.x, Math.max(0, body.velocity.y), body.velocity.z);
+    if (!body) return true;
+    let lift = -Infinity;
+    for (const entry of coming) {
+      if (!inside(entry, body.position)) continue;
+      const root = entry.instance.root;
+      root.worldToLocal(point.set(body.position.x, body.position.y, body.position.z));
+      const feet = point.y - PLAYER_R;
+      // The top under the feet: the highest box of this piece the player is over, within a step of it.
+      const top = Math.max(
+        ...entry.colliders.map((box) =>
+          box.shape === 'box' && box.at[1] + box.half[1] - STEP_UP <= feet ? box.at[1] + box.half[1] : -Infinity,
+        ),
+      );
+      if (top === -Infinity) return false;
+      root.localToWorld(point.set(0, top, 0));
+      lift = Math.max(lift, point.y);
     }
+    if (lift === -Infinity) return true;
+    const to = { x: body.position.x, y: lift + PLAYER_R + resting, z: body.position.z };
+    if (pieces.some((e) => (e.enabled || coming.includes(e)) && inside(e, to))) return false;
+    body.position.y = to.y;
+    body.interpolatedPosition.set(to.x, to.y, to.z);
+    body.velocity.set(body.velocity.x, Math.max(0, body.velocity.y), body.velocity.z);
     return true;
   }
-  /** Each bay's guarded pieces that should stand now switch their solids on, or stay off while someone is in them. */
+  /** Each bay's guarded pieces that should stand now and are not on yet switch on together, or stay off while anyone
+   * is in them. A solid already on stays on: nothing is switched off by contact or by another piece's wait. */
   function settle() {
     if (!pending) return;
     pending = false;
     for (const set of sets) {
-      const want = set.filter((p) => shows(shown, p.piece));
-      if (want.every((p) => p.enabled)) continue;
-      const ok = clear(want);
-      for (const p of want) {
+      const coming = set.filter((p) => !p.enabled && shows(shown, p.piece));
+      if (!coming.length) continue;
+      const ok = clear(coming);
+      for (const p of coming) {
         p.held = !ok;
-        if (p.enabled !== ok) p.instance.setEnabled(ok);
-        p.enabled = ok;
+        if (ok) {
+          p.instance.setEnabled(true);
+          p.enabled = true;
+        }
       }
       pending ||= !ok;
     }
@@ -224,6 +238,8 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
         if (!guarded(piece) || !on) {
           instance.setEnabled(on);
           entry.enabled = on;
+          // No longer wanted: no longer waiting.
+          if (!on) entry.held = false;
         } else if (!entry.enabled) {
           instance.setEnabled(false);
           pending = true;

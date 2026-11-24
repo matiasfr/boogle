@@ -169,6 +169,7 @@ onEntered(() => {
   document.body.classList.remove('fall-stage');
   despawn(previewProp);
   inputState.held = true;
+  inputState.holder = 'fall';
   // Two arrivals can overlap in the sky. A remote body must not become a floor or fling us off the opening.
   playerMask = getMask(me.body!);
   setMask(me.body!, playerMask & (GROUP.SCENERY | GROUP.CAVE));
@@ -192,6 +193,7 @@ function holdOrSteer() {
     if (rollT >= ROLL_S) {
       state = 'fall';
       inputState.held = false;
+      if (inputState.holder === 'fall') inputState.holder = null;
       me.coyote = 0;
       b.velocity.set(FWD.x * RELEASE * 0.8, LAUNCH_UP, FWD.z * RELEASE * 0.8);
       releaseCar();

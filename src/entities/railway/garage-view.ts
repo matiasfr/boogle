@@ -494,7 +494,8 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     // Garage step 4: the row the copy wore last (a watched trade fit's wheels run up from it), the table line shown,
     // and a bring in the air (its send time, 0 for none) on the bring revision it was sent on.
     fromRow = 0,
-    // The garage set inputState.held itself (open), so closing may clear it; a hold anyone else set is theirs.
+    // The garage took inputState.held itself (open); it hands it back only while it is still the holder
+    // (`inputState.holder`), so a card or talk that took the input after it keeps it.
     ownsHold = false,
     wornRow = 0,
     tableShown = -1,
@@ -989,8 +990,17 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
 
   // ---------------------------------------------------------------- the frame
   let lastOpen = false;
+  /** Hands back the input hold the garage took, if it is still the holder (garage step 4's review). */
+  function releaseHold() {
+    if (!ownsHold) return;
+    ownsHold = false;
+    if (inputState.holder !== 'garage') return;
+    inputState.held = false;
+    inputState.holder = null;
+  }
   function update(dt: number, room: RoomFacts) {
     facts = room;
+    if (!open) releaseHold();
     // The first offer stands after the table turn; later the copy returns once the wagon couples and the shunter
     // is home. An accepted upgrade keeps the copy for its moment, before the reserved roll-out starts.
     const rest = deps.restYaw();
@@ -1233,9 +1243,8 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     if (!open) return;
     open = false;
     holding = false;
-    // Only the hold the garage took: a conversation or the fall that holds input keeps it.
-    if (ownsHold) inputState.held = false;
-    ownsHold = false;
+    // The garage's own hold goes on the next frame (releaseHold, from update), once whatever took the input meanwhile
+    // has said so: a reward card that came up while the garage was open keeps it.
     closeModal();
     // Someone else's install plays on in the world when this tab leaves the garage.
     if (phase === 'moment' && real && !mine) return;
@@ -1265,6 +1274,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       cat = sel === 'cradle' ? 'cargo' : 'engine';
       if (sel === 'long') ghostT = 0;
       inputState.held = ownsHold = true;
+      inputState.holder = 'garage';
     },
     close,
     snap(): GarageSnap {
@@ -1396,6 +1406,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     }),
     dispose() {
       close();
+      releaseHold();
       const k = camConstraints.indexOf(constraint);
       if (k >= 0) camConstraints.splice(k, 1);
       if (garage.api === api) garage.api = null;

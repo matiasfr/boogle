@@ -137,6 +137,7 @@ export function createRewardReveal({
     holder.visible = true;
     document.body.classList.add('place-getting');
     inputState.held = true;
+    inputState.holder = 'reward';
     me.charging = false;
     faceCamera(); // turned to face you
     setAloft(false);
@@ -173,6 +174,7 @@ export function createRewardReveal({
     document.body.classList.remove('place-getting');
     setAloft(false);
     inputState.held = false;
+    if (inputState.holder === 'reward') inputState.holder = null;
     setPadGrab(null);
     if (!reducedMotion && !g.tint) sparkles(holder.position, 24, 3.4);
     pop(7, 0.7);

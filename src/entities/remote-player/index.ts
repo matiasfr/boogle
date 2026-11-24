@@ -39,6 +39,7 @@ type Ride = {
   boarding: boolean; // a new boarding blends current world presence, not an obsolete pre-boarding avatar pose
   blendLeft: number;
   drawOffset: Local; // continuity from the last displayed pose when attachment changes
+  placed?: boolean; // the car placed them last frame (not parked under the land)
   world: THREE.Vector3; // their world presence pose this frame
   worldYaw: number;
   l: Local;
@@ -190,6 +191,12 @@ function placeRider(r: Remote, rt: number, interpolated: boolean, dt = 0) {
     ride.blendLeft = RIDE_BLEND_S;
     ride.drawn = true;
   }
+  // The car parked (or came back) under a rider still on it: ease from the pose last drawn, as an attachment change does.
+  if (ride.drawn && on === ride.on && ride.placed !== undefined && placed !== ride.placed) {
+    setDrawOffset(ride.drawOffset, at, yaw, r.target, r.yaw);
+    ride.blendLeft = RIDE_BLEND_S;
+  }
+  ride.placed = placed;
   if (on && ride.boarding) {
     // As on main, let incoming world presence finish the approach instead of replaying a frozen old offset.
     // Later attachment changes retain the last-displayed-pose easing above for continuity across train gaps.
