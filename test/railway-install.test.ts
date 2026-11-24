@@ -833,6 +833,13 @@ test('rail.bring: refusals (not open, already there, stale, the hold); two on on
   assert.equal(invariant(loaded), null);
 });
 
+test('a save with no bring history must still have the original table copy', () => {
+  const s = tradeReady();
+  assert.deepEqual([shed(s.w).tableLine, shed(s.w).bringRev, shed(s.w).brought], [LINE2, 0, -1]);
+  s.w.mut(Shed, s.w.single(Shed))!.tableLine = BAYL;
+  assert.throws(() => restore(s.w), /garage table/);
+});
+
 test("line 2's install revision is its two fits' sum across its whole install order", () => {
   const s = copy(railwayAtWorks('cradle-fitted'));
   const sum = (w: World) => assert.equal(lineRow(w, LINE2).rev, lineRow(w, LINE2).boiler + lineRow(w, LINE2).cradle);

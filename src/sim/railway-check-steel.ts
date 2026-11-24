@@ -114,13 +114,13 @@ export function checkSteel(w: World) {
     return l.rev > 0 === l.boiler > 0 && (l.boiler === 0 || tradeOpen(w, line));
   };
   if (ls.some((l, line) => !revOk(l, line))) bad('install revision');
-  // The garage table holds line 2's copy or an open trade line's (garage step 4).
+  // The garage table holds line 2's copy until the first bring, then line 2's or an open trade line's (garage step 4).
   const h = shed(w);
   if (
     !railInt(h.bringRev) ||
     !railInt(h.brought, RAILWAY_MAX_INT, -1) ||
     (h.brought >= 0) !== (h.bringRev > 0) ||
-    (h.tableLine !== LINE2 && !tradeOpen(w, h.tableLine))
+    (h.tableLine !== LINE2 && (h.bringRev === 0 || !tradeOpen(w, h.tableLine)))
   )
     bad('garage table');
 }
