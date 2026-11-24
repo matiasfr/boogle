@@ -4,6 +4,16 @@
 
 ## Archive: Core loop, pacing and progression
 
+### Garage step 4 answers, 24 November 2026
+
+Ruled in [the garage step 4 entry](decisions-rewards.md#d-2026-11-24-garage-step4-strong-window) (owner, 24 November 2026); moved word for word from [agent-calls](agent-calls.md).
+
+| Date | Call | Where | By | Why this pick | Status when archived |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-24 | New (needs his word on reading the ten-second rule over the line being built): the bay line's Quick/Strong trade opens at the bay cut's first lay (`bay-mid`), not its last (plan only) | [garage-step4](plans/garage-step4.md#design-review-2026-11-24), call 8, open question 1 | Planner (design review) | Checkpoint G: fitted at `bay-reached` Strong is 17.9 s slower than Quick solo; at `bay-mid` it saves 13.5 s over Quick and 55.7 s over standard across leg 3, and slows nobody | open |
+| 2026-11-24 | New (needs his word: the decided readout form is "resources a minute"): a trade line's third readout is "Kit a trip" (Quick 1 → 1, Strong 1 → 2 sections), or "Nothing to build" when no built leg the line carries kit for has two sections still to lay (plan only) | [garage-step4](plans/garage-step4.md#design-review-2026-11-24), call 11, open question 2 | Planner (design review) | A per-minute rate would show Strong doubling its haul while the room saves 13.5 s (DESIGN 11). Replaces the 19 November "Nothing to haul yet" row (call 21) and, with the hold, the "extra car runs empty" row (call 20) below | open |
+| 2026-11-24 | Default: Strong is offered on the `ns` line, where no multi-section leg exists yet, with the readout "Nothing to build" (plan only) | [garage-step4](plans/garage-step4.md#design-review-2026-11-24), call 12, open question 3 | Planner (design review) | The decided trade offers both rows at one price; the screen shows Quick is the pick there | open |
+
 ### Decisions page answers, 18 November 2026
 
 Ruled in [the decisions-page entry](decisions-core-loop.md#d-2026-11-18-decisions-page-core-loop) (owner, 18 November 2026); moved word for word from [agent-calls](agent-calls.md).
