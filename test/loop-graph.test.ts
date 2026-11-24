@@ -338,7 +338,10 @@ type RejoinFault =
   | 'kit moves to another train at the pickup'
   | 'server has phantom rails on an unmarked train'
   | 'seed adapter account on A omits its legRails'
-  | 'server has no carrier account before the pickup';
+  | 'server has no carrier account before the pickup'
+  // Recheck 3:
+  | 'no bay train carries kit at the seed'
+  | 'no bay train carries kit after the first round trip';
 
 async function replayLegRejoin(fault?: RejoinFault) {
   const pages = new Set<string>();
@@ -369,7 +372,10 @@ async function replayLegRejoin(fault?: RejoinFault) {
   const train = (_world: unknown, slot: number) => {
     const switched = fault === 'kit switches trains on the final round trip' && restoredAt >= 0 && tick > restoredAt;
     const moved = fault === 'kit moves to another train at the pickup' && picked;
-    const legKit = slot === (tick === 0 || switched ? 10 : moved ? 11 : 9);
+    const missing =
+      (fault === 'no bay train carries kit at the seed' && tick === 0) ||
+      (fault === 'no bay train carries kit after the first round trip' && tick > 0);
+    const legKit = !missing && slot === (tick === 0 || switched ? 10 : moved ? 11 : 9);
     const phantom = fault === 'server has phantom rails on an unmarked train' && picked && !legKit && slot === 11;
     return { legKit, logs: legKit ? kitUnits : 0, rails: legKit ? kitUnits : phantom ? 1 : 0 };
   };
@@ -500,6 +506,8 @@ for (const fault of [
   'server has phantom rails on an unmarked train',
   'seed adapter account on A omits its legRails',
   'server has no carrier account before the pickup',
+  'no bay train carries kit at the seed',
+  'no bay train carries kit after the first round trip',
 ] as const) {
   test('the leg rejoin proof detects ' + fault, async () => {
     await assert.rejects(replayLegRejoin(fault), /Leg rejoin proof stopped/);
