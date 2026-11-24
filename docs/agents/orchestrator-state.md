@@ -12,6 +12,9 @@ The one record of who is running what, and what the five-job limit is counted fr
 | --- | --- | --- | --- | --- | --- |
 | The bot and the loop (greybox leg 3 step 7) | The greybox route | claude/greybox-leg3-bot | the heartbeat, Opus medium | 2026-11-24 14:20 | running: a delegate of the heartbeat’s thread, browser-heavy |
 | Garage step 4, step 3: seeds, screen, bays and trains | Garage choices | claude/garage-step4-screen | the heartbeat, Opus medium | 2026-11-24 14:33 | running: a delegate of the heartbeat’s thread; ships after the leg 3 bot where `dev/loop/graph.ts` overlaps |
+| Tidy: simplify over `2913718e1..046c1c66c`, lower-risk areas (entities, features, prefabs, place, render, dev; not sim, world, net, server or tests; not the files above) | none (daily tidy) | tidy/simplify-1124 | the daily tidy, Antigravity gemini-4-neon medium | 2026-11-24 17:05 | running; ships each area itself |
+| Tidy: simplify the high-risk areas over `c2d2560e..046c1c66c` (sim, world, net, ecs, server/src; not tests or the files above) | none (daily tidy) | tidy/simplify-highrisk-1124 | the daily tidy, Opus medium | 2026-11-24 17:05 | running; pushed but not shipped until an independent Astra review |
+| Tidy: architecture review, docs audit and the weekly agent-calls ranking through `046c1c66c` (docs only; not the orchestrator files) | none (daily tidy) | tidy/docs-arch-1124 | the daily tidy, Opus medium | 2026-11-24 17:05 | running |
 
 ## Where the work stands
 
