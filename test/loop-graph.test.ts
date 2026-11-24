@@ -34,8 +34,8 @@ test('a Canopy stop cannot be assigned to the Ring Island bot, which finishes at
 });
 
 // Exercise the real dev entry points with the browser inputs and sim clock under test control.
-function loadTool(file: string, mocks: Record<string, unknown>, globals: Record<string, unknown> = {}) {
-  const url = new URL(file, import.meta.url);
+// Each caller names its file as a literal URL, so the unit selection's walk follows it (test/unit-select.test.ts).
+function loadTool(url: URL, mocks: Record<string, unknown>, globals: Record<string, unknown> = {}) {
   const require = createRequire(url);
   const output = { exports: {} };
   const { code } = transformSync(readFileSync(url, 'utf8'), { loader: 'ts', format: 'cjs' });
@@ -51,7 +51,7 @@ function loadTool(file: string, mocks: Record<string, unknown>, globals: Record<
 }
 
 test('loop run refuses a cut built branch before starting the by-hand simulation', () => {
-  const { runLoop } = loadTool('../dev/loop/run.ts', {
+  const { runLoop } = loadTool(new URL('../dev/loop/run.ts', import.meta.url), {
     './host.ts': { createHost: () => assert.fail('started simulating the cut branch request') },
   }) as typeof import('../dev/loop/run.ts');
   assert.throws(() => runLoop(['--one-branch', '--by-hand', 'canopy-1', '--players', '1']), /--one-branch/);
@@ -75,7 +75,7 @@ async function rideForCloth(firstContactMs: number) {
   let target: { x: number; z: number } | undefined;
   const stop = new Error('observed the first step off');
   const { legRoute } = loadTool(
-    '../dev/look/bots/railway-legs.ts',
+    new URL('../dev/look/bots/railway-legs.ts', import.meta.url),
     {
       '../../../src/sim/railway-queries-route.ts': {
         legDone: () => true,
