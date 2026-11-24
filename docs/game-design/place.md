@@ -1546,6 +1546,24 @@ lines has a request lever on its outward platform and each head a second on its 
 departure board listing the line's open stops. Leg 2's objective texts go to the play record only. All copy is
 placeholder. Not tested on a device.
 
+**Canopy and the line to it, drawn (24 November 2026; [greybox-leg3](../plans/greybox-leg3.md), step 6).** Leg 3 is
+drawn as the bay cut is, on from the bay cut's deck end at Bell Rock (the bay cut's buffers there go at leg 3's first
+lay): deck, two tracks, bents over the strait (none on the rock or the isle), frames, racks, signals and the end board
+"LINE TO CANOPY TOWN / UNDER CONSTRUCTION". Head 1, over the sea, has its platforms and sea ramps while it is a stop;
+head 2, on the isle's edge, steps down to the ground each side. **Canopy isle** is solid as the horizon draws it, a
+flat top 12 m up, with a pale beach slope off every edge into the sea (none inside the chalk or under the deck), so a
+swimmer climbs out anywhere; the bay line's bed runs over it on a low dark bank. The White Wall's two chalk islets and
+the forest's trunks (the five mothers and twelve more) are solid too. **Canopy Town** stands in the cleft: two
+platforms 0.9 m over the rails after the crossover, the homeward one running on into a deck round the buffers, across
+the row at its kink, with steps down to the isle from each platform's home end and the deck's side. On the deck the
+glider cloth's post ("Take the glider cloth", refused with "The line to Canopy isn't laid yet" until the last lay) and,
+10 m from it, the Notch barrier, a red panel on each track, shut ("No line beyond yet"), with a board "LINE TO LANTERN
+NOTCH / LATER". A 30 m square of ground on the homeward side, behind the mother trunk there, is kept clear for a
+stand-in town. Bell Rock's Canopy stall rises at the last lay. Bell Rock's bay halt, which leg 3 turns into a through
+halt, gains a homeward lever on its homeward platform. Leg 3's objective texts ("Open the barrier to Canopy", "Build
+the line to Canopy Town", "Take the glider cloth", "Ride home: the next line isn't built yet") go to the play record
+only. All copy is placeholder. Not tested on a device.
+
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 
 **Rotunda step 1a (14 November, local branch; v45 not shipped).** The shared kit is data: 20° wedge bays,

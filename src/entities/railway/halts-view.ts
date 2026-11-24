@@ -39,7 +39,7 @@ import {
 } from './lever-place.ts';
 import { railheadEnd } from './railhead-state.ts';
 import { line2World, line2Y, RING_S } from './line2-path.ts';
-import { isRowLine, ROW_PLATFORM, rowWorld, rowY } from './row-path.ts';
+import { isRowLine, ROW_PLATFORM, rowHomewardLever, rowWorld, rowY } from './row-path.ts';
 import { createRequestLever, type RequestLever } from './request-lever.ts';
 import { LINE2_GLIDE, pierLaid } from '../../sim/railway-line2-layout.ts';
 import { WORKS_KILN, WORKS_SEAMS } from '../../sim/railway-works-layout.ts';
@@ -553,15 +553,10 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     const at = h.s / 100,
       on = () => mainWay(h.line, h.stop),
       passed = () => stopsNow[h.line]!.length > h.stop + 1;
-    if (h.end?.kind === 'stub') {
-      spots.push(rowSpot(id, false, at, ROW_PLATFORM, () => true, on));
-      spots.push(rowSpot(id, true, at, -ROW_PLATFORM, passed, HOME));
-    } else {
-      spots.push(rowSpot(id, false, h.stop === 0 ? at - 10 : at - 8.5, ROW_PLATFORM, () => true, on));
-      // A destination the line has grown past (Bell Rock on the bay line, once leg 3 lays): homeward trains stand at
-      // its homeward platform, so a second lever there calls them home.
-      if (h.stop > 0) spots.push(rowSpot(id, true, at - 8.5, -ROW_PLATFORM, passed, HOME));
-    }
+    const stub = h.end?.kind === 'stub',
+      lever = stub ? at : h.stop === 0 ? at - 10 : at - 8.5;
+    spots.push(rowSpot(id, false, lever, ROW_PLATFORM, () => true, on));
+    if (rowHomewardLever(h)) spots.push(rowSpot(id, true, lever, -ROW_PLATFORM, passed, HOME));
   }
   const ringSpots = spots.filter((x) => x.ring);
   // The stack line's departure boards (leg 1 step 4b; the design review's answer g): the halt map on a grey stand at

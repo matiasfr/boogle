@@ -207,9 +207,9 @@ type LegSpec = {
   row: boolean;
   /** Stretches with no sea bents (the bore, the level's own beds on posts and Bell Rock's rock). */
   noBents: readonly (readonly [number, number])[];
-  /** It runs on from the end of another leg's deck on the same line (leg 3 from the bay cut's at Bell Rock): no
-   * buffers and no crossover at its start. */
-  joins?: true;
+  /** The leg whose deck end it runs on from, on the same line (leg 3 from the bay cut's at Bell Rock): no buffers
+   * and no crossover at its start, and that leg's end buffers go once this one has a section laid. */
+  joins?: string;
   /** Solid land under it that is not Ring Island's (Canopy isle): its height at (x, z), or null over the sea. A bent
    * stands on it and a head's steps come down to it. */
   ground?: (x: number, z: number) => number | null;
@@ -318,7 +318,7 @@ const SPECS: readonly LegSpec[] = [
     BAY_CUT_END + 1.8,
     () => CANOPY_KINK - 2,
     [[1150, 1341]],
-    { name: 'LINE TO CANOPY TOWN', joins: true, ground: canopyGround },
+    { name: 'LINE TO CANOPY TOWN', joins: 'bay-cut', ground: canopyGround },
   ),
 ].filter((sp) => legBuilt(sp.k));
 
@@ -867,14 +867,15 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     if (s.lit >= 0) return 'cast';
     return s.yardLogs + s.yardRails + s.logs + s.rails > 0 ? 'feed' : 'kit';
   }
-  const nearGorge = () => {
-    const g = gorgeAt(0, 0),
-      b = me.body?.position;
+  /** Whether the camera or your body is within `radius` metres of `c`. */
+  const near = (c: { x: number; z: number }, radius: number) => {
+    const b = me.body?.position;
     return (
-      Math.hypot(camera.position.x - g.x, camera.position.z - g.z) < 700 ||
-      (!!b && Math.hypot(b.x - g.x, b.z - g.z) < 700)
+      Math.hypot(camera.position.x - c.x, camera.position.z - c.z) < radius ||
+      (!!b && Math.hypot(b.x - c.x, b.z - c.z) < radius)
     );
   };
+  const nearGorge = () => near(gorgeAt(0, 0), 700);
 
   let objective = '',
     drawnDeck = '';
@@ -905,7 +906,10 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     if (!r) return things.commit();
     legs.forEach((l, i) => {
       if (ends[i]! < 0) return;
-      l.solid(r.per[i]!.laid, l.sp.leg.id === 'bay-cut' && legRow(r.wd, canopyIndex).laid > 0);
+      l.solid(
+        r.per[i]!.laid,
+        legs.some((o, j) => o.sp.joins === l.sp.leg.id && r.per[j]!.laid > 0),
+      );
       l.draw(r.per[i]!, r.wd, r.joined);
     });
     // The open leg's current section: its frame, bill, rack and plate (the stack's while Ring Island's near view
@@ -1028,14 +1032,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     for (const a of [-1.85, 1.85]) put(site, a, -1.35, 1.3, 0.3, 2.6, 0.3, GREY_DARK);
     put(site, 0, -1.35, open ? 2.5 : 1.1, 0.2, open ? 0.2 : 1.6, 3.4, open ? CLEAR : DANGER);
   }
-  const nearBell = () => {
-    const c = AREA_CENTRES.bell,
-      b = me.body?.position;
-    return (
-      Math.hypot(camera.position.x - c.x, camera.position.z - c.z) < 450 ||
-      (!!b && Math.hypot(b.x - c.x, b.z - c.z) < 450)
-    );
-  };
+  const nearBell = () => near(AREA_CENTRES.bell, 450);
   /** What each pad's sign was last painted with, by the relabel it was painted through (a remount paints again). */
   const padPainted = new Map<string, { by: (lines: readonly string[]) => void; text: string }>();
   /** Bell Rock, while you are near it: the seeds post (until taken), the Canopy barrier, the stalls risen on their
@@ -1081,14 +1078,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       ]);
     }
   }
-  const nearCanopy = () => {
-    const c = AREA_CENTRES.canopy,
-      b = me.body?.position;
-    return (
-      Math.hypot(camera.position.x - c.x, camera.position.z - c.z) < 450 ||
-      (!!b && Math.hypot(b.x - c.x, b.z - c.z) < 450)
-    );
-  };
+  const nearCanopy = () => near(AREA_CENTRES.canopy, 450);
   /** Canopy Town, while you are near it: the cloth post (until taken; lit once the leg is laid) and the Notch barrier,
    * shut (its leg is leg 6's). */
   function canopy(r: NonNullable<ReturnType<typeof rows>>) {
@@ -1220,16 +1210,22 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
               : { ...target, blocked: NO_LINE },
         );
       }
-      // Bell Rock (greybox leg 2): the seeds refuse until the incline is laid; the Canopy barrier until its leg is
-      // built and open with the seeds held (leg 3's: it refuses today, in view).
-      if (!(r.grants & (1 << SEEDS)) && within(p, SEEDS_AT, RAIL_GRANTS[SEEDS]!.at.reach)) {
-        const target = { id: 'railway-leg-seeds', verb: TAKE_SEEDS, at: v3(SEEDS_AT, SEEDS_AT.y + 1.6) };
-        out.push(
-          done(r, 'incline')
-            ? { ...target, run: () => void adapter.takeGrant(SEEDS) }
-            : { ...target, blocked: SEEDS_NOT_YET },
-        );
-      }
+      // A key's post (RAIL_GRANTS k at `at`) refuses until the leg `after` is laid: the seeds at Bell Rock after the
+      // incline (greybox leg 2), the glider cloth at Canopy after leg 3.
+      const grant = (
+        k: number,
+        id: string,
+        verb: string,
+        at: Site | typeof SEEDS_AT,
+        after: string,
+        notYet: string,
+      ) => {
+        if (r.grants & (1 << k) || !within(p, at, RAIL_GRANTS[k]!.at.reach)) return;
+        const target = { id, verb, at: v3(at, at.y + 1.6) };
+        out.push(done(r, after) ? { ...target, run: () => void adapter.takeGrant(k) } : { ...target, blocked: notYet });
+      };
+      grant(SEEDS, 'railway-leg-seeds', TAKE_SEEDS, SEEDS_AT, 'incline', SEEDS_NOT_YET);
+      grant(CLOTH, 'railway-leg-cloth', TAKE_CLOTH, CLOTH_AT, 'bell-canopy', CLOTH_NOT_YET);
       // Leg 3's barriers: the Canopy barrier on its frame at Bell Rock, the Notch barrier at Canopy (leg 6's: it refuses
       // in view, the cloth held). Each opens once its leg is open with its key held.
       const gate = (k: number, id: string, at: { x: number; y: number; z: number }) => {
@@ -1244,15 +1240,6 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       };
       gate(CANOPY, 'railway-leg-canopy', CANOPY_SITE);
       gate(NOTCH, 'railway-leg-notch', NOTCH_AT);
-      // Canopy Town: the glider cloth refuses until leg 3 is laid.
-      if (!(r.grants & (1 << CLOTH)) && within(p, CLOTH_AT, RAIL_GRANTS[CLOTH]!.at.reach)) {
-        const target = { id: 'railway-leg-cloth', verb: TAKE_CLOTH, at: v3(CLOTH_AT, CLOTH_AT.y + 1.6) };
-        out.push(
-          done(r, 'bell-canopy')
-            ? { ...target, run: () => void adapter.takeGrant(CLOTH) }
-            : { ...target, blocked: CLOTH_NOT_YET },
-        );
-      }
       return out;
     },
     inspect: () => {

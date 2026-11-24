@@ -64,6 +64,10 @@ function build(id: 'ns' | 'bay'): RowPath {
 }
 const PATHS: readonly RowPath[] = [build('ns'), build('bay')];
 const byLine = new Map(PATHS.map((p) => [p.line, p]));
+/** Whether a row line's halt has a second lever, on its homeward platform (railway/halts-view.ts rowSpot): a stub head,
+ * and every later halt, which its line may grow past (Bell Rock on the bay line, once leg 3 lays: homeward trains
+ * stand at its homeward platform). It stands only once the line runs past the halt. */
+export const rowHomewardLever = (h: { stop: number; end?: { kind: string } }) => h.end?.kind === 'stub' || h.stop > 0;
 /** Whether sim line `line` is one of the rows drawn here. */
 export const isRowLine = (line: number) => byLine.has(line);
 

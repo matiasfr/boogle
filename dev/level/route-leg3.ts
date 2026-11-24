@@ -45,11 +45,8 @@ export function checkLeg3() {
     `Bell Rock rack to kit car ${carDistance.toFixed(2)} m, rack to frame ${carry.toFixed(2)} m`,
     carDistance < 9 && carry < 15,
   );
-  const { land } = layout(
-    parseMapPage(fs.readFileSync(new URL('../../docs/world/map-prototypes.html', import.meta.url), 'utf8')),
-    'sickle',
-    'A',
-  );
+  const map = readMap(),
+    { land } = map;
   for (const [i, sec] of leg.sections.slice(0, -1).entries()) {
     const stop = sec.toCm - 1000;
     check(
@@ -80,7 +77,7 @@ export function checkLeg3() {
   }
   const distance = apart(RAIL_GRANTS.find((g) => g.id === 'cloth')!.at, RAIL_GATES.find((g) => g.id === 'notch')!.at);
   check(`Cloth to Notch barrier ${distance.toFixed(2)} m`, Math.abs(distance - 10) < 0.1);
-  entries.push(...canopyEntries(land));
+  entries.push(...canopyEntries(map));
   return { level: 'route leg 3', entries, failures: entries.filter((e) => !e.passed).length };
 }
 
@@ -91,10 +88,12 @@ type P = { x: number; z: number };
 const LANDS = ['canopy-isle', 'wall-cn', 'wall-cs'] as const;
 const r2 = (v: number) => Math.round(v * 100) / 100,
   r4 = (v: number) => Math.round(v * 1e4) / 1e4;
-const insideRing = (p: P, ring: readonly P[]) =>
-  inside(
-    [p.x - ORIGIN.x, p.z - ORIGIN.z],
-    ring.map((q) => [q.x - ORIGIN.x, q.z - ORIGIN.z]),
+/** The page's layout (docs/world/map-prototypes.html, option A), read once per report or bake. */
+const readMap = () =>
+  layout(
+    parseMapPage(fs.readFileSync(new URL('../../docs/world/map-prototypes.html', import.meta.url), 'utf8')),
+    'sickle',
+    'A',
   );
 const side = (p: P, q: P, r: P) => Math.sign((q.x - p.x) * (r.z - p.z) - (q.z - p.z) * (r.x - p.x));
 const crosses = (a: P, b: P, c: P, d: P) => side(a, b, c) !== side(a, b, d) && side(c, d, a) !== side(c, d, b);
@@ -116,7 +115,8 @@ export function bakeCanopy(land: readonly Land[], terrain: readonly Terrain[]) {
   >;
   // The beach: off each isle edge, outward, 40 m; not inside an islet, not across the row's deck (s 2040 to 2140, and
   // 6 m either side of it).
-  const isle = rings['canopy-isle'],
+  const islets = ['wall-cn', 'wall-cs'].map((id) => land.find((l) => l.id === id)!.outline),
+    isle = rings['canopy-isle'],
     [cx, cz] = centres['canopy-isle'],
     q = { x: 0, z: 0 },
     rows = [-6, 0, 6].map((e) => [{ ...rowWorld(3, 2040, e, q) }, { ...rowWorld(3, 2140, e, q) }] as const);
@@ -128,7 +128,7 @@ export function bakeCanopy(land: readonly Land[], terrain: readonly Terrain[]) {
     let nx = (b.z - a.z) / len,
       nz = -(b.x - a.x) / len;
     if (nx * (mid.x - cx) + nz * (mid.z - cz) < 0) [nx, nz] = [-nx, -nz];
-    if ([rings['wall-cn'], rings['wall-cs']].some((w) => insideRing(mid, w))) return;
+    if (islets.some((w) => inside([mid.x - ORIGIN.x, mid.z - ORIGIN.z], w))) return;
     const far = (p: P) => ({ x: p.x + nx * 40, z: p.z + nz * 40 }),
       quad = [a, b, far(b), far(a)];
     if (rows.some(([p, r]) => quad.some((c, k) => crosses(p, r, c, quad[(k + 1) % 4]!)))) return;
@@ -208,12 +208,11 @@ const off = (a: readonly unknown[], b: readonly unknown[]): number =>
                 : Infinity,
         ),
       );
-function canopyEntries(land: readonly Land[]) {
+function canopyEntries(map: ReturnType<typeof layout>) {
   const entries: { message: string; passed: boolean }[] = [];
   const check = (message: string, passed: boolean) => entries.push({ message, passed });
   const f1 = (v: number) => v.toFixed(1);
-  const page = fs.readFileSync(new URL('../../docs/world/map-prototypes.html', import.meta.url), 'utf8');
-  const fresh = bakeCanopy(land, layout(parseMapPage(page), 'sickle', 'A').terrain);
+  const fresh = bakeCanopy(map.land, map.terrain);
   // The baked numbers: each within 0.01 of a fresh bake (the map or the row moved: re-bake).
   const worst = Math.max(
     ...LANDS.map((id) =>
@@ -340,9 +339,8 @@ function canopyEntries(land: readonly Land[]) {
 }
 
 if (import.meta.main) {
-  const page = fs.readFileSync(new URL('../../docs/world/map-prototypes.html', import.meta.url), 'utf8'),
-    map = layout(parseMapPage(page), 'sickle', 'A');
   if (process.argv.includes('--bake')) {
+    const map = readMap();
     const file = 'src/content/levels/leg3.ts',
       source = fs.readFileSync(file, 'utf8'),
       found = source.match(BAKED);
