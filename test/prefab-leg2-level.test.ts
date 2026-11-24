@@ -33,7 +33,7 @@ import * as row from '../src/entities/railway/row-path.ts';
 import * as junctions from '../src/place/junctions.ts';
 import { KIT } from '../src/place/turnout.ts';
 import * as gorgeLayout from '../src/entities/route-greybox/massing.ts';
-import { AREA_CENTRES, LEG2_TEXT } from '../src/entities/route-greybox/leg2-layout.ts';
+import { AREA_CENTRES, coverNear, LEG2_TEXT } from '../src/entities/route-greybox/leg2-layout.ts';
 import { CANOPY_CENTRES, isleGround, landPoints } from '../src/content/levels/leg3.ts';
 import type { Shape } from '../src/physics/engine.ts';
 import { resident } from '../src/render/lod-level.ts';
@@ -209,15 +209,15 @@ test('review (greybox leg 2 step 4): no standable surface under a leg 2 deck lea
   assert.equal(bad.length, 0, `${bad.length} spots, first: ${bad.slice(0, 3).join('; ')}`);
 });
 
-// Greybox leg 3, step 6's two reviews (Astra, on 87d7edf12 and 033182dbb): a solid that switches on with a body in
-// it lifts the body onto its top or waits, the set of them, until the body is clear; never a push sideways
-// (route-greybox/clear.ts, the orchestrator's call of 24 November). Canopy's residency covers every solid of it and
-// counts them all, and a row line's departure boards list only halts where a train stops. Each runs the view's own
-// source.
+// Greybox leg 3, step 6's reviews (Astra, on 87d7edf12, 033182dbb and b5e0f7f49): a laid deck's slabs that switch on
+// where a body stands lift it onto their top when it fits there, or wait, the set of them, neither solid nor drawn,
+// until it is clear; never a push sideways (route-greybox/clear.ts, the orchestrator's calls of 24 November). An
+// area's mount is an ordinary static mount, far from anyone (580 m for Canopy, which covers every solid of it and
+// counts them all). A row line's departure boards list only halts where a train stops. Each runs the view's own source.
 const clearFor = (position: THREE.Vector3) =>
   sourceModule<typeof import('../src/entities/route-greybox/clear.ts')>(
     fs.readFileSync('src/entities/route-greybox/clear.ts', 'utf8'),
-    { THREE, HEAD_OFFSET, PLAYER_R, me: { body: { position } } },
+    { THREE, HEAD_OFFSET, PLAYER_R, me: { body: { position } }, compiled: artifact },
   );
 /** A resolved collider as the physics shape its prefab's instance makes (a box from its axes, a trimesh as is). */
 function shapeOf(c: ReturnType<typeof ground>[number]): Shape {
@@ -256,6 +256,7 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3) {
   const position = new THREE.Vector3(p.x, floor + PLAYER_R, p.z);
   const signs = new Map<THREE.Group, string[]>();
   const overlaps: number[] = [];
+  const drawnDeck: Shape[] = [];
   const slab = (ax: number, az: number, bx: number, bz: number, ya: number, yb: number, width: number) => {
     const dx = bx - ax,
       dz = bz - az,
@@ -295,6 +296,9 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3) {
           route.RAIL_LEGS.map((l) => l.sections.length),
         ),
       canopyGround: isleGround,
+      bellMassing: () => [],
+      canopyMassing: () => [],
+      westMassing: () => [],
       legKitFlight: { logs: 0, rails: 0 },
       legYardFlight: { logs: 0, rails: 0 },
       bellPads: [],
@@ -314,10 +318,22 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3) {
           s.mesh,
           entries.map((l) => l.t),
         ),
-      createBoxBatch: () => ({ mesh: new THREE.Group(), begin() {}, commit() {}, box() {}, between() {} }),
+      createBoxBatch: (_owner: unknown, capacity: number) => ({
+        mesh: new THREE.Group(),
+        begin() {
+          if (capacity === 4800) drawnDeck.length = 0;
+        },
+        commit() {},
+        box(x: number, y: number, z: number, w: number, h: number, d: number, colour: string, yaw: number, rx: number) {
+          if (capacity === 4800 && colour === '#9c9ea1' && h === 0.5)
+            drawnDeck.push(clear.boxShape({ x, y, z, w, h, d, yaw, pitch: -rx }));
+        },
+        between() {},
+      }),
       playObjective() {},
     },
   );
+  const clear = clearFor(position);
   const seed = buildSeedWorld('awake');
   for (const [i, leg] of route.RAIL_LEGS.entries())
     if (lines.legBuilt(i))
@@ -339,7 +355,7 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3) {
     leg.laid = 1;
     view.update();
   }
-  return { signs, overlaps, floor, position };
+  return { signs, overlaps, floor, position, drawnDeck };
 }
 
 test('the Canopy lay leaves a player standing on Bell Rock clear of the new deck', async () => {
@@ -468,38 +484,10 @@ test('a swimmer arriving at the western beach finds its collider at the shorelin
   assert.ok((await mountAt(p)).enabled.includes(beach.placement.id));
 });
 
-test('a Canopy mount leaves a player inside the platform where they are, the platform off until they are out', async () => {
-  const platform = ground(canopy).find((c) => c.placement.id === 'canopy.platform-out')!;
-  const p = platform.volume.centre.clone(),
-    was = p.clone();
-  const m = await mountAt(p);
-  assert.deepEqual(m.overlaps, []);
-  assert.ok(!m.enabled.includes(platform.placement.id));
-  assert.deepEqual(p.toArray(), was.toArray(), 'moved');
-  p.y = 40; // out of it (over it)
-  m.update();
-  assert.ok(m.state().enabled.includes(platform.placement.id));
-});
-
 test('the Canopy residency report counts every mounted collider', async () => {
   const p = AREA_CENTRES.canopy;
   const { report } = await mountAt(new THREE.Vector3(p.x, 200, p.z));
   assert.equal(report?.solids, ground(canopy).length);
-});
-
-test('cold mount holds both end decks off for a body straddling them, never pushing it between them', async () => {
-  const p = new THREE.Vector3(-1098, 12 + PLAYER_R, -291.5),
-    was = p.clone();
-  assert.equal(isleGround(p.x, p.z), 12);
-  const m = await mountAt(p);
-  assert.deepEqual(m.overlaps, []);
-  for (const id of ['canopy.deck', 'canopy.deck-end']) assert.ok(!m.enabled.includes(id), id);
-  assert.deepEqual(p.toArray(), was.toArray(), 'moved');
-  for (let k = 0; k < 30; k++) m.update(); // nothing ping-pongs while it stands there
-  assert.deepEqual(p.toArray(), was.toArray(), 'moved while held');
-  p.set(-1098, 12 + PLAYER_R, -250); // walked off onto the isle
-  m.update();
-  for (const id of ['canopy.deck', 'canopy.deck-end']) assert.ok(m.state().enabled.includes(id), id);
 });
 
 for (const id of ['wall-cn', 'wall-cs'] as const)
@@ -518,17 +506,68 @@ for (const id of ['wall-cn', 'wall-cs'] as const)
     assert.ok((await mountAt(p)).enabled.includes('canopy.lands'), `no wall at ${p.toArray()}`);
   });
 
-test('the island prism waits for a body under its top, and lifts one whose feet are within a step of it', async () => {
-  const p = new THREE.Vector3(-1060, 0, -300);
-  assert.equal(isleGround(p.x, p.z), 12);
-  const m = await mountAt(p);
-  assert.ok(!m.enabled.includes('canopy.lands'));
-  assert.deepEqual(p.toArray(), [-1060, 0, -300], 'moved');
-  p.set(-1060, 300, -300); // clear of it
-  m.update();
-  assert.ok(m.state().enabled.includes('canopy.lands'));
-  const q = new THREE.Vector3(-1060, 12 - 0.2 + PLAYER_R, -300); // feet 0.2 m under the top
-  const n = await mountAt(q);
-  assert.ok(n.enabled.includes('canopy.lands'));
-  assert.ok(Math.abs(q.y - PLAYER_R - 12) < 0.05, `feet at ${q.y - PLAYER_R}`);
+test('a waiting first-lay slab at the Bell Rock rim is hidden', async () => {
+  const { position, floor, overlaps, drawnDeck } = await reachedView(1340, -2.25, 1);
+  assert.equal(position.y, floor + PLAYER_R);
+  assert.deepEqual(overlaps, []);
+  assert.ok(drawnDeck.length);
+  const clear = clearFor(position);
+  assert.ok(
+    drawnDeck.every((s) => clear.heldTop(s, position) === null),
+    'deck drawn through player',
+  );
+});
+
+test('the Bell Rock lower-deck lift leaves headroom below the ramp', () => {
+  const position = new THREE.Vector3(-72.99383527541504, 5.15, -860.5269921785417);
+  const colliders = ground(bellRaw);
+  const shapes = colliders.map(shapeOf);
+  const ramp = shapes[colliders.findIndex((c) => c.placement.id === 'bell.ramp')]!;
+  const clear = clearFor(position);
+  assert.equal(clear.heldTop(ramp, position), null);
+  const result = clear.liftOrWait(shapes);
+  assert.equal(clear.heldTop(ramp, position), null, 'the lifted head intersects the ramp');
+  assert.equal(result.kind, 'wait');
+});
+
+test("a lay's headroom reads the scenery as the levels build it: placedShapes matches the resolved colliders", () => {
+  const position = new THREE.Vector3(-72.99383527541504, 5.15, -860.5269921785417),
+    clear = clearFor(position);
+  for (const raw of [bellRaw, canopy]) {
+    const level = validation.loadLevelArtifact(raw, artifact.prefabs as unknown as Readonly<Record<string, PrefabDef>>),
+      built = clear.placedShapes(
+        level.placements.filter((p) => p.prefab === 'greybox.box' || p.prefab === 'greybox.collider'),
+      ),
+      resolved = ground(raw)
+        .filter((c) => c.definition.shape === 'box')
+        .map(shapeOf);
+    assert.equal(built.length, resolved.length);
+    // The same solid: held or not, and the same top, at sample points through each.
+    built.forEach((b, i) => {
+      const r = resolved[i]! as Extract<Shape, { kind: 'box' }>,
+        o = r.offset!;
+      for (const dy of [-0.3, 0, 0.3]) {
+        const p = { x: o.x + 0.3, y: o.y + dy, z: o.z - 0.2 },
+          a = clear.heldTop(b, p),
+          c = clear.heldTop(r, p);
+        assert.ok((a === null) === (c === null) && (a === null || Math.abs(a - c!) < 1e-6), `${i} at ${dy}`);
+      }
+    });
+  }
+  // The same lift with the scenery given as it is built, not as the test resolves it, also waits.
+  const level = validation.loadLevelArtifact(
+    bellRaw,
+    artifact.prefabs as unknown as Readonly<Record<string, PrefabDef>>,
+  );
+  assert.equal(clear.liftOrWait(ground(bellRaw).map(shapeOf), clear.placedShapes(level.placements)).kind, 'wait');
+});
+
+test('residency covers the far face of a pitched box', () => {
+  // Static levels support pitched boxes (Canopy's beach and both platform ramps).
+  // A wide radial separation makes an omitted corner visible even after rounding to 10 m.
+  const defs = { box: { colliders: [{ shape: 'box', at: [0, 0, 0], half: [1, 4, 1] }] } };
+  const placement = { prefab: 'box', pos: [0, 0, 408], rot: [0, Math.PI / 4, 0] };
+  const near = coverNear([placement], defs, { x: 0, z: 0 });
+  const far = new THREE.Vector3(1, 4, 1).applyEuler(new THREE.Euler(Math.PI / 4, 0, 0, 'YXZ'));
+  assert.ok(near >= Math.hypot(far.x, 408 + far.z) + 40, 'the outer corner is inside the arrival margin');
 });
