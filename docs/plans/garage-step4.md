@@ -317,7 +317,10 @@ before step 3. Step 3 holds on question 1.
       lay, on the first tick a bay train enters service while another is away from the West landing, so the new train
       takes Strong at home while the one away stays standard until it is back. Every Strong run must see a mixed fleet,
       and the growing one a hold or a release too (independent review and re-check, 24 November). The trade tests'
-      seed runs the leg seed's own steps (`legStagesOn`) on worlds each file already builds, lazily, in a named test. The "leg 2 mixed, growing from `incline-open`" case is dropped: a Strong bay train while leg 2 grows is
+      seed runs the leg seed's own steps (`legStagesOn`) on worlds each file already builds, lazily, in a named test.
+      Only asks made in the first circuit after the fit get the mixed-fleet checks; asks already pending keep their
+      ordinary budget. The empty-pool refusal runs on a reachable `bay-mid` with the works never lit, built inside that
+      test (final check, 24 November). The "leg 2 mixed, growing from `incline-open`" case is dropped: a Strong bay train while leg 2 grows is
       unreachable now that the bay trade opens at `bay-mid` (owner, 24 November).
 - [ ] **3. Seeds, screen, bays and trains (M to L; player-visible). Holds on question 1.**
       `src/sim/railway-seed-legs.ts` (or a sibling): `trade-ready` from `bay-mid` under A (`bay-reached` under C), by

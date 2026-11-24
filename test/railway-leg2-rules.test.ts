@@ -409,8 +409,8 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
   // Settled runs fit as the measured run starts. Growing Canopy fits late (independent re-check, 24 November): from one
   // tick before the bay cut's last section is laid, on the first tick a bay train has just entered service while
   // another serving bay train is away from the West landing. The new train, standing at home, takes Strong at once; the
-  // one away keeps its standard boiler until it is home again, so the fleet is mixed. Asks pending on the bay line at
-  // the fit move to the mixed-fleet checks too.
+  // one away keeps its standard boiler until it is home again, so the fleet is mixed. Only asks made during the first
+  // circuit after the fit get the mixed-fleet checks (23 November); asks already pending keep their ordinary budget.
   const late = strong && canopy && feed;
   const away = (j: number) => !(train(s.w, j).phase === TRAIN_PHASE.STAND && train(s.w, j).at === 0);
   let fitted = false,
@@ -429,7 +429,6 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
       fitted = true;
       const st = stopsOf(s.w, BAYL);
       mixedUntil = s.t + Math.max(cycleTicks(BAYL, st, 0), cycleTicks(BAYL, st, 5));
-      for (const p of health.pending.values()) if (RAIL_HALTS[p.id]!.line === BAYL) p.safetyOnly = true;
     }
     if (rand() < 0.05) {
       const pool = askPool(s.w),

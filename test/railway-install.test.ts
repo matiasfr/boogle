@@ -797,12 +797,12 @@ test('trade installs: refusals, the first fit spends 1, swaps spend nothing, ten
   assert.equal(fit(s, NS, 5), 1);
   assert.equal(shed(s.w).spent, spent + 2);
   // With no steel home, a first fit is refused (the screen's STEEL 0/1).
-  // An empty pool: the trade seed with its pool spent by hand (no load check after it), the bay copy on the table.
-  const dry = tradeReady();
+  // An empty pool on a reachable world: bay-mid with the works never lit (built here, so only this test pays for it),
+  // the bay copy brought, and the first fit refused through `fit`, which checks the world after it.
+  const dry = copy(buildSeedWorld('bay-mid'));
+  assert.equal(steelPool(shed(dry.w)), 0);
   brought(dry, BAYL);
-  const h = dry.w.mut(Shed, dry.w.single(Shed))!;
-  h.spent = h.steel;
-  assert.equal(raw(dry.w, 'rail.install', { line: BAYL, part: 5, revision: 0 }, dry.t), 0, 'an empty pool');
+  assert.equal(fit(dry, BAYL, 5), 0, 'an empty pool');
   const loaded = restore(s.w);
   assert.equal(invariant(loaded), null);
   assert.deepEqual([lineRow(loaded, BAYL).rev, lineRow(loaded, NS).rev, shed(loaded).tableLine, shed(loaded).bringRev], [11, 1, NS, 2]);
