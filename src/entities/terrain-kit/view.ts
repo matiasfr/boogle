@@ -124,13 +124,15 @@ async function build(owner: ReturnType<typeof createOwnedView>) {
   const waiting = new Map(
     things.map((t) => [t, t.solids.map(boxOf).filter((b): b is NonNullable<typeof b> => b !== null)] as const),
   );
+  const SPHERE_Y = [0, HEAD_OFFSET] as const;
   const probe = new THREE.Vector3();
   const settle = () => {
+    if (!waiting.size) return;
     const body = me.body;
     for (const [thing, boxes] of waiting) {
       const inside =
         body &&
-        [0, HEAD_OFFSET].some((up) => {
+        SPHERE_Y.some((up) => {
           probe.set(body.position.x, body.position.y + up, body.position.z);
           return boxes.some((b) => outside(b, probe) < PLAYER_R);
         });

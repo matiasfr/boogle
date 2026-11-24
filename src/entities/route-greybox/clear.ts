@@ -34,12 +34,13 @@ export function boxShape(b: GreyBox): Shape {
     rotation: { x: q.x, y: q.y, z: q.z, w: q.w },
   };
 }
-/** `p` in shape `s`'s own frame (into `rel`). */
-function local(s: Shape, p: P) {
-  const o = s.offset ?? { x: 0, y: 0, z: 0 },
+const SPHERE_Y = [0, HEAD_OFFSET] as const;
+/** `(x, y, z)` in shape `s`'s own frame (into `rel`). */
+function local(s: Shape, x: number, y: number, z: number) {
+  const o = s.offset,
     r = s.rotation;
   toLocal.set(r?.x ?? 0, r?.y ?? 0, r?.z ?? 0, r?.w ?? 1).invert();
-  return rel.set(p.x - o.x, p.y - o.y, p.z - o.z).applyQuaternion(toLocal);
+  return rel.set(x - (o?.x ?? 0), y - (o?.y ?? 0), z - (o?.z ?? 0)).applyQuaternion(toLocal);
 }
 /** The lowest face of trimesh `s` straight over local point `l`, and how many faces are over it (odd: inside). */
 function over(s: Extract<Shape, { kind: 'trimesh' }>, l: THREE.Vector3) {
@@ -74,31 +75,33 @@ function over(s: Extract<Shape, { kind: 'trimesh' }>, l: THREE.Vector3) {
 /** If your body (either sphere) is in solid `s`, the height of the solid's top over it; else null. Boxes and
  * trimeshes (a closed prism, or one open underneath as the lands' are); other kinds never hold. */
 export function heldTop(s: Shape, body: P = me.body!.position): number | null {
-  const spheres = [0, HEAD_OFFSET].map((up) => ({ x: body.x, y: body.y + up, z: body.z }));
   if (s.kind === 'box') {
-    const inside = spheres.some((p) => {
-      const l = local(s, p);
+    let inside = false;
+    for (const up of SPHERE_Y) {
+      const l = local(s, body.x, body.y + up, body.z);
       const d = Math.hypot(
         Math.max(0, Math.abs(l.x) - s.hx),
         Math.max(0, Math.abs(l.y) - s.hy),
         Math.max(0, Math.abs(l.z) - s.hz),
       );
-      return d < PLAYER_R - CONTACT;
-    });
+      if (d < PLAYER_R - CONTACT) {
+        inside = true;
+        break;
+      }
+    }
     if (!inside) return null;
     // The top face's height over the body: its local point at the body's (x, z), back in the world.
-    const l = local(s, body),
-      r = s.rotation,
-      o = s.offset ?? { x: 0, y: 0, z: 0 };
+    const l = local(s, body.x, body.y, body.z),
+      r = s.rotation;
     top
       .set(Math.max(-s.hx, Math.min(s.hx, l.x)), s.hy, Math.max(-s.hz, Math.min(s.hz, l.z)))
       .applyQuaternion(toLocal.set(r?.x ?? 0, r?.y ?? 0, r?.z ?? 0, r?.w ?? 1));
-    return top.y + o.y;
+    return top.y + (s.offset?.y ?? 0);
   }
   if (s.kind === 'trimesh') {
     // In it: a sphere's centre under an odd number of faces, or its bottom less than a radius under the top.
-    for (const p of spheres) {
-      const l = local(s, { ...p, y: p.y - PLAYER_R + CONTACT }),
+    for (const up of SPHERE_Y) {
+      const l = local(s, body.x, body.y + up - PLAYER_R + CONTACT, body.z),
         { lowest, count } = over(s, l);
       if (count % 2 === 1) return lowest + (s.offset?.y ?? 0);
     }
@@ -129,7 +132,8 @@ export function liftOrWait(
   const y = highest + PLAYER_R + CONTACT,
     at = { x: p.x, y, z: p.z };
   // The destination must be clear: nothing of the set or of the scenery around holds the body standing there.
-  if ([...solids, ...world].some((s) => heldTop(s, at) !== null)) return { kind: 'wait', held };
+  if (solids.some((s) => heldTop(s, at) !== null) || world.some((s) => heldTop(s, at) !== null))
+    return { kind: 'wait', held };
   p.set(p.x, y, p.z);
   body.interpolatedPosition?.set(p.x, y, p.z);
   body.velocity?.set(0, 0, 0);

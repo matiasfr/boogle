@@ -14,8 +14,7 @@ import { instantiate } from '../../prefab/instantiate.ts';
 import { HALT_YARDS, HALT_YARD_REACH, type HaltYardId } from '../../sim/railway-yard-layout.ts';
 import { haltYardOpen, haltYardStock } from '../../sim/railway-queries-yard.ts';
 import { balanceOf, railAccount, roomOf, LOGS, STONE } from '../../sim/railway-queries.ts';
-import { RAILS } from '../../sim/railway-line2-layout.ts';
-import { LINE2_FORGE, LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
+import { LINE2_FORGE, LINE2_STATIONS, RAILS } from '../../sim/railway-line2-layout.ts';
 import { forge } from '../../sim/railway-rows.ts';
 import {
   bayBin,
@@ -251,18 +250,26 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView,
   function targets(): Interactable[] {
     if (!adapter.read.ready() || !me.body) return NO_TARGETS;
     const p = me.body.interpolatedPosition;
-    const near = promptBays.filter(
-      (bay) => bay.shown && Math.hypot(p.x - bay.x, p.z - bay.z) <= HALT_YARD_REACH / 100 - REACH_SLACK,
-    );
-    if (!near.length) return NO_TARGETS;
-    const w = adapter.read.world(),
-      account = railAccount(w, adapter.read.pid);
-    const mine = KINDS.map((kind) => (account ? balanceOf(account, kind) : 0));
-    const carried = KINDS.filter((kind) => mine[kind]! > 0);
+    const reach = HALT_YARD_REACH / 100 - REACH_SLACK;
     let out: Interactable[] | null = null;
-    for (const bay of near)
+    let w: ReturnType<typeof adapter.read.world> | null = null;
+    let account: ReturnType<typeof railAccount> = undefined;
+    let mine: [number, number, number] | null = null;
+    let carried: Kind[] | null = null;
+    for (const bay of promptBays) {
+      if (!bay.shown || Math.hypot(p.x - bay.x, p.z - bay.z) > reach) continue;
+      if (bins[bay.k]!.some((bin) => bin.flights.some((f) => f.active()))) continue;
+      if (!w) {
+        w = adapter.read.world();
+        account = railAccount(w, adapter.read.pid);
+        mine = [
+          account ? balanceOf(account, LOGS) : 0,
+          account ? balanceOf(account, STONE) : 0,
+          account ? balanceOf(account, RAILS) : 0,
+        ];
+        carried = KINDS.filter((kind) => mine![kind] > 0);
+      }
       for (const kind of KINDS) {
-        if (bins[bay.k]!.some((bin) => bin.flights.some((f) => f.active()))) continue;
         const at = bay.at[kind]!;
         if (!inReach(at)) continue;
         const stock = haltYardStock(w, bay.k, kind);
@@ -276,7 +283,7 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView,
         // A Pick up names what the bin holds, as a pile's does; Leave it here needs no count.
         const note = `${stock} ${NOUN[kind]}`;
         let target: Interactable;
-        if (stock > 0 && mine[kind] === 0 && account && roomOf(w, account, kind) > 0)
+        if (stock > 0 && mine![kind] === 0 && account && roomOf(w, account, kind) > 0)
           target = {
             id,
             at,
@@ -284,19 +291,21 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView,
             verb: 'Pick up',
             run: () => void (rack ? adapter.rackTake(kind) : adapter.haltTake(bay.k, kind)),
           };
-        else if (carried.length)
+        else if (carried!.length) {
+          const kinds = carried!;
           target = {
             id,
             at,
             verb: 'Leave it here', // draft, for the owner (docs/plans/halt-yard.md, question 3)
             run: () => {
-              leaveLoad(adapter, bay.k, carried);
+              leaveLoad(adapter, bay.k, kinds);
             },
           };
-        else if (stock > 0) target = { id, at, note, verb: 'Pick up', blocked: KIND_FULL[kind]! };
+        } else if (stock > 0) target = { id, at, note, verb: 'Pick up', blocked: KIND_FULL[kind]! };
         else continue;
         (out ??= []).push(target);
       }
+    }
     return out ?? NO_TARGETS;
   }
 
