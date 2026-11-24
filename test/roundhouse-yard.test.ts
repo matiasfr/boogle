@@ -17,27 +17,57 @@ import { WAGON_S } from '../src/sim/railway-works-layout.ts';
 import { sourceFunction, sourceModule } from '../dev/level/source.ts';
 import { readFileSync } from 'node:fs';
 
-test('the garage does not acquire modal input while another activity holds it', () => {
+function garageModal(inputState: { held: boolean }, openModal: () => boolean) {
   const source = readFileSync('src/entities/railway/garage-view.ts', 'utf8');
-  const methods = source.slice(source.indexOf('  const api = {'), source.indexOf('  garage.api = api;'));
-  let requests = 0;
-  const api = sourceModule<{ api: { open(): void } }>(
+  const methods = source.slice(source.indexOf('  function close()'), source.indexOf('  garage.api = api;'));
+  return sourceModule<{ api: { open(): void; close(): void } }>(
     methods,
     {
       open: false,
       shown: true,
       facts: { boilerFitted: true, tableBusy: false },
-      inputState: { held: true },
-      close() {},
-      openModal() {
-        requests++;
-        return false;
-      },
+      inputState,
+      openModal,
+      closeModal() {},
+      ownsHold: false,
+      holding: false,
+      settled: false,
+      spinRate: 0,
+      today: () => 0,
+      sel: 'boiler',
+      offered: () => 'boiler',
+      cat: 'engine',
+      phase: 'idle',
+      real: false,
+      waiting: false,
+      mine: false,
+      brief: false,
+      wearRows() {},
+      ring: 0,
     },
     ['api'],
   ).api;
+}
+
+test('the garage does not acquire modal input while another activity holds it', () => {
+  let requests = 0;
+  const api = garageModal({ held: true }, () => {
+    requests++;
+    return false;
+  });
   api.open();
   assert.equal(requests, 0, 'the existing input owner must retain control');
+});
+
+test('closing the garage preserves a reward card hold acquired after opening', () => {
+  const inputState = { held: false };
+  const api = garageModal(inputState, () => true);
+  api.open();
+  assert.equal(inputState.held, true);
+  // An outstanding personal reward claim can finish while the garage is open (reward.ts, reward-reveal.ts).
+  inputState.held = true;
+  api.close();
+  assert.equal(inputState.held, true, 'the active reward card still holds input');
 });
 
 const deck = railY(LINES.east, 0);

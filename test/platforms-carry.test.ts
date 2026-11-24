@@ -21,7 +21,7 @@ import { sourceFunction } from '../dev/level/source.ts';
 import { Vector3 } from 'three';
 import { lerp, angleLerp } from '../src/math.ts';
 
-async function checkCopyClearance(remoteInside: boolean) {
+async function rotundaFixture() {
   const THREE = await import('three/webgpu');
   const { definitions } = await import('../src/prefab/catalogue.ts');
   const geometry = await import('../src/place/rotunda.ts');
@@ -67,12 +67,30 @@ async function checkCopyClearance(remoteInside: boolean) {
   );
   await physics.physicsReady;
   const owner = createOwnedView();
+  const view = createRotundaView(owner);
+  const copy = COPY_BAYS[1]!;
+  const pose = rotundaPose(ROTUNDA_HOME, copy.bay);
+  const local = (x: number, y: number, z: number) =>
+    new Vector3(x, y, z)
+      .applyAxisAngle(new Vector3(0, 1, 0), pose.yaw)
+      .add(new Vector3(pose.x + ORIGIN.x, pose.y, pose.z + ORIGIN.z));
+  return { owner, view, copy, pose, ORIGIN, geometry, remotes, enabled, local, definitions, HEAD_OFFSET };
+}
+
+async function withRotunda(check: (fixture: Awaited<ReturnType<typeof rotundaFixture>>) => void) {
   const previous = player.body;
+  const fixture = await rotundaFixture();
   try {
-    const view = createRotundaView(owner);
-    const copy = COPY_BAYS[1]!;
+    check(fixture);
+  } finally {
+    player.body = previous;
+    fixture.owner.dispose();
+  }
+}
+
+function checkCopyClearance(remoteInside: boolean) {
+  return withRotunda(({ owner, view, copy, pose, ORIGIN, geometry, remotes, enabled }) => {
     view.show(3, 6);
-    const pose = rotundaPose(ROTUNDA_HOME, copy.bay);
     const copies = [{ line: copy.line, long: false, flatbed: false }];
     if (remoteInside) {
       const position = new Vector3(
@@ -101,15 +119,64 @@ async function checkCopyClearance(remoteInside: boolean) {
     view.copies([]);
     const moved = Math.hypot(rider.position.x - x, rider.position.z - z);
     assert.ok(moved < 0.001, `closing door displaced player ${moved} m sideways`);
-  } finally {
-    player.body = previous;
-    owner.dispose();
-  }
+  });
 }
 test('bringing a copy does not move a player standing in its open bay doorway', () => checkCopyClearance(false));
 test('a bay copy waits for a remote player inside its engine', () => checkCopyClearance(true));
 
-test('a remote rider stays above ground when its Strong flatbed is parked before the next presence packet', () => {
+test('a withdrawn bay door is removed from heldSolids', () =>
+  withRotunda(({ owner, view, copy, local }) => {
+    view.show(3, 6);
+    const copies = [{ line: copy.line, long: false, flatbed: false }];
+    view.copies(copies);
+    const me = local(0, PLAYER_R, 14.2);
+    player.body = owner.addBody(makePlayerBody(false));
+    physics.teleport(player.body, me.x, me.y, me.z);
+    view.copies([]);
+    const door = 'door-210';
+    assert.ok(view.inspect().heldSolids.includes(door));
+    view.copies(copies);
+    assert.ok(!view.inspect().standing.includes(door));
+    assert.ok(!view.inspect().heldSolids.includes(door), 'withdrawn door is still reported as pending');
+  }));
+
+test('a blocked open leaf keeps the waiting engine solid under the local player', () =>
+  withRotunda(({ owner, view, copy, remotes, enabled, local }) => {
+    view.show(0, 1);
+    const engine = `rotunda-home.waiting-${copy.bay}`;
+    assert.equal(enabled.get(engine), true);
+    remotes.set('peer', { entered: true, avatar: { position: local(2.03, PLAYER_R, 15.2) } });
+    const me = local(0, 3.3 + PLAYER_R, 18.5);
+    player.body = owner.addBody(makePlayerBody(false));
+    physics.teleport(player.body, me.x, me.y, me.z);
+    view.show(1, 1);
+    assert.equal(enabled.get(`rotunda-home.open-${copy.bay}`), false);
+    assert.equal(enabled.get(engine), true, 'the original engine must keep supporting the local player');
+  }));
+
+test('a newly opened bay leaf cannot lift a player into the existing roof', () =>
+  withRotunda(({ owner, view, copy, pose, local, definitions, HEAD_OFFSET }) => {
+    view.show(3, 6);
+    const x = 2.03,
+      z = 15.2;
+    const start = local(x, 4.26 + PLAYER_R, z);
+    player.body = owner.addBody(makePlayerBody(false));
+    physics.teleport(player.body, start.x, start.y, start.z);
+    const roof = definitions['roundhouse.bay']!.colliders.find((c) => c.at[2] === 15.6)!;
+    assert.ok(roof.shape === 'box' && roof.rot);
+    const gap = (y: number) => {
+      const q = new Vector3(x, y - pose.y + HEAD_OFFSET, z)
+        .sub(new Vector3(...roof.at))
+        .applyAxisAngle(new Vector3(1, 0, 0), -roof.rot![1]);
+      return q.distanceTo(q.clone().clamp(new Vector3(...roof.half).negate(), new Vector3(...roof.half)));
+    };
+    assert.ok(gap(start.y) > PLAYER_R, 'head starts clear of the roof');
+    view.copies([{ line: copy.line, long: false, flatbed: false }]);
+    const clearance = gap(player.body.position.y);
+    assert.ok(clearance >= PLAYER_R - 0.02, `head centre only ${clearance.toFixed(3)} m from roof`);
+  }));
+
+function parkedRiderFixture() {
   const platform = deck('railway:train9-steel', 0, 0, 1, 2);
   platform.body.position.y = platform.body.interpolatedPosition.y = -60;
   const sample = { l: [0, 1, 0], r: 0 };
@@ -144,10 +211,32 @@ test('a remote rider stays above ground when its Strong flatbed is parked before
       INTERP_MS: 100,
       RIDE_BLEND_S: 0.2,
       RIDE_MAX_AGE_MS: 1000,
+      setDrawOffset: sourceFunction('src/entities/remote-player/index.ts', 'setDrawOffset', { angleLerp }),
     },
   );
+  return { place, remote, platform };
+}
+test('a remote rider stays above ground when its Strong flatbed is parked before the next presence packet', () => {
+  const { place, remote } = parkedRiderFixture();
   place(remote, 1000, true, 1 / 60);
   assert.ok(remote.target.y >= 0, `avatar rendered at y=${remote.target.y}`);
+});
+
+test('parking a car during a remote car change keeps the rider between the drawn and world poses', () => {
+  const { place, remote, platform } = parkedRiderFixture();
+  // A fresh ID while already riding starts a blend, with boarding false. This tab's car is ahead of its peer's.
+  remote.ride.drawn = remote.ride.on = false;
+  platform.body.position.x = platform.body.interpolatedPosition.x = 12;
+  platform.body.position.y = platform.body.interpolatedPosition.y = 9;
+  place(remote, 1000, true, 1 / 60);
+  const last = remote.target.x;
+  assert.ok(last > 0 && last < 12);
+  platform.body.position.y = platform.body.interpolatedPosition.y = -60;
+  place(remote, 1017, true, 1 / 60);
+  assert.ok(
+    remote.target.x >= remote.ride.world.x && remote.target.x <= last,
+    `world x=0, last drawn x=${last.toFixed(2)}, parked x=${remote.target.x.toFixed(2)}`,
+  );
 });
 
 const v3 = (x = 0, y = 0, z = 0) => ({ x, y, z });
