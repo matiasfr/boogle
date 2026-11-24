@@ -648,3 +648,78 @@ export function raycastClosest(from: V3, to: V3, o: { mask?: number; skipBackfac
   hit.hitNormalWorld.z = h.normal.z;
   return true;
 }
+
+// A body of two spheres as one capsule, against one shape not built in the world or against what is built there
+// (./engine.ts, capsuleOverlaps). A shape's Rapier copy is made once and kept while the shape is: a trimesh's is
+// costly, and a waiting set is asked again every frame.
+type Placed = { raw: RawShape; at: RawVector; turn: RawRotation };
+const placedShapes = new WeakMap<Shape, Placed | null>();
+function placedShape(s: Shape): Placed | null {
+  let p = placedShapes.get(s);
+  if (p !== undefined) return p;
+  const d = colliderDesc(s);
+  // A heightfield is centred by its description (colliderDesc); every other shape stands at its own offset.
+  const at = s.kind === 'heightfield' ? d?.translation : s.offset;
+  p = d && {
+    // A trimesh's copy is oriented (outward faces), so a point inside a closed one, or under an open land's top, is in
+    // it: the built colliders' FIX_INTERNAL_EDGES does not include ORIENTED in Rapier 0.21.
+    raw:
+      s.kind === 'trimesh'
+        ? new R!.TriMesh(
+            Float32Array.from(s.vertices),
+            Uint32Array.from(s.indices),
+            R!.TriMeshFlags.ORIENTED | R!.TriMeshFlags.MERGE_DUPLICATE_VERTICES,
+          ).intoRaw()
+        : d.shape.intoRaw(),
+    at: R!.VectorOps.intoRaw(at ?? ZERO),
+    turn: R!.RotationOps.intoRaw(s.rotation ?? IDENTITY),
+  };
+  placedShapes.set(s, p);
+  return p;
+}
+let capsule: { r: number; up: number; raw: RawShape; shape: RAPIER.Capsule } | undefined;
+const capsuleAt = { x: 0, y: 0, z: 0 },
+  sphereAt = { x: 0, y: 0, z: 0 };
+export function capsuleOverlaps(at: V3, r: number, up: number, against: Shape | { mask: number }) {
+  if (!R || !world) return false;
+  if (capsule?.r !== r || capsule.up !== up) {
+    const shape = new R.Capsule(up / 2, r);
+    capsule = { r, up, shape, raw: shape.intoRaw() };
+  }
+  capsuleAt.x = at.x;
+  capsuleAt.y = at.y + up / 2;
+  capsuleAt.z = at.z;
+  if ('kind' in against) {
+    const p = placedShape(against);
+    if (!p) return false;
+    const pos = R.VectorOps.intoRaw(capsuleAt),
+      turn = R.RotationOps.intoRaw(IDENTITY);
+    // Touching its surface, or wholly inside a closed shape (a sphere's centre in it: a prism's interior).
+    let hit = capsule.raw.intersectsShape(pos, turn, p.raw, p.at, p.turn);
+    for (const dy of [0, up]) {
+      if (hit) break;
+      const point = R.VectorOps.intoRaw({ x: at.x, y: at.y + dy, z: at.z });
+      hit = p.raw.containsPoint(p.at, p.turn, point);
+      point.free();
+    }
+    pos.free();
+    turn.free();
+    return hit;
+  }
+  const filter = ((0xffff << 16) | (against.mask & 0xffff)) >>> 0,
+    flags = R.QueryFilterFlags.EXCLUDE_SENSORS | R.QueryFilterFlags.EXCLUDE_DYNAMIC;
+  if (world.intersectionWithShape(capsuleAt, IDENTITY, capsule.shape, flags, filter)) return true;
+  let inside = false;
+  const found = () => {
+    inside = true;
+    return false; // one is enough
+  };
+  for (const dy of [0, up]) {
+    sphereAt.x = at.x;
+    sphereAt.y = at.y + dy;
+    sphereAt.z = at.z;
+    world.intersectionsWithPoint(sphereAt, found, flags, filter);
+    if (inside) return true;
+  }
+  return false;
+}

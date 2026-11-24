@@ -690,6 +690,7 @@
       "count": 2,
       "exports": [
         "addBody",
+        "capsuleOverlaps",
         "createBody",
         "forEachContact",
         "forEachStatic",
@@ -723,10 +724,11 @@
     }
   },
   "doors": {
-    "src/prefab/instantiate.ts": ["createPrefabBatch", "gorgePlacements", "instantiate", "workshopChair"],
+    "src/prefab/instantiate.ts": ["createPrefabBatch", "gorgePlacements", "instantiate", "liftOrWait", "workshopChair"],
     "src/physics/engine.ts": [
       "BODY",
       "addBody",
+      "capsuleOverlaps",
       "createBody",
       "forEachContact",
       "forEachStatic",
@@ -753,6 +755,7 @@
     ],
     "src/physics/backend-rapier.ts": [
       "addBody",
+      "capsuleOverlaps",
       "createBody",
       "forEachContact",
       "forEachStatic",
@@ -879,7 +882,7 @@
       "colliders": 3
     },
     "src/prefab/instantiate.ts": {
-      "colliders": 2,
+      "colliders": 3,
       "seats": 1
     }
   }

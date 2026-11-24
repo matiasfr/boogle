@@ -19,6 +19,18 @@ export const PREFAB_DEBT_FILE = 'dev/lint/prefab-debt.json';
 const empty = (): PrefabDebt => ({ colliders: {}, seats: {} });
 const rules = { colliders: 'boogle/colliders-from-records', seats: 'boogle/seats-from-records' } as const;
 
+// The only door growth the owner has approved (docs/decisions-process.md, d-2026-11-24-door-export-clearance-helper):
+// the shared lift-or-wait helper's export on the record door and the engine's one overlap query, with the one import
+// binding the record door needs to reach it. Nothing else may grow; once a base carries them these admit nothing new.
+const APPROVED_DOOR_EXPORTS: Readonly<Record<string, readonly string[]>> = {
+  'src/prefab/instantiate.ts': ['liftOrWait'],
+  'src/physics/engine.ts': ['capsuleOverlaps'],
+  'src/physics/backend-rapier.ts': ['capsuleOverlaps'],
+};
+const APPROVED_DOOR_COUNTS: Readonly<Record<string, { colliders: number }>> = {
+  'src/prefab/instantiate.ts': { colliders: 3 },
+};
+
 export function comparePrefabDebt(base: PrefabDebt, head: PrefabDebt): string[] {
   const errors: string[] = [];
   if ((base.version ?? 0) >= 5 && (head.version ?? 0) < base.version!)
@@ -42,19 +54,20 @@ export function comparePrefabDebt(base: PrefabDebt, head: PrefabDebt): string[] 
           `${PREFAB_DEBT_FILE}: ${kind}/${file} count grew: ${base[kind][file]!.count} → ${entry.count}; lower the count. Use src/prefab/instantiate.ts.`,
         );
       for (const name of entry.exports ?? [])
-        if (!(base[kind][file]?.exports ?? []).includes(name))
+        if (!(base[kind][file]?.exports ?? []).includes(name) && !APPROVED_DOOR_EXPORTS[file]?.includes(name))
           errors.push(`${PREFAB_DEBT_FILE}: ${kind}/${file} public exports grew: ${name}`);
     }
   for (const [file, names] of Object.entries(head.doors ?? {}))
     for (const name of names)
-      if (!(base.doors?.[file] ?? []).includes(name))
+      if (!(base.doors?.[file] ?? []).includes(name) && !APPROVED_DOOR_EXPORTS[file]?.includes(name))
         errors.push(`${PREFAB_DEBT_FILE}: door ${file} public exports grew: ${name}`);
   for (const [file, counts] of Object.entries(head.doorCounts ?? {}))
     for (const kind of ['colliders', 'seats'] as const) {
       const count = counts[kind];
       if (count === undefined) continue;
       const old = base.doorCounts?.[file]?.[kind];
-      if (old === undefined || count > old)
+      const approved = kind === 'colliders' ? APPROVED_DOOR_COUNTS[file]?.colliders : undefined;
+      if (old === undefined || count > Math.max(old, approved ?? old))
         errors.push(
           `${PREFAB_DEBT_FILE}: door ${file}/${kind} capability bindings grew. Use src/prefab/instantiate.ts.`,
         );

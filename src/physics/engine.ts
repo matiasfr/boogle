@@ -26,6 +26,13 @@
 //                                  something static (what moves and sensors don't count, nor does anything it starts inside);
 //                                  -1 if clear. thin: 'skip' or 'only' for shapes under 1.6 m across (trunks, posts).
 //                                  For a camera arm, line of sight, placing
+//   capsuleOverlaps(at, r, up, against)   whether a body of two spheres of radius r, at `at` and `up` over it (taken as
+//                                  one capsule), overlaps `against`: one shape placed in the world but not built there
+//                                  (a solid about to switch on), or { mask }: what is built in a group of `mask`,
+//                                  static or kinematic (sensors and what moves freely don't count). Touching its
+//                                  surface or a sphere's centre inside it both count (for one shape, a trimesh's
+//                                  interior too: a closed prism's, or under an open land's top).
+//                                  For src/place/clearance.ts, through src/prefab/instantiate.ts
 //   physicsTime()                  seconds of simulated time
 //   physicsClock(), setPhysicsClock(c)   that time and what's left under a step, for a replay to start from
 //                                  (src/debug/record.ts writes it): sea state follows the time, and the steps a frame holds the rest
@@ -107,6 +114,8 @@ export const forEachContact: (
 ) => void = backend.forEachContact;
 export const sweepSphere: (from: V3, to: V3, r: number, o: { mask: number; thin: 'skip' | 'only' }) => number =
   backend.sweepSphere;
+export const capsuleOverlaps: (at: V3, r: number, up: number, against: Shape | { mask: number }) => boolean =
+  backend.capsuleOverlaps;
 export const rayHit: () => RayHit = backend.rayHit;
 export const raycastClosest: (from: V3, to: V3, o: { mask?: number; skipBackfaces?: boolean }, hit: RayHit) => boolean =
   backend.raycastClosest;
