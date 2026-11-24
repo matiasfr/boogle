@@ -762,12 +762,16 @@ proof is the net suite's `leg rejoin` case (`dev/peer-test/ws-railway.ts` `railw
 - **Bot segment** `--from bay-reached --to canopy` (`.look/playthrough/leg3checkc/`): verdict `pass`, not under load
   (1.35 → 5.86 of 20), every checkpoint from the barrier through the three sections, Canopy reached, the cloth taken and
   home at the West landing, no recovery, no error; the end still has Buddy on the West landing's apron by its board.
-- **`npm run test:net`**: 288 of 288 (the 269 before and the 19 of `leg rejoin`).
+- **`npm run test:net`**: 292 of 292 (the 269 before and the 23 of `leg rejoin`).
 - **Reconnect** (`leg rejoin`): the `canopy-mid` seed doc is written to the server store before any page opens, as
   `look --rail-seed` writes it (POST /jump builds an unprebuilt stage in a worker with a 60 s limit, and canopy-mid takes
   longer than that on HOTBOX: 500; production serves prebuilt seeds). The case has its own 8-minute deadline, the seed
   build included. "A round trip" is a bay train's whole round trip to head 1, dwells included (`cycleTicks` over the
-  line's stops: 1,928 ticks). Every count is exact, against the catalog and the pickup. The seed: one section laid,
+  line's stops: 1,928 ticks). Every count is exact, against the catalog and the pickup (a yoked back's 16 rails), at
+  each of seven checkpoints: the leg row (`laid`, `logs`, `rails`, `start`, `loadedLogs`, `loadedRails`, `heldLogs`,
+  `heldRails`), the rack, the kit aboard and the carrier's back on the server, and on each tab its own mirror of the
+  back and of every bay train's kit (the tabs' leg row and rack are not in their probes; they share the room's hash).
+  The seed: one section laid,
   nothing fed or held, the rack empty, train 10 carrying section 2's bill (20 logs, 20 rails). A second tab joins; a
   round trip later head 1's rack holds section 2's whole bill (20 / 20) and only train 9 carries kit, section 3's
   (20 / 20). The first tab takes 16 rails: its back 16 (`legRails` 16), Leg `heldRails` 16 and the rack debited by
@@ -778,8 +782,10 @@ proof is the net suite's `leg rejoin` case (`dev/peer-test/ws-railway.ts` `railw
   20 / 20), the rack (20 / 4) and the back (16, `legRails` 16) are exactly what they were; both tabs' mirrors match the
   server's back again, its own adapter shows the 16 rails, and a further round trip moves nothing. The review's replay
   (`test/loop-graph.test.ts`) feeds the case a held count stuck at 0, a rack never debited, an empty train marked as
-  carrying kit, a rack restored empty, and two mirrors agreeing on the pre-pickup back, and the case stops on each.
-  `npm run test:net` (re-run on the final case, not under load): 288 of 288. What the rules do with the carried rails
+  carrying kit, a rack restored empty, two mirrors agreeing on the pre-pickup back, a short pickup, a rail fed during
+  the pickup, a missing log or rail load, logs held at the pickup, stale train mirrors at the seed or after the rejoin,
+  and a mirror that regresses after the last round trip, and the case stops on each. `npm run test:net` on the final
+  case: 292 of 292 (another job held about 57% of the CPUs). What the rules do with the carried rails
   (read in `server/src/host/host-maintenance.ts`, not decided here): they stay on the leaver's back and counted held
   through `railBeamGraceS` (180 s); past it `legKitRelease` takes them off the held count only (the rails stay on the
   back, and the leg loads as many again). The grace clock is the host's memory, so a restart starts it again for anyone
