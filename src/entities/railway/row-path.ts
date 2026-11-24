@@ -21,6 +21,8 @@ const STEP = 5;
 
 type RowPath = { line: number; table: Float64Array; len: number };
 export const BAY_CUT_END = WORLD_LINES.find((l) => l.id === 'bay')!.legs[0]!.toCm / 100;
+/** The bay row's kink at Canopy Town, metres (leg 3's buffers stand 2 m short of it; leg 6 eases it). */
+export const CANOPY_KINK = WORLD_LINES.find((l) => l.id === 'bay')!.legs[1]!.toCm / 100;
 function build(id: 'ns' | 'bay'): RowPath {
   const r = WORLD_LINES.find((l) => l.id === id)!,
     end = r.fromCm + r.lengthCm;

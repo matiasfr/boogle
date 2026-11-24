@@ -61,6 +61,7 @@ import { crossoverPlan, seaCrossovers, uncut, type RailCut } from '../../place/j
 import { KIT } from '../../place/turnout.ts';
 import {
   BAY_CUT_END,
+  CANOPY_KINK,
   ROW_PLATFORM,
   ROW_TRACK,
   rowAt,
@@ -73,6 +74,7 @@ import {
 import { islandGround, ringIslandNear } from '../ring-island/state.ts';
 import { GATE_AT, GORGE_DECK, PICK_AT, TOWN_PAD, gorgeAt } from './massing.ts';
 import { bellPads } from './massing-bell.ts';
+import { canopyGround } from './massing-canopy.ts';
 import { AREA_CENTRES, LEG2_TEXT } from './leg2-layout.ts';
 import { areaLabels } from './state.ts';
 import type { GreyBox } from './boxes.ts';
@@ -98,7 +100,10 @@ const FEED = 'Feed the frame',
   SEEDS_NOT_YET = "The incline isn't laid yet",
   CONNECTED = 'Connected (placeholder)',
   HOME_LINE = 'LINE TO HOME (WEST LANDING)',
-  BUILT_FROM_HOME = 'BUILT FROM HOME';
+  BUILT_FROM_HOME = 'BUILT FROM HOME',
+  // Greybox leg 3's (docs/plans/greybox-leg3.md, "Controls and copy"; placeholders, none The Boogler's).
+  TAKE_CLOTH = 'Take the glider cloth',
+  CLOTH_NOT_YET = "The line to Canopy isn't laid yet";
 export const LEG_OBJECTIVES = {
   first: "Build the line to High Gorge: section 1 of 4. The frame is on Ring Island's west platform.",
   next: (n: number, of: number) => `Build the line to High Gorge: section ${n} of ${of}. Ride line 2 to the railhead.`,
@@ -109,7 +114,11 @@ export const LEG_OBJECTIVES = {
   incline: 'Build the incline to Bell Rock',
   seeds: 'Take the crystal seeds',
   bay: 'Build the bay line from the West landing',
-  ride: 'Ride the bay line to Bell Rock',
+  // Greybox leg 3's (docs/plans/greybox-leg3.md, "Controls and copy"; placeholders).
+  canopyGate: 'Open the barrier to Canopy',
+  canopy: 'Build the line to Canopy Town',
+  cloth: 'Take the glider cloth',
+  home: "Ride home: the next line isn't built yet",
 } as const;
 /** The steel loop's steps, from the rivet to the longer boiler (docs/plans/ring-island-build2.md, section 1). Draft
  * copy for the owner to reword (docs/agent-calls.md; decision d-2026-11-18-decisions-page-rail). */
@@ -128,7 +137,8 @@ const GREY = '#9c9ea1',
   BED = '#77705f',
   DANGER = '#c8402c',
   TIMBER = '#5e574a',
-  CLEAR = '#3c8f4a';
+  CLEAR = '#3c8f4a',
+  CLOTH_LIT = '#e8dcc0';
 const SEG = 10,
   SEA_BED = -8;
 
@@ -197,6 +207,12 @@ type LegSpec = {
   row: boolean;
   /** Stretches with no sea bents (the bore, the level's own beds on posts and Bell Rock's rock). */
   noBents: readonly (readonly [number, number])[];
+  /** It runs on from the end of another leg's deck on the same line (leg 3 from the bay cut's at Bell Rock): no
+   * buffers and no crossover at its start. */
+  joins?: true;
+  /** Solid land under it that is not Ring Island's (Canopy isle): its height at (x, z), or null over the sea. A bent
+   * stands on it and a head's steps come down to it. */
+  ground?: (x: number, z: number) => number | null;
 };
 const sectionEnds = (leg: RouteLeg) => leg.sections.map((sec) => legS(leg, sec.toCm) / 100);
 /** The stack leg (RAIL_LEGS slot 0): line 2 on from Ring Island. */
@@ -232,9 +248,10 @@ function stackSpec(): LegSpec {
     noBents: [],
   };
 }
-/** A leg of its own row line (greybox leg 2: the incline, the bay cut). `first`: section 1's frame and rack, metres
- * along their line, the side the rails are on and (when not the leg's own) the line's geometry; `start`, where its
- * rails start; `face`, its buffers' face at the destination. */
+/** A leg of its own row line (greybox leg 2: the incline, the bay cut; leg 3: Bell Rock to Canopy). `first`: section
+ * 1's frame and rack, metres along their line, the side the rails are on and (when not the leg's own) the line's
+ * geometry; `start`, where its rails start; `face`, its buffers' face at the destination; `more`, its end board's
+ * name and the fields a leg that joins another's deck sets. */
 type FirstSite = readonly [s: number, toTrack: 1 | -1, geo?: Geo];
 function rowSpec(
   id: string,
@@ -242,6 +259,7 @@ function rowSpec(
   start: number,
   face: (R: readonly number[]) => number,
   noBents: readonly (readonly [number, number])[],
+  more: Partial<Pick<LegSpec, 'name' | 'joins' | 'ground'>> = {},
 ): LegSpec {
   const k = RAIL_LEGS.findIndex((l) => l.id === id),
     leg = RAIL_LEGS[k]!,
@@ -268,6 +286,7 @@ function rowSpec(
     racks: leg.sections.map((_s, j) => site(legRack(leg, j), j, first.rack, 18)),
     row: true,
     noBents,
+    ...more,
   };
 }
 /** Line 2's High Gorge stop, metres along line 2, and the line 2 kit car's offset behind it there (railway-route.ts). */
@@ -289,6 +308,18 @@ const SPECS: readonly LegSpec[] = [
     [0, 60],
     [1150, 1240],
   ]),
+  // Bell Rock to Canopy (greybox-leg3.md, step 6): on from the bay cut's deck end (its buffers stand until this leg's
+  // first lay), the frame and rack on Bell Rock's outward upper platform (railway-route.ts FIRST_SITE); over the strait
+  // on bents, onto Canopy isle's bank (no bents on the isle, steps down at head 2); buffers 2 m short of the kink. No
+  // bents on Bell Rock (to s 1341, where the row leaves the rock).
+  rowSpec(
+    'bell-canopy',
+    { frame: [1229, -1], rack: [1219, -1] },
+    BAY_CUT_END + 1.8,
+    () => CANOPY_KINK - 2,
+    [[1150, 1341]],
+    { name: 'LINE TO CANOPY TOWN', joins: true, ground: canopyGround },
+  ),
 ].filter((sp) => legBuilt(sp.k));
 
 /** Bell Rock (greybox leg 2): the seeds post, the Canopy barrier (RAIL_GATES[1], shut until leg 3 is built: it stands
@@ -300,13 +331,36 @@ const SEEDS = RAIL_GRANTS.findIndex((g) => g.id === 'seeds'),
   canopyIndex = RAIL_LEGS.findIndex((l) => l.id === 'bell-canopy'),
   canopyLeg = RAIL_LEGS[canopyIndex]!,
   canopyGeo = rowGeo(canopyLeg.line),
-  CANOPY_SITE = siteAt(legFrame(canopyLeg, 0), canopyGeo, 1229, -1),
-  canopyRack = siteAt(legRack(canopyLeg, 0), canopyGeo, 1219, -1);
+  CANOPY_SITE = siteAt(legFrame(canopyLeg, 0), canopyGeo, 1229, -1);
 const STALLS: Readonly<Record<string, string>> = {
   'bell.pad-gorge': 'incline',
   'bell.pad-ring': 'incline',
   'bell.pad-home': 'bay-cut',
+  'bell.pad-canopy': 'bell-canopy',
 };
+/** Canopy Town (greybox leg 3, step 6): the cloth post on the homeward deck round the buffers (RAIL_GRANTS `cloth`)
+ * and the Notch barrier across the row at its kink (RAIL_GATES `notch`, shut until leg 6), 10 m apart (call 20); its
+ * board is the massing's (src/content/levels/leg3.ts). The barrier is two, one on each track, facing the line's
+ * straight heading at the stop (the drawn row bends through the kink here: railway/row-path.ts). */
+const CLOTH = RAIL_GRANTS.findIndex((g) => g.id === 'cloth'),
+  CLOTH_AT = metres(RAIL_GRANTS[CLOTH]!.at),
+  NOTCH = RAIL_GATES.findIndex((g) => g.id === 'notch'),
+  NOTCH_AT = metres(RAIL_GATES[NOTCH]!.at),
+  NOTCH_SITES = (() => {
+    const s = legS(canopyLeg, canopyLeg.sections.at(-1)!.toCm) / 100;
+    canopyGeo.at(s, P);
+    // `local(site, a, t)`: a across the row (the panel's length), t along it; the panel stands 1.35 m back of t 0.
+    return [-ROW_TRACK, ROW_TRACK].map((lat): Site => ({
+      x: NOTCH_AT.x - P.uz * lat + P.ux * 1.35,
+      y: NOTCH_AT.y,
+      z: NOTCH_AT.z + P.ux * lat + P.uz * 1.35,
+      hx: -P.uz,
+      hz: P.ux,
+      tx: P.ux,
+      tz: P.uz,
+      yaw: Math.atan2(-P.uz, P.ux),
+    }));
+  })();
 /** The board at the end of Bell Rock's upper in-half platform, where the bay line will arrive (the review's finding
  * 1): on the bay row's bed 19.5 m in from the kink, facing the deck, from the incline's last lay to the bay cut's. */
 const HOME_BOARD_S = BAY_CUT_END - 19.5;
@@ -401,7 +455,8 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     // (railway/halts-view.ts rowSpot), listing the line's open stops by their catalog names.
     const halts = sp.row ? RAIL_LINES[sp.leg.line]!.halts : [],
       departures = halts.flatMap((h, stop) => {
-        if (!h.leg) return [];
+        // Each leg stands its own halts' boards (the bay line's are the bay cut's and leg 3's).
+        if (h.leg?.slot !== sp.k) return [];
         const at = h.s / 100 - (stop === 0 ? 14 : h.end?.kind === 'stub' ? 5 : 4);
         return [{ stop, at, board: sign(2.6, 1.3, 1.4, 'two', 512) }];
       });
@@ -472,7 +527,11 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         if (Math.round((s0 - sp.from) / SEG) % 2 === 0 && bentFree(s0)) {
           const y = geo.y(s0);
           geo.world(s0, mid, q);
-          const foot = Math.max(SEA_BED, ground.onIsland(q.x, q.z) ? ground.islandH(q.x, q.z) : SEA_BED);
+          const foot = Math.max(
+            SEA_BED,
+            ground.onIsland(q.x, q.z) ? ground.islandH(q.x, q.z) : SEA_BED,
+            sp.ground?.(q.x, q.z) ?? SEA_BED,
+          );
           if (foot < y - 1.5) {
             geo.at(s0, P);
             const yaw = Math.atan2(P.ux, P.uz);
@@ -491,7 +550,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       // cross to the homeward track as they leave). Each a diagonal track between the two.
       const swing = (w: RowSwing | null) => w && track(w.s0, w.s1, w.from, w.to),
         open = halts[sp.leg.railheadHalt + Math.min(laid, n) - 1]?.end;
-      swing(rowStartCrossing(sp.leg.line));
+      if (!sp.joins) swing(rowStartCrossing(sp.leg.line));
       if (open) swing(rowEndSwing(open));
     }
     /** The deck's walkable top as far as the laid end (a section still laying is drawn, not yet solid). A row's
@@ -555,7 +614,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         face = laid === 0 ? end - 0.5 : end - 1.8;
       for (const t of tracks) {
         if (!through) box(face, face + 0.6, t, 1.4, 1.4, 2.6, 1.2, GREY_DARK);
-        if (sp.row) box(sp.from, sp.from + 0.6, t, 1.4, 1.4, 2.6, 1.2, GREY_DARK);
+        if (sp.row && !sp.joins) box(sp.from, sp.from + 0.6, t, 1.4, 1.4, 2.6, 1.2, GREY_DARK);
       }
       // The heads that are stops now: head j from its section's lay until it closes behind two lays on; the last
       // stays (the request stop: the stack's `Stack halt`, the incline's and the bay cut's one head).
@@ -583,9 +642,12 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
             });
           }
           // The sea ramp (the deck is 4 m over open water): a landing behind the platform's home end, then a slip
-          // down along the line to under the surface, at the Ring ramps' pitch.
-          const ramp = side * (plat.lat + plat.w / 2 + 1),
-            drop = geo.y(r) + plat.up + 1.3;
+          // down along the line to under the surface, at the Ring ramps' pitch; on land (head 2 on Canopy isle),
+          // steps down to the ground.
+          const ramp = side * (plat.lat + plat.w / 2 + 1);
+          geo.world(r - plat.len + 3, ramp, q);
+          const land = sp.ground?.(q.x, q.z),
+            drop = geo.y(r) + plat.up - (land ?? -1.3);
           box(r - plat.len, r - plat.len + 3, ramp, plat.up, plat.up, 2, 0.4, GREY);
           box(r - plat.len + 3, r - plat.len + 3 + drop / 0.54, ramp, plat.up, plat.up - drop, 2, 0.3, GREY);
         }
@@ -853,6 +915,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     yard(r);
     gorge(r);
     bell(r);
+    canopy(r);
     things.commit();
     note(r);
   }
@@ -981,14 +1044,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     if (!nearBell()) return;
     if (!(r.grants & (1 << SEEDS)))
       things.box(SEEDS_AT.x, SEEDS_AT.y + 0.7, SEEDS_AT.z, 0.5, 1.4, 0.5, done(r, 'incline') ? '#4fd1c5' : GREY_DARK);
-    const build = legRow(r.wd, canopyIndex);
-    if (done(r, 'bay-cut') && build.laid === 0) {
-      framePosts(CANOPY_SITE);
-      load(CANOPY_SITE, build.logs, build.rails);
-      const stock = rail(r.wd);
-      const active = legOpen(r.wd, canopyIndex);
-      pile(canopyRack, active ? stock.depot : 0, active ? stock.depotRails : 0);
-    }
+    // Frame 1 and rack 1 are the leg's own site (site(), while it is open); the barrier stands on that frame.
     barrier(CANOPY_SITE, !!(r.gates & (1 << CANOPY)));
     for (const pad of bellPads) {
       const leg = STALLS[pad.id],
@@ -1025,14 +1081,42 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       ]);
     }
   }
-  /** Leg 2's step once the incline's barrier is open: build the incline, take the seeds, build the bay line, ride it
-   * (beats 3 to 10; the seeds first, though the bay cut does not need them). */
+  const nearCanopy = () => {
+    const c = AREA_CENTRES.canopy,
+      b = me.body?.position;
+    return (
+      Math.hypot(camera.position.x - c.x, camera.position.z - c.z) < 450 ||
+      (!!b && Math.hypot(b.x - c.x, b.z - c.z) < 450)
+    );
+  };
+  /** Canopy Town, while you are near it: the cloth post (until taken; lit once the leg is laid) and the Notch barrier,
+   * shut (its leg is leg 6's). */
+  function canopy(r: NonNullable<ReturnType<typeof rows>>) {
+    if (!nearCanopy()) return;
+    if (!(r.grants & (1 << CLOTH)))
+      things.box(
+        CLOTH_AT.x,
+        CLOTH_AT.y + 0.7,
+        CLOTH_AT.z,
+        0.5,
+        1.4,
+        0.5,
+        done(r, 'bell-canopy') ? CLOTH_LIT : GREY_DARK,
+      );
+    for (const s of NOTCH_SITES) barrier(s, !!(r.gates & (1 << NOTCH)));
+  }
+  /** Leg 2's steps once the incline's barrier is open: build the incline, take the seeds, build the bay line (beats 3
+   * to 10; the seeds first, though the bay cut does not need them); then leg 3's (greybox-leg3.md, "Controls and
+   * copy"): open the Canopy barrier, build the line, take the cloth, ride home. */
   function leg2Objective(r: NonNullable<ReturnType<typeof rows>>) {
     if (!incline) return '';
     if (!done(r, 'incline')) return LEG_OBJECTIVES.incline;
     if (!(r.grants & (1 << SEEDS))) return LEG_OBJECTIVES.seeds;
     if (!bay) return '';
-    return done(r, 'bay-cut') ? LEG_OBJECTIVES.ride : LEG_OBJECTIVES.bay;
+    if (!done(r, 'bay-cut')) return LEG_OBJECTIVES.bay;
+    if (!(r.gates & (1 << CANOPY))) return LEG_OBJECTIVES.canopyGate;
+    if (!done(r, 'bell-canopy')) return LEG_OBJECTIVES.canopy;
+    return r.grants & (1 << CLOTH) ? LEG_OBJECTIVES.home : LEG_OBJECTIVES.cloth;
   }
   /** The objective line's text, to the play record (no on-screen line on the route). */
   function note(r: NonNullable<ReturnType<typeof rows>>) {
@@ -1146,13 +1230,27 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
             : { ...target, blocked: SEEDS_NOT_YET },
         );
       }
-      const canopy = gateLeg(CANOPY);
-      if (!(r.gates & (1 << CANOPY)) && within(p, CANOPY_SITE, RAIL_GATES[CANOPY]!.at.reach)) {
-        const target = { id: 'railway-leg-canopy', verb: OPEN_GATE, at: v3(CANOPY_SITE, CANOPY_SITE.y + 1.6) };
+      // Leg 3's barriers: the Canopy barrier on its frame at Bell Rock, the Notch barrier at Canopy (leg 6's: it refuses
+      // in view, the cloth held). Each opens once its leg is open with its key held.
+      const gate = (k: number, id: string, at: { x: number; y: number; z: number }) => {
+        if (r.gates & (1 << k) || !within(p, at, RAIL_GATES[k]!.at.reach)) return;
+        const target = { id, verb: OPEN_GATE, at: v3(at, at.y + 1.6) },
+          shuts = gateLeg(k);
         out.push(
-          canopy && legOpen(wd, canopy.leg) && r.grants & (1 << RAIL_GATES[CANOPY]!.needs)
-            ? { ...target, run: () => void adapter.openGate(CANOPY) }
+          shuts && legOpen(wd, shuts.leg) && r.grants & (1 << RAIL_GATES[k]!.needs)
+            ? { ...target, run: () => void adapter.openGate(k) }
             : { ...target, blocked: NO_LINE },
+        );
+      };
+      gate(CANOPY, 'railway-leg-canopy', CANOPY_SITE);
+      gate(NOTCH, 'railway-leg-notch', NOTCH_AT);
+      // Canopy Town: the glider cloth refuses until leg 3 is laid.
+      if (!(r.grants & (1 << CLOTH)) && within(p, CLOTH_AT, RAIL_GRANTS[CLOTH]!.at.reach)) {
+        const target = { id: 'railway-leg-cloth', verb: TAKE_CLOTH, at: v3(CLOTH_AT, CLOTH_AT.y + 1.6) };
+        out.push(
+          done(r, 'bell-canopy')
+            ? { ...target, run: () => void adapter.takeGrant(CLOTH) }
+            : { ...target, blocked: CLOTH_NOT_YET },
         );
       }
       return out;

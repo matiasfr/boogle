@@ -10,11 +10,15 @@ export const LEG2_TEXT: Readonly<Record<string, readonly string[]>> = {
   'bell.pad-quay': stall('Port Quay'),
   'bell.market': ['Market board (placeholder)'],
   'west.board': ['LINE TO BELL ROCK', 'UNDER CONSTRUCTION'],
+  // Greybox leg 3 (docs/plans/greybox-leg3.md, "Controls and copy"): beside the Notch barrier at Canopy Town's buffers.
+  'canopy.notch': ['LINE TO LANTERN NOTCH', 'LATER'],
 };
 const westLength = Math.hypot(-0.6155, -0.7881);
 export const AREA_CENTRES = {
   gorge: { x: -103, z: -1988 },
   bell: { x: -50, z: -850 },
   west: { x: 801 + (-0.6155 / westLength) * 20, z: 10 + (-0.7881 / westLength) * 20 },
+  // Canopy isle's map centre (docs/world/map-prototypes.html, `canopy-isle`): the isle, its islets and Canopy Town.
+  canopy: { x: -1060, z: -300 },
 } as const;
 export { PAD_SIZE } from '../../prefab/greybox-constants.ts';

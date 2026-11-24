@@ -533,8 +533,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   }
   // The greybox route's own lines (docs/plans/greybox-leg2.md, step 4): a lever on each built halt's outward
   // platform, at its stop, for the way its trains leave there (out from the start, home from the line's end, on
-  // from a head once passed), and at each head a second on the homeward platform for the way home once passed. Each
-  // stands within the server's 12.6 m reach of the platform point it is judged from (railway-lines.ts haltPlatform):
+  // from a head once passed), and at each head (and a destination the line has grown past) a second on the homeward
+  // platform for the way home once passed. Each stands within the server's 12.6 m reach of the platform point it is judged from (railway-lines.ts haltPlatform):
   // at the start 10 m short of the stop, at the end 8.5 m short (the West landing's, High Gorge's and Bell Rock's
   // lower level's reserved lever ends, leg2.ts, are 17 to 27 m from their stops, beyond it). No collider.
   const rowSpot = (id: number, up: boolean, s: number, lat: number, need: () => boolean, way: () => -1 | 1): Spot => {
@@ -556,7 +556,12 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     if (h.end?.kind === 'stub') {
       spots.push(rowSpot(id, false, at, ROW_PLATFORM, () => true, on));
       spots.push(rowSpot(id, true, at, -ROW_PLATFORM, passed, HOME));
-    } else spots.push(rowSpot(id, false, h.stop === 0 ? at - 10 : at - 8.5, ROW_PLATFORM, () => true, on));
+    } else {
+      spots.push(rowSpot(id, false, h.stop === 0 ? at - 10 : at - 8.5, ROW_PLATFORM, () => true, on));
+      // A destination the line has grown past (Bell Rock on the bay line, once leg 3 lays): homeward trains stand at
+      // its homeward platform, so a second lever there calls them home.
+      if (h.stop > 0) spots.push(rowSpot(id, true, at - 8.5, -ROW_PLATFORM, passed, HOME));
+    }
   }
   const ringSpots = spots.filter((x) => x.ring);
   // The stack line's departure boards (leg 1 step 4b; the design review's answer g): the halt map on a grey stand at

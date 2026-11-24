@@ -95,10 +95,12 @@ export function haltKitContent() {
       });
   }
   // The greybox route's own lines (docs/plans/greybox-leg2.md, step 4): a lever on each built halt's outward platform,
-  // and on each head's homeward one (right-hand running), stood by the view (railway/halts-view.ts rowSpot).
+  // and on each head's and later halt's homeward one (right-hand running), stood by the view (railway/halts-view.ts
+  // rowSpot).
   for (const [id, h] of RAIL_HALTS.entries()) {
     if (!h.leg || !isRowLine(h.line)) continue;
-    for (const up of h.end?.kind === 'stub' ? [false, true] : [false])
+    // A stub head's homeward lever, and a destination's for once the line grows past it (Bell Rock on the bay line).
+    for (const up of h.end?.kind === 'stub' || h.stop > 0 ? [false, true] : [false])
       entries.push({
         id: `halt-row-lever-${id}-${up ? 'up' : 'down'}`,
         prefab: 'railway.halt-lever',

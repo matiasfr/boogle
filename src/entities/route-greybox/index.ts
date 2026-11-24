@@ -1,9 +1,9 @@
 // The greybox route's massing, resident by distance (docs/plans/greybox-route.md, leg 1 step 4; prerequisite P1: one
 // area's colliders and near mesh at a time). Each area in AREAS is built and mounted once the camera or your body is
 // within 400 m of its centre and freed past 550 m; the horizon silhouette stays for the rest. High Gorge's is
-// ./massing.ts; leg 2's places (docs/plans/greybox-leg2-massing.md) join the list as their steps land. The stack
-// leg's own views (the deck, frames, racks, signs and prompts) are ./leg-view.ts's, mounted by the railway's works
-// seam. Local scenery: no state, no sync, no saves. ?blockout=world draws its own Gorge, so it gets none of this.
+// ./massing.ts; leg 2's places (docs/plans/greybox-leg2-massing.md) and leg 3's Canopy (greybox-leg3.md, step 6) join
+// the list as their steps land. The legs' own views (the deck, frames, racks, signs and prompts) are ./leg-view.ts's,
+// mounted by the railway's works seam. Local scenery: no state, no sync, no saves. ?blockout=world draws its own Gorge, so it gets none of this.
 import { productionRailway } from '../../proto/flags.ts';
 import { background } from '../../async.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../../entity/entity.ts';
@@ -15,6 +15,7 @@ import { precompile } from '../../render/precompile.ts';
 import { gorgePlacements } from '../../prefab/instantiate.ts';
 import { bellExtras, bellMassing } from './massing-bell.ts';
 import { westExtras, westMassing } from './massing-west.ts';
+import { canopyExtras, canopyMassing } from './massing-canopy.ts';
 import { AREA_CENTRES } from './leg2-layout.ts';
 import { drawGreyBoxes } from './boxes.ts';
 import type { Placement } from '../../prefab/types.ts';
@@ -35,6 +36,7 @@ const AREAS: readonly Area[] = [
   { id: 'gorge', centre: AREA_CENTRES.gorge, build: () => gorgePlacements },
   { id: 'bell', centre: AREA_CENTRES.bell, build: bellMassing, extras: bellExtras },
   { id: 'west', centre: AREA_CENTRES.west, build: westMassing, extras: westExtras },
+  { id: 'canopy', centre: AREA_CENTRES.canopy, build: canopyMassing, extras: canopyExtras },
 ];
 
 if (productionRailway && new URLSearchParams(location.search).get('blockout') !== 'world') {
