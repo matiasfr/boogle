@@ -72,23 +72,23 @@ export function createLiftOrWait(overlaps: Overlaps) {
     body: Lifted | null | undefined,
     o: { lift: boolean },
   ): Clearing<S> {
-    let waiting: readonly S[] = [];
-    const settle = (set: readonly S[], b: Lifted | null | undefined) => {
+    /** Settles `set` for body `b`: what still waits. At the switch the solids that hold the body are the set; retried
+     * (`whole`), the set stays whole while any of it holds. */
+    const settle = (set: readonly S[], b: Lifted | null | undefined, whole: boolean) => {
       const held = b ? set.filter((s) => holds(s, b.position)) : [];
-      const lifted = !!b && held.length > 0 && o.lift && lift(set, held, b);
-      // At the switch the solids that hold the body are the set; retried, the set stays whole while any of it holds.
-      waiting = held.length && !lifted ? (set === waiting ? set : held) : [];
-      for (const s of set) if (!waiting.includes(s)) s.on();
-      return held.length ? (lifted ? 'lifted' : 'wait') : 'clear';
+      const left = b && held.length && !(o.lift && lift(set, held, b)) ? (whole ? set : held) : [];
+      for (const s of set) if (!left.includes(s)) s.on();
+      return { held: held.length > 0, left };
     };
-    const kind = settle(solids, body);
+    const first = settle(solids, body, false);
+    let waiting = first.left;
     return {
-      kind,
+      kind: !first.held ? 'clear' : waiting.length ? 'wait' : 'lifted',
       get waiting() {
         return waiting;
       },
       retry(b) {
-        if (waiting.length) settle(waiting, b);
+        if (waiting.length) waiting = settle(waiting, b, true).left;
         return waiting.length > 0;
       },
     };

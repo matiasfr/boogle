@@ -160,12 +160,13 @@ const rowGeo = (ln: number): Geo => ({
 });
 
 const metres = (p: { x: number; y: number; z: number }) => ({ x: p.x / 100, y: p.y / 100, z: p.z / 100 });
-/** A deck slab's box, as place/land.ts slab builds its collider: 0.4 m thick, its top from (a, ya) to (b, yb). */
 const boxTurn = new THREE.Quaternion(),
   boxEuler = new THREE.Euler(0, 0, 0, 'YXZ');
-/** A greybox box (yaw, then pitch about its x, as its collider is built) as a physics shape. */
+/** A greybox box's turn (yaw, then pitch about its x), as its collider is built. */
+const boxQuat = (b: GreyBox) => boxTurn.setFromEuler(boxEuler.set(-(b.pitch ?? 0), b.yaw, 0)).clone();
+/** A greybox box as a physics shape, placed in the world. */
 function boxShape(b: GreyBox): Shape {
-  const q = boxTurn.setFromEuler(boxEuler.set(-(b.pitch ?? 0), b.yaw, 0));
+  const q = boxQuat(b);
   return {
     kind: 'box',
     hx: b.w / 2,
@@ -175,6 +176,7 @@ function boxShape(b: GreyBox): Shape {
     rotation: { x: q.x, y: q.y, z: q.z, w: q.w },
   };
 }
+/** A deck slab's box, as place/land.ts slab builds its collider: 0.4 m thick, its top from (a, ya) to (b, yb). */
 function slabBox(
   a: { x: number; z: number },
   b: { x: number; z: number },
@@ -445,8 +447,6 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     gatePlate = sign(3, 1, 2.3, 'none', 384),
     townBoard = sign(3.2, 1.3, 1.2, 'two', 512),
     homeBoard = sign(5.2, 1.4, 0.9, 'two', 768);
-  const euler = new THREE.Euler(0, 0, 0, 'YXZ'),
-    quat = new THREE.Quaternion();
 
   // ---------------------------------------------------------------- one leg's deck, pieces and signs
   function legView(sp: LegSpec) {
@@ -586,6 +586,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
             s1 = next;
           }
         geo.world(s1, mid, b);
+        // Copies: a and b are rewritten for the next slab.
         const y0 = geo.y(s0),
           y1 = geo.y(s1),
           from = { ...a },
@@ -694,13 +695,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
           shapes: [boxShape(b)],
           on: () =>
             standing.bodies.push(
-              addStatic(
-                { kind: 'box', hx: b.w / 2, hy: b.h / 2, hz: b.d / 2 },
-                { x: b.x, y: b.y, z: b.z },
-                quat.setFromEuler(euler.set(-(b.pitch ?? 0), b.yaw, 0)).clone(),
-                undefined,
-                owner,
-              ),
+              addStatic({ kind: 'box', hx: b.w / 2, hy: b.h / 2, hz: b.d / 2 }, b, boxQuat(b), undefined, owner),
             ),
         })),
         me.body,
