@@ -17,6 +17,17 @@ Seeded on 14 November 2026 from the plans' status lines, the orchestrator state,
 
 Reconciled on 16 November 2026 at `3720b4c3b` (#1905, world v52), on the owner's word that too much was open at once: P1 went from eleven rows to four. The three choice-and-payoff rows lead (the town economy, garage choices, the first-line decisions), with the Round because the economy's houses stand on its plots. Seven rows moved from P1 to P2 or P3 with their owner words unchanged; which ones, and that the demotions are the orchestrator's reading of his call, is in the [decision](decisions-process.md#d-2026-11-16-focus-choice-and-payoff). Two rows left because their work shipped and the remainder already had rows: the rotunda (steps 1–5, #1880 and #1890; step 6 is garage choices; its quiet-machine frame timing is in the [state file's Leftovers](agents/orchestrator-leftovers.md#leftovers)) and Grant's 14 November queue (D1, D3, D4, D5 and C1–C7 shipped, #1864–#1903; what is left is the first-line decisions row and the P3 batch). The town economy and traveller rows were checked against the code; the other rows' next steps come from a check of each plan against main (its status line now carries the PR numbers).
 
+## The checkpoint we work toward
+
+**Canopy and the first real choice** (set 24 November 2026 on the owner's "Set a good checkpoint to work towards"; the orchestrator's pick, his to change). It is where the P1 focus, choice and payoff ([16 November](decisions-process.md#d-2026-11-16-focus-choice-and-payoff)), lands: garage step 4 is the payoff, and it waits only on greybox leg 3 ([call](decisions-rewards.md#d-2026-11-19-garage-step4-waits-for-leg3)). Done when:
+
+1. Greybox leg 3 is playable: steps 6 and 7 on main and Checkpoints G and C proved ([greybox-leg3](plans/greybox-leg3.md)): a room opens the Canopy barrier, lays the bay line to Canopy Town, takes the glider cloth and rides home.
+2. Garage step 4 is on main ([garage-step4](plans/garage-step4.md)): at the Roundhouse a room picks Quick or Strong per line, and Strong's hold on the bay line saves a measured amount (under 15 s solo at `bay-reached` goes to him with the table first, as the leg 3 plan says).
+3. The bot segment `--from bay-reached --to canopy` passes with a choice made.
+4. He plays it; nothing waits for that.
+
+Free job slots go to this checkpoint's next step first; other rows fill what is left, by rank.
+
 ## Committed work
 
 | Rank | Effort | Status | Plan or source | Next step | Owner words |
