@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-24 · Every cliff and rock wall in the world, the shore's included, takes the Chunky Sunshine kit's treatment, so they read as one palette and one world ([entry](#d-2026-11-24-chunky-every-cliff))
 - 2026-11-24 · The canyon kit's faces near the bridge sit flush with the wall, so the alcove stays in view from the top of the climb ([entry](#d-2026-11-24-canyon-faces-flush))
 - 2026-11-24 · The canyon mesh kit is Chunky Sunshine blocks: deep bevels, big sandstone faces, broken rim caps ([entry](#d-2026-11-24-canyon-kit-chunky-sunshine))
 - 2026-11-18 · The chopped tree: a V notch that deepens to a thin hinge, pale fresh wood inside, pale chips, a few lying at the foot ([entry](#d-2026-11-18-chop-v-notch))
@@ -64,6 +65,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-11-01 · night stays light, moonlit ([entry](#d-2026-11-01-night-stays-light-moonlit))
 
 ## Decided
+
+- <a id="d-2026-11-24-chunky-every-cliff"></a>**2026-11-24, the Chunky Sunshine kit for every cliff** (owner, 24 November 2026, in the live session, after the canyon kit's flush faces shipped (#2355): "Okay, that looks really great. Uh, do we have queued up to basically apply the same art treatment to all of the walls in the environment, are all the cliffs, not just one specific part? For example, now it feels inconsistent that we have these walls and then different ones near the shore. Um, they should feel like they're from the same sort of stylistic palate. Uh, or the same world at least."). Answers terrain-clean Part 3's "where next": the kit goes to every cliff and rock wall in the world, the shore's included, so they share one stylistic palette. Orchestrator's reading: a census of every cliff first (where rock shows, what a player sees from the paths and the sea, the draw and triangle budget), then area by area, each with matched stills; the [14 November](#d-2026-11-14-terrain-simple-geometry-cleanup-first) rules stand (simple walkable ground, the kit is scenery with colliders, never a new way up).
 
 - <a id="d-2026-11-24-canyon-faces-flush"></a>**2026-11-24, the canyon kit's faces near the alcove sit flush** (owner, 24 November 2026, in the live session, asked whether the faces near the bridge should sit flush with the wall since they hide most of the alcove's bracket from the top of the climb: "Yeah, flush with the wall is fine"). The faces near the bridge and alcove sit flush with the wall so the alcove stays in view; the rest of the kit (#2337) is unchanged.
 

@@ -13,6 +13,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 | Checkpoint C: the harness for its reconnect, perf and idle-seconds proofs, then the proofs | The greybox route | claude/leg3-checkpoint-c | the heartbeat, Opus medium | 2026-11-24 19:09 | running: a delegate of the heartbeat’s thread, browser-heavy; dev tooling and the plan only, not `dev/loop/graph.ts` |
 | Garage step 4, step 4: the bot makes the choice | Garage choices | claude/garage-step4-bot | the heartbeat, Opus medium | 2026-11-24 21:10 | running: a delegate of the heartbeat’s thread, browser-heavy; `dev/look/bots/railway-legs.ts` and the `rail.bring` lines of `dev/loop/graph.ts` only; ships after Checkpoint C and rebases onto it |
 | One shared lift-or-wait helper for solids near players (rule 67 as code) | Terrain clean-up | claude/solid-clearance-helper | live session, Opus medium | 2026-11-24 20:20 | running: `src/place` helper + tests, migrates the canyon kit and leg 3's lay slabs; garage step 4's screen migrates after it ships |
+| Every-cliff kit: census and plan | Terrain clean-up | claude/cliff-kit-everywhere | live session, Opus medium | 2026-11-24 21:40 | running: docs and dev census tooling only; the build waits for the clearance helper |
 
 ## Where the work stands
 
