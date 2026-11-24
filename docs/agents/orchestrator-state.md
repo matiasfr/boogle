@@ -32,7 +32,6 @@ Cleaned on 24 November: every item from 5 to 19 November is in [the log](orchest
 - Wakes: a wake ends its turn after scheduling its follow-up, starts `ship-queue` so its exit wakes nobody, first sends every finished delegate its unblocking step, and every run starts with `ListAgents` (two heartbeat sessions ran at once on 19 November; rules 62, 65).
 - CI builds the site and runs the boot probe on every ship, so a branch that cannot boot never reaches main (the 24-minute deploy failure after greybox leg 2).
 - `ci-autofix.yml`'s conflict job gets the commands it was denied, so a docs-only conflict mends itself.
-- `deploy-server.yml` skips its test job when CI was green on that commit (a server merge goes live in about 8 minutes, not 19).
 - He, or a session he is in, moves the project root to `origin/main` (`git checkout --detach origin/main`).
 
 **His to do or decide:**
