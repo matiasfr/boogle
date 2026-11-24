@@ -333,7 +333,12 @@ type RejoinFault =
   | 'stale seed train mirror'
   | 'unmarked train has phantom logs on B while A is away'
   | 'kit switches trains on the final round trip'
-  | 'seed account on B omits its rail count';
+  | 'seed account on B omits its rail count'
+  // The same sweep's other instances (fix round 3):
+  | 'kit moves to another train at the pickup'
+  | 'server has phantom rails on an unmarked train'
+  | 'seed adapter account on A omits its legRails'
+  | 'server has no carrier account before the pickup';
 
 async function replayLegRejoin(fault?: RejoinFault) {
   const pages = new Set<string>();
@@ -363,10 +368,15 @@ async function replayLegRejoin(fault?: RejoinFault) {
   }
   const train = (_world: unknown, slot: number) => {
     const switched = fault === 'kit switches trains on the final round trip' && restoredAt >= 0 && tick > restoredAt;
-    const legKit = slot === (tick === 0 || switched ? 10 : 9);
-    return { legKit, logs: legKit ? kitUnits : 0, rails: legKit ? kitUnits : 0 };
+    const moved = fault === 'kit moves to another train at the pickup' && picked;
+    const legKit = slot === (tick === 0 || switched ? 10 : moved ? 11 : 9);
+    const phantom = fault === 'server has phantom rails on an unmarked train' && picked && !legKit && slot === 11;
+    return { legKit, logs: legKit ? kitUnits : 0, rails: legKit ? kitUnits : phantom ? 1 : 0 };
   };
   const back = () => ({ rails: picked ? pickup : 0, legRails: picked ? pickup : 0 });
+  /** The server's account row: the fixture's back, or none (a fault). */
+  const serverBack = () =>
+    fault === 'server has no carrier account before the pickup' && !picked ? undefined : back();
   const world = {
     rules: { railway: { world: () => ({}) } },
     sync: {
@@ -389,7 +399,7 @@ async function replayLegRejoin(fault?: RejoinFault) {
     {
       '../look/rail-seed.ts': { writeRailSeed: async () => {} },
       '../../src/sim/railway-queries-route.ts': { legRow: leg },
-      '../../src/sim/railway-rows.ts': { train, account: back, rail: rack },
+      '../../src/sim/railway-rows.ts': { train, account: serverBack, rail: rack },
       './harness.ts': {
         waitFor: async (fn: () => Promise<boolean>) => ((await fn()) ? 0 : -1),
         ev: (page: { name: string }, fn: (arg: unknown) => unknown, arg: unknown) => {
@@ -424,7 +434,16 @@ async function replayLegRejoin(fault?: RejoinFault) {
               picked = true;
             },
             room: { peers: () => [...pages].map((peer) => ({ peer })) },
-            railAdapter: () => ({ session: { ready: true, pending: 0 }, rows: { account: { ...observed }, trains } }),
+            railAdapter: () => ({
+              session: { ready: true, pending: 0 },
+              rows: {
+                account:
+                  fault === 'seed adapter account on A omits its legRails' && page.name === 'L0' && !picked
+                    ? { rails: observed.rails }
+                    : { ...observed },
+                trains,
+              },
+            }),
             rail: () => ({
               ready: true,
               hash: 42 + observed.rails + trains.reduce((sum, t) => sum + t.rails, 0),
@@ -477,6 +496,10 @@ for (const fault of [
   'unmarked train has phantom logs on B while A is away',
   'kit switches trains on the final round trip',
   'seed account on B omits its rail count',
+  'kit moves to another train at the pickup',
+  'server has phantom rails on an unmarked train',
+  'seed adapter account on A omits its legRails',
+  'server has no carrier account before the pickup',
 ] as const) {
   test('the leg rejoin proof detects ' + fault, async () => {
     await assert.rejects(replayLegRejoin(fault), /Leg rejoin proof stopped/);
