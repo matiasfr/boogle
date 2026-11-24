@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-24 · The canyon mesh kit is Chunky Sunshine blocks: deep bevels, big sandstone faces, broken rim caps ([entry](#d-2026-11-24-canyon-kit-chunky-sunshine))
 - 2026-11-18 · The chopped tree: a V notch that deepens to a thin hinge, pale fresh wood inside, pale chips, a few lying at the foot ([entry](#d-2026-11-18-chop-v-notch))
 - 2026-11-18 · Decisions page (look): gold ghosts keep 0.6 and the 6 s breath, the garage's "have" frame goes solid; the summit vane stays gone; the Big-boiler moment's wheels start from the long boiler's rate ([entry](#d-2026-11-18-decisions-page-look))
 - 2026-11-16 · The dressing kit's small calls stand without painted risers ([entry](#d-2026-11-16-batch2-dressing-kit-without-painted-risers))
@@ -62,6 +63,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-11-01 · night stays light, moonlit ([entry](#d-2026-11-01-night-stays-light-moonlit))
 
 ## Decided
+
+- <a id="d-2026-11-24-canyon-kit-chunky-sunshine"></a>**2026-11-24, the canyon mesh kit is Chunky Sunshine blocks** (owner, 24 November 2026, in chat, shown the [previz sheet](plans/terrain-clean/previz/canyon-mesh-kit-previz.jpg) (#2330) of the canyon climb in two styles: "Chunky sunshine I like better"). The kit on the canyon wedge is built in the Chunky Sunshine style (deep bevels, big sandstone faces, broken rim caps), not the quieter Odyssey strata. Answers [terrain-clean](plans/terrain-clean.md) Part 3's style question.
 
 - <a id="d-2026-11-18-chop-v-notch"></a>**2026-11-18, the chopped tree: a V notch, pale wood, chips at the foot** (owner, 18 November 2026, in chat, on the live G20 bite: "right now we have that horizontal gray or rather brown rectangle that increases in width to the edge of the tree ... it could look like the tree is actually getting chipped away in the middle until it falls over"; offered five directions, he answered "yes do 1-3"). The rules: (1) the cut is a V notch, not a slot, deepening with each hit until a thin hinge holds the tree; (2) its faces are pale fresh wood with bark at the rim, not a dark heart; (3) the chips are pale to match, and a few lie round the foot. Not picked: the lean and creak before the fall (4) and a notch per chopping side in co-op (5).
 - <a id="d-2026-11-18-decisions-page-look"></a>**2026-11-18, decisions page: gold ghosts kept, the garage's "have" frame solid, the summit vane gone, the big boiler's wheels** (owner, 18 November 2026 (19 November UTC), his picks on the orchestrator's decisions page ([page](https://claude.ai/artifact/6BfvBJTeqtKCN3GFWYZrt7)), pasted back in chat). His picks, word for word: the gold ghosts "Keep the numbers; give "have" its own solid look"; the glider summit's mast and vane "Keep it gone"; the Big-boiler moment's wheels "Start from the long boiler's rate". The rules: every gold ghost stays see-through at 0.6 and breathes 0.45 to 0.75 over 6 s ([gold outline](#d-2026-11-16-gold-outline-not-physical)), but the garage's gold "have" frame, which marks a part you own, gets its own solid material; nothing on the summit points the way; the Big-boiler moment starts its wheels from the long boiler's rate, as `watch()` does.
