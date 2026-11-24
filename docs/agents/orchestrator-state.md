@@ -12,7 +12,6 @@ The one record of who is running what, and what the five-job limit is counted fr
 | --- | --- | --- | --- | --- | --- |
 | Canopy and leg 3's views (greybox leg 3 step 6) | The greybox route | claude/greybox-leg3-views | live session, Opus medium | 2026-11-24 08:20 | running |
 | Garage step 4, steps 1 and 2: the page and the rules (v67) | Garage choices | claude/garage-step4-rules | live session, Opus medium | 2026-11-24 10:10 | running |
-| Canyon mesh kit on the wedge, Chunky Sunshine | Terrain clean-up | claude/canyon-kit-chunky | live session, Opus medium | 2026-11-24 09:30 | running |
 
 ## Where the work stands
 
@@ -44,6 +43,8 @@ Cleaned on 24 November: every item from 5 to 19 November is in [the log](orchest
 **His words** (The Boogler's copy): Button's line for `SHOP.kept[0]`; the first house resident's name and lines (placeholders are live); the "Steam" card reads "You got steam!" (recommended: leave it).
 
 **The heartbeat reviewed a live session's job** (24 November, a change to how work runs): the 10:12 UTC heartbeat started an independent review of `claude/greybox-leg3-views` while this live session owned it and was waiting on the builder; the builder then fixed to that review, and the live session had to find out from the builder's report. Recommended: section 9 says the heartbeat does not review, re-check or ship a job whose "Jobs in flight" row says `live session` until the claim lapses (30 minutes after that session's last ship); it only reports it.
+
+**The canyon kit near the alcove** (#2337): from the top of the climb the faces stand proud of the wall and hide most of the alcove's bracket. Recommended: set the faces near the bridge flush (a small job). Waits on his word.
 
 **For his eye:** the waiting Rail yoke reads as a thin outline in a glass box; the halt yard's forge fingerpost is a plain stake.
 
