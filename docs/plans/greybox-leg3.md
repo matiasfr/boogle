@@ -622,7 +622,7 @@ here**, with [what it gets](#what-garage-step-4-gets-from-leg-3), the table and 
 answer. If the table shows Strong fitted at `bay-reached` saving under 15 s solo, that goes to the owner with the
 table before garage step 4's screen is built (finding 3), not before its rules.
 
-- [ ] **6. Canopy and leg 3's views (M to L; Mac).** New `src/content/levels/leg3.ts` and
+- [x] **6. Canopy and leg 3's views (M to L; Mac).** New `src/content/levels/leg3.ts` and
       `src/entities/route-greybox/massing-canopy.ts` ([above](#the-massing-steps-5-and-6)), registered in `massing.ts`;
       the level artifact `content/built/levels/canopy.json`; `dev/level/route-leg3.ts` gains the flood. `leg-view.ts`:
       leg 3 among the built legs: deck, rails and sea bents from `laid` (the strait's bents; the bank on the isle),
@@ -635,6 +635,55 @@ table before garage step 4's screen is built (finding 3), not before its rules.
       ahead; head 1 from the train; head 2's platform and its step to the ground; Canopy's platforms in the cleft from
       the train; the cloth post and the Notch barrier from the platform; Bell Rock's upper deck with the Canopy stall;
       the look harness's mesh and collider counts with Canopy resident and not.
+
+      **As built, 24 November.** Canopy is the compiled level `canopy` (`src/content/levels/leg3.ts` →
+      `content/built/levels/canopy.json`), registered as a resident area in `route-greybox/index.ts` (centre the isle's,
+      (−1060, −300)); `massing-canopy.ts` mounts it. The isle and both chalk islets are trimesh prisms on their map
+      outlines (`src/content/prefabs/canopy-lands.ts`, collision only: the horizon draws them), the five mother trunks and
+      the forest's twelve drawn trunks are hidden box colliders. Changes from the plan's words, each for a reason: **the
+      beach** is one 40 m slope off each isle edge to −1.4 m (18°), not the map's 90 m shelf, and none where an edge is
+      inside an islet or under the deck (the prefab compiler refuses derived floats, so the outlines, beach, trunks and
+      the bank's last chords are baked literals that `dev/level/route-leg3.ts --bake` writes and the level report
+      re-bakes within 0.01 m); **the stand-in town's 30 m square** moved to n −72 to −42, lat −50 to −20 (the plan's
+      spot holds a mother trunk, 33 m off the homeward side); **Canopy's platforms** run n −33 to +12 (outward: the drawn
+      row bends toward it past s 2413) and −33 to +23 (homeward), the deck on to n +30 and across the row past the
+      buffers; steps down from each platform's home end and the deck's side. **Leg view:** leg 3 is a row leg that
+      `joins` the bay cut's deck (no start buffers or crossover; the bay cut's end buffers go at leg 3's first lay),
+      with a `ground` hook so bents stop on the isle and head 2's steps come down to it; each row leg stands only its
+      own halts' departure boards; Bell Rock's frame 1 and rack 1 are now the leg's own site. **Halts view:** every later
+      halt of a row line gets a homeward lever, shown once the line runs past it (`row-path.ts rowHomewardLever`): Bell
+      Rock on the bay line, which leg 3 makes a through halt, needed it to call a train home; the halt-kit golden gains
+      those three levers (42 meshes, nothing removed). **Adapters:** unchanged; `takeGrant` and `openGate` already take
+      any index. **train-view.ts:** unchanged; it poses every `RAIL_TRAINS` slot, and the stills show slots 9 and 11 on
+      the bay line.
+
+      `npm run level-check`: 22 reports, no failure; route leg 3's 19 lines ok (on foot from Canopy's outward platform to
+      the homeward one, the deck, the cloth post, the Notch barrier and the town's square; from the isle's ground up to
+      both platforms; a swimmer from the sea east, north-east, west and south-east reaches the isle inland, head 2's
+      ground both sides and Canopy Town; the platforms and deck clear of both islets; every reserve clear). Counts (the
+      look harness, `leg2-counts.ts`, canopy-reached): Canopy resident with Buddy on the homeward platform, the area 58
+      drawn boxes and 78 solids (75 boxes and the three land prisms; the first count left the prisms out), the scene 1,177 visible meshes, 3,194 static colliders, 508 draw calls; on Bell Rock's
+      upper deck (Bell resident, Canopy not) 1,182 meshes and 3,152 colliders; over the strait at head 1 with every
+      area but the West landing freed, 1,205 meshes and 3,121 colliders. Counts, not timings. Stills in
+      [greybox-leg3/](greybox-leg3/) (1200 × 750): the descent off Bell Rock from a bay train, head 1 from the train
+      (canopy-mid), head 2's platforms and steps, a train standing at Canopy's platforms in the cleft (from above
+      behind; from the train the islet's face fills the view), the cloth post and Notch barrier from the homeward
+      platform, Canopy from above, and Bell Rock's Canopy stall. The boot probe passed on the built site. Not tested on a
+      device.
+
+      **The independent review (Astra medium, on 87d7edf12): fix first, six findings, fixed.** P1: the first Canopy lay
+      turned the deck solid through a player on Bell Rock's rock under the descent, and a cold mount turned Canopy's
+      boxes solid round a player standing in one. Both now clear the player with the shared clearance first
+      (`route-greybox/clear.ts`: lifted onto the top when only the feet are in it, else out of the box's footprint).
+      Looked at: `dev/look/evals/leg3-clear.ts` fed section 1 at canopy-open with Buddy on the rock at s 1300 (lat 0,
+      14.45 m): after the lay Buddy stood 4.45 m to the side at the same height; at canopy-reached Buddy put inside the
+      outward platform's box (12.9 m) stood on the track deck 2.65 m in (13.45 m) once Canopy mounted. P2: Canopy's
+      residency covers its whole isle (`coverNear`: 490 m, freed past 640 m; the level report checks every box and the
+      isle lie 40 m inside it); a row line's departure boards list only halts a train stops at (head 1 once passed);
+      `canopy-mid` and `canopy-reached` land on head 1's and Canopy's platforms (`src/world/railway-jump.ts`, two
+      `land` fields), and `canopy-open` waits for leg 2's reason (Bell Rock's upper platform over the cut, which
+      return-spot.ts would also give the lower line's riders). P3: the residency report counts the extras' solids.
+      The reviewer's six cases live in `test/prefab-leg2-level.test.ts` and `test/railway-jump.test.ts`.
 - [ ] **7. The bot and the loop (M; HOTBOX).** After leg 2's step 5. `dev/loop/graph.ts`: `canopy-gate`, `canopy-1` to
       `canopy-3`, `cloth`, bills and positions imported from `RAIL_LEGS`; `dev/loop/standins.ts` drops the `canopy`
       slot. `dev/look/bots/railway-legs.ts`: the barrier at Bell Rock, the three sections, the cloth, the ride home;
