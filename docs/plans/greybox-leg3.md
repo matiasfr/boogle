@@ -684,6 +684,17 @@ table before garage step 4's screen is built (finding 3), not before its rules.
       `land` fields), and `canopy-open` waits for leg 2's reason (Bell Rock's upper platform over the cut, which
       return-spot.ts would also give the lower line's riders). P3: the residency report counts the extras' solids.
       The reviewer's six cases live in `test/prefab-leg2-level.test.ts` and `test/railway-jump.test.ts`.
+
+      **The re-check (Astra, on 033182dbb): fix then ship, six findings, fixed.** The clearance was a sideways push, and
+      it pushed a player at Bell Rock's rim (bay s 1340) over the sea, wedged one between Canopy's two end decks and
+      left the isle's prism out. The orchestrator's call (24 November): **lift or wait, never push.** A solid switching
+      on lifts a body whose feet are within 0.3 m of its top onto it; otherwise every solid that holds the body stays
+      off, as one set, until the body is clear (`route-greybox/clear.ts`, boxes and prisms alike, for a lay's slabs and
+      an area's mount). Canopy mounts within 580 m (its islets' tips are 532 m out); a closed head's levers stand down;
+      `canopy-reached` keeps the spawn (arrival probes its landing before Canopy mounts there; shared arrival code is
+      not changed), so of leg 3's stages only `canopy-mid` lands. Looked at: the first lay with Buddy at s 1340, 2.25 m
+      off the row, on the rock (feet 14.0 m, the slab's top 14.31): the slab waited and Buddy stayed where they stood; a
+      mount with Buddy inside the outward platform: x and z unchanged, Buddy on the isle's ground, the platform off.
 - [ ] **7. The bot and the loop (M; HOTBOX).** After leg 2's step 5. `dev/loop/graph.ts`: `canopy-gate`, `canopy-1` to
       `canopy-3`, `cloth`, bills and positions imported from `RAIL_LEGS`; `dev/loop/standins.ts` drops the `canopy`
       slot. `dev/look/bots/railway-legs.ts`: the barrier at Bell Rock, the three sections, the cloth, the ride home;
