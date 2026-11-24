@@ -19,17 +19,10 @@ export const PREFAB_DEBT_FILE = 'dev/lint/prefab-debt.json';
 const empty = (): PrefabDebt => ({ colliders: {}, seats: {} });
 const rules = { colliders: 'boogle/colliders-from-records', seats: 'boogle/seats-from-records' } as const;
 
-// The only door growth the owner has approved (docs/decisions-process.md, d-2026-11-24-door-export-clearance-helper):
-// the shared lift-or-wait helper's export on the record door and the engine's one overlap query, with the one import
-// binding the record door needs to reach it. Nothing else may grow; once a base carries them these admit nothing new.
-const APPROVED_DOOR_EXPORTS: Readonly<Record<string, readonly string[]>> = {
-  'src/prefab/instantiate.ts': ['liftOrWait'],
-  'src/physics/engine.ts': ['capsuleOverlaps'],
-  'src/physics/backend-rapier.ts': ['capsuleOverlaps'],
-};
+// The owner's one approved door growth (docs/decisions-process.md, d-2026-11-24-door-export-clearance-helper) is on main
+// since #2365, so the base carries it; nothing may grow from here, and the one-time grant that admitted it is gone.
 /** The record door's capability bindings, by name: the two it had and the decision's capsuleOverlaps. checkPrefabDebt
- * refuses any other from the door's source, in any order of retiring and adding. The recorded count may grow once, from
- * 2 to 3, only as the engine's query and liftOrWait first appear together. */
+ * refuses any other from the door's source, in any order of retiring and adding. */
 const DOOR_BINDINGS = {
   file: 'src/prefab/instantiate.ts',
   /** Each capability module the door may bind, and the exports it may import from it, by name: no namespace, no
@@ -38,8 +31,6 @@ const DOOR_BINDINGS = {
     'src/place/land.ts': ['ROOM_GROUP', 'staticBody'],
     'src/physics/engine.ts': ['capsuleOverlaps'],
   } as Readonly<Record<string, readonly string[]>>,
-  with: 'liftOrWait',
-  query: { file: 'src/physics/engine.ts', name: 'capsuleOverlaps' },
 } as const;
 
 export function comparePrefabDebt(base: PrefabDebt, head: PrefabDebt): string[] {
@@ -65,28 +56,19 @@ export function comparePrefabDebt(base: PrefabDebt, head: PrefabDebt): string[] 
           `${PREFAB_DEBT_FILE}: ${kind}/${file} count grew: ${base[kind][file]!.count} → ${entry.count}; lower the count. Use src/prefab/instantiate.ts.`,
         );
       for (const name of entry.exports ?? [])
-        if (!(base[kind][file]?.exports ?? []).includes(name) && !APPROVED_DOOR_EXPORTS[file]?.includes(name))
+        if (!(base[kind][file]?.exports ?? []).includes(name))
           errors.push(`${PREFAB_DEBT_FILE}: ${kind}/${file} public exports grew: ${name}`);
     }
   for (const [file, names] of Object.entries(head.doors ?? {}))
     for (const name of names)
-      if (!(base.doors?.[file] ?? []).includes(name) && !APPROVED_DOOR_EXPORTS[file]?.includes(name))
+      if (!(base.doors?.[file] ?? []).includes(name))
         errors.push(`${PREFAB_DEBT_FILE}: door ${file} public exports grew: ${name}`);
   for (const [file, counts] of Object.entries(head.doorCounts ?? {}))
     for (const kind of ['colliders', 'seats'] as const) {
       const count = counts[kind];
       if (count === undefined) continue;
       const old = base.doorCounts?.[file]?.[kind];
-      const { file: door, with: name, query } = DOOR_BINDINGS,
-        granted =
-          kind === 'colliders' &&
-          file === door &&
-          old === 2 &&
-          count === 3 &&
-          !!head.doors?.[door]?.includes(name) &&
-          !base.doors?.[door]?.includes(name) &&
-          !base.doors?.[query.file]?.includes(query.name);
-      if (old === undefined || (count > old && !granted))
+      if (old === undefined || count > old)
         errors.push(
           `${PREFAB_DEBT_FILE}: door ${file}/${kind} capability bindings grew. Use src/prefab/instantiate.ts.`,
         );
