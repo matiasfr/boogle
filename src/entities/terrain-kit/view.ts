@@ -68,25 +68,38 @@ function outside(box: NonNullable<ReturnType<typeof boxOf>>, p: THREE.Vector3) {
   );
 }
 
+/** m: how far Buddy may sink into a solid piece before it counts as standing inside it. A body resting against a solid
+ * overlaps it by the solver's contact margin, never by this much; a teleport into one does. */
+const CONTACT = 0.05;
+
 export async function createTerrainKitView() {
   const owner = createOwnedView();
   owner.root.name = 'terrain-kit';
+  try {
+    return await build(owner);
+  } catch (error) {
+    owner.dispose(); // whatever the failed build made, baked pieces included, goes with it
+    throw error;
+  }
+}
+
+async function build(owner: ReturnType<typeof createOwnedView>) {
   const [gltf, { ORIGIN }] = await Promise.all([
     new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url),
     import('../../place/layout.ts'),
   ]);
   gltf.scene.updateMatrixWorld(true);
   const pieces = new Map<string, THREE.BufferGeometry>();
+  owner.cleanup(() => {
+    setTerrainKit(new Map()); // the builder keeps no disposed geometry reachable
+    for (const g of pieces.values()) g.dispose();
+  });
   gltf.scene.traverse((o) => {
     if (!(o instanceof THREE.Mesh)) return;
     pieces.set(o.name || o.parent!.name, bake(o));
     o.geometry.dispose(); // the file's quantized copy: only the baked one is drawn
   });
   setTerrainKit(pieces);
-  owner.cleanup(() => {
-    setTerrainKit(new Map()); // the builder keeps no disposed geometry reachable
-    for (const g of pieces.values()) g.dispose();
-  });
 
   const placements = loadLevelArtifact(level, definitions).placements;
   const counts = new Map<PrefabKey, number>();
@@ -103,33 +116,41 @@ export async function createTerrainKitView() {
     );
   });
 
-  // Clearance: a piece whose solids hold Buddy's foot or head sphere waits until Buddy has stepped clear (an instance
-  // batch draws a piece only while it is enabled).
-  const waiting = new Map(
-    things.map((t) => [t, t.solids.map(boxOf).filter((b): b is NonNullable<typeof b> => b !== null)] as const),
-  );
+  // Clearance, before every physics step: a piece is solid only while neither of Buddy's spheres is inside its boxes.
+  // It turns solid once Buddy is clear of it, and goes back to waiting if Buddy is put inside it (a return, a teleport),
+  // so the solver never has to push anyone out of rock. A waiting piece is not drawn either: an instance batch draws a
+  // piece only while it is enabled.
+  const kit = things.map((thing) => ({
+    thing,
+    boxes: thing.solids.map(boxOf).filter((b): b is NonNullable<typeof b> => b !== null),
+    solid: false,
+  }));
   const probe = new THREE.Vector3();
-  const clear = () => {
+  /** How far Buddy's nearer sphere centre is from a piece's solids. */
+  const gap = (boxes: (typeof kit)[number]['boxes']) => {
     const body = me.body;
-    for (const [thing, boxes] of waiting) {
-      const inside =
-        body &&
-        [0, HEAD_OFFSET].some((up) => {
-          probe.set(body.position.x, body.position.y + up, body.position.z);
-          return boxes.some((b) => outside(b, probe) < PLAYER_R);
-        });
-      if (inside) continue;
-      thing.setEnabled(true);
-      waiting.delete(thing);
+    if (!body) return Infinity;
+    let near = Infinity;
+    for (const up of [0, HEAD_OFFSET]) {
+      probe.set(body.position.x, body.position.y + up, body.position.z);
+      for (const b of boxes) near = Math.min(near, outside(b, probe));
+    }
+    return near;
+  };
+  const settle = () => {
+    for (const piece of kit) {
+      const near = gap(piece.boxes);
+      if (piece.solid && near < PLAYER_R - CONTACT) piece.thing.setEnabled((piece.solid = false));
+      else if (!piece.solid && near >= PLAYER_R) piece.thing.setEnabled((piece.solid = true));
     }
   };
-  clear();
+  settle();
 
   return {
     root: owner.root,
-    /** Each frame: enables any piece still waiting for Buddy to step clear (nothing once all are solid). */
-    update: clear,
-    inspect: () => ({ pieces: things.length, batches: batches.size, waiting: waiting.size }),
+    /** Before each physics step. */
+    prePhysics: settle,
+    inspect: () => ({ pieces: things.length, batches: batches.size, waiting: kit.filter((k) => !k.solid).length }),
     dispose: () => owner.dispose(),
   };
 }

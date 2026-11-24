@@ -6,7 +6,7 @@ import { defineKind, spawn } from '../../entity/entity.ts';
 import { warmUp } from '../../render/precompile.ts';
 import { createTerrainKitView } from './view.ts';
 
-defineKind('terrain-kit', { update: 4 });
+defineKind('terrain-kit', { prePhysics: 20 });
 
 if (productionRailway) {
   const loaded = createTerrainKitView().then(
@@ -14,7 +14,7 @@ if (productionRailway) {
       spawn({
         kind: 'terrain-kit',
         mesh: view.root,
-        update: view.update,
+        prePhysics: view.prePhysics,
         describe: view.inspect,
         dispose: view.dispose,
       });
