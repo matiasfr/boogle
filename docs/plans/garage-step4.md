@@ -307,6 +307,13 @@ before step 3. Step 3 holds on question 1.
       sweep), and a pending op in the loop graph until step 4 gives the bot the choice. The two leg 3 hold tests fit
       Strong by accepted ops from `bay-mid` with the works lit, and the adoption test runs on `canopy-reached`: on
       `bay-mid` a Strong train's two bills cannot unload, so the guard rightly keeps Strong on a swap to Quick.
+      Leg 3's three forced-mixed tests (`test/railway-leg2-rules.test.ts`: "leg 2 mixed" and "Canopy mixed" service
+      health, "mixed bay riders") relied on adoption only rising: they set the bay line to Strong and back to 0 by hand
+      so one train stayed Strong. With `!==` that train goes back at its next halt 0 stand. On the orchestrator's call
+      (option a), they now fit Strong by accepted ops only (the steel seed's own steps, exported as `steelHomeOn`, then
+      `rail.bring` and `rail.install`), and an ask made within one circuit of the fit gets the 23 November mixed-fleet
+      checks. The "leg 2 mixed, growing from `incline-open`" case is dropped: a Strong bay train while leg 2 grows is
+      unreachable now that the bay trade opens at `bay-mid` (owner, 24 November).
 - [ ] **3. Seeds, screen, bays and trains (M to L; player-visible). Holds on question 1.**
       `src/sim/railway-seed-legs.ts` (or a sibling): `trade-ready` from `bay-mid` under A (`bay-reached` under C), by
       accepted ops only: light the works and bring 12 steel home with the steel seed's own helpers, for a pool of 12.

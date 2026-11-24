@@ -6,6 +6,7 @@
 //   steel-lit     the bill fed by one player and lit; the first steel on its rack
 //   steel-home    the first steel in the Roundhouse bay; line 2's longer boiler not yet installed
 //   boiler-long   the install made at the table, and every line 2 train wearing the longer boiler
+//   steelHomeOn(s)  the first three steps on a later seed whose works is cold (garage step 4)
 import { act, type Seed } from './railway-seed-route.ts';
 import { invariant, need, restore } from './railway-drive.ts';
 import { advanceWorks } from './railway-seed-works.ts';
@@ -32,6 +33,15 @@ export function railwayAtSteel(stage: SteelStage): Seed {
     cache.set(stage, base);
   }
   return { w: restore(base.w), t: base.t };
+}
+
+/** The steel-kit, steel-lit and steel-home steps run on `s`, any later seed whose works is still cold (a leg seed:
+ * its kit already lies in the island yard), so the works is lit and its first steel is home by accepted ops and ticks
+ * only (garage step 4's trade tests; step 3's trade seeds). Changes `s` in place and returns it. */
+export function steelHomeOn(s: Seed): Seed {
+  for (const stage of ['steel-kit', 'steel-lit', 'steel-home'] as const) build(s, stage);
+  need(invariant(s.w) === null, 'steel home');
+  return s;
 }
 
 /** Advance (checking the world every tick) until `ok`, at most `max` ticks. */
