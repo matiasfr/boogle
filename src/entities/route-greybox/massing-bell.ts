@@ -6,6 +6,4 @@ const placements = leg2Massing(level);
 export const bellMassing = () => placements;
 /** Bell Rock's five stall pads (ruling 2), for the boxes that rise on them (./leg-view.ts). */
 export const bellPads = leg2Pads(level);
-export function bellExtras(owner: OwnedView) {
-  leg2Extras(owner, level);
-}
+export const bellExtras = (owner: OwnedView) => leg2Extras(owner, level);

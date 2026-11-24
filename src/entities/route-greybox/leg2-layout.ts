@@ -22,3 +22,23 @@ export const AREA_CENTRES = {
   canopy: { x: -1060, z: -300 },
 } as const;
 export { PAD_SIZE } from '../../prefab/greybox-constants.ts';
+/** The usual distance an area mounts within (route-greybox/index.ts; freed past it plus FREE_MORE). */
+export const MOUNT_NEAR = 400,
+  FREE_MORE = 150,
+  /** How far out of an area's farthest box its residency reaches, so a swimmer or a glider coming in finds every
+   * collider already there (a mount takes a moment: its pipeline compiles off the frame). */
+  ARRIVAL = 40;
+/** An area's mount distance that covers the boxes among `placements` (each scaled one's centre and half diagonal) from
+ * `centre` with ARRIVAL to spare, rounded up to 10 m and never under MOUNT_NEAR. */
+export function coverNear(
+  placements: readonly { pos: readonly number[]; scale?: readonly number[] }[],
+  centre: { x: number; z: number },
+) {
+  let far = 0;
+  for (const p of placements) {
+    if (!p.scale) continue;
+    const [w = 1, , d = 1] = p.scale;
+    far = Math.max(far, Math.hypot(p.pos[0]! - centre.x, p.pos[2]! - centre.z) + Math.hypot(w, d) / 2);
+  }
+  return Math.max(MOUNT_NEAR, Math.ceil((far + ARRIVAL) / 10) * 10);
+}

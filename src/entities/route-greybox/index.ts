@@ -15,28 +15,31 @@ import { precompile } from '../../render/precompile.ts';
 import { gorgePlacements } from '../../prefab/instantiate.ts';
 import { bellExtras, bellMassing } from './massing-bell.ts';
 import { westExtras, westMassing } from './massing-west.ts';
-import { canopyExtras, canopyMassing } from './massing-canopy.ts';
-import { AREA_CENTRES } from './leg2-layout.ts';
+import { canopyExtras, canopyMassing, canopyNear } from './massing-canopy.ts';
+import { clearOf, placedBoxes } from './clear.ts';
+import { AREA_CENTRES, FREE_MORE, MOUNT_NEAR } from './leg2-layout.ts';
 import { drawGreyBoxes } from './boxes.ts';
 import type { Placement } from '../../prefab/types.ts';
 import { routeAreas, routeSceneryMounted } from './state.ts';
 
-const MOUNT = { near: 400, far: 550 };
 defineKind('route-greybox', { update: 13 });
 defineKind('route-greybox-area', {});
 
-/** One place's massing: its boxes, and what else stands under the same owner (painted boards, the rock's colliders). */
+/** One place's massing: its boxes, and what else stands under the same owner (painted boards, the rock's colliders;
+ * `extras` returns how many solids it made). `near`: its mount distance when not the usual (it is freed past it plus
+ * FREE_MORE). */
 type Area = {
   id: string;
   centre: { x: number; z: number };
   build: () => readonly Placement[];
-  extras?: (owner: OwnedView) => void | Promise<void>;
+  extras?: (owner: OwnedView) => number;
+  near?: number;
 };
 const AREAS: readonly Area[] = [
   { id: 'gorge', centre: AREA_CENTRES.gorge, build: () => gorgePlacements },
   { id: 'bell', centre: AREA_CENTRES.bell, build: bellMassing, extras: bellExtras },
   { id: 'west', centre: AREA_CENTRES.west, build: westMassing, extras: westExtras },
-  { id: 'canopy', centre: AREA_CENTRES.canopy, build: canopyMassing, extras: canopyExtras },
+  { id: 'canopy', centre: AREA_CENTRES.canopy, build: canopyMassing, extras: canopyExtras, near: canopyNear },
 ];
 
 if (productionRailway && new URLSearchParams(location.search).get('blockout') !== 'world') {
@@ -53,13 +56,17 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
         Math.hypot(camera.position.x - c.x, camera.position.z - c.z),
         body ? Math.hypot(body.x - c.x, body.z - c.z) : Infinity,
       );
-      return resident(d, mounted !== null, MOUNT.near, MOUNT.far);
+      const near = area.near ?? MOUNT_NEAR;
+      return resident(d, mounted !== null, near, near + FREE_MORE);
     };
     async function mount() {
       building = true;
       const owner = createOwnedView(),
-        { mesh, solids } = await drawGreyBoxes(owner, area.build());
-      await area.extras?.(owner);
+        placements = area.build();
+      // A player standing where a box goes solid is moved clear first (./clear.ts); the boxes go on in the same task.
+      for (const b of placedBoxes(placements)) clearOf(b);
+      const { mesh, solids } = await drawGreyBoxes(owner, placements),
+        more = area.extras?.(owner) ?? 0;
       // Its pipeline compiles off the frame before it first shows (src/render/precompile.ts).
       owner.root.visible = false;
       await precompile(owner.root);
@@ -70,7 +77,7 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
         owner,
         entity: spawn({ kind: 'route-greybox-area', mesh: owner.root }),
         boxes: mesh.count,
-        solids,
+        solids: solids + more,
       };
       residency.mounted = true;
       routeSceneryMounted();

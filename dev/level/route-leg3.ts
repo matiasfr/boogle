@@ -23,6 +23,7 @@ import { validateArtifact, loadLevelArtifact } from '../../src/prefab/validate.t
 import { flood } from './flood.ts';
 import { MOVER } from './mover.ts';
 import { heightAt, reserveVolume, resolvePlacedColliders, volumesOverlap } from './prefab-colliders.ts';
+import { AREA_CENTRES, ARRIVAL, coverNear } from '../../src/entities/route-greybox/leg2-layout.ts';
 
 const records = (() => {
   const value: unknown = artifact;
@@ -334,6 +335,23 @@ function canopyEntries(map: ReturnType<typeof layout>) {
       ? `Canopy's reserves: ${bad.join('; ')}`
       : `Canopy's reserves are clear: ${A.reserves.map((r) => r.id).join(', ')}`,
     !bad.length,
+  );
+  // The floods above assume every collider is there: Canopy mounts within coverNear of its centre (route-greybox
+  // index.ts), so each box and the isle's prism must lie ARRIVAL inside that (the islets' far ends are sheer, with no
+  // beach, and run beyond it).
+  const near = coverNear(level.placements, AREA_CENTRES.canopy),
+    c = AREA_CENTRES.canopy,
+    reach = Math.max(
+      ...resolved.colliders
+        .filter(
+          (k) => k.definition.shape === 'box' || k === resolved.colliders.find((t) => t.definition.shape === 'trimesh'),
+        )
+        .flatMap((k) => k.volume.triangles.flatMap((t) => [t.a, t.b, t.c]))
+        .map((p) => Math.hypot(p.x - c.x, p.z - c.z)),
+    );
+  check(
+    `Canopy mounts within ${near} m of its centre: every box and the isle reach ${f1(reach)} m (needs ${near - ARRIVAL} at most)`,
+    reach <= near - ARRIVAL,
   );
   return entries;
 }
