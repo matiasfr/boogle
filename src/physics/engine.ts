@@ -28,10 +28,11 @@
 //                                  For a camera arm, line of sight, placing
 //   capsuleOverlaps(at, r, up, against)   whether a body of two spheres of radius r, at `at` and `up` over it (taken as
 //                                  one capsule), overlaps `against`: one shape placed in the world but not built there
-//                                  (a solid about to switch on), or { mask }: what is built in a group of `mask`,
-//                                  static or kinematic (sensors and what moves freely don't count). Touching its
-//                                  surface or a sphere's centre inside it both count (for one shape, a trimesh's
-//                                  interior too: a closed prism's, or under an open land's top).
+//                                  (a solid about to switch on), or { mask }: every static or kinematic body in a group
+//                                  of `mask`, added this frame included (sensors and free movers don't count), by the
+//                                  same test. Touching a surface or a sphere's centre inside counts; a trimesh holds a
+//                                  point only under one of its faces (a closed prism's inside, an open land's footprint).
+//                                  True for everything until physicsReady: nothing can be measured yet.
 //                                  For src/place/clearance.ts, through src/prefab/instantiate.ts
 //   physicsTime()                  seconds of simulated time
 //   physicsClock(), setPhysicsClock(c)   that time and what's left under a step, for a replay to start from

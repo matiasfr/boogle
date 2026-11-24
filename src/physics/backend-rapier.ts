@@ -651,14 +651,27 @@ export function raycastClosest(from: V3, to: V3, o: { mask?: number; skipBackfac
   return true;
 }
 
-// A body of two spheres as one capsule, against one shape not built in the world or against what is built there
-// (./engine.ts, capsuleOverlaps). A shape's Rapier copy is made once and kept while the shape is: a trimesh's is
-// costly, and a waiting set is asked again every frame.
-type Placed = { raw: RawShape; at: RawVector; turn: RawRotation };
-const placedShapes = new WeakMap<Shape, Placed | null>();
-function placedShape(s: Shape): Placed | null {
-  let p = placedShapes.get(s);
-  if (p !== undefined) return p;
+// A body of two spheres as one capsule against shapes (./engine.ts, capsuleOverlaps): one shape not built yet, or every
+// built static and kinematic body, read from this backend's own list (so a body added this frame counts before the next
+// step), through the same test, so the two never disagree. A shape's Rapier copy is made once and kept while the shape
+// is (its geometry is read once; its pose is read on every call): a trimesh's is costly, and a waiting set is asked
+// every frame.
+type Q = { x: number; y: number; z: number; w: number };
+type Copy = { raw: RawShape; trimesh: boolean; centred: V3 | null; centre: V3; reach: number };
+const copies = new WeakMap<Shape, Copy | null>();
+const rotate = (q: Q, v: V3, out: V3) => {
+  // v + 2w(q×v) + 2q×(q×v)
+  const tx = 2 * (q.y * v.z - q.z * v.y),
+    ty = 2 * (q.z * v.x - q.x * v.z),
+    tz = 2 * (q.x * v.y - q.y * v.x);
+  out.x = v.x + q.w * tx + (q.y * tz - q.z * ty);
+  out.y = v.y + q.w * ty + (q.z * tx - q.x * tz);
+  out.z = v.z + q.w * tz + (q.x * ty - q.y * tx);
+  return out;
+};
+function copyOf(s: Shape): Copy | null {
+  let c = copies.get(s);
+  if (c !== undefined) return c;
   // A trimesh's copy is oriented (outward faces), so a point inside a closed one, or under an open land's top, is in
   // it: the built colliders' FIX_INTERNAL_EDGES does not include ORIENTED in Rapier 0.21.
   const d = s.kind === 'trimesh' ? null : colliderDesc(s);
@@ -670,61 +683,115 @@ function placedShape(s: Shape): Placed | null {
           R!.TriMeshFlags.ORIENTED | R!.TriMeshFlags.MERGE_DUPLICATE_VERTICES,
         ).intoRaw()
       : d?.shape.intoRaw();
-  // A heightfield is centred by its description (colliderDesc); every other shape stands at its own offset.
-  const at = s.kind === 'heightfield' ? d?.translation : s.offset;
-  p = raw ? { raw, at: R!.VectorOps.intoRaw(at ?? ZERO), turn: R!.RotationOps.intoRaw(s.rotation ?? IDENTITY) } : null;
-  placedShapes.set(s, p);
-  return p;
-}
-let capsule: { r: number; up: number; raw: RawShape; shape: RAPIER.Capsule } | undefined;
-/** Kept raw inputs for the shape test (a waiting set is asked every frame): the capsule's centre, no turn, a point. */
-let scratch: { at: RawVector; turn: RawRotation; point: RawVector } | undefined;
-const capsuleAt = { x: 0, y: 0, z: 0 },
-  sphereAt = { x: 0, y: 0, z: 0 };
-export function capsuleOverlaps(at: V3, r: number, up: number, against: Shape | { mask: number }) {
-  if (!R || !world) return false;
-  if (capsule?.r !== r || capsule.up !== up) {
-    const shape = new R.Capsule(up / 2, r);
-    capsule = { r, up, shape, raw: shape.intoRaw() };
+  if (!raw) {
+    copies.set(s, null);
+    return null;
   }
-  capsuleAt.x = at.x;
-  capsuleAt.y = at.y + up / 2;
-  capsuleAt.z = at.z;
-  if ('kind' in against) {
-    const p = placedShape(against);
-    if (!p) return false;
-    scratch ??= {
-      at: R.VectorOps.intoRaw(ZERO),
-      turn: R.RotationOps.intoRaw(IDENTITY),
-      point: R.VectorOps.intoRaw(ZERO),
+  // Where it stands on its body: a heightfield is centred by its description (colliderDesc), every other shape at
+  // its own offset. Its bounding sphere, in its own frame, skips the far ones cheaply.
+  const centred = s.kind === 'heightfield' ? { ...d!.translation } : null;
+  let centre: V3 = { ...ZERO },
+    reach: number;
+  if (s.kind === 'box') reach = Math.hypot(s.hx, s.hy, s.hz);
+  else if (s.kind === 'sphere') reach = s.r;
+  else if (s.kind === 'cylinder') reach = Math.hypot(Math.max(s.rTop, s.rBottom), s.h / 2);
+  else {
+    const lo = [Infinity, Infinity, Infinity],
+      hi = [-Infinity, -Infinity, -Infinity];
+    const add = (x: number, y: number, z: number) => {
+      [x, y, z].forEach((v, k) => {
+        lo[k] = Math.min(lo[k]!, v);
+        hi[k] = Math.max(hi[k]!, v);
+      });
     };
-    scratch.at.x = capsuleAt.x;
-    scratch.at.y = capsuleAt.y;
-    scratch.at.z = capsuleAt.z;
-    // Touching its surface, or wholly inside a closed shape (a sphere's centre in it: a prism's interior).
-    if (capsule.raw.intersectsShape(scratch.at, scratch.turn, p.raw, p.at, p.turn)) return true;
-    for (const dy of [0, up]) {
-      scratch.point.x = at.x;
-      scratch.point.y = at.y + dy;
-      scratch.point.z = at.z;
-      if (p.raw.containsPoint(p.at, p.turn, scratch.point)) return true;
+    if (s.kind === 'trimesh')
+      for (let k = 0; k < s.vertices.length; k += 3) add(s.vertices[k]!, s.vertices[k + 1]!, s.vertices[k + 2]!);
+    else {
+      const nx = s.heights.length - 1,
+        nz = s.heights[0]!.length - 1;
+      for (const row of s.heights) for (const h of row) add(0, h, 0);
+      add(-(nx * s.cell) / 2, lo[1]!, -(nz * s.cell) / 2);
+      add((nx * s.cell) / 2, hi[1]!, (nz * s.cell) / 2);
     }
-    return false;
+    centre = { x: (lo[0]! + hi[0]!) / 2, y: (lo[1]! + hi[1]!) / 2, z: (lo[2]! + hi[2]!) / 2 };
+    reach = Math.hypot(hi[0]! - lo[0]!, hi[1]! - lo[1]!, hi[2]! - lo[2]!) / 2;
   }
-  const filter = queryGroups(against.mask),
-    flags = R.QueryFilterFlags.EXCLUDE_SENSORS | R.QueryFilterFlags.EXCLUDE_DYNAMIC;
-  if (world.intersectionWithShape(capsuleAt, IDENTITY, capsule.shape, flags, filter)) return true;
-  let inside = false;
-  const found = () => {
-    inside = true;
-    return false; // one is enough
+  c = { raw, trimesh: s.kind === 'trimesh', centred, centre, reach };
+  copies.set(s, c);
+  return c;
+}
+let capsule: { r: number; up: number; raw: RawShape } | undefined;
+/** Kept raw inputs (a waiting set is asked every frame): the capsule's centre, no turn, a point, up, the shape's pose. */
+let scratch: { at: RawVector; none: RawRotation; point: RawVector; up: RawVector; pos: RawVector } | undefined;
+const shapeAt = { x: 0, y: 0, z: 0 },
+  shapeTurn = new Quat(),
+  near = { x: 0, y: 0, z: 0 };
+/** Whether the capsule (bottom sphere's centre `at`, top `up` over it) overlaps `shape` (its copy `c`) where it stands
+ * now on a body at `bodyAt` turned `bodyTurn` (an unbuilt shape: no body, the identity). */
+function overlapsCopy(shape: Shape, c: Copy, at: V3, r: number, up: number, bodyAt: V3, bodyTurn: Q) {
+  const s = scratch!;
+  rotate(bodyTurn, c.centred ?? shape.offset ?? ZERO, shapeAt);
+  shapeAt.x += bodyAt.x;
+  shapeAt.y += bodyAt.y;
+  shapeAt.z += bodyAt.z;
+  multiplyRotation(bodyTurn as RAPIER.Rotation, (shape.rotation ?? IDENTITY) as RAPIER.Rotation, shapeTurn);
+  rotate(shapeTurn, c.centre, near);
+  const dx = shapeAt.x + near.x - at.x,
+    dy = shapeAt.y + near.y - (at.y + up / 2),
+    dz = shapeAt.z + near.z - at.z;
+  if (Math.hypot(dx, dy, dz) > c.reach + r + up / 2) return false;
+  s.pos.x = shapeAt.x;
+  s.pos.y = shapeAt.y;
+  s.pos.z = shapeAt.z;
+  const turn = R!.RotationOps.intoRaw(shapeTurn); // a raw rotation's parts are read-only
+  try {
+    return hits(c, at, up, turn);
+  } finally {
+    turn.free();
+  }
+}
+function hits(c: Copy, at: V3, up: number, turn: RawRotation) {
+  const s = scratch!;
+  if (capsule!.raw.intersectsShape(s.at, s.none, c.raw, s.pos, turn)) return true;
+  // Wholly inside: a sphere's centre in it. A trimesh holds a point only with a face over it too (in a closed prism, or
+  // under an open land's top within its footprint; never beside an open mesh's edge).
+  for (const lift of [0, up]) {
+    s.point.x = at.x;
+    s.point.y = at.y + lift;
+    s.point.z = at.z;
+    if (
+      c.raw.containsPoint(s.pos, turn, s.point) &&
+      (!c.trimesh || c.raw.castRay(s.pos, turn, s.point, s.up, 1e4, false) >= 0)
+    )
+      return true;
+  }
+  return false;
+}
+export function capsuleOverlaps(at: V3, r: number, up: number, against: Shape | { mask: number }) {
+  // Before Rapier is in nothing can be measured: everything holds, so nothing switches on round a player.
+  if (!R || !world) return true;
+  if (capsule?.r !== r || capsule.up !== up) capsule = { r, up, raw: new R.Capsule(up / 2, r).intoRaw() };
+  scratch ??= {
+    at: R.VectorOps.intoRaw(ZERO),
+    none: R.RotationOps.intoRaw(IDENTITY),
+    point: R.VectorOps.intoRaw(ZERO),
+    up: R.VectorOps.intoRaw({ x: 0, y: 1, z: 0 }),
+    pos: R.VectorOps.intoRaw(ZERO),
   };
-  for (const dy of [0, up]) {
-    sphereAt.x = at.x;
-    sphereAt.y = at.y + dy;
-    sphereAt.z = at.z;
-    world.intersectionsWithPoint(sphereAt, found, flags, filter);
-    if (inside) return true;
+  scratch.at.x = at.x;
+  scratch.at.y = at.y + up / 2;
+  scratch.at.z = at.z;
+  if ('kind' in against) {
+    const c = copyOf(against);
+    return !!c && overlapsCopy(against, c, at, r, up, ZERO, IDENTITY);
+  }
+  // What is built in a group of `mask`: static and kinematic bodies that respond (sensors and free movers don't hold).
+  for (const b of bodies) {
+    if (b.kind === 'dynamic' || !b.response || !(b.group & against.mask & 0xffff) || !(b.mask & 0xffff)) continue;
+    for (const shape of b.shapes) {
+      const c = copyOf(shape);
+      if (c && overlapsCopy(shape, c, at, r, up, b.position, b.quaternion)) return true;
+    }
   }
   return false;
 }

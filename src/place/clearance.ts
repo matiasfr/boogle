@@ -14,6 +14,10 @@ export const STEP = 0.3;
 const CONTACT = 0.02;
 /** Halvings that find the top under STEP: to a tenth of a millimetre. */
 const SEARCH = 12;
+/** Rapier's overlap test reads about 2 mm generous: a top exactly STEP over the feet still counts as within it. */
+const SLACK = 0.005;
+/** The probe under the feet that finds the top they would stand on. */
+const FOOT = 0.02;
 
 /** physics/engine.ts's capsuleOverlaps. */
 export type Overlaps = (at: V3, r: number, up: number, against: Shape | { mask: number }) => boolean;
@@ -42,13 +46,13 @@ export function createLiftOrWait(overlaps: Overlaps) {
     at.z = p.z;
     return s.shapes.some((shape) => overlaps(at, r, HEAD_OFFSET, shape));
   };
-  /** Lifts `body` onto `held` if its feet are within STEP of their top and it fits there (no solid of `set` at the
-   * top, nothing built in the way up); true if it did. */
+  /** Lifts `body` onto `held` if its feet are within STEP of their top, that top is under its feet, and the whole body
+   * fits standing there; true if it did. */
   function lift(set: readonly Solid[], held: readonly Solid[], body: Lifted) {
     const p = body.position;
-    // Clear of the shrunk body at hi: the top is at most STEP over the feet.
+    // Clear of the shrunk body at hi: the top is at most STEP over the feet (STEP itself included).
     let lo = p.y,
-      hi = p.y + STEP - CONTACT;
+      hi = p.y + STEP - CONTACT + SLACK;
     if (held.some((s) => holds(s, p, hi))) return false;
     for (let i = 0; i < SEARCH; i++) {
       const mid = (lo + hi) / 2;
@@ -56,12 +60,16 @@ export function createLiftOrWait(overlaps: Overlaps) {
       else hi = mid;
     }
     const y = hi + CONTACT;
-    if (set.some((s) => holds(s, p, y))) return false;
     at.x = p.x;
-    at.y = p.y;
     at.z = p.z;
-    // The body swept from where it stands to where it would stand: a roof over the top holds it off.
-    if (overlaps(at, r, HEAD_OFFSET + y - p.y, world)) return false;
+    // A top under the feet: just under where the feet would stand is in the set (not a corner grazed from beside it).
+    at.y = y - PLAYER_R - 2 * FOOT;
+    if (!set.some((s) => s.shapes.some((shape) => overlaps(at, FOOT, 0, shape)))) return false;
+    // The whole body fits there (a little over the top it stands on): nothing of the set, nothing built. This covers
+    // the way up too: the body only rises by less than its height.
+    at.y = y + CONTACT;
+    if (set.some((s) => s.shapes.some((shape) => overlaps(at, PLAYER_R, HEAD_OFFSET, shape)))) return false;
+    if (overlaps(at, PLAYER_R, HEAD_OFFSET, world)) return false;
     p.set(p.x, y, p.z);
     body.interpolatedPosition?.set(p.x, y, p.z);
     body.velocity.set(0, 0, 0);
