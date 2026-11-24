@@ -78,6 +78,7 @@ import { canopyGround } from './massing-canopy.ts';
 import { AREA_CENTRES, LEG2_TEXT } from './leg2-layout.ts';
 import { areaLabels } from './state.ts';
 import type { GreyBox } from './boxes.ts';
+import { clearOf, exitFrom } from './clear.ts';
 
 // Placeholder labels (the step 4 design review's answers b, e, i, k and l; none is The Boogler's).
 const FEED = 'Feed the frame',
@@ -158,6 +159,27 @@ const rowGeo = (ln: number): Geo => ({
 });
 
 const metres = (p: { x: number; y: number; z: number }) => ({ x: p.x / 100, y: p.y / 100, z: p.z / 100 });
+/** A deck slab's box, as place/land.ts slab builds its collider: 0.4 m thick, its top from (a, ya) to (b, yb). */
+function slabBox(
+  a: { x: number; z: number },
+  b: { x: number; z: number },
+  ya: number,
+  yb: number,
+  w: number,
+  over: number,
+) {
+  const run = Math.hypot(b.x - a.x, b.z - a.z);
+  return {
+    x: (a.x + b.x) / 2,
+    y: (ya + yb) / 2 - 0.2,
+    z: (a.z + b.z) / 2,
+    w,
+    h: 0.4,
+    d: Math.hypot(run, yb - ya) + 2 * over,
+    yaw: Math.atan2(b.x - a.x, b.z - a.z),
+    pitch: Math.atan2(yb - ya, run),
+  } satisfies GreyBox;
+}
 const within = (p: { x: number; y: number; z: number }, site: { x: number; y: number; z: number }, reach: number) =>
   Math.hypot(p.x - site.x, p.z - site.z) <= reach / 100 - 0.4 && Math.abs(p.y - site.y) <= 2.6;
 
@@ -366,40 +388,11 @@ const CLOTH = RAIL_GRANTS.findIndex((g) => g.id === 'cloth'),
 const HOME_BOARD_S = BAY_CUT_END - 19.5;
 
 export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
-  const [{ addStatic, slab }, ground, { siteExit }, { outOf }] = await Promise.all([
-    import('../../place/land.ts'),
-    islandGround(),
-    import('../../place/site-clearance.ts'),
-    import('../../place/sites.ts'),
-  ]);
-  /** Whether your body (its two spheres) stands in box `b` (the shared site clearance, src/place/site-clearance.ts),
-   * measured in the box's own frame, pitch and all (a sea ramp's slip is pitched about 28°), as its collider is built
-   * (stand). A standing piece's collider waits until you are out of it: nothing here may move you (no teleport in a
-   * view), and a solid that closed round you would hold you. */
-  const toBox = new THREE.Quaternion(),
-    rel = new THREE.Vector3();
-  const inBox = (b: GreyBox) => {
-    if (!me.body) return false;
-    toBox.setFromEuler(euler.set(-(b.pitch ?? 0), b.yaw, 0)).invert();
-    const distance = (p: { x: number; y: number; z: number }) => {
-      rel.set(p.x - b.x, p.y - b.y, p.z - b.z).applyQuaternion(toBox);
-      return Math.hypot(
-        Math.max(0, Math.abs(rel.x) - b.w / 2),
-        Math.max(0, Math.abs(rel.y) - b.h / 2),
-        Math.max(0, Math.abs(rel.z) - b.d / 2),
-      );
-    };
-    return !!siteExit(
-      me.body.position,
-      { x: b.x, z: b.z, c: Math.cos(b.yaw), s: Math.sin(b.yaw), hw: 0, hd: 0 },
-      b.y,
-      [{ dx: 0, dy: 0, dz: 0, hx: b.w / 2, hy: b.h / 2, hz: b.d / 2 }],
-      outOf,
-      undefined,
-      0.02,
-      distance,
-    );
-  };
+  const [{ addStatic, slab }, ground] = await Promise.all([import('../../place/land.ts'), islandGround()]);
+  /** Whether your body (its two spheres) stands in box `b` (the shared site clearance, ./clear.ts), measured in the
+   * box's own frame, pitch and all (a sea ramp's slip is pitched about 28°), as its collider is built (stand). A
+   * standing piece's collider waits until you are out of it; a deck's slab moves you clear first (solidDeck). */
+  const inBox = (b: GreyBox) => !!exitFrom(b);
   const deck = createBoxBatch(owner, 4800, false),
     things = createBoxBatch(owner, 700, false);
   // Named, so a look can count what the leg's views add to a frame (dev/look/evals/stack-draws.ts).
@@ -579,7 +572,12 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
             s1 = next;
           }
         geo.world(s1, mid, b);
-        deckBodies.push(slab(a.x, a.z, b.x, b.z, geo.y(s0), geo.y(s1), sp.width, owner, 0.05));
+        const y0 = geo.y(s0),
+          y1 = geo.y(s1);
+        // A body standing where the slab goes (on the bed under it, or on Bell Rock's rock under leg 3's descent) is
+        // moved clear first: onto the deck from the bed, out from under it from the rock (slab: 0.4 m thick).
+        clearOf(slabBox(a, b, y0, y1, sp.width, 0.05));
+        deckBodies.push(slab(a.x, a.z, b.x, b.z, y0, y1, sp.width, owner, 0.05));
         s0 = s1;
       }
     }
