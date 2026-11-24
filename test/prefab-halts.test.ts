@@ -24,6 +24,9 @@ import * as leverPlace from '../src/entities/railway/lever-place.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 import { buildSeedWorld } from '../src/sim/railway-seeds.ts';
 import { laySection } from '../src/sim/railway-seed-legs.ts';
+import { Leg } from '../src/sim/railway-components.ts';
+import { legId } from '../src/sim/railway-queries-route.ts';
+import { RAIL_LEGS } from '../src/sim/railway-route.ts';
 import { HEAD_OFFSET, PLAYER_R, SEA } from '../src/constants.ts';
 import type { Box } from '../src/render/box-plan.ts';
 import type { Body, Shape } from '../src/physics/engine.ts';
@@ -319,8 +322,36 @@ test('halt kit placements, colliders, lever plaques and ordered prompts match th
   const requests = 'test/fixtures/prefab-halt-requests.json';
   if (process.env.GOLDEN === '1') fs.writeFileSync(requests, JSON.stringify(calls, null, 2) + '\n');
   assert.deepEqual(calls, JSON.parse(fs.readFileSync(requests, 'utf8')));
-  // Leg 3 adds both directions at two heads and one homeward lever at Canopy.
-  assert.equal(levers.length, 33);
+  // Leg 3 adds both directions at two heads and one homeward lever at Canopy. Step 6: every later halt of a row line
+  // gains a homeward lever (row-path.ts rowHomewardLever): the ns and bay lines' Bell Rock and Canopy.
+  assert.equal(levers.length, 36);
+  for (const [k, leg] of RAIL_LEGS.entries())
+    if (catalog.legBuilt(k)) seed.w.mut(Leg, legId(seed.w, k))!.laid = leg.sections.length;
+  halt.restore();
+  const bay = catalog.RAIL_LINES.findIndex((l) => l.id === 'bay');
+  const closed = catalog.RAIL_HALTS.findIndex((h) => h.line === bay && h.closesAt !== undefined);
+  const bell = catalog.RAIL_HALTS.findIndex((h) => h.line === bay && h.name === 'Bell Rock');
+  const unservedCalls: unknown[] = [];
+  for (const [haltId, wanted] of [
+    [bell, true],
+    [closed, false],
+  ] as const) {
+    assert.ok(haltId >= 0);
+    for (const [side, dir] of [
+      ['up', -1],
+      ['down', 1],
+    ] as const) {
+      const h = catalog.RAIL_HALTS[haltId]!;
+      const s = h.s / 100 - (h.end?.kind === 'stub' ? 0 : 8.5);
+      const at = rowPath.rowWorld(bay, s, dir * rowPath.ROW_PLATFORM, { x: 0, z: 0 });
+      me.body = { position: new THREE.Vector3(at.x, rowPath.rowY(bay, s) + 1.35, at.z) };
+      calls.length = 0;
+      for (const target of halt.targets()) target.run?.();
+      if (wanted) assert.deepEqual(calls, [[haltId, dir]], `${h.name} ${side}`);
+      else unservedCalls.push(...calls);
+    }
+  }
   owner.dispose();
   assert.equal(active.size, 0);
+  assert.deepEqual(unservedCalls, [], 'closed head must offer neither request');
 });

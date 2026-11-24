@@ -5,6 +5,4 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { leg2Massing, leg2Extras } from './leg2-draw.ts';
 const placements = leg2Massing(level);
 export const westMassing = () => placements;
-export function westExtras(owner: OwnedView) {
-  leg2Extras(owner, level);
-}
+export const westExtras = (owner: OwnedView) => leg2Extras(owner, level);

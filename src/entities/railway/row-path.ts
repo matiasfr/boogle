@@ -21,6 +21,8 @@ const STEP = 5;
 
 type RowPath = { line: number; table: Float64Array; len: number };
 export const BAY_CUT_END = WORLD_LINES.find((l) => l.id === 'bay')!.legs[0]!.toCm / 100;
+/** The bay row's kink at Canopy Town, metres (leg 3's buffers stand 2 m short of it; leg 6 eases it). */
+export const CANOPY_KINK = WORLD_LINES.find((l) => l.id === 'bay')!.legs[1]!.toCm / 100;
 function build(id: 'ns' | 'bay'): RowPath {
   const r = WORLD_LINES.find((l) => l.id === id)!,
     end = r.fromCm + r.lengthCm;
@@ -62,6 +64,10 @@ function build(id: 'ns' | 'bay'): RowPath {
 }
 const PATHS: readonly RowPath[] = [build('ns'), build('bay')];
 const byLine = new Map(PATHS.map((p) => [p.line, p]));
+/** Whether a row line's halt has a second lever, on its homeward platform (railway/halts-view.ts rowSpot): a stub head,
+ * and every later halt, which its line may grow past (Bell Rock on the bay line, once leg 3 lays: homeward trains
+ * stand at its homeward platform). It stands only once the line runs past the halt. */
+export const rowHomewardLever = (h: { stop: number; end?: { kind: string } }) => h.end?.kind === 'stub' || h.stop > 0;
 /** Whether sim line `line` is one of the rows drawn here. */
 export const isRowLine = (line: number) => byLine.has(line);
 

@@ -16,13 +16,18 @@ const batched = (key: string) => {
   const visual = records.prefabs[key]!.visual;
   return ('builder' in visual && visual.batch === 'route-greybox:massing') || key === 'greybox.collider';
 };
+/** All a leg 2 level's placements (the massing's and the extras'). */
+export const leg2Placements = (value: unknown) => compiled(value).placements;
 export function leg2Massing(value: unknown) {
   return compiled(value).placements.filter((p) => batched(p.prefab));
 }
+/** Stands a level's other placements (labels, the lands' prisms) under `owner`; returns how many solids they made. */
 export function leg2Extras(owner: OwnedView, value: unknown) {
+  let solids = 0;
   for (const p of compiled(value).placements.filter((p) => !batched(p.prefab))) {
     const made = instantiate(p.prefab, p, { owner, texts: LEG2_TEXT, still: true });
     made.setEnabled(true);
+    solids += made.bodies.length;
     // Each label can be repainted while this area stands (route-greybox/leg-view.ts: a stall pad that connects).
     for (const [name, key] of Object.entries(p.labels ?? {})) {
       const relabel = (lines: readonly string[]) => made.relabel(name, lines);
@@ -32,6 +37,7 @@ export function leg2Extras(owner: OwnedView, value: unknown) {
       });
     }
   }
+  return solids;
 }
 /** A leg 2 level's pads (`greybox.pad` placements): id, centre and yaw. */
 export function leg2Pads(value: unknown) {

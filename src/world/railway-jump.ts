@@ -295,9 +295,20 @@ export const JUMPS: readonly Jump[] = [
     label: 'Bay cut laid',
     line: 'Both new lines run to Bell Rock; Home is a minute away',
   },
-  // Placeholder tooling copy for the owner. Landings are measured in step 6.
+  // Placeholder tooling copy for the owner. Landings measured in step 6 (docs/plans/greybox-leg3.md, its stills).
+  // canopy-open has none, for leg 2's reason above: its spot is Bell Rock's upper platform over the cut, which
+  // return-spot.ts (by x and z alone, within 30 m) would also give a rider of the lower level's line. canopy-reached
+  // has none either: arrival.ts probes a landing's surface from the spawn, before Canopy's massing (resident by
+  // distance) has mounted there, so it would keep the spawn; head 1's platform (canopy-mid) is the leg view's, always up.
   { stage: 'canopy-open', menu: false, label: 'Canopy gate open', line: 'The first kit is on the Bell Rock rack' },
-  { stage: 'canopy-mid', menu: false, label: 'Canopy line building', line: 'The second kit is aboard a bay train' },
+  {
+    stage: 'canopy-mid',
+    menu: false,
+    label: 'Canopy line building',
+    line: 'The second kit is aboard a bay train',
+    // Head 1's outward platform over the strait, between rack 2 and frame 2 (legRack, legFrame), facing the frame.
+    land: { x: -525.13, y: 4.9, z: -673.36, yaw: 1.935 },
+  },
   { stage: 'canopy-reached', menu: false, label: 'Canopy reached', line: 'The cloth waits at Canopy Town' },
 ];
 /** The rows a menu lists: every row but the tooling-only ones. */

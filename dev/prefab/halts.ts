@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { canonical } from './compiler.ts';
 // Placement authority: join, never rewrite, the sim catalog and the existing view-only platform layout.
 import { RAIL_HALTS } from '../../src/sim/railway-lines.ts';
-import { isRowLine } from '../../src/entities/railway/row-path.ts';
+import { isRowLine, rowHomewardLever } from '../../src/entities/railway/row-path.ts';
 import { HALT_PIER } from '../../src/prefab/halt-deck.ts';
 import { HALTS, OFFSET_HALTS, CROSSING_SPAN, CROSSING_WIDTH, FORMATION } from '../../src/place/layout.ts';
 import { ISLAND, HEADS, BUFFERS, LINE_ORIGIN, AXIS, ISLAND_LEVER } from '../../src/place/home-station.ts';
@@ -95,10 +95,11 @@ export function haltKitContent() {
       });
   }
   // The greybox route's own lines (docs/plans/greybox-leg2.md, step 4): a lever on each built halt's outward platform,
-  // and on each head's homeward one (right-hand running), stood by the view (railway/halts-view.ts rowSpot).
+  // and on each head's and later halt's homeward one (right-hand running), stood by the view (railway/halts-view.ts
+  // rowSpot).
   for (const [id, h] of RAIL_HALTS.entries()) {
     if (!h.leg || !isRowLine(h.line)) continue;
-    for (const up of h.end?.kind === 'stub' ? [false, true] : [false])
+    for (const up of rowHomewardLever(h) ? [false, true] : [false])
       entries.push({
         id: `halt-row-lever-${id}-${up ? 'up' : 'down'}`,
         prefab: 'railway.halt-lever',
