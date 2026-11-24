@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-24 · The canyon kit's faces near the bridge sit flush with the wall, so the alcove stays in view from the top of the climb ([entry](#d-2026-11-24-canyon-faces-flush))
 - 2026-11-24 · The canyon mesh kit is Chunky Sunshine blocks: deep bevels, big sandstone faces, broken rim caps ([entry](#d-2026-11-24-canyon-kit-chunky-sunshine))
 - 2026-11-18 · The chopped tree: a V notch that deepens to a thin hinge, pale fresh wood inside, pale chips, a few lying at the foot ([entry](#d-2026-11-18-chop-v-notch))
 - 2026-11-18 · Decisions page (look): gold ghosts keep 0.6 and the 6 s breath, the garage's "have" frame goes solid; the summit vane stays gone; the Big-boiler moment's wheels start from the long boiler's rate ([entry](#d-2026-11-18-decisions-page-look))
@@ -63,6 +64,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-11-01 · night stays light, moonlit ([entry](#d-2026-11-01-night-stays-light-moonlit))
 
 ## Decided
+
+- <a id="d-2026-11-24-canyon-faces-flush"></a>**2026-11-24, the canyon kit's faces near the alcove sit flush** (owner, 24 November 2026, in the live session, asked whether the faces near the bridge should sit flush with the wall since they hide most of the alcove's bracket from the top of the climb: "Yeah, flush with the wall is fine"). The faces near the bridge and alcove sit flush with the wall so the alcove stays in view; the rest of the kit (#2337) is unchanged.
 
 - <a id="d-2026-11-24-canyon-kit-chunky-sunshine"></a>**2026-11-24, the canyon mesh kit is Chunky Sunshine blocks** (owner, 24 November 2026, in chat, shown the [previz sheet](plans/terrain-clean/previz/canyon-mesh-kit-previz.jpg) (#2330) of the canyon climb in two styles: "Chunky sunshine I like better"). The kit on the canyon wedge is built in the Chunky Sunshine style (deep bevels, big sandstone faces, broken rim caps), not the quieter Odyssey strata. Answers [terrain-clean](plans/terrain-clean.md) Part 3's style question.
 
