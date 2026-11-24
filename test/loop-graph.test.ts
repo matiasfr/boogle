@@ -38,7 +38,11 @@ test('a Canopy stop cannot be assigned to the Ring Island bot, which finishes at
 function loadTool(url: URL, mocks: Record<string, unknown>, globals: Record<string, unknown> = {}) {
   const require = createRequire(url);
   const output = { exports: {} };
-  const { code } = transformSync(readFileSync(url, 'utf8'), { loader: 'ts', format: 'cjs' });
+  const { code } = transformSync(readFileSync(url, 'utf8'), {
+    loader: 'ts',
+    format: 'cjs',
+    supported: { 'dynamic-import': false },
+  });
   runInNewContext(code, {
     module: output,
     require: (id: string) => (id in mocks ? mocks[id] : require(id)),
@@ -294,4 +298,146 @@ test('built nodes and stand-ins are told apart by the flag, and the stand-ins re
     assert.ok(!built.has(s.id), `${s.id} is not a built node's id`);
     assert.ok(Object.values(s.bill).every((n) => n > 0) && s.legs.every((l) => l.km > 0), `${s.id}: a bill and a leg`);
   }
+});
+
+test('the shared prefix preserves three-player idle time in the T3 before beam order', async () => {
+  const { playOrder } = await import('../dev/loop/run.ts');
+  const orders = proposeOrders();
+  const canonical = orders[0]!.order;
+  const variant = orders.find((o) => o.name === 'T3 before beam')!.order;
+  const split = variant.findIndex((id, i) => id !== canonical[i]);
+  const order = variant.slice(0, split + 1);
+  const checkpoints: import('../dev/loop/run.ts').Checkpoint[] = [];
+  playOrder(canonical.slice(0, split + 1), 'canonical', 3, { checkpoints });
+  const full = playOrder(order, 'full', 3);
+  const resumed = playOrder(order, 'resumed', 3, { from: checkpoints[split]! });
+  assert.equal(resumed.nodes[split]!.idle, full.nodes[split]!.idle);
+});
+
+// Replay the real proof with one corrupt observation. The intact fixture stocks the rack,
+// moves 16 rails to the carrier and leg, and holds the following kit aboard through a restart.
+async function replayLegRejoin(fault?: 'held' | 'rack' | 'empty cargo' | 'restore' | 'mirror') {
+  const pages = new Set<string>();
+  let tick = 0,
+    picked = false,
+    restoredAt = -1;
+  const kitUnits = fault === 'empty cargo' ? 0 : 20;
+  const leg = () => ({
+    slot: 3,
+    laid: 1,
+    logs: 0,
+    rails: 0,
+    start: -1,
+    loadedLogs: tick ? 60 : 40,
+    loadedRails: tick ? 60 : 40,
+    heldLogs: 0,
+    heldRails: picked && fault !== 'held' ? 16 : 0,
+  });
+  const rack = () => ({
+    depot: tick > 0 ? 20 : 0,
+    depotRails: rackRails(),
+  });
+  function rackRails() {
+    if (tick === 0 || (fault === 'restore' && tick === restoredAt)) return 0;
+    return picked && fault !== 'rack' ? 4 : 20;
+  }
+  const train = (_world: unknown, slot: number) => {
+    const legKit = slot === (tick === 0 ? 10 : 9);
+    return { legKit, logs: legKit ? kitUnits : 0, rails: legKit ? kitUnits : 0 };
+  };
+  const back = () => ({ rails: picked ? 16 : 0, legRails: picked ? 16 : 0 });
+  const world = {
+    rules: { railway: { world: () => ({}) } },
+    sync: {
+      world: {
+        get tick() {
+          return tick;
+        },
+      },
+      roomStep: () => tick,
+      whenDurable: async () => {},
+    },
+    whenReady: async () => {},
+    step: () => {
+      tick++;
+    },
+  };
+  let hosted = { world };
+  const { railwayLegRejoin } = loadTool(
+    new URL('../dev/peer-test/ws-railway.ts', import.meta.url),
+    {
+      '../look/rail-seed.ts': { writeRailSeed: async () => {} },
+      '../../src/sim/railway-queries-route.ts': { legRow: leg },
+      '../../src/sim/railway-rows.ts': { train, account: back, rail: rack },
+      './harness.ts': {
+        waitFor: async (fn: () => Promise<boolean>) => ((await fn()) ? 0 : -1),
+        ev: (_page: unknown, fn: (arg: unknown) => unknown, arg: unknown) => {
+          // Both tabs can still agree on the pre-pickup packet before leaving.
+          const observed = fault === 'mirror' && restoredAt < 0 ? { rails: 0, legRails: 0 } : back();
+          const T = {
+            railStand() {},
+            railIntent() {
+              picked = true;
+            },
+            room: { peers: () => [...pages].map((peer) => ({ peer })) },
+            railAdapter: () => ({ session: { ready: true, pending: 0 }, rows: { account: { ...observed } } }),
+            rail: () => ({ ready: true, hash: 42 + observed.rails, accounts: [{ pid: 'leg0', ...observed }] }),
+          };
+          return runInNewContext('(' + fn.toString() + ')(arg)', { window: { T }, arg });
+        },
+      },
+    },
+    { setTimeout, clearTimeout },
+  ) as typeof import('../dev/peer-test/ws-railway.ts');
+  const web = {
+    open: async (name: string) => {
+      pages.add(name);
+      return { name, selfId: name, page: { name, close: async () => pages.delete(name) } };
+    },
+  };
+  await (railwayLegRejoin as (ctx: unknown) => Promise<void>)({
+    room: 'wscheck',
+    port: () => 1234,
+    dataDir: '',
+    web,
+    hosted: () => hosted,
+    check() {},
+    restart: async () => {
+      restoredAt = tick;
+      hosted = { world: { ...world } };
+    },
+  });
+  assert.ok(restoredAt >= 0);
+  return tick - restoredAt;
+}
+
+for (const fault of ['held', 'rack', 'empty cargo', 'restore', 'mirror'] as const) {
+  test('the leg rejoin proof detects corrupted ' + fault, async () => {
+    await assert.rejects(replayLegRejoin(fault), /Leg rejoin proof stopped/);
+  });
+}
+
+test('the leg rejoin proof steps at least one bay train round trip after the restart', async () => {
+  const { cycleTicks } = await import('../src/sim/railway-trains.ts');
+  const { RAIL_LINES } = await import('../src/sim/railway-lines.ts');
+  const leg = RAIL_LEGS.find((l) => l.id === 'bell-canopy')!;
+  const stops = RAIL_LINES[leg.line]!.halts.slice(0, leg.railheadHalt + 1).map((h) => h.s);
+  const elapsed = await replayLegRejoin();
+  const cycle = cycleTicks(leg.line, stops);
+  assert.ok(elapsed >= cycle, `advanced ${elapsed} ticks, standard bay train needs at least ${cycle}`);
+});
+
+test('the reported Checkpoint C idle range includes the solo first stack section', async () => {
+  const note = readFileSync(new URL('../docs/plans/greybox-leg3.md', import.meta.url), 'utf8');
+  const range = /Q7 and the stack line's first two\s+sections \((\d+) to (\d+) s\)/.exec(note);
+  if (!range) return; // The note may omit the range or qualify it by player count.
+  const { playOrder } = await import('../dev/loop/run.ts');
+  const order = proposeOrders()[0]!.order;
+  const throughStack = order.slice(0, order.indexOf('stack-1') + 1);
+  const run = playOrder(throughStack, 'canonical', 1);
+  const seconds = Math.round(run.nodes.at(-1)!.idle / 10);
+  assert.ok(
+    seconds >= Number(range[1]) && seconds <= Number(range[2]),
+    `solo stack-1: ${seconds} s, report: ${range[1]} to ${range[2]} s`,
+  );
 });
