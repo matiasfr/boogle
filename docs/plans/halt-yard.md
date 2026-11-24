@@ -1,4 +1,4 @@
-> **Status: step 1 built (2026-11-19, `claude/halt-yard-store`, world v65); step 2 built (2026-11-19, `claude/halt-yard-bay`, view only); steps 3 to 5 built and checked locally on `codex/halt-yard-stacks` (2026-11-22).** Read at `origin/main` `c0c993ff7` (world v62). Station-deposit
+> **Status: build 1 done. Step 1 on main (#2305, 19 November, world v65); step 2 on main (#2319, 19 November, view only); steps 3 to 5 on main (#2325, 23 November).** Read at `origin/main` `c0c993ff7` (world v62). Station-deposit
 > build 1. Step 1 changes rules, wire, save and server validation: one `WORLD_NS` bump (**the next free
 > version**), one independent review. Build 2 (cargo cars carry a yard's goods) is out of scope: it waits for the
 > cargo trains row.

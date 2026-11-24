@@ -1,6 +1,6 @@
 # Terrain clean: no cliff ledges, clean walkable ground, then custom meshes
 
-> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Part 1 and Checkpoint A are on main (#1821, #1839); Part 2a step 1 and wall-foot repairs (#1840), and Part 2b steps 5–6/seam repairs (#1846, #1882) are on main. Part 2a steps 2–3 trials were rejected (#1852). Part 2b step 7 is on main (#2092, 18 November) with its review fixes (abutment cut 0.692 m; exposed-trail cut 0.02 m; worst walk-on step 0.014 m; ring check passes). Next: Part 2a step 2, an accepted tread-edge treatment; Part 3 remains unverified/unbuilt.
+> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Part 1 and Checkpoint A are on main (#1821, #1839); Part 2a step 1 and wall-foot repairs (#1840), and Part 2b steps 5–6/seam repairs (#1846, #1882) are on main. Part 2a steps 2–3 trials were rejected (#1852). Part 2b step 7 is on main (#2092, 18 November) with its review fixes (abutment cut 0.692 m; exposed-trail cut 0.02 m; worst walk-on step 0.014 m; ring check passes). Next: Part 2a step 2, an accepted tread-edge treatment. Part 3: the canyon kit previz (#2330) and step (2), the Chunky Sunshine kit on the wedge (#2337, 24 November), are on main; the rest is unbuilt.
 _Plan, 14 November 2026. Part 1 implemented and checkpoint A recorded; Part 2a partially implemented, with its wall-foot regression repaired; Parts 2b and 3 not started. Original survey measured on main at `b2157fb6b`; every survey still was taken under load
 (1-minute load 16 to 34), so stills are evidence of shape and colour only, not of timing, shimmer or motion. Not tested
 on a device._
@@ -488,7 +488,7 @@ blocks** and **Quieter Odyssey strata** from the same two Boogle cameras. The so
 [the view back down](terrain-clean/previz/back-down-the-climb.png). An original meadow swatch illustrates the
 Small Magic look note beside the paintovers. The sheet shows design intent for the owner's style pick.
 
-**Step (2), built 24 November (branch `claude/canyon-kit-chunky`), for the owner to judge.** The Chunky Sunshine kit
+**Step (2), on main (#2337, 24 November), for the owner to judge.** The Chunky Sunshine kit
 (seven pieces: faces 6 and 10 m, a rim cap, boulders 0.9, 1.6 and 2.6 m, bank rock; one 43 KB GLB) stands on the
 wedge in the live game, no flag: six faces on the climb's east wall and round its top bend, ten boulders at their foot,
 six caps on the plateau's lip, four low rocks at the waterline. Matched stills from the previz's two cameras, before

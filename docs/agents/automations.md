@@ -6,7 +6,7 @@ posts there. Since 17 November they are bound to different threads: the heartbea
 with a fresh session each run, the daily tidy to "Set Up Scheduled Boogle Tasks", where it keeps its context.
 
 Running since 17 November 2026 (first heartbeat 07:24 UTC) on the Windows machine `hotbox`, clone
-`C:\Users\matia\Claude work\boogle`, Pacific time. **Paused on 19 November 2026** (`enabled: false` on both `Boogle heartbeat` and `Boogle daily tidy`) while Claude and Codex are at usage limits; re-enable both when ready to resume ([orchestrator state](orchestrator-state.md#paused-at-claude-and-codex-usage-limits-19-november)). The prompts below are the ones configured there.
+`C:\Users\matia\Claude work\boogle`, Pacific time. Paused on 19 November 2026 while Claude and Codex were at usage limits, and re-enabled on 24 November on the owner's "Let's resume development" ([log](orchestrator-log.md#24-november-resumed-state-file-cleaned)). The prompts below are the ones configured there.
 
 The MacBook's copies (`/Users/matiasfranco/Developer/boogle`) were paused on 17 November at 06:05 UTC and kept, so
 they can be turned back on there with `enabled: true` (and the Windows ones paused).
