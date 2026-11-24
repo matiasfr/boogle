@@ -1,6 +1,7 @@
 // The canyon kit (docs/plans/terrain-clean.md, Part 3; Chunky Sunshine blocks, docs/decisions-look.md
 // d-2026-11-24-canyon-kit-chunky-sunshine): pieces of assets/src/terrain-kit.py, drawn by the `terrain.kit` builder
-// (src/prefab/builders/terrain-kit.ts), one instance batch per piece, and placed by content/levels/canyon-kit.ts.
+// (src/prefab/builders/terrain-kit.ts), one instance batch per piece, and placed by dev/prefab/canyon-kit.ts
+// (content/built/levels/canyon-kit.json).
 // Scenery only: nothing to climb, break or use. What looks solid is solid, a little inside the drawn rock, so a block
 // standing proud is drawn over the box you bump. Origin: the middle of the piece's base front edge (boulders: the middle
 // of their base); +z is out of the wall, toward the path.
