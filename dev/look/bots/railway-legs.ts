@@ -45,6 +45,7 @@ const STACK = legOf('stack'),
 const PICK = RAIL_GRANTS.findIndex((g) => g.id === 'pick'),
   SEEDS = RAIL_GRANTS.findIndex((g) => g.id === 'seeds'),
   CLOTH = RAIL_GRANTS.findIndex((g) => g.id === 'cloth');
+const ORDINAL = ['one', 'two', 'three', 'four', 'five', 'six'];
 /** A leg's first halt on its sim line (the stop before its first head). */
 const fromStop = (L: RouteLeg) => L.railheadHalt - 1;
 /** High Gorge on line 2: the stack line's last halt. */
@@ -300,9 +301,10 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
       const frame = legFrame(leg, k);
       check(near(frame, 40), `standing by ${name} section ${k + 1}'s frame`);
       check(await bot.walk(frame.x / 100, frame.z / 100, 3), `walked to ${name} section ${k + 1}'s frame`);
-      await checkpoint(`${name} section ${k + 1} frame reached`);
+      // The section in words: the playthrough's stall check counts a beat as new only with its digits ignored.
+      await checkpoint(`${name} section ${ORDINAL[k]} frame reached`);
       await feedSection(slot, k, `${name} section ${k + 1}`);
-      await checkpoint(`${name} section ${k + 1} laid`);
+      await checkpoint(`${name} section ${ORDINAL[k]} laid`);
       const last = at() >= m;
       const stop = leg.railheadHalt + at() - 1;
       await rowRide(leg.line, leg.railheadHalt + k - 1, stop, name);
