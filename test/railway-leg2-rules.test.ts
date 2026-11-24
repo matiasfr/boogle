@@ -367,49 +367,39 @@ function ask(s: Seed, f: Record<string, unknown>) {
   const a = acc(s, 'a');
   return apply(s.w, 'a', { op: 'rail.call', epoch: a.epoch, request: a.request + 1, ...f } as never, s.t).accepted;
 }
-/** Garage step 4 (v67): the bay line fitted Strong by accepted ops only. The works lit and its first steel home (the
- * steel seed's own steps), the bay copy brought to the garage table, then rail.install's Strong boiler (part 6); the
- * bay trade is open from bay-mid. With `bills`, played on until the first bay train has adopted Strong and loaded two
- * bills ahead of the bay cut's last lay, and that lay made. Deterministic, so built once a stage and copied. */
-const strongBases = new Map<string, { s: Seed; fitAt: number }>();
-function strongBase(stage: 'bay-mid' | 'bay-reached', bills: boolean) {
-  const key = `${stage}/${bills}`;
-  if (!strongBases.has(key)) {
+/** Garage step 4 (v67): the works lit and its first steel home (the steel seed's own steps) and the bay line's copy
+ * brought to the garage table, by accepted ops only, with the copies' swap waited out. Deterministic, so built once a
+ * stage and copied. */
+const tradeBases = new Map<string, Seed>();
+function tradeBase(stage: 'bay-mid' | 'bay-reached') {
+  if (!tradeBases.has(stage)) {
     const s = steelHomeOn(unaudited(copy(stage)));
     assert.equal(act(s, 'a', 'rail.bring', { line: BAYL, revision: routeShed(s.w).bringRev }), 1);
     advance(s, BRING_TICKS);
-    assert.equal(act(s, 'a', 'rail.install', { line: BAYL, part: 6, revision: line(s.w, BAYL).rev }), 1);
-    const fitAt = s.t;
-    if (bills) {
-      const first = LINE_SLOTS[BAYL]![0]!;
-      for (let t = 0; train(s.w, first).logs < 40 || train(s.w, first).rails < 40; t++) {
-        assert.ok(t < 8000, 'two bills ahead of the last bay-cut lay');
-        advance(s, 1);
-      }
-      assert.equal(train(s.w, first).boiler, 5);
-      feedSection(s, BAY);
-    }
-    strongBases.set(key, { s, fitAt });
+    tradeBases.set(stage, s);
   }
-  const { s, fitAt } = strongBases.get(key)!;
-  return { s: unaudited({ w: restore(s.w), t: s.t }), fitAt };
+  const s = tradeBases.get(stage)!;
+  return unaudited({ w: restore(s.w), t: s.t });
+}
+/** The bay line's Strong boiler (rail.install, part 6), accepted. */
+function fitStrong(s: Seed) {
+  assert.equal(act(s, 'a', 'rail.install', { line: BAYL, part: 6, revision: line(s.w, BAYL).rev }), 1);
 }
 /** Asks at 5% a tick from askPool, riders' asks and junk calls, restores; with `feed`, the open leg fed every tick and
  * the seeds taken once the incline is laid. The worst served wait on each new line. With `strong`, the bay line is
- * fitted Strong by accepted ops (strongBase), and an ask made within one circuit of the fit is held to the 23 November
- * mixed-fleet checks (safety and the three-budget stall limit) while the fleet adopts. */
+ * fitted Strong by accepted ops as the measured run starts (tradeBase, then rail.install), so the fleet is mixed while
+ * it adopts, and a bay ask made within one circuit of the fit is held to the 23 November mixed-fleet checks (safety
+ * and the three-budget stall limit); the `ns` line keeps the ordinary budget. */
 function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: boolean, canopy = false, strong = false) {
   let s = unaudited(copy(stage));
   let mixedTicks = 0, heldTicks = 0, layingHoldTicks = 0, yieldedTicks = 0;
   let thirdEligible = -1, thirdServing = -1, mixedUntil = -1;
   if (strong) {
     assert.ok(stage === 'bay-mid' || stage === 'bay-reached', 'the bay trade is open');
-    const base = strongBase(stage, canopy);
-    s = base.s;
-    const st = stopsOf(s.w, BAYL);
-    mixedUntil = base.fitAt + Math.max(cycleTicks(BAYL, st, 0), cycleTicks(BAYL, st, 5));
+    s = tradeBase(stage);
   }
-  if (canopy) {
+  // Canopy: the barrier opened once the bay cut is laid (here, or by the growing run from bay-mid, below).
+  if (canopy && legRow(s.w, BAY).laid === RAIL_LEGS[BAY]!.sections.length) {
     assert.equal(act(s, 'a', 'rail.gate', { id: CANOPY }), 1);
     if (!feed) while (legRow(s.w, 3).laid < RAIL_LEGS[3]!.sections.length) feedSection(s, 3);
   }
@@ -417,11 +407,20 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
     rand = mulberry32(seed),
     health = new ServiceHealth([NS, BAYL], s.w);
   for (let k = 0; k < FUZZ; k++) {
+    if (strong && k === 0) {
+      fitStrong(s);
+      const st = stopsOf(s.w, BAYL);
+      mixedUntil = s.t + Math.max(cycleTicks(BAYL, st, 0), cycleTicks(BAYL, st, 5));
+    }
     if (rand() < 0.05) {
       const pool = askPool(s.w),
         id = pool[Math.floor(rand() * pool.length)]!,
         dir = rand() < 0.5 ? -1 : 1;
-      if (id !== undefined && ask(s, { id, dir })) health.ask(s.w, id, dir, s.t, s.t <= mixedUntil);
+      if (id !== undefined && ask(s, { id, dir })) {
+        health.ask(s.w, id, dir, s.t, s.t <= mixedUntil && RAIL_HALTS[id]!.line === BAYL);
+        if (RAIL_HALTS[id]!.line === NS)
+          assert.ok(!health.pending.get(`${id}/${dir}`)?.safetyOnly, 'a bay fit must keep the ordinary ns wait budget');
+      }
     }
     for (const line of [NS, BAYL]) {
       const n = stopsOf(s.w, line).length;
@@ -441,6 +440,8 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
     if (feed) {
       const open = RAIL_LEGS.findIndex((_l, j) => legOpen(s.w, j));
       if (open >= 0 && legRow(s.w, open).start < 0) stock(s, open);
+      if (canopy && legRow(s.w, BAY).laid === RAIL_LEGS[BAY]!.sections.length && !(routeRow(s.w).gates & (1 << CANOPY)))
+        ask(s, { op: 'rail.gate', id: CANOPY });
       if (legRow(s.w, INCLINE).laid === 2 && !(routeRow(s.w).grants & (1 << SEEDS)))
         apply(
           s.w,
@@ -480,9 +481,9 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
   health.drain(s.w, s.t, () => railTick(s.w, ++s.t, 75));
   assert.equal(invariant(s.w), null);
   if (strong) {
-    // Leg 2 mixed fits at the fuzz's start, so its first circuit is mixed; Canopy mixed fits before the bay cut's last
-    // lay, in setup, and the rest of its fleet adopts there or as the shed trains join.
-    if (!canopy) assert.ok(mixedTicks > 0, 'Strong and standard trains in service together after the fit');
+    // Settled runs fit at bay-reached with two or three bay trains in service, so the fleet is mixed while it adopts.
+    // Growing Canopy fits at bay-mid, inside Strong's window, where the bay line runs one train: its check is the hold.
+    if (!feed) assert.ok(mixedTicks > 0, 'Strong and standard trains in service together during the measured run');
     if (feed && canopy) assert.ok(heldTicks + yieldedTicks > 0, 'the growing fuzz exercised a Strong hold or release');
   }
   return {
@@ -501,7 +502,8 @@ for (const [label, canopy, strong] of [
       for (const feed of [false, true]) {
         // A Strong bay train while leg 2 grows (from incline-open) is unreachable since the bay trade opens at bay-mid.
         if (strong && !canopy && feed) continue;
-        const stage = strong && canopy ? 'bay-mid' : feed && !canopy ? 'incline-open' : 'bay-reached';
+        // Canopy mixed, growing: from bay-mid, so the Strong fit lands inside its window (the bay cut's first lay).
+        const stage = strong && canopy && feed ? 'bay-mid' : feed && !canopy ? 'incline-open' : 'bay-reached';
         const r = waits(stage, seed, feed, canopy, strong);
         const mode = feed ? 'growing' : 'settled';
         t.diagnostic(`${seed.toString(16)} ${mode} ns ${r.ns} bay ${r.bay}; ${[...r.health.stages].join('; ')}; held ${r.heldTicks}; mixed ${r.mixedTicks}`);
@@ -515,9 +517,16 @@ for (const [label, canopy, strong] of [
 // Matched random demand on the same mixed-fleet save. The control keeps the original
 // Strong hold at Bell Rock for the departure tick only, restoring its dwell clock afterward.
 test('mixed bay riders: early departures and the delay to the second full rack', t => {
-  // The bay line fitted Strong by accepted ops (strongBase): slot 0 with two bills, the bay cut laid.
-  const base = strongBase('bay-mid', true).s, slot = LINE_SLOTS[BAYL]![0]!;
+  // The bay line fitted Strong by accepted ops at bay-mid (tradeBase, rail.install): the first bay train adopts it and
+  // loads two bills ahead of the bay cut's last lay, then the cut is laid and the Canopy barrier opened.
+  const base = tradeBase('bay-mid'), slot = LINE_SLOTS[BAYL]![0]!;
+  fitStrong(base);
+  for (let t = 0; train(base.w, slot).logs < 40 || train(base.w, slot).rails < 40; t++) {
+    assert.ok(t < 8000, 'two bills ahead of the last bay-cut lay');
+    advance(base, 1);
+  }
   assert.equal(train(base.w, slot).boiler, 5);
+  feedSection(base, BAY);
   assert.ok(act(base, 'a', 'rail.gate', { id: CANOPY }));
   const halts = RAIL_HALTS.flatMap((h,id) => h.line === BAYL && h.stop <= 2 ? [id] : []);
   function trial(seed: number, retain: boolean) {

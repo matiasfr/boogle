@@ -311,8 +311,10 @@ before step 3. Step 3 holds on question 1.
       health, "mixed bay riders") relied on adoption only rising: they set the bay line to Strong and back to 0 by hand
       so one train stayed Strong. With `!==` that train goes back at its next halt 0 stand. On the orchestrator's call
       (option a), they now fit Strong by accepted ops only (the steel seed's own steps, exported as `steelHomeOn`, then
-      `rail.bring` and `rail.install`), and an ask made within one circuit of the fit gets the 23 November mixed-fleet
-      checks. The "leg 2 mixed, growing from `incline-open`" case is dropped: a Strong bay train while leg 2 grows is
+      `rail.bring` and `rail.install`) as the measured run starts, and a bay ask made within one circuit of the fit gets
+      the 23 November mixed-fleet checks (`ns` keeps its ordinary budget). The settled runs fit at `bay-reached`, with two
+      or three bay trains, and must see a mixed fleet; growing Canopy fits at `bay-mid`, inside Strong's window, where
+      the bay line runs one train, and must see a hold or a release (independent review, 24 November). The "leg 2 mixed, growing from `incline-open`" case is dropped: a Strong bay train while leg 2 grows is
       unreachable now that the bay trade opens at `bay-mid` (owner, 24 November).
 - [ ] **3. Seeds, screen, bays and trains (M to L; player-visible). Holds on question 1.**
       `src/sim/railway-seed-legs.ts` (or a sibling): `trade-ready` from `bay-mid` under A (`bay-reached` under C), by
