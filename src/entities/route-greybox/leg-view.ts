@@ -76,9 +76,12 @@ import { GATE_AT, GORGE_DECK, PICK_AT, TOWN_PAD, gorgeAt } from './massing.ts';
 import { bellMassing, bellPads } from './massing-bell.ts';
 import { westMassing } from './massing-west.ts';
 import { canopyGround, canopyMassing } from './massing-canopy.ts';
-/** The leg 2 and 3 levels' solids, built once on a lay's first lift: what a lifted body must also have room in. */
+import { gorgePlacements } from '../../prefab/instantiate.ts';
+/** The greybox levels' solids (High Gorge's, leg 2's and leg 3's), built once on a lay's first lift: what a lifted
+ * body must also have room in. */
 let around: readonly Shape[] | null = null;
-const scenery = () => (around ??= placedShapes([...bellMassing(), ...canopyMassing(), ...westMassing()]));
+const scenery = () =>
+  (around ??= placedShapes([...gorgePlacements, ...bellMassing(), ...canopyMassing(), ...westMassing()]));
 import { AREA_CENTRES, LEG2_TEXT } from './leg2-layout.ts';
 import { areaLabels } from './state.ts';
 import type { GreyBox } from './boxes.ts';
