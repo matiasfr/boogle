@@ -1476,7 +1476,8 @@ async function legRejoin(c: Ctx) {
   const mirrorsShow = async (group: Page[]) => {
     const want = (await state()).back;
     return agreeOn(group, (s) => {
-      const a = s.accounts.find((x) => x.pid === 'leg0');
+      // The mirror copies the whole account row (ws-page.ts), its leg counts included; RailAccount does not name them.
+      const a: { rails?: number; legRails?: number } | undefined = s.accounts.find((x) => x.pid === 'leg0');
       return (a?.rails ?? 0) === want.rails && (a?.legRails ?? 0) === want.legRails;
     });
   };
