@@ -11,7 +11,6 @@ The one record of who is running what, and what the eight-job limit is counted f
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
 | Garage step 4’s Checkpoint: the plan’s proofs once, and the early Install offer reproduced at real speed | Garage choices | claude/garage-step4-checkpoint | the heartbeat, Opus medium | 2026-11-24 23:10 | running: the step 4 bot builder’s own thread, a delegate of the heartbeat’s thread, browser-heavy; a report, the plan’s Checkpoint note and dev tooling only, no `src/`, `server/` or `test/` |
-| Greybox leg 4’s plan: the cave line (West landing, Saltpan, Port Quay) | The greybox route | claude/greybox-leg4-plan | the heartbeat, Opus high (planner) | 2026-11-24 23:10 | running: a delegate of the heartbeat’s thread; docs only, `docs/plans/greybox-leg4.md` and its design review’s rows in `docs/agent-calls.md` |
 | Cliff kit: plan revised to his answers, then step 0 (the generator) | Terrain clean-up | claude/cliff-kit-step0 | live session, Opus medium | 2026-11-25 00:00 | running |
 
 ## Where the work stands
@@ -27,6 +26,12 @@ The one record of who is running what, and what the eight-job limit is counted f
 One list, newest first. Each proceeds on its recommendation unless it says it waits; the heartbeat starts nothing on a question that waits. When he answers, record the answer in the decision log and delete the item here. Answered lately: [the decisions page, 18 November](../decisions-process.md#d-2026-11-18-decisions-page-process) (every item it carried, by topic: [rail](../decisions-rail.md#d-2026-11-18-decisions-page-rail), [rewards](../decisions-rewards.md#d-2026-11-18-decisions-page-rewards), [core loop](../decisions-core-loop.md#d-2026-11-18-decisions-page-core-loop), [look](../decisions-look.md#d-2026-11-18-decisions-page-look), [controls](../decisions-controls.md#d-2026-11-18-decisions-page-controls), [characters](../decisions-characters.md#d-2026-11-18-decisions-page-characters)); [fill the free job slots, 18 November](../decisions-process.md#d-2026-11-18-fill-free-slots); [the town’s first choice, 16 November](../decisions-rewards.md#d-2026-11-16-first-town-lesson-answers); [the first line, 17 November: no fork](../decisions-core-loop.md#d-2026-11-17-first-line-no-fork); the names "Blast pipe" and "Big boiler" (16 November).
 
 Cleaned on 24 November: every item from 5 to 19 November is in [the log](orchestrator-log.md#24-november-resumed-state-file-cleaned) word for word. Status reports of shipped work left the list (the backlog rows carry them). What still needs him, grouped, each with its recommendation; none holds other work:
+
+**Greybox leg 4’s plan** ([greybox-leg4](../plans/greybox-leg4.md#open-questions), on main, #2368; 24 November). Three questions, none blocking: the build proceeds on each recommendation.
+- The sea cave in greybox: a grey hood over the line beside the cliff (recommended), or a tunnel through the sandstone face, which re-routes the line’s first 100 m.
+- The plug refuses with the pick in hand from High Gorge until Canopy’s line is laid: keep the decided fixed order and say "After the line to Canopy (placeholder)" (recommended), or open the cave leg after the bay cut, a branch against the fixed order.
+- Whether the cave line gets Quick or Strong: not in leg 4, the garage’s next plan decides (recommended).
+- For his eye, the plan’s one New call (26): the cave line runs standard trains only, so Strong has no building leg after leg 3 until the garage adds it. A world bump (v68) rides with steps 1 to 3.
 
 **Changes to how work runs** (each recommended, none started because it changes a skill or workflow):
 - Wakes: a wake ends its turn after scheduling its follow-up, starts `ship-queue` so its exit wakes nobody, first sends every finished delegate its unblocking step, and every run starts with `ListAgents` (two heartbeat sessions ran at once on 19 November; rules 62, 65).
