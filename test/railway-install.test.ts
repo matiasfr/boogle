@@ -1,4 +1,5 @@
 import { ServiceHealth } from './helpers/railway-service-health.ts';
+import { intentOf, railwayActs } from '../src/adapters/railway-intents.ts';
 // The install and the longer boiler (docs/plans/ring-island-build2.md, R3): rail.install's refusals (no steel in the
 // bay, line 1, another part, a stale revision or a malformed hold, the table mid roll-out), two presses on one tick
 // installing once, each line 2 train taking the fit only standing at the Village, the fastest row's braking
@@ -790,6 +791,14 @@ test('trade installs: refusals, the first fit spends 1, swaps spend nothing, ten
   const loaded = restore(s.w);
   assert.equal(invariant(loaded), null);
   assert.deepEqual([lineRow(loaded, BAYL).rev, lineRow(loaded, NS).rev, shed(loaded).tableLine, shed(loaded).bringRev], [11, 1, NS, 2]);
+});
+
+test('line 2 refuses trade parts in the legacy adapter and the receipt decoder', () => {
+  const acts = railwayActs(() => true, () => HOME.w);
+  for (const part of [5, 6] as const) {
+    const event = { op: 'rail.install', line: LINE2, part, revision: 1 };
+    assert.deepEqual([acts.installBoiler(1, part), intentOf(event)], [false, null]);
+  }
 });
 
 test('trade installs are refused before each trade opens, even with the copy on the table', () => {

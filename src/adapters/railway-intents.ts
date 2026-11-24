@@ -9,7 +9,7 @@ import { LINE1_STATIONS, LINE1_HARDWOODS, type RailMaterial, type LineStationId 
 import type { Line2StationId } from '../sim/railway-line2-layout.ts';
 import { BOILER_MAX, LINE_HALTS } from '../sim/railway-train.ts';
 import { LINE2, RAIL_TRAINS } from '../sim/railway-lines.ts';
-import { RAIL_ROCKS, installPart, type InstallPart } from '../sim/railway-works-layout.ts';
+import { RAIL_ROCKS, type InstallPart } from '../sim/railway-works-layout.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS } from '../sim/railway-route.ts';
 import { HALT_YARDS } from '../sim/railway-yard-layout.ts';
 import { Pile } from '../sim/railway-components.ts';
@@ -81,7 +81,7 @@ export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   // Ring Island's steel works and the install (v31): a kind of 0 is left out of the event.
   if (e.op === 'rail.steelTake' && (e.kind === undefined || railInt(e.kind, 1)))
     return { op: e.op, kind: e.kind === 1 ? 1 : 0 };
-  if (e.op === 'rail.install' && e.line === LINE2 && installPart(e.part) && railInt(e.revision, BOILER_MAX + 1))
+  if (e.op === 'rail.install' && e.line === LINE2 && installAdmits(LINE2, e.part) && railInt(e.revision, BOILER_MAX + 1))
     return { op: e.op, line: LINE2, part: e.part, revision: e.revision };
   // Garage step 4: a trade line's Quick (5) or Strong (6) boiler on the line's install revision, and a line's copy
   // brought to the garage table on the table's bring revision.
@@ -319,7 +319,9 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
     haltTake: halt('rail.haltTake'),
     /** Install at Home on the shared revision of line 2's boiler and cradle fits. */
     installBoiler: (revision: number, part: InstallPart = 2) =>
-      railInt(revision, BOILER_MAX + 1) && submit({ op: 'rail.install', line: LINE2, part, revision }),
+      installAdmits(LINE2, part) &&
+      railInt(revision, BOILER_MAX + 1) &&
+      submit({ op: 'rail.install', line: LINE2, part, revision }),
     /** Garage step 4: bring `line`'s copy to the garage table on the bring revision this tab saw (`Shed.bringRev`). */
     bringLine: (line: number, revision: number) =>
       railInt(line, GARAGE_LINES.length - 1) && railInt(revision) && submit({ op: 'rail.bring', line, revision }),
