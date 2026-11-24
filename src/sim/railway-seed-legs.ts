@@ -81,6 +81,17 @@ export function laySection(s: Seed, k = STACK) {
     advance(s, 1);
   }
 }
+/** The leg stages after `from` up to `to` run on `s`, any seed in `from`'s state (garage step 4's tests start them
+ * from worlds they already hold, such as High Gorge reached with steel home). Changes `s` in place and returns it. */
+export function legStagesOn(s: Seed, from: LegStage, to: LegStage): Seed {
+  const a = LEG_STAGES.indexOf(from),
+    b = LEG_STAGES.indexOf(to);
+  need(a >= 0 && b > a, `${from} to ${to}`);
+  for (const stage of LEG_STAGES.slice(a + 1, b + 1)) build(s, stage);
+  const broken = invariant(s.w);
+  need(broken === null, `${to}: ${broken}`);
+  return s;
+}
 
 /** Advances until `ok`, at most `max` ticks. */
 function until(s: Seed, ok: () => boolean, max: number, what: string) {

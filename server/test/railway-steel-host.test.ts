@@ -15,9 +15,9 @@ import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
 import { RING_STEEL_WORKS, RING_STEEL_YARD, STEEL } from '../../src/sim/railway-ring-layout.ts';
 import { BRING_TICKS, SHED_TABLE, WORKS, INSTALL_STEEL, steelPool } from '../../src/sim/railway-works-layout.ts';
-import { laySection } from '../../src/sim/railway-seed-legs.ts';
+import { laySection, legStagesOn } from '../../src/sim/railway-seed-legs.ts';
 import { railwayAtSteel, type SteelStage } from '../../src/sim/railway-seed-steel.ts';
-import { buildSeedWorld, invariant, line, steel, steelHome, type Seed } from '../../test/helpers/rail.ts';
+import { buildSeedWorld, invariant, line, steel, unaudited, type Seed } from '../../test/helpers/rail.ts';
 import { account, shed } from '../../src/sim/railway-rows.ts';
 import { rail } from '../../src/sim/railway-rows.ts';
 import {
@@ -805,11 +805,13 @@ test("steel host (review): a leaver holding the kit's 8 logs and 12 rails foreve
 const BAYL = ROW_LINE.bay,
   NSL = ROW_LINE.ns;
 const bring = (line: unknown, revision: unknown) => ({ op: 'rail.bring', line, revision });
-/** bay-mid with the works lit and the first steel home, built at module scope, outside the test's timeout. */
-const TRADE = steelHome(buildSeedWorld('bay-mid'));
+/** Both trades open: the file's PAID_GORGE (High Gorge reached by accepted ops, all twelve steel home) played on
+ * through the leg seed's own steps to bay-mid, on an unaudited copy. Built lazily, inside the test that uses it. */
+let tradeSeed: Seed | undefined;
+const tradeFixture = () => (tradeSeed ??= legStagesOn(unaudited(PAID_GORGE), 'gorge-reached', 'bay-mid'));
 
 test('trade host: a bring and Strong cross r:edit, race once, replicate and survive a restart unrepeated', async () => {
-  const r = await host('trade', TRADE, { s: 'a', peer: 'b' });
+  const r = await host('trade', tradeFixture(), { s: 'a', peer: 'b' });
   try {
     const mirror = r.connect('viewer');
     assert.equal(await r.action(bring(BAYL, 0), away(SHED_TABLE)), 'rejected', 'out of reach');

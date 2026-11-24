@@ -55,7 +55,7 @@ import { apply } from '../src/sim/railway-drive.ts';
 import { BRING_TICKS, CRADLE_CAP, INSTALL_STEEL, WORKS, steelPool } from '../src/sim/railway-works-layout.ts';
 import { RAIL_GATES, RAIL_LEGS, ROW_LINE } from '../src/sim/railway-route.ts';
 import { legDone, legOpen, legRow, routeRow, tradeOpen } from '../src/sim/railway-queries-route.ts';
-import { laySection } from '../src/sim/railway-seed-legs.ts';
+import { laySection, legStagesOn } from '../src/sim/railway-seed-legs.ts';
 import { RAILS } from '../src/sim/railway-line2-layout.ts';
 import type { World } from '../src/ecs/index.ts';
 import { footCap } from '../src/sim/railway-queries-trade.ts';
@@ -713,10 +713,26 @@ const NS = ROW_LINE.ns,
   BAYL = ROW_LINE.bay,
   CUT = RAIL_LEGS.findIndex((l) => l.id === 'bay-cut'),
   CANOPY_GATE = RAIL_GATES.findIndex((g) => g.id === 'canopy');
-/** `bay-mid` (both trades open) with the works lit and the first steel home, by accepted ops and ticks only. Built at
- * module scope, outside each test's timeout, as HOME and GORGE are. */
-const TRADE = steelHome(buildSeedWorld('bay-mid'));
-const tradeReady = () => copy(TRADE);
+/** GORGE (High Gorge reached, the first steel home) played on through the leg seed's own steps to incline-mid (no
+ * trade open), bay-open (the ns trade open) and bay-mid (both open), by accepted ops and ticks only, each stage kept.
+ * Built once, lazily, by the first test that needs it (the next one names it). */
+let tradeSeeds: Record<'incline-mid' | 'bay-open' | 'bay-mid', Seed> | undefined;
+function tradeStages() {
+  if (!tradeSeeds) {
+    const s = copy(GORGE);
+    const mid = copy(legStagesOn(s, 'gorge-reached', 'incline-mid'));
+    const open = copy(legStagesOn(s, 'incline-mid', 'bay-open'));
+    tradeSeeds = { 'incline-mid': mid, 'bay-open': open, 'bay-mid': legStagesOn(s, 'bay-open', 'bay-mid') };
+  }
+  return tradeSeeds;
+}
+const tradeReady = (stage: 'incline-mid' | 'bay-open' | 'bay-mid' = 'bay-mid') => copy(tradeStages()[stage]);
+
+test('the trade seed: bay-mid on High Gorge with steel home, both trades open', { timeout: 300000 }, () => {
+  const s = tradeReady();
+  assert.deepEqual([tradeOpen(s.w, NS), tradeOpen(s.w, BAYL), steelPool(shed(s.w)) >= 1], [true, true, true]);
+  assert.equal(legRow(s.w, CUT).laid, 1);
+});
 const bring = (s: Seed, line: unknown, pid = 'a', fields: Record<string, unknown> = {}) =>
   act(s, pid, 'rail.bring', { line, revision: shed(s.w).bringRev, ...fields } as never);
 const fit = (s: Seed, line: number, part: unknown, pid = 'a', fields: Record<string, unknown> = {}) =>
@@ -781,10 +797,12 @@ test('trade installs: refusals, the first fit spends 1, swaps spend nothing, ten
   assert.equal(fit(s, NS, 5), 1);
   assert.equal(shed(s.w).spent, spent + 2);
   // With no steel home, a first fit is refused (the screen's STEEL 0/1).
-  const dry = copy(buildSeedWorld('bay-mid'));
-  assert.equal(steelPool(shed(dry.w)), 0);
+  // An empty pool: the trade seed with its pool spent by hand (no load check after it), the bay copy on the table.
+  const dry = tradeReady();
   brought(dry, BAYL);
-  assert.equal(fit(dry, BAYL, 5), 0, 'an empty pool');
+  const h = dry.w.mut(Shed, dry.w.single(Shed))!;
+  h.spent = h.steel;
+  assert.equal(raw(dry.w, 'rail.install', { line: BAYL, part: 5, revision: 0 }, dry.t), 0, 'an empty pool');
   const loaded = restore(s.w);
   assert.equal(invariant(loaded), null);
   assert.deepEqual([lineRow(loaded, BAYL).rev, lineRow(loaded, NS).rev, shed(loaded).tableLine, shed(loaded).bringRev], [11, 1, NS, 2]);
@@ -805,7 +823,7 @@ test('trade installs are refused before each trade opens, even with the copy on 
     ['bay-open', NS, true],
     ['bay-open', BAYL, false],
   ] as const) {
-    const s = copy(buildSeedWorld(stage));
+    const s = tradeReady(stage);
     assert.equal(tradeOpen(s.w, line), open, `${stage} line ${line}`);
     if (!open) assert.equal(bring(s, line), 0, `${stage}: no bring before the trade opens`);
     // A hand-made table with the copy on it, and a pool: the rule still refuses until the trade opens.
@@ -910,10 +928,17 @@ test('a Strong train with two bills aboard, swapped to Quick, keeps Strong until
       if (k % 100 === 0) assert.equal(invariant(s.w), null, `invariant at ${s.t}`);
     }
   };
-  until(() => row().logs === 40 && row().rails === 40 && row().at === 0 && row().boiler === 5, 'two bills aboard');
-  assert.equal(row().phase, TRAIN_PHASE.STAND, 'standing at the West landing');
-  advance(s, Math.max(0, tableFree(s.w) - s.t));
-  assert.ok(row().at === 0 && row().logs === 40, 'still at the West landing with both bills');
+  // Standing at the West landing with both bills, the table free for the swap.
+  until(
+    () =>
+      row().logs === 40 &&
+      row().rails === 40 &&
+      row().at === 0 &&
+      row().phase === TRAIN_PHASE.STAND &&
+      row().boiler === 5 &&
+      s.t >= tableFree(s.w),
+    'two bills aboard, standing at the West landing',
+  );
   assert.equal(fit(s, BAYL, 5), 1, 'swapped to Quick with two bills aboard');
   advance(s, 1);
   assert.equal(row().boiler, 5, 'two bills do not fit a Quick train: it keeps Strong');
