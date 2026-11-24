@@ -719,6 +719,15 @@ table before garage step 4's screen is built (finding 3), not before its rules.
       West landing, no recovery, no error. The end still shows Buddy on the West landing's apron by the departure board
       (Bay head 1, Bell Rock, Canopy head 2: head 1 closed behind). Timings are not evidence. Not tested on a device.
 
+      **Review round, 24 November.** The review's four tests (`test/loop-graph.test.ts`) pass: a leg stop is refused for a
+      seed whose bot never reaches it; boarding counts only after 0.8 s carried, the deadline included; the untaken-cloth
+      return steps off at Canopy's lever (metres to cm); `--one-branch` is refused before any host. The bot also accepts
+      a homeward train that carries it on the way to the lever, waits on Canopy's deck while a train stands there or is
+      bound there, approaches leg 3's frames and racks 1.5 m further from the track (a rider was carried off from head 2
+      into the strait), and names a row leg's sections in words (the playthrough's stall check ignores digits, so section
+      3 read as section 1 and two runs stopped 600 game seconds after section 1 laid). `--from bay-reached --to canopy`
+      passed twice in a row on 34069cce5 (`.look/playthrough/leg3fixe/`, `leg3fixf/`). Not tested on a device.
+
 **Checkpoint C (leg 3 playable).** Named proofs, run once: `npm run loop -- run` for one to three players with idle
 seconds per wait; the bot segment `--from bay-reached --to canopy`; `npm run test:net`; `npm run scenario --
 reconnect-edit` at `--rail-seed canopy-mid` (a second tab joins; the first leaves carrying a rail and rejoins after a
