@@ -1,10 +1,8 @@
-// A greybox solid switching on with a player standing in it (greybox leg 3, step 6's reviews; route-greybox/clear.ts:
+// A laid deck's slab switching on where a player stands (greybox leg 3, step 6's reviews; route-greybox/clear.ts:
 // lift or wait, never push). `&clear=lay` (with --rail-seed canopy-open): feeds Canopy's first section through the real
 // commands (take at Bell Rock's rack, feed frame 1), then stands Buddy on Bell Rock's rock under leg 3's descent
 // (`&clearAt=s,lat`, by default bay s 1340, 2.25 m left of the row, the rim the re-check found) and waits out the lay.
-// `&clear=mount` (--rail-seed canopy-reached): frees Canopy's area (Buddy 900 m away), puts Buddy inside the outward
-// platform's box, and lets the area mount again. Each prints `CLEAR` lines with Buddy's position before and after and
-// ends the warm-up (window.__placeDone).
+// Prints `CLEAR` lines with Buddy's position before and after and ends the warm-up (window.__placeDone).
 //   npm run look -- --rail-seed canopy-open --eval dev/look/evals/leg3-clear.ts --query 'clear=lay' \
 //     --until window.__placeDone --cam -110,22,-805 --look -125,14,-830 --name l3-clear-lay
 const R = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
@@ -24,9 +22,6 @@ const { legRow } = (await import(
 const { rowWorld, rowY } = (await import(
   '/src/entities/railway/row-path.ts' as string
 )) as typeof import('../../../src/entities/railway/row-path.ts');
-const { routeAreas } = (await import(
-  '/src/entities/route-greybox/state.ts' as string
-)) as typeof import('../../../src/entities/route-greybox/state.ts');
 const { background } = (await import('/src/async.ts' as string)) as typeof import('../../../src/async.ts');
 
 const w = window as Window & { __placeDone?: boolean };
@@ -85,17 +80,7 @@ background(
       await until(() => legRow(R.rw(), k).laid >= 1, 'the first section laid', 90000);
       await wait(1500);
       console.log(`CLEAR after the lay ${JSON.stringify({ at: at(), laid: legRow(R.rw(), k).laid })}`);
-    } else if (mode === 'mount') {
-      const canopy = routeAreas.get('canopy')!;
-      put(-1060, 40, -1200);
-      await until(() => !canopy.mounted, 'Canopy freed', 60000);
-      // Inside the outward platform's box (n -10, lat +5.8 from the stop; its top 13.9 m, solid down to 11.5 m).
-      put(-1077.73, 12.9, -327.59);
-      console.log(`CLEAR inside ${JSON.stringify({ at: at(), mounted: canopy.mounted })}`);
-      await until(() => canopy.mounted, 'Canopy mounted', 60000);
-      await wait(1500);
-      console.log(`CLEAR after the mount ${JSON.stringify({ at: at(), mounted: canopy.mounted })}`);
-    } else throw new Error('leg3-clear: ?clear=lay or ?clear=mount');
+    } else throw new Error('leg3-clear: ?clear=lay');
     w.__placeDone = true;
   })(),
   'leg 3 clearance look',
