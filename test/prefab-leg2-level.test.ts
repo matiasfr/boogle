@@ -246,18 +246,20 @@ const ground = (value: unknown) =>
   ).colliders;
 
 // Run the view's actual draw and solid transitions, recording the sign and physics boundaries.
-async function reachedView(s = 1300, lat = 0, canopyLaid = 3) {
+async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE.Vector3) {
   const p = row.rowWorld(route.ROW_LINE.bay, s, lat, { x: 0, z: 0 });
   const floor = placed.heightAt(
     ground(bellRaw).flatMap((c) => c.volume.triangles),
     p,
   );
   assert.ok(floor !== null);
-  const position = new THREE.Vector3(p.x, floor + PLAYER_R, p.z);
+  const position = stackLayAt ?? new THREE.Vector3(p.x, floor + PLAYER_R, p.z);
   const signs = new Map<THREE.Group, string[]>();
   const overlaps: number[] = [];
   const drawnDeck: Shape[] = [];
+  let slabsEnabled = 0;
   const slab = (ax: number, az: number, bx: number, bz: number, ya: number, yb: number, width: number) => {
+    slabsEnabled++;
     const dx = bx - ax,
       dz = bz - az,
       run = Math.hypot(dx, dz);
@@ -267,6 +269,10 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3) {
     if (position.y - PLAYER_R < rail && position.y + HEAD_OFFSET + PLAYER_R > rail - 0.4) overlaps.push(rail);
     return {};
   };
+  const { leg2Massing } = sourceModule<typeof import('../src/entities/route-greybox/leg2-draw.ts')>(
+    fs.readFileSync('src/entities/route-greybox/leg2-draw.ts', 'utf8'),
+    { records: artifact, loadLevelArtifact: validation.loadLevelArtifact, LEG2_TEXT },
+  );
   const source = fs
     .readFileSync('src/entities/route-greybox/leg-view.ts', 'utf8')
     .replace(/await Promise\.all\(\s*\[[\s\S]*?\],?\s*\)/, 'dependencies');
@@ -296,9 +302,10 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3) {
           route.RAIL_LEGS.map((l) => l.sections.length),
         ),
       canopyGround: isleGround,
-      bellMassing: () => [],
-      canopyMassing: () => [],
-      westMassing: () => [],
+      gorgePlacements: gorge.placements,
+      bellMassing: () => leg2Massing(bellRaw),
+      canopyMassing: () => leg2Massing(canopy),
+      westMassing: () => leg2Massing(westRaw),
       legKitFlight: { logs: 0, rails: 0 },
       legYardFlight: { logs: 0, rails: 0 },
       bellPads: [],
@@ -347,6 +354,14 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3) {
     ),
   )!;
   if (firstLay) leg.laid = 0;
+  const stack = seed.w.mut(
+    Leg,
+    progress.legId(
+      seed.w,
+      route.RAIL_LEGS.findIndex((l) => l.id === 'stack'),
+    ),
+  )!;
+  if (stackLayAt) stack.laid--;
   const view = await createLegView(
     { read: { whole: () => true, world: () => seed.w, tick: () => seed.t } },
     { removeBody() {} },
@@ -355,7 +370,11 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3) {
     leg.laid = 1;
     view.update();
   }
-  return { signs, overlaps, floor, position, drawnDeck };
+  if (stackLayAt) {
+    stack.laid++;
+    view.update();
+  }
+  return { signs, overlaps, floor, position, drawnDeck, slabsEnabled: () => slabsEnabled, update: () => view.update() };
 }
 
 test('the Canopy lay leaves a player standing on Bell Rock clear of the new deck', async () => {
@@ -570,4 +589,30 @@ test('residency covers the far face of a pitched box', () => {
   const near = coverNear([placement], defs, { x: 0, z: 0 });
   const far = new THREE.Vector3(1, 4, 1).applyEuler(new THREE.Euler(Math.PI / 4, 0, 0, 'YXZ'));
   assert.ok(near >= Math.hypot(far.x, 408 + far.z) + 40, 'the outer corner is inside the arrival margin');
+});
+test('the first Canopy lay keeps both slabs at the Bell Rock seam off until the player clears both', async () => {
+  const seam = row.BAY_CUT_END + 1.8 + 110;
+  const view = await reachedView(seam, 0, 1);
+  const first = view.slabsEnabled();
+  const move = (s: number) => {
+    const p = row.rowWorld(route.ROW_LINE.bay, s, 0, { x: 0, z: 0 });
+    view.position.set(p.x, view.floor + PLAYER_R, p.z);
+    view.update();
+  };
+  move(seam - 1);
+  const partial = view.slabsEnabled() - first;
+  view.position.y += 5;
+  view.update();
+  assert.equal(view.slabsEnabled() - first, 2, 'both colliders must return once clear');
+  assert.equal(partial, 0, 'one slab returned while the player still overlapped the other');
+});
+
+test('a stack deck becoming solid at High Gorge leaves room for the player’s head', async () => {
+  const position = new THREE.Vector3(-105.36, 3.3, -1983.2695);
+  const clear = clearFor(position);
+  const solids = ground(gorgeRaw).map(shapeOf);
+  const fits = () => solids.every((solid) => clear.heldTop(solid, position) === null);
+  assert.ok(fits());
+  await reachedView(1300, 0, 3, position);
+  assert.ok(fits(), `deck lifted the player into High Gorge at ${position.toArray()}`);
 });
