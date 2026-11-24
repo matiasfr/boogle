@@ -8,7 +8,9 @@
 // riding `bay` trains over the strait to each head and on to Canopy Town, take the glider cloth round the buffers and
 // ride home on the same line to the West landing. Prompts are pressed by id (`railway-leg-take-logs`, `-take-rails`,
 // `-feed`, `-pick`, `-gate`, `-seeds`, `-canopy`, `-cloth`). Each phase reads the rows first, so it resumes from
-// `ring-joined`, `gorge-open`, `gorge-mid`, `gorge-reached` and `bay-reached` (a seed starts at the Village).
+// `ring-joined`, `gorge-open`, `gorge-mid`, `gorge-reached`, `bay-mid`, `trade-ready` and `bay-reached` (a seed starts
+// at the Village). Garage step 4: with `railFit=quick|strong` the bot fits the bay line at the Roundhouse post
+// (./railway-fit.ts) at Home before its next bay ride out; with none it never visits the post.
 // Inspection observes; it never seeds a world or moves a player. A fall into the sea is a finding (no recovery).
 import type { Bot } from '../bot.ts';
 import { legDone, legRow, routeRow } from '../../../src/sim/railway-queries-route.ts';
@@ -403,7 +405,52 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   // The incline: section 1's frame and rack are High Gorge's; its heads and Bell Rock's lower deck by `ns` trains.
   if (!legDone(rw(), INCLINE)) await buildRowLeg(INCLINE, 'incline');
   const bell = rowHalt(incline.row, incline.destRowHalt);
-  if (!legDone(rw(), BAY)) {
+  const bayLeg = RAIL_LEGS[BAY]!;
+  const westLanding = legFrame(bayLeg, 0);
+  /** Off the car to `at` (cm), standing there dry. */
+  const stepOff = async (at: { x: number; z: number }, beat: string) => {
+    await hopTo(at.x / 100, at.z / 100, beat);
+    await until(() => me.coyote > 0 && !me.swimming, `${beat}: standing`, 10000);
+  };
+  /** From the Village (where a seed starts): walk to the West landing and ride a bay train out to stop `to`. */
+  const rideOut = async (to: number, at: { x: number; z: number }, beat: string) => {
+    check(await bot.walk(westLanding.x / 100, westLanding.z / 100, 3), 'walked from the Village to the West landing');
+    await rowRide(bayLeg.line, 0, to, 'bay line');
+    await stepOff(at, beat);
+  };
+  /** Garage step 4's choice, when the page's `railFit=quick|strong` asks for one: at Home, before the next bay ride
+   * out. The fit's module loads only then (it reaches the garage screen's imports), and the query is read by pattern:
+   * test/loop-graph.test.ts runs this route in a bare context with no location or URLSearchParams. */
+  const fit = /[?&]railFit=([^&]*)/.exec(globalThis.location?.search ?? '')?.[1] ?? null;
+  check(fit === null || fit === 'quick' || fit === 'strong', `railFit=${fit}: quick or strong`);
+  const choose = async () => {
+    if (!fit) return;
+    const { fitAtPost } = await import('./railway-fit.ts');
+    if (await fitAtPost({ bot, until, check, face }, bayLeg.line, fit as 'quick' | 'strong'))
+      await checkpoint(`bay line fitted ${fit}`);
+  };
+  /** The bay line's trains for the log: [slot, phase, at, boiler] each, parked ones left out. */
+  const logFleet = (beat: string) =>
+    console.log(
+      `RAILWAY FLEET ${JSON.stringify({
+        beat,
+        tick: railAt(),
+        fit,
+        bay: LINE_SLOTS[bayLeg.line]!.map((slot) => [slot, trains(rw())[slot]!] as const)
+          .filter(([, t]) => t.phase !== 2)
+          .map(([slot, t]) => [slot, t.phase, t.at, t.boiler]),
+      })}`,
+    );
+  if (!legDone(rw(), BAY) && legRow(rw(), BAY).laid > 0 && !near(bell, 80)) {
+    // A seed mid bay cut (`bay-mid`, `trade-ready`) starts at the Village: the seeds are taken and the cut's first
+    // section laid. Make the choice if one is asked, then ride a bay train out to the open section's head.
+    await checkpoint('bell reached');
+    await choose();
+    const k = legRow(rw(), BAY).laid;
+    await rideOut(bayLeg.railheadHalt + k - 1, legFrame(bayLeg, k), `stepped off at bay cut head ${k}`);
+    if (fit) logFleet('rode out after the fit');
+    await buildRowLeg(BAY, 'bay cut');
+  } else if (!legDone(rw(), BAY)) {
     await checkpoint('bell reached');
     if (!granted(SEEDS)) {
       await press('railway-leg-seeds', RAIL_GRANTS[SEEDS]!.at, 'take the crystal seeds');
@@ -442,23 +489,13 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   const canopy = RAIL_LEGS[CANOPY]!;
   const canopyGate = canopy.sections[0]!.gate!;
   const canopyEnd = canopy.railheadHalt + canopy.sections.length - 1;
-  const westLanding = legFrame(RAIL_LEGS[BAY]!, 0);
-  /** Off the car to `at` (cm), standing there dry. */
-  const stepOff = async (at: { x: number; z: number }, beat: string) => {
-    await hopTo(at.x / 100, at.z / 100, beat);
-    await until(() => me.coyote > 0 && !me.swimming, `${beat}: standing`, 10000);
-  };
-  /** From the Village (where a seed starts): walk to the West landing and ride a bay train out to stop `to`. */
-  const rideOut = async (to: number, at: { x: number; z: number }, beat: string) => {
-    check(await bot.walk(westLanding.x / 100, westLanding.z / 100, 3), 'walked from the Village to the West landing');
-    await rowRide(canopy.line, 0, to, 'bay line');
-    await stepOff(at, beat);
-  };
   if (!legDone(rw(), CANOPY)) {
     // Section 1's frame is Bell Rock's (frame 1 on the outward upper platform, the barrier on it); a later one stands
     // on the head the last lay made.
     const k = legRow(rw(), CANOPY).laid,
       frame = legFrame(canopy, k);
+    // From a seed at the Village (`bay-reached` on), the choice is made at Home first.
+    if (!near(frame, 40)) await choose();
     if (!near(frame, 40))
       await rideOut(
         canopy.railheadHalt + k - 1,
@@ -497,5 +534,6 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   check(await bot.until(() => !atOrBound(), 600000), "Canopy's platform cleared before the homeward walk");
   await rowRide(canopy.line, canopyEnd, 0, 'bay line');
   await stepOff(westLanding, 'stepped off at the West landing');
+  if (fit) logFleet('home from Canopy Town');
   await checkpoint('canopy home');
 }
