@@ -2,6 +2,10 @@
 
 Proof debts, things jobs reported and did not fix, and older parked items. Split from the [orchestrator state](orchestrator-state.md) on 17 November 2026, word for word, so that file stays short. Read it before picking a small job; add a leftover here the day a job reports it, ranked, and delete it when it lands.
 
+## From 24 November
+
+- P3 · The shared return check (`src/place/pose.ts`, on main) can land a returning player inside a solid: its support sweep ignores a solid it starts inside (0.174 m into a boulder beside a saved spot), the nearby-ground fallback accepts a head 0.10 m into a ceiling (compound, trimesh and heightfield colliders too), and an exact return checks clearance at the current surface height but places the player at the saved height (0.09 m into a deck that rose 0.49 m). Found by the canyon kit's re-check (witnesses on local `codex/recheck-canyon-kit-chunky` @ `bca31cad2`, `review/canyon-kit-recheck.test.ts` :18, :91, :102, :203). Fix: a real sphere-overlap query at the arrival coordinates, as its own job with game-wide proof.
+
 ## From 16 November
 
 - **P3, from greybox leg 2's last review (19 November, #2270):** the stand-in property test's runtime claim ("about 30 s locally", in its header, the plan and the commit) did not reproduce: the reviewer measured 96 s of base build and about 11 s a seed, about 177 s for 8 seeds, about 215 s predicted on CI against the 480 s budget; its `dev/ci/unit-weights.json` weights (100 and 66) are about half the measured cost. Correct the figures and weights. Also: the test's pulse model offers recovery to every due pile, where the host offers one pile nobody is near per pulse; and it never jumps the marker (covered by recheck2's `marker += 200`).
