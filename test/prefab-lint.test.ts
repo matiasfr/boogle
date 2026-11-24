@@ -548,3 +548,21 @@ test('registry works in a depth-1 clone with no merge base', () => {
     fs.rmSync(area, { recursive: true, force: true });
   }
 });
+
+test('re-check: the lift helper binding cannot be granted twice by dropping and re-adding liftOrWait', () => {
+  const file = 'src/prefab/instantiate.ts';
+  // Shipped: liftOrWait and 3 bindings. A later change drops the export but keeps a third binding in use.
+  const shipped: PrefabDebt = {
+    colliders: {},
+    seats: {},
+    doors: { [file]: ['instantiate', 'liftOrWait'] },
+    doorCounts: { [file]: { colliders: 3 } },
+  };
+  const dropped = structuredClone(shipped);
+  dropped.doors![file] = ['instantiate'];
+  assert.deepEqual(comparePrefabDebt(shipped, dropped), []);
+  // The next re-adds it with a fourth binding: the one-time grant fires again.
+  const readded = structuredClone(shipped);
+  readded.doorCounts![file]!.colliders = 4;
+  assert.match(comparePrefabDebt(dropped, readded).join('\n'), /capability bindings grew/);
+});

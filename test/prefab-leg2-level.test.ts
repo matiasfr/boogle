@@ -38,7 +38,7 @@ import { AREA_CENTRES, coverNear, LEG2_TEXT } from '../src/entities/route-greybo
 import { CANOPY_CENTRES, isleGround, landPoints } from '../src/content/levels/leg3.ts';
 import type { Body, Shape } from '../src/physics/engine.ts';
 import { resident } from '../src/render/lod-level.ts';
-import { HEAD_OFFSET, PLAYER_R } from '../src/constants.ts';
+import { CAVE_GROUP, HEAD_OFFSET, PLAYER_R } from '../src/constants.ts';
 import { createLiftOrWait, STEP, type Solid } from '../src/place/clearance.ts';
 import canopy from '../content/built/levels/canopy.json' with { type: 'json' };
 
@@ -497,6 +497,68 @@ test('a reused shape at a new placement tests its current pose', () => {
   assert.equal(physics.capsuleOverlaps(p, PLAYER_R, HEAD_OFFSET, door), true);
   door.offset!.x += 10;
   assert.equal(physics.capsuleOverlaps(p, PLAYER_R, HEAD_OFFSET, door), false);
+});
+
+test('re-check: a cave-group roof the surface body never touches does not block its lift', () => {
+  // The solver pairs groups both ways; the world query takes every group (mask -1), so a collider only underground
+  // bodies meet (CAVE_GROUP: SURFACE_MASK leaves it out) turns a lift into a wait.
+  const head = 2 * PLAYER_R + HEAD_OFFSET;
+  const roof = physics.createBody({
+    type: 'static',
+    group: CAVE_GROUP,
+    shapes: [box(3000, head + 0.3, 1000, 2, 0.1, 2)],
+  });
+  physics.addBody(roof);
+  try {
+    assert.equal(liftOrWait(solids([box(3000, 0.2, 1000)]).list, bodyAt(3000, 0, 1000), { lift: true }).kind, 'lifted');
+  } finally {
+    physics.removeBody(roof);
+  }
+});
+
+test('re-check: a kinematic body is not in its own way when lifted', () => {
+  // Yours is kinematic in guest play (src/guest/play.ts); the world query then counts your own capsule.
+  const b = physics.createBody({
+    type: physics.BODY.KINEMATIC,
+    mass: 0,
+    position: { x: 3100, y: PLAYER_R, z: 1000 },
+    shapes: [
+      { kind: 'sphere', r: PLAYER_R },
+      { kind: 'sphere', r: PLAYER_R, offset: { x: 0, y: HEAD_OFFSET, z: 0 } },
+    ],
+  });
+  physics.addBody(b);
+  try {
+    assert.equal(liftOrWait(solids([box(3100, 0.2, 1000)]).list, b, { lift: true }).kind, 'lifted');
+  } finally {
+    physics.removeBody(b);
+  }
+});
+
+test('re-check: a body sunk into a heightfield overlaps it, built or not', () => {
+  // engine.ts: every static body, by the same test. A heightfield answers false even through its surface.
+  const heights = [
+    [5, 5, 5],
+    [5, 5, 5],
+    [5, 5, 5],
+  ];
+  const at = { x: 3310, y: 4.8, z: 990 }; // bottom sphere 0.65 m under the 5 m surface, inside the footprint
+  const body = physics.createBody({
+    type: 'static',
+    position: { x: 3300, y: 0, z: 1000 },
+    shapes: [{ kind: 'heightfield', heights, cell: 10 }],
+  });
+  physics.addBody(body);
+  try {
+    assert.equal(physics.capsuleOverlaps(at, PLAYER_R, 0, { mask: -1 }), true, 'built');
+    assert.equal(
+      physics.capsuleOverlaps({ x: 10, y: 4.8, z: -10 }, PLAYER_R, 0, { kind: 'heightfield', heights, cell: 10 }),
+      true,
+      'unbuilt',
+    );
+  } finally {
+    physics.removeBody(body);
+  }
 });
 
 // Back to leg 3's lays.
