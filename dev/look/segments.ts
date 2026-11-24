@@ -73,6 +73,11 @@ export const RAIL_FROM = {
   // Leg 3 (greybox-leg3.md, step 7): the Canopy barrier at Bell Rock, the three sections to Canopy Town, the cloth and
   // the ride home, from the bay cut laid (the seed starts at the Village). The other leg seeds are not played from.
   'bay-reached': { railFrom: 'legs', after: 'bay', bot: 'railway-legs-bot.ts' },
+  // Garage step 4 (garage-step4.md, step 4): the bay cut's second section and leg 3 from its first lay. `trade-ready`
+  // has the works' 12 steel home, so `--query railFit=strong` (or quick) fits the bay line at the post first;
+  // `bay-mid`'s pool is empty and a fit asked there fails.
+  'bay-mid': { railFrom: 'legs', after: 'bell', bot: 'railway-legs-bot.ts' },
+  'trade-ready': { railFrom: 'legs', after: 'bell', bot: 'railway-legs-bot.ts' },
 } as const satisfies Record<string, { railFrom: string; after: RailStop; bot: string }>;
 /** Beats both peers pass in a two-player run; the follower watches line two from the village. */
 export const RAIL_COOP_STOPS: readonly RailStop[] = [

@@ -368,11 +368,29 @@ before step 3. Step 3 holds on question 1.
       and hides the flatbed); a Quick `ns` train at High Gorge (the longer barrel, from behind); the bring as a sheet and
       a real-time clip; the knob from the Village platform (orange, a few pixels at 21 m) and **not** from the West
       landing (the cliff blocks every line to the post: level finding 4 stands, unanswered).
-- [ ] **4. The bot makes the choice (S; HOTBOX). After leg 3's step 7.** `dev/look/bots/railway-legs.ts`: on the
+- [x] **4. The bot makes the choice (S; HOTBOX). After leg 3's step 7.** `dev/look/bots/railway-legs.ts`: on the
       segment `--from bay-mid` (A) or `--from bay-reached` (C), the bot walks to the post, brings the bay chip and
       installs Strong, then plays leg 3; a second run installs Quick. Verify: `npm run playthrough -- --from bay-mid
       --to canopy`, a pass verdict with the fit in its log (timings under load are not evidence). This is the
       checkpoint's "bot segment passes with a choice made". Row: "Owed proofs on a built branch" or the step 3 builder.
+      **As built (24 November, branch `claude/garage-step4-bot`, dev files only).** The segment starts from
+      `trade-ready`, not `bay-mid`: `bay-mid`'s steel pool is 0 (the works unlit, its 8 logs and 12 rails still in
+      Ring Island's yard), so no fit is affordable there; `trade-ready` is `bay-mid` with the works' 12 steel home by
+      accepted ops. Both are now `--from` seeds (`dev/look/segments.ts`), and the legs bot resumes mid bay cut: from
+      the Village it rides a bay train out to the open section's head. The page's `railFit=quick|strong` (`--query
+      'shot=play&railFit=strong'`) asks for the fit; with none the bot never visits the post. `dev/look/bots/railway-fit.ts`
+      walks to the post, presses Interact, clicks the bay chip and the boiler's tile and holds Interact, as a player
+      does; a hold the screen drops is let go and made again (at most four, each logged). `rail.bring` moved from
+      `PENDING_OPS` to `GENERIC_OPS` in the loop graph (a choice that never gates the route). Runs on `6e389dfb4`, not
+      under load, `--wall 1200` (the 300 s default ends mid leg 3): `npm run playthrough -- --from trade-ready --to
+      canopy --wall 1200` with `railFit=strong` passed (`.look/playthrough/step4-strong/`, 1452 game s: part 6 on the
+      first hold, pool 12 to 11, the bay train ridden out on row 5, all three bay trains on row 5 at the end), with
+      `railFit=quick` passed (`step4-quick/`, 1737 game s: part 5, row 4 on all three), and with no fit passed
+      (`step4-nofit/`, 1529 game s, no post visit). After the simplify pass and the rebase, Strong passed again on
+      `9bbdd25d2` (`step4-strong-final/`, 1053 game s, under load: not timing evidence). **Finding (game side, not fixed here):** on the Quick run, the
+      screen offered Install before the server's table hold was over. The hold dropped mid-crank (Install, then
+      "Keep holding", then Install again, the bring's hold back on) and the second hold fitted. A player who holds the
+      moment Install lights can see the part lower once. The first Strong run failed the same way before the retry.
 
 **Checkpoint (this step's few proofs, once, after step 4).** Two peers at the post (`dev/look` two-tab, `--real`): one
 brings the bay line, both screens and both tables show it, and the other's install during the swap refuses with "The
