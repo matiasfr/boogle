@@ -41,7 +41,7 @@ const second = new URLSearchParams(location.search).get('player') === '2';
 const who = second ? 'two' : 'one';
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const say = (text: string, data?: unknown) =>
-  console.log(`TRADE2 ${who}: ${text}${data ? ` ${JSON.stringify(data)}` : ''}`);
+  console.log(`TRADETWO ${who}: ${text}${data ? ` ${JSON.stringify(data)}` : ''}`);
 const done = window as Window & { __twoDone?: boolean };
 async function until(ok: () => unknown, what: string, ms: number) {
   const end = performance.now() + ms;
