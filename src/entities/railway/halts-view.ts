@@ -13,7 +13,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { trainAlong, trainWakeAt, TRAIN_PHASE, reqHas, LINE_HALTS } from '../../sim/railway-train.ts';
-import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS } from '../../sim/railway-lines.ts';
+import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, trainPassesBy } from '../../sim/railway-lines.ts';
 import { railCallReady, railPlatformEnd, railTrainHeld, trainStops } from '../../sim/railway-queries-trains.ts';
 import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
 import { LINE_SLOTS } from '../../sim/railway-trains.ts';
@@ -552,11 +552,16 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     if (!h.leg || !isRowLine(h.line)) continue;
     const at = h.s / 100,
       on = () => mainWay(h.line, h.stop),
-      passed = () => stopsNow[h.line]!.length > h.stop + 1;
+      passed = () => stopsNow[h.line]!.length > h.stop + 1,
+      // A head closed behind is passed both ways: no lever there asks for a train (as the departure boards).
+      serves = () => {
+        const n = stopsNow[h.line]!.length;
+        return !(trainPassesBy(h.line, h.stop, 1, n) && trainPassesBy(h.line, h.stop, -1, n));
+      };
     const stub = h.end?.kind === 'stub',
       lever = stub ? at : h.stop === 0 ? at - 10 : at - 8.5;
-    spots.push(rowSpot(id, false, lever, ROW_PLATFORM, () => true, on));
-    if (rowHomewardLever(h)) spots.push(rowSpot(id, true, lever, -ROW_PLATFORM, passed, HOME));
+    spots.push(rowSpot(id, false, lever, ROW_PLATFORM, serves, on));
+    if (rowHomewardLever(h)) spots.push(rowSpot(id, true, lever, -ROW_PLATFORM, () => passed() && serves(), HOME));
   }
   const ringSpots = spots.filter((x) => x.ring);
   // The stack line's departure boards (leg 1 step 4b; the design review's answer g): the halt map on a grey stand at
