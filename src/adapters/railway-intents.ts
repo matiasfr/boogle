@@ -2,26 +2,19 @@
 // intent read back off the wire, the sets the session's submit and settle judge by, and the adapter's action methods.
 // Nothing here sends, predicts or plays: that is railway-session.ts.
 import { RAILWAY_SOURCES } from '../sim/railway-layout.ts';
-import { MAX_KIND_CAPACITY } from '../sim/railway-queries.ts';
+import { activeStation, MAX_KIND_CAPACITY } from '../sim/railway-queries.ts';
 import { railInt, railYaw } from '../sim/railway.ts';
-import { railPos } from '../sim/railway-route.ts';
 import { LINE1_STATIONS, LINE1_HARDWOODS, type RailMaterial, type LineStationId } from '../sim/railway-line-layout.ts';
 import type { Line2StationId } from '../sim/railway-line2-layout.ts';
 import { BOILER_MAX, LINE_HALTS } from '../sim/railway-train.ts';
-import { LINE2, RAIL_TRAINS } from '../sim/railway-lines.ts';
-import { RAIL_ROCKS, type InstallPart } from '../sim/railway-works-layout.ts';
-import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS } from '../sim/railway-route.ts';
+import { LINE2, RAIL_LINES, RAIL_TRAINS } from '../sim/railway-lines.ts';
+import { installAdmits, RAIL_ROCKS, type InstallPart } from '../sim/railway-works-layout.ts';
+import { isTradeLine, RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, railPos } from '../sim/railway-route.ts';
 import { HALT_YARDS } from '../sim/railway-yard-layout.ts';
 import { Pile } from '../sim/railway-components.ts';
-import { activeStation } from '../sim/railway-queries.ts';
 import { railBeamChoppable } from '../sim/railway-queries-line1.ts';
 import type { World } from '../ecs/index.ts';
-
 import { TRADE } from '../sim/railway-trade-layout.ts';
-// Garage step 4's trade lines, parts and the table's copy.
-import { RAIL_LINES as GARAGE_LINES } from '../sim/railway-lines.ts';
-import { isTradeLine } from '../sim/railway-route.ts';
-import { installAdmits } from '../sim/railway-works-layout.ts';
 
 const pricedPlot = (id: unknown): id is number => railInt(id) && !!TRADE.plots[Math.floor(id / 16)]?.[id % 16];
 
@@ -81,13 +74,18 @@ export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   // Ring Island's steel works and the install (v31): a kind of 0 is left out of the event.
   if (e.op === 'rail.steelTake' && (e.kind === undefined || railInt(e.kind, 1)))
     return { op: e.op, kind: e.kind === 1 ? 1 : 0 };
-  if (e.op === 'rail.install' && e.line === LINE2 && installAdmits(LINE2, e.part) && railInt(e.revision, BOILER_MAX + 1))
+  if (
+    e.op === 'rail.install' &&
+    e.line === LINE2 &&
+    installAdmits(LINE2, e.part) &&
+    railInt(e.revision, BOILER_MAX + 1)
+  )
     return { op: e.op, line: LINE2, part: e.part, revision: e.revision };
   // Garage step 4: a trade line's Quick (5) or Strong (6) boiler on the line's install revision, and a line's copy
   // brought to the garage table on the table's bring revision.
   if (e.op === 'rail.install' && isTradeLine(e.line) && installAdmits(e.line, e.part) && railInt(e.revision))
     return { op: e.op, line: e.line, part: e.part, revision: e.revision };
-  if (e.op === 'rail.bring' && railInt(e.line, GARAGE_LINES.length - 1) && railInt(e.revision))
+  if (e.op === 'rail.bring' && railInt(e.line, RAIL_LINES.length - 1) && railInt(e.revision))
     return { op: e.op, line: e.line, revision: e.revision };
   // The greybox route (docs/plans/greybox-route.md, leg 1 step 4): catalog indexes.
   if (e.op === 'rail.legStock' && railInt(e.leg, RAIL_LEGS.length - 1)) return { op: e.op, leg: e.leg };
@@ -324,7 +322,7 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
       submit({ op: 'rail.install', line: LINE2, part, revision }),
     /** Garage step 4: bring `line`'s copy to the garage table on the bring revision this tab saw (`Shed.bringRev`). */
     bringLine: (line: number, revision: number) =>
-      railInt(line, GARAGE_LINES.length - 1) && railInt(revision) && submit({ op: 'rail.bring', line, revision }),
+      railInt(line, RAIL_LINES.length - 1) && railInt(revision) && submit({ op: 'rail.bring', line, revision }),
     /** Install `part` on `line` (line 2's 1 to 4, a trade line's 5 Quick and 6 Strong) on its `Line.rev`. */
     installPart: (line: number, part: InstallPart, revision: number) =>
       installAdmits(line, part) && railInt(revision) && submit({ op: 'rail.install', line, part, revision }),

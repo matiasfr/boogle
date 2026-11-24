@@ -9,6 +9,8 @@ import { knock } from '../../render/fanfare.ts';
 import type { yardStock } from './halt-yard-stock.ts';
 import type { createRailwaySources } from './sources.ts';
 
+const PIECE = ['log', 'stone', 'rail'] as const;
+
 export type Bin = { stock: ReturnType<typeof yardStock>; flights: { active: () => boolean; incoming: boolean }[] };
 export type YardSources = Pick<
   Awaited<ReturnType<typeof createRailwaySources>>,
@@ -28,7 +30,7 @@ export function yardFlights(adapter: RailwayAdapter, owner: OwnedView, bins: Bin
         const point = bin.stock.point((event.level ?? 0) + (put ? -i : i + 1));
         if (!sources.bundleOrigin(event.pid, (event.carried ?? 0) + (put ? i : 0), back)) continue;
         const active = send(
-          (['log', 'stone', 'rail'] as const)[kind],
+          PIECE[kind],
           put ? back : point,
           put ? point : back,
           {
@@ -63,7 +65,7 @@ export function yardFlights(adapter: RailwayAdapter, owner: OwnedView, bins: Bin
         const home = bin.stock.point(haltYardStock(w, yard, kind) + 1);
         if (back.distanceTo(home) > 6) continue;
         const active = send(
-          (['log', 'stone', 'rail'] as const)[kind],
+          PIECE[kind],
           put ? home : back,
           put ? back : home,
           {

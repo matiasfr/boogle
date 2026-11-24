@@ -242,6 +242,15 @@ export async function createRailwayTools(
   };
   const frames = wornOn(() => gear.packFrameMesh()),
     yokes = wornOn(gear.yokeMesh);
+  const syncWorn = ({ worn, wear }: typeof frames, on: boolean) => {
+    wear(me.entered ? me.avatar : null, on);
+    for (const r of remotes.values()) wear(r.visible && r.entered ? r.avatar : null, on);
+    for (const [avatar, mesh] of worn)
+      if (!avatar.parent) {
+        mesh.removeFromParent();
+        worn.delete(avatar);
+      }
+  };
   const api = {
     /** A friend's card for one of these (ability-arrival.ts): the finder's name, line and model, without the rise
      * from the device or chest, or the camp resident's handoff. */
@@ -341,21 +350,10 @@ export async function createRailwayTools(
           lipBody = null;
         }
       }
-      for (const [{ worn, wear }, on] of [
-        [frames, backSeam.pack?.() ?? false],
-        [yokes, backSeam.yoke?.() ?? false],
-      ] as const) {
-        wear(me.entered ? me.avatar : null, on);
-        for (const r of remotes.values()) wear(r.visible && r.entered ? r.avatar : null, on);
-        for (const [avatar, mesh] of worn)
-          if (!avatar.parent) {
-            mesh.removeFromParent();
-            worn.delete(avatar);
-          }
-      }
-      for (const object of [ring, ring2, core]) object.visible = !rail(w).jump;
+      syncWorn(frames, backSeam.pack?.() ?? false);
+      syncWorn(yokes, backSeam.yoke?.() ?? false);
       // Keep the faint unclaimed locator; acquiring the power never expands it into a screen-filling beam.
-      shaft.visible = !rail(w).jump;
+      ring.visible = ring2.visible = core.visible = shaft.visible = !rail(w).jump;
       ring.rotation.z = now * 0.0007;
       ring2.rotation.y = now * 0.001;
       core.rotation.y = now * 0.0012;
