@@ -347,15 +347,7 @@ function replan<L extends LineRef>(io: TrainIO<L>, line: L, slot: number, tick: 
     stops = io.stops(line),
     dir = r.track ? -1 : 1;
   const pose = trainPose(r, line, stops, tick);
-  const reasons = trainReasons(
-    io.row,
-    line,
-    stops,
-    slot,
-    io.line(line).req,
-    tick,
-    io.service(slot),
-  );
+  const reasons = trainReasons(io.row, line, stops, slot, io.line(line).req, tick, io.service(slot));
   const leg = planLeg(io.row, line, stops, slot, { s: pose.s, v: pose.v, track: r.track }, tick, reasons);
   if (!leg || leg.dest === r.dest) return;
   const heldNow = r.to < 0 || !(atEnd(r.to, stops) || reasons(r.to, dir));
@@ -370,7 +362,15 @@ function endStanding(line: LineRef, stops: readonly number[], r: Readonly<RailTr
   return -1;
 }
 /** Release a platform hold for its assigned rider or a follower standing at its approach signal. */
-export function platformHoldPressure(rows: Rows, line: LineRef, stops: readonly number[], slot: number, from: number, req: number, tick: number) {
+export function platformHoldPressure(
+  rows: Rows,
+  line: LineRef,
+  stops: readonly number[],
+  slot: number,
+  from: number,
+  req: number,
+  tick: number,
+) {
   const last = stops.length - 1;
   const end = atEnd(from, stops);
   const block = endBlocks(line, stops)[from === 0 ? 0 : 1];
@@ -378,19 +378,28 @@ export function platformHoldPressure(rows: Rows, line: LineRef, stops: readonly 
   const approach = track ? -1 : 1;
   let signal = end ? block.signal : undefined;
   if (!end) {
-    const signals = [...(lineDef(line).signals ?? []),
-      ...protectedBlocks(rows, line, stops, tick).filter(b => b.dir === approach).map(b => b.signal)];
+    const signals = [
+      ...(lineDef(line).signals ?? []),
+      ...protectedBlocks(rows, line, stops, tick)
+        .filter((b) => b.dir === approach)
+        .map((b) => b.signal),
+    ];
     for (const cm of signals)
       if ((stops[from]! - cm) * approach > 0 && (signal === undefined || (cm - signal) * approach > 0)) signal = cm;
   }
   for (const other of servingSlots(rows, line)) {
     const r = rows(other);
-    if (other !== slot && r.phase === TRAIN_PHASE.STAND && r.at === -1 &&
-        r.from === signal && r.track === track) return true;
+    if (other !== slot && r.phase === TRAIN_PHASE.STAND && r.at === -1 && r.from === signal && r.track === track)
+      return true;
   }
   for (let stop = 0; stop <= last; stop++) {
     for (const dir of stop === 0 ? [-1] : stop === last ? [1] : [1, -1])
-      if ((stop !== from || (!end && dir !== approach)) && reqHas(req, stop, dir, stops.length) && trainServes(rows, line, stops, stop, dir, tick) === slot) return true;
+      if (
+        (stop !== from || (!end && dir !== approach)) &&
+        reqHas(req, stop, dir, stops.length) &&
+        trainServes(rows, line, stops, stop, dir, tick) === slot
+      )
+        return true;
   }
   return false;
 }
@@ -412,16 +421,22 @@ export function balancedHold<L extends LineRef>(
   from: number,
   tick: number,
 ) {
-  const def = lineDef(line), r = io.row(slot);
+  const def = lineDef(line),
+    r = io.row(slot);
   const middle = !atEnd(from, stops);
   const greybox = middle || greyboxSpacing(line, stops);
   const fleet = servingSlots(io.row, line);
   if (fleet.length < 2) return false;
-  if (middle && !r.serviceStand &&
-      !reqHas(io.line(line).req, from, r.track ? -1 : 1, stops.length) &&
-      !reqHas(r.req, from, r.track ? -1 : 1, stops.length)) return false;
-  const cap = greybox ? Math.max(1, Math.min(BALANCE_MAX_TICKS,
-    Math.floor(cycleTicks(line, stops, r.boiler) / fleet.length))) : def.balance;
+  if (
+    middle &&
+    !r.serviceStand &&
+    !reqHas(io.line(line).req, from, r.track ? -1 : 1, stops.length) &&
+    !reqHas(r.req, from, r.track ? -1 : 1, stops.length)
+  )
+    return false;
+  const cap = greybox
+    ? Math.max(1, Math.min(BALANCE_MAX_TICKS, Math.floor(cycleTicks(line, stops, r.boiler) / fleet.length)))
+    : def.balance;
   if (cap === undefined || !balanceOk(cap) || io.headExempt(slot)) return false;
   if (tick >= r.arrived + (r.at >= 0 ? TRAIN.dwellTicks : 0) + cap) return false;
   // Keep the departure gap at terminals even when assigned a call. Leaving early at the Village
@@ -429,8 +444,13 @@ export function balancedHold<L extends LineRef>(
   if (middle && platformHoldPressure(io.row, line, stops, slot, from, io.line(line).req, tick)) return false;
   if (!middle) {
     const b = endBlocks(line, stops)[from === 0 ? 0 : 1];
-    if (fleet.some(k => k !== slot && io.row(k).to === -1 && io.row(k).dest === b.signal &&
-        io.row(k).track === (b.dir > 0 ? 0 : 1))) return false;
+    if (
+      fleet.some(
+        (k) =>
+          k !== slot && io.row(k).to === -1 && io.row(k).dest === b.signal && io.row(k).track === (b.dir > 0 ? 0 : 1),
+      )
+    )
+      return false;
   }
   const gaps = trainGaps(io.row, line, stops, slot, tick);
   return gaps !== null && gaps.ahead < gaps.behind;
@@ -495,8 +515,10 @@ export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: 
         const at = !turn && r.to >= 0 && trainPassesBy(line, r.to, r.track ? -1 : 1, n) ? -1 : r.to;
         io.set(slot, {
           phase: TRAIN_PHASE.STAND,
-          serviceStand: at > 0 && at < n - 1 && trainReasons(io.row, line, stops, slot,
-            io.line(line).req, tick, io.service(slot))(at, r.track ? -1 : 1),
+          serviceStand:
+            at > 0 &&
+            at < n - 1 &&
+            trainReasons(io.row, line, stops, slot, io.line(line).req, tick, io.service(slot))(at, r.track ? -1 : 1),
           at,
           to: at,
           from: r.dest,
@@ -529,15 +551,7 @@ export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: 
         left = from === 0 ? io.line(line).left0 : io.line(line).left1;
       if (end && head > 0 && left >= 0 && tick < left + head && !io.headExempt(slot)) break;
       if (from >= 0 && balancedHold(io, line, stops, slot, from, tick)) break;
-      const reasons = trainReasons(
-        io.row,
-        line,
-        stops,
-        slot,
-        io.line(line).req,
-        tick,
-        io.service(slot),
-      );
+      const reasons = trainReasons(io.row, line, stops, slot, io.line(line).req, tick, io.service(slot));
       const leg = planLeg(io.row, line, stops, slot, { s: r.from, v: 0, track: r.track }, tick, reasons);
       if (!leg) break; // held: the block ahead is not clear
       const dir = r.track ? -1 : 1;

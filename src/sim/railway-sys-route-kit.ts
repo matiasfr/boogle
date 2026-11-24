@@ -259,12 +259,14 @@ export function legRailheadHold(w: World, slot: number, tick: number): 'hold' | 
   if (r.phase !== TRAIN_PHASE.STAND || !r.legKit || kitBills(r.boiler) < 2) return 'on';
   const line = RAIL_TRAINS[slot]!.line;
   for (const k of legsServed(w, line)) {
-    const leg = RAIL_LEGS[k]!, g = legRow(w, k);
+    const leg = RAIL_LEGS[k]!,
+      g = legRow(w, k);
     if (leg.line !== line || g.laid + 1 >= leg.sections.length || r.at !== legKitDrop(w, line, k)) continue;
     if (legKitFits(w, line, k, r)) continue;
     if (g.start >= 0 || tick < r.depart + TRAIN.dwellTicks + TRAIN.railheadHoldTicks) {
-      return platformHoldPressure(j => train(w, j), line, stopsOf(w, line), slot, r.at, lineRow(w, line).req, tick)
-        ? 'yield' : 'hold';
+      return platformHoldPressure((j) => train(w, j), line, stopsOf(w, line), slot, r.at, lineRow(w, line).req, tick)
+        ? 'yield'
+        : 'hold';
     }
   }
   return 'on';

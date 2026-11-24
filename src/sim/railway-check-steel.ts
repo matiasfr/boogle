@@ -94,18 +94,20 @@ export function checkSteel(w: World) {
       (l, line) =>
         l.boiler > 0 !== l.fitted >= 0 ||
         !allowed(line, l.boiler) ||
-        (line <= LINE2 &&
-          (l.boiler >= 1 !== shed(w).ready >= 0 || (l.boiler >= 1 && shed(w).table !== 1))) ||
+        (line <= LINE2 && (l.boiler >= 1 !== shed(w).ready >= 0 || (l.boiler >= 1 && shed(w).table !== 1))) ||
         (line === LINE2 && l.boiler >= 2 && bay < 1) ||
         (l.boiler === 3 && !legDone(w, 0)) ||
         (l.cradle > 0 && (line !== LINE2 || l.boiler < 1 || bay < 1)),
     )
   )
     bad('boiler fit');
-  if (ts.some((r, slot) => {
-    const line = RAIL_TRAINS[slot]!.line;
-    return !allowed(line, r.boiler) || (line <= LINE2 && r.boiler > ls[line]!.boiler);
-  })) bad('boiler aboard');
+  if (
+    ts.some((r, slot) => {
+      const line = RAIL_TRAINS[slot]!.line;
+      return !allowed(line, r.boiler) || (line <= LINE2 && r.boiler > ls[line]!.boiler);
+    })
+  )
+    bad('boiler aboard');
   // Each line's install revision (garage step 4): line 2's is its two fits' sum at every accepted step; a trade line's
   // is 0 until its first fit, which only an open trade accepts; no other line installs.
   const revOk = (l: (typeof ls)[number], line: number) => {
@@ -119,7 +121,7 @@ export function checkSteel(w: World) {
   if (
     !railInt(h.bringRev) ||
     !railInt(h.brought, RAILWAY_MAX_INT, -1) ||
-    (h.brought >= 0) !== (h.bringRev > 0) ||
+    h.brought >= 0 !== h.bringRev > 0 ||
     (h.tableLine !== LINE2 && (h.bringRev === 0 || !tradeOpen(w, h.tableLine)))
   )
     bad('garage table');

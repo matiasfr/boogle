@@ -21,8 +21,7 @@ const bad = (what: string): never => {
 };
 /** The most of each kind a train of `line` carries: line 2's kit car (32), a section's bill on a line that carries a
  * leg's kit (greybox-leg2.md, step 2: one kit a train), else none. */
-const cargoOf = (line: number) =>
-  line === LINE2 ? 32 : SERVED_LEGS[line]!.length ? LEG_KIT_MOST : 0;
+const cargoOf = (line: number) => (line === LINE2 ? 32 : SERVED_LEGS[line]!.length ? LEG_KIT_MOST : 0);
 /** The trains' and lines' whole-world invariants; throws on the first broken one. */
 export function checkTrains(w: World) {
   // The train and line row counts are railwayCheck's own count check, which refuses first.
