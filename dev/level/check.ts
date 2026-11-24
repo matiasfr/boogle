@@ -246,6 +246,14 @@ async function runChecks() {
     failed += homeSignals.failures;
     report.push(homeSignals);
     if (!json) console.log('Home held signals:', JSON.stringify(homeSignals));
+    const { checkCanyonKit } = await import('./canyon-kit.ts');
+    const canyonKit = checkCanyonKit();
+    failed += canyonKit.failures;
+    report.push(canyonKit);
+    if (!json) {
+      console.log(`canyon kit: ${canyonKit.pieces} pieces, ${canyonKit.failures} problems`);
+      for (const problem of canyonKit.problems) console.log(`  ${problem}`);
+    }
     const { checkRiderCoach } = await import('./rider-coach.ts');
     const riderCoach = checkRiderCoach();
     failed += riderCoach.failures;

@@ -93,6 +93,7 @@ export const names: NameRegistry = {
     'ring.summit-deck',
     'ring.hammer-head',
     'mushrooms.stall',
+    'terrain.kit',
   ],
   interactions: [
     'railway.request-stop',

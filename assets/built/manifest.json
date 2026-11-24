@@ -339,6 +339,25 @@
       "pole"
     ]
   },
+  "terrain-kit": {
+    "source": "terrain-kit.py",
+    "sourceHash": "0e09d5a638417621",
+    "outHash": "8c976c383b849f95",
+    "rawBytes": 159340,
+    "bytes": 43896,
+    "triangles": 2024,
+    "nodes": [
+      "bank_rock",
+      "boulder_l",
+      "boulder_m",
+      "boulder_s",
+      "face_10",
+      "face_6",
+      "rim_cap"
+    ],
+    "animations": [],
+    "textures": []
+  },
   "track-layer": {
     "source": "track-layer.py",
     "sourceHash": "b1514e0484c7cef2",

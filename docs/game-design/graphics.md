@@ -179,6 +179,17 @@
   horizontal tread footprint; a wall rejected by the bench never becomes a dark verge. Exterior cut-bank paint is
   removed: the sandstone keeps its own colour right down to its foot. The canyon, quarry and shore treads are regraded; short path-end/bend irregularities elsewhere and the
   dotted crease remain recorded findings in Part 2b.
+- **Canyon kit: Chunky Sunshine blocks** ([owner, 24 November](../decisions-look.md#d-2026-11-24-canyon-kit-chunky-sunshine);
+  [terrain-clean](../plans/terrain-clean.md#part-3-custom-meshes-to-dress-the-world-proposal-not-a-commitment), Part 3).
+  The canyon climb's east wall, from 4.5 m above the bridge round the top bend, is faced with big sandstone slabs
+  (`assets/src/terrain-kit.py`: 2.4 m courses stepping back 0.32 m each, a third of the blocks two courses tall, 0.22 m
+  bevels, a broken top), with boulders at its foot, broken caps on the plateau's lip and low rock at the waterline. The
+  pieces wear the cliff's own rock (`rockLayers` in [ground-material.ts](../../src/place/ground-material.ts)), each block
+  shaded a little lighter or darker and its sky-facing faces sun-bleached. They are scenery with box solids: the tread
+  keeps its full width (every solid 0.4 m outside its edge), the river side stays open, and nothing within 6 m of the
+  alcove, bell or first device pad. Records: `terrain.*` (src/content/prefabs/terrain.ts), placed by
+  [dev/prefab/canyon-kit.ts](../../dev/prefab/canyon-kit.ts) from the ground; seven instance batches, 6,688 triangles a
+  pass. Other wedges wait for the owner's word after he judges this one.
 - **Lighting model: three's plain Standard lighting** (10 November owner call: baseline shading, after trying toon
   style B live as the default). No stepped light, cool shade side or rim on characters or the world. The comparison
   is kept as research: [toon-shading](../research/toon-shading.md).

@@ -11,7 +11,7 @@
 //   c.ease, c.sleep, c.VIEWS
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { Page } from 'playwright';
 import { startStack, launch, Game, VIEWS, sleep } from '../look/lib.ts';
 
@@ -109,7 +109,7 @@ try {
   const liveStack = (stack = await startStack({ root: opt.root }));
   const liveBrowser = (browser = await launch());
   for (const name of opt.names) {
-    const shot: Shot = (await import(shotFile(name))).default;
+    const shot: Shot = (await import(pathToFileURL(shotFile(name)).href)).default;
     console.log(`\n== ${name}: ${shot.about || ''}`);
     const games: ClipGame[] = [];
     const out = path.resolve(opt.out);

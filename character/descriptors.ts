@@ -176,6 +176,17 @@ export const descriptors: Record<string, AssetDescriptor> = {
     category: 'kit',
     motion: { kind: 'none', source: 'Static kit; assembly motion belongs to game owners' },
   },
+  'terrain-kit': {
+    label: 'Canyon kit',
+    category: 'kit',
+    defaultNode: 'face_6',
+    rootNote:
+      'Chunky Sunshine sandstone; origin at the base front middle (boulders: base middle), +z out of the wall. Colour is the ground rock material in code.',
+    motion: {
+      kind: 'none',
+      source: 'assets/src/terrain-kit.py; static scenery placed by content/levels/canyon-kit.ts',
+    },
+  },
   'scaffold-kit': {
     motion: { kind: 'clips', source: 'assets/built/scaffold-kit.glb' },
     label: 'Scaffold kit',

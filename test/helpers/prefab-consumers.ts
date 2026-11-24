@@ -10,5 +10,6 @@ import '../../src/entities/route-greybox/boxes.ts';
 import '../../src/entities/route-greybox/leg2-draw.ts';
 import '../../src/prefab/instantiate.ts';
 import '../../src/entities/railway/halt-kit.ts';
+import '../../src/entities/terrain-kit/view.ts';
 
 export const roomCamera = ROOM_CAM;

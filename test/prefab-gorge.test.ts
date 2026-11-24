@@ -85,6 +85,7 @@ test('Gorge collider and placement values match the old massing', async (t) => {
   builders.set('secrets.stone-pad', () => new THREE.Group());
   builders.set('secrets.column', () => new THREE.Group());
   builders.set('secrets.clue', () => new THREE.Group());
+  builders.set('terrain.kit', () => new THREE.Group());
   const runtime = sourceModule<typeof import('../src/prefab/instantiate.ts')>(
     fs.readFileSync('src/prefab/instantiate.ts', 'utf8'),
     { THREE, artifact, compiled, definitions, workshop, gorge, names, ...validation, builders, staticBody: record },

@@ -153,6 +153,7 @@ export function captureWorkshop(positions: readonly (readonly [number, number, n
       ['secrets.stone-pad', () => chair],
       ['secrets.column', () => chair],
       ['secrets.clue', () => chair],
+      ['terrain.kit', () => chair],
       [
         'town.workshop-parts',
         (params) => workshopParts(params.piece as string, params.hw as number, params.hd as number),
@@ -383,6 +384,7 @@ function runtimeHarness(input?: { prefabs: PrefabArtifact; level: LevelArtifact 
         ['secrets.stone-pad', () => new THREE.Group()],
         ['secrets.column', () => new THREE.Group()],
         ['secrets.clue', () => new THREE.Group()],
+        ['terrain.kit', () => new THREE.Group()],
         [
           'seat.chair',
           () => {
