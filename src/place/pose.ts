@@ -1,11 +1,24 @@
 // Place's personal return-ground policy. No material state, rendering, registration or persistence owner.
-import { PLAYER_R } from '../constants.ts';
+import { HEAD_OFFSET, PLAYER_R } from '../constants.ts';
 import { sweepSphere } from '../physics/engine.ts';
 import { GROUP } from '../physics/physics.ts';
 import { ROOM_PLOTS, toWorld } from './layout.ts';
 
 export type Pose = { x: number; z: number; yaw: number };
 const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
+/** Rays out of a standing player's spheres: every 45 degrees round, and four 45 degrees down. Not up: the headroom sweep
+ * owns ceilings. A ray that starts inside a solid hits at once. */
+const AROUND = [
+  ...Array.from({ length: 8 }, (_, k) => ({ x: Math.cos((k * Math.PI) / 4), y: 0, z: Math.sin((k * Math.PI) / 4) })),
+  ...[
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ].map(([x, z]) => ({ x: x! * Math.SQRT1_2, y: -Math.SQRT1_2, z: z! * Math.SQRT1_2 })),
+];
+/** Where a placed player's foot sphere stands over its ground (arrival places the body PLAYER_R + 0.4 up). */
+const LIFT = PLAYER_R + 0.4;
 
 export function createPosePolicy(
   ground: (x: number, z: number) => number,
@@ -49,11 +62,34 @@ export function createPosePolicy(
     const surface = surfaceY(x, y, z, head);
     return surface !== null && Math.abs(surface - y) <= 0.5;
   }
+  /** Neither of a player's spheres, placed standing at (x, y, z), is inside or touching a solid: the downward sweep
+   * ignores what it starts inside (a boulder that appeared beside a saved spot), so each sphere looks round itself.
+   * Walkable ground never comes within PLAYER_R of a sphere lifted LIFT over it. */
+  function clearAt(x: number, y: number, z: number) {
+    if (!probe || !hit) return true;
+    for (const up of [LIFT, LIFT + HEAD_OFFSET]) {
+      const from = { x, y: y + up, z };
+      for (const d of AROUND)
+        if (
+          probe.raycastClosest(
+            from,
+            { x: x + d.x * PLAYER_R, y: from.y + d.y * PLAYER_R, z: z + d.z * PLAYER_R },
+            { mask: GROUP.SCENERY },
+            hit,
+          )
+        )
+          return false;
+    }
+    return true;
+  }
   function standableAt(x: number, y: number, z: number) {
     if (![x, y, z].every(finite) || blocked(x, z)) return false;
     const surface = surfaceY(x, y, z, 2 * PLAYER_R + 0.5);
     return (
-      surface !== null && Math.abs(surface - y) <= 0.5 && (surface > 1.6 || Math.abs(surface - ground(x, z)) > 0.5)
+      surface !== null &&
+      Math.abs(surface - y) <= 0.5 &&
+      (surface > 1.6 || Math.abs(surface - ground(x, z)) > 0.5) &&
+      clearAt(x, surface, z)
     );
   }
   function standableNear(
