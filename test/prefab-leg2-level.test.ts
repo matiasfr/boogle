@@ -589,8 +589,23 @@ test('final review: resting exactly on flat terrain is clear', () => {
   assert.equal(physics.capsuleOverlaps({ x: 1, y: 5 + PLAYER_R, z: -1 }, PLAYER_R, HEAD_OFFSET, flatField(5)), false);
 });
 
-test('final review: a sunk body inside a small terrain footprint stays in the ground', () => {
-  assert.equal(physics.capsuleOverlaps({ x: 1, y: -2, z: -1 }, PLAYER_R, HEAD_OFFSET, flatField(5)), true);
+// A body wholly under a heightfield is not tested: a lift starts from where the solver already holds the body.
+
+test('a body in the open gap below a rotated heightfield lip is clear', () => {
+  // The two strips meet at (4,0). After a 45-degree roll their planes are y=x-4 and y=3*(4-x).
+  // At x=2.5 the bottom sphere is 1.77 m above the floor and the top sphere 0.85 m below the lip,
+  // measured along the normals. Both clear the 0.45 m radius, but a world-up ray hits the lip.
+  const shape: Shape = {
+    kind: 'heightfield',
+    heights: [
+      [0, 0],
+      [0, 0],
+      [8, 8],
+    ],
+    cell: 4,
+    rotation: { x: 0, y: 0, z: Math.sin(Math.PI / 8), w: Math.cos(Math.PI / 8) },
+  };
+  assert.equal(physics.capsuleOverlaps({ x: 2.5, y: 1, z: -2 }, PLAYER_R, HEAD_OFFSET, shape), false);
 });
 
 // Back to leg 3's lays.

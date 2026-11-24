@@ -586,3 +586,59 @@ test('final review: retiring the third binding and helper together cannot reopen
   // The engine and backend already have the approved query. Nothing records which binding is added back.
   assert.match(comparePrefabDebt(retired, shipped).join('\n'), /capability bindings grew/);
 });
+
+const recordDoor = 'src/prefab/instantiate.ts';
+const engineDoor = 'src/physics/engine.ts';
+
+test('an approved local name cannot give an imported helper the entire engine namespace', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-door-bindings-'));
+  const write = (file: string, source: string) => {
+    fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+    fs.writeFileSync(path.join(root, file), source);
+  };
+  const land = 'src/place/land.ts';
+  const baseline = {
+    version: 7,
+    legacy: {},
+    forwards: {},
+    seats: {},
+    colliders: {},
+    doors: {
+      [land]: ['ROOM_GROUP', 'staticBody'],
+      [recordDoor]: ['liftOrWait'],
+      [engineDoor]: ['capsuleOverlaps', 'physicsTime'],
+    },
+    doorCounts: { [recordDoor]: { colliders: 3, seats: 0 }, [engineDoor]: { colliders: 0 }, [land]: { colliders: 0 } },
+  };
+  try {
+    write(PREFAB_DEBT_FILE, JSON.stringify(baseline));
+    write(land, 'export const ROOM_GROUP = 1; export function staticBody() {}');
+    write(engineDoor, 'export function capsuleOverlaps() {} export function physicsTime() {}');
+    const imports = "import { ROOM_GROUP, staticBody } from '../place/land.ts';";
+    write(
+      recordDoor,
+      imports +
+        "import { capsuleOverlaps } from '../physics/engine.ts'; export function liftOrWait() { capsuleOverlaps(); }",
+    );
+    assert.deepEqual(checkPrefabDebt(root, 'HEAD'), []);
+    for (const binding of [
+      "import {physicsTime as capsuleOverlaps} from '../physics/engine.ts'; export function liftOrWait() { capsuleOverlaps(); }",
+      "export {physicsTime as liftOrWait} from '../physics/engine.ts';",
+    ]) {
+      write(recordDoor, imports + binding);
+      assert.match(checkPrefabDebt(root, 'HEAD').join('\n'), /capability binding physicsTime/);
+    }
+    write(
+      'src/prefab/helper.ts',
+      'export function callClock({physicsTime}: {physicsTime: () => void}) { physicsTime(); }',
+    );
+    write(
+      recordDoor,
+      imports +
+        "import * as capsuleOverlaps from '../physics/engine.ts'; import {callClock} from './helper.ts'; export function liftOrWait() { callClock(capsuleOverlaps); }",
+    );
+    assert.ok(checkPrefabDebt(root, 'HEAD').length > 0, 'The whole engine replaced one named query');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

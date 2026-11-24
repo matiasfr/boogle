@@ -6,8 +6,7 @@ import { lintSafety } from '../lint/safety.ts';
 import type { PrefabDebt } from '../lint/safety.ts';
 import { checkPrefabRegistrations } from './prefab-registrations.ts';
 import { parseSync } from 'oxc-parser';
-import { createModuleResolver, runtimeExports, PREFAB_DOORS } from '../lint/prefab-boundaries.ts';
-import { capabilitySpecifiers } from '../lint/prefab-specifiers.ts';
+import { createModuleResolver, isCapability, runtimeExports, PREFAB_DOORS } from '../lint/prefab-boundaries.ts';
 import {
   loadLegacyGraph,
   compareConstructionForwards,
@@ -33,7 +32,12 @@ const APPROVED_DOOR_EXPORTS: Readonly<Record<string, readonly string[]>> = {
  * 2 to 3, only as the engine's query and liftOrWait first appear together. */
 const DOOR_BINDINGS = {
   file: 'src/prefab/instantiate.ts',
-  names: ['ROOM_GROUP', 'staticBody', 'capsuleOverlaps'],
+  /** Each capability module the door may bind, and the exports it may import from it, by name: no namespace, no
+   * re-export of everything, no other export under an approved local name. */
+  names: {
+    'src/place/land.ts': ['ROOM_GROUP', 'staticBody'],
+    'src/physics/engine.ts': ['capsuleOverlaps'],
+  } as Readonly<Record<string, readonly string[]>>,
   with: 'liftOrWait',
   query: { file: 'src/physics/engine.ts', name: 'capsuleOverlaps' },
 } as const;
@@ -168,19 +172,45 @@ export function checkPrefabDebt(root: string, ref: string): string[] {
   {
     const { file, names } = DOOR_BINDINGS,
       current = path.join(root, file);
+    type Spec = {
+      type: string;
+      importKind?: string;
+      exportKind?: string;
+      imported?: { name?: string; value?: string };
+      local?: { name?: string; value?: string };
+    };
+    type Edge = { type: string; source?: { value: string } | null; importKind?: string; exportKind?: string };
     if (fs.existsSync(current))
-      for (const node of capabilitySpecifiers(
-        parseSync(file, fs.readFileSync(current, 'utf8')).program,
-        file,
-        resolve,
-        'colliders',
-      )) {
-        const n = node as { imported?: { name?: string; value?: string }; local?: { name?: string } },
-          bound = n.imported?.name ?? n.imported?.value ?? n.local?.name ?? '?';
-        if (!(names as readonly string[]).includes(bound))
-          errors.push(
-            `${file}: capability binding ${bound} is not one of the door's named bindings (${names.join(', ')}).`,
-          );
+      for (const node of parseSync(file, fs.readFileSync(current, 'utf8')).program.body as unknown as (Edge & {
+        specifiers?: Spec[];
+      })[]) {
+        if (
+          !node.source ||
+          !['ImportDeclaration', 'ExportNamedDeclaration', 'ExportAllDeclaration'].includes(node.type)
+        )
+          continue;
+        if (node.importKind === 'type' || node.exportKind === 'type') continue;
+        const target = resolve(file, node.source.value);
+        if (!target || !isCapability('colliders', target)) continue;
+        const allowed = names[target] ?? [];
+        if (node.type === 'ExportAllDeclaration') {
+          errors.push(`${file}: capability binding * of ${target}: the door re-exports no whole capability module.`);
+          continue;
+        }
+        for (const spec of node.specifiers ?? []) {
+          if (spec.importKind === 'type' || spec.exportKind === 'type') continue;
+          const named =
+              spec.type === 'ImportSpecifier' ? spec.imported : spec.type === 'ExportSpecifier' ? spec.local : null,
+            bound = named ? (named.name ?? named.value ?? '?') : `* as ${spec.local?.name ?? '?'}`;
+          if (!named || !allowed.includes(bound))
+            errors.push(
+              `${file}: capability binding ${bound} of ${target} is not one of the door's named imports (${Object.entries(
+                names,
+              )
+                .map(([m, n]) => `${m}: ${n.join(', ')}`)
+                .join('; ')}).`,
+            );
+        }
       }
   }
   for (const [file, counts] of Object.entries(head.doorCounts ?? {}))

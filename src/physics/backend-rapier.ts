@@ -753,7 +753,7 @@ function overlapsCopy(shape: Shape, c: Copy, at: V3, r: number, up: number, body
 }
 function hits(c: Copy, at: V3, up: number, turn: RawRotation) {
   const s = scratch!;
-  if (c.kind === 'heightfield') return heightfieldHits(c, at, up, turn);
+  if (c.kind === 'heightfield') return heightfieldHits(c, turn);
   if (capsule!.raw.intersectsShape(s.at, s.none, c.raw, s.pos, turn)) return true;
   // Wholly inside: a sphere's centre in it. A trimesh holds a point only with a face over it too (in a closed prism, or
   // under an open land's top within its footprint; never beside an open mesh's edge).
@@ -808,21 +808,13 @@ export function capsuleOverlaps(at: V3, r: number, up: number, against: Shape | 
   return false;
 }
 /** Rapier's intersection test never reports a heightfield, so its contact query does (a signed distance): a body
- * more than RESTING into the surface overlaps it, and one resting on it does not. A body wholly under the surface has
- * no contact, so a sphere's centre with the surface over it (Rapier's ray, as for a trimesh) is in the ground. */
-function heightfieldHits(c: Copy, at: V3, up: number, turn: RawRotation) {
+ * more than RESTING into the surface overlaps it, and one resting on it does not. Only contact: a body wholly under a
+ * heightfield is not a place a lift starts from (the solver already holds the body where it stands). */
+function heightfieldHits(c: Copy, turn: RawRotation) {
   const s = scratch!;
   const k = capsule!.raw.contactShape(s.at, s.none, c.raw, s.pos, turn, 0);
-  if (k) {
-    k.getComponents(contactParts);
-    k.free();
-    if (contactParts[0]! < -RESTING) return true;
-  }
-  for (const lift of [0, up]) {
-    s.point.x = at.x;
-    s.point.y = at.y + lift;
-    s.point.z = at.z;
-    if (c.raw.castRay(s.pos, turn, s.point, s.up, 1e4, false) >= 0) return true;
-  }
-  return false;
+  if (!k) return false;
+  k.getComponents(contactParts);
+  k.free();
+  return contactParts[0]! < -RESTING;
 }
