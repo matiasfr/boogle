@@ -36,7 +36,14 @@ that writes the plan carries it out, so it can change the plan when a step turns
    leave the commits for the caller. A session working directly with the owner ships finished work and reports it; it
    does not ask "want me to ship it?" (owner, 19 November, docs/decisions-process.md, "finished work ships"). The
    usual gates stay: the checks, a look, and an independent review where `npm run review-stamp` asks for one.
-9. **Owed proofs are yours.** A rebase, bot run, still or tick mark your branch still owes comes back to this same
+9. **Solids near players: lift or wait, never push.** When your change switches a solid on where a player can be (a lay,
+   a mount, a kit, a door, an engine or copy appearing), lift the player onto it when their feet are within a small step
+   of its top and the whole body fits there (headroom), otherwise leave every solid holding them off and undrawn, as one
+   set, until they are clear. Never push sideways, never move a player to a spot with no ground, never switch a solid
+   off on contact. An area that mounts far from players is an ordinary static: placing a returning or teleported player
+   is `src/place/pose.ts`'s job. Use the shared helper when one exists (`npm run map -- src/place`). This one class cost
+   three branches 2 to 5 review rounds each on 24 November (rule 67 in docs/agents/orchestrator-state.md).
+10. **Owed proofs are yours.** A rebase, bot run, still or tick mark your branch still owes comes back to this same
    thread; you have the context a fresh agent would lack.
 
 Report: the plan as built and where it changed, files changed, check results, the paths of the stills you looked at
