@@ -969,13 +969,21 @@ export type Checkpoint = {
   index: number;
   snapshot: unknown;
   tick: number;
-  players: Pick<Player, 'at' | 'busy' | 'walked'>[];
+  players: Pick<Player, 'at' | 'busy' | 'walked' | 'waiting'>[];
   bringing: [string, number][];
   flags: Run['flags'];
   nodes: NodeTime[];
   parked: number[];
   lastProgress: number;
 };
+
+/** What a checkpoint keeps of a player, saved and restored the same way. */
+const playerState = (p: Checkpoint['players'][number]): Checkpoint['players'][number] => ({
+  at: { ...p.at },
+  busy: p.busy,
+  walked: p.walked,
+  waiting: p.waiting,
+});
 
 export function playOrder(
   order: readonly NodeId[],
@@ -1009,7 +1017,7 @@ export function playOrder(
   if (opts.from) {
     const cp = opts.from;
     start = cp.index;
-    cp.players.forEach((p, i) => Object.assign(g.players[i]!, { at: { ...p.at }, busy: p.busy, walked: p.walked }));
+    cp.players.forEach((p, i) => Object.assign(g.players[i]!, playerState(p)));
     g.bringing = new Map(cp.bringing);
     Object.assign(r.flags, cp.flags);
     result.nodes = cp.nodes.map((t) => ({ ...t }));
@@ -1020,7 +1028,7 @@ export function playOrder(
     index,
     snapshot: h.snapshot(),
     tick: h.tick(),
-    players: g.players.map((p) => ({ at: { ...p.at }, busy: p.busy, walked: p.walked })),
+    players: g.players.map(playerState),
     bringing: [...g.bringing],
     flags: { ...r.flags },
     nodes: result.nodes.map((t) => ({ ...t })),
