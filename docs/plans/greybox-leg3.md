@@ -735,6 +735,63 @@ server restart; `Leg` and the kit aboard unchanged); steps 5 and 6's stills on o
 Canopy on the Mac (reported, not a gate); `npm run perf` (Canopy isle, five trunks, two chalk walls, 1.2 km of deck,
 three bay trains). The independent review covers steps 1 to 5 as one batch.
 
+- [x] `npm run loop -- run`, one to three players, with idle seconds per node
+- [x] the bot segment `--from bay-reached --to canopy`
+- [x] `npm run test:net`
+- [x] the reconnect proof at `canopy-mid` (as the net suite's `leg rejoin` case; see below)
+- [x] steps 5 and 6's stills on one sheet
+- [x] `npm run perf` at Canopy (counts)
+- [ ] one frame-time reading at Canopy on the Mac (not a gate; no Mac on HOTBOX)
+
+**As built, 24 November (HOTBOX, on bce1a9efc).** Three tools changed so the proofs could run as worded. `npm run loop
+-- run` prints an `idle s` column: each player's mean seconds standing on a `wait` (a train, a lay, a friend; the
+Medium hold counts too) or done with their share while the node was open, until reached or parked. `npm run perf`
+takes `--rail-seed <stage>` and `--view canopy`, which seeds `canopy-reached`, stands the body on Canopy's homeward
+platform until the route areas near it mount, and frames the isle from over the strait beyond head 2. The reconnect
+proof is the net suite's `leg rejoin` case (`dev/peer-test/ws-railway.ts` `railwayLegRejoin`), not a browser scenario:
+`npm run scenario` cannot restart its server, and the net harness already restarts one and reads the hosted room.
+
+- **Loop run** (straight-line, a lower bound): no softlock, defect or graph bug for 1, 2 or 3 players; every order probe
+  refused as the graph says; leg 3's nodes refuse nothing (Ring Island's `bents` 7 at 3 players, as before). Whole loop
+  1:11:16 / 1:10:47 / 1:10:11; area 6 played in 8 / 9 / 9 minutes; whole route 2:40 / 2:34 / 2:32. Leg 3's idle seconds
+  per player (canopy-gate, canopy-1, -2, -3, cloth): 1p 0, 34, 50, 38, 0; 2p 55, 78, 37, 46, 26; 3p 73, 63, 40, 49, 34.
+  The largest waits on the route are Ring Island's `bents` (244 / 286 / 279 s) and Q7 and the stack line's first two
+  sections (65 to 141 s).
+- **Bot segment** `--from bay-reached --to canopy` (`.look/playthrough/leg3checkc/`): verdict `pass`, not under load
+  (1.35 → 5.86 of 20), every checkpoint from the barrier through the three sections, Canopy reached, the cloth taken and
+  home at the West landing, no recovery, no error; the end still has Buddy on the West landing's apron by its board.
+- **`npm run test:net`**: 288 of 288 (the 269 before and the 19 of `leg rejoin`).
+- **Reconnect** (`leg rejoin`): the `canopy-mid` seed doc is written to the server store before any page opens, as
+  `look --rail-seed` writes it (POST /jump builds an unprebuilt stage in a worker with a 60 s limit, and canopy-mid takes
+  longer than that on HOTBOX: 500; production serves prebuilt seeds). A second tab joins; one bay train cycle stocks
+  head 1's rack (20 logs, 20 rails) and train 9 holds the next kit (20 + 20). The first tab takes 16 rails (Leg
+  `heldRails` 16, the rack 20 / 4); a train cycle later the leg, the rack and the kit aboard are unchanged (the carried
+  rails count as held, so train 9 does not top the rack up). The tab closes (the other hears it leave), the server
+  restarts, it rejoins: the Leg row (`laid` 1, `loadedLogs`/`loadedRails` 60, `heldRails` 16), the kit aboard (train 9,
+  20 + 20), the back (16 rails, `legRails` 16) and the rack are what they were, its own adapter shows the 16 rails, a
+  further train cycle changes nothing, and both mirrors agree. What the rules do with the carried rails (read in
+  `server/src/host/host-maintenance.ts`, not decided here): they stay on the leaver's back and counted held through
+  `railBeamGraceS` (180 s); past it `legKitRelease` takes them off the held count only (the rails stay on the back, and
+  the leg loads as many again). The grace clock is the host's memory, so a restart starts it again for anyone still
+  away. Only the rejoin inside the grace is proven; the release past it is not run here.
+- **Perf at Canopy** (`npm run perf -- --view canopy`, headless WebGPU on the NVIDIA (Ampere) adapter, 960 × 600): `canopy`
+  resident, the body at (−1070, 14.3, −319); 155 draw calls, 74 of them the shadow pass, 419,317 triangles, 1,493
+  geometries, 217 programs. Counts, not timings: the run ended under load (another job's processes held every core),
+  and its main-thread table (frame 46 ms average) is not evidence. The isle, its mother trunks and a chalk wall are in
+  frame (`.look/perf/perf-canopy-still.png`); the deck and the trains are resident but behind the wall from there.
+  HOTBOX frame time, the same view (`-- --view canopy --hardware --seconds 10`, a visible Chrome on the NVIDIA Ampere
+  GPU, not a fallback adapter; load 10.3 → 1.6 of 20, not under load, though not a closed machine): 554 frames in 10 s;
+  frame interval 18.1 ms average, 18.8 p95, 19.5 max; main-thread CPU 10.8 / 13.2 / 20.0 ms; GPU 2.35 / 5.06 / 9.99 ms
+  (scene pass 0.94 ms, shadow map 0.18 ms per frame). The shadow pass read 58 calls there. A Windows desktop GPU, not
+  the Mac.
+- **Stills**: [checkpoint-c-sheet.jpg](greybox-leg3/checkpoint-c-sheet.jpg) (1200 × 822). Step 5's own stills were never
+  committed and were gone from this machine, so two were taken again on bce1a9efc at `bay-reached` with the body on Bell
+  Rock's upper level: the bay row onto the upper level from above, and frame 1 with the Canopy barrier, rack 1 and the
+  lever from the platform. Step 5's third (a train standing at the upper platform) was not retaken. Step 6's seven are
+  the committed ones.
+- **Unproven:** the frame-time reading at Canopy on the Mac; a carrier away past the grace through a restart. Not
+  tested on a device.
+
 ### Order, and what waits for leg 2
 
 | Step | Needs on main first | Why |
