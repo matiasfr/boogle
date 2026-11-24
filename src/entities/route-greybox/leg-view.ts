@@ -73,12 +73,16 @@ import {
 } from '../railway/row-path.ts';
 import { islandGround, ringIslandNear } from '../ring-island/state.ts';
 import { GATE_AT, GORGE_DECK, PICK_AT, TOWN_PAD, gorgeAt } from './massing.ts';
-import { bellPads } from './massing-bell.ts';
-import { canopyGround } from './massing-canopy.ts';
+import { bellMassing, bellPads } from './massing-bell.ts';
+import { westMassing } from './massing-west.ts';
+import { canopyGround, canopyMassing } from './massing-canopy.ts';
+/** The leg 2 and 3 levels' solids, built once on a lay's first lift: what a lifted body must also have room in. */
+let around: readonly Shape[] | null = null;
+const scenery = () => (around ??= placedShapes([...bellMassing(), ...canopyMassing(), ...westMassing()]));
 import { AREA_CENTRES, LEG2_TEXT } from './leg2-layout.ts';
 import { areaLabels } from './state.ts';
 import type { GreyBox } from './boxes.ts';
-import { boxShape, heldTop, liftOrWait } from './clear.ts';
+import { boxShape, heldTop, liftOrWait, placedShapes } from './clear.ts';
 
 // Placeholder labels (the step 4 design review's answers b, e, i, k and l; none is The Boogler's).
 const FEED = 'Feed the frame',
@@ -514,6 +518,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       for (const x of down) crossover(x);
       for (let s0 = sp.from; s0 < end - 1e-6; s0 += SEG) {
         const s1 = Math.min(end, s0 + SEG);
+        if (slabsWaiting.some((x) => s0 < x.s1 - 1e-6 && s1 > x.s0 + 1e-6)) continue;
         along(s0, s1, mid, mid, 0, sp.width, 0.5, GREY);
         for (const t of tracks) track(s0, s1, t, t, cuts);
         // A bent every 20 m where the deck stands clear of the ground: two posts to the sea bed and a cap.
@@ -576,19 +581,39 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         geo.world(s1, mid, b);
         const y0 = geo.y(s0),
           y1 = geo.y(s1);
-        slabs.push({ a: { ...a }, b: { ...b }, y0, y1, shape: boxShape(slabBox(a, b, y0, y1, sp.width, 0.05)) });
+        slabs.push({
+          s0,
+          s1,
+          a: { ...a },
+          b: { ...b },
+          y0,
+          y1,
+          shape: boxShape(slabBox(a, b, y0, y1, sp.width, 0.05)),
+        });
         s0 = s1;
       }
       // A body where the slabs go (on the bed under them, or on Bell Rock's rock under leg 3's descent) is lifted onto
-      // them if its feet are within a step of their top; else the slabs that hold it wait, as one set (./clear.ts).
+      // them if its feet are within a step of their top and it fits standing there; else the slabs that hold it wait,
+      // as one set, neither solid nor drawn (drawDeck), until it is clear of them all (./clear.ts).
       slabsWaiting = layOrHold(slabs);
     }
-    type Slab = { a: { x: number; z: number }; b: { x: number; z: number }; y0: number; y1: number; shape: Shape };
-    /** The slabs held off while you stand in them, retried each frame (solid). */
+    type Slab = {
+      s0: number;
+      s1: number;
+      a: { x: number; z: number };
+      b: { x: number; z: number };
+      y0: number;
+      y1: number;
+      shape: Shape;
+    };
+    /** The slabs held off while you stand in them, retried each frame (solid), and not drawn meanwhile (drawDeck). */
     let slabsWaiting: Slab[] = [];
     /** Makes `slabs` solid, but those that hold your body when it cannot be lifted onto them; returns those. */
     function layOrHold(slabs: readonly Slab[]) {
-      const { kind, held } = liftOrWait(slabs.map((x) => x.shape)),
+      const { kind, held } = liftOrWait(
+          slabs.map((x) => x.shape),
+          scenery(),
+        ),
         keep = kind === 'wait' ? slabs.filter((_x, i) => held.includes(i)) : [];
       for (const x of slabs)
         if (!keep.includes(x)) deckBodies.push(slab(x.a.x, x.a.z, x.b.x, x.b.z, x.y0, x.y1, sp.width, owner, 0.05));
@@ -732,6 +757,8 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         deckEnd = end;
         drawDeck(end, laid);
       },
+      /** The slabs that wait, as a key: the deck batch is redrawn when it changes. */
+      held: () => slabsWaiting.map((x) => x.s0).join('/'),
       /** The slabs and standing pieces for `laid` (once each change). */
       solid(laid: number, through: boolean) {
         if (laid !== deckLaid) solidDeck((deckLaid = laid));
@@ -908,8 +935,17 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       if (e < 0) l.clear();
       return e;
     });
-    // The deck batch is shared: rewritten when any leg's end moves.
-    const key = ends.join();
+    // The slabs and standing pieces first, so a slab that waits for you is not drawn this frame either.
+    if (r)
+      legs.forEach((l, i) => {
+        if (ends[i]! >= 0)
+          l.solid(
+            r.per[i]!.laid,
+            legs.some((o, j) => o.sp.joins === l.sp.leg.id && r.per[j]!.laid > 0),
+          );
+      });
+    // The deck batch is shared: rewritten when any leg's end moves or a slab starts or stops waiting.
+    const key = `${ends.join()}|${legs.map((l) => l.held()).join()}`;
     if (key !== drawnDeck) {
       drawnDeck = key;
       deck.begin();
@@ -921,12 +957,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     things.begin();
     if (!r) return things.commit();
     legs.forEach((l, i) => {
-      if (ends[i]! < 0) return;
-      l.solid(
-        r.per[i]!.laid,
-        legs.some((o, j) => o.sp.joins === l.sp.leg.id && r.per[j]!.laid > 0),
-      );
-      l.draw(r.per[i]!, r.wd, r.joined);
+      if (ends[i]! >= 0) l.draw(r.per[i]!, r.wd, r.joined);
     });
     // The open leg's current section: its frame, bill, rack and plate (the stack's while Ring Island's near view
     // stands, as its deck does with nothing laid).

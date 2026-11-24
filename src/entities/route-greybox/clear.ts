@@ -1,13 +1,15 @@
-// A greybox solid switching on with a player standing in it (a laid deck's slab, a resident area's boxes and prisms):
-// lift or wait, never push sideways (orchestrator's call, 24 November, after three review rounds). If the body's feet
-// are within STEP of the highest top among the solids that hold it, it is lifted onto that top (a lay over the unlaid
-// bed lifts a body standing there, as leg 2's bed meant); otherwise all the solids that hold it stay off, as one set,
-// until it is clear of every one, and then switch on. Nobody is moved anywhere but onto a solid's own top. Local
-// presentation of accepted state: no state, no sync.
+// A laid deck's slabs switching on where a player stands (route-greybox/leg-view.ts solidDeck: new geometry where
+// people already are): lift or wait, never push sideways (orchestrator's calls, 24 November). If the body's feet are
+// within STEP of the highest top among the slabs that hold it, and the whole body fits standing there, it is lifted
+// onto that top (a lay over the unlaid bed lifts a body standing there, as leg 2's bed meant); otherwise every slab
+// that holds it waits, neither solid nor drawn, as one set, until it is clear of them all. An area's mount is not
+// this: it happens far from anyone (route-greybox/index.ts). Local presentation of accepted state: no state, no sync.
 import * as THREE from 'three/webgpu';
 import { HEAD_OFFSET, PLAYER_R } from '../../constants.ts';
 import { me } from '../../player/player.ts';
 import type { Shape } from '../../physics/engine.ts';
+import { compiled } from '../../prefab/catalogue.ts';
+import type { Placement } from '../../prefab/types.ts';
 import type { GreyBox } from './boxes.ts';
 
 /** The most a body's feet may be under a solid's top and still be lifted onto it. */
@@ -104,9 +106,13 @@ export function heldTop(s: Shape, body: P = me.body!.position): number | null {
   return null;
 }
 /** What switching `solids` on means for your body: `clear` (none holds it), `lifted` (its feet were within STEP of
- * the highest top among those that hold it: it now stands on that top) or `wait` (keep every solid that holds it off
- * until it is clear). `held` lists the indices of the solids that hold it. */
-export function liftOrWait(solids: readonly Shape[]): { kind: 'clear' | 'lifted' | 'wait'; held: number[] } {
+ * the highest top among those that hold it, and the whole body fits standing there: it now stands on that top) or
+ * `wait` (keep every solid that holds it off until it is clear). `held` lists the indices of the solids that hold it.
+ * `world`: the scenery around (placedShapes), which must leave the lifted body room too (headroom). */
+export function liftOrWait(
+  solids: readonly Shape[],
+  world: readonly Shape[] = [],
+): { kind: 'clear' | 'lifted' | 'wait'; held: number[] } {
   const body = me.body;
   if (!body) return { kind: 'clear', held: [] };
   const p = body.position,
@@ -120,9 +126,38 @@ export function liftOrWait(solids: readonly Shape[]): { kind: 'clear' | 'lifted'
   });
   if (!held.length) return { kind: 'clear', held };
   if (p.y - PLAYER_R < highest - STEP) return { kind: 'wait', held };
-  const y = highest + PLAYER_R + CONTACT;
+  const y = highest + PLAYER_R + CONTACT,
+    at = { x: p.x, y, z: p.z };
+  // The destination must be clear: nothing of the set or of the scenery around holds the body standing there.
+  if ([...solids, ...world].some((s) => heldTop(s, at) !== null)) return { kind: 'wait', held };
   p.set(p.x, y, p.z);
   body.interpolatedPosition?.set(p.x, y, p.z);
   body.velocity?.set(0, 0, 0);
   return { kind: 'lifted', held };
+}
+/** The solids of compiled placements (their prefabs' boxes and trimeshes, scaled, turned and placed as instantiate
+ * builds them: rot is yaw, pitch, roll in YXZ order), for liftOrWait's `world`. A collider's own offset or turn is
+ * not read: the greybox records have none. */
+export function placedShapes(placements: readonly Placement[]): Shape[] {
+  const q = new THREE.Quaternion();
+  return placements.flatMap((p) => {
+    const [yaw = 0, pitch = 0, roll = 0] = p.rot ?? [],
+      [sx = 1, sy = 1, sz = 1] = p.scale ?? [];
+    q.setFromEuler(euler.set(pitch, yaw, roll));
+    const placed = { offset: { x: p.pos[0], y: p.pos[1], z: p.pos[2] }, rotation: { x: q.x, y: q.y, z: q.z, w: q.w } };
+    return (compiled.prefabs[p.prefab]?.colliders ?? []).flatMap((c): Shape[] =>
+      c.shape === 'box'
+        ? [{ kind: 'box', hx: c.half[0] * sx, hy: c.half[1] * sy, hz: c.half[2] * sz, ...placed }]
+        : c.shape === 'trimesh'
+          ? [
+              {
+                kind: 'trimesh',
+                vertices: c.vertices.map((v, i) => v * [sx, sy, sz][i % 3]!),
+                indices: c.indices,
+                ...placed,
+              },
+            ]
+          : [],
+    );
+  });
 }

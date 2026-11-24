@@ -3,7 +3,9 @@
 // within 400 m of its centre and freed past 550 m; the horizon silhouette stays for the rest. High Gorge's is
 // ./massing.ts; leg 2's places (docs/plans/greybox-leg2-massing.md) and leg 3's Canopy (greybox-leg3.md, step 6) join
 // the list as their steps land. The legs' own views (the deck, frames, racks, signs and prompts) are ./leg-view.ts's,
-// mounted by the railway's works seam. Local scenery: no state, no sync, no saves. ?blockout=world draws its own Gorge, so it gets none of this.
+// mounted by the railway's works seam. Local scenery: no state, no sync, no saves. ?blockout=world draws its own
+// Gorge, so it gets none of this. An area mounts far from anyone walking, swimming or riding there (Canopy at 580 m),
+// so its solids go on as ordinary statics; a player put into one (a jump, a return) is the shared return check's.
 import { productionRailway } from '../../proto/flags.ts';
 import { background } from '../../async.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../../entity/entity.ts';
@@ -16,8 +18,6 @@ import { gorgePlacements } from '../../prefab/instantiate.ts';
 import { bellExtras, bellMassing } from './massing-bell.ts';
 import { westExtras, westMassing } from './massing-west.ts';
 import { canopyExtras, canopyMassing, canopyNear } from './massing-canopy.ts';
-import { liftOrWait } from './clear.ts';
-import type { instantiate } from '../../prefab/instantiate.ts';
 import { AREA_CENTRES, FREE_MORE, MOUNT_NEAR } from './leg2-layout.ts';
 import { drawGreyBoxes } from './boxes.ts';
 import type { Placement } from '../../prefab/types.ts';
@@ -27,12 +27,13 @@ defineKind('route-greybox', { update: 13 });
 defineKind('route-greybox-area', {});
 
 /** One place's massing: its boxes, and what else stands under the same owner (painted boards, the rock's colliders;
- * `extras` returns its instances). `near`: its mount distance when not the usual (it is freed past it plus FREE_MORE). */
+ * `extras` returns how many solids it made). `near`: its mount distance when not the usual (freed past it plus
+ * FREE_MORE). */
 type Area = {
   id: string;
   centre: { x: number; z: number };
   build: () => readonly Placement[];
-  extras?: (owner: OwnedView) => readonly Instance[];
+  extras?: (owner: OwnedView) => number;
   near?: number;
 };
 const AREAS: readonly Area[] = [
@@ -42,31 +43,13 @@ const AREAS: readonly Area[] = [
   { id: 'canopy', centre: AREA_CENTRES.canopy, build: canopyMassing, extras: canopyExtras, near: canopyNear },
 ];
 
-type Instance = ReturnType<typeof instantiate>;
-/** Instances whose solids hold your body stay off as one set until you are clear of them all, or are lifted onto
- * (./clear.ts). Called on the mount, in the task that switched them on, and each update after. Returns those still held. */
-function hold(instances: readonly Instance[], first: boolean) {
-  const solids = instances.flatMap((i) => i.solids.map((s) => ({ i, s }))),
-    { kind, held } = liftOrWait(solids.map((x) => x.s));
-  if (kind !== 'wait') {
-    if (!first) for (const i of instances) i.setEnabled(true);
-    return [];
-  }
-  const waiting = [...new Set(held.map((k) => solids[k]!.i))];
-  if (first) for (const i of waiting) i.setEnabled(false);
-  else for (const i of instances) if (!waiting.includes(i)) i.setEnabled(true);
-  return waiting;
-}
-
 if (productionRailway && new URLSearchParams(location.search).get('blockout') !== 'world') {
   let gone = false;
   const residents = AREAS.map((area) => {
     const residency = { ...area.centre, mounted: false };
     routeAreas.set(area.id, residency);
     let mounted: { owner: OwnedView; entity: GameEntity; boxes: number; solids: number } | null = null,
-      building = false,
-      /** Solids held off while you stand in them (hold). */
-      waiting: readonly Instance[] = [];
+      building = false;
     const wanted = () => {
       const body = me.body?.position,
         c = area.centre;
@@ -80,10 +63,8 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
     async function mount() {
       building = true;
       const owner = createOwnedView(),
-        { mesh, instances } = await drawGreyBoxes(owner, area.build()),
-        all = [...instances, ...(area.extras?.(owner) ?? [])];
-      // No physics step has run since they went on: a player standing in any is lifted onto it, or they stay off.
-      waiting = hold(all, true);
+        { mesh, solids } = await drawGreyBoxes(owner, area.build()),
+        more = area.extras?.(owner) ?? 0;
       // Its pipeline compiles off the frame before it first shows (src/render/precompile.ts).
       owner.root.visible = false;
       await precompile(owner.root);
@@ -94,7 +75,7 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
         owner,
         entity: spawn({ kind: 'route-greybox-area', mesh: owner.root }),
         boxes: mesh.count,
-        solids: all.reduce((n, i) => n + i.solids.length, 0),
+        solids: solids + more,
       };
       residency.mounted = true;
       routeSceneryMounted();
@@ -104,7 +85,6 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
       despawn(mounted.entity);
       mounted.owner.dispose();
       mounted = null;
-      waiting = [];
       residency.mounted = false;
     }
     return {
@@ -113,7 +93,6 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
         const want = wanted();
         if (want && !mounted && !building) background(mount(), `route greybox massing: ${area.id}`);
         else if (!want && mounted) unmount();
-        else if (mounted && waiting.length) waiting = hold(waiting, false);
       },
       describe: () =>
         mounted ? { resident: true, boxes: mounted.boxes, solids: mounted.solids } : { resident: false },
