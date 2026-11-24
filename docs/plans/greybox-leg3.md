@@ -714,7 +714,7 @@ table before garage step 4's screen is built (finding 3), not before its rules.
 
       `npm run loop -- run`: every order probe refused as the graph says, no softlock or graph bug, 0 refusals; area 6
       played in 8 / 9 / 9 / 9 minutes (1 to 4 players), the whole route 2:40 / 2:34 / 2:32 / 2:33.
-      `npm run playthrough -- --from bay-reached --to canopy`: verdict `pass` (`.look/playthrough/leg3bot2/`), every
+      `npm run playthrough -- --from bay-reached --to canopy`: verdict `pass` twice, the second on the simplified branch head (`.look/playthrough/leg3bot3/`), every
       checkpoint from the barrier at Bell Rock through the three sections, Canopy reached, the cloth taken and home at the
       West landing, no recovery, no error. The end still shows Buddy on the West landing's apron by the departure board
       (Bay head 1, Bell Rock, Canopy head 2: head 1 closed behind). Timings are not evidence. Not tested on a device.
