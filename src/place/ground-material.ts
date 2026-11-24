@@ -114,6 +114,34 @@ export function homeGroundMaterial(lawnLayer?: LawnLayer) {
     .add(wander.mul(0.07));
   const broad: N = smoothstep(0.54, 0.6, soil.add(wander.mul(0.03))).oneMinus();
   const rock: N = smoothstep(0.3, 0.42, steep.add(ragged)).max(broad);
+  const { layered, paint, q } = rockLayers(p);
+  const tread: N = smoothstep(0.05, 0.3, fract(q)).oneMinus();
+  const seam: N = smoothstep(0.02, 0.07, fract(q)).mul(smoothstep(0.93, 0.98, fract(q)).oneMinus());
+  const rockColour: N = layered
+    .mul(mix(vec3(1), paint, 0.45))
+    .mul(smoothstep(0, 0.45, foot).mul(0.2).add(0.8))
+    .mul(tread.mul(0.05).add(1))
+    .mul(seam.mul(0.14).add(0.86));
+  // A dry lip only at the rim.
+  const lip: N = smoothstep(0.02, 0.12, steep)
+    .mul(rock.oneMinus())
+    .mul(smoothstep(0.5, 0.8, foot));
+  patchNode(m, 'colorNode', () => {
+    let c: N = mix(ground, ground.mul(vec3(1.12, 1.04, 0.8)), lip.mul(0.5));
+    c = mix(c, c.mul(0.72), wet);
+    c = mix(c, rockColour, rock);
+    return c;
+  });
+  // Rock takes its drawn facets (a crisp rim); everything you can walk on keeps the smooth normals.
+  patchNode(m, 'normalNode', () => mix(normalViewGeometry, normalFlat, rock).normalize());
+  // The land registers with the sea through its cove layers (land.ts).
+  return m;
+}
+
+/** The gorge's rock, shared by the ground's cliffs and the canyon kit (src/prefab/builders/terrain-kit.ts), so piece and
+ * cliff are one rock: `layered` is the bedded pigment at a Place-local point `p`, `paint` the cove's rock tile seen
+ * triplanar along the drawn normal, `q` the bed coordinate (one per STRATA metres). */
+export function rockLayers(p: N) {
   const tiles = coveTextures();
   const n: N = normalWorldGeometry.normalize();
   const an: N = abs(n);
@@ -140,25 +168,5 @@ export function homeGroundMaterial(lawnLayer?: LawnLayer) {
     mix(bed, today, 0.5),
     smoothstep(0.35, 0.36, tone).mul(0.55),
   ).mul(fract(tone.mul(7.7)).mul(0.16).add(0.92));
-  const tread: N = smoothstep(0.05, 0.3, fract(q)).oneMinus();
-  const seam: N = smoothstep(0.02, 0.07, fract(q)).mul(smoothstep(0.93, 0.98, fract(q)).oneMinus());
-  const rockColour: N = layered
-    .mul(mix(vec3(1), paint, 0.45))
-    .mul(smoothstep(0, 0.45, foot).mul(0.2).add(0.8))
-    .mul(tread.mul(0.05).add(1))
-    .mul(seam.mul(0.14).add(0.86));
-  // A dry lip only at the rim.
-  const lip: N = smoothstep(0.02, 0.12, steep)
-    .mul(rock.oneMinus())
-    .mul(smoothstep(0.5, 0.8, foot));
-  patchNode(m, 'colorNode', () => {
-    let c: N = mix(ground, ground.mul(vec3(1.12, 1.04, 0.8)), lip.mul(0.5));
-    c = mix(c, c.mul(0.72), wet);
-    c = mix(c, rockColour, rock);
-    return c;
-  });
-  // Rock takes its drawn facets (a crisp rim); everything you can walk on keeps the smooth normals.
-  patchNode(m, 'normalNode', () => mix(normalViewGeometry, normalFlat, rock).normalize());
-  // The land registers with the sea through its cove layers (land.ts).
-  return m;
+  return { layered, paint, q };
 }

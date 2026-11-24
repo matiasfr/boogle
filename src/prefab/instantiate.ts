@@ -41,6 +41,7 @@ import './builders/lookout.ts';
 import './builders/ring-island.ts';
 import './builders/mushrooms.ts';
 import './builders/secrets.ts';
+import './builders/terrain-kit.ts';
 import type { Interactable } from '../player/hands.ts';
 import type { Part } from '../render/part-geometry.ts';
 import { builders, type ConstructionBuild, type Piece } from './builders.ts';
