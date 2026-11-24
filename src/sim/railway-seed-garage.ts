@@ -19,6 +19,7 @@ import { legRailheadHold } from './railway-sys-route-kit.ts';
 import { servingSlots } from './railway-trains.ts';
 import { RAIL_LEGS, ROW_LINE } from './railway-route.ts';
 import { STEEL } from './railway-ring-layout.ts';
+import { TRADE_ROW, type InstallPart } from './railway-works-layout.ts';
 import { RAIL_TRAINS } from './railway-lines.ts';
 import { TRAIN_PHASE } from './railway-train.ts';
 
@@ -28,9 +29,9 @@ export type GarageStage = (typeof GARAGE_STAGES)[number];
 const NS = ROW_LINE.ns,
   BAY = ROW_LINE.bay,
   CANOPY = RAIL_LEGS.findIndex((l) => l.id === 'bell-canopy');
-/** The install parts of the trade (src/sim/railway-works-layout.ts installPart): Quick, Strong. */
-const QUICK = 5,
-  STRONG = 6;
+/** The install parts of the trade (./railway-works-layout.ts): Quick, Strong, and the rows they fit. */
+const QUICK = 5 satisfies InstallPart,
+  STRONG = 6 satisfies InstallPart;
 
 // Share only a serialized source fixture through restore, never a mutable world between callers.
 const cache = new Map<GarageStage, Seed>();
@@ -74,7 +75,12 @@ function build(s: Seed, stage: GarageStage): Seed {
     case 'trade-fitted':
       fit(s, NS, QUICK);
       fit(s, BAY, STRONG);
-      until(s, () => wearing(s, NS, 4) && wearing(s, BAY, 5), 6000, 'every ns train Quick and bay train Strong');
+      until(
+        s,
+        () => wearing(s, NS, TRADE_ROW[QUICK]) && wearing(s, BAY, TRADE_ROW[STRONG]),
+        6000,
+        'every ns train Quick and bay train Strong',
+      );
       need(shed(w).tableLine === BAY && upgradePool(w) === STEEL.total - 2, 'the bay copy on the table, 2 spent');
       break;
     case 'trade-held':
@@ -86,7 +92,7 @@ function build(s: Seed, stage: GarageStage): Seed {
             const r = train(w, j);
             return (
               t.line === BAY &&
-              r.boiler === 5 &&
+              r.boiler === TRADE_ROW[STRONG] &&
               r.phase === TRAIN_PHASE.STAND &&
               r.at === legKitDrop(w, BAY, CANOPY) &&
               r.legKit &&

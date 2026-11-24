@@ -78,6 +78,12 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
   });
   // Garage step 4: each copy's engine, the same parts the table's copy wears (garage-view.ts), facing the table.
   const engines = new Map<number, { root: THREE.Group; short: THREE.Mesh[]; long: THREE.Mesh[] }>();
+  const wheel = new THREE.CylinderGeometry(ENGINE_WHEELS.r, ENGINE_WHEELS.r, 0.12, 16).rotateZ(Math.PI / 2);
+  const iron = new THREE.MeshStandardNodeMaterial({ color: '#2c2e34', roughness: 0.55, metalness: 0.5 });
+  owner.cleanup(() => {
+    wheel.dispose();
+    iron.dispose();
+  });
   if (kit)
     for (const { bay } of COPY_BAYS) {
       const pose = rotundaPose(site, bay);
@@ -101,8 +107,6 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
       const rods = kit.enginePart('engine_rods');
       rods.position.y = ENGINE_WHEELS.throw;
       engine.add(...short, ...long, rods, kit.enginePart('engine_stool'), kit.engineDoor(1), kit.engineDoor(-1));
-      const wheel = new THREE.CylinderGeometry(ENGINE_WHEELS.r, ENGINE_WHEELS.r, 0.12, 16).rotateZ(Math.PI / 2);
-      const iron = new THREE.MeshStandardNodeMaterial({ color: '#2c2e34', roughness: 0.55, metalness: 0.5 });
       for (const x of [-0.5, 0.5])
         for (const z of [-1, 1]) {
           const m = new THREE.Mesh(wheel, iron);
@@ -114,6 +118,7 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
       engines.set(bay, { root, short, long });
     }
   let copies = new Map<number, BayCopy>(),
+    copiesKey = '',
     restand = false;
   let shown = -1;
   let serving = -1;
@@ -195,13 +200,18 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
     }
     return true;
   }
+  /** Each bay's copy pieces (its engine's solid and plate, the flatbed), grouped once. */
+  const isCopy = (part: string) => part === 'copy' || part === 'flatbed';
+  const copySets = COPY_BAYS.map(({ bay }) => pieces.filter((p) => p.piece.turn === bay && isCopy(p.piece.part)));
+  /** Some copy piece stands with its solid still off: settleCopies runs each frame until none does. */
+  let pending = false;
   /** Each bay's copy pieces that should stand now switch their solids on, or wait while someone is in them. */
   function settleCopies() {
-    for (const { bay } of COPY_BAYS) {
-      const set = pieces.filter((p) => p.piece.turn === bay && (p.piece.part === 'copy' || p.piece.part === 'flatbed'));
+    if (!pending) return;
+    pending = false;
+    for (const set of copySets) {
       const want = set.filter((p) => shows(shown, p.piece));
-      const waiting = want.filter((p) => !p.enabled);
-      if (!waiting.length) continue;
+      if (want.every((p) => p.enabled)) continue;
       const clear = copyClear(want);
       for (const p of want) {
         p.held = !clear;
@@ -210,6 +220,7 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
           p.enabled = true;
         }
       }
+      pending ||= !clear;
     }
   }
   const view = {
@@ -226,7 +237,7 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
         // Reset even an unfinished rise; unchanged pieces keep their record colliders.
         instance.root.position.y = rest.elements[13]!;
         const on = shows(stage, piece);
-        const copy = piece.part === 'copy' || piece.part === 'flatbed';
+        const copy = isCopy(piece.part);
         if (
           on &&
           !entry.enabled &&
@@ -237,7 +248,7 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
         if (!copy || !on) {
           instance.setEnabled(on);
           entry.enabled = on;
-        }
+        } else if (!entry.enabled) pending = true;
         instance.root.visible = on;
         if (batch) {
           batch.mesh.setMatrixAt(index, instance.root.visible ? rest : matrix.makeScale(0, 0, 0));
@@ -258,16 +269,16 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
     },
     /** Garage step 4: the copies off the table, each wearing its line's row; a change re-stands the bays. A copy's
      * door opens with it and its solids wait for anyone standing in it (settleCopies). */
-    copies(list: readonly (BayCopy & { bay?: number })[]) {
-      const next = new Map(
+    copies(list: readonly BayCopy[]) {
+      const key = `${serving}|${list.map((c) => `${c.line}${+c.long}${+c.flatbed}`).join()}`;
+      if (key === copiesKey) return settleCopies();
+      copiesKey = key;
+      copies = new Map(
         bayOccupants(site, { serving, copies: list.map((c) => c.line) }).copies.map((c) => [
           c.bay,
           list.find((l) => l.line === c.line)!,
         ]),
       );
-      const key = (m: Map<number, BayCopy>) => JSON.stringify([...m]);
-      if (key(next) === key(copies)) return settleCopies();
-      copies = next;
       restand = true;
       view.show(shown, serving);
     },
@@ -284,8 +295,7 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
         if (
           piece.part === 'ruin' ||
           piece.part === 'waiting' ||
-          piece.part === 'copy' ||
-          piece.part === 'flatbed' ||
+          isCopy(piece.part) ||
           !shows(stage, piece) ||
           shows(shown, piece)
         )

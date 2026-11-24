@@ -3,7 +3,8 @@
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { material } from '../../render/materials.ts';
-import { ROTUNDA_BLOCK, ROTUNDA_KIT } from '../../place/rotunda.ts';
+import { COPY_AT, ROTUNDA_BLOCK, ROTUNDA_KIT } from '../../place/rotunda.ts';
+import { KIT_FLATBED, KIT_FLATBED_LOOK } from '../../entities/railway/cars.ts';
 import { ENGINE, ENGINE_CAB, ENGINE_BOILER, ENGINE_WHEELS } from '../../entities/railway/engine.ts';
 import { registerBuilder } from '../builders.ts';
 declare module '../names.ts' {
@@ -144,10 +145,11 @@ registerBuilder('roundhouse.bay', (params, batch) => {
     }
     case 'copy-flatbed': {
       // Garage step 4: the Strong boiler's kit flatbed behind the copy (a train's flatbed: deck 0.7 m over the rails).
-      const z = 22.1,
-        rail = 0.24;
-      box(0, rail + 0.6, z, 2.2, 0.2, 3.2, '#8a6d4a');
-      for (const x of [-1.1, 1.1]) box(x, rail + 0.6, z, 0.06, 0.16, 3.1, '#4a3a2a');
+      const z = COPY_AT.flatbed,
+        rail = 0.24,
+        { hx, hz, top } = KIT_FLATBED;
+      box(0, rail + top - 0.1, z, hx * 2, 0.2, hz * 2, KIT_FLATBED_LOOK.deck);
+      for (const x of [-hx, hx]) box(x, rail + top - 0.1, z, 0.06, 0.16, hz * 2 - 0.1, KIT_FLATBED_LOOK.stake);
       for (const x of [-0.8, 0.8])
         for (const dz of [-1.1, 1.1])
           add(

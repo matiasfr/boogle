@@ -49,7 +49,18 @@ import { line2At, line2Lat, line2Y, endMergeM, departureHalt } from './line2-pat
 import { isRowLine, rowAt, rowLat, rowY } from './row-path.ts';
 import { BOTTOM, type Car } from './car.ts';
 import type { CarRole } from './cars.ts';
-import { KIT_FLATBED, STEEL_CAR, ridesOn, consistOf, consistBounds, roleIndex, offsetOf } from './cars.ts';
+import {
+  KIT_FLATBED,
+  KIT_FLATBED_LOOK,
+  STEEL_CAR,
+  ridesOn,
+  consistOf,
+  consistBounds,
+  roleIndex,
+  offsetOf,
+  wearsLong as rowLong,
+  wearsTail as rowTail,
+} from './cars.ts';
 import { CAR_BUFFERS, ENGINE_BUFFERS, couplingCapacity, trainPlaces, type Vehicle } from './car-spacing.ts';
 import { createCouplings } from './couplings.ts';
 import type { TrainAhead } from './path-refuge.ts';
@@ -400,10 +411,8 @@ export async function createRailwayTrains(
     role === 'wagon' ? wagonCar : role === 'steel' || role === 'cargo' ? tr.steel! : tr.carByRole(role);
   /** The tail car's role: line 2's steel car, a trade line's Strong flatbed (garage step 4). */
   const tailRole = (tr: (typeof trains)[number]): CarRole => (tr.line === LINE2 ? 'steel' : 'cargo');
-  /** What a row wears (garage step 4): line 2's longer and Big boilers and a trade line's Quick draw the longer barrel
-   * and chimney; line 2's longer boiler brings the steel car, a trade line's Strong its kit flatbed. */
-  const wearsLong = (tr: (typeof trains)[number], row: number) => (tr.line === LINE2 ? row >= 2 : row === 4);
-  const wearsTail = (tr: (typeof trains)[number], row: number) => (tr.line === LINE2 ? row >= 2 : row === 5);
+  const wearsLong = (tr: (typeof trains)[number], row: number) => rowLong(tr.line, row);
+  const wearsTail = (tr: (typeof trains)[number], row: number) => rowTail(tr.line, row);
   // Cache available role-to-car collections once. A line without a steel car never selects a steel layout.
   const carLayouts = new Map(
     trains.map((tr) => [
@@ -820,11 +829,11 @@ export async function createRailwayTrains(
           { hx, hz, top } = car.spec;
         // A trade line's Strong flatbed (garage step 4) is timber with dark stakes; line 2's steel car is grey and orange.
         const kitBed = tr.line !== LINE2;
-        steelBatch.part(f, 0, top - 0.2, 0, hx * 2, 0.4, hz * 2, kitBed ? '#8a6d4a' : '#6f7275');
+        steelBatch.part(f, 0, top - 0.2, 0, hx * 2, 0.4, hz * 2, kitBed ? KIT_FLATBED_LOOK.deck : '#6f7275');
         for (const x of [-0.85, 0.85])
           for (const z of [-1, 1]) steelBatch.part(f, x, 0.15, z, 0.25, 0.5, 0.5, '#3a3c3c');
         for (const x of [-hx, hx]) {
-          steelBatch.part(f, x, top - 0.2, 0, 0.05, 0.16, hz * 2 - 0.1, kitBed ? '#4a3a2a' : STEEL_BLOCK);
+          steelBatch.part(f, x, top - 0.2, 0, 0.05, 0.16, hz * 2 - 0.1, kitBed ? KIT_FLATBED_LOOK.stake : STEEL_BLOCK);
           for (const z of [-hz + 0.15, hz - 0.15])
             steelBatch.part(f, x * 0.96, top + 0.15, z, 0.1, 0.3, 0.1, '#1e1e22');
         }

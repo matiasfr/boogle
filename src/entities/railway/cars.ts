@@ -2,6 +2,8 @@
 // pose (test/railway-works-layout.test.ts keeps line 2's stops clear of the parked track layer with them).
 import { ENGINE } from './engine.ts';
 import { lineRoute } from '../../sim/railway-trade-layout.ts';
+import { LINE2 } from '../../sim/railway-lines.ts';
+import { boilerCars } from '../../sim/railway-train.ts';
 
 /** A car's physical size, shared with the platforms: deck half sizes and the deck top's height over the ground. */
 export type CarSpec = { hx: number; hz: number; top: number };
@@ -21,6 +23,13 @@ export type Consist = readonly { role: CarRole; spec: CarSpec; offset: number }[
 export const STEEL_CAR: CarSpec = { ...TRAILER };
 /** Garage step 4's kit flatbed: the Strong boiler's extra car, a flatbed behind the kit car (role `cargo`). */
 export const KIT_FLATBED: CarSpec = { ...TRAILER };
+/** What a boiler row looks like on `line`'s engines, wherever one is drawn (a train, the table's copy, a bay's): line
+ * 2's longer and Big boilers and a trade line's Quick (row 4) wear the longer barrel and chimney; line 2's longer
+ * boiler brings the steel car, a trade line's Strong (the sim's extra car, `boilerCars`) its kit flatbed. */
+export const wearsLong = (line: number, row: number) => (line === LINE2 ? row >= 2 : row === 4);
+export const wearsTail = (line: number, row: number) => (line === LINE2 ? row >= 2 : boilerCars(row) > 0);
+/** The kit flatbed's timber and stakes (the train's and the bay copy's). */
+export const KIT_FLATBED_LOOK = { deck: '#8a6d4a', stake: '#4a3a2a' } as const;
 /** Local layout only; passenger routes include the coach outside the boiler's cargo allowance. */
 function makeConsist(rider: boolean, wagon: boolean, steel: boolean, strong: boolean): Consist {
   const cars: { role: CarRole; spec: CarSpec; offset: number }[] = [

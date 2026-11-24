@@ -282,7 +282,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       case 'strong':
         return barrel(0);
       case 'flatbed':
-        return car(flatbedOffset, TRAILER.top, tradeRow() === TRADE_ROW.strong);
+        return car(flatbedOffset, TRAILER.top, tableRow() === TRADE_ROW.strong);
       case 'blast':
         return { c: [0, b.chimney.y - 0.1, at + b.chimney.z], s: [0.7, 0.9, 0.7] };
       case 'plough':
@@ -504,10 +504,10 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   let momentPart: InstallId = 'long';
   /** Garage step 4: the copy on the table is `facts.tableLine`'s, a trade line's row 0, Quick (4) or Strong (5). */
   const trade = () => facts.tableLine !== GARAGE_LINE;
-  const tradeRow = () => lineFacts(facts, facts.tableLine)?.row ?? 0;
+  const tableRow = () => lineFacts(facts, facts.tableLine)?.row ?? 0;
   const isTrade = (p: InstallId): p is 'quick' | 'strong' => p === 'quick' || p === 'strong';
   /** The copy wears the longer boiler's barrel and chimney: line 2's longer or Big boiler, a trade line's Quick. */
-  const wearsLong = () => (trade() ? tradeRow() === TRADE_ROW.quick : facts.longFitted);
+  const wearsLong = () => cars.wearsLong(facts.tableLine, lineFacts(facts, facts.tableLine)?.row ?? 0);
   /** The rate a moment's wheels start from: the boiler its part replaces (a trade fit's: the line's row before it). */
   const fromRate = () =>
     isTrade(momentPart) ? tradeFromSpeed(facts.tableLine, fromRow) : speedMs(BOILERS[MOMENT_FROM[momentPart]].speed);
@@ -681,7 +681,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   /** Outside an install's moment the copy wears exactly the rows: the room's boiler, bolted when it is the longer one. */
   function wearRows() {
     setLong(wearsLong());
-    wornRow = tradeRow();
+    wornRow = tableRow();
     cradleCopy.root.visible = !trade() && facts.cradleFitted;
     pipe.visible = !trade() && facts.boilerRev === 1;
     for (const b of bolts) {
@@ -692,7 +692,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   /** The engine's cruise in the garage, by the room's fit. */
   const today = () =>
     trade()
-      ? tradeFromSpeed(facts.tableLine, tradeRow())
+      ? tradeFromSpeed(facts.tableLine, tableRow())
       : speedMs(
           BOILERS[facts.boilerRev >= 3 ? 'big' : facts.longFitted ? 'long' : facts.boilerRev === 1 ? 'table' : 'boiler']
             .speed,
@@ -841,7 +841,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     real = waiting = true;
     sinceCommit = 0;
     hangUp = 0;
-    fromRow = tradeRow();
+    fromRow = tableRow();
     const rev = trade() ? (lineFacts(facts, facts.tableLine)?.rev ?? 0) : facts.installRev;
     if (!deps.install(facts.tableLine, rev, INSTALL_PART[momentPart])) deny();
   }
@@ -1166,7 +1166,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       (phase === 'moment'
         ? !hit
         : sel === 'quick'
-          ? tradeRow() !== TRADE_ROW.quick
+          ? tableRow() !== TRADE_ROW.quick
           : sel === 'blast'
             ? facts.boilerRev === 0
             : sel === 'big'

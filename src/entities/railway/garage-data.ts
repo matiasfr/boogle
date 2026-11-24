@@ -3,7 +3,12 @@
 // railway's own leg maths (src/sim/railway-train.ts) so a number on the screen is the number the timetable gives.
 import { BOILER, boilerCars, boilerSpeed, kitBills, trainLegTicks, TRAIN } from '../../sim/railway-train.ts';
 import { LINE2, RAIL_LINES } from '../../sim/railway-lines.ts';
-import { CRADLE_CAP, INSTALL_STEEL, type InstallPart } from '../../sim/railway-works-layout.ts';
+import {
+  CRADLE_CAP,
+  INSTALL_STEEL,
+  TRADE_ROW as SIM_TRADE_ROW,
+  type InstallPart,
+} from '../../sim/railway-works-layout.ts';
 import { TRADE } from '../../sim/railway-trade-layout.ts';
 import { LINE2_KIT } from '../../sim/railway-line2-layout.ts';
 import { prefabs as railwayPrefabs } from '../../content/prefabs/railway.ts';
@@ -121,10 +126,43 @@ export type Part = {
   price?: string;
 };
 
+/** The Looks and Whistle parts, the same on every line's copy. */
+const COSMETICS: Part[] = [
+  {
+    id: 'roof',
+    cat: 'looks',
+    name: 'Roof and lamps',
+    desc: 'Built and switched off. It has no rule, so it is a look.',
+    standing: 'later',
+    pill: 'Later',
+    size: 'small',
+  },
+  {
+    id: 'toot',
+    cat: 'whistle',
+    name: 'Toot',
+    desc: 'Today’s whistle.',
+    standing: 'installed',
+    pill: 'Installed',
+    size: 'small',
+  },
+  {
+    id: 'two',
+    cat: 'whistle',
+    name: 'Two-tone',
+    desc: 'Not built yet.',
+    standing: 'later',
+    pill: 'Later',
+    size: 'small',
+  },
+];
 /** The chip `line`'s facts, or undefined while it has none (a trade line not open). */
 export const lineFacts = (room: RoomFacts, line: number) => room.lines.find((l) => l.line === line);
 /** Garage step 4's rows: Quick is row 4, Strong row 5 (src/sim/railway-train.ts BOILER); a trade line's own rows. */
-export const TRADE_ROW = { quick: 4, strong: 5 } as const;
+export const TRADE_ROW = {
+  quick: SIM_TRADE_ROW[INSTALL_PART.quick],
+  strong: SIM_TRADE_ROW[INSTALL_PART.strong],
+} as const;
 /** A trade line's catalog (docs/plans/garage-step4.md, "The garage screen"): the Engine tab's two boilers side by side,
  * the first fit's price a line, then free swaps; the Cargo tab's kit car and Strong's flatbed. Strings are
  * placeholders for the owner ("Swap", "Kit flatbed"). */
@@ -177,7 +215,7 @@ function tradeParts(room: RoomFacts, line: number): Part[] {
       pill: strong ? 'Installed' : 'Later',
       size: 'medium',
     },
-    ...partsOf(room, GARAGE_LINE).filter((p) => p.cat === 'looks' || p.cat === 'whistle'),
+    ...COSMETICS,
   ];
 }
 /** A part someone could install now on any chip's line: the post's knob turns orange for it (plan, call 16). */
@@ -313,33 +351,7 @@ export function partsOf(room: RoomFacts, line = room.tableLine): Part[] {
       ...paid('cradle', room.steelHome, room.cradleFitted),
       size: 'medium',
     },
-    {
-      id: 'roof',
-      cat: 'looks',
-      name: 'Roof and lamps',
-      desc: 'Built and switched off. It has no rule, so it is a look.',
-      standing: 'later',
-      pill: 'Later',
-      size: 'small',
-    },
-    {
-      id: 'toot',
-      cat: 'whistle',
-      name: 'Toot',
-      desc: 'Today’s whistle.',
-      standing: 'installed',
-      pill: 'Installed',
-      size: 'small',
-    },
-    {
-      id: 'two',
-      cat: 'whistle',
-      name: 'Two-tone',
-      desc: 'Not built yet.',
-      standing: 'later',
-      pill: 'Later',
-      size: 'small',
-    },
+    ...COSMETICS,
   ];
 }
 

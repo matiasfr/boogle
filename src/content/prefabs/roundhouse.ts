@@ -58,6 +58,7 @@ export const prefabs = [
   definePrefab({
     key: 'roundhouse.copy-plate',
     visual: { builder: 'roundhouse.bay', params: { part: 'copy-plate' } },
+    // z 17.9 and 22.1 are src/place/rotunda.ts COPY_AT's engine and flatbed (records import no place code).
     colliders: [box(0, 1.85, 17.9, 1.2, 1.45, 2.2)],
     scope: 'owner',
   }),

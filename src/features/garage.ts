@@ -296,22 +296,13 @@ function refresh() {
   }
   // Through a real install the rows count from the old numbers to the new, though the room's rows already say fitted.
   const landing = snap.real && snap.phase === 'moment';
+  // The row counted from is the one the table's copy wore before the fit (`fromRow`), on either line.
   const table = lineFacts(snap.facts, snap.facts.tableLine);
+  const row = landing ? snap.fromRow : (table?.row ?? snap.facts.boilerRev);
   const rows =
     snap.facts.tableLine !== GARAGE_LINE && table
-      ? tradeRowsFor(snap.cat, snap.sel, landing ? snap.fromRow : table.row, table.line, table.kitTrip)
-      : rowsFor(
-          snap.cat,
-          snap.sel,
-          landing && snap.sel !== 'cradle'
-            ? snap.sel === 'blast'
-              ? 0
-              : snap.sel === 'big'
-                ? 2
-                : 1
-            : snap.facts.boilerRev,
-          landing && snap.sel === 'cradle' ? false : snap.facts.cradleFitted,
-        );
+      ? tradeRowsFor(snap.cat, snap.sel, row, table.line, table.kitTrip)
+      : rowsFor(snap.cat, snap.sel, row, landing && snap.sel === 'cradle' ? false : snap.facts.cradleFitted);
   const html = rows.map((r, i) => rowHtml(r, i, snap)).join('');
   if (html !== shownKey) {
     shownKey = html;
