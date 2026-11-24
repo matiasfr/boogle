@@ -34,6 +34,7 @@ import {
   type RouteLeg,
 } from '../../../src/sim/railway-route.ts';
 import { HALT, line2Rides } from './railway-ride.ts';
+import type { Fit } from './railway-fit.ts';
 
 export type LegRoute = { bot: Bot; checkpoint: (name: string) => Promise<void> };
 const cm = (p: { x: number; z: number }) => ({ x: p.x / 100, z: p.z / 100 });
@@ -426,11 +427,12 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   const choose = async () => {
     if (!fit) return;
     const { fitAtPost } = await import('./railway-fit.ts');
-    if (await fitAtPost({ bot, until, check, face }, bayLeg.line, fit as 'quick' | 'strong'))
+    if (await fitAtPost({ bot, until, check, face, untilTicks }, bayLeg.line, fit as Fit))
       await checkpoint(`bay line fitted ${fit}`);
   };
   /** The bay line's trains for the log: [slot, phase, at, boiler] each, parked ones left out. */
   const logFleet = (beat: string) =>
+    fit &&
     console.log(
       `RAILWAY FLEET ${JSON.stringify({
         beat,
@@ -448,7 +450,7 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
     await choose();
     const k = legRow(rw(), BAY).laid;
     await rideOut(bayLeg.railheadHalt + k - 1, legFrame(bayLeg, k), `stepped off at bay cut head ${k}`);
-    if (fit) logFleet('rode out after the fit');
+    logFleet('rode out after the fit');
     await buildRowLeg(BAY, 'bay cut');
   } else if (!legDone(rw(), BAY)) {
     await checkpoint('bell reached');
@@ -479,8 +481,10 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
     );
     clearInterval(watch);
     await checkpoint('village reached');
-    const west = legFrame(RAIL_LEGS[BAY]!, 0);
-    check(await bot.walk(west.x / 100, west.z / 100, 3), "walked from the Village to the West landing's frame");
+    check(
+      await bot.walk(westLanding.x / 100, westLanding.z / 100, 3),
+      "walked from the Village to the West landing's frame",
+    );
     await buildRowLeg(BAY, 'bay cut');
   }
   await checkpoint('bay reached');
@@ -495,8 +499,8 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
     const k = legRow(rw(), CANOPY).laid,
       frame = legFrame(canopy, k);
     // From a seed at the Village (`bay-reached` on), the choice is made at Home first.
-    if (!near(frame, 40)) await choose();
-    if (!near(frame, 40))
+    if (!near(frame, 40)) {
+      await choose();
       await rideOut(
         canopy.railheadHalt + k - 1,
         frame,
@@ -504,6 +508,7 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
           ? "stepped off at Bell Rock's upper platform by Canopy's first frame"
           : `stepped off at Canopy head ${k}`,
       );
+    }
     if (!(route().gates & (1 << canopyGate))) {
       await press('railway-leg-canopy', RAIL_GATES[canopyGate]!.at, 'open the Canopy barrier');
       check(route().gates & (1 << canopyGate), 'the Canopy barrier is open');
@@ -534,6 +539,6 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   check(await bot.until(() => !atOrBound(), 600000), "Canopy's platform cleared before the homeward walk");
   await rowRide(canopy.line, canopyEnd, 0, 'bay line');
   await stepOff(westLanding, 'stepped off at the West landing');
-  if (fit) logFleet('home from Canopy Town');
+  logFleet('home from Canopy Town');
   await checkpoint('canopy home');
 }

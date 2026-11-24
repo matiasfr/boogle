@@ -10,7 +10,7 @@ import { interactTarget } from '../../../src/player/hands.ts';
 import { triggerAction } from '../../../src/player/controls.ts';
 import { garageRow, polarAt } from '../../../src/entities/railway/garage-geo.ts';
 import { garage } from '../../../src/entities/railway/garage-state.ts';
-import { TRADE_ROW } from '../../../src/entities/railway/garage-data.ts';
+import { INSTALL_PART, TRADE_ROW } from '../../../src/entities/railway/garage-data.ts';
 
 export type Fit = keyof typeof TRADE_ROW;
 
@@ -19,11 +19,13 @@ type Tools = {
   until: (fn: () => unknown, beat: string, ms?: number) => Promise<void>;
   check: (ok: unknown, beat: string) => void;
   face: (x: number, z: number) => void;
+  /** Wait for `fn` within `ticks` server ticks (./railway-legs.ts's own). */
+  untilTicks: (fn: () => unknown, beat: string, ticks: number) => Promise<void>;
 };
 
 /** Walk to the garage post and fit `fit` on trade line `l` (the room pays its first fit's 1 steel). The caller stands
  * at Home. Returns false, doing nothing, if the line already wears the row. */
-export async function fitAtPost({ bot, until, check, face }: Tools, l: number, fit: Fit) {
+export async function fitAtPost({ bot, until, check, face, untilTicks }: Tools, l: number, fit: Fit) {
   const row = TRADE_ROW[fit];
   if (line(rw(), l).boiler === row) return false;
   check(tradeOpen(rw(), l), `line ${l}'s trade is open for the ${fit} fit`);
@@ -31,11 +33,6 @@ export async function fitAtPost({ bot, until, check, face }: Tools, l: number, f
     line(rw(), l).boiler > 0 || upgradePool(rw()) >= 1,
     `the room can pay the ${fit} fit: the steel pool holds ${upgradePool(rw())}`,
   );
-  const untilTicks = async (fn: () => unknown, beat: string, ticks: number) => {
-    const end = railAt() + ticks;
-    while (!fn() && railAt() < end) await bot.wait(100);
-    check(fn(), beat);
-  };
   const { geo, table } = garageRow();
   const post = polarAt(table, geo.post);
   // Beside the lever and inside the server's reach, as the steel bot stands for the longer boiler.
@@ -46,13 +43,12 @@ export async function fitAtPost({ bot, until, check, face }: Tools, l: number, f
   const t = interactTarget()!;
   check(t.run && !t.blocked, `the garage opens, not blocked "${t.blocked ?? ''}"`);
   bot.press();
-  await until(() => garage.api?.snap().open, 'the garage opened', 8000);
+  await until(() => garage.api?.isOpen(), 'the garage opened', 8000);
   await bot.wait(700); // the camera's glide
   const snap = () => garage.api!.snap();
   const click = async (selector: string, what: string) => {
-    let el: HTMLElement | null = null;
-    await until(() => (el = document.querySelector<HTMLElement>(selector)), `${what} on screen`, 8000);
-    el!.click();
+    await until(() => document.querySelector(selector), `${what} on screen`, 8000);
+    document.querySelector<HTMLElement>(selector)!.click();
   };
   try {
     // The chip: wait for the table to be free (the chips undimmed), then click the line's.
@@ -83,8 +79,7 @@ export async function fitAtPost({ bot, until, check, face }: Tools, l: number, f
       check(attempt <= 4, `line ${l} on row ${row} after four holds`);
       await until(() => snap().canInstall, `the ${fit} boiler installable (the table's hold over)`, 60000);
       const seen: string[] = [];
-      const note = () => {
-        const s = snap();
+      const note = (s: ReturnType<typeof snap>) => {
         const k = `${s.phase}${s.held ? '+held' : ''}${s.waiting ? '+waiting' : ''}${s.canInstall ? '' : '-can'}${s.facts.held ? '+tablehold' : ''}`;
         if (seen.at(-1) !== k) seen.push(k);
       };
@@ -94,9 +89,10 @@ export async function fitAtPost({ bot, until, check, face }: Tools, l: number, f
         let began = false;
         await untilTicks(
           () => {
-            note();
-            began ||= snap().phase !== 'idle';
-            return line(rw(), l).boiler === row || (began && snap().phase === 'idle' && !snap().waiting);
+            const s = snap();
+            note(s);
+            began ||= s.phase !== 'idle';
+            return line(rw(), l).boiler === row || (began && s.phase === 'idle' && !s.waiting);
           },
           `the ${fit} hold ended`,
           600,
@@ -109,7 +105,7 @@ export async function fitAtPost({ bot, until, check, face }: Tools, l: number, f
       );
     }
     console.log(
-      `RAILWAY FIT ${JSON.stringify({ tick: railAt(), line: l, fit, part: fit === 'quick' ? 5 : 6, row, rev: line(rw(), l).rev, pool: [pool, upgradePool(rw())] })}`,
+      `RAILWAY FIT ${JSON.stringify({ tick: railAt(), line: l, fit, part: INSTALL_PART[fit], row, rev: line(rw(), l).rev, pool: [pool, upgradePool(rw())] })}`,
     );
     await until(() => snap().phase === 'idle', 'the install moment ran to its end', 15000);
   } finally {
