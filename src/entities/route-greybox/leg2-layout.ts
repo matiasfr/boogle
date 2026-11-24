@@ -28,17 +28,36 @@ export const MOUNT_NEAR = 400,
   /** How far out of an area's farthest box its residency reaches, so a swimmer or a glider coming in finds every
    * collider already there (a mount takes a moment: its pipeline compiles off the frame). */
   ARRIVAL = 40;
-/** An area's mount distance that covers the boxes among `placements` (each scaled one's centre and half diagonal) from
- * `centre` with ARRIVAL to spare, rounded up to 10 m and never under MOUNT_NEAR. */
+/** The parts of a placement and its prefab's colliders that coverNear reads. */
+type CoverPlacement = { prefab: string; pos: readonly number[]; rot?: readonly number[]; scale?: readonly number[] };
+type CoverCollider =
+  | { shape: 'box'; at: readonly number[]; half: readonly number[] }
+  | { shape: 'trimesh'; at: readonly number[]; vertices: readonly number[] }
+  | { shape: string; at: readonly number[] };
+/** An area's mount distance that covers every solid point of `placements` (each box collider's corners and each
+ * trimesh's vertices, across: x and z) from `centre` with ARRIVAL to spare, rounded up to 10 m and never under
+ * MOUNT_NEAR. `prefabs`: the compiled records the placements name. */
 export function coverNear(
-  placements: readonly { pos: readonly number[]; scale?: readonly number[] }[],
+  placements: readonly CoverPlacement[],
+  prefabs: Readonly<Record<string, { colliders: readonly CoverCollider[] }>>,
   centre: { x: number; z: number },
 ) {
   let far = 0;
+  const reach = (x: number, z: number) => (far = Math.max(far, Math.hypot(x - centre.x, z - centre.z)));
   for (const p of placements) {
-    if (!p.scale) continue;
-    const [w = 1, , d = 1] = p.scale;
-    far = Math.max(far, Math.hypot(p.pos[0]! - centre.x, p.pos[2]! - centre.z) + Math.hypot(w, d) / 2);
+    const yaw = p.rot?.[0] ?? 0,
+      c = Math.cos(yaw),
+      s = Math.sin(yaw),
+      [sx = 1, , sz = 1] = p.scale ?? [];
+    // A local (x, z) of the placement in the world, as its yaw turns it.
+    const at = (x: number, z: number) =>
+      reach(p.pos[0]! + c * x * sx + s * z * sz, p.pos[2]! - s * x * sx + c * z * sz);
+    for (const k of prefabs[p.prefab]?.colliders ?? []) {
+      if (k.shape === 'box' && 'half' in k)
+        for (const dx of [-1, 1]) for (const dz of [-1, 1]) at(k.at[0]! + dx * k.half[0]!, k.at[2]! + dz * k.half[2]!);
+      else if (k.shape === 'trimesh' && 'vertices' in k)
+        for (let i = 0; i < k.vertices.length; i += 3) at(k.at[0]! + k.vertices[i]!, k.at[2]! + k.vertices[i + 2]!);
+    }
   }
   return Math.max(MOUNT_NEAR, Math.ceil((far + ARRIVAL) / 10) * 10);
 }

@@ -337,21 +337,17 @@ function canopyEntries(map: ReturnType<typeof layout>) {
     !bad.length,
   );
   // The floods above assume every collider is there: Canopy mounts within coverNear of its centre (route-greybox
-  // index.ts), so each box and the isle's prism must lie ARRIVAL inside that (the islets' far ends are sheer, with no
-  // beach, and run beyond it).
-  const near = coverNear(level.placements, AREA_CENTRES.canopy),
+  // index.ts), so every solid's farthest point (boxes, the isle and both islets' prisms) must lie ARRIVAL inside it.
+  const near = coverNear(level.placements, records.prefabs, AREA_CENTRES.canopy),
     c = AREA_CENTRES.canopy,
     reach = Math.max(
       ...resolved.colliders
-        .filter(
-          (k) => k.definition.shape === 'box' || k === resolved.colliders.find((t) => t.definition.shape === 'trimesh'),
-        )
         .flatMap((k) => k.volume.triangles.flatMap((t) => [t.a, t.b, t.c]))
         .map((p) => Math.hypot(p.x - c.x, p.z - c.z)),
     );
   check(
-    `Canopy mounts within ${near} m of its centre: every box and the isle reach ${f1(reach)} m (needs ${near - ARRIVAL} at most)`,
-    reach <= near - ARRIVAL,
+    `Canopy mounts within ${near} m of its centre: its farthest solid point is ${f1(reach)} m out (needs ${near - ARRIVAL} at most)`,
+    reach <= near - ARRIVAL + 0.01,
   );
   return entries;
 }
