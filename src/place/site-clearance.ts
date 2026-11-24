@@ -1,6 +1,22 @@
 import { HEAD_OFFSET, PLAYER_R } from '../constants.ts';
+import { boxGap2 } from '../math-pure.ts';
 import type { Hull } from './building-plans.ts';
 import type { Foot, outOf as moveOutside } from './sites.ts';
+
+/** m: a resting contact is not an overlap. */
+export const CONTACT = 0.02;
+/** One of Buddy's spheres, its centre at (x, y, z) in a box's own frame, overlaps the box (centre `at`, half sizes
+ * `half`) by more than `tolerance`: the clearance every solid that switches on near a player shares. */
+export function sphereInBox(
+  x: number,
+  y: number,
+  z: number,
+  at: readonly [number, number, number],
+  half: readonly [number, number, number],
+  tolerance = CONTACT,
+) {
+  return boxGap2(x, y, z, at, half) < (PLAYER_R - tolerance) ** 2;
+}
 
 export function siteExit(
   position: { x: number; y: number; z: number },
@@ -27,14 +43,11 @@ export function siteExit(
     const radius = PLAYER_R - contactTolerance;
     const overlaps = distanceToSolid
       ? [0, HEAD_OFFSET].some((up) => distanceToSolid({ ...position, y: position.y + up }) < radius)
-      : solids.some((h) => {
-          const dx = Math.max(0, Math.abs(lx - h.dx) - h.hx),
-            dz = Math.max(0, Math.abs(lz - h.dz) - h.hz);
-          return [0, HEAD_OFFSET].some((up) => {
-            const dy = Math.max(0, Math.abs(position.y + up - y - h.dy) - h.hy);
-            return dx * dx + dy * dy + dz * dz < radius * radius;
-          });
-        });
+      : solids.some((h) =>
+          [0, HEAD_OFFSET].some((up) =>
+            sphereInBox(lx, position.y + up - y, lz, [h.dx, h.dy, h.dz], [h.hx, h.hy, h.hz], contactTolerance),
+          ),
+        );
     if (overlaps)
       moved = outOf(
         {

@@ -6,7 +6,6 @@
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
-import type { RailwayIntent } from '../../adapters/railway-intents.ts';
 import { LINE2 } from '../../sim/railway-lines.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
@@ -41,6 +40,8 @@ import { drawWorksBoxes, createBoxBatch, createLater, footingFrame, footingParts
 import { createGhostOutlines } from '../../render/ghost-outline.ts';
 import { createGarageView } from './garage-view.ts';
 import { roomFacts } from './garage-state.ts';
+import type { RoomFacts } from './garage-data.ts';
+import { wearsLong, wearsTail } from './cars.ts';
 import { playSharedMoment } from './shared-moment.ts';
 import { showMomentBanner } from '../../ui/moment-banner.ts';
 import { garageRow, mastFrom, polarAt } from './garage-geo.ts';
@@ -58,9 +59,23 @@ import { cameraHeld } from '../../render/buddy-frame.ts';
 import { inputState } from '../../player/input-state.ts';
 import { reducedMotion } from '../../constants.ts';
 
-/** Line 2's own install (parts 1 to 4): the garage screen's hold, its refusal and its shared moment. A trade line's
- * Quick or Strong fit (garage step 4, parts 5 and 6) has no moment or screen until step 3, so it plays nothing here. */
-const line2Install = (i: RailwayIntent) => i.op === 'rail.install' && i.line === LINE2 && i.part <= 4;
+/** An install or a bring at the garage table refused (garage step 4: line 2's parts 1 to 4 or a trade line's Quick or
+ * Strong, on whichever copy is on the table): the part lowers, or the chips wake. */
+const refusedAtTable = (op: string, view: { denied(): void; bringDenied(): void }) => {
+  if (op === 'rail.install') view.denied();
+  else if (op === 'rail.bring') view.bringDenied();
+};
+
+/** Garage step 4: each chip's line whose copy is off the table waits in its bay, wearing its row (line 2's longer or
+ * Big boiler and a trade line's Quick the longer barrel; Strong its kit flatbed). */
+const bayCopies = (f: RoomFacts) =>
+  f.lines
+    .filter((l) => l.line !== f.tableLine)
+    .map((l) => ({
+      line: l.line,
+      long: wearsLong(l.line, l.row),
+      flatbed: l.line !== LINE2 && wearsTail(l.line, l.row),
+    }));
 
 /** Seconds: the door piers' build, the tarp's slide, the table's quarter turn. */
 const BUILD_S = 3,
@@ -112,7 +127,8 @@ export async function createRailwayRoundhouse(
 
   // ---------------------------------------------------------------- the turntable: the pit and its kerb are the
   // rotunda's fixed table record; the bridge across the shallow pit is drawn here, since it turns
-  const rotunda = createRotundaView(owner);
+  // Garage step 4: the works copies off the table stand in their bays, drawn with the engine's own parts.
+  const rotunda = createRotundaView(owner, await import('./engine-kit.ts'));
   const anchor = { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100 };
   const table = toWorld(home.TABLE);
   const tableY = TABLE_RAIL;
@@ -144,7 +160,9 @@ export async function createRailwayRoundhouse(
         (deckK === null || deckK <= 0) && !tableTurning && Math.abs(shunterA - (PARKED_A - PARK.gap)) < 0.05
           ? tableYaw
           : null,
-      install: (rev, part) => adapter.installBoiler(rev, part),
+      install: (line, rev, part) =>
+        line === LINE2 ? adapter.installBoiler(rev, part) : adapter.installPart(line, part, rev),
+      bring: (line, rev) => adapter.bringLine(line, rev),
       installHere: true,
       online: () => adapter.read.ready(),
     },
@@ -153,7 +171,7 @@ export async function createRailwayRoundhouse(
   // The install is not predicted, so a refusal is no correction: the adapter says so directly and the part lowers.
   owner.cleanup(
     adapter.onRefused((r) => {
-      if (line2Install(r.intent)) garageView.denied();
+      refusedAtTable(r.intent.op, garageView);
     }),
   );
 
@@ -180,6 +198,7 @@ export async function createRailwayRoundhouse(
   const later = createLater();
   // The rows, re-read at the head of each entry (update, accepted, snap, targets): a refill swaps the world.
   let wd: ReadWorld = adapter.read.world();
+  let facts: RoomFacts = roomFacts(wd);
   let slabBody: Body | null = null,
     wagonBody: Body | null = null,
     wagonBodyAt = NaN,
@@ -239,6 +258,7 @@ export async function createRailwayRoundhouse(
   }
   function drawStage(dt: number) {
     rotunda.occupy(rotundaServing(wd));
+    rotunda.copies(bayCopies(facts));
     const target = rotundaStage(wd);
     // A restore goes through snap(); a rollback cancels the local rise. Opening the garage settles it before
     // the install's first frame. Steel arrives from a server tick, so its live row edge has no action receipt.
@@ -716,7 +736,9 @@ export async function createRailwayRoundhouse(
     update(dt: number) {
       later.update(dt);
       wd = adapter.read.world();
-      garageView.update(dt, roomFacts(wd));
+      // The room's garage facts, once a frame: the table's garage and the bays' copies read the same.
+      facts = roomFacts(wd, adapter.read.tickNow());
+      garageView.update(dt, facts);
       const sh = shed(wd);
       const open = !!(worksRow(wd).seams & SEAM_STALL);
       if (open && !slabOpen && pop < 0) solidSlab(false);
@@ -816,22 +838,27 @@ export async function createRailwayRoundhouse(
         lowering.push({ site: e.site, slot, from, t: 0 });
       }
       if (e.op === 'rail.turn') clank(table.x, table.z);
-      if (e.op === 'rail.install' && line2Install(e))
+      if (e.op === 'rail.install')
         // The room's moment, on every page from the accepted install (never a restore or a late join): at the table
         // or in the garage it is the part going on; a page away from both gets the banner as its note.
-        playSharedMoment(e.part === 1 ? 'upgrade' : 'longer boiler', e, adapter.read.pid, (mine) => {
-          const pos = me.body?.position;
-          const away = !pos || Math.hypot(pos.x - table.x, pos.z - table.z) > BANNER_BEYOND;
-          if (e.part === 2 && away && !garageView.isOpen()) showMomentBanner(BANNER[0], BANNER[1], 4.5);
-          garageView.accepted(mine, e.part);
-          return false;
-        });
+        playSharedMoment(
+          e.part === 1 ? 'upgrade' : e.part >= 5 ? 'trade boiler' : 'longer boiler',
+          e,
+          adapter.read.pid,
+          (mine) => {
+            const pos = me.body?.position;
+            const away = !pos || Math.hypot(pos.x - table.x, pos.z - table.z) > BANNER_BEYOND;
+            if (e.part === 2 && away && !garageView.isOpen()) showMomentBanner(BANNER[0], BANNER[1], 4.5);
+            garageView.accepted(mine, e.part);
+            return false;
+          },
+        );
     },
     corrected(c: RailwayCorrection) {
       const e = c.event;
       if (e.op === 'rail.footSet') lowering.length = 0;
       if (e.op === 'rail.turn') asked = null;
-      if (line2Install(e)) garageView.denied();
+      refusedAtTable(e.op, garageView);
     },
     targets(): Interactable[] {
       const pos = me.body?.position;

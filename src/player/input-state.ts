@@ -4,7 +4,7 @@ export const input = { keys: new Set<string>(), stickX: 0, stickY: 0, sprint: fa
 // canLock: the browser has Pointer Lock at all (Safari on iPadOS has none, research/cross-device-input.md rec 3), so
 // mouse look there is a click-drag or a two-finger trackpad scroll. looked: one of those has turned the camera (the
 // hint in hud.ts then goes). seated: in a vehicle's seat (setSeated), where its chase camera owns the view. held: the
-// player stands still (no move or jump) while a talk is open (src/player/conversation.ts).
+// player stands still (no move or jump) while a talk is open (src/player/conversation.ts), a card, the fall or the garage.
 export const inputState = {
   locked: false,
   lockFailed: false,
@@ -13,4 +13,7 @@ export const inputState = {
   touchLooked: false, // Local to this visit; only a touch look retires touch guidance.
   seated: false,
   held: false,
+  /** Who took `held` last (garage step 4's review): 'conversation', 'fall', 'reward' or 'garage'; null when none says.
+   * A holder that hands input back after someone else has taken it leaves `held` to them. */
+  holder: null as string | null,
 };

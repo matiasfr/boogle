@@ -2,6 +2,8 @@
 // pose (test/railway-works-layout.test.ts keeps line 2's stops clear of the parked track layer with them).
 import { ENGINE } from './engine.ts';
 import { lineRoute } from '../../sim/railway-trade-layout.ts';
+import { LINE2 } from '../../sim/railway-lines.ts';
+import { boilerCars } from '../../sim/railway-train.ts';
 
 /** A car's physical size, shared with the platforms: deck half sizes and the deck top's height over the ground. */
 export type CarSpec = { hx: number; hz: number; top: number };
@@ -16,11 +18,20 @@ export const RIDER_CAR: CarSpec = { hx: 0.8, hz: 1.45, top: 2.05 };
 /** A railway train's cars, engine first, and each car's centre from the train's along in metres: the engine (A with
  * its walk-in cab, ./engine.ts) 0.6 m ahead of the first flatbed's end (a longer engine reaches further forward), then
  * cars every 3.7 m. Line 1 runs the first three; line 2 adds the footing wagon, which couples at the village (WAGON_S). */
-export type CarRole = 'engine' | 'player' | 'rider' | 'kit' | 'wagon' | 'steel';
+export type CarRole = 'engine' | 'player' | 'rider' | 'kit' | 'wagon' | 'steel' | 'cargo';
 export type Consist = readonly { role: CarRole; spec: CarSpec; offset: number }[];
 export const STEEL_CAR: CarSpec = { ...TRAILER };
+/** Garage step 4's kit flatbed: the Strong boiler's extra car, a flatbed behind the kit car (role `cargo`). */
+export const KIT_FLATBED: CarSpec = { ...TRAILER };
+/** What a boiler row looks like on `line`'s engines, wherever one is drawn (a train, the table's copy, a bay's): line
+ * 2's longer and Big boilers and a trade line's Quick (row 4) wear the longer barrel and chimney; line 2's longer
+ * boiler brings the steel car, a trade line's Strong (the sim's extra car, `boilerCars`) its kit flatbed. */
+export const wearsLong = (line: number, row: number) => (line === LINE2 ? row >= 2 : row === 4);
+export const wearsTail = (line: number, row: number) => (line === LINE2 ? row >= 2 : boilerCars(row) > 0);
+/** The kit flatbed's timber and stakes (the train's and the bay copy's). */
+export const KIT_FLATBED_LOOK = { deck: '#8a6d4a', stake: '#4a3a2a' } as const;
 /** Local layout only; passenger routes include the coach outside the boiler's cargo allowance. */
-function makeConsist(rider: boolean, wagon: boolean, steel: boolean): Consist {
+function makeConsist(rider: boolean, wagon: boolean, steel: boolean, strong: boolean): Consist {
   const cars: { role: CarRole; spec: CarSpec; offset: number }[] = [
     { role: 'engine', spec: ENGINE, offset: TRAILER.hz + 0.6 + ENGINE.hz },
     { role: 'player', spec: TRAILER, offset: 0 },
@@ -28,6 +39,7 @@ function makeConsist(rider: boolean, wagon: boolean, steel: boolean): Consist {
   for (const [role, spec] of [
     ...(rider ? [['rider', RIDER_CAR] as const] : []),
     ['kit', TRAILER],
+    ...(strong ? [['cargo', KIT_FLATBED] as const] : []),
     ...(wagon ? [['wagon', WAGON_CAR] as const] : []),
     ...(steel ? [['steel', STEEL_CAR] as const] : []),
   ] as const) {
@@ -39,12 +51,24 @@ function makeConsist(rider: boolean, wagon: boolean, steel: boolean): Consist {
 }
 // Build all layouts once, never in a frame path. A works copy explicitly requests no passenger route.
 const layouts = [false, true].map((rider) =>
-  [false, true].map((wagon) => [false, true].map((steel) => makeConsist(rider, wagon, steel))),
+  [false, true].map((wagon) =>
+    [false, true].map((steel) => [false, true].map((strong) => makeConsist(rider, wagon, steel, strong))),
+  ),
 );
-export const consistOf = ({ line, wagon, steel }: { line: number; wagon: boolean; steel: boolean }): Consist =>
-  layouts[Number(lineRoute(line) >= 0)]![Number(wagon)]![Number(steel)]!;
+/** `strong`: a trade line's train wears the Strong boiler (garage step 4), so its kit flatbed rides behind the kit car. */
+export const consistOf = ({
+  line,
+  wagon,
+  steel,
+  strong = false,
+}: {
+  line: number;
+  wagon: boolean;
+  steel: boolean;
+  strong?: boolean;
+}): Consist => layouts[Number(lineRoute(line) >= 0)]![Number(wagon)]![Number(steel)]![Number(strong)]!;
 const bounds = new Map(
-  layouts.flat(2).map(
+  layouts.flat(3).map(
     (consist) =>
       [
         consist,

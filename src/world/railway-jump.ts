@@ -310,6 +310,22 @@ export const JUMPS: readonly Jump[] = [
     land: { x: -525.13, y: 4.9, z: -673.36, yaw: 1.935 },
   },
   { stage: 'canopy-reached', menu: false, label: 'Canopy reached', line: 'The cloth waits at Canopy Town' },
+  // Garage step 4 (docs/plans/garage-step4.md, step 3): placeholder tooling copy for the owner, no landings (the usual
+  // spawn at Home is the post's side of the island; trade-held's train stands at Bell Rock, which canopy-open's note
+  // above keeps unlanded).
+  { stage: 'trade-ready', menu: false, label: 'Trade ready', line: 'Steel is home; both new lines can be fitted' },
+  {
+    stage: 'trade-fitted',
+    menu: false,
+    label: 'Trade fitted',
+    line: 'The north-south line runs Quick, the bay line Strong',
+  },
+  {
+    stage: 'trade-held',
+    menu: false,
+    label: 'Strong train held',
+    line: 'A Strong bay train waits at Bell Rock with kit',
+  },
 ];
 /** The rows a menu lists: every row but the tooling-only ones. */
 export const MENU_JUMPS: readonly Jump[] = JUMPS.filter((j) => j.menu !== false);

@@ -158,6 +158,11 @@
   background: #e8742c;
   color: #fff;
 }
+.pill.swap {
+  background: var(--g-card-on);
+  color: var(--g-ink);
+  border-color: var(--g-preview);
+}
 .pill.replaced {
   background: #2b3a57;
   color: var(--g-soft);
@@ -326,6 +331,43 @@
 .g-skip[hidden] {
   display: none;
 }
+/* Garage step 4's chips: one a line with a copy, above the categories; the table's is lit like a chosen category. */
+.g-chips {
+  position: absolute;
+  left: max(12px, env(safe-area-inset-left, 0px));
+  top: 64px;
+  right: 380px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.g-chips[hidden] {
+  display: none;
+}
+.g-chips:not([hidden]) ~ .g-rail {
+  top: 116px;
+}
+.g-chip {
+  background: var(--g-card);
+  border: 3px solid var(--g-line);
+  border-radius: 999px;
+  box-shadow: 0 3px 0 var(--g-line);
+  font-size: 15px;
+  padding: 5px 12px;
+  min-height: 36px;
+}
+.g-chip[aria-pressed='true'] {
+  background: var(--g-sun);
+  color: #13243f;
+}
+.g-chip.focus {
+  outline: 3px solid var(--g-preview);
+  outline-offset: 2px;
+}
+.g-chips.busy .g-chip {
+  opacity: 0.55;
+  cursor: default;
+}
 /* The prompts and the mouse hint step back while it is open. */
 body.garage-open .hud > :not(.garage-ui):not(.shot-skip-chip):not(.notify) {
   visibility: hidden;
@@ -336,6 +378,12 @@ body.garage-open #touch {
   visibility: hidden;
 }
 @media (max-width: 899px) {
+  .g-chips {
+    right: 12px;
+  }
+  .g-chips:not([hidden]) ~ .g-rail {
+    top: auto;
+  }
   .g-rail {
     top: auto;
     bottom: 150px;

@@ -95,6 +95,11 @@ export const UNFOLLOWED: Record<string, { reaches: readonly string[]; why: strin
     reaches: ['test/fixtures/prefab-seat-ids.json', 'test/fixtures/prefab-seat-poses.json'],
     why: 'the golden loop constructs these two fixture names; source block inputs are rooted literals already followed',
   },
+  'test/roundhouse-yard.test.ts: sourceModule': {
+    count: 2,
+    reaches: [],
+    why: "evaluates garage-view.ts's open() and stand slices from its source, read by a rooted literal the walk follows",
+  },
   'test/return-presence.test.ts: sourceModule': {
     count: 4,
     reaches: [],

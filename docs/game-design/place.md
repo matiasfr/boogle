@@ -1382,6 +1382,36 @@ pool. Both lose blocks when steel is spent; neither is a second stock. New solid
 Later route steel bills and footing demand are still offline stand-ins; this step adds no route or per-line trade.
 Proof and remaining limits: [Garage choices, step 3 as built](../plans/garage-choices.md#7-steps).
 
+**Quick or Strong, a line at a time (24 November, garage step 4).** Once a new line can be built on, the room fits it
+at Home's table with one of two boilers: the north–south line from the incline's last lay, the bay line from the bay
+cut's first lay (owner, [24 November](../decisions-rewards.md#d-2026-11-24-garage-step4-strong-window)). **Chips:** a
+row of line chips stands above the garage's categories, one for line 2 and one for each open trade line (catalog names,
+"Line 2", "North-south line", "Bay line"), the table's lit. A click, a tap, or Up from the first category then
+Left/Right and Interact brings that line's copy to the table (`rail.bring`; nothing turns until the server accepts it).
+The chips dim and say the table's busy for 6 s after a bring and 5 s after any install, and while a bring is in the
+air. The brought copy arrives under the table's steam puff and toot, wearing its line's row, and the screen lands on
+its Engine tab. **The trade's tiles:** a trade line's Engine tab has Quick boiler (25 m/s, the same cars) and Strong
+boiler (20 m/s, one more car) side by side. Before the line is paid both read "STEEL n/1" or Ready; the first fit costs
+1 steel from the pool, after which the fitted one reads Installed and the other "Swap", free, any number of times. The
+readouts are top speed, cars it pulls (2, or 3 with Strong) and "Kit a trip" (1 section, or 2 with Strong) while a leg
+the line's trains carry kit for has two or more sections to lay; otherwise that row reads "Nothing to build" (always on
+the north–south line today, and on the bay line from leg 3's second lay). Cars has the four seats; Cargo the kit car
+(Installed) and the "Kit flatbed" (Installed on Strong, Later otherwise). The install moment is line 2's large one: the
+Quick barrel or the standard barrel lifted from the stand, its wheels running up from the line's row before the fit.
+The post's knob turns orange whenever any chip's line has a Ready part. **The bays:** each line's copy that is not on
+the table waits in its own bay with its door open and a plate in the line's colour (placeholders: line 2 brass at
+170°, the north–south line blue at 210°, the bay line teal at 230°), wearing its row: Quick the longer barrel and
+chimney, Strong its flatbed behind. A bay's solids that switch on where someone may stand (its door, its open leaves, a
+waiting engine, a copy and its flatbed) switch on together, only once neither you nor a friend stands in them; your
+feet within a short step of a top are lifted onto it, and nobody is pushed sideways. **The trains:** a line's trains take its fit only while
+standing at the line's own depot (High Gorge for the north–south line, the West landing for the bay line), with line
+2's platform beat on any change of row, a swap back included. A Quick train wears the longer barrel and chimney; a
+Strong train couples a timber kit flatbed behind its kit car. The flatbed carries the kit that rides on, up to one
+section's bill, as crates, and the kit car the bill past it, which the next railhead takes; the crates hop off the kit
+car first, then the flatbed. So a train held at a railhead stands with an empty kit car and a loaded flatbed: the
+Strong hold's cue. When a swap uncouples the flatbed with you on it, you are first set on the halt's platform. A restore, a late join
+and reduced motion get no beat. Strings and colours here are placeholders for the owner.
+
 **The Install (G3, 12 November; sole Home from X1):** the garage is the one way to install. With
 steel home the garage opens on the Longer boiler and its button reads "Install". Holding it (the button, or Interact)
 for 1.2 s is the lift: the barrel rises off its stand on the jib's hook and swings over the engine, and letting go

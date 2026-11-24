@@ -134,6 +134,7 @@ export function openConversation(talk: Talk) {
   conversation.open = true;
   document.body.classList.add('talking');
   inputState.held = true;
+  inputState.holder = 'conversation';
   openedAt = performance.now();
   selFirst = null;
   hintHtml = '';
@@ -173,6 +174,7 @@ export function closeConversation() {
   conversation.open = false;
   document.body.classList.remove('talking');
   inputState.held = false;
+  if (inputState.holder === 'conversation') inputState.holder = null;
   setPadGrab(null);
 }
 

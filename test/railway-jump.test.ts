@@ -17,6 +17,7 @@ import { WORKS_STAGES } from '../src/sim/railway-seed-works.ts';
 import { RING_STAGES } from '../src/sim/railway-seed-ring.ts';
 import { STEEL_STAGES } from '../src/sim/railway-seed-steel.ts';
 import { LEG_STAGES } from '../src/sim/railway-seed-legs.ts';
+import { GARAGE_STAGES } from '../src/sim/railway-seed-garage.ts';
 import { RAILWAY_PLAY_NS, railwayRoomId } from '../src/world/railway-namespace.ts';
 import { DEFAULT_ROOM } from '../src/constants.ts';
 
@@ -66,9 +67,9 @@ test('the complete Jump in menu is pinned stage by stage', () => {
   );
 });
 
-test('the seed catalog holds every train, works, ring, steel and leg stage', () => {
+test('the seed catalog holds every train, works, ring, steel, leg and garage stage', () => {
   assert.equal(new Set(seeds).size, seeds.length);
-  for (const s of [...TRAIN_STAGES, ...WORKS_STAGES, ...RING_STAGES, ...STEEL_STAGES, ...LEG_STAGES])
+  for (const s of [...TRAIN_STAGES, ...WORKS_STAGES, ...RING_STAGES, ...STEEL_STAGES, ...LEG_STAGES, ...GARAGE_STAGES])
     assert.ok(seeds.includes(s), s);
 });
 
@@ -163,6 +164,9 @@ test('the menu lists the rows it always did: the house and leg 1 stages are tool
     'canopy-open',
     'canopy-mid',
     'canopy-reached',
+    'trade-ready',
+    'trade-fitted',
+    'trade-held',
   ];
   assert.equal(MENU_JUMPS.length, JUMPS.length - tooling.length);
   assert.deepEqual(
@@ -180,6 +184,10 @@ test('the menu lists the rows it always did: the house and leg 1 stages are tool
         'canopy-open',
         'canopy-mid',
         'canopy-reached',
+        // Garage step 4's trade rows keep the usual spawn at Home, the post's island (docs/plans/garage-step4.md).
+        'trade-ready',
+        'trade-fitted',
+        'trade-held',
       ].includes(stage)
     )
       assert.ok(jumpOf(stage)?.land, `${stage} resolves with its landing`);

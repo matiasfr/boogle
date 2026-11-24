@@ -21,6 +21,13 @@ import { actionForSlot, isTyping, PAD, wrapAction, type Action } from '../player
 import { dom } from '../player/dom.ts';
 import { interactTarget } from '../player/hands.ts';
 import { input, inputState } from '../player/input-state.ts';
+
+/** inputState's flags, as a recording keeps them: `holder` names who holds the input, which no replay drives. */
+function inputFlags() {
+  const flags: Partial<typeof inputState> = { ...inputState };
+  delete flags.holder;
+  return flags as Omit<typeof inputState, 'holder'>;
+}
 import { inv } from '../player/inventory.ts';
 import { cam, me } from '../player/state.ts';
 import { aimPoint, chargeAmount } from '../player/throw.ts';
@@ -49,7 +56,7 @@ function snapshot() {
     triggerR: input.triggerR,
     charging: me.charging,
     mine: ball.mine,
-    state: { ...inputState },
+    state: inputFlags(),
   };
 }
 
@@ -88,7 +95,7 @@ function begin() {
         triggerL: input.triggerL,
         triggerR: input.triggerR,
       },
-      state: { ...inputState },
+      state: inputFlags(),
       ball: {
         p: xyz(ball.pose.p),
         q: xyzw(ball.pose.q),

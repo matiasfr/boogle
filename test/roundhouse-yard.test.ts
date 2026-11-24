@@ -14,9 +14,119 @@ import { garageRow, mastFrom, polarAt } from '../src/entities/railway/garage-geo
 import { MOMENT } from '../src/entities/railway/garage-data.ts';
 import { ENGINE_BOILER } from '../src/entities/railway/engine.ts';
 import { WAGON_S } from '../src/sim/railway-works-layout.ts';
-import { sourceFunction } from '../dev/level/source.ts';
+import { sourceFunction, sourceModule } from '../dev/level/source.ts';
+import { readFileSync } from 'node:fs';
+
+function garageModal(inputState: { held: boolean }, openModal: () => boolean) {
+  const source = readFileSync('src/entities/railway/garage-view.ts', 'utf8');
+  const methods = source.slice(source.indexOf('  function close()'), source.indexOf('  garage.api = api;'));
+  const release = source.slice(source.indexOf('  function releaseHold()'), source.indexOf('  function update(dt:'));
+  const moment = source.slice(source.indexOf('    if (openT <= 0) lastOpen'), source.indexOf('    shake = Math.max'));
+  const reveal = readFileSync('src/render/reward-reveal.ts', 'utf8');
+  const putAway = reveal.slice(reveal.indexOf('  function putAway()'), reveal.indexOf('  function dropGot()'));
+  return sourceModule<{
+    api: { open(): void; close(): void; dismissCard(): void; installFrame(): void; closedFrame(): void };
+  }>(
+    release +
+      methods +
+      putAway +
+      `
+      api.dismissCard = putAway;
+      api.installFrame = () => { phase = 'moment'; ${moment} };
+      api.closedFrame = () => { if (!open) releaseHold(); };
+    `,
+    {
+      open: false,
+      shown: true,
+      facts: { boilerFitted: true, tableBusy: false },
+      inputState,
+      openModal,
+      closeModal() {},
+      ownsHold: false,
+      holding: false,
+      settled: false,
+      spinRate: 0,
+      today: () => 0,
+      sel: 'boiler',
+      offered: () => 'boiler',
+      cat: 'engine',
+      phase: 'idle',
+      openT: 1,
+      lastOpen: true,
+      partGroup: {},
+      cur: {},
+      holder: {},
+      box: { classList: { remove() {} } },
+      document: { body: { classList: { remove() {} } } },
+      setAloft() {},
+      setPadGrab() {},
+      reducedMotion: true,
+      pop() {},
+      next() {},
+      real: false,
+      waiting: false,
+      mine: false,
+      brief: false,
+      wearRows() {},
+      ring: 0,
+    },
+    ['api'],
+  ).api;
+}
+
+test('the garage does not acquire modal input while another activity holds it', () => {
+  let requests = 0;
+  const api = garageModal({ held: true }, () => {
+    requests++;
+    return false;
+  });
+  api.open();
+  assert.equal(requests, 0, 'the existing input owner must retain control');
+});
+
+test('closing the garage preserves a reward card hold acquired after opening', () => {
+  const inputState = { held: false };
+  const api = garageModal(inputState, () => true);
+  api.open();
+  assert.equal(inputState.held, true);
+  // An outstanding personal reward claim can finish while the garage is open (reward.ts, reward-reveal.ts).
+  inputState.held = true;
+  api.close();
+  assert.equal(inputState.held, true, 'the active reward card still holds input');
+});
 
 const deck = railY(LINES.east, 0);
+
+test('closing an install after a reward card releases its hold gives movement back', () => {
+  const inputState: { held: boolean; holder: string | null } = { held: false, holder: null };
+  const api = garageModal(inputState, () => true);
+  api.open();
+  api.installFrame();
+  // An outstanding reward arrives during the moment. Dismiss it before leaving the garage.
+  Object.assign(inputState, { held: true, holder: 'reward' });
+  api.dismissCard();
+  api.installFrame();
+  api.close();
+  api.closedFrame();
+  assert.equal(inputState.held, false, 'movement is still held after the closed frame');
+});
+test('selecting an already paid Swap does not put a spare boiler on the stand', () => {
+  const source = readFileSync('src/entities/railway/garage-view.ts', 'utf8');
+  const offered = source.slice(source.indexOf('  const offered ='), source.indexOf('  const activePart ='));
+  const visible = source.match(/partGroup\.visible = shown && [^;]+;/)![0];
+  const partGroup = { visible: false };
+  sourceModule(`${offered}\n${visible}`, {
+    open: true,
+    shown: true,
+    sel: 'quick',
+    partGroup,
+    INSTALL_PART: { quick: 5, strong: 6 },
+    isInstall: () => true,
+    readyPart: () => false,
+    swapPart: (id: string) => id === 'quick',
+  });
+  assert.equal(partGroup.visible, false, 'only a first fit waits on the stand');
+});
 const ground = (p: { x: number; z: number }) => H(p.x + ORIGIN.x, p.z);
 
 /** The rail height the yard's track is drawn at under a world point (./home-station-view.ts and the lines): the deck

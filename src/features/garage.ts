@@ -12,7 +12,7 @@ import { glyph } from '../player/glyphs.ts';
 import { reducedMotion } from '../constants.ts';
 import { onMenuKey, setPadGrab, touchHold, wrapAction } from '../player/controls.ts';
 import { uiSound } from '../ui/ui-sound.ts';
-import { garage } from '../entities/railway/garage-state.ts';
+import { garage, type GarageSnap } from '../entities/railway/garage-state.ts';
 import {
   CATS,
   GROUP_NAME,
@@ -20,6 +20,9 @@ import {
   partsOf,
   rowsFor,
   shownRow,
+  tradeRowsFor,
+  lineFacts,
+  GARAGE_LINE,
   type CatId,
   type Group,
   type Part,
@@ -29,6 +32,7 @@ import {
 let root: HTMLElement | null = null;
 let els: {
   where: HTMLElement;
+  chips: HTMLElement;
 
   rail: HTMLElement;
   parts: HTMLElement;
@@ -44,6 +48,10 @@ let els: {
 let shownKey = '';
 let railKey = '';
 let wasOpen = false;
+/** Garage step 4: the pad and keys stand on the chip row (up from the first category) or on the parts; `chip` is the
+ * chip they stand on there. Local to this tab. */
+let onChips = false,
+  chip = 0;
 
 const h = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 
@@ -60,6 +68,7 @@ function build() {
       <button class="g-back" type="button">Back</button>
 
     </div>
+    <div class="g-chips" role="toolbar" aria-label="Lines" hidden></div>
     <nav class="g-rail" role="tablist" aria-label="Categories"></nav>
     <div class="g-parts" role="listbox" aria-label="Parts"></div>
     <aside class="g-panel" aria-label="Selected part">
@@ -75,6 +84,7 @@ function build() {
   const q = <T extends HTMLElement>(s: string) => root!.querySelector<T>(s)!;
   els = {
     where: q('.g-where b'),
+    chips: q('.g-chips'),
 
     rail: q('.g-rail'),
     parts: q('.g-parts'),
@@ -89,6 +99,10 @@ function build() {
   };
   q('.g-back').addEventListener('click', () => leave());
   els.skip.addEventListener('click', () => garage.api?.skip());
+  els.chips.addEventListener('click', (e) => {
+    const b = (e.target as Element).closest<HTMLElement>('[data-line]');
+    if (b) garage.api?.bring(Number(b.dataset.line));
+  });
   els.rail.addEventListener('click', (e) => {
     const b = (e.target as Element).closest<HTMLElement>('[data-cat]');
     if (b) pickCat(b.dataset.cat as CatId);
@@ -129,9 +143,28 @@ const move = (step: number, across: 'part' | 'cat') => {
   const api = garage.api,
     snap = api?.snap();
   if (!api || !snap || !snap.open) return;
+  const lines = snap.facts.lines;
   if (across === 'cat') {
     const i = CATS.findIndex((c) => c.id === snap.cat);
+    // Up from the first category is the chip row (when there is more than line 2's chip); down from it, the categories.
+    if (onChips) {
+      if (step > 0) onChips = false;
+      uiSound('tick');
+      return;
+    }
+    if (step < 0 && i === 0 && lines.length > 1) {
+      onChips = true;
+      chip = Math.max(
+        0,
+        lines.findIndex((l) => l.line === snap.facts.tableLine),
+      );
+      uiSound('tick');
+      return;
+    }
     pickCat(CATS[(i + step + CATS.length) % CATS.length]!.id);
+  } else if (onChips) {
+    chip = (chip + step + lines.length) % lines.length;
+    uiSound('tick');
   } else {
     const list = partsIn(snap.cat),
       i = list.findIndex((p) => p.id === snap.sel);
@@ -164,6 +197,10 @@ onStart(() =>
         snap = api?.snap();
       if (!api || !snap?.open) return next();
       if (snap.canSkip) return api.skip();
+      if (onChips) {
+        const l = snap.facts.lines[chip];
+        return l ? api.bring(l.line) : undefined;
+      }
       if (snap.cat === 'whistle') return api.hear();
       api.holdStart();
     },
@@ -175,14 +212,14 @@ onStart(() =>
 );
 
 const f = (v: number, digits = 0) => v.toFixed(digits);
-function rowHtml(row: Row, i: number, snap: ReturnType<NonNullable<typeof garage.api>['snap']>) {
+function rowHtml(row: Row, i: number, snap: GarageSnap) {
   if (row.kind === 'text') return `<div class="g-row"><span>${h(row.label)}</span><b>${h(row.text ?? '')}</b></div>`;
   const live = reducedMotion ? 1e6 : snap.ms;
   const s = shownRow(row, i, snap.phase, snap.phase === 'moment' ? live : 0);
   const cls = s.preview ? ' preview' : '';
 
   const arrow = s.arrow ? `<s>${f(row.now, row.digits)}</s> → ` : '';
-  return `<div class="g-row"><span>${h(row.label)}</span><b class="${cls}">${arrow}${f(s.value, row.digits)}${h(row.unit ?? '')}</b></div>`;
+  return `<div class="g-row"><span>${h(row.label)}</span><b class="${cls}">${arrow}${f(s.value, row.digits)}${h((s.value === 1 && row.one) || (row.unit ?? ''))}</b></div>`;
 }
 
 function refresh() {
@@ -200,6 +237,7 @@ function refresh() {
         stick: true,
       });
       shownKey = railKey = '';
+      onChips = false;
     } else setPadGrab(null);
   }
   if (!snap.open) return;
@@ -210,9 +248,23 @@ function refresh() {
   const part = list.find((p) => p.id === snap.sel) ?? list[0];
   if (!part) return;
 
-  const rk = `${snap.cat}|${snap.sel}|${JSON.stringify(snap.facts)}|${snap.phase === 'idle' || snap.phase === 'holding'}`;
+  const lines = snap.facts.lines;
+  if (onChips && lines.length < 2) onChips = false;
+  const rk = `${snap.cat}|${snap.sel}|${JSON.stringify(snap.facts)}|${snap.phase === 'idle' || snap.phase === 'holding'}|${onChips && chip}|${snap.bringing}`;
   if (rk !== railKey) {
     railKey = rk;
+    // Garage step 4's chips (plan, "The garage screen"): one a line with a copy, the table's lit; a press brings that
+    // line's copy to the table (rail.bring). Dimmed, saying the table's busy, while it holds or a bring is in the air.
+    const wait = snap.facts.held || snap.facts.tableBusy || snap.bringing || snap.phase === 'moment';
+    els.chips.hidden = lines.length < 2;
+    els.chips.classList.toggle('busy', wait);
+    els.chips.title = wait ? 'The table’s busy' : '';
+    els.chips.innerHTML = lines
+      .map(
+        (l, i) =>
+          `<button class="g-chip${onChips && i === chip ? ' focus' : ''}" type="button" data-line="${l.line}" aria-pressed="${l.line === snap.facts.tableLine}"${wait ? ' aria-disabled="true"' : ''}>${h(l.name)}</button>`,
+      )
+      .join('');
     const groupOf = (g: Group) =>
       `<span class="g-grp ${g}">${GROUP_NAME[g]}</span>` +
       CATS.filter((c) => c.group === g)
@@ -244,12 +296,13 @@ function refresh() {
   }
   // Through a real install the rows count from the old numbers to the new, though the room's rows already say fitted.
   const landing = snap.real && snap.phase === 'moment';
-  const rows = rowsFor(
-    snap.cat,
-    snap.sel,
-    landing && snap.sel !== 'cradle' ? (snap.sel === 'blast' ? 0 : snap.sel === 'big' ? 2 : 1) : snap.facts.boilerRev,
-    landing && snap.sel === 'cradle' ? false : snap.facts.cradleFitted,
-  );
+  // The row counted from is the one the table's copy wore before the fit (`fromRow`), on either line.
+  const table = lineFacts(snap.facts, snap.facts.tableLine);
+  const row = landing ? snap.fromRow : (table?.row ?? snap.facts.boilerRev);
+  const rows =
+    snap.facts.tableLine !== GARAGE_LINE && table
+      ? tradeRowsFor(snap.cat, snap.sel, row, table.line, table.kitTrip)
+      : rowsFor(snap.cat, snap.sel, row, landing && snap.sel === 'cradle' ? false : snap.facts.cradleFitted);
   const html = rows.map((r, i) => rowHtml(r, i, snap)).join('');
   if (html !== shownKey) {
     shownKey = html;

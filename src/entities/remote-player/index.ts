@@ -39,6 +39,7 @@ type Ride = {
   boarding: boolean; // a new boarding blends current world presence, not an obsolete pre-boarding avatar pose
   blendLeft: number;
   drawOffset: Local; // continuity from the last displayed pose when attachment changes
+  placed?: boolean; // the car placed them last frame (not parked under the land)
   world: THREE.Vector3; // their world presence pose this frame
   worldYaw: number;
   l: Local;
@@ -178,8 +179,11 @@ function placeRider(r: Remote, rt: number, interpolated: boolean, dt = 0) {
   const step = dt / RIDE_BLEND_S;
   ride.bodyW = ride.bodyOn && !ride.leaving ? Math.min(1, ride.bodyW + step) : Math.max(0, ride.bodyW - step);
   const on = !!p && !!s && !ride.leaving && rt + INTERP_MS - ride.lastSeen <= RIDE_MAX_AGE_MS;
-  const at = on ? rideAt : ride.world;
-  const yaw = on ? rideAt.yaw : ride.worldYaw;
+  // A car parked under the land (y -60 and below -30, as car.ts drops this tab's own carry there: an uncoupled Strong
+  // flatbed or steel car) places nobody: the rider stays at their last world presence until the next packet.
+  const placed = on && p!.body.position.y > -30;
+  const at = placed ? rideAt : ride.world;
+  const yaw = placed ? rideAt.yaw : ride.worldYaw;
   if (!ride.drawn || on !== ride.on) {
     if (ride.drawn) ride.boarding = false;
     const shown = r.avatar;
@@ -187,6 +191,14 @@ function placeRider(r: Remote, rt: number, interpolated: boolean, dt = 0) {
     ride.blendLeft = RIDE_BLEND_S;
     ride.drawn = true;
   }
+  // The car parked (or came back) under a rider still on it: ease from the pose last drawn, as an attachment change does.
+  if (ride.drawn && on === ride.on && ride.placed !== undefined && placed !== ride.placed) {
+    // From the pose last drawn: the avatar's (pre-physics has already moved r.target to this frame's presence).
+    setDrawOffset(ride.drawOffset, at, yaw, r.avatar?.position ?? r.target, r.avatar?.rotation.y ?? r.yaw);
+    ride.blendLeft = RIDE_BLEND_S;
+    ride.boarding = false; // a boarding cut short here eases from the drawn pose too, not from world presence
+  }
+  ride.placed = placed;
   if (on && ride.boarding) {
     // As on main, let incoming world presence finish the approach instead of replaying a frozen old offset.
     // Later attachment changes retain the last-displayed-pose easing above for continuity across train gaps.

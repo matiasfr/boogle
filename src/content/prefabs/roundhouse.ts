@@ -53,6 +53,21 @@ export const prefabs = [
     colliders: [box(0, 1.85, 18.5, 1.2, 1.45, 2.2)],
     scope: 'owner',
   }),
+  // Garage step 4: a line's works copy in its bay. The engine itself is drawn by the view (rotunda-view.ts), wearing the
+  // line's row; the record holds its solid and the plate in the line's colour (params.colour), and the Strong flatbed.
+  definePrefab({
+    key: 'roundhouse.copy-plate',
+    visual: { builder: 'roundhouse.bay', params: { part: 'copy-plate' } },
+    // z 17.9 and 22.1 are src/place/rotunda.ts COPY_AT's engine and flatbed (records import no place code).
+    colliders: [box(0, 1.85, 17.9, 1.2, 1.45, 2.2)],
+    scope: 'owner',
+  }),
+  definePrefab({
+    key: 'roundhouse.copy-flatbed',
+    visual: { builder: 'roundhouse.bay', params: { part: 'copy-flatbed' }, batch: 'rotunda-copy-flatbeds' },
+    colliders: [box(0, 0.59, 22.1, 1.1, 0.35, 1.6)],
+    scope: 'owner',
+  }),
   definePrefab({
     key: 'roundhouse.bay-ruin',
     visual: { builder: 'roundhouse.bay', params: { part: 'ruin' } },

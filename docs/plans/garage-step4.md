@@ -322,7 +322,7 @@ before step 3. Step 3 holds on question 1.
       ordinary budget. The empty-pool refusal runs on a reachable `bay-mid` with the works never lit, built inside that
       test (final check, 24 November). The "leg 2 mixed, growing from `incline-open`" case is dropped: a Strong bay train while leg 2 grows is
       unreachable now that the bay trade opens at `bay-mid` (owner, 24 November).
-- [ ] **3. Seeds, screen, bays and trains (M to L; player-visible). Holds on question 1.**
+- [x] **3. Seeds, screen, bays and trains (M to L; player-visible). Built on the owner's answer A (24 November).**
       `src/sim/railway-seed-legs.ts` (or a sibling): `trade-ready` from `bay-mid` under A (`bay-reached` under C), by
       accepted ops only: light the works and bring 12 steel home with the steel seed's own helpers, for a pool of 12.
       `trade-fitted`: `ns` Quick and `bay` Strong, both adopted at their depots. `trade-held`: `trade-fitted` run on by
@@ -345,6 +345,29 @@ before step 3. Step 3 holds on question 1.
       from frame 1; a Quick `ns` train at High Gorge; the bring as motion (a contact sheet or clip, plus one real-time
       watch); the post's knob from the West landing platform and the Village platform. Rows: "Player-visible
       implementation": opus medium, high for tricky work; visual review by the main session.
+      **As built (24 November, branch `claude/garage-step4-screen`, no bump).** As written, on option A, with these
+      differences. The seeds are their own file, `src/sim/railway-seed-garage.ts` (`trade-ready` takes the works' whole
+      12 steel home with the steel seed's own steps; `trade-fitted` fits `ns` Quick then `bay` Strong by `rail.bring` and
+      `rail.install`, the bay copy left on the table; `trade-held` plays on to `canopy-open` and waits for a Strong bay
+      train standing held at Bell Rock's upper platform, leg 3's first kit on its rack). They follow the leg stages in
+      `SEED_STAGES` and shard 11 (only their three golden rows are new), with tooling `JUMPS` rows and no landing; their
+      assertions are one lazy test in `test/railway-leg2-rules.test.ts`. **The flatbed's rule changed** (finding 3 of
+      the [build's review](#design-review-2026-11-24-step-3-build)): a held train carries exactly one bill, so "past one
+      section's bill" left the flatbed bare at the hold. The flatbed carries the kit that rides on (up to one bill) and
+      the kit car the rest; railhead hops leave the kit car first, then the flatbed, so every unit still lands. A
+      trade line's tail car reuses line 2's steel-car slot in `train-view.ts` (`consistOf`'s `strong`, role `cargo`,
+      `KIT_FLATBED`). One row-look rule (`cars.ts` `wearsLong`, `wearsTail`) dresses trains, the table's copy and the
+      bays. The bay copies are the engine's own parts drawn by `rotunda-view.ts`; the record (`roundhouse.copy-plate`,
+      `roundhouse.copy-flatbed`) holds their solids, plates and the flatbed, switched on only once nobody stands in them.
+      The chips reach the pad by Up from the first category. A free Swap is installable but lights no knob and waits on
+      no stand. The copies' swap is the table's arrival puff and toot; the bays change at once. **Seen** (`.look/`,
+      opened): the post at `trade-ready` with chips and the bay tab at Ready ("Kit a trip"); `ns`'s tab at
+      `trade-fitted` (Installed, Swap, "Nothing to build"); bays 210° and 230° from the apron and from the post (the
+      table's copy hides most of 230° from the post) and the garage camera (one copy bay behind the table); the held
+      Strong train from the platform (empty kit car, five crates on the flatbed) and from frame 1 (the engine faces you
+      and hides the flatbed); a Quick `ns` train at High Gorge (the longer barrel, from behind); the bring as a sheet and
+      a real-time clip; the knob from the Village platform (orange, a few pixels at 21 m) and **not** from the West
+      landing (the cliff blocks every line to the post: level finding 4 stands, unanswered).
 - [ ] **4. The bot makes the choice (S; HOTBOX). After leg 3's step 7.** `dev/look/bots/railway-legs.ts`: on the
       segment `--from bay-mid` (A) or `--from bay-reached` (C), the bot walks to the post, brings the bay chip and
       installs Strong, then plays leg 3; a second run installs Quick. Verify: `npm run playthrough -- --from bay-mid
@@ -599,3 +622,32 @@ chips, the copies, and the held train with kit on its flatbed.
 ### Owner questions
 
 The plan's [open questions](#open-questions) 1 to 3. Question 1 holds step 3; 2 and 3 proceed on their recommendations.
+
+## Design review (2026-11-24, step 3 build)
+
+The builder's own review of the calls step 3 made beyond this plan, in the same sitting (owner call "Fold roles into
+the builder"). **Read:** this plan from the top, the owner's [24 November answers](../decisions-rewards.md#d-2026-11-24-garage-step4-strong-window),
+DESIGN.md 6, 7 and 11, the code each call changes. **Seen:** the stills listed in step 3's as-built note. The plan's
+own calls (both reviews above) are not repeated.
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | The bay plates' colours: line 2 brass, the north–south line blue, the bay line teal, on a post just inside each open door | Default | No line colours exist in the game; brass matches the Roundhouse's own trim |
+| 2 | The chips by pad and keys: Up from the first category steps onto the chip row, Left and Right step the chips, Interact brings, Down returns; a click or tap brings at once | Default | Plan call 15 asks for no new action, slot or key: this reuses the screen's own navigation |
+| 3 | A bay copy is the real engine (the table copy's parts), Quick with the longer barrel and chimney, Strong with its flatbed behind; no canvas | Default | "Each copy wearing its row" (plan, "The bays"); the canvas hides exactly what the row changes |
+| 4 | The copies' swap on a bring: the table's copy changes under the existing arrival puff and toot; the bay copies appear and leave at once, with no roll between table and bay | Default | Greybox: the plan asks only for "at most 6 s"; a rolled swap is a polish pass |
+| 5 | On a Strong train the flatbed carries the kit that rides on (up to one section's bill) and the kit car what is past it, the bill the next railhead takes; the crates hop off the kit car first, then the flatbed | Default | Changes "past one section's bill" (plan, "What the player sees at the depot"): a train held at the railhead carries exactly one bill, so that rule left the flatbed bare at the hold (finding 3) |
+| 6 | Strong's install moment lifts the standard barrel from the stand, as Quick lifts the longer one | Default | The plan's moment is line 2's; Strong has no barrel of its own |
+| 7 | The post's knob turns orange only for a Ready part on any line, not for a free Swap | Default | Plan call 16 says "any line's Ready part"; a swap is a choice, not something waiting to be spent |
+| 8 | Tooling jump rows `trade-ready`, `trade-fitted`, `trade-held` (placeholder labels, no landing, not in the menu) | Default | Step 3's file list; landings wait for a still that checks one, as leg 2's did |
+
+**Counts:** 0 Decided, 8 Default, 0 New. All eight are logged in [agent-calls](../agent-calls.md).
+
+**Findings.** (1) *(no change)* A swap's flatbed leaving under a rider is covered by the plan (the rider is set on the
+platform); a flatbed arriving under someone standing at the tail sets them on its deck, as line 2's steel car already
+does. (2) *(no change)* A Strong train with two bills shows both cars loaded, and one held at a railhead a loaded
+flatbed behind an empty kit car. (3) *(changed call 5 and the flatbed's rule)* The plan drew the flatbed's crates
+from the kit "past one section's bill". A held train has unloaded its first bill and carries exactly one, so its
+flatbed would be bare at the very moment it is meant to be the cue (seen on the `trade-held` seed: 20 logs and 20
+rails aboard, no crates). The flatbed now carries up to one bill and the kit car the rest. **Owner questions:** none; the strings and colours go
+on the placeholder list.

@@ -9,7 +9,7 @@ import type { World } from '../src/ecs/index.ts';
 import { mulberry32 } from '../src/sim/rng.ts';
 import { Account, Forge, Leg, LegYard, Rail, Route, Train } from '../src/sim/railway-components.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
-import { LINE2, RAIL_HALTS, RAIL_LINES } from '../src/sim/railway-lines.ts';
+import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import { LEG_TUNE, RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, ROW_LINE, legFrame, legRack } from '../src/sim/railway-route.ts';
 import { TRAIN, TRAIN_PHASE, fleetOf, lineStagesOf, trainDir, trainPassesBy } from '../src/sim/railway-train.ts';
 import { LINE_SLOTS, cycleTicks, servingSlots, trainSpacing } from '../src/sim/railway-trains.ts';
@@ -25,6 +25,11 @@ import { steelHomeOn } from '../src/sim/railway-seed-steel.ts';
 import { BRING_TICKS } from '../src/sim/railway-works-layout.ts';
 import { line, shed as routeShed } from '../src/sim/railway-rows.ts';
 import { routeTicks } from './helpers/fuzz.ts';
+import { steelPool } from '../src/sim/railway-works-layout.ts';
+import { STEEL } from '../src/sim/railway-ring-layout.ts';
+import { legKitDrop, tradeOpen } from '../src/sim/railway-queries-route.ts';
+
+const CANOPY_LEG = RAIL_LEGS.findIndex((l) => l.id === 'bell-canopy');
 
 const INCLINE = RAIL_LEGS.findIndex((l) => l.id === 'incline'),
   BAY = RAIL_LEGS.findIndex((l) => l.id === 'bay-cut');
@@ -587,4 +592,28 @@ test('replay: the same leg 2 ops from the same seed give the same hash, through 
     return s.w.hash();
   };
   assert.equal(run(), run());
+});
+
+// Garage step 4, step 3 (src/sim/railway-seed-garage.ts): the trade's seeds, built on bay-mid by accepted ops only,
+// built lazily here (bay-mid is this file's own world already).
+test('the trade seeds: ready with the pool full, fitted and adopted, a Strong train held at Bell Rock', { timeout: 300000 }, () => {
+  const ready = copy('trade-ready');
+  assert.equal(steelPool(routeShed(ready.w)), STEEL.total, 'the pool of 12');
+  assert.deepEqual([tradeOpen(ready.w, NS), tradeOpen(ready.w, BAYL)], [true, true]);
+  assert.deepEqual([line(ready.w, NS).boiler, line(ready.w, BAYL).boiler, routeShed(ready.w).tableLine], [0, 0, LINE2]);
+  const fitted = copy('trade-fitted');
+  assert.deepEqual([line(fitted.w, NS).boiler, line(fitted.w, BAYL).boiler], [4, 5]);
+  assert.equal(routeShed(fitted.w).tableLine, BAYL, "the bay line's copy on the table");
+  assert.equal(steelPool(routeShed(fitted.w)), STEEL.total - 2, 'each first fit spent 1');
+  for (const [l, row] of [[NS, 4], [BAYL, 5]] as const)
+    for (const j of servingSlots((k) => train(fitted.w, k), l)) assert.equal(train(fitted.w, j).boiler, row, `${l}/${j}`);
+  const held = copy('trade-held');
+  const at = RAIL_TRAINS.findIndex((t, j) => t.line === BAYL && legRailheadHold(held.w, j, held.t) === 'hold');
+  assert.ok(at >= 0, 'a bay train holds');
+  const r = train(held.w, at);
+  assert.equal(r.boiler, 5, 'Strong');
+  assert.equal(r.at, legKitDrop(held.w, BAYL, CANOPY_LEG), "at leg 3's railhead");
+  assert.ok(r.legKit && r.logs > 0 && r.rails > 0, "the second section's kit aboard");
+  assert.equal(legRow(held.w, CANOPY_LEG).laid, 0);
+  assert.equal(invariant(held.w), null);
 });

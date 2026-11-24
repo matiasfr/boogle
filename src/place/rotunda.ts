@@ -1,5 +1,10 @@
 // The reusable rotunda's dimensions and frames. Local static geometry in site-local metres; no renderer or rules.
 import type { XZ } from './home-station.ts';
+import { LINE2 } from '../sim/railway-lines.ts';
+import { ROW_LINE } from '../sim/railway-route.ts';
+/** The shared clearance's measure (../math-pure.ts; ./site-clearance.ts's sphereInBox) the rotunda's solids switch on
+ * by. Re-exported here, beside the bays it guards, since this module stays free of the place's render graph. */
+export { boxGap2 } from '../math-pure.ts';
 
 export type RotundaKit = {
   rim: number;
@@ -62,13 +67,30 @@ export function rotundaBays(site: RotundaSite, stage: number): number[] {
   return site.order.slice(0, site.stages[stage] ?? 0);
 }
 
-/** Waiting engines only, in departure order (signed bay offsets): 250°, 150°, then 170°, 210°, 230°.
- * The first engine already belongs to the line. Building a bay never adds or removes an engine: these stand
- * in the ruins too. Use the actual serving count, not the route's target fleet, so a delayed join still waits.
- * The working bay and later works copies/store are owned separately; Port Quay has no waiting fleet yet. */
-export function bayOccupants(site: RotundaSite, facts: { serving: number }): number[] {
-  if (site.id !== 'home') return [];
-  return [3, -2, -1, 1, 2].slice(Math.max(0, facts.serving - 1)).filter((bay) => site.order.includes(bay));
+/** Garage step 4 (docs/plans/garage-step4.md, "The bays"): each line's works copy waits in its own bay while another
+ * line's stands on the table, door open, the line's colour on a plate (placeholder colours): line 2 at 170°, the
+ * north–south line at 210°, the bay line at 230° (signed bay offsets; `line` is the sim's line index). */
+export const COPY_BAYS: readonly { line: number; bay: number; colour: `#${string}` }[] = [
+  { line: LINE2, bay: -1, colour: '#c79a3e' },
+  { line: ROW_LINE.ns, bay: 1, colour: '#3f7fbf' },
+  { line: ROW_LINE.bay, bay: 2, colour: '#2f9e8f' },
+];
+/** The copy's engine centre and its Strong flatbed's, metres out from the table along the bay (the flatbed couples
+ * 0.6 m behind, as a train's first car does; its end stays clear of the back wall's 24.3 m face). */
+export const COPY_AT = { engine: 17.9, flatbed: 22.1 } as const;
+/** What stands in the bays: the waiting engines, in departure order (signed bay offsets: 250°, 150°, then 170°, 210°,
+ * 230°), and the works copies. The first engine already belongs to the line. Building a bay never adds or removes an
+ * engine: these stand in the ruins too. Use the actual serving count, not the route's target fleet, so a delayed join
+ * still waits. `copies` are the lines whose copy is off the table (garage step 4); a copy takes its bay only when no
+ * waiting engine is in it. The working bay and the store are owned separately; Port Quay has no waiting fleet yet. */
+export function bayOccupants(
+  site: RotundaSite,
+  facts: { serving: number; copies?: readonly number[] },
+): { waiting: number[]; copies: (typeof COPY_BAYS)[number][] } {
+  if (site.id !== 'home') return { waiting: [], copies: [] };
+  const waiting = [3, -2, -1, 1, 2].slice(Math.max(0, facts.serving - 1)).filter((bay) => site.order.includes(bay));
+  const copies = COPY_BAYS.filter((c) => facts.copies?.includes(c.line) && !waiting.includes(c.bay));
+  return { waiting, copies };
 }
 
 /** Steel waits on the open apron, 80° off the approach road, between the camera and garage post at Home.

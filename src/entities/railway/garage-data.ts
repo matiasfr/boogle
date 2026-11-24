@@ -1,9 +1,14 @@
 // The train garage's catalogue and readout maths (docs/brainstorms/engine-garage.md), pure: no scene, DOM or clock.
 // Local view data only: nothing here is sent, saved or read by the simulation. Speeds and times come from the
 // railway's own leg maths (src/sim/railway-train.ts) so a number on the screen is the number the timetable gives.
-import { BOILER, trainLegTicks, TRAIN } from '../../sim/railway-train.ts';
+import { BOILER, boilerCars, boilerSpeed, kitBills, trainLegTicks, TRAIN } from '../../sim/railway-train.ts';
 import { LINE2, RAIL_LINES } from '../../sim/railway-lines.ts';
-import { CRADLE_CAP, INSTALL_STEEL, type InstallPart } from '../../sim/railway-works-layout.ts';
+import {
+  CRADLE_CAP,
+  INSTALL_STEEL,
+  TRADE_ROW as SIM_TRADE_ROW,
+  type InstallPart,
+} from '../../sim/railway-works-layout.ts';
 import { TRADE } from '../../sim/railway-trade-layout.ts';
 import { LINE2_KIT } from '../../sim/railway-line2-layout.ts';
 import { prefabs as railwayPrefabs } from '../../content/prefabs/railway.ts';
@@ -48,7 +53,16 @@ export type RoomFacts = {
   installRev: number;
   cradleFitted: boolean;
   gorgeReached: boolean;
+  /** Garage step 4: whose copy stands on the table (`Shed.tableLine`), the table's bring revision (`Shed.bringRev`),
+   * the table's hold after a bring or an install (the server refuses both until it runs out), and the chips. */
+  tableLine: number;
+  bringRev: number;
+  held: boolean;
+  lines: readonly LineFacts[];
 };
+/** One chip: line 2, or a trade line whose trade is open. `row` is its `Line.boiler`, `rev` its `Line.rev`; `kitTrip`
+ * whether a leg its trains carry kit for still has two sections to lay (the third readout). */
+export type LineFacts = { line: number; name: string; row: number; rev: number; kitTrip: boolean };
 
 export type PartId =
   | 'boiler'
@@ -63,7 +77,10 @@ export type PartId =
   | 'cradle'
   | 'roof'
   | 'toot'
-  | 'two';
+  | 'two'
+  | 'quick'
+  | 'strong'
+  | 'flatbed';
 /** How big an install of this part is (brief, "Three sizes of install"): a tunable table, not three code paths. */
 export type Size = 'small' | 'medium' | 'large';
 export type Standing =
@@ -75,6 +92,8 @@ export type Standing =
   | 'steel'
   /** The material is home: it can be installed now. */
   | 'ready'
+  /** Garage step 4: the line is already paid for and wears the other boiler, so this one goes on for nothing. */
+  | 'swap'
   /** A later part took its place; it cannot be put back. */
   | 'replaced'
   /** Not built yet: shown so the category reads true, with no picture of its own. */
@@ -83,7 +102,7 @@ export type Standing =
 export type Bill = { what: string; need: number; have: number };
 /** The longer boiler needs steel home (`Shed.steel` of 1 or more: the server's rule for `rail.install`). */
 export const LONG_NEEDS_STEEL = 1;
-export const INSTALL_PART = { blast: 1, long: 2, big: 3, cradle: 4 } as const;
+export const INSTALL_PART = { blast: 1, long: 2, big: 3, cradle: 4, quick: 5, strong: 6 } as const;
 export type InstallId = keyof typeof INSTALL_PART;
 export const isInstall = (id: PartId): id is InstallId => Object.hasOwn(INSTALL_PART, id);
 /** `INSTALL_PART` the other way: the part an install number fits. */
@@ -107,7 +126,105 @@ export type Part = {
   price?: string;
 };
 
-export function partsOf(room: RoomFacts): Part[] {
+/** The Looks and Whistle parts, the same on every line's copy. */
+const COSMETICS: Part[] = [
+  {
+    id: 'roof',
+    cat: 'looks',
+    name: 'Roof and lamps',
+    desc: 'Built and switched off. It has no rule, so it is a look.',
+    standing: 'later',
+    pill: 'Later',
+    size: 'small',
+  },
+  {
+    id: 'toot',
+    cat: 'whistle',
+    name: 'Toot',
+    desc: 'Today’s whistle.',
+    standing: 'installed',
+    pill: 'Installed',
+    size: 'small',
+  },
+  {
+    id: 'two',
+    cat: 'whistle',
+    name: 'Two-tone',
+    desc: 'Not built yet.',
+    standing: 'later',
+    pill: 'Later',
+    size: 'small',
+  },
+];
+/** The chip `line`'s facts, or undefined while it has none (a trade line not open). */
+export const lineFacts = (room: RoomFacts, line: number) => room.lines.find((l) => l.line === line);
+/** Garage step 4's rows: Quick is row 4, Strong row 5 (src/sim/railway-train.ts BOILER); a trade line's own rows. */
+export const TRADE_ROW = {
+  quick: SIM_TRADE_ROW[INSTALL_PART.quick],
+  strong: SIM_TRADE_ROW[INSTALL_PART.strong],
+} as const;
+/** A trade line's catalog (docs/plans/garage-step4.md, "The garage screen"): the Engine tab's two boilers side by side,
+ * the first fit's price a line, then free swaps; the Cargo tab's kit car and Strong's flatbed. Strings are
+ * placeholders for the owner ("Swap", "Kit flatbed"). */
+function tradeParts(room: RoomFacts, line: number): Part[] {
+  const row = lineFacts(room, line)?.row ?? 0;
+  const boiler = (id: 'quick' | 'strong', name: string, desc: string): Part => {
+    const need = INSTALL_STEEL[INSTALL_PART[id]],
+      have = Math.min(room.steel, need);
+    const on = row === TRADE_ROW[id],
+      paid = row > 0;
+    return {
+      id,
+      cat: 'engine',
+      name,
+      desc,
+      size: 'large',
+      standing: on ? 'installed' : paid ? 'swap' : have >= need ? 'ready' : 'steel',
+      pill: on ? 'Installed' : paid ? 'Swap' : have >= need ? 'Ready' : `STEEL ${have}/${need}`,
+      ...(on || paid ? {} : { needs: { what: 'STEEL', need, have } }),
+    };
+  };
+  const strong = row === TRADE_ROW.strong;
+  return [
+    boiler('quick', 'Quick boiler', `${speedMs(BOILER[TRADE_ROW.quick].speed)} m/s. The same cars.`),
+    boiler('strong', 'Strong boiler', `${speedMs(BOILER[TRADE_ROW.strong].speed)} m/s. One more car, for kit.`),
+    {
+      id: 'four',
+      cat: 'cars',
+      name: `${playerSeats} seats`,
+      desc: `The knifeboard car seats ${playerSeats} players.`,
+      standing: 'installed',
+      pill: 'Installed',
+      size: 'medium',
+    },
+    {
+      id: 'kitcar',
+      cat: 'cargo',
+      name: 'Rail and kit car',
+      desc: "Stakes and boards. One section's kit a trip.",
+      standing: 'installed',
+      pill: 'Installed',
+      size: 'medium',
+    },
+    {
+      id: 'flatbed',
+      cat: 'cargo',
+      name: 'Kit flatbed',
+      desc: strong ? "Came with the Strong boiler. A second section's kit." : 'Comes with the Strong boiler.',
+      standing: strong ? 'free' : 'later',
+      pill: strong ? 'Installed' : 'Later',
+      size: 'medium',
+    },
+    ...COSMETICS,
+  ];
+}
+/** A part someone could install now on any chip's line: the post's knob turns orange for it (plan, call 16). */
+export const readyAnywhere = (room: RoomFacts) =>
+  room.lines.some((l) => partsOf(room, l.line).some((p) => isInstall(p.id) && p.standing === 'ready'));
+
+/** The parts of `line`'s copy (the table's by default): line 2's catalogue, or a trade line's. */
+export function partsOf(room: RoomFacts, line = room.tableLine): Part[] {
+  if (line !== GARAGE_LINE) return tradeParts(room, line);
   const paid = (id: 'big' | 'cradle', available: boolean, installed: boolean) => {
     const need = INSTALL_STEEL[INSTALL_PART[id]],
       have = Math.min(room.steel, need);
@@ -234,33 +351,7 @@ export function partsOf(room: RoomFacts): Part[] {
       ...paid('cradle', room.steelHome, room.cradleFitted),
       size: 'medium',
     },
-    {
-      id: 'roof',
-      cat: 'looks',
-      name: 'Roof and lamps',
-      desc: 'Built and switched off. It has no rule, so it is a look.',
-      standing: 'later',
-      pill: 'Later',
-      size: 'small',
-    },
-    {
-      id: 'toot',
-      cat: 'whistle',
-      name: 'Toot',
-      desc: 'Today’s whistle.',
-      standing: 'installed',
-      pill: 'Installed',
-      size: 'small',
-    },
-    {
-      id: 'two',
-      cat: 'whistle',
-      name: 'Two-tone',
-      desc: 'Not built yet.',
-      standing: 'later',
-      pill: 'Later',
-      size: 'small',
-    },
+    ...COSMETICS,
   ];
 }
 
@@ -281,7 +372,7 @@ export const BOILERS = {
 export type BoilerId = keyof typeof BOILERS;
 /** The boiler an install moment's wheels start from, the one the part replaces: the Big boiler's from the long
  * boiler's rate (owner, 18 November 2026, docs/decisions-look.md#d-2026-11-18-decisions-page-look). */
-export const MOMENT_FROM: Record<InstallId, BoilerId> = {
+export const MOMENT_FROM: Record<Exclude<InstallId, 'quick' | 'strong'>, BoilerId> = {
   blast: 'boiler',
   long: 'table',
   big: 'long',
@@ -324,6 +415,8 @@ export type Row = {
   /** Decimal places the count shows. */
   digits?: number;
   unit?: string;
+  /** The unit when the shown count is 1 ("1 section"). */
+  one?: string;
   text?: string;
 };
 export const rowChanged = (r: Row) => r.kind !== 'text' && r.now !== r.then;
@@ -395,6 +488,44 @@ export function rowsFor(cat: CatId, chosen: PartId, boiler = 0, cradle = false):
     return [{ id: 'look', label: 'What it changes', kind: 'text', now: 0, then: 0, text: 'The look only' }];
   return [{ id: 'sound', label: 'Its sound', kind: 'text', now: 0, then: 0, text: 'Hear it' }];
 }
+
+/** A trade line's rows (garage step 4, "Readouts", revised): its top speed and the cars it pulls, then what its trains
+ * carry, "Kit a trip" in sections while a leg they carry kit for has two sections still to lay, else "Nothing to
+ * build" (placeholders). `row` is the line's boiler now; the chosen boiler's row is the preview, and a chosen row the
+ * line already wears changes nothing. Not a rate a minute: Strong's two sections save seconds, not half the time. */
+export function tradeRowsFor(cat: CatId, chosen: PartId, row: number, line: number, kitTrip: boolean): Row[] {
+  const then = chosen === 'quick' || chosen === 'strong' ? TRADE_ROW[chosen] : row;
+  const kit: Row = kitTrip
+    ? {
+        id: 'kitTrip',
+        label: 'Kit a trip',
+        kind: 'number',
+        now: kitBills(row),
+        then: kitBills(then),
+        unit: ' sections',
+        one: ' section',
+      }
+    : { id: 'kitTrip', label: 'Kit a trip', kind: 'text', now: 0, then: 0, text: 'Nothing to build' };
+  if (cat === 'engine')
+    return [
+      {
+        id: 'speed',
+        label: 'Top speed',
+        kind: 'number',
+        now: speedMs(boilerSpeed(line, row)),
+        then: speedMs(boilerSpeed(line, then)),
+        unit: ' m/s',
+      },
+      { id: 'cars', label: 'Cars it pulls', kind: 'number', now: 2 + boilerCars(row), then: 2 + boilerCars(then) },
+      kit,
+    ];
+  if (cat === 'cars') return [{ id: 'seats', label: 'Seats', kind: 'number', now: playerSeats, then: playerSeats }];
+  if (cat === 'cargo') return [kit];
+  return rowsFor(cat, chosen);
+}
+/** The cruise a trade boiler's moment runs its wheels up from: the row the line wore before the fit (plan, MOMENT_FROM
+ * for parts 5 and 6). */
+export const tradeFromSpeed = (line: number, row: number) => speedMs(boilerSpeed(line, row));
 
 // ---------------------------------------------------------------- the install moment (brief, "The install moment")
 /** Milliseconds and sizes, one tunable table. `hold` is the press-and-hold that lifts the part; `hang` the pause above
