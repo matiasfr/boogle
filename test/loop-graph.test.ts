@@ -21,7 +21,7 @@ import { Forge, Job, QJob, Rail, Shed, Steel, createRailwayWorld } from '../src/
 import { jobId, qjobId } from '../src/sim/railway-queries.ts';
 import { beatsOf } from '../dev/playtest/beats.ts';
 import { RAIL_STOPS, railSegmentOptions } from '../dev/look/segments.ts';
-import { RAIL_GRANTS, RAIL_LEGS } from '../src/sim/railway-route.ts';
+import { RAIL_GRANTS, RAIL_LEGS, legFrame } from '../src/sim/railway-route.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 
 const generic = new Set<string>(GENERIC_OPS);
@@ -59,7 +59,7 @@ test('loop run refuses a cut built branch before starting the by-hand simulation
 
 // The room finished the track and the rider starts at home. Stop at the first hop so the two boundary
 // cases need no renderer or real time. Keep the actual leg catalog, halt geometry and bot route.
-async function rideForCloth(firstContactMs: number) {
+async function rideForCloth(firstContactMs: number, clothTaken = false) {
   const canopy = RAIL_LEGS.find((l) => l.id === 'bell-canopy')!;
   const slot = LINE_SLOTS[canopy.line]![0]!;
   const cloth = RAIL_GRANTS.find((g) => g.id === 'cloth')!.at;
@@ -80,12 +80,17 @@ async function rideForCloth(firstContactMs: number) {
       '../../../src/sim/railway-queries-route.ts': {
         legDone: () => true,
         legRow: (_: unknown, k: number) => ({ laid: RAIL_LEGS[k]!.sections.length }),
-        routeRow: () => ({ grants: 3, gates: 3 }),
+        routeRow: () => ({ grants: clothTaken ? 7 : 3, gates: 3 }),
       },
       '../rail-read.ts': {
         rw: () => ({}),
         aperture: () => ({ joined: 1 }),
-        trains: () => Array.from({ length: slot + 1 }, () => ({ phase: 0, at: 0, track: 0 })),
+        trains: () =>
+          Array.from({ length: slot + 1 }, () => ({
+            phase: 0,
+            at: clothTaken ? canopy.railheadHalt + canopy.sections.length - 1 : 0,
+            track: clothTaken ? 1 : 0,
+          })),
       },
       '../../../src/player/player.ts': { me: { body: { position: { x: 0, z: 0 } }, coyote: 1 } },
       '../../../src/player/input.ts': { input: { keys: new Set() } },
@@ -108,7 +113,14 @@ async function rideForCloth(firstContactMs: number) {
     { performance: { now: () => now } },
   ) as typeof import('../dev/look/bots/railway-legs.ts');
   const bot = {
-    walk: () => true,
+    until: (ready: () => boolean, timeout: number) => {
+      now += timeout;
+      return ready();
+    },
+    walk: () => {
+      if (clothTaken) throw new Error('walked toward the occupied platform');
+      return true;
+    },
     wait: (ms: number) => {
       now += ms;
     },
@@ -129,6 +141,44 @@ test('a first train contact at the boarding deadline cannot pass the 800 ms hold
 test('returning for untaken cloth steps off on the Canopy platform near its post', async () => {
   const metres = await rideForCloth(0);
   assert.ok(metres < 60, `step-off target is ${Math.round(metres)} m from the cloth`);
+});
+
+test('a continuous 800 ms boarding hold completed at the deadline counts', async () => {
+  await rideForCloth(19200);
+});
+
+test('a timed-out platform clearance fails before the homeward walk', async () => {
+  await assert.rejects(rideForCloth(0, true), /clear|timeout|timed out/i);
+});
+
+test('successive stack frames register distinct progress when numbers are ignored', async () => {
+  const stack = RAIL_LEGS.find((leg) => leg.id === 'stack')!;
+  const beats = new Set<string>();
+  for (const laid of [1, 2]) {
+    const frame = legFrame(stack, laid);
+    const { legRoute } = loadTool(new URL('../dev/look/bots/railway-legs.ts', import.meta.url), {
+      '../../../src/sim/railway-queries-route.ts': { legRow: () => ({ laid }) },
+      '../rail-read.ts': { rw: () => ({}), aperture: () => ({ joined: 1 }) },
+      '../../../src/player/player.ts': { me: { body: { position: { x: frame.x / 100, z: frame.z / 100 } } } },
+      '../../../src/player/input.ts': {},
+      '../../../src/player/hands.ts': {},
+      '../../../src/entities/player/state.ts': {},
+      '../../../src/entities/ring-island/state.ts': {},
+      './railway-ride.ts': { line2Rides: () => ({ check: assert.ok }) },
+    }) as typeof import('../dev/look/bots/railway-legs.ts');
+    const stop = new Error('frame reached');
+    await assert.rejects(
+      legRoute({
+        bot: { walk: () => true } as unknown as Parameters<typeof legRoute>[0]['bot'],
+        checkpoint: async (beat) => {
+          beats.add(beat.replace(/[\d.]+/g, '#'));
+          throw stop;
+        },
+      }),
+      (error) => error === stop,
+    );
+  }
+  assert.equal(beats.size, 2);
 });
 
 test('every rail action has a node or is a generic route-independent op', () => {
