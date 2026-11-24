@@ -87,6 +87,7 @@ test('page startup has exactly one catalogue validation owner shared by every co
     'src/entities/route-greybox/leg2-draw.ts',
     'src/prefab/instantiate.ts',
     'src/entities/railway/halt-kit.ts',
+    'src/entities/terrain-kit/view.ts',
   ])
     assert.match(
       fs.readFileSync(file, 'utf8'),
@@ -97,7 +98,7 @@ test('page startup has exactly one catalogue validation owner shared by every co
 
 // A fresh Node process prevents other unit tests' ESM caches from hiding duplicate startup validation.
 // This executes consumer imports under a validator spy; it needs no Git refs or timing assumptions.
-test('importing all ten page consumers validates the catalogue exactly once', () => {
+test('importing all eleven page consumers validates the catalogue exactly once', () => {
   const preloads = process.execArgv.flatMap((arg, k, args) =>
     arg === '--import' ? [arg, args[k + 1]!] : arg.startsWith('--import=') ? [arg] : [],
   );
@@ -108,7 +109,7 @@ test('importing all ten page consumers validates the catalogue exactly once', ()
       { encoding: 'utf8' },
     ),
   );
-  assert.deepEqual(result, { consumers: 10, catalogueValidations: 1, directValidations: 0 });
+  assert.deepEqual(result, { consumers: 11, catalogueValidations: 1, directValidations: 0 });
 });
 
 // Report growth without a content ceiling: owner-calls.md, "No limits ahead of a measured problem" (14 November).
