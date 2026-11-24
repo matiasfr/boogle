@@ -11,7 +11,6 @@ import { createLiftOrWait, STEP, type Solid } from '../src/place/clearance.ts';
 import type { Body, Shape } from '../src/physics/engine.ts';
 
 const physics = await import('../src/physics/engine.ts');
-await physics.physicsReady;
 const liftOrWait = createLiftOrWait(physics.capsuleOverlaps);
 
 class Vec {
@@ -66,6 +65,18 @@ function built(shape: Shape) {
   return () => physics.removeBody(body);
 }
 const asBody = (b: ReturnType<typeof bodyAt>) => b as unknown as Body;
+
+// Capture the first call before the async WASM load finishes. All later tests use the ready engine.
+const coldSolids = solids([box(1950, 3, 1000)]);
+const cold = liftOrWait(coldSolids.list, bodyAt(1950, 0, 1000), { lift: false });
+await physics.physicsReady;
+
+test('a mount during physics startup keeps an occupied solid off', () => {
+  assert.deepEqual(coldSolids.switched, []);
+  assert.equal(cold.retry(bodyAt(1950, 0, 1000)), true);
+  assert.equal(cold.retry(bodyAt(1970, 0, 1000)), false);
+  assert.deepEqual(coldSolids.switched, [0]);
+});
 
 test('feet within a step of the top: lifted straight up onto it, and the solid switches on', () => {
   const b = bodyAt(1000, 0, 1000);
@@ -200,4 +211,80 @@ test('no body: everything switches on', () => {
   const { list, switched } = solids([box(1800, 0.2, 1000)], [box(1810, 3, 1000)]);
   assert.equal(liftOrWait(list, null, { lift: true }).kind, 'clear');
   assert.deepEqual(switched, [0, 1]);
+});
+
+test('a level step exactly 0.30 m above the feet lifts', () => {
+  const b = bodyAt(2000, 0, 1000);
+  assert.equal(liftOrWait(solids([box(2000, STEP, 1000)]).list, b, { lift: true }).kind, 'lifted');
+});
+
+test('grazing the edge of a yawed 0.40 m step cannot lift onto empty space', () => {
+  const yaw = Math.PI / 4;
+  const edge = box(2100, 0.4, 1000, 2, 1, 4);
+  edge.rotation = { x: 0, y: Math.sin(yaw / 2), z: 0, w: Math.cos(yaw / 2) };
+  // Feet are 0.35 m outside its local +x edge. A sphere grazes the corner, but no top lies below the feet.
+  const b = bodyAt(2100 + 2.35 * Math.cos(yaw), 0, 1000 - 2.35 * Math.sin(yaw));
+  const { list, switched } = solids([edge]);
+  assert.equal(liftOrWait(list, b, { lift: true }).kind, 'wait');
+  assert.equal(b.position.y, PLAYER_R);
+  assert.deepEqual(switched, []);
+});
+
+test('the complete upper sphere must fit under an existing roof after a lift', () => {
+  const b = bodyAt(2200, 0, 1000);
+  const headAfterLift = 2 * PLAYER_R + HEAD_OFFSET + 0.2;
+  const remove = built(box(2200, headAfterLift - 0.015 + 0.2, 1000, 2, 0.1, 2));
+  try {
+    assert.equal(liftOrWait(solids([box(2200, 0.2, 1000)]).list, b, { lift: true }).kind, 'wait');
+    assert.equal(b.position.y, PLAYER_R);
+  } finally {
+    remove();
+  }
+});
+
+test('a roof mounted this frame blocks the lift before the next physics step', () => {
+  const head = 2 * PLAYER_R + HEAD_OFFSET;
+  const roof = physics.createBody({ type: 'static', shapes: [box(2300, head + 0.3, 1000, 2, 0.1, 2)] });
+  physics.addBody(roof);
+  try {
+    const b = bodyAt(2300, 0, 1000);
+    assert.equal(liftOrWait(solids([box(2300, 0.2, 1000)]).list, b, { lift: true }).kind, 'wait');
+    assert.equal(b.position.y, PLAYER_R);
+  } finally {
+    physics.removeBody(roof);
+  }
+});
+
+test('mounting a closed prism preserves the interior used for clearance', () => {
+  const shape = prism(2395, 995, 2405, 1005, -3, 5);
+  const p = bodyAt(2400, 0, 1000).position;
+  const remove = built(shape);
+  try {
+    assert.equal(physics.capsuleOverlaps(p, PLAYER_R, HEAD_OFFSET, shape), true);
+    assert.equal(physics.capsuleOverlaps(p, PLAYER_R, HEAD_OFFSET, { mask: -1 }), true);
+  } finally {
+    remove();
+  }
+});
+
+test('open land below its top holds a body only within the land footprint', () => {
+  const land: Shape = {
+    kind: 'trimesh',
+    vertices: [2500, 5, 1000, 2510, 5, 1000, 2510, 5, 1010, 2500, 5, 1010],
+    indices: [0, 2, 1, 0, 3, 2],
+  };
+  const inside = bodyAt(2505, 0, 1005);
+  const { list, switched } = solids([land]);
+  const clearing = liftOrWait(list, inside, { lift: false });
+  assert.equal(clearing.kind, 'wait');
+  assert.equal(clearing.retry(bodyAt(2525, 0, 1005)), false);
+  assert.deepEqual(switched, [0]);
+});
+
+test('a reused shape at a new placement tests its current pose', () => {
+  const door = box(2600, 3, 1000);
+  const p = bodyAt(2600, 0, 1000).position;
+  assert.equal(physics.capsuleOverlaps(p, PLAYER_R, HEAD_OFFSET, door), true);
+  door.offset!.x += 10;
+  assert.equal(physics.capsuleOverlaps(p, PLAYER_R, HEAD_OFFSET, door), false);
 });

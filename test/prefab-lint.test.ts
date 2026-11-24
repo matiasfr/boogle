@@ -208,6 +208,19 @@ test('review P2: a debt file cannot append calls or retain an inflated count', (
   assert.deepEqual(comparePrefabDebt(grown, budget), []);
 });
 
+test('after the lift helper ships and a different binding retires, the smaller door count binds', () => {
+  const file = 'src/prefab/instantiate.ts';
+  const base: PrefabDebt = {
+    colliders: {},
+    seats: {},
+    doors: { [file]: ['instantiate', 'liftOrWait'] },
+    doorCounts: { [file]: { colliders: 2 } },
+  };
+  const grown = structuredClone(base);
+  grown.doorCounts![file]!.colliders = 3;
+  assert.match(comparePrefabDebt(base, grown).join('\n'), /capability bindings grew/);
+});
+
 test('review P2: content local origin and shadowed browser names are bindings, not globals', () => {
   for (const code of [
     'const origin = [0, 0, 0]; export const pos = origin;',
