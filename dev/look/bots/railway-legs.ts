@@ -316,32 +316,43 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
         const r = trains(rw())[slot]!;
         return r.phase === 0 && r.at === from && (r.track ? -1 : 1) === dir;
       }) ?? -1;
+    /** A train of the line going our way that already carries the rider (stepped onto on the way to the lever). */
+    const carrying = () => {
+      const t = view().trains.find((v) => LINE_SLOTS[line]!.includes(v.slot) && v.cars.some((car) => car.riding));
+      return t && (trains(rw())[t.slot]!.track ? -1 : 1) === dir ? t.slot : -1;
+    };
     const lever = rowLever(line, from);
     const watch = watchTrains(line, from);
     try {
-      check(await bot.walk(lever.x, lever.z, 1.2), `walked to ${name}'s lever at stop ${from}`);
-      // The train a lay asks for may already be coming. Pull the lever whenever it is free to pull; while it shows the
-      // stop requested ("Stop requested", blocked), a train is on its way: wait for it.
-      const waitEnd = performance.now() + 2400000;
-      while (standing() < 0 && performance.now() < waitEnd) {
-        const t = interactTarget();
-        if (t && /^Request stop/.test(t.verb) && t.run && !t.blocked) bot.press();
-        await bot.until(() => standing() >= 0, 20000);
+      const walked = await bot.walk(lever.x, lever.z, 1.2);
+      // Carried off by a train our way while walking to the lever: that is the ride (the hold below still applies).
+      let slot = carrying();
+      if (slot < 0) {
+        check(walked, `walked to ${name}'s lever at stop ${from}`);
+        // The train a lay asks for may already be coming. Pull the lever whenever it is free to pull; while it shows
+        // the stop requested ("Stop requested", blocked), a train is on its way: wait for it.
+        const waitEnd = performance.now() + 2400000;
+        while (standing() < 0 && performance.now() < waitEnd) {
+          const t = interactTarget();
+          if (t && /^Request stop/.test(t.verb) && t.run && !t.blocked) bot.press();
+          await bot.until(() => standing() >= 0, 20000);
+        }
+        check(standing() >= 0, `a ${name} train toward stop ${to} stands at stop ${from}`);
+        slot = standing();
       }
-      check(standing() >= 0, `a ${name} train toward stop ${to} stands at stop ${from}`);
-      const slot = standing();
       const train = () => view().trains.find((t) => t.slot === slot)!;
       const aboard = () => train().cars.some((car) => car.riding);
       const end = performance.now() + 20000;
       // Aboard once the car carries the rider for 0.8 s with the stick let go: a jump's first touch of the car reads
       // `riding` for a frame and can bounce off it (Bell Rock's curved platform, greybox leg 3's first run).
-      let since: number | undefined;
+      let since: number | undefined,
+        held = false;
       try {
         while (performance.now() < end) {
           if (aboard()) {
             input.keys.delete('KeyW');
             since ??= performance.now();
-            if (performance.now() - since >= 800) break;
+            if ((held = performance.now() - since >= 800)) break;
             await bot.wait(80);
             continue;
           }
@@ -359,7 +370,7 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
         input.keys.delete('KeyW');
         releaseJump();
       }
-      check(aboard(), `boarded a ${name} train at stop ${from} by a real jump`);
+      check(held, `boarded a ${name} train at stop ${from} by a real jump, carried 0.8 s`);
       const asked = new Set<string>();
       let ran = false;
       await until(() => {
@@ -456,12 +467,23 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   // The cloth post on the homeward deck round the buffers.
   if (!granted(CLOTH)) {
     const cloth = RAIL_GRANTS[CLOTH]!.at;
-    if (!near(cloth, 60)) await rideOut(canopyEnd, rowLever(canopy.line, canopyEnd), 'stepped off at Canopy Town');
+    if (!near(cloth, 60)) {
+      const lever = rowLever(canopy.line, canopyEnd); // metres; stepOff takes cm
+      await rideOut(canopyEnd, { x: lever.x * 100, z: lever.z * 100 }, 'stepped off at Canopy Town');
+    }
     await press('railway-leg-cloth', cloth, 'take the glider cloth');
     check(granted(CLOTH), 'the room holds the glider cloth');
     await checkpoint('cloth taken');
   }
-  // Home on the same line: a bay train from Canopy Town to the West landing (the Notch barrier stays shut: leg 6).
+  // Home on the same line: a bay train from Canopy Town to the West landing (the Notch barrier stays shut: leg 6). The
+  // walk from the cloth post to the lever runs along the train's platform: wait on the deck while a train stands at
+  // Canopy or is bound there, so none leaves beside the rider (a run on 24 November was carried off and tumbled).
+  const atOrBound = () =>
+    LINE_SLOTS[canopy.line]!.some((slot) => {
+      const r = trains(rw())[slot]!;
+      return r.phase === 0 ? r.at === canopyEnd : r.to === canopyEnd;
+    });
+  await bot.until(() => !atOrBound(), 600000);
   await rowRide(canopy.line, canopyEnd, 0, 'bay line');
   await stepOff(westLanding, 'stepped off at the West landing');
   await checkpoint('canopy home');

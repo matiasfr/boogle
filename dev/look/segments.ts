@@ -113,5 +113,19 @@ export function railSegmentOptions(args: string[]) {
     : undefined;
   if (seed && to && names.indexOf(to) <= names.indexOf(seed.after))
     throw new Error(`--to must follow ${seed.after} when starting from ${from}`);
+  // A seed's bot stops only at its own beats: the legs' stops are the legs bot's, the rest another bot's. A bot that
+  // never reaches the stop would finish its own route and pass without it.
+  if (seed && to) {
+    const legStop = LEG_STOPS.includes(to);
+    const playsTo = (s: { bot: string }) => (s.bot === RAIL_FROM['gorge-open'].bot) === legStop;
+    if (!playsTo(seed)) {
+      const can = legStop
+        ? `--from ${(Object.keys(RAIL_FROM) as (keyof typeof RAIL_FROM)[])
+            .filter((k) => playsTo(RAIL_FROM[k]) && names.indexOf(to) > names.indexOf(RAIL_FROM[k].after))
+            .join(', ')}`
+        : `the legs bot plays only to ${LEG_STOPS.join(', ')}`;
+      throw new Error(`--to ${to}: the ${from} seed's bot (${seed.bot}) never reaches it; ${can}`);
+    }
+  }
   return { from, to, seed };
 }

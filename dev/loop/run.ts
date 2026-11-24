@@ -1115,6 +1115,8 @@ export function runLoop(args: string[]) {
     const i = args.indexOf(flag);
     return i >= 0 ? args[i + 1] : undefined;
   };
+  // The flags first, before any host plays: a retired variant flag is refused here, not after a run.
+  const variant = variantOf(args);
   const counts = value('--players') ? [Number(value('--players'))] : [1, 2, 3, 4];
   if (counts.some((n) => !Number.isInteger(n) || n < 1 || n > 4)) throw new Error('--players: 1 to 4');
   const only = value('--order');
@@ -1160,7 +1162,7 @@ export function runLoop(args: string[]) {
   const route =
     broken || [...shownRuns, ...calRuns].some((r) => r.softlock)
       ? null
-      : wholeRouteLines(counts, shownRuns, calRuns, variantOf(args));
+      : wholeRouteLines(counts, shownRuns, calRuns, variant);
   if (args.includes('--json'))
     return console.log(
       JSON.stringify({ ms, results, calibrated: [...calibrated.values()], wholeRoute: route?.data ?? null }, null, 2),
