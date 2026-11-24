@@ -223,7 +223,8 @@ export const install = defineSystem(
       for (const home of [0, LINE2]) Object.assign(w.mut(Line, lineId(w, home))!, { boiler: 1, fitted: tick });
       commission(w, tick);
     } else {
-      if (e.part === 4) w.mut(Line, id)!.cradle = 1;
+      // The cradle sets the line's install tick too, so it starts the table's hold as every install does.
+      if (e.part === 4) Object.assign(w.mut(Line, id)!, { cradle: 1, fitted: tick });
       else Object.assign(w.mut(Line, id)!, { boiler: e.part, fitted: tick });
       spendUpgrade(w, INSTALL_STEEL[e.part]);
     }

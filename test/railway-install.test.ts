@@ -131,9 +131,13 @@ test('paid installs spend only the shared pool, refuse short/stale/repeated hold
   assert.equal(shed(full.w).steel, STEEL.total, 'landed does not go backwards');
   assert.equal(shed(full.w).spent, INSTALL_STEEL[4]);
   assert.equal(steelPool(shed(full.w)), STEEL.total - INSTALL_STEEL[4]);
-  // The cradle sets no `fitted`, so it starts no hold: the race is refused as stale.
   assert.equal(install(full, 'b', { part: 2, revision: rev }), 0, 'cross-part race is stale');
   assert.equal(install(full, 'b', { part: 4 }), 0, 'new request cannot buy it twice');
+  const resumed = copy(full);
+  assert.equal(install(full, 'b'), 0, 'the cradle holds the table even on the new revision');
+  advance(resumed, WORKS.upgradeTicks - 1);
+  assert.equal(install(resumed, 'b'), 0, 'the cradle hold survives a save');
+  settle(full);
   assert.equal(install(full), 1, 'free longer boiler still reads landed steel');
   assert.equal(shed(full.w).spent, INSTALL_STEEL[4]);
   const wagon = trains(full.w).find((r) => r.wagon)!;
@@ -166,6 +170,7 @@ test('big boiler needs High Gorge and row 2; fits once, spends six, then adopts 
   assert.equal(install(s), 1);
   settle(s);
   assert.equal(install(s, 'a', { part: 4 }), 1);
+  settle(s);
   const rev = lineRow(s.w, LINE2).rev;
   const before = trains(s.w).map((r) => ({ ...r }));
   assert.equal(install(s, 'a', { part: 3, revision: rev }), 1);

@@ -302,8 +302,8 @@ before step 3. Step 3 holds on question 1.
       `railway-queries-route.ts`, since it reads the world (`railway-route.ts` holds only catalog data: `TRADE_LINES`,
       `TRADE_LEG`, `TRADE_OPENS`). The kit guard's bound is the load check's own, `kitBills(fit) × LEG_KIT_MOST` (the
       most of one kind in any section bill, 20 today, now exported once and shared), not a per-leg bill, so the guard
-      and the cargo bound cannot drift apart. The table's hold follows the formula above, so the bigger cradle (part 4,
-      which sets no `fitted`) starts no hold, as before. `rail.bring` is last in `RAIL_ACTIONS` (the host trace's
+      and the cargo bound cannot drift apart. The table's hold follows the formula above, and every install starts it
+      (call 14): the bigger cradle (part 4) now sets `Line.fitted` too (independent review, 24 November). `rail.bring` is last in `RAIL_ACTIONS` (the host trace's
       sweep), and a pending op in the loop graph until step 4 gives the bot the choice. The two leg 3 hold tests fit
       Strong by accepted ops from `bay-mid` with the works lit, and the adoption test runs on `canopy-reached`: on
       `bay-mid` a Strong train's two bills cannot unload, so the guard rightly keeps Strong on a swap to Quick.

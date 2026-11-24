@@ -61,7 +61,7 @@ export function worksStage(w: World): WorksStage {
  * count this; a store's stack shows only what lies in that store (`steelPool` of its own row). */
 export const upgradePool = (w: World) => steelPool(w.get(Shed, shedId(w))!);
 /** The garage table's hold (garage step 4): the first tick a rail.install or rail.bring is accepted, BRING_TICKS after
- * the last bring and WORKS.upgradeTicks after any line's last install. */
+ * the last bring and WORKS.upgradeTicks after any line's last install (`Line.fitted`, which every part sets). */
 export function tableFree(w: World) {
   const brought = w.get(Shed, shedId(w))!.brought;
   let free = brought >= 0 ? brought + BRING_TICKS : 0;

@@ -186,7 +186,7 @@ export const Steel = defineComponent(
 /** A line's shared row (docs/plans/generic-lines.md, v26), by line index: its halts' lever asks (Train.req's digits)
  * and the tick a train last left its start end and its far end (-1 never), for the headway hold. Since v28
  * (ring-island-build2, R3) the room's boiler fit for the line (`boiler`, BOILER_SPEED's row; rail.install) and the
- * tick it was installed (`fitted`, -1 never). Since v67 (garage step 4) `rev`, the line's install revision: +1 on
+ * tick of its last accepted install (`fitted`, -1 never; v67: the cradle's too, for the table's hold). Since v67 (garage step 4) `rev`, the line's install revision: +1 on
  * every accepted rail.install of the line, so a stale hold refuses even when a swap returns to a row (on line 2 it
  * equals `boiler + cradle`). */
 export const Line = defineComponent(

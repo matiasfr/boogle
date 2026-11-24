@@ -194,6 +194,8 @@ test('paid host: cradle and big boiler cross r:edit, share the pool, replicate a
     );
     assert.equal(shed(r.w).spent, INSTALL_STEEL[4]);
     assert.equal(await r.action(install(rev + 1, LINE2, 4), spot(SHED_TABLE)), 'noop');
+    assert.equal(await r.action(install(rev + 1, LINE2, 3), spot(SHED_TABLE)), 'noop', "the cradle's table hold");
+    await r.ticks(WORKS.upgradeTicks);
     assert.equal(await r.action(install(rev + 1, LINE2, 3), spot(SHED_TABLE)), 'accepted');
     assert.equal(await r.action(install(rev + 2, LINE2, 3), spot(SHED_TABLE)), 'noop');
     await r.ticks(3);
