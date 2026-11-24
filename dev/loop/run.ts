@@ -1,6 +1,5 @@
-// `npm run loop -- run [--players N] [--order <name>] [--json] [--branch-first gorge|canopy] [--one-branch]
-// [--bills <factor>]`: plays each order the loop graph allows through the
-// REAL rules (the host's install: railValid, railApply, railTick; dev/loop/host.ts) for 1 to 4 players and prints
+// `npm run loop -- run [--players N] [--order <name>] [--json] [--bills <factor>]`: plays each order the loop graph
+// allows through the REAL rules (the host's install: railValid, railApply, railTick; dev/loop/host.ts) for 1 to 4 players and prints
 // the time each node is reached. Walking is straight-line at WALK_MPS (no terrain, no trains ridden); cart, train,
 // laying and kiln time come from the sim. A stall with nothing accepted is a softlock; an order the graph allows that
 // the rules refuse is a graph bug. Decided edges the graph says nothing enforces (and edges said to be the rules')
@@ -563,6 +562,8 @@ const ROUTE_PRESS: Partial<Record<NodeId, { op: 'rail.grant' | 'rail.gate'; id: 
   pick: { op: 'rail.grant', id: RAIL_GRANTS.findIndex((x) => x.id === 'pick') },
   'incline-gate': { op: 'rail.gate', id: RAIL_GATES.findIndex((x) => x.id === 'incline') },
   seeds: { op: 'rail.grant', id: RAIL_GRANTS.findIndex((x) => x.id === 'seeds') },
+  'canopy-gate': { op: 'rail.gate', id: RAIL_GATES.findIndex((x) => x.id === 'canopy') },
+  cloth: { op: 'rail.grant', id: RAIL_GRANTS.findIndex((x) => x.id === 'cloth') },
 };
 /** A route point (cm, with its height: the server's reach check judges both). */
 const routePoint = (q: { x: number; z: number; y: number }): Point => ({ x: q.x, z: q.z, y: q.y });
@@ -693,6 +694,8 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
     pick: pressed('pick'),
     'incline-gate': pressed('incline-gate'),
     seeds: pressed('seeds'),
+    'canopy-gate': pressed('canopy-gate'),
+    cloth: pressed('cloth'),
   };
   const ready = (id: NodeId) => () => node(id).requires.every((e) => e.scope === 'finish' || done[e.on]());
   const policy: Record<NodeId, (pl: Player) => Policy> = {
@@ -822,6 +825,8 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
     pick: routePolicy('pick'),
     'incline-gate': routePolicy('incline-gate'),
     seeds: routePolicy('seeds'),
+    'canopy-gate': routePolicy('canopy-gate'),
+    cloth: routePolicy('cloth'),
   };
   return { g, done, policy, flags, current: null, detour: () => 1 };
 }
@@ -1110,6 +1115,8 @@ export function runLoop(args: string[]) {
     const i = args.indexOf(flag);
     return i >= 0 ? args[i + 1] : undefined;
   };
+  // The flags first, before any host plays: a retired variant flag is refused here, not after a run.
+  const variant = variantOf(args);
   const counts = value('--players') ? [Number(value('--players'))] : [1, 2, 3, 4];
   if (counts.some((n) => !Number.isInteger(n) || n < 1 || n > 4)) throw new Error('--players: 1 to 4');
   const only = value('--order');
@@ -1155,7 +1162,7 @@ export function runLoop(args: string[]) {
   const route =
     broken || [...shownRuns, ...calRuns].some((r) => r.softlock)
       ? null
-      : wholeRouteLines(counts, shownRuns, calRuns, variantOf(args));
+      : wholeRouteLines(counts, shownRuns, calRuns, variant);
   if (args.includes('--json'))
     return console.log(
       JSON.stringify({ ms, results, calibrated: [...calibrated.values()], wholeRoute: route?.data ?? null }, null, 2),

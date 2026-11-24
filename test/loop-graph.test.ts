@@ -2,6 +2,10 @@
 // a named generic route-independent op / activity mark), and the hand-kept beat lists agree with the graph's nodes.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { runInNewContext } from 'node:vm';
+import { transformSync } from 'esbuild';
 import { ACTIVITY_MARKS, GENERIC_OPS, NODES, PENDING_MARKS, PENDING_OPS, proposeOrders } from '../dev/loop/graph.ts';
 import { isStandIn, standInRoute } from '../dev/loop/standins.ts';
 import { RAIL_ACTIONS } from '../src/world/railway-server.ts';
@@ -16,12 +20,166 @@ import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { Forge, Job, QJob, Rail, Shed, Steel, createRailwayWorld } from '../src/sim/railway-components.ts';
 import { jobId, qjobId } from '../src/sim/railway-queries.ts';
 import { beatsOf } from '../dev/playtest/beats.ts';
-import { RAIL_STOPS } from '../dev/look/segments.ts';
+import { RAIL_STOPS, railSegmentOptions } from '../dev/look/segments.ts';
+import { RAIL_GRANTS, RAIL_LEGS, legFrame } from '../src/sim/railway-route.ts';
+import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 
 const generic = new Set<string>(GENERIC_OPS);
 // The route's ops whose nodes are not built yet (dev/loop/graph.ts, PENDING_OPS): named, never owned too.
 const pending = new Set<string>(PENDING_OPS);
 const owned = new Set(NODES.flatMap((n) => n.ops));
+
+test('a Canopy stop cannot be assigned to the Ring Island bot, which finishes at Ring Island', () => {
+  assert.throws(() => railSegmentOptions(['--from', 'deck-laid', '--to', 'canopy']));
+});
+
+// Exercise the real dev entry points with the browser inputs and sim clock under test control.
+// Each caller names its file as a literal URL, so the unit selection's walk follows it (test/unit-select.test.ts).
+function loadTool(url: URL, mocks: Record<string, unknown>, globals: Record<string, unknown> = {}) {
+  const require = createRequire(url);
+  const output = { exports: {} };
+  const { code } = transformSync(readFileSync(url, 'utf8'), { loader: 'ts', format: 'cjs' });
+  runInNewContext(code, {
+    module: output,
+    require: (id: string) => (id in mocks ? mocks[id] : require(id)),
+    performance,
+    setInterval,
+    clearInterval,
+    ...globals,
+  });
+  return output.exports;
+}
+
+test('loop run refuses a cut built branch before starting the by-hand simulation', () => {
+  const { runLoop } = loadTool(new URL('../dev/loop/run.ts', import.meta.url), {
+    './host.ts': { createHost: () => assert.fail('started simulating the cut branch request') },
+  }) as typeof import('../dev/loop/run.ts');
+  assert.throws(() => runLoop(['--one-branch', '--by-hand', 'canopy-1', '--players', '1']), /--one-branch/);
+});
+
+// The room finished the track and the rider starts at home. Stop at the first hop so the two boundary
+// cases need no renderer or real time. Keep the actual leg catalog, halt geometry and bot route.
+async function rideForCloth(firstContactMs: number, clothTaken = false) {
+  const canopy = RAIL_LEGS.find((l) => l.id === 'bell-canopy')!;
+  const slot = LINE_SLOTS[canopy.line]![0]!;
+  const cloth = RAIL_GRANTS.find((g) => g.id === 'cloth')!.at;
+  const car = {
+    x: 0,
+    z: 0,
+    get riding() {
+      return now >= firstContactMs;
+    },
+  };
+  const check = (value: unknown, beat: string) => assert.ok(value, beat);
+  let now = 0;
+  let target: { x: number; z: number } | undefined;
+  const stop = new Error('observed the first step off');
+  const { legRoute } = loadTool(
+    new URL('../dev/look/bots/railway-legs.ts', import.meta.url),
+    {
+      '../../../src/sim/railway-queries-route.ts': {
+        legDone: () => true,
+        legRow: (_: unknown, k: number) => ({ laid: RAIL_LEGS[k]!.sections.length }),
+        routeRow: () => ({ grants: clothTaken ? 7 : 3, gates: 3 }),
+      },
+      '../rail-read.ts': {
+        rw: () => ({}),
+        aperture: () => ({ joined: 1 }),
+        trains: () =>
+          Array.from({ length: slot + 1 }, () => ({
+            phase: 0,
+            at: clothTaken ? canopy.railheadHalt + canopy.sections.length - 1 : 0,
+            track: clothTaken ? 1 : 0,
+          })),
+      },
+      '../../../src/player/player.ts': { me: { body: { position: { x: 0, z: 0 } }, coyote: 1 } },
+      '../../../src/player/input.ts': { input: { keys: new Set() } },
+      '../../../src/player/hands.ts': {},
+      '../../../src/entities/player/state.ts': { pressJump() {}, releaseJump() {} },
+      '../../../src/entities/ring-island/state.ts': {},
+      './railway-ride.ts': {
+        line2Rides: () => ({
+          view: () => ({ trains: [{ slot, cars: [car] }] }),
+          check,
+          face() {},
+          until() {},
+          hopTo(x: number, z: number) {
+            target = { x, z };
+            throw stop;
+          },
+        }),
+      },
+    },
+    { performance: { now: () => now } },
+  ) as typeof import('../dev/look/bots/railway-legs.ts');
+  const bot = {
+    until: (ready: () => boolean, timeout: number) => {
+      now += timeout;
+      return ready();
+    },
+    walk: () => {
+      if (clothTaken) throw new Error('walked toward the occupied platform');
+      return true;
+    },
+    wait: (ms: number) => {
+      now += ms;
+    },
+  };
+  try {
+    await legRoute({ bot: bot as unknown as Parameters<typeof legRoute>[0]['bot'], checkpoint: async () => {} });
+  } catch (err) {
+    if (err !== stop) throw err;
+  }
+  assert.ok(target);
+  return Math.hypot(target.x - cloth.x / 100, target.z - cloth.z / 100);
+}
+
+test('a first train contact at the boarding deadline cannot pass the 800 ms hold', async () => {
+  await assert.rejects(rideForCloth(20000), /boarded/);
+});
+
+test('returning for untaken cloth steps off on the Canopy platform near its post', async () => {
+  const metres = await rideForCloth(0);
+  assert.ok(metres < 60, `step-off target is ${Math.round(metres)} m from the cloth`);
+});
+
+test('a continuous 800 ms boarding hold completed at the deadline counts', async () => {
+  await rideForCloth(19200);
+});
+
+test('a timed-out platform clearance fails before the homeward walk', async () => {
+  await assert.rejects(rideForCloth(0, true), /clear|timeout|timed out/i);
+});
+
+test('successive stack frames register distinct progress when numbers are ignored', async () => {
+  const stack = RAIL_LEGS.find((leg) => leg.id === 'stack')!;
+  const beats = new Set<string>();
+  for (const laid of [1, 2]) {
+    const frame = legFrame(stack, laid);
+    const { legRoute } = loadTool(new URL('../dev/look/bots/railway-legs.ts', import.meta.url), {
+      '../../../src/sim/railway-queries-route.ts': { legRow: () => ({ laid }) },
+      '../rail-read.ts': { rw: () => ({}), aperture: () => ({ joined: 1 }) },
+      '../../../src/player/player.ts': { me: { body: { position: { x: frame.x / 100, z: frame.z / 100 } } } },
+      '../../../src/player/input.ts': {},
+      '../../../src/player/hands.ts': {},
+      '../../../src/entities/player/state.ts': {},
+      '../../../src/entities/ring-island/state.ts': {},
+      './railway-ride.ts': { line2Rides: () => ({ check: assert.ok }) },
+    }) as typeof import('../dev/look/bots/railway-legs.ts');
+    const stop = new Error('frame reached');
+    await assert.rejects(
+      legRoute({
+        bot: { walk: () => true } as unknown as Parameters<typeof legRoute>[0]['bot'],
+        checkpoint: async (beat) => {
+          beats.add(beat.replace(/[\d.]+/g, '#'));
+          throw stop;
+        },
+      }),
+      (error) => error === stop,
+    );
+  }
+  assert.equal(beats.size, 2);
+});
 
 test('every rail action has a node or is a generic route-independent op', () => {
   for (const op of RAIL_ACTIONS) assert.ok(owned.has(op) || generic.has(op) || pending.has(op), `${op} has no node`);
@@ -115,24 +273,25 @@ test('the solver proposes the canonical order and each soft edge flipped', () =>
 test('built nodes and stand-ins are told apart by the flag, and the stand-ins reach the ending', () => {
   for (const n of NODES) assert.ok(!isStandIn(n), `${n.id} is built: it carries no standIn flag`);
   const built = new Set<string>(NODES.map((n) => n.id));
-  // High Gorge and Bell Rock are built (greybox leg 2, step 5): the stand-ins are areas 6 to 9, Canopy Town cuttable.
-  for (const branches of ['both', 'first'] as const) {
-    const { nodes, lost } = standInRoute({ branches, bills: 1 });
-    assert.equal(nodes.length, branches === 'both' ? 4 : 3);
-    assert.equal(
-      nodes[0]!.requires[0]!.on,
-      NODES[NODES.length - 1]!.id,
-      'the stand-ins start where the built graph ends',
-    );
-    assert.equal(nodes[nodes.length - 1]!.id, 'ending');
-    assert.equal(lost.length, branches === 'both' ? 0 : 1, 'cutting a branch loses exactly its gate');
-    for (const s of nodes) {
-      assert.ok(isStandIn(s), `${s.id} is flagged a stand-in`);
-      assert.ok(!built.has(s.id), `${s.id} is not a built node's id`);
-      assert.ok(
-        Object.values(s.bill).every((n) => n > 0) && s.legs.every((l) => l.km > 0),
-        `${s.id}: a bill and a leg`,
-      );
-    }
+  // High Gorge, Bell Rock and Canopy Town are built (greybox leg 2's step 5, leg 3's step 7): the stand-ins are areas 7
+  // to 9, and the ending's key is the built cloth.
+  const { nodes } = standInRoute({ bills: 1 });
+  assert.deepEqual(
+    nodes.map((n) => n.id),
+    ['port', 'wall', 'ending'],
+  );
+  assert.equal(
+    nodes[0]!.requires[0]!.on,
+    NODES[NODES.length - 1]!.id,
+    'the stand-ins start where the built graph ends',
+  );
+  assert.ok(
+    nodes[2]!.requires.some((e) => e.on === 'cloth' && e.needs === 'glider cloth'),
+    'the ending needs the cloth',
+  );
+  for (const s of nodes) {
+    assert.ok(isStandIn(s), `${s.id} is flagged a stand-in`);
+    assert.ok(!built.has(s.id), `${s.id} is not a built node's id`);
+    assert.ok(Object.values(s.bill).every((n) => n > 0) && s.legs.every((l) => l.km > 0), `${s.id}: a bill and a leg`);
   }
 });

@@ -1,13 +1,15 @@
-// The greybox route's built legs through ordinary inputs (docs/plans/greybox-route.md and greybox-leg2.md, step 5),
-// driven by RAIL_LEGS. Leg 1, the stack line: ride line 2 to the leg's first frame, then for each section take the kit
-// off the rack, feed the frame, wait out the lay, ride on to the new railhead and step off onto its platform, until High
-// Gorge is reached on foot. Leg 2: take the powered pick at the stair's head, open the incline's barrier, build the
-// incline the same way riding `ns` trains to each head and on to Bell Rock's lower deck, take the crystal seeds, ride
-// home the long way (`ns` to High Gorge, line 2 to the Village), walk to the West landing and build the bay cut, riding
-// `bay` trains to Bell Rock's upper platform. Prompts are pressed by id (`railway-leg-take-logs`, `-take-rails`, `-feed`,
-// `-pick`, `-gate`, `-seeds`). Each phase reads the rows first, so it resumes from `ring-joined`, `gorge-open`,
-// `gorge-mid` and `gorge-reached` (a seed starts at the Village). Inspection observes; it never seeds a world or moves a
-// player. A fall into the sea is a finding (no recovery).
+// The greybox route's built legs through ordinary inputs (docs/plans/greybox-route.md and greybox-leg2.md, step 5;
+// greybox-leg3.md, step 7), driven by RAIL_LEGS. Leg 1, the stack line: ride line 2 to the leg's first frame, then for
+// each section take the kit off the rack, feed the frame, wait out the lay, ride on to the new railhead and step off
+// onto its platform, until High Gorge is reached on foot. Leg 2: take the powered pick at the stair's head, open the
+// incline's barrier, build the incline the same way riding `ns` trains to each head and on to Bell Rock's lower deck,
+// take the crystal seeds, ride home the long way (`ns` to High Gorge, line 2 to the Village), walk to the West landing
+// and build the bay cut, riding `bay` trains to Bell Rock's upper platform. Leg 3: open the Canopy barrier on frame 1 there, build the three sections
+// riding `bay` trains over the strait to each head and on to Canopy Town, take the glider cloth round the buffers and
+// ride home on the same line to the West landing. Prompts are pressed by id (`railway-leg-take-logs`, `-take-rails`,
+// `-feed`, `-pick`, `-gate`, `-seeds`, `-canopy`, `-cloth`). Each phase reads the rows first, so it resumes from
+// `ring-joined`, `gorge-open`, `gorge-mid`, `gorge-reached` and `bay-reached` (a seed starts at the Village).
+// Inspection observes; it never seeds a world or moves a player. A fall into the sea is a finding (no recovery).
 import type { Bot } from '../bot.ts';
 import { legDone, legRow, routeRow } from '../../../src/sim/railway-queries-route.ts';
 import { account, aperture, rail, railAt, railPid, railRead, rw, trains } from '../rail-read.ts';
@@ -38,9 +40,12 @@ const ISLAND = 5;
 const legOf = (id: string) => RAIL_LEGS.findIndex((l) => l.id === id);
 const STACK = legOf('stack'),
   INCLINE = legOf('incline'),
-  BAY = legOf('bay-cut');
+  BAY = legOf('bay-cut'),
+  CANOPY = legOf('bell-canopy');
 const PICK = RAIL_GRANTS.findIndex((g) => g.id === 'pick'),
-  SEEDS = RAIL_GRANTS.findIndex((g) => g.id === 'seeds');
+  SEEDS = RAIL_GRANTS.findIndex((g) => g.id === 'seeds'),
+  CLOTH = RAIL_GRANTS.findIndex((g) => g.id === 'cloth');
+const ORDINAL = ['one', 'two', 'three', 'four', 'five', 'six'];
 /** A leg's first halt on its sim line (the stop before its first head). */
 const fromStop = (L: RouteLeg) => L.railheadHalt - 1;
 /** High Gorge on line 2: the stack line's last halt. */
@@ -139,9 +144,17 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   const feedSection = async (slot: number, k: number, what: string) => {
     const leg = RAIL_LEGS[slot]!,
       sec = leg.sections[k]!,
-      frame = legFrame(leg, k),
-      rack = legRack(leg, k),
       at = () => legRow(rw(), slot);
+    // Leg 3's frame and rack stand 4.8 m right of the track, where a standing car's deck reaches the line between
+    // them: approach each 1.5 m further out (a rider was carried off from Canopy head 2 into the strait, 24 November).
+    // The frame is the rack's outward neighbour, so right of rack-to-frame is away from the track.
+    const site = { frame: legFrame(leg, k), rack: legRack(leg, k) },
+      dx = site.frame.x - site.rack.x,
+      dz = site.frame.z - site.rack.z,
+      out = slot === CANOPY ? 150 / Math.hypot(dx, dz) : 0,
+      away = <P extends { x: number; z: number }>(p: P) => ({ ...p, x: p.x - dz * out, z: p.z + dx * out }),
+      frame = away(site.frame),
+      rack = away(site.rack);
     for (let guard = 0; at().start < 0 && at().laid === k; guard++) {
       check(guard < 40, `${what} fed in 40 trips`);
       const needL = sec.logs - at().logs,
@@ -203,11 +216,11 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
     // Outward arrivals now stand east. Reach the west-side frame by the south foot crossing, never over live rails.
     if (k === 0 && nearerEast()) await crossIsland(true);
     check(await bot.walk(frame.x / 100, frame.z / 100, 3), `walked to section ${k + 1}'s frame`);
-    await checkpoint(`section ${k + 1} frame reached`);
+    await checkpoint(`section ${ORDINAL[k]} frame reached`);
 
     // 2. Feed the frame the section's bill from the rack; 3. the lay clock runs out and the section is laid.
     await feedSection(STACK, k, `section ${k + 1}`);
-    await checkpoint(`section ${k + 1} laid`);
+    await checkpoint(`section ${ORDINAL[k]} laid`);
 
     // 4. On to the new railhead (or the leg's last halt): the first stop is the leg's `railheadHalt` + laid - 1.
     const stop = L.railheadHalt + laid() - 1;
@@ -288,9 +301,10 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
       const frame = legFrame(leg, k);
       check(near(frame, 40), `standing by ${name} section ${k + 1}'s frame`);
       check(await bot.walk(frame.x / 100, frame.z / 100, 3), `walked to ${name} section ${k + 1}'s frame`);
-      await checkpoint(`${name} section ${k + 1} frame reached`);
+      // The section in words: the playthrough's stall check counts a beat as new only with its digits ignored.
+      await checkpoint(`${name} section ${ORDINAL[k]} frame reached`);
       await feedSection(slot, k, `${name} section ${k + 1}`);
-      await checkpoint(`${name} section ${k + 1} laid`);
+      await checkpoint(`${name} section ${ORDINAL[k]} laid`);
       const last = at() >= m;
       const stop = leg.railheadHalt + at() - 1;
       await rowRide(leg.line, leg.railheadHalt + k - 1, stop, name);
@@ -312,25 +326,48 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
         const r = trains(rw())[slot]!;
         return r.phase === 0 && r.at === from && (r.track ? -1 : 1) === dir;
       }) ?? -1;
+    /** A train of the line going our way that already carries the rider (stepped onto on the way to the lever). */
+    const carrying = () => {
+      const t = view().trains.find((v) => LINE_SLOTS[line]!.includes(v.slot) && v.cars.some((car) => car.riding));
+      return t && (trains(rw())[t.slot]!.track ? -1 : 1) === dir ? t.slot : -1;
+    };
     const lever = rowLever(line, from);
     const watch = watchTrains(line, from);
     try {
-      check(await bot.walk(lever.x, lever.z, 1.2), `walked to ${name}'s lever at stop ${from}`);
-      // The train a lay asks for may already be coming. Pull the lever whenever it is free to pull; while it shows the
-      // stop requested ("Stop requested", blocked), a train is on its way: wait for it.
-      const waitEnd = performance.now() + 2400000;
-      while (standing() < 0 && performance.now() < waitEnd) {
-        const t = interactTarget();
-        if (t && /^Request stop/.test(t.verb) && t.run && !t.blocked) bot.press();
-        await bot.until(() => standing() >= 0, 20000);
+      const walked = await bot.walk(lever.x, lever.z, 1.2);
+      // Carried off by a train our way while walking to the lever: that is the ride (the hold below still applies).
+      let slot = carrying();
+      if (slot < 0) {
+        check(walked, `walked to ${name}'s lever at stop ${from}`);
+        // The train a lay asks for may already be coming. Pull the lever whenever it is free to pull; while it shows
+        // the stop requested ("Stop requested", blocked), a train is on its way: wait for it.
+        const waitEnd = performance.now() + 2400000;
+        while (standing() < 0 && performance.now() < waitEnd) {
+          const t = interactTarget();
+          if (t && /^Request stop/.test(t.verb) && t.run && !t.blocked) bot.press();
+          await bot.until(() => standing() >= 0, 20000);
+        }
+        check(standing() >= 0, `a ${name} train toward stop ${to} stands at stop ${from}`);
+        slot = standing();
       }
-      check(standing() >= 0, `a ${name} train toward stop ${to} stands at stop ${from}`);
-      const slot = standing();
       const train = () => view().trains.find((t) => t.slot === slot)!;
       const aboard = () => train().cars.some((car) => car.riding);
       const end = performance.now() + 20000;
+      // Aboard once the car carries the rider for 0.8 s with the stick let go: a jump's first touch of the car reads
+      // `riding` for a frame and can bounce off it (Bell Rock's curved platform, greybox leg 3's first run).
+      let since: number | undefined,
+        held = false;
       try {
-        while (!aboard() && performance.now() < end) {
+        // A hold begun before the deadline may finish after it; a first touch at or past it never counts.
+        while (performance.now() < end || since !== undefined) {
+          if (aboard()) {
+            input.keys.delete('KeyW');
+            since ??= performance.now();
+            if ((held = performance.now() - since >= 800)) break;
+            await bot.wait(80);
+            continue;
+          }
+          since = undefined;
           const cars = train().cars,
             car = cars[1] ?? cars[0]!;
           face(car.x, car.z);
@@ -344,7 +381,7 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
         input.keys.delete('KeyW');
         releaseJump();
       }
-      check(aboard(), `boarded a ${name} train at stop ${from} by a real jump`);
+      check(held, `boarded a ${name} train at stop ${from} by a real jump, carried 0.8 s`);
       const asked = new Set<string>();
       let ran = false;
       await until(() => {
@@ -400,4 +437,65 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
     await buildRowLeg(BAY, 'bay cut');
   }
   await checkpoint('bay reached');
+
+  // ---------------------------------------------------------------- leg 3: Bell Rock to Canopy Town, and home
+  const canopy = RAIL_LEGS[CANOPY]!;
+  const canopyGate = canopy.sections[0]!.gate!;
+  const canopyEnd = canopy.railheadHalt + canopy.sections.length - 1;
+  const westLanding = legFrame(RAIL_LEGS[BAY]!, 0);
+  /** Off the car to `at` (cm), standing there dry. */
+  const stepOff = async (at: { x: number; z: number }, beat: string) => {
+    await hopTo(at.x / 100, at.z / 100, beat);
+    await until(() => me.coyote > 0 && !me.swimming, `${beat}: standing`, 10000);
+  };
+  /** From the Village (where a seed starts): walk to the West landing and ride a bay train out to stop `to`. */
+  const rideOut = async (to: number, at: { x: number; z: number }, beat: string) => {
+    check(await bot.walk(westLanding.x / 100, westLanding.z / 100, 3), 'walked from the Village to the West landing');
+    await rowRide(canopy.line, 0, to, 'bay line');
+    await stepOff(at, beat);
+  };
+  if (!legDone(rw(), CANOPY)) {
+    // Section 1's frame is Bell Rock's (frame 1 on the outward upper platform, the barrier on it); a later one stands
+    // on the head the last lay made.
+    const k = legRow(rw(), CANOPY).laid,
+      frame = legFrame(canopy, k);
+    if (!near(frame, 40))
+      await rideOut(
+        canopy.railheadHalt + k - 1,
+        frame,
+        k === 0
+          ? "stepped off at Bell Rock's upper platform by Canopy's first frame"
+          : `stepped off at Canopy head ${k}`,
+      );
+    if (!(route().gates & (1 << canopyGate))) {
+      await press('railway-leg-canopy', RAIL_GATES[canopyGate]!.at, 'open the Canopy barrier');
+      check(route().gates & (1 << canopyGate), 'the Canopy barrier is open');
+      await checkpoint('canopy barrier opened');
+    }
+    await buildRowLeg(CANOPY, 'canopy');
+  }
+  await checkpoint('canopy reached');
+  // The cloth post on the homeward deck round the buffers.
+  if (!granted(CLOTH)) {
+    const cloth = RAIL_GRANTS[CLOTH]!.at;
+    if (!near(cloth, 60)) {
+      const lever = rowLever(canopy.line, canopyEnd); // metres; stepOff takes cm
+      await rideOut(canopyEnd, { x: lever.x * 100, z: lever.z * 100 }, 'stepped off at Canopy Town');
+    }
+    await press('railway-leg-cloth', cloth, 'take the glider cloth');
+    check(granted(CLOTH), 'the room holds the glider cloth');
+    await checkpoint('cloth taken');
+  }
+  // Home on the same line: a bay train from Canopy Town to the West landing (the Notch barrier stays shut: leg 6). The
+  // walk from the cloth post to the lever runs along the train's platform: wait on the deck while a train stands at
+  // Canopy or is bound there, so none leaves beside the rider (a run on 24 November was carried off and tumbled).
+  const atOrBound = () =>
+    LINE_SLOTS[canopy.line]!.some((slot) => {
+      const r = trains(rw())[slot]!;
+      return r.phase === 0 ? r.at === canopyEnd : r.to === canopyEnd;
+    });
+  check(await bot.until(() => !atOrBound(), 600000), "Canopy's platform cleared before the homeward walk");
+  await rowRide(canopy.line, canopyEnd, 0, 'bay line');
+  await stepOff(westLanding, 'stepped off at the West landing');
+  await checkpoint('canopy home');
 }

@@ -690,12 +690,43 @@ table before garage step 4's screen is built (finding 3), not before its rules.
       the spawn. Looked at: the first lay with Buddy on the rock at bay s 1340, 2.25 m off the row (feet 14.0 m, the
       slab's top 14.31 m): the slab waited and Buddy stayed where they stood. The reviewers' cases live in
       `test/prefab-leg2-level.test.ts`, `test/prefab-halts.test.ts` and `test/railway-jump.test.ts`.
-- [ ] **7. The bot and the loop (M; HOTBOX).** After leg 2's step 5. `dev/loop/graph.ts`: `canopy-gate`, `canopy-1` to
+- [x] **7. The bot and the loop (M; HOTBOX).** After leg 2's step 5. `dev/loop/graph.ts`: `canopy-gate`, `canopy-1` to
       `canopy-3`, `cloth`, bills and positions imported from `RAIL_LEGS`; `dev/loop/standins.ts` drops the `canopy`
       slot. `dev/look/bots/railway-legs.ts`: the barrier at Bell Rock, the three sections, the cloth, the ride home;
       `dev/look/segments.ts` `RAIL_STOPS.canopy`. Verify: `npm run loop -- node canopy-1` and `-- node cloth` print the
       bill, the train supply and the cue; `npm run loop -- run`; `npm run playthrough -- --from bay-reached --to canopy`
       (a pass verdict; its timings are not evidence under load).
+
+      **As built, 24 November.** The loop graph gains `canopy-gate` (`rail.gate`, the second "route barrier opened";
+      needs `bay-2` and `seeds`), `canopy-1` to `canopy-3` (`legSection` on `bell-canopy`: bills, frames and racks from
+      `RAIL_LEGS`; the kit by bay train, the first the kit ahead to Bell Rock's rack) and `cloth` (`rail.grant`, the third
+      "route pickup taken", stop `canopy`); `dev/loop/run.ts` presses the barrier and the cloth as it does the pick and
+      the seeds. No op or mark is new, so `GENERIC_OPS` and `ACTIVITY_MARKS` are unchanged. The stand-ins drop Canopy
+      Town: the whole-route table plays area 6, ending at the cloth, against the stand-in's 42-minute allowance, and the
+      ending's stand-in gates on the built cloth; `--one-branch` is refused as `--branch-first` is (agent-calls,
+      Architecture). The leg bot, after the bay cut (or from `bay-reached`, the seed at the Village): walk to the West
+      landing, a bay train to Bell Rock's upper platform, the barrier (`railway-leg-canopy`), the three sections riding
+      bay trains to each head and on to Canopy Town, the cloth (`railway-leg-cloth`) and a bay train home to the West
+      landing; `RAIL_STOPS.canopy` is "canopy home" and `--from bay-reached` is a leg seed. The first run failed on a bot
+      defect, not a game one: boarding at Bell Rock's curved platform read `riding` for one frame with W held and the
+      jump bounced; `rowRide` now counts a rider aboard after 0.8 s carried with the stick let go (line 2's own boarding
+      loop in `railway-ride.ts` is unchanged). The legs eval's facts now name the open leg (they read leg 0's row).
+
+      `npm run loop -- run`: every order probe refused as the graph says, no softlock or graph bug, no refusal at leg 3's nodes (Ring Island's `bents` has 7 and 8 at 3 and 4 players, as before this step); area 6
+      played in 8 / 9 / 9 / 9 minutes (1 to 4 players), the whole route 2:40 / 2:34 / 2:32 / 2:33.
+      `npm run playthrough -- --from bay-reached --to canopy`: verdict `pass` twice, the second on the simplified branch head (`.look/playthrough/leg3bot3/`), every
+      checkpoint from the barrier at Bell Rock through the three sections, Canopy reached, the cloth taken and home at the
+      West landing, no recovery, no error. The end still shows Buddy on the West landing's apron by the departure board
+      (Bay head 1, Bell Rock, Canopy head 2: head 1 closed behind). Timings are not evidence. Not tested on a device.
+
+      **Review round, 24 November.** The review's four tests (`test/loop-graph.test.ts`) pass: a leg stop is refused for a
+      seed whose bot never reaches it; boarding counts only after 0.8 s carried, the deadline included; the untaken-cloth
+      return steps off at Canopy's lever (metres to cm); `--one-branch` is refused before any host. The bot also accepts
+      a homeward train that carries it on the way to the lever, waits on Canopy's deck while a train stands there or is
+      bound there, approaches leg 3's frames and racks 1.5 m further from the track (a rider was carried off from head 2
+      into the strait), and names a row leg's sections in words (the playthrough's stall check ignores digits, so section
+      3 read as section 1 and two runs stopped 600 game seconds after section 1 laid). `--from bay-reached --to canopy`
+      passed twice in a row on 34069cce5 (`.look/playthrough/leg3fixe/`, `leg3fixf/`). Not tested on a device.
 
 **Checkpoint C (leg 3 playable).** Named proofs, run once: `npm run loop -- run` for one to three players with idle
 seconds per wait; the bot segment `--from bay-reached --to canopy`; `npm run test:net`; `npm run scenario --
