@@ -12,7 +12,6 @@ The one record of who is running what, and what the five-job limit is counted fr
 | --- | --- | --- | --- | --- | --- |
 | Canopy and leg 3's views (greybox leg 3 step 6) | The greybox route | claude/greybox-leg3-views | live session, Opus medium | 2026-11-24 08:20 | running |
 | Greybox leg 3 Checkpoint G proofs | The greybox route | neon/greybox-leg3-checkpoint-g | live session, Neon medium | 2026-11-24 08:20 | running |
-| Terrain mesh kit previz | Terrain clean-up | codex/terrain-mesh-kit-previz | live session, Sol medium | 2026-11-24 08:20 | running |
 
 ## Where the work stands
 
@@ -42,6 +41,8 @@ Cleaned on 24 November: every item from 5 to 19 November is in [the log](orchest
 - How many riders a passenger car holds and how cars are added (check [his answers](../decisions-rail.md#d-2026-11-16-rider-coach-a-and-rework) first).
 
 **His words** (The Boogler's copy): Button's line for `SHOP.kept[0]`; the first house resident's name and lines (placeholders are live); the "Steam" card reads "You got steam!" (recommended: leave it).
+
+**His pick:** the canyon mesh kit's style from [the previz sheet](../plans/terrain-clean/previz/canyon-mesh-kit-previz.jpg) (#2330): Chunky Sunshine blocks or Quieter Odyssey strata; the two read close, so a bolder second round is his to ask for. The terrain row waits on it.
 
 **For his eye:** the waiting Rail yoke reads as a thin outline in a glass box; the halt yard's forge fingerpost is a plain stake.
 
