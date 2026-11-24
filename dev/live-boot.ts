@@ -35,7 +35,11 @@ else
     ...['--enable-features=Vulkan', '--use-vulkan=swiftshader', '--use-webgpu-adapter=swiftshader'],
   );
 
-const browser = await chromium.launch({ args: flags, headless: true });
+// On Windows the full Chromium build, headless (dev/look/lib.ts browserChannel; LOOK_CHANNEL overrides): Playwright's
+// headless shell ships no dxcompiler.dll, so requestDevice fails there ("DynamicLib.Open: dxcompiler.dll Windows Error:
+// 87") before the game starts.
+const channel = process.env.LOOK_CHANNEL ?? (process.platform === 'win32' ? 'chromium' : undefined);
+const browser = await chromium.launch({ args: flags, headless: true, ...(channel ? { channel } : {}) });
 const failures: string[] = [];
 const pageErrors: string[] = [];
 const refused = new Set<string>(); // --offline: the hosts the page tried and did not get
