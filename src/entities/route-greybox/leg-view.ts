@@ -33,7 +33,7 @@ import { me } from '../../player/player.ts';
 import { camera } from '../../render/scene.ts';
 import { signBoard } from '../../render/sign-board.ts';
 import { playObjective } from '../../proto/mark.ts';
-import { LINE2, RAIL_LINES, legBuilt } from '../../sim/railway-lines.ts';
+import { LINE2, RAIL_LINES, legBuilt, trainPassesBy } from '../../sim/railway-lines.ts';
 import { LINE_SLOTS } from '../../sim/railway-trains.ts';
 import { TRAIN_PHASE } from '../../sim/railway-train.ts';
 import { trainStops } from '../../sim/railway-queries-trains.ts';
@@ -725,13 +725,16 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       },
       /** Into `things`: the standing pieces, the end board, the passed block signals and a row's departure boards. */
       draw(r: LegRows, wd: ReadWorld, joined: boolean) {
-        const open = departures.length ? trainStops(wd, sp.leg.line).length : 0;
+        const open = departures.length ? trainStops(wd, sp.leg.line).length : 0,
+          // An open stop a train stops at one way or the other (a head closed behind is passed both ways).
+          served = (k: number) =>
+            k < open && !(trainPassesBy(sp.leg.line, k, 1, open) && trainPassesBy(sp.leg.line, k, -1, open));
         if (open !== listed) {
           listed = open;
-          stopLines = halts.slice(0, open).map((h) => ({ t: h.name, size: 0.2 }));
+          stopLines = halts.filter((_h, k) => served(k)).map((h) => ({ t: h.name, size: 0.2 }));
         }
         for (const d of departures) {
-          if (d.stop >= open) continue;
+          if (!served(d.stop)) continue;
           geo.at(d.at, P);
           geo.world(d.at, sp.plat.lat + 1.5, q);
           show(d.board, q, geo.y(d.at) + sp.plat.up, P.uz, -P.ux, stopLines);
