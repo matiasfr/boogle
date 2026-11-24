@@ -1,13 +1,15 @@
-// The greybox route's built legs through ordinary inputs (docs/plans/greybox-route.md and greybox-leg2.md, step 5),
-// driven by RAIL_LEGS. Leg 1, the stack line: ride line 2 to the leg's first frame, then for each section take the kit
-// off the rack, feed the frame, wait out the lay, ride on to the new railhead and step off onto its platform, until High
-// Gorge is reached on foot. Leg 2: take the powered pick at the stair's head, open the incline's barrier, build the
+// The greybox route's built legs through ordinary inputs (docs/plans/greybox-route.md and greybox-leg2.md, step 5;
+// greybox-leg3.md, step 7), driven by RAIL_LEGS. Leg 1, the stack line: ride line 2 to the leg's first frame, then for
+// each section take the kit off the rack, feed the frame, wait out the lay, ride on to the new railhead and step off
+// onto its platform, until High Gorge is reached on foot. Leg 2: take the powered pick at the stair's head, open the incline's barrier, build the
 // incline the same way riding `ns` trains to each head and on to Bell Rock's lower deck, take the crystal seeds, ride
 // home the long way (`ns` to High Gorge, line 2 to the Village), walk to the West landing and build the bay cut, riding
-// `bay` trains to Bell Rock's upper platform. Prompts are pressed by id (`railway-leg-take-logs`, `-take-rails`, `-feed`,
-// `-pick`, `-gate`, `-seeds`). Each phase reads the rows first, so it resumes from `ring-joined`, `gorge-open`,
-// `gorge-mid` and `gorge-reached` (a seed starts at the Village). Inspection observes; it never seeds a world or moves a
-// player. A fall into the sea is a finding (no recovery).
+// `bay` trains to Bell Rock's upper platform. Leg 3: open the Canopy barrier on frame 1 there, build the three sections
+// riding `bay` trains over the strait to each head and on to Canopy Town, take the glider cloth round the buffers and
+// ride home on the same line to the West landing. Prompts are pressed by id (`railway-leg-take-logs`, `-take-rails`,
+// `-feed`, `-pick`, `-gate`, `-seeds`, `-canopy`, `-cloth`). Each phase reads the rows first, so it resumes from
+// `ring-joined`, `gorge-open`, `gorge-mid`, `gorge-reached` and `bay-reached` (a seed starts at the Village).
+// Inspection observes; it never seeds a world or moves a player. A fall into the sea is a finding (no recovery).
 import type { Bot } from '../bot.ts';
 import { legDone, legRow, routeRow } from '../../../src/sim/railway-queries-route.ts';
 import { account, aperture, rail, railAt, railPid, railRead, rw, trains } from '../rail-read.ts';
@@ -38,9 +40,11 @@ const ISLAND = 5;
 const legOf = (id: string) => RAIL_LEGS.findIndex((l) => l.id === id);
 const STACK = legOf('stack'),
   INCLINE = legOf('incline'),
-  BAY = legOf('bay-cut');
+  BAY = legOf('bay-cut'),
+  CANOPY = legOf('bell-canopy');
 const PICK = RAIL_GRANTS.findIndex((g) => g.id === 'pick'),
-  SEEDS = RAIL_GRANTS.findIndex((g) => g.id === 'seeds');
+  SEEDS = RAIL_GRANTS.findIndex((g) => g.id === 'seeds'),
+  CLOTH = RAIL_GRANTS.findIndex((g) => g.id === 'cloth');
 /** A leg's first halt on its sim line (the stop before its first head). */
 const fromStop = (L: RouteLeg) => L.railheadHalt - 1;
 /** High Gorge on line 2: the stack line's last halt. */
@@ -400,4 +404,51 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
     await buildRowLeg(BAY, 'bay cut');
   }
   await checkpoint('bay reached');
+
+  // ---------------------------------------------------------------- leg 3: Bell Rock to Canopy Town, and home
+  const canopy = RAIL_LEGS[CANOPY]!;
+  const canopyGate = canopy.sections[0]!.gate!;
+  const canopyEnd = canopy.railheadHalt + canopy.sections.length - 1;
+  const westLanding = legFrame(RAIL_LEGS[BAY]!, 0);
+  /** From the Village (where a seed starts): walk to the West landing and ride a bay train out to stop `to`. */
+  const rideOut = async (to: number, at: { x: number; z: number }, beat: string) => {
+    check(await bot.walk(westLanding.x / 100, westLanding.z / 100, 3), 'walked from the Village to the West landing');
+    await rowRide(canopy.line, 0, to, 'bay line');
+    await hopTo(at.x / 100, at.z / 100, beat);
+    await until(() => me.coyote > 0 && !me.swimming, `${beat}: standing`, 10000);
+  };
+  if (!legDone(rw(), CANOPY)) {
+    // Section 1's frame is Bell Rock's (frame 1 on the outward upper platform, the barrier on it); a later one stands
+    // on the head the last lay made.
+    const k = legRow(rw(), CANOPY).laid,
+      frame = legFrame(canopy, k);
+    if (!near(frame, 40))
+      await rideOut(
+        canopy.railheadHalt + k - 1,
+        frame,
+        k === 0
+          ? "stepped off at Bell Rock's upper platform by Canopy's first frame"
+          : `stepped off at Canopy head ${k}`,
+      );
+    if (!(route().gates & (1 << canopyGate))) {
+      await press('railway-leg-canopy', RAIL_GATES[canopyGate]!.at, 'open the Canopy barrier');
+      check(route().gates & (1 << canopyGate), 'the Canopy barrier is open');
+      await checkpoint('canopy barrier opened');
+    }
+    await buildRowLeg(CANOPY, 'canopy');
+  }
+  await checkpoint('canopy reached');
+  // The cloth post on the homeward deck round the buffers.
+  if (!granted(CLOTH)) {
+    const cloth = RAIL_GRANTS[CLOTH]!.at;
+    if (!near(cloth, 60)) await rideOut(canopyEnd, rowLever(canopy.line, canopyEnd), 'stepped off at Canopy Town');
+    await press('railway-leg-cloth', cloth, 'take the glider cloth');
+    check(granted(CLOTH), 'the room holds the glider cloth');
+    await checkpoint('cloth taken');
+  }
+  // Home on the same line: a bay train from Canopy Town to the West landing (the Notch barrier stays shut: leg 6).
+  await rowRide(canopy.line, canopyEnd, 0, 'bay line');
+  await hopTo(westLanding.x / 100, westLanding.z / 100, 'stepped off at the West landing');
+  await until(() => me.coyote > 0 && !me.swimming, 'standing at the West landing', 10000);
+  await checkpoint('canopy home');
 }

@@ -39,14 +39,16 @@ export const RAIL_STOPS = {
   'boiler-long': 'boiler installed',
   // The greybox route's legs (dev/look/bots/railway-legs.ts): leg 1 from `--from ring-joined`, `gorge-open` or
   // `gorge-mid`; leg 2 from `gorge-reached` or a later leg seed. Bell Rock is reached by the incline's last ride, the
-  // bay when the bay cut's first train brings the bot to Bell Rock's upper platform.
+  // bay when the bay cut's first train brings the bot to Bell Rock's upper platform. Leg 3 (greybox-leg3.md, step 7)
+  // from `bay-reached`: canopy once the bot, the glider cloth taken at Canopy Town, has ridden home to the West landing.
   gorge: 'gorge reached',
   bell: 'bell reached',
   bay: 'bay reached',
+  canopy: 'canopy home',
 } as const;
 export type RailStop = keyof typeof RAIL_STOPS;
 /** The greybox legs' stops (dev/look/bots/railway-legs.ts). */
-const LEG_STOPS: readonly RailStop[] = ['gorge', 'bell', 'bay'];
+const LEG_STOPS: readonly RailStop[] = ['gorge', 'bell', 'bay', 'canopy'];
 /** `--from <stage>`: an accepted `--rail-seed` server save that its `bot` eval resumes from (its `railFrom`).
  * Seeds are written per run through the real host's save path; there are no client fixtures to keep. */
 export const RAIL_FROM = {
@@ -66,8 +68,11 @@ export const RAIL_FROM = {
   'gorge-open': { railFrom: 'legs', after: 'ring-joined', bot: 'railway-legs-bot.ts' },
   'gorge-mid': { railFrom: 'legs', after: 'ring-joined', bot: 'railway-legs-bot.ts' },
   // Leg 2 (greybox-leg2.md, step 5): the pick, the barrier, the incline to Bell Rock, the seeds, the ride home and the bay
-  // cut, from High Gorge reached (the seed starts at the Village). The later leg seeds are not yet played from.
+  // cut, from High Gorge reached (the seed starts at the Village).
   'gorge-reached': { railFrom: 'legs', after: 'gorge', bot: 'railway-legs-bot.ts' },
+  // Leg 3 (greybox-leg3.md, step 7): the Canopy barrier at Bell Rock, the three sections to Canopy Town, the cloth and
+  // the ride home, from the bay cut laid (the seed starts at the Village). The other leg seeds are not played from.
+  'bay-reached': { railFrom: 'legs', after: 'bay', bot: 'railway-legs-bot.ts' },
 } as const satisfies Record<string, { railFrom: string; after: RailStop; bot: string }>;
 /** Beats both peers pass in a two-player run; the follower watches line two from the village. */
 export const RAIL_COOP_STOPS: readonly RailStop[] = [
