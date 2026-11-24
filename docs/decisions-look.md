@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-24 · Cliff kit scope: kit faces on walls within 40 m of a tread or rail or at the sea, colour and rim caps beyond; the shore's cove face is replaced with kit faces; the Sickle horizon, Needle Bell and props (loose boulders, works rocks, caves) are in the pass ([entry](#d-2026-11-24-cliff-kit-scope))
 - 2026-11-24 · Every cliff and rock wall in the world, the shore's included, takes the Chunky Sunshine kit's treatment, so they read as one palette and one world ([entry](#d-2026-11-24-chunky-every-cliff))
 - 2026-11-24 · The canyon kit's faces near the bridge sit flush with the wall, so the alcove stays in view from the top of the climb ([entry](#d-2026-11-24-canyon-faces-flush))
 - 2026-11-24 · The canyon mesh kit is Chunky Sunshine blocks: deep bevels, big sandstone faces, broken rim caps ([entry](#d-2026-11-24-canyon-kit-chunky-sunshine))
@@ -65,6 +66,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-11-01 · night stays light, moonlit ([entry](#d-2026-11-01-night-stays-light-moonlit))
 
 ## Decided
+
+- <a id="d-2026-11-24-cliff-kit-scope"></a>**2026-11-24, the cliff kit's scope** (owner, 24 November 2026, three tap answers on the [cliff-kit-everywhere](plans/cliff-kit-everywhere.md) plan's open questions). (1) The cove face: "Replace with kit faces" (recommended was keep it sculpted and recolour it): fully chunky like the canyon; the landing's walk and collider are re-tuned and re-tested in the shore step. (2) Far walls: "Yes, near walls only": kit faces where a wall's toe is within 40 m of a tread or rail, or at the sea; farther walls take the kit's colour and rim caps. (3) "Include them" (recommended was leave them out): the Sickle horizon backdrop, Needle Bell and props (loose boulders, works rocks, caves) are in this pass, so the whole world reads as one palette. The plan's steps take these on before the shore step is built.
 
 - <a id="d-2026-11-24-chunky-every-cliff"></a>**2026-11-24, the Chunky Sunshine kit for every cliff** (owner, 24 November 2026, in the live session, after the canyon kit's flush faces shipped (#2355): "Okay, that looks really great. Uh, do we have queued up to basically apply the same art treatment to all of the walls in the environment, are all the cliffs, not just one specific part? For example, now it feels inconsistent that we have these walls and then different ones near the shore. Um, they should feel like they're from the same sort of stylistic palate. Uh, or the same world at least."). Answers terrain-clean Part 3's "where next": the kit goes to every cliff and rock wall in the world, the shore's included, so they share one stylistic palette. Orchestrator's reading: a census of every cliff first (where rock shows, what a player sees from the paths and the sea, the draw and triangle budget), then area by area, each with matched stills; the [14 November](#d-2026-11-14-terrain-simple-geometry-cleanup-first) rules stand (simple walkable ground, the kit is scenery with colliders, never a new way up).
 

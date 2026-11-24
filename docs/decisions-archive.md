@@ -1542,6 +1542,18 @@ History for [decisions-characters.md](decisions-characters.md), verbatim.
 
 ## Archive: Graphics, water, sky and devices
 
+### Cliff kit everywhere answers, 24 November 2026
+
+Ruled in [the cliff kit entry](decisions-look.md#d-2026-11-24-cliff-kit-scope) (owner, 24 November 2026); moved word for word from [agent-calls](agent-calls.md). Confirmed: kit faces only near treads, rails and the sea. Overruled: the cove face is replaced with kit faces, and the Sickle horizon, Needle Bell and props are in scope.
+
+| Date | Call | Where | By | Why this pick | Status when archived |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-24 | New: Needle Bell is not a cliff for the kit pass; it stays pale stone | [cliff-kit-everywhere](plans/cliff-kit-everywhere.md#design-review-2026-11-24) | Cliff census, design review | the spire is the island's landmark, read from everywhere and set apart on purpose; owner question 3 | open |
+| 2026-11-24 | New: kit faces only on toe within 40 m of a tread or rail, or at the sea; farther walls take `rockLayers` colour and rim caps | [cliff-kit-everywhere](plans/cliff-kit-everywhere.md#design-review-2026-11-24) | Cliff census, design review | dressing every seen metre adds about 200,000 triangles a pass from the summit; from 40 m on the heightfield's facets read as texture; owner question 5 | open |
+| 2026-11-24 | Default: the cove face stays sculpted, recoloured, its foot and nose dressed with sea-cliff faces and shore rocks | [cliff-kit-everywhere](plans/cliff-kit-everywhere.md#design-review-2026-11-24) | Cliff census, design review | keeps its walkable south end and its tuned collider; owner question 1 | open |
+| 2026-11-24 | Default: the Sickle horizon keeps its colours | [cliff-kit-everywhere](plans/cliff-kit-everywhere.md#design-review-2026-11-24) | Cliff census, design review | distant backdrop with no colliders; owner question 2 | open |
+| 2026-11-24 | Default: small boulders, works rocks and caves are out of scope; ones at a dressed wall's foot are swapped for kit boulders; the shore hop keeps its collider | [cliff-kit-everywhere](plans/cliff-kit-everywhere.md#design-review-2026-11-24) | Cliff census, design review | props, not walls; the hop is a play object | open |
+
 ### The chopped tree, 18 November 2026
 
 Changed by [the V-notch entry](decisions-look.md#d-2026-11-18-chop-v-notch) (owner, 18 November 2026); moved word for word from [agent-calls](agent-calls.md).
