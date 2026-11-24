@@ -171,8 +171,25 @@ test('the menu lists the rows it always did: the house and leg 1 stages are tool
   );
   for (const stage of tooling) {
     // Leg 2's rows land at the usual spawn until step 4's stills check a landing (greybox-leg2.md).
-    if (!['incline-open', 'bell-reached', 'bay-open', 'bay-reached', 'canopy-open', 'canopy-mid', 'canopy-reached'].includes(stage))
+    if (
+      ![
+        'incline-open',
+        'bell-reached',
+        'bay-open',
+        'bay-reached',
+        'canopy-open',
+        'canopy-mid',
+        'canopy-reached',
+      ].includes(stage)
+    )
       assert.ok(jumpOf(stage)?.land, `${stage} resolves with its landing`);
     assert.ok(OFFERED_STAGES.includes(stage as never), `${stage} stays buildable by ?from=`);
   }
+});
+
+test("Canopy's stages land where step 6 has stills; canopy-open waits, as leg 2's Bell Rock rows do", () => {
+  // canopy-open's spot is Bell Rock's upper platform over the cut, which return-spot.ts (x and z alone, within 30 m)
+  // would also give a rider of the lower level's line (docs/plans/greybox-leg3.md, step 6).
+  assert.equal(jumpOf('canopy-open')?.land, undefined);
+  for (const stage of ['canopy-mid', 'canopy-reached']) assert.ok(jumpOf(stage)?.land, stage);
 });

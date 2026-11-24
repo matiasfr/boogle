@@ -18,6 +18,27 @@ import { Matrix4, Vector3 } from 'three';
 import * as placed from '../dev/level/prefab-colliders.ts';
 import { metadata, type LevelArtifact, type PrefabDef } from '../src/prefab/types.ts';
 import { MOVER } from '../dev/level/mover.ts';
+import * as THREE from 'three/webgpu';
+import { sourceFunction } from '../dev/level/source.ts';
+import * as lines from '../src/sim/railway-lines.ts';
+import * as rows from '../src/sim/railway-rows.ts';
+import * as progress from '../src/sim/railway-queries-route.ts';
+import { RING_S_HEAD } from '../src/sim/railway-ring-layout.ts';
+import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
+import { TRAIN_PHASE, trainStopsOf } from '../src/sim/railway-train.ts';
+import { Leg } from '../src/sim/railway-components.ts';
+import { buildSeedWorld } from '../src/sim/railway-seeds.ts';
+import * as path from '../src/entities/railway/line2-path.ts';
+import * as row from '../src/entities/railway/row-path.ts';
+import * as junctions from '../src/place/junctions.ts';
+import { KIT } from '../src/place/turnout.ts';
+import * as gorgeLayout from '../src/entities/route-greybox/massing.ts';
+import { AREA_CENTRES, LEG2_TEXT } from '../src/entities/route-greybox/leg2-layout.ts';
+import { isleGround } from '../src/content/levels/leg3.ts';
+import { siteExit } from '../src/place/site-clearance.ts';
+import { resident } from '../src/render/lod-level.ts';
+import { HEAD_OFFSET, PLAYER_R } from '../src/constants.ts';
+import canopy from '../content/built/levels/canopy.json' with { type: 'json' };
 
 validation.validateArtifact(artifact);
 const bell = validation.loadLevelArtifact(bellRaw, artifact.prefabs),
@@ -186,4 +207,223 @@ test('review (greybox leg 2 step 4): no standable surface under a leg 2 deck lea
         bad.push(`line ${line} s ${s} lat ${lat.toFixed(1)}: surface ${top.toFixed(2)} m, rail ${rail.toFixed(2)} m`);
       }
   assert.equal(bad.length, 0, `${bad.length} spots, first: ${bad.slice(0, 3).join('; ')}`);
+});
+
+// Greybox leg 3, step 6's review (Astra, on 87d7edf12): the leg view's lays and the route areas' mounts clear a body
+// standing where a solid goes on (route-greybox/clear.ts), Canopy's residency covers its whole isle and counts every
+// solid, and a row line's departure boards list only halts where a train stops. Each runs the view's own source.
+const clearFor = (position: THREE.Vector3) =>
+  sourceModule<typeof import('../src/entities/route-greybox/clear.ts')>(
+    fs.readFileSync('src/entities/route-greybox/clear.ts', 'utf8'),
+    {
+      THREE,
+      HEAD_OFFSET,
+      PLAYER_R,
+      me: { body: { position } },
+      siteExit,
+      outOf: sourceFunction('src/place/sites.ts', 'outOf', {}),
+      compiled: artifact,
+    },
+  );
+const ground = (value: unknown) =>
+  placed.resolvePlacedColliders(
+    validation.loadLevelArtifact(value, artifact.prefabs as unknown as Readonly<Record<string, PrefabDef>>),
+    artifact.prefabs as unknown as Readonly<Record<string, PrefabDef>>,
+  ).colliders;
+
+// Run the view's actual draw and solid transitions, recording the sign and physics boundaries.
+async function reachedView() {
+  const p = row.rowWorld(route.ROW_LINE.bay, 1300, 0, { x: 0, z: 0 });
+  const floor = placed.heightAt(
+    ground(bellRaw).flatMap((c) => c.volume.triangles),
+    p,
+  );
+  assert.ok(floor !== null);
+  const position = new THREE.Vector3(p.x, floor + PLAYER_R, p.z);
+  const signs = new Map<THREE.Group, string[]>();
+  const overlaps: number[] = [];
+  const slab = (ax: number, az: number, bx: number, bz: number, ya: number, yb: number, width: number) => {
+    const dx = bx - ax,
+      dz = bz - az,
+      run = Math.hypot(dx, dz);
+    const t = ((position.x - ax) * dx + (position.z - az) * dz) / (run * run);
+    if (t < 0 || t > 1 || Math.abs((position.x - ax) * dz - (position.z - az) * dx) / run > width / 2) return {};
+    const rail = ya + (yb - ya) * t;
+    if (position.y - PLAYER_R < rail && position.y + HEAD_OFFSET + PLAYER_R > rail - 0.4) overlaps.push(rail);
+    return {};
+  };
+  const source = fs
+    .readFileSync('src/entities/route-greybox/leg-view.ts', 'utf8')
+    .replace(/await Promise\.all\(\s*\[[\s\S]*?\],?\s*\)/, 'dependencies');
+  const { createLegView } = sourceModule<{ createLegView: (adapter: unknown, owner: unknown) => Promise<unknown> }>(
+    source,
+    {
+      THREE,
+      ...route,
+      ...lines,
+      ...rows,
+      ...progress,
+      ...gorgeLayout,
+      ...junctions,
+      ...path,
+      ...row,
+      KIT,
+      TRAIN_PHASE,
+      RING_S_HEAD,
+      LINE_SLOTS,
+      AREA_CENTRES,
+      trainStops: (_world: unknown, line: number) =>
+        trainStopsOf(
+          line,
+          true,
+          { joined: true, head: 2 },
+          route.RAIL_LEGS.map((l) => l.sections.length),
+        ),
+      canopyGround: isleGround,
+      bellPads: [],
+      areaLabels: new Map(),
+      ringIslandNear: { mounted: false },
+      me: { body: { position } },
+      camera: { position },
+      dependencies: [
+        { slab, addStatic: () => ({}) },
+        { onIsland: () => false },
+        { outOf: sourceFunction('src/place/sites.ts', 'outOf', {}) },
+      ],
+      ...clearFor(position),
+      signBoard: () => ({ mesh: new THREE.Group() }),
+      paintPlate: (s: { mesh: THREE.Group }, entries: { t: string }[]) =>
+        signs.set(
+          s.mesh,
+          entries.map((l) => l.t),
+        ),
+      createBoxBatch: () => ({ mesh: new THREE.Group(), begin() {}, commit() {}, box() {}, between() {} }),
+      playObjective() {},
+    },
+  );
+  const seed = buildSeedWorld('awake');
+  for (const [i, leg] of route.RAIL_LEGS.entries())
+    if (lines.legBuilt(i)) seed.w.mut(Leg, progress.legId(seed.w, i))!.laid = leg.sections.length;
+  await createLegView({ read: { whole: () => true, world: () => seed.w, tick: () => seed.t } }, { removeBody() {} });
+  return { signs, overlaps, floor };
+}
+
+test('the Canopy lay leaves a player standing on Bell Rock clear of the new deck', async () => {
+  const { overlaps, floor } = await reachedView();
+  assert.deepEqual(overlaps, [], `deck activated through a player on Bell Rock at height ${floor}`);
+});
+
+test('the completed bay line only advertises halts where a train can stop', async () => {
+  const { signs } = await reachedView();
+  const destinations = [...signs].filter(([mesh, text]) => mesh.visible && text.includes('Canopy Town'));
+  assert.ok(destinations.length);
+  const closed = lines.RAIL_LINES[route.ROW_LINE.bay]!.halts.find((h) => h.closesAt !== undefined)!;
+  assert.ok(!destinations.some(([, text]) => text.includes(closed.name)), `advertises closed ${closed.name}`);
+});
+
+// Drive a cold residency update with camera and player together, as on arrival from the sea.
+async function mountAt(position: THREE.Vector3) {
+  let update: (() => void) | undefined;
+  let describe: (() => Record<string, { solids: number }>) | undefined;
+  const pending: Promise<void>[] = [];
+  const enabled: string[] = [];
+  const overlaps: string[] = [];
+  const colliders = ground(canopy);
+  const instantiate = (_key: string, placement: { id: string }) => {
+    const solids = colliders.filter((c) => c.placement.id === placement.id);
+    return {
+      bodies: solids,
+      setEnabled(on: boolean) {
+        if (!on) return;
+        enabled.push(placement.id);
+        if (
+          solids.some(
+            (c) =>
+              placed.heightAt(c.volume.triangles, position) !== null && c.volume.centre.distanceTo(position) < PLAYER_R,
+          )
+        )
+          overlaps.push(placement.id);
+      },
+    };
+  };
+  const helpers = sourceModule<typeof import('../src/entities/route-greybox/leg2-draw.ts')>(
+    fs.readFileSync('src/entities/route-greybox/leg2-draw.ts', 'utf8'),
+    {
+      records: artifact,
+      loadLevelArtifact: validation.loadLevelArtifact,
+      LEG2_TEXT,
+      areaLabels: new Map(),
+      instantiate,
+    },
+  );
+  type Draw = typeof import('../src/entities/route-greybox/boxes.ts').drawGreyBoxes;
+  const draw = sourceFunction<Draw>('src/entities/route-greybox/boxes.ts', 'drawGreyBoxes', {
+    compiled: artifact,
+    gorgeSurfaces: () => new Map(),
+    createPrefabBatch: () => ({
+      mesh: new THREE.InstancedMesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial(), 100),
+    }),
+    instantiate,
+  });
+  sourceModule(fs.readFileSync('src/entities/route-greybox/index.ts', 'utf8'), {
+    productionRailway: true,
+    location: { search: '' },
+    AREA_CENTRES,
+    resident,
+    camera: { position },
+    me: { body: { position } },
+    defineKind() {},
+    routeAreas: new Map(),
+    spawn: (entity: { update?: () => void; describe?: typeof describe }) => {
+      if (entity.update) {
+        update = entity.update;
+        describe = entity.describe;
+      }
+      return entity;
+    },
+    createOwnedView: () => ({ root: new THREE.Group(), cleanup() {} }),
+    ...clearFor(position),
+    MOUNT_NEAR: 400,
+    FREE_MORE: 150,
+    canopyNear: sourceFunction<typeof import('../src/entities/route-greybox/leg2-layout.ts').coverNear>(
+      'src/entities/route-greybox/leg2-layout.ts',
+      'coverNear',
+      { MOUNT_NEAR: 400, ARRIVAL: 40 },
+    )(helpers.leg2Massing(canopy), AREA_CENTRES.canopy),
+    canopyMassing: () => helpers.leg2Massing(canopy),
+    canopyExtras: (owner: Parameters<typeof helpers.leg2Extras>[0]) => helpers.leg2Extras(owner, canopy),
+    bellExtras() {},
+    westExtras() {},
+    bellMassing() {},
+    westMassing() {},
+    drawGreyBoxes: draw,
+    precompile() {},
+    routeSceneryMounted() {},
+    background: (promise: Promise<void>) => pending.push(promise),
+  });
+  assert.ok(update);
+  update();
+  await Promise.all(pending);
+  assert.ok(describe);
+  return { enabled, overlaps, report: describe().canopy };
+}
+
+test('a swimmer arriving at the western beach finds its collider at the shoreline', async () => {
+  const beach = ground(canopy).find((c) => c.placement.id === 'canopy.beach-27')!;
+  const p = beach.volume.centre.clone();
+  assert.ok((placed.heightAt(beach.volume.triangles, p) ?? -1) > 0);
+  p.y = 0;
+  assert.ok((await mountAt(p)).enabled.includes(beach.placement.id));
+});
+
+test('a Canopy remount clears a player inside the platform before enabling its box', async () => {
+  const platform = ground(canopy).find((c) => c.placement.id === 'canopy.platform-out')!;
+  const { overlaps } = await mountAt(platform.volume.centre.clone());
+  assert.deepEqual(overlaps, []);
+});
+
+test('the Canopy residency report counts every mounted collider', async () => {
+  const p = AREA_CENTRES.canopy;
+  const { report } = await mountAt(new THREE.Vector3(p.x, 200, p.z));
+  assert.equal(report?.solids, ground(canopy).length);
 });
