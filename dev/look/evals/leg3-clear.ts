@@ -1,9 +1,10 @@
-// A greybox solid going on with a player standing in it (greybox leg 3, step 6's review: route-greybox/clear.ts).
-// `&clear=lay` (with --rail-seed canopy-open): feeds Canopy's first section through the real commands (take at Bell
-// Rock's rack, feed frame 1), then stands Buddy on Bell Rock's rock under leg 3's descent (bay s 1300, where the
-// slab's underside is under head height) and waits out the lay. `&clear=mount` (--rail-seed canopy-reached): frees
-// Canopy's area (Buddy 900 m away), puts Buddy inside the outward platform's box, and lets the area mount again. Each
-// prints `CLEAR` lines with Buddy's position before and after and ends the warm-up (window.__placeDone).
+// A greybox solid switching on with a player standing in it (greybox leg 3, step 6's reviews; route-greybox/clear.ts:
+// lift or wait, never push). `&clear=lay` (with --rail-seed canopy-open): feeds Canopy's first section through the real
+// commands (take at Bell Rock's rack, feed frame 1), then stands Buddy on Bell Rock's rock under leg 3's descent
+// (`&clearAt=s,lat`, by default bay s 1340, 2.25 m left of the row, the rim the re-check found) and waits out the lay.
+// `&clear=mount` (--rail-seed canopy-reached): frees Canopy's area (Buddy 900 m away), puts Buddy inside the outward
+// platform's box, and lets the area mount again. Each prints `CLEAR` lines with Buddy's position before and after and
+// ends the warm-up (window.__placeDone).
 //   npm run look -- --rail-seed canopy-open --eval dev/look/evals/leg3-clear.ts --query 'clear=lay' \
 //     --until window.__placeDone --cam -110,22,-805 --look -125,14,-830 --name l3-clear-lay
 const R = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
@@ -37,7 +38,9 @@ const until = async (ok: () => boolean, what: string, ms = 120000) => {
     await wait(50);
   }
 };
-const mode = new URLSearchParams(location.search).get('clear');
+const mode = new URLSearchParams(location.search).get('clear'),
+  // Where on Bell Rock's rock the lay finds you: bay metres and metres off the row (`&clearAt=s,lat`).
+  spot = (new URLSearchParams(location.search).get('clearAt') ?? '1340,-2.25').split(',').map(Number);
 const at = () => {
   const p = me.body!.position;
   return [+p.x.toFixed(2), +p.y.toFixed(2), +p.z.toFixed(2)];
@@ -75,10 +78,10 @@ background(
           `CLEAR fed ${row.logs}/${sec.logs} logs, ${row.rails}/${sec.rails} rails, laying ${row.start >= 0}`,
         );
       }
-      const p = rowWorld(ROW_LINE.bay, 1300, 0, { x: 0, z: 0 });
+      const p = rowWorld(ROW_LINE.bay, spot[0]!, spot[1]!, { x: 0, z: 0 });
       put(p.x, 14.6, p.z);
       await wait(1500);
-      console.log(`CLEAR standing ${JSON.stringify({ at: at(), rail: +rowY(ROW_LINE.bay, 1300).toFixed(2) })}`);
+      console.log(`CLEAR standing ${JSON.stringify({ at: at(), rail: +rowY(ROW_LINE.bay, spot[0]!).toFixed(2) })}`);
       await until(() => legRow(R.rw(), k).laid >= 1, 'the first section laid', 90000);
       await wait(1500);
       console.log(`CLEAR after the lay ${JSON.stringify({ at: at(), laid: legRow(R.rw(), k).laid })}`);
