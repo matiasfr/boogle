@@ -1401,8 +1401,9 @@ Quick barrel or the standard barrel lifted from the stand, its wheels running up
 The post's knob turns orange whenever any chip's line has a Ready part. **The bays:** each line's copy that is not on
 the table waits in its own bay with its door open and a plate in the line's colour (placeholders: line 2 brass at
 170°, the north–south line blue at 210°, the bay line teal at 230°), wearing its row: Quick the longer barrel and
-chimney, Strong its flatbed behind. A copy's solids switch on only once nobody stands in them; feet within a short step
-of the top are lifted onto it, and nobody is pushed sideways. **The trains:** a line's trains take its fit only while
+chimney, Strong its flatbed behind. A bay's solids that switch on where someone may stand (its door, its open leaves, a
+waiting engine, a copy and its flatbed) switch on together, only once neither you nor a friend stands in them; your
+feet within a short step of a top are lifted onto it, and nobody is pushed sideways. **The trains:** a line's trains take its fit only while
 standing at the line's own depot (High Gorge for the north–south line, the West landing for the bay line), with line
 2's platform beat on any change of row, a swap back included. A Quick train wears the longer barrel and chimney; a
 Strong train couples a timber kit flatbed behind its kit car. The flatbed carries the kit that rides on, up to one

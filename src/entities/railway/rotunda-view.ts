@@ -13,15 +13,16 @@ import {
   bayOccupants,
   COPY_AT,
   COPY_BAYS,
-  ROTUNDA_BLOCK,
-  ROTUNDA_KIT,
   rotundaBays,
   rotundaPieces,
   rotundaPose,
   rotundaShows,
+  sphereInBox,
+  CONTACT,
 } from '../../place/rotunda.ts';
 import { HEAD_OFFSET, PLAYER_R } from '../../constants.ts';
 import { me } from '../../player/state.ts';
+import { remotes } from '../../netplay/net.ts';
 import { ENGINE_WHEELS } from './engine.ts';
 
 type EngineKit = typeof import('./engine-kit.ts');
@@ -126,31 +127,6 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
   let rising = false;
   const matrix = pieces[0]!.rest.clone();
   const point = owner.root.position.clone();
-  function clearPlayer({ instance, colliders }: (typeof pieces)[number]) {
-    const body = me.body;
-    if (!body) return;
-    // As at the halt reveal, test BOTH body spheres against the authored boxes in their own frame. Like the
-    // bridge's clearance guard, do this before enabling collision, never let Rapier resolve a new solid through us.
-    const root = instance.root;
-    root.updateWorldMatrix(true, false);
-    const overlaps = colliders.some((box) => {
-      if (box.shape !== 'box') return false;
-      return [0, HEAD_OFFSET].some((up) => {
-        root.worldToLocal(point.set(body.position.x, body.position.y + up, body.position.z));
-        const dx = Math.max(0, Math.abs(point.x - box.at[0]) - box.half[0]);
-        const dy = Math.max(0, Math.abs(point.y - box.at[1]) - box.half[1]);
-        const dz = Math.max(0, Math.abs(point.z - box.at[2]) - box.half[2]);
-        return dx * dx + dy * dy + dz * dz < (PLAYER_R - 0.01) ** 2;
-      });
-    });
-    if (!overlaps) return;
-    // The flat apron on this road, in front of the door reveal and outside the pit/kerb. Transform its ground too:
-    // an elevated owner must not put the player down on the untransformed site's floor.
-    root.localToWorld(point.set(0, PLAYER_R + 0.025, ROTUNDA_KIT.doorR - ROTUNDA_BLOCK.reveal - PLAYER_R - 0.1));
-    body.position.set(point.x, point.y, point.z);
-    body.interpolatedPosition.set(point.x, point.y, point.z);
-    body.velocity.set(0, 0, 0);
-  }
   const shows = (stage: number, piece: (typeof pieces)[number]['piece']) => {
     if (stage >= 2 && piece.turn === -2 && piece.part === 'open') return true;
     if (stage >= 2 && piece.turn === -2 && piece.part === 'door') return false;
@@ -162,65 +138,71 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
     if (piece.part === 'door' && filled) return false;
     return rotundaShows(site, stage, piece);
   };
-  /** Garage step 4's rule for a copy's solids switching on where a player may stand (both of a bay's as one set): feet
-   * within STEP_UP of a solid's top are lifted onto it; anyone deeper keeps the set off until they are clear. Never a
-   * sideways push. Returns whether the set may switch on now. */
-  function copyClear(set: (typeof pieces)[number][]) {
-    const body = me.body;
-    if (!body) return true;
+  /** A bay's solids that switch on where a player may stand: its door, its open leaves, a waiting engine and a works
+   * copy with its flatbed (garage step 4; the working bay's door and leaves are the Roundhouse view's). Each bay's set
+   * switches on as one, by the copies' rule: feet within STEP_UP of a solid's top are lifted onto it; anyone else in
+   * it, this tab's player or a friend, keeps the set off until they are clear. Nobody is moved sideways. */
+  const guarded = (piece: (typeof pieces)[number]['piece']) =>
+    piece.part === 'waiting' ||
+    piece.part === 'open' ||
+    piece.part === 'copy' ||
+    piece.part === 'flatbed' ||
+    (piece.part === 'door' && piece.turn !== 0);
+  const sets = [...new Set(pieces.filter((p) => guarded(p.piece)).map((p) => p.piece.turn))].map((turn) =>
+    pieces.filter((p) => p.piece.turn === turn && guarded(p.piece)),
+  );
+  /** Some guarded piece stands with its solid still off: settle runs each frame until none does. */
+  let pending = false;
+  /** Whether a set may switch on now, lifting this tab's player onto it when their feet are within a step of a top. */
+  function clear(set: (typeof pieces)[number][]) {
+    // A friend's drawn pose stands where their collision proxy is (remote-player/index.ts poses both at its target).
+    const bodies = [...remotes.values()].flatMap((r) => (r.entered && r.avatar ? [r.avatar.position] : []));
     let lift = -Infinity,
       inside = false;
+    const mine = me.body?.position;
     for (const { instance, colliders } of set) {
       const root = instance.root;
       root.updateWorldMatrix(true, false);
       for (const box of colliders) {
         if (box.shape !== 'box') continue;
-        const hit = [0, HEAD_OFFSET].some((up) => {
-          root.worldToLocal(point.set(body.position.x, body.position.y + up, body.position.z));
-          const dx = Math.max(0, Math.abs(point.x - box.at[0]) - box.half[0]);
-          const dy = Math.max(0, Math.abs(point.y - box.at[1]) - box.half[1]);
-          const dz = Math.max(0, Math.abs(point.z - box.at[2]) - box.half[2]);
-          return dx * dx + dy * dy + dz * dz < (PLAYER_R - 0.01) ** 2;
-        });
-        if (!hit) continue;
-        root.worldToLocal(point.set(body.position.x, body.position.y, body.position.z));
+        const hit = (p: { x: number; y: number; z: number }) =>
+          [0, HEAD_OFFSET].some((up) => {
+            root.worldToLocal(point.set(p.x, p.y + up, p.z));
+            return sphereInBox(point.x, point.y, point.z, box.at, box.half);
+          });
+        if (bodies.some(hit)) return false;
+        if (!mine || !hit(mine)) continue;
+        root.worldToLocal(point.set(mine.x, mine.y, mine.z));
         const top = box.at[1] + box.half[1];
         if (point.y - PLAYER_R >= top - STEP_UP) lift = Math.max(lift, top);
         else inside = true;
       }
     }
     if (inside) return false;
-    if (lift > -Infinity) {
-      const root = set[0]!.instance.root;
-      root.localToWorld(point.set(0, lift, 0));
-      const y = point.y + PLAYER_R + 0.02;
+    const body = me.body;
+    if (body && lift > -Infinity) {
+      set[0]!.instance.root.localToWorld(point.set(0, lift, 0));
+      const y = point.y + PLAYER_R + CONTACT;
       body.position.y = y;
       body.interpolatedPosition.set(body.position.x, y, body.position.z);
       body.velocity.set(body.velocity.x, Math.max(0, body.velocity.y), body.velocity.z);
     }
     return true;
   }
-  /** Each bay's copy pieces (its engine's solid and plate, the flatbed), grouped once. */
-  const isCopy = (part: string) => part === 'copy' || part === 'flatbed';
-  const copySets = COPY_BAYS.map(({ bay }) => pieces.filter((p) => p.piece.turn === bay && isCopy(p.piece.part)));
-  /** Some copy piece stands with its solid still off: settleCopies runs each frame until none does. */
-  let pending = false;
-  /** Each bay's copy pieces that should stand now switch their solids on, or wait while someone is in them. */
-  function settleCopies() {
+  /** Each bay's guarded pieces that should stand now switch their solids on, or stay off while someone is in them. */
+  function settle() {
     if (!pending) return;
     pending = false;
-    for (const set of copySets) {
+    for (const set of sets) {
       const want = set.filter((p) => shows(shown, p.piece));
       if (want.every((p) => p.enabled)) continue;
-      const clear = copyClear(want);
+      const ok = clear(want);
       for (const p of want) {
-        p.held = !clear;
-        if (clear && !p.enabled) {
-          p.instance.setEnabled(true);
-          p.enabled = true;
-        }
+        p.held = !ok;
+        if (p.enabled !== ok) p.instance.setEnabled(ok);
+        p.enabled = ok;
       }
-      pending ||= !clear;
+      pending ||= !ok;
     }
   }
   const view = {
@@ -237,18 +219,14 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
         // Reset even an unfinished rise; unchanged pieces keep their record colliders.
         instance.root.position.y = rest.elements[13]!;
         const on = shows(stage, piece);
-        const copy = isCopy(piece.part);
-        if (
-          on &&
-          !entry.enabled &&
-          (piece.part === 'waiting' || piece.part === 'open' || (piece.part === 'door' && piece.turn !== 0))
-        )
-          clearPlayer(entry);
-        // A copy's solids switch on through settleCopies, below; off at once (nothing stands on it any more).
-        if (!copy || !on) {
+        // A guarded solid switches on through settle, below; off at once (nothing stands on it any more).
+        if (!guarded(piece) || !on) {
           instance.setEnabled(on);
           entry.enabled = on;
-        } else if (!entry.enabled) pending = true;
+        } else if (!entry.enabled) {
+          instance.setEnabled(false);
+          pending = true;
+        }
         instance.root.visible = on;
         if (batch) {
           batch.mesh.setMatrixAt(index, instance.root.visible ? rest : matrix.makeScale(0, 0, 0));
@@ -265,13 +243,13 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
         for (const m of e.short) m.visible = !c?.long;
         for (const m of e.long) m.visible = !!c?.long;
       }
-      settleCopies();
+      settle();
     },
     /** Garage step 4: the copies off the table, each wearing its line's row; a change re-stands the bays. A copy's
-     * door opens with it and its solids wait for anyone standing in it (settleCopies). */
+     * door opens with it and its solids wait for anyone standing in it (settle). */
     copies(list: readonly BayCopy[]) {
       const key = `${serving}|${list.map((c) => `${c.line}${+c.long}${+c.flatbed}`).join()}`;
-      if (key === copiesKey) return settleCopies();
+      if (key === copiesKey) return settle();
       copiesKey = key;
       copies = new Map(
         bayOccupants(site, { serving, copies: list.map((c) => c.line) }).copies.map((c) => [
@@ -295,7 +273,8 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
         if (
           piece.part === 'ruin' ||
           piece.part === 'waiting' ||
-          isCopy(piece.part) ||
+          piece.part === 'copy' ||
+          piece.part === 'flatbed' ||
           !shows(stage, piece) ||
           shows(shown, piece)
         )

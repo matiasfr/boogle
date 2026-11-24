@@ -178,8 +178,11 @@ function placeRider(r: Remote, rt: number, interpolated: boolean, dt = 0) {
   const step = dt / RIDE_BLEND_S;
   ride.bodyW = ride.bodyOn && !ride.leaving ? Math.min(1, ride.bodyW + step) : Math.max(0, ride.bodyW - step);
   const on = !!p && !!s && !ride.leaving && rt + INTERP_MS - ride.lastSeen <= RIDE_MAX_AGE_MS;
-  const at = on ? rideAt : ride.world;
-  const yaw = on ? rideAt.yaw : ride.worldYaw;
+  // A car parked under the land (y -60 and below -30, as car.ts drops this tab's own carry there: an uncoupled Strong
+  // flatbed or steel car) places nobody: the rider stays at their last world presence until the next packet.
+  const placed = on && p!.body.position.y > -30;
+  const at = placed ? rideAt : ride.world;
+  const yaw = placed ? rideAt.yaw : ride.worldYaw;
   if (!ride.drawn || on !== ride.on) {
     if (ride.drawn) ride.boarding = false;
     const shown = r.avatar;

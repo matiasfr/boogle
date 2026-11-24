@@ -2,6 +2,8 @@
 import type { XZ } from './home-station.ts';
 import { LINE2 } from '../sim/railway-lines.ts';
 import { ROW_LINE } from '../sim/railway-route.ts';
+/** The shared clearance (./site-clearance.ts, sites.ts's) the rotunda's solids switch on by. */
+export { CONTACT, sphereInBox } from './site-clearance.ts';
 
 export type RotundaKit = {
   rim: number;

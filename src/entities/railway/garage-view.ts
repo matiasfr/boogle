@@ -494,6 +494,8 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     // Garage step 4: the row the copy wore last (a watched trade fit's wheels run up from it), the table line shown,
     // and a bring in the air (its send time, 0 for none) on the bring revision it was sent on.
     fromRow = 0,
+    // The garage set inputState.held itself (open), so closing may clear it; a hold anyone else set is theirs.
+    ownsHold = false,
     wornRow = 0,
     tableShown = -1,
     bringing = 0,
@@ -526,7 +528,8 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
    * it never waits on the stand or lights the knob. */
   const swapPart = (id: PartId) => open && isInstall(id) && parts().some((p) => p.id === id && p.standing === 'swap');
   const offered = (): InstallId | null => {
-    if (open && isInstall(sel) && (readyPart(sel) || swapPart(sel))) return sel;
+    // A paid line's free Swap goes on from the screen, never from the stand (only a first fit waits there).
+    if (open && isInstall(sel) && readyPart(sel)) return sel;
     return (Object.keys(INSTALL_PART) as InstallId[]).find(readyPart) ?? null;
   };
   const activePart = () => (phase === 'idle' ? (offered() ?? (isInstall(sel) ? sel : 'long')) : momentPart);
@@ -1230,7 +1233,9 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     if (!open) return;
     open = false;
     holding = false;
-    inputState.held = false;
+    // Only the hold the garage took: a conversation or the fall that holds input keeps it.
+    if (ownsHold) inputState.held = false;
+    ownsHold = false;
     closeModal();
     // Someone else's install plays on in the world when this tab leaves the garage.
     if (phase === 'moment' && real && !mine) return;
@@ -1247,7 +1252,8 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   const api = {
     isOpen: () => open,
     open() {
-      if (open || !shown || !facts.boilerFitted || facts.tableBusy) return;
+      // Never while something else holds the input (a conversation, a card, the fall): it keeps control.
+      if (open || !shown || !facts.boilerFitted || facts.tableBusy || inputState.held) return;
       // The garage is the one modal while it is open, marked before it drops the pointer lock (openModal does), so
       // Pause does not take the lost lock for an Esc. Its keys and pad stay its own (src/features/garage.ts).
       if (!openModal({ passKeys: true })) return;
@@ -1258,7 +1264,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       sel = offered() ?? (trade() ? 'quick' : facts.boilerRev === 1 ? 'blast' : 'boiler');
       cat = sel === 'cradle' ? 'cargo' : 'engine';
       if (sel === 'long') ghostT = 0;
-      inputState.held = true;
+      inputState.held = ownsHold = true;
     },
     close,
     snap(): GarageSnap {
