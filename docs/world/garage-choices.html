@@ -212,14 +212,14 @@
   <main>
     <small
       >BOOGLE / DESIGN WORKBENCH / GARAGE STEP 4, STEP 1 · re-measured on main 9eccec7d6 · world v62 · 19 November
-      2026</small
+      2026 · refreshed to leg 3 as built (world v66, Checkpoint G) · 24 November 2026</small
     >
     <h1>Quick or Strong, on the lines as built</h1>
     <p>
       A per-line trade: <strong class="quick">Quick boiler</strong> (25 m/s, the same cars) or
       <strong class="strong">Strong boiler</strong> (20 m/s, one more car), one price, swaps free. This page asks
       whether that trade means anything on the North–south (<code>ns</code>) and Bay (<code>bay</code>) lines that
-      greybox leg 2 built, and what would make Strong pay without new freight. It is an editable design model, not the
+      greybox legs 2 and 3 built, and what makes Strong pay without new freight. It is an editable design model, not the
       garage UI or a played route. The plan it serves is <a href="../plans/garage-step4.md">garage-step4.md</a> (step
       1).
     </p>
@@ -237,8 +237,16 @@
       Each line runs two trains between its depot (halt 0) and Bell Rock, nonstop unless a rider asks for head 1. Each
       leg is two sections of 20 logs + 20 rails. One train carries a whole section's kit, and the rider goes with that
       kit: section 1's rack is at the depot, and the player rides the section 2 kit train to head 1. Once a leg is laid,
-      the line has no towns, no riders and no freight. The trade is offered at the leg's last lay
-      (<code>bell-reached</code>, <code>bay-reached</code>), so it never applies while its own line is being built.
+      the line has no towns, no riders and no freight. The owner's answer of 24 November
+      (<a href="../decisions-rewards.md#d-2026-11-24-garage-step4-strong-window">option A</a>): the North–south trade
+      opens at the incline's last lay (<code>bell-reached</code>), the Bay trade at the bay cut's <b>first</b> lay
+      (<code>bay-mid</code>), so a Bay fit is in place before leg 3's kit runs ahead.
+    </p>
+    <p id="felt">
+      <b>Where Strong is felt, line by line.</b> <span class="strong">Bay line</span>: on leg 3 only, while it is built
+      (a Strong train carries two sections' kit and holds at the railhead): 13.5 s over Quick, measured below; nowhere
+      after leg 3 is laid. <span class="strong">North–south line</span>: nowhere yet (the incline is laid when the trade
+      opens, and its next leg, the causeway, is one section and not built), so its screen reads "Nothing to build".
     </p>
     <div id="lines" class="grid"></div>
 
@@ -273,17 +281,115 @@
     </p>
     <div class="scroll"><table id="variants"></table></div>
 
-    <h3 style="margin-top: 24px">Leg 3 on the Bay line: where a hold could pay</h3>
+    <h3 style="margin-top: 24px">Leg 3 on the Bay line: what Checkpoint G measured</h3>
     <section>
       <p>
-        <span class="tag a">ARITHMETIC</span> Leg 3 is not built, so this is the only number on the page that describes
-        a future route. Section <i>k</i>'s rack stands at its start. After a lay, the players stand at the section's
-        rack and wait for the next kit train to come from the West landing, then ride it one section on. With
-        <b>Strong as a hold</b>, the train that brought section 1's kit also carries section 2's and stands at the
-        railhead until section 1 is laid, so section 2's wait is only the hop. Section 3 is waited for as today: the
-        second train cannot stand at the same railhead (an assumption, unmeasured). The best case is assumed throughout:
-        a loaded kit train leaves the depot the moment it is needed. The extra-wait input below adds a late train (leg
-        2's worst settled wait was 107.5 s, measured).
+        <span class="tag m">MEASURED</span> Leg 3 is built (v66): a Strong train loads two sections' bills at the West
+        landing and holds at the railhead for the next lay, up to 1,200 ticks, yielding to an assigned ask or a
+        follower. <code>dev/sim/leg3-trade.ts</code> on v66, solo means over eight start offsets (0 to 525 ticks by
+        75), from opening the Canopy gate to leg 3's third lay
+        (<a href="../reports/greybox-leg3-checkpoint-g.md">Checkpoint G report</a>). A pair gives the same figures to
+        the tick.
+      </p>
+      <div class="scroll">
+        <table id="g">
+          <thead>
+            <tr>
+              <th>Fitted at</th>
+              <th>Standard</th>
+              <th class="quick">Quick</th>
+              <th class="strong">Strong</th>
+              <th>Strong vs Quick</th>
+              <th>Strong vs Standard</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th><code>bay-mid</code> (the bay cut's first lay)</th>
+              <td class="n">343.8 s<br /><small>333.6–345.9</small></td>
+              <td class="n quick">301.6 s<br /><small>292.0–304.3</small></td>
+              <td class="n strong">288.1 s<br /><small>278.3–290.6</small></td>
+              <td class="n"><b>+13.5 s</b></td>
+              <td class="n">+55.7 s</td>
+            </tr>
+            <tr>
+              <th><code>bay-reached</code> (the bay cut's last lay)</th>
+              <td class="n">258.1 s<br /><small>226.0–294.2</small></td>
+              <td class="n quick">232.6 s<br /><small>207.7–261.7</small></td>
+              <td class="n strong">250.5 s<br /><small>194.8–294.2</small></td>
+              <td class="n"><b>−17.9 s</b></td>
+              <td class="n">+7.7 s</td>
+            </tr>
+            <tr>
+              <th><code>bay-reached</code>, offset 0 only</th>
+              <td class="n">256.0 s</td>
+              <td class="n quick">222.1 s</td>
+              <td class="n strong">194.8 s</td>
+              <td class="n">+27.3 s</td>
+              <td class="n">+61.2 s</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <small
+        >Means over the eight offsets; the small line is the min–max total over them (the report's per-offset ranges).
+        Strong vs Quick ranges 12.2 to 13.7 s over the offsets at <code>bay-mid</code>. Counted from the fit at
+        <code>bay-mid</code>, with the bay cut's last section included: Standard 389.9 s, Quick 347.2 s, Strong 334.7 s
+        (+12.6 s over Quick).</small
+      >
+      <p>
+        <b>Why the window closes at <code>bay-reached</code>.</b> When the bay cut's last section lays, section 1's kit is
+        already on Bell Rock's rack, and within 7.5 s a standard train has left the West landing with section 2's kit. A
+        Strong fit after that finds one bill left to load, and a solo room is then at Bell Rock, about 2 km from the post.
+      </p>
+      <div class="scroll">
+        <table id="options">
+          <thead>
+            <tr>
+              <th>Option</th>
+              <th>What it changes</th>
+              <th>Strong vs Quick</th>
+              <th>Strong vs Standard</th>
+              <th>Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>A. Offer the Bay trade at the bay cut's first lay · <b>the owner's pick, 24 November</b></th>
+              <td>One constant: <code>TRADE_OPENS.bay = 1</code></td>
+              <td class="n">+13.5 s</td>
+              <td class="n">+55.7 s</td>
+              <td>Quick is offered while the open Bay line is one section long: 4.5 s a ride, then 10.5 s, then about 22 s with leg 3</td>
+            </tr>
+            <tr>
+              <th>B. Leg 3's kit loads only once the Canopy barrier is open</th>
+              <td>Reverses leg 3's "kit runs ahead"; a bump</td>
+              <td class="n">+24.5 s</td>
+              <td class="n">+57.0 s</td>
+              <td>Every room about 100 s slower on leg 3: Standard +104.7 s, Quick +97.8 s, Strong +55.3 s</td>
+            </tr>
+            <tr>
+              <th>C. No change (offer at <code>bay-reached</code>)</th>
+              <td>Nothing</td>
+              <td class="n">−17.9 s</td>
+              <td class="n">+7.7 s</td>
+              <td>Strong is a trap for a solo room</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <h3 style="margin-top: 24px">Best case, no kit ahead · the 19 November arithmetic, kept as an input</h3>
+    <section>
+      <p>
+        <span class="tag a">ARITHMETIC</span> The model this page used before leg 3 was built, kept as a labelled input.
+        It has no kit running ahead: section <i>k</i>'s rack stands at its start, and after a lay the players wait for
+        the next kit train from the West landing and ride it one section on. With the hold, the train that brought
+        section 1's kit also carries section 2's, so section 2's wait is only the hop. A loaded kit train leaves the
+        depot the moment it is needed. On leg 3's built cuts this method gives 291, 248 and 221 s of train time
+        (standard, Quick, the hold: <a href="../plans/greybox-leg3.md">greybox-leg3.md</a>); the defaults below are
+        equal thirds. It promised more than the measured table above, because the built route's kit runs ahead.
       </p>
       <div class="grid">
         <div>
@@ -318,7 +424,7 @@
       <label
         >Bills
         <select id="bills">
-          <option value="built" selected>Built greybox kit (main, v62)</option>
+          <option value="built" selected>Built greybox kit (main, v66)</option>
           <option value="old">Old stand-in bills (10/20-footing model, 17 November)</option>
         </select></label
       ><label>Steel landed from the works · built 12 <input id="landed" type="number" min="0" value="12" /></label
@@ -365,11 +471,12 @@
       </section>
       <section>
         <h3>Quick boiler / Strong boiler</h3>
-        Ready: each line at its own leg's last lay (North–south at <code>bell-reached</code>, Bay at
-        <code>bay-reached</code>) + 1 steel the first time. Chosen at Home's Roundhouse with the line's copy on the
+        Ready: North–south at the incline's last lay (<code>bell-reached</code>), Bay at the bay cut's first lay
+        (<code>bay-mid</code>, the owner's option A) + 1 steel the first time. Chosen at Home's Roundhouse with the line's copy on the
         table; taken by the line's next train standing at its depot (High Gorge, the West landing). Swaps free.<small
-          >Planned, not built: garage-step4.md. Strong's car carries nothing on these lines until a freight rule or a
-          variant above gives it a load.</small
+          >Planned: garage-step4.md (rules in step 2, the screen in step 3). Strong's car is leg 3's second bill and
+          hold; the third readout is "Kit a trip" (1 → 2 sections), or "Nothing to build" where no leg the line
+          carries kit for has two sections still to lay.</small
         >
       </section>
       <section>
@@ -429,7 +536,9 @@
     </p>
     <p>
       This page cannot establish fun, how often a room rides each line, or leg 3's real waits. No character copy.
-      Placeholders: "Nothing to haul yet", "Later" (the plan's).
+      Placeholders: "Kit a trip", "Nothing to build", "Swap", "Kit flatbed" (the plan's; "Nothing to haul yet" and
+      "Cargo car" are retired). Leg 3's figures are Checkpoint G's (<code>dev/sim/leg3-trade.ts</code>, v66, 24
+      November).
     </p>
   </main>
   <script>
@@ -461,7 +570,7 @@
         gaps: [529, 883],
         worst: 1075,
         kitTicks: 352,
-        next: 'leg 3, Bell Rock to Canopy Town: three sections of 20 logs + 20 rails, kit loaded at the West landing (specified, rules not built)',
+        next: 'leg 3, Bell Rock to Canopy Town: three sections of 20 logs + 20 rails, kit loaded at the West landing (built, v66: a Strong train carries two bills and holds at the railhead)',
         felt: "Often: it is Home's shortcut to Bell Rock, and its depot is 158 m (about 28 s on foot) from the garage post, so a room can fit, walk and ride the train it chose.",
       },
     ];
@@ -512,9 +621,11 @@
       const F = built.map(lineFacts);
       // ---- The answer.
       $('answer').innerHTML =
-        `<h2 style="margin-top:0">The answer: not on the lines as built</h2>` +
-        `<p><b>Strong never matters on <code>ns</code> or <code>bay</code> today, and Quick barely does.</b> Strong is the standard 20 m/s engine with an empty car: it changes nothing a player can time, so it is never better than Quick and never worse than not fitting. Quick is never worse than Strong; it saves <b>${s1(F[0].ride - F[0].rideQ)} s</b> (North–south) and <b>${s1(F[1].ride - F[1].rideQ)} s</b> (Bay) on a whole-line ride, about <b>${s1(F[0].w - F[0].wq)} s</b> and <b>${s1(F[1].w - F[1].wq)} s</b> more on the mean wait for a train, the same at 1, 2 and 3 players. Nothing on these lines is waited for but the ride: the trade opens at each leg's last lay, after the only kit the lines carry.</p>` +
-        `<p>So as planned the choice is Quick-or-nothing, worth about a quarter-minute a trip on the Bay line and rarely met on the North–south line. No variant below makes Strong pay on the North–south line without freight. One does on the Bay line, once leg 3 exists: <b>Strong as a hold</b>, with a second section's kit aboard (<a href="#rec">recommendation</a>).</p>`;
+        `<h2 style="margin-top:0">The answer: Strong pays on leg 3 only, if it is fitted at the bay cut's first lay</h2>` +
+        `<p><b>Measured (Checkpoint G, v66):</b> fitted at <code>bay-mid</code>, Strong saves <b>13.5 s</b> over Quick and 55.7 s over standard across leg 3, solo or pair. Fitted at <code>bay-reached</code> it is 17.9 s slower than Quick. The owner chose to open the Bay trade at <code>bay-mid</code> (24 November). After leg 3 is laid, Strong holds nowhere on the built route, and the free swap carries the call: <b>Strong while the Bay line builds, Quick after</b>. On the North–south line Strong is never felt yet.</p>` +
+        `<h3>Outside leg 3, the 19 November reading still holds</h3>` +
+        `<p><b>Strong never matters on <code>ns</code> or <code>bay</code> today, and Quick barely does.</b> Strong is the standard 20 m/s engine with an empty car: it changes nothing a player can time, so it is never better than Quick and never worse than not fitting. Quick is never worse than Strong; it saves <b>${s1(F[0].ride - F[0].rideQ)} s</b> (North–south) and <b>${s1(F[1].ride - F[1].rideQ)} s</b> (Bay) on a whole-line ride, about <b>${s1(F[0].w - F[0].wq)} s</b> and <b>${s1(F[1].w - F[1].wq)} s</b> more on the mean wait for a train, the same at 1, 2 and 3 players. Outside leg 3 nothing on these lines is waited for but the ride.</p>` +
+        `<p>So as planned the choice is Quick-or-nothing, worth about a quarter-minute a trip on the Bay line and rarely met on the North–south line. No variant below makes Strong pay on the North–south line without freight. One does on the Bay line, and leg 3 built it: <b>Strong as a hold</b>, with a second section's kit aboard (<a href="#rec">recommendation</a>, measured <a href="#g">above</a>).</p>`;
       // ---- Per-line cards.
       $('lines').innerHTML = built
         .map((l, i) => {
@@ -595,7 +706,7 @@
             "Never: the North–south line's legs are laid when the trade opens, and its next leg (causeway) is one section",
             `Nothing today (leg 2 is laid; on a two-section leg whose first rack is the depot it would save 0). On leg 3: about ${s1(holdGain)} s over Quick, best case; more with a late kit train`,
             'Yes, on purpose: worse than Quick on every ride, better while a 3+-section leg is built; swaps are free',
-            "Sim: the leg-line load bound becomes two bills on a Strong train; a railhead hold in the stand; the conservation and kit-carrier checks; whether two trains can stand at one railhead (unmeasured); a world bump. Pays only once leg 3's rules are built, so it belongs in leg 3's plan",
+            "Sim: the leg-line load bound becomes two bills on a Strong train; a railhead hold in the stand; the conservation and kit-carrier checks; whether two trains can stand at one railhead (unmeasured); a world bump. Built with leg 3 (v66); measured +13.5 s over Quick when fitted at bay-mid",
           ],
           [
             'C. Kit per trip: every car carries half a section (20 units), so a standard or Quick train takes two trips a section and Strong one',
@@ -616,10 +727,11 @@
         '</tbody>';
       // ---- Recommendation.
       $('rec').innerHTML =
-        `<h2 style="margin-top:0">Recommended: variant B, built with leg 3's rules</h2>` +
+        `<h2 style="margin-top:0">Variant B was built with leg 3's rules (v66); the owner chose option A for its window</h2>` +
+        `<p><b>As built and measured</b>: the hold pays 13.5 s over Quick when the Bay line is fitted at <code>bay-mid</code>, against the arithmetic's best case below, because the kit runs ahead. The recommendation that follows is the 19 November one, kept as written.</p>` +
         `<p><b>Strong as a hold</b> is the only variant that makes Strong pay on today's route without new freight, and it does so on the Bay line only: about ${s1(holdGain)} s over Quick across leg 3 in the best case (arithmetic), with Quick still winning every ride, so the free swap becomes a real call: Strong while the line builds, Quick after. It uses kit and rules that exist (the kit rides ahead, the depot hold) and needs no new car meaning. Its cost: a sim change to the kit load bound and a railhead hold, the checks that go with them, and a world bump; and it is worth nothing until leg 3's rules exist, so it goes in that plan, not in garage step 4's step 2.</p>` +
         `<p><b>What that means for step 4 now</b> (the plan's open question 1, the owner's call): until leg 3, Strong is dead on both lines. Offering both tiles now, with "Nothing to haul yet", is honest but offers a choice with one right answer. I'd show Strong as "Later" on the Bay line until leg 3 brings the hold, and on the North–south line until the freight brief gives it a load. Variant A pays nothing at 1–3 players and reverses a decided call. Variant C costs more and slows the built legs for an unmeasured gain.</p>` +
-        `<small>The ${s1(holdGain)} s is a best case on stand-in feed and lay times, a future leg and an assumed hold; leg 3's checkpoint would measure it.</small>`;
+        `<small>The ${s1(holdGain)} s is a best case on stand-in feed and lay times with no kit ahead; Checkpoint G measured 13.5 s (<a href="#g">table</a>).</small>`;
       // ---- Steel timeline.
       const old = $('bills').value === 'old';
       let pool = n('landed') - n('cradle') - n('bigPrice');
@@ -655,7 +767,7 @@
         area: 5,
         label: 'The incline and the bay cut (Bell Rock)',
         builtNote: 'BUILT',
-        kit: "Incline 2 sections + bay cut 2 sections, each 20 logs + 20 rails; no footings, no steel. The trade opens on each line at its leg's last lay",
+        kit: "Incline 2 sections + bay cut 2 sections, each 20 logs + 20 rails; no footings, no steel. The North–south trade opens at the incline's last lay, the Bay trade at the bay cut's first",
         allowanceMin: 30,
         oldBill: '12 logs · 28 rails · 44 footings · 52 steel · 4 copper · 2 crystal',
         oldSteel: 52,
@@ -664,7 +776,7 @@
       {
         area: 6,
         label: 'Leg 3: Bell Rock to Canopy Town',
-        builtNote: 'SPECIFIED, RULES NOT BUILT',
+        builtNote: 'BUILT (v66)',
         kit: '3 sections × (20 logs + 20 rails) on the Bay line; no steel',
         allowanceMin: 42,
         oldBill: '48 logs · 36 rails · 24 footings · 24 steel · 24 fibre',

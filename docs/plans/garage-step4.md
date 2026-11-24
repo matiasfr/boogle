@@ -262,7 +262,7 @@ guard. Stages 3a and 3b stay moved out (19 November call 17).
 Each step leaves `node dev/ship-check.ts` green. Model rows are from `npm run models` (24 November). Step 2 ships
 before step 3. Step 3 holds on question 1.
 
-- [ ] **1. The 2D page, refreshed to leg 3 as built (S; docs).** `docs/world/garage-choices.html`: the leg 3
+- [x] **1. The 2D page, refreshed to leg 3 as built (S; docs).** `docs/world/garage-choices.html`: the leg 3
       calculator's "ARITHMETIC / leg 3 is not built" becomes Checkpoint G's measured table (the three rows above, with
       the per-offset ranges from the report); the three options with their figures; the trade price 1; the greybox
       bills; the steel supply after 12 set to 0 (the built Works); a line per line saying where Strong is felt (bay:
