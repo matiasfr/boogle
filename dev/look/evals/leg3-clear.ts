@@ -1,4 +1,4 @@
-// A laid deck's slab switching on where a player stands (greybox leg 3, step 6's reviews; route-greybox/clear.ts:
+// A laid deck's slab switching on where a player stands (greybox leg 3, step 6's reviews; src/place/clearance.ts:
 // lift or wait, never push). `&clear=lay` (with --rail-seed canopy-open): feeds Canopy's first section through the real
 // commands (take at Bell Rock's rack, feed frame 1), then stands Buddy on Bell Rock's rock under leg 3's descent
 // (`&clearAt=s,lat`, by default bay s 1340, 2.25 m left of the row, the rim the re-check found) and waits out the lay.

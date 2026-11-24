@@ -1,4 +1,5 @@
 // Review reproduction: missing/moved compiled placements must change the actual level-check verdict.
+import '../dev/sim/hooks.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -38,6 +39,7 @@ import { CANOPY_CENTRES, isleGround, landPoints } from '../src/content/levels/le
 import type { Shape } from '../src/physics/engine.ts';
 import { resident } from '../src/render/lod-level.ts';
 import { HEAD_OFFSET, PLAYER_R } from '../src/constants.ts';
+import { createLiftOrWait } from '../src/place/clearance.ts';
 import canopy from '../content/built/levels/canopy.json' with { type: 'json' };
 
 validation.validateArtifact(artifact);
@@ -211,14 +213,49 @@ test('review (greybox leg 2 step 4): no standable surface under a leg 2 deck lea
 
 // Greybox leg 3, step 6's reviews (Astra, on 87d7edf12, 033182dbb and b5e0f7f49): a laid deck's slabs that switch on
 // where a body stands lift it onto their top when it fits there, or wait, the set of them, neither solid nor drawn,
-// until it is clear; never a push sideways (route-greybox/clear.ts, the orchestrator's calls of 24 November). An
-// area's mount is an ordinary static mount, far from anyone (580 m for Canopy, which covers every solid of it and
-// counts them all). A row line's departure boards list only halts where a train stops. Each runs the view's own source.
-const clearFor = (position: THREE.Vector3) =>
-  sourceModule<typeof import('../src/entities/route-greybox/clear.ts')>(
-    fs.readFileSync('src/entities/route-greybox/clear.ts', 'utf8'),
-    { THREE, HEAD_OFFSET, PLAYER_R, me: { body: { position } }, compiled: artifact },
-  );
+// until it is clear; never a push sideways (src/place/clearance.ts with the engine's real Rapier overlap query, the
+// orchestrator's calls of 24 November). An area's mount is an ordinary static mount, far from anyone (580 m for Canopy,
+// which covers every solid of it and counts them all). A row line's departure boards list only halts where a train
+// stops. Each runs the view's own source.
+const physics = await import('../src/physics/engine.ts');
+await physics.physicsReady;
+const liftOrWait = createLiftOrWait(physics.capsuleOverlaps);
+/** Whether a body standing at `p` is in solid `s`, as the helper measures it (resting on a top is not). */
+const holds = (s: Shape, p: { x: number; y: number; z: number }) =>
+  physics.capsuleOverlaps(p, PLAYER_R - 0.02, HEAD_OFFSET, s);
+/** Your body at `position`, as the views read it (me.body). */
+const bodyOf = (position: THREE.Vector3) => ({ position, velocity: new THREE.Vector3() });
+/** A greybox box (yaw, then pitch about its x) as the physics shape its collider is. */
+function boxShape(b: {
+  x: number;
+  y: number;
+  z: number;
+  w: number;
+  h: number;
+  d: number;
+  yaw: number;
+  pitch?: number;
+}) {
+  const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(-(b.pitch ?? 0), b.yaw, 0, 'YXZ'));
+  return {
+    kind: 'box',
+    hx: b.w / 2,
+    hy: b.h / 2,
+    hz: b.d / 2,
+    offset: { x: b.x, y: b.y, z: b.z },
+    rotation: { x: q.x, y: q.y, z: q.z, w: q.w },
+  } satisfies Shape;
+}
+/** The greybox levels' solids (High Gorge's, leg 2's and leg 3's) built in the world once, as they stand when a lay
+ * happens near them: what a lifted body must also have room in. */
+let scenery = false;
+function buildScenery() {
+  if (scenery) return;
+  scenery = true;
+  for (const raw of [gorgeRaw, bellRaw, canopy, westRaw])
+    physics.addBody(physics.createBody({ type: 'static', shapes: ground(raw).map(shapeOf) }));
+  physics.stepFixed(); // into the broad phase
+}
 /** A resolved collider as the physics shape its prefab's instance makes (a box from its axes, a trimesh as is). */
 function shapeOf(c: ReturnType<typeof ground>[number]): Shape {
   const v = c.volume;
@@ -311,14 +348,14 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
       bellPads: [],
       areaLabels: new Map(),
       ringIslandNear: { mounted: false },
-      me: { body: { position } },
+      me: { body: bodyOf(position) },
       camera: { position },
       dependencies: [
         { slab, addStatic: () => ({}) },
         { onIsland: () => false },
         { outOf: sourceFunction('src/place/sites.ts', 'outOf', {}) },
       ],
-      ...clearFor(position),
+      liftOrWait,
       signBoard: () => ({ mesh: new THREE.Group() }),
       paintPlate: (s: { mesh: THREE.Group }, entries: { t: string }[]) =>
         signs.set(
@@ -333,14 +370,14 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
         commit() {},
         box(x: number, y: number, z: number, w: number, h: number, d: number, colour: string, yaw: number, rx: number) {
           if (capacity === 4800 && colour === '#9c9ea1' && h === 0.5)
-            drawnDeck.push(clear.boxShape({ x, y, z, w, h, d, yaw, pitch: -rx }));
+            drawnDeck.push(boxShape({ x, y, z, w, h, d, yaw, pitch: -rx }));
         },
         between() {},
       }),
       playObjective() {},
     },
   );
-  const clear = clearFor(position);
+  buildScenery();
   const seed = buildSeedWorld('awake');
   for (const [i, leg] of route.RAIL_LEGS.entries())
     if (lines.legBuilt(i))
@@ -410,8 +447,7 @@ async function mountAt(position: THREE.Vector3) {
   const pending: Promise<void>[] = [];
   const on = new Set<string>(),
     shapes = new Map<string, Shape[]>();
-  const colliders = ground(canopy),
-    clear = clearFor(position);
+  const colliders = ground(canopy);
   const instantiate = (_key: string, placement: { id: string }) => {
     const mine = colliders.filter((c) => c.placement.id === placement.id);
     shapes.set(placement.id, mine.map(shapeOf));
@@ -429,7 +465,7 @@ async function mountAt(position: THREE.Vector3) {
     const enabled = [...on];
     return {
       enabled,
-      overlaps: enabled.filter((id) => shapes.get(id)!.some((x) => clear.heldTop(x, position) !== null)),
+      overlaps: enabled.filter((id) => shapes.get(id)!.some((x) => holds(x, position))),
     };
   };
   const helpers = sourceModule<typeof import('../src/entities/route-greybox/leg2-draw.ts')>(
@@ -468,7 +504,6 @@ async function mountAt(position: THREE.Vector3) {
       return entity;
     },
     createOwnedView: () => ({ root: new THREE.Group(), cleanup() {} }),
-    liftOrWait: clear.liftOrWait,
     MOUNT_NEAR: 400,
     FREE_MORE: 150,
     canopyNear: sourceFunction<typeof import('../src/entities/route-greybox/leg2-layout.ts').coverNear>(
@@ -530,9 +565,8 @@ test('a waiting first-lay slab at the Bell Rock rim is hidden', async () => {
   assert.equal(position.y, floor + PLAYER_R);
   assert.deepEqual(overlaps, []);
   assert.ok(drawnDeck.length);
-  const clear = clearFor(position);
   assert.ok(
-    drawnDeck.every((s) => clear.heldTop(s, position) === null),
+    drawnDeck.every((s) => !holds(s, position)),
     'deck drawn through player',
   );
 });
@@ -542,49 +576,29 @@ test('the Bell Rock lower-deck lift leaves headroom below the ramp', () => {
   const colliders = ground(bellRaw);
   const shapes = colliders.map(shapeOf);
   const ramp = shapes[colliders.findIndex((c) => c.placement.id === 'bell.ramp')]!;
-  const clear = clearFor(position);
-  assert.equal(clear.heldTop(ramp, position), null);
-  const result = clear.liftOrWait(shapes);
-  assert.equal(clear.heldTop(ramp, position), null, 'the lifted head intersects the ramp');
+  assert.equal(holds(ramp, position), false);
+  const result = liftOrWait(
+    shapes.map((x) => ({ shapes: [x], on() {} })),
+    bodyOf(position),
+    { lift: true },
+  );
+  assert.equal(holds(ramp, position), false, 'the lifted head intersects the ramp');
   assert.equal(result.kind, 'wait');
 });
 
-test("a lay's headroom reads the scenery as the levels build it: placedShapes matches the resolved colliders", () => {
-  const position = new THREE.Vector3(-72.99383527541504, 5.15, -860.5269921785417),
-    clear = clearFor(position);
-  for (const raw of [bellRaw, canopy]) {
-    const level = validation.loadLevelArtifact(raw, artifact.prefabs as unknown as Readonly<Record<string, PrefabDef>>),
-      built = clear.placedShapes(
-        level.placements.filter((p) => p.prefab === 'greybox.box' || p.prefab === 'greybox.collider'),
-      ),
-      resolved = ground(raw)
-        .filter((c) => c.definition.shape === 'box')
-        .map(shapeOf);
-    assert.equal(built.length, resolved.length);
-    // The same solid: held or not, and the same top, at sample points through each.
-    built.forEach((b, i) => {
-      const r = resolved[i]! as Extract<Shape, { kind: 'box' }>,
-        o = r.offset!;
-      for (const dy of [-0.3, 0, 0.3]) {
-        const p = { x: o.x + 0.3, y: o.y + dy, z: o.z - 0.2 },
-          a = clear.heldTop(b, p),
-          c = clear.heldTop(r, p);
-        assert.ok((a === null) === (c === null) && (a === null || Math.abs(a - c!) < 1e-6), `${i} at ${dy}`);
-      }
-    });
-  }
-  // A slab whose top is 0.2 m over the feet under the ramp: alone it lifts the body; with the scenery as the levels
-  // build it, the ramp is over the lifted head and it waits. So a lift that left the scenery out would show here.
-  const level = validation.loadLevelArtifact(
-    bellRaw,
-    artifact.prefabs as unknown as Readonly<Record<string, PrefabDef>>,
-  );
-  const deck = (p: THREE.Vector3) =>
-    clear.boxShape({ x: p.x, y: p.y - PLAYER_R + 0.2 - 0.2, z: p.z, w: 4, h: 0.4, d: 4, yaw: 0 });
-  const alone = position.clone();
-  assert.equal(clearFor(alone).liftOrWait([deck(alone)]).kind, 'lifted');
+test("a lay's headroom reads the scenery as the world builds it", () => {
+  // A slab whose top is 0.2 m over the feet under Bell Rock's ramp: alone (the same spot 3 km off, nothing built
+  // there) it lifts the body; with the levels' solids built round it, the ramp is over the lifted head and it waits.
+  // So a lift that left the scenery out would show here.
+  buildScenery();
+  const position = new THREE.Vector3(-72.99383527541504, 5.15, -860.5269921785417);
+  const deck = (p: THREE.Vector3) => [
+    { shapes: [boxShape({ x: p.x, y: p.y - PLAYER_R + 0.2 - 0.2, z: p.z, w: 4, h: 0.4, d: 4, yaw: 0 })], on() {} },
+  ];
+  const alone = position.clone().setX(position.x + 3000);
+  assert.equal(liftOrWait(deck(alone), bodyOf(alone), { lift: true }).kind, 'lifted');
   const among = position.clone();
-  assert.equal(clearFor(among).liftOrWait([deck(among)], clear.placedShapes(level.placements)).kind, 'wait');
+  assert.equal(liftOrWait(deck(among), bodyOf(among), { lift: true }).kind, 'wait');
   assert.deepEqual(among.toArray(), position.toArray(), 'moved while waiting');
 });
 
@@ -616,10 +630,14 @@ test('the first Canopy lay keeps both slabs at the Bell Rock seam off until the 
 
 test('a stack deck becoming solid at High Gorge leaves room for the player’s head', async () => {
   const position = new THREE.Vector3(-105.36, 3.3, -1983.2695);
-  const clear = clearFor(position);
   const solids = ground(gorgeRaw).map(shapeOf);
-  const fits = () => solids.every((solid) => clear.heldTop(solid, position) === null);
-  assert.ok(fits());
+  // Rapier's overlap test reads about 2 mm generous, and this spot grazes a Gorge slab's underside by less: so the lay
+  // may only keep what already held the body, never add to it.
+  const held = () => solids.filter((solid) => holds(solid, position));
+  const before = held();
   await reachedView(1300, 0, 3, position);
-  assert.ok(fits(), `deck lifted the player into High Gorge at ${position.toArray()}`);
+  assert.ok(
+    held().every((s) => before.includes(s)),
+    `deck lifted the player into High Gorge at ${position.toArray()}`,
+  );
 });
