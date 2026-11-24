@@ -1,7 +1,7 @@
 > **Status, 24 November 2026: plan, not built.** Planner, against main `56138efa6` (world v67: leg 3 playable,
-> Checkpoint C passed, #2362; garage step 4's rules, v67). Leg 4 is next in [greybox-route](greybox-route.md)'s order
-> (section 3, row 4; section 6). Steps 1 to 3 ship together as the leg's bump; 4 and 5 after it; 6 after the garage
-> bot job ([order](#order-and-what-waits)). Design review [near the end](#design-review-2026-11-24); [open
+> Checkpoint C passed, #2362; garage step 4's rules, v67), rebased onto `cbaaf2825` (the clearance helper and garage
+> step 4's bot on main). Leg 4 is next in [greybox-route](greybox-route.md)'s order (section 3, row 4; section 6).
+> Steps 1 to 3 ship together as the leg's bump; 4, 5 and 6 after it, in order ([order](#order-and-what-waits)). Design review [near the end](#design-review-2026-11-24); [open
 > questions](#open-questions) last. Nothing here waits for the owner.
 
 # Greybox leg 4: the cave line, West landing to Port Quay, playable
@@ -33,12 +33,12 @@ with the entries cited below; docs/agents/orchestrator-state.md, "Rules learned"
 `RAIL_TRAINS`), `railway-queries-route.ts` (`MINT_LEGS`, `STOCKED_LEGS`, `legKitStop`), `railway-sys-route.ts`
 (`gate`), `railway-sys-route-kit.ts` (`legKitStock`, `legKitLoad`), `railway-seed-legs.ts`, the generated
 `railway-world-lines.ts`, `src/content/levels/leg2.ts` (`west()`) and `leg3.ts`, `src/entities/route-greybox/`
-(`index.ts`, `leg-view.ts`, `clear.ts`), `src/world/railway-jump.ts`, `src/world/namespace.ts`,
+(`index.ts`, `leg-view.ts`), `src/world/railway-jump.ts`, `src/world/namespace.ts`,
 `dev/level/world-blockout.ts` (`SERVICES`, `curves`, `ROUTES.seacave`), `dev/level/route-leg2.ts` and `route-leg3.ts`,
 `dev/loop/graph.ts`, `dev/loop/standins.ts`, `dev/loop/run.ts`, `dev/look/bots/railway-legs.ts`,
 `dev/look/segments.ts`, `dev/look/perf.ts` (`PLACES`), `dev/peer-test/ws-railway.ts` (`railwayLegRejoin`);
-`docs/world/map-prototypes.html` (`seacave`, `salt-quay`, `salt-land`, `port-isle`, `port-top`, the `cave` gate); the
-branch `claude/solid-clearance-helper` (`src/place/clearance.ts`). Pattern followed: leg 3, steps 1 to 7.
+`docs/world/map-prototypes.html` (`seacave`, `salt-quay`, `salt-land`, `port-isle`, `port-top`, the `cave` gate);
+`src/place/clearance.ts` and `src/prefab/instantiate.ts` (`liftOrWait`). Pattern followed: leg 3, steps 1 to 7.
 
 **Research.** [route-contract](../research/route-contract.md) (travel edges never supply work): used; the Saltpan and
 Port Quay are reachable early by swimming, and every post there refuses ([Level findings](#level-findings), 8).
@@ -56,13 +56,15 @@ footings + 112 steel + 16 copper = 270 units; allowance 48 min; legs seacave 0.7
 grants harbour crane, faster engine; requires cloth, pick". `wall` requires `port` and `seeds`. `cloth` is built
 (leg 3's step 7) and requires `canopy-3`.
 
-**In flight** (`npm run inflight` and the state file's job table, 24 November):
-- `claude/solid-clearance-helper` (live session): the shared lift-or-wait helper `createLiftOrWait` in new
-  `src/place/clearance.ts`, bound in `src/prefab/instantiate.ts`; it deletes `src/entities/route-greybox/clear.ts`,
-  rewrites `leg-view.ts`'s lay slabs on it and adds cases to `test/prefab-leg2-level.test.ts`. **Step 5 starts after it
-  ships** and uses it.
-- `claude/garage-step4-bot` (heartbeat): `dev/look/bots/railway-legs.ts` and the `rail.bring` lines of
-  `dev/loop/graph.ts`. **Step 6 starts after it ships** and rebases onto it.
+**In flight** (`npm run inflight` and the state file's job table, 24 November; rebased onto `cbaaf2825`):
+- **Landed while this was planned:** the shared lift-or-wait helper (#2367 and before: `createLiftOrWait` in
+  `src/place/clearance.ts`, bound with the engine's overlap query as `liftOrWait` in `src/prefab/instantiate.ts`;
+  `route-greybox/clear.ts` is gone and `leg-view.ts`'s lay slabs use it), and garage step 4's bot
+  (`dev/look/bots/railway-legs.ts`, `dev/loop/graph.ts`'s `rail.bring` lines). Steps 5 and 6 build on both.
+- `claude/garage-step4-checkpoint` (heartbeat): a report, a plan note and dev tooling, no `src/`, `server/` or `test/`;
+  nothing here shares a file with it.
+- `claude/cliff-kit-step0` (live session): terrain clean-up's cliff kit generator; if it touches Home's cliff by the
+  West landing, step 4 measures against it.
 - `claude/forge-rack-move` (161 h old): `dev/level/rail-map.ts`, `dev/look/bots/railway.ts`, `docs/agent-calls.md`,
   `place.md`. Step 1 regenerates `rail-map.html` through `rail-map.ts` and step 5 edits `place.md`; both append, and
   whichever ships second rebases.
@@ -264,8 +266,8 @@ is massing with a plain ramp. No buildings, no folk, no crane, no salt to slide 
 ### Solids near players
 
 Anything that switches solids on where a player can be (each lay's deck slabs, a head's platforms, a frame, a rack)
-**uses the shared lift-or-wait clearance, `createLiftOrWait` in `src/place/clearance.ts`** (from
-`claude/solid-clearance-helper`, which migrates leg 3's lay slabs onto it): lift the body onto the solid when its feet
+**uses the shared lift-or-wait clearance: `liftOrWait` in `src/prefab/instantiate.ts`, the engine-bound form of
+`createLiftOrWait` in `src/place/clearance.ts`** (on main; leg 3's lay slabs already use it): lift the body onto the solid when its feet
 are within the helper's step of the top and the whole body fits there; otherwise every solid of the set that holds it
 waits, neither solid nor drawn, until the body is clear of all of them. Never push sideways, never put a player where
 there is no ground, never switch a solid off on contact. **Do not write another.** An area's mount stays an ordinary
@@ -354,15 +356,15 @@ is an independent one before merge (src/sim, src/world): **gpt-6.2-astra medium*
       the hood clear of the crossover's gauge); `.look/` stills: the West landing from the commons (the hood and the
       apron in view), the apron with frame 1 and rack 1 from the bay platforms, the hood from the cave platform's end.
 - [ ] **5. The Saltpan, Port Quay and leg 4's views (M to L; HOTBOX; "Player-visible implementation": Claude opus
-      medium). After `claude/solid-clearance-helper` ships.** Files: new `src/content/levels/leg4.ts` (levels `saltpan`
+      medium).** Files: new `src/content/levels/leg4.ts` (levels `saltpan`
       and `quay`) and `src/content/prefabs/leg4-lands.ts` (the three map outlines, collision only, baked as leg 3's are);
       `content/built/levels/saltpan.json`, `quay.json`; new `src/entities/route-greybox/massing-saltpan.ts` and
       `massing-quay.ts`, registered in `index.ts`'s `AREAS` with their `coverNear` distances; `dev/level/route-leg4.ts`
       gains the floods and the bake; `leg-view.ts`: the cave leg as a row leg (deck, rails and sea bents from `laid`;
       none on the two isles or under the West landing's bed; frames with bill and plate, racks, head 1's platform with
       a sea ramp, block signal posts, the end boards, buffers 2 m short of Port Quay's turn), the plug barrier at frame
-      1 with its blocked reasons, `STALLS['bell.pad-quay'] = 'cave'`, `LEG_OBJECTIVES`' new lines; the lay slabs on
-      `createLiftOrWait` (do not write another); `src/entities/railway/halts-view.ts`: levers and boards at the new
+      1 with its blocked reasons, `STALLS['bell.pad-quay'] = 'cave'`, `LEG_OBJECTIVES`' new lines; every solid that
+      switches on near a player through `liftOrWait` (do not write another); `src/entities/railway/halts-view.ts`: levers and boards at the new
       halts (the row lines' rule on main); `train-view.ts` unchanged (it poses every slot). `docs/game-design/place.md`
       updated. No new unit test file (rule 36); the hand-kept lists and far-ground check as step 4 (rule 41). **Rule 53,
       what a player presses:** the plug's prompt and the objective after the cloth change here, so the same branch runs
@@ -375,8 +377,8 @@ is an independent one before merge (src/sim, src/world): **gpt-6.2-astra medium*
       Port's top behind; the board at the buffers; Bell Rock's Port Quay stall; the look harness's mesh and collider
       counts with each new area resident and not. **The boot probe on the built site (rule 61)**: the views index the
       new train rows and halts.
-- [ ] **6. The bot and the loop (M; HOTBOX; "Implementation from a brief or an approved plan": Claude opus medium).
-      After `claude/garage-step4-bot` ships.** Files: `dev/loop/graph.ts` (`plug-gate`: `rail.gate`, the third "route
+- [ ] **6. The bot and the loop (M; HOTBOX; "Implementation from a brief or an approved plan": Claude opus medium).**
+      On garage step 4's bot as merged. Files: `dev/loop/graph.ts` (`plug-gate`: `rail.gate`, the third "route
       barrier opened", requires `canopy-3` and `pick`; `cave-1` to `cave-3`: `legSection` on `cave`, bills, frames and
       racks from `RAIL_LEGS`, `KIT_BY.cave` "stocked on the West landing's cave rack (the stand-in: no train)" for the
       first and "a cave train from the West landing" after, `NODE_PREFIX.cave` unchanged, `cave-3` with `stops:
@@ -427,8 +429,8 @@ The independent review covers steps 1 to 3 as one batch, steps 4 and 5 as anothe
 | --- | --- | --- |
 | 1 to 3 | Nothing | Sim and catalog; no file of the in-flight jobs |
 | 4 | Step 3 | `west()` draws the cave line's platforms where its halts now stand |
-| 5 | Step 4; `claude/solid-clearance-helper` | `leg-view.ts`'s lay slabs move onto the helper there |
-| 6 | Step 5; `claude/garage-step4-bot` | `railway-legs.ts` and `graph.ts` are that job's |
+| 5 | Step 4 (the clearance helper is on main) | Bell Rock's and the West landing's levels are drawn by the same views |
+| 6 | Step 5 (garage step 4's bot is on main) | The bot rides to the barrier step 5 draws |
 
 **Between the bump and step 5** no room can open the plug in play (its barrier is step 5's view), so no cave train runs
 for anyone who plays to it; production prebuilds the jump rows (`OFFERED_STAGES`), so `?from=cave-mid` would run a cave
@@ -518,8 +520,8 @@ catalog (`rowPoint`, `rowSide`, `legFrame`, `legRack`), Home's terrain (`H`) and
 - **Line 2 is not touched** (rule 14): no line 2 halt, train or kit changes; the forge rack is shared, and no other leg
   loads kit while leg 4 is open.
 - **Hot files.** `railway-lines.ts`, `railway-route.ts`, `world-blockout.ts` and its generated files, `leg2.ts`,
-  `leg-view.ts` (the clearance helper's), `route-greybox/index.ts`, `halts-view.ts`, `railway-legs.ts` and `graph.ts`
-  (the garage bot's), `rail-map.ts` (the stale forge-rack branch's).
+  `leg-view.ts`, `route-greybox/index.ts`, `halts-view.ts`, `railway-legs.ts` and `graph.ts` (each touched by a job
+  that merged on 24 November), `rail-map.ts` (the stale forge-rack branch's).
 - **Lockstep.** Integer cm and ticks; the arc's points are generated integers in the catalog (the generator runs at
   authoring time); `simHalt`'s count is an integer read.
 - **Performance.** Two isle prisms with beaches, High Port's 55 m block and its ramp, the hood, 1.2 km of deck and bents,
