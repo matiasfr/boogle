@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-24 · Eight jobs in flight across all sessions (was five); still at most two browser-heavy on HOTBOX ([entry](#d-2026-11-24-eight-jobs))
 - 2026-11-24 · The heartbeat leaves a live session's job alone until its claim lapses: it reports it, never reviews, re-checks, fixes or ships it ([entry](#d-2026-11-24-heartbeat-leaves-live-jobs))
 - 2026-11-24 · The prefab door may grow by one export, and the engine by one shape-overlap query, for the shared lift-or-wait helper; nothing else grows ([entry](#d-2026-11-24-door-export-clearance-helper))
 - 2026-11-18 · Decisions page (process): Godot export once, not in CI; he sets `ADVANCE_KEY` himself; device tests take option A; Codex rows on Claude only until Codex is back; separate capacities is P1; his side threads count toward the five jobs; the heartbeat adopts its nine workflow fixes (wakes fill freed slots, background ship-queue, ship-check runs server and net suites for seeds, profile before performance steps) ([entry](#d-2026-11-18-decisions-page-process))
@@ -107,6 +108,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · Mini-games get their own design pass later. ([entry](#d-undated-mini-games-get-their-own-design))
 
 ## Decided
+
+- <a id="d-2026-11-24-eight-jobs"></a>**2026-11-24, eight jobs in flight** (owner, 24 November 2026, in the live session: "can we increase our job queued limit to allow for more? Uh, for more jobs simultaneously"). Measured first: HOTBOX had 1.7 of 20 logical CPUs busy and 44 GB free with two to four jobs running, so the machine was not the limit. The limit on jobs in flight across all sessions goes from five ([18 November](#d-2026-11-18-five-jobs-fewer-bookkeeping-ships)) to eight, the orchestrator's pick; at most two browser-heavy jobs on HOTBOX stays, because bot runs and two-player looks share one GPU. An independent review counts as part of its build's job, not an extra row. Procedure: [orchestrate skill](../.claude/skills/orchestrate-boogle/SKILL.md), section 9.
 
 - <a id="d-2026-11-24-heartbeat-leaves-live-jobs"></a>**2026-11-24, the heartbeat leaves a live session's job alone** (owner, 24 November 2026, in the live session: "Yes, and your recommendation for the heartbeat"). The recommendation: the 10:12 UTC heartbeat started an independent review of `claude/greybox-leg3-views` while the live session owned it, and the builder fixed to a review that session had not started. So a job whose "Jobs in flight" row says `live session` belongs to that session until its claim lapses (30 minutes after the session's last ship); the heartbeat reports it but does not review, re-check, fix or ship it. Procedure: [orchestrate skill](../.claude/skills/orchestrate-boogle/SKILL.md), section 9 step 3.
 
