@@ -322,7 +322,7 @@ before step 3. Step 3 holds on question 1.
       ordinary budget. The empty-pool refusal runs on a reachable `bay-mid` with the works never lit, built inside that
       test (final check, 24 November). The "leg 2 mixed, growing from `incline-open`" case is dropped: a Strong bay train while leg 2 grows is
       unreachable now that the bay trade opens at `bay-mid` (owner, 24 November).
-- [ ] **3. Seeds, screen, bays and trains (M to L; player-visible). Holds on question 1.**
+- [x] **3. Seeds, screen, bays and trains (M to L; player-visible). Built on the owner's answer A (24 November).**
       `src/sim/railway-seed-legs.ts` (or a sibling): `trade-ready` from `bay-mid` under A (`bay-reached` under C), by
       accepted ops only: light the works and bring 12 steel home with the steel seed's own helpers, for a pool of 12.
       `trade-fitted`: `ns` Quick and `bay` Strong, both adopted at their depots. `trade-held`: `trade-fitted` run on by
@@ -345,6 +345,29 @@ before step 3. Step 3 holds on question 1.
       from frame 1; a Quick `ns` train at High Gorge; the bring as motion (a contact sheet or clip, plus one real-time
       watch); the post's knob from the West landing platform and the Village platform. Rows: "Player-visible
       implementation": opus medium, high for tricky work; visual review by the main session.
+      **As built (24 November, branch `claude/garage-step4-screen`, no bump).** As written, on option A, with these
+      differences. The seeds are their own file, `src/sim/railway-seed-garage.ts` (`trade-ready` takes the works' whole
+      12 steel home with the steel seed's own steps; `trade-fitted` fits `ns` Quick then `bay` Strong by `rail.bring` and
+      `rail.install`, the bay copy left on the table; `trade-held` plays on to `canopy-open` and waits for a Strong bay
+      train standing held at Bell Rock's upper platform, leg 3's first kit on its rack). They follow the leg stages in
+      `SEED_STAGES` and shard 11 (only their three golden rows are new), with tooling `JUMPS` rows and no landing; their
+      assertions are one lazy test in `test/railway-leg2-rules.test.ts`. **The flatbed's rule changed** (finding 3 of
+      the [build's review](#design-review-2026-11-24-step-3-build)): a held train carries exactly one bill, so "past one
+      section's bill" left the flatbed bare at the hold. The flatbed carries the kit that rides on (up to one bill) and
+      the kit car the rest; railhead hops leave the kit car first, then the flatbed, so every unit still lands. A
+      trade line's tail car reuses line 2's steel-car slot in `train-view.ts` (`consistOf`'s `strong`, role `cargo`,
+      `KIT_FLATBED`). One row-look rule (`cars.ts` `wearsLong`, `wearsTail`) dresses trains, the table's copy and the
+      bays. The bay copies are the engine's own parts drawn by `rotunda-view.ts`; the record (`roundhouse.copy-plate`,
+      `roundhouse.copy-flatbed`) holds their solids, plates and the flatbed, switched on only once nobody stands in them.
+      The chips reach the pad by Up from the first category. A free Swap is installable but lights no knob and waits on
+      no stand. The copies' swap is the table's arrival puff and toot; the bays change at once. **Seen** (`.look/`,
+      opened): the post at `trade-ready` with chips and the bay tab at Ready ("Kit a trip"); `ns`'s tab at
+      `trade-fitted` (Installed, Swap, "Nothing to build"); bays 210° and 230° from the apron and from the post (the
+      table's copy hides most of 230° from the post) and the garage camera (one copy bay behind the table); the held
+      Strong train from the platform (empty kit car, five crates on the flatbed) and from frame 1 (the engine faces you
+      and hides the flatbed); a Quick `ns` train at High Gorge (the longer barrel, from behind); the bring as a sheet and
+      a real-time clip; the knob from the Village platform (orange, a few pixels at 21 m) and **not** from the West
+      landing (the cliff blocks every line to the post: level finding 4 stands, unanswered).
 - [ ] **4. The bot makes the choice (S; HOTBOX). After leg 3's step 7.** `dev/look/bots/railway-legs.ts`: on the
       segment `--from bay-mid` (A) or `--from bay-reached` (C), the bot walks to the post, brings the bay chip and
       installs Strong, then plays leg 3; a second run installs Quick. Verify: `npm run playthrough -- --from bay-mid
