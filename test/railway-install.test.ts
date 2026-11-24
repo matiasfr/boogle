@@ -49,7 +49,7 @@ import {
 } from '../src/sim/railway-trains.ts';
 import { trainStops } from '../src/sim/railway-queries-trains.ts';
 import { apply } from '../src/sim/railway-drive.ts';
-import { CRADLE_CAP, INSTALL_STEEL, WORKS, installRevision, steelPool } from '../src/sim/railway-works-layout.ts';
+import { CRADLE_CAP, INSTALL_STEEL, WORKS, steelPool } from '../src/sim/railway-works-layout.ts';
 import { footCap } from '../src/sim/railway-queries-trade.ts';
 import { STEEL } from '../src/sim/railway-ring-layout.ts';
 import { fuzzTicks } from './helpers/fuzz.ts';
@@ -66,42 +66,23 @@ import {
   railwayAtWorks,
   restore,
   shed,
-  steel,
   train,
   trains,
   unaudited,
   type Seed,
   buildSeedWorld,
+  steelHome,
 } from './helpers/rail.ts';
 
 const [A, B, C] = LINE_SLOTS[LINE2] as [number, number, number];
 const ISLAND = 5;
 const copy = (s: Seed): Seed => unaudited({ w: restore(s.w), t: s.t });
 const install = (s: Seed, pid = 'a', fields: Record<string, unknown> = {}) =>
-  act(s, pid, 'rail.install', { line: LINE2, part: 2, revision: installRevision(lineRow(s.w, LINE2)), ...fields });
+  act(s, pid, 'rail.install', { line: LINE2, part: 2, revision: lineRow(s.w, LINE2).rev, ...fields });
+/** The garage table's hold after an accepted install (garage step 4): wait it out before the next install. */
+const settle = (s: Seed) => advance(s, WORKS.upgradeTicks);
 
-/** Ring-joined played on until the first steel is in the bay, from accepted ops and ticks only: the kit train, the
- * bill fed by one player, the casts and the ride home. Built once, outside any one test's time. */
-function steelHome(source = railwayAtRing('ring-joined')): Seed {
-  const s = copy(source);
-  const run = (ok: () => boolean, max: number, what: string) => {
-    for (let t = 0; !ok(); t++) {
-      assert.ok(t < max, `${what} in time (tick ${s.t})`);
-      advance(s, 1);
-    }
-  };
-  run(() => steel(s.w).yardLogs + steel(s.w).yardRails === STEEL.logs + STEEL.rails, 4000, 'the kit in the yard');
-  for (const kind of [0, 1])
-    for (let k = 0; k < 8; k++) {
-      act(s, 'a', 'rail.steelTake', { kind });
-      if (!act(s, 'a', 'rail.steel')) break;
-    }
-  assert.ok(steel(s.w).lit >= 0, 'the works lit');
-  run(() => shed(s.w).steel >= 1, 6000, 'the first steel in the bay');
-  assert.equal(invariant(s.w), null);
-  return s;
-}
-const HOME = steelHome();
+const HOME = steelHome(railwayAtRing('ring-joined'));
 const GORGE = steelHome(buildSeedWorld('gorge-reached'));
 
 function landed(source: Seed, count: number) {
@@ -118,22 +99,28 @@ const FULL_GORGE = landed(GORGE, STEEL.total);
 test('paid installs spend only the shared pool, refuse short/stale/repeated holds and restore', () => {
   const s = landed(GORGE, INSTALL_STEEL[3]);
   assert.equal(install(s), 1);
+  assert.equal(install(s, 'a', { part: 3 }), 0, "the table's hold");
+  settle(s);
   assert.equal(install(s, 'a', { part: 3 }), 1);
+  settle(s);
   assert.ok(steelPool(shed(s.w)) < INSTALL_STEEL[4]);
   assert.equal(install(s, 'a', { part: 4 }), 0, 'short pool');
   const shortBig = landed(GORGE, INSTALL_STEEL[3]);
   assert.equal(install(shortBig), 1);
+  settle(shortBig);
   assert.equal(install(shortBig, 'a', { part: 4 }), 1);
+  settle(shortBig);
   assert.ok(steelPool(shed(shortBig.w)) < INSTALL_STEEL[3]);
   assert.equal(install(shortBig, 'a', { part: 3 }), 0, 'short pool at High Gorge');
   const full = copy(FULL_HOME);
-  const rev = installRevision(lineRow(full.w, LINE2));
+  const rev = lineRow(full.w, LINE2).rev;
   const original = trains(full.w).map((r) => ({ ...r }));
   assert.equal(install(full, 'a', { part: 4, revision: rev }), 1);
   assert.deepEqual(trains(full.w), original, 'capacity changes no cargo or running leg');
   assert.equal(shed(full.w).steel, STEEL.total, 'landed does not go backwards');
   assert.equal(shed(full.w).spent, INSTALL_STEEL[4]);
   assert.equal(steelPool(shed(full.w)), STEEL.total - INSTALL_STEEL[4]);
+  // The cradle sets no `fitted`, so it starts no hold: the race is refused as stale.
   assert.equal(install(full, 'b', { part: 2, revision: rev }), 0, 'cross-part race is stale');
   assert.equal(install(full, 'b', { part: 4 }), 0, 'new request cannot buy it twice');
   assert.equal(install(full), 1, 'free longer boiler still reads landed steel');
@@ -161,12 +148,14 @@ test('paid installs spend only the shared pool, refuse short/stale/repeated hold
 test('big boiler needs High Gorge and row 2; fits once, spends six, then adopts only at Home', () => {
   const early = copy(FULL_HOME);
   assert.equal(install(early), 1);
+  settle(early);
   assert.equal(install(early, 'a', { part: 3 }), 0, 'not High Gorge');
   const s = copy(FULL_GORGE);
   assert.equal(install(s, 'a', { part: 3 }), 0, 'cannot skip longer boiler');
   assert.equal(install(s), 1);
+  settle(s);
   assert.equal(install(s, 'a', { part: 4 }), 1);
-  const rev = installRevision(lineRow(s.w, LINE2));
+  const rev = lineRow(s.w, LINE2).rev;
   const before = trains(s.w).map((r) => ({ ...r }));
   assert.equal(install(s, 'a', { part: 3, revision: rev }), 1);
   assert.equal(install(s, 'b', { part: 3, revision: rev }), 0);
@@ -698,3 +687,4 @@ test('a fast train let go right behind a slow one is held at the halt behind it,
   );
   assert.equal(invariant(s.w), null);
 });
+

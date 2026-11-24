@@ -14,7 +14,7 @@ import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
 import { RING_STEEL_WORKS, RING_STEEL_YARD, STEEL } from '../../src/sim/railway-ring-layout.ts';
-import { SHED_TABLE, WORKS, INSTALL_STEEL, installRevision, steelPool } from '../../src/sim/railway-works-layout.ts';
+import { SHED_TABLE, WORKS, INSTALL_STEEL, steelPool } from '../../src/sim/railway-works-layout.ts';
 import { laySection } from '../../src/sim/railway-seed-legs.ts';
 import { railwayAtSteel, type SteelStage } from '../../src/sim/railway-seed-steel.ts';
 import { buildSeedWorld, invariant, line, steel, type Seed } from '../../test/helpers/rail.ts';
@@ -35,7 +35,7 @@ import { act, apply, railTick, restore, trees } from '../../test/helpers/rail.ts
 import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
 import { railApply } from '../../src/sim/railway-systems.ts';
 import { Account, Pile } from '../../src/sim/railway-components.ts';
-import type { RailAction } from '../../src/sim/railway.ts';
+import { RAILWAY_MAX_INT, type RailAction } from '../../src/sim/railway.ts';
 import { RAIL_ACTIONS, RIDER_REACH, RIDER_SPAN, railValid, type Actor } from '../../src/world/railway-server.ts';
 import { steelCarOffset } from '../../src/entities/railway/cars.ts';
 import { isRailwayRoom } from '../../src/world/railway-namespace.ts';
@@ -44,7 +44,7 @@ import { railwayRequestEdit } from '../src/host/railway-requests.ts';
 import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
 import { train } from '../../src/sim/railway-rows.ts';
 import { LINE_SLOTS, balancedHold, trainGaps, trainSpacing } from '../../src/sim/railway-trains.ts';
-import { BOILER_MAX, TRAIN, TRAIN_PHASE, trainAlong } from '../../src/sim/railway-train.ts';
+import { TRAIN, TRAIN_PHASE, trainAlong } from '../../src/sim/railway-train.ts';
 import { railLinePoint } from '../../src/sim/railway-line-path.ts';
 import { LINE2, RAIL_HALTS, RAIL_LINES, trainPassesBy } from '../../src/sim/railway-lines.ts';
 import { LOGS, roomOf, steelNeed, stopsOf } from '../../src/sim/railway-queries.ts';
@@ -181,7 +181,7 @@ test('paid host: cradle and big boiler cross r:edit, share the pool, replicate a
   const r = await host('paid', PAID_GORGE, { s: 'a', peer: 'b' });
   try {
     const mirror = r.connect('viewer');
-    const rev = installRevision(line(r.w, LINE2));
+    const rev = line(r.w, LINE2).rev;
     for (const part of [3, 4]) assert.equal(await r.action(install(rev, LINE2, part), away(SHED_TABLE)), 'rejected');
     assert.deepEqual(
       await r.race([
@@ -218,6 +218,8 @@ test('paid host: short pool and early big boiler refuse through r:edit without s
   const r = await host('paid-short', fixture('steel-home'));
   try {
     assert.equal(await r.action(install(1, LINE2, 2), spot(SHED_TABLE)), 'accepted');
+    // The garage table's hold (garage step 4) after the longer boiler's install.
+    await r.ticks(WORKS.upgradeTicks);
     assert.equal(await r.action(install(2, LINE2, 3), spot(SHED_TABLE)), 'noop');
     assert.equal(await r.action(install(2, LINE2, 4), spot(SHED_TABLE)), 'accepted');
     assert.ok(steelPool(shed(r.w)) < INSTALL_STEEL[3]);
@@ -400,7 +402,8 @@ test('steel host: malformed kinds, lines, parts and revisions refused without a 
       assert.equal(await r.action(install(0, l as number), spot(SHED_TABLE)), 'rejected', `line ${l}`);
     for (const part of [0, 5, '1', null])
       assert.equal(await r.action(install(0, 1, part as number), spot(SHED_TABLE)), 'rejected', `part ${part}`);
-    for (const revision of [BOILER_MAX + 2, -1, 0.5, '0', null, undefined])
+    // Since v67 an install's revision is the line's `Line.rev`, bounded by RAILWAY_MAX_INT (a stale one is a noop).
+    for (const revision of [RAILWAY_MAX_INT + 1, -1, 0.5, '0', null, undefined])
       assert.equal(
         await r.action({ op: 'rail.install', line: 1, part: 2, revision }, spot(SHED_TABLE)),
         'rejected',
@@ -791,3 +794,4 @@ test("steel host (review): a leaver holding the kit's 8 logs and 12 rails foreve
     await r.done();
   }
 });
+

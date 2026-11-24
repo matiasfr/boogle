@@ -189,8 +189,9 @@ export const GENERIC_OPS = [
   'rail.haltTake',
 ] as const;
 /** Rail actions whose nodes are not built yet: the meeting on the Original Island (the route's last leg, area 9, a
- * stand-in in dev/loop/standins.ts). Named here, not owned by a node. */
-export const PENDING_OPS = ['rail.arrive'] as const;
+ * stand-in in dev/loop/standins.ts), and the garage table's copy (rail.bring: garage step 4's choice, which its step 4
+ * gives the bot). Named here, not owned by a node. */
+export const PENDING_OPS = ['rail.arrive', 'rail.bring'] as const;
 /** The greybox legs' reached marks that the play record does not carry yet (greybox-leg2.md, step 5, as built): no
  * progress mark names a laid section or the arrival at High Gorge (src/adapters/railway-marks.ts), and the pickup and
  * barrier marks have no beat (dev/playtest/beats.ts). Both files belong to later work; test/loop-graph.test.ts holds

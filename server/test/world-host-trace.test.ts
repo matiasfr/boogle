@@ -68,6 +68,13 @@
 // railTrainHoldPct. Namespace, hash, checksum and 5,677 snapBytes samples follow. The intermediate v66 fixture
 // instead had one extra bay train (slot 12). Keyed comparisons against both fixtures account for all 8,616 records:
 // 57 inputs, 2,220 messages and 457 replica packets match exactly. Dispatch never moves a train in this trace.
+// v67 garage step 4 (docs/plans/garage-step4.md, step 2): the action sweep adds four records for a refused rail.bring
+// (its input, pending and settled status, its rejection packet), last in the sweep, so only Bob's final account request
+// (47 -> 48; 100 checkpoints), one ack and his r:session `next` (48 -> 49) move; each checkpoint after it holds one
+// more outcome row (1,200 cells; the railway's next id +1 on 200) and stats.actions counts one more (3,556 samples).
+// 205 checkpoints append Line.rev (0 on all five lines) and Shed.tableLine/bringRev/brought (1, 0, -1) and change
+// namespace/hash/checksum; 5,677 snapBytes samples follow. Keyed comparison with the v66 fixture before the writer
+// regenerated it: 8,620 records; every other column, input, result, message and replica packet is exact.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';

@@ -294,6 +294,21 @@ export const RAIL_LEGS: readonly RouteLeg[] = SPECS.map((s) => ({
 /** A section's first centimetre: the leg's start, or the section before's end. */
 export const sectionFromCm = (leg: RouteLeg, k: number): number => (k === 0 ? leg.fromCm : leg.sections[k - 1]!.toCm);
 
+// ---- Garage step 4 (docs/plans/garage-step4.md): the per-line Quick or Strong trade. Catalog data, no state.
+/** The sim lines the room fits with Quick (row 4) or Strong (row 5) at Home's Roundhouse. */
+export const TRADE_LINES: readonly number[] = [ROW_LINE.ns, ROW_LINE.bay];
+export const isTradeLine = (line: unknown): line is number => TRADE_LINES.includes(line as number);
+/** A trade line's first leg (a RAIL_LEGS index), by line: the incline, the bay cut. */
+export const TRADE_LEG: Readonly<Record<number, number>> = Object.fromEntries(
+  TRADE_LINES.map((line) => [line, RAIL_LEGS.findIndex((l) => l.line === line)]),
+);
+/** The sections of a trade line's TRADE_LEG laid before its trade opens: the incline's whole length on `ns`; one on
+ * `bay`, the bay cut's first lay (owner, 24 November, d-2026-11-24-garage-step4-strong-window: Strong's window). */
+export const TRADE_OPENS: Readonly<Record<number, number>> = {
+  [ROW_LINE.ns]: RAIL_LEGS[TRADE_LEG[ROW_LINE.ns]!]!.sections.length,
+  [ROW_LINE.bay]: 1,
+};
+
 /** The abilities a leg grants once its last section is laid; each stands at its leg's destination halt (a placeholder
  * position: step 4's massing moves it off the platform, the plan's change 1). The hook reel and the carry sling are
  * left out until something uses them. */

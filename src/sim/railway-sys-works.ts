@@ -1,11 +1,14 @@
 // The Works and the Roundhouse's systems (docs/plans/ecs-migration-railway.md, section 2; ./railway-works.ts): the
-// breaker, the seams, the kiln and its casting tick, the footings, the cradle and the turntable, and a footing's
-// absent-carrier path.
+// breaker, the seams, the kiln and its casting tick, the footings, the cradle and the turntable, the garage table's
+// copy (rail.bring, garage step 4), and a footing's absent-carrier path.
 import { defineSystem, type World } from '../ecs/index.ts';
 import { pierLaid } from './railway-line2-layout.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { SEAM_STALL, SEAM_THROAT } from './railway-works.ts';
 import { railInt, RAILWAY_MAX_INT } from './railway.ts';
+import { LINE2, RAIL_LINES } from './railway-lines.ts';
+import { tradeOpen } from './railway-queries-route.ts';
+import { tableBusy } from './railway-queries-works.ts';
 import {
   Account,
   Aperture,
@@ -160,6 +163,25 @@ export const turn = defineSystem(
     hm.table = e.to;
     hm.tableRev++;
     commission(w, tick);
+    return 1;
+  },
+);
+/** Bring a line's copy to the garage table (garage step 4, rail.bring { line, revision }): line 2's, or an open trade
+ * line's, on the bring revision the actor saw, not the copy already there, with the table free (no roll-out, the
+ * table's hold over). Judged at SHED_TABLE's reach by the server. */
+export const bring = defineSystem(
+  'rail.bring',
+  { reads: [Leg, Line, Train], writes: [Shed], phase: 'act', order: 57 },
+  (w, { e, tick }: Act) => {
+    if (!railInt(e.line, RAIL_LINES.length - 1) || !railInt(e.revision)) return 0;
+    const h = w.get(Shed, shedId(w))!;
+    if (e.revision !== h.bringRev || h.bringRev >= RAILWAY_MAX_INT || e.line === h.tableLine) return 0;
+    if (e.line !== LINE2 && !tradeOpen(w, e.line)) return 0;
+    if (tableBusy(w, tick)) return 0;
+    const hm = w.mut(Shed, shedId(w))!;
+    hm.tableLine = e.line;
+    hm.bringRev++;
+    hm.brought = tick;
     return 1;
   },
 );

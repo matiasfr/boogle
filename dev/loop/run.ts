@@ -850,7 +850,7 @@ function step(r: Run, pl: Player, t: Tally, log: string[]) {
       // The table turn and fit name the revision the actor sees now.
       if (cmd.act === 'rail.turn') Object.assign(fields, { to: 1, revision: shed(g.w).tableRev });
       if (cmd.act === 'rail.install')
-        Object.assign(fields, { line: LINE2, part: fields.part ?? 2, revision: lineOf(g.w, LINE2).boiler });
+        Object.assign(fields, { line: LINE2, part: fields.part ?? 2, revision: lineOf(g.w, LINE2).rev });
       const res = g.h.act(pl.pid, cmd.act, fields, pl.at);
       t.actions++;
       t.tried?.add(cmd.act);

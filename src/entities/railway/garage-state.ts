@@ -7,7 +7,6 @@
 import { leg, line, shed, trains, type ReadWorld } from '../../sim/railway-rows.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { LINE2 } from '../../sim/railway-lines.ts';
-import { installRevision } from '../../sim/railway-works-layout.ts';
 import { upgradePool } from '../../sim/railway-queries-works.ts';
 import { RAIL_LEGS } from '../../sim/railway-route.ts';
 import type { CatId, Phase, PartId, RoomFacts } from './garage-data.ts';
@@ -26,7 +25,7 @@ export function roomFacts(w: ReadWorld): RoomFacts {
     steel: upgradePool(w),
     longFitted: boiler >= 2,
     boilerRev: boiler,
-    installRev: installRevision(line(w, LINE2)),
+    installRev: line(w, LINE2).rev,
     cradleFitted: line(w, LINE2).cradle > 0,
     gorgeReached: leg(w, 0).laid >= RAIL_LEGS[0]!.sections.length,
   };

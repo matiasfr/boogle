@@ -536,6 +536,8 @@ function startWorld(room: Room) {
           return adapter.feedSteel();
         case 'rail.install':
           return adapter.installBoiler(intent.revision);
+        case 'rail.bring':
+          return adapter.bringLine(intent.line, intent.revision);
       }
     };
   }

@@ -10,7 +10,11 @@ import type { Seed } from '../../src/sim/railway-seed-route.ts';
 import { createRailwayWorld, Pile } from '../../src/sim/railway-components.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
 import type { Read, ReadWorld } from '../../src/sim/railway-rows.ts';
-import { restore } from '../../src/sim/railway-drive.ts';
+import { invariant, restore } from '../../src/sim/railway-drive.ts';
+import { act, advance } from '../../src/sim/railway-seed-route.ts';
+import { shed as shedRow, steel as steelRow } from '../../src/sim/railway-rows.ts';
+import { STEEL } from '../../src/sim/railway-ring-layout.ts';
+import assert from 'node:assert/strict';
 import * as seeds from '../../src/sim/railway-seeds.ts';
 import * as works from '../../src/sim/railway-seed-works.ts';
 import * as ring from '../../src/sim/railway-seed-ring.ts';
@@ -61,4 +65,26 @@ export function unaudited(s: Seed): Seed {
   const raw = createRailwayWorld();
   raw.load(JSON.parse(JSON.stringify(s.w.snapshot())), railwayCheck);
   return { w: raw, t: s.t };
+}
+/** `source` (unaudited) played on until the first steel is in Home's bay, from accepted ops and ticks only: the kit
+ * into the island yard, the bill fed by one player, the casts and the ride home. Ring-joined or any later seed whose
+ * works is cold (a leg seed's kit already lies in the yard). */
+export function steelHome(source: Seed): Seed {
+  const s = unaudited({ w: restore(source.w), t: source.t });
+  const run = (ok: () => boolean, max: number, what: string) => {
+    for (let t = 0; !ok(); t++) {
+      assert.ok(t < max, `${what} in time (tick ${s.t})`);
+      advance(s, 1);
+    }
+  };
+  run(() => steelRow(s.w).yardLogs + steelRow(s.w).yardRails === STEEL.logs + STEEL.rails, 4000, 'the kit in the yard');
+  for (const kind of [0, 1])
+    for (let k = 0; k < 8; k++) {
+      act(s, 'a', 'rail.steelTake', { kind });
+      if (!act(s, 'a', 'rail.steel')) break;
+    }
+  assert.ok(steelRow(s.w).lit >= 0, 'the works lit');
+  run(() => shedRow(s.w).steel >= 1, 6000, 'the first steel in the bay');
+  assert.equal(invariant(s.w), null);
+  return s;
 }
