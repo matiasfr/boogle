@@ -83,29 +83,12 @@ export function checkSteel(w: World) {
     )
   )
     bad('boiler bounds');
-  // Each line's install revision (garage step 4): line 2's is its two fits' sum at every accepted step; a trade line's
-  // is 0 until its first fit, which only an open trade accepts; no other line installs.
-  const revOk = (l: (typeof ls)[number], line: number) => {
-    if (line === LINE2) return l.rev === l.boiler + l.cradle;
-    if (!isTradeLine(line)) return l.rev === 0;
-    return l.rev > 0 === l.boiler > 0 && (l.boiler === 0 || tradeOpen(w, line));
-  };
-  if (ls.some((l, line) => !revOk(l, line))) bad('install revision');
   // Every bought fit accounts for its steel once: line 2's cradle and big boiler, and each trade line's first fit.
   const fittedSteel =
     ls[LINE2]!.cradle * INSTALL_STEEL[4] +
     (ls[LINE2]!.boiler === 3 ? INSTALL_STEEL[3] : 0) +
     TRADE_LINES.reduce((n, line) => n + (ls[line]!.boiler > 0 ? INSTALL_STEEL[5] : 0), 0);
   if (spent !== fittedSteel) bad('steel spent');
-  // The garage table holds line 2's copy or an open trade line's (garage step 4).
-  const h = shed(w);
-  if (
-    !railInt(h.bringRev) ||
-    !railInt(h.brought, RAILWAY_MAX_INT, -1) ||
-    (h.brought >= 0) !== (h.bringRev > 0) ||
-    (h.tableLine !== LINE2 && !tradeOpen(w, h.tableLine))
-  )
-    bad('garage table');
   if (
     ls.some(
       (l, line) =>
@@ -123,4 +106,21 @@ export function checkSteel(w: World) {
     const line = RAIL_TRAINS[slot]!.line;
     return !allowed(line, r.boiler) || (line <= LINE2 && r.boiler > ls[line]!.boiler);
   })) bad('boiler aboard');
+  // Each line's install revision (garage step 4): line 2's is its two fits' sum at every accepted step; a trade line's
+  // is 0 until its first fit, which only an open trade accepts; no other line installs.
+  const revOk = (l: (typeof ls)[number], line: number) => {
+    if (line === LINE2) return l.rev === l.boiler + l.cradle;
+    if (!isTradeLine(line)) return l.rev === 0;
+    return l.rev > 0 === l.boiler > 0 && (l.boiler === 0 || tradeOpen(w, line));
+  };
+  if (ls.some((l, line) => !revOk(l, line))) bad('install revision');
+  // The garage table holds line 2's copy or an open trade line's (garage step 4).
+  const h = shed(w);
+  if (
+    !railInt(h.bringRev) ||
+    !railInt(h.brought, RAILWAY_MAX_INT, -1) ||
+    (h.brought >= 0) !== (h.bringRev > 0) ||
+    (h.tableLine !== LINE2 && !tradeOpen(w, h.tableLine))
+  )
+    bad('garage table');
 }
