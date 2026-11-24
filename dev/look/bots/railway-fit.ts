@@ -76,13 +76,37 @@ export async function fitAtPost({ bot, until, check, face }: Tools, l: number, f
     // The boiler: its tile clicked, then Install held once the table's hold is over.
     await click(`.g-parts [data-part="${fit}"]`, `the ${fit} boiler`);
     await until(() => snap().sel === fit, `the ${fit} boiler selected`, 8000);
-    await until(() => snap().canInstall, `the ${fit} boiler installable (the table's hold over)`, 60000);
     const pool = upgradePool(rw());
-    triggerAction('interact', 'down');
-    try {
-      await untilTicks(() => line(rw(), l).boiler === row, `line ${l} on row ${row} after the hold`, 600);
-    } finally {
-      triggerAction('interact', 'up');
+    // Held as a player holds it: a hold that drops (the part lowers, a refusal) is let go and made again, at most
+    // four times, each logged with the screen's states it passed through.
+    for (let attempt = 1; line(rw(), l).boiler !== row; attempt++) {
+      check(attempt <= 4, `line ${l} on row ${row} after four holds`);
+      await until(() => snap().canInstall, `the ${fit} boiler installable (the table's hold over)`, 60000);
+      const seen: string[] = [];
+      const note = () => {
+        const s = snap();
+        const k = `${s.phase}${s.held ? '+held' : ''}${s.waiting ? '+waiting' : ''}${s.canInstall ? '' : '-can'}${s.facts.held ? '+tablehold' : ''}`;
+        if (seen.at(-1) !== k) seen.push(k);
+      };
+      triggerAction('interact', 'down');
+      try {
+        // Down until fitted, or until the screen gave the hold up (idle, nothing in the air) after it began.
+        let began = false;
+        await untilTicks(
+          () => {
+            note();
+            began ||= snap().phase !== 'idle';
+            return line(rw(), l).boiler === row || (began && snap().phase === 'idle' && !snap().waiting);
+          },
+          `the ${fit} hold ended`,
+          600,
+        );
+      } finally {
+        triggerAction('interact', 'up');
+      }
+      console.log(
+        `RAILWAY FIT ${JSON.stringify({ tick: railAt(), attempt, fitted: line(rw(), l).boiler === row, seen })}`,
+      );
     }
     console.log(
       `RAILWAY FIT ${JSON.stringify({ tick: railAt(), line: l, fit, part: fit === 'quick' ? 5 : 6, row, rev: line(rw(), l).rev, pool: [pool, upgradePool(rw())] })}`,
