@@ -482,6 +482,12 @@ new way up a wall). Authoring: one previz round, then about one piece a session.
 styles (chunky Sunshine blocks; quieter Odyssey strata); (2) the chosen kit placed on the wedge in the live game, no
 flag, with matched before and after stills and a walk clip. He judges the wedge, then says where next.
 
+**Previz.** The [canyon mesh kit sheet](terrain-clean/previz/canyon-mesh-kit-previz.jpg) compares **Chunky Sunshine
+blocks** and **Quieter Odyssey strata** from the same two Boogle cameras. The source stills show
+[the view up the climb](terrain-clean/previz/up-the-climb.png) and
+[the view back down](terrain-clean/previz/back-down-the-climb.png). An original meadow swatch illustrates the
+Small Magic look note beside the paintovers. The sheet shows design intent for the owner's style pick.
+
 **Not in this proposal:** climbing, breakable rocks, anything a player uses. Pieces are scenery with colliders.
 
 **Reference:** [small-magic-look](../research/small-magic-look.md) (owner's look reference, 14 November): what makes a code-drawn meadow's ground and vegetation read well, and three flagged experiments for a lawn wedge.
