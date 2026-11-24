@@ -263,6 +263,33 @@ test('parking a car preserves the displayed rider across the next prePhysics sam
   frame(1017);
   assert.ok(avatar.position.x > 3 && avatar.position.x < 4, `rider jumped from 4 to ${avatar.position.x} m`);
 });
+test('parking halfway through first boarding eases from the rider already drawn', () => {
+  const { place, remote, platform } = parkedRiderFixture();
+  remote.ride.on = remote.ride.drawn = false;
+  remote.ride.boarding = true;
+  const avatar = { position: remote.target.clone(), rotation: { y: 0 } };
+  Object.assign(remote, { avatar });
+  platform.body.position.x = platform.body.interpolatedPosition.x = 4;
+  platform.body.position.y = platform.body.interpolatedPosition.y = 9;
+  const frame = (time: number) => {
+    remote.target.set(0, 10, 0);
+    remote.yaw = 0;
+    place(remote, time, false, 0);
+    place(remote, time, true, 1 / 60);
+    avatar.position.copy(remote.target);
+    avatar.rotation.y = remote.yaw;
+  };
+  for (let i = 0; i < 6; i++) frame(1000 + (i * 1000) / 60);
+  const before = avatar.position.x;
+  assert.ok(Math.abs(before - 2) < 1e-6, 'rider is halfway from presence to the deck');
+  platform.body.position.y = platform.body.interpolatedPosition.y = -60;
+  frame(1100);
+  assert.ok(
+    avatar.position.x > 1 && avatar.position.x < before,
+    `parked rider jumped from ${before} to ${avatar.position.x}`,
+  );
+});
+
 const body = (x: number, y: number, z: number) =>
   ({
     position: v3(x, y, z),
