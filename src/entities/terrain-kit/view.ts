@@ -68,9 +68,9 @@ function outside(box: NonNullable<ReturnType<typeof boxOf>>, p: THREE.Vector3) {
   );
 }
 
-/** m: how far Buddy may sink into a solid piece before it counts as standing inside it. A body resting against a solid
- * overlaps it by the solver's contact margin, never by this much; a teleport into one does. */
-const CONTACT = 0.05;
+/** m: a move this far between two fixed steps is a relocation (a return, a respawn, a teleport), not walking or falling:
+ * 5 m/s for a 60 Hz step is under 0.1 m. */
+const RELOCATED = 1;
 
 export async function createTerrainKitView() {
   const owner = createOwnedView();
@@ -94,11 +94,15 @@ async function build(owner: ReturnType<typeof createOwnedView>) {
     setTerrainKit(new Map()); // the builder keeps no disposed geometry reachable
     for (const g of pieces.values()) g.dispose();
   });
+  const meshes: THREE.Mesh[] = [];
   gltf.scene.traverse((o) => {
-    if (!(o instanceof THREE.Mesh)) return;
-    pieces.set(o.name || o.parent!.name, bake(o));
-    o.geometry.dispose(); // the file's quantized copy: only the baked one is drawn
+    if (o instanceof THREE.Mesh) meshes.push(o);
   });
+  try {
+    for (const o of meshes) pieces.set(o.name || o.parent!.name, bake(o));
+  } finally {
+    for (const o of meshes) o.geometry.dispose(); // the file's quantized copies, baked or not: only baked ones are drawn
+  }
   setTerrainKit(pieces);
 
   const placements = loadLevelArtifact(level, definitions).placements;
@@ -116,10 +120,12 @@ async function build(owner: ReturnType<typeof createOwnedView>) {
     );
   });
 
-  // Clearance, before every physics step: a piece is solid only while neither of Buddy's spheres is inside its boxes.
-  // It turns solid once Buddy is clear of it, and goes back to waiting if Buddy is put inside it (a return, a teleport),
-  // so the solver never has to push anyone out of rock. A waiting piece is not drawn either: an instance batch draws a
-  // piece only while it is enabled.
+  // Clearance, each fixed step after the player's own moves: a piece never turns solid around Buddy. At mount, a piece
+  // whose boxes hold either of Buddy's spheres waits until Buddy is clear. Afterwards only a relocation (Buddy more
+  // than RELOCATED from the last step: a return, a respawn, a teleport) can send a solid piece back to waiting, and only
+  // if Buddy landed inside it. Contact never does: a landing or a brush sinks the feet a few centimetres for a step,
+  // which is the solver's to resolve. A waiting piece is not drawn either: an instance batch draws a piece only while it
+  // is enabled.
   const kit = things.map((thing) => ({
     thing,
     boxes: thing.solids.map(boxOf).filter((b): b is NonNullable<typeof b> => b !== null),
@@ -127,9 +133,7 @@ async function build(owner: ReturnType<typeof createOwnedView>) {
   }));
   const probe = new THREE.Vector3();
   /** How far Buddy's nearer sphere centre is from a piece's solids. */
-  const gap = (boxes: (typeof kit)[number]['boxes']) => {
-    const body = me.body;
-    if (!body) return Infinity;
+  const gap = (body: NonNullable<typeof me.body>, boxes: (typeof kit)[number]['boxes']) => {
     let near = Infinity;
     for (const up of [0, HEAD_OFFSET]) {
       probe.set(body.position.x, body.position.y + up, body.position.z);
@@ -137,10 +141,18 @@ async function build(owner: ReturnType<typeof createOwnedView>) {
     }
     return near;
   };
+  let last: { body: unknown; x: number; y: number; z: number } | null = null;
   const settle = () => {
+    const body = me.body;
+    const relocated =
+      !!body &&
+      (!last ||
+        last.body !== body ||
+        Math.hypot(body.position.x - last.x, body.position.y - last.y, body.position.z - last.z) > RELOCATED);
+    last = body ? { body, x: body.position.x, y: body.position.y, z: body.position.z } : null;
     for (const piece of kit) {
-      const near = gap(piece.boxes);
-      if (piece.solid && near < PLAYER_R - CONTACT) piece.thing.setEnabled((piece.solid = false));
+      const near = body ? gap(body, piece.boxes) : Infinity;
+      if (piece.solid && relocated && near < PLAYER_R) piece.thing.setEnabled((piece.solid = false));
       else if (!piece.solid && near >= PLAYER_R) piece.thing.setEnabled((piece.solid = true));
     }
   };
@@ -148,8 +160,8 @@ async function build(owner: ReturnType<typeof createOwnedView>) {
 
   return {
     root: owner.root,
-    /** Before each physics step. */
-    prePhysics: settle,
+    /** Each fixed step, before it solves. */
+    fixedPre: settle,
     inspect: () => ({ pieces: things.length, batches: batches.size, waiting: kit.filter((k) => !k.solid).length }),
     dispose: () => owner.dispose(),
   };
