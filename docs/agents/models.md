@@ -19,8 +19,12 @@ different models at the same time"). The owner's words for each change are in
   Opus high, Fable medium only for extremely complex work. Fable never runs above high
   (`fableTopEffort`, owner 10 November: "fable high should be the absolute top used") and not at low either (the
   Fable 5.2 system card: low saves about 15% of medium's cost for a clear drop in score).
-- **Codex is the workhorse.** Use Sol 6.2 medium for routine implementation. Use Astra 6.2 for player-visible or
-  high-risk work and independent reviews; raise to high for tricky cases. Every Codex result is reviewed before it ships.
+- **Opus builds, Astra reviews, Neon spreads the load** (owner, 24 November 2026: "Make sure we're leveraging codex
+  and antigravity neon as well as Claude. Opus medium implement or and Astra reviewer is a good combo, neon good for
+  story and npc and also coding"). Opus medium takes the implementation rows, high-risk included; Astra 6.2 medium is
+  the first reviewer of an Opus build; Neon medium takes story and NPC work, fixes and tooling, and builds from a plan
+  outside the high-risk paths when Claude usage should be spread. Sol keeps images and previz.
+- **Codex.** Use Astra 6.2 for independent and code reviews; raise to high for tricky cases. Every Codex result is reviewed before it ships.
   The [Artificial Analysis Coding Agent Index](https://artificialanalysis.ai/agents/coding-agents/comparisons/claude-code-vs-codex)
   (17 November 2026) puts Sol medium at 45 versus 47 at high, and Astra medium at 49 versus 52 at high.
   Medium is our default, not a claim that effort levels are equivalent across providers. No route names

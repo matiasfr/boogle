@@ -45,15 +45,22 @@ export const routes: Route[] = [
     'opus',
     'high',
   ),
-  codex(
+  claude(
     'Implementation from a brief or an approved plan; the builder writes its own short plan first and revises it as it builds (the build skill)',
-    'gpt-6.2-sol',
+    'Claude (T3 delegate_task), or Antigravity gemini-4-neon medium to spread usage (not src/sim, src/net, src/world, server/ or the wire format)',
+    'opus',
     'medium',
   ),
-  codex(
-    'Player-visible implementation: views, cameras, effects, characters, prompts, feel, assets and look work',
-    'gpt-6.2-astra',
+  claude(
+    'Player-visible implementation: views, cameras, effects, prompts, feel, assets and look work',
+    'Claude (T3 delegate_task)',
+    'opus',
     'medium; high for tricky work',
+  ),
+  antigravity(
+    "Story and NPC work: characters' behaviour, conversations, placeholders and drafts for the owner (The Boogler's copy stays his)",
+    'gemini-4-neon',
+    'medium',
   ),
   claude(
     'Visual review of a player-visible change before it ships (opens the stills and motion sheets; names what looks wrong)',
@@ -61,12 +68,18 @@ export const routes: Route[] = [
     'opus',
     'medium; high for tricky work',
   ),
-  codex('Fixes, tooling and captures-driven tasks with no plan to follow', 'gpt-6.2-sol', 'medium'),
-  codex('High-risk implementation (server, sync, src/world, src/net)', 'gpt-6.2-astra', 'medium; high for tricky work'),
+  antigravity('Fixes, tooling and captures-driven tasks with no plan to follow', 'gemini-4-neon', 'medium'),
+  claude(
+    'High-risk implementation (server, sync, src/world, src/net)',
+    'Claude (T3 delegate_task)',
+    'opus',
+    'medium; high for tricky work',
+  ),
   {
     work: 'Independent review before merge of src/sim, src/net, src/world, server/ or the wire format (a failing test per suspected defect)',
     who: "a fresh reviewer with none of the author's context: a fresh Codex review delegate or a Claude delegate (T3 delegate_task)",
-    model: 'gpt-6.2-astra first, or opus, or gemini-4-neon (Antigravity)',
+    model:
+      'gpt-6.2-astra first (the reviewer for an Opus build), or opus for a Codex or Neon build, or gemini-4-neon (Antigravity)',
     effort: 'medium; high for tricky work',
   },
   {
