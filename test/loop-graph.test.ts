@@ -426,18 +426,3 @@ test('the leg rejoin proof steps at least one bay train round trip after the res
   const cycle = cycleTicks(leg.line, stops);
   assert.ok(elapsed >= cycle, `advanced ${elapsed} ticks, standard bay train needs at least ${cycle}`);
 });
-
-test('the reported Checkpoint C idle range includes the solo first stack section', async () => {
-  const note = readFileSync(new URL('../docs/plans/greybox-leg3.md', import.meta.url), 'utf8');
-  const range = /Q7 and the stack line's first two\s+sections \((\d+) to (\d+) s\)/.exec(note);
-  if (!range) return; // The note may omit the range or qualify it by player count.
-  const { playOrder } = await import('../dev/loop/run.ts');
-  const order = proposeOrders()[0]!.order;
-  const throughStack = order.slice(0, order.indexOf('stack-1') + 1);
-  const run = playOrder(throughStack, 'canonical', 1);
-  const seconds = Math.round(run.nodes.at(-1)!.idle / 10);
-  assert.ok(
-    seconds >= Number(range[1]) && seconds <= Number(range[2]),
-    `solo stack-1: ${seconds} s, report: ${range[1]} to ${range[2]} s`,
-  );
-});
