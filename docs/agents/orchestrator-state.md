@@ -11,7 +11,7 @@ The one record of who is running what, and what the five-job limit is counted fr
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
 | Canopy and leg 3's views (greybox leg 3 step 6) | The greybox route | claude/greybox-leg3-views | live session, Opus medium | 2026-11-24 08:20 | running |
-| Garage step 4 re-plan against leg 3 as built | Garage choices | claude/garage-step4-replan | live session, Opus high (planner) | 2026-11-24 09:30 | running |
+| Garage step 4, steps 1 and 2: the page and the rules (v67) | Garage choices | claude/garage-step4-rules | live session, Opus medium | 2026-11-24 10:10 | running |
 | Canyon mesh kit on the wedge, Chunky Sunshine | Terrain clean-up | claude/canyon-kit-chunky | live session, Opus medium | 2026-11-24 09:30 | running |
 
 ## Where the work stands
@@ -42,8 +42,6 @@ Cleaned on 24 November: every item from 5 to 19 November is in [the log](orchest
 - How many riders a passenger car holds and how cars are added (check [his answers](../decisions-rail.md#d-2026-11-16-rider-coach-a-and-rework) first).
 
 **His words** (The Boogler's copy): Button's line for `SHOP.kept[0]`; the first house resident's name and lines (placeholders are live); the "Steam" card reads "You got steam!" (recommended: leave it).
-
-**Garage step 4 and Strong's saving** ([Checkpoint G report](../reports/greybox-leg3-checkpoint-g.md), #2331): Strong fitted at `bay-reached` saves 7.7 s solo against Standard and is 17.9 s slower than Quick (only a start right at the gate gains); fitted at `bay-mid` it saves 55.7 s (13.5 s over Quick). By the leg 3 plan this goes to him before garage step 4's screen is built, not before its rules; the re-plan proceeds and carries options. Recommended: keep going and let the re-plan propose what makes Strong worth fitting early.
 
 **For his eye:** the waiting Rail yoke reads as a thin outline in a glass box; the halt yard's forge fingerpost is a plain stake.
 
