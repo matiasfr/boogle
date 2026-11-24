@@ -26,7 +26,7 @@
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
-import type { Body } from '../../physics/engine.ts';
+import type { Body, Shape } from '../../physics/engine.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { LinePoint } from '../../place/layout.ts';
 import { me } from '../../player/player.ts';
@@ -78,7 +78,7 @@ import { canopyGround } from './massing-canopy.ts';
 import { AREA_CENTRES, LEG2_TEXT } from './leg2-layout.ts';
 import { areaLabels } from './state.ts';
 import type { GreyBox } from './boxes.ts';
-import { clearOf, exitFrom } from './clear.ts';
+import { boxShape, heldTop, liftOrWait } from './clear.ts';
 
 // Placeholder labels (the step 4 design review's answers b, e, i, k and l; none is The Boogler's).
 const FEED = 'Feed the frame',
@@ -389,10 +389,10 @@ const HOME_BOARD_S = BAY_CUT_END - 19.5;
 
 export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
   const [{ addStatic, slab }, ground] = await Promise.all([import('../../place/land.ts'), islandGround()]);
-  /** Whether your body (its two spheres) stands in box `b` (the shared site clearance, ./clear.ts), measured in the
-   * box's own frame, pitch and all (a sea ramp's slip is pitched about 28°), as its collider is built (stand). A
-   * standing piece's collider waits until you are out of it; a deck's slab moves you clear first (solidDeck). */
-  const inBox = (b: GreyBox) => !!exitFrom(b);
+  /** Whether your body (its two spheres) stands in box `b` (./clear.ts), measured in the box's own frame, pitch and
+   * all (a sea ramp's slip is pitched about 28°), as its collider is built (stand): a standing piece's collider waits
+   * until you are out of it. A deck's slabs lift you onto them or wait too (solidDeck). */
+  const inBox = (b: GreyBox) => !!me.body && heldTop(boxShape(b)) !== null;
   const deck = createBoxBatch(owner, 4800, false),
     things = createBoxBatch(owner, 700, false);
   // Named, so a look can count what the leg's views add to a frame (dev/look/evals/stack-draws.ts).
@@ -550,6 +550,8 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
      * merges 10 m lengths that run straight and level into one slab. */
     function solidDeck(laid: number) {
       for (const b of deckBodies.splice(0)) owner.removeBody(b);
+      slabsWaiting = [];
+      const slabs: Slab[] = [];
       const end = END[laid]!,
         a = { x: 0, z: 0 },
         b = { x: 0, z: 0 },
@@ -574,12 +576,23 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         geo.world(s1, mid, b);
         const y0 = geo.y(s0),
           y1 = geo.y(s1);
-        // A body standing where the slab goes (on the bed under it, or on Bell Rock's rock under leg 3's descent) is
-        // moved clear first: onto the deck from the bed, out from under it from the rock (slab: 0.4 m thick).
-        clearOf(slabBox(a, b, y0, y1, sp.width, 0.05));
-        deckBodies.push(slab(a.x, a.z, b.x, b.z, y0, y1, sp.width, owner, 0.05));
+        slabs.push({ a: { ...a }, b: { ...b }, y0, y1, shape: boxShape(slabBox(a, b, y0, y1, sp.width, 0.05)) });
         s0 = s1;
       }
+      // A body where the slabs go (on the bed under them, or on Bell Rock's rock under leg 3's descent) is lifted onto
+      // them if its feet are within a step of their top; else the slabs that hold it wait, as one set (./clear.ts).
+      slabsWaiting = layOrHold(slabs);
+    }
+    type Slab = { a: { x: number; z: number }; b: { x: number; z: number }; y0: number; y1: number; shape: Shape };
+    /** The slabs held off while you stand in them, retried each frame (solid). */
+    let slabsWaiting: Slab[] = [];
+    /** Makes `slabs` solid, but those that hold your body when it cannot be lifted onto them; returns those. */
+    function layOrHold(slabs: readonly Slab[]) {
+      const { kind, held } = liftOrWait(slabs.map((x) => x.shape)),
+        keep = kind === 'wait' ? slabs.filter((_x, i) => held.includes(i)) : [];
+      for (const x of slabs)
+        if (!keep.includes(x)) deckBodies.push(slab(x.a.x, x.a.z, x.b.x, x.b.z, x.y0, x.y1, sp.width, owner, 0.05));
+      return keep;
     }
     /** The boxes that stand for a state of the line: buffers at its end (and a row's start), and each stopping head's
      * platform and ramp. */
@@ -681,6 +694,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     function clear() {
       for (const b of deckBodies.splice(0)) owner.removeBody(b);
       for (const b of standing.bodies.splice(0)) owner.removeBody(b);
+      slabsWaiting = [];
       standing.boxes = [];
       waiting = [];
       deckLaid = stood = deckEnd = -1;
@@ -721,6 +735,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       /** The slabs and standing pieces for `laid` (once each change). */
       solid(laid: number, through: boolean) {
         if (laid !== deckLaid) solidDeck((deckLaid = laid));
+        else if (slabsWaiting.length) slabsWaiting = layOrHold(slabsWaiting);
         stand(laid, through);
       },
       /** Into `things`: the standing pieces, the end board, the passed block signals and a row's departure boards. */

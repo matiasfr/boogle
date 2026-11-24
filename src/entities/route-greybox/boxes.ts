@@ -63,6 +63,7 @@ export async function drawGreyBoxes(owner: OwnedView, placements: readonly Place
   batch.mesh.count = count;
   let solids = 0,
     index = 0;
+  const instances: ReturnType<typeof instantiate>[] = [];
   for (const p of placements) {
     const instance = instantiate(p.prefab, p, {
       owner,
@@ -72,6 +73,7 @@ export async function drawGreyBoxes(owner: OwnedView, placements: readonly Place
     index += slots(p);
     instance.setEnabled(true);
     solids += instance.bodies.length;
+    instances.push(instance);
   }
   const trimmed = gorgeSurfaces(placements);
   if (trimmed.size) {
@@ -127,5 +129,5 @@ export async function drawGreyBoxes(owner: OwnedView, placements: readonly Place
   }
   batch.mesh.computeBoundingBox();
   batch.mesh.computeBoundingSphere();
-  return { mesh: batch.mesh, solids };
+  return { mesh: batch.mesh, solids, instances };
 }

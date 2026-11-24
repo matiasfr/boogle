@@ -1,85 +1,128 @@
-// Before a greybox solid goes on (a laid deck's slab, a resident area's boxes), a player standing in it is moved clear
-// by the shared clearance (src/place/site-clearance.ts siteExit, moving out of the box's footprint with sites.ts
-// outOf): onto its top when only the feet are in it (a lay over the unlaid bed lifts a body standing there), else
-// sideways out of it. A player resting on it or against it stays put. Local presentation of accepted state: no state.
+// A greybox solid switching on with a player standing in it (a laid deck's slab, a resident area's boxes and prisms):
+// lift or wait, never push sideways (orchestrator's call, 24 November, after three review rounds). If the body's feet
+// are within STEP of the highest top among the solids that hold it, it is lifted onto that top (a lay over the unlaid
+// bed lifts a body standing there, as leg 2's bed meant); otherwise all the solids that hold it stay off, as one set,
+// until it is clear of every one, and then switch on. Nobody is moved anywhere but onto a solid's own top. Local
+// presentation of accepted state: no state, no sync.
 import * as THREE from 'three/webgpu';
 import { HEAD_OFFSET, PLAYER_R } from '../../constants.ts';
 import { me } from '../../player/player.ts';
-import { siteExit } from '../../place/site-clearance.ts';
-import { outOf } from '../../place/sites.ts';
+import type { Shape } from '../../physics/engine.ts';
 import type { GreyBox } from './boxes.ts';
-import { compiled } from '../../prefab/catalogue.ts';
-import type { Placement } from '../../prefab/types.ts';
 
-const euler = new THREE.Euler(0, 0, 0, 'YXZ'),
-  toBox = new THREE.Quaternion(),
-  rel = new THREE.Vector3();
-/** A point in box `b`'s own frame (pitch and all, as its collider is built). */
-function local(b: GreyBox, p: { x: number; y: number; z: number }) {
-  toBox.setFromEuler(euler.set(-(b.pitch ?? 0), b.yaw, 0)).invert();
-  return rel.set(p.x - b.x, p.y - b.y, p.z - b.z).applyQuaternion(toBox);
+/** The most a body's feet may be under a solid's top and still be lifted onto it. */
+const STEP = 0.3,
+  /** A sphere this far into a solid is resting on it, not in it. */
+  CONTACT = 0.02;
+const toLocal = new THREE.Quaternion(),
+  rel = new THREE.Vector3(),
+  top = new THREE.Vector3(),
+  euler = new THREE.Euler(0, 0, 0, 'YXZ');
+type P = { x: number; y: number; z: number };
+
+/** A greybox box (yaw, then pitch about its x, as its collider is built) as a physics shape. */
+export function boxShape(b: GreyBox): Shape {
+  const q = new THREE.Quaternion().setFromEuler(euler.set(-(b.pitch ?? 0), b.yaw, 0));
+  return {
+    kind: 'box',
+    hx: b.w / 2,
+    hy: b.h / 2,
+    hz: b.d / 2,
+    offset: { x: b.x, y: b.y, z: b.z },
+    rotation: { x: q.x, y: q.y, z: q.z, w: q.w },
+  };
 }
-/** Metres from `p` to box `b`, 0 inside. */
-export function boxDistance(b: GreyBox, p: { x: number; y: number; z: number }) {
-  const l = local(b, p);
-  return Math.hypot(
-    Math.max(0, Math.abs(l.x) - b.w / 2),
-    Math.max(0, Math.abs(l.y) - b.h / 2),
-    Math.max(0, Math.abs(l.z) - b.d / 2),
-  );
+/** `p` in shape `s`'s own frame (into `rel`). */
+function local(s: Shape, p: P) {
+  const o = s.offset ?? { x: 0, y: 0, z: 0 },
+    r = s.rotation;
+  toLocal.set(r?.x ?? 0, r?.y ?? 0, r?.z ?? 0, r?.w ?? 1).invert();
+  return rel.set(p.x - o.x, p.y - o.y, p.z - o.z).applyQuaternion(toLocal);
 }
-/** The footprint the shared clearance moves a body out of. */
-const footOf = (b: GreyBox) => ({ x: b.x, z: b.z, c: Math.cos(b.yaw), s: Math.sin(b.yaw), hw: b.w / 2, hd: b.d / 2 });
-/** Where the shared clearance would move your body out of box `b` (its two spheres overlap it), or null if clear. */
-export function exitFrom(b: GreyBox, contact = 0.02) {
-  if (!me.body) return null;
-  return siteExit(me.body.position, footOf(b), b.y, [], outOf, undefined, contact, (p) => boxDistance(b, p));
-}
-/** The most a body's feet may be under box `b`'s top and still be lifted onto it rather than moved out sideways. */
-const STEP = 0.3;
-/** Moves your body clear of box `b` before its collider goes on: onto its top if only the feet are in it, else out of
- * its footprint at the same height. True if it moved you. */
-export function clearOf(b: GreyBox) {
-  const body = me.body;
-  if (!body) return false;
-  const p = body.position,
-    overlaps = [0, HEAD_OFFSET].some((up) => boxDistance(b, { x: p.x, y: p.y + up, z: p.z }) < PLAYER_R - 0.02);
-  if (!overlaps) return false;
-  const l = local(b, p),
-    pitch = b.pitch ?? 0,
-    top = b.y + (b.h / 2) * Math.cos(pitch) + l.z * Math.sin(pitch),
-    inside = Math.abs(l.x) <= b.w / 2 && Math.abs(l.z) <= b.d / 2;
-  let to: { x: number; y: number; z: number } | null = null;
-  if (inside && p.y - PLAYER_R >= top - STEP) to = { x: p.x, y: top + PLAYER_R + 0.02, z: p.z };
-  else {
-    const exit = exitFrom(b);
-    if (exit) to = { x: exit.x, y: p.y, z: exit.z };
+/** The lowest face of trimesh `s` straight over local point `l`, and how many faces are over it (odd: inside). */
+function over(s: Extract<Shape, { kind: 'trimesh' }>, l: THREE.Vector3) {
+  const v = s.vertices,
+    ix = s.indices;
+  let lowest = Infinity,
+    count = 0;
+  for (let t = 0; t < ix.length; t += 3) {
+    const a = 3 * ix[t]!,
+      b = 3 * ix[t + 1]!,
+      c = 3 * ix[t + 2]!;
+    const ax = v[a]!,
+      az = v[a + 2]!,
+      bx = v[b]! - ax,
+      bz = v[b + 2]! - az,
+      cx = v[c]! - ax,
+      cz = v[c + 2]! - az,
+      px = l.x - ax,
+      pz = l.z - az,
+      det = bx * cz - bz * cx;
+    if (Math.abs(det) < 1e-9) continue; // a wall: seen edge-on from above
+    const u = (px * cz - pz * cx) / det,
+      w = (bx * pz - bz * px) / det;
+    if (u < 0 || w < 0 || u + w > 1) continue;
+    const y = v[a + 1]! + u * (v[b + 1]! - v[a + 1]!) + w * (v[c + 1]! - v[a + 1]!);
+    if (y <= l.y) continue;
+    count++;
+    lowest = Math.min(lowest, y);
   }
-  if (!to) return false;
-  p.set(to.x, to.y, to.z);
-  body.interpolatedPosition?.set(to.x, to.y, to.z);
-  body.velocity?.set(0, 0, 0);
-  return true;
+  return { lowest, count };
 }
-/** The solid boxes among compiled placements (a prefab whose one collider is its unit box at its origin, as
- * `greybox.box` and `greybox.collider`), as boxes in the world: the solids an area's mount turns on. */
-export function placedBoxes(placements: readonly Placement[]): GreyBox[] {
-  return placements.flatMap((p) => {
-    const c = compiled.prefabs[p.prefab]?.colliders;
-    if (c?.length !== 1 || c[0]!.shape !== 'box' || c[0]!.at.some((v) => v !== 0) || c[0]!.rot) return [];
-    const [hx, hy, hz] = c[0]!.half,
-      [sx = 1, sy = 1, sz = 1] = p.scale ?? [];
-    return [
-      {
-        x: p.pos[0],
-        y: p.pos[1],
-        z: p.pos[2],
-        w: 2 * hx * sx,
-        h: 2 * hy * sy,
-        d: 2 * hz * sz,
-        yaw: p.rot?.[0] ?? 0,
-        pitch: -(p.rot?.[1] ?? 0),
-      },
-    ];
+/** If your body (either sphere) is in solid `s`, the height of the solid's top over it; else null. Boxes and
+ * trimeshes (a closed prism, or one open underneath as the lands' are); other kinds never hold. */
+export function heldTop(s: Shape, body: P = me.body!.position): number | null {
+  const spheres = [0, HEAD_OFFSET].map((up) => ({ x: body.x, y: body.y + up, z: body.z }));
+  if (s.kind === 'box') {
+    const inside = spheres.some((p) => {
+      const l = local(s, p);
+      const d = Math.hypot(
+        Math.max(0, Math.abs(l.x) - s.hx),
+        Math.max(0, Math.abs(l.y) - s.hy),
+        Math.max(0, Math.abs(l.z) - s.hz),
+      );
+      return d < PLAYER_R - CONTACT;
+    });
+    if (!inside) return null;
+    // The top face's height over the body: its local point at the body's (x, z), back in the world.
+    const l = local(s, body),
+      r = s.rotation,
+      o = s.offset ?? { x: 0, y: 0, z: 0 };
+    top
+      .set(Math.max(-s.hx, Math.min(s.hx, l.x)), s.hy, Math.max(-s.hz, Math.min(s.hz, l.z)))
+      .applyQuaternion(toLocal.set(r?.x ?? 0, r?.y ?? 0, r?.z ?? 0, r?.w ?? 1));
+    return top.y + o.y;
+  }
+  if (s.kind === 'trimesh') {
+    // In it: a sphere's centre under an odd number of faces, or its bottom less than a radius under the top.
+    for (const p of spheres) {
+      const l = local(s, { ...p, y: p.y - PLAYER_R + CONTACT }),
+        { lowest, count } = over(s, l);
+      if (count % 2 === 1) return lowest + (s.offset?.y ?? 0);
+    }
+  }
+  return null;
+}
+/** What switching `solids` on means for your body: `clear` (none holds it), `lifted` (its feet were within STEP of
+ * the highest top among those that hold it: it now stands on that top) or `wait` (keep every solid that holds it off
+ * until it is clear). `held` lists the indices of the solids that hold it. */
+export function liftOrWait(solids: readonly Shape[]): { kind: 'clear' | 'lifted' | 'wait'; held: number[] } {
+  const body = me.body;
+  if (!body) return { kind: 'clear', held: [] };
+  const p = body.position,
+    held: number[] = [];
+  let highest = -Infinity;
+  solids.forEach((s, i) => {
+    const t = heldTop(s, p);
+    if (t === null) return;
+    held.push(i);
+    highest = Math.max(highest, t);
   });
+  if (!held.length) return { kind: 'clear', held };
+  if (p.y - PLAYER_R < highest - STEP) return { kind: 'wait', held };
+  const y = highest + PLAYER_R + CONTACT;
+  p.set(p.x, y, p.z);
+  body.interpolatedPosition?.set(p.x, y, p.z);
+  body.velocity?.set(0, 0, 0);
+  return { kind: 'lifted', held };
 }
