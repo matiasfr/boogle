@@ -316,22 +316,35 @@ test('the shared prefix preserves three-player idle time in the T3 before beam o
 
 // Replay the real proof with one corrupt observation. The intact fixture stocks the rack,
 // moves 16 rails to the carrier and leg, and holds the following kit aboard through a restart.
-async function replayLegRejoin(fault?: 'held' | 'rack' | 'empty cargo' | 'restore' | 'mirror') {
+type RejoinFault =
+  | 'held'
+  | 'rack'
+  | 'empty cargo'
+  | 'restore'
+  | 'mirror'
+  | 'short pickup'
+  | 'fed during pickup'
+  | 'missing load'
+  | 'stale train mirrors'
+  | 'late mirror';
+
+async function replayLegRejoin(fault?: RejoinFault) {
   const pages = new Set<string>();
   let tick = 0,
     picked = false,
     restoredAt = -1;
   const kitUnits = fault === 'empty cargo' ? 0 : 20;
+  const pickup = fault === 'short pickup' ? 1 : 16;
   const leg = () => ({
     slot: 3,
     laid: 1,
     logs: 0,
-    rails: 0,
+    rails: picked && fault === 'fed during pickup' ? 1 : 0,
     start: -1,
     loadedLogs: tick ? 60 : 40,
-    loadedRails: tick ? 60 : 40,
+    loadedRails: tick && fault !== 'missing load' ? 60 : 40,
     heldLogs: 0,
-    heldRails: picked && fault !== 'held' ? 16 : 0,
+    heldRails: picked && fault !== 'held' ? pickup : 0,
   });
   const rack = () => ({
     depot: tick > 0 ? 20 : 0,
@@ -339,13 +352,13 @@ async function replayLegRejoin(fault?: 'held' | 'rack' | 'empty cargo' | 'restor
   });
   function rackRails() {
     if (tick === 0 || (fault === 'restore' && tick === restoredAt)) return 0;
-    return picked && fault !== 'rack' ? 4 : 20;
+    return picked && fault !== 'rack' ? 20 - pickup : 20;
   }
   const train = (_world: unknown, slot: number) => {
     const legKit = slot === (tick === 0 ? 10 : 9);
     return { legKit, logs: legKit ? kitUnits : 0, rails: legKit ? kitUnits : 0 };
   };
-  const back = () => ({ rails: picked ? 16 : 0, legRails: picked ? 16 : 0 });
+  const back = () => ({ rails: picked ? pickup : 0, legRails: picked ? pickup : 0 });
   const world = {
     rules: { railway: { world: () => ({}) } },
     sync: {
@@ -373,15 +386,29 @@ async function replayLegRejoin(fault?: 'held' | 'rack' | 'empty cargo' | 'restor
         waitFor: async (fn: () => Promise<boolean>) => ((await fn()) ? 0 : -1),
         ev: (_page: unknown, fn: (arg: unknown) => unknown, arg: unknown) => {
           // Both tabs can still agree on the pre-pickup packet before leaving.
-          const observed = fault === 'mirror' && restoredAt < 0 ? { rails: 0, legRails: 0 } : back();
+          const staleBack =
+            (fault === 'mirror' && restoredAt < 0) || (fault === 'late mirror' && restoredAt >= 0 && tick > restoredAt);
+          const observed = staleBack ? { rails: 0, legRails: 0 } : back();
+          const legSpec = RAIL_LEGS.find((l) => l.id === 'bell-canopy')!;
+          const trains = LINE_SLOTS[legSpec.line]!.map((slot) => ({
+            slot,
+            ...train(undefined, slot),
+          }));
+          if (fault === 'stale train mirrors' && restoredAt >= 0) {
+            trains.find((t) => t.legKit)!.rails = 0;
+          }
           const T = {
             railStand() {},
             railIntent() {
               picked = true;
             },
             room: { peers: () => [...pages].map((peer) => ({ peer })) },
-            railAdapter: () => ({ session: { ready: true, pending: 0 }, rows: { account: { ...observed } } }),
-            rail: () => ({ ready: true, hash: 42 + observed.rails, accounts: [{ pid: 'leg0', ...observed }] }),
+            railAdapter: () => ({ session: { ready: true, pending: 0 }, rows: { account: { ...observed }, trains } }),
+            rail: () => ({
+              ready: true,
+              hash: 42 + observed.rails + trains.reduce((sum, t) => sum + t.rails, 0),
+              accounts: [{ pid: 'leg0', ...observed }],
+            }),
           };
           return runInNewContext('(' + fn.toString() + ')(arg)', { window: { T }, arg });
         },
@@ -413,6 +440,18 @@ async function replayLegRejoin(fault?: 'held' | 'rack' | 'empty cargo' | 'restor
 
 for (const fault of ['held', 'rack', 'empty cargo', 'restore', 'mirror'] as const) {
   test('the leg rejoin proof detects corrupted ' + fault, async () => {
+    await assert.rejects(replayLegRejoin(fault), /Leg rejoin proof stopped/);
+  });
+}
+
+for (const fault of [
+  'short pickup',
+  'fed during pickup',
+  'missing load',
+  'stale train mirrors',
+  'late mirror',
+] as const) {
+  test('the leg rejoin proof detects ' + fault, async () => {
     await assert.rejects(replayLegRejoin(fault), /Leg rejoin proof stopped/);
   });
 }
