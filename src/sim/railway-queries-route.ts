@@ -240,10 +240,10 @@ export function legRackNeed(w: World, k: number) {
     rail = w.get(Rail, w.single(Rail))!;
   if (!s || row.start >= 0 || !legOpen(w, k)) return { logs: 0, rails: 0 };
   const held = heldKit(w, k);
-  return {
-    logs: Math.max(0, s.logs - row.logs - rail.depot - held.logs),
-    rails: Math.max(0, s.rails - row.rails - rail.depotRails - held.rails),
-  };
+  return less(s, {
+    logs: row.logs + rail.depot + held.logs,
+    rails: row.rails + rail.depotRails + held.rails,
+  });
 }
 /** The halt (on `line`) where its trains unload leg k's kit: the feeder's destination for a yard leg minted on another
  * line, else the leg's rack halt (legKitStop). */
