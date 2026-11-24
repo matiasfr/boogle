@@ -614,6 +614,8 @@ rides with it. Steps 6 and 7 ship on their own after it.
 
 ### Checkpoint G (garage step 4 may start)
 
+- [x] **Checkpoint G passed (24 November 2026):** see [greybox-leg3-checkpoint-g.md](../reports/greybox-leg3-checkpoint-g.md) (Strong fitted at `bay-reached` saves under 15 s solo — goes to the owner).
+
 After steps 1 to 5 are on main. Proofs, run once: step 3's table (the hold's saving per fit and start, solo and a pair)
 and the hold test; step 2's fuzz figures; `npm run loop -- run`; `npm run test:net`. **Garage step 4 is briefed from
 here**, with [what it gets](#what-garage-step-4-gets-from-leg-3), the table and [open question 1](#open-questions)'s
