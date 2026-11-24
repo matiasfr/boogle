@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-24 · A server deploy skips its tests and image build when CI's `server` and `image` jobs passed on the same source tree ([entry](#d-2026-11-24-deploy-skips-green-rerun))
 - 2026-11-24 · Eight jobs in flight across all sessions (was five); still at most two browser-heavy on HOTBOX ([entry](#d-2026-11-24-eight-jobs))
 - 2026-11-24 · The heartbeat leaves a live session's job alone until its claim lapses: it reports it, never reviews, re-checks, fixes or ships it ([entry](#d-2026-11-24-heartbeat-leaves-live-jobs))
 - 2026-11-24 · The prefab door may grow by one export, and the engine by one shape-overlap query, for the shared lift-or-wait helper; nothing else grows ([entry](#d-2026-11-24-door-export-clearance-helper))
@@ -108,6 +109,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · Mini-games get their own design pass later. ([entry](#d-undated-mini-games-get-their-own-design))
 
 ## Decided
+
+- <a id="d-2026-11-24-deploy-skips-green-rerun"></a>**2026-11-24, the server deploy skips a green rerun** (owner, 24 November 2026, in the live session: "Yeah, let's ... skipping the ... deployer reruns test that we already passed ... I say yes, let's do it"). A server merge took about 19 minutes to go live because `deploy-server.yml` reran the server tests and rebuilt and booted the image that CI's `server` and `image` jobs had passed on the ship branch minutes earlier. Its test job now first looks for a successful CI run whose commit has the same source tree with both jobs green, and skips those steps when it finds one; any doubt runs them as before. Expected: about 8 minutes from merge to live. Running CI on HOTBOX instead of GitHub was not taken (slower than eight cloud shards, loads the capture machine, and loses Linux coverage).
 
 - <a id="d-2026-11-24-eight-jobs"></a>**2026-11-24, eight jobs in flight** (owner, 24 November 2026, in the live session: "can we increase our job queued limit to allow for more? Uh, for more jobs simultaneously"). Measured first: HOTBOX had 1.7 of 20 logical CPUs busy and 44 GB free with two to four jobs running, so the machine was not the limit. The limit on jobs in flight across all sessions goes from five ([18 November](#d-2026-11-18-five-jobs-fewer-bookkeeping-ships)) to eight, the orchestrator's pick; at most two browser-heavy jobs on HOTBOX stays, because bot runs and two-player looks share one GPU. An independent review counts as part of its build's job, not an extra row. Procedure: [orchestrate skill](../.claude/skills/orchestrate-boogle/SKILL.md), section 9.
 
