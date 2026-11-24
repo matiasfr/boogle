@@ -7,8 +7,8 @@
 import * as THREE from 'three/webgpu';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import url from '../../../assets/built/terrain-kit.glb?url';
 import { registerAsset } from '../../render/asset-manifest.ts';
+import url from './kit-url.ts';
 import { createOwnedView } from '../../render/owned-view.ts';
 import { me } from '../../player/player.ts';
 import { HEAD_OFFSET, PLAYER_R } from '../../constants.ts';
@@ -84,6 +84,7 @@ export async function createTerrainKitView() {
   });
   setTerrainKit(pieces);
   owner.cleanup(() => {
+    setTerrainKit(new Map()); // the builder keeps no disposed geometry reachable
     for (const g of pieces.values()) g.dispose();
   });
 
