@@ -82,7 +82,7 @@ const HOST_ONLY: Record<HostSection, number> = {
   'request stop': 11,
   leaf: 9,
   'carrier leaves': 31,
-  'leg rejoin': 19,
+  'leg rejoin': 23,
 };
 const skipped: HostSection[] = [];
 const hostMarks = new Map<HostSection, number>();

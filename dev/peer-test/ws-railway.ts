@@ -1390,13 +1390,15 @@ export async function railwayCarrierLeaves(c: Ctx) {
 
 // Greybox leg 3's Checkpoint C (docs/plans/greybox-leg3.md): at `canopy-mid` (the seed doc a playtest jump-in writes),
 // a second tab joins; the first takes rails off head 1's rack, leaves (its page closes: a `bye`, not a lost link), the
-// server restarts, and it rejoins. Every count is checked exactly against the catalog and the pickup: the leg's row
-// (sections laid, fed and held), the rack, the kit aboard the bay trains and the carrier's back, right after the rejoin
-// and again after a full bay train round trip (cycleTicks over the line's stops to head 1); each tab's mirror of the
-// carrier's back is checked against the server's room, not only against the other tab's. Today's rule (read, not
-// decided here; server/src/host/host-maintenance.ts): a leaver's lifted leg units stay on their back and counted held
-// for the leg through `railBeamGraceS` (180 s); past it legKitRelease takes them off the held count only. The grace
-// clock lives in the host's memory, so a restart starts it again for anyone still away.
+// server restarts, and it rejoins. At every checkpoint (the seed, a round trip later, the pickup, before the leave,
+// while away, straight after the rejoin, a round trip later) the server's counts are checked against exact values from
+// the catalog and the pickup: the leg's row (laid, fed, start, loaded and held, logs and rails), the rack, the kit
+// aboard the bay trains and the carrier's back. Each tab's own mirror of the back and of every bay train's kit is
+// checked against the same values; the tabs' leg rows and rack are not in their probes, only in the hash they share.
+// "A round trip" is cycleTicks over the line's stops to head 1. Today's rule (read, not decided here;
+// server/src/host/host-maintenance.ts): a leaver's lifted leg units stay on their back and counted held for the leg
+// through `railBeamGraceS` (180 s); past it legKitRelease takes them off the held count only. The grace clock lives in
+// the host's memory, so a restart starts it again for anyone still away.
 export async function railwayLegRejoin(c: Ctx) {
   // The whole case, the seed build included (about two minutes on HOTBOX), within its own deadline.
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -1418,6 +1420,7 @@ export async function railwayLegRejoin(c: Ctx) {
 async function legRejoin(c: Ctx) {
   const { RAIL_LEGS, legRack } = await import('../../src/sim/railway-route.ts');
   const { RAIL_LINES } = await import('../../src/sim/railway-lines.ts');
+  const { RAILWAY_CAPACITY } = await import('../../src/sim/railway-layout.ts');
   const { legRow } = await import('../../src/sim/railway-queries-route.ts');
   const { account, rail: railRow } = await import('../../src/sim/railway-rows.ts');
   const { LINE_SLOTS, cycleTicks } = await import('../../src/sim/railway-trains.ts');
@@ -1432,6 +1435,37 @@ async function legRejoin(c: Ctx) {
     leg.line,
     RAIL_LINES[leg.line]!.halts.slice(0, leg.railheadHalt + 1).map((h) => h.s),
   );
+  // canopy-mid: section 1 laid (railway-seed-legs.ts), section 2's kit aboard. The pickup is a yoked back's rails off
+  // a rack holding section 2's whole bill: the yoke is long taken by this stage.
+  const LAID = 1;
+  const bill = (i: number) => ({ logs: leg.sections[i]!.logs, rails: leg.sections[i]!.rails });
+  const billsTo = (n: number) =>
+    leg.sections.slice(0, n).reduce((t, s) => ({ logs: t.logs + s.logs, rails: t.rails + s.rails }), { logs: 0, rails: 0 });
+  const PICKUP = Math.min(bill(LAID).rails, RAILWAY_CAPACITY.railsYoke);
+  type Stage = 'seed' | 'racked' | 'carried';
+  /** What the server must hold at each stage, from the catalog and the pickup alone. */
+  const expected = (stage: Stage) => {
+    const kit = bill(stage === 'seed' ? LAID : LAID + 1),
+      loaded = billsTo(stage === 'seed' ? LAID + 1 : LAID + 2),
+      carried = stage === 'carried' ? PICKUP : 0,
+      racked = stage === 'seed' ? { logs: 0, rails: 0 } : bill(LAID);
+    return {
+      row: {
+        laid: LAID,
+        logs: 0,
+        rails: 0,
+        start: -1,
+        loadedLogs: loaded.logs,
+        loadedRails: loaded.rails,
+        heldLogs: 0,
+        heldRails: carried,
+      },
+      aboard: [kit],
+      rack: { logs: racked.logs, rails: racked.rails - carried },
+      back: { rails: carried, legRails: carried },
+    };
+  };
+  type Expected = ReturnType<typeof expected>;
   // The seed doc a jump-in writes, written into the server's store before any page opens (as `look --rail-seed`):
   // POST /jump builds an unprebuilt stage in a worker with a 60 s limit (server/src/jump.ts), and canopy-mid, built
   // from ring-joined through every leg stage, takes longer than that on HOTBOX.
@@ -1449,37 +1483,79 @@ async function legRejoin(c: Ctx) {
   const B = await c.web.open('L1', url('leg1'));
   // The server's world, read again at each use: a restart replaces the hosted room.
   const live = async () => (await hostedWorld(c, roomId)).rules.railway.world();
-  /** The server's counts: the leg's row, every bay train carrying leg kit, the rack and the carrier's back. */
+  /** Each bay train carrying leg kit, from any row list with the Train fields. */
+  const kitOf = (rowOf: (slot: number) => { legKit?: boolean; logs: number; rails: number } | undefined) =>
+    LINE_SLOTS[leg.line]!.flatMap((slot) => {
+      const t = rowOf(slot);
+      return t?.legKit ? [{ slot, logs: t.logs, rails: t.rails }] : [];
+    });
+  /** The server's counts: the leg's row, the bay trains' kit, the rack and the carrier's back. */
   const state = async () => {
     const w = await live();
-    const aboard = LINE_SLOTS[leg.line]!.flatMap((slot) => {
-      const t = trainRow(w, slot)!;
-      return t.legKit ? [{ slot, logs: t.logs, rails: t.rails }] : [];
-    });
     const a = account(w, 'leg0');
     const rr = railRow(w);
+    const row = legRow(w, k);
     return {
-      row: { ...legRow(w, k) },
-      aboard,
+      row: {
+        laid: row.laid,
+        logs: row.logs,
+        rails: row.rails,
+        start: row.start,
+        loadedLogs: row.loadedLogs,
+        loadedRails: row.loadedRails,
+        heldLogs: row.heldLogs,
+        heldRails: row.heldRails,
+      },
+      aboard: kitOf((slot) => trainRow(w, slot)),
       rack: { logs: rr.depot, rails: rr.depotRails },
       back: { rails: a?.rails ?? 0, legRails: a?.legRails ?? 0 },
     };
   };
   type State = Awaited<ReturnType<typeof state>>;
   const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-  /** Exactly one bay train carries leg kit, and it is section `i`'s whole bill. */
-  const holds = (s: State, i: number) =>
-    s.aboard.length === 1 &&
-    s.aboard[0]!.logs === leg.sections[i]!.logs &&
-    s.aboard[0]!.rails === leg.sections[i]!.rails;
-  /** The tabs agree, and each one's mirror shows the carrier's back as the server has it (read once: it holds still). */
-  const mirrorsShow = async (group: Page[]) => {
-    const want = (await state()).back;
-    return agreeOn(group, (s) => {
-      // The mirror copies the whole account row (ws-page.ts), its leg counts included; RailAccount does not name them.
-      const a: { rails?: number; legRails?: number } | undefined = s.accounts.find((x) => x.pid === 'leg0');
-      return (a?.rails ?? 0) === want.rails && (a?.legRails ?? 0) === want.legRails;
-    });
+  /** The server matches `want` exactly (the kit aboard by its bill, whichever train carries it). */
+  const fits = (s: State, want: Expected) =>
+    same(s.row, want.row) &&
+    same(
+      s.aboard.map(({ logs, rails }) => ({ logs, rails })),
+      want.aboard,
+    ) &&
+    same(s.rack, want.rack) &&
+    same(s.back, want.back);
+  /** Every tab in `group` is ready on one hash, and its own mirror of the carrier's back (the room's account row and
+   * its adapter's) and of every bay train's kit is exactly `want`'s, on the trains the server has it on. */
+  const mirrorsAt = async (group: Page[], want: Expected, server: State) =>
+    (await waitFor(async () => {
+      const probes = await Promise.all(group.map(rail));
+      const views = await Promise.all(group.map(adapter));
+      return probes.every((s, i) => {
+        // The mirror copies the whole account row (ws-page.ts), its leg counts included; RailAccount does not name them.
+        const a: { rails?: number; legRails?: number } | undefined = s.accounts.find((x) => x.pid === 'leg0');
+        const own = views[i]!.rows;
+        const theirs = (own.account as { rails?: number; legRails?: number } | undefined) ?? undefined;
+        return (
+          s.ready &&
+          s.hash === probes[0]!.hash &&
+          same({ rails: a?.rails ?? 0, legRails: a?.legRails ?? 0 }, want.back) &&
+          (group[i] !== A || same({ rails: theirs?.rails ?? 0, legRails: theirs?.legRails ?? 0 }, want.back)) &&
+          same(
+            kitOf((slot) => own.trains.find((t) => t.slot === slot)),
+            server.aboard,
+          )
+        );
+      });
+    }, 10000)) >= 0;
+  /** One checkpoint: the server exactly as `stage` says, then every tab of `group` mirroring it. */
+  const at = async (name: string, stage: Stage, group: Page[]) => {
+    const want = expected(stage);
+    let s = await state();
+    legCheck(
+      `${name}: the server holds exactly what the catalog and the pickup say`,
+      (await waitFor(async () => fits((s = await state()), want), 10000)) >= 0,
+      JSON.stringify({ server: s, want }),
+    );
+    legCheck(`${name}: every tab mirrors the carrier's back and the trains' kit exactly`, await mirrorsAt(group, want, s));
+    return s;
   };
   const cycle = async () => {
     const world = await hostedWorld(c, roomId);
@@ -1491,27 +1567,12 @@ async function legRejoin(c: Ctx) {
     (await Promise.all([A, B].map(ready))).every((t) => t >= 0),
   );
   legCheck('the second tab joined: each sees the other', await meet(A, B));
-  const seeded = await state();
-  const laid = seeded.row.laid;
-  legCheck(
-    "the seed: one section laid, nothing fed or held, the rack empty, section 2's kit aboard one bay train",
-    laid === 1 &&
-      seeded.row.logs + seeded.row.rails + seeded.row.heldLogs + seeded.row.heldRails === 0 &&
-      same(seeded.rack, { logs: 0, rails: 0 }) &&
-      holds(seeded, laid),
-    JSON.stringify(seeded),
-  );
+  await at('the seed', 'seed', [A, B]);
   // A round trip: the train brings section 2's kit to head 1's rack; section 3's is then aboard, held while the rack
   // is full.
   await cycle();
-  const racked = await state();
-  const bill = leg.sections[laid]!;
-  legCheck(
-    "head 1's rack holds section 2's whole bill and one bay train holds section 3's",
-    same(racked.rack, { logs: bill.logs, rails: bill.rails }) && holds(racked, laid + 1) && racked.row.heldRails === 0,
-    JSON.stringify(racked),
-  );
-  const rack = legRack(leg, laid);
+  await at('a round trip later', 'racked', [A, B]);
+  const rack = legRack(leg, LAID);
   legCheck('the first tab has a live session', (await ready(A)) >= 0);
   await ev(
     A.page,
@@ -1521,45 +1582,19 @@ async function legRejoin(c: Ctx) {
     },
     { at: { x: rack.x, y: rack.y, z: rack.z } },
   );
-  let picked = racked;
-  legCheck(
-    'the first tab takes rails off the rack: back, held count and rack debit all the same number',
-    (await waitFor(async () => {
-      picked = await state();
-      const n = picked.back.rails;
-      return (
-        n > 0 &&
-        picked.back.legRails === n &&
-        picked.row.heldRails === n &&
-        same(picked.rack, { logs: racked.rack.logs, rails: racked.rack.rails - n }) &&
-        same(picked.aboard, racked.aboard) &&
-        (await adapter(A)).session.pending === 0
-      );
-    }, 10000)) >= 0,
-    JSON.stringify(picked),
-  );
+  legCheck('the take is settled on the first tab', (await waitFor(async () => (await adapter(A)).session.pending === 0, 10000)) >= 0);
+  await at(`the pickup (${PICKUP} rails)`, 'carried', [A, B]);
   // A round trip with the rails carried: the carried rails count as held, so the train aboard must not top the rack
-  // up again. This is the baseline the rejoin is compared with.
+  // up again.
   await cycle();
-  const before = await state();
-  legCheck(
-    'with the rails carried, a bay train round trip moves nothing',
-    same(before, picked),
-    JSON.stringify({ picked, before }),
-  );
-  legCheck("both tabs mirror the server's back for the carrier before the leave", await mirrorsShow([A, B]));
+  const before = await at('before the leave, a round trip later', 'carried', [A, B]);
 
   await A.page.close();
   legCheck(
     'the first tab leaves: the second hears it go',
     (await waitFor(async () => !(await sees(B, A)), 10000)) >= 0,
   );
-  const away = await state();
-  legCheck(
-    'with the carrier away nothing moves and the rails stay on its back',
-    same(away, before),
-    JSON.stringify(away),
-  );
+  await at('with the carrier away', 'carried', [B]);
   await c.restart();
   A = await c.web.open('L0', url('leg0'));
   legCheck(
@@ -1567,36 +1602,16 @@ async function legRejoin(c: Ctx) {
     (await Promise.all([A, B].map(ready))).every((t) => t >= 0),
   );
   legCheck('the rejoined tab and the second see each other', await meet(A, B));
-  // Straight after the rejoin, before any further train runs.
-  const after = await state();
+  // Straight after the rejoin, before any further train runs: the same exact counts, and on the same train.
+  const after = await at('straight after the rejoin', 'carried', [A, B]);
   legCheck(
-    'the leg row is exactly as before the leave',
-    same(after.row, before.row),
-    `${JSON.stringify(before.row)} -> ${JSON.stringify(after.row)}`,
-  );
-  legCheck(
-    'the kit aboard is exactly as before the leave',
+    'the kit is aboard the same train as before the leave',
     same(after.aboard, before.aboard),
     `${JSON.stringify(before.aboard)} -> ${JSON.stringify(after.aboard)}`,
   );
-  legCheck(
-    'the rack and the rejoined back are exactly as before the leave',
-    same(after.rack, before.rack) && same(after.back, before.back),
-    `${JSON.stringify({ rack: before.rack, back: before.back })} -> ${JSON.stringify({ rack: after.rack, back: after.back })}`,
-  );
-  legCheck("both tabs mirror the server's back for the carrier after the rejoin", await mirrorsShow([A, B]));
-  legCheck(
-    "the rejoined tab's own adapter shows the rails on its back",
-    (await adapter(A)).rows.account?.rails === before.back.rails,
-  );
   await cycle();
-  const later = await state();
-  legCheck(
-    'a bay train round trip after the rejoin moves nothing',
-    same(later, before),
-    JSON.stringify({ before, later }),
-  );
-  console.log(`  leg rejoin: round trip ${roundTrip} ticks; ${JSON.stringify({ racked, before, after: later })}`);
+  const later = await at('a round trip after the rejoin', 'carried', [A, B]);
+  console.log(`  leg rejoin: round trip ${roundTrip} ticks, pickup ${PICKUP}; ${JSON.stringify({ before, later })}`);
   await Promise.all([A, B].map((p) => p.page.close()));
 }
 
@@ -1857,9 +1872,8 @@ const sees = (p: Page, other: Page) =>
   ev(p.page, (id: unknown) => window.T.room.peers().some((x: { peer: unknown }) => x.peer === id), other.selfId);
 /** Each of two tabs sees the other. */
 const meet = async (a: Page, b: Page) => (await Promise.all([sees(a, b), sees(b, a)])).every(Boolean);
-/** Every tab is ready on the same hash (and passes `also`, when given). */
-const agreeOn = async (group: Page[], also: (s: RailwayProbe) => boolean = () => true) =>
+const agreeOn = async (group: Page[]) =>
   (await waitFor(async () => {
     const all = await Promise.all(group.map(rail));
-    return all.every((s) => s.ready && s.hash === all[0]!.hash && also(s));
+    return all.every((s) => s.ready && s.hash === all[0]!.hash);
   }, 8000)) >= 0;

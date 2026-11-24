@@ -326,7 +326,11 @@ type RejoinFault =
   | 'fed during pickup'
   | 'missing load'
   | 'stale train mirrors'
-  | 'late mirror';
+  | 'late mirror'
+  // The same sweep's logs side and its other checkpoints (fix round 2):
+  | 'missing log load'
+  | 'logs held at pickup'
+  | 'stale seed train mirror';
 
 async function replayLegRejoin(fault?: RejoinFault) {
   const pages = new Set<string>();
@@ -341,9 +345,9 @@ async function replayLegRejoin(fault?: RejoinFault) {
     logs: 0,
     rails: picked && fault === 'fed during pickup' ? 1 : 0,
     start: -1,
-    loadedLogs: tick ? 60 : 40,
+    loadedLogs: tick && fault !== 'missing log load' ? 60 : 40,
     loadedRails: tick && fault !== 'missing load' ? 60 : 40,
-    heldLogs: 0,
+    heldLogs: picked && fault === 'logs held at pickup' ? 1 : 0,
     heldRails: picked && fault !== 'held' ? pickup : 0,
   });
   const rack = () => ({
@@ -387,7 +391,8 @@ async function replayLegRejoin(fault?: RejoinFault) {
         ev: (_page: unknown, fn: (arg: unknown) => unknown, arg: unknown) => {
           // Both tabs can still agree on the pre-pickup packet before leaving.
           const staleBack =
-            (fault === 'mirror' && restoredAt < 0) || (fault === 'late mirror' && restoredAt >= 0 && tick > restoredAt);
+            (fault === 'mirror' && restoredAt < 0) ||
+            (fault === 'late mirror' && restoredAt >= 0 && tick > restoredAt);
           const observed = staleBack ? { rails: 0, legRails: 0 } : back();
           const legSpec = RAIL_LEGS.find((l) => l.id === 'bell-canopy')!;
           const trains = LINE_SLOTS[legSpec.line]!.map((slot) => ({
@@ -397,6 +402,7 @@ async function replayLegRejoin(fault?: RejoinFault) {
           if (fault === 'stale train mirrors' && restoredAt >= 0) {
             trains.find((t) => t.legKit)!.rails = 0;
           }
+          if (fault === 'stale seed train mirror' && tick === 0) trains.find((t) => t.legKit)!.logs = 0;
           const T = {
             railStand() {},
             railIntent() {
@@ -450,6 +456,9 @@ for (const fault of [
   'missing load',
   'stale train mirrors',
   'late mirror',
+  'missing log load',
+  'logs held at pickup',
+  'stale seed train mirror',
 ] as const) {
   test('the leg rejoin proof detects ' + fault, async () => {
     await assert.rejects(replayLegRejoin(fault), /Leg rejoin proof stopped/);
