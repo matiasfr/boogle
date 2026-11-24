@@ -571,6 +571,28 @@ test('re-check: a body sunk into a heightfield overlaps it, built or not', () =>
   }
 });
 
+const flatField = (height: number): Shape => ({
+  kind: 'heightfield',
+  heights: [
+    [height, height],
+    [height, height],
+  ],
+  cell: 2,
+});
+
+test('final review: the capsule side intersects a terrain edge halfway between feet and waist', () => {
+  // The flat edge at x=0, y=0.2 crosses the cylinder by 3 cm. Each sample centre is over a radius away.
+  assert.equal(physics.capsuleOverlaps({ x: -0.42, y: 0, z: -1 }, PLAYER_R, HEAD_OFFSET, flatField(0.2)), true);
+});
+
+test('final review: resting exactly on flat terrain is clear', () => {
+  assert.equal(physics.capsuleOverlaps({ x: 1, y: 5 + PLAYER_R, z: -1 }, PLAYER_R, HEAD_OFFSET, flatField(5)), false);
+});
+
+test('final review: a sunk body inside a small terrain footprint stays in the ground', () => {
+  assert.equal(physics.capsuleOverlaps({ x: 1, y: -2, z: -1 }, PLAYER_R, HEAD_OFFSET, flatField(5)), true);
+});
+
 // Back to leg 3's lays.
 /** Whether a body standing at `p` is in solid `s`, as the helper measures it (resting on a top is not). */
 const holds = (s: Shape, p: { x: number; y: number; z: number }) =>

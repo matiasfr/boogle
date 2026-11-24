@@ -566,3 +566,23 @@ test('re-check: the lift helper binding cannot be granted twice by dropping and 
   readded.doorCounts![file]!.colliders = 4;
   assert.match(comparePrefabDebt(dropped, readded).join('\n'), /capability bindings grew/);
 });
+
+test('final review: retiring the third binding and helper together cannot reopen the grant', () => {
+  const door = 'src/prefab/instantiate.ts';
+  const shipped: PrefabDebt = {
+    colliders: {},
+    seats: {},
+    doors: {
+      [door]: ['instantiate', 'liftOrWait'],
+      'src/physics/engine.ts': ['capsuleOverlaps'],
+      'src/physics/backend-rapier.ts': ['capsuleOverlaps'],
+    },
+    doorCounts: { [door]: { colliders: 3 } },
+  };
+  const retired = structuredClone(shipped);
+  retired.doors![door] = retired.doors![door]!.filter((name) => name !== 'liftOrWait');
+  retired.doorCounts![door]!.colliders = 2;
+  assert.deepEqual(comparePrefabDebt(shipped, retired), []);
+  // The engine and backend already have the approved query. Nothing records which binding is added back.
+  assert.match(comparePrefabDebt(retired, shipped).join('\n'), /capability bindings grew/);
+});
