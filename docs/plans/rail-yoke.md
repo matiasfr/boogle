@@ -1,4 +1,4 @@
-> **Status: steps 1–3 on main (#2300, #2321). Steps 4–6 implemented on `codex/rail-yoke-rack`; verification below.** Backlog row (P3): "The rails' own capacity upgrade: rails start at 8 on
+> **Status: built. Steps 1–3 on main (#2300, #2321); steps 4–6 on main (#2324, 23 November); verification below.** Backlog row (P3): "The rails' own capacity upgrade: rails start at 8 on
 > everyone's back, and a later upgrade raises them". Brief: [rails-capacity-upgrade](../brainstorms/rails-capacity-upgrade.md).
 > Decision: [rewards, 18 November](../decisions-rewards.md#d-2026-11-18-decisions-page-rewards). Base: `origin/main`
 > `99207c548`, world `v62`. Steps 1 and 2 change rules, wire, save and seeds (one `WORLD_NS` bump, independent review).

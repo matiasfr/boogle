@@ -1,5 +1,5 @@
-> **Status, 19 November 2026: steps 1 to 4 on main; step 5 built on `claude/greybox-leg2-bot`
-> ([as built](#step-5-as-built-19-november)), awaiting review** (steps 1 to 3 [as built](#steps-1-to-3-as-built-18-november), step 4 [as built](#step-4-as-built-19-november)). Planner, against main `e8ae03b0f` (world v61), rebased onto `cfb8123d6` with the owner's 18 November rail answers folded in. Owner's go
+> **Status, 19 November 2026: done. Steps 1 to 4 on main; step 5 on main (#2317, 19 November)
+> ([as built](#step-5-as-built-19-november))** (steps 1 to 3 [as built](#steps-1-to-3-as-built-18-november), step 4 [as built](#step-4-as-built-19-november)). Planner, against main `e8ae03b0f` (world v61), rebased onto `cfb8123d6` with the owner's 18 November rail answers folded in. Owner's go
 > (18 November, decisions page): "Start the greybox route's leg 2 rules now, so garage step 4 can follow? -> Yes,
 > start a planner after separate capacities". **Garage choices step 4 can start once steps 2 and 3 are on main**
 > ([below](#what-garage-step-4-waits-for)). Design review [at the end](#design-review-2026-11-18).
