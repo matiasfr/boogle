@@ -805,9 +805,11 @@ test("steel host (review): a leaver holding the kit's 8 logs and 12 rails foreve
 const BAYL = ROW_LINE.bay,
   NSL = ROW_LINE.ns;
 const bring = (line: unknown, revision: unknown) => ({ op: 'rail.bring', line, revision });
+/** bay-mid with the works lit and the first steel home, built at module scope, outside the test's timeout. */
+const TRADE = steelHome(buildSeedWorld('bay-mid'));
 
 test('trade host: a bring and Strong cross r:edit, race once, replicate and survive a restart unrepeated', async () => {
-  const r = await host('trade', steelHome(buildSeedWorld('bay-mid')), { s: 'a', peer: 'b' });
+  const r = await host('trade', TRADE, { s: 'a', peer: 'b' });
   try {
     const mirror = r.connect('viewer');
     assert.equal(await r.action(bring(BAYL, 0), away(SHED_TABLE)), 'rejected', 'out of reach');

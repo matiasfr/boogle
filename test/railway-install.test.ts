@@ -713,13 +713,10 @@ const NS = ROW_LINE.ns,
   BAYL = ROW_LINE.bay,
   CUT = RAIL_LEGS.findIndex((l) => l.id === 'bay-cut'),
   CANOPY_GATE = RAIL_GATES.findIndex((g) => g.id === 'canopy');
-/** `bay-mid` (both trades open; `canopy-reached`: leg 3 laid, no kit running) with the works lit and the first steel
- * home, by accepted ops and ticks only. Built once each, on first use. */
-const tradeSeeds = new Map<string, Seed>();
-const tradeReady = (stage: 'bay-mid' | 'canopy-reached' = 'bay-mid') => {
-  if (!tradeSeeds.has(stage)) tradeSeeds.set(stage, steelHome(buildSeedWorld(stage)));
-  return copy(tradeSeeds.get(stage)!);
-};
+/** `bay-mid` (both trades open) with the works lit and the first steel home, by accepted ops and ticks only. Built at
+ * module scope, outside each test's timeout, as HOME and GORGE are. */
+const TRADE = steelHome(buildSeedWorld('bay-mid'));
+const tradeReady = () => copy(TRADE);
 const bring = (s: Seed, line: unknown, pid = 'a', fields: Record<string, unknown> = {}) =>
   act(s, pid, 'rail.bring', { line, revision: shed(s.w).bringRev, ...fields } as never);
 const fit = (s: Seed, line: number, part: unknown, pid = 'a', fields: Record<string, unknown> = {}) =>
@@ -867,22 +864,23 @@ test("line 2's install revision is its two fits' sum across its whole install or
 });
 
 test('a trade fit adopts only standing at its halt 0, never in flight, and a swap back adopts', () => {
-  // Leg 3 laid: no kit runs, so the kit guard never holds a row (its own test is below).
-  const s = tradeReady('canopy-reached');
-  brought(s, BAYL);
+  // The ns line from bay-mid: the incline is laid and the causeway unbuilt, so no kit runs and the kit guard never
+  // holds a row (its own test is below).
+  const s = tradeReady();
+  brought(s, NS);
   for (const [part, row] of [
     [6, 5],
     [5, 4],
     [6, 5],
   ] as const) {
     advance(s, Math.max(0, tableFree(s.w) - s.t));
-    assert.equal(fit(s, BAYL, part), 1);
-    const pending = new Set(servingSlots((k) => train(s.w, k), BAYL));
+    assert.equal(fit(s, NS, part), 1);
+    const pending = new Set(servingSlots((k) => train(s.w, k), NS));
     for (let t = 0; pending.size; t++) {
-      assert.ok(t < 8000, `every bay train adopts row ${row}`);
+      assert.ok(t < 8000, `every ns train adopts row ${row}`);
       const was = trains(s.w).map((r) => r.boiler);
       advance(s, 1);
-      for (const k of LINE_SLOTS[BAYL]!) {
+      for (const k of LINE_SLOTS[NS]!) {
         const r = train(s.w, k);
         if (r.boiler === was[k]) continue;
         assert.equal(r.boiler, row);
