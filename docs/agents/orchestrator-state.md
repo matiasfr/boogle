@@ -12,7 +12,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 | --- | --- | --- | --- | --- | --- |
 | Garage step 4’s Checkpoint: the plan’s proofs once, and the early Install offer reproduced at real speed | Garage choices | claude/garage-step4-checkpoint | the heartbeat, Opus medium | 2026-11-24 23:10 | running: the step 4 bot builder’s own thread, a delegate of the heartbeat’s thread, browser-heavy; a report, the plan’s Checkpoint note and dev tooling only, no `src/`, `server/` or `test/` |
 | Greybox leg 4’s plan: the cave line (West landing, Saltpan, Port Quay) | The greybox route | claude/greybox-leg4-plan | the heartbeat, Opus high (planner) | 2026-11-24 23:10 | running: a delegate of the heartbeat’s thread; docs only, `docs/plans/greybox-leg4.md` and its design review’s rows in `docs/agent-calls.md` |
-| One shared lift-or-wait helper for solids near players (rule 67 as code) | Terrain clean-up | claude/solid-clearance-helper | live session, Opus medium | 2026-11-24 20:20 | running: `src/place` helper + tests, migrates the canyon kit and leg 3's lay slabs; garage step 4's screen migrates after it ships |
+| Cliff kit: plan revised to his answers, then step 0 (the generator) | Terrain clean-up | claude/cliff-kit-step0 | live session, Opus medium | 2026-11-25 00:00 | running |
 
 ## Where the work stands
 
