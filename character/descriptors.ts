@@ -184,7 +184,7 @@ export const descriptors: Record<string, AssetDescriptor> = {
       'Chunky Sunshine sandstone; origin at the base front middle (boulders: base middle), +z out of the wall. Colour is the ground rock material in code.',
     motion: {
       kind: 'none',
-      source: 'assets/src/terrain-kit.py; static scenery placed by content/levels/canyon-kit.ts',
+      source: 'assets/src/terrain-kit.py; static scenery placed by dev/prefab/cliff-kit.ts',
     },
   },
   'scaffold-kit': {
