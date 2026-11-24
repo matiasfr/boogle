@@ -739,7 +739,8 @@ function overlapsCopy(shape: Shape, c: Copy, at: V3, r: number, up: number, body
   const dx = shapeAt.x + near.x - at.x,
     dy = shapeAt.y + near.y - (at.y + up / 2),
     dz = shapeAt.z + near.z - at.z;
-  if (Math.hypot(dx, dy, dz) > c.reach + r + up / 2) return false;
+  // Too far to touch it. A heightfield's ground runs on under it, so only across does that count.
+  if ((c.kind === 'heightfield' ? Math.hypot(dx, dz) : Math.hypot(dx, dy, dz)) > c.reach + r + up / 2) return false;
   s.pos.x = shapeAt.x;
   s.pos.y = shapeAt.y;
   s.pos.z = shapeAt.z;
@@ -768,7 +769,9 @@ function hits(c: Copy, at: V3, up: number, turn: RawRotation) {
   }
   return false;
 }
-const projected = new Float32Array(3);
+/** A heightfield's contact parts: distance, two points, two normals. Within RESTING of its surface is resting on it. */
+const contactParts = new Float32Array(16),
+  RESTING = 0.01;
 export function capsuleOverlaps(at: V3, r: number, up: number, against: Shape | { of: object }) {
   // Before Rapier is in nothing can be measured: everything holds, so nothing switches on round a player.
   if (!R || !world) return true;
@@ -804,21 +807,22 @@ export function capsuleOverlaps(at: V3, r: number, up: number, against: Shape | 
   }
   return false;
 }
-/** Rapier finds no shape overlap with a heightfield, so a body meets one by points along its axis (the feet sphere's
- * centre, the waist, the head's): one under the surface within the footprint is in the ground, and one nearer the
- * surface than the radius touches it. */
+/** Rapier's intersection test never reports a heightfield, so its contact query does (a signed distance): a body
+ * more than RESTING into the surface overlaps it, and one resting on it does not. A body wholly under the surface has
+ * no contact, so a sphere's centre with the surface over it (Rapier's ray, as for a trimesh) is in the ground. */
 function heightfieldHits(c: Copy, at: V3, up: number, turn: RawRotation) {
-  const s = scratch!,
-    r = capsule!.r;
-  for (const lift of [0, up / 2, up]) {
+  const s = scratch!;
+  const k = capsule!.raw.contactShape(s.at, s.none, c.raw, s.pos, turn, 0);
+  if (k) {
+    k.getComponents(contactParts);
+    k.free();
+    if (contactParts[0]! < -RESTING) return true;
+  }
+  for (const lift of [0, up]) {
     s.point.x = at.x;
     s.point.y = at.y + lift;
     s.point.z = at.z;
     if (c.raw.castRay(s.pos, turn, s.point, s.up, 1e4, false) >= 0) return true;
-    const p = c.raw.projectPoint(s.pos, turn, s.point, false);
-    p.point(projected);
-    p.free();
-    if (Math.hypot(projected[0]! - s.point.x, projected[1]! - s.point.y, projected[2]! - s.point.z) < r) return true;
   }
   return false;
 }

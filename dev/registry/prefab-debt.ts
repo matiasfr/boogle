@@ -7,6 +7,7 @@ import type { PrefabDebt } from '../lint/safety.ts';
 import { checkPrefabRegistrations } from './prefab-registrations.ts';
 import { parseSync } from 'oxc-parser';
 import { createModuleResolver, runtimeExports, PREFAB_DOORS } from '../lint/prefab-boundaries.ts';
+import { capabilitySpecifiers } from '../lint/prefab-specifiers.ts';
 import {
   loadLegacyGraph,
   compareConstructionForwards,
@@ -27,10 +28,15 @@ const APPROVED_DOOR_EXPORTS: Readonly<Record<string, readonly string[]>> = {
   'src/physics/engine.ts': ['capsuleOverlaps'],
   'src/physics/backend-rapier.ts': ['capsuleOverlaps'],
 };
-/** The one capability binding that comes with it: the record door's import of capsuleOverlaps, which arrives with its
- * liftOrWait export. Granted once, as the decision has it: the count rising from exactly 2 to 3 as liftOrWait appears,
- * so no later change can reuse the slot (after another binding retires, or by dropping and re-adding the export). */
-const APPROVED_DOOR_BINDING = { file: 'src/prefab/instantiate.ts', with: 'liftOrWait', from: 2, to: 3 } as const;
+/** The record door's capability bindings, by name: the two it had and the decision's capsuleOverlaps. checkPrefabDebt
+ * refuses any other from the door's source, in any order of retiring and adding. The recorded count may grow once, from
+ * 2 to 3, only as the engine's query and liftOrWait first appear together. */
+const DOOR_BINDINGS = {
+  file: 'src/prefab/instantiate.ts',
+  names: ['ROOM_GROUP', 'staticBody', 'capsuleOverlaps'],
+  with: 'liftOrWait',
+  query: { file: 'src/physics/engine.ts', name: 'capsuleOverlaps' },
+} as const;
 
 export function comparePrefabDebt(base: PrefabDebt, head: PrefabDebt): string[] {
   const errors: string[] = [];
@@ -67,14 +73,15 @@ export function comparePrefabDebt(base: PrefabDebt, head: PrefabDebt): string[] 
       const count = counts[kind];
       if (count === undefined) continue;
       const old = base.doorCounts?.[file]?.[kind];
-      const { file: door, with: name, from, to } = APPROVED_DOOR_BINDING,
+      const { file: door, with: name, query } = DOOR_BINDINGS,
         granted =
           kind === 'colliders' &&
           file === door &&
-          old === from &&
-          count === to &&
+          old === 2 &&
+          count === 3 &&
           !!head.doors?.[door]?.includes(name) &&
-          !base.doors?.[door]?.includes(name);
+          !base.doors?.[door]?.includes(name) &&
+          !base.doors?.[query.file]?.includes(query.name);
       if (old === undefined || (count > old && !granted))
         errors.push(
           `${PREFAB_DEBT_FILE}: door ${file}/${kind} capability bindings grew. Use src/prefab/instantiate.ts.`,
@@ -158,6 +165,24 @@ export function checkPrefabDebt(root: string, ref: string): string[] {
           `${file}: ${kind} door has ${actual} bindings, budget ${recorded}; ${actual < recorded ? 'lower the count' : 'use src/prefab/instantiate.ts'}.`,
         );
     }
+  {
+    const { file, names } = DOOR_BINDINGS,
+      current = path.join(root, file);
+    if (fs.existsSync(current))
+      for (const node of capabilitySpecifiers(
+        parseSync(file, fs.readFileSync(current, 'utf8')).program,
+        file,
+        resolve,
+        'colliders',
+      )) {
+        const n = node as { imported?: { name?: string; value?: string }; local?: { name?: string } },
+          bound = n.imported?.name ?? n.imported?.value ?? n.local?.name ?? '?';
+        if (!(names as readonly string[]).includes(bound))
+          errors.push(
+            `${file}: capability binding ${bound} is not one of the door's named bindings (${names.join(', ')}).`,
+          );
+      }
+  }
   for (const [file, counts] of Object.entries(head.doorCounts ?? {}))
     for (const kind of Object.keys(counts))
       if (!(kind === 'colliders' || kind === 'seats') || !PREFAB_DOORS[kind].includes(file))

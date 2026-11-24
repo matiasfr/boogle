@@ -33,7 +33,8 @@
 //                                  added this frame included (sensors and free movers don't count), by the same test.
 //                                  Touching a surface or a sphere's centre inside counts; a trimesh holds a point only
 //                                  under one of its faces (a closed prism's inside, an open land's footprint); a
-//                                  heightfield by points along the body's axis (under its surface, or within r of it).
+//                                  heightfield by Rapier's contact (more than 1 cm into its surface; resting on it is
+//                                  clear) or a sphere's centre under its surface.
 //                                  True for everything until physicsReady: nothing can be measured yet.
 //                                  For src/place/clearance.ts, through src/prefab/instantiate.ts
 //   physicsTime()                  seconds of simulated time
