@@ -807,6 +807,9 @@ proof is the net suite's `leg rejoin` case (`dev/peer-test/ws-railway.ts` `railw
   rack 1 and the lever from the platform. Step 6's seven are the committed ones.
 - **Unproven:** the frame-time reading at Canopy on the Mac; a carrier away past the grace through a restart. Not
   tested on a device.
+- **Known limit of the rejoin proof:** the tabs' mirrors of the leg row and the rack are compared only with each
+  other's hash, never with the server (and with one tab, while the carrier is away, not at all). Closing it needs the
+  leg row and the rack in `ws-page.ts`'s probes, or each tab's hash checked against the server's at the same step.
 
 ### Order, and what waits for leg 2
 

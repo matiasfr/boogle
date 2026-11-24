@@ -1440,7 +1440,9 @@ async function legRejoin(c: Ctx) {
   const LAID = 1;
   const bill = (i: number) => ({ logs: leg.sections[i]!.logs, rails: leg.sections[i]!.rails });
   const billsTo = (n: number) =>
-    leg.sections.slice(0, n).reduce((t, s) => ({ logs: t.logs + s.logs, rails: t.rails + s.rails }), { logs: 0, rails: 0 });
+    leg.sections
+      .slice(0, n)
+      .reduce((t, s) => ({ logs: t.logs + s.logs, rails: t.rails + s.rails }), { logs: 0, rails: 0 });
   const PICKUP = Math.min(bill(LAID).rails, RAILWAY_CAPACITY.railsYoke);
   type Stage = 'seed' | 'racked' | 'carried';
   /** What the server must hold at each stage, from the catalog and the pickup alone; `kitSlot` is the train carrying
@@ -1544,22 +1546,26 @@ async function legRejoin(c: Ctx) {
         );
       });
     }, 10000)) >= 0;
-  /** The one train the server shows carrying kit (its slot is then part of the expected state), or -1. */
+  /** The one train the server shows carrying kit (its slot is then part of the expected state), or -1 when none or
+   * more than one is marked (never the first of several). */
   const kitTrain = (s: State) => {
     const marked = s.trains.filter((t) => t.legKit === true);
     return marked.length === 1 ? marked[0]!.slot : -1;
   };
   /** One checkpoint: the server exactly as `stage` says, then every tab of `group` mirroring it. Without `kitSlot`
-   * (the seed, and the first round trip, when the kit changes trains) the kit's train is the one the server marks. */
+   * (the seed, and the first round trip, when the kit changes trains) the kit's train is the one the server marks, and
+   * the checkpoint fails when there is no such one train: the kit is always aboard one at these stages. */
   const at = async (name: string, stage: Stage, group: Page[], kitSlot?: number) => {
     let s = await state(),
-      want = expected(stage, kitSlot ?? kitTrain(s));
+      slot = kitSlot ?? kitTrain(s),
+      want = expected(stage, slot);
     legCheck(
       `${name}: the server holds exactly what the catalog and the pickup say`,
       (await waitFor(async () => {
         s = await state();
-        want = expected(stage, kitSlot ?? kitTrain(s));
-        return fits(s, want);
+        slot = kitSlot ?? kitTrain(s);
+        want = expected(stage, slot);
+        return LINE_SLOTS[leg.line]!.includes(slot) && fits(s, want);
       }, 10000)) >= 0,
       JSON.stringify({ server: s, want }),
     );
@@ -1591,7 +1597,10 @@ async function legRejoin(c: Ctx) {
     },
     { at: { x: rack.x, y: rack.y, z: rack.z } },
   );
-  legCheck('the take is settled on the first tab', (await waitFor(async () => (await adapter(A)).session.pending === 0, 10000)) >= 0);
+  legCheck(
+    'the take is settled on the first tab',
+    (await waitFor(async () => (await adapter(A)).session.pending === 0, 10000)) >= 0,
+  );
   await at(`the pickup (${PICKUP} rails)`, 'carried', [A, B], KIT);
   // A round trip with the rails carried: the carried rails count as held, so the train aboard must not top the rack
   // up again.
