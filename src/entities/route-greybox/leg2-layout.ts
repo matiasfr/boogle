@@ -34,8 +34,9 @@ type CoverCollider =
   | { shape: 'box'; at: readonly number[]; half: readonly number[] }
   | { shape: 'trimesh'; at: readonly number[]; vertices: readonly number[] }
   | { shape: string; at: readonly number[] };
-/** An area's mount distance that covers every solid point of `placements` (each box collider's corners and each
- * trimesh's vertices, across: x and z) from `centre` with ARRIVAL to spare, rounded up to 10 m and never under
+/** An area's mount distance that covers every solid point of `placements` (each box collider's eight corners and each
+ * trimesh's vertices, scaled and turned by the placement's full rotation: yaw, pitch and roll in YXZ order, as
+ * prefab/types.ts has it; across, x and z) from `centre` with ARRIVAL to spare, rounded up to 10 m and never under
  * MOUNT_NEAR. `prefabs`: the compiled records the placements name. */
 export function coverNear(
   placements: readonly CoverPlacement[],
@@ -43,20 +44,29 @@ export function coverNear(
   centre: { x: number; z: number },
 ) {
   let far = 0;
-  const reach = (x: number, z: number) => (far = Math.max(far, Math.hypot(x - centre.x, z - centre.z)));
   for (const p of placements) {
-    const yaw = p.rot?.[0] ?? 0,
-      c = Math.cos(yaw),
-      s = Math.sin(yaw),
-      [sx = 1, , sz = 1] = p.scale ?? [];
-    // A local (x, z) of the placement in the world, as its yaw turns it.
-    const at = (x: number, z: number) =>
-      reach(p.pos[0]! + c * x * sx + s * z * sz, p.pos[2]! - s * x * sx + c * z * sz);
+    const [yaw = 0, pitch = 0, roll = 0] = p.rot ?? [],
+      [sx = 1, sy = 1, sz = 1] = p.scale ?? [],
+      [cy, sy0, cp, sp, cr, sr] = [yaw, pitch, roll].flatMap((t) => [Math.cos(t), Math.sin(t)]) as number[];
+    // A local point of the placement in the world: scaled, then roll (z), pitch (x) and yaw (y), then moved.
+    const at = (x0: number, y0: number, z0: number) => {
+      const x1 = x0 * sx * cr! - y0 * sy * sr!,
+        y1 = x0 * sx * sr! + y0 * sy * cr!,
+        z1 = z0 * sz;
+      const z2 = y1 * sp! + z1 * cp!; // the height after pitch does not matter here
+      const x = p.pos[0]! + x1 * cy! + z2 * sy0!,
+        z = p.pos[2]! - x1 * sy0! + z2 * cy!;
+      far = Math.max(far, Math.hypot(x - centre.x, z - centre.z));
+    };
     for (const k of prefabs[p.prefab]?.colliders ?? []) {
+      const [ax = 0, ay = 0, az = 0] = k.at;
       if (k.shape === 'box' && 'half' in k)
-        for (const dx of [-1, 1]) for (const dz of [-1, 1]) at(k.at[0]! + dx * k.half[0]!, k.at[2]! + dz * k.half[2]!);
+        for (const dx of [-1, 1])
+          for (const dy of [-1, 1])
+            for (const dz of [-1, 1]) at(ax + dx * k.half[0]!, ay + dy * k.half[1]!, az + dz * k.half[2]!);
       else if (k.shape === 'trimesh' && 'vertices' in k)
-        for (let i = 0; i < k.vertices.length; i += 3) at(k.at[0]! + k.vertices[i]!, k.at[2]! + k.vertices[i + 2]!);
+        for (let i = 0; i < k.vertices.length; i += 3)
+          at(ax + k.vertices[i]!, ay + k.vertices[i + 1]!, az + k.vertices[i + 2]!);
     }
   }
   return Math.max(MOUNT_NEAR, Math.ceil((far + ARRIVAL) / 10) * 10);
