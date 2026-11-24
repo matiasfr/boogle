@@ -573,12 +573,19 @@ test("a lay's headroom reads the scenery as the levels build it: placedShapes ma
       }
     });
   }
-  // The same lift with the scenery given as it is built, not as the test resolves it, also waits.
+  // A slab whose top is 0.2 m over the feet under the ramp: alone it lifts the body; with the scenery as the levels
+  // build it, the ramp is over the lifted head and it waits. So a lift that left the scenery out would show here.
   const level = validation.loadLevelArtifact(
     bellRaw,
     artifact.prefabs as unknown as Readonly<Record<string, PrefabDef>>,
   );
-  assert.equal(clear.liftOrWait(ground(bellRaw).map(shapeOf), clear.placedShapes(level.placements)).kind, 'wait');
+  const deck = (p: THREE.Vector3) =>
+    clear.boxShape({ x: p.x, y: p.y - PLAYER_R + 0.2 - 0.2, z: p.z, w: 4, h: 0.4, d: 4, yaw: 0 });
+  const alone = position.clone();
+  assert.equal(clearFor(alone).liftOrWait([deck(alone)]).kind, 'lifted');
+  const among = position.clone();
+  assert.equal(clearFor(among).liftOrWait([deck(among)], clear.placedShapes(level.placements)).kind, 'wait');
+  assert.deepEqual(among.toArray(), position.toArray(), 'moved while waiting');
 });
 
 test('residency covers the far face of a pitched box', () => {
