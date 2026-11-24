@@ -20,8 +20,21 @@ import { readFileSync } from 'node:fs';
 function garageModal(inputState: { held: boolean }, openModal: () => boolean) {
   const source = readFileSync('src/entities/railway/garage-view.ts', 'utf8');
   const methods = source.slice(source.indexOf('  function close()'), source.indexOf('  garage.api = api;'));
-  return sourceModule<{ api: { open(): void; close(): void } }>(
-    methods,
+  const release = source.slice(source.indexOf('  function releaseHold()'), source.indexOf('  function update(dt:'));
+  const moment = source.slice(source.indexOf('    if (openT <= 0) lastOpen'), source.indexOf('    shake = Math.max'));
+  const reveal = readFileSync('src/render/reward-reveal.ts', 'utf8');
+  const putAway = reveal.slice(reveal.indexOf('  function putAway()'), reveal.indexOf('  function dropGot()'));
+  return sourceModule<{
+    api: { open(): void; close(): void; dismissCard(): void; installFrame(): void; closedFrame(): void };
+  }>(
+    release +
+      methods +
+      putAway +
+      `
+      api.dismissCard = putAway;
+      api.installFrame = () => { phase = 'moment'; ${moment} };
+      api.closedFrame = () => { if (!open) releaseHold(); };
+    `,
     {
       open: false,
       shown: true,
@@ -38,6 +51,18 @@ function garageModal(inputState: { held: boolean }, openModal: () => boolean) {
       offered: () => 'boiler',
       cat: 'engine',
       phase: 'idle',
+      openT: 1,
+      lastOpen: true,
+      partGroup: {},
+      cur: {},
+      holder: {},
+      box: { classList: { remove() {} } },
+      document: { body: { classList: { remove() {} } } },
+      setAloft() {},
+      setPadGrab() {},
+      reducedMotion: true,
+      pop() {},
+      next() {},
       real: false,
       waiting: false,
       mine: false,
@@ -71,6 +96,20 @@ test('closing the garage preserves a reward card hold acquired after opening', (
 });
 
 const deck = railY(LINES.east, 0);
+
+test('closing an install after a reward card releases its hold gives movement back', () => {
+  const inputState: { held: boolean; holder: string | null } = { held: false, holder: null };
+  const api = garageModal(inputState, () => true);
+  api.open();
+  api.installFrame();
+  // An outstanding reward arrives during the moment. Dismiss it before leaving the garage.
+  Object.assign(inputState, { held: true, holder: 'reward' });
+  api.dismissCard();
+  api.installFrame();
+  api.close();
+  api.closedFrame();
+  assert.equal(inputState.held, false, 'movement is still held after the closed frame');
+});
 test('selecting an already paid Swap does not put a spare boiler on the stand', () => {
   const source = readFileSync('src/entities/railway/garage-view.ts', 'utf8');
   const offered = source.slice(source.indexOf('  const offered ='), source.indexOf('  const activePart ='));

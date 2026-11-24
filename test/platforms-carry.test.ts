@@ -208,6 +208,8 @@ function parkedRiderFixture() {
       angleLerp,
       fromPlatform,
       rideAt: {},
+      rideV: new Vector3(),
+      RIDE_TRUST: 1.5,
       INTERP_MS: 100,
       RIDE_BLEND_S: 0.2,
       RIDE_MAX_AGE_MS: 1000,
@@ -240,6 +242,27 @@ test('parking a car during a remote car change keeps the rider between the drawn
 });
 
 const v3 = (x = 0, y = 0, z = 0) => ({ x, y, z });
+
+test('parking a car preserves the displayed rider across the next prePhysics sample', () => {
+  const { place, remote, platform } = parkedRiderFixture();
+  const avatar = { position: remote.target.clone(), rotation: { y: remote.yaw } };
+  Object.assign(remote, { avatar });
+  const frame = (time: number) => {
+    remote.target.set(0, 10, 0); // samplePose reads this peer's stationary presence before each physics step.
+    remote.yaw = 0;
+    place(remote, time, false, 0);
+    place(remote, time, true, 1 / 60);
+    avatar.position.copy(remote.target);
+    avatar.rotation.y = remote.yaw;
+  };
+  platform.body.position.x = platform.body.interpolatedPosition.x = 4;
+  platform.body.position.y = platform.body.interpolatedPosition.y = 9;
+  frame(1000);
+  assert.equal(avatar.position.x, 4);
+  platform.body.position.y = platform.body.interpolatedPosition.y = -60;
+  frame(1017);
+  assert.ok(avatar.position.x > 3 && avatar.position.x < 4, `rider jumped from 4 to ${avatar.position.x} m`);
+});
 const body = (x: number, y: number, z: number) =>
   ({
     position: v3(x, y, z),
