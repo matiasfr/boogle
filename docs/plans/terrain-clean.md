@@ -509,6 +509,7 @@ leftover for its own game-wide fix (a view moves no bodies outside the prefab do
 `npm run level-check` audits the built level's tilted
 boxes against the tread and the gated places; kerbs and shoreline pieces beyond the bank rock are not built. Open: the faces
 stand proud of the wall and, from the top of the climb looking back, hide most of the alcove's bracket.
+**Flush faces follow-up (`d-2026-11-24-canyon-faces-flush`):** `canyon.3` (+0.80 m), `canyon.20` (+1.10 m) and `canyon.21` (+0.50 m) are set deeper into the east wall so they sit flush and the alcove's bracket stays in view looking back down the climb ([before](terrain-clean/kit/back-down-the-climb-flush-before.jpg) / [after](terrain-clean/kit/back-down-the-climb-flush-after.jpg)).
 
 **Not in this proposal:** climbing, breakable rocks, anything a player uses. Pieces are scenery with colliders.
 

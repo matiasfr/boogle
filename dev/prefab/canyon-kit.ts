@@ -168,9 +168,10 @@ function generate(): Placement[] {
       return march(s, 3, 12, (h) => h > top);
     };
     return {
-      /** Faces at the wall's foot, sunk 0.5 m below the bench so no block floats. */
-      faces(list: readonly (readonly [Key, number])[]) {
-        for (const [prefab, s] of list) place(prefab, s, foot(s) - 0.6, bench(s) - 0.5);
+      /** Faces at the wall's foot, sunk 0.5 m below the bench so no block floats. Optional 3rd entry overrides the
+       * default -0.6 m offset from `foot(s)` (positive moves the face deeper into the wall). */
+      faces(list: readonly (readonly [Key, number, number?])[]) {
+        for (const [prefab, s, offset = -0.6] of list) place(prefab, s, foot(s) + offset, bench(s) - 0.5);
       },
       /** Boulders on the verge against the face; where the wall stands close to the tread, partly into the face's foot
        * rather than over the edge. */
@@ -202,12 +203,14 @@ function generate(): Placement[] {
   }
 
   // The climb: the east wall's faces end to end from 4.5 m up it (10, 6, 10 and 6 m wide), boulders at their foot.
+  // The upper face at the bend (s=33.5) and both faces round the top bend sit flush with the wall so the alcove's
+  // bracket stays in view looking back down the climb (docs/decisions-look.md d-2026-11-24-canyon-faces-flush).
   const climb = dress(CLIMB_LEG);
   climb.faces([
     ['terrain.face-10', 9.5],
     ['terrain.face-6', 17.5],
     ['terrain.face-10', 25.5],
-    ['terrain.face-6', 33.5],
+    ['terrain.face-6', 33.5, 0.2],
   ]);
   climb.boulders([
     ['terrain.boulder-m', 6, 0.3],
@@ -221,11 +224,11 @@ function generate(): Placement[] {
   ]);
   climb.bank([7, 15.5, 24, 32.5]);
   climb.caps([7, 14, 22.5, 31]);
-  // Round the top's bend: the wall that fills the view back down the climb.
+  // Round the top's bend: the wall that fills the view back down the climb, set flush with the wall.
   const top = dress(TOP_LEG);
   top.faces([
-    ['terrain.face-10', 6],
-    ['terrain.face-6', 14],
+    ['terrain.face-10', 6, 0.5],
+    ['terrain.face-6', 14, -0.1],
   ]);
   top.boulders([
     ['terrain.boulder-s', 3, 0.6],
