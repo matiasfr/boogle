@@ -295,10 +295,26 @@ export const JUMPS: readonly Jump[] = [
     label: 'Bay cut laid',
     line: 'Both new lines run to Bell Rock; Home is a minute away',
   },
-  // Placeholder tooling copy for the owner. Landings are measured in step 6.
+  // Placeholder tooling copy for the owner. Landings measured in step 6 (docs/plans/greybox-leg3.md, its stills).
+  // canopy-open has none, for leg 2's reason above: its spot is Bell Rock's upper platform over the cut, which
+  // return-spot.ts (by x and z alone, within 30 m) would also give a rider of the lower level's line.
   { stage: 'canopy-open', menu: false, label: 'Canopy gate open', line: 'The first kit is on the Bell Rock rack' },
-  { stage: 'canopy-mid', menu: false, label: 'Canopy line building', line: 'The second kit is aboard a bay train' },
-  { stage: 'canopy-reached', menu: false, label: 'Canopy reached', line: 'The cloth waits at Canopy Town' },
+  {
+    stage: 'canopy-mid',
+    menu: false,
+    label: 'Canopy line building',
+    line: 'The second kit is aboard a bay train',
+    // Head 1's outward platform over the strait, between rack 2 and frame 2 (legRack, legFrame), facing the frame.
+    land: { x: -525.13, y: 4.9, z: -673.36, yaw: 1.935 },
+  },
+  {
+    stage: 'canopy-reached',
+    menu: false,
+    label: 'Canopy reached',
+    line: 'The cloth waits at Canopy Town',
+    // Canopy Town's homeward platform, 10 m short of the stop, facing the cloth post.
+    land: { x: -1070.02, y: 13.9, z: -318.93, yaw: 2.419 },
+  },
 ];
 /** The rows a menu lists: every row but the tooling-only ones. */
 export const MENU_JUMPS: readonly Jump[] = JUMPS.filter((j) => j.menu !== false);
