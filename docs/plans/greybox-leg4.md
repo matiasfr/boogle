@@ -290,7 +290,7 @@ return check's.
 
 Each step leaves `node dev/ship-check.ts` green. **Steps 1 to 3 ship together as the leg's bump** (as leg 3's 1 to 5
 did): the arc and Port Quay's stop are geometry the rules' cuts and the seeds' goldens read. Steps 4 and 5 ship after
-it; step 6 after `claude/garage-step4-bot`. Model rows are `npm run models`' (24 November). Every review of steps 1 to 3
+it; step 6 after them (garage step 4’s bot, which it builds on, is on main, #2363). Model rows are `npm run models`' (24 November). Every review of steps 1 to 3
 is an independent one before merge (src/sim, src/world): **gpt-6.2-astra medium** first, per the table.
 
 - [ ] **1. The catalog (M; HOTBOX; "High-risk implementation": Claude opus medium).** Files:
