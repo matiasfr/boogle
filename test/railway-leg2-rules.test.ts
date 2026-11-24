@@ -10,7 +10,7 @@ import { mulberry32 } from '../src/sim/rng.ts';
 import { Account, Forge, Leg, LegYard, Rail, Route, Train } from '../src/sim/railway-components.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
 import { LINE2, RAIL_HALTS, RAIL_LINES } from '../src/sim/railway-lines.ts';
-import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, ROW_LINE, legFrame, legRack } from '../src/sim/railway-route.ts';
+import { LEG_TUNE, RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, ROW_LINE, legFrame, legRack } from '../src/sim/railway-route.ts';
 import { TRAIN, TRAIN_PHASE, fleetOf, lineStagesOf, trainDir, trainPassesBy } from '../src/sim/railway-train.ts';
 import { LINE_SLOTS, cycleTicks, servingSlots, trainSpacing } from '../src/sim/railway-trains.ts';
 import { railTick } from '../src/sim/railway-systems.ts';
@@ -406,11 +406,30 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
   const t0 = s.t,
     rand = mulberry32(seed),
     health = new ServiceHealth([NS, BAYL], s.w);
+  // Settled runs fit as the measured run starts. Growing Canopy fits late (independent re-check, 24 November): from one
+  // tick before the bay cut's last section is laid, on the first tick a bay train has just entered service while
+  // another serving bay train is away from the West landing. The new train, standing at home, takes Strong at once; the
+  // one away keeps its standard boiler until it is home again, so the fleet is mixed. Asks pending on the bay line at
+  // the fit move to the mixed-fleet checks too.
+  const late = strong && canopy && feed;
+  const away = (j: number) => !(train(s.w, j).phase === TRAIN_PHASE.STAND && train(s.w, j).at === 0);
+  let fitted = false,
+    fleetWas = servingSlots((j) => train(s.w, j), BAYL).length;
   for (let k = 0; k < FUZZ; k++) {
-    if (strong && k === 0) {
+    const bay = legRow(s.w, BAY),
+      fleetNow = servingSlots((j) => train(s.w, j), BAYL);
+    const due = late
+      ? (bay.laid === 2 || (bay.laid === 1 && bay.start >= 0 && s.t >= bay.start + LEG_TUNE.layTicks - 1)) &&
+        fleetNow.length > fleetWas &&
+        fleetNow.some(away)
+      : k === 0;
+    fleetWas = fleetNow.length;
+    if (strong && !fitted && due) {
       fitStrong(s);
+      fitted = true;
       const st = stopsOf(s.w, BAYL);
       mixedUntil = s.t + Math.max(cycleTicks(BAYL, st, 0), cycleTicks(BAYL, st, 5));
+      for (const p of health.pending.values()) if (RAIL_HALTS[p.id]!.line === BAYL) p.safetyOnly = true;
     }
     if (rand() < 0.05) {
       const pool = askPool(s.w),
@@ -481,9 +500,8 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
   health.drain(s.w, s.t, () => railTick(s.w, ++s.t, 75));
   assert.equal(invariant(s.w), null);
   if (strong) {
-    // Settled runs fit at bay-reached with two or three bay trains in service, so the fleet is mixed while it adopts.
-    // Growing Canopy fits at bay-mid, inside Strong's window, where the bay line runs one train: its check is the hold.
-    if (!feed) assert.ok(mixedTicks > 0, 'Strong and standard trains in service together during the measured run');
+    assert.ok(fitted, 'the Strong fit was made during the measured run');
+    assert.ok(mixedTicks > 0, 'Strong and standard trains in service together during the measured run');
     if (feed && canopy) assert.ok(heldTicks + yieldedTicks > 0, 'the growing fuzz exercised a Strong hold or release');
   }
   return {
@@ -502,7 +520,7 @@ for (const [label, canopy, strong] of [
       for (const feed of [false, true]) {
         // A Strong bay train while leg 2 grows (from incline-open) is unreachable since the bay trade opens at bay-mid.
         if (strong && !canopy && feed) continue;
-        // Canopy mixed, growing: from bay-mid, so the Strong fit lands inside its window (the bay cut's first lay).
+        // Canopy mixed, growing: from bay-mid, so the Strong fit can land inside its window (before the cut's last lay).
         const stage = strong && canopy && feed ? 'bay-mid' : feed && !canopy ? 'incline-open' : 'bay-reached';
         const r = waits(stage, seed, feed, canopy, strong);
         const mode = feed ? 'growing' : 'settled';
