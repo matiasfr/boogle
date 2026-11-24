@@ -115,24 +115,25 @@ test('the solver proposes the canonical order and each soft edge flipped', () =>
 test('built nodes and stand-ins are told apart by the flag, and the stand-ins reach the ending', () => {
   for (const n of NODES) assert.ok(!isStandIn(n), `${n.id} is built: it carries no standIn flag`);
   const built = new Set<string>(NODES.map((n) => n.id));
-  // High Gorge and Bell Rock are built (greybox leg 2, step 5): the stand-ins are areas 6 to 9, Canopy Town cuttable.
-  for (const branches of ['both', 'first'] as const) {
-    const { nodes, lost } = standInRoute({ branches, bills: 1 });
-    assert.equal(nodes.length, branches === 'both' ? 4 : 3);
-    assert.equal(
-      nodes[0]!.requires[0]!.on,
-      NODES[NODES.length - 1]!.id,
-      'the stand-ins start where the built graph ends',
-    );
-    assert.equal(nodes[nodes.length - 1]!.id, 'ending');
-    assert.equal(lost.length, branches === 'both' ? 0 : 1, 'cutting a branch loses exactly its gate');
-    for (const s of nodes) {
-      assert.ok(isStandIn(s), `${s.id} is flagged a stand-in`);
-      assert.ok(!built.has(s.id), `${s.id} is not a built node's id`);
-      assert.ok(
-        Object.values(s.bill).every((n) => n > 0) && s.legs.every((l) => l.km > 0),
-        `${s.id}: a bill and a leg`,
-      );
-    }
+  // High Gorge, Bell Rock and Canopy Town are built (greybox leg 2's step 5, leg 3's step 7): the stand-ins are areas 7
+  // to 9, and the ending's key is the built cloth.
+  const { nodes } = standInRoute({ bills: 1 });
+  assert.deepEqual(
+    nodes.map((n) => n.id),
+    ['port', 'wall', 'ending'],
+  );
+  assert.equal(
+    nodes[0]!.requires[0]!.on,
+    NODES[NODES.length - 1]!.id,
+    'the stand-ins start where the built graph ends',
+  );
+  assert.ok(
+    nodes[2]!.requires.some((e) => e.on === 'cloth' && e.needs === 'glider cloth'),
+    'the ending needs the cloth',
+  );
+  for (const s of nodes) {
+    assert.ok(isStandIn(s), `${s.id} is flagged a stand-in`);
+    assert.ok(!built.has(s.id), `${s.id} is not a built node's id`);
+    assert.ok(Object.values(s.bill).every((n) => n > 0) && s.legs.every((l) => l.km > 0), `${s.id}: a bill and a leg`);
   }
 });

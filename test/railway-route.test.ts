@@ -120,8 +120,8 @@ test('each after and needs points backwards', () => {
 });
 
 test("the three long-range gates equal standins.ts's GATES", () => {
-  // The built pickups' nodes (dev/loop/graph.ts) stand for areas 4 and 5 since greybox leg 2's step 5.
-  const areaOf: Record<string, number> = { pick: 4, seeds: 5, canopy: 6, port: 7, wall: 8, ending: 9 };
+  // The built pickups' nodes (dev/loop/graph.ts) stand for areas 4 to 6 since greybox leg 2's step 5 and leg 3's step 7.
+  const areaOf: Record<string, number> = { pick: 4, seeds: 5, cloth: 6, port: 7, wall: 8, ending: 9 };
   const grantOf: Record<string, string> = { 'powered pick': 'pick', 'crystal seeds': 'seeds', 'glider cloth': 'cloth' };
   const { nodes } = standInRoute();
   let found = 0;
@@ -297,7 +297,7 @@ test("every leg's railhead halt is its from halt's sim index + 1 (simHalt counts
   );
   assert.equal(simHalt('ring', 1), 9, "line 2's High Gorge after its three stack heads");
   assert.equal(simHalt('ns', 1), 2, "the ns line's Bell Rock after incline head 1");
-  assert.equal(simHalt('bay', 2), 5, "Canopy Town after both Canopy heads");
+  assert.equal(simHalt('bay', 2), 5, 'Canopy Town after both Canopy heads');
 });
 /** A leg's from halt on its row: the halt whose stop is its fromCm. */
 function fromHalt(leg: (typeof RAIL_LEGS)[number]) {

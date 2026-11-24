@@ -105,9 +105,22 @@ export type NodeId =
   | 'gorge'
   | 'pick'
   | 'incline-gate'
-  | 'seeds';
+  | 'seeds'
+  | 'canopy-gate'
+  | 'cloth';
 /** The greybox legs' sections (ROUTE_SECTIONS). */
-export type SectionId = 'stack-1' | 'stack-2' | 'stack-3' | 'stack-4' | 'incline-1' | 'incline-2' | 'bay-1' | 'bay-2';
+export type SectionId =
+  | 'stack-1'
+  | 'stack-2'
+  | 'stack-3'
+  | 'stack-4'
+  | 'incline-1'
+  | 'incline-2'
+  | 'bay-1'
+  | 'bay-2'
+  | 'canopy-1'
+  | 'canopy-2'
+  | 'canopy-3';
 
 /** World centimetres, as the catalogs pin them. `y` only where the catalog gives a height. */
 export type Point = { x: number; z: number; y?: number };
@@ -365,16 +378,18 @@ const steelKit = (foot: HandSupply): Supply => ({
   foot,
 });
 
-// The greybox route's legs (docs/plans/greybox-route.md and greybox-leg2.md, step 5): each section is a node, fed at
-// its frame off its rack; bills, frames and racks are RAIL_LEGS's. The rules: src/sim/railway-sys-route.ts (legStock,
-// grant, gate), the facts src/sim/railway-queries-route.ts (legReached: a leg's `after` complete).
+// The greybox route's legs (docs/plans/greybox-route.md, greybox-leg2.md step 5, greybox-leg3.md step 7): each
+// section is a node, fed at its frame off its rack; bills, frames and racks are RAIL_LEGS's. The rules:
+// src/sim/railway-sys-route.ts (legStock, grant, gate), the facts src/sim/railway-queries-route.ts (legReached: a leg's
+// `after` complete).
 const RULES_ROUTE = 'src/sim/railway-sys-route.ts';
 const ROUTE_QUERIES = 'src/sim/railway-queries-route.ts';
 const LEG_VIEW = 'src/entities/route-greybox/leg-view.ts';
 const legOf = (id: string) => RAIL_LEGS.find((l) => l.id === id)!;
 const STACK = legOf('stack'),
   INCLINE = legOf('incline'),
-  BAY = legOf('bay-cut');
+  BAY = legOf('bay-cut'),
+  CANOPY = legOf('bell-canopy');
 const grantOf = (id: string) => RAIL_GRANTS.findIndex((g) => g.id === id);
 /** Who brings section k's kit to its rack (src/sim/railway-queries-route.ts: MINT_LEGS, YARD_LEGS, STOCKED_LEGS). */
 const KIT_BY: Record<string, (k: number) => string> = {
@@ -385,11 +400,21 @@ const KIT_BY: Record<string, (k: number) => string> = {
       : "an ns train from High Gorge's yard to the head",
   'bay-cut': (k) =>
     k === 0 ? "stocked on the West landing's rack (the stand-in: no train)" : 'a bay train from the West landing',
+  'bell-canopy': (k) =>
+    k === 0
+      ? "a bay train from the West landing to Bell Rock's rack (the kit ahead, aboard since the bay cut)"
+      : 'a bay train from the West landing (a Strong train holds at the railhead with the next bill)',
 };
-const legNodeId = (leg: RouteLeg, k: number) => `${leg === BAY ? 'bay' : leg.id}-${k + 1}` as SectionId;
+const legNodeId = (leg: RouteLeg, k: number) =>
+  `${leg === BAY ? 'bay' : leg === CANOPY ? 'canopy' : leg.id}-${k + 1}` as SectionId;
 /** Each built leg's sections as nodes: the node, its RAIL_LEGS index and the section index. */
-export const ROUTE_SECTIONS: readonly { id: SectionId; leg: number; section: number }[] = [STACK, INCLINE, BAY].flatMap(
-  (leg) => leg.sections.map((_s, section) => ({ id: legNodeId(leg, section), leg: RAIL_LEGS.indexOf(leg), section })),
+export const ROUTE_SECTIONS: readonly { id: SectionId; leg: number; section: number }[] = [
+  STACK,
+  INCLINE,
+  BAY,
+  CANOPY,
+].flatMap((leg) =>
+  leg.sections.map((_s, section) => ({ id: legNodeId(leg, section), leg: RAIL_LEGS.indexOf(leg), section })),
 );
 function legSection(leg: RouteLeg, k: number, label: string, requires: Edge[], stops: string[] = []): LoopNode {
   const sec = leg.sections[k]!;
@@ -515,6 +540,53 @@ const ROUTE_NODES: readonly LoopNode[] = [
       k === BAY.sections.length - 1 ? ['bay'] : [],
     ),
   ),
+  {
+    id: 'canopy-gate',
+    label: "Open the Canopy barrier on Bell Rock's upper platform",
+    area: 'route',
+    at: p(RAIL_GATES[CANOPY.sections[0]!.gate!]!.at),
+    bill: {},
+    supply: {},
+    ops: ['rail.gate'],
+    reached: { mark: 'route barrier opened', nth: 2 },
+    stops: [],
+    requires: [
+      dec('bay-2', 'rules', `${RULES_ROUTE} gate: the leg it shuts is open (the bay cut laid)`),
+      dec('seeds', 'rules', `${RULES_ROUTE} gate: the room holds its needs grant (the seeds)`),
+    ],
+    cue: [
+      onMain('world', "the barrier on Canopy's first frame, beside the rack and the kit car", `${LEG_VIEW} Bell Rock`),
+    ],
+  },
+  ...CANOPY.sections.map((_s, k) =>
+    legSection(
+      CANOPY,
+      k,
+      `Bell Rock to Canopy Town, section ${k + 1} of ${CANOPY.sections.length}`,
+      k === 0
+        ? [dec('canopy-gate', 'rules', `${RULES_ROUTE} legStock: refused while the frame's barrier is shut`)]
+        : [],
+    ),
+  ),
+  {
+    id: 'cloth',
+    label: 'Take the glider cloth at Canopy Town, and ride home',
+    area: 'route',
+    at: p(RAIL_GRANTS[grantOf('cloth')]!.at),
+    bill: {},
+    supply: {},
+    ops: ['rail.grant'],
+    reached: { mark: 'route pickup taken', nth: 3 },
+    stops: ['canopy'],
+    requires: [dec('canopy-3', 'rules', `${RULES_ROUTE} grant: its leg laid (legDone)`)],
+    cue: [
+      onMain(
+        'world',
+        "the cloth post on Canopy's deck round the buffers, the Notch barrier beyond",
+        `${LEG_VIEW} Canopy`,
+      ),
+    ],
+  },
 ];
 
 export const NODES: readonly LoopNode[] = [

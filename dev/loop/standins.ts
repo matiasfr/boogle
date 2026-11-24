@@ -1,20 +1,21 @@
-// The route past the built graph, as STAND-INS (docs/plans/campaign-outline.md, section 5, step 1): areas 6 to 9 of
+// The route past the built graph, as STAND-INS (docs/plans/campaign-outline.md, section 5, step 1): areas 7 to 9 of
 // the campaign outline, each a bill, its legs and a gate, and nothing else. No mechanic is invented and none of this is
 // played through the rules: `npm run loop -- run` plays the built graph (dev/loop/graph.ts NODES, which hold areas 4
-// and 5 since greybox leg 2's step 5) and MODELS these on top of it, at the rate the built route itself played. Every
+// and 5 since greybox leg 2's step 5 and area 6 since leg 3's step 7) and MODELS these on top of it, at the rate the
+// built route itself played. Every
 // stand-in carries `standIn: true`; a built node never does.
 //   bill   the main-route bill the economy model charges the area's steps (dev/economy/ring-sim.ts): the bill its
 //          allowance was sized on, not a designed bill
 //   legs   the real lengths of the track the area builds, from the generated line catalog (src/sim/railway-world-lines.ts)
 //   gate   what the area grants (`grants`) and which later area needs it (`requires[].needs`), a built node's too
-// The owner has not ruled on the outline's area list or order, so the choices are one switch (`Variant`): whether the
-// second branch exists, and a factor on every bill. High Gorge, built, is the first branch (the outline's default).
+// The owner has not ruled on the outline's later areas, so the one switch (`Variant`) is a factor on every bill. Both
+// branches, High Gorge and Canopy Town, are built: neither can be cut or reordered here.
 import { WORLD_LINES } from '../../src/sim/railway-world-lines.ts';
 import { ROUTE as MODEL_ROUTE, type Material as ModelMaterial } from '../economy/ring-data.ts';
 import { defaultSettings, rideS, simulate } from '../economy/ring-sim.ts';
 import { NODES, type NodeId } from './graph.ts';
 
-export type StandInId = 'canopy' | 'port' | 'wall' | 'ending';
+export type StandInId = 'port' | 'wall' | 'ending';
 export type StandInMaterial = 'logs' | 'stone' | 'rails' | 'footings' | 'steel' | 'copper' | 'fibre' | 'crystal';
 export type Leg = { id: string; line: string; km: number };
 /** Every stand-in edge is the outline's default, not a ruling. `needs`: the grant of `on` that opens this area. */
@@ -36,13 +37,11 @@ export type StandIn = {
   requires: StandInEdge[];
 };
 export type Variant = {
-  /** `first`: the second branch area (Canopy Town) is cut (the outline's decision 1, third option). */
-  branches: 'both' | 'first';
   /** A factor on every stand-in bill (1.5: the sensitivity row). */
   bills: number;
 };
-/** The outline's default answers (decision 1): both branch areas, High Gorge first, fixed order. */
-export const DEFAULT_VARIANT: Variant = { branches: 'both', bills: 1 };
+/** The outline's default: the bills as the model sized them. */
+export const DEFAULT_VARIANT: Variant = { bills: 1 };
 
 const MATERIAL_OF: Record<ModelMaterial, StandInMaterial> = {
   W: 'logs',
@@ -58,35 +57,34 @@ const OUTLINE = 'docs/plans/campaign-outline.md section 3';
 /** The route's slots past the built graph, in the outline's order: `stage` is world-lines.ts's build stage (High Gorge
  * first), `steps` the model's. */
 const SLOTS = [
-  { id: 'canopy', area: 6, stage: 5, allowanceMin: 42, steps: ['b2.reach', 'b2.connect'] },
   { id: 'port', area: 7, stage: 6, allowanceMin: 48, steps: ['port.reach', 'port.connect'] },
   { id: 'wall', area: 8, stage: 7, allowanceMin: 48, steps: ['ring.close'] },
   { id: 'ending', area: 9, stage: 8, allowanceMin: 18, steps: ['final'] },
 ] as const;
 const PLACE: Record<StandInId, { label: string; grants: string[] }> = {
-  canopy: { label: 'Canopy Town', grants: ['carry sling', 'glider cloth'] },
   port: { label: 'Sea cave, Saltpan, High Port', grants: ['harbour crane', 'faster engine'] },
   wall: { label: 'The White Wall line', grants: ['crystal collars', 'the lap'] },
   ending: { label: 'Lantern Notch, the causeway, the Original Island', grants: ['the ending'] },
 };
 /** The grants of built nodes a stand-in's gate names (dev/loop/graph.ts; src/sim/railway-route.ts RAIL_GRANTS). */
-const BUILT_GRANTS: Partial<Record<NodeId, string>> = { pick: 'powered pick', seeds: 'crystal seeds' };
+const BUILT_GRANTS: Partial<Record<NodeId, string>> = {
+  pick: 'powered pick',
+  seeds: 'crystal seeds',
+  cloth: 'glider cloth',
+};
 /** The gates the outline names: the day-one sea cave, the one deep span, the glide to the Notch. */
 const GATES: Partial<Record<StandInId, StandInEdge[]>> = {
   port: [{ on: 'pick', needs: 'powered pick', source: `${OUTLINE}: break the sea cave's plug with the powered pick` }],
   wall: [{ on: 'seeds', needs: 'crystal seeds', source: `${OUTLINE}: crystal collars for the one deep span` }],
-  ending: [{ on: 'canopy', needs: 'glider cloth', source: `${OUTLINE}: the glide from Canopy's ledge to the Notch` }],
+  ending: [{ on: 'cloth', needs: 'glider cloth', source: `${OUTLINE}: the glide from Canopy's ledge to the Notch` }],
 };
-const isPlace = (id: string): id is StandInId => id in PLACE;
 
-/** The stand-in route for a variant, in play order. `lost`: gates whose key area the variant cut. */
-export function standInRoute(v: Variant = DEFAULT_VARIANT): { nodes: StandIn[]; lost: string[] } {
+/** The stand-in route for a variant, in play order. */
+export function standInRoute(v: Variant = DEFAULT_VARIANT): { nodes: StandIn[] } {
   const model = simulate({ branchFirst: 'gorge' }, [1]);
   const nodes: StandIn[] = [];
-  const lost: string[] = [];
   let last: NodeId | StandInId = NODES[NODES.length - 1]!.id;
   for (const s of SLOTS) {
-    if (s.id === 'canopy' && v.branches === 'first') continue;
     const id: StandInId = s.id;
     const bill: StandIn['bill'] = {};
     for (const key of s.steps)
@@ -100,11 +98,10 @@ export function standInRoute(v: Variant = DEFAULT_VARIANT): { nodes: StandIn[]; 
         .filter((leg) => leg.stage[0] === s.stage)
         .map((leg) => ({ id: leg.id, line: line.name, km: (leg.toCm - leg.fromCm) / 1e5 })),
     );
-    const requires: StandInEdge[] = [{ on: last, source: `${OUTLINE}: the route's order (default, unruled)` }];
-    for (const gate of GATES[id] ?? []) {
-      if (!isPlace(gate.on) || nodes.some((n) => n.id === gate.on)) requires.push(gate);
-      else lost.push(`${PLACE[id].label} loses its key: ${gate.needs} (${PLACE[gate.on].label} is cut)`);
-    }
+    const requires: StandInEdge[] = [
+      { on: last, source: `${OUTLINE}: the route's order (default, unruled)` },
+      ...(GATES[id] ?? []),
+    ];
     nodes.push({
       id,
       standIn: true,
@@ -129,7 +126,7 @@ export function standInRoute(v: Variant = DEFAULT_VARIANT): { nodes: StandIn[]; 
       if (e.needs && !grants.includes(e.needs)) throw new Error(`stand-ins: ${e.on} does not grant "${e.needs}"`);
     }
   }
-  return { nodes, lost };
+  return { nodes };
 }
 
 export const isStandIn = (n: { standIn?: boolean }): n is StandIn => n.standIn === true;
@@ -168,19 +165,20 @@ export function standInSeconds(s: StandIn, rate: BuiltRate, packFootings = false
 
 // ---------------------------------------------------------------- the whole route
 /** The built areas, by the node that ends each in the canonical order. Ring Island's area ends with build 2's install,
- * so the steel loop counts in it; High Gorge's ends with the pick, Bell Rock's with the bay cut laid. The allowances of
- * areas 4 and 5 are the economy model's, as their stand-ins had them. */
+ * so the steel loop counts in it; High Gorge's ends with the pick, Bell Rock's with the bay cut laid, Canopy Town's with
+ * the cloth taken. The allowances of areas 4 to 6 are the economy model's, as their stand-ins had them. */
 const BUILT_AREAS: readonly { area: number; label: string; ends: NodeId; allowanceMin: number }[] = [
   { area: 1, label: 'Home', ends: 'pier', allowanceMin: 36 },
   { area: 2, label: 'Split-rock Works', ends: 'crossing', allowanceMin: 36 },
   { area: 3, label: 'Ring Island, builds 1 and 2', ends: 'install', allowanceMin: 36 },
   { area: 4, label: 'High Gorge', ends: 'pick', allowanceMin: 72 },
   { area: 5, label: 'Bell Rock and the bay shortcut', ends: 'bay-2', allowanceMin: 30 },
+  { area: 6, label: 'Canopy Town', ends: 'cloth', allowanceMin: 42 },
 ];
 export type RouteRow = { area: number; label: string; standIn: boolean; allowanceMin: number; seconds: number[] };
 /** Seconds per area for each played run (one per player count): built areas as played, stand-ins modelled. */
 export function wholeRoute(runs: readonly Played[], v: Variant = DEFAULT_VARIANT, packFootings = false) {
-  const { nodes, lost } = standInRoute(v);
+  const { nodes } = standInRoute(v);
   const reached = (run: Played, id: NodeId) => run.nodes.find((x) => x.id === id)!.tick / 10;
   const rows: RouteRow[] = BUILT_AREAS.map((a, k) => ({
     area: a.area,
@@ -202,7 +200,7 @@ export function wholeRoute(runs: readonly Played[], v: Variant = DEFAULT_VARIANT
       }),
     });
   const total = runs.map((_r, k) => rows.reduce((a, row) => a + row.seconds[k]!, 0));
-  return { rows, total, rates, lost, nodes };
+  return { rows, total, rates, nodes };
 }
 
 const TARGET_MIN = Number(defaultSettings().targetHours) * 60;
@@ -211,15 +209,15 @@ const hm = (seconds: number) => {
   return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
 };
 const min = (seconds: number) => String(Math.round(seconds / 60));
-const variantName = (v: Variant) =>
-  `${v.branches === 'both' ? 'both branches' : 'one branch only (Canopy Town cut)'}, bills x${v.bills}`;
+const variantName = (v: Variant) => `bills x${v.bills}`;
 export function variantOf(args: readonly string[]): Variant {
   const value = (flag: string) => (args.includes(flag) ? args[args.indexOf(flag) + 1] : undefined);
   const bills = Number(value('--bills') ?? DEFAULT_VARIANT.bills);
-  // High Gorge is built and played (greybox leg 2's step 5): the flag can no longer put Canopy Town first.
+  // Both branches are built and played (greybox leg 2's step 5, leg 3's step 7): neither flag has a stand-in to move.
   if (args.includes('--branch-first')) throw new Error('--branch-first: High Gorge is built, so it comes first');
+  if (args.includes('--one-branch')) throw new Error('--one-branch: Canopy Town is built, so it cannot be cut');
   if (!(bills > 0)) throw new Error('--bills: a factor above 0');
-  return { branches: args.includes('--one-branch') ? 'first' : 'both', bills };
+  return { bills };
 }
 
 /** The section `npm run loop -- run` prints after the built tables. `calibrated`: the same runs with human detours. */
@@ -233,7 +231,7 @@ export function wholeRouteLines(
   const cols = (seconds: readonly number[], f = min) => seconds.map((x) => f(x).padStart(7)).join('');
   const out = [
     '',
-    `Whole route to the ending: areas 1-5 PLAYED above, areas 6-9 STAND-INS, modelled and not played (dev/loop/standins.ts).`,
+    `Whole route to the ending: areas 1-6 PLAYED above, areas 7-9 STAND-INS, modelled and not played (dev/loop/standins.ts).`,
     `Variant: ${variantName(v)}. A stand-in is its bill at the built route's own rate plus rides over its real legs:`,
     `no puzzles, discovery, confusion or ending. Minutes; the target is ${TARGET_MIN}.`,
     `  #  area                                              kind      units  legs km ${players.map((n) => `${n}p`.padStart(7)).join('')}  allowance`,
@@ -254,27 +252,20 @@ export function wholeRouteLines(
     )}`,
     `  Built rates, seconds per bill unit (${players.map((n) => `${n}p`).join(' / ')}): a footing ${base.rates.map((r) => r.footingS.toFixed(1)).join(' / ')}; any other unit ${base.rates.map((r) => r.otherS.toFixed(2)).join(' / ')}.`,
   );
-  for (const l of base.lost) out.push(`  GATE LOST: ${l}`);
-  const row = (name: string, w: ReturnType<typeof wholeRoute>) => {
-    out.push(`  ${name.padEnd(78)} ${cols(w.total, hm)}`);
-    for (const l of w.lost) out.push(`      gate lost: ${l}`);
-  };
+  const row = (name: string, w: ReturnType<typeof wholeRoute>) => out.push(`  ${name.padEnd(78)} ${cols(w.total, hm)}`);
   out.push('', `Sensitivity, whole route h:mm (${players.map((n) => `${n}p`).join(', ')}):`);
   row(`as above (${variantName(v)})`, base);
   if (calibrated.length === runs.length)
     row('walking at human detours (dev/loop/detour.json), stand-ins at that rate', wholeRoute(calibrated, v));
-  for (const alt of [
-    { ...v, branches: 'first' as const },
-    { ...v, bills: v.bills * 1.5 },
-  ])
-    if (variantName(alt) !== variantName(v)) row(variantName(alt), wholeRoute(runs, alt));
+  const alt = { bills: v.bills * 1.5 };
+  row(variantName(alt), wholeRoute(runs, alt));
   row('floor: footings carried like any other unit (the economy model reads them so)', wholeRoute(runs, v, true));
   return { lines: out, data: base };
 }
 
 /** `npm run loop` and `-- node <id>`: the stand-ins as data. */
 export function standInLines(v: Variant = DEFAULT_VARIANT, only?: string) {
-  const { nodes, lost } = standInRoute(v);
+  const { nodes } = standInRoute(v);
   const out: string[] = [];
   for (const s of nodes.filter((n) => !only || n.id === only)) {
     out.push(
@@ -287,7 +278,6 @@ export function standInLines(v: Variant = DEFAULT_VARIANT, only?: string) {
       `  requires: ${s.requires.map((e) => `${e.on}${e.needs ? ` (its ${e.needs})` : ''}`).join(', ')}`,
     );
   }
-  if (!only) for (const l of lost) out.push(`GATE LOST: ${l}`);
   return out;
 }
 export const STAND_IN_IDS: readonly string[] = Object.keys(PLACE);
