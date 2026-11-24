@@ -297,7 +297,9 @@ export const JUMPS: readonly Jump[] = [
   },
   // Placeholder tooling copy for the owner. Landings measured in step 6 (docs/plans/greybox-leg3.md, its stills).
   // canopy-open has none, for leg 2's reason above: its spot is Bell Rock's upper platform over the cut, which
-  // return-spot.ts (by x and z alone, within 30 m) would also give a rider of the lower level's line.
+  // return-spot.ts (by x and z alone, within 30 m) would also give a rider of the lower level's line. canopy-reached
+  // has none either: arrival.ts probes a landing's surface from the spawn, before Canopy's massing (resident by
+  // distance) has mounted there, so it would keep the spawn; head 1's platform (canopy-mid) is the leg view's, always up.
   { stage: 'canopy-open', menu: false, label: 'Canopy gate open', line: 'The first kit is on the Bell Rock rack' },
   {
     stage: 'canopy-mid',
@@ -307,14 +309,7 @@ export const JUMPS: readonly Jump[] = [
     // Head 1's outward platform over the strait, between rack 2 and frame 2 (legRack, legFrame), facing the frame.
     land: { x: -525.13, y: 4.9, z: -673.36, yaw: 1.935 },
   },
-  {
-    stage: 'canopy-reached',
-    menu: false,
-    label: 'Canopy reached',
-    line: 'The cloth waits at Canopy Town',
-    // Canopy Town's homeward platform, 10 m short of the stop, facing the cloth post.
-    land: { x: -1070.02, y: 13.9, z: -318.93, yaw: 2.419 },
-  },
+  { stage: 'canopy-reached', menu: false, label: 'Canopy reached', line: 'The cloth waits at Canopy Town' },
 ];
 /** The rows a menu lists: every row but the tooling-only ones. */
 export const MENU_JUMPS: readonly Jump[] = JUMPS.filter((j) => j.menu !== false);
