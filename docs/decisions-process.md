@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-24 · The heartbeat leaves a live session's job alone until its claim lapses: it reports it, never reviews, re-checks, fixes or ships it ([entry](#d-2026-11-24-heartbeat-leaves-live-jobs))
 - 2026-11-24 · The prefab door may grow by one export, and the engine by one shape-overlap query, for the shared lift-or-wait helper; nothing else grows ([entry](#d-2026-11-24-door-export-clearance-helper))
 - 2026-11-18 · Decisions page (process): Godot export once, not in CI; he sets `ADVANCE_KEY` himself; device tests take option A; Codex rows on Claude only until Codex is back; separate capacities is P1; his side threads count toward the five jobs; the heartbeat adopts its nine workflow fixes (wakes fill freed slots, background ship-queue, ship-check runs server and net suites for seeds, profile before performance steps) ([entry](#d-2026-11-18-decisions-page-process))
 - 2026-11-19 · Finished work ships without asking him first; new T3 threads start in their own worktree and the project root auto-pulls ([entry](#d-2026-11-19-finished-work-ships-threads-in-worktrees))
@@ -106,6 +107,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · Mini-games get their own design pass later. ([entry](#d-undated-mini-games-get-their-own-design))
 
 ## Decided
+
+- <a id="d-2026-11-24-heartbeat-leaves-live-jobs"></a>**2026-11-24, the heartbeat leaves a live session's job alone** (owner, 24 November 2026, in the live session: "Yes, and your recommendation for the heartbeat"). The recommendation: the 10:12 UTC heartbeat started an independent review of `claude/greybox-leg3-views` while the live session owned it, and the builder fixed to a review that session had not started. So a job whose "Jobs in flight" row says `live session` belongs to that session until its claim lapses (30 minutes after the session's last ship); the heartbeat reports it but does not review, re-check, fix or ship it. Procedure: [orchestrate skill](../.claude/skills/orchestrate-boogle/SKILL.md), section 9 step 3.
 
 - <a id="d-2026-11-24-door-export-clearance-helper"></a>**2026-11-24, the prefab door grows one export for the shared clearance helper** (owner, 24 November 2026, a tap answer in the live session: "1: new door export + query (Recommended)"). The shared lift-or-wait helper for solids that switch on near players (rule 67; build skill step 9) gets a real physics query: one new export on `src/prefab/instantiate.ts` (the record door) and one new capsule and shape-overlap query in `src/physics/engine.ts` and its Rapier backend, three new door export names in all, no new files on the prefab-debt list and no count growth. The helper's logic stays physics-free in `src/place/` with the queries passed in. The prefab-debt registry may admit exactly these names, citing this entry; every other ratchet stays as it was. Not taken: building on the existing `sweepSphere` only, or no new exports.
 
