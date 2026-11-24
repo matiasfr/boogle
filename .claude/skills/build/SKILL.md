@@ -45,6 +45,12 @@ that writes the plan carries it out, so it can change the plan when a step turns
    three branches 2 to 5 review rounds each on 24 November (rule 67 in docs/agents/orchestrator-state.md).
 10. **Owed proofs are yours.** A rebase, bot run, still or tick mark your branch still owes comes back to this same
    thread; you have the context a fresh agent would lack.
+11. **A test must be able to fail.** See a regression or proof test fail once on the code without your change (or with
+   its subject broken) before you trust its pass. Assert exact values and compare with the source of truth (the server,
+   the sim), not "more than zero" or "same as before", and run the real step in between. In a fix round, make the least
+   change that turns the reviewer's tests green; when the defect is one writer of a value several paths write, check
+   every writer in that pass (24 November: a reconnect proof passed with the inventory stuck at zero, and one rider snap
+   took three review rounds, a narrower case each time; rule 70 in docs/agents/orchestrator-state.md).
 
 Report: the plan as built and where it changed, files changed, check results, the paths of the stills you looked at
 with your one-line gut check, what is unverified, and "not tested on a device" where it applies.
