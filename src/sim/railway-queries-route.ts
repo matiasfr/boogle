@@ -6,6 +6,8 @@
 //   legsLaid(w)                  sections laid by RAIL_LEGS slot (what the stops read)
 //   legDone, legReached, legOpen, openLeg   a leg complete; reached (built, its `after` complete); open (reached, not
 //                                complete); the open leg on a line
+//   tradeOpen(w, line)           a trade line's Quick or Strong trade is open (garage step 4: TRADE_OPENS)
+//   LEG_KIT_MOST                 the most of one kind in a kit bill (the cargo bound's unit)
 //   legSection(w, k)             the section being fed (its index), or -1 with the leg complete
 //   legKitHalt(line), legKitStop(w, k)   where a leg's kit loads (its line's home halt) and unloads (the rack's halt)
 //   legKitCap(w, k)              one kit: the current section's bill (one kit a train)
@@ -24,7 +26,7 @@
 //   haltHead(w, halt)            the head a `heads` halt stands at now (the Railhead's ring head, a leg's sections)
 import type { World } from '../ecs/index.ts';
 import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, legBuilt } from './railway-lines.ts';
-import { LEG_TUNE, RAIL_LEGS, RAIL_YARDS, legStartS } from './railway-route.ts';
+import { LEG_TUNE, RAIL_LEGS, RAIL_YARDS, TRADE_LEG, TRADE_OPENS, isTradeLine, legStartS } from './railway-route.ts';
 import { LINE_SLOTS } from './railway-trains.ts';
 import { TRAIN_PHASE, type RailTrain } from './railway-train.ts';
 import { Account, Aperture, Leg, LegYard, Rail, Route, Train } from './railway-components.ts';
@@ -37,6 +39,12 @@ export const routeRow = (w: World) => w.get(Route, routeId(w))!;
 export const legsLaid = (w: World): number[] => RAIL_LEGS.map((_l, k) => legRow(w, k).laid);
 /** Leg k's sections are all laid. */
 export const legDone = (w: World, k: number) => legRow(w, k).laid >= RAIL_LEGS[k]!.sections.length;
+/** A trade line's Quick or Strong trade is open (garage step 4): its first leg has TRADE_OPENS' sections laid. */
+export const tradeOpen = (w: World, line: number) =>
+  isTradeLine(line) && legRow(w, TRADE_LEG[line]!).laid >= TRADE_OPENS[line]!;
+/** The most of each kind one kit bill holds, over every leg's sections: a leg-kit train carries at most its row's
+ * `kitBills` of it (the load check's cargo bound and boilerAdopt's kit guard). */
+export const LEG_KIT_MOST = Math.max(...RAIL_LEGS.flatMap((l) => l.sections.map((s) => Math.max(s.logs, s.rails))));
 /** Leg k may be built on: its rules are built (legBuilt) and the leg before it is complete (`after` -1: Ring Island's
  * rivet struck). */
 export function legReached(w: World, k: number) {

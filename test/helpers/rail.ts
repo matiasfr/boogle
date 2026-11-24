@@ -11,6 +11,7 @@ import { createRailwayWorld, Pile } from '../../src/sim/railway-components.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
 import type { Read, ReadWorld } from '../../src/sim/railway-rows.ts';
 import { restore } from '../../src/sim/railway-drive.ts';
+import { steelHomeOn } from '../../src/sim/railway-seed-steel.ts';
 import * as seeds from '../../src/sim/railway-seeds.ts';
 import * as works from '../../src/sim/railway-seed-works.ts';
 import * as ring from '../../src/sim/railway-seed-ring.ts';
@@ -61,4 +62,10 @@ export function unaudited(s: Seed): Seed {
   const raw = createRailwayWorld();
   raw.load(JSON.parse(JSON.stringify(s.w.snapshot())), railwayCheck);
   return { w: raw, t: s.t };
+}
+/** `source` (an unaudited copy) played on until the first steel is in Home's bay: the steel seed's own steps
+ * (src/sim/railway-seed-steel.ts, steelHomeOn), by accepted ops and ticks only. Ring-joined, or any later seed whose works
+ * is cold. */
+export function steelHome(source: Seed): Seed {
+  return steelHomeOn(unaudited({ w: restore(source.w), t: source.t }));
 }

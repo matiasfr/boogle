@@ -1,15 +1,16 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { Line, Train } from '../src/sim/railway-components.ts';
+import { Train } from '../src/sim/railway-components.ts';
 import { legKitCap, legRow } from '../src/sim/railway-queries-route.ts';
 import { RAIL_GATES, ROW_LINE } from '../src/sim/railway-route.ts';
-import { rail, train } from '../src/sim/railway-rows.ts';
+import { line, rail, shed, train } from '../src/sim/railway-rows.ts';
+import { BRING_TICKS } from '../src/sim/railway-works-layout.ts';
 import { laySection } from '../src/sim/railway-seed-legs.ts';
 import { TRAIN, TRAIN_PHASE, boilerCars, kitBills } from '../src/sim/railway-train.ts';
 import { stopsOf } from '../src/sim/railway-queries.ts';
 import { endBlocks, LINE_SLOTS } from '../src/sim/railway-trains.ts';
 import { legRailheadHold } from '../src/sim/railway-sys-route-kit.ts';
-import { act, advance, buildSeedWorld, invariant, restore, unaudited, type Seed } from './helpers/rail.ts';
+import { act, advance, buildSeedWorld, invariant, restore, steelHome, unaudited, type Seed } from './helpers/rail.ts';
 
 const BAY = ROW_LINE.bay,
   CUT = 2,
@@ -21,10 +22,24 @@ function until(s: Seed, predicate: () => boolean, message: string) {
     advance(s, 1);
   }
 }
+/** bay-mid with the works lit and the first steel home, by accepted ops and ticks only (built once). */
+let baySteel: Seed | undefined;
+const bayMidSteel = () => unaudited((baySteel ??= steelHome(buildSeedWorld('bay-mid'))));
+/** Garage step 4: the bay line's copy brought to the table, then the copies' swap waited out. */
+function bringBay(s: Seed) {
+  assert.equal(act(s, 'a', 'rail.bring', { line: BAY, revision: shed(s.w).bringRev }), 1);
+  advance(s, BRING_TICKS);
+}
+/** Strong (part 6) installed on the bay line, by accepted rail.install. */
+function fitStrong(s: Seed) {
+  assert.equal(act(s, 'a', 'rail.install', { line: BAY, part: 6, revision: line(s.w, BAY).rev }), 1);
+  assert.equal(line(s.w, BAY).boiler, 5);
+}
 
-test('Strong loads two bills, holds at Bell Rock and unloads at the next head', { timeout: 300000 }, (t) => {
-  const s = unaudited(buildSeedWorld('bay-mid'));
-  Object.assign(s.w.mut(Line, s.w.lookup(Line, BAY)!)!, { boiler: 5, fitted: s.t });
+test('Strong fitted by rail.bring and rail.install loads two bills, holds at Bell Rock and unloads at the next head', { timeout: 300000 }, (t) => {
+  const s = bayMidSteel();
+  bringBay(s);
+  fitStrong(s);
   assert.equal(boilerCars(5), 1);
   assert.deepEqual([kitBills(0), kitBills(4), kitBills(5)], [1, 1, 2]);
   assert.deepEqual(legKitCap(s.w, CUT, 2), { logs: 20, rails: 20 }, 'the bay cut has one bill left');
@@ -72,7 +87,8 @@ test('Strong loads two bills, holds at Bell Rock and unloads at the next head', 
 });
 
 test('a train carrying one Canopy bill tops up at West landing when it adopts Strong', { timeout: 300000 }, () => {
-  const s = unaudited(buildSeedWorld('bay-mid'));
+  const s = bayMidSteel();
+  bringBay(s);
   const slot = LINE_SLOTS[BAY]![0]!;
   const row = () => train(s.w, slot);
   until(
@@ -80,7 +96,7 @@ test('a train carrying one Canopy bill tops up at West landing when it adopts St
     () => rail(s.w).depot === 20 && row().legKit && row().logs === 20 && row().track === 0 && row().at === 0,
     'a standard train carries its first Canopy bill while the last bay section waits',
   );
-  Object.assign(s.w.mut(Line, s.w.lookup(Line, BAY)!)!, { boiler: 5, fitted: s.t });
+  fitStrong(s);
   until(s, () => row().boiler === 5 && row().logs === 40 && row().rails === 40, 'top up the existing bill');
   assert.equal(row().at, 0);
   assert.equal(invariant(s.w), null);

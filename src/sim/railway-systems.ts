@@ -62,7 +62,7 @@ import {
   yoke,
 } from './railway-sys-line2.ts';
 import { call, trainTick } from './railway-sys-trains.ts';
-import { breaker, cradle, footRelease, footSet, footTake, kiln, strike, turn, worksTick } from './railway-sys-works.ts';
+import { breaker, bring, cradle, footRelease, footSet, footTake, kiln, strike, turn, worksTick } from './railway-sys-works.ts';
 import { legKitRelease } from './railway-sys-route-kit.ts';
 import { resume, supply } from './railway-sys-away.ts';
 import { brace, ringFootSet, ringFootTake, ringStopTick, ringStrike } from './railway-sys-ring.ts';
@@ -110,6 +110,7 @@ const OPS: Record<string, readonly System<never, number>[]> = {
   'rail.footSet': [footSet, ringFootSet],
   'rail.cradle': [cradle],
   'rail.turn': [turn],
+  'rail.bring': [bring],
   // Ring Island (v27, ./railway-sys-ring.ts): the rivet, the railhead rack and jib above, and the leaf's brace.
   'rail.brace': [brace],
   // Ring Island build 2 (./railway-sys-steel.ts): the kit off the island yard, and the steel works' bill.

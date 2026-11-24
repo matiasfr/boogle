@@ -16,7 +16,7 @@ import { RAIL_ROCKS } from './railway-works-layout.ts';
 import { LINE2_STATIONS } from './railway-line2-layout.ts';
 import { LINE_TIMING } from './railway-line.ts';
 import { TRAIN_PHASE, TRAIN_STOPS } from './railway-train.ts';
-import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
+import { LINE2, RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { TRADE, TRADE_TOWNS } from './railway-trade-layout.ts';
 import { RAIL_LEGS, RAIL_YARDS } from './railway-route.ts';
 import { HALT_YARDS } from './railway-yard-layout.ts';
@@ -186,10 +186,12 @@ export const Steel = defineComponent(
 /** A line's shared row (docs/plans/generic-lines.md, v26), by line index: its halts' lever asks (Train.req's digits)
  * and the tick a train last left its start end and its far end (-1 never), for the headway hold. Since v28
  * (ring-island-build2, R3) the room's boiler fit for the line (`boiler`, BOILER_SPEED's row; rail.install) and the
- * tick it was installed (`fitted`, -1 never). */
+ * tick of its last accepted install (`fitted`, -1 never; v67: the cradle's too, for the table's hold). Since v67 (garage step 4) `rev`, the line's install revision: +1 on
+ * every accepted rail.install of the line, so a stale hold refuses even when a swap returns to a row (on line 2 it
+ * equals `boiler + cradle`). */
 export const Line = defineComponent(
   'line',
-  { slot: 'int', req: 'int', left0: 'int', left1: 'int', boiler: 'u8', fitted: 'int', cradle: 'u8' },
+  { slot: 'int', req: 'int', left0: 'int', left1: 'int', boiler: 'u8', fitted: 'int', cradle: 'u8', rev: 'int' },
   { key: 'slot', defaults: { left0: -1, left1: -1, fitted: -1 } },
 );
 /** Split-rock Works (./railway-works.ts): the breaker, the seams, the kiln, its rack and the pier's footings. */
@@ -224,8 +226,13 @@ export const Shed = defineComponent(
     // Landed steel never falls: stage/gate facts read it; stock and bills read steel - spent.
     steel: 'int',
     spent: 'int',
+    // Garage step 4 (v67): the line whose copy stands on the garage table (LINE2 or a trade line), the bring's
+    // revision (+1 on every accepted rail.bring) and the tick of the last bring (-1 never).
+    tableLine: 'u8',
+    bringRev: 'int',
+    brought: 'int',
   },
-  { defaults: { fitted: -1, ready: -1 } },
+  { defaults: { fitted: -1, ready: -1, tableLine: LINE2, brought: -1 } },
 );
 export const ForgeClock = defineComponent('forgeClock', { lastPour: 'int' }, { replicate: false });
 export const Forge = defineComponent(

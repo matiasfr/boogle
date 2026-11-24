@@ -12,18 +12,19 @@
 //   steelArrives   arriving                  the kit into the island yard and the rack's steel aboard; steel into the
 //                                            Roundhouse bay at the Village
 //   steelService   serviceOf                 the stops those errands ask for
-//   install        rail.install { line, part, revision }   line 2's longer boiler, once steel is in the bay (R3)
-//   boilerAdopt    standing at the Village   a line 2 train takes its line's boiler fit
+//   install        rail.install { line, part, revision }   line 2's longer boiler, once steel is in the bay (R3); a
+//                                            trade line's Quick or Strong (garage step 4)
+//   boilerAdopt    standing at halt 0        a train takes its line's boiler fit, unless its leg kit would not fit
 import { defineSystem, type World } from '../ecs/index.ts';
 import { deckHeld } from './railway-queries-trade.ts';
 import { STEEL } from './railway-ring-layout.ts';
 import { LINE2_KIT, RAILS } from './railway-line2-layout.ts';
-import { railInt } from './railway.ts';
+import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { LINE2 } from './railway-lines.ts';
-import { BOILER_MAX } from './railway-train.ts';
-import { INSTALL_STEEL, installPart, installRevision } from './railway-works-layout.ts';
-import { upgradePool } from './railway-queries-works.ts';
-import { legDone } from './railway-queries-route.ts';
+import { kitBills } from './railway-train.ts';
+import { INSTALL_STEEL, TRADE_ROW, installAdmits } from './railway-works-layout.ts';
+import { tableBusy, upgradePool } from './railway-queries-works.ts';
+import { LEG_KIT_MOST, legDone, tradeOpen } from './railway-queries-route.ts';
 import {
   Account,
   Aperture,
@@ -49,7 +50,6 @@ import {
   shedId,
   steelId,
   steelNeed,
-  wagonSlot,
   type Row,
 } from './railway-queries.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
@@ -198,39 +198,63 @@ export function steelService(w: World, r: Readonly<Row<typeof Train>>, k: number
 function spendUpgrade(w: World, n: number) {
   w.mut(Shed, shedId(w))!.spent += n;
 }
-/** One hold at Home, from the line's shared fit revision. Parts 1/2 are free; 3/4 spend the shared upgrade pool.
- * Boiler fits adopt at the next Village stand; the cradle changes the wagon's next load, never cargo aboard. */
+/** One hold at Home, on the line's install revision (`Line.rev`), with the line's copy on the table (`Shed.tableLine`)
+ * and the table's hold over (tableFree). Line 2's parts 1/2 are free; 3/4 spend the shared upgrade pool. A trade
+ * line's parts 5/6 (Quick, Strong; garage step 4) once its trade is open: 1 steel for the line's first fit, then swaps
+ * for nothing. Boiler fits adopt at the line's next halt 0 stand; the cradle changes the wagon's next load, never cargo
+ * aboard. */
 export const install = defineSystem(
   'rail.install',
   { reads: [Train, Leg], writes: [Line, Shed], phase: 'act', order: 56 },
   (w, { e, tick }: Act) => {
-    if (e.line !== LINE2 || !installPart(e.part) || !railInt(e.revision, BOILER_MAX + 1)) return 0;
-    const id = lineId(w, LINE2),
+    if (!railInt(e.line) || !installAdmits(e.line, e.part) || !railInt(e.revision)) return 0;
+    const id = lineId(w, e.line),
       l = w.get(Line, id)!,
       h = w.get(Shed, shedId(w))!;
-    if (e.revision !== installRevision(l)) return 0;
+    if (e.revision !== l.rev || l.rev >= RAILWAY_MAX_INT || h.tableLine !== e.line || tableBusy(w, tick)) return 0;
+    if (e.part >= 5) return fitTrade(w, id, e.part as keyof typeof TRADE_ROW, tick);
     if (e.part === 4 ? l.cradle !== 0 || l.boiler < 1 : l.boiler !== e.part - 1) return 0;
-    if (h.ready >= 0 && wagonSlot(w) < 0) return 0;
     if (upgradePool(w) < INSTALL_STEEL[e.part]) return 0;
+    if (e.part === 1 ? h.fitted < 0 || h.table !== 1 : h.steel < 1) return 0;
+    // High Gorge is reached when the stack leg is complete, not when a later pickup is taken.
+    if (e.part === 3 && !legDone(w, 0)) return 0;
+    w.mut(Line, id)!.rev++;
     if (e.part === 1) {
-      if (h.fitted < 0 || h.table !== 1) return 0;
       for (const home of [0, LINE2]) Object.assign(w.mut(Line, lineId(w, home))!, { boiler: 1, fitted: tick });
       commission(w, tick);
     } else {
-      if (h.steel < 1) return 0;
-      // High Gorge is reached when the stack leg is complete, not when a later pickup is taken.
-      if (e.part === 3 && !legDone(w, 0)) return 0;
-      if (e.part === 4) w.mut(Line, id)!.cradle = 1;
+      // The cradle sets the line's install tick too, so it starts the table's hold as every install does.
+      if (e.part === 4) Object.assign(w.mut(Line, id)!, { cradle: 1, fitted: tick });
       else Object.assign(w.mut(Line, id)!, { boiler: e.part, fitted: tick });
       spendUpgrade(w, INSTALL_STEEL[e.part]);
     }
     return 1;
   },
 );
-/** A line 2 train standing at the Village takes its line's boiler fit (never in flight, so no leg changes speed). */
+/** A trade line's Quick or Strong fit (garage step 4): the trade open and the row not the line's now; the line's first
+ * fit spends INSTALL_STEEL's 1, a swap nothing. */
+function fitTrade(w: World, id: number, part: keyof typeof TRADE_ROW, tick: number) {
+  const l = w.get(Line, id)!,
+    row = TRADE_ROW[part],
+    price = l.boiler === 0 ? INSTALL_STEEL[part] : 0;
+  if (l.boiler === row || !tradeOpen(w, l.slot) || upgradePool(w) < price) return 0;
+  const m = w.mut(Line, id)!;
+  m.boiler = row;
+  m.fitted = tick;
+  m.rev++;
+  spendUpgrade(w, price);
+  return 1;
+}
+/** A train standing at its line's halt 0 takes its line's boiler fit when it differs (never in flight, so no leg
+ * changes speed), so a trade line's swap back adopts too. Not while its leg kit aboard is more than the fit's
+ * `kitBills` of a bill (the load check's cargo bound; a Strong train that yielded with its second bill aboard): it keeps
+ * its row until a later stand where the kit fits, so no unit goes home. On lines 1 and 2 the fit only rises. */
 export function boilerAdopt(w: World, id: number, line: number) {
-  const fit = w.get(Line, lineId(w, line))!.boiler;
-  if (w.get(Train, id)!.boiler < fit) w.mut(Train, id)!.boiler = fit;
+  const fit = w.get(Line, lineId(w, line))!.boiler,
+    r = w.get(Train, id)!;
+  if (r.boiler === fit) return;
+  if (r.legKit && Math.max(r.logs, r.rails) > kitBills(fit) * LEG_KIT_MOST) return;
+  w.mut(Train, id)!.boiler = fit;
 }
 /** The works' cast: once lit, one steel to the rack every castTicks while the rack has room, STEEL.total in all. A full
  * rack waits; the next cast comes as soon as there is room. */

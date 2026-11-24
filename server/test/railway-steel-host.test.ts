@@ -14,10 +14,10 @@ import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
 import { RING_STEEL_WORKS, RING_STEEL_YARD, STEEL } from '../../src/sim/railway-ring-layout.ts';
-import { SHED_TABLE, WORKS, INSTALL_STEEL, installRevision, steelPool } from '../../src/sim/railway-works-layout.ts';
-import { laySection } from '../../src/sim/railway-seed-legs.ts';
+import { BRING_TICKS, SHED_TABLE, WORKS, INSTALL_STEEL, steelPool } from '../../src/sim/railway-works-layout.ts';
+import { laySection, legStagesOn } from '../../src/sim/railway-seed-legs.ts';
 import { railwayAtSteel, type SteelStage } from '../../src/sim/railway-seed-steel.ts';
-import { buildSeedWorld, invariant, line, steel, type Seed } from '../../test/helpers/rail.ts';
+import { buildSeedWorld, invariant, line, steel, unaudited, type Seed } from '../../test/helpers/rail.ts';
 import { account, shed } from '../../src/sim/railway-rows.ts';
 import { rail } from '../../src/sim/railway-rows.ts';
 import {
@@ -27,6 +27,7 @@ import {
   RAIL_POSITION_MARGIN,
   RAIL_POSITION_MAX,
   RAIL_ROUTE_POINTS,
+  ROW_LINE,
   legFrame,
   legRack,
 } from '../../src/sim/railway-route.ts';
@@ -35,7 +36,7 @@ import { act, apply, railTick, restore, trees } from '../../test/helpers/rail.ts
 import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
 import { railApply } from '../../src/sim/railway-systems.ts';
 import { Account, Pile } from '../../src/sim/railway-components.ts';
-import type { RailAction } from '../../src/sim/railway.ts';
+import { RAILWAY_MAX_INT, type RailAction } from '../../src/sim/railway.ts';
 import { RAIL_ACTIONS, RIDER_REACH, RIDER_SPAN, railValid, type Actor } from '../../src/world/railway-server.ts';
 import { steelCarOffset } from '../../src/entities/railway/cars.ts';
 import { isRailwayRoom } from '../../src/world/railway-namespace.ts';
@@ -44,7 +45,7 @@ import { railwayRequestEdit } from '../src/host/railway-requests.ts';
 import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
 import { train } from '../../src/sim/railway-rows.ts';
 import { LINE_SLOTS, balancedHold, trainGaps, trainSpacing } from '../../src/sim/railway-trains.ts';
-import { BOILER_MAX, TRAIN, TRAIN_PHASE, trainAlong } from '../../src/sim/railway-train.ts';
+import { TRAIN, TRAIN_PHASE, trainAlong } from '../../src/sim/railway-train.ts';
 import { railLinePoint } from '../../src/sim/railway-line-path.ts';
 import { LINE2, RAIL_HALTS, RAIL_LINES, trainPassesBy } from '../../src/sim/railway-lines.ts';
 import { LOGS, roomOf, steelNeed, stopsOf } from '../../src/sim/railway-queries.ts';
@@ -181,7 +182,7 @@ test('paid host: cradle and big boiler cross r:edit, share the pool, replicate a
   const r = await host('paid', PAID_GORGE, { s: 'a', peer: 'b' });
   try {
     const mirror = r.connect('viewer');
-    const rev = installRevision(line(r.w, LINE2));
+    const rev = line(r.w, LINE2).rev;
     for (const part of [3, 4]) assert.equal(await r.action(install(rev, LINE2, part), away(SHED_TABLE)), 'rejected');
     assert.deepEqual(
       await r.race([
@@ -193,6 +194,8 @@ test('paid host: cradle and big boiler cross r:edit, share the pool, replicate a
     );
     assert.equal(shed(r.w).spent, INSTALL_STEEL[4]);
     assert.equal(await r.action(install(rev + 1, LINE2, 4), spot(SHED_TABLE)), 'noop');
+    assert.equal(await r.action(install(rev + 1, LINE2, 3), spot(SHED_TABLE)), 'noop', "the cradle's table hold");
+    await r.ticks(WORKS.upgradeTicks);
     assert.equal(await r.action(install(rev + 1, LINE2, 3), spot(SHED_TABLE)), 'accepted');
     assert.equal(await r.action(install(rev + 2, LINE2, 3), spot(SHED_TABLE)), 'noop');
     await r.ticks(3);
@@ -218,6 +221,8 @@ test('paid host: short pool and early big boiler refuse through r:edit without s
   const r = await host('paid-short', fixture('steel-home'));
   try {
     assert.equal(await r.action(install(1, LINE2, 2), spot(SHED_TABLE)), 'accepted');
+    // The garage table's hold (garage step 4) after the longer boiler's install.
+    await r.ticks(WORKS.upgradeTicks);
     assert.equal(await r.action(install(2, LINE2, 3), spot(SHED_TABLE)), 'noop');
     assert.equal(await r.action(install(2, LINE2, 4), spot(SHED_TABLE)), 'accepted');
     assert.ok(steelPool(shed(r.w)) < INSTALL_STEEL[3]);
@@ -400,7 +405,8 @@ test('steel host: malformed kinds, lines, parts and revisions refused without a 
       assert.equal(await r.action(install(0, l as number), spot(SHED_TABLE)), 'rejected', `line ${l}`);
     for (const part of [0, 5, '1', null])
       assert.equal(await r.action(install(0, 1, part as number), spot(SHED_TABLE)), 'rejected', `part ${part}`);
-    for (const revision of [BOILER_MAX + 2, -1, 0.5, '0', null, undefined])
+    // Since v67 an install's revision is the line's `Line.rev`, bounded by RAILWAY_MAX_INT (a stale one is a noop).
+    for (const revision of [RAILWAY_MAX_INT + 1, -1, 0.5, '0', null, undefined])
       assert.equal(
         await r.action({ op: 'rail.install', line: 1, part: 2, revision }, spot(SHED_TABLE)),
         'rejected',
@@ -787,6 +793,72 @@ test("steel host (review): a leaver holding the kit's 8 logs and 12 rails foreve
     }
     assert.deepEqual({ logs: account(r.w, 'b')!.carry, rails: account(r.w, 'b')!.rails }, kit, 'still on the leaver');
     assert.equal(invariant(r.w), null);
+  } finally {
+    await r.done();
+  }
+});
+
+// ---------------------------------------------------------------- garage step 4 (v67)
+// The trade on the real host: rail.bring and a trade line's rail.install through r:edit, judged at the table's reach,
+// malformed ones refused without a throw, a same-tick race won once, replicated, and the state back after a restart
+// with nothing applied twice (the revision and the spend as they were).
+const BAYL = ROW_LINE.bay,
+  NSL = ROW_LINE.ns;
+const bring = (line: unknown, revision: unknown) => ({ op: 'rail.bring', line, revision });
+/** Both trades open: the file's PAID_GORGE (High Gorge reached by accepted ops, all twelve steel home) played on
+ * through the leg seed's own steps to bay-mid, on an unaudited copy. Built lazily, inside the test that uses it. */
+let tradeSeed: Seed | undefined;
+const tradeFixture = () => (tradeSeed ??= legStagesOn(unaudited(PAID_GORGE), 'gorge-reached', 'bay-mid'));
+
+test('trade host: a bring and Strong cross r:edit, race once, replicate and survive a restart unrepeated', async () => {
+  const r = await host('trade', tradeFixture(), { s: 'a', peer: 'b' });
+  try {
+    const mirror = r.connect('viewer');
+    assert.equal(await r.action(bring(BAYL, 0), away(SHED_TABLE)), 'rejected', 'out of reach');
+    for (const e of [bring(-1, 0), bring(RAIL_LINES.length, 0), bring('3', 0), bring(BAYL, -1), bring(BAYL, 1.5)])
+      assert.equal(await r.action(e, spot(SHED_TABLE)), 'rejected');
+    for (const e of [install(0, LINE2, 5), install(0, BAYL, 2), install(0, BAYL, 7), install(-1, BAYL, 6), install('0', BAYL, 6)])
+      assert.equal(await r.action(e, spot(SHED_TABLE)), 'rejected');
+    assert.equal(await r.action(install(0, BAYL, 6), spot(SHED_TABLE)), 'noop', "line 2's copy is on the table");
+    assert.deepEqual(
+      await r.race([
+        [bring(BAYL, 0), spot(SHED_TABLE), 's'],
+        [bring(NSL, 0), spot(SHED_TABLE), 'peer'],
+      ]),
+      ['accepted', 'noop'],
+      'one bring a revision',
+    );
+    assert.equal(await r.action(install(0, BAYL, 6), spot(SHED_TABLE)), 'noop', "the copies' swap holds the table");
+    await r.ticks(BRING_TICKS);
+    assert.deepEqual(
+      await r.race([
+        [install(0, BAYL, 6), spot(SHED_TABLE), 's'],
+        [install(0, BAYL, 5), spot(SHED_TABLE), 'peer'],
+      ]),
+      ['accepted', 'noop'],
+      'the first fit wins the race',
+    );
+    const spent = shed(r.w).spent;
+    await r.ticks(3);
+    for (const w of [r.w, mirror()!]) {
+      assert.deepEqual([line(w, BAYL).boiler, line(w, BAYL).rev], [5, 1]);
+      assert.deepEqual([shed(w).tableLine, shed(w).bringRev], [BAYL, 1]);
+      assert.equal(shed(w).spent, spent);
+    }
+    const fitted = line(r.w, BAYL).fitted,
+      brought = shed(r.w).brought;
+    await r.restart();
+    await r.ticks(3);
+    assert.deepEqual(
+      [line(r.w, BAYL).boiler, line(r.w, BAYL).rev, line(r.w, BAYL).fitted],
+      [5, 1, fitted],
+      'the fit comes back, applied once',
+    );
+    assert.deepEqual([shed(r.w).tableLine, shed(r.w).bringRev, shed(r.w).brought, shed(r.w).spent], [BAYL, 1, brought, spent]);
+    const late = r.connect('late');
+    await r.ticks(3);
+    assert.deepEqual([line(late()!, BAYL).boiler, shed(late()!).tableLine], [5, BAYL]);
+    assert.equal(shed(late()!).spent, spent);
   } finally {
     await r.done();
   }

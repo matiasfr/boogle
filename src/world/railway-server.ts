@@ -29,9 +29,8 @@ import {
 import { railCounts, line2Active, line2GateOpen, line2Completed } from '../sim/railway-queries-line2.ts';
 import { railMaxDuration, railPanelCount, railPanelStock, railPhase } from '../sim/railway-queries-line1.ts';
 import { trainAlong, trainSpeed, TRAIN_PHASE } from '../sim/railway-train.ts';
-import { LINE2, RAIL_HALTS, RAIL_TRAINS } from '../sim/railway-lines.ts';
-import { BOILER_MAX } from '../sim/railway-train.ts';
-import { installPart } from '../sim/railway-works-layout.ts';
+import { RAIL_HALTS, RAIL_LINES, RAIL_TRAINS } from '../sim/railway-lines.ts';
+import { installAdmits } from '../sim/railway-works-layout.ts';
 import { RING_BRACE, RING_HEAD, RING_RIVET, RING_STEEL_WORKS, RING_STEEL_YARD } from '../sim/railway-ring-layout.ts';
 import { railLinePoint } from '../sim/railway-line-path.ts';
 import {
@@ -145,6 +144,8 @@ export const RAIL_ACTIONS = new Set([
   // The halt yards (docs/plans/halt-yard.md).
   'rail.haltPut',
   'rail.haltTake',
+  // Garage step 4: a line's copy to the garage table.
+  'rail.bring',
 ]);
 
 /** A passenger's reach of its train: 10 m of the train's pose (its cars run up to 14.5 m behind it, RIDER_SPAN), at the tick or in the
@@ -323,8 +324,12 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     case 'rail.steel':
       return at(RING_STEEL_WORKS);
     case 'rail.install':
-      // At Home's table post: upgrade (1), longer boiler (2), big boiler (3), bigger cradle (4).
-      return e.line === LINE2 && installPart(e.part) && railInt(e.revision, BOILER_MAX + 1) && at(SHED_TABLE);
+      // At Home's table post: line 2's upgrade (1), longer boiler (2), big boiler (3), bigger cradle (4); a trade
+      // line's Quick (5) or Strong (6) boiler (garage step 4), on the line's install revision.
+      return installAdmits(e.line, e.part) && railInt(e.revision) && at(SHED_TABLE);
+    case 'rail.bring':
+      // At Home's table post: whether the line is open and the table free is the rule's (railway-sys-works.ts).
+      return railInt(e.line, RAIL_LINES.length - 1) && railInt(e.revision) && at(SHED_TABLE);
     // The greybox route (step 3): ids are catalog indexes; whether the leg is open, the pickup's leg laid or the grant
     // held is the rule's (./railway-sys-route.ts), never this.
     case 'rail.legStock': {

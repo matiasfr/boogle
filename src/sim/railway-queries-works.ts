@@ -6,11 +6,13 @@
 //   worksStage(w)      a label for views and the bot
 //   upgradePool(w)     the steel every upgrade may spend: all hub stores of steel added together; today only Home's
 //                      Roundhouse bay, landed less spent (docs/plans/shared-pool.md, section 3)
+//   tableFree(w)       the first tick the garage table takes an install or a bring (garage step 4's hold)
+//   tableBusy(w, tick) the table refuses an install or a bring now: the roll-out, or that hold
 import type { World } from '../ecs/index.ts';
-import { WORKS, steelPool } from './railway-works-layout.ts';
+import { BRING_TICKS, WORKS, steelPool } from './railway-works-layout.ts';
 import { SEAM_THROAT, type WorksStage } from './railway-works.ts';
-import { Account, Aperture, Pile, Shed, Train, Works } from './railway-components.ts';
-import { apertureId, FOOT, pierOwed, shedId, worksId } from './railway-queries.ts';
+import { Account, Aperture, Line, Pile, Shed, Train, Works } from './railway-components.ts';
+import { apertureId, FOOT, pierOwed, shedId, wagonSlot, worksId } from './railway-queries.ts';
 
 /** Footings aboard every carrier, including loader decks; the conserved total is independent of carrier role. */
 const carrierFoot = (w: World) => {
@@ -58,3 +60,19 @@ export function worksStage(w: World): WorksStage {
 /** The one world-wide steel pool an upgrade checks its price against (docs/plans/shared-pool.md, section 3). Screens
  * count this; a store's stack shows only what lies in that store (`steelPool` of its own row). */
 export const upgradePool = (w: World) => steelPool(w.get(Shed, shedId(w))!);
+/** The garage table's hold (garage step 4): the first tick a rail.install or rail.bring is accepted, BRING_TICKS after
+ * the last bring and WORKS.upgradeTicks after any line's last install (`Line.fitted`, which every part sets). */
+export function tableFree(w: World) {
+  const brought = w.get(Shed, shedId(w))!.brought;
+  let free = brought >= 0 ? brought + BRING_TICKS : 0;
+  w.each([Line], (_id, l) => {
+    if (l.fitted >= 0) free = Math.max(free, l.fitted + WORKS.upgradeTicks);
+  });
+  return free;
+}
+/** The garage table refuses an install or a bring now (garage step 4): the wagon's roll-out holds it, or tableFree's
+ * hold has not run out. */
+export function tableBusy(w: World, tick: number) {
+  const h = w.get(Shed, shedId(w))!;
+  return (h.ready >= 0 && wagonSlot(w) < 0) || tick < tableFree(w);
+}

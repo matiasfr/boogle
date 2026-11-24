@@ -6,6 +6,8 @@
 import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
+import type { RailwayIntent } from '../../adapters/railway-intents.ts';
+import { LINE2 } from '../../sim/railway-lines.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { Body } from '../../physics/engine.ts';
@@ -55,6 +57,10 @@ import { bayFrame, rotundaBays } from '../../place/rotunda.ts';
 import { cameraHeld } from '../../render/buddy-frame.ts';
 import { inputState } from '../../player/input-state.ts';
 import { reducedMotion } from '../../constants.ts';
+
+/** Line 2's own install (parts 1 to 4): the garage screen's hold, its refusal and its shared moment. A trade line's
+ * Quick or Strong fit (garage step 4, parts 5 and 6) has no moment or screen until step 3, so it plays nothing here. */
+const line2Install = (i: RailwayIntent) => i.op === 'rail.install' && i.line === LINE2 && i.part <= 4;
 
 /** Seconds: the door piers' build, the tarp's slide, the table's quarter turn. */
 const BUILD_S = 3,
@@ -147,7 +153,7 @@ export async function createRailwayRoundhouse(
   // The install is not predicted, so a refusal is no correction: the adapter says so directly and the part lowers.
   owner.cleanup(
     adapter.onRefused((r) => {
-      if (r.intent.op === 'rail.install') garageView.denied();
+      if (line2Install(r.intent)) garageView.denied();
     }),
   );
 
@@ -810,7 +816,7 @@ export async function createRailwayRoundhouse(
         lowering.push({ site: e.site, slot, from, t: 0 });
       }
       if (e.op === 'rail.turn') clank(table.x, table.z);
-      if (e.op === 'rail.install')
+      if (e.op === 'rail.install' && line2Install(e))
         // The room's moment, on every page from the accepted install (never a restore or a late join): at the table
         // or in the garage it is the part going on; a page away from both gets the banner as its note.
         playSharedMoment(e.part === 1 ? 'upgrade' : 'longer boiler', e, adapter.read.pid, (mine) => {
@@ -825,7 +831,7 @@ export async function createRailwayRoundhouse(
       const e = c.event;
       if (e.op === 'rail.footSet') lowering.length = 0;
       if (e.op === 'rail.turn') asked = null;
-      if (e.op === 'rail.install') garageView.denied();
+      if (line2Install(e)) garageView.denied();
     },
     targets(): Interactable[] {
       const pos = me.body?.position;

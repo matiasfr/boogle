@@ -99,6 +99,8 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
     clean.line = e.line;
     clean.part = e.part;
   }
+  // Garage step 4: the line whose copy is brought to the garage table; the rules validate it.
+  if (e.op === 'rail.bring') clean.line = e.line;
   if (
     [
       'rail.beamTake',
@@ -110,6 +112,7 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
       'rail.turn',
       'rail.brace',
       'rail.install',
+      'rail.bring',
     ].includes(String(e.op))
   )
     clean.revision = e.revision;

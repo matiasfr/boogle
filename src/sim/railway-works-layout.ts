@@ -2,15 +2,24 @@
 // The Works rules (./railway-works.ts, ./railway-sys-works.ts) and the server read it. No prototype imports.
 import { LINE1_ROCKS } from './railway-line-layout.ts';
 import { RING_RIVET } from './railway-ring-layout.ts';
+import { ROW_LINE, isTradeLine } from './railway-route.ts';
 
 /** Garage choices G-c: line 2's footing wagon fits, in footings per trip. */
 export const CRADLE_CAP = [6, 10] as const;
-/** One steel price per install. Part ids 1/2 keep the free upgrade/longer boiler; 3/4 add big boiler/cradle. */
-export const INSTALL_STEEL = { 1: 0, 2: 0, 3: 6, 4: 4 } as const;
+/** One steel price per install. Part ids 1/2 keep the free upgrade/longer boiler; 3/4 add big boiler/cradle, line 2's.
+ * Garage step 4: 5 (Quick boiler, row 4) and 6 (Strong boiler, row 5), a trade line's, at 1 steel for the line's first
+ * fit; a line already on either row swaps for nothing (railway-sys-steel.ts, install). */
+export const INSTALL_STEEL = { 1: 0, 2: 0, 3: 6, 4: 4, 5: 1, 6: 1 } as const;
 export type InstallPart = keyof typeof INSTALL_STEEL;
-export const installPart = (part: unknown): part is InstallPart => part === 1 || part === 2 || part === 3 || part === 4;
-/** Both fits only rise, so their sum is the line's shared install revision, including cross-part races. */
-export const installRevision = (line: { boiler: number; cradle: number }) => line.boiler + line.cradle;
+export const installPart = (part: unknown): part is InstallPart =>
+  part === 1 || part === 2 || part === 3 || part === 4 || part === 5 || part === 6;
+/** The boiler row a trade part fits: Quick (part 5) row 4, Strong (part 6) row 5. */
+export const TRADE_ROW = { 5: 4, 6: 5 } as const;
+/** `part` is one `line` can take: line 2's parts 1 to 4, a trade line's 5 and 6 (the server's admission and the rule). */
+export const installAdmits = (line: unknown, part: unknown): part is InstallPart =>
+  installPart(part) && (line === ROW_LINE.ring ? part <= 4 : isTradeLine(line) && part >= 5);
+/** The garage table's hold after an accepted rail.bring: the copies' swap (6 s). An install's is WORKS.upgradeTicks. */
+export const BRING_TICKS = 60;
 /** Landed is monotone progression; stock and every steel bill use this one pool. */
 export const steelPool = (shed: { steel: number; spent: number }) => shed.steel - shed.spent;
 

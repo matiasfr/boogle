@@ -37,6 +37,7 @@ import {
 } from '../../src/sim/railway-components.ts';
 import { BOILER_MAX, reqAdd } from '../../src/sim/railway-train.ts';
 import { LINE2, RAIL_TRAINS } from '../../src/sim/railway-lines.ts';
+import { ROW_LINE } from '../../src/sim/railway-route.ts';
 import { LINE_SLOTS } from '../../src/sim/railway-trains.ts';
 import { stopsOf } from '../../src/sim/railway-queries.ts';
 
@@ -558,6 +559,18 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     message: 'railway: boiler aboard',
     stage: J,
     break: (w) => set(w, Train, { boiler: 2 }, LINE_SLOTS[LINE2]![0]),
+  },  // Garage step 4 (v67): line 2's install revision is its two fits' sum; the garage table holds an open line's copy.
+  {
+    site: 'install revision',
+    message: 'railway: install revision',
+    stage: J,
+    break: (w) => set(w, Line, { rev: 5 }, LINE2),
+  },
+  {
+    site: 'garage table',
+    message: 'railway: garage table',
+    stage: J,
+    break: (w) => set(w, Shed, { tableLine: ROW_LINE.bay }),
   },
 ];
 
