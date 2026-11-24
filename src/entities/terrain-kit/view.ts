@@ -29,7 +29,11 @@ function bake(mesh: THREE.Mesh) {
   const floats = (name: string) => {
     const a = src.getAttribute(name);
     const f = new Float32Array(a.count * 3);
-    for (let i = 0; i < a.count; i++) f.set([a.getX(i), a.getY(i), a.getZ(i)], i * 3);
+    for (let i = 0; i < a.count; i++) {
+      f[i * 3] = a.getX(i);
+      f[i * 3 + 1] = a.getY(i);
+      f[i * 3 + 2] = a.getZ(i);
+    }
     return new THREE.BufferAttribute(f, 3);
   };
   g.setAttribute('position', floats('position'));
@@ -43,21 +47,26 @@ function bake(mesh: THREE.Mesh) {
 }
 
 type Solid = ReturnType<typeof instantiate>['solids'][number];
-/** How far a point is from a placed box solid (0 inside it); other shapes count as far. */
-function outside(shape: Solid, p: THREE.Vector3) {
-  if (shape.kind !== 'box' || !shape.offset) return Infinity;
-  const local = p.clone().sub(new THREE.Vector3(shape.offset.x, shape.offset.y, shape.offset.z));
-  if (shape.rotation) {
-    const q = shape.rotation;
-    local.applyQuaternion(new THREE.Quaternion(q.x, q.y, q.z, q.w).invert());
-  }
-  const dx = Math.max(0, Math.abs(local.x) - shape.hx),
-    dy = Math.max(0, Math.abs(local.y) - shape.hy),
-    dz = Math.max(0, Math.abs(local.z) - shape.hz);
-  return Math.hypot(dx, dy, dz);
+/** A box solid, ready to measure against: its centre and the rotation back into its own frame. */
+const boxOf = (s: Solid) =>
+  s.kind === 'box' && s.offset
+    ? {
+        centre: new THREE.Vector3(s.offset.x, s.offset.y, s.offset.z),
+        back: s.rotation ? new THREE.Quaternion(s.rotation.x, s.rotation.y, s.rotation.z, s.rotation.w).invert() : null,
+        half: new THREE.Vector3(s.hx, s.hy, s.hz),
+      }
+    : null;
+const local = new THREE.Vector3();
+/** How far a point is from a box solid (0 inside it). */
+function outside(box: NonNullable<ReturnType<typeof boxOf>>, p: THREE.Vector3) {
+  local.subVectors(p, box.centre);
+  if (box.back) local.applyQuaternion(box.back);
+  return Math.hypot(
+    Math.max(0, Math.abs(local.x) - box.half.x),
+    Math.max(0, Math.abs(local.y) - box.half.y),
+    Math.max(0, Math.abs(local.z) - box.half.z),
+  );
 }
-
-export type TerrainKitView = Awaited<ReturnType<typeof createTerrainKitView>>;
 
 export async function createTerrainKitView() {
   const owner = createOwnedView();
@@ -69,7 +78,9 @@ export async function createTerrainKitView() {
   gltf.scene.updateMatrixWorld(true);
   const pieces = new Map<string, THREE.BufferGeometry>();
   gltf.scene.traverse((o) => {
-    if (o instanceof THREE.Mesh) pieces.set(o.parent?.name && !o.name ? o.parent.name : o.name, bake(o));
+    if (!(o instanceof THREE.Mesh)) return;
+    pieces.set(o.name || o.parent!.name, bake(o));
+    o.geometry.dispose(); // the file's quantized copy: only the baked one is drawn
   });
   setTerrainKit(pieces);
   owner.cleanup(() => {
@@ -91,16 +102,20 @@ export async function createTerrainKitView() {
     );
   });
 
-  // Clearance: a piece whose solids hold Buddy's foot or head sphere waits until Buddy has stepped clear (an instance batch draws a piece only while it is enabled).
-  const waiting = new Set(things);
+  // Clearance: a piece whose solids hold Buddy's foot or head sphere waits until Buddy has stepped clear (an instance
+  // batch draws a piece only while it is enabled).
+  const waiting = new Map(
+    things.map((t) => [t, t.solids.map(boxOf).filter((b): b is NonNullable<typeof b> => b !== null)] as const),
+  );
+  const probe = new THREE.Vector3();
   const clear = () => {
     const body = me.body;
-    for (const thing of waiting) {
+    for (const [thing, boxes] of waiting) {
       const inside =
         body &&
         [0, HEAD_OFFSET].some((up) => {
-          const p = new THREE.Vector3(body.position.x, body.position.y + up, body.position.z);
-          return thing.solids.some((s) => outside(s, p) < PLAYER_R);
+          probe.set(body.position.x, body.position.y + up, body.position.z);
+          return boxes.some((b) => outside(b, probe) < PLAYER_R);
         });
       if (inside) continue;
       thing.setEnabled(true);
@@ -111,10 +126,8 @@ export async function createTerrainKitView() {
 
   return {
     root: owner.root,
-    /** Each frame until every piece is solid. */
-    update: () => {
-      if (waiting.size) clear();
-    },
+    /** Each frame: enables any piece still waiting for Buddy to step clear (nothing once all are solid). */
+    update: clear,
     inspect: () => ({ pieces: things.length, batches: batches.size, waiting: waiting.size }),
     dispose: () => owner.dispose(),
   };

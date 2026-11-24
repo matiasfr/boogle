@@ -12,7 +12,7 @@ import type { LevelDef, Placement, Vec3 } from '../../src/prefab/types.ts';
 import { H } from '../../src/place/terrain.ts';
 import { ORIGIN, PATHS } from '../../src/place/layout.ts';
 import { pathAt } from '../../src/place/path-field.ts';
-import { prefabs } from '../../src/content/prefabs/terrain.ts';
+import { BOULDER_SIZE, prefabs } from '../../src/content/prefabs/terrain.ts';
 
 const CLIMB = PATHS[0]!.pts;
 /** A straight run of the path: stations `s` along it from `a`, `d` across it, positive uphill (the east wall is on the
@@ -60,15 +60,14 @@ function dress(run: ReturnType<typeof leg>) {
   function place(prefab: Key, s: number, d: number, y: number, turn = 0) {
     const p = run.at(s, d);
     const pos: Vec3 = [round(p.x), round(y), round(p.z)];
-    const rot: Vec3 = [round(run.facing + turn), 0, 0];
+    const yaw = round(run.facing + turn);
     // The checks: every collider's corners clear of every tread, every piece clear of the gated places.
     for (const c of prefabs.find((q) => q.key === prefab)!.colliders) {
       if (c.shape !== 'box') throw new Error('canyon kit: boxes only');
       for (const sx of [-1, 1])
         for (const sz of [-1, 1]) {
           const lx = c.at[0] + sx * c.half[0],
-            lz = c.at[2] + sz * c.half[2],
-            yaw = rot[0];
+            lz = c.at[2] + sz * c.half[2];
           const x = pos[0] + lx * Math.cos(yaw) + lz * Math.sin(yaw),
             z = pos[2] - lx * Math.sin(yaw) + lz * Math.cos(yaw);
           if (pathAt(x, z).edge < CLEAR) throw new Error(`canyon kit: ${prefab} at station ${s} narrows the tread`);
@@ -76,10 +75,13 @@ function dress(run: ReturnType<typeof leg>) {
     }
     for (const [x, z] of KEEP_CLEAR)
       if (Math.hypot(pos[0] - x, pos[2] - z) < 6) throw new Error(`canyon kit: ${prefab} within 6 m of (${x}, ${z})`);
-    placements.push({ id: `canyon.${placements.length}`, prefab, pos, rot });
+    placements.push({ id: `canyon.${placements.length}`, prefab, pos, rot: [yaw, 0, 0] });
   }
   /** Where the wall's foot is: the ground first stands 1 m above the bench. */
-  const foot = (s: number) => march(s, 3, 12, (h) => h > bench(s) + 1);
+  const foot = (s: number) => {
+    const top = bench(s) + 1;
+    return march(s, 3, 12, (h) => h > top);
+  };
   return {
     /** Faces at the wall's foot, sunk 0.5 m below the bench so no block floats. */
     faces(list: readonly (readonly [Key, number])[]) {
@@ -89,7 +91,7 @@ function dress(run: ReturnType<typeof leg>) {
      * rather than over the edge. */
     boulders(list: readonly (readonly [Key, number, number])[]) {
       for (const [prefab, s, turn] of list) {
-        const size = prefab === 'terrain.boulder-l' ? 2.6 : prefab === 'terrain.boulder-m' ? 1.6 : 0.9;
+        const size = BOULDER_SIZE[prefab as keyof typeof BOULDER_SIZE];
         const d = Math.max(foot(s) - 0.4 - size * 0.3, 3 + CLEAR + size * 0.8);
         const p = run.at(s, d);
         place(prefab, s, d, ground(p.x, p.z), turn);

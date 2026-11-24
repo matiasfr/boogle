@@ -14,10 +14,10 @@ declare module '../names.ts' {
   }
 }
 
-const pieces = new Map<string, THREE.BufferGeometry>();
+let pieces: ReadonlyMap<string, THREE.BufferGeometry> = new Map();
 /** The kit's pieces by node name, in metres with their node transforms baked in. */
 export function setTerrainKit(geometries: ReadonlyMap<string, THREE.BufferGeometry>) {
-  for (const [name, geometry] of geometries) pieces.set(name, geometry);
+  pieces = geometries;
 }
 
 let shared: THREE.MeshStandardNodeMaterial | undefined;

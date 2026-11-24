@@ -15,9 +15,10 @@ const faceSlab = (width: number): ColliderDef => ({
   rot: [0, FACE_LEAN, 0],
   half: [width / 2 - 0.2, 7.2, 1],
 });
-/** A boulder: its two leaning blocks in one box, sunk 0.12 of its size into the ground (size s: centre (0.08, 0.22, 0) s,
- * half (0.56, 0.33, 0.42) s, written out for 0.9, 1.6 and 2.6 m). */
-const boulderBox = (at: Vec3, half: Vec3): ColliderDef => ({ shape: 'box', at, half });
+const box = (at: Vec3, half: Vec3): ColliderDef => ({ shape: 'box', at, half });
+/** Boulders across, metres (assets/src/terrain-kit.py); their boxes below hold both leaning blocks, sunk 0.12 of the
+ * size into the ground: centre (0.08, 0.22, 0) and half (0.56, 0.33, 0.42) times the size, written out. */
+export const BOULDER_SIZE = { 'terrain.boulder-s': 0.9, 'terrain.boulder-m': 1.6, 'terrain.boulder-l': 2.6 } as const;
 
 const piece = (key: `terrain.${string}`, node: string, colliders: ColliderDef[]) =>
   definePrefab({
@@ -31,10 +32,10 @@ export const prefabs = [
   piece('terrain.face-6', 'face_6', [faceSlab(6)]),
   piece('terrain.face-10', 'face_10', [faceSlab(10)]),
   // Three blocks along a lip, 4 m: 0.7 to 1.6 m tall drawn, 1.1 m solid.
-  piece('terrain.rim-cap', 'rim_cap', [{ shape: 'box', at: [0, 0.15, -1.3], half: [1.9, 0.95, 1.2] }]),
-  piece('terrain.boulder-s', 'boulder_s', [boulderBox([0.07, 0.2, 0], [0.5, 0.3, 0.38])]),
-  piece('terrain.boulder-m', 'boulder_m', [boulderBox([0.13, 0.35, 0], [0.9, 0.53, 0.67])]),
-  piece('terrain.boulder-l', 'boulder_l', [boulderBox([0.21, 0.57, 0], [1.46, 0.86, 1.09])]),
+  piece('terrain.rim-cap', 'rim_cap', [box([0, 0.15, -1.3], [1.9, 0.95, 1.2])]),
+  piece('terrain.boulder-s', 'boulder_s', [box([0.07, 0.2, 0], [0.5, 0.3, 0.38])]),
+  piece('terrain.boulder-m', 'boulder_m', [box([0.13, 0.35, 0], [0.9, 0.53, 0.67])]),
+  piece('terrain.boulder-l', 'boulder_l', [box([0.21, 0.57, 0], [1.46, 0.86, 1.09])]),
   // Three low slabs at the waterline, 3 m along it, at most 0.7 m tall.
-  piece('terrain.bank-rock', 'bank_rock', [{ shape: 'box', at: [0, 0.1, -0.2], half: [1.6, 0.3, 0.6] }]),
+  piece('terrain.bank-rock', 'bank_rock', [box([0, 0.1, -0.2], [1.6, 0.3, 0.6])]),
 ];
