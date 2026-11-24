@@ -335,17 +335,17 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
       const end = performance.now() + 20000;
       // Aboard once the car carries the rider for 0.8 s with the stick let go: a jump's first touch of the car reads
       // `riding` for a frame and can bounce off it (Bell Rock's curved platform, greybox leg 3's first run).
-      let since = -1;
+      let since: number | undefined;
       try {
         while (performance.now() < end) {
           if (aboard()) {
             input.keys.delete('KeyW');
-            if (since < 0) since = performance.now();
+            since ??= performance.now();
             if (performance.now() - since >= 800) break;
             await bot.wait(80);
             continue;
           }
-          since = -1;
+          since = undefined;
           const cars = train().cars,
             car = cars[1] ?? cars[0]!;
           face(car.x, car.z);
@@ -421,12 +421,16 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   const canopyGate = canopy.sections[0]!.gate!;
   const canopyEnd = canopy.railheadHalt + canopy.sections.length - 1;
   const westLanding = legFrame(RAIL_LEGS[BAY]!, 0);
+  /** Off the car to `at` (cm), standing there dry. */
+  const stepOff = async (at: { x: number; z: number }, beat: string) => {
+    await hopTo(at.x / 100, at.z / 100, beat);
+    await until(() => me.coyote > 0 && !me.swimming, `${beat}: standing`, 10000);
+  };
   /** From the Village (where a seed starts): walk to the West landing and ride a bay train out to stop `to`. */
   const rideOut = async (to: number, at: { x: number; z: number }, beat: string) => {
     check(await bot.walk(westLanding.x / 100, westLanding.z / 100, 3), 'walked from the Village to the West landing');
     await rowRide(canopy.line, 0, to, 'bay line');
-    await hopTo(at.x / 100, at.z / 100, beat);
-    await until(() => me.coyote > 0 && !me.swimming, `${beat}: standing`, 10000);
+    await stepOff(at, beat);
   };
   if (!legDone(rw(), CANOPY)) {
     // Section 1's frame is Bell Rock's (frame 1 on the outward upper platform, the barrier on it); a later one stands
@@ -459,7 +463,6 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   }
   // Home on the same line: a bay train from Canopy Town to the West landing (the Notch barrier stays shut: leg 6).
   await rowRide(canopy.line, canopyEnd, 0, 'bay line');
-  await hopTo(westLanding.x / 100, westLanding.z / 100, 'stepped off at the West landing');
-  await until(() => me.coyote > 0 && !me.swimming, 'standing at the West landing', 10000);
+  await stepOff(westLanding, 'stepped off at the West landing');
   await checkpoint('canopy home');
 }

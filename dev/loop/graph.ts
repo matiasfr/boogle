@@ -405,8 +405,9 @@ const KIT_BY: Record<string, (k: number) => string> = {
       ? "a bay train from the West landing to Bell Rock's rack (the kit ahead, aboard since the bay cut)"
       : 'a bay train from the West landing (a Strong train holds at the railhead with the next bill)',
 };
-const legNodeId = (leg: RouteLeg, k: number) =>
-  `${leg === BAY ? 'bay' : leg === CANOPY ? 'canopy' : leg.id}-${k + 1}` as SectionId;
+/** A leg's node prefix, where it is not the leg's id. */
+const NODE_PREFIX: Readonly<Record<string, string>> = { 'bay-cut': 'bay', 'bell-canopy': 'canopy' };
+const legNodeId = (leg: RouteLeg, k: number) => `${NODE_PREFIX[leg.id] ?? leg.id}-${k + 1}` as SectionId;
 /** Each built leg's sections as nodes: the node, its RAIL_LEGS index and the section index. */
 export const ROUTE_SECTIONS: readonly { id: SectionId; leg: number; section: number }[] = [
   STACK,

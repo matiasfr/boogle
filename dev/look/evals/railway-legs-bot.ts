@@ -15,7 +15,7 @@ const { railCheckpoint } = (await import(
 const { RAIL_LEGS } = (await import(
   '/src/sim/railway-route.ts' as string
 )) as typeof import('../../../src/sim/railway-route.ts');
-const { legOpen, legRow } = (await import(
+const { legOpen, legRow, legsLaid } = (await import(
   '/src/sim/railway-queries-route.ts' as string
 )) as typeof import('../../../src/sim/railway-queries-route.ts');
 const { railReady, rw } = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
@@ -31,8 +31,9 @@ const shot = window as Window & { __placeDone?: boolean };
 setTimeout(() => window.__debugCam!.clear(), 100);
 /** The open leg, or the last one laid once none is open. */
 const legNow = () => {
-  const open = RAIL_LEGS.findIndex((_l, k) => legOpen(rw(), k));
-  return open >= 0 ? open : RAIL_LEGS.findLastIndex((_l, k) => legRow(rw(), k).laid > 0);
+  const w = rw(),
+    open = RAIL_LEGS.findIndex((_l, k) => legOpen(w, k));
+  return open >= 0 ? open : legsLaid(w).findLastIndex((n) => n > 0);
 };
 const facts = () => {
   const k = legNow(),
