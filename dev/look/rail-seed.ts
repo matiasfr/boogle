@@ -11,7 +11,8 @@ import { buildStackDoc, stackStage } from './stack-seed.ts';
 import { buildLayDoc, layStage } from './lay-seed.ts';
 import { yardRecoverySeed } from './halt-yard-seed.ts';
 
-export async function writeRailSeed(dataDir: string, room: string, stage: string) {
+/** `maxRooms`: the store's room cap for this write; a data dir that already holds many rooms (the net suite's) needs more. */
+export async function writeRailSeed(dataDir: string, room: string, stage: string, maxRooms = 2) {
   const mid = ringMidStage(stage);
   const stack = stackStage(stage);
   const lay = layStage(stage);
@@ -27,7 +28,7 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
         : mid !== null
           ? await buildRingMidDoc(Number(mid))
           : await buildSeedDoc(stage as never);
-  const store = createStore({ dataDir, maxRooms: 2 });
+  const store = createStore({ dataDir, maxRooms });
   await store.init();
   const result = await store.write(railwayRoomId(room), {
     ...doc,

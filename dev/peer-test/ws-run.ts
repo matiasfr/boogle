@@ -31,6 +31,7 @@ const {
   railwayRequestStop,
   railwayLeaf,
   railwayCarrierLeaves,
+  railwayLegRejoin,
   railwayLoad,
   railwayCartRide,
   railwayTrainRide,
@@ -81,6 +82,7 @@ const HOST_ONLY: Record<HostSection, number> = {
   'request stop': 11,
   leaf: 9,
   'carrier leaves': 31,
+  'leg rejoin': 23,
 };
 const skipped: HostSection[] = [];
 const hostMarks = new Map<HostSection, number>();
@@ -325,6 +327,8 @@ try {
   await hostSection('leaf', () => railwayLeaf(ctx));
   // Ring Island build 2's Checkpoint A: a steel-yard carrier leaves mid-carry.
   await hostSection('carrier leaves', () => railwayCarrierLeaves(ctx));
+  // Greybox leg 3's Checkpoint C: at canopy-mid a carrier of leg kit leaves and rejoins after a server restart.
+  await hostSection('leg rejoin', () => railwayLegRejoin(ctx));
 
   // 11. WS_LOAD=1: R1a's and R1b's measurements (2, 4, 6 players at 0, 100, 200 ms added latency, normal and 5x
   // churn). WS_LOAD_PLAYERS=6 / WS_LOAD_LAT=200 / WS_LOAD_CHURN=5x pick rows.

@@ -38,7 +38,11 @@ test('a Canopy stop cannot be assigned to the Ring Island bot, which finishes at
 function loadTool(url: URL, mocks: Record<string, unknown>, globals: Record<string, unknown> = {}) {
   const require = createRequire(url);
   const output = { exports: {} };
-  const { code } = transformSync(readFileSync(url, 'utf8'), { loader: 'ts', format: 'cjs' });
+  const { code } = transformSync(readFileSync(url, 'utf8'), {
+    loader: 'ts',
+    format: 'cjs',
+    supported: { 'dynamic-import': false },
+  });
   runInNewContext(code, {
     module: output,
     require: (id: string) => (id in mocks ? mocks[id] : require(id)),
@@ -294,4 +298,228 @@ test('built nodes and stand-ins are told apart by the flag, and the stand-ins re
     assert.ok(!built.has(s.id), `${s.id} is not a built node's id`);
     assert.ok(Object.values(s.bill).every((n) => n > 0) && s.legs.every((l) => l.km > 0), `${s.id}: a bill and a leg`);
   }
+});
+
+test('the shared prefix preserves three-player idle time in the T3 before beam order', async () => {
+  const { playOrder } = await import('../dev/loop/run.ts');
+  const orders = proposeOrders();
+  const canonical = orders[0]!.order;
+  const variant = orders.find((o) => o.name === 'T3 before beam')!.order;
+  const split = variant.findIndex((id, i) => id !== canonical[i]);
+  const order = variant.slice(0, split + 1);
+  const checkpoints: import('../dev/loop/run.ts').Checkpoint[] = [];
+  playOrder(canonical.slice(0, split + 1), 'canonical', 3, { checkpoints });
+  const full = playOrder(order, 'full', 3);
+  const resumed = playOrder(order, 'resumed', 3, { from: checkpoints[split]! });
+  assert.equal(resumed.nodes[split]!.idle, full.nodes[split]!.idle);
+});
+
+// Replay the real proof with one corrupt observation. The intact fixture stocks the rack,
+// moves 16 rails to the carrier and leg, and holds the following kit aboard through a restart.
+type RejoinFault =
+  | 'held'
+  | 'rack'
+  | 'empty cargo'
+  | 'restore'
+  | 'mirror'
+  | 'short pickup'
+  | 'fed during pickup'
+  | 'missing load'
+  | 'stale train mirrors'
+  | 'late mirror'
+  // The same sweep's logs side and its other checkpoints (fix round 2):
+  | 'missing log load'
+  | 'logs held at pickup'
+  | 'stale seed train mirror'
+  | 'unmarked train has phantom logs on B while A is away'
+  | 'kit switches trains on the final round trip'
+  | 'seed account on B omits its rail count'
+  // The same sweep's other instances (fix round 3):
+  | 'kit moves to another train at the pickup'
+  | 'server has phantom rails on an unmarked train'
+  | 'seed adapter account on A omits its legRails'
+  | 'server has no carrier account before the pickup'
+  // Recheck 3:
+  | 'no bay train carries kit at the seed'
+  | 'no bay train carries kit after the first round trip';
+
+async function replayLegRejoin(fault?: RejoinFault) {
+  const pages = new Set<string>();
+  let tick = 0,
+    picked = false,
+    restoredAt = -1;
+  const kitUnits = fault === 'empty cargo' ? 0 : 20;
+  const pickup = fault === 'short pickup' ? 1 : 16;
+  const leg = () => ({
+    slot: 3,
+    laid: 1,
+    logs: 0,
+    rails: picked && fault === 'fed during pickup' ? 1 : 0,
+    start: -1,
+    loadedLogs: tick && fault !== 'missing log load' ? 60 : 40,
+    loadedRails: tick && fault !== 'missing load' ? 60 : 40,
+    heldLogs: picked && fault === 'logs held at pickup' ? 1 : 0,
+    heldRails: picked && fault !== 'held' ? pickup : 0,
+  });
+  const rack = () => ({
+    depot: tick > 0 ? 20 : 0,
+    depotRails: rackRails(),
+  });
+  function rackRails() {
+    if (tick === 0 || (fault === 'restore' && tick === restoredAt)) return 0;
+    return picked && fault !== 'rack' ? 20 - pickup : 20;
+  }
+  const train = (_world: unknown, slot: number) => {
+    const switched = fault === 'kit switches trains on the final round trip' && restoredAt >= 0 && tick > restoredAt;
+    const moved = fault === 'kit moves to another train at the pickup' && picked;
+    const missing =
+      (fault === 'no bay train carries kit at the seed' && tick === 0) ||
+      (fault === 'no bay train carries kit after the first round trip' && tick > 0);
+    const legKit = !missing && slot === (tick === 0 || switched ? 10 : moved ? 11 : 9);
+    const phantom = fault === 'server has phantom rails on an unmarked train' && picked && !legKit && slot === 11;
+    return { legKit, logs: legKit ? kitUnits : 0, rails: legKit ? kitUnits : phantom ? 1 : 0 };
+  };
+  const back = () => ({ rails: picked ? pickup : 0, legRails: picked ? pickup : 0 });
+  /** The server's account row: the fixture's back, or none (a fault). */
+  const serverBack = () =>
+    fault === 'server has no carrier account before the pickup' && !picked ? undefined : back();
+  const world = {
+    rules: { railway: { world: () => ({}) } },
+    sync: {
+      world: {
+        get tick() {
+          return tick;
+        },
+      },
+      roomStep: () => tick,
+      whenDurable: async () => {},
+    },
+    whenReady: async () => {},
+    step: () => {
+      tick++;
+    },
+  };
+  let hosted = { world };
+  const { railwayLegRejoin } = loadTool(
+    new URL('../dev/peer-test/ws-railway.ts', import.meta.url),
+    {
+      '../look/rail-seed.ts': { writeRailSeed: async () => {} },
+      '../../src/sim/railway-queries-route.ts': { legRow: leg },
+      '../../src/sim/railway-rows.ts': { train, account: serverBack, rail: rack },
+      './harness.ts': {
+        waitFor: async (fn: () => Promise<boolean>) => ((await fn()) ? 0 : -1),
+        ev: (page: { name: string }, fn: (arg: unknown) => unknown, arg: unknown) => {
+          // Both tabs can still agree on the pre-pickup packet before leaving.
+          const staleBack =
+            (fault === 'mirror' && restoredAt < 0) ||
+            (fault === 'late mirror' && restoredAt >= 0 && tick > restoredAt);
+          const observed = staleBack ? { rails: 0, legRails: 0 } : back();
+          const legSpec = RAIL_LEGS.find((l) => l.id === 'bell-canopy')!;
+          const trains = LINE_SLOTS[legSpec.line]!.map((slot) => ({
+            slot,
+            ...train(undefined, slot),
+          }));
+          if (fault === 'stale train mirrors' && restoredAt >= 0) {
+            trains.find((t) => t.legKit)!.rails = 0;
+          }
+          if (fault === 'stale seed train mirror' && tick === 0) trains.find((t) => t.legKit)!.logs = 0;
+          if (
+            fault === 'unmarked train has phantom logs on B while A is away' &&
+            page.name === 'L1' &&
+            !pages.has('L0')
+          ) {
+            trains.find((t) => !t.legKit)!.logs++;
+          }
+          const roomBack =
+            fault === 'seed account on B omits its rail count' && page.name === 'L1' && tick === 0
+              ? { legRails: observed.legRails }
+              : observed;
+          const T = {
+            railStand() {},
+            railIntent() {
+              picked = true;
+            },
+            room: { peers: () => [...pages].map((peer) => ({ peer })) },
+            railAdapter: () => ({
+              session: { ready: true, pending: 0 },
+              rows: {
+                account:
+                  fault === 'seed adapter account on A omits its legRails' && page.name === 'L0' && !picked
+                    ? { rails: observed.rails }
+                    : { ...observed },
+                trains,
+              },
+            }),
+            rail: () => ({
+              ready: true,
+              hash: 42 + observed.rails + trains.reduce((sum, t) => sum + t.rails, 0),
+              accounts: [{ pid: 'leg0', ...roomBack }],
+            }),
+          };
+          return runInNewContext('(' + fn.toString() + ')(arg)', { window: { T }, arg });
+        },
+      },
+    },
+    { setTimeout, clearTimeout },
+  ) as typeof import('../dev/peer-test/ws-railway.ts');
+  const web = {
+    open: async (name: string) => {
+      pages.add(name);
+      return { name, selfId: name, page: { name, close: async () => pages.delete(name) } };
+    },
+  };
+  await (railwayLegRejoin as (ctx: unknown) => Promise<void>)({
+    room: 'wscheck',
+    port: () => 1234,
+    dataDir: '',
+    web,
+    hosted: () => hosted,
+    check() {},
+    restart: async () => {
+      restoredAt = tick;
+      hosted = { world: { ...world } };
+    },
+  });
+  assert.ok(restoredAt >= 0);
+  return tick - restoredAt;
+}
+
+for (const fault of ['held', 'rack', 'empty cargo', 'restore', 'mirror'] as const) {
+  test('the leg rejoin proof detects corrupted ' + fault, async () => {
+    await assert.rejects(replayLegRejoin(fault), /Leg rejoin proof stopped/);
+  });
+}
+
+for (const fault of [
+  'short pickup',
+  'fed during pickup',
+  'missing load',
+  'stale train mirrors',
+  'late mirror',
+  'missing log load',
+  'logs held at pickup',
+  'stale seed train mirror',
+  'unmarked train has phantom logs on B while A is away',
+  'kit switches trains on the final round trip',
+  'seed account on B omits its rail count',
+  'kit moves to another train at the pickup',
+  'server has phantom rails on an unmarked train',
+  'seed adapter account on A omits its legRails',
+  'server has no carrier account before the pickup',
+  'no bay train carries kit at the seed',
+  'no bay train carries kit after the first round trip',
+] as const) {
+  test('the leg rejoin proof detects ' + fault, async () => {
+    await assert.rejects(replayLegRejoin(fault), /Leg rejoin proof stopped/);
+  });
+}
+
+test('the leg rejoin proof steps at least one bay train round trip after the restart', async () => {
+  const { cycleTicks } = await import('../src/sim/railway-trains.ts');
+  const { RAIL_LINES } = await import('../src/sim/railway-lines.ts');
+  const leg = RAIL_LEGS.find((l) => l.id === 'bell-canopy')!;
+  const stops = RAIL_LINES[leg.line]!.halts.slice(0, leg.railheadHalt + 1).map((h) => h.s);
+  const elapsed = await replayLegRejoin();
+  const cycle = cycleTicks(leg.line, stops);
+  assert.ok(elapsed >= cycle, `advanced ${elapsed} ticks, standard bay train needs at least ${cycle}`);
 });

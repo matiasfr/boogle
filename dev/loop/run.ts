@@ -90,7 +90,16 @@ import { variantOf, wholeRouteLines } from './standins.ts';
 
 type Cmd = { walk: Point } | { act: string; fields?: Partial<RailAction> } | { wait: number };
 type Policy = Generator<Cmd, void, number>;
-type Player = { pid: string; i: number; at: Point; busy: number; walked: number; gen: Policy | null };
+/** `waiting`: the player's last command was a `wait` (standing for a train, a lay, a regrowth or a friend). */
+type Player = {
+  pid: string;
+  i: number;
+  at: Point;
+  busy: number;
+  walked: number;
+  gen: Policy | null;
+  waiting?: boolean;
+};
 type Tally = {
   carries: number;
   walked: number;
@@ -101,7 +110,8 @@ type Tally = {
   /** Ops pressed at all, accepted or not (the order probes). */
   tried?: Set<string>;
 };
-export type NodeTime = { id: NodeId; tick: number; startTick: number; parked: boolean } & Tally;
+/** `idle`: player-ticks while the node was open with that player waiting or done with their share. */
+export type NodeTime = { id: NodeId; tick: number; startTick: number; parked: boolean; idle: number } & Tally;
 export type RunResult = {
   order: string;
   players: number;
@@ -843,6 +853,7 @@ function step(r: Run, pl: Player, t: Tally, log: string[]) {
     }
     const cmd = next.value;
     input = 0;
+    pl.waiting = 'wait' in cmd;
     if ('walk' in cmd) {
       const d = cm(pl.at, cmd.walk) * (r.current ? r.detour(r.current) : 1);
       pl.at = { ...cmd.walk };
@@ -958,13 +969,21 @@ export type Checkpoint = {
   index: number;
   snapshot: unknown;
   tick: number;
-  players: Pick<Player, 'at' | 'busy' | 'walked'>[];
+  players: Pick<Player, 'at' | 'busy' | 'walked' | 'waiting'>[];
   bringing: [string, number][];
   flags: Run['flags'];
   nodes: NodeTime[];
   parked: number[];
   lastProgress: number;
 };
+
+/** What a checkpoint keeps of a player, saved and restored the same way. */
+const playerState = (p: Checkpoint['players'][number]): Checkpoint['players'][number] => ({
+  at: { ...p.at },
+  busy: p.busy,
+  walked: p.walked,
+  waiting: p.waiting,
+});
 
 export function playOrder(
   order: readonly NodeId[],
@@ -998,7 +1017,7 @@ export function playOrder(
   if (opts.from) {
     const cp = opts.from;
     start = cp.index;
-    cp.players.forEach((p, i) => Object.assign(g.players[i]!, { at: { ...p.at }, busy: p.busy, walked: p.walked }));
+    cp.players.forEach((p, i) => Object.assign(g.players[i]!, playerState(p)));
     g.bringing = new Map(cp.bringing);
     Object.assign(r.flags, cp.flags);
     result.nodes = cp.nodes.map((t) => ({ ...t }));
@@ -1009,7 +1028,7 @@ export function playOrder(
     index,
     snapshot: h.snapshot(),
     tick: h.tick(),
-    players: g.players.map((p) => ({ at: { ...p.at }, busy: p.busy, walked: p.walked })),
+    players: g.players.map(playerState),
     bringing: [...g.bringing],
     flags: { ...r.flags },
     nodes: result.nodes.map((t) => ({ ...t })),
@@ -1049,6 +1068,7 @@ export function playOrder(
       refused: 0,
       actions: 0,
       accepted: 0,
+      idle: 0,
     };
     result.nodes.push(t);
     if (done[id]()) {
@@ -1067,9 +1087,9 @@ export function playOrder(
         lastProgress = h.tick();
         break;
       }
-      const idle = g.players.every((pl) => !pl.gen);
+      const allDone = g.players.every((pl) => !pl.gen);
       const waitsOnFinish = node(id).requires.some((e) => e.scope === 'finish' && !done[e.on]());
-      if (idle && waitsOnFinish) {
+      if (allDone && waitsOnFinish) {
         t.parked = true;
         parked.push({ id, t });
         break;
@@ -1078,10 +1098,12 @@ export function playOrder(
         result.softlock = {
           node: id,
           tick: h.tick(),
-          why: idle ? 'every player is done and the node is not' : 'nothing accepted',
+          why: allDone ? 'every player is done and the node is not' : 'nothing accepted',
         };
         break;
       }
+      const now = h.tick();
+      for (const pl of g.players) if (!pl.gen || (pl.waiting && pl.busy > now)) t.idle++;
       h.advance();
     }
     for (const pl of g.players) pl.gen = null;
@@ -1201,7 +1223,7 @@ export function runLoop(args: string[]) {
       '',
       `${players} player${players > 1 ? 's' : ''}, ${shown} order: straight-line ${verdict(canon)}${cal ? `; calibrated ${verdict(cal)}` : ''}`,
     );
-    out.push('  node      reached    took     carries  walked m  refused   calibrated: reached  detour');
+    out.push('  node      reached    took     carries  walked m  refused  idle s   calibrated: reached  detour');
     for (const t of canon.nodes) {
       // From the moment its turn came to the moment it was reached (a parked node finishes later).
       const took = t.tick < 0 ? '-' : clock(t.tick - t.startTick);
@@ -1211,9 +1233,13 @@ export function runLoop(args: string[]) {
         ? `${(c && c.tick >= 0 ? clock(c.tick) : 'never').padStart(19)}  ${d ? `x${d.median.toFixed(2)} (n ${d.n})` : 'x1 (uncalibrated)'}`
         : '';
       out.push(
-        `  ${t.id.padEnd(9)} ${(t.tick < 0 ? 'never' : clock(t.tick)).padStart(8)}  ${took.padStart(7)}${t.parked ? ' (parked)' : '         '}${String(t.carries).padStart(4)} ${String(Math.round(t.walked)).padStart(9)} ${String(t.refused).padStart(8)}  ${calCol}`,
+        `  ${t.id.padEnd(9)} ${(t.tick < 0 ? 'never' : clock(t.tick)).padStart(8)}  ${took.padStart(7)}${t.parked ? ' (parked)' : '         '}${String(t.carries).padStart(4)} ${String(Math.round(t.walked)).padStart(9)} ${String(t.refused).padStart(8)} ${String(Math.round(t.idle / 10 / players)).padStart(7)}  ${calCol}`,
       );
     }
+    out.push(
+      '  idle s: seconds each player (mean) stood waiting (a train, a lay, a friend; holds count too) or had nothing',
+      '  left to do while the node was open, until it was reached or parked.',
+    );
     for (const r of results.filter((x) => x.players === players && x.order !== shown))
       out.push(`  order "${r.order}": ${verdict(r)}`);
   }

@@ -2,7 +2,9 @@
 // `-- --render` or `-- --sim` for one half; `-- --json file` writes the first render row from a fixed pose, for
 // dev/look/counts.ts). `--hardware` opens a visible browser and samples real frames for 5 seconds;
 // `--seconds N` (1–30), `--view NAME`, `--size 1210x702` and `--query 'k=v'` select the sample (default: the production
-// entry). Counts stay timing-free.
+// entry). Counts stay timing-free. `--rail-seed <stage>` starts the room from an accepted railway server save, as look's
+// (dev/look/rail-seed.ts). A view in PLACES below also stands the body somewhere and starts from its seed, so what is
+// resident by distance is there: `npm run perf -- --view canopy` (add `--hardware` for frame time on this GPU).
 // Render: draw calls, triangles, shadow-pass calls, geometries and shader stages (vertex and fragment, deduplicated) for the island as you enter it.
 // Counts come from renderer.info and are exact; headless software rendering makes
 // fps meaningless, so none is reported.
@@ -29,7 +31,41 @@ const jsonOut = argv.includes('--json') ? argv[argv.indexOf('--json') + 1] : nul
 const size = argv.includes('--size') ? argv[argv.indexOf('--size') + 1]!.split('x').map(Number) : undefined;
 // `--verdict file` stamps the run (load at start/end, under load) like look's verdicts; timings under load aren't evidence.
 const verdictFile = argv.includes('--verdict') ? argv[argv.indexOf('--verdict') + 1]! : null;
+const railSeedArg = argv.includes('--rail-seed') ? argv[argv.indexOf('--rail-seed') + 1] : undefined;
 const IDLE_TICKS = 100;
+
+type Place = (typeof VIEWS)[string] & { seed: string; stand: [number, number, number] };
+/** Views far from the spawn: the body stands at `stand` on `seed` until every route area near it has mounted. */
+const PLACES: Record<string, Place> = {
+  // Greybox leg 3's Checkpoint C (docs/plans/greybox-leg3.md): leg 3 laid, the body on Canopy Town's homeward
+  // platform (src/content/levels/leg3.ts, cf.at(-10, -5.8)), the camera high over the strait beyond head 2, looking
+  // along the row at the isle, its mother trunks and the chalk islets.
+  canopy: { seed: 'canopy-reached', stand: [-1070, 15, -319], cam: [-700, 180, -620], look: [-1060, 20, -300] },
+};
+const place = viewName ? PLACES[viewName] : undefined;
+const railSeed = railSeedArg ?? place?.seed;
+// The stand: a staging teleport repeated until the areas near it settle (as dev/look/evals/leg2-counts.ts), then a
+// few seconds for the body to land and the trains to pose.
+const STAND = ([x, y, z]: number[]) => `
+  const { me } = await import('/src/player/player.ts');
+  const { teleport } = await import('/src/physics/engine.ts');
+  const { routeAreas, routeAreasPending } = await import('/src/entities/route-greybox/state.ts');
+  const { railRead } = await import('/dev/look/rail-read.ts');
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  for (let k = 0; !(me.body && me.entered && railRead()?.whole()); k++) {
+    if (k > 600) throw new Error('perf stand: the player and the railway never came up');
+    await wait(100);
+  }
+  const near = () => [...routeAreas.values()].some((a) => a.mounted && Math.hypot(a.x - ${x}, a.z - ${z}) < 400);
+  for (let k = 0; routeAreasPending(${x}, ${z}) || !near(); k++) {
+    if (k > 600) throw new Error('perf stand: the route areas near the stand never mounted');
+    teleport(me.body, ${x}, ${y}, ${z});
+    me.body.velocity.set(0, 0, 0);
+    await wait(100);
+  }
+  await wait(4000);
+  return { at: [me.body.position.x, me.body.position.y, me.body.position.z].map((v) => Math.round(v * 10) / 10),
+    areas: [...routeAreas.entries()].filter(([, a]) => a.mounted).map(([id]) => id) };`;
 
 // The game draws from renderer.setAnimationLoop: three resets renderer.info at the start of each frame, then the game
 // renders, so right after a frame renderer.info.render holds that frame's counts (the scene pass runs once per frame,
@@ -130,10 +166,14 @@ if (verdictFile) startRun(path.resolve(verdictFile), { checkout: root });
 try {
   if (hardware && !doRender) throw new Error('--hardware cannot be combined with --sim');
   if (!Number.isFinite(seconds) || seconds < 1 || seconds > 30) throw new Error('--seconds must be 1–30');
-  if (argv.includes('--view') && (!viewName || !VIEWS[viewName]))
-    throw new Error('Unknown --view; use ' + Object.keys(VIEWS).join(', '));
+  if (argv.includes('--view') && (!viewName || !(VIEWS[viewName] ?? PLACES[viewName])))
+    throw new Error('Unknown --view; use ' + [...Object.keys(VIEWS), ...Object.keys(PLACES)].join(', '));
+  if (railSeed && url) throw new Error('--rail-seed needs a local stack, not --url');
   stack = await startStack({ url });
   browser = await launch({ hardware });
+  const room = railSeed ? 'perf-rail' : undefined;
+  // After launch, as look's: queue time must not become away credit on the seeded save.
+  if (railSeed) await (await import('./rail-seed.ts')).writeRailSeed(stack.dataDir!, room!, railSeed);
   // The spawn is a random spot, the sky follows the clock and the shadow pass culls around all that, so counts that must
   // repeat (--json) take a seeded Math.random, a fixed camera and a fixed sun, once the lazy props are in.
   const init = jsonOut ? SEEDED_RANDOM : undefined;
@@ -144,17 +184,20 @@ try {
     isolated: doSim || hardware,
     init,
     query: q.toString() || undefined,
+    ...(room ? { room, out: path.resolve('.look/perf') } : {}),
     ...(size ? { size } : {}),
   });
+  if (place) console.log(`stood at ${viewName} (${railSeed}):`, JSON.stringify(await g.eval(STAND(place.stand))));
   if (doRender) {
     if (jsonOut || viewName) {
-      const { cam, look, fov } = VIEWS[viewName ?? 'overview']!;
+      const { cam, look, fov } = place ?? VIEWS[viewName ?? 'overview']!;
       const pose = `${JSON.stringify(cam)}, ${JSON.stringify(look)}, ${fov ?? null}`;
       await g.eval(`window.__debugCam.set(${pose});`);
       await sleep(6000);
     }
     const measuredView = viewName ?? (jsonOut ? 'overview' : 'player camera');
-    const row = { ...(await g.eval(STATS)), measuredView };
+    const row = { ...(await g.eval(STATS)), measuredView, railSeed: railSeed ?? null };
+    if (place) console.log('still', await g.still(`perf-${viewName}`));
     if (hardware) {
       // The shadow-difference sample above perturbs a few frames; settle before the separate timing window.
       await sleep(1000);
