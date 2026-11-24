@@ -386,7 +386,8 @@ before step 3. Step 3 holds on question 1.
       canopy --wall 1200` with `railFit=strong` passed (`.look/playthrough/step4-strong/`, 1452 game s: part 6 on the
       first hold, pool 12 to 11, the bay train ridden out on row 5, all three bay trains on row 5 at the end), with
       `railFit=quick` passed (`step4-quick/`, 1737 game s: part 5, row 4 on all three), and with no fit passed
-      (`step4-nofit/`, 1529 game s, no post visit). **Finding (game side, not fixed here):** on the Quick run, the
+      (`step4-nofit/`, 1529 game s, no post visit). After the simplify pass and the rebase, Strong passed again on
+      `9bbdd25d2` (`step4-strong-final/`, 1053 game s, under load: not timing evidence). **Finding (game side, not fixed here):** on the Quick run, the
       screen offered Install before the server's table hold was over. The hold dropped mid-crank (Install, then
       "Keep holding", then Install again, the bring's hold back on) and the second hold fitted. A player who holds the
       moment Install lights can see the part lower once. The first Strong run failed the same way before the retry.
