@@ -49,7 +49,8 @@ import { CAVE_GROUP } from '../constants.ts';
 import { makeGreyboxLabel } from './builders/greybox-label.ts';
 import { registerSeat, type Seat } from '../entities/railway/seat.ts';
 import { ROOM_GROUP, staticBody } from '../place/land.ts';
-import type { Body, Shape } from '../physics/engine.ts';
+import { capsuleOverlaps, type Body, type Shape } from '../physics/engine.ts';
+import { createLiftOrWait, type Clearing, type Solid } from '../place/clearance.ts';
 import type { OwnedView } from '../render/owned-view.ts';
 import type { Platform } from '../physics/platforms.ts';
 
@@ -57,6 +58,17 @@ const room = loadLevelArtifact(workshop, compiled.prefabs);
 export const workshopChair = room.placements[0]!;
 const gorgeLevel = loadLevelArtifact(gorge, compiled.prefabs);
 export const gorgePlacements = gorgeLevel.placements;
+let lifter: ReturnType<typeof createLiftOrWait> | undefined;
+/** Switches solids on where a player can be: lift or wait, never push (src/place/clearance.ts, with the engine's real
+ * overlap query; decision d-2026-11-24-door-export-clearance-helper). A record's solids and setEnabled, or any other. */
+export function liftOrWait<S extends Solid>(
+  solids: readonly S[],
+  body: Parameters<NonNullable<typeof lifter>>[1],
+  o: { lift: boolean },
+): Clearing<S> {
+  lifter ??= createLiftOrWait(capsuleOverlaps); // on first use: loading the door builds nothing
+  return lifter(solids, body, o);
+}
 for (const name of names.builders)
   if (!builders.has(name as BuilderName)) throw new Error(`prefabs: missing builder ${name}`);
 const euler = (v: Vec3 = [0, 0, 0]) => new THREE.Euler(v[1], v[0], v[2], 'YXZ');

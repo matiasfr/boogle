@@ -208,6 +208,19 @@ test('review P2: a debt file cannot append calls or retain an inflated count', (
   assert.deepEqual(comparePrefabDebt(grown, budget), []);
 });
 
+test('after the lift helper ships and a different binding retires, the smaller door count binds', () => {
+  const file = 'src/prefab/instantiate.ts';
+  const base: PrefabDebt = {
+    colliders: {},
+    seats: {},
+    doors: { [file]: ['instantiate', 'liftOrWait'] },
+    doorCounts: { [file]: { colliders: 2 } },
+  };
+  const grown = structuredClone(base);
+  grown.doorCounts![file]!.colliders = 3;
+  assert.match(comparePrefabDebt(base, grown).join('\n'), /capability bindings grew/);
+});
+
 test('review P2: content local origin and shadowed browser names are bindings, not globals', () => {
   for (const code of [
     'const origin = [0, 0, 0]; export const pos = origin;',
@@ -533,5 +546,99 @@ test('registry works in a depth-1 clone with no merge base', () => {
     assert.match(checkPrefabDebt(clone, 'origin/main').join('\n'), /colliders grew: src\/new.ts/);
   } finally {
     fs.rmSync(area, { recursive: true, force: true });
+  }
+});
+
+test('re-check: the lift helper binding cannot be granted twice by dropping and re-adding liftOrWait', () => {
+  const file = 'src/prefab/instantiate.ts';
+  // Shipped: liftOrWait and 3 bindings. A later change drops the export but keeps a third binding in use.
+  const shipped: PrefabDebt = {
+    colliders: {},
+    seats: {},
+    doors: { [file]: ['instantiate', 'liftOrWait'] },
+    doorCounts: { [file]: { colliders: 3 } },
+  };
+  const dropped = structuredClone(shipped);
+  dropped.doors![file] = ['instantiate'];
+  assert.deepEqual(comparePrefabDebt(shipped, dropped), []);
+  // The next re-adds it with a fourth binding: the one-time grant fires again.
+  const readded = structuredClone(shipped);
+  readded.doorCounts![file]!.colliders = 4;
+  assert.match(comparePrefabDebt(dropped, readded).join('\n'), /capability bindings grew/);
+});
+
+test('final review: retiring the third binding and helper together cannot reopen the grant', () => {
+  const door = 'src/prefab/instantiate.ts';
+  const shipped: PrefabDebt = {
+    colliders: {},
+    seats: {},
+    doors: {
+      [door]: ['instantiate', 'liftOrWait'],
+      'src/physics/engine.ts': ['capsuleOverlaps'],
+      'src/physics/backend-rapier.ts': ['capsuleOverlaps'],
+    },
+    doorCounts: { [door]: { colliders: 3 } },
+  };
+  const retired = structuredClone(shipped);
+  retired.doors![door] = retired.doors![door]!.filter((name) => name !== 'liftOrWait');
+  retired.doorCounts![door]!.colliders = 2;
+  assert.deepEqual(comparePrefabDebt(shipped, retired), []);
+  // The engine and backend already have the approved query. Nothing records which binding is added back.
+  assert.match(comparePrefabDebt(retired, shipped).join('\n'), /capability bindings grew/);
+});
+
+const recordDoor = 'src/prefab/instantiate.ts';
+const engineDoor = 'src/physics/engine.ts';
+
+test('an approved local name cannot give an imported helper the entire engine namespace', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-door-bindings-'));
+  const write = (file: string, source: string) => {
+    fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+    fs.writeFileSync(path.join(root, file), source);
+  };
+  const land = 'src/place/land.ts';
+  const baseline = {
+    version: 7,
+    legacy: {},
+    forwards: {},
+    seats: {},
+    colliders: {},
+    doors: {
+      [land]: ['ROOM_GROUP', 'staticBody'],
+      [recordDoor]: ['liftOrWait'],
+      [engineDoor]: ['capsuleOverlaps', 'physicsTime'],
+    },
+    doorCounts: { [recordDoor]: { colliders: 3, seats: 0 }, [engineDoor]: { colliders: 0 }, [land]: { colliders: 0 } },
+  };
+  try {
+    write(PREFAB_DEBT_FILE, JSON.stringify(baseline));
+    write(land, 'export const ROOM_GROUP = 1; export function staticBody() {}');
+    write(engineDoor, 'export function capsuleOverlaps() {} export function physicsTime() {}');
+    const imports = "import { ROOM_GROUP, staticBody } from '../place/land.ts';";
+    write(
+      recordDoor,
+      imports +
+        "import { capsuleOverlaps } from '../physics/engine.ts'; export function liftOrWait() { capsuleOverlaps(); }",
+    );
+    assert.deepEqual(checkPrefabDebt(root, 'HEAD'), []);
+    for (const binding of [
+      "import {physicsTime as capsuleOverlaps} from '../physics/engine.ts'; export function liftOrWait() { capsuleOverlaps(); }",
+      "export {physicsTime as liftOrWait} from '../physics/engine.ts';",
+    ]) {
+      write(recordDoor, imports + binding);
+      assert.match(checkPrefabDebt(root, 'HEAD').join('\n'), /capability binding physicsTime/);
+    }
+    write(
+      'src/prefab/helper.ts',
+      'export function callClock({physicsTime}: {physicsTime: () => void}) { physicsTime(); }',
+    );
+    write(
+      recordDoor,
+      imports +
+        "import * as capsuleOverlaps from '../physics/engine.ts'; import {callClock} from './helper.ts'; export function liftOrWait() { callClock(capsuleOverlaps); }",
+    );
+    assert.ok(checkPrefabDebt(root, 'HEAD').length > 0, 'The whole engine replaced one named query');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
   }
 });

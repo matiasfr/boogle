@@ -6,7 +6,7 @@ import { lintSafety } from '../lint/safety.ts';
 import type { PrefabDebt } from '../lint/safety.ts';
 import { checkPrefabRegistrations } from './prefab-registrations.ts';
 import { parseSync } from 'oxc-parser';
-import { createModuleResolver, runtimeExports, PREFAB_DOORS } from '../lint/prefab-boundaries.ts';
+import { createModuleResolver, isCapability, runtimeExports, PREFAB_DOORS } from '../lint/prefab-boundaries.ts';
 import {
   loadLegacyGraph,
   compareConstructionForwards,
@@ -18,6 +18,29 @@ import {
 export const PREFAB_DEBT_FILE = 'dev/lint/prefab-debt.json';
 const empty = (): PrefabDebt => ({ colliders: {}, seats: {} });
 const rules = { colliders: 'boogle/colliders-from-records', seats: 'boogle/seats-from-records' } as const;
+
+// The only door growth the owner has approved (docs/decisions-process.md, d-2026-11-24-door-export-clearance-helper):
+// the shared lift-or-wait helper's export on the record door and the engine's one overlap query, with the one import
+// binding the record door needs to reach it. Nothing else may grow; once a base carries them these admit nothing new.
+const APPROVED_DOOR_EXPORTS: Readonly<Record<string, readonly string[]>> = {
+  'src/prefab/instantiate.ts': ['liftOrWait'],
+  'src/physics/engine.ts': ['capsuleOverlaps'],
+  'src/physics/backend-rapier.ts': ['capsuleOverlaps'],
+};
+/** The record door's capability bindings, by name: the two it had and the decision's capsuleOverlaps. checkPrefabDebt
+ * refuses any other from the door's source, in any order of retiring and adding. The recorded count may grow once, from
+ * 2 to 3, only as the engine's query and liftOrWait first appear together. */
+const DOOR_BINDINGS = {
+  file: 'src/prefab/instantiate.ts',
+  /** Each capability module the door may bind, and the exports it may import from it, by name: no namespace, no
+   * re-export of everything, no other export under an approved local name. */
+  names: {
+    'src/place/land.ts': ['ROOM_GROUP', 'staticBody'],
+    'src/physics/engine.ts': ['capsuleOverlaps'],
+  } as Readonly<Record<string, readonly string[]>>,
+  with: 'liftOrWait',
+  query: { file: 'src/physics/engine.ts', name: 'capsuleOverlaps' },
+} as const;
 
 export function comparePrefabDebt(base: PrefabDebt, head: PrefabDebt): string[] {
   const errors: string[] = [];
@@ -42,19 +65,28 @@ export function comparePrefabDebt(base: PrefabDebt, head: PrefabDebt): string[] 
           `${PREFAB_DEBT_FILE}: ${kind}/${file} count grew: ${base[kind][file]!.count} → ${entry.count}; lower the count. Use src/prefab/instantiate.ts.`,
         );
       for (const name of entry.exports ?? [])
-        if (!(base[kind][file]?.exports ?? []).includes(name))
+        if (!(base[kind][file]?.exports ?? []).includes(name) && !APPROVED_DOOR_EXPORTS[file]?.includes(name))
           errors.push(`${PREFAB_DEBT_FILE}: ${kind}/${file} public exports grew: ${name}`);
     }
   for (const [file, names] of Object.entries(head.doors ?? {}))
     for (const name of names)
-      if (!(base.doors?.[file] ?? []).includes(name))
+      if (!(base.doors?.[file] ?? []).includes(name) && !APPROVED_DOOR_EXPORTS[file]?.includes(name))
         errors.push(`${PREFAB_DEBT_FILE}: door ${file} public exports grew: ${name}`);
   for (const [file, counts] of Object.entries(head.doorCounts ?? {}))
     for (const kind of ['colliders', 'seats'] as const) {
       const count = counts[kind];
       if (count === undefined) continue;
       const old = base.doorCounts?.[file]?.[kind];
-      if (old === undefined || count > old)
+      const { file: door, with: name, query } = DOOR_BINDINGS,
+        granted =
+          kind === 'colliders' &&
+          file === door &&
+          old === 2 &&
+          count === 3 &&
+          !!head.doors?.[door]?.includes(name) &&
+          !base.doors?.[door]?.includes(name) &&
+          !base.doors?.[query.file]?.includes(query.name);
+      if (old === undefined || (count > old && !granted))
         errors.push(
           `${PREFAB_DEBT_FILE}: door ${file}/${kind} capability bindings grew. Use src/prefab/instantiate.ts.`,
         );
@@ -137,6 +169,50 @@ export function checkPrefabDebt(root: string, ref: string): string[] {
           `${file}: ${kind} door has ${actual} bindings, budget ${recorded}; ${actual < recorded ? 'lower the count' : 'use src/prefab/instantiate.ts'}.`,
         );
     }
+  {
+    const { file, names } = DOOR_BINDINGS,
+      current = path.join(root, file);
+    type Spec = {
+      type: string;
+      importKind?: string;
+      exportKind?: string;
+      imported?: { name?: string; value?: string };
+      local?: { name?: string; value?: string };
+    };
+    type Edge = { type: string; source?: { value: string } | null; importKind?: string; exportKind?: string };
+    if (fs.existsSync(current))
+      for (const node of parseSync(file, fs.readFileSync(current, 'utf8')).program.body as unknown as (Edge & {
+        specifiers?: Spec[];
+      })[]) {
+        if (
+          !node.source ||
+          !['ImportDeclaration', 'ExportNamedDeclaration', 'ExportAllDeclaration'].includes(node.type)
+        )
+          continue;
+        if (node.importKind === 'type' || node.exportKind === 'type') continue;
+        const target = resolve(file, node.source.value);
+        if (!target || !isCapability('colliders', target)) continue;
+        const allowed = names[target] ?? [];
+        if (node.type === 'ExportAllDeclaration') {
+          errors.push(`${file}: capability binding * of ${target}: the door re-exports no whole capability module.`);
+          continue;
+        }
+        for (const spec of node.specifiers ?? []) {
+          if (spec.importKind === 'type' || spec.exportKind === 'type') continue;
+          const named =
+              spec.type === 'ImportSpecifier' ? spec.imported : spec.type === 'ExportSpecifier' ? spec.local : null,
+            bound = named ? (named.name ?? named.value ?? '?') : `* as ${spec.local?.name ?? '?'}`;
+          if (!named || !allowed.includes(bound))
+            errors.push(
+              `${file}: capability binding ${bound} of ${target} is not one of the door's named imports (${Object.entries(
+                names,
+              )
+                .map(([m, n]) => `${m}: ${n.join(', ')}`)
+                .join('; ')}).`,
+            );
+        }
+      }
+  }
   for (const [file, counts] of Object.entries(head.doorCounts ?? {}))
     for (const kind of Object.keys(counts))
       if (!(kind === 'colliders' || kind === 'seats') || !PREFAB_DOORS[kind].includes(file))

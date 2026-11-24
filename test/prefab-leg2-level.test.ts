@@ -1,4 +1,5 @@
 // Review reproduction: missing/moved compiled placements must change the actual level-check verdict.
+import '../dev/sim/hooks.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -35,9 +36,10 @@ import { KIT } from '../src/place/turnout.ts';
 import * as gorgeLayout from '../src/entities/route-greybox/massing.ts';
 import { AREA_CENTRES, coverNear, LEG2_TEXT } from '../src/entities/route-greybox/leg2-layout.ts';
 import { CANOPY_CENTRES, isleGround, landPoints } from '../src/content/levels/leg3.ts';
-import type { Shape } from '../src/physics/engine.ts';
+import type { Body, Shape } from '../src/physics/engine.ts';
 import { resident } from '../src/render/lod-level.ts';
-import { HEAD_OFFSET, PLAYER_R } from '../src/constants.ts';
+import { CAVE_GROUP, HEAD_OFFSET, PLAYER_R } from '../src/constants.ts';
+import { createLiftOrWait, STEP, type Solid } from '../src/place/clearance.ts';
 import canopy from '../content/built/levels/canopy.json' with { type: 'json' };
 
 validation.validateArtifact(artifact);
@@ -211,14 +213,437 @@ test('review (greybox leg 2 step 4): no standable surface under a leg 2 deck lea
 
 // Greybox leg 3, step 6's reviews (Astra, on 87d7edf12, 033182dbb and b5e0f7f49): a laid deck's slabs that switch on
 // where a body stands lift it onto their top when it fits there, or wait, the set of them, neither solid nor drawn,
-// until it is clear; never a push sideways (route-greybox/clear.ts, the orchestrator's calls of 24 November). An
-// area's mount is an ordinary static mount, far from anyone (580 m for Canopy, which covers every solid of it and
-// counts them all). A row line's departure boards list only halts where a train stops. Each runs the view's own source.
-const clearFor = (position: THREE.Vector3) =>
-  sourceModule<typeof import('../src/entities/route-greybox/clear.ts')>(
-    fs.readFileSync('src/entities/route-greybox/clear.ts', 'utf8'),
-    { THREE, HEAD_OFFSET, PLAYER_R, me: { body: { position } }, compiled: artifact },
+// until it is clear; never a push sideways (src/place/clearance.ts with the engine's real Rapier overlap query, the
+// orchestrator's calls of 24 November). An area's mount is an ordinary static mount, far from anyone (580 m for Canopy,
+// which covers every solid of it and counts them all). A row line's departure boards list only halts where a train
+// stops. Each runs the view's own source.
+const physics = await import('../src/physics/engine.ts');
+const liftOrWait = createLiftOrWait(physics.capsuleOverlaps);
+
+// The shared helper itself (src/place/clearance.ts with the engine's real Rapier query), for every owner that switches
+// solids on near players (rule 67; build skill step 9): lift straight up or wait as one set, undrawn, until clear;
+// never sideways, never switched off. Here beside its first user's cases rather than in a file of its own (test diet).
+
+class Vec {
+  x: number;
+  y: number;
+  z: number;
+  constructor(x = 0, y = 0, z = 0) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+  }
+  set(x: number, y: number, z: number) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    return this;
+  }
+}
+/** A body standing with its feet (the bottom sphere's lowest point) at `feet`, far from anything else built. */
+const bodyAt = (x: number, feet: number, z: number) => ({
+  position: new Vec(x, feet + PLAYER_R, z),
+  velocity: new Vec(0, -3, 0),
+  interpolatedPosition: new Vec(x, feet + PLAYER_R, z),
+});
+const box = (x: number, top: number, z: number, hx = 2, hy = 1, hz = 2): Shape => ({
+  kind: 'box',
+  hx,
+  hy,
+  hz,
+  offset: { x, y: top - hy, z },
+});
+/** A closed six-sided prism, a trimesh as the kits' rocks are: from (x0, z0) to (x1, z1), from y0 up to y1. */
+function prism(x0: number, z0: number, x1: number, z1: number, y0: number, y1: number): Shape {
+  const v = [x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1, x0, y1, z0, x1, y1, z0, x1, y1, z1, x0, y1, z1];
+  // Outward-facing triangles (counter-clockwise seen from outside).
+  const f = [
+    0, 1, 2, 0, 2, 3, 4, 6, 5, 4, 7, 6, 0, 4, 5, 0, 5, 1, 1, 5, 6, 1, 6, 2, 2, 6, 7, 2, 7, 3, 3, 7, 4, 3, 4, 0,
+  ];
+  return { kind: 'trimesh', vertices: v, indices: f };
+}
+/** Solids that record when they switch on (solid and drawn together): `on` is the only switch there is. */
+function solids(...shapes: Shape[][]) {
+  const switched: number[] = [];
+  const list: (Solid & { i: number })[] = shapes.map((s, i) => ({ i, shapes: s, on: () => switched.push(i) }));
+  return { list, switched };
+}
+/** A static roof built in the world, for headroom; removed after. */
+function built(shape: Shape) {
+  const body = physics.createBody({ type: 'static', shapes: [shape] });
+  physics.addBody(body);
+  return () => physics.removeBody(body);
+}
+const asBody = (b: ReturnType<typeof bodyAt>) => b as unknown as Body;
+
+// Capture the first call before the async WASM load finishes. All later tests use the ready engine.
+const coldSolids = solids([box(1950, 3, 1000)]);
+const cold = liftOrWait(coldSolids.list, bodyAt(1950, 0, 1000), { lift: false });
+await physics.physicsReady;
+
+test('a mount during physics startup keeps an occupied solid off', () => {
+  assert.deepEqual(coldSolids.switched, []);
+  assert.equal(cold.retry(bodyAt(1950, 0, 1000)), true);
+  assert.equal(cold.retry(bodyAt(1970, 0, 1000)), false);
+  assert.deepEqual(coldSolids.switched, [0]);
+});
+
+test('feet within a step of the top: lifted straight up onto it, and the solid switches on', () => {
+  const b = bodyAt(1000, 0, 1000);
+  const { list, switched } = solids([box(1000, 0.2, 1000)]);
+  const c = liftOrWait(list, asBody(b), { lift: true });
+  assert.equal(c.kind, 'lifted');
+  assert.deepEqual(switched, [0]);
+  assert.ok(Math.abs(b.position.y - (0.2 + PLAYER_R)) < 0.005, `stands at ${b.position.y}`);
+  assert.equal(b.interpolatedPosition.y, b.position.y);
+  assert.deepEqual([b.position.x, b.position.z], [1000, 1000], 'moved sideways');
+  assert.equal(b.velocity.y, 0);
+});
+
+test('a trimesh prism lifts too, and a body wholly inside a tall one waits', () => {
+  const low = bodyAt(1100, 0, 1000);
+  const step = solids([prism(1098, 998, 1102, 1002, -1, 0.25)]);
+  assert.equal(liftOrWait(step.list, asBody(low), { lift: true }).kind, 'lifted');
+  assert.ok(Math.abs(low.position.y - (0.25 + PLAYER_R)) < 0.005);
+  const inside = bodyAt(1100, 0, 1010);
+  const tall = solids([prism(1095, 1005, 1105, 1015, -2, 5)]);
+  const c = liftOrWait(tall.list, asBody(inside), { lift: true });
+  assert.equal(c.kind, 'wait');
+  assert.deepEqual(tall.switched, [], 'a waiting solid is neither solid nor drawn');
+  assert.equal(inside.position.y, PLAYER_R);
+});
+
+test('a lift into a roof waits instead, the body unmoved', () => {
+  const b = bodyAt(1200, 0, 1000);
+  // The roof's underside is 0.1 m over the head now: clear where it stands, not where it would stand on the slab.
+  const head = PLAYER_R + HEAD_OFFSET + PLAYER_R;
+  const remove = built(box(1200, head + 0.1 + 0.5, 1000, 2, 0.25, 2));
+  try {
+    const { list, switched } = solids([box(1200, 0.2, 1000)]);
+    const c = liftOrWait(list, asBody(b), { lift: true });
+    assert.equal(c.kind, 'wait');
+    assert.deepEqual(switched, []);
+    assert.equal(b.position.y, PLAYER_R);
+    assert.equal(c.waiting.length, 1);
+  } finally {
+    remove();
+  }
+});
+
+test('the step is STEP exactly: a top 0.29 m over the feet lifts, 0.31 m waits', () => {
+  const under = bodyAt(1250, 0, 1000);
+  assert.equal(liftOrWait(solids([box(1250, STEP - 0.01, 1000)]).list, asBody(under), { lift: true }).kind, 'lifted');
+  const over = bodyAt(1250, 0, 1010);
+  assert.equal(liftOrWait(solids([box(1250, STEP + 0.01, 1010)]).list, asBody(over), { lift: true }).kind, 'wait');
+  assert.equal(over.position.y, PLAYER_R);
+});
+
+test('a top more than a step over the feet waits; lift: false (a mount) only ever waits', () => {
+  const high = bodyAt(1300, 0, 1000);
+  const tall = solids([box(1300, STEP + 0.1, 1000)]);
+  assert.equal(liftOrWait(tall.list, asBody(high), { lift: true }).kind, 'wait');
+  assert.equal(high.position.y, PLAYER_R);
+  const mount = bodyAt(1300, 0, 1010);
+  const low = solids([box(1300, 0.1, 1010)]);
+  assert.equal(liftOrWait(low.list, asBody(mount), { lift: false }).kind, 'wait');
+  assert.equal(mount.position.y, PLAYER_R);
+  assert.deepEqual(low.switched, []);
+});
+
+test('an overhang that holds only the head waits: nobody is lifted to where there is no ground under them', () => {
+  const b = bodyAt(1350, 0, 1000);
+  const overhang = solids([box(1350, PLAYER_R + HEAD_OFFSET + 0.3, 1000, 2, 0.2, 2)]);
+  assert.equal(liftOrWait(overhang.list, asBody(b), { lift: true }).kind, 'wait');
+  assert.equal(b.position.y, PLAYER_R);
+});
+
+test('two overlapping solids wait as one set; a partial exit keeps both off; clear of both, both come back together', () => {
+  const b = bodyAt(1400, 0, 1000);
+  // A and B overlap around x = 1400; each is too tall to be lifted onto.
+  const { list, switched } = solids(
+    [box(1399, 2, 1000, 1.5, 3, 2)],
+    [box(1401, 2, 1000, 1.5, 3, 2)],
+    [box(1450, 0.1, 1000)],
   );
+  const c = liftOrWait(list, asBody(b), { lift: true });
+  assert.equal(c.kind, 'wait');
+  assert.deepEqual(switched, [2], 'the solid that holds nobody switches on at once');
+  assert.deepEqual(
+    c.waiting.map((s) => s.i),
+    [0, 1],
+  );
+  b.position.set(1402, PLAYER_R, 1000); // out of A, still in B
+  assert.equal(c.retry(asBody(b)), true);
+  assert.deepEqual(switched, [2], 'A switched on while the body was still in B');
+  b.position.set(1398, PLAYER_R, 1000); // back in A: still one set
+  assert.equal(c.retry(asBody(b)), true);
+  assert.deepEqual(switched, [2]);
+  b.position.set(1420, PLAYER_R, 1000);
+  assert.equal(c.retry(asBody(b)), false);
+  assert.deepEqual(switched, [2, 0, 1], 'both return in the same retry');
+  assert.deepEqual([b.position.x, b.position.z], [1420, 1000], 'the helper never moves a body sideways');
+});
+
+test('never sideways: a body grazing a tall solid from beside it waits where it is', () => {
+  const b = bodyAt(1500, 0, 1000);
+  const side = solids([box(1500 + PLAYER_R + 1.9, 3, 1000)]); // 0.1 m into its side face
+  const c = liftOrWait(side.list, asBody(b), { lift: true });
+  assert.equal(c.kind, 'wait');
+  assert.deepEqual([b.position.x, b.position.y, b.position.z], [1500, PLAYER_R, 1000]);
+});
+
+test('resting on a top is not in it; once on, a landing or contact never switches a solid off', () => {
+  const b = bodyAt(1600, 0.5, 1000); // feet on the box's top, within the solver's contact sink
+  b.position.y -= 0.005;
+  const { list, switched } = solids([box(1600, 0.5, 1000)]);
+  const c = liftOrWait(list, asBody(b), { lift: true });
+  assert.equal(c.kind, 'clear');
+  assert.deepEqual(switched, [0]);
+  b.position.set(1600, 0, 1000); // sunk into it (a hard landing): nothing waits, nothing is switched again
+  assert.equal(c.retry(asBody(b)), false);
+  assert.deepEqual(switched, [0]);
+  assert.equal(c.waiting.length, 0);
+  assert.equal(b.position.y, 0);
+});
+
+test('a retried set lifts the body once its feet come within a step of the top', () => {
+  const b = bodyAt(1700, -1, 1000);
+  const { list, switched } = solids([box(1700, 0.2, 1000)]);
+  const c = liftOrWait(list, asBody(b), { lift: true });
+  assert.equal(c.kind, 'wait');
+  b.position.set(1700, PLAYER_R, 1000);
+  assert.equal(c.retry(asBody(b)), false);
+  assert.deepEqual(switched, [0]);
+  assert.ok(Math.abs(b.position.y - (0.2 + PLAYER_R)) < 0.005);
+});
+
+test('no body: everything switches on', () => {
+  const { list, switched } = solids([box(1800, 0.2, 1000)], [box(1810, 3, 1000)]);
+  assert.equal(liftOrWait(list, null, { lift: true }).kind, 'clear');
+  assert.deepEqual(switched, [0, 1]);
+});
+
+test('a level step exactly 0.30 m above the feet lifts', () => {
+  const b = bodyAt(2000, 0, 1000);
+  assert.equal(liftOrWait(solids([box(2000, STEP, 1000)]).list, b, { lift: true }).kind, 'lifted');
+});
+
+test('grazing the edge of a yawed 0.40 m step cannot lift onto empty space', () => {
+  const yaw = Math.PI / 4;
+  const edge = box(2100, 0.4, 1000, 2, 1, 4);
+  edge.rotation = { x: 0, y: Math.sin(yaw / 2), z: 0, w: Math.cos(yaw / 2) };
+  // Feet are 0.35 m outside its local +x edge. A sphere grazes the corner, but no top lies below the feet.
+  const b = bodyAt(2100 + 2.35 * Math.cos(yaw), 0, 1000 - 2.35 * Math.sin(yaw));
+  const { list, switched } = solids([edge]);
+  assert.equal(liftOrWait(list, b, { lift: true }).kind, 'wait');
+  assert.equal(b.position.y, PLAYER_R);
+  assert.deepEqual(switched, []);
+});
+
+test('the complete upper sphere must fit under an existing roof after a lift', () => {
+  const b = bodyAt(2200, 0, 1000);
+  const headAfterLift = 2 * PLAYER_R + HEAD_OFFSET + 0.2;
+  const remove = built(box(2200, headAfterLift - 0.015 + 0.2, 1000, 2, 0.1, 2));
+  try {
+    assert.equal(liftOrWait(solids([box(2200, 0.2, 1000)]).list, b, { lift: true }).kind, 'wait');
+    assert.equal(b.position.y, PLAYER_R);
+  } finally {
+    remove();
+  }
+});
+
+test('a roof mounted this frame blocks the lift before the next physics step', () => {
+  const head = 2 * PLAYER_R + HEAD_OFFSET;
+  const roof = physics.createBody({ type: 'static', shapes: [box(2300, head + 0.3, 1000, 2, 0.1, 2)] });
+  physics.addBody(roof);
+  try {
+    const b = bodyAt(2300, 0, 1000);
+    assert.equal(liftOrWait(solids([box(2300, 0.2, 1000)]).list, b, { lift: true }).kind, 'wait');
+    assert.equal(b.position.y, PLAYER_R);
+  } finally {
+    physics.removeBody(roof);
+  }
+});
+
+test('mounting a closed prism preserves the interior used for clearance', () => {
+  const shape = prism(2395, 995, 2405, 1005, -3, 5);
+  const p = bodyAt(2400, 0, 1000).position;
+  const remove = built(shape);
+  try {
+    assert.equal(physics.capsuleOverlaps(p, PLAYER_R, HEAD_OFFSET, shape), true);
+    assert.equal(physics.capsuleOverlaps(p, PLAYER_R, HEAD_OFFSET, { of: { position: p } }), true);
+  } finally {
+    remove();
+  }
+});
+
+test('open land below its top holds a body only within the land footprint', () => {
+  const land: Shape = {
+    kind: 'trimesh',
+    vertices: [2500, 5, 1000, 2510, 5, 1000, 2510, 5, 1010, 2500, 5, 1010],
+    indices: [0, 2, 1, 0, 3, 2],
+  };
+  const inside = bodyAt(2505, 0, 1005);
+  const { list, switched } = solids([land]);
+  const clearing = liftOrWait(list, inside, { lift: false });
+  assert.equal(clearing.kind, 'wait');
+  assert.equal(clearing.retry(bodyAt(2525, 0, 1005)), false);
+  assert.deepEqual(switched, [0]);
+});
+
+test('a reused shape at a new placement tests its current pose', () => {
+  const door = box(2600, 3, 1000);
+  const p = bodyAt(2600, 0, 1000).position;
+  assert.equal(physics.capsuleOverlaps(p, PLAYER_R, HEAD_OFFSET, door), true);
+  door.offset!.x += 10;
+  assert.equal(physics.capsuleOverlaps(p, PLAYER_R, HEAD_OFFSET, door), false);
+});
+
+test('re-check: a cave-group roof the surface body never touches does not block its lift', () => {
+  // The solver pairs groups both ways; the world query takes every group (mask -1), so a collider only underground
+  // bodies meet (CAVE_GROUP: SURFACE_MASK leaves it out) turns a lift into a wait.
+  const head = 2 * PLAYER_R + HEAD_OFFSET;
+  const roof = physics.createBody({
+    type: 'static',
+    group: CAVE_GROUP,
+    shapes: [box(3000, head + 0.3, 1000, 2, 0.1, 2)],
+  });
+  // A surface player's body, as src/pois/caves sets it: every group but the caves'.
+  const player = physics.createBody({
+    type: physics.BODY.DYNAMIC,
+    mass: 1,
+    mask: ~CAVE_GROUP,
+    position: { x: 3000, y: PLAYER_R, z: 1000 },
+    shapes: [{ kind: 'sphere', r: PLAYER_R }],
+  });
+  physics.addBody(roof);
+  physics.addBody(player);
+  try {
+    assert.equal(liftOrWait(solids([box(3000, 0.2, 1000)]).list, player, { lift: true }).kind, 'lifted');
+  } finally {
+    physics.removeBody(roof);
+    physics.removeBody(player);
+  }
+});
+
+test('re-check: a kinematic body is not in its own way when lifted', () => {
+  // Yours is kinematic in guest play (src/guest/play.ts); the world query then counts your own capsule.
+  const b = physics.createBody({
+    type: physics.BODY.KINEMATIC,
+    mass: 0,
+    position: { x: 3100, y: PLAYER_R, z: 1000 },
+    shapes: [
+      { kind: 'sphere', r: PLAYER_R },
+      { kind: 'sphere', r: PLAYER_R, offset: { x: 0, y: HEAD_OFFSET, z: 0 } },
+    ],
+  });
+  physics.addBody(b);
+  try {
+    assert.equal(liftOrWait(solids([box(3100, 0.2, 1000)]).list, b, { lift: true }).kind, 'lifted');
+  } finally {
+    physics.removeBody(b);
+  }
+});
+
+test('re-check: a body sunk into a heightfield overlaps it, built or not', () => {
+  // engine.ts: every static body, by the same test. A heightfield answers false even through its surface.
+  const heights = [
+    [5, 5, 5],
+    [5, 5, 5],
+    [5, 5, 5],
+  ];
+  const at = { x: 3310, y: 4.8, z: 990 }; // bottom sphere 0.65 m under the 5 m surface, inside the footprint
+  const body = physics.createBody({
+    type: 'static',
+    position: { x: 3300, y: 0, z: 1000 },
+    shapes: [{ kind: 'heightfield', heights, cell: 10 }],
+  });
+  physics.addBody(body);
+  try {
+    assert.equal(physics.capsuleOverlaps(at, PLAYER_R, 0, { of: { position: at } }), true, 'built');
+    assert.equal(
+      physics.capsuleOverlaps({ x: 10, y: 4.8, z: -10 }, PLAYER_R, 0, { kind: 'heightfield', heights, cell: 10 }),
+      true,
+      'unbuilt',
+    );
+  } finally {
+    physics.removeBody(body);
+  }
+});
+
+const flatField = (height: number): Shape => ({
+  kind: 'heightfield',
+  heights: [
+    [height, height],
+    [height, height],
+  ],
+  cell: 2,
+});
+
+test('final review: the capsule side intersects a terrain edge halfway between feet and waist', () => {
+  // The flat edge at x=0, y=0.2 crosses the cylinder by 3 cm. Each sample centre is over a radius away.
+  assert.equal(physics.capsuleOverlaps({ x: -0.42, y: 0, z: -1 }, PLAYER_R, HEAD_OFFSET, flatField(0.2)), true);
+});
+
+test('final review: resting exactly on flat terrain is clear', () => {
+  assert.equal(physics.capsuleOverlaps({ x: 1, y: 5 + PLAYER_R, z: -1 }, PLAYER_R, HEAD_OFFSET, flatField(5)), false);
+});
+
+// A body wholly under a heightfield is not tested: a lift starts from where the solver already holds the body.
+
+test('a body in the open gap below a rotated heightfield lip is clear', () => {
+  // The two strips meet at (4,0). After a 45-degree roll their planes are y=x-4 and y=3*(4-x).
+  // At x=2.5 the bottom sphere is 1.77 m above the floor and the top sphere 0.85 m below the lip,
+  // measured along the normals. Both clear the 0.45 m radius, but a world-up ray hits the lip.
+  const shape: Shape = {
+    kind: 'heightfield',
+    heights: [
+      [0, 0],
+      [0, 0],
+      [8, 8],
+    ],
+    cell: 4,
+    rotation: { x: 0, y: 0, z: Math.sin(Math.PI / 8), w: Math.cos(Math.PI / 8) },
+  };
+  assert.equal(physics.capsuleOverlaps({ x: 2.5, y: 1, z: -2 }, PLAYER_R, HEAD_OFFSET, shape), false);
+});
+
+// Back to leg 3's lays.
+/** Whether a body standing at `p` is in solid `s`, as the helper measures it (resting on a top is not). */
+const holds = (s: Shape, p: { x: number; y: number; z: number }) =>
+  physics.capsuleOverlaps(p, PLAYER_R - 0.02, HEAD_OFFSET, s);
+/** Your body at `position`, as the views read it (me.body). */
+const bodyOf = (position: THREE.Vector3) => ({ position, velocity: new THREE.Vector3() });
+/** A greybox box (yaw, then pitch about its x) as the physics shape its collider is. */
+function boxShape(b: {
+  x: number;
+  y: number;
+  z: number;
+  w: number;
+  h: number;
+  d: number;
+  yaw: number;
+  pitch?: number;
+}) {
+  const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(-(b.pitch ?? 0), b.yaw, 0, 'YXZ'));
+  return {
+    kind: 'box',
+    hx: b.w / 2,
+    hy: b.h / 2,
+    hz: b.d / 2,
+    offset: { x: b.x, y: b.y, z: b.z },
+    rotation: { x: q.x, y: q.y, z: q.z, w: q.w },
+  } satisfies Shape;
+}
+/** The greybox levels' solids (High Gorge's, leg 2's and leg 3's) built in the world once, as they stand when a lay
+ * happens near them: what a lifted body must also have room in. */
+let scenery = false;
+function buildScenery() {
+  if (scenery) return;
+  scenery = true;
+  for (const raw of [gorgeRaw, bellRaw, canopy, westRaw])
+    physics.addBody(physics.createBody({ type: 'static', shapes: ground(raw).map(shapeOf) }));
+}
 /** A resolved collider as the physics shape its prefab's instance makes (a box from its axes, a trimesh as is). */
 function shapeOf(c: ReturnType<typeof ground>[number]): Shape {
   const v = c.volume;
@@ -311,14 +736,14 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
       bellPads: [],
       areaLabels: new Map(),
       ringIslandNear: { mounted: false },
-      me: { body: { position } },
+      me: { body: bodyOf(position) },
       camera: { position },
       dependencies: [
         { slab, addStatic: () => ({}) },
         { onIsland: () => false },
         { outOf: sourceFunction('src/place/sites.ts', 'outOf', {}) },
       ],
-      ...clearFor(position),
+      liftOrWait,
       signBoard: () => ({ mesh: new THREE.Group() }),
       paintPlate: (s: { mesh: THREE.Group }, entries: { t: string }[]) =>
         signs.set(
@@ -333,14 +758,14 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
         commit() {},
         box(x: number, y: number, z: number, w: number, h: number, d: number, colour: string, yaw: number, rx: number) {
           if (capacity === 4800 && colour === '#9c9ea1' && h === 0.5)
-            drawnDeck.push(clear.boxShape({ x, y, z, w, h, d, yaw, pitch: -rx }));
+            drawnDeck.push(boxShape({ x, y, z, w, h, d, yaw, pitch: -rx }));
         },
         between() {},
       }),
       playObjective() {},
     },
   );
-  const clear = clearFor(position);
+  buildScenery();
   const seed = buildSeedWorld('awake');
   for (const [i, leg] of route.RAIL_LEGS.entries())
     if (lines.legBuilt(i))
@@ -410,8 +835,7 @@ async function mountAt(position: THREE.Vector3) {
   const pending: Promise<void>[] = [];
   const on = new Set<string>(),
     shapes = new Map<string, Shape[]>();
-  const colliders = ground(canopy),
-    clear = clearFor(position);
+  const colliders = ground(canopy);
   const instantiate = (_key: string, placement: { id: string }) => {
     const mine = colliders.filter((c) => c.placement.id === placement.id);
     shapes.set(placement.id, mine.map(shapeOf));
@@ -429,7 +853,7 @@ async function mountAt(position: THREE.Vector3) {
     const enabled = [...on];
     return {
       enabled,
-      overlaps: enabled.filter((id) => shapes.get(id)!.some((x) => clear.heldTop(x, position) !== null)),
+      overlaps: enabled.filter((id) => shapes.get(id)!.some((x) => holds(x, position))),
     };
   };
   const helpers = sourceModule<typeof import('../src/entities/route-greybox/leg2-draw.ts')>(
@@ -468,7 +892,6 @@ async function mountAt(position: THREE.Vector3) {
       return entity;
     },
     createOwnedView: () => ({ root: new THREE.Group(), cleanup() {} }),
-    liftOrWait: clear.liftOrWait,
     MOUNT_NEAR: 400,
     FREE_MORE: 150,
     canopyNear: sourceFunction<typeof import('../src/entities/route-greybox/leg2-layout.ts').coverNear>(
@@ -530,9 +953,8 @@ test('a waiting first-lay slab at the Bell Rock rim is hidden', async () => {
   assert.equal(position.y, floor + PLAYER_R);
   assert.deepEqual(overlaps, []);
   assert.ok(drawnDeck.length);
-  const clear = clearFor(position);
   assert.ok(
-    drawnDeck.every((s) => clear.heldTop(s, position) === null),
+    drawnDeck.every((s) => !holds(s, position)),
     'deck drawn through player',
   );
 });
@@ -542,49 +964,29 @@ test('the Bell Rock lower-deck lift leaves headroom below the ramp', () => {
   const colliders = ground(bellRaw);
   const shapes = colliders.map(shapeOf);
   const ramp = shapes[colliders.findIndex((c) => c.placement.id === 'bell.ramp')]!;
-  const clear = clearFor(position);
-  assert.equal(clear.heldTop(ramp, position), null);
-  const result = clear.liftOrWait(shapes);
-  assert.equal(clear.heldTop(ramp, position), null, 'the lifted head intersects the ramp');
+  assert.equal(holds(ramp, position), false);
+  const result = liftOrWait(
+    shapes.map((x) => ({ shapes: [x], on() {} })),
+    bodyOf(position),
+    { lift: true },
+  );
+  assert.equal(holds(ramp, position), false, 'the lifted head intersects the ramp');
   assert.equal(result.kind, 'wait');
 });
 
-test("a lay's headroom reads the scenery as the levels build it: placedShapes matches the resolved colliders", () => {
-  const position = new THREE.Vector3(-72.99383527541504, 5.15, -860.5269921785417),
-    clear = clearFor(position);
-  for (const raw of [bellRaw, canopy]) {
-    const level = validation.loadLevelArtifact(raw, artifact.prefabs as unknown as Readonly<Record<string, PrefabDef>>),
-      built = clear.placedShapes(
-        level.placements.filter((p) => p.prefab === 'greybox.box' || p.prefab === 'greybox.collider'),
-      ),
-      resolved = ground(raw)
-        .filter((c) => c.definition.shape === 'box')
-        .map(shapeOf);
-    assert.equal(built.length, resolved.length);
-    // The same solid: held or not, and the same top, at sample points through each.
-    built.forEach((b, i) => {
-      const r = resolved[i]! as Extract<Shape, { kind: 'box' }>,
-        o = r.offset!;
-      for (const dy of [-0.3, 0, 0.3]) {
-        const p = { x: o.x + 0.3, y: o.y + dy, z: o.z - 0.2 },
-          a = clear.heldTop(b, p),
-          c = clear.heldTop(r, p);
-        assert.ok((a === null) === (c === null) && (a === null || Math.abs(a - c!) < 1e-6), `${i} at ${dy}`);
-      }
-    });
-  }
-  // A slab whose top is 0.2 m over the feet under the ramp: alone it lifts the body; with the scenery as the levels
-  // build it, the ramp is over the lifted head and it waits. So a lift that left the scenery out would show here.
-  const level = validation.loadLevelArtifact(
-    bellRaw,
-    artifact.prefabs as unknown as Readonly<Record<string, PrefabDef>>,
-  );
-  const deck = (p: THREE.Vector3) =>
-    clear.boxShape({ x: p.x, y: p.y - PLAYER_R + 0.2 - 0.2, z: p.z, w: 4, h: 0.4, d: 4, yaw: 0 });
-  const alone = position.clone();
-  assert.equal(clearFor(alone).liftOrWait([deck(alone)]).kind, 'lifted');
+test("a lay's headroom reads the scenery as the world builds it", () => {
+  // A slab whose top is 0.2 m over the feet under Bell Rock's ramp: alone (the same spot 3 km off, nothing built
+  // there) it lifts the body; with the levels' solids built round it, the ramp is over the lifted head and it waits.
+  // So a lift that left the scenery out would show here.
+  buildScenery();
+  const position = new THREE.Vector3(-72.99383527541504, 5.15, -860.5269921785417);
+  const deck = (p: THREE.Vector3) => [
+    { shapes: [boxShape({ x: p.x, y: p.y - PLAYER_R + 0.2 - 0.2, z: p.z, w: 4, h: 0.4, d: 4, yaw: 0 })], on() {} },
+  ];
+  const alone = position.clone().setX(position.x + 3000);
+  assert.equal(liftOrWait(deck(alone), bodyOf(alone), { lift: true }).kind, 'lifted');
   const among = position.clone();
-  assert.equal(clearFor(among).liftOrWait([deck(among)], clear.placedShapes(level.placements)).kind, 'wait');
+  assert.equal(liftOrWait(deck(among), bodyOf(among), { lift: true }).kind, 'wait');
   assert.deepEqual(among.toArray(), position.toArray(), 'moved while waiting');
 });
 
@@ -616,10 +1018,14 @@ test('the first Canopy lay keeps both slabs at the Bell Rock seam off until the 
 
 test('a stack deck becoming solid at High Gorge leaves room for the player’s head', async () => {
   const position = new THREE.Vector3(-105.36, 3.3, -1983.2695);
-  const clear = clearFor(position);
   const solids = ground(gorgeRaw).map(shapeOf);
-  const fits = () => solids.every((solid) => clear.heldTop(solid, position) === null);
-  assert.ok(fits());
+  // Rapier's overlap test reads about 2 mm generous, and this spot grazes a Gorge slab's underside by less: so the lay
+  // may only keep what already held the body, never add to it.
+  const held = () => solids.filter((solid) => holds(solid, position));
+  const before = held();
   await reachedView(1300, 0, 3, position);
-  assert.ok(fits(), `deck lifted the player into High Gorge at ${position.toArray()}`);
+  assert.ok(
+    held().every((s) => before.includes(s)),
+    `deck lifted the player into High Gorge at ${position.toArray()}`,
+  );
 });

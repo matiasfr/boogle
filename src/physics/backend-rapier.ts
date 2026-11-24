@@ -108,6 +108,8 @@ export function ready() {
 }
 
 const groups = (b: MBody) => (((b.group & 0xffff) << 16) | (b.mask & 0xffff)) >>> 0;
+/** A query's interaction groups: it is in every group and meets those of `mask`. */
+const queryGroups = (mask: number) => ((0xffff << 16) | (mask & 0xffff)) >>> 0;
 function colliderDesc(s: Shape): RAPIER.ColliderDesc | null {
   const r = R!;
   if (s.kind === 'sphere') return r.ColliderDesc.ball(s.r);
@@ -590,7 +592,7 @@ export function sweepSphere(from: V3, to: V3, r: number, o: { mask: number; thin
   sweep.by.x = dx;
   sweep.by.y = dy;
   sweep.by.z = dz;
-  const filter = ((0xffff << 16) | (o.mask & 0xffff)) >>> 0;
+  const filter = queryGroups(o.mask);
   const flags =
     R.QueryFilterFlags.EXCLUDE_SENSORS | R.QueryFilterFlags.EXCLUDE_DYNAMIC | R.QueryFilterFlags.EXCLUDE_KINEMATIC;
   const only = o.thin === 'only' ? isThinCollider : notThinCollider;
@@ -634,7 +636,7 @@ export function raycastClosest(from: V3, to: V3, o: { mask?: number; skipBackfac
     len = Math.hypot(dx, dy, dz);
   if (len === 0) return false;
   const ray = new R.Ray(from, { x: dx / len, y: dy / len, z: dz / len });
-  const filter = ((0xffff << 16) | ((o.mask ?? -1) & 0xffff)) >>> 0;
+  const filter = queryGroups(o.mask ?? -1);
   const h = world.castRayAndGetNormal(ray, len, true, R.QueryFilterFlags.EXCLUDE_SENSORS, filter);
   if (!h) return false;
   const t = h.timeOfImpact;
@@ -647,4 +649,172 @@ export function raycastClosest(from: V3, to: V3, o: { mask?: number; skipBackfac
   hit.hitNormalWorld.y = h.normal.y;
   hit.hitNormalWorld.z = h.normal.z;
   return true;
+}
+
+// A body of two spheres as one capsule against shapes (./engine.ts, capsuleOverlaps): one shape not built yet, or every
+// built static and kinematic body, read from this backend's own list (so a body added this frame counts before the next
+// step), through the same test, so the two never disagree. A shape's Rapier copy is made once and kept while the shape
+// is (its geometry is read once; its pose is read on every call): a trimesh's is costly, and a waiting set is asked
+// every frame.
+type Q = { x: number; y: number; z: number; w: number };
+type Copy = { raw: RawShape; kind: Shape['kind']; centred: V3 | null; centre: V3; reach: number };
+const copies = new WeakMap<Shape, Copy | null>();
+const rotate = (q: Q, v: V3, out: V3) => {
+  // v + 2w(q×v) + 2q×(q×v)
+  const tx = 2 * (q.y * v.z - q.z * v.y),
+    ty = 2 * (q.z * v.x - q.x * v.z),
+    tz = 2 * (q.x * v.y - q.y * v.x);
+  out.x = v.x + q.w * tx + (q.y * tz - q.z * ty);
+  out.y = v.y + q.w * ty + (q.z * tx - q.x * tz);
+  out.z = v.z + q.w * tz + (q.x * ty - q.y * tx);
+  return out;
+};
+function copyOf(s: Shape): Copy | null {
+  let c = copies.get(s);
+  if (c !== undefined) return c;
+  // A trimesh's copy is oriented (outward faces), so a point inside a closed one, or under an open land's top, is in
+  // it: the built colliders' FIX_INTERNAL_EDGES does not include ORIENTED in Rapier 0.21.
+  const d = s.kind === 'trimesh' ? null : colliderDesc(s);
+  const raw =
+    s.kind === 'trimesh'
+      ? new R!.TriMesh(
+          Float32Array.from(s.vertices),
+          Uint32Array.from(s.indices),
+          R!.TriMeshFlags.ORIENTED | R!.TriMeshFlags.MERGE_DUPLICATE_VERTICES,
+        ).intoRaw()
+      : d?.shape.intoRaw();
+  if (!raw) {
+    copies.set(s, null);
+    return null;
+  }
+  // Where it stands on its body: a heightfield is centred by its description (colliderDesc), every other shape at
+  // its own offset. Its bounding sphere, in its own frame, skips the far ones cheaply.
+  const centred = s.kind === 'heightfield' ? { ...d!.translation } : null;
+  let centre: V3 = { ...ZERO },
+    reach: number;
+  if (s.kind === 'box') reach = Math.hypot(s.hx, s.hy, s.hz);
+  else if (s.kind === 'sphere') reach = s.r;
+  else if (s.kind === 'cylinder') reach = Math.hypot(Math.max(s.rTop, s.rBottom), s.h / 2);
+  else {
+    const lo = [Infinity, Infinity, Infinity],
+      hi = [-Infinity, -Infinity, -Infinity];
+    const add = (x: number, y: number, z: number) => {
+      [x, y, z].forEach((v, k) => {
+        lo[k] = Math.min(lo[k]!, v);
+        hi[k] = Math.max(hi[k]!, v);
+      });
+    };
+    if (s.kind === 'trimesh')
+      for (let k = 0; k < s.vertices.length; k += 3) add(s.vertices[k]!, s.vertices[k + 1]!, s.vertices[k + 2]!);
+    else {
+      const nx = s.heights.length - 1,
+        nz = s.heights[0]!.length - 1;
+      for (const row of s.heights) for (const h of row) add(0, h, 0);
+      add(-(nx * s.cell) / 2, lo[1]!, -(nz * s.cell) / 2);
+      add((nx * s.cell) / 2, hi[1]!, (nz * s.cell) / 2);
+    }
+    centre = { x: (lo[0]! + hi[0]!) / 2, y: (lo[1]! + hi[1]!) / 2, z: (lo[2]! + hi[2]!) / 2 };
+    reach = Math.hypot(hi[0]! - lo[0]!, hi[1]! - lo[1]!, hi[2]! - lo[2]!) / 2;
+  }
+  c = { raw, kind: s.kind, centred, centre, reach };
+  copies.set(s, c);
+  return c;
+}
+let capsule: { r: number; up: number; raw: RawShape } | undefined;
+/** Kept raw inputs (a waiting set is asked every frame): the capsule's centre, no turn, a point, up, the shape's pose. */
+let scratch: { at: RawVector; none: RawRotation; point: RawVector; up: RawVector; pos: RawVector } | undefined;
+const shapeAt = { x: 0, y: 0, z: 0 },
+  shapeTurn = new Quat(),
+  near = { x: 0, y: 0, z: 0 };
+/** Whether the capsule (bottom sphere's centre `at`, top `up` over it) overlaps `shape` (its copy `c`) where it stands
+ * now on a body at `bodyAt` turned `bodyTurn` (an unbuilt shape: no body, the identity). */
+function overlapsCopy(shape: Shape, c: Copy, at: V3, r: number, up: number, bodyAt: V3, bodyTurn: Q) {
+  const s = scratch!;
+  rotate(bodyTurn, c.centred ?? shape.offset ?? ZERO, shapeAt);
+  shapeAt.x += bodyAt.x;
+  shapeAt.y += bodyAt.y;
+  shapeAt.z += bodyAt.z;
+  multiplyRotation(bodyTurn as RAPIER.Rotation, (shape.rotation ?? IDENTITY) as RAPIER.Rotation, shapeTurn);
+  rotate(shapeTurn, c.centre, near);
+  const dx = shapeAt.x + near.x - at.x,
+    dy = shapeAt.y + near.y - (at.y + up / 2),
+    dz = shapeAt.z + near.z - at.z;
+  // Too far to touch it. A heightfield's ground runs on under it, so only across does that count.
+  if ((c.kind === 'heightfield' ? Math.hypot(dx, dz) : Math.hypot(dx, dy, dz)) > c.reach + r + up / 2) return false;
+  s.pos.x = shapeAt.x;
+  s.pos.y = shapeAt.y;
+  s.pos.z = shapeAt.z;
+  const turn = R!.RotationOps.intoRaw(shapeTurn); // a raw rotation's parts are read-only
+  try {
+    return hits(c, at, up, turn);
+  } finally {
+    turn.free();
+  }
+}
+function hits(c: Copy, at: V3, up: number, turn: RawRotation) {
+  const s = scratch!;
+  if (c.kind === 'heightfield') return heightfieldHits(c, turn);
+  if (capsule!.raw.intersectsShape(s.at, s.none, c.raw, s.pos, turn)) return true;
+  // Wholly inside: a sphere's centre in it. A trimesh holds a point only with a face over it too (in a closed prism, or
+  // under an open land's top within its footprint; never beside an open mesh's edge).
+  for (const lift of [0, up]) {
+    s.point.x = at.x;
+    s.point.y = at.y + lift;
+    s.point.z = at.z;
+    if (
+      c.raw.containsPoint(s.pos, turn, s.point) &&
+      (c.kind !== 'trimesh' || c.raw.castRay(s.pos, turn, s.point, s.up, 1e4, false) >= 0)
+    )
+      return true;
+  }
+  return false;
+}
+/** A heightfield's contact parts: distance, two points, two normals. Within RESTING of its surface is resting on it. */
+const contactParts = new Float32Array(16),
+  RESTING = 0.01;
+export function capsuleOverlaps(at: V3, r: number, up: number, against: Shape | { of: object }) {
+  // Before Rapier is in nothing can be measured: everything holds, so nothing switches on round a player.
+  if (!R || !world) return true;
+  if (capsule?.r !== r || capsule.up !== up) capsule = { r, up, raw: new R.Capsule(up / 2, r).intoRaw() };
+  scratch ??= {
+    at: R.VectorOps.intoRaw(ZERO),
+    none: R.RotationOps.intoRaw(IDENTITY),
+    point: R.VectorOps.intoRaw(ZERO),
+    up: R.VectorOps.intoRaw({ x: 0, y: 1, z: 0 }),
+    pos: R.VectorOps.intoRaw(ZERO),
+  };
+  scratch.at.x = at.x;
+  scratch.at.y = at.y + up / 2;
+  scratch.at.z = at.z;
+  if ('kind' in against) {
+    const c = copyOf(against);
+    return !!c && overlapsCopy(against, c, at, r, up, ZERO, IDENTITY);
+  }
+  // What is built that this body meets: static and kinematic bodies that respond (sensors and free movers don't hold),
+  // paired both ways as the solver pairs them (a cave roof is nothing to a body on the surface), never the body itself
+  // (a guest's kinematic one). A body not in the world is taken as the default group meeting everything.
+  const own = m(against.of as Body),
+    known = bodies.has(own),
+    group = known ? own.group : 1,
+    mask = known ? own.mask : -1;
+  for (const b of bodies) {
+    if (b === own || b.kind === 'dynamic' || !b.response || !(b.group & mask & 0xffff) || !(group & b.mask & 0xffff))
+      continue;
+    for (const shape of b.shapes) {
+      const c = copyOf(shape);
+      if (c && overlapsCopy(shape, c, at, r, up, b.position, b.quaternion)) return true;
+    }
+  }
+  return false;
+}
+/** Rapier's intersection test never reports a heightfield, so its contact query does (a signed distance): a body
+ * more than RESTING into the surface overlaps it, and one resting on it does not. Only contact: a body wholly under a
+ * heightfield is not a place a lift starts from (the solver already holds the body where it stands). */
+function heightfieldHits(c: Copy, turn: RawRotation) {
+  const s = scratch!;
+  const k = capsule!.raw.contactShape(s.at, s.none, c.raw, s.pos, turn, 0);
+  if (!k) return false;
+  k.getComponents(contactParts);
+  k.free();
+  return contactParts[0]! < -RESTING;
 }

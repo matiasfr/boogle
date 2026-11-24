@@ -41,7 +41,7 @@ that writes the plan carries it out, so it can change the plan when a step turns
    of its top and the whole body fits there (headroom), otherwise leave every solid holding them off and undrawn, as one
    set, until they are clear. Never push sideways, never move a player to a spot with no ground, never switch a solid
    off on contact. An area that mounts far from players is an ordinary static: placing a returning or teleported player
-   is `src/place/pose.ts`'s job. Use the shared helper when one exists (`npm run map -- src/place`). This one class cost
+   is `src/place/pose.ts`'s job. Use the shared helper: `liftOrWait` from `src/prefab/instantiate.ts` (`src/place/clearance.ts`). This one class cost
    three branches 2 to 5 review rounds each on 24 November (rule 67 in docs/agents/orchestrator-state.md).
 10. **Owed proofs are yours.** A rebase, bot run, still or tick mark your branch still owes comes back to this same
    thread; you have the context a fresh agent would lack.

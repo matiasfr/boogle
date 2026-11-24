@@ -73,19 +73,13 @@ import {
 } from '../railway/row-path.ts';
 import { islandGround, ringIslandNear } from '../ring-island/state.ts';
 import { GATE_AT, GORGE_DECK, PICK_AT, TOWN_PAD, gorgeAt } from './massing.ts';
-import { bellMassing, bellPads } from './massing-bell.ts';
-import { westMassing } from './massing-west.ts';
-import { canopyGround, canopyMassing } from './massing-canopy.ts';
-import { gorgePlacements } from '../../prefab/instantiate.ts';
-/** The greybox levels' solids (High Gorge's, leg 2's and leg 3's), built once on a lay's first lift: what a lifted
- * body must also have room in. */
-let around: readonly Shape[] | null = null;
-const scenery = () =>
-  (around ??= placedShapes([...gorgePlacements, ...bellMassing(), ...canopyMassing(), ...westMassing()]));
+import { bellPads } from './massing-bell.ts';
+import { canopyGround } from './massing-canopy.ts';
+import { liftOrWait } from '../../prefab/instantiate.ts';
+import type { Clearing } from '../../place/clearance.ts';
 import { AREA_CENTRES, LEG2_TEXT } from './leg2-layout.ts';
 import { areaLabels } from './state.ts';
 import type { GreyBox } from './boxes.ts';
-import { boxShape, heldTop, liftOrWait, placedShapes } from './clear.ts';
 
 // Placeholder labels (the step 4 design review's answers b, e, i, k and l; none is The Boogler's).
 const FEED = 'Feed the frame',
@@ -166,6 +160,22 @@ const rowGeo = (ln: number): Geo => ({
 });
 
 const metres = (p: { x: number; y: number; z: number }) => ({ x: p.x / 100, y: p.y / 100, z: p.z / 100 });
+const boxTurn = new THREE.Quaternion(),
+  boxEuler = new THREE.Euler(0, 0, 0, 'YXZ');
+/** A greybox box's turn (yaw, then pitch about its x), as its collider is built. */
+const boxQuat = (b: GreyBox) => boxTurn.setFromEuler(boxEuler.set(-(b.pitch ?? 0), b.yaw, 0)).clone();
+/** A greybox box as a physics shape, placed in the world. */
+function boxShape(b: GreyBox): Shape {
+  const q = boxQuat(b);
+  return {
+    kind: 'box',
+    hx: b.w / 2,
+    hy: b.h / 2,
+    hz: b.d / 2,
+    offset: { x: b.x, y: b.y, z: b.z },
+    rotation: { x: q.x, y: q.y, z: q.z, w: q.w },
+  };
+}
 /** A deck slab's box, as place/land.ts slab builds its collider: 0.4 m thick, its top from (a, ya) to (b, yb). */
 function slabBox(
   a: { x: number; z: number },
@@ -396,10 +406,6 @@ const HOME_BOARD_S = BAY_CUT_END - 19.5;
 
 export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
   const [{ addStatic, slab }, ground] = await Promise.all([import('../../place/land.ts'), islandGround()]);
-  /** Whether your body (its two spheres) stands in box `b` (./clear.ts), measured in the box's own frame, pitch and
-   * all (a sea ramp's slip is pitched about 28°), as its collider is built (stand): a standing piece's collider waits
-   * until you are out of it. A deck's slabs lift you onto them or wait too (solidDeck). */
-  const inBox = (b: GreyBox) => !!me.body && heldTop(boxShape(b)) !== null;
   const deck = createBoxBatch(owner, 4800, false),
     things = createBoxBatch(owner, 700, false);
   // Named, so a look can count what the leg's views add to a frame (dev/look/evals/stack-draws.ts).
@@ -441,8 +447,6 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     gatePlate = sign(3, 1, 2.3, 'none', 384),
     townBoard = sign(3.2, 1.3, 1.2, 'two', 512),
     homeBoard = sign(5.2, 1.4, 0.9, 'two', 768);
-  const euler = new THREE.Euler(0, 0, 0, 'YXZ'),
-    quat = new THREE.Quaternion();
 
   // ---------------------------------------------------------------- one leg's deck, pieces and signs
   function legView(sp: LegSpec) {
@@ -521,7 +525,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       for (const x of down) crossover(x);
       for (let s0 = sp.from; s0 < end - 1e-6; s0 += SEG) {
         const s1 = Math.min(end, s0 + SEG);
-        if (slabsWaiting.some((x) => s0 < x.s1 - 1e-6 && s1 > x.s0 + 1e-6)) continue;
+        if (lay?.waiting.some((x) => s0 < x.s1 - 1e-6 && s1 > x.s0 + 1e-6)) continue;
         along(s0, s1, mid, mid, 0, sp.width, 0.5, GREY);
         for (const t of tracks) track(s0, s1, t, t, cuts);
         // A bent every 20 m where the deck stands clear of the ground: two posts to the sea bed and a cap.
@@ -558,7 +562,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
      * merges 10 m lengths that run straight and level into one slab. */
     function solidDeck(laid: number) {
       for (const b of deckBodies.splice(0)) owner.removeBody(b);
-      slabsWaiting = [];
+      lay = null;
       const slabs: Slab[] = [];
       const end = END[laid]!,
         a = { x: 0, z: 0 },
@@ -582,47 +586,28 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
             s1 = next;
           }
         geo.world(s1, mid, b);
+        // Copies: a and b are rewritten for the next slab.
         const y0 = geo.y(s0),
-          y1 = geo.y(s1);
+          y1 = geo.y(s1),
+          from = { ...a },
+          to = { ...b };
         slabs.push({
           s0,
           s1,
-          a: { ...a },
-          b: { ...b },
-          y0,
-          y1,
-          shape: boxShape(slabBox(a, b, y0, y1, sp.width, 0.05)),
+          shapes: [boxShape(slabBox(a, b, y0, y1, sp.width, 0.05))],
+          on: () => deckBodies.push(slab(from.x, from.z, to.x, to.z, y0, y1, sp.width, owner, 0.05)),
         });
         s0 = s1;
       }
       // A body where the slabs go (on the bed under them, or on Bell Rock's rock under leg 3's descent) is lifted onto
       // them if its feet are within a step of their top and it fits standing there; else the slabs that hold it wait,
-      // as one set, neither solid nor drawn (drawDeck), until it is clear of them all (./clear.ts).
-      slabsWaiting = layOrHold(slabs);
+      // as one set, neither solid nor drawn (drawDeck), until it is clear of them all (src/place/clearance.ts).
+      lay = liftOrWait(slabs, me.body, { lift: true });
     }
-    type Slab = {
-      s0: number;
-      s1: number;
-      a: { x: number; z: number };
-      b: { x: number; z: number };
-      y0: number;
-      y1: number;
-      shape: Shape;
-    };
-    /** The slabs held off while you stand in them, retried each frame (solid), and not drawn meanwhile (drawDeck). */
-    let slabsWaiting: readonly Slab[] = [];
-    /** Makes `slabs` solid, but those that hold your body when it cannot be lifted onto them; returns those. */
-    function layOrHold(slabs: readonly Slab[], retry = false) {
-      const { kind, held } = liftOrWait(
-          slabs.map((x) => x.shape),
-          scenery(),
-        ),
-        // At the lay the slabs that hold you are the set; retried, that set stays whole while any of it still does.
-        keep = kind !== 'wait' ? [] : retry ? slabs : slabs.filter((_x, i) => held.includes(i));
-      for (const x of slabs)
-        if (!keep.includes(x)) deckBodies.push(slab(x.a.x, x.a.z, x.b.x, x.b.z, x.y0, x.y1, sp.width, owner, 0.05));
-      return keep;
-    }
+    type Slab = { s0: number; s1: number; shapes: Shape[]; on(): void };
+    /** The lay's slabs held off while you stand in them, retried each frame (solid), and not drawn meanwhile
+     * (drawDeck). */
+    let lay: Clearing<Slab> | null = null;
     /** The boxes that stand for a state of the line: buffers at its end (and a row's start), and each stopping head's
      * platform and ramp. */
     function pieces(laid: number, through: boolean): GreyBox[] {
@@ -694,38 +679,35 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       }
       return out;
     }
-    /** The standing pieces whose colliders wait for you to step out of them (inBox). */
-    let waiting: GreyBox[] = [];
+    /** The standing pieces whose colliders wait, undrawn, as one set, until you are out of them all (measured in each
+     * box's own frame, pitch and all: a sea ramp's slip is pitched about 28°). They wait only: nobody is lifted onto a
+     * buffer or a platform (src/place/clearance.ts). */
+    let standClear: Clearing<{ box: GreyBox; shapes: Shape[]; on(): void }> | null = null;
     function stand(laid: number, through: boolean) {
       const key = 2 * laid + Number(through);
-      if (key !== stood) {
-        stood = key;
-        for (const b of standing.bodies.splice(0)) owner.removeBody(b);
-        standing.boxes = pieces(laid, through);
-        waiting = [...standing.boxes];
-      }
-      if (!waiting.length) return;
-      waiting = waiting.filter((b) => {
-        if (inBox(b)) return true;
-        standing.bodies.push(
-          addStatic(
-            { kind: 'box', hx: b.w / 2, hy: b.h / 2, hz: b.d / 2 },
-            { x: b.x, y: b.y, z: b.z },
-            quat.setFromEuler(euler.set(-(b.pitch ?? 0), b.yaw, 0)).clone(),
-            undefined,
-            owner,
-          ),
-        );
-        return false;
-      });
+      if (key === stood) return void standClear?.retry(me.body);
+      stood = key;
+      for (const b of standing.bodies.splice(0)) owner.removeBody(b);
+      standing.boxes = pieces(laid, through);
+      standClear = liftOrWait(
+        standing.boxes.map((b) => ({
+          box: b,
+          shapes: [boxShape(b)],
+          on: () =>
+            standing.bodies.push(
+              addStatic({ kind: 'box', hx: b.w / 2, hy: b.h / 2, hz: b.d / 2 }, b, boxQuat(b), undefined, owner),
+            ),
+        })),
+        me.body,
+        { lift: false },
+      );
     }
     /** Takes the deck's slabs and the standing pieces' colliders away (and forgets what was drawn), until next shown. */
     function clear() {
       for (const b of deckBodies.splice(0)) owner.removeBody(b);
       for (const b of standing.bodies.splice(0)) owner.removeBody(b);
-      slabsWaiting = [];
+      lay = standClear = null;
       standing.boxes = [];
-      waiting = [];
       deckLaid = stood = deckEnd = -1;
     }
     /** A train of this leg's line held at the block signal at `s` metres (standing at no halt, within 80 m of it). */
@@ -762,11 +744,11 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         drawDeck(end, laid);
       },
       /** The slabs that wait, as a key: the deck batch is redrawn when it changes. */
-      held: () => slabsWaiting.map((x) => x.s0).join('/'),
+      held: () => (lay?.waiting ?? []).map((x) => x.s0).join('/'),
       /** The slabs and standing pieces for `laid` (once each change). */
       solid(laid: number, through: boolean) {
         if (laid !== deckLaid) solidDeck((deckLaid = laid));
-        else if (slabsWaiting.length) slabsWaiting = layOrHold(slabsWaiting, true);
+        else lay?.retry(me.body);
         stand(laid, through);
       },
       /** Into `things`: the standing pieces, the end board, the passed block signals and a row's departure boards. */
@@ -785,8 +767,10 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
           geo.world(d.at, sp.plat.lat + 1.5, q);
           show(d.board, q, geo.y(d.at) + sp.plat.up, P.uz, -P.ux, stopLines);
         }
+        const held = standClear?.waiting ?? [];
         for (const b of standing.boxes)
-          things.box(b.x, b.y, b.z, b.w, b.h, b.d, b.colour ?? GREY, b.yaw, -(b.pitch ?? 0));
+          if (!held.some((x) => x.box === b))
+            things.box(b.x, b.y, b.z, b.w, b.h, b.d, b.colour ?? GREY, b.yaw, -(b.pitch ?? 0));
         const laid = r.laid;
         // The end board, 1.5 m behind the buffers' faces, facing back down the line: the stack's blank until the
         // rivet, then the line's name; it travels with the head and is gone at the destination (answer i). A row's
@@ -840,7 +824,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         deckEnd,
         deckSolids: deckBodies.length,
         standing: standing.boxes.length,
-        waiting: waiting.length,
+        waiting: standClear?.waiting.length ?? 0,
         endBoard: endBoard.mesh.visible ? endBoard.text : null,
         signals: signalPlates.filter((s) => s.mesh.visible).length,
       }),

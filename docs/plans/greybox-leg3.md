@@ -672,7 +672,7 @@ table before garage step 4's screen is built (finding 3), not before its rules.
       device.
 
       **Three review rounds (Astra, 24 November: on 87d7edf12, 033182dbb and b5e0f7f49), and where they ended.**
-      *A laid deck's slab is lift or wait* (`route-greybox/clear.ts`, the orchestrator's calls): a lay is new geometry
+      *A laid deck's slab is lift or wait* (the orchestrator's calls; since 24 November the shared `src/place/clearance.ts`, through `liftOrWait` on the prefab door, with the engine's real Rapier overlap query for the scenery's headroom in place of the old `placedShapes` stand-in; its standing pieces wait as one set too, and are not drawn while they wait): a lay is new geometry
       where people already stand (on Bell Rock's rock under leg 3's descent, on an unlaid bed), so before a slab goes
       solid a body in it is lifted onto its top if the feet are within 0.3 m of it and the whole body fits standing there
       (nothing of the slabs or of the greybox levels' scenery holds it: no head into Bell Rock's ramp); otherwise every
