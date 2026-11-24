@@ -330,7 +330,10 @@ type RejoinFault =
   // The same sweep's logs side and its other checkpoints (fix round 2):
   | 'missing log load'
   | 'logs held at pickup'
-  | 'stale seed train mirror';
+  | 'stale seed train mirror'
+  | 'unmarked train has phantom logs on B while A is away'
+  | 'kit switches trains on the final round trip'
+  | 'seed account on B omits its rail count';
 
 async function replayLegRejoin(fault?: RejoinFault) {
   const pages = new Set<string>();
@@ -359,7 +362,8 @@ async function replayLegRejoin(fault?: RejoinFault) {
     return picked && fault !== 'rack' ? 20 - pickup : 20;
   }
   const train = (_world: unknown, slot: number) => {
-    const legKit = slot === (tick === 0 ? 10 : 9);
+    const switched = fault === 'kit switches trains on the final round trip' && restoredAt >= 0 && tick > restoredAt;
+    const legKit = slot === (tick === 0 || switched ? 10 : 9);
     return { legKit, logs: legKit ? kitUnits : 0, rails: legKit ? kitUnits : 0 };
   };
   const back = () => ({ rails: picked ? pickup : 0, legRails: picked ? pickup : 0 });
@@ -388,7 +392,7 @@ async function replayLegRejoin(fault?: RejoinFault) {
       '../../src/sim/railway-rows.ts': { train, account: back, rail: rack },
       './harness.ts': {
         waitFor: async (fn: () => Promise<boolean>) => ((await fn()) ? 0 : -1),
-        ev: (_page: unknown, fn: (arg: unknown) => unknown, arg: unknown) => {
+        ev: (page: { name: string }, fn: (arg: unknown) => unknown, arg: unknown) => {
           // Both tabs can still agree on the pre-pickup packet before leaving.
           const staleBack =
             (fault === 'mirror' && restoredAt < 0) ||
@@ -403,6 +407,17 @@ async function replayLegRejoin(fault?: RejoinFault) {
             trains.find((t) => t.legKit)!.rails = 0;
           }
           if (fault === 'stale seed train mirror' && tick === 0) trains.find((t) => t.legKit)!.logs = 0;
+          if (
+            fault === 'unmarked train has phantom logs on B while A is away' &&
+            page.name === 'L1' &&
+            !pages.has('L0')
+          ) {
+            trains.find((t) => !t.legKit)!.logs++;
+          }
+          const roomBack =
+            fault === 'seed account on B omits its rail count' && page.name === 'L1' && tick === 0
+              ? { legRails: observed.legRails }
+              : observed;
           const T = {
             railStand() {},
             railIntent() {
@@ -413,7 +428,7 @@ async function replayLegRejoin(fault?: RejoinFault) {
             rail: () => ({
               ready: true,
               hash: 42 + observed.rails + trains.reduce((sum, t) => sum + t.rails, 0),
-              accounts: [{ pid: 'leg0', ...observed }],
+              accounts: [{ pid: 'leg0', ...roomBack }],
             }),
           };
           return runInNewContext('(' + fn.toString() + ')(arg)', { window: { T }, arg });
@@ -459,6 +474,9 @@ for (const fault of [
   'missing log load',
   'logs held at pickup',
   'stale seed train mirror',
+  'unmarked train has phantom logs on B while A is away',
+  'kit switches trains on the final round trip',
+  'seed account on B omits its rail count',
 ] as const) {
   test('the leg rejoin proof detects ' + fault, async () => {
     await assert.rejects(replayLegRejoin(fault), /Leg rejoin proof stopped/);
