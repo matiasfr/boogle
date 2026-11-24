@@ -196,6 +196,7 @@ function placeRider(r: Remote, rt: number, interpolated: boolean, dt = 0) {
     // From the pose last drawn: the avatar's (pre-physics has already moved r.target to this frame's presence).
     setDrawOffset(ride.drawOffset, at, yaw, r.avatar?.position ?? r.target, r.avatar?.rotation.y ?? r.yaw);
     ride.blendLeft = RIDE_BLEND_S;
+    ride.boarding = false; // a boarding cut short here eases from the drawn pose too, not from world presence
   }
   ride.placed = placed;
   if (on && ride.boarding) {
