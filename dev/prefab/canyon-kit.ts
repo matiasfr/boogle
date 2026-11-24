@@ -45,8 +45,8 @@ function turn([x, y, z]: readonly number[], [yaw = 0, pitch = 0, roll = 0]: read
   return [x * Math.cos(yaw) + z * Math.sin(yaw), y, -x * Math.sin(yaw) + z * Math.cos(yaw)] as const;
 }
 /** A placed piece's box solids, each as a function from box-local (-1..1 on each axis) to Place-local (x, y, z): the
- * box's own rotation, then the placement's whole rotation and position. Plain arithmetic, so audits can run this source
- * with only its data bound. */
+ * box's own rotation and offset, then the placement's scale, whole rotation and position (three's TRS order). Plain
+ * arithmetic, so audits can run this source with only its data bound. */
 function solidBoxes(p: Placement) {
   return prefabs
     .find((q) => q.key === p.prefab)!
@@ -54,7 +54,11 @@ function solidBoxes(p: Placement) {
       if (c.shape !== 'box') throw new Error(`canyon kit: ${p.prefab} has a solid that is not a box`);
       return (u: number, v: number, w: number) => {
         const inBox = turn([c.half[0] * u, c.half[1] * v, c.half[2] * w], c.rot ?? []);
-        const placed = turn([inBox[0] + c.at[0], inBox[1] + c.at[1], inBox[2] + c.at[2]], p.rot ?? []);
+        const [sx = 1, sy = 1, sz = 1] = p.scale ?? [];
+        const placed = turn(
+          [(inBox[0] + c.at[0]) * sx, (inBox[1] + c.at[1]) * sy, (inBox[2] + c.at[2]) * sz],
+          p.rot ?? [],
+        );
         return [placed[0] + p.pos[0], placed[1] + p.pos[1], placed[2] + p.pos[2]] as const;
       };
     });
