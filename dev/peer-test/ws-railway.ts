@@ -417,6 +417,27 @@ export async function railwayChecks(c: Ctx) {
   const adapterReady = async () => (await Promise.all([AA, AB].map(adapter))).every((p) => p.session.ready);
   railCheck('browser adapters become ready on the mirror and a session', (await waitFor(adapterReady)) >= 0);
   await pose(AA, 'station');
+  const sentFit = await ev(AA.page, () => {
+    const room = window.T.room;
+    const send = room.send;
+    let fit: { line: number; part: number; revision: number } | undefined;
+    room.send = (m: { t: string; e?: { op: string; line: number; part: number; revision: number } }) => {
+      if (m.t === 'r:edit' && m.e?.op === 'rail.install') fit = m.e;
+      return send.call(room, m);
+    };
+    try {
+      window.T.railIntent({ op: 'rail.install', line: 3, part: 6, revision: 0 });
+      return fit;
+    } finally {
+      room.send = send;
+    }
+  });
+  railCheck(
+    'the browser probe forwards the bay Strong install',
+    sentFit?.line === 3 && sentFit.part === 6 && sentFit.revision === 0,
+    JSON.stringify(sentFit),
+  );
+  await waitFor(async () => (await adapter(AA)).session.pending === 0);
   railCheck('adapter sends a wake', await ev(AA.page, () => window.T.railIntent({ op: 'rail.wake' })));
   railCheck(
     'adapter wake retires and both show idle',
