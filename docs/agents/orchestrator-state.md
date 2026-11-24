@@ -13,7 +13,6 @@ The one record of who is running what, and what the eight-job limit is counted f
 | Checkpoint C: the harness for its reconnect, perf and idle-seconds proofs, then the proofs | The greybox route | claude/leg3-checkpoint-c | the heartbeat, Opus medium | 2026-11-24 19:09 | running: a delegate of the heartbeat’s thread, browser-heavy; dev tooling and the plan only, not `dev/loop/graph.ts` |
 | Garage step 4, step 3: seeds, screen, bays and trains | Garage choices | claude/garage-step4-screen | the heartbeat, Opus medium | 2026-11-24 14:33 | built 17:53 UTC; its second independent review (Astra) runs since 19:08 UTC, a delegate of the heartbeat’s thread (the first stood 68 minutes on an approval prompt, rule 69); merges onto main with no conflict |
 | One shared lift-or-wait helper for solids near players (rule 67 as code) | Terrain clean-up | claude/solid-clearance-helper | live session, Opus medium | 2026-11-24 20:20 | running: `src/place` helper + tests, migrates the canyon kit and leg 3's lay slabs; garage step 4's screen migrates after it ships |
-| Canyon kit faces flush near the alcove | Terrain clean-up | neon/canyon-faces-flush | live session, Neon medium | 2026-11-24 20:50 | running: placement generator, compiled level, plan note and stills; not `src/entities/terrain-kit/` |
 
 ## Where the work stands
 
