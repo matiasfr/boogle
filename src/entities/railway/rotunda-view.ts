@@ -17,8 +17,7 @@ import {
   rotundaPieces,
   rotundaPose,
   rotundaShows,
-  sphereInBox,
-  CONTACT,
+  boxGap2,
 } from '../../place/rotunda.ts';
 import { HEAD_OFFSET, PLAYER_R } from '../../constants.ts';
 import { me } from '../../player/state.ts';
@@ -151,6 +150,8 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
   const sets = [...new Set(pieces.filter((p) => guarded(p.piece)).map((p) => p.piece.turn))].map((turn) =>
     pieces.filter((p) => p.piece.turn === turn && guarded(p.piece)),
   );
+  /** m: a resting contact is not an overlap (src/place/site-clearance.ts's CONTACT). */
+  const resting = 0.02;
   /** Some guarded piece stands with its solid still off: settle runs each frame until none does. */
   let pending = false;
   /** Whether a set may switch on now, lifting this tab's player onto it when their feet are within a step of a top. */
@@ -168,7 +169,7 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
         const hit = (p: { x: number; y: number; z: number }) =>
           [0, HEAD_OFFSET].some((up) => {
             root.worldToLocal(point.set(p.x, p.y + up, p.z));
-            return sphereInBox(point.x, point.y, point.z, box.at, box.half);
+            return boxGap2(point.x, point.y, point.z, box.at, box.half) < (PLAYER_R - resting) ** 2;
           });
         if (bodies.some(hit)) return false;
         if (!mine || !hit(mine)) continue;
@@ -182,7 +183,7 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
     const body = me.body;
     if (body && lift > -Infinity) {
       set[0]!.instance.root.localToWorld(point.set(0, lift, 0));
-      const y = point.y + PLAYER_R + CONTACT;
+      const y = point.y + PLAYER_R + resting;
       body.position.y = y;
       body.interpolatedPosition.set(body.position.x, y, body.position.z);
       body.velocity.set(body.velocity.x, Math.max(0, body.velocity.y), body.velocity.z);

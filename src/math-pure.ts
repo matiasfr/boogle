@@ -3,6 +3,20 @@
 
 export const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+/** The squared distance from a point to an axis-aligned box (centre `at`, half sizes `half`), all in one frame: 0
+ * inside. The shared clearance's measure (src/place/site-clearance.ts, the rotunda's solids). */
+export function boxGap2(
+  x: number,
+  y: number,
+  z: number,
+  at: readonly [number, number, number],
+  half: readonly [number, number, number],
+) {
+  const dx = Math.max(0, Math.abs(x - at[0]) - half[0]),
+    dy = Math.max(0, Math.abs(y - at[1]) - half[1]),
+    dz = Math.max(0, Math.abs(z - at[2]) - half[2]);
+  return dx * dx + dy * dy + dz * dz;
+}
 export const smoothstep = (a: number, b: number, x: number) => {
   const t = clamp((x - a) / (b - a), 0, 1);
   return t * t * (3 - 2 * t);

@@ -6,7 +6,7 @@
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../render/owned-view.ts';
 import { thump } from '../render/machine-sfx.ts';
-import { CONTACT, siteExit } from './site-clearance.ts';
+import { siteExit } from './site-clearance.ts';
 import { PLAYER_R } from '../constants.ts';
 import { me } from '../player/player.ts';
 import { teleport, type Body } from '../physics/engine.ts';
@@ -173,6 +173,8 @@ function solid(site: Site, on: boolean) {
       site.poleBodies.push(...part.bodies);
     }
 }
+/** m: a resting contact is not an overlap (site-clearance.ts). */
+const CONTACT = 0.02;
 /** m: a solid whose top is no higher than this over the site's ground is a slab you step onto (a room's floor and
  * apron), so standing beside the walls on it, or on the doorstep, leaves you where you are. */
 const STEP_ON = 0.2;

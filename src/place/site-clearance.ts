@@ -1,4 +1,5 @@
 import { HEAD_OFFSET, PLAYER_R } from '../constants.ts';
+import { boxGap2 } from '../math-pure.ts';
 import type { Hull } from './building-plans.ts';
 import type { Foot, outOf as moveOutside } from './sites.ts';
 
@@ -14,10 +15,7 @@ export function sphereInBox(
   half: readonly [number, number, number],
   tolerance = CONTACT,
 ) {
-  const dx = Math.max(0, Math.abs(x - at[0]) - half[0]),
-    dy = Math.max(0, Math.abs(y - at[1]) - half[1]),
-    dz = Math.max(0, Math.abs(z - at[2]) - half[2]);
-  return dx * dx + dy * dy + dz * dz < (PLAYER_R - tolerance) ** 2;
+  return boxGap2(x, y, z, at, half) < (PLAYER_R - tolerance) ** 2;
 }
 
 export function siteExit(
