@@ -38,44 +38,84 @@ const KEEP_CLEAR: readonly [number, number][] = [
 const KEEP_AWAY = 6; // m
 type Key = (typeof prefabs)[number]['key'];
 
-/** Points through a placed piece's box solids, no more than 0.5 m apart, Place-local x and z: each box as authored
- * (its own yaw, pitch and roll, order YXZ), then the placement's yaw. Plain arithmetic, so audits can run this source
+/** Turns (x, y, z) by a record rotation [yaw, pitch, roll] in its order, YXZ: roll, then pitch, then yaw. */
+function turn([x, y, z]: readonly number[], [yaw = 0, pitch = 0, roll = 0]: readonly number[]) {
+  [x, y] = [x! * Math.cos(roll) - y! * Math.sin(roll), x! * Math.sin(roll) + y! * Math.cos(roll)];
+  [y, z] = [y * Math.cos(pitch) - z! * Math.sin(pitch), y * Math.sin(pitch) + z! * Math.cos(pitch)];
+  return [x * Math.cos(yaw) + z * Math.sin(yaw), y, -x * Math.sin(yaw) + z * Math.cos(yaw)] as const;
+}
+/** A placed piece's box solids, each as a function from box-local (-1..1 on each axis) to Place-local (x, y, z): the
+ * box's own rotation, then the placement's whole rotation and position. Plain arithmetic, so audits can run this source
  * with only its data bound. */
-function solidPoints(p: Placement) {
-  const out: { x: number; z: number }[] = [];
-  const yaw = p.rot?.[0] ?? 0;
-  for (const c of prefabs.find((q) => q.key === p.prefab)!.colliders) {
-    if (c.shape !== 'box') throw new Error(`canyon kit: ${p.prefab} has a solid that is not a box`);
-    const [cy, cx, cz] = c.rot ?? [0, 0, 0];
+function solidBoxes(p: Placement) {
+  return prefabs
+    .find((q) => q.key === p.prefab)!
+    .colliders.map((c) => {
+      if (c.shape !== 'box') throw new Error(`canyon kit: ${p.prefab} has a solid that is not a box`);
+      return (u: number, v: number, w: number) => {
+        const inBox = turn([c.half[0] * u, c.half[1] * v, c.half[2] * w], c.rot ?? []);
+        const placed = turn([inBox[0] + c.at[0], inBox[1] + c.at[1], inBox[2] + c.at[2]], p.rot ?? []);
+        return [placed[0] + p.pos[0], placed[1] + p.pos[1], placed[2] + p.pos[2]] as const;
+      };
+    });
+}
+/** How far (x, z) is, across the ground, from a box: the distance to its footprint, the outline of its eight corners
+ * seen from above (0 inside it). */
+function footprintDistance(box: ReturnType<typeof solidBoxes>[number], x: number, z: number) {
+  const corners: [number, number][] = [];
+  for (const u of [-1, 1])
+    for (const v of [-1, 1])
+      for (const w of [-1, 1]) {
+        const q = box(u, v, w);
+        corners.push([q[0], q[2]]);
+      }
+  // The outline: the convex hull of the corners (monotone chain), counter-clockwise.
+  corners.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o: number[], a: number[], b: number[]) =>
+    (a[0]! - o[0]!) * (b[1]! - o[1]!) - (a[1]! - o[1]!) * (b[0]! - o[0]!);
+  const half = (points: [number, number][]) => {
+    const out: [number, number][] = [];
+    for (const q of points) {
+      while (out.length > 1 && cross(out[out.length - 2]!, out[out.length - 1]!, q) <= 0) out.pop();
+      out.push(q);
+    }
+    return out.slice(0, -1);
+  };
+  const hull = [...half(corners), ...half([...corners].reverse())];
+  let inside = hull.length > 2,
+    near = Infinity;
+  for (let i = 0; i < hull.length; i++) {
+    const a = hull[i]!,
+      b = hull[(i + 1) % hull.length]!;
+    if (cross(a, b, [x, z]) < 0) inside = false;
+    const ex = b[0] - a[0],
+      ez = b[1] - a[1];
+    const t = Math.max(0, Math.min(1, ((x - a[0]) * ex + (z - a[1]) * ez) / (ex * ex + ez * ez || 1)));
+    near = Math.min(near, Math.hypot(x - a[0] - ex * t, z - a[1] - ez * t));
+  }
+  return inside ? 0 : near;
+}
+/** What a placed piece breaks: its solids over or within CLEAR of a tread (sampled through each box no more than 0.5 m
+ * apart, against the tread's distance field), or within KEEP_AWAY of a gated place (exactly). */
+export function kitPieceProblems(p: Placement): string[] {
+  const problems: string[] = [];
+  const boxes = solidBoxes(p);
+  let tread = Infinity;
+  for (const [n, box] of boxes.entries()) {
+    const c = prefabs.find((q) => q.key === p.prefab)!.colliders[n]!;
+    if (c.shape !== 'box') continue;
     const steps = c.half.map((h) => Math.max(1, Math.ceil((2 * h) / 0.5)));
     for (let i = 0; i <= steps[0]!; i++)
       for (let j = 0; j <= steps[1]!; j++)
         for (let k = 0; k <= steps[2]!; k++) {
-          let x = c.half[0] * (2 * (i / steps[0]!) - 1),
-            y = c.half[1] * (2 * (j / steps[1]!) - 1),
-            z = c.half[2] * (2 * (k / steps[2]!) - 1);
-          [x, y] = [x * Math.cos(cz) - y * Math.sin(cz), x * Math.sin(cz) + y * Math.cos(cz)]; // roll
-          z = y * Math.sin(cx) + z * Math.cos(cx); // pitch (only x and z are read after it)
-          [x, z] = [x * Math.cos(cy) + z * Math.sin(cy), -x * Math.sin(cy) + z * Math.cos(cy)]; // the box's yaw
-          x += c.at[0];
-          z += c.at[2];
-          out.push({
-            x: p.pos[0] + x * Math.cos(yaw) + z * Math.sin(yaw),
-            z: p.pos[2] - x * Math.sin(yaw) + z * Math.cos(yaw),
-          });
+          const q = box((2 * i) / steps[0]! - 1, (2 * j) / steps[1]! - 1, (2 * k) / steps[2]! - 1);
+          tread = Math.min(tread, pathAt(q[0], q[2]).edge);
         }
   }
-  return out;
-}
-/** What a placed piece breaks: its solids over or within CLEAR of a tread, or within KEEP_AWAY of a gated place. */
-export function kitPieceProblems(p: Placement): string[] {
-  const points = solidPoints(p);
-  const problems: string[] = [];
-  const tread = Math.min(...points.map((q) => pathAt(q.x, q.z).edge));
   if (tread < CLEAR)
     problems.push(`${p.id} (${p.prefab}) narrows the tread: its solid comes ${tread.toFixed(3)} m from the edge`);
   for (const [x, z] of KEEP_CLEAR) {
-    const near = Math.min(...points.map((q) => Math.hypot(q.x - x, q.z - z)));
+    const near = Math.min(...boxes.map((box) => footprintDistance(box, x, z)));
     if (near < KEEP_AWAY) problems.push(`${p.id} (${p.prefab}) within 6 m of (${x}, ${z}): ${near.toFixed(3)} m`);
   }
   return problems;
