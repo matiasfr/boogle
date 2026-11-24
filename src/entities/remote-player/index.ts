@@ -193,7 +193,8 @@ function placeRider(r: Remote, rt: number, interpolated: boolean, dt = 0) {
   }
   // The car parked (or came back) under a rider still on it: ease from the pose last drawn, as an attachment change does.
   if (ride.drawn && on === ride.on && ride.placed !== undefined && placed !== ride.placed) {
-    setDrawOffset(ride.drawOffset, at, yaw, r.target, r.yaw);
+    // From the pose last drawn: the avatar's (pre-physics has already moved r.target to this frame's presence).
+    setDrawOffset(ride.drawOffset, at, yaw, r.avatar?.position ?? r.target, r.avatar?.rotation.y ?? r.yaw);
     ride.blendLeft = RIDE_BLEND_S;
   }
   ride.placed = placed;

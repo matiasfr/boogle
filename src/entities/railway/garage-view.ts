@@ -1059,7 +1059,11 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       lastOpen = true;
       ghostT = 0;
     }
-    if (open && phase === 'moment') inputState.held = true;
+    if (open && phase === 'moment') {
+      inputState.held = true;
+      // A card put away mid-moment cleared the holder: the hold re-taken here is the garage's to hand back.
+      inputState.holder ??= 'garage';
+    }
     shake = Math.max(0, shake - (dt / 0.4) * 0.35);
 
     // The hold: the ring is the crank.
