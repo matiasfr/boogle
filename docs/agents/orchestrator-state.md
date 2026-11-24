@@ -13,7 +13,6 @@ The one record of who is running what, and what the five-job limit is counted fr
 | Canopy and leg 3's views (greybox leg 3 step 6) | The greybox route | claude/greybox-leg3-views | live session, Opus medium | 2026-11-24 08:20 | running |
 | Greybox leg 3 Checkpoint G proofs | The greybox route | neon/greybox-leg3-checkpoint-g | live session, Neon medium | 2026-11-24 08:20 | running |
 | Terrain mesh kit previz | Terrain clean-up | codex/terrain-mesh-kit-previz | live session, Sol medium | 2026-11-24 08:20 | running |
-| The Pier's plank step (small fix 2) | Small fixes found in the coach work | neon/pier-plank-step | live session, Neon medium | 2026-11-24 08:20 | running |
 
 ## Where the work stands
 
