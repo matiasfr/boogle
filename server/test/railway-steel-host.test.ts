@@ -14,10 +14,10 @@ import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
 import { RING_STEEL_WORKS, RING_STEEL_YARD, STEEL } from '../../src/sim/railway-ring-layout.ts';
-import { SHED_TABLE, WORKS, INSTALL_STEEL, steelPool } from '../../src/sim/railway-works-layout.ts';
+import { BRING_TICKS, SHED_TABLE, WORKS, INSTALL_STEEL, steelPool } from '../../src/sim/railway-works-layout.ts';
 import { laySection } from '../../src/sim/railway-seed-legs.ts';
 import { railwayAtSteel, type SteelStage } from '../../src/sim/railway-seed-steel.ts';
-import { buildSeedWorld, invariant, line, steel, type Seed } from '../../test/helpers/rail.ts';
+import { buildSeedWorld, invariant, line, steel, steelHome, type Seed } from '../../test/helpers/rail.ts';
 import { account, shed } from '../../src/sim/railway-rows.ts';
 import { rail } from '../../src/sim/railway-rows.ts';
 import {
@@ -27,6 +27,7 @@ import {
   RAIL_POSITION_MARGIN,
   RAIL_POSITION_MAX,
   RAIL_ROUTE_POINTS,
+  ROW_LINE,
   legFrame,
   legRack,
 } from '../../src/sim/railway-route.ts';
@@ -795,3 +796,64 @@ test("steel host (review): a leaver holding the kit's 8 logs and 12 rails foreve
   }
 });
 
+// ---------------------------------------------------------------- garage step 4 (v67)
+// The trade on the real host: rail.bring and a trade line's rail.install through r:edit, judged at the table's reach,
+// malformed ones refused without a throw, a same-tick race won once, replicated, and the state back after a restart
+// with nothing applied twice (the revision and the spend as they were).
+const BAYL = ROW_LINE.bay,
+  NSL = ROW_LINE.ns;
+const bring = (line: unknown, revision: unknown) => ({ op: 'rail.bring', line, revision });
+
+test('trade host: a bring and Strong cross r:edit, race once, replicate and survive a restart unrepeated', async () => {
+  const r = await host('trade', steelHome(buildSeedWorld('bay-mid')), { s: 'a', peer: 'b' });
+  try {
+    const mirror = r.connect('viewer');
+    assert.equal(await r.action(bring(BAYL, 0), away(SHED_TABLE)), 'rejected', 'out of reach');
+    for (const e of [bring(-1, 0), bring(RAIL_LINES.length, 0), bring('3', 0), bring(BAYL, -1), bring(BAYL, 1.5)])
+      assert.equal(await r.action(e, spot(SHED_TABLE)), 'rejected');
+    for (const e of [install(0, LINE2, 5), install(0, BAYL, 2), install(0, BAYL, 7), install(-1, BAYL, 6), install('0', BAYL, 6)])
+      assert.equal(await r.action(e, spot(SHED_TABLE)), 'rejected');
+    assert.equal(await r.action(install(0, BAYL, 6), spot(SHED_TABLE)), 'noop', "line 2's copy is on the table");
+    assert.deepEqual(
+      await r.race([
+        [bring(BAYL, 0), spot(SHED_TABLE), 's'],
+        [bring(NSL, 0), spot(SHED_TABLE), 'peer'],
+      ]),
+      ['accepted', 'noop'],
+      'one bring a revision',
+    );
+    assert.equal(await r.action(install(0, BAYL, 6), spot(SHED_TABLE)), 'noop', "the copies' swap holds the table");
+    await r.ticks(BRING_TICKS);
+    assert.deepEqual(
+      await r.race([
+        [install(0, BAYL, 6), spot(SHED_TABLE), 's'],
+        [install(0, BAYL, 5), spot(SHED_TABLE), 'peer'],
+      ]),
+      ['accepted', 'noop'],
+      'the first fit wins the race',
+    );
+    const spent = shed(r.w).spent;
+    await r.ticks(3);
+    for (const w of [r.w, mirror()!]) {
+      assert.deepEqual([line(w, BAYL).boiler, line(w, BAYL).rev], [5, 1]);
+      assert.deepEqual([shed(w).tableLine, shed(w).bringRev], [BAYL, 1]);
+      assert.equal(shed(w).spent, spent);
+    }
+    const fitted = line(r.w, BAYL).fitted,
+      brought = shed(r.w).brought;
+    await r.restart();
+    await r.ticks(3);
+    assert.deepEqual(
+      [line(r.w, BAYL).boiler, line(r.w, BAYL).rev, line(r.w, BAYL).fitted],
+      [5, 1, fitted],
+      'the fit comes back, applied once',
+    );
+    assert.deepEqual([shed(r.w).tableLine, shed(r.w).bringRev, shed(r.w).brought, shed(r.w).spent], [BAYL, 1, brought, spent]);
+    const late = r.connect('late');
+    await r.ticks(3);
+    assert.deepEqual([line(late()!, BAYL).boiler, shed(late()!).tableLine], [5, BAYL]);
+    assert.equal(shed(late()!).spent, spent);
+  } finally {
+    await r.done();
+  }
+});

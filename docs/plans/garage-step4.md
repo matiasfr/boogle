@@ -269,7 +269,7 @@ before step 3. Step 3 holds on question 1.
       leg 3 only; `ns`: nowhere yet). Keep the old arithmetic (291, 248 and 221 s) as a labelled "best case, no kit
       ahead" input. Verify: open the page, read the totals back from the DOM, one still. Row: "Fixes, tooling and
       captures-driven tasks": gemini-4-neon medium.
-- [ ] **2. The rules and the bump (M to L; review).** `src/sim/railway-route.ts`: `TRADE_LINES`, `tradeLeg`,
+- [x] **2. The rules and the bump (M to L; review).** `src/sim/railway-route.ts`: `TRADE_LINES`, `tradeLeg`,
       `TRADE_OPENS`, `tradeOpen`. `src/sim/railway-components.ts`: `Line.rev`; `Shed.tableLine` (default `LINE2`),
       `Shed.bringRev`, `Shed.brought` (−1). `src/sim/railway-works-layout.ts`: `INSTALL_STEEL` 5 and 6 at 1,
       `installPart` 5 and 6, `BRING_TICKS`; `installRevision` removed (its readers move to `Line.rev`).
@@ -297,6 +297,16 @@ before step 3. Step 3 holds on question 1.
       circuit after each swap. `server/test/railway-steel-host.test.ts`: a trade install and a bring across `r:edit`
       and a host restart (the state comes back, the moment does not replay). `npm run loop -- run`. Rows: "High-risk
       implementation": opus medium (high for tricky work), then the independent review row (gpt-6.2-astra first).
+      **As built (24 November, branch `claude/garage-step4-rules`, v67).** As written, with `TRADE_OPENS.bay = 1`
+      (the owner's answer 1). Where the build differs from the words above: `tradeOpen` lives in
+      `railway-queries-route.ts`, since it reads the world (`railway-route.ts` holds only catalog data: `TRADE_LINES`,
+      `TRADE_LEG`, `TRADE_OPENS`). The kit guard's bound is the load check's own, `kitBills(fit) × LEG_KIT_MOST` (the
+      most of one kind in any section bill, 20 today, now exported once and shared), not a per-leg bill, so the guard
+      and the cargo bound cannot drift apart. The table's hold follows the formula above, so the bigger cradle (part 4,
+      which sets no `fitted`) starts no hold, as before. `rail.bring` is last in `RAIL_ACTIONS` (the host trace's
+      sweep), and a pending op in the loop graph until step 4 gives the bot the choice. The two leg 3 hold tests fit
+      Strong by accepted ops from `bay-mid` with the works lit, and the adoption test runs on `canopy-reached`: on
+      `bay-mid` a Strong train's two bills cannot unload, so the guard rightly keeps Strong on a swap to Quick.
 - [ ] **3. Seeds, screen, bays and trains (M to L; player-visible). Holds on question 1.**
       `src/sim/railway-seed-legs.ts` (or a sibling): `trade-ready` from `bay-mid` under A (`bay-reached` under C), by
       accepted ops only: light the works and bring 12 steel home with the steel seed's own helpers, for a pool of 12.
