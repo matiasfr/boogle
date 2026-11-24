@@ -10,8 +10,8 @@ The one record of who is running what, and what the eight-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Checkpoint C: the harness for its reconnect, perf and idle-seconds proofs, then the proofs | The greybox route | claude/leg3-checkpoint-c | the heartbeat, Opus medium | 2026-11-24 19:09 | running: a delegate of the heartbeat’s thread, browser-heavy; dev tooling and the plan only, not `dev/loop/graph.ts` |
-| Garage step 4, step 4: the bot makes the choice | Garage choices | claude/garage-step4-bot | the heartbeat, Opus medium | 2026-11-24 21:10 | running: a delegate of the heartbeat’s thread, browser-heavy; `dev/look/bots/railway-legs.ts` and the `rail.bring` lines of `dev/loop/graph.ts` only; ships after Checkpoint C and rebases onto it |
+| Garage step 4’s Checkpoint: the plan’s proofs once, and the early Install offer reproduced at real speed | Garage choices | claude/garage-step4-checkpoint | the heartbeat, Opus medium | 2026-11-24 23:10 | running: the step 4 bot builder’s own thread, a delegate of the heartbeat’s thread, browser-heavy; a report, the plan’s Checkpoint note and dev tooling only, no `src/`, `server/` or `test/` |
+| Greybox leg 4’s plan: the cave line (West landing, Saltpan, Port Quay) | The greybox route | claude/greybox-leg4-plan | the heartbeat, Opus high (planner) | 2026-11-24 23:10 | running: a delegate of the heartbeat’s thread; docs only, `docs/plans/greybox-leg4.md` and its design review’s rows in `docs/agent-calls.md` |
 | One shared lift-or-wait helper for solids near players (rule 67 as code) | Terrain clean-up | claude/solid-clearance-helper | live session, Opus medium | 2026-11-24 20:20 | running: `src/place` helper + tests, migrates the canyon kit and leg 3's lay slabs; garage step 4's screen migrates after it ships |
 
 ## Where the work stands
@@ -44,7 +44,7 @@ Cleaned on 24 November: every item from 5 to 19 November is in [the log](orchest
 
 **Codex delegates still stop for approval** (24 November, a change to how work runs): a full-access Codex review asked to approve a PowerShell script (`Start-Process`, `taskkill /T /F`) and stood for 68 minutes; no session can answer an approval (`t3_pending_request` cannot). Recommended: he sets the Codex provider in T3 so a full-access child never prompts, or says the reviewers never start the preview server and the orchestrator runs the boot probe (rule 69 does the second meanwhile).
 
-**Checkpoint C’s Mac frame-time reading** (greybox leg 3): there is no Mac in the loop while its schedules are paused. Recommended: Checkpoint C closes on HOTBOX’s `perf` reading at Canopy and the Mac reading is taken when he next opens the Mac (reported, not a gate, as the plan says).
+**Checkpoint C’s Mac frame-time reading** (greybox leg 3): there is no Mac in the loop while its schedules are paused. Checkpoint C is on main (#2362) with HOTBOX’s reading at Canopy (18.1 ms a frame on its desktop GPU, not under load) and the Mac box unticked; garage step 4’s Checkpoint owes the same reading at the Roundhouse. Recommended: both Mac readings are taken when he next opens the Mac (reported, not a gate, as the plans say).
 
 **For his eye:** the waiting Rail yoke reads as a thin outline in a glass box; the halt yard's forge fingerpost is a plain stake.
 
