@@ -19,7 +19,19 @@ import { TRAIN_PHASE } from './railway-train.ts';
 import { LINE_SLOTS, endMoved } from './railway-trains.ts';
 import { reqAdd, reqDrop, reqOnly } from './railway-train.ts';
 import { railInt } from './railway.ts';
-import { Account, Aperture, Boiler, Forge, Leg, LegYard, Line, QJob, Rail, Route, Train } from './railway-components.ts';
+import {
+  Account,
+  Aperture,
+  Boiler,
+  Forge,
+  Leg,
+  LegYard,
+  Line,
+  QJob,
+  Rail,
+  Route,
+  Train,
+} from './railway-components.ts';
 import { boilerHeld, stopsOf } from './railway-queries.ts';
 import { gateLeg, legDone, legId, legKitStop, legOpen, legRow, routeId, routeRow } from './railway-queries-route.ts';
 import { trainMoveIO } from './railway-sys-trains.ts';
@@ -66,7 +78,7 @@ function lay(w: World, k: number, tick: number) {
     from = legKitStop(w, k); // the rack's halt before this section: the line's end
   // The bay's destination crossover is behind its outward platform. A held Strong train
   // there can continue straight on when track opens beyond it. Read its hold before the lay.
-  const held = LINE_SLOTS[leg.line]!.find(slot => {
+  const held = LINE_SLOTS[leg.line]!.find((slot) => {
     const r = w.get(Train, w.lookup(Train, slot)!)!;
     return r.phase === TRAIN_PHASE.STAND && r.at === from && legRailheadHold(w, slot, tick) === 'hold';
   });

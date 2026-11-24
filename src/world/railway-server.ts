@@ -399,16 +399,11 @@ export function install(
     { server: true },
   );
   sync.onTick((tick) => {
-    railTick(
-      world,
-      tick,
-      rules.railTune.get('railTrainHeadPct'),
-      {
-        farePct: rules.railTune.get('railFarePct'),
-        riderPct: rules.railTune.get('railRiderPct'),
-        pricePct: rules.railTune.get('railPricePct'),
-      },
-    );
+    railTick(world, tick, rules.railTune.get('railTrainHeadPct'), {
+      farePct: rules.railTune.get('railFarePct'),
+      riderPct: rules.railTune.get('railRiderPct'),
+      pricePct: rules.railTune.get('railPricePct'),
+    });
     commit();
   }, 'railway');
   const touchAll = () => {

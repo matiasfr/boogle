@@ -62,7 +62,18 @@ import {
   yoke,
 } from './railway-sys-line2.ts';
 import { call, trainTick } from './railway-sys-trains.ts';
-import { breaker, bring, cradle, footRelease, footSet, footTake, kiln, strike, turn, worksTick } from './railway-sys-works.ts';
+import {
+  breaker,
+  bring,
+  cradle,
+  footRelease,
+  footSet,
+  footTake,
+  kiln,
+  strike,
+  turn,
+  worksTick,
+} from './railway-sys-works.ts';
 import { legKitRelease } from './railway-sys-route-kit.ts';
 import { resume, supply } from './railway-sys-away.ts';
 import { brace, ringFootSet, ringFootTake, ringStopTick, ringStrike } from './railway-sys-ring.ts';
@@ -177,12 +188,7 @@ export const RAIL_TICK: readonly System<never, unknown>[] = [
 const TICK = createSchedule(RAIL_TICK);
 /** The rule tick; `headPct` is the room's railTrainHeadPct (the trains' headway hold), `trade` its railFarePct and
  * railRiderPct (slice 5 R3). */
-export function railTick(
-  w: World,
-  tick: number,
-  headPct = TRAIN_HEAD_PCT,
-  trade: TradePct = TRADE_PCT,
-) {
+export function railTick(w: World, tick: number, headPct = TRAIN_HEAD_PCT, trade: TradePct = TRADE_PCT) {
   TICK.run(w, 'tick', {
     tick,
     headPct,
