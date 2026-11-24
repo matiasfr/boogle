@@ -134,6 +134,28 @@ registerBuilder('roundhouse.bay', (params, batch) => {
     case 'steel-block':
       box(0, 0, 0, 0.56, 0.4, 0.56, '#e8742c');
       break;
+    case 'copy-plate': {
+      // Garage step 4: the line's colour on a plate, on a post just inside the open door, left of the copy.
+      const colour = (typeof params.colour === 'string' ? params.colour : '#ffffff') as Hex;
+      box(-2.0, 0.8, 15.4, 0.12, 1.6, 0.12, STEEL);
+      box(-2.0, 1.75, 15.36, 0.9, 0.6, 0.06, colour);
+      box(-2.0, 1.75, 15.4, 1.0, 0.7, 0.04, '#2a1c10');
+      break;
+    }
+    case 'copy-flatbed': {
+      // Garage step 4: the Strong boiler's kit flatbed behind the copy (a train's flatbed: deck 0.7 m over the rails).
+      const z = 22.1,
+        rail = 0.24;
+      box(0, rail + 0.6, z, 2.2, 0.2, 3.2, '#8a6d4a');
+      for (const x of [-1.1, 1.1]) box(x, rail + 0.6, z, 0.06, 0.16, 3.1, '#4a3a2a');
+      for (const x of [-0.8, 0.8])
+        for (const dz of [-1.1, 1.1])
+          add(
+            new THREE.CylinderGeometry(0.22, 0.22, 0.14, 12).rotateZ(Math.PI / 2).translate(x, rail + 0.22, z + dz),
+            '#343b39',
+          );
+      break;
+    }
     case 'waiting-engine': {
       // The existing engine's silhouette under canvas, facing the table. Only the underframe, drivers and buffers
       // are exposed: no hidden detailed locomotive is rendered beneath the opaque cloth.

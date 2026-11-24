@@ -6597,6 +6597,57 @@
         }
       }
     },
+    "roundhouse.copy-flatbed": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            0.59,
+            22.1
+          ],
+          "half": [
+            1.1,
+            0.35,
+            1.6
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "roundhouse.copy-flatbed",
+      "scope": "owner",
+      "visual": {
+        "batch": "rotunda-copy-flatbeds",
+        "builder": "roundhouse.bay",
+        "params": {
+          "part": "copy-flatbed"
+        }
+      }
+    },
+    "roundhouse.copy-plate": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            1.85,
+            17.9
+          ],
+          "half": [
+            1.2,
+            1.45,
+            2.2
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "roundhouse.copy-plate",
+      "scope": "owner",
+      "visual": {
+        "builder": "roundhouse.bay",
+        "params": {
+          "part": "copy-plate"
+        }
+      }
+    },
     "roundhouse.end-wall": {
       "colliders": [
         {

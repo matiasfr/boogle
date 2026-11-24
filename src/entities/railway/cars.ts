@@ -16,11 +16,13 @@ export const RIDER_CAR: CarSpec = { hx: 0.8, hz: 1.45, top: 2.05 };
 /** A railway train's cars, engine first, and each car's centre from the train's along in metres: the engine (A with
  * its walk-in cab, ./engine.ts) 0.6 m ahead of the first flatbed's end (a longer engine reaches further forward), then
  * cars every 3.7 m. Line 1 runs the first three; line 2 adds the footing wagon, which couples at the village (WAGON_S). */
-export type CarRole = 'engine' | 'player' | 'rider' | 'kit' | 'wagon' | 'steel';
+export type CarRole = 'engine' | 'player' | 'rider' | 'kit' | 'wagon' | 'steel' | 'cargo';
 export type Consist = readonly { role: CarRole; spec: CarSpec; offset: number }[];
 export const STEEL_CAR: CarSpec = { ...TRAILER };
+/** Garage step 4's kit flatbed: the Strong boiler's extra car, a flatbed behind the kit car (role `cargo`). */
+export const KIT_FLATBED: CarSpec = { ...TRAILER };
 /** Local layout only; passenger routes include the coach outside the boiler's cargo allowance. */
-function makeConsist(rider: boolean, wagon: boolean, steel: boolean): Consist {
+function makeConsist(rider: boolean, wagon: boolean, steel: boolean, strong: boolean): Consist {
   const cars: { role: CarRole; spec: CarSpec; offset: number }[] = [
     { role: 'engine', spec: ENGINE, offset: TRAILER.hz + 0.6 + ENGINE.hz },
     { role: 'player', spec: TRAILER, offset: 0 },
@@ -28,6 +30,7 @@ function makeConsist(rider: boolean, wagon: boolean, steel: boolean): Consist {
   for (const [role, spec] of [
     ...(rider ? [['rider', RIDER_CAR] as const] : []),
     ['kit', TRAILER],
+    ...(strong ? [['cargo', KIT_FLATBED] as const] : []),
     ...(wagon ? [['wagon', WAGON_CAR] as const] : []),
     ...(steel ? [['steel', STEEL_CAR] as const] : []),
   ] as const) {
@@ -39,12 +42,24 @@ function makeConsist(rider: boolean, wagon: boolean, steel: boolean): Consist {
 }
 // Build all layouts once, never in a frame path. A works copy explicitly requests no passenger route.
 const layouts = [false, true].map((rider) =>
-  [false, true].map((wagon) => [false, true].map((steel) => makeConsist(rider, wagon, steel))),
+  [false, true].map((wagon) =>
+    [false, true].map((steel) => [false, true].map((strong) => makeConsist(rider, wagon, steel, strong))),
+  ),
 );
-export const consistOf = ({ line, wagon, steel }: { line: number; wagon: boolean; steel: boolean }): Consist =>
-  layouts[Number(lineRoute(line) >= 0)]![Number(wagon)]![Number(steel)]!;
+/** `strong`: a trade line's train wears the Strong boiler (garage step 4), so its kit flatbed rides behind the kit car. */
+export const consistOf = ({
+  line,
+  wagon,
+  steel,
+  strong = false,
+}: {
+  line: number;
+  wagon: boolean;
+  steel: boolean;
+  strong?: boolean;
+}): Consist => layouts[Number(lineRoute(line) >= 0)]![Number(wagon)]![Number(steel)]![Number(strong)]!;
 const bounds = new Map(
-  layouts.flat(2).map(
+  layouts.flat(3).map(
     (consist) =>
       [
         consist,

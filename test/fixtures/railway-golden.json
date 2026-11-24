@@ -331,6 +331,21 @@
    "tick": 23222,
    "stage": 1443534861,
    "after": 2968051329
+  },
+  "trade-ready": {
+   "tick": 23006,
+   "stage": 609421006,
+   "after": 1847133950
+  },
+  "trade-fitted": {
+   "tick": 24013,
+   "stage": 2900325658,
+   "after": 1084396442
+  },
+  "trade-held": {
+   "tick": 25213,
+   "stage": 230703301,
+   "after": 113729781
   }
  }
 }

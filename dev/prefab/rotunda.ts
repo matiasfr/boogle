@@ -3,7 +3,7 @@
 // stands, in bays from the site's `mid` (`turn`); the owning view stands it from the same site row
 // (src/place/rotunda.ts `rotundaPose`) and shows it by stage (`rotundaShows`), so no derived number is stored.
 import { ROTUNDA_HOME } from '../../src/place/home-station.ts';
-import { bayOccupants, rotundaPieces, type RotundaPart, type RotundaSite } from '../../src/place/rotunda.ts';
+import { COPY_BAYS, bayOccupants, rotundaPieces, type RotundaPart, type RotundaSite } from '../../src/place/rotunda.ts';
 import type { LevelDef, Placement, PrefabKey } from '../../src/prefab/types.ts';
 
 const SITES: readonly RotundaSite[] = [ROTUNDA_HOME];
@@ -49,7 +49,7 @@ export function rotundaContent(): { levels: LevelDef[] } {
         pos: [0, 0, 0],
         params: { turn: 0 },
       });
-      for (const bay of bayOccupants(site, { serving: 1 })) {
+      for (const bay of bayOccupants(site, { serving: 1 }).waiting) {
         for (const [part, prefab] of [
           ['waiting', 'roundhouse.waiting-engine'],
           ['open', 'roundhouse.bay-open-doors'],
@@ -61,6 +61,23 @@ export function rotundaContent(): { levels: LevelDef[] } {
             params: { turn: bay },
           });
       }
+      // Garage step 4: each line's works copy in its bay (the engine is the view's, wearing the line's row): the plate
+      // in the line's colour and the engine's solid, and the Strong flatbed behind it.
+      if (site.id === 'home')
+        for (const { bay, colour } of COPY_BAYS) {
+          placements.push({
+            id: `rotunda-${site.id}.copy-${bay}`,
+            prefab: 'roundhouse.copy-plate',
+            pos: [0, 0, 0],
+            params: { turn: bay, colour },
+          });
+          placements.push({
+            id: `rotunda-${site.id}.flatbed-${bay}`,
+            prefab: 'roundhouse.copy-flatbed',
+            pos: [0, 0, 0],
+            params: { turn: bay },
+          });
+        }
       return { place: `rotunda-${site.id}`, placements };
     }),
   };

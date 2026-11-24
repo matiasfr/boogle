@@ -599,3 +599,32 @@ chips, the copies, and the held train with kit on its flatbed.
 ### Owner questions
 
 The plan's [open questions](#open-questions) 1 to 3. Question 1 holds step 3; 2 and 3 proceed on their recommendations.
+
+## Design review (2026-11-24, step 3 build)
+
+The builder's own review of the calls step 3 made beyond this plan, in the same sitting (owner call "Fold roles into
+the builder"). **Read:** this plan from the top, the owner's [24 November answers](../decisions-rewards.md#d-2026-11-24-garage-step4-strong-window),
+DESIGN.md 6, 7 and 11, the code each call changes. **Seen:** the stills listed in step 3's as-built note. The plan's
+own calls (both reviews above) are not repeated.
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | The bay plates' colours: line 2 brass, the north–south line blue, the bay line teal, on a post just inside each open door | Default | No line colours exist in the game; brass matches the Roundhouse's own trim |
+| 2 | The chips by pad and keys: Up from the first category steps onto the chip row, Left and Right step the chips, Interact brings, Down returns; a click or tap brings at once | Default | Plan call 15 asks for no new action, slot or key: this reuses the screen's own navigation |
+| 3 | A bay copy is the real engine (the table copy's parts), Quick with the longer barrel and chimney, Strong with its flatbed behind; no canvas | Default | "Each copy wearing its row" (plan, "The bays"); the canvas hides exactly what the row changes |
+| 4 | The copies' swap on a bring: the table's copy changes under the existing arrival puff and toot; the bay copies appear and leave at once, with no roll between table and bay | Default | Greybox: the plan asks only for "at most 6 s"; a rolled swap is a polish pass |
+| 5 | On a Strong train the flatbed carries the kit that rides on (up to one section's bill) and the kit car what is past it, the bill the next railhead takes; the crates hop off the kit car first, then the flatbed | Default | Changes "past one section's bill" (plan, "What the player sees at the depot"): a train held at the railhead carries exactly one bill, so that rule left the flatbed bare at the hold (finding 3) |
+| 6 | Strong's install moment lifts the standard barrel from the stand, as Quick lifts the longer one | Default | The plan's moment is line 2's; Strong has no barrel of its own |
+| 7 | The post's knob turns orange only for a Ready part on any line, not for a free Swap | Default | Plan call 16 says "any line's Ready part"; a swap is a choice, not something waiting to be spent |
+| 8 | Tooling jump rows `trade-ready`, `trade-fitted`, `trade-held` (placeholder labels, no landing, not in the menu) | Default | Step 3's file list; landings wait for a still that checks one, as leg 2's did |
+
+**Counts:** 0 Decided, 8 Default, 0 New. All eight are logged in [agent-calls](../agent-calls.md).
+
+**Findings.** (1) *(no change)* A swap's flatbed leaving under a rider is covered by the plan (the rider is set on the
+platform); a flatbed arriving under someone standing at the tail sets them on its deck, as line 2's steel car already
+does. (2) *(no change)* A Strong train with two bills shows both cars loaded, and one held at a railhead a loaded
+flatbed behind an empty kit car. (3) *(changed call 5 and the flatbed's rule)* The plan drew the flatbed's crates
+from the kit "past one section's bill". A held train has unloaded its first bill and carries exactly one, so its
+flatbed would be bare at the very moment it is meant to be the cue (seen on the `trade-held` seed: 20 logs and 20
+rails aboard, no crates). The flatbed now carries up to one bill and the kit car the rest. **Owner questions:** none; the strings and colours go
+on the placeholder list.
