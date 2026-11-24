@@ -216,11 +216,11 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
     // Outward arrivals now stand east. Reach the west-side frame by the south foot crossing, never over live rails.
     if (k === 0 && nearerEast()) await crossIsland(true);
     check(await bot.walk(frame.x / 100, frame.z / 100, 3), `walked to section ${k + 1}'s frame`);
-    await checkpoint(`section ${k + 1} frame reached`);
+    await checkpoint(`section ${ORDINAL[k]} frame reached`);
 
     // 2. Feed the frame the section's bill from the rack; 3. the lay clock runs out and the section is laid.
     await feedSection(STACK, k, `section ${k + 1}`);
-    await checkpoint(`section ${k + 1} laid`);
+    await checkpoint(`section ${ORDINAL[k]} laid`);
 
     // 4. On to the new railhead (or the leg's last halt): the first stop is the leg's `railheadHalt` + laid - 1.
     const stop = L.railheadHalt + laid() - 1;
@@ -358,7 +358,8 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
       let since: number | undefined,
         held = false;
       try {
-        while (performance.now() < end) {
+        // A hold begun before the deadline may finish after it; a first touch at or past it never counts.
+        while (performance.now() < end || since !== undefined) {
           if (aboard()) {
             input.keys.delete('KeyW');
             since ??= performance.now();
@@ -493,7 +494,7 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
       const r = trains(rw())[slot]!;
       return r.phase === 0 ? r.at === canopyEnd : r.to === canopyEnd;
     });
-  await bot.until(() => !atOrBound(), 600000);
+  check(await bot.until(() => !atOrBound(), 600000), "Canopy's platform cleared before the homeward walk");
   await rowRide(canopy.line, canopyEnd, 0, 'bay line');
   await stepOff(westLanding, 'stepped off at the West landing');
   await checkpoint('canopy home');
