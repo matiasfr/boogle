@@ -607,14 +607,15 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       shape: Shape;
     };
     /** The slabs held off while you stand in them, retried each frame (solid), and not drawn meanwhile (drawDeck). */
-    let slabsWaiting: Slab[] = [];
+    let slabsWaiting: readonly Slab[] = [];
     /** Makes `slabs` solid, but those that hold your body when it cannot be lifted onto them; returns those. */
-    function layOrHold(slabs: readonly Slab[]) {
+    function layOrHold(slabs: readonly Slab[], retry = false) {
       const { kind, held } = liftOrWait(
           slabs.map((x) => x.shape),
           scenery(),
         ),
-        keep = kind === 'wait' ? slabs.filter((_x, i) => held.includes(i)) : [];
+        // At the lay the slabs that hold you are the set; retried, that set stays whole while any of it still does.
+        keep = kind !== 'wait' ? [] : retry ? slabs : slabs.filter((_x, i) => held.includes(i));
       for (const x of slabs)
         if (!keep.includes(x)) deckBodies.push(slab(x.a.x, x.a.z, x.b.x, x.b.z, x.y0, x.y1, sp.width, owner, 0.05));
       return keep;
@@ -762,7 +763,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       /** The slabs and standing pieces for `laid` (once each change). */
       solid(laid: number, through: boolean) {
         if (laid !== deckLaid) solidDeck((deckLaid = laid));
-        else if (slabsWaiting.length) slabsWaiting = layOrHold(slabsWaiting);
+        else if (slabsWaiting.length) slabsWaiting = layOrHold(slabsWaiting, true);
         stand(laid, through);
       },
       /** Into `things`: the standing pieces, the end board, the passed block signals and a row's departure boards. */
