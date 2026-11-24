@@ -17,6 +17,138 @@ const { me: player } = await import('../src/player/state.ts');
 const { steerPlayer, shapeJump, groundPlayer, softWall } = await import('../src/entities/player/state.ts');
 import { carry, carryStep, CARRY, registerPlatform, type Platform } from '../src/physics/platforms.ts';
 import type { Body } from '../src/physics/engine.ts';
+import { sourceFunction } from '../dev/level/source.ts';
+import { Vector3 } from 'three';
+import { lerp, angleLerp } from '../src/math.ts';
+
+async function checkCopyClearance(remoteInside: boolean) {
+  const THREE = await import('three/webgpu');
+  const { definitions } = await import('../src/prefab/catalogue.ts');
+  const geometry = await import('../src/place/rotunda.ts');
+  const { ENGINE_WHEELS } = await import('../src/entities/railway/engine.ts');
+  const { HEAD_OFFSET } = await import('../src/constants.ts');
+  const { default: level } = await import('../content/built/levels/rotunda-home.json', { with: { type: 'json' } });
+  const { ROTUNDA_HOME } = await import('../src/place/home-station.ts');
+  const { rotundaPose, COPY_BAYS } = await import('../src/place/rotunda.ts');
+  const { ORIGIN } = await import('../src/place/layout.ts');
+  const remotes = new Map();
+  const enabled = new Map<string, boolean>();
+  const createRotundaView = sourceFunction<typeof import('../src/entities/railway/rotunda-view.ts').createRotundaView>(
+    'src/entities/railway/rotunda-view.ts',
+    'createRotundaView',
+    {
+      ...geometry,
+      ROTUNDA_HOME,
+      ORIGIN,
+      ENGINE_WHEELS,
+      THREE,
+      HEAD_OFFSET,
+      PLAYER_R,
+      STEP_UP: 0.35,
+      me: player,
+      level,
+      loadLevelArtifact: () => level,
+      remotes,
+      definitions: Object.fromEntries(
+        Object.entries(definitions).map(([key, def]) => [key, { colliders: def.colliders, visual: {} }]),
+      ),
+      instantiate: (_key: string, p: { id: string; pos: [number, number, number]; rot: number[] }) => {
+        const root = new THREE.Group();
+        root.position.set(...p.pos);
+        root.rotation.y = p.rot[0]!;
+        return {
+          root,
+          setEnabled(on: boolean) {
+            enabled.set(p.id, on);
+          },
+        };
+      },
+    },
+  );
+  await physics.physicsReady;
+  const owner = createOwnedView();
+  const previous = player.body;
+  try {
+    const view = createRotundaView(owner);
+    const copy = COPY_BAYS[1]!;
+    view.show(3, 6);
+    const pose = rotundaPose(ROTUNDA_HOME, copy.bay);
+    const copies = [{ line: copy.line, long: false, flatbed: false }];
+    if (remoteInside) {
+      const position = new Vector3(
+        pose.x + ORIGIN.x + Math.sin(pose.yaw) * geometry.COPY_AT.engine,
+        pose.y + PLAYER_R,
+        pose.z + Math.cos(pose.yaw) * geometry.COPY_AT.engine,
+      );
+      const body = makePlayerBody(true);
+      owner.addBody(body);
+      physics.teleport(body, position.x, position.y, position.z);
+      remotes.set('peer', { entered: true, body, avatar: { position } });
+      player.body = makePlayerBody(false);
+      owner.addBody(player.body);
+      physics.teleport(player.body, position.x + 20, position.y, position.z);
+      view.copies(copies);
+      assert.equal(enabled.get(`rotunda-home.copy-${copy.bay}`), false, 'copy solid must wait for the visiting player');
+      return;
+    }
+    view.copies(copies);
+    const x = pose.x + ORIGIN.x + Math.sin(pose.yaw) * 14.2;
+    const z = pose.z + Math.cos(pose.yaw) * 14.2;
+    const rider = makePlayerBody(false);
+    owner.addBody(rider);
+    physics.teleport(rider, x, pose.y + PLAYER_R, z);
+    player.body = rider;
+    view.copies([]);
+    const moved = Math.hypot(rider.position.x - x, rider.position.z - z);
+    assert.ok(moved < 0.001, `closing door displaced player ${moved} m sideways`);
+  } finally {
+    player.body = previous;
+    owner.dispose();
+  }
+}
+test('bringing a copy does not move a player standing in its open bay doorway', () => checkCopyClearance(false));
+test('a bay copy waits for a remote player inside its engine', () => checkCopyClearance(true));
+
+test('a remote rider stays above ground when its Strong flatbed is parked before the next presence packet', () => {
+  const platform = deck('railway:train9-steel', 0, 0, 1, 2);
+  platform.body.position.y = platform.body.interpolatedPosition.y = -60;
+  const sample = { l: [0, 1, 0], r: 0 };
+  const remote = {
+    target: new Vector3(0, 10, 0),
+    yaw: 0,
+    ride: {
+      id: platform.id,
+      snaps: { sample: () => ({ a: sample, b: sample, u: 1 }) },
+      l: {},
+      world: new Vector3(0, 10, 0),
+      worldYaw: 0,
+      on: true,
+      drawn: true,
+      leaving: false,
+      boarding: false,
+      blendLeft: 0,
+      drawOffset: { x: 0, y: 0, z: 0, yaw: 0 },
+      bodyW: 0,
+      lastSeen: 1000,
+    },
+  };
+  const place = sourceFunction<(peer: typeof remote, time: number, draw: boolean, dt: number) => boolean>(
+    'src/entities/remote-player/index.ts',
+    'placeRider',
+    {
+      platformById: () => platform,
+      lerp,
+      angleLerp,
+      fromPlatform,
+      rideAt: {},
+      INTERP_MS: 100,
+      RIDE_BLEND_S: 0.2,
+      RIDE_MAX_AGE_MS: 1000,
+    },
+  );
+  place(remote, 1000, true, 1 / 60);
+  assert.ok(remote.target.y >= 0, `avatar rendered at y=${remote.target.y}`);
+});
 
 const v3 = (x = 0, y = 0, z = 0) => ({ x, y, z });
 const body = (x: number, y: number, z: number) =>

@@ -14,9 +14,50 @@ import { garageRow, mastFrom, polarAt } from '../src/entities/railway/garage-geo
 import { MOMENT } from '../src/entities/railway/garage-data.ts';
 import { ENGINE_BOILER } from '../src/entities/railway/engine.ts';
 import { WAGON_S } from '../src/sim/railway-works-layout.ts';
-import { sourceFunction } from '../dev/level/source.ts';
+import { sourceFunction, sourceModule } from '../dev/level/source.ts';
+import { readFileSync } from 'node:fs';
+
+test('the garage does not acquire modal input while another activity holds it', () => {
+  const source = readFileSync('src/entities/railway/garage-view.ts', 'utf8');
+  const methods = source.slice(source.indexOf('  const api = {'), source.indexOf('  garage.api = api;'));
+  let requests = 0;
+  const api = sourceModule<{ api: { open(): void } }>(
+    methods,
+    {
+      open: false,
+      shown: true,
+      facts: { boilerFitted: true, tableBusy: false },
+      inputState: { held: true },
+      close() {},
+      openModal() {
+        requests++;
+        return false;
+      },
+    },
+    ['api'],
+  ).api;
+  api.open();
+  assert.equal(requests, 0, 'the existing input owner must retain control');
+});
 
 const deck = railY(LINES.east, 0);
+test('selecting an already paid Swap does not put a spare boiler on the stand', () => {
+  const source = readFileSync('src/entities/railway/garage-view.ts', 'utf8');
+  const offered = source.slice(source.indexOf('  const offered ='), source.indexOf('  const activePart ='));
+  const visible = source.match(/partGroup\.visible = shown && [^;]+;/)![0];
+  const partGroup = { visible: false };
+  sourceModule(`${offered}\n${visible}`, {
+    open: true,
+    shown: true,
+    sel: 'quick',
+    partGroup,
+    INSTALL_PART: { quick: 5, strong: 6 },
+    isInstall: () => true,
+    readyPart: () => false,
+    swapPart: (id: string) => id === 'quick',
+  });
+  assert.equal(partGroup.visible, false, 'only a first fit waits on the stand');
+});
 const ground = (p: { x: number; z: number }) => H(p.x + ORIGIN.x, p.z);
 
 /** The rail height the yard's track is drawn at under a world point (./home-station-view.ts and the lines): the deck
