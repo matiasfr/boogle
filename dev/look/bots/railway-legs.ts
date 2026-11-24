@@ -1,10 +1,10 @@
 // The greybox route's built legs through ordinary inputs (docs/plans/greybox-route.md and greybox-leg2.md, step 5;
 // greybox-leg3.md, step 7), driven by RAIL_LEGS. Leg 1, the stack line: ride line 2 to the leg's first frame, then for
 // each section take the kit off the rack, feed the frame, wait out the lay, ride on to the new railhead and step off
-// onto its platform, until High Gorge is reached on foot. Leg 2: take the powered pick at the stair's head, open the incline's barrier, build the
-// incline the same way riding `ns` trains to each head and on to Bell Rock's lower deck, take the crystal seeds, ride
-// home the long way (`ns` to High Gorge, line 2 to the Village), walk to the West landing and build the bay cut, riding
-// `bay` trains to Bell Rock's upper platform. Leg 3: open the Canopy barrier on frame 1 there, build the three sections
+// onto its platform, until High Gorge is reached on foot. Leg 2: take the powered pick at the stair's head, open the
+// incline's barrier, build the incline the same way riding `ns` trains to each head and on to Bell Rock's lower deck,
+// take the crystal seeds, ride home the long way (`ns` to High Gorge, line 2 to the Village), walk to the West landing
+// and build the bay cut, riding `bay` trains to Bell Rock's upper platform. Leg 3: open the Canopy barrier on frame 1 there, build the three sections
 // riding `bay` trains over the strait to each head and on to Canopy Town, take the glider cloth round the buffers and
 // ride home on the same line to the West landing. Prompts are pressed by id (`railway-leg-take-logs`, `-take-rails`,
 // `-feed`, `-pick`, `-gate`, `-seeds`, `-canopy`, `-cloth`). Each phase reads the rows first, so it resumes from
@@ -333,8 +333,19 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
       const train = () => view().trains.find((t) => t.slot === slot)!;
       const aboard = () => train().cars.some((car) => car.riding);
       const end = performance.now() + 20000;
+      // Aboard once the car carries the rider for 0.8 s with the stick let go: a jump's first touch of the car reads
+      // `riding` for a frame and can bounce off it (Bell Rock's curved platform, greybox leg 3's first run).
+      let since = -1;
       try {
-        while (!aboard() && performance.now() < end) {
+        while (performance.now() < end) {
+          if (aboard()) {
+            input.keys.delete('KeyW');
+            if (since < 0) since = performance.now();
+            if (performance.now() - since >= 800) break;
+            await bot.wait(80);
+            continue;
+          }
+          since = -1;
           const cars = train().cars,
             car = cars[1] ?? cars[0]!;
           face(car.x, car.z);
