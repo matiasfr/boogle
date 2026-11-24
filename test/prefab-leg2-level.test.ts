@@ -34,8 +34,8 @@ import * as junctions from '../src/place/junctions.ts';
 import { KIT } from '../src/place/turnout.ts';
 import * as gorgeLayout from '../src/entities/route-greybox/massing.ts';
 import { AREA_CENTRES, LEG2_TEXT } from '../src/entities/route-greybox/leg2-layout.ts';
-import { isleGround } from '../src/content/levels/leg3.ts';
-import { siteExit } from '../src/place/site-clearance.ts';
+import { CANOPY_CENTRES, isleGround, landPoints } from '../src/content/levels/leg3.ts';
+import type { Shape } from '../src/physics/engine.ts';
 import { resident } from '../src/render/lod-level.ts';
 import { HEAD_OFFSET, PLAYER_R } from '../src/constants.ts';
 import canopy from '../content/built/levels/canopy.json' with { type: 'json' };
@@ -209,22 +209,36 @@ test('review (greybox leg 2 step 4): no standable surface under a leg 2 deck lea
   assert.equal(bad.length, 0, `${bad.length} spots, first: ${bad.slice(0, 3).join('; ')}`);
 });
 
-// Greybox leg 3, step 6's review (Astra, on 87d7edf12): the leg view's lays and the route areas' mounts clear a body
-// standing where a solid goes on (route-greybox/clear.ts), Canopy's residency covers its whole isle and counts every
-// solid, and a row line's departure boards list only halts where a train stops. Each runs the view's own source.
+// Greybox leg 3, step 6's two reviews (Astra, on 87d7edf12 and 033182dbb): a solid that switches on with a body in
+// it lifts the body onto its top or waits, the set of them, until the body is clear; never a push sideways
+// (route-greybox/clear.ts, the orchestrator's call of 24 November). Canopy's residency covers every solid of it and
+// counts them all, and a row line's departure boards list only halts where a train stops. Each runs the view's own
+// source.
 const clearFor = (position: THREE.Vector3) =>
   sourceModule<typeof import('../src/entities/route-greybox/clear.ts')>(
     fs.readFileSync('src/entities/route-greybox/clear.ts', 'utf8'),
-    {
-      THREE,
-      HEAD_OFFSET,
-      PLAYER_R,
-      me: { body: { position } },
-      siteExit,
-      outOf: sourceFunction('src/place/sites.ts', 'outOf', {}),
-      compiled: artifact,
-    },
+    { THREE, HEAD_OFFSET, PLAYER_R, me: { body: { position } } },
   );
+/** A resolved collider as the physics shape its prefab's instance makes (a box from its axes, a trimesh as is). */
+function shapeOf(c: ReturnType<typeof ground>[number]): Shape {
+  const v = c.volume;
+  if (c.definition.shape === 'box') {
+    const [x, y, z] = v.edges,
+      q = new THREE.Quaternion().setFromRotationMatrix(
+        new THREE.Matrix4().makeBasis(x!.clone().normalize(), y!.clone().normalize(), z!.clone().normalize()),
+      );
+    return {
+      kind: 'box',
+      hx: x!.length(),
+      hy: y!.length(),
+      hz: z!.length(),
+      offset: { x: v.centre.x, y: v.centre.y, z: v.centre.z },
+      rotation: { x: q.x, y: q.y, z: q.z, w: q.w },
+    };
+  }
+  const vertices = v.triangles.flatMap((t) => [t.a, t.b, t.c].flatMap((p) => [p.x, p.y, p.z]));
+  return { kind: 'trimesh', vertices, indices: vertices.map((_v, i) => i).slice(0, vertices.length / 3) };
+}
 const ground = (value: unknown) =>
   placed.resolvePlacedColliders(
     validation.loadLevelArtifact(value, artifact.prefabs as unknown as Readonly<Record<string, PrefabDef>>),
@@ -232,8 +246,8 @@ const ground = (value: unknown) =>
   ).colliders;
 
 // Run the view's actual draw and solid transitions, recording the sign and physics boundaries.
-async function reachedView() {
-  const p = row.rowWorld(route.ROW_LINE.bay, 1300, 0, { x: 0, z: 0 });
+async function reachedView(s = 1300, lat = 0, canopyLaid = 3) {
+  const p = row.rowWorld(route.ROW_LINE.bay, s, lat, { x: 0, z: 0 });
   const floor = placed.heightAt(
     ground(bellRaw).flatMap((c) => c.volume.triangles),
     p,
@@ -255,7 +269,8 @@ async function reachedView() {
   const source = fs
     .readFileSync('src/entities/route-greybox/leg-view.ts', 'utf8')
     .replace(/await Promise\.all\(\s*\[[\s\S]*?\],?\s*\)/, 'dependencies');
-  const { createLegView } = sourceModule<{ createLegView: (adapter: unknown, owner: unknown) => Promise<unknown> }>(
+  type View = { update(): void };
+  const { createLegView } = sourceModule<{ createLegView: (adapter: unknown, owner: unknown) => Promise<View> }>(
     source,
     {
       THREE,
@@ -280,6 +295,8 @@ async function reachedView() {
           route.RAIL_LEGS.map((l) => l.sections.length),
         ),
       canopyGround: isleGround,
+      legKitFlight: { logs: 0, rails: 0 },
+      legYardFlight: { logs: 0, rails: 0 },
       bellPads: [],
       areaLabels: new Map(),
       ringIslandNear: { mounted: false },
@@ -303,9 +320,26 @@ async function reachedView() {
   );
   const seed = buildSeedWorld('awake');
   for (const [i, leg] of route.RAIL_LEGS.entries())
-    if (lines.legBuilt(i)) seed.w.mut(Leg, progress.legId(seed.w, i))!.laid = leg.sections.length;
-  await createLegView({ read: { whole: () => true, world: () => seed.w, tick: () => seed.t } }, { removeBody() {} });
-  return { signs, overlaps, floor };
+    if (lines.legBuilt(i))
+      seed.w.mut(Leg, progress.legId(seed.w, i))!.laid = leg.id === 'bell-canopy' ? canopyLaid : leg.sections.length;
+  const firstLay = canopyLaid === 1;
+  const leg = seed.w.mut(
+    Leg,
+    progress.legId(
+      seed.w,
+      route.RAIL_LEGS.findIndex((l) => l.id === 'bell-canopy'),
+    ),
+  )!;
+  if (firstLay) leg.laid = 0;
+  const view = await createLegView(
+    { read: { whole: () => true, world: () => seed.w, tick: () => seed.t } },
+    { removeBody() {} },
+  );
+  if (firstLay) {
+    leg.laid = 1;
+    view.update();
+  }
+  return { signs, overlaps, floor, position };
 }
 
 test('the Canopy lay leaves a player standing on Bell Rock clear of the new deck', async () => {
@@ -321,29 +355,46 @@ test('the completed bay line only advertises halts where a train can stop', asyn
   assert.ok(!destinations.some(([, text]) => text.includes(closed.name)), `advertises closed ${closed.name}`);
 });
 
+test('the first Canopy lay leaves a player on supported ground at the Bell Rock rim', async () => {
+  const { position, floor } = await reachedView(1340, -2.25, 1);
+  assert.equal(floor, 14);
+  const groundAfter = placed.heightAt(
+    ground(bellRaw).flatMap((c) => c.volume.triangles),
+    position,
+  );
+  // At this point the new track is descending over the rock. Standing on the slab is also a safe exit.
+  const onDeck =
+    position.y > floor + PLAYER_R && Math.abs(position.y - (row.rowY(route.ROW_LINE.bay, 1340) + PLAYER_R)) < 0.1;
+  assert.ok(groundAfter !== null || onDeck, `lay ejected the player over water at ${position.toArray()}`);
+});
+
 // Drive a cold residency update with camera and player together, as on arrival from the sea.
 async function mountAt(position: THREE.Vector3) {
   let update: (() => void) | undefined;
   let describe: (() => Record<string, { solids: number }>) | undefined;
   const pending: Promise<void>[] = [];
-  const enabled: string[] = [];
-  const overlaps: string[] = [];
-  const colliders = ground(canopy);
+  const on = new Set<string>(),
+    shapes = new Map<string, Shape[]>();
+  const colliders = ground(canopy),
+    clear = clearFor(position);
   const instantiate = (_key: string, placement: { id: string }) => {
-    const solids = colliders.filter((c) => c.placement.id === placement.id);
+    const mine = colliders.filter((c) => c.placement.id === placement.id);
+    shapes.set(placement.id, mine.map(shapeOf));
     return {
-      bodies: solids,
-      setEnabled(on: boolean) {
-        if (!on) return;
-        enabled.push(placement.id);
-        if (
-          solids.some(
-            (c) =>
-              placed.heightAt(c.volume.triangles, position) !== null && c.volume.centre.distanceTo(position) < PLAYER_R,
-          )
-        )
-          overlaps.push(placement.id);
+      bodies: mine,
+      solids: shapes.get(placement.id)!,
+      setEnabled(enable: boolean) {
+        if (enable) on.add(placement.id);
+        else on.delete(placement.id);
       },
+    };
+  };
+  /** The instances on now, and those of them that hold the body (none may, after any update). */
+  const state = () => {
+    const enabled = [...on];
+    return {
+      enabled,
+      overlaps: enabled.filter((id) => shapes.get(id)!.some((x) => clear.heldTop(x, position) !== null)),
     };
   };
   const helpers = sourceModule<typeof import('../src/entities/route-greybox/leg2-draw.ts')>(
@@ -382,14 +433,14 @@ async function mountAt(position: THREE.Vector3) {
       return entity;
     },
     createOwnedView: () => ({ root: new THREE.Group(), cleanup() {} }),
-    ...clearFor(position),
+    liftOrWait: clear.liftOrWait,
     MOUNT_NEAR: 400,
     FREE_MORE: 150,
     canopyNear: sourceFunction<typeof import('../src/entities/route-greybox/leg2-layout.ts').coverNear>(
       'src/entities/route-greybox/leg2-layout.ts',
       'coverNear',
       { MOUNT_NEAR: 400, ARRIVAL: 40 },
-    )(helpers.leg2Massing(canopy), AREA_CENTRES.canopy),
+    )(helpers.leg2Placements(canopy), artifact.prefabs, AREA_CENTRES.canopy),
     canopyMassing: () => helpers.leg2Massing(canopy),
     canopyExtras: (owner: Parameters<typeof helpers.leg2Extras>[0]) => helpers.leg2Extras(owner, canopy),
     bellExtras() {},
@@ -405,7 +456,8 @@ async function mountAt(position: THREE.Vector3) {
   update();
   await Promise.all(pending);
   assert.ok(describe);
-  return { enabled, overlaps, report: describe().canopy };
+  const tick = update;
+  return { ...state(), report: describe().canopy, state, update: () => tick() };
 }
 
 test('a swimmer arriving at the western beach finds its collider at the shoreline', async () => {
@@ -416,14 +468,67 @@ test('a swimmer arriving at the western beach finds its collider at the shorelin
   assert.ok((await mountAt(p)).enabled.includes(beach.placement.id));
 });
 
-test('a Canopy remount clears a player inside the platform before enabling its box', async () => {
+test('a Canopy mount leaves a player inside the platform where they are, the platform off until they are out', async () => {
   const platform = ground(canopy).find((c) => c.placement.id === 'canopy.platform-out')!;
-  const { overlaps } = await mountAt(platform.volume.centre.clone());
-  assert.deepEqual(overlaps, []);
+  const p = platform.volume.centre.clone(),
+    was = p.clone();
+  const m = await mountAt(p);
+  assert.deepEqual(m.overlaps, []);
+  assert.ok(!m.enabled.includes(platform.placement.id));
+  assert.deepEqual(p.toArray(), was.toArray(), 'moved');
+  p.y = 40; // out of it (over it)
+  m.update();
+  assert.ok(m.state().enabled.includes(platform.placement.id));
 });
 
 test('the Canopy residency report counts every mounted collider', async () => {
   const p = AREA_CENTRES.canopy;
   const { report } = await mountAt(new THREE.Vector3(p.x, 200, p.z));
   assert.equal(report?.solids, ground(canopy).length);
+});
+
+test('cold mount holds both end decks off for a body straddling them, never pushing it between them', async () => {
+  const p = new THREE.Vector3(-1098, 12 + PLAYER_R, -291.5),
+    was = p.clone();
+  assert.equal(isleGround(p.x, p.z), 12);
+  const m = await mountAt(p);
+  assert.deepEqual(m.overlaps, []);
+  for (const id of ['canopy.deck', 'canopy.deck-end']) assert.ok(!m.enabled.includes(id), id);
+  assert.deepEqual(p.toArray(), was.toArray(), 'moved');
+  for (let k = 0; k < 30; k++) m.update(); // nothing ping-pongs while it stands there
+  assert.deepEqual(p.toArray(), was.toArray(), 'moved while held');
+  p.set(-1098, 12 + PLAYER_R, -250); // walked off onto the isle
+  m.update();
+  for (const id of ['canopy.deck', 'canopy.deck-end']) assert.ok(m.state().enabled.includes(id), id);
+});
+
+for (const id of ['wall-cn', 'wall-cs'] as const)
+  test(`an incoming swimmer meets ${id}'s chalk wall before crossing its tip`, async () => {
+    const c = AREA_CENTRES.canopy;
+    const outer = landPoints(id).reduce((a, b) =>
+      Math.hypot(a.x - c.x, a.z - c.z) > Math.hypot(b.x - c.x, b.z - c.z) ? a : b,
+    );
+    const [cx, cz] = CANOPY_CENTRES[id];
+    const triangles = ground(canopy).flatMap((k) => k.volume.triangles);
+    // Just inland of the outermost vertex the wall stands 120 m; just outside it, the sea, where the swimmer is.
+    const inside = new THREE.Vector3(outer.x * 0.98 + cx * 0.02, 0, outer.z * 0.98 + cz * 0.02);
+    assert.equal(placed.heightAt(triangles, inside), 120);
+    const p = new THREE.Vector3(outer.x * 1.01 - cx * 0.01, 0, outer.z * 1.01 - cz * 0.01);
+    assert.equal(placed.heightAt(triangles, p), null);
+    assert.ok((await mountAt(p)).enabled.includes('canopy.lands'), `no wall at ${p.toArray()}`);
+  });
+
+test('the island prism waits for a body under its top, and lifts one whose feet are within a step of it', async () => {
+  const p = new THREE.Vector3(-1060, 0, -300);
+  assert.equal(isleGround(p.x, p.z), 12);
+  const m = await mountAt(p);
+  assert.ok(!m.enabled.includes('canopy.lands'));
+  assert.deepEqual(p.toArray(), [-1060, 0, -300], 'moved');
+  p.set(-1060, 300, -300); // clear of it
+  m.update();
+  assert.ok(m.state().enabled.includes('canopy.lands'));
+  const q = new THREE.Vector3(-1060, 12 - 0.2 + PLAYER_R, -300); // feet 0.2 m under the top
+  const n = await mountAt(q);
+  assert.ok(n.enabled.includes('canopy.lands'));
+  assert.ok(Math.abs(q.y - PLAYER_R - 12) < 0.05, `feet at ${q.y - PLAYER_R}`);
 });

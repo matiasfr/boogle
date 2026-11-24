@@ -187,9 +187,10 @@ test('the menu lists the rows it always did: the house and leg 1 stages are tool
   }
 });
 
-test("Canopy's stages land where step 6 has stills; canopy-open waits, as leg 2's Bell Rock rows do", () => {
+test("Canopy's landings: canopy-mid on head 1's platform; canopy-open and canopy-reached keep the spawn", () => {
   // canopy-open's spot is Bell Rock's upper platform over the cut, which return-spot.ts (x and z alone, within 30 m)
-  // would also give a rider of the lower level's line (docs/plans/greybox-leg3.md, step 6).
-  assert.equal(jumpOf('canopy-open')?.land, undefined);
-  for (const stage of ['canopy-mid', 'canopy-reached']) assert.ok(jumpOf(stage)?.land, stage);
+  // would also give a rider of the lower level's line; canopy-reached's is Canopy's platform, which arrival.ts would
+  // probe from the spawn before Canopy's massing has mounted there (docs/plans/greybox-leg3.md, step 6).
+  for (const stage of ['canopy-open', 'canopy-reached']) assert.equal(jumpOf(stage)?.land, undefined, stage);
+  assert.deepEqual(jumpOf('canopy-mid')?.land, { x: -525.13, y: 4.9, z: -673.36, yaw: 1.935 });
 });
