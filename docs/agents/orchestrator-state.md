@@ -10,7 +10,8 @@ The one record of who is running what, and what the eight-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Greybox leg 6 step 4: the massing (Canopy, Bell Rock, the Notch, the island halt) | The greybox route | codex/greybox-leg6-massing | the orchestrator thread, Codex Astra medium | 2026-11-25 21:04 | running: built; Astra review found one P2 (cold jump-ins to notch-reached and island-reached keep the spawn); fix round 1 in the builder thread (drop both landings, as canopy-reached), rebasing onto #2495; an Astra re-check before it ships |
+| Greybox leg 6 step 4: the massing (Canopy, Bell Rock, the Notch, the island halt) | The greybox route | codex/greybox-leg6-massing | the orchestrator thread, Codex Astra medium | 2026-11-25 21:04 | shipping: Astra review (one P2, cold jump-in landings, fixed) and Astra re-check: ship as is |
+| Greybox leg 6 step 5: the views (both legs, barriers at frame 1, the arrive act, levers and boards) | The greybox route | codex/greybox-leg6-views | the heartbeat, Codex Astra medium | 2026-11-25 22:03 | running: on step 4's reviewed tip (rule 74), rebases when it lands; view, adapter and bot files; an independent review before it ships |
 
 ## Where the work stands
 
