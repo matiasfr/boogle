@@ -74,6 +74,8 @@ const AXE: Shape[] = [
   },
 ];
 
+const SHAPES = { pack: PACK, jump: JUMP, axe: AXE, yoke: YOKE };
+
 /** Paints `kind` centred on (x, y), `size` px across. Every shape is stroked first and filled after, so the outline is
  * the whole silhouette's, never a box around each bar. */
 export function drawRewardGlyph(g: G, kind: RewardKind, x: number, y: number, size: number, ready: boolean) {
@@ -91,7 +93,7 @@ export function drawRewardGlyph(g: G, kind: RewardKind, x: number, y: number, si
   const s = size * (ready ? 0.78 : 0.9);
   g.scale(s, s);
   g.lineJoin = 'round';
-  const shapes = { pack: PACK, jump: JUMP, axe: AXE, yoke: YOKE }[kind];
+  const shapes = SHAPES[kind];
   g.strokeStyle = INK;
   g.lineWidth = (ready ? 0.045 : 0.07) * 2;
   for (const shape of shapes) {
