@@ -21,7 +21,9 @@ import type { LevelDef, Placement, Vec3 } from '../../src/prefab/types.ts';
 import { segDist } from '../../src/island/stamps.ts';
 import { ORIGIN } from '../../src/place/layout.ts';
 import { pathAt } from '../../src/place/path-field.ts';
-import { DEVICES, PADS, PILLARS, SECRETS } from '../../src/place/tech-layout.ts';
+import { DEVICES, PADS, PILLARS, SECRETS, ringAt } from '../../src/place/tech-layout.ts';
+import { H } from '../../src/place/terrain.ts';
+import { FACE_TOP } from '../../src/content/prefabs/terrain.ts';
 import { GAUGE } from '../../src/entities/ring-island/bracket.ts';
 import { KIT } from '../../src/place/turnout.ts';
 import type { prefabs } from '../../src/content/prefabs/terrain.ts';
@@ -31,6 +33,7 @@ import { drawnTracks } from '../level/rail-network.ts';
 import { canyon } from './cliff-kit-canyon.ts';
 import { shore } from './cliff-kit-shore.ts';
 import { gorgeRim } from './cliff-kit-gorge-rim.ts';
+import { gorgeWalls } from './cliff-kit-gorge-walls.ts';
 
 export type Key = (typeof prefabs)[number]['key'];
 /** Places one piece in an area, checked against the piece rules; `where` names it in a failure. */
@@ -51,7 +54,7 @@ export type Area = {
   stranded?: { x: number; z: number; half: number };
   dress(kit: Kit): void;
 };
-export const AREAS: readonly Area[] = [canyon, shore, gorgeRim];
+export const AREAS: readonly Area[] = [canyon, shore, gorgeRim, gorgeWalls];
 /** The level an area writes. */
 export const levelOf = (area: Area) => area.level ?? `cliff-kit-${area.id}`;
 
@@ -113,8 +116,16 @@ export function layCourses(run: ReturnType<typeof runAlong>, side: 1 | -1, put: 
   layAlong(run, 0, pieces, -0.4, side, put);
 }
 /** Every gated place in the layout, Place-local: a point and the radius it holds (a pad's or pillar's own size). */
-const GATED: readonly { what: string; x: number; z: number; r: number }[] = [
-  ...PADS.map((p) => ({ what: `pad ${p.id}`, x: p.x, z: p.z, r: Math.hypot(p.hx, p.hz) })),
+const highPad = (p: (typeof PADS)[number]) => p.top - H(ORIGIN.x + p.x, ORIGIN.z + p.z) > FACE_TOP && !!p.ring;
+type Gate = { what: string; x: number; z: number; r: number; clearance?: number };
+const GATED: readonly Gate[] = [
+  ...PADS.map((p) => ({
+    what: `pad ${p.id}`,
+    x: p.x,
+    z: p.z,
+    r: Math.hypot(p.hx, p.hz),
+    clearance: highPad(p) ? 0 : KEEP_AWAY,
+  })),
   ...SECRETS.flatMap((s) => [
     { what: `secret ${s.id}`, x: s.x, z: s.z, r: 0 },
     { what: `secret ${s.id}'s approach`, x: s.from.x, z: s.from.z, r: 0 },
@@ -130,6 +141,24 @@ const GATED: readonly { what: string; x: number; z: number; r: number }[] = [
     })),
   ),
 ];
+
+// A high pad still reserves its column. Its approach needs body clearance along
+// the actual pull, from the previous landing to the ring above the destination.
+const pulls = PADS.filter(highPad).flatMap((p) => {
+  const start = PADS.find((q) => q.id === p.ring);
+  if (!start) return [];
+  const end = ringAt(p);
+  const steps = Math.ceil(Math.hypot(end.x - start.x, end.y - start.top, end.z - start.z));
+  return Array.from({ length: steps + 1 }, (_, i) => {
+    const t = i / steps;
+    return {
+      pad: p.id,
+      x: start.x + t * (end.x - start.x),
+      y: start.top + t * (end.y - start.top),
+      z: start.z + t * (end.z - start.z),
+    };
+  });
+});
 
 /** How far a point (x, z) is, across the ground, from a solid: the distance to its footprint, the outline of its
  * corners seen from above (0 inside it). */
@@ -232,12 +261,21 @@ export function kitPieceProblems(p: Placement, keepClear: Area['keepClear'] = []
     problems.push(`${p.id} (${p.prefab}) narrows the tread: its solid comes ${tread.toFixed(3)} m from the edge`);
   if (gauge)
     problems.push(`${p.id} (${p.prefab}) inside a rail's gauge at (${gauge.map((n) => n.toFixed(2)).join(', ')})`);
-  const outlines = solidHulls(p).map((h) => footprint(h.points));
-  for (const g of [...GATED, ...keepClear.map(([x, z]) => ({ what: "the area's gated place", x, z, r: 0 }))]) {
+  const hulls = solidHulls(p);
+  const outlines = hulls.map((h) => footprint(h.points));
+  const points = hulls.flatMap((h) => h.points);
+  const low = Math.min(...points.map((q) => q[1])) - 2,
+    high = Math.max(...points.map((q) => q[1])) + 2;
+  const blockedPull = pulls.find(
+    (q) => q.y >= low && q.y <= high && outlines.some((distance) => distance(q.x, q.z) < 1),
+  );
+  if (blockedPull) problems.push(`${p.id} obstructs the pull to ${blockedPull.pad}`);
+  for (const g of [...GATED, ...keepClear.map(([x, z]): Gate => ({ what: "the area's gated place", x, z, r: 0 }))]) {
     const near = Math.min(...outlines.map((distance) => distance(g.x, g.z))) - g.r;
-    if (near < KEEP_AWAY)
+    const clearance = g.clearance ?? KEEP_AWAY;
+    if (near < clearance)
       problems.push(
-        `${p.id} (${p.prefab}) within ${KEEP_AWAY} m of ${g.what} (${g.x.toFixed(1)}, ${g.z.toFixed(1)}): ${near.toFixed(3)} m`,
+        `${p.id} (${p.prefab}) violates ${g.what} clearance (${g.x.toFixed(1)}, ${g.z.toFixed(1)}): ${near.toFixed(3)} m, requires ${clearance} m`,
       );
   }
   return problems;
