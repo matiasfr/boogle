@@ -13,7 +13,7 @@ import { flood } from './flood.ts';
 import { MOVER } from './mover.ts';
 import type { Reserve } from '../../src/content/levels/leg2.ts';
 
-function shoreDistance(p: XZ, outline: XZ[]) {
+export function shoreDistance(p: XZ, outline: XZ[]) {
   const distances = outline.map(([x, z], i) => {
     const q = outline[(i + 1) % outline.length]!,
       dx = q[0] - x,

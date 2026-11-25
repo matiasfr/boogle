@@ -39,6 +39,9 @@ export const LEG_STAGES = [
   'cave-open',
   'cave-mid',
   'port-reached',
+  'wall-mid',
+  'wall-deep',
+  'wall-closed',
 ] as const;
 export type LegStage = (typeof LEG_STAGES)[number];
 
@@ -47,7 +50,8 @@ const STACK = RAIL_LEGS.findIndex((l) => l.id === 'stack'),
   INCLINE = RAIL_LEGS.findIndex((l) => l.id === 'incline'),
   BAY = RAIL_LEGS.findIndex((l) => l.id === 'bay-cut'),
   CANOPY = RAIL_LEGS.findIndex((l) => l.id === 'bell-canopy'),
-  CAVE = RAIL_LEGS.findIndex((l) => l.id === 'cave');
+  CAVE = RAIL_LEGS.findIndex((l) => l.id === 'cave'),
+  WALL = RAIL_LEGS.findIndex((l) => l.id === 'wall');
 
 // Share only a serialized source fixture through restore, never a mutable world between callers.
 const cache = new Map<LegStage, Seed>();
@@ -180,6 +184,18 @@ function build(s: Seed, stage: LegStage): Seed {
       break;
     case 'port-reached':
       while (legRow(w, CAVE).laid < RAIL_LEGS[CAVE]!.sections.length) laySection(s, CAVE);
+      advance(s, 900);
+      break;
+    case 'wall-mid':
+      while (legRow(w, WALL).laid < 2) laySection(s, WALL);
+      until(s, () => aboard(s, WALL), 8000, 'third Wall kit aboard');
+      break;
+    case 'wall-deep':
+      while (legRow(w, WALL).laid < 5) laySection(s, WALL);
+      break;
+    case 'wall-closed':
+      need(act(s, 'a', 'rail.gate', { id: RAIL_GATES.findIndex((g) => g.id === 'deep-span') }) === 1, 'deep span open');
+      laySection(s, WALL);
       advance(s, 900);
       break;
   }

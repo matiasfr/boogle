@@ -321,6 +321,21 @@ export const JUMPS: readonly Jump[] = [
     land: betweenRackAndFrame(4, 1),
   },
   { stage: 'port-reached', menu: false, label: 'Port Quay reached', line: 'The cave line runs to Port Quay' },
+  {
+    stage: 'wall-mid',
+    menu: false,
+    label: 'White Wall building',
+    line: 'The third kit rides a cave train',
+    land: betweenRackAndFrame(5, 2),
+  },
+  {
+    stage: 'wall-deep',
+    menu: false,
+    label: 'Deep span reached',
+    line: 'The barrier stands at the last frame',
+    land: betweenRackAndFrame(5, 5),
+  },
+  { stage: 'wall-closed', menu: false, label: 'White Wall laid', line: 'The cave line reaches High Gorge' },
   // Garage step 4 (docs/plans/garage-step4.md, step 3): placeholder tooling copy for the owner, no landings (the usual
   // spawn at Home is the post's side of the island; trade-held's train stands at Bell Rock, which canopy-open's note
   // above keeps unlanded).

@@ -121,6 +121,7 @@ export function checkRoute(w: World) {
     const at = gateLeg(k);
     if (!(route.grants & (1 << g.needs))) bad('gate before its grant');
     if (!at || !legReached(w, at.leg)) bad('gate before its leg');
+    if (at && legRow(w, at.leg).laid < at.section) bad('gate before its section');
   });
   if (route.arrived >= 0 && !legDone(w, RAIL_LEGS.length - 1)) bad('arrived before the causeway');
 }

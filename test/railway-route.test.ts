@@ -142,11 +142,12 @@ test('the remaining stand-in gates match the route catalog', () => {
   assert.equal(found, 2);
 });
 
-test('a place drawn on two rows is one place: its halts are within 40 m', () => {
+test('each interchange fits its walking bound', () => {
   for (const p of RAIL_PLACES) {
     const hs = p.halts.map(([id, k]) => row(id).halts[k]!);
     for (const a of hs)
-      for (const b of hs) assert.ok((a.x - b.x) ** 2 + (a.z - b.z) ** 2 <= 4000 ** 2, `${p.id}: ${a.name} / ${b.name}`);
+      for (const b of hs)
+        assert.ok((a.x - b.x) ** 2 + (a.z - b.z) ** 2 <= (p.boundCm ?? 4000) ** 2, `${p.id}: ${a.name} / ${b.name}`);
   }
 });
 
@@ -186,6 +187,7 @@ test('each gate shuts the section it names and stands at that frame', () => {
     if (g.id === 'incline' || g.id === 'canopy' || g.id === 'plug')
       return assert.deepEqual(g.at, { ...legFrame(leg, 0), reach: 400 }, g.id);
     if (g.id === 'notch') return assert.ok(Math.hypot(g.at.x + 110000, g.at.z + 30000) < 5);
+    if (g.id === 'deep-span') return assert.deepEqual(g.at, legFrame(leg, 5));
     const p = rowPoint(row(leg.row), sectionFromCm(leg, k));
     assert.ok(Math.hypot(g.at.x - p.x, g.at.z - p.z) <= 500, `${g.id} stands at its frame`);
   });
@@ -235,6 +237,19 @@ test('Canopy cuts stand midway across the level strait and 33 m beyond the climb
   assert.equal(leg.sections[2]!.toCm, bay.legs[1]!.toCm - 2500);
 });
 
+test('Canopy head serves its catalog halt on a 50 m straight', () => {
+  const cave = row('cave'),
+    stop = cave.stops[3]!;
+  assert.equal(RAIL_LEGS[5]!.sections[2]!.toCm, stop + 1000);
+  const a = rowPoint(cave, stop - 2500),
+    b = rowPoint(cave, stop + 2500);
+  for (let offset = -2500; offset <= 2500; offset += 100) {
+    const p = rowPoint(cave, stop + offset),
+      t = (offset + 2500) / 5000;
+    assert.ok(Math.hypot(p.x - a.x - (b.x - a.x) * t, p.z - a.z - (b.z - a.z) * t) < 2);
+  }
+});
+
 test("the Wall cuts are the islets' true closest passes to the cave row, within 1 m", () => {
   const land = layout(
     parseMapPage(readFileSync(new URL('../docs/world/map-prototypes.html', import.meta.url), 'utf8')),
@@ -243,25 +258,28 @@ test("the Wall cuts are the islets' true closest passes to the cave row, within 
   ).land;
   const cave = row('cave');
   for (const [id, cm] of Object.entries(WALL_ISLETS)) {
-    const c = land.find((l) => l.id === id)!.c!;
-    const cx = (c[0] + ORIGIN.x) * 100;
-    const cz = (c[1] + ORIGIN.z) * 100;
+    const isle = land.find((l) => l.id === id)!;
+    const targets = id === 'wall-n1' ? isle.outline : [isle.c!];
     let best = Infinity;
     let at = 0;
-    let arc = 0;
-    for (let i = 1; i < cave.pts.length; i++) {
-      const a = cave.pts[i - 1]!;
-      const b = cave.pts[i]!;
-      const dx = b[0] - a[0];
-      const dz = b[1] - a[1];
-      const len = Math.sqrt(dx * dx + dz * dz);
-      const t = Math.max(0, Math.min(1, ((cx - a[0]) * dx + (cz - a[1]) * dz) / (len * len)));
-      const d = Math.hypot(a[0] + dx * t - cx, a[1] + dz * t - cz);
-      if (d < best) {
-        best = d;
-        at = cave.fromCm + arc + t * len;
+    for (const c of targets) {
+      const cx = (c[0] + ORIGIN.x) * 100;
+      const cz = (c[1] + ORIGIN.z) * 100;
+      let arc = 0;
+      for (let i = 1; i < cave.pts.length; i++) {
+        const a = cave.pts[i - 1]!;
+        const b = cave.pts[i]!;
+        const dx = b[0] - a[0];
+        const dz = b[1] - a[1];
+        const len = Math.sqrt(dx * dx + dz * dz);
+        const t = Math.max(0, Math.min(1, ((cx - a[0]) * dx + (cz - a[1]) * dz) / (len * len)));
+        const d = Math.hypot(a[0] + dx * t - cx, a[1] + dz * t - cz);
+        if (d < best) {
+          best = d;
+          at = cave.fromCm + arc + t * len;
+        }
+        arc += len;
       }
-      arc += len;
     }
     assert.ok(Math.abs(at - cm) <= 100, `${id}: closest pass at ${Math.round(at)}, catalog has ${cm}`);
   }
@@ -300,7 +318,7 @@ test("every leg's railhead halt is its from halt's sim index + 1 (simHalt counts
   assert.equal(simHalt('bay', 2), 5, 'Canopy Town after both Canopy heads');
   assert.deepEqual(
     row('cave').halts.map((_, i) => simHalt('cave', i)),
-    [0, 2, 3, 4, 5],
+    [0, 2, 3, 6, 9],
   );
   // Two intermediate named halts, with a new head before each. Neither named head adds a duplicate slot.
   const stops = [0, 10000, 20000, 30000],

@@ -267,7 +267,7 @@ function appendLeg(
       leg: { slot, section: k },
       platforms: legPlatforms(id, at),
       end: railEnd('stub', at - HEAD_MERGE_CM, 1),
-      ...(k < heads.length - 1 ? { closesAt: leg.railheadHalt + k + 3 } : {}),
+      ...(k < heads.length - 1 && !r.stops.includes(at) ? { closesAt: leg.railheadHalt + k + 3 } : {}),
     })),
     {
       name: r.halts[leg.destRowHalt]!.name,
@@ -568,11 +568,17 @@ export const RAIL_LINES: readonly RailLineDef[] = [
     [2, 2, 3, 3],
   ),
   appendLeg(
-    rowLine('cave'),
-    'cave',
-    'Cave head',
-    WORLD_LINES.find((l) => l.id === 'cave')!.stops[2]! - 2450,
-    [0, 1, 2, 2],
+    appendLeg(
+      rowLine('cave'),
+      'cave',
+      'Cave head',
+      WORLD_LINES.find((l) => l.id === 'cave')!.stops[2]! - 2450,
+      [0, 1, 2, 2],
+    ),
+    'wall',
+    'Wall head',
+    WORLD_LINES.find((l) => l.id === 'cave')!.stops[4]! - 2450,
+    [2, 2, 3, 3, 4, 4, 5],
   ),
 ];
 

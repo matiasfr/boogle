@@ -31,6 +31,7 @@ import {
   legFrame,
   legRack,
   rowHalt,
+  rowPoint,
 } from '../../src/sim/railway-route.ts';
 import { legKitNeed, legRow, routeRow } from '../../src/sim/railway-queries-route.ts';
 import { act, railTick, restore, trees } from '../../test/helpers/rail.ts';
@@ -120,7 +121,9 @@ async function host(name: string, fixture: Seed, players: Record<string, string>
     later(ms: number) {
       now += ms;
     },
-    get tune() { return h.rules.railTune.tune; },
+    get tune() {
+      return h.rules.railTune.tune;
+    },
     /** An orderly restart (a deploy): the room saves on close and comes back from its save. */
     async restart() {
       await h.close({ save: true });
@@ -581,6 +584,23 @@ test('route host: a grant and a gate keep their id; judged at their spot, refuse
   }
 });
 
+test('route host: the deep span takes seeds at frame six, outside the track centre reach', async () => {
+  const r = await host('wall-span', legStagesOn(unaudited(tradeFixture()), 'bay-mid', 'wall-deep'));
+  try {
+    const wall = RAIL_LEGS[5]!,
+      id = RAIL_GATES.findIndex((g) => g.id === 'deep-span');
+    const op = { op: 'rail.gate', id },
+      before = routeRow(r.w).gates;
+    assert.equal(await r.action(op, [-37618, 400, -143970]), 'rejected', 'the v70 centre reach');
+    assert.equal(await r.action(op, spot(rowPoint(wall.row, wall.sections[4]!.toCm))), 'rejected');
+    assert.equal(routeRow(r.w).gates, before);
+    assert.equal(await r.action(op, spot(legFrame(wall, 5))), 'accepted');
+    assert.equal(routeRow(r.w).gates, before | (1 << id));
+  } finally {
+    await r.done();
+  }
+});
+
 test('route host: the plug opens at cave frame 1 after Canopy, away from the old West landing reach', async () => {
   const seed = legStagesOn(unaudited(tradeFixture()), 'bay-mid', 'canopy-reached');
   const r = await host('cave-plug', seed);
@@ -727,14 +747,27 @@ test('spacing host: Ring Island holds while the gap ahead is short, then dispatc
     let held = -1;
     for (let t = 0; t < 4000; t++) {
       const rows = (slot: number) => train(r.w, slot);
-      const slot = LINE_SLOTS[LINE2]!.find(j => {
+      const slot = LINE_SLOTS[LINE2]!.find((j) => {
         const x = rows(j);
-        return x.phase === TRAIN_PHASE.STAND && x.at === ring &&
+        return (
+          x.phase === TRAIN_PHASE.STAND &&
+          x.at === ring &&
           r.tick + 1 >= x.depart + TRAIN.dwellTicks &&
-          balancedHold({ row: rows, line: l => line(r.w, l), headExempt: () => false }, LINE2, stops, j, ring, r.tick + 1);
+          balancedHold(
+            { row: rows, line: (l) => line(r.w, l), headExempt: () => false },
+            LINE2,
+            stops,
+            j,
+            ring,
+            r.tick + 1,
+          )
+        );
       });
       await r.ticks(1);
-      assert.equal(trainSpacing(rows, l => stopsOf(r.w, l), r.tick), null);
+      assert.equal(
+        trainSpacing(rows, (l) => stopsOf(r.w, l), r.tick),
+        null,
+      );
       if (held >= 0 && rows(held).phase === TRAIN_PHASE.RUN) return;
       if (slot !== undefined && rows(slot).phase === TRAIN_PHASE.STAND) {
         const gaps = trainGaps(rows, LINE2, stops, slot, r.tick)!;
@@ -802,7 +835,13 @@ test('trade host: a bring and Strong cross r:edit, race once, replicate and surv
     assert.equal(await r.action(bring(BAYL, 0), away(SHED_TABLE)), 'rejected', 'out of reach');
     for (const e of [bring(-1, 0), bring(RAIL_LINES.length, 0), bring('3', 0), bring(BAYL, -1), bring(BAYL, 1.5)])
       assert.equal(await r.action(e, spot(SHED_TABLE)), 'rejected');
-    for (const e of [install(0, LINE2, 5), install(0, BAYL, 2), install(0, BAYL, 7), install(-1, BAYL, 6), install('0', BAYL, 6)])
+    for (const e of [
+      install(0, LINE2, 5),
+      install(0, BAYL, 2),
+      install(0, BAYL, 7),
+      install(-1, BAYL, 6),
+      install('0', BAYL, 6),
+    ])
       assert.equal(await r.action(e, spot(SHED_TABLE)), 'rejected');
     assert.equal(await r.action(install(0, BAYL, 6), spot(SHED_TABLE)), 'noop', "line 2's copy is on the table");
     assert.deepEqual(
@@ -839,7 +878,10 @@ test('trade host: a bring and Strong cross r:edit, race once, replicate and surv
       [5, 1, fitted],
       'the fit comes back, applied once',
     );
-    assert.deepEqual([shed(r.w).tableLine, shed(r.w).bringRev, shed(r.w).brought, shed(r.w).spent], [BAYL, 1, brought, spent]);
+    assert.deepEqual(
+      [shed(r.w).tableLine, shed(r.w).bringRev, shed(r.w).brought, shed(r.w).spent],
+      [BAYL, 1, brought, spent],
+    );
     const late = r.connect('late');
     await r.ticks(3);
     assert.deepEqual([line(late()!, BAYL).boiler, shed(late()!).tableLine], [5, BAYL]);
