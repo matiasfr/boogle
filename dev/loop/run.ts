@@ -582,12 +582,13 @@ function* cradle(g: Game, pl: Player): Policy {
 }
 
 // ---------------------------------------------------------------- the greybox route's legs
-/** The route's pickups and barrier: each node's op and its catalog index (RAIL_GRANTS or RAIL_GATES). */
+/** The route's pickups and barriers: each node's op and its catalog index (RAIL_GRANTS or RAIL_GATES). */
 const ROUTE_PRESS: Partial<Record<NodeId, { op: 'rail.grant' | 'rail.gate'; id: number }>> = {
   pick: { op: 'rail.grant', id: RAIL_GRANTS.findIndex((x) => x.id === 'pick') },
   'incline-gate': { op: 'rail.gate', id: RAIL_GATES.findIndex((x) => x.id === 'incline') },
   seeds: { op: 'rail.grant', id: RAIL_GRANTS.findIndex((x) => x.id === 'seeds') },
   'canopy-gate': { op: 'rail.gate', id: RAIL_GATES.findIndex((x) => x.id === 'canopy') },
+  'plug-gate': { op: 'rail.gate', id: RAIL_GATES.findIndex((x) => x.id === 'plug') },
   cloth: { op: 'rail.grant', id: RAIL_GRANTS.findIndex((x) => x.id === 'cloth') },
 };
 /** A route point (cm, with its height: the server's reach check judges both). */
@@ -720,6 +721,7 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set(), pick
     'incline-gate': pressed('incline-gate'),
     seeds: pressed('seeds'),
     'canopy-gate': pressed('canopy-gate'),
+    'plug-gate': pressed('plug-gate'),
     cloth: pressed('cloth'),
   };
   const ready = (id: NodeId) => () => node(id).requires.every((e) => e.scope === 'finish' || done[e.on]());
@@ -860,6 +862,7 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set(), pick
     'incline-gate': routePolicy('incline-gate'),
     seeds: routePolicy('seeds'),
     'canopy-gate': routePolicy('canopy-gate'),
+    'plug-gate': routePolicy('plug-gate'),
     cloth: routePolicy('cloth'),
   };
   return { g, done, policy, flags, current: null, detour: () => 1 };

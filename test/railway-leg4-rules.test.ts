@@ -34,6 +34,7 @@ function ledger(s: Seed) {
   assert.equal(invariant(s.w), null);
 }
 test('the plug needs the pick and Canopy laid, and the stocked first frame waits for the plug', () => {
+  assert.equal(RAIL_GRANTS[pick]!.id, 'pick');
   for (const [stage, held] of [
     ['gorge-reached', false],
     ['canopy-mid', true],

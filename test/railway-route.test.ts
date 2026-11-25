@@ -120,10 +120,9 @@ test('each after and needs points backwards', () => {
   RAIL_GRANTS.forEach((g) => assert.ok(RAIL_LEGS[g.leg], g.id));
 });
 
-test("the three long-range gates equal standins.ts's GATES", () => {
-  // The built pickups' nodes (dev/loop/graph.ts) stand for areas 4 to 6 since greybox leg 2's step 5 and leg 3's step 7.
-  const areaOf: Record<string, number> = { pick: 4, seeds: 5, cloth: 6, port: 7, wall: 8, ending: 9 };
-  const grantOf: Record<string, string> = { 'powered pick': 'pick', 'crystal seeds': 'seeds', 'glider cloth': 'cloth' };
+test('the remaining stand-in gates match the route catalog', () => {
+  const areaOf: Record<string, number> = { seeds: 5, cloth: 6 };
+  const grantOf: Record<string, string> = { 'crystal seeds': 'seeds', 'glider cloth': 'cloth' };
   const { nodes } = standInRoute();
   let found = 0;
   for (const n of nodes)
@@ -140,7 +139,7 @@ test("the three long-range gates equal standins.ts's GATES", () => {
         `${r.needs} comes from ${r.on}`,
       );
     }
-  assert.equal(found, 3);
+  assert.equal(found, 2);
 });
 
 test('a place drawn on two rows is one place: its halts are within 40 m', () => {

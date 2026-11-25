@@ -399,7 +399,7 @@ is an independent one before merge (src/sim, src/world): **gpt-6.2-astra medium*
       and [approaching head 1](greybox-leg4/head-one.png). The [Saltpan stop](greybox-leg4/saltpan-stop.png),
       [quay platforms](greybox-leg4/quay-platforms.png), [buffer board](greybox-leg4/quay-buffers.png)
       and [connected Bell Rock stall](greybox-leg4/bell-quay-stall.png) show the completed line.
-- [ ] **6. The bot and the loop (M; HOTBOX; "Implementation from a brief or an approved plan": Claude opus medium).**
+- [x] **6. The bot and the loop (M; HOTBOX; "Implementation from a brief or an approved plan": Claude opus medium).**
       On garage step 4's bot as merged. Files: `dev/loop/graph.ts` (`plug-gate`: `rail.gate`, the third "route
       barrier opened", requires `canopy-3` and `pick`; `cave-1` to `cave-3`: `legSection` on `cave`, bills, frames and
       racks from `RAIL_LEGS`, `KIT_BY.cave` "stocked on the West landing's cave rack (the stand-in: no train)" for the
@@ -412,6 +412,13 @@ is an independent one before merge (src/sim, src/world): **gpt-6.2-astra medium*
       (`RAIL_STOPS.port` "port home", `LEG_STOPS`). Verify: `npm run loop -- node plug-gate` and `-- node cave-3` print
       the bill, the supply and the cue; `npm run loop -- run`; `npm run playthrough -- --from canopy-reached --to port`
       (a pass verdict; its timings are not evidence under load); `test/loop-graph.test.ts`.
+      **As built.** The loop reports the plug and all three bills with their catalog sites and supplies. The canonical
+      orders finish for one to four players. The cave order probes refuse as expected. Area 7 takes 10, 15, 15 and
+      15 modelled minutes against 48. The headless model walks straight lines and reports idle above 60 s at the plug
+      and on the first section in co-op. The known “T3 before beam” order still stalls at jump.
+      The real-input `canopy-reached` to `port` segment passed through all three lays, stepped off at Port Quay and
+      rode back to the West landing. Local verdict `.look/playthrough/leg4-port/verdict.json`, load 0.23 to 1.60,
+      exclusive slot, no recovery or graphics errors. Ship check and level check exited 0.
 
 ### Checkpoint D (leg 4 playable)
 
