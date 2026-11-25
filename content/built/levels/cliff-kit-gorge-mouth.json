@@ -39,15 +39,9 @@
     {"id":"gorge-mouth.33","pos":[73.47,4.5,185.26],"prefab":"terrain.sea-face-10","rot":[-0.09,0,0]},
     {"id":"gorge-mouth.34","pos":[82.8,4.5,185.58],"prefab":"terrain.sea-face-10","rot":[0.04,0,0]},
     {"id":"gorge-mouth.35","pos":[90.3,4.5,185.23],"prefab":"terrain.sea-face-6","rot":[0.06,0,0]},
-    {"id":"gorge-mouth.36","pos":[45.16,9.5,177.9],"prefab":"terrain.sea-face-10","rot":[-0.18,0,0]},
-    {"id":"gorge-mouth.37","pos":[54.55,9.5,179.36],"prefab":"terrain.sea-face-10","rot":[-0.15,0,0]},
-    {"id":"gorge-mouth.38","pos":[64.02,9.5,180.82],"prefab":"terrain.sea-face-10","rot":[-0.16,0,0]},
-    {"id":"gorge-mouth.39","pos":[73.39,9.5,181.94],"prefab":"terrain.sea-face-10","rot":[-0.08,0,0]},
-    {"id":"gorge-mouth.40","pos":[82.77,9.5,182.21],"prefab":"terrain.sea-face-10","rot":[0.02,0,0]},
-    {"id":"gorge-mouth.41","pos":[90.25,9.5,181.99],"prefab":"terrain.sea-face-6","rot":[0.06,0,0]},
-    {"id":"gorge-mouth.42","pos":[-52,1.1,177],"prefab":"terrain.shore-rock-m","rot":[0.6,0,0]},
-    {"id":"gorge-mouth.43","pos":[-25,4.83,180],"prefab":"terrain.shore-rock-m","rot":[-0.4,0,0]},
-    {"id":"gorge-mouth.44","pos":[68,-2.56,193],"prefab":"terrain.shore-rock-m","rot":[0.9,0,0]}
+    {"id":"gorge-mouth.36","pos":[-52,1.1,177],"prefab":"terrain.shore-rock-m","rot":[0.6,0,0]},
+    {"id":"gorge-mouth.37","pos":[-25,4.83,180],"prefab":"terrain.shore-rock-m","rot":[-0.4,0,0]},
+    {"id":"gorge-mouth.38","pos":[68,-2.56,193],"prefab":"terrain.shore-rock-m","rot":[0.9,0,0]}
   ],
   "rotation": "yaw, pitch, roll in radians, order YXZ",
   "units": "metres",
