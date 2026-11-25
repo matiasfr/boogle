@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-25 · Kit faces cover walkable rock slopes too, with sloped tops nobody can stand on, so every cliff reads chunky, not patches on smooth slopes ([entry](#d-2026-11-25-non-standable-kit-everywhere))
 - 2026-11-24 · Cliff kit scope: kit faces on walls within 40 m of a tread or rail or at the sea, colour and rim caps beyond; the shore's cove face is replaced with kit faces; the Sickle horizon, Needle Bell and props (loose boulders, works rocks, caves) are in the pass ([entry](#d-2026-11-24-cliff-kit-scope))
 - 2026-11-24 · Every cliff and rock wall in the world, the shore's included, takes the Chunky Sunshine kit's treatment, so they read as one palette and one world ([entry](#d-2026-11-24-chunky-every-cliff))
 - 2026-11-24 · The canyon kit's faces near the bridge sit flush with the wall, so the alcove stays in view from the top of the climb ([entry](#d-2026-11-24-canyon-faces-flush))
@@ -66,6 +67,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-11-01 · night stays light, moonlit ([entry](#d-2026-11-01-night-stays-light-moonlit))
 
 ## Decided
+
+- <a id="d-2026-11-25-non-standable-kit-everywhere"></a>**2026-11-25, non-standable kit everywhere** (owner, 25 November 2026, a tap answer in the live session, shown the shore step's [before/after sheet](plans/cliff-kit-everywhere/shore-before-after.jpg): the shore took the kit's colour, but kit faces went only on a few sheer spots, because the no-new-way-up gate refused faces wherever walkable ground surrounds the rock, so they read as patches on smooth slopes): "Non-standable kit everywhere" (the orchestrator recommended drawing the chunky courses in the rock material instead). Kit faces get sloped tops too steep to stand on, so they offer nothing new to stand on and may cover walkable rock slopes as well as sheer walls; every cliff reads chunky. They keep 0.4 m off every tread and must not snag a walk.
 
 - <a id="d-2026-11-24-cliff-kit-scope"></a>**2026-11-24, the cliff kit's scope** (owner, 24 November 2026, three tap answers on the [cliff-kit-everywhere](plans/cliff-kit-everywhere.md) plan's open questions). (1) The cove face: "Replace with kit faces" (recommended was keep it sculpted and recolour it): fully chunky like the canyon; the landing's walk and collider are re-tuned and re-tested in the shore step. (2) Far walls: "Yes, near walls only": kit faces where a wall's toe is within 40 m of a tread or rail, or at the sea; farther walls take the kit's colour and rim caps. (3) "Include them" (recommended was leave them out): the Sickle horizon backdrop, Needle Bell and props (loose boulders, works rocks, caves) are in this pass, so the whole world reads as one palette. The plan's steps take these on before the shore step is built.
 
