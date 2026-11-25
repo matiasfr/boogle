@@ -961,6 +961,8 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
   // The default plays in a player's order (Home flow finding 4):
   // the pack at Station 1, the glider on the first climb, and the sea switch at its gate after Q4.
   const legacy = query.get('botOrder') === 'legacy';
+  const jumpFirst = query.get('botOrder') === 'jump-first';
+  const pick = jumpFirst ? 'jump' : 'pack';
   const botTo = query.get('botTo');
   if (botTo !== null && !(botTo in RAIL_STOPS)) throw new Error(`Unknown botTo ${botTo}`);
   // `pier` is the whole route: its closing totals still run.
@@ -1404,24 +1406,24 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await until(() => job(0).start >= 0, 'funded T1 begins');
     mark('T1 funded');
     if (!legacy) {
-      const firstPick = LINE1_PICK_STANDS.pack;
+      const firstPick = LINE1_PICK_STANDS[pick];
       await walk(firstPick.x / 100 + (second ? -1 : 0), firstPick.z / 100 + 2, 0.6);
       face(firstPick.x / 100, firstPick.z / 100);
       if (!second) {
-        await until(() => interactTarget()?.id === 'railway-pick-pack', 'Station 1 offers the pack');
+        await until(() => interactTarget()?.id === `railway-pick-${pick}`, `Station 1 offers the ${pick}`);
         await checkpoint('T1 stands');
         triggerAction('interact', 'down');
         try {
-          await until(() => R.rail(R.rw()).pack, 'held Take gives the room its pack');
+          await until(() => R.rail(R.rw())[pick], `held Take gives the room its ${pick}`);
         } finally {
           triggerAction('interact', 'up');
         }
       }
-      await until(() => read().reward.arrival.cards.includes('pack'), 'Station 1 pack card');
+      await until(() => read().reward.arrival.cards.includes(pick), `Station 1 ${pick} card`);
       await checkpoint('T1 pick card');
-      await dismiss('Station 1 pack');
-      require(R.capacityOf(R.rw(), R.LOGS) === 16, 'the Station 1 pack gives each player 16 log spaces');
-      await checkpoint('pack');
+      await dismiss(`Station 1 ${pick}`);
+      require(R.capacityOf(R.rw(), R.LOGS) === (jumpFirst ? 8 : 16), 'log capacity follows the Station 1 pick');
+      await checkpoint(pick);
       await checkpoint('T1 carry-off');
     }
     await ride(0);
@@ -1621,7 +1623,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     require(counts.stone &&
       counts.stone.total === RAIL_STONE + counts.stone.produced, 'counted stone conserves initial supply and renewal');
     await checkpoint('T3 laid');
-    require(!R.rail(R.rw()).jump, 'walk home does not need optional jump');
+    require(R.rail(R.rw()).jump === jumpFirst, 'walk starts with the chosen jump state');
     const access = railAt(116);
     await walk(access.x + layout.ORIGIN.x, access.z, 0.8);
     await walkTrack(116, 191);
@@ -1645,7 +1647,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     };
     await walkBypass(bypass.slice(1));
     await checkpoint('path walked home');
-    require(!R.rail(R.rw()).jump, 'walk home completed before jump discovery');
+    require(R.rail(R.rw()).jump === jumpFirst, 'walk home preserves the chosen jump state');
     await walkBypass([...bypass].reverse().slice(1));
     require(Math.abs(me.body!.position.y - PLAYER_R - layout.railY(line.line, 30)) <
       1, 'village stub rejoins the new deck');
@@ -1683,19 +1685,21 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     ), 'walked from completed rail to first-pillar lip');
     require(await bot.straight(ownSlot.x, ownSlot.z, 0.4, 6000), 'walked the lip onto the first pillar');
     await until(() => me.coyote > 0 && !me.swimming, 'first pillar supports the player');
-    if (!second) require(!R.rail(R.rw()).jump, 'first pillar reached before optional jump discovery');
+    if (!second) require(R.rail(R.rw()).jump === jumpFirst, 'pillar reached with the chosen jump state');
     mark('first pillar reached');
     if (coop && !second)
       await until(() => friendAt(friendSlot), 'friend reaches the first pillar before shared discovery');
-    if (!second) {
+    if (!jumpFirst && !second) {
       const device = read().reward.jumpDevice;
       require(await bot.use(device.x, device.z, 'take the first jump device', /^Take it$/), 'jump device offered');
     }
     await until(() => R.rail(R.rw()).jump, 'shared optional jump accepted');
     // The finder gets the card on the press; a friend online gets their own once free.
-    if (second) await friendCard('jump', 'jump');
-    else await dismiss('optional jump reveal');
-    mark('optional jump discovered');
+    if (!jumpFirst) {
+      if (second) await friendCard('jump', 'jump');
+      else await dismiss('optional jump reveal');
+      mark('optional jump discovered');
+    }
     require(await bot.straight(ownSlot.x, ownSlot.z, 0.4, 6000), 'stood clear of the device for the jump');
     await until(() => me.coyote > 0 && me.body!.velocity.y <= 0, 'grounded before jump demonstration');
     const jumpsBefore = read().reward.tools.jumps;
