@@ -1431,7 +1431,8 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     panels(1);
     require(job(0).used === 24 && job(0).allocation === 0, 'T1 contains exactly 24 logs');
     mark('T1 laid');
-    const track = railAt(154);
+    // Stand on the middle of the laid stretch, clear of the layer parked at its new head.
+    const track = railAt((firstFrame.fromCm + firstFrame.toCm) / 200);
     await walk(track.x + layout.ORIGIN.x, track.z, 0.8);
     await until(() => me.coyote > 0 && !me.swimming, 'standing on laid T1');
     mark('T1 track stood on');
