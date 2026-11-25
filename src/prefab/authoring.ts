@@ -8,7 +8,9 @@ export function landPrism(
 ) {
   const n = ring.length;
   // 0..n-1 the top's ring, n..2n-1 the foot's, 2n the top's centre.
-  const vertices = [...ring.flatMap((p) => [p.x, top, p.z]), ...ring.flatMap((p) => [p.x, base, p.z]), cx, top, cz];
+  const vertices: number[] = [];
+  for (const y of [top, base]) ring.forEach(({ x, z }) => vertices.push(x, y, z));
+  vertices.push(cx, top, cz);
   // Counter-clockwise seen from above (x east, z south): (b - a) x (c - a) has +y.
   const up = (a: number, b: number, c: number) => {
     const ax = vertices[3 * a]!,
