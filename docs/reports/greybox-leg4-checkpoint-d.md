@@ -1,15 +1,16 @@
 # Greybox leg 4 Checkpoint D
 
 25 November 2026, HOTBOX, Node 26.13.0. The run started from main at `ce6701ba1`, which contains leg 4 step 6 (#2430).
-Checkpoint D remains open. The canonical loop reached Port Quay with one, two, and three players. The alternate
-`T3 before beam` order hit the previously recorded softlock at `jump`.
-The proofs use that game tree. The final branch rebase includes later main changes that were outside these runs.
+Checkpoint D remains open for the built-site offline boot probe. The original bot, stills and performance
+observations below use the step 6 game tree. The loop regression was reproduced and corrected on the branch
+based on `9cb665aa1`.
 
 ## Loop
 
-Commands `npm.cmd run loop -- run` and `timeout 1800s npm run loop -- run` for the retry. The default also printed
-four-player results. The table records the requested one to three players. See `.look/checkpoint-d/loop.log` and
-`.look/checkpoint-d/loop-retry.log`.
+Reran `timeout 1800s npm run loop -- run` on `7e6ec9463` (exit 0). Every proposed order finished for one
+through four players, including pack-first and jump-first. T3 before beam finished in 1:21:36 solo, 1:25:55 with
+two players and 1:25:23 with three. The canonical results for the requested room sizes follow.
+See `.look/job/loop.log`.
 
 | Players | Plug gate idle (s) | Cave 1 idle (s) | Cave 2 idle (s) | Cave 3 idle (s) | Area 7 / allowance (min) | Built route | Whole route including stand-ins |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -21,10 +22,15 @@ The idle column is mean seconds per player spent waiting or with no work left wh
 `plug-gate` and `cave-1` waits exceeded Checkpoint A's 60-second threshold in both co-op runs. The cave nodes recorded
 zero refusals in canonical order. All 50 order probes were refused as expected, including all four for leg 4.
 
-The alternate order printed `SOFTLOCK at jump (24:04: every player is done and the node is not); GRAPH BUG: the graph
-allows "T3 before beam" but the rules never finished jump`. Two and three players hit it at 22:51 and 22:13.
-The repeat reproduced all three times. The leg 4 plan's steps 1–3 notes already record the same result on the v69
-control. The other tested orders finished.
+**T3 before beam.** With logs already delivered, the real host accepts the beam and starts laying track.
+The loop treated beam delivery as permission to press the pillar drum. The host refused the early press and the
+loop exhausted its actions. The host keeps laying track and accepts the pillar press once T3 completes.
+The loop now waits on the graph's T3 prerequisite for the pillar. The Station 1 stand still grants the early jump
+in a jump-first room. No game rule changed.
+
+The regression replay sent real host operations in this order with three players. Before the fix it stopped at
+`jump` at tick 13327. After the fix both a fresh replay and one resumed from the shared prefix completed T3
+after beam delivery and collected the jump with zero refusals. The loop graph suite passed 37/37.
 
 ## Network and reconnect
 
@@ -33,6 +39,8 @@ Command `timeout 2400s npm run test:net` for both runs. The first suite finished
 The corrected inventory gave a clean retry, `PASS: 315/315 checks passed`. See `.look/checkpoint-d/net.log` and
 `.look/checkpoint-d/net-retry.log`.
 
+The post-fix network suite also exited 0 with 315/315 checks, including all 23 cave assertions (`.look/job/net.log`).
+
 The `cave-mid` host proof wrote the save before opening the first tab. Both tabs joined and matched. After a 564-tick
 round trip, the rack held 20 logs and 20 rails. The first tab picked up 16 rails, left, and rejoined after the server
 restart. The cave row, rack, train kits and carried rails matched the expected values throughout. After restart and a
@@ -40,10 +48,10 @@ further round trip the carrier still held 16 rails, the rack held 20 logs and fo
 20 rails. All 23 cave assertions passed. The mirror probes check train kits and the carrier's back. The tabs share a
 replica hash and the host checks the leg row and rack directly.
 
-The requested `timeout 420s npm run scenario -- reconnect-edit --rail-seed cave-mid` failed before opening a browser
-on both attempts with `unknown scenario --rail-seed, cave-mid`. The existing scenario exercises a roster edit over a
-socket drop. The plan names the seeded host test for the restart proof. See `.look/checkpoint-d/scenario.log` and
-`.look/checkpoint-d/scenario-retry.log`. Neither attempt reached verdict creation.
+The roster reconnect scenario runs with `timeout 420s npm run scenario -- reconnect-edit`. The scenario runner
+takes scenario names and has no rail-seed option. The corrected invocation passed all eight assertions on
+`9cb665aa1` in 24.4 seconds, with zero graphics errors. The disconnected tab edited its colour, rejoined,
+and both tabs agreed with the host. The seeded cave restart is covered by the separate net case above.
 
 The replay `node --test test/loop-graph.test.ts` passed 37/37, with a full post-restart cycle exercised for both
 `canopy-mid` and `cave-mid`. See `.look/checkpoint-d/loop-graph.log`.
@@ -110,3 +118,9 @@ seed-helper changes. The service rules and fuzz were unchanged, so the existing 
 See `.look/checkpoint-d/service-rule-diff.log`.
 
 The Mac frame-time reading remains pending. Not tested on a device.
+
+## Branch checks
+
+The scoped ship-check against `origin/main` passed registry, lint, typecheck and the 20 affected test files.
+The level check exited 0. This branch changes developer tooling, tests and documentation. The conditional
+server suite and long service fuzz did not apply.
