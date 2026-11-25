@@ -4,6 +4,7 @@ Proof debts, things jobs reported and did not fix, and older parked items. Split
 
 ## From 25 November
 
+- P3 · `ship-queue --wait` keeps polling for a PR when the Auto-merge workflow fails before opening one (a GitHub 503 on 25 November stranded two green ships from 15:45 to the follow-up). It should read the Auto-merge run for its SHA and exit with its own code.
 - P3 · From greybox leg 5 step 4's review (Astra medium): the new floods prove each endpoint is reachable, not that the intended route is walked: the quay flood (`dev/level/route-leg4.ts`, near line 153) reaches the crossing, foot and top separately with jumping on, and Canopy's 2 m grid (`dev/level/route-leg3.ts`, near line 290) can smooth a platform edge into a slope; a real-speed walk over the crossing and up a Canopy ramp was not seen.
 - P3 · From greybox leg 5 steps 1 to 3's review (Astra high): the checkpoint validator passes a completed Wall whose deep-span barrier is still shut (`src/sim/railway-check-route.ts`, near line 72); play enforces the gate before the final lay, so only a hand-edited fixture shows it. Failing test `the world check refuses a completed Wall with its deep-span barrier still shut` is on the reviewer's branch `review/greybox-leg5-rules` (`dab59ad05`, `test/railway-leg5-rules.test.ts`).
 - P3 · From friends voice step 5 (the honk reply): a honk replaces the same player's "On my way" row with "Name ♪", so the card loses that they are coming (`src/features/ping.ts`, `reply`, the shared `replies` row per player).
