@@ -149,7 +149,8 @@
 // v69 (2026-11-25): trade fits hold through their line's last lay and allow one free re-pick. Retire the bigger cradle.
 // v70 (2026-11-25): the cave line gains two train rows and a head, Saltpan's arc and the plug's frame reach.
 // v71 (2026-11-25): the cave line grows from Port Quay to High Gorge, with new halt ids, three trains and the deep-span reach.
-export const WORLD_NS = 'v71';
+// v72 (2026-11-25): the Notch and causeway extend two lines, four reach points move and Route saves the island train's first stop.
+export const WORLD_NS = 'v72';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

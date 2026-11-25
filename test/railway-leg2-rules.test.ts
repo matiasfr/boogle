@@ -117,7 +117,7 @@ test("leg 2's catalog lines: ns and bay open by their legs' sections, fleets 0, 
         l.halts.slice(0, stops.length).map((h) => h.s),
         `${l.id}: the stops a prefix`,
       );
-      assert.equal(trains, [0, 0, 1, 2, 2, 3, 3][stops.length], `${l.id}: ${trains} trains over ${stops.length} stops`);
+      assert.equal(trains, [0, 0, 1, 2, 2, 3, 3, 3][stops.length], `${l.id}: ${trains} trains over ${stops.length} stops`);
     }
     // Right-hand running (owner, 18 November): each halt's outward platform right of the row going out, its homeward
     // one left, 11.6 m apart.

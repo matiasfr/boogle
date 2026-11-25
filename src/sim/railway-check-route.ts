@@ -26,6 +26,7 @@ import {
   legKitMayLoad,
   legKitTrains,
   legOpen,
+  legYardAhead,
   legReached,
   legRow,
   routeRow,
@@ -101,7 +102,7 @@ export function checkRoute(w: World) {
     // A junction yard holds units only while a leg that loads there is open, never more than its remaining sections'
     // bills less what is fed (greybox-leg2.md, step 2: on the lay that completes it, the yard goes home).
     if (!y.logs && !y.rails) return;
-    const k = RAIL_LEGS.findIndex((l, j) => l.kit === y.slot && legOpen(w, j));
+    const k = RAIL_LEGS.findIndex((l, j) => l.kit === y.slot && (legOpen(w, j) || legYardAhead(w, j)));
     if (k < 0) bad('yard without its open leg');
     const room = legHeldRoom(w, k);
     if (y.logs > room.logs || y.rails > room.rails) bad('yard over its leg');
@@ -110,6 +111,7 @@ export function checkRoute(w: World) {
   if (
     !railInt(route.grants, (1 << RAIL_GRANTS.length) - 1) ||
     !railInt(route.gates, (1 << RAIL_GATES.length) - 1) ||
+    !railInt(route.reached, RAILWAY_MAX_INT, -1) ||
     !railInt(route.arrived, RAILWAY_MAX_INT, -1)
   )
     bad('route bounds');
@@ -123,5 +125,7 @@ export function checkRoute(w: World) {
     if (!at || !legReached(w, at.leg)) bad('gate before its leg');
     if (at && legRow(w, at.leg).laid < at.section) bad('gate before its section');
   });
-  if (route.arrived >= 0 && !legDone(w, RAIL_LEGS.length - 1)) bad('arrived before the causeway');
+  if (route.reached >= 0 && !legDone(w, RAIL_LEGS.length - 1)) bad('island reached before the causeway');
+  if (route.arrived >= 0 && (route.reached < 0 || route.arrived < route.reached))
+    bad('arrival before a train reached the island');
 }

@@ -20,7 +20,7 @@ import { railwayAtRing } from './railway-seed-ring.ts';
 import { account, rail } from './railway-rows.ts';
 import { LOGS, roomOf } from './railway-queries.ts';
 import { RAILS } from './railway-line2-layout.ts';
-import { legKitCarriers, legRow } from './railway-queries-route.ts';
+import { legKitCarriers, legRow, routeRow } from './railway-queries-route.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS } from './railway-route.ts';
 
 export const LEG_STAGES = [
@@ -42,6 +42,11 @@ export const LEG_STAGES = [
   'wall-mid',
   'wall-deep',
   'wall-closed',
+  'notch-open',
+  'notch-reached',
+  'causeway-open',
+  'island-reached',
+  'arrived',
 ] as const;
 export type LegStage = (typeof LEG_STAGES)[number];
 
@@ -197,6 +202,25 @@ function build(s: Seed, stage: LegStage): Seed {
       need(act(s, 'a', 'rail.gate', { id: RAIL_GATES.findIndex((g) => g.id === 'deep-span') }) === 1, 'deep span open');
       laySection(s, WALL);
       advance(s, 900);
+      break;
+    case 'notch-open':
+      until(s, () => racked(s, 6), 8000, 'Notch kit delivered at Canopy');
+      break;
+    case 'notch-reached':
+      need(act(s, 'a', 'rail.gate', { id: 4 }) === 1, 'cloth opens the Notch frame');
+      laySection(s, 6);
+      break;
+    case 'causeway-open':
+      need(act(s, 'a', 'rail.grant', { id: 3 }) === 1, 'lantern taken');
+      need(act(s, 'a', 'rail.gate', { id: 5 }) === 1, 'lantern opens the causeway');
+      until(s, () => racked(s, 7), 8000, 'causeway kit delivered at Bell Rock');
+      break;
+    case 'island-reached':
+      laySection(s, 7);
+      until(s, () => routeRow(w).reached >= 0, 8000, 'first train stood at the island');
+      break;
+    case 'arrived':
+      need(act(s, 'a', 'rail.arrive', {}) === 1, 'meeting accepted');
       break;
   }
   return s;

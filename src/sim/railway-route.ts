@@ -32,6 +32,7 @@ export type RouteLeg = {
   after: number;
   /** Where its trains load: the line's Home halt, or a junction yard (a RAIL_YARDS index). */
   kit: 'home' | number;
+  kitAhead?: true;
 };
 
 /** The sim line of each catalog row. Line 2 is the existing one; step 3 appends `ns`, `bay` and `cave` after it in this
@@ -137,7 +138,6 @@ const WALL_N1 = WALL_ISLETS['wall-n1'];
 // Midway across the strait's level deck; 33 m beyond the top of the climb onto Canopy isle.
 export const CANOPY_STRAIT = 174323,
   CANOPY_EDGE = 214613;
-const CANOPY_KINK = row('bay').legs[1]!.toCm;
 /** A temporary head stops 10 m short of the laid deck's end. */
 export const HEAD_BACK_CM = 1000;
 
@@ -156,6 +156,7 @@ type Spec = {
   gated: readonly (readonly [number, number])[];
   after: number;
   kit: 'home' | number;
+  kitAhead?: true;
   /** Its rules are built: its sim line holds a halt for each head (railway-lines.ts), so simHalt counts them. */
   built?: true;
 };
@@ -252,6 +253,7 @@ const SPECS: readonly Spec[] = [
     gated: [[0, 4]],
     after: 5,
     kit: 'home',
+    built: true,
   },
   {
     id: 'causeway',
@@ -264,6 +266,8 @@ const SPECS: readonly Spec[] = [
     gated: [[0, 5]],
     after: 6,
     kit: 0,
+    built: true,
+    kitAhead: true,
   },
 ];
 
@@ -304,6 +308,7 @@ export const RAIL_LEGS: readonly RouteLeg[] = SPECS.map((s) => ({
   destRowHalt: s.dest,
   after: s.after,
   kit: s.kit,
+  ...(s.kitAhead ? { kitAhead: s.kitAhead } : {}),
 }));
 
 /** A section's first centimetre: the leg's start, or the section before's end. */
@@ -324,6 +329,9 @@ export const TRADE_OPENS: Readonly<Record<number, number>> = {
   [ROW_LINE.bay]: 1,
 };
 
+/** The pinned cloth post and its surveyed distance to the Notch frame, in cm (greybox-leg6.md, Level findings). */
+export const CANOPY_CLOTH = { x: -109199, z: -29401, barrierGapCm: 2472 } as const;
+
 /** The abilities a leg grants once its last section is laid; each stands at its leg's destination halt (a placeholder
  * position: step 4's massing moves it off the platform, the plan's change 1). The hook reel and the carry sling are
  * left out until something uses them. */
@@ -332,8 +340,8 @@ export const RAIL_GRANTS: readonly { id: string; label: string; leg: number; at:
   { id: 'pick', label: 'Powered pick', leg: 0, at: { x: -7435, z: -203262, y: 8500, reach: 400 } },
   // Bell Rock's reserved seeds spot on the lower deck (src/content/levels/leg2.ts, marks.seeds: ne.at(-4, -15)).
   { id: 'seeds', label: 'Crystal seeds', leg: 1, at: { x: -6473, z: -85491, y: 490, reach: 400 } },
-  { id: 'cloth', label: 'Glider cloth', leg: 3, at: rowSide('bay', CANOPY_KINK - 200, -980, 90, 400) },
-  { id: 'lantern', label: 'Lantern', leg: 6, at: haltAt('bay', 3) },
+  { id: 'cloth', label: 'Glider cloth', leg: 3, at: { x: CANOPY_CLOTH.x, z: CANOPY_CLOTH.z, y: 1390, reach: 400 } },
+  { id: 'lantern', label: 'Lantern', leg: 6, at: { x: -162000, z: -98600, y: 600, reach: 400 } },
 ];
 const grant = (id: string) => RAIL_GRANTS.findIndex((g) => g.id === id);
 
@@ -361,9 +369,14 @@ export const RAIL_GATES: readonly { id: string; label: string; needs: number; at
     id: 'notch',
     label: 'The Notch frame',
     needs: grant('cloth'),
-    at: { ...pointAt('bay', CANOPY_KINK), y: 1390, reach: 400 },
+    at: rowSide('bay', stopCm('bay', 2) + 300, 480, 90, LEG_SITE_REACH),
   },
-  { id: 'causeway', label: "The causeway's first frame", needs: grant('lantern'), at: haltAt('ns', 1) },
+  {
+    id: 'causeway',
+    label: "The causeway's first frame",
+    needs: grant('lantern'),
+    at: rowSide('ns', stopCm('ns', 1) + 300, 480, 90, LEG_SITE_REACH),
+  },
 ];
 
 /** A junction: trains of the `fedBy` leg unload here and the next leg's kit trains load here. `halt` is an index on the
@@ -481,6 +494,8 @@ const FIRST_SITE: Readonly<Record<string, { frame: RailPlatform; rack: RailPlatf
     frame: rowSide('cave', stopCm('cave', 2) + 1200, 480, 90, LEG_SITE_REACH),
     rack: rowSide('cave', stopCm('cave', 2) + 200, 480, 90, LEG_SITE_REACH),
   },
+  'notch-tunnel': { frame: RAIL_GATES[4]!.at, rack: rowSide('bay', stopCm('bay', 2) - 700, 480, 90, LEG_SITE_REACH) },
+  causeway: { frame: RAIL_GATES[5]!.at, rack: rowSide('ns', stopCm('ns', 1) - 700, 480, 90, LEG_SITE_REACH) },
 };
 if (
   Object.keys(FIRST_SITE).join() !==
@@ -502,8 +517,8 @@ export function legRack(leg: RouteLeg, k: number): RailPlatform {
   if (k === 0) return FIRST_SITE[leg.id]?.rack ?? legFrame(leg, 0);
   return rowSide(leg.row, sectionFromCm(leg, k) - 1800, 480, 90, LEG_SITE_REACH);
 }
-/** The meeting marker on the Original Island (placeholder: at the `ns` row's last halt, 25 m round it): `rail.arrive`. */
-export const RAIL_ARRIVAL: RailPlatform = { ...haltAt('ns', 2), reach: 2500 };
+/** The meeting marker on the north beach, 12 m beyond the platform ends. */
+export const RAIL_ARRIVAL: RailPlatform = { x: 370, z: -10460, y: 228, reach: 400 };
 /** The route's named tunables (design review of 12 November, rulings 1.3 and 1.4): `layTicks`, a section's lay time
  * whatever its length (30 s); `kitLead`, the sections whose kit is owed ahead of the frame, "all remaining" (the
  * longest leg's count), never under 2. Catalog data, not room tunables: a change is a rules change, no state. */

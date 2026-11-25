@@ -295,6 +295,7 @@ async function runChecks() {
     recordLeg((await import('./route-leg3.ts')).checkLeg3());
     recordLeg((await import('./route-leg4.ts')).checkLeg4());
     recordLeg((await import('./route-leg5.ts')).checkLeg5());
+    recordLeg((await import('./route-leg6.ts')).checkLeg6());
     // Track continuity measures physical original/offset sides independently of train direction (rail-map.md).
     const { checkContinuity, printContinuity } = await import('./track-continuity.ts');
     const continuity = checkContinuity();

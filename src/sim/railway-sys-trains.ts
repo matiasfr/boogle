@@ -29,6 +29,7 @@ import {
   Till,
   Leg,
   LegYard,
+  Route,
 } from './railway-components.ts';
 import {
   apertureId,
@@ -60,7 +61,10 @@ import type { TradePct } from './railway-trade-layout.ts';
 import { boilerAdopt, steelArrives, steelLoads, steelService } from './railway-sys-steel.ts';
 import { legKitArrive, legKitLoad, legKitService, legRailheadHold } from './railway-sys-route-kit.ts';
 import { fleetOf } from './railway-train.ts';
-import { legsLaid } from './railway-queries-route.ts';
+import { legDone, legsLaid, routeRow, routeId } from './railway-queries-route.ts';
+import { RAIL_LEGS } from './railway-route.ts';
+const causewaySlot = RAIL_LEGS.findIndex((l) => l.id === 'causeway');
+const causeway = RAIL_LEGS[causewaySlot]!;
 
 /** A stop request (docs/plans/works-late-game.md, step 1; docs/plans/generic-lines.md, 7): one digit per halt per way,
  * so a repeat adds no request. A platform call can extend an unextended stand once (depart still equals arrived).
@@ -190,6 +194,13 @@ function trainIO(w: World, headPct: number, pct: TradePct, tick: number): TrainI
     headPct,
     service: (slot) => serviceOf(w, slot, row(slot), tick),
     arrive(slot) {
+      if (
+        RAIL_TRAINS[slot]!.line === causeway.line &&
+        row(slot).at === causeway.railheadHalt &&
+        routeRow(w).reached < 0 &&
+        legDone(w, causewaySlot)
+      )
+        w.mut(Route, routeId(w))!.reached = tick;
       freightArrives(w, slot);
       ridersArrive(w, slot, pct, tick);
       // The greybox route: a leg's kit off at its rack (none while a Q job's kit is owed: one open leg comes after Q7).
@@ -280,7 +291,7 @@ export const trainTick = defineSystem(
   'rail.trainTick',
   {
     reads: [QJob, Cart, Account, Plot],
-    writes: [Train, Line, Rail, Forge, Works, Aperture, Yard, Town, Till, Steel, Shed, Leg, LegYard],
+    writes: [Train, Line, Rail, Forge, Works, Aperture, Yard, Town, Till, Steel, Shed, Leg, LegYard, Route],
     phase: 'tick',
     order: 3,
   },

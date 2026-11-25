@@ -559,13 +559,25 @@ export const RAIL_LINES: readonly RailLineDef[] = [
     signals: STACK.sections.slice(0, -1).map((sec) => legS(STACK, sec.toCm)),
   },
   // The incline ends at Bell Rock. The bay cut's crossover there serves until the line grows on to Canopy.
-  appendLeg(rowLine('ns'), 'incline', 'Incline head', 110600, [0, 1, 2]),
   appendLeg(
-    appendLeg(rowLine('bay'), 'bay-cut', 'Bay head', 119248, [0, 1, 2]),
-    'bell-canopy',
-    'Canopy head',
-    236000,
-    [2, 2, 3, 3],
+    appendLeg(rowLine('ns'), 'incline', 'Incline head', 110600, [0, 1, 2]),
+    'causeway',
+    'Causeway head',
+    WORLD_LINES.find((l) => l.id === 'ns')!.ends.find((e) => e.at === 'end')!.sCm,
+    [2, 2],
+  ),
+  appendLeg(
+    appendLeg(
+      appendLeg(rowLine('bay'), 'bay-cut', 'Bay head', 119248, [0, 1, 2]),
+      'bell-canopy',
+      'Canopy head',
+      236000,
+      [2, 2, 3, 3],
+    ),
+    'notch-tunnel',
+    'Notch head',
+    WORLD_LINES.find((l) => l.id === 'bay')!.ends.find((e) => e.at === 'end')!.sCm,
+    [3, 3],
   ),
   appendLeg(
     appendLeg(
