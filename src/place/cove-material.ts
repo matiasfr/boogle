@@ -1,4 +1,6 @@
-// One island-space layer vocabulary for heightfield and sculpted kit. Local live numeric controls.
+// The cove's ground layers round the landing (cove-ground.ts): sand, turf, wet and relief of its own, and the rock every
+// cliff shares (ground-material.ts beddedRock: one palette with the cliff kit, docs/plans/cliff-kit-everywhere.md,
+// step 1). Local live numeric controls.
 import * as THREE from 'three/webgpu';
 import {
   abs,
@@ -25,11 +27,12 @@ import { coveU } from './cove-tuning.ts';
 import { coveTextures } from './cove-textures.ts';
 import { registerCoveSand } from './cove-sand.ts';
 import { ORIGIN } from './layout.ts';
+import { beddedRock } from './ground-material.ts';
 // oxlint-disable-next-line typescript/no-explicit-any
 type N = any;
 const pigment = (family: 'rock' | 'strata' | 'sediment' | 'rust' | 'grass' | 'sand' | 'path') =>
   vec3(coveU(`${family}R`), coveU(`${family}G`), coveU(`${family}B`));
-export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region: N, kit = false, soilSlope: N = null) {
+export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region: N, soilSlope: N) {
   const tiles = coveTextures();
   const p = positionWorld.sub(vec3(ORIGIN.x, 0, ORIGIN.z));
   const n = normalWorldGeometry.normalize();
@@ -41,7 +44,6 @@ export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region
       .mul(axes.x)
       .add(texture(map, p.xz.div(repeat)).mul(axes.y))
       .add(texture(map, p.xy.div(repeat)).mul(axes.z));
-  const rockPaint = tri(tiles.rock).rgb;
   const rockHeight = tri(tiles.data).r;
   const turfUV = p.xz.div(coveU('grassScale'));
   const turfPaint = texture(tiles.turf, turfUV).rgb;
@@ -49,7 +51,7 @@ export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region
   const macro = texture(tiles.data, p.xz.mul(coveU('noiseScale')).div(8)).b.sub(0.5);
   const slope = coveU('slopeThreshold'),
     slopeWidth = coveU('slopeBlend');
-  const coverageSlope = kit ? n.y : mix(n.y, soilSlope, coveU('macroSlopeMix'));
+  const coverageSlope = mix(n.y, soilSlope, coveU('macroSlopeMix'));
   let rock: N = smoothstep(slope.sub(slopeWidth), slope.add(slopeWidth), coverageSlope).oneMinus();
   const sandLine = coveU('sandHeight').add(macro.mul(coveU('heightBlend')));
   let sand: N = smoothstep(sandLine.sub(coveU('sandBlend')), sandLine.add(coveU('sandBlend')), p.y)
@@ -67,24 +69,13 @@ export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region
   // Broad slope coverage must not grow turf on the wet shoreline's steep foot.
   const dryTurf = smoothstep(0, coveU('grassMinHeight'), p.y);
   grass = grass.mul(dryTurf);
-  const tag: N = kit ? attribute('coveTurf', 'float') : float(0);
-  if (kit) {
-    grass = tag;
-    sand = float(0);
-  }
-  // The buried roof/soil socket shares composition as well as lighting. Away from that small contact strip,
-  // retain each surface's ordinary sand, soil and authored cap rules. Slope eligibility still applies below.
-  const capJoin = attribute('coveCapJoin', 'vec2');
-  const capWeight = capJoin.x.clamp();
-  grass = grass.mul(capWeight.oneMinus()).add(capJoin.y.clamp());
-  sand = sand.mul(capWeight.oneMinus());
   rock = grass.add(sand).oneMinus().max(0);
   // The broad field selects the border; actual normals only enforce walkability. Repeating the full
   // rock/turf threshold here stamped the lighting mesh's coarse facets back into the smoothed coverage.
   const turfSlope = smoothstep(WALKABLE_NY, float(WALKABLE_NY).add(max(0.01, slopeWidth)), n.y);
   rock = rock.add(grass.mul(turfSlope.oneMinus()));
   grass = grass.mul(turfSlope);
-  const path: N = kit ? float(0) : attribute('covePath', 'float').clamp();
+  const path: N = attribute('covePath', 'float').clamp();
   // Microheight only contests existing coverage; zero-coverage layers never win. Keep this graph branch-free:
   // scalar TSL select emits an if, which can pull lazy texture samples into nonuniform control flow.
   const influence = coveU('heightBlend');
@@ -112,46 +103,8 @@ export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region
   rock = rock.div(exposed).mul(cleanGrass.oneMinus());
   sand = sand.div(exposed).mul(cleanGrass.oneMinus());
   grass = cleanGrass;
-  // Slowly varying deposition rate gives unequal bed heights. Its derivative remains positive,
-  // so irregularity cannot fold sediment layers back through themselves.
-  const height = p.y.add(
-    sin(p.x.mul(coveU('bandWarpScale')))
-      .add(sin(p.z.mul(coveU('bandWarpScale')).mul(0.71).add(1.3)))
-      .mul(coveU('bandWarp')),
-  );
-  const deposition = height.div(coveU('bandScale'));
-  const layers = deposition
-    .add(
-      sin(deposition.mul(0.77))
-        .mul(0.55)
-        .add(sin(deposition.mul(1.7).add(0.9)).mul(0.15))
-        .mul(coveU('bandIrregularity')),
-    )
-    .add(rockHeight.sub(0.5).mul(coveU('bandErosion')));
-  const bed = floor(layers),
-    phase = fract(layers);
-  const randomBed = (index: N) => fract(sin(index.mul(7.13).add(2.39)).mul(43758.5453));
-  const bedPigment = (index: N) => {
-    const tone = floor(randomBed(index).mul(coveU('bandColourCount')));
-    return tone
-      .greaterThan(2.5)
-      .select(
-        pigment('rust'),
-        tone
-          .greaterThan(1.5)
-          .select(pigment('sediment'), tone.greaterThan(0.5).select(pigment('strata'), pigment('rock'))),
-      );
-  };
-  const sediment = mix(bedPigment(bed.sub(1)), bedPigment(bed), smoothstep(0, coveU('bandSoftness'), phase));
-  // Bedding is visible only on exposed steep faces; rounded caps/shoulders keep quiet pigment.
-  const steep = smoothstep(
-    coveU('bandSlopeThreshold').sub(coveU('bandSlopeBlend')),
-    coveU('bandSlopeThreshold').add(coveU('bandSlopeBlend')),
-    n.y,
-  ).oneMinus();
-  const rockCol = mix(pigment('rock'), sediment, steep.mul(coveU('strataStrength'))).mul(
-    mix(vec3(1), rockPaint, coveU('pigmentStrength')),
-  );
+  // The rock every cliff shares, the cliff kit's included; the cove keeps its own sand, turf and wet.
+  const rockCol = beddedRock(p);
   const grassCol = pigment('grass').mul(turfPaint.sub(0.8).mul(coveU('grassDetailStrength')).add(1));
   const sandCol = pigment('sand').mul(macro.mul(coveU('detailStrength')).add(1));
   const edgeStart = float(0.5).sub(coveU('grassEdgeWidth'));

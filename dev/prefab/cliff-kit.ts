@@ -15,7 +15,8 @@
 // - Art only stands, never a new way up: no standable top more than a step off the bare world's own footing (the gate
 //   in level-check, dev/level/cliff-kit-standing.ts; not run here, so a piece that breaks it is reported, not built
 //   round).
-// Areas: the canyon (dev/prefab/cliff-kit-canyon.ts). No other area is dressed yet.
+// Areas: the canyon (dev/prefab/cliff-kit-canyon.ts, by stations along the path) and the shore
+// (dev/prefab/cliff-kit-shore.ts, by runs along its walls: `runAlong` and `layAlong` below).
 import type { LevelDef, Placement, Vec3 } from '../../src/prefab/types.ts';
 import { segDist } from '../../src/island/stamps.ts';
 import { ORIGIN } from '../../src/place/layout.ts';
@@ -27,6 +28,7 @@ import { prefabs } from '../../src/content/prefabs/terrain.ts';
 import { baseSites } from '../level/sites.ts';
 import { drawnTracks } from '../level/rail-network.ts';
 import { canyon } from './cliff-kit-canyon.ts';
+import { shore } from './cliff-kit-shore.ts';
 
 export type Key = (typeof prefabs)[number]['key'];
 /** Places one piece in an area, checked against the piece rules; `where` names it in a failure. */
@@ -42,13 +44,60 @@ export type Area = {
   walls: readonly (readonly [number, number])[];
   /** Gated places of its own, beyond the layout's (Place-local x, z). */
   keepClear?: readonly (readonly [number, number])[];
+  /** A square (Place-local centre, half its side, m) where nobody may be walled off from the treads by the kit: the
+   * audit's reverse flood (dev/level/cliff-kit.ts) for an area whose pieces stand at the water. */
+  stranded?: { x: number; z: number; half: number };
   dress(kit: Kit): void;
 };
-export const AREAS: readonly Area[] = [canyon];
+export const AREAS: readonly Area[] = [canyon, shore];
 /** The level an area writes. */
 export const levelOf = (area: Area) => area.level ?? `cliff-kit-${area.id}`;
 
 export const CLEAR = 0.4; // m, a collider's footprint outside the tread's edge
+
+/** A run along a wall (docs/plans/cliff-kit-everywhere.md, "runs, not stations"): a polyline of Place-local (x, z)
+ * points along its toe or front, measured by arc length. `at(s)` is the point s m along it, with its unit tangent and
+ * the normal to its left (u turned a quarter: (-uz, ux)). */
+export function runAlong(points: readonly (readonly [number, number])[]) {
+  const lengths = [0];
+  for (let k = 1; k < points.length; k++)
+    lengths.push(lengths[k - 1]! + Math.hypot(points[k]![0] - points[k - 1]![0], points[k]![1] - points[k - 1]![1]));
+  const length = lengths[lengths.length - 1]!;
+  const at = (s: number) => {
+    let k = 1;
+    while (k < points.length - 1 && lengths[k]! < s) k++;
+    const [ax, az] = points[k - 1]!,
+      [bx, bz] = points[k]!;
+    const span = lengths[k]! - lengths[k - 1]!,
+      t = (s - lengths[k - 1]!) / span;
+    const ux = (bx - ax) / span,
+      uz = (bz - az) / span;
+    return { x: ax + (bx - ax) * t, z: az + (bz - az) * t, ux, uz, nx: -uz, nz: ux };
+  };
+  return { length, at };
+}
+/** Pieces end to end along a run from `from` m, each its `width` plus `gap` m of it: each centred on its chord and
+ * turned so its front (+z) faces the chord's normal on `side` (+1 the run's left, -1 its right). `put` places it, given
+ * its centre and that outward normal (x, z), and its yaw. */
+export function layAlong(
+  run: ReturnType<typeof runAlong>,
+  from: number,
+  pieces: readonly (readonly [Key, number])[],
+  gap: number,
+  side: 1 | -1,
+  put: (prefab: Key, at: { x: number; z: number; nx: number; nz: number }, yaw: number, s: number) => void,
+) {
+  let s = from;
+  for (const [prefab, width] of pieces) {
+    const a = run.at(s),
+      b = run.at(Math.min(run.length, s + width));
+    const span = Math.hypot(b.x - a.x, b.z - a.z);
+    const nx = (-(b.z - a.z) / span) * side,
+      nz = ((b.x - a.x) / span) * side;
+    put(prefab, { x: (a.x + b.x) / 2, z: (a.z + b.z) / 2, nx, nz }, Math.atan2(nx, nz), s);
+    s += width + gap;
+  }
+}
 export const KEEP_AWAY = 6; // m
 /** Every gated place in the layout, Place-local: a point and the radius it holds (a pad's or pillar's own size). */
 const GATED: readonly { what: string; x: number; z: number; r: number }[] = [

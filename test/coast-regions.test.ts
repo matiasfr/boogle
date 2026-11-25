@@ -9,7 +9,6 @@ import { gridBedAt, registerShoreProvider } from '../src/render/water/shore-prov
 import { createCoast, type Coast } from '../src/render/water/coast.ts';
 import { GRID, ORIGIN } from '../src/place/layout.ts';
 import { heights as placeHeights, NX, NZ, at, fineHeightAt } from '../src/place/terrain.ts';
-import { coveSurface } from '../src/place/cove.ts';
 
 // Home's heights come from Vite-only layout data, so Home here is a stand-in island on Home's own grid, bounds and
 // extent; Place is its real terrain and bed query (src/place/water.ts).
@@ -54,9 +53,7 @@ function registerToday() {
       extent: 1024,
       bedAt: (x, z) => {
         const bed = gridBed(x, z);
-        const lx = x - ORIGIN.x,
-          lz = z - ORIGIN.z;
-        return bed.valid ? { valid: true, height: coveSurface(lx, lz, fineHeightAt(lx, lz, bed.height)) } : bed;
+        return bed.valid ? { valid: true, height: fineHeightAt(x - ORIGIN.x, z - ORIGIN.z, bed.height) } : bed;
       },
     }),
   );

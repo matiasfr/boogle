@@ -470,11 +470,6 @@
       "exports": ["holdCoveStop"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
-    "src/place/cove-view.ts": {
-      "count": 6,
-      "exports": ["buildCove"],
-      "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
-    },
     "src/place/folk.ts": {
       "count": 2,
       "exports": [
@@ -856,7 +851,6 @@
     "src/entities/town/view.ts#createTownView": 1,
     "src/entities/town/workshop.ts#makeWorkshop": 1,
     "src/fall/letters.ts#blastLetters": 1,
-    "src/place/cove-view.ts#buildCove": 1,
     "src/place/sites.ts#hullBodies": 1,
     "src/proto/crossing/world.ts#buildWorld": 1,
     "src/proto/greybox/build.ts#buildGreybox": 2,

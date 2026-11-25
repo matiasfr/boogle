@@ -114,14 +114,7 @@ export function homeGroundMaterial(lawnLayer?: LawnLayer) {
     .add(wander.mul(0.07));
   const broad: N = smoothstep(0.54, 0.6, soil.add(wander.mul(0.03))).oneMinus();
   const rock: N = smoothstep(0.3, 0.42, steep.add(ragged)).max(broad);
-  const { layered, paint, q } = rockLayers(p);
-  const tread: N = smoothstep(0.05, 0.3, fract(q)).oneMinus();
-  const seam: N = smoothstep(0.02, 0.07, fract(q)).mul(smoothstep(0.93, 0.98, fract(q)).oneMinus());
-  const rockColour: N = layered
-    .mul(mix(vec3(1), paint, 0.45))
-    .mul(smoothstep(0, 0.45, foot).mul(0.2).add(0.8))
-    .mul(tread.mul(0.05).add(1))
-    .mul(seam.mul(0.14).add(0.86));
+  const rockColour: N = beddedRock(p).mul(smoothstep(0, 0.45, foot).mul(0.2).add(0.8));
   // A dry lip only at the rim.
   const lip: N = smoothstep(0.02, 0.12, steep)
     .mul(rock.oneMinus())
@@ -136,6 +129,19 @@ export function homeGroundMaterial(lawnLayer?: LawnLayer) {
   patchNode(m, 'normalNode', () => mix(normalViewGeometry, normalFlat, rock).normalize());
   // The land registers with the sea through its cove layers (land.ts).
   return m;
+}
+
+/** The ground's cliff rock at a Place-local point `p`: rockLayers' beds through the rock tile, each bed's tread a little
+ * lighter and a thin dark seam between beds. Home's ground and the cove's ground round the landing (cove-material.ts)
+ * both draw their rock with it. */
+export function beddedRock(p: N): N {
+  const { layered, paint, q } = rockLayers(p);
+  const tread: N = smoothstep(0.05, 0.3, fract(q)).oneMinus();
+  const seam: N = smoothstep(0.02, 0.07, fract(q)).mul(smoothstep(0.93, 0.98, fract(q)).oneMinus());
+  return layered
+    .mul(mix(vec3(1), paint, 0.45))
+    .mul(tread.mul(0.05).add(1))
+    .mul(seam.mul(0.14).add(0.86));
 }
 
 /** The gorge's rock, shared by the ground's cliffs and the canyon kit (src/prefab/builders/terrain-kit.ts), so piece and

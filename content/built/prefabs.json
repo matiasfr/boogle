@@ -7319,6 +7319,37 @@
         }
       }
     },
+    "terrain.low-face": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            1.45,
+            -0.99
+          ],
+          "half": [
+            2.3,
+            1.45,
+            0.9
+          ],
+          "rot": [
+            0,
+            -0.133,
+            0
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "terrain.low-face",
+      "scope": "place",
+      "visual": {
+        "batch": "terrain.low-face",
+        "builder": "terrain.kit",
+        "params": {
+          "piece": "low_face"
+        }
+      }
+    },
     "terrain.rim-cap": {
       "colliders": [
         {
@@ -7342,6 +7373,195 @@
         "builder": "terrain.kit",
         "params": {
           "piece": "rim_cap"
+        }
+      }
+    },
+    "terrain.sea-corner": {
+      "colliders": [
+        {
+          "at": [
+            -1.9,
+            3,
+            -1.2
+          ],
+          "half": [
+            1.9,
+            3,
+            0.9
+          ],
+          "rot": [
+            0,
+            -0.133,
+            0
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            -1.2,
+            3,
+            -1.9
+          ],
+          "half": [
+            1.9,
+            3,
+            0.9
+          ],
+          "rot": [
+            1.5708,
+            -0.133,
+            0
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "terrain.sea-corner",
+      "scope": "place",
+      "visual": {
+        "batch": "terrain.sea-corner",
+        "builder": "terrain.kit",
+        "params": {
+          "piece": "sea_corner"
+        }
+      }
+    },
+    "terrain.sea-face-10": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            3,
+            -1.3
+          ],
+          "half": [
+            4.8,
+            3,
+            1
+          ],
+          "rot": [
+            0,
+            -0.133,
+            0
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "terrain.sea-face-10",
+      "scope": "place",
+      "visual": {
+        "batch": "terrain.sea-face-10",
+        "builder": "terrain.kit",
+        "params": {
+          "piece": "sea_face_10"
+        }
+      }
+    },
+    "terrain.sea-face-6": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            3,
+            -1.3
+          ],
+          "half": [
+            2.8,
+            3,
+            1
+          ],
+          "rot": [
+            0,
+            -0.133,
+            0
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "terrain.sea-face-6",
+      "scope": "place",
+      "visual": {
+        "batch": "terrain.sea-face-6",
+        "builder": "terrain.kit",
+        "params": {
+          "piece": "sea_face_6"
+        }
+      }
+    },
+    "terrain.shore-rock-l": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            0.3,
+            0
+          ],
+          "half": [
+            1.344,
+            0.42,
+            0.96
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "terrain.shore-rock-l",
+      "scope": "place",
+      "visual": {
+        "batch": "terrain.shore-rock-l",
+        "builder": "terrain.kit",
+        "params": {
+          "piece": "shore_rock_l"
+        }
+      }
+    },
+    "terrain.shore-rock-m": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            0.21,
+            0
+          ],
+          "half": [
+            0.84,
+            0.294,
+            0.6
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "terrain.shore-rock-m",
+      "scope": "place",
+      "visual": {
+        "batch": "terrain.shore-rock-m",
+        "builder": "terrain.kit",
+        "params": {
+          "piece": "shore_rock_m"
+        }
+      }
+    },
+    "terrain.shore-rock-s": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            0.135,
+            0
+          ],
+          "half": [
+            0.504,
+            0.189,
+            0.36
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "terrain.shore-rock-s",
+      "scope": "place",
+      "visual": {
+        "batch": "terrain.shore-rock-s",
+        "builder": "terrain.kit",
+        "params": {
+          "piece": "shore_rock_s"
         }
       }
     },

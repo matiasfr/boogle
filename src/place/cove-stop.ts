@@ -1,9 +1,20 @@
-// Owner-only, installed by the cove experiment. No change to moving friction or shared physics rules.
+// Owner-only, installed with Home's ground (land.ts; until 24 November by the sculpted cove face's view, which is gone:
+// docs/plans/cliff-kit-everywhere.md, step 1). No change to moving friction or shared physics rules.
 import { GRAVITY, PLAYER_MASS, WALKABLE_NY } from '../constants.ts';
+import { defineKind, despawn, spawn } from '../entity/entity.ts';
+import type { OwnedView } from '../render/owned-view.ts';
 import { forEachContact, forEachStatic, type Body } from '../physics/engine.ts';
 import { carry } from '../physics/platforms.ts';
 import { GROUP } from '../physics/physics.ts';
 import { me } from '../player/state.ts';
+
+defineKind('place-cove-stop', { fixedPre: 44 });
+/** Holds an idle player still on static scenery (Home's ground, the cliff kit, the landing) while the ground's view
+ * stands. */
+export function installCoveStop(owner: OwnedView) {
+  const stop = spawn({ kind: 'place-cove-stop', fixedPre: holdCoveStop });
+  owner.cleanup(() => despawn(stop));
+}
 
 const staticSupports = new WeakSet<Body>();
 export function holdCoveStop() {

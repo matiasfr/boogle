@@ -1,0 +1,29 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "place": "cliff-kit-shore",
+  "placements": [
+    {"id":"shore.0","pos":[-197.63,-1.41,51.86],"prefab":"terrain.sea-face-6","rot":[-1.68,0,0]},
+    {"id":"shore.1","pos":[-196.11,-1.43,59.6],"prefab":"terrain.sea-face-10","rot":[-1.2,0,0]},
+    {"id":"shore.2","pos":[-193.16,-1.55,66.69],"prefab":"terrain.sea-face-6","rot":[-1.12,0,0]},
+    {"id":"shore.3","pos":[-198.8,0.56,47],"prefab":"terrain.low-face","rot":[-1.62,0,0]},
+    {"id":"shore.4","pos":[-191.17,-1.51,71],"prefab":"terrain.sea-corner","rot":[-1.57,0,0]},
+    {"id":"shore.5","pos":[-200.43,-0.63,52],"prefab":"terrain.shore-rock-l","rot":[-1.17,0,0]},
+    {"id":"shore.6","pos":[-199.88,-0.37,57.5],"prefab":"terrain.shore-rock-m","rot":[-2.07,0,0]},
+    {"id":"shore.7","pos":[-198.24,-0.15,61],"prefab":"terrain.shore-rock-s","rot":[-0.47,0,0]},
+    {"id":"shore.8","pos":[-196.48,-0.37,64.5],"prefab":"terrain.shore-rock-m","rot":[-1.37,0,0]},
+    {"id":"shore.9","pos":[-194.92,-0.15,68],"prefab":"terrain.shore-rock-s","rot":[-2.47,0,0]},
+    {"id":"shore.10","pos":[-189.72,0.35,-3.81],"prefab":"terrain.face-6","rot":[-1.32,0,0]},
+    {"id":"shore.11","pos":[-181.59,17.25,-5.92],"prefab":"terrain.rim-cap","rot":[-1.32,0,0]},
+    {"id":"shore.12","pos":[-187.27,0.54,1.69],"prefab":"terrain.face-6","rot":[-0.9,0,0]},
+    {"id":"shore.13","pos":[-181.46,17.2,-2.89],"prefab":"terrain.rim-cap","rot":[-0.9,0,0]},
+    {"id":"shore.14","pos":[-181.25,-0.16,6.53],"prefab":"terrain.face-10","rot":[-0.9,0,0]},
+    {"id":"shore.15","pos":[-177.03,17.1,-0.04],"prefab":"terrain.rim-cap","rot":[-0.9,0,0]},
+    {"id":"shore.16","pos":[-173.9,16.91,3.87],"prefab":"terrain.rim-cap","rot":[-0.9,0,0]},
+    {"id":"shore.17","pos":[-171.75,16.69,8.53],"prefab":"terrain.rim-cap","rot":[-0.88,0,0]},
+    {"id":"shore.18","pos":[-169.53,16.59,12.57],"prefab":"terrain.rim-cap","rot":[-0.95,0,0]}
+  ],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}
