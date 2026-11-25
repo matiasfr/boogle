@@ -47,6 +47,8 @@ export const LEG_STAGES = [
   'causeway-open',
   'island-reached',
   'arrived',
+  'cave-first-open',
+  'cave-first-reached',
 ] as const;
 export type LegStage = (typeof LEG_STAGES)[number];
 
@@ -64,7 +66,7 @@ const cache = new Map<LegStage, Seed>();
 export function railwayAtLegs(stage: LegStage): Seed {
   let base = cache.get(stage);
   if (!base) {
-    const before = LEG_STAGES[LEG_STAGES.indexOf(stage) - 1];
+    const before = stage === 'cave-first-open' ? 'bay-reached' : LEG_STAGES[LEG_STAGES.indexOf(stage) - 1];
     base = build(before ? railwayAtLegs(before) : railwayAtRing('ring-joined'), stage);
     const broken = invariant(base.w);
     need(broken === null, `${stage}: ${broken}`);
@@ -179,6 +181,14 @@ function build(s: Seed, stage: LegStage): Seed {
       break;
     case 'canopy-reached':
       while (legRow(w, CANOPY).laid < RAIL_LEGS[CANOPY]!.sections.length) laySection(s, CANOPY);
+      break;
+    case 'cave-first-open':
+      need(act(s, 'a', 'rail.gate', { id: RAIL_GATES.findIndex(g => g.id === 'plug') }) === 1, 'plug opened first');
+      until(s, () => racked(s, CANOPY) && racked(s, CAVE), 6000, 'both first racks stocked');
+      break;
+    case 'cave-first-reached':
+      while (legRow(w,CAVE).laid < RAIL_LEGS[CAVE]!.sections.length) laySection(s, CAVE);
+      advance(s, 900);
       break;
     case 'cave-open':
       need(act(s, 'a', 'rail.grant', { id: RAIL_GRANTS.findIndex((g) => g.id === 'cloth') }) === 1, 'cloth taken');

@@ -86,6 +86,8 @@ export const SHARDS: readonly (readonly SeedStage[])[] = [
     'canopy-open',
     'canopy-mid',
     'canopy-reached',
+    'cave-first-open',
+    'cave-first-reached',
     'cave-open',
     'cave-mid',
     'port-reached',
