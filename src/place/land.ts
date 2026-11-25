@@ -34,7 +34,8 @@ import { boxFootprint, sampleFootprint } from './support.ts';
 import type { OwnedView } from '../render/owned-view.ts';
 import { tagStepSupport, segmentStepSupport, type StepSurface } from '../render/locomotion-surfaces.ts';
 import { coveWeight } from './cove.ts';
-import { installCoveStop } from './cove-stop.ts';
+import { holdCoveStop } from './cove-stop.ts';
+import { despawn, spawn } from '../entity/entity.ts';
 import { dressCoveGround } from './cove-ground.ts';
 import { addFarGround } from './far-ground.ts';
 import type { TileCells } from './far-ground-index.ts';
@@ -309,7 +310,9 @@ function buildMesh(owner: OwnedView) {
       return { top, surface: top < 2.4 && gorgeD(x - ORIGIN.x, z - ORIGIN.z) >= 18 ? 'sand' : 'grass' };
     });
   }
-  installCoveStop(owner);
+  // Holds an idle player still on static scenery (the ground, the cliff kit, the landing) while the ground stands.
+  const stop = spawn({ kind: 'place-cove-stop', fixedPre: holdCoveStop });
+  owner.cleanup(() => despawn(stop));
 }
 
 export { ROOM_GROUP } from '../constants.ts';
