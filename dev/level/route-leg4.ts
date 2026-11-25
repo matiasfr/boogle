@@ -69,17 +69,28 @@ function bake() {
     const p = rowPoint('cave', 62500 + i * 1000);
     return { x: p.x / 100, z: p.z / 100, y: round(Math.max(3.03, p.y / 100 - 0.15)) };
   });
-  return { saltBed, saltLand: land('salt-land'), portIsle: land('port-isle'), portTop: land('port-top'), salt };
+  const quayBed = Array.from({ length: 11 }, (_, i) => {
+    const p = rowPoint('cave', 124680 + i * 500);
+    return { x: p.x / 100, z: p.z / 100, y: round(p.y / 100 - 0.15) };
+  });
+  return {
+    saltBed,
+    quayBed,
+    saltLand: land('salt-land'),
+    portIsle: land('port-isle'),
+    portTop: land('port-top'),
+    salt,
+  };
 }
 
 function bakedBlocks(write: boolean) {
-  const { saltLand, portIsle, portTop, salt, saltBed } = bake();
+  const { saltLand, portIsle, portTop, salt, saltBed, quayBed } = bake();
   const shore = ({ centre, beach }: typeof saltLand) => ({ centre, beach });
   const outline = ({ centre, ring }: typeof saltLand) => ({ centre, ring });
   const files = [
     [
       new URL('../../src/content/levels/leg4.ts', import.meta.url),
-      { saltLand: shore(saltLand), portIsle: shore(portIsle), salt, saltBed },
+      { saltLand: shore(saltLand), portIsle: shore(portIsle), salt, saltBed, quayBed },
     ],
     [
       new URL('../../src/content/prefabs/leg4-lands.ts', import.meta.url),
@@ -149,7 +160,7 @@ function coastalReach(check: (message: string, passed: boolean) => void, id: 'sa
           home,
           slab: at(s - 2200, 0),
           apron: at(s, -1600),
-          crossing: at(s + 2400, 0),
+          crossing: at(s + 2900, 0),
           foot: { x: 109, z: 982 },
           head: { x: 10, z: 996 },
           top: { x: 0, z: 1000 },

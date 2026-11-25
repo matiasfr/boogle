@@ -26,6 +26,436 @@
       "pads": [],
       "pieces": [
         {
+          "bounds": [
+            0,
+            4.99,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 120,
+              "y": 3.05,
+              "z": 960
+            },
+            "u": {
+              "axis": {
+                "x": -371,
+                "z": 334
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -371,
+                  "z": 334
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-0",
+          "rise": {
+            "a": 3.24,
+            "b": 3.05,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.05
+        },
+        {
+          "bounds": [
+            0,
+            5,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 116.29,
+              "y": 3.24,
+              "z": 963.34
+            },
+            "u": {
+              "axis": {
+                "x": -405,
+                "z": 293
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -405,
+                  "z": 293
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-1",
+          "rise": {
+            "a": 3.43,
+            "b": 3.24,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.24
+        },
+        {
+          "bounds": [
+            0,
+            4.99,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 112.24,
+              "y": 3.43,
+              "z": 966.27
+            },
+            "u": {
+              "axis": {
+                "x": -433,
+                "z": 249
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -433,
+                  "z": 249
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-2",
+          "rise": {
+            "a": 3.63,
+            "b": 3.43,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.43
+        },
+        {
+          "bounds": [
+            0,
+            5,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 107.91,
+              "y": 3.63,
+              "z": 968.76
+            },
+            "u": {
+              "axis": {
+                "x": -455,
+                "z": 207
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -455,
+                  "z": 207
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-3",
+          "rise": {
+            "a": 3.82,
+            "b": 3.63,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.63
+        },
+        {
+          "bounds": [
+            0,
+            5,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 103.36,
+              "y": 3.82,
+              "z": 970.83
+            },
+            "u": {
+              "axis": {
+                "x": -472,
+                "z": 166
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -472,
+                  "z": 166
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-4",
+          "rise": {
+            "a": 3.85,
+            "b": 3.82,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.82
+        },
+        {
+          "bounds": [
+            0,
+            4.99,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 98.64,
+              "y": 3.85,
+              "z": 972.49
+            },
+            "u": {
+              "axis": {
+                "x": -482,
+                "z": 131
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -482,
+                  "z": 131
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-5",
+          "rise": {
+            "a": 3.85,
+            "b": 3.85,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.85
+        },
+        {
+          "bounds": [
+            0,
+            5,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 93.82,
+              "y": 3.85,
+              "z": 973.8
+            },
+            "u": {
+              "axis": {
+                "x": -491,
+                "z": 96
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -491,
+                  "z": 96
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-6",
+          "rise": {
+            "a": 3.85,
+            "b": 3.85,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.85
+        },
+        {
+          "bounds": [
+            0,
+            5,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 88.91,
+              "y": 3.85,
+              "z": 974.76
+            },
+            "u": {
+              "axis": {
+                "x": -495,
+                "z": 69
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -495,
+                  "z": 69
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-7",
+          "rise": {
+            "a": 3.85,
+            "b": 3.85,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.85
+        },
+        {
+          "bounds": [
+            0,
+            5,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 83.96,
+              "y": 3.85,
+              "z": 975.45
+            },
+            "u": {
+              "axis": {
+                "x": -498,
+                "z": 42
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -498,
+                  "z": 42
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-8",
+          "rise": {
+            "a": 3.85,
+            "b": 3.85,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.85
+        },
+        {
+          "bounds": [
+            0,
+            5,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 78.98,
+              "y": 3.85,
+              "z": 975.87
+            },
+            "u": {
+              "axis": {
+                "x": -500,
+                "z": 19
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -500,
+                  "z": 19
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-9",
+          "rise": {
+            "a": 3.85,
+            "b": 3.85,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.85
+        },
+        {
           "d": 8.5,
           "h": 0.5,
           "id": "beach-0",
@@ -830,7 +1260,7 @@
         {
           "bounds": [
             20,
-            23,
+            28,
             -7.8,
             -3.8
           ],
@@ -841,7 +1271,7 @@
           "h": 0.3,
           "id": "platform-crossing-step",
           "rise": {
-            "a": 3.18,
+            "a": 3.35,
             "b": 3.9,
             "compute": "sub"
           },
@@ -850,8 +1280,8 @@
         },
         {
           "bounds": [
-            23,
-            25,
+            28,
+            30,
             -7.8,
             -6.82
           ],
@@ -862,12 +1292,12 @@
           "h": 0.24,
           "id": "foot-plank-0",
           "tone": "sandstone",
-          "top": 3.19
+          "top": 3.35
         },
         {
           "bounds": [
-            23,
-            25,
+            28,
+            30,
             -6.8,
             -5.82
           ],
@@ -878,12 +1308,12 @@
           "h": 0.24,
           "id": "foot-plank-1",
           "tone": "sandstone",
-          "top": 3.19
+          "top": 3.35
         },
         {
           "bounds": [
-            23,
-            25,
+            28,
+            30,
             -5.8,
             -4.82
           ],
@@ -894,12 +1324,12 @@
           "h": 0.24,
           "id": "foot-plank-2",
           "tone": "sandstone",
-          "top": 3.19
+          "top": 3.35
         },
         {
           "bounds": [
-            23,
-            25,
+            28,
+            30,
             -4.8,
             -3.82
           ],
@@ -910,12 +1340,12 @@
           "h": 0.24,
           "id": "foot-plank-3",
           "tone": "sandstone",
-          "top": 3.19
+          "top": 3.35
         },
         {
           "bounds": [
-            23,
-            25,
+            28,
+            30,
             -3.8,
             -2.82
           ],
@@ -926,12 +1356,12 @@
           "h": 0.24,
           "id": "foot-plank-4",
           "tone": "sandstone",
-          "top": 3.19
+          "top": 3.35
         },
         {
           "bounds": [
-            23,
-            25,
+            28,
+            30,
             -2.8,
             -1.82
           ],
@@ -942,12 +1372,12 @@
           "h": 0.24,
           "id": "foot-plank-5",
           "tone": "sandstone",
-          "top": 3.19
+          "top": 3.35
         },
         {
           "bounds": [
-            23,
-            25,
+            28,
+            30,
             -1.8,
             -0.82
           ],
@@ -958,12 +1388,12 @@
           "h": 0.24,
           "id": "foot-plank-6",
           "tone": "sandstone",
-          "top": 3.19
+          "top": 3.35
         },
         {
           "bounds": [
-            23,
-            25,
+            28,
+            30,
             -0.8,
             0.18
           ],
@@ -974,12 +1404,12 @@
           "h": 0.24,
           "id": "foot-plank-7",
           "tone": "sandstone",
-          "top": 3.19
+          "top": 3.35
         },
         {
           "bounds": [
-            23,
-            25,
+            28,
+            30,
             0.2,
             1.18
           ],
@@ -990,12 +1420,12 @@
           "h": 0.24,
           "id": "foot-plank-8",
           "tone": "sandstone",
-          "top": 3.19
+          "top": 3.35
         },
         {
           "bounds": [
-            23,
-            25,
+            28,
+            30,
             1.2,
             2.18
           ],
@@ -1006,12 +1436,12 @@
           "h": 0.24,
           "id": "foot-plank-9",
           "tone": "sandstone",
-          "top": 3.19
+          "top": 3.35
         },
         {
           "bounds": [
-            23,
-            25,
+            28,
+            30,
             2.2,
             3.18
           ],
@@ -1022,12 +1452,12 @@
           "h": 0.24,
           "id": "foot-plank-10",
           "tone": "sandstone",
-          "top": 3.19
+          "top": 3.35
         },
         {
           "bounds": [
-            23,
-            25,
+            28,
+            30,
             3.2,
             4.18
           ],
@@ -1038,12 +1468,12 @@
           "h": 0.24,
           "id": "foot-plank-11",
           "tone": "sandstone",
-          "top": 3.19
+          "top": 3.35
         },
         {
           "bounds": [
-            23,
-            25,
+            28,
+            30,
             4.2,
             5.18
           ],
@@ -1054,12 +1484,12 @@
           "h": 0.24,
           "id": "foot-plank-12",
           "tone": "sandstone",
-          "top": 3.19
+          "top": 3.35
         },
         {
           "bounds": [
-            23,
-            25,
+            28,
+            30,
             5.2,
             6.18
           ],
@@ -1070,12 +1500,12 @@
           "h": 0.24,
           "id": "foot-plank-13",
           "tone": "sandstone",
-          "top": 3.19
+          "top": 3.35
         },
         {
           "bounds": [
-            23,
-            25,
+            28,
+            30,
             6.2,
             7.18
           ],
@@ -1086,12 +1516,12 @@
           "h": 0.24,
           "id": "foot-plank-14",
           "tone": "sandstone",
-          "top": 3.19
+          "top": 3.35
         },
         {
           "bounds": [
-            23,
-            25,
+            28,
+            30,
             7.2,
             8.18
           ],
@@ -1102,7 +1532,7 @@
           "h": 0.24,
           "id": "foot-plank-15",
           "tone": "sandstone",
-          "top": 3.19
+          "top": 3.35
         },
         {
           "bounds": [
