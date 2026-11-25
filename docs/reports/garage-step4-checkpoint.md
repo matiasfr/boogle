@@ -82,6 +82,10 @@ sheet: the bring, the watched fit, the West landing departure),
 [held-strong-flatbed.png](garage-step4-checkpoint/held-strong-flatbed.png). Gut check: the bay chip and copy, the
 Installed tile and a four-car train at the landing read as the plan describes. The first `gt-two` run passed too, but
 its page logs were dropped: look echoes only lines matching `^[A-Z]{3,} ` and the prefix was `TRADE2`, now renamed.
+After the `/simplify` pass, a third run on the final tools (`5fdbb2dc`) passed with the same story: the bring at 23696,
+nothing sent during the swap, Install lit at 23756 by the action clock (`tickNow` 23757) as the hold ended at 23756,
+fitted on the first hold, and train 9 to row 5 standing at the West landing (23886). It left at 23937 with 4 cars and 5
+crates, on both pages. Load 3.96 → 13.23.
 
 ## 2. The trade table (`dev/sim/leg3-trade.ts`)
 
@@ -123,7 +127,7 @@ Not measured: no Mac in the loop. No HOTBOX figure stands in for it.
 
 ## The early Install (garage step 4's finding): did not reproduce at real speed
 
-At real speed, in one two-peer run, Install lit exactly when the bring's hold ended (both clocks 23534 against a hold
+At real speed, in each of two logged two-peer runs, Install lit exactly when the bring's hold ended (both clocks 23534 against a hold
 ending at 23534) and the first hold fitted. Its log is `gt-two` above. Two warped repeats (5x, then 3x) both failed on
 harness clock capacity: the pages drifted 36 to 46 game s behind, and the 3x run ended under load. So no valid
 warped repeat exists. The finding stands only from step 4's warped bot runs. On the Quick run, Install lit and the hold
