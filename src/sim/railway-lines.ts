@@ -166,6 +166,8 @@ export const LINE2_ON: readonly number[] = (() => {
 /** The stack railhead's stop at each section laid but the last (the Gorge's is the last's). */
 const STACK_HEADS = STACK.sections.slice(0, -1).map((sec) => legS(STACK, sec.toCm) - HEAD_BACK_CM);
 const STACK_HEAD_PLATFORMS = STACK_HEADS.map((at) => rowPoint('ring', at + ROW_SHIFT.ring));
+// Stack-west-platforms: homeward service at a passed head boards at its west deck, with the usual 12.6 m reach.
+const STACK_HEAD_WEST = STACK_HEADS.map((at) => rowSide('ring', at + ROW_SHIFT.ring - 250, -805, 90, 1260));
 const STACK_HALTS: readonly RailHalt[] = [
   // The stack line's railheads, one halt a head (the step 4 review's call 88): head k opens once section k is laid, a
   // stub end while it is the line's last; when the next section lays the line runs on past it (endMoved) and it stays a
@@ -178,7 +180,7 @@ const STACK_HALTS: readonly RailHalt[] = [
     opens: 6,
     ring: true,
     leg: { slot: STACK_LEG, section: k },
-    platforms: both(STACK_HEAD_PLATFORMS[k]!),
+    platforms: [STACK_HEAD_PLATFORMS[k]!, STACK_HEAD_WEST[k]!],
     end: railEnd('stub', at - HEAD_MERGE_CM, 1),
     ...(k < STACK_HEADS.length - 1 ? { closesAt: STACK.railheadHalt + k + 3 } : {}),
   })),

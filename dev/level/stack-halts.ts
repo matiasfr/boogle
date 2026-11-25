@@ -163,6 +163,14 @@ export function checkStackHalts() {
     }
     pin('lever past ramp top', STACK_WEST.len - STACK_WEST_LEVER.back, 1, 0.5);
     pin('lever inside deck', STACK_WEST.lat + STACK_WEST.w / 2 - STACK_WEST_LEVER.lat, 0.5);
+    const platform = h.platforms[1];
+    const center = line2World(r - 12.5, STACK_WEST.lat, { x: 0, z: 0 });
+    const lever = line2World(r - STACK_WEST_LEVER.back, STACK_WEST_LEVER.lat, { x: 0, z: 0 });
+    const offset = Math.hypot(center.x - platform.x / 100, center.z - platform.z / 100);
+    const reach = Math.hypot(lever.x - platform.x / 100, lever.z - platform.z / 100);
+    pin('catalog west point offset', offset, [0.125, 0.005, 0.044][index]!, 0, 0.25);
+    pin('catalog height', platform.y / 100 - line2Y(r), STACK_WEST.up);
+    pin('whole prompt inside reach', Number(reach + 1.8 <= platform.reach / 100), 1);
     for (let laid = 0; laid <= 4; laid++)
       pin(`west at lay ${laid}`, Number(westStands(head, laid)), Number(laid === head + 1 || (head === 3 && laid > 3)));
   }

@@ -38,6 +38,7 @@ import {
   legStartS,
   ROW_SHIFT,
   rowPoint,
+  rowSide,
 } from '../../src/sim/railway-route.ts';
 import { WORLD_LINES } from '../../src/sim/railway-world-lines.ts';
 import { RING_END, RING_S_HEAD, STEEL, ringAt } from '../../src/sim/railway-ring-layout.ts';
@@ -449,6 +450,23 @@ export function routeRulesShard(shard: number) {
       first = RAIL_LINES[LINE2]!.halts[HEAD]!.platforms[1];
     assert.equal(railValid(t.w, op('rail.call', { id: haltId(LINE2, HEAD + 1), dir: -1 }), actorAt(second)), true);
     assert.equal(railValid(t.w, op('rail.call', { id: haltId(LINE2, HEAD + 1), dir: -1 }), actorAt(first)), false);
+    const heads = copy(JOINED);
+    feedSection(heads);
+    for (let index = 0; index < 3; index++) {
+      const stop = HEAD + index,
+        head = RAIL_LINES[LINE2]!.halts[stop]!;
+      const call = op('rail.call', { id: haltId(LINE2, stop), dir: -1 });
+      const west = actorAt(rowSide('ring', head.s + ROW_SHIFT.ring - 1200, -630, 90, 1260));
+      assert.equal(railValid(heads.w, call, actorAt(head.platforms[0]), heads.t), true);
+      assert.equal(railValid(heads.w, call, west, heads.t), false);
+      feedSection(heads);
+      // The departure retained on the old terminal track still boards on the east.
+      let ticks = 0;
+      while (!railValid(heads.w, call, west, heads.t) && ticks++ < 1500) advance(heads, 1);
+      assert.equal(railValid(heads.w, call, west, heads.t), true);
+      const other = op('rail.call', { id: haltId(LINE2, stop + 1), dir: -1 });
+      assert.equal(railValid(heads.w, other, west, heads.t), false);
+    }
   });
 
   // ---------------------------------------------------------------- the kit

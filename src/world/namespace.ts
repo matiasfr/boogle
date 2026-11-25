@@ -150,7 +150,8 @@
 // v70 (2026-11-25): the cave line gains two train rows and a head, Saltpan's arc and the plug's frame reach.
 // v71 (2026-11-25): the cave line grows from Port Quay to High Gorge, with new halt ids, three trains and the deep-span reach.
 // v72 (2026-11-25): the Notch and causeway extend two lines, four reach points move and Route saves the island train's first stop.
-export const WORLD_NS = 'v72';
+// v73 (2026-11-25): homeward platform points at the three Stack heads move to the west decks.
+export const WORLD_NS = 'v73';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.
