@@ -34,7 +34,7 @@ function dressCut(kit: Kit, sections: Section[], levels: number[], side: 1 | -1,
     for (let j = 1; j < sections.length; j++) {
       const a = sections[j - 1]!,
         b = sections[j]!;
-      const steps = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]));
+      const steps = Math.ceil(r2(Math.hypot(b[0] - a[0], b[1] - a[1])));
       for (let i = j === 1 ? 0 : 1; i <= steps; i++) {
         const p = a.map((v, k) => v + ((b[k]! - v) * i) / steps);
         const [x, z, rx, rz] = p as [number, number, number, number];
