@@ -17,7 +17,7 @@ export function dressSlope(
   name: string,
   rays: readonly (readonly [number, number, number, number])[],
   levels: readonly number[],
-  options: { keepClear?: Area['keepClear']; keepOff?: (x: number, z: number) => boolean; seatEnds?: boolean },
+  options: { keepClear?: Area['keepClear']; keepOff?: (x: number, z: number) => boolean; rock?: (x: number, z: number) => boolean },
 ) {
   for (const level of levels) {
     const runs: { x: number; z: number; ux: number; uz: number }[][] = [[]];
@@ -26,7 +26,8 @@ export function dressSlope(
       while (d < 30 && ground(x0 + ux * d, z0 + uz * d) < level) d += 0.25;
       const run = runs[runs.length - 1]!;
       const last = run[run.length - 1];
-      const point = d < 30 ? { x: x0 + ux * d, z: z0 + uz * d, ux, uz } : undefined;
+      const x = x0 + ux * d, z = z0 + uz * d;
+      const point = d < 30 && (!options.rock || options.rock(x, z)) ? { x, z, ux, uz } : undefined;
       if (!point || (last && Math.hypot(point.x - last.x, point.z - last.z) > 4)) runs.push([]);
       if (point) runs[runs.length - 1]!.push(point);
     }
@@ -38,18 +39,20 @@ export function dressSlope(
       const side = n.nx * points[0]!.ux + n.nz * points[0]!.uz < 0 ? 1 : -1;
       layCourses(run, side, (prefab, c, yaw, s) => {
         let base = level - 0.5;
-        if (options.seatEnds) {
+        const inset = options.rock ? 0.4 : 1.5;
+        if (options.rock) {
           const half = prefab === 'terrain.sea-face-10' ? 4.8 : 2.8;
           for (const across of [-half, 0, half]) {
-            const x = c.x - c.nx * 1.5 + c.nz * across;
-            const z = c.z - c.nz * 1.5 - c.nx * across;
-            base = Math.min(base, ground(x, z) - 0.4, ground(x - 2.4 * c.nx, z - 2.4 * c.nz) - SEA_FACE);
+            const x = c.x - c.nx * inset + c.nz * across;
+            const z = c.z - c.nz * inset - c.nx * across;
+            if (!options.rock(x, z)) return;
+            base = Math.min(base, ground(x, z) - 1.3, ground(x - 2.4 * c.nx, z - 2.4 * c.nz) - SEA_FACE);
           }
         }
         const placement: Placement = {
           id: 'trial',
           prefab,
-          pos: [round(c.x - c.nx * 1.5), round(base), round(c.z - c.nz * 1.5)],
+          pos: [round(c.x - c.nx * inset), round(base), round(c.z - c.nz * inset)],
           rot: [round(yaw), 0, 0],
         };
         if (options.keepOff?.(c.x, c.z) || kitPieceProblems(placement, options.keepClear).length) return;
