@@ -440,16 +440,12 @@ const STALLS: Readonly<Record<string, string>> = {
   'bell.pad-canopy': 'bell-canopy',
   'bell.pad-quay': 'cave',
 };
-/** Canopy Town (greybox leg 3, step 6): the cloth post on the homeward deck round the buffers (RAIL_GRANTS `cloth`)
- * and the Notch barrier across the row at its kink (RAIL_GATES `notch`, shut until leg 6), 10 m apart (call 20); its
- * board is the massing's (src/content/levels/leg3.ts). The barrier is two, one on each track, facing the line's
- * straight heading at the stop (the drawn row bends through the kink here: railway/row-path.ts). */
+const notch = SPECS.find((sp) => sp.leg.id === 'notch-tunnel')!;
+const causeway = SPECS.find((sp) => sp.leg.id === 'causeway')!;
 const CLOTH = RAIL_GRANTS.findIndex((g) => g.id === 'cloth'),
   CLOTH_AT = metres(RAIL_GRANTS[CLOTH]!.at),
   NOTCH = RAIL_GATES.findIndex((g) => g.id === 'notch'),
-  NOTCH_AT = metres(RAIL_GATES[NOTCH]!.at),
   CAUSEWAY = RAIL_GATES.findIndex((g) => g.id === 'causeway'),
-  CAUSEWAY_AT = metres(RAIL_GATES[CAUSEWAY]!.at),
   LANTERN = RAIL_GRANTS.findIndex((g) => g.id === 'lantern'),
   LANTERN_AT = metres(RAIL_GRANTS[LANTERN]!.at),
   MEETING_AT = metres(RAIL_ARRIVAL);
@@ -459,7 +455,13 @@ const HOME_BOARD_S = BAY_CUT_END - 19.5;
 
 export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
   const [{ addStatic, slab }, ground] = await Promise.all([import('../../place/land.ts'), islandGround()]);
-  const deck = createBoxBatch(owner, 10500, false),
+  // The earlier routes fit 10,500 instances. Each added 10 m chord has a slab, two beds and four rails,
+  // with up to three bent pieces and a turnout at the destination.
+  const endingCapacity = [notch, causeway].reduce(
+    (sum, sp) => sum + 10 * Math.ceil((sp.END.at(-1)! - sp.from) / SEG) + 8,
+    0,
+  );
+  const deck = createBoxBatch(owner, 10500 + endingCapacity, false),
     things = createBoxBatch(owner, 700, false);
   // Named, so a look can count what the leg's views add to a frame (dev/look/evals/stack-draws.ts).
   deck.mesh.name = 'route-greybox:deck';
@@ -501,7 +503,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     townBoard = sign(3.2, 1.3, 1.2, 'two', 512),
     homeBoard = sign(5.2, 1.4, 0.9, 'two', 768),
     causewayBoard = sign(5.2, 1.4, 0.9, 'two', 768),
-    meetingBoard = sign(3.2, 1.3, 1.2, 'two', 512);
+    meetingBoard = sign(3.2, 1.3, 1.2, 'one', 512);
 
   // ---------------------------------------------------------------- one leg's deck, pieces and signs
   function legView(sp: LegSpec) {
@@ -584,7 +586,8 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       for (let s0 = sp.from; s0 < end - 1e-6; s0 += SEG) {
         const s1 = Math.min(end, s0 + SEG);
         if (lay?.waiting.some((x) => s0 < x.s1 - 1e-6 && s1 > x.s0 + 1e-6)) continue;
-        along(s0, s1, mid, mid, 0, sp.width, 0.5, GREY);
+        const slabStart = sp === causeway ? Math.max(s0, BELL_STOP + 60) : s0;
+        if (s1 > slabStart) along(slabStart, s1, mid, mid, 0, sp.width, 0.5, GREY);
         for (const t of tracks) track(s0, s1, t, t, cuts);
         // A bent every 20 m where the deck stands clear of the ground: two posts to the sea bed and a cap.
         if (Math.round((s0 - sp.from) / SEG) % 2 === 0 && bentFree(s0)) {
@@ -626,7 +629,8 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         a = { x: 0, z: 0 },
         b = { x: 0, z: 0 },
         c = { x: 0, z: 0 };
-      let s0 = sp.from;
+      // Bell Rock's lower bed already carries the rails for 60 m beyond the stop.
+      let s0 = sp === causeway ? BELL_STOP + 60 : sp.from;
       while (s0 < end - 1e-6) {
         let s1 = Math.min(end, s0 + SEG);
         geo.world(s0, mid, a);
@@ -853,7 +857,9 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
             k < open && !(trainPassesBy(sp.leg.line, k, 1, open) && trainPassesBy(sp.leg.line, k, -1, open));
         if (open !== listed) {
           listed = open;
-          stopLines = halts.filter((_h, k) => served(k)).map((h) => ({ t: h.name, size: 0.2 }));
+          const stops = halts.filter((_h, k) => served(k));
+          const size = Math.min(0.2, 0.72 / stops.length);
+          stopLines = stops.map((h) => ({ t: h.name, size }));
         }
         for (const d of departures) {
           if (!served(d.stop)) continue;
@@ -1061,8 +1067,8 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     if (plugSite && near(plugSite, 450)) barrier(plugSite, !!(r.gates & (1 << PLUG)));
     if (deepFrameBuilt(r) && near(deepSite, 450)) barrier(deepSite, !!(r.gates & (1 << deepSpan)));
     canopy(r);
-    if (near(CAUSEWAY_AT, 450)) {
-      const sp = SPECS[legIndex.get('causeway')!]!;
+    if (near(causeway.frames[0]!, 450)) {
+      const sp = causeway;
       barrier(sp.frames[0]!, !!(r.gates & (1 << CAUSEWAY)));
       if (!done(r, 'causeway')) {
         const s = BELL_STOP + 15;
@@ -1075,19 +1081,19 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       }
     }
     if (near(LANTERN_AT, 450) && !(r.grants & (1 << LANTERN))) {
-      things.box(LANTERN_AT.x, LANTERN_AT.y + 0.7, LANTERN_AT.z, 0.5, 1.4, 0.5, GREY_DARK);
+      // The reef is below rail height. Raise the lamp above the buffer faces on the train's approach.
+      things.box(LANTERN_AT.x, LANTERN_AT.y + 2.4, LANTERN_AT.z, 0.4, 4.8, 0.4, GREY_DARK);
       things.box(
         LANTERN_AT.x,
-        LANTERN_AT.y + 1.6,
+        LANTERN_AT.y + 5.2,
         LANTERN_AT.z,
-        0.6,
-        0.5,
-        0.6,
+        1.1,
+        0.9,
+        1.1,
         done(r, 'notch-tunnel') ? '#ffd46b' : GREY,
       );
     }
     if (near(MEETING_AT, 450)) {
-      things.box(MEETING_AT.x, MEETING_AT.y + 0.6, MEETING_AT.z, 0.25, 1.2, 0.25, GREY_DARK);
       show(meetingBoard, MEETING_AT, MEETING_AT.y, 0, -1, [
         { t: r.arrived ? 'Arrived' : 'Meeting (placeholder)', size: 0.28 },
       ]);
@@ -1274,7 +1280,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         0.5,
         done(r, 'bell-canopy') ? CLOTH_LIT : GREY_DARK,
       );
-    barrier(SPECS[legIndex.get('notch-tunnel')!]!.frames[0]!, !!(r.gates & (1 << NOTCH)));
+    barrier(notch.frames[0]!, !!(r.gates & (1 << NOTCH)));
   }
   /** Leg 2's steps once the incline's barrier is open: build the incline, take the seeds, build the bay line (beats 3
    * to 10; the seeds first, though the bay cut does not need them); then leg 3's (greybox-leg3.md, "Controls and
@@ -1440,13 +1446,13 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       gate(
         NOTCH,
         'railway-leg-notch',
-        NOTCH_AT,
+        notch.frames[0]!,
         r.grants & (1 << CLOTH) ? 'After the White Wall (placeholder)' : 'Needs the glider cloth',
       );
       gate(
         CAUSEWAY,
         'railway-leg-causeway',
-        CAUSEWAY_AT,
+        causeway.frames[0]!,
         r.grants & (1 << LANTERN) ? 'After the line to Lantern Notch (placeholder)' : 'Needs the lantern',
       );
       grant(
