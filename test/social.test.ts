@@ -1,5 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { PerspectiveCamera, Vector3 } from 'three';
+import { sourceFunction } from '../dev/level/source.ts';
 import {
   validatePing,
   createLimiter,
@@ -44,6 +46,30 @@ test('the relay preserves which of two successive markers a friend answered', ()
   const train = validatePing({ ...reply, seq: 2 });
   assert.ok(station && train);
   assert.notDeepEqual(station, train);
+});
+
+test('a marker centred after the camera rises over terrain receives the reply', () => {
+  const camera = new PerspectiveCamera();
+  camera.position.set(0, 2, 5);
+  camera.lookAt(0, 0, -8);
+  const at = camera.getWorldDirection(new Vector3()).multiplyScalar(25).add(camera.position);
+  const messages: unknown[] = [];
+  const ping = sourceFunction<() => void>('src/features/ping.ts', 'pingNow', {
+    camera,
+    camForward: (out: Vector3) => out.set(0, 0, -1),
+    fwd: new Vector3(),
+    tmp: new Vector3(),
+    lastOwn: -Infinity,
+    me: { entered: true, body: {} },
+    TUNE: { ownGapMs: 1000 },
+    net: {},
+    pings: new Map([['friend', { at, expires: Infinity, reply() {} }]]),
+    sendPing: (msg: unknown) => messages.push(msg),
+    aimPing: () => ({ k: 'look', x: 0, y: 0, z: 0 }),
+    addPing() {},
+  });
+  ping();
+  assert.deepEqual(messages, [{ k: 'omw', of: 'friend' }]);
 });
 
 test('limiter allows N per window per sender', () => {
