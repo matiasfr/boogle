@@ -10,7 +10,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Friends voice step 2: nearby voice on iOS | Friends hear and signal each other | codex/friends-voice-ios | heartbeat, Codex Astra medium | 2026-11-25 12:24 | running |
+| Friends voice steps 3 and 4: rail ping labels and a reply to a ping | Friends hear and signal each other | codex/friends-ping-reply | heartbeat, Codex Astra medium | 2026-11-25 12:42 | running |
 | Cliff kit step 9: the Sickle horizon | Terrain clean-up | codex/cliff-kit-horizon | live session, Codex Astra medium | 2026-11-25 | running |
 
 ## Where the work stands
