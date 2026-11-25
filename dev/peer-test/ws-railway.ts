@@ -1400,15 +1400,15 @@ export async function railwayCarrierLeaves(c: Ctx) {
 // through `railBeamGraceS` (180 s); past it legKitRelease takes them off the held count only. The grace clock lives in
 // the host's memory, so a restart starts it again for anyone still away.
 const REJOIN_CASES = {
-  'canopy-mid': { leg: 'bell-canopy', laid: 1, minutes: 8 },
-  'cave-mid': { leg: 'cave', laid: 1, minutes: 8 },
-  'wall-mid': { leg: 'wall', laid: 2, minutes: 12 },
+  'canopy-mid': { leg: 'bell-canopy', laid: 1 },
+  'cave-mid': { leg: 'cave', laid: 1 },
+  'wall-mid': { leg: 'wall', laid: 2 },
 } as const;
 type RejoinSeed = keyof typeof REJOIN_CASES;
 
 export async function railwayLegRejoin(c: Ctx, seed: RejoinSeed) {
   // The whole case includes the cold seed build and the line's round trips.
-  const { minutes } = REJOIN_CASES[seed];
+  const deadlineSeconds = 480;
   const started = performance.now();
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -1417,13 +1417,13 @@ export async function railwayLegRejoin(c: Ctx, seed: RejoinSeed) {
       new Promise<never>(
         (_, reject) =>
           (timer = setTimeout(
-            () => reject(new Error(`Leg rejoin proof stopped (${seed}): past its ${minutes}-minute deadline`)),
-            minutes * 60_000,
+            () => reject(new Error(`Leg rejoin proof stopped (${seed}): past its ${deadlineSeconds}-second deadline`)),
+            deadlineSeconds * 1000,
           )),
       ),
     ]);
     console.log(
-      `  leg rejoin (${seed}): ${((performance.now() - started) / 1000).toFixed(1)} s of ${minutes * 60} s deadline`,
+      `  leg rejoin (${seed}): ${((performance.now() - started) / 1000).toFixed(1)} s of ${deadlineSeconds} s deadline`,
     );
   } finally {
     clearTimeout(timer);
