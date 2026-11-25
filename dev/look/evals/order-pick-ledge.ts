@@ -51,10 +51,10 @@ const used = R.inspectRailway()!.reward.tools.jumps;
 try {
   pressJump();
   await until(() => me.coyote <= 0 && body.velocity.y > 0, 'first jump');
-  releaseJump();
   await until(() => body.velocity.y < 1.5, 'first apex');
-  pressJump();
+  releaseJump();
   input.keys.add('KeyW');
+  pressJump();
   await until(() => R.inspectRailway()!.reward.tools.jumps > used, 'air jump');
   await until(
     () => Math.abs(body.position.x - x) < pad.hx - 0.4 && Math.abs(body.position.z - z) < pad.hz - 0.4,
