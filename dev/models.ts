@@ -49,7 +49,7 @@ export const routes: Route[] = [
     'Implementation from a brief or an approved plan; the builder writes its own short plan first and revises it as it builds (the build skill)',
     'Claude (T3 delegate_task), or Antigravity gemini-4-neon medium to spread usage (not src/sim, src/net, src/world, server/ or the wire format)',
     'opus',
-    'medium',
+    'medium; high for tricky work',
   ),
   claude(
     'Player-visible implementation: views, cameras, effects, prompts, feel, assets and look work',
@@ -68,7 +68,11 @@ export const routes: Route[] = [
     'opus',
     'medium; high for tricky work',
   ),
-  antigravity('Fixes, tooling and captures-driven tasks with no plan to follow', 'gemini-4-neon', 'medium'),
+  antigravity(
+    'Fixes, tooling and captures-driven tasks with no plan to follow (not src/sim, src/net, src/world, server/ or the wire format)',
+    'gemini-4-neon',
+    'medium',
+  ),
   claude(
     'High-risk implementation (server, sync, src/world, src/net)',
     'Claude (T3 delegate_task)',
@@ -79,7 +83,7 @@ export const routes: Route[] = [
     work: 'Independent review before merge of src/sim, src/net, src/world, server/ or the wire format (a failing test per suspected defect)',
     who: "a fresh reviewer with none of the author's context: a fresh Codex review delegate or a Claude delegate (T3 delegate_task)",
     model:
-      'gpt-6.2-astra first (the reviewer for an Opus build), or opus for a Codex or Neon build, or gemini-4-neon (Antigravity)',
+      'gpt-6.2-astra first (the reviewer for an Opus build), or opus for a Codex or Neon build; gemini-4-neon (Antigravity) only when neither can run',
     effort: 'medium; high for tricky work',
   },
   {
@@ -107,14 +111,19 @@ export const routes: Route[] = [
     'its own model',
     'at its own effort',
   ),
-  antigravity('Mechanical jobs above that size', 'gemini-4-neon', 'medium'),
+  antigravity(
+    'Mechanical jobs above that size (not src/sim, src/net, src/world, server/ or the wire format)',
+    'gemini-4-neon',
+    'medium',
+  ),
   antigravity('Brainstorm (light: one agent, three lenses; --panel: three panelists)', 'gemini-4-neon', 'medium'),
   codex('Images and previz (only Codex paints)', 'gpt-6.2-sol', 'medium'),
 ];
 
 /**
- * Opus runs at medium; raise one task to high only when it hits bugs medium can't fix or medium falls short (owner,
- * 9 November). Before raising, check the task can verify its own work (docs/agents/models.md, "Escalating").
+ * Opus and Astra run at medium; a task starts at high when it is tricky going in, or is raised when medium hits bugs
+ * it can't fix or falls short (owner, 9 and 25 November). Before raising, check the task can verify its own work
+ * (docs/agents/models.md, "Opus and Astra at medium, high when needed").
  */
 export const opusEscalation = 'high';
 

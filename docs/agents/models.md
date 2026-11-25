@@ -39,15 +39,14 @@ different models at the same time"). The owner's words for each change are in
   in Antigravity against Opus 5.5 max 58 and Astra 53), but early reports also show capacity errors and stalled runs,
   a test suite rigged to pass and stale API knowledge, so it gets work where a stall costs little and the result is
   checked: every Neon result is reviewed like a Codex one, and it does not build `src/sim`, `src/net`, `src/world`,
-  `server/` or the wire format. `gemini-pro-orchestrator-neon` (Antigravity's planner model) is not on a route.
-- **Opus at medium, escalate on evidence** (owner, 9 November). Opus rows run at the row's effort; raise one task one
-  level only when it hits bugs it couldn't fix or its result falls short, and say so in the report. Before raising,
+  `server/` or the wire format. **Where Neon fits** (orchestrator's reading of his 25 November "the right tasks"): story and NPC drafts, brainstorms, fixes, tooling and mechanical jobs outside the high-risk paths, plan builds outside them when Claude usage should be spread, a fresh runner for owed proofs, and the independent review of a player-visible or tooling build when Astra cannot run. Where it does not: anything in the high-risk paths, fixes included; the independent review of a high-risk change while Astra or Opus can run; the look at stills (the main session's); The Boogler's copy (the owner's). `gemini-pro-orchestrator-neon` (Antigravity's planner model) is not on a route.
+- **Opus and Astra at medium, high when needed** (owner, 9 November; 24 November 2026 (25 November UTC): "We should be able to use Opus High and Astra High when needed, as well.  Make sure that we're leveraging Google anti-gravity neon for the right tasks."). Rows marked "medium; high for tricky work" run at medium by default. Whoever dispatches may start a task at high when it is tricky going in: a change across sync, lockstep or the adapters, a defect a medium run or a review round already failed on, a review of such a change, or a plan or design question with many recorded rules to reconcile. Otherwise raise one task one level only when it hits bugs it couldn't fix or its result falls short. Say in the claim or report that it ran at high and why. Before raising,
   give the task a way to verify its own work (a failing test, a build, a look, a bot segment); it is often cheaper
   than more effort. A task that Opus high can't solve goes back to the orchestrator, not to xhigh (about 2.5x the
   cost of high for about 1.4 points on SWE-bench Pro). Opus `max` only when the owner asks.
 - **"A good model" picks the row, not more effort** (owner, 10 November, after a planner asked for "a good model"
   ran at high: "Fable at medium effort should be sufficient for the future FYI"). Take the model and effort from the
-  table as written; raise effort only when the owner names one.
+  table as written; high is used as the rule above says, and nothing goes above the row's top effort unless the owner names it.
 - **Model floor.** Use Sol 6.2 or above on Codex, Opus or above on Claude and Gemini 4 Neon on Antigravity. The exceptions are read-only Explore
   (Haiku medium) and the on-demand Atlas job (Terra low). A usage reset can inform an owner-directed provider switch, not an automatic downgrade.
 - **Code review** never runs in the main session: an Astra review delegate on the committed branch (T3
