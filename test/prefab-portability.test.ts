@@ -32,6 +32,8 @@ import { prefabs as greybox } from '../src/content/prefabs/greybox.ts';
 import { prefabs as town } from '../src/content/prefabs/town.ts';
 import { prefabs as rock } from '../src/content/prefabs/bell-rock.ts';
 import { prefabs as canopyLands } from '../src/content/prefabs/canopy-lands.ts';
+import { prefabs as caveLands } from '../src/content/prefabs/leg4-lands.ts';
+import { levels as leg4 } from '../src/content/levels/leg4.ts';
 import { levels as leg2 } from '../src/content/levels/leg2.ts';
 import { levels as leg3 } from '../src/content/levels/leg3.ts';
 import { levels as gorge } from '../src/content/levels/gorge.ts';
@@ -158,6 +160,7 @@ test('artifact serialization is independent of runtime native transcendental res
           ...plotHouses,
           ...rock,
           ...canopyLands,
+          ...caveLands,
           ...railway,
           ...till,
           ...yoke,
@@ -184,6 +187,7 @@ test('artifact serialization is independent of runtime native transcendental res
         [
           ...leg2,
           ...leg3,
+          ...leg4,
           ...tillLevels,
           ...yokeLevels,
           ...gorge,

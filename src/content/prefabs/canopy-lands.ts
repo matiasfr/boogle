@@ -5,11 +5,8 @@
 import { definePrefab } from '../../prefab/types.ts';
 import { CANOPY_CENTRES, CANOPY_LANDS, CANOPY_TOPS, LAND_BASE, landPoints, type CanopyLand } from '../levels/leg3.ts';
 
-function prism(id: CanopyLand) {
-  const ring = landPoints(id),
-    n = ring.length,
-    top = CANOPY_TOPS[id],
-    [cx, cz] = CANOPY_CENTRES[id];
+export function landPrism(ring: readonly { x: number; z: number }[], top: number, cx: number, cz: number) {
+  const n = ring.length;
   // 0..n-1 the top's ring, n..2n-1 the foot's, 2n the top's centre.
   const vertices = [
     ...ring.flatMap((p) => [p.x, top, p.z]),
@@ -38,7 +35,9 @@ export const prefabs = [
   definePrefab({
     key: 'greybox.canopy-lands',
     visual: { none: true },
-    colliders: (Object.keys(CANOPY_LANDS) as CanopyLand[]).map(prism),
+    colliders: (Object.keys(CANOPY_LANDS) as CanopyLand[]).map((id) =>
+      landPrism(landPoints(id), CANOPY_TOPS[id], CANOPY_CENTRES[id][0], CANOPY_CENTRES[id][1]),
+    ),
     scope: 'place',
   }),
 ];

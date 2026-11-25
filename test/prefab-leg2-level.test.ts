@@ -886,6 +886,8 @@ async function mountAt(position: THREE.Vector3) {
   });
   sourceModule(fs.readFileSync('src/entities/route-greybox/index.ts', 'utf8'), {
     productionRailway: true,
+    saltpanArea: { id: 'saltpan', centre: AREA_CENTRES.saltpan, build: () => [] },
+    quayArea: { id: 'quay', centre: AREA_CENTRES.quay, build: () => [] },
     location: { search: '' },
     AREA_CENTRES,
     resident,

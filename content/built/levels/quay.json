@@ -1,0 +1,933 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "layout": {
+    "area": "quay",
+    "data": {
+      "basis": {
+        "operand": 0
+      },
+      "extras": [
+        {
+          "id": "lands",
+          "pos": [
+            0,
+            0,
+            0
+          ],
+          "prefab": "greybox.quay-lands"
+        }
+      ],
+      "marks": {},
+      "origin": {
+        "x": 137.6,
+        "z": 942.25
+      },
+      "pads": [],
+      "pieces": [
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-0",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 37.36,
+          "x": 180.23,
+          "yaw": 1.97814,
+          "z": 1094.65
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-1",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 39.3,
+          "x": 195.42,
+          "yaw": 2.03025,
+          "z": 1127.41
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-2",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 30.46,
+          "x": 203.41,
+          "yaw": 1.52265,
+          "z": 1160.31
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-3",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 41.22,
+          "x": 183.48,
+          "yaw": 0.50289,
+          "z": 1187.28
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-4",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 56.1,
+          "x": 139.26,
+          "yaw": 0.26004,
+          "z": 1204.05
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-5",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 50.24,
+          "x": 90.79,
+          "yaw": 0.34889,
+          "z": 1219.14
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-6",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 37.56,
+          "x": 56.65,
+          "yaw": 0.76133,
+          "z": 1238.79
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-7",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 34.99,
+          "x": 34.91,
+          "yaw": 0.96447,
+          "z": 1263.99
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-8",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 34.6,
+          "x": 12.27,
+          "yaw": 0.69525,
+          "z": 1288.78
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-9",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 41.79,
+          "x": -20.73,
+          "yaw": 0.28955,
+          "z": 1305.66
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-10",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 46.66,
+          "x": -62.66,
+          "yaw": 0.11513,
+          "z": 1314.05
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-11",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 45.18,
+          "x": -106.9,
+          "yaw": -0.00139,
+          "z": 1316.61
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-12",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 40.84,
+          "x": -148.3,
+          "yaw": -0.23461,
+          "z": 1311.96
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-13",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 41.26,
+          "x": -186,
+          "yaw": -0.37067,
+          "z": 1300.17
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-14",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 43.26,
+          "x": -223.86,
+          "yaw": -0.17097,
+          "z": 1289.76
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-15",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 52.63,
+          "x": -267.47,
+          "yaw": 0.20569,
+          "z": 1291.4
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-16",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 58.43,
+          "x": -318.64,
+          "yaw": 0.31609,
+          "z": 1305.22
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-17",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 50.86,
+          "x": -370.36,
+          "yaw": 0.13651,
+          "z": 1317.48
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-18",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 46.3,
+          "x": -417.49,
+          "yaw": -0.28791,
+          "z": 1314.39
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-19",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 46.04,
+          "x": -458.36,
+          "yaw": -0.56199,
+          "z": 1295.91
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-20",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 39.12,
+          "x": -490.3,
+          "yaw": -0.83362,
+          "z": 1269.74
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-21",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 33.84,
+          "x": -506.08,
+          "yaw": -1.42486,
+          "z": 1238.14
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-22",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 38.34,
+          "x": -504.51,
+          "yaw": -1.78373,
+          "z": 1203.2
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-23",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 34.77,
+          "x": -499.16,
+          "yaw": -1.66737,
+          "z": 1169.59
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-24",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 28.94,
+          "x": -501.41,
+          "yaw": -1.27041,
+          "z": 1141.99
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-25",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 28.05,
+          "x": -511.33,
+          "yaw": -1.07022,
+          "z": 1118.43
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-26",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 30.78,
+          "x": -524.6,
+          "yaw": -1.05911,
+          "z": 1094.5
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-27",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 39.74,
+          "x": -542.12,
+          "yaw": -0.97045,
+          "z": 1066.69
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-28",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 42.49,
+          "x": -564.23,
+          "yaw": -0.96944,
+          "z": 1034.43
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-29",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 31.74,
+          "x": -578.65,
+          "yaw": -1.41482,
+          "z": 1001.4
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-30",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 37.05,
+          "x": -566.18,
+          "yaw": -2.44185,
+          "z": 971.74
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-31",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 50.77,
+          "x": -529.17,
+          "yaw": -2.751,
+          "z": 950.54
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-32",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 48.92,
+          "x": -484.6,
+          "yaw": -2.77791,
+          "z": 932.87
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-33",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 40.63,
+          "x": -445.01,
+          "yaw": -2.742,
+          "z": 917.06
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-34",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 38.76,
+          "x": -409.93,
+          "yaw": -2.77579,
+          "z": 902.92
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-35",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 38.79,
+          "x": -375.44,
+          "yaw": -2.78941,
+          "z": 889.98
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-36",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 38.84,
+          "x": -340.99,
+          "yaw": -2.77984,
+          "z": 877.13
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-37",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 38.86,
+          "x": -306.38,
+          "yaw": -2.79333,
+          "z": 864.3
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-38",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 40.67,
+          "x": -270.33,
+          "yaw": -2.84962,
+          "z": 852.37
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-39",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 45.75,
+          "x": -230.74,
+          "yaw": -2.86229,
+          "z": 840.77
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-40",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 47.69,
+          "x": -187.32,
+          "yaw": -2.90744,
+          "z": 829.39
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-41",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 43.08,
+          "x": -143.73,
+          "yaw": -3.11871,
+          "z": 823.51
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-42",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 38.63,
+          "x": -104.95,
+          "yaw": 2.67306,
+          "z": 831.74
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-43",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 41.31,
+          "x": -73.1,
+          "yaw": 2.41235,
+          "z": 853.69
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-44",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 42.9,
+          "x": -41.43,
+          "yaw": 2.6135,
+          "z": 876.62
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-45",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 52.96,
+          "x": -0.03,
+          "yaw": 3.03956,
+          "z": 889
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-46",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 58.7,
+          "x": 53.23,
+          "yaw": -3.13454,
+          "z": 891.37
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-47",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 46.83,
+          "x": 104.38,
+          "yaw": 2.95649,
+          "z": 895.36
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-48",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 35.16,
+          "x": 139.71,
+          "yaw": 2.30072,
+          "z": 913.11
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-49",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 36.68,
+          "x": 156.36,
+          "yaw": 1.84704,
+          "z": 943.72
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-50",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 35.33,
+          "x": 164.17,
+          "yaw": 1.75148,
+          "z": 977.18
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-51",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 30.85,
+          "x": 168.99,
+          "yaw": 1.69519,
+          "z": 1008.11
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-52",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 30.06,
+          "x": 170.86,
+          "yaw": 1.57436,
+          "z": 1036.94
+        },
+        {
+          "d": 8.5,
+          "h": 0.5,
+          "id": "beach-53",
+          "rise": -4.5,
+          "tone": "sandstone",
+          "top": 3,
+          "w": 31.14,
+          "x": 172.21,
+          "yaw": 1.66152,
+          "z": 1065.13
+        },
+        {
+          "bounds": [
+            -26,
+            26,
+            -10,
+            18
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 2,
+          "id": "quay-slab",
+          "tone": "grey",
+          "top": 3
+        },
+        {
+          "bounds": [
+            -20,
+            20,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 1,
+          "id": "platform-0",
+          "tone": "light",
+          "top": 3.9
+        },
+        {
+          "bounds": [
+            -20,
+            -23,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.3,
+          "id": "platform-step-0",
+          "rise": {
+            "a": 3.9,
+            "b": 3,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 3
+        },
+        {
+          "bounds": [
+            -20,
+            20,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 1,
+          "id": "platform-2",
+          "tone": "light",
+          "top": 3.9
+        },
+        {
+          "bounds": [
+            -20,
+            -23,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.3,
+          "id": "platform-step-2",
+          "rise": {
+            "a": 3.9,
+            "b": 3,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 3
+        },
+        {
+          "bounds": [
+            -31,
+            64,
+            -70,
+            -7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 1,
+          "id": "apron",
+          "tone": "grey",
+          "top": 3.02
+        },
+        {
+          "bounds": [
+            0,
+            98,
+            -3,
+            3
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.3,
+          "id": "high-port-ramp",
+          "rise": {
+            "a": 55,
+            "b": 3,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 3
+        },
+        {
+          "bounds": [
+            0,
+            98,
+            3,
+            3.3
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 1,
+          "id": "high-port-parapet",
+          "rise": {
+            "a": 56,
+            "b": 4,
+            "compute": "sub"
+          },
+          "tone": "pale",
+          "top": 4
+        }
+      ],
+      "posts": [
+        {
+          "at": [
+            24,
+            5.8
+          ],
+          "compute": "point",
+          "facing": {
+            "axis": {
+              "x": 17.6,
+              "z": -17.75
+            },
+            "compute": "unit"
+          },
+          "frame": {
+            "operand": 0
+          },
+          "id": "end-board",
+          "label": "quay.wall",
+          "y": 3
+        }
+      ],
+      "reserves": [
+        {
+          "bounds": [
+            -30,
+            30,
+            -69,
+            -9
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "id": "Roundhouse",
+          "y0": 3.02,
+          "y1": 12
+        },
+        {
+          "bounds": [
+            33,
+            63,
+            -55,
+            -25
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "id": "town",
+          "y0": 3.02,
+          "y1": 12
+        }
+      ]
+    },
+    "kind": "leg2",
+    "operands": [
+      {
+        "o": {
+          "x": 137.6,
+          "z": 942.25
+        },
+        "u": {
+          "axis": {
+            "x": -17.6,
+            "z": 17.75
+          },
+          "compute": "unit"
+        },
+        "v": {
+          "axis": {
+            "axis": {
+              "x": -17.6,
+              "z": 17.75
+            },
+            "compute": "unit"
+          },
+          "compute": "perp",
+          "sign": 1
+        }
+      },
+      {
+        "o": {
+          "x": 104,
+          "z": 973
+        },
+        "u": {
+          "axis": {
+            "x": -93,
+            "z": 23
+          },
+          "compute": "unit"
+        },
+        "v": {
+          "axis": {
+            "x": 23,
+            "z": 93
+          },
+          "compute": "unit"
+        }
+      }
+    ]
+  },
+  "place": "quay",
+  "placements": [],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}

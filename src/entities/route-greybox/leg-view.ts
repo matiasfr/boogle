@@ -361,9 +361,21 @@ const SPECS: readonly LegSpec[] = [
     [[1150, 1341]],
     { name: 'LINE TO CANOPY TOWN', joins: 'bay-cut', ground: canopyGround },
   ),
-  rowSpec('cave', { frame: [12, 1], rack: [6, 1] }, 0.5, (ends) => ends.at(-1)! + 23, [[0, 60]], {
-    name: 'LINE TO PORT QUAY',
-  }),
+  // The West bed, the Saltpan flats and the made ground at the quay carry the track.
+  rowSpec(
+    'cave',
+    { frame: [12, 1], rack: [6, 1] },
+    0.5,
+    (ends) => ends.at(-1)! + 23,
+    [
+      [0, 60],
+      [625, 885],
+      [1195, 1248],
+    ],
+    {
+      name: 'LINE TO PORT QUAY',
+    },
+  ),
 ].filter((sp) => legBuilt(sp.k));
 
 /** Bell Rock (greybox leg 2): the seeds post, the Canopy barrier (RAIL_GATES[1], shut until leg 3 is built: it stands
