@@ -15,7 +15,7 @@ import {
 import { RING_HALT, RING_HEAD, RING_JOINT_UP, RING_STEEL_WORKS, ringAt } from '../sim/railway-ring-layout.ts';
 import { CROSSING_BENTS, PIER_STOP, SHED_TABLE, WORKS_KILN, WORKS_RACK } from '../sim/railway-works-layout.ts';
 import { RAIL_LINES } from '../sim/railway-lines.ts';
-import { RAIL_GRANTS, RAIL_LEGS, legFrame, legRack } from '../sim/railway-route.ts';
+import { RAIL_ARRIVAL, RAIL_GRANTS, RAIL_LEGS, legFrame, legRack, rowSide } from '../sim/railway-route.ts';
 
 /** Where a jump-in lands, in metres on world axes; y is the surface stood on (terrain, pad or deck). */
 export type JumpLand = { x: number; y: number; z: number; yaw?: number };
@@ -297,9 +297,7 @@ export const JUMPS: readonly Jump[] = [
   },
   // Placeholder tooling copy for the owner. Landings measured in step 6 (docs/plans/greybox-leg3.md, its stills).
   // canopy-open has none, for leg 2's reason above: its spot is Bell Rock's upper platform over the cut, which
-  // return-spot.ts (by x and z alone, within 30 m) would also give a rider of the lower level's line. canopy-reached
-  // has none either: arrival.ts probes a landing's surface from the spawn, before Canopy's massing (resident by
-  // distance) has mounted there, so it would keep the spawn; head 1's platform (canopy-mid) is the leg view's, always up.
+  // return-spot.ts (by x and z alone, within 30 m) would also give a rider of the lower level's line.
   { stage: 'canopy-open', menu: false, label: 'Canopy gate open', line: 'The first kit is on the Bell Rock rack' },
   {
     stage: 'canopy-mid',
@@ -309,7 +307,13 @@ export const JUMPS: readonly Jump[] = [
     // Head 1's outward platform over the strait, between rack 2 and frame 2 (legRack, legFrame), facing the frame.
     land: { x: -525.13, y: 4.9, z: -673.36, yaw: 1.935 },
   },
-  { stage: 'canopy-reached', menu: false, label: 'Canopy reached', line: 'The cloth waits at Canopy Town' },
+  {
+    stage: 'canopy-reached',
+    menu: false,
+    label: 'Canopy reached',
+    line: 'The cloth waits at Canopy Town',
+    land: { x: -1070.02, y: 13.9, z: -318.93, yaw: 2.419 },
+  },
   // Placeholder tooling rows. The head platform and quay arrive with leg 4's views (step 5).
   { stage: 'cave-open', menu: false, label: 'Cave line open', line: 'The plug is open at the West landing' },
   {
@@ -353,7 +357,7 @@ export const JUMPS: readonly Jump[] = [
     menu: false,
     label: 'Notch reached',
     line: 'Take the lantern at Lantern Notch (placeholder)',
-    // Keep the spawn for canopy-reached's reason: the halt mounts by distance.
+    land: near(rowSide('bay', RAIL_LEGS[6]!.sections[0]!.toCm, 480, 90, 400), 0, 0, 7.9, RAIL_GRANTS[3]!.at),
   },
   {
     stage: 'causeway-open',
@@ -367,7 +371,7 @@ export const JUMPS: readonly Jump[] = [
     menu: false,
     label: 'Island reached',
     line: 'Arrive (placeholder)',
-    // Keep the spawn for canopy-reached's reason: the halt mounts by distance.
+    land: near(rowSide('ns', RAIL_LEGS[7]!.sections[0]!.toCm, 480, 90, 400), 0, 0, 4.9, RAIL_ARRIVAL),
   },
   { stage: 'arrived', menu: false, label: 'Arrived', line: 'Arrived (placeholder)' },
   // Garage step 4 (docs/plans/garage-step4.md, step 3): placeholder tooling copy for the owner, no landings (the usual
