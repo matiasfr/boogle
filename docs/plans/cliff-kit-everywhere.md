@@ -290,6 +290,8 @@ load at start and end; a run with load over 2 is discarded and rerun). Counts fr
 they are not the result. Over the ceiling, the step mitigates before shipping (fewer boulders, caps off the far rims,
 the shadow pass off for pieces past 150 m, or merged batches), or the owner is told the cost and decides.
 
+[Steps 0–3 frame-cost measurements on HOTBOX](../reports/cliff-kit-perf.md).
+
 ## Level findings
 
 `npm run level-check` on main, 24 November (23 reports, 46.5 s): **canyon kit: 26 pieces, 0 problems**; production
