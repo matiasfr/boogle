@@ -21,7 +21,7 @@ export function summitPathFoot() {
 
 /** The formation's middle at `sCm` along the stack line (the same as ground.ts's STACK_CUT: 2 m west of the down
  * track), the unit normal toward the halt side, and the rail's height. */
-function formation(sCm: number) {
+export function formation(sCm: number) {
   const p = rowPoint('ring', sCm + ROW_SHIFT.ring),
     q = rowPoint('ring', sCm + ROW_SHIFT.ring + 100),
     len = Math.hypot(q.x - p.x, q.z - p.z),
@@ -51,17 +51,6 @@ export function summitBridge(g: { uncappedH(x: number, z: number): number }) {
  * within about 25 m of the rim, each at least `back` m behind the rim on uncut ground. None within `bridge` m of the
  * deck's axis along the line, or `path` m of the path's centreline. */
 export const SUMMIT_RIM_ROCKS = { s0: 124150, s1: 131200, step: 350, back: 1.5, bridge: 4.5, path: 3 } as const;
-
-/** A rim rock as drawn and as solid, both centred `lift` m over its ground point and sharing its yaw. `drawn` is the
- * scale of a dodecahedron of `radius`; `box` is the collider's full size, inscribed in the drawn stone: eight of a
- * dodecahedron's vertices are a cube's corners (radius / sqrt(3) from each axis), and the box is that cube a hair
- * smaller, scaled as the stone is. Nothing solid stands outside what is drawn; the stone's edges overhang the box. */
-export function summitRimRockShape(r: { w: number; h: number }) {
-  const radius = 0.62,
-    drawn = { x: r.w, y: r.h, z: r.w * 0.8 },
-    k = 2 * radius * 0.577;
-  return { radius, lift: r.h * 0.3, drawn, box: { x: drawn.x * k, y: drawn.y * k, z: drawn.z * k } };
-}
 
 /** The rim rocks: centre on the ground (`y`), `w` across and `h` high, yawed. Uneven by a fixed sequence, not chance. */
 export function summitRimRocks(g: IslandGround, centre: { x: number; z: number }) {

@@ -10,10 +10,8 @@ import {
   summitPath,
   summitPathFacts,
   summitPathFoot,
-  summitRimRockShape,
   summitRimRocks,
 } from '../src/entities/ring-island/path.ts';
-import { DodecahedronGeometry } from 'three';
 import { MOVER } from '../dev/level/mover.ts';
 import * as THREE from 'three';
 import { PLAYER_R } from '../src/constants.ts';
@@ -265,43 +263,5 @@ test('the rim rocks stand on uncut ground behind the summit-side rim, off the pa
         t = Math.max(0, Math.min(1, ((r.x - ax) * ex + (r.z - az) * ez) / (ex * ex + ez * ez)));
       assert.ok(Math.hypot(r.x - ax - ex * t, r.z - az - ez * t) >= 3, 'three metres off the path');
     }
-  }
-});
-
-test("every corner of a rim rock's collider is inside the drawn stone", () => {
-  for (const r of summitRimRocks(g, centre)) {
-    const { radius, drawn, box } = summitRimRockShape(r);
-    // The drawn stone's faces, scaled as the view scales them; both shapes share a centre and a yaw.
-    const p = new DodecahedronGeometry(radius).toNonIndexed().getAttribute('position');
-    const v = (i: number) => [p.getX(i) * drawn.x, p.getY(i) * drawn.y, p.getZ(i) * drawn.z] as const;
-    for (let i = 0; i < p.count; i += 3) {
-      const [a, b, c] = [v(i), v(i + 1), v(i + 2)],
-        e = [b[0] - a[0], b[1] - a[1], b[2] - a[2]],
-        f = [c[0] - a[0], c[1] - a[1], c[2] - a[2]],
-        n = [e[1]! * f[2]! - e[2]! * f[1]!, e[2]! * f[0]! - e[0]! * f[2]!, e[0]! * f[1]! - e[1]! * f[0]!],
-        len = Math.hypot(n[0]!, n[1]!, n[2]!),
-        d = (n[0]! * a[0] + n[1]! * a[1] + n[2]! * a[2]) / len;
-      assert.ok(d > 0, 'faces wind outward');
-      for (const sx of [-1, 1])
-        for (const sy of [-1, 1])
-          for (const sz of [-1, 1]) {
-            const out = (n[0]! * sx * box.x + n[1]! * sy * box.y + n[2]! * sz * box.z) / (2 * len) - d;
-            assert.ok(
-              out <= 1e-6,
-              `a collider corner stands ${out.toFixed(3)} m outside the stone (w ${r.w}, h ${r.h})`,
-            );
-          }
-    }
-  }
-});
-
-test("every rim rock's collider top stands at least 0.45 m over its ground", () => {
-  // src/place/pose.ts's safe() sweeps down to 0.4 m over the ground: a lower box would let a saved pose return
-  // inside a rock (test/ring-island-rim-pose.test.ts runs that policy on the real colliders).
-  for (const r of summitRimRocks(g, centre)) {
-    const { lift, box } = summitRimRockShape(r),
-      top = lift + box.y / 2;
-    assert.equal(r.y, g.islandH(r.x, r.z));
-    assert.ok(top >= 0.45, `collider top ${top.toFixed(3)} m over the ground at ${r.x}, ${r.z}`);
   }
 });

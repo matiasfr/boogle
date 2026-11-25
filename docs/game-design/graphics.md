@@ -198,7 +198,8 @@
   the height contours on both riverbanks and above the camp path. The climb's existing faces meet those upper courses.
   The crowns are too steep to stand on, and the descent, bridge approach and climb keep their full tread width.
   From Line 2 the courses follow both long walls to the quarry footbridge. The east wall carries cap stones along
-  the lip facing the village.
+  the lip facing the village. On Ring Island the exposed stack cutting takes the same bedded sandstone.
+  Crowned courses follow the two cut walls, and nineteen low sandstone markers trace the summit-side rim near the footbridge.
 - **Lighting model: three's plain Standard lighting** (10 November owner call: baseline shading, after trying toon
   style B live as the default). No stepped light, cool shade side or rim on characters or the world. The comparison
   is kept as research: [toon-shading](../research/toon-shading.md).

@@ -6,7 +6,11 @@ import assert from 'node:assert/strict';
 import { FAR, ORIGIN } from '../src/place/layout.ts';
 import { RING_CONES } from '../src/proto/greybox/ring-cones.ts';
 import { createIslandGround } from '../src/entities/ring-island/ground.ts';
-import { summitRimRockShape, summitRimRocks } from '../src/entities/ring-island/path.ts';
+import { summitRimRocks } from '../src/entities/ring-island/path.ts';
+import kit from '../content/built/levels/cliff-kit-ring-island.json' with { type: 'json' };
+import { definitions } from '../src/prefab/catalogue.ts';
+import { loadLevelArtifact } from '../src/prefab/validate.ts';
+import { solidHulls } from '../dev/prefab/cliff-kit-solids.ts';
 
 test('a saved pose at the centre of any rim rock is rejected', async () => {
   const physics = await import('../src/physics/engine.ts');
@@ -25,17 +29,14 @@ test('a saved pose at the centre of any rim rock is rejected', async () => {
     type: 'static',
     group: GROUP.SCENERY,
     position: { x: 0, y: 0, z: 0 },
-    shapes: rocks.map((r) => {
-      const { lift, box } = summitRimRockShape(r);
-      return {
-        kind: 'box' as const,
-        hx: box.x / 2,
-        hy: box.y / 2,
-        hz: box.z / 2,
-        offset: { x: r.x, y: r.y + lift, z: r.z },
-        rotation: { x: 0, y: Math.sin(r.yaw / 2), z: 0, w: Math.cos(r.yaw / 2) },
-      };
-    }),
+    shapes: loadLevelArtifact(kit, definitions)
+      .placements.filter((p) => p.prefab === 'terrain.low-face')
+      .flatMap(solidHulls)
+      .map(({ points, triangles }) => ({
+        kind: 'trimesh' as const,
+        vertices: points.flatMap(([x, y, z]) => [x + ORIGIN.x, y, z + ORIGIN.z]),
+        indices: triangles.flat(),
+      })),
   });
   physics.addBody(body);
   physics.stepFixed();

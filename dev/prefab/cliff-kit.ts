@@ -38,10 +38,11 @@ import { gorgeWalls } from './cliff-kit-gorge-walls.ts';
 
 import { farHead } from './cliff-kit-far-head.ts';
 import { northRidge, eastCutting } from './cliff-kit-north-ridge.ts';
+import { ringIsland } from './cliff-kit-ring-island.ts';
 
 export type Key = (typeof prefabs)[number]['key'];
 /** Places one piece in an area, checked against the piece rules; `where` names it in a failure. */
-export type Kit = { place(prefab: Key, pos: Vec3, rot: Vec3, where: string): void };
+export type Kit = { place(prefab: Key, pos: Vec3, rot: Vec3, where: string, scale?: Vec3): void };
 /** One area's record: what it dresses and how. */
 export type Area = {
   /** Its placements' id prefix. */
@@ -58,7 +59,17 @@ export type Area = {
   stranded?: { x: number; z: number; half: number; landing?: readonly [number, number] };
   dress(kit: Kit): void;
 };
-export const AREAS: readonly Area[] = [canyon, shore, gorgeRim, gorgeWalls, gorgeMouth, northRidge, eastCutting, farHead];
+export const AREAS: readonly Area[] = [
+  canyon,
+  shore,
+  gorgeRim,
+  gorgeWalls,
+  gorgeMouth,
+  northRidge,
+  eastCutting,
+  farHead,
+  ringIsland,
+];
 /** The level an area writes. */
 export const levelOf = (area: Area) => area.level ?? `cliff-kit-${area.id}`;
 
@@ -290,8 +301,8 @@ export function kitPieceProblems(p: Placement, keepClear: Area['keepClear'] = []
 export function generateArea(area: Area): Placement[] {
   const placements: Placement[] = [];
   area.dress({
-    place(prefab, pos, rot, where) {
-      const placement: Placement = { id: `${area.id}.${placements.length}`, prefab, pos, rot };
+    place(prefab, pos, rot, where, scale) {
+      const placement: Placement = { id: `${area.id}.${placements.length}`, prefab, pos, rot, ...(scale && { scale }) };
       const problems = kitPieceProblems(placement, area.keepClear);
       if (problems.length) throw new Error(`cliff kit, ${area.id} ${where}: ${problems.join('; ')}`);
       placements.push(placement);

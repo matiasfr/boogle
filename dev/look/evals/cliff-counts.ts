@@ -32,8 +32,13 @@ async function frame() {
     await wait(20);
   }
 }
-for (const [name, cam, look, [bx, bz]] of CAMERAS) {
-  teleport(me.body!, bx!, H(bx!, bz!) + 1.5, bz!);
+// Run this pose with --rail-seed ring-joined --query cliffCensus=ring.
+const ringOnly = new URLSearchParams(location.search).get('cliffCensus') === 'ring';
+const poses: typeof CAMERAS = ringOnly
+  ? [['ring cutting', [1403, 9, -867.5], [1387, 9, -893], [1403, -867.5]]]
+  : CAMERAS;
+for (const [name, cam, look, [bx, bz]] of poses) {
+  teleport(me.body!, bx!, ringOnly ? 8.3 : H(bx!, bz!) + 1.5, bz!);
   me.body!.velocity.set(0, 0, 0);
   window.__debugCam!.set(cam as [number, number, number], look as [number, number, number]);
   await wait(2000);

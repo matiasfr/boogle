@@ -14,6 +14,7 @@ import { loadLevelArtifact } from '../../prefab/validate.ts';
 import { setTerrainKit } from '../../prefab/builders/terrain-kit.ts';
 import type { PrefabKey } from '../../prefab/types.ts';
 import { KIT_AREAS } from './areas.ts';
+import { ringIslandNear } from '../ring-island/state.ts';
 
 export async function createTerrainKitView() {
   const owner = createOwnedView();
@@ -47,7 +48,7 @@ async function build(owner: ReturnType<typeof createOwnedView>) {
         { owner, batch: { target: area.get(p.prefab)!, index }, still: true },
       );
     });
-    return { batches: area.size, things };
+    return { batches: area.size, things, island: level.place === 'cliff-kit-ring-island' };
   });
   const things = areas.flatMap((a) => a.things),
     batches = areas.reduce((n, a) => n + a.batches, 0);
@@ -57,17 +58,34 @@ async function build(owner: ReturnType<typeof createOwnedView>) {
   // for good. After that the pieces are ordinary static solids, like every other collider: the solver resolves contact
   // as it does for any wall, and where a returning player is placed is the shared return check's job
   // (src/place/pose.ts).
-  const clearing = liftOrWait(
-    things.map((t) => ({ shapes: t.solids, on: () => t.setEnabled(true) })),
-    me.body,
-    { lift: false },
-  );
+  const enable = (records: typeof things) =>
+    liftOrWait(
+      records.map((t) => ({ shapes: t.solids, on: () => t.setEnabled(true) })),
+      me.body,
+      { lift: false },
+    );
+  const clearing = enable(areas.filter((a) => !a.island).flatMap((a) => a.things));
+  const island = areas.filter((a) => a.island).flatMap((a) => a.things);
+  let islandClearing: ReturnType<typeof enable> | undefined;
 
   return {
     root: owner.root,
     /** Each frame: turns the waiting pieces solid once Buddy is clear of them all (nothing once all are solid). */
-    update: () => void clearing.retry(me.body),
-    inspect: () => ({ pieces: things.length, batches, waiting: clearing.waiting.length }),
+    update() {
+      clearing.retry(me.body);
+      if (ringIslandNear.mounted) {
+        islandClearing ??= enable(island);
+        islandClearing.retry(me.body);
+      } else if (islandClearing) {
+        for (const piece of island) piece.setEnabled(false);
+        islandClearing = undefined;
+      }
+    },
+    inspect: () => ({
+      pieces: things.length,
+      batches,
+      waiting: clearing.waiting.length + (islandClearing?.waiting.length ?? 0),
+    }),
     dispose: () => owner.dispose(),
   };
 }
