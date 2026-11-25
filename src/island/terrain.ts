@@ -5,7 +5,7 @@ import {
   Loop,
   attribute,
   bool,
-  materialColor,
+  vertexColor,
   mix,
   clamp,
   dot,
@@ -101,7 +101,7 @@ function writeVertex(geo: THREE.BufferGeometry, o: number, i: number, j: number)
 function caveRockMask(geo: THREE.BufferGeometry) {
   const position = geo.getAttribute('position');
   const normals = geo.getAttribute('normal');
-  const mask = new Float32Array(position.count);
+  let mask: Float32Array | undefined;
   for (const mouth of MOUTHS) {
     const last = position.count - 1;
     if (
@@ -111,12 +111,13 @@ function caveRockMask(geo: THREE.BufferGeometry) {
       mouth.z > position.getZ(0) + 16
     )
       continue;
+    mask ??= new Float32Array(position.count);
     for (let i = 0; i < mask.length; i++) {
       const distance = Math.hypot(position.getX(i) - mouth.x, position.getZ(i) - mouth.z);
       mask[i] = Math.max(mask[i]!, smoothstep(16, 8, distance) * smoothstep(0.88, 0.72, normals.getY(i)));
     }
   }
-  if (!mask.some((value) => value > 0)) return false;
+  if (!mask?.some((value) => value > 0)) return false;
   geo.setAttribute('caveRock', new THREE.BufferAttribute(mask, 1));
   return true;
 }
@@ -126,8 +127,8 @@ defineKind('terrain', {});
 export function createTerrainMesh() {
   const n = GRID_RES;
   const group = new THREE.Group();
-  const cliff = new THREE.MeshStandardNodeMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 });
-  cliff.colorNode = mix(materialColor, beddedRock(positionGeometry), attribute('caveRock', 'float'));
+  const cliff = new THREE.MeshStandardNodeMaterial({ flatShading: true, roughness: 0.95 });
+  cliff.colorNode = mix(vertexColor().rgb, beddedRock(positionGeometry), attribute('caveRock', 'float'));
   cliff.maskNode = terrainMat.maskNode;
   cliff.maskShadowNode = terrainMat.maskShadowNode;
   registerWaterReceiver(cliff);
