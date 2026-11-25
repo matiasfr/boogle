@@ -424,6 +424,68 @@ is measured across the ground, so a face at a toe counts against a pad floating 
 tower). Steps 3 and 6 plan round them; step 3 settles whether a floating pad's keep-clear is its column or its
 approach (design review, revised, finding 4).
 
+## Step 1 as built
+
+On `claude/cliff-kit-shore` (24 November 2026; revised 25 November to the owner's
+[non-standable kit everywhere](../decisions-look.md#d-2026-11-25-non-standable-kit-everywhere), after the first sheet
+showed faces as patches on smooth slopes). Matched stills:
+[before and after sheet](cliff-kit-everywhere/shore-before-after.jpg) (the census's two cameras, the landing at eye
+level and one from the sea), single stills under [cliff-kit-everywhere/shore/](cliff-kit-everywhere/shore/). Shape and
+colour only. Not tested on a device.
+
+- **The cove face is ground and kit.** The sculpted face, its three boulders, its trimesh and its view
+  (`src/place/cove-view.ts`) are gone. Its bluff is the heightfield's (`src/place/cove.ts` `coveBluff`, through
+  `coveGround`): the sculpted face's profile, its front blended from steep to the broad end along its across axis as
+  the face's was, its top `coveCrest`. The walkable end from the sand at z 34 to 36 up to 1.7 m at z 38 and 4.5 m by
+  z 48 is ground; against the old face's top it is within 0.5 m along the walk, its west lip 0.6 m broader (a
+  scripted walk slid off the first version), its back corner over the pocket about a metre narrower where the
+  landing's protection holds the ground (z 38 to 42). `H`, the water bed and the ground verifier read the heightfield
+  alone; the coast bake's pins are re-pinned (`test/coast-regions.test.ts`).
+- **No face is a place to stand** (25 November). Every face's solid (the canyon's 6 and 10 m faces too, their
+  placements unchanged) is a closed prism (`src/content/prefabs/terrain.ts` `crowned`): the slab leaning back with
+  the courses, its top a crown of two roof planes 62 degrees from level meeting in a ridge at the face's top, steeper
+  than the controller's limit (`WALKABLE_NY` 0.55, 56.6 degrees). The steepest triangle's normal is 0.47 up, so the
+  gate finds no top on any face. The drawn top stays level. The gate and the audits read every solid as a convex hull
+  of triangles (`dev/prefab/cliff-kit-solids.ts` `solidHulls`). Known limit, not modelled: a sphere exactly over a
+  ridge's apex touches it with an upward normal for an instant; nothing reaches a ridge from a lower footing by walking.
+- **New pieces** (`assets/src/terrain-kit.py`; the canyon's seven drawn pieces byte-identical): sea-cliff faces 6 and
+  10 m wide, two courses over a darker 1.2 m wave-cut foot set back 0.45 m (about 6 m, 396 and 616 triangles); a low
+  face 5 m wide and about 3 m tall (176); an outside corner of sea-cliff courses (440); shore rocks 1.2, 2 and 3.2 m
+  across (about 130 each). In the asset viewer as the Cliff kit. The low face is unused at the shore.
+- **The shore area** (`dev/prefab/cliff-kit-shore.ts`, 45 pieces, `content/built/levels/cliff-kit-shore.json`):
+  three sea-cliff faces along the bluff's front from z 49, their ridges at its top walk; the corner where it tucks
+  under the beach at z 71; five shore rocks in the water; and tiers of sea-cliff faces along the contours of the
+  shore's rock slopes, every 3 m of height (`dressSlope`, by rays across each slope; faces set 1.5 m into the slope
+  and 0.5 m under the contour): census wall 9 from the landing hill to the climb, its part beside the climb, the
+  pocket's east wall behind the board, the hill behind the bluff and the slope beyond it. Kept off: the bluff's
+  walkable end and its flank, the landing's pad, every tread by 0.4 m (`treadClearance`), the gated places (the
+  landing, the timber stage's end, the board, the shore hop; 6 m each). The shore hop keeps its place, solid and
+  colour (step 7 moves its colour with Needle Bell's).
+- **Colour.** The landing's ground takes the cliffs' rock (`ground-material.ts` `beddedRock`, shared with Home's
+  ground); its sand, turf, wet and relief terms are its own; the cove's tunables keep their names (the band controls
+  are unused now).
+- **The idle hold** (`holdCoveStop`) is spawned by the land's ground with its view (`src/place/land.ts`).
+- **Proofs.** `npm run level-check -- --cove` (the heightfield facade and the kit's solids as trimeshes in Rapier;
+  14,625 rays, those off the kit within 0.03 m of `H`; 66 walk samples on the end and the bluff top all on walkable
+  heightfield, none on a kit solid): 0 findings. `npm run level-check`: shore 45 pieces and canyon 26, 0 problems
+  each (the piece rules, the gate, and the reverse flood: 48,841 nodes, none walled off; at a 0.5 m set-in the flood
+  found two small pockets behind the lowest tiers, so faces stand 1.5 m in; a ring of faces round the end, tried by
+  hand, loses 500). `dev/look/evals/shore-walk.ts` (held W, real controller): up the end and back, and from the
+  landing up the shore climb past the dressed wall and back, all arrive; the climb's way down drops at 8.2 m/s at
+  one point, as main's does (8.6). Idle 5 s: creep 0 m on the landing, the graded end and the climb, 0.04 m on the
+  bluff's top (a landing settle that stops). Walk clip from the landing up the climb: `.look/shore-clip-realtime.webm`
+  (local, first version).
+- **Counts** at the census cameras (`dev/look/evals/cliff-counts.ts`, both passes, against main): from the landing
+  147 to 153 draws (+6), 537,559 to 579,243 triangles (+41,684); the climb from the sea 360 to 367 draws (+7), 756,177
+  to 798,125 (+41,948). The kit's instances 26 to 71, 6,688 to 29,824 triangles a pass. Over the shore's 21,000 line in
+  the budget, within the 70,000 ceiling (budgets guide, they don't cut). Not timed (shared machine); the bot's arrival
+  walk on the quiet Mac is still owed.
+
+**Design review, step 1** (same context; calls beyond the plan's): every face's solid crowned, the canyon's included
+(the owner's 25 November call reads "kit faces"); tiers every 3 m of height on every rock slope of the shore, set 1.5 m
+in (the flood's pockets); the bluff's end 0.6 m broader at its lip; the low face unused at the shore; wall 9's rim caps
+dropped (the top tier stands at the rim); the shore hop's colour left for step 7. No copy changed.
+
 ## Design review (2026-11-24)
 
 Run by the plan's author in the same context (design-review skill). Read for it: DESIGN.md, owner calls (Look and art,

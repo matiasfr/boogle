@@ -341,11 +341,11 @@
   },
   "terrain-kit": {
     "source": "terrain-kit.py",
-    "sourceHash": "0e09d5a638417621",
-    "outHash": "8c976c383b849f95",
-    "rawBytes": 159340,
-    "bytes": 43896,
-    "triangles": 2024,
+    "sourceHash": "7f60eaeeb013746f",
+    "outHash": "9b7185da73cedbb4",
+    "rawBytes": 318184,
+    "bytes": 87984,
+    "triangles": 4044,
     "nodes": [
       "bank_rock",
       "boulder_l",
@@ -353,7 +353,14 @@
       "boulder_s",
       "face_10",
       "face_6",
-      "rim_cap"
+      "low_face",
+      "rim_cap",
+      "sea_corner",
+      "sea_face_10",
+      "sea_face_6",
+      "shore_rock_l",
+      "shore_rock_m",
+      "shore_rock_s"
     ],
     "animations": [],
     "textures": []

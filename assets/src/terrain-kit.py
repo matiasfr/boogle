@@ -1,6 +1,6 @@
-# The canyon kit (docs/plans/terrain-clean.md, Part 3; Chunky Sunshine blocks, docs/decisions-look.md
+# The cliff kit, first the canyon's (docs/plans/terrain-clean.md, Part 3; Chunky Sunshine blocks, docs/decisions-look.md
 # d-2026-11-24-canyon-kit-chunky-sunshine): big sandstone faces made of stacked, deeply bevelled blocks, broken rim caps,
-# boulders and low bank rock. Built from scratch by Blender's Python, exported by `npm run assets`:
+# boulders and low bank rock, and the shore's sea-cliff faces, low face, corner and shore rocks. Built from scratch by Blender's Python, exported by `npm run assets`:
 #   Blender -b --factory-startup --python assets/src/terrain-kit.py -- <raw.glb>
 # Pieces are authored in the game's axes (x across the piece, y up, z out of the wall toward the viewer; see `G`), with
 # the origin at the middle of the piece's base front edge (boulders: the middle of their base). One object per piece; code
@@ -23,6 +23,15 @@ FACE_ROWS = 6  # courses in a face: 14.4 m, most of the gorge's 20 to 28 m wall 
 LEAN = 0.32  # m each course steps back into the wall (about 7.6 degrees)
 BEVEL = 0.22  # m, the deep chamfer that makes the blocks read chunky from the path
 SHADE = (0.84, 1.08)  # per-block shade range
+# The shore's pieces (docs/plans/cliff-kit-everywhere.md, step 1): sea-cliff faces two courses over a wave-cut foot, so
+# about 6 m (the cove's bluff stands 4.5 m over its beach); a low face of one course and a short broken top, about 3 m;
+# an outside corner of sea-cliff courses; low dark shore rocks at the waterline.
+SEA_ROWS = 2
+SEA_FOOT = 1.2  # m, the wave-cut foot's height
+SEA_TOP = (0.9, 1.0)  # of a course: a near-level top, since the sea faces' tops are flush with the walk behind them
+UNDERCUT = 0.45  # m the foot stands back under the courses
+FOOT_SHADE = (0.58, 0.72)  # darker: wet rock at the waterline
+CORNER = 4.0  # m, each leg of the corner
 
 
 def G(x, y, z):
@@ -69,51 +78,97 @@ def piece(name, build, bevel=BEVEL, segments=1):
     return ob
 
 
-def face(width, seed):
-    """A sandstone face `width` m wide: FACE_ROWS courses, each stepped back by LEAN. A third of the blocks stand two
-    courses tall, so the face reads as big broken slabs rather than coursed masonry; each block stands a little proud or
-    shy and leans a few degrees; the top is broken into uneven heights. Blocks are 1.4 to 2.2 m deep, so terrain behind
-    shows only at a gap, never a hole."""
+def courses(bm, shade_layer, rng, x0, x1, rows, foot=0.0, top_range=(0.3, 1.0)):
+    """Coursed sandstone from x0 to x1 (game x), its front at z 0: `rows` courses, each stepped back by LEAN. A third
+    of the blocks stand two courses tall, so a face reads as big broken slabs rather than coursed masonry; each block
+    stands a little proud or shy and leans a few degrees; the top is broken into uneven heights (`top_range` of a
+    course). Blocks are 1.4 to 2.2 m deep, so terrain behind shows only at a gap, never a hole. `foot` m: a wave-cut foot
+    under the courses, a darker band of low blocks set back UNDERCUT under them (drawn only: the solid stays a plain
+    leaning slab, no overhang)."""
+    if foot:
+        x = x0
+        while x < x1 - 0.4:
+            w = min(rng.uniform(1.2, 2.4), x1 - x)
+            block(bm, shade_layer, w - 0.06, foot, rng.uniform(1.6, 2.2), x + w / 2, 0, -UNDERCUT + rng.uniform(-0.1, 0.1),
+                  jitter=0.12, rng=rng, shade=rng.uniform(*FOOT_SHADE))
+            x += w
+    tall = []  # (x0, x1) spans the course below already filled with a two-course block
+    for row in range(rows):
+        y = foot + row * ROW
+        back = row * LEAN
+        top = row == rows - 1
+        spans, tall = tall, []
+        x = x0
+        while x < x1 - 0.4:
+            skip = next((s for s in spans if s[0] <= x + 0.01 < s[1]), None)
+            if skip:
+                x = skip[1]
+                continue
+            limit = min([s[0] for s in spans if s[0] > x + 0.01] + [x1])
+            w = min(rng.uniform(1.8, 3.8), limit - x)
+            if limit - x - w < 1.1:
+                w = limit - x
+            two = not top and row < rows - 2 and rng.random() < 0.35
+            h = ROW * (rng.uniform(*top_range) if top else (2 if two else 1) * rng.uniform(0.96, 1.02))
+            if two:
+                tall.append((x, x + w))
+            vs = block(
+                bm,
+                shade_layer,
+                w - 0.08,
+                h,
+                rng.uniform(1.4, 2.2),
+                x + w / 2,
+                y,
+                -back + rng.uniform(-0.4, 0.5),
+                jitter=0.16,
+                rng=rng,
+                shade=rng.uniform(*SHADE),
+            )
+            centre = G(x + w / 2, y + h / 2, -back)
+            bmesh.ops.rotate(bm, verts=vs, cent=centre, matrix=Matrix.Rotation(rng.uniform(-0.07, 0.07), 3, 'X'))
+            bmesh.ops.rotate(bm, verts=vs, cent=centre, matrix=Matrix.Rotation(rng.uniform(-0.05, 0.05), 3, 'Y'))
+            x += w
+
+
+def face(width, seed, rows=FACE_ROWS, foot=0.0, top_range=(0.3, 1.0)):
+    """A sandstone face `width` m wide (`courses` across it); the canyon's are FACE_ROWS courses, 14.4 m."""
+
+    def build(bm, shade_layer):
+        courses(bm, shade_layer, random.Random(seed), -width / 2, width / 2, rows, foot, top_range)
+
+    return build
+
+
+def corner(seed):
+    """An outside corner, 90 degrees, for a headland's nose: two CORNER m legs of sea-cliff courses meeting at the
+    origin (the corner's foot), one facing +z along -x, the other facing +x along -z. Leg A runs 0.25 m past the corner,
+    a quoin over the other leg's end."""
 
     def build(bm, shade_layer):
         rng = random.Random(seed)
-        tall = []  # (x0, x1) spans the course below already filled with a two-course block
-        for row in range(FACE_ROWS):
-            y = row * ROW
-            back = row * LEAN
-            top = row == FACE_ROWS - 1
-            spans, tall = tall, []
-            x = -width / 2
-            while x < width / 2 - 0.4:
-                skip = next((s for s in spans if s[0] <= x + 0.01 < s[1]), None)
-                if skip:
-                    x = skip[1]
-                    continue
-                limit = min([s[0] for s in spans if s[0] > x + 0.01] + [width / 2])
-                w = min(rng.uniform(1.8, 3.8), limit - x)
-                if limit - x - w < 1.1:
-                    w = limit - x
-                two = not top and row < FACE_ROWS - 2 and rng.random() < 0.35
-                h = ROW * (rng.uniform(0.3, 1.0) if top else (2 if two else 1) * rng.uniform(0.96, 1.02))
-                if two:
-                    tall.append((x, x + w))
-                vs = block(
-                    bm,
-                    shade_layer,
-                    w - 0.08,
-                    h,
-                    rng.uniform(1.4, 2.2),
-                    x + w / 2,
-                    y,
-                    -back + rng.uniform(-0.4, 0.5),
-                    jitter=0.16,
-                    rng=rng,
-                    shade=rng.uniform(*SHADE),
-                )
-                centre = G(x + w / 2, y + h / 2, -back)
-                bmesh.ops.rotate(bm, verts=vs, cent=centre, matrix=Matrix.Rotation(rng.uniform(-0.07, 0.07), 3, 'X'))
-                bmesh.ops.rotate(bm, verts=vs, cent=centre, matrix=Matrix.Rotation(rng.uniform(-0.05, 0.05), 3, 'Y'))
-                x += w
+        before = set(bm.verts)
+        courses(bm, shade_layer, rng, 0.25, CORNER, SEA_ROWS, SEA_FOOT, SEA_TOP)
+        leg = [v for v in bm.verts if v not in before]
+        # Game yaw +90 degrees, (x, z) -> (z, -x): Blender's +90 degrees about its Z.
+        bmesh.ops.rotate(bm, verts=leg, cent=(0, 0, 0), matrix=Matrix.Rotation(math.pi / 2, 3, 'Z'))
+        courses(bm, shade_layer, rng, -CORNER, 0.25, SEA_ROWS, SEA_FOOT, SEA_TOP)
+
+    return build
+
+
+def shore_rock(size, height, seed):
+    """Low dark rock at the waterline, `size` m across: a flat slab, a smaller one leaning on it and a chip; at most
+    `height` m tall, sunk a little. Origin the middle of its base."""
+
+    def build(bm, shade_layer):
+        rng = random.Random(seed)
+        parts = ((size, 0.7 * size, height, 0, 0), (0.55 * size, 0.45 * size, 0.7 * height, 0.42 * size, 0.2 * size),
+                 (0.3 * size, 0.3 * size, 0.45 * height, -0.45 * size, 0.18 * size))
+        for w, d, h, x, z in parts:
+            vs = block(bm, shade_layer, w, h, d, x, -0.12 * height, z + d / 2, jitter=0.1 * size, rng=rng,
+                       shade=rng.uniform(*FOOT_SHADE))
+            bmesh.ops.rotate(bm, verts=vs, cent=G(x, 0, z), matrix=Matrix.Rotation(rng.uniform(-0.5, 0.5), 3, 'Z'))
 
     return build
 
@@ -161,6 +216,13 @@ for name, build, bev in (
     ('boulder_m', boulder(1.6, 102), 0.14),
     ('boulder_l', boulder(2.6, 103), 0.2),
     ('bank_rock', bank_rock, 0.08),
+    ('sea_face_6', face(6.0, 206, SEA_ROWS, SEA_FOOT, SEA_TOP), BEVEL),
+    ('sea_face_10', face(10.0, 210, SEA_ROWS, SEA_FOOT, SEA_TOP), BEVEL),
+    ('low_face', face(5.0, 205, 2, 0.0, (0.2, 0.3)), BEVEL),
+    ('sea_corner', corner(240), BEVEL),
+    ('shore_rock_s', shore_rock(1.2, 0.45, 301), 0.1),
+    ('shore_rock_m', shore_rock(2.0, 0.7, 302), 0.14),
+    ('shore_rock_l', shore_rock(3.2, 1.0, 303), 0.18),
 ):
     piece(name, build, bev)
 

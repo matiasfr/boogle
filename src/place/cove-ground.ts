@@ -25,5 +25,5 @@ export function dressCoveGround(material: THREE.MeshStandardNodeMaterial, slopeA
     .mul(smoothstep(-20, -5, p.z))
     .mul(smoothstep(95, 110, p.z).oneMinus());
   const uv = p.xz.sub(vec2(731, -24)).div(2).add(0.5).div(vec2(width, height));
-  applyCoveLayers(material, region, false, textureBicubicLevel(texture(slopes, uv), float(0)).r);
+  applyCoveLayers(material, region, textureBicubicLevel(texture(slopes, uv), float(0)).r);
 }

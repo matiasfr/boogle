@@ -9,7 +9,6 @@ import { gridBedAt, registerShoreProvider } from '../src/render/water/shore-prov
 import { createCoast, type Coast } from '../src/render/water/coast.ts';
 import { GRID, ORIGIN } from '../src/place/layout.ts';
 import { heights as placeHeights, NX, NZ, at, fineHeightAt } from '../src/place/terrain.ts';
-import { coveSurface } from '../src/place/cove.ts';
 
 // Home's heights come from Vite-only layout data, so Home here is a stand-in island on Home's own grid, bounds and
 // extent; Place is its real terrain and bed query (src/place/water.ts).
@@ -54,9 +53,7 @@ function registerToday() {
       extent: 1024,
       bedAt: (x, z) => {
         const bed = gridBed(x, z);
-        const lx = x - ORIGIN.x,
-          lz = z - ORIGIN.z;
-        return bed.valid ? { valid: true, height: coveSurface(lx, lz, fineHeightAt(lx, lz, bed.height)) } : bed;
+        return bed.valid ? { valid: true, height: fineHeightAt(x - ORIGIN.x, z - ORIGIN.z, bed.height) } : bed;
       },
     }),
   );
@@ -85,15 +82,16 @@ function digest(coast: Coast) {
   return { width: tex.image.width, height: tex.image.height, texture, sampled, n };
 }
 
-// D1: three gate-threshold grid vertices change terrain inputs; coast/shader code is unchanged.
+// D1: three gate-threshold grid vertices change terrain inputs; coast/shader code is unchanged. Re-pinned 24 November
+// 2026 for the cove's bluff as ground (docs/plans/cliff-kit-everywhere.md, step 1).
 // Print replacement texture/sample digests after an intentional terrain change (then review and update only those pins):
 // PRINT_COAST_BASELINE=1 node --test --test-name-pattern='two shores' test/coast-regions.test.ts
 // Size, transform, lattice bounds and region assertions remain independent of regeneration.
 const COAST_BASELINE = {
   width: 2015,
   height: 780,
-  texture: 'ed69c3bf51851763f63cf691032122b25d776f16a34eae6abf0c15179fec41e4',
-  sampled: 'c122e3f04c01f51b76f06f86d5ba8727790c55e44cbe3fbfd3b2d78d5ed4872e',
+  texture: '68c9800b74cb1975ff318fcbfd941c9bb9d18873b3074c9d6bafd0565eeeab25',
+  sampled: '28ad06f79fd3bfabb3bdb84cb97a49892ea96f5739a3685a14ad358409a81556',
   transform: [-375, -400, 0.0004962779156327543, 0.001282051282051282],
 };
 

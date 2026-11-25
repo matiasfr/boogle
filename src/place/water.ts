@@ -4,7 +4,6 @@ import { registerShoreProvider } from '../render/water-render.ts';
 import { gridBedAt } from '../render/water/shore-providers.ts';
 import { GRID, ORIGIN } from './layout.ts';
 import { heights, NX, NZ, at, fineHeightAt } from './terrain.ts';
-import { coveSurface } from './cove.ts';
 
 export function registerPlaceShore() {
   const bounds = {
@@ -27,14 +26,12 @@ export function registerPlaceShore() {
     id: 'place',
     bounds,
     seaLevel: SEA,
-    revision: 'cove-smooth-2',
+    revision: 'cove-bluff-1',
     extent: 1024,
     // The bed query matches the 1 m cove triangles.
     bedAt: (x, z) => {
       const bed = gridBed(x, z);
-      const lx = x - ORIGIN.x,
-        lz = z - ORIGIN.z;
-      return bed.valid ? { valid: true, height: coveSurface(lx, lz, fineHeightAt(lx, lz, bed.height)) } : bed;
+      return bed.valid ? { valid: true, height: fineHeightAt(x - ORIGIN.x, z - ORIGIN.z, bed.height) } : bed;
     },
   });
 }

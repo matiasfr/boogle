@@ -1,7 +1,6 @@
 // Pure collider queries for the independent ground verifier. No render or ledge imports.
 import { GRID, ORIGIN } from '../../src/place/layout.ts';
 import { terrainCollisionTiles, type TerrainCollisionTile } from '../../src/place/terrain.ts';
-import { coveMeshes, coveSurface, type CoveMesh } from '../../src/place/cove.ts';
 import { WALKABLE_NY } from '../../src/constants.ts';
 
 const collision = terrainCollisionTiles();
@@ -10,8 +9,7 @@ export function onHome(x: number, z: number) {
   return x >= GRID.x0 + ORIGIN.x && x <= GRID.x1 + ORIGIN.x && z >= GRID.z0 + ORIGIN.z && z <= GRID.z1 + ORIGIN.z;
 }
 
-/** Physics heightfield triangles, including the closed outer edge (surfaceHeight uses an outside fallback there).
- * The cove kit's exact shared triangle query composes its solid tops over the heightfield. */
+/** Physics heightfield triangles, including the closed outer edge (surfaceHeight uses an outside fallback there). */
 export function colliderHeight(x: number, z: number) {
   for (const tile of collision) {
     const nx = tile.heights.length,
@@ -28,22 +26,21 @@ export function colliderHeight(x: number, z: number) {
     const c = tile.heights[i]![nz - 2 - j]!,
       d = tile.heights[i + 1]![nz - 2 - j]!;
     const h = u + v <= 1 ? a + (b - a) * u + (c - a) * v : d + (c - d) * (1 - u) + (b - d) * (1 - v);
-    return coveSurface(x - ORIGIN.x, z - ORIGIN.z, h);
+    return h;
   }
   throw new Error(`No Home collider at ${x},${z}`);
 }
 
 export type ColliderFace = { height: number; ny: number };
-const EDGE_EPS = 1e-6; // same barycentric inclusion tolerance as the cove collider's top query
+const EDGE_EPS = 1e-6; // barycentric inclusion tolerance at shared edges
 const HEIGHT_EPS = 1e-8; // numerical equality of incident physical faces, not a drawn-gap tolerance
 
 /** Every actual face incident at the point: both sides of diagonals, grid edges, vertices and tile joins.
- * Source arguments keep the geometry queries testable with small, analytical heightfield and cove fixtures. */
+ * Source arguments keep the geometry queries testable with small, analytical heightfield fixtures. */
 export function incidentColliderFaces(
   x: number,
   z: number,
   tiles: readonly TerrainCollisionTile[] = collision,
-  meshes: readonly Pick<CoveMesh, 'vertices' | 'indices' | 'bounds'>[] = coveMeshes,
 ): ColliderFace[] {
   const faces: ColliderFace[] = [];
   for (const tile of tiles) {
@@ -72,36 +69,10 @@ export function incidentColliderFaces(
           });
       }
   }
-  const lx = x - ORIGIN.x,
-    lz = z - ORIGIN.z;
-  for (const mesh of meshes) {
-    if (lx < mesh.bounds.minX || lx > mesh.bounds.maxX || lz < mesh.bounds.minZ || lz > mesh.bounds.maxZ) continue;
-    for (let k = 0; k < mesh.indices.length; k += 3) {
-      const a = mesh.indices[k]! * 3,
-        b = mesh.indices[k + 1]! * 3,
-        c = mesh.indices[k + 2]! * 3;
-      const ax = mesh.vertices[a]!,
-        ay = mesh.vertices[a + 1]!,
-        az = mesh.vertices[a + 2]!;
-      const bx = mesh.vertices[b]! - ax,
-        by = mesh.vertices[b + 1]! - ay,
-        bz = mesh.vertices[b + 2]! - az;
-      const cx = mesh.vertices[c]! - ax,
-        cy = mesh.vertices[c + 1]! - ay,
-        cz = mesh.vertices[c + 2]! - az;
-      const det = bx * cz - bz * cx;
-      if (Math.abs(det) < 1e-8) continue;
-      const u = ((lx - ax) * cz - (lz - az) * cx) / det;
-      const v = (bx * (lz - az) - bz * (lx - ax)) / det;
-      if (u < -EDGE_EPS || v < -EDGE_EPS || u + v > 1 + EDGE_EPS) continue;
-      faces.push({ height: ay + u * by + v * cy, ny: -det / Math.hypot(by * cz - bz * cy, det, bx * cy - by * cx) });
-    }
-  }
   return faces;
 }
 
-/** A shared boundary belongs to each face; a walkable face at the top surface must not be excluded.
- * Conversely, a buried walkable heightfield under a steep cove face cannot make that face walkable. */
+/** A shared boundary belongs to each face; a walkable face at the top surface must not be excluded. */
 export function walkableFaces(faces: readonly ColliderFace[], height: number) {
   return faces.some((face) => Math.abs(face.height - height) <= HEIGHT_EPS && face.ny >= WALKABLE_NY);
 }

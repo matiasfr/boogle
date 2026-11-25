@@ -3,7 +3,7 @@
 // here overhangs; footbridges and platforms are their own boxes. Local: nothing here reaches the sim.
 import { smoothstep } from '../math.ts';
 import { frameBesideLine, FRAME_D, FRAME_W, SPAN } from './spatial-station.ts';
-import { coveFront, coveGround, coveSurface, coveWeight, fitCoveBacking } from './cove.ts';
+import { coveFront, coveGround, coveWeight } from './cove.ts';
 import { SHORE_COAST, SHORE_HOP, SHORE_LANDING, SHORE_PATH } from './shore-layout.ts';
 import { TOWN_CENTRE, TOWN_GROUND, TOWN_RING, TOWN_SLOTS, TOWN_STREETS, townBuilding } from './town-plan.ts';
 import { ROTUNDA_HOME } from './home-station.ts';
@@ -658,10 +658,6 @@ export function fineHeightAt(x: number, z: number, fallback: number): number {
   return triangleHeight(atFine(0, 0), atFine(1, 0), atFine(0, 1), atFine(1, 1), fx - i, fz - j);
 }
 
-// Static final assembly: fit the opaque kit return to the finished, protected soil.
-// Do not sample H here: it already includes the kit whose shared triangles we are fitting.
-fitCoveBacking((x, z) => fineHeightAt(x, z, coarseTriangleHeight(x, z)));
-
 export type TerrainCollisionTile = {
   heights: number[][];
   cell: number;
@@ -696,10 +692,9 @@ export function terrainCollisionTiles(): TerrainCollisionTile[] {
   ];
 }
 
-/** Finished rendered/collision surface for grounding audits, including the fine cove grid and kit. */
+/** Finished rendered/collision surface for grounding audits, including the fine cove grid. */
 export function surfaceHeight(wx: number, wz: number) {
-  const coarse = coarseHeight(wx, wz, true);
-  return coveSurface(wx - ORIGIN.x, wz - ORIGIN.z, fineHeightAt(wx - ORIGIN.x, wz - ORIGIN.z, coarse));
+  return fineHeightAt(wx - ORIGIN.x, wz - ORIGIN.z, coarseHeight(wx, wz, true));
 }
 
 /** The land's height at a world point. */
@@ -711,7 +706,7 @@ export function H(wx: number, wz: number) {
   const nearFine =
     lx >= fineBounds.x0 - 4 && lx <= fineBounds.x1 + 4 && lz >= fineBounds.z0 - 4 && lz <= fineBounds.z1 + 4;
   const h = coarseHeight(wx, wz, coveWeight(lx, lz) > 0 || nearFine);
-  return coveSurface(lx, lz, fineHeightAt(lx, lz, h));
+  return fineHeightAt(lx, lz, h);
 }
 export const insidePlace = (wx: number, wz: number) =>
   wx - ORIGIN.x > GRID.x0 + 4 &&

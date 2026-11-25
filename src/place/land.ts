@@ -1,4 +1,4 @@
-// The land of ?proto=place, drawn from terrain.ts; the cove locally refines the shared render/collision surface, with the
+// The land of ?proto=place, drawn from terrain.ts; the cove's 1 m patch refines the shared render/collision surface, with the
 // spire, the footbridges and what stands across the sea. chop.ts owns every tree. Local.
 import * as THREE from 'three/webgpu';
 import { flat } from '../render/flat.ts';
@@ -33,8 +33,9 @@ import { SHORE_COAST, SHORE_HOP, SHORE_LANDING } from './shore-layout.ts';
 import { boxFootprint, sampleFootprint } from './support.ts';
 import type { OwnedView } from '../render/owned-view.ts';
 import { tagStepSupport, segmentStepSupport, type StepSurface } from '../render/locomotion-surfaces.ts';
-import { coveJoinCoverage, coveJoinNormal, coveWeight } from './cove.ts';
-import { buildCove } from './cove-view.ts';
+import { coveWeight } from './cove.ts';
+import { holdCoveStop } from './cove-stop.ts';
+import { despawn, spawn } from '../entity/entity.ts';
 import { dressCoveGround } from './cove-ground.ts';
 import { addFarGround } from './far-ground.ts';
 import type { TileCells } from './far-ground-index.ts';
@@ -259,17 +260,6 @@ function buildMesh(owner: OwnedView) {
       ).normalize();
       normals.setXYZ(baseCount + j * f.nx + i, n.x, n.y, n.z);
     }
-  const capJoin = new Float32Array((pos.length / 3) * 2);
-  for (let k = 0; k < pos.length / 3; k++) {
-    const wx = pos[k * 3]!,
-      wz = pos[k * 3 + 2]!;
-    const coverage = coveJoinCoverage(wx - ORIGIN.x, wz - ORIGIN.z, pos[k * 3 + 1]!);
-    if (coverage) capJoin.set(coverage, k * 2);
-    // Coverage keeps the original soil slope. Only lighting shares the kit's contact tangent.
-    const joined = coveJoinNormal(wx - ORIGIN.x, wz - ORIGIN.z, normals.getX(k), normals.getY(k), normals.getZ(k));
-    if (joined) normals.setXYZ(k, joined[0]!, joined[1]!, joined[2]!);
-  }
-  geo.setAttribute('coveCapJoin', new THREE.BufferAttribute(capJoin, 2));
   const inCove = (i: number, j: number) =>
     cellX(i) >= COVE_FINE.x0 && cellX(i) < COVE_FINE.x1 && cellZ(j) >= COVE_FINE.z0 && cellZ(j) < COVE_FINE.z1;
   // Material layers on the collider's own triangles. `?terrain=0` keeps the earlier ground material.
@@ -320,7 +310,9 @@ function buildMesh(owner: OwnedView) {
       return { top, surface: top < 2.4 && gorgeD(x - ORIGIN.x, z - ORIGIN.z) >= 18 ? 'sand' : 'grass' };
     });
   }
-  buildCove();
+  // Holds an idle player still on static scenery (the ground, the cliff kit, the landing) while the ground stands.
+  const stop = spawn({ kind: 'place-cove-stop', fixedPre: holdCoveStop });
+  owner.cleanup(() => despawn(stop));
 }
 
 export { ROOM_GROUP } from '../constants.ts';

@@ -20,7 +20,7 @@ import { SEA } from '../../src/world/grid.ts';
 import { PLAYER_R, WALKABLE_NY } from '../../src/constants.ts';
 import { STEP } from '../../src/place/clearance.ts';
 import type { Placement } from '../../src/prefab/types.ts';
-import { solidBoxes } from '../prefab/cliff-kit.ts';
+import { normalOf, solidHulls } from '../prefab/cliff-kit-solids.ts';
 import { MOVER, TWO_JUMPS } from './mover.ts';
 import { TRAIN_TOP, drawnTracks } from './rail-network.ts';
 
@@ -29,19 +29,19 @@ const SAMPLE = 0.25,
   AROUND = 0.15,
   NEAR = 0.5;
 /** How far across the ground a top is out of reach of lower footings (b), and a perch's footing (c). */
-const REACH = 8,
+export const REACH = 8,
   PERCH = 1;
 
 const ground = (x: number, z: number) => H(x + ORIGIN.x, z);
 /** Whether the bare ground at Place-local (x, z) is walkable: its slope's normal at least WALKABLE_NY up. */
-function walkable(x: number, z: number) {
+export function walkable(x: number, z: number) {
   const e = SAMPLE;
   const gx = (ground(x + e, z) - ground(x - e, z)) / (2 * e),
     gz = (ground(x, z + e) - ground(x, z - e)) / (2 * e);
   return 1 / Math.sqrt(1 + gx * gx + gz * gz) >= WALKABLE_NY;
 }
 /** The height a player stands at in the bare world at (x, z), or undefined: walkable ground, or the sea's surface. */
-function footing(x: number, z: number) {
+export function footing(x: number, z: number) {
   const g = ground(x, z);
   return g < SEA ? SEA : walkable(x, z) ? g : undefined;
 }
@@ -76,38 +76,23 @@ type V = readonly [number, number, number];
 const sub = (a: V, b: V) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]] as const;
 type Top = { piece: number; solid: number; at: V };
 
-/** Every unburied point of a piece's faces a player could stand on, SAMPLE m apart. */
+/** Every unburied point of a piece's faces a player could stand on, about SAMPLE m apart: each triangle of its solids
+ * whose outward normal is at least WALKABLE_NY up (a face's crowned prism has none). */
 function standableTops(p: Placement, piece: number): Top[] {
   const out: Top[] = [];
-  for (const [solid, box] of solidBoxes(p).entries()) {
-    const centre = box(0, 0, 0);
-    for (let axis = 0; axis < 3; axis++)
-      for (const side of [-1, 1]) {
-        // The face's two other axes, its tangents across it and its outward normal (scale and rotation included).
-        const [a, b] = [0, 1, 2].filter((x) => x !== axis) as [number, number];
-        const at = (s: number, t: number) => {
-          const q = [0, 0, 0];
-          q[axis] = side;
-          q[a] = s;
-          q[b] = t;
-          return box(q[0]!, q[1]!, q[2]!);
-        };
-        const ta = sub(at(1, 0), at(-1, 0)),
-          tb = sub(at(0, 1), at(0, -1));
-        let normal = [ta[1] * tb[2] - ta[2] * tb[1], ta[2] * tb[0] - ta[0] * tb[2], ta[0] * tb[1] - ta[1] * tb[0]];
-        const outward = sub(at(0, 0), centre);
-        if (normal[0]! * outward[0] + normal[1]! * outward[1] + normal[2]! * outward[2] < 0)
-          normal = normal.map((v) => -v);
-        if (normal[1]! / Math.hypot(...normal) < WALKABLE_NY) continue; // too steep to stand on: no top
-        const sa = Math.max(1, Math.ceil(Math.hypot(...ta) / SAMPLE)),
-          sb = Math.max(1, Math.ceil(Math.hypot(...tb) / SAMPLE));
-        for (let i = 0; i <= sa; i++)
-          for (let j = 0; j <= sb; j++) {
-            const q = at((2 * i) / sa - 1, (2 * j) / sb - 1);
-            if (q[1] >= ground(q[0], q[2]) - 0.05) out.push({ piece, solid, at: q }); // else buried
-          }
-      }
-  }
+  for (const [solid, hull] of solidHulls(p).entries())
+    for (const t of hull.triangles) {
+      if (normalOf(hull, t)[1] < WALKABLE_NY) continue; // too steep to stand on: no top
+      const [a, b, c] = t.map((k) => hull.points[k]!) as [V, V, V];
+      const steps = Math.max(1, Math.ceil(Math.max(Math.hypot(...sub(b, a)), Math.hypot(...sub(c, a))) / SAMPLE));
+      for (let i = 0; i <= steps; i++)
+        for (let j = 0; i + j <= steps; j++) {
+          const u = i / steps,
+            v = j / steps;
+          const q: V = [0, 1, 2].map((d) => a[d]! + (b[d]! - a[d]!) * u + (c[d]! - a[d]!) * v) as unknown as V;
+          if (q[1] >= ground(q[0], q[2]) - 0.05) out.push({ piece, solid, at: q }); // else buried
+        }
+    }
   return out;
 }
 

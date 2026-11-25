@@ -15,7 +15,8 @@
 // - Art only stands, never a new way up: no standable top more than a step off the bare world's own footing (the gate
 //   in level-check, dev/level/cliff-kit-standing.ts; not run here, so a piece that breaks it is reported, not built
 //   round).
-// Areas: the canyon (dev/prefab/cliff-kit-canyon.ts). No other area is dressed yet.
+// Areas: the canyon (dev/prefab/cliff-kit-canyon.ts, by stations along the path) and the shore
+// (dev/prefab/cliff-kit-shore.ts, by runs along its walls: `runAlong` and `layAlong` below).
 import type { LevelDef, Placement, Vec3 } from '../../src/prefab/types.ts';
 import { segDist } from '../../src/island/stamps.ts';
 import { ORIGIN } from '../../src/place/layout.ts';
@@ -23,10 +24,12 @@ import { pathAt } from '../../src/place/path-field.ts';
 import { DEVICES, PADS, PILLARS, SECRETS } from '../../src/place/tech-layout.ts';
 import { GAUGE } from '../../src/entities/ring-island/bracket.ts';
 import { KIT } from '../../src/place/turnout.ts';
-import { prefabs } from '../../src/content/prefabs/terrain.ts';
+import type { prefabs } from '../../src/content/prefabs/terrain.ts';
 import { baseSites } from '../level/sites.ts';
+import { solidHulls, solidSamples, type V3 } from './cliff-kit-solids.ts';
 import { drawnTracks } from '../level/rail-network.ts';
 import { canyon } from './cliff-kit-canyon.ts';
+import { shore } from './cliff-kit-shore.ts';
 
 export type Key = (typeof prefabs)[number]['key'];
 /** Places one piece in an area, checked against the piece rules; `where` names it in a failure. */
@@ -42,13 +45,61 @@ export type Area = {
   walls: readonly (readonly [number, number])[];
   /** Gated places of its own, beyond the layout's (Place-local x, z). */
   keepClear?: readonly (readonly [number, number])[];
+  /** A square (Place-local centre, half its side, m) where nobody may be walled off from the treads by the kit: the
+   * audit's reverse flood (dev/level/cliff-kit.ts) for an area whose pieces stand at the water. */
+  stranded?: { x: number; z: number; half: number };
   dress(kit: Kit): void;
 };
-export const AREAS: readonly Area[] = [canyon];
+export const AREAS: readonly Area[] = [canyon, shore];
 /** The level an area writes. */
 export const levelOf = (area: Area) => area.level ?? `cliff-kit-${area.id}`;
 
+export { solidHulls, solidSamples };
 export const CLEAR = 0.4; // m, a collider's footprint outside the tread's edge
+
+/** A run along a wall (docs/plans/cliff-kit-everywhere.md, "runs, not stations"): a polyline of Place-local (x, z)
+ * points along its toe or front, measured by arc length. `at(s)` is the point s m along it, with its unit tangent and
+ * the normal to its left (u turned a quarter: (-uz, ux)). */
+export function runAlong(points: readonly (readonly [number, number])[]) {
+  const lengths = [0];
+  for (let k = 1; k < points.length; k++)
+    lengths.push(lengths[k - 1]! + Math.hypot(points[k]![0] - points[k - 1]![0], points[k]![1] - points[k - 1]![1]));
+  const length = lengths[lengths.length - 1]!;
+  const at = (s: number) => {
+    let k = 1;
+    while (k < points.length - 1 && lengths[k]! < s) k++;
+    const [ax, az] = points[k - 1]!,
+      [bx, bz] = points[k]!;
+    const span = lengths[k]! - lengths[k - 1]!,
+      t = (s - lengths[k - 1]!) / span;
+    const ux = (bx - ax) / span,
+      uz = (bz - az) / span;
+    return { x: ax + (bx - ax) * t, z: az + (bz - az) * t, ux, uz, nx: -uz, nz: ux };
+  };
+  return { length, at };
+}
+/** Pieces end to end along a run from `from` m, each its `width` plus `gap` m of it: each centred on its chord and
+ * turned so its front (+z) faces the chord's normal on `side` (+1 the run's left, -1 its right). `put` places it, given
+ * its centre and that outward normal (x, z), and its yaw. */
+export function layAlong(
+  run: ReturnType<typeof runAlong>,
+  from: number,
+  pieces: readonly (readonly [Key, number])[],
+  gap: number,
+  side: 1 | -1,
+  put: (prefab: Key, at: { x: number; z: number; nx: number; nz: number }, yaw: number, s: number) => void,
+) {
+  let s = from;
+  for (const [prefab, width] of pieces) {
+    const a = run.at(s),
+      b = run.at(Math.min(run.length, s + width));
+    const span = Math.hypot(b.x - a.x, b.z - a.z);
+    const nx = (-(b.z - a.z) / span) * side,
+      nz = ((b.x - a.x) / span) * side;
+    put(prefab, { x: (a.x + b.x) / 2, z: (a.z + b.z) / 2, nx, nz }, Math.atan2(nx, nz), s);
+    s += width + gap;
+  }
+}
 export const KEEP_AWAY = 6; // m
 /** Every gated place in the layout, Place-local: a point and the radius it holds (a pad's or pillar's own size). */
 const GATED: readonly { what: string; x: number; z: number; r: number }[] = [
@@ -69,52 +120,10 @@ const GATED: readonly { what: string; x: number; z: number; r: number }[] = [
   ),
 ];
 
-/** Turns (x, y, z) by a record rotation [yaw, pitch, roll] in its order, YXZ: roll, then pitch, then yaw. */
-function turn([x, y, z]: readonly number[], [yaw = 0, pitch = 0, roll = 0]: readonly number[]) {
-  [x, y] = [x! * Math.cos(roll) - y! * Math.sin(roll), x! * Math.sin(roll) + y! * Math.cos(roll)];
-  [y, z] = [y * Math.cos(pitch) - z! * Math.sin(pitch), y * Math.sin(pitch) + z! * Math.cos(pitch)];
-  return [x * Math.cos(yaw) + z * Math.sin(yaw), y, -x * Math.sin(yaw) + z * Math.cos(yaw)] as const;
-}
-/** A placed piece's box solids, each as a function from box-local (-1..1 on each axis) to Place-local (x, y, z): the
- * box's own rotation and offset, then the placement's scale, whole rotation and position (three's TRS order), with the
- * box's half sizes. Plain arithmetic, so audits can run this source with only its data bound. */
-export function solidBoxes(p: Placement) {
-  return prefabs
-    .find((q) => q.key === p.prefab)!
-    .colliders.map((c) => {
-      if (c.shape !== 'box') throw new Error(`cliff kit: ${p.prefab} has a solid that is not a box`);
-      const box = (u: number, v: number, w: number) => {
-        const inBox = turn([c.half[0] * u, c.half[1] * v, c.half[2] * w], c.rot ?? []);
-        const [sx = 1, sy = 1, sz = 1] = p.scale ?? [];
-        const placed = turn(
-          [(inBox[0] + c.at[0]) * sx, (inBox[1] + c.at[1]) * sy, (inBox[2] + c.at[2]) * sz],
-          p.rot ?? [],
-        );
-        return [placed[0] + p.pos[0], placed[1] + p.pos[1], placed[2] + p.pos[2]] as const;
-      };
-      return Object.assign(box, { half: c.half });
-    });
-}
-/** Every point through a placed piece's boxes, no more than `spacing` m apart along each box axis. */
-export function* solidSamples(p: Placement, spacing: number) {
-  for (const box of solidBoxes(p)) {
-    const steps = box.half.map((h) => Math.max(1, Math.ceil((2 * h) / spacing)));
-    for (let i = 0; i <= steps[0]!; i++)
-      for (let j = 0; j <= steps[1]!; j++)
-        for (let k = 0; k <= steps[2]!; k++)
-          yield box((2 * i) / steps[0]! - 1, (2 * j) / steps[1]! - 1, (2 * k) / steps[2]! - 1);
-  }
-}
-/** How far a point (x, z) is, across the ground, from a box: the distance to its footprint, the outline of its eight
+/** How far a point (x, z) is, across the ground, from a solid: the distance to its footprint, the outline of its
  * corners seen from above (0 inside it). */
-function footprint(box: ReturnType<typeof solidBoxes>[number]) {
-  const corners: [number, number][] = [];
-  for (const u of [-1, 1])
-    for (const v of [-1, 1])
-      for (const w of [-1, 1]) {
-        const q = box(u, v, w);
-        corners.push([q[0], q[2]]);
-      }
+function footprint(points: readonly V3[]) {
+  const corners = points.map((q): [number, number] => [q[0], q[2]]);
   // The outline: the convex hull of the corners (monotone chain), counter-clockwise.
   corners.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
   const cross = (o: number[], a: number[], b: number[]) =>
@@ -187,14 +196,20 @@ function inGauge(rails: ReturnType<typeof railsNear>, x: number, y: number, z: n
   return false;
 }
 
+/** How far a placed piece's solids come outside the nearest tread's edge, m (negative: over it), sampled through each
+ * box no more than 0.5 m apart. */
+export function treadClearance(p: Placement) {
+  let tread = Infinity;
+  for (const q of solidSamples(p, 0.5)) tread = Math.min(tread, pathAt(q[0], q[2]).edge);
+  return tread;
+}
 /** What a placed piece breaks: its solids over or within CLEAR of a tread (sampled through each box no more than 0.5 m
  * apart) or inside a rail's gauge (0.25 m apart, against the tracks in the bins round the piece: every solid is within
  * RAIL_BIN m of its origin), or within KEEP_AWAY of a gated place (exactly, beyond the place's own radius). */
 export function kitPieceProblems(p: Placement, keepClear: Area['keepClear'] = []): string[] {
   const problems: string[] = [];
-  let tread = Infinity,
-    gauge: readonly number[] | undefined;
-  for (const q of solidSamples(p, 0.5)) tread = Math.min(tread, pathAt(q[0], q[2]).edge);
+  const tread = treadClearance(p);
+  let gauge: readonly number[] | undefined;
   const rails = railsNear(p.pos[0], p.pos[2]);
   if (rails.length)
     for (const q of solidSamples(p, 0.25))
@@ -206,7 +221,7 @@ export function kitPieceProblems(p: Placement, keepClear: Area['keepClear'] = []
     problems.push(`${p.id} (${p.prefab}) narrows the tread: its solid comes ${tread.toFixed(3)} m from the edge`);
   if (gauge)
     problems.push(`${p.id} (${p.prefab}) inside a rail's gauge at (${gauge.map((n) => n.toFixed(2)).join(', ')})`);
-  const outlines = solidBoxes(p).map(footprint);
+  const outlines = solidHulls(p).map((h) => footprint(h.points));
   for (const g of [...GATED, ...keepClear.map(([x, z]) => ({ what: "the area's gated place", x, z, r: 0 }))]) {
     const near = Math.min(...outlines.map((distance) => distance(g.x, g.z))) - g.r;
     if (near < KEEP_AWAY)
