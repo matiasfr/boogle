@@ -4,10 +4,7 @@
 // some cellular networks can't connect, and that peer shows "Can't connect" instead of hanging.
 //   Presence `vc`: 1 in voice, 2 muted; missing means not in voice. Signals: room messages to one tab (src/net/rtc-wire.ts).
 //   A tab that never presses the button opens no mic and no connection: nobody offers to a tab without `vc`.
-//   Each remote voice plays from its own <audio> element at the listener's chosen range.
-//   Remote talking dots read each link's inbound audio level from getStats, so remote voices never
-//   touch WebAudio (Safari can silence an element whose stream also feeds the context); only your own mic is metered
-//   on the game's context, and nothing of voice ever reaches its speakers.
+//   Remote talking dots read getStats. Playback uses an element unless Nearby needs a Web Audio gain.
 import './voice.css';
 import { voiceGain } from '../netplay/voice-gain.ts';
 import { me } from '../player/player.ts';
@@ -18,7 +15,7 @@ import { createVoiceMesh, type PeerLink, type VoiceMesh } from '../netplay/voice
 import { validateRtc, type RtcIce } from '../net/rtc-wire.ts';
 import type { Room } from '../net/ws-room.ts';
 import { pauseSections } from '../player/pause-pages.ts';
-import { meterContext, micSession } from '../render/audio.ts';
+import { voiceContext, micSession } from '../render/audio.ts';
 import { onStart } from '../loop.ts';
 import { registerAction } from '../player/controls.ts';
 import { glyph, inputKind } from '../player/glyphs.ts';
@@ -38,7 +35,16 @@ try {
   // Storage can be unavailable.
 }
 
-type Voice = { pc: RTCPeerConnection; audio: HTMLAudioElement; level: number; stream: MediaStream | null };
+const elementVolumeWorks = (() => {
+  const audio = document.createElement('audio');
+  audio.volume = 0.5;
+  return audio.volume === 0.5;
+})();
+type Voice = {
+  pc: RTCPeerConnection; audio: HTMLAudioElement; level: number; stream: MediaStream | null;
+  route: { source: MediaStreamAudioSourceNode; gain: GainNode } | null;
+  volume: number;
+};
 type Meter = { src: MediaStreamAudioSourceNode; an: AnalyserNode; buf: Float32Array<ArrayBuffer> };
 
 let mic: MediaStream | null = null;
@@ -55,8 +61,8 @@ const inVoice = new Map<string, number>(); // peer -> their presence vc (1 talki
 
 // ---------------------------------------------------------------- audio
 function meter(stream: MediaStream): Meter | null {
-  const ctx = meterContext();
-  if (!ctx) return null;
+  const ctx = voiceContext();
+  if (ctx?.state !== 'running') return null;
   try {
     const src = ctx.createMediaStreamSource(stream);
     const an = ctx.createAnalyser();
@@ -81,16 +87,42 @@ const unmeter = (m: Meter | null) => {
     // already gone
   }
 };
-/** The one volume point for a peer's voice (0..1). iOS Safari ignores element volume; see the design doc. */
+function disconnectRoute(voice: Voice) {
+  voice.route?.source.disconnect();
+  voice.route?.gain.disconnect();
+  voice.route = null;
+}
 function peerVolume(peer: string, voice: Voice) {
   const pos = me.body?.position;
   const target = remotes.get(peer)?.target;
-  voice.audio.volume = hear === 'near' && pos && target ? voiceGain(Math.hypot(pos.x - target.x, pos.z - target.z)) : 1;
+  const volume = hear === 'near' && pos && target ? voiceGain(Math.hypot(pos.x - target.x, pos.z - target.z)) : 1;
+  voice.volume = volume;
+  const ctx = !elementVolumeWorks && hear === 'near' ? voiceContext() : null;
+  if (ctx && voice.stream) {
+    if (!voice.route) {
+      voice.audio.srcObject = null;
+      const source = ctx.createMediaStreamSource(voice.stream);
+      const gain = ctx.createGain();
+      gain.gain.value = volume;
+      source.connect(gain).connect(ctx.destination);
+      voice.route = { source, gain };
+    }
+    voice.route.gain.gain.setTargetAtTime(volume, ctx.currentTime, 0.1);
+  } else {
+    if (voice.route) disconnectRoute(voice);
+    voice.audio.volume = volume;
+    if (voice.stream && voice.audio.srcObject !== voice.stream) {
+      voice.audio.srcObject = voice.stream;
+      play(voice.audio);
+    }
+  }
 }
 function play(audio: HTMLAudioElement) {
   audio.play().catch(() => {}); // refused without a gesture: replayAll() on the next press
 }
 const replayAll = () => {
+  const ctx = voiceContext();
+  if (ctx && ctx.state !== 'running') void ctx.resume().catch(() => {});
   for (const v of voices.values()) if (v.audio.paused && v.audio.srcObject) play(v.audio);
 };
 
@@ -102,7 +134,7 @@ function open(peer: string, onIce: (c: RtcIce | null) => void, onState: (s: 'con
   audio.setAttribute('playsinline', '');
   audio.className = 'voice-audio';
   document.body.append(audio);
-  const voice: Voice = { pc, audio, level: 0, stream: null };
+  const voice: Voice = { pc, audio, level: 0, stream: null, route: null, volume: 1 };
   voices.set(peer, voice); // the mesh closed any older link to this peer first
   peerVolume(peer, voice);
   if (mic) for (const t of mic.getTracks()) pc.addTrack(t, mic);
@@ -124,9 +156,9 @@ function open(peer: string, onIce: (c: RtcIce | null) => void, onState: (s: 'con
   pc.ontrack = (e) => {
     const stream = e.streams[0] ?? new MediaStream([e.track]);
     if (voice.stream === stream) return;
+    disconnectRoute(voice);
     voice.stream = stream;
-    audio.srcObject = stream;
-    play(audio);
+    peerVolume(peer, voice);
   };
   return {
     async makeOffer() {
@@ -146,6 +178,7 @@ function open(peer: string, onIce: (c: RtcIce | null) => void, onState: (s: 'con
     },
     close() {
       pc.close();
+      disconnectRoute(voice);
       audio.srcObject = null;
       audio.remove();
       if (voices.get(peer) === voice) voices.delete(peer);
@@ -357,7 +390,7 @@ function refresh() {
             : (voices.get(peer)?.level ?? 0) > TALK_RMS
               ? 'talking'
               : 'on';
-    const far = link === 'connected' && (voices.get(peer)?.audio.volume ?? 1) < 0.05;
+    const far = link === 'connected' && (voices.get(peer)?.volume ?? 1) < 0.05;
     list.push({ name: r?.name || 'Someone', state, far });
   }
   // Record only local transitions and aggregate failures, never peers or audio levels.
@@ -444,6 +477,6 @@ export async function voiceProbe() {
     peers.push({ peer, state: mesh?.links().get(peer)?.state ?? 'gone', pc: v.pc.connectionState, audioLevel, bytes, volume: v.audio.volume });
   }
   const vc = Object.fromEntries(inVoice); // peer -> their presence vc (1 in voice, 2 muted)
-  return { joined, muted, problem, self: net.room?.selfId ?? null, members: members(), vc, peers };
+  return { joined, muted, problem, elementVolumeWorks, self: net.room?.selfId ?? null, members: members(), vc, peers };
 }
 export const voiceLeave = leave;

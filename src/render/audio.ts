@@ -137,8 +137,8 @@ export function micSession(on: boolean) {
   if (nav.audioSession) nav.audioSession.type = on ? 'play-and-record' : 'playback';
   if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
 }
-/** The context for a level meter that never reaches the speakers (voice chat's talking dots); null before unlock. */
-export const meterContext = () => (ctx?.state === 'running' ? ctx : null);
+/** Voice uses the unlocked context independently of game volume and can resume it after an interruption. */
+export const voiceContext = () => ctx;
 
 export function getAudio(bus: Bus = 'sfx'): { ctx: AudioContext; out: AudioNode } | null {
   const nodes = buses.get(bus);
