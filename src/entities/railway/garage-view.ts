@@ -18,6 +18,8 @@ import { clank, thump, chuff, whistle, cordPull } from '../../render/machine-sfx
 import { emit } from '../../render/particles.ts';
 import { dustRing } from '../../render/particle-effects.ts';
 import { uiSound } from '../../ui/ui-sound.ts';
+import { notify } from '../../ui/notify.ts';
+import type { TradeRefusal } from '../../sim/railway.ts';
 import { createGarageSelection, type Focus } from './garage-selection.ts';
 import {
   BOILERS,
@@ -35,6 +37,7 @@ import {
   tradeFromSpeed,
   GARAGE_LINE,
   TRADE_ROW,
+  TRADE_DENIAL,
   type CatId,
   type InstallId,
   type Part,
@@ -813,13 +816,14 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     if (!deps.install(facts.tableLine, rev, INSTALL_PART[momentPart])) deny();
   }
   /** No answer, a refusal or a lost connection: the part lowers to its stand and the hold can be made again at once. */
-  function deny() {
+  function deny(reason?: TradeRefusal) {
     if (!real || !waiting) return;
     real = waiting = false;
     phase = 'holding'; // the ring drains and the part goes back down the way it came up
     holding = false;
     ring = 1;
-    uiSound('deny');
+    if (reason) notify(TRADE_DENIAL[reason], { kind: 'deny' });
+    else uiSound('deny');
   }
   /** Someone's install was accepted and it is not this tab's running hold (G4): this tab's own hold is
    * dropped, the part lifts off its stand in `MOMENT.catchUp` and the same moment plays, in the garage or out in the

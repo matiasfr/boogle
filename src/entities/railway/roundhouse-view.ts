@@ -7,6 +7,7 @@ import * as THREE from 'three/webgpu';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
 import { LINE2 } from '../../sim/railway-lines.ts';
+import { isTradeRefusal, type TradeRefusal } from '../../sim/railway.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { Body } from '../../physics/engine.ts';
@@ -59,10 +60,13 @@ import { cameraHeld } from '../../render/buddy-frame.ts';
 import { inputState } from '../../player/input-state.ts';
 import { reducedMotion } from '../../constants.ts';
 
-/** An install or a bring at the garage table refused (garage step 4: line 2's parts 1 to 4 or a trade line's Quick or
- * Strong, on whichever copy is on the table): the part lowers, or the chips wake. */
-const refusedAtTable = (op: string, view: { denied(): void; bringDenied(): void }) => {
-  if (op === 'rail.install') view.denied();
+/** A refused install lowers the part and explains a trade hold. A refused bring wakes the chips. */
+const refusedAtTable = (
+  op: string,
+  view: { denied(reason?: TradeRefusal): void; bringDenied(): void },
+  reason?: string,
+) => {
+  if (op === 'rail.install') view.denied(reason && isTradeRefusal(reason) ? reason : undefined);
   else if (op === 'rail.bring') view.bringDenied();
 };
 
@@ -171,7 +175,7 @@ export async function createRailwayRoundhouse(
   // The install is not predicted, so a refusal is no correction: the adapter says so directly and the part lowers.
   owner.cleanup(
     adapter.onRefused((r) => {
-      refusedAtTable(r.intent.op, garageView);
+      refusedAtTable(r.intent.op, garageView, r.reason);
     }),
   );
 

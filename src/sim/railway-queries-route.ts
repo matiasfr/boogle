@@ -153,6 +153,12 @@ export const SERVED_LEGS: readonly (readonly number[])[] = RAIL_LINES.map((_l, l
 );
 /** The last section of every built leg this line carries kit for has actually been laid. */
 export const tradeBuildDone = (w: World, line: number) => SERVED_LEGS[line]!.every((k) => legDone(w, k));
+/** Why a line cannot change its boiler. The garage reads the same saved lays and revision as an install. */
+export function tradeSwapRefusal(w: World, line: number, revision: number) {
+  if (revision > 0 && !tradeBuildDone(w, line)) return 'trade-building';
+  if (revision >= 2) return 'trade-repicked';
+  return undefined;
+}
 /** Built legs whose first kit is stocked (the stand-in, legKitStock): minted at their own line's home, on a line their
  * first section gives its track (its first halt opens with it, so no train can bring that kit). */
 export const STOCKED_LEGS: readonly number[] = RAIL_LEGS.flatMap((l, k) =>

@@ -24,7 +24,7 @@ import { LINE2 } from './railway-lines.ts';
 import { kitBills } from './railway-train.ts';
 import { INSTALL_STEEL, TRADE_ROW, installAdmits } from './railway-works-layout.ts';
 import { tableBusy, upgradePool } from './railway-queries-works.ts';
-import { LEG_KIT_MOST, legDone, tradeBuildDone, tradeOpen } from './railway-queries-route.ts';
+import { LEG_KIT_MOST, legDone, tradeSwapRefusal, tradeOpen } from './railway-queries-route.ts';
 import {
   Account,
   Aperture,
@@ -234,8 +234,8 @@ function fitTrade(w: World, id: number, part: keyof typeof TRADE_ROW, tick: numb
     row = TRADE_ROW[part],
     price = l.boiler === 0 ? INSTALL_STEEL[part] : 0;
   if (l.boiler === row || !tradeOpen(w, l.slot) || upgradePool(w) < price) return 0;
-  if (l.rev > 0 && !tradeBuildDone(w, l.slot)) return 'trade-building';
-  if (l.rev >= 2) return 'trade-repicked';
+  const refusal = tradeSwapRefusal(w, l.slot, l.rev);
+  if (refusal) return refusal;
   if (tableBusy(w, tick)) return 0;
   const m = w.mut(Line, id)!;
   m.boiler = row;

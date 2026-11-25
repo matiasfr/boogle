@@ -9,7 +9,7 @@ import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { LINE2, RAIL_LINES, legBuilt } from '../../sim/railway-lines.ts';
 import { tableFree, upgradePool } from '../../sim/railway-queries-works.ts';
 import { RAIL_LEGS, TRADE_LINES } from '../../sim/railway-route.ts';
-import { SERVED_LEGS, tradeOpen } from '../../sim/railway-queries-route.ts';
+import { SERVED_LEGS, tradeOpen, tradeSwapRefusal } from '../../sim/railway-queries-route.ts';
 import type { CatId, LineFacts, Phase, PartId, RoomFacts } from './garage-data.ts';
 
 /** The garage step 4 readout's test (plan, "The garage screen"): a built leg whose kit `line`'s own trains carry has
@@ -26,6 +26,7 @@ function linesOf(w: ReadWorld): LineFacts[] {
     name: RAIL_LINES[l]!.name,
     row: line(w, l).boiler,
     rev: line(w, l).rev,
+    swapRefusal: l === LINE2 ? undefined : tradeSwapRefusal(w, l, line(w, l).rev),
     kitTrip: l !== LINE2 && kitTrip(w, l),
   }));
 }

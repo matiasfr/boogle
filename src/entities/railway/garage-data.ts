@@ -5,6 +5,7 @@ import { BOILER, boilerCars, boilerSpeed, kitBills, trainLegTicks, TRAIN } from 
 import { LINE2, RAIL_LINES } from '../../sim/railway-lines.ts';
 import { WORKS, INSTALL_STEEL, TRADE_ROW as SIM_TRADE_ROW, type InstallPart } from '../../sim/railway-works-layout.ts';
 import { TRADE } from '../../sim/railway-trade-layout.ts';
+import type { TradeRefusal } from '../../sim/railway.ts';
 import { LINE2_KIT } from '../../sim/railway-line2-layout.ts';
 import { prefabs as railwayPrefabs } from '../../content/prefabs/railway.ts';
 
@@ -56,7 +57,14 @@ export type RoomFacts = {
 };
 /** One chip: line 2, or a trade line whose trade is open. `row` is its `Line.boiler`, `rev` its `Line.rev`; `kitTrip`
  * whether a leg its trains carry kit for still has two sections to lay (the third readout). */
-export type LineFacts = { line: number; name: string; row: number; rev: number; kitTrip: boolean };
+export type LineFacts = {
+  line: number;
+  name: string;
+  row: number;
+  rev: number;
+  kitTrip: boolean;
+  swapRefusal?: TradeRefusal;
+};
 
 export type PartId =
   | 'boiler'
@@ -87,6 +95,7 @@ export type Standing =
   | 'ready'
   /** Garage step 4: the line is already paid for and wears the other boiler, so this one goes on for nothing. */
   | 'swap'
+  | TradeRefusal
   /** A later part took its place; it cannot be put back. */
   | 'replaced'
   /** Not built yet: shown so the category reads true, with no picture of its own. */
@@ -156,24 +165,36 @@ export const TRADE_ROW = {
   quick: SIM_TRADE_ROW[INSTALL_PART.quick],
   strong: SIM_TRADE_ROW[INSTALL_PART.strong],
 } as const;
-/** A trade line's catalog (docs/plans/garage-step4.md, "The garage screen"): the Engine tab's two boilers side by side,
- * the first fit's price a line, then free swaps; the Cargo tab's kit car and Strong's flatbed. Strings are
- * placeholders for the owner ("Swap", "Kit flatbed"). */
+/** Owner placeholders for the held Install and a refusal that arrives while it is in flight. */
+export const TRADE_DENIAL = {
+  'trade-building': 'Held until the line is laid',
+  'trade-repicked': 'Re-pick used',
+} as const satisfies Record<TradeRefusal, string>;
+const TRADE_PILL = {
+  installed: 'Installed',
+  'trade-building': 'Held while the line builds',
+  'trade-repicked': TRADE_DENIAL['trade-repicked'],
+  swap: 'Swap (once)',
+  ready: 'Ready',
+};
+/** A trade line's first fit costs one steel. Its only free swap opens on the final lay. */
 function tradeParts(room: RoomFacts, line: number): Part[] {
-  const row = lineFacts(room, line)?.row ?? 0;
+  const fit = lineFacts(room, line);
+  const row = fit?.row ?? 0;
   const boiler = (id: 'quick' | 'strong', name: string, desc: string): Part => {
     const need = INSTALL_STEEL[INSTALL_PART[id]],
       have = Math.min(room.steel, need);
     const on = row === TRADE_ROW[id],
       paid = row > 0;
+    const standing = on ? 'installed' : paid ? (fit?.swapRefusal ?? 'swap') : have >= need ? 'ready' : 'steel';
     return {
       id,
       cat: 'engine',
       name,
       desc,
       size: 'large',
-      standing: on ? 'installed' : paid ? 'swap' : have >= need ? 'ready' : 'steel',
-      pill: on ? 'Installed' : paid ? 'Swap' : have >= need ? 'Ready' : `STEEL ${have}/${need}`,
+      standing,
+      pill: standing === 'steel' ? `STEEL ${have}/${need}` : TRADE_PILL[standing],
       ...(on || paid ? {} : { needs: { what: 'STEEL', need, have } }),
     };
   };

@@ -1391,7 +1391,9 @@ its Engine tab. **The trade's tiles:** a trade line's Engine tab has Quick boile
 boiler (20 m/s, one more car) side by side. Before the line is paid both read "STEEL n/1" or Ready; the first fit costs
 1 steel from the pool. The pick holds through the last lay of every built leg the line carries kit for. On the bay
 line this is Bell–Canopy's third lay. On the north–south line the incline is already laid when the trade opens.
-After completion the room may change its pick once, for free. The other tile still reads "Swap" until B2. The
+During the build the other tile reads "Held while the line builds". Selecting it shows "Held until the line is laid"
+and withholds Install. After completion the tile reads "Swap (once)" and the room can re-pick for free. After the
+re-pick the other tile reads "Re-pick used" and Install is withheld. The
 readouts are top speed, cars it pulls (2, or 3 with Strong) and "Kit a trip" (1 section, or 2 with Strong) while a leg
 the line's trains carry kit for has two or more sections to lay; otherwise that row reads "Nothing to build" (always on
 the north–south line today, and on the bay line from leg 3's second lay). Cars has the four seats; Cargo the kit car

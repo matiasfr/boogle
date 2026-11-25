@@ -983,7 +983,8 @@ test('review: the garage offers no trade swap the server would refuse, during th
   brought(s, BAYL);
   assert.equal(fit(s, BAYL, 6), 1);
   settle(s);
-  const tile = (id: 'quick' | 'strong') => partsOf(roomFacts(s.w as unknown as ReadWorld, s.t), BAYL).find((p) => p.id === id)!.standing;
+  const tile = (id: 'quick' | 'strong') =>
+    partsOf(roomFacts(s.w as unknown as ReadWorld, s.t), BAYL).find((p) => p.id === id)!.standing;
   const offered: string[] = [];
   assert.equal(fit(copy(s), BAYL, 5), 0, 'the server refuses Quick while the bay builds');
   offered.push(`during the hold, Quick reads ${tile('quick')}`);
