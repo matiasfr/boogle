@@ -551,26 +551,27 @@ passes, above the step’s 58,000 guide, and seven draws. Device frame time is u
 
 ## Step 4 as built
 
-The gorge mouth and south sea cliff (walls 4, 7 and 8) carry 41 crowned sea faces and three shore rocks.
-Both banks follow the shore kit's height contours. A second tier on the south coast closed a pocket behind
-the lower course, so that coast keeps one course. With all five areas mounted, the reverse flood lost zero
-of the 121,801 cells checked around the mouth. The closest tread sample clears the edge by 1.01 m.
+The gorge mouth and south sea cliff (walls 4, 7 and 8) carry 22 crowned faces and three waterline rocks.
+The census rock mask clips the east bank's courses. On the steep west bank, two taller canyon faces seat into the cut.
+The south coast has two outcrops with shorter upper courses and a grass break. The headlands between the trees
+and the crack beside the south path stay clear. The combined reverse flood lost zero cells across 121,801 samples.
+The closest tread sample clears the edge by 2.35 m.
 The rail gauge is clear. The canyon, shore, gorge rim and long gorge wall levels match main byte for byte.
 
 [Matched sea, path and eye-level stills](cliff-kit-everywhere/gorge-mouth-before-after.jpg).
 
 The controller walked 17 m east along the south path and held its horizontal position through two seconds idle.
-The new area adds 24,320 kit triangles per pass. The mouth draws it twice, adding 48,640 triangles and six draws.
+The kit adds 13,540 triangles per pass. At the mouth camera that is 27,080 triangles and ten draws across both passes.
 
 | Census camera | Draws, main → step 4 | Triangles, main → step 4 |
 | --- | ---: | ---: |
-| Shore | 158 → 161 | 768,883 → 793,203 |
-| Shore climb | 375 → 378 | 1,017,289 → 1,041,609 |
+| Shore | 158 → 163 | 769,195 → 782,735 |
+| Shore climb | 376 → 381 | 1,017,641 → 1,031,181 |
 | Canyon climb | 206 → 206 | 829,299 → 829,299 |
-| Gorge rim | 369 → 372 | 955,441 → 979,761 |
-| Gorge mouth | 426 → 432 | 1,001,968 → 1,050,608 |
+| Gorge rim | 369 → 372 | 955,441 → 967,485 |
+| Gorge mouth | 427 → 437 | 1,003,924 → 1,031,004 |
 | Far Head | 291 → 291 | 844,745 → 844,745 |
-| Summit | 346 → 346 | 1,006,666 → 1,006,666 |
+| Summit | 346 → 346 | 1,006,978 → 1,006,978 |
 
 ## Design review (2026-11-24)
 
