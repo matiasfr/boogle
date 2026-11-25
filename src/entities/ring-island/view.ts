@@ -23,6 +23,9 @@
 // What stays view code: the ground and its heightfield, the approach's trail and the landing (the ground's own), the
 // leaf and its footings, the pennant, and the hammer's lift and thump.
 import * as THREE from 'three/webgpu';
+import { attribute, mix, positionWorld, vec3, vertexColor } from 'three/tsl';
+import { beddedRock } from '../../place/ground-material.ts';
+import { ORIGIN } from '../../place/layout.ts';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { BODY, createBody, type Body, type Shape } from '../../physics/engine.ts';
 import { createOwnedView } from '../../render/owned-view.ts';
@@ -53,7 +56,7 @@ import {
   ringDeckY,
 } from '../../sim/railway-ring-layout.ts';
 import { LANDING, type Cone, type IslandGround } from './ground.ts';
-import { SUMMIT_BRIDGE, summitBridge, summitPath, summitPathFoot, summitRimRockShape, summitRimRocks } from './path.ts';
+import { SUMMIT_BRIDGE, summitBridge, summitPath, summitPathFoot } from './path.ts';
 import { RING_CROSSING, RING_MAP_TABLE, ringCrossingPlanks, ringIslandPose } from './state.ts';
 import { addFarGround } from '../../place/far-ground.ts';
 import { BRACKET_Z, CRADLE, HANGER, PLATE_BOTTOM, WEIGHT, WEIGHT_X } from './bracket.ts';
@@ -113,8 +116,7 @@ const STEEL = '#e8742c', // the folk's orange steel
   SAND = '#d6c69c',
   PATH = '#c9b48a',
   LAND = '#4a4d5c', // buildFar's cones
-  LAND2 = '#3b3e4c',
-  ROCK = '#7d7a78'; // the cuttings' faces
+  LAND2 = '#3b3e4c';
 
 /** Geometry merged into one vertex-coloured mesh, and `clearance`: every fixed solid in build order, all of them the
  * records' (the mount clearance's order). */
@@ -406,8 +408,7 @@ function generatedCounts(): [string, number][] {
 function summitFrames(g: IslandGround, centre: { x: number; z: number }) {
   const { way, bridgeLeg } = summitPath(g, centre),
     { a, b } = summitBridge(g),
-    B = SUMMIT_BRIDGE,
-    rocks = summitRimRocks(g, centre);
+    B = SUMMIT_BRIDGE;
   const span = Math.hypot(b.x - a.x, b.z - a.z),
     ax = (b.x - a.x) / span,
     az = (b.z - a.z) / span;
@@ -451,13 +452,9 @@ function summitFrames(g: IslandGround, centre: { x: number; z: number }) {
     ...B.bents.map((_, k): [string, number] => [`bridge/bent${k + 1}/`, 3]),
     [`bridge/bent${B.bents.length + 1}/`, 0],
     ['bridge/', 5 + 3 * B.bents.length],
-    ['rim/stone', rocks.length],
-    ['rim/box', rocks.length],
-    ['rim/', 2 * rocks.length],
   ];
   return {
     on,
-    rocks,
     counts,
     path(place: JsonObject): Anchors {
       const i = finite(place.leg, 'leg'),
@@ -493,23 +490,6 @@ function resolvePlacement(
   const { place: authored, ...params } = p.params ?? {};
   const place = object(authored, `${p.id} place`);
   const frame = place.frame;
-  if (frame === 'rim') {
-    // Rim rock k (path.ts's summitRimRocks): its stone as drawn, or its box (inscribed in the stone), both centred
-    // `lift` over its ground point and sharing its yaw.
-    const r = summitAt.rocks[finite(place.k, 'rock')];
-    if (!r) throw new Error(`ring island: ${p.id} rock`);
-    const { lift, drawn, box } = summitRimRockShape(r),
-      size = place.rock === 'stone' ? drawn : place.rock === 'box' ? box : undefined;
-    if (!size) throw new Error(`ring island: ${p.id} rock`);
-    return {
-      id: p.id,
-      prefab: p.prefab,
-      pos: [r.x, r.y + lift, r.z],
-      rot: [r.yaw, 0, 0],
-      scale: [size.x, size.y, size.z],
-      ...(Object.keys(params).length ? { params } : {}),
-    };
-  }
   if (frame === 'map-table') {
     const mc = RING_MAP_TABLE,
       gorge = toward(place.gorge),
@@ -748,9 +728,6 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   for (const [prefix, n] of summitAt.counts)
     if (furnishing.filter((p) => p.id.startsWith(prefix)).length !== n)
       throw new Error(`ring island: ${prefix} is not placed as the ground lays it out (${n})`);
-  const rock = definitions['ring.rim-rock']?.visual;
-  if (!rock || !('builder' in rock) || summitAt.rocks.some((r) => summitRimRockShape(r).radius !== rock.params.radius))
-    throw new Error('ring island: the rim rock is not summitRimRockShape');
   const toward = (to: Json | undefined) => {
     if (!Array.isArray(to) || to.length !== 2) throw new Error('ring island: toward expected');
     const dx = finite(to[0], 'toward') - haltMid.x,
@@ -964,7 +941,6 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
     parts.add(PATH, trailGeo);
   }
   furnish((p) => p.id.startsWith('bridge/') && p.id !== 'bridge/deck');
-  furnish((p) => p.id.startsWith('rim/'));
   // The summit lookout: its deck, rail posts and one of the folk, and a short ramp from the path's end up onto the deck,
   // whose rim stands about 1.5 m over the slope. The deck's top is `lift` over the ground at the island's middle.
   const summitDeck = furnishing.find((p) => p.prefab === 'ring.summit-deck');
@@ -980,11 +956,11 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   const ground = (() => {
     const { nx, nz, x0, z0, cell } = g;
     const pos = new Float32Array(nx * nz * 3 + g.patch.vertices.length),
-      col = new Float32Array(pos.length);
+      col = new Float32Array(pos.length),
+      cut = new Float32Array(pos.length / 3);
     const land = new THREE.Color(LAND),
       land2 = new THREE.Color(LAND2),
       sand = new THREE.Color(SAND),
-      rock = new THREE.Color(ROCK),
       c = new THREE.Color();
     function vertex(k: number, x: number, h: number, z: number) {
       // A hair over buildFar's faceted cones, which hide while this view is mounted (src/place/far-hills.ts).
@@ -1005,7 +981,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
       c.lerp(sand, Math.max(shore, fill * 0.85));
       // Cut rock where the railway's cuttings took the hillside away (the run-off's notch and the stack line's
       // walls and floor): paler than the hill's skin, so a cutting reads as cut from the track and from above.
-      c.lerp(rock, THREE.MathUtils.smoothstep(g.cone(x, z) - h, 0.3, 1.5));
+      cut[k] = THREE.MathUtils.smoothstep(g.cone(x, z) - h, 0.3, 1.5);
       col.set([c.r, c.g, c.b], k * 3);
     }
     for (let j = 0; j < nz; j++)
@@ -1031,9 +1007,12 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    geo.setAttribute('cutRock', new THREE.BufferAttribute(cut, 1));
     geo.setIndex(index);
     geo.computeVertexNormals();
-    const mesh = new THREE.Mesh(geo, new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.95 }));
+    const groundMaterial = new THREE.MeshStandardNodeMaterial({ roughness: 0.95 });
+    groundMaterial.colorNode = mix(vertexColor().rgb, beddedRock(positionWorld.sub(vec3(ORIGIN.x, 0, ORIGIN.z))), attribute('cutRock', 'float'));
+    const mesh = new THREE.Mesh(geo, groundMaterial);
     mesh.receiveShadow = true;
     mesh.name = 'ring-island-ground';
     return { mesh, underwater, mainEnd };

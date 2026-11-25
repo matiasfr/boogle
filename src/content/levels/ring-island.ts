@@ -390,8 +390,7 @@ const crossover: Placement[] = Array.from({ length: CROSSOVER.metres }, (_, k) =
  * ground, drawn by the view between the deck and the parapets). Each rim rock is its stone, drawn, then its box, solid
  * (`rim` frame, rock `k` of summitRimRocks). */
 const PATH_LEGS = [4, 5, 0, 0, 7, 10, 11, 9, 7];
-const BRIDGE_BENTS = 2,
-  RIM_ROCKS = 19;
+const BRIDGE_BENTS = 2;
 const SUMMIT_MASSING: Placement[] = [
   ...PATH_LEGS.flatMap((n, leg) =>
     Array.from({ length: n }, (_, k) =>
@@ -481,20 +480,6 @@ const SUMMIT_MASSING: Placement[] = [
         },
       }),
     ),
-  ]).flat(),
-  ...Array.from({ length: RIM_ROCKS }, (_, k) => [
-    {
-      id: `rim/stone${k + 1}`,
-      prefab: 'ring.rim-rock' as const,
-      pos: [0, 0, 0] as const,
-      params: { place: { frame: 'rim', k, rock: 'stone' } },
-    },
-    {
-      id: `rim/box${k + 1}`,
-      prefab: 'ring.box-solid' as const,
-      pos: [0, 0, 0] as const,
-      params: { place: { frame: 'rim', k, rock: 'box' } },
-    },
   ]).flat(),
 ];
 
