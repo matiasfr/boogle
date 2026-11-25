@@ -55,7 +55,8 @@ No floor: out of earshot is silent, which gives honk and ping their job. Pure, i
 Each step leaves `node dev/ship-check.ts` green and updates the owning section of
 [social.md](../game-design/social.md) in the same commit.
 
-- [ ] **1. Nearby voice on desktop and Android.** `src/netplay/voice-gain.ts` (`voiceGain`, `NEAR_M = 6`, `FAR_M = 30`).
+- [x] **1. Nearby voice on desktop and Android.** Shipped in #2441 with per-listener gain and far chips.
+  `src/netplay/voice-gain.ts` (`voiceGain`, `NEAR_M = 6`, `FAR_M = 30`).
   In voice.ts: a `hear: 'all' | 'near'` setting read and written through a guarded localStorage key (`boogle.voiceHear`,
   missing reads as `all`); the 200 ms `tick()` sets `peerVolume(peer, hear === 'near' ? voiceGain(d) : 1)` for each
   voice, with `d` the 2D distance from `me.body` to the remote's target (no body or no target: 1). The Pause chip of a
@@ -64,7 +65,8 @@ Each step leaves `node dev/ship-check.ts` green and updates the owning section o
   voice, one set to nearby: the talking dot keeps glowing while the other walks away, the chip dims to far at about
   30 m, and the voice fades in as they walk back (heard, not stilled: a short screen recording with sound, or the
   probe's per-peer volume read in the proof).
-- [ ] **2. Nearby voice on iOS.** Element volume is read-only there, so in nearby mode only, a voice plays through Web
+- [x] **2. Nearby voice on iOS.** Shipped in #2443 with a Web Audio gain path. Device proof remains open.
+  Element volume is read-only there, so in nearby mode only, a voice plays through Web
   Audio: `ctx.createMediaStreamSource(stream) → GainNode → ctx.destination`, straight to the destination and not
   through the game's buses, so game volume and mute leave friends alone as on desktop. Pick the path once with a probe
   (set a detached element's `volume` to 0.5 and read it back). Switching the setting mid-call reroutes live: to Web
@@ -92,13 +94,18 @@ Each step leaves `node dev/ship-check.ts` green and updates the owning section o
   screen. Same limiter and own gap as a ping. **Check:** `test/social.test.ts`: a reply passes, a reply missing `of` or
   with a 65-character one fails, and the clean copy carries no other field. **Proof look:** two tabs, one
   pings, the other replies from 40 m away: stills of the card with the reply on both screens.
-- [ ] **5. A honk answers a ping.** Local only. A honk from anyone but the pinger, while a ping is live, adds a small
+- [x] **5. A honk answers a ping.** Both tabs showed the honker's name and ♪ in the existing reply row on a rail ping.
+  [Pinger](friends-ping/honk-still.png) · [Honker](friends-ping/friend-honk-still.png).
+  Local only. A honk from anyone but the pinger, while a ping is live, adds a small
   note and their name to the newest live ping's card (no reply message). ping.ts hears remote honks through its own
   `room.onMessage` and your own through `wrapAction('honk', ...)` in `onStart`, counting only when `me.entered` and not
   `me.down`. **Proof look:** stills of a honk reply on both screens.
 
 **Checkpoint after step 4** (owner-calls "Build more, test less"): `npm run check:full` (the relay's behaviour
 changed), `node dev/look/voice-proof.ts`, and a two-tab look covering a rail ping, a reply and nearby voice.
+Voice proof passed all 14 checks. Two WebGPU tabs 40 m apart received audio at Nearby volume 0 and saw both
+the aimed reply and the honk on the rail card. Checkpoint open on Windows: all 274 unit files passed, then
+the server account crash test expected `SIGKILL` and received a null signal (406 passed, 1 failed, 2 skipped).
 
 ## Settings UI
 
