@@ -762,11 +762,11 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
       createBoxBatch: (_owner: unknown, capacity: number) => ({
         mesh: new THREE.Group(),
         begin() {
-          if (capacity === 4800) drawnDeck.length = 0;
+          if (capacity === 6500) drawnDeck.length = 0;
         },
         commit() {},
         box(x: number, y: number, z: number, w: number, h: number, d: number, colour: string, yaw: number, rx: number) {
-          if (capacity === 4800 && colour === '#9c9ea1' && h === 0.5)
+          if (capacity === 6500 && colour === '#9c9ea1' && h === 0.5)
             drawnDeck.push(boxShape({ x, y, z, w, h, d, yaw, pitch: -rx }));
         },
         between() {},
@@ -886,6 +886,8 @@ async function mountAt(position: THREE.Vector3) {
   });
   sourceModule(fs.readFileSync('src/entities/route-greybox/index.ts', 'utf8'), {
     productionRailway: true,
+    saltpanArea: { id: 'saltpan', centre: AREA_CENTRES.saltpan, build: () => [] },
+    quayArea: { id: 'quay', centre: AREA_CENTRES.quay, build: () => [] },
     location: { search: '' },
     AREA_CENTRES,
     resident,

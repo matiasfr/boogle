@@ -1,4 +1,29 @@
 import type { JsonObject } from './types.ts';
+export function landPrism(
+  ring: readonly { x: number; z: number }[],
+  top: number,
+  cx: number,
+  cz: number,
+  base: number,
+) {
+  const n = ring.length;
+  // 0..n-1 the top's ring, n..2n-1 the foot's, 2n the top's centre.
+  const vertices = [...ring.flatMap((p) => [p.x, top, p.z]), ...ring.flatMap((p) => [p.x, base, p.z]), cx, top, cz];
+  // Counter-clockwise seen from above (x east, z south): (b - a) x (c - a) has +y.
+  const up = (a: number, b: number, c: number) => {
+    const ax = vertices[3 * a]!,
+      az = vertices[3 * a + 2]!,
+      cross =
+        (vertices[3 * b + 2]! - az) * (vertices[3 * c]! - ax) - (vertices[3 * b]! - ax) * (vertices[3 * c + 2]! - az);
+    return cross >= 0 ? [a, b, c] : [a, c, b];
+  };
+  const indices: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    indices.push(...up(2 * n, i, j), i, j, n + i, j, n + j, n + i);
+  }
+  return { shape: 'trimesh' as const, at: [0, 0, 0] as const, vertices, indices };
+}
 export type Scalar =
   number | { compute: 'line2EndY'; offset: number } | { compute: 'add' | 'sub' | 'mul'; a: Scalar; b: Scalar };
 export type Axis =

@@ -18,6 +18,8 @@ import { gorgePlacements } from '../../prefab/instantiate.ts';
 import { bellExtras, bellMassing } from './massing-bell.ts';
 import { westExtras, westMassing } from './massing-west.ts';
 import { canopyExtras, canopyMassing, canopyNear } from './massing-canopy.ts';
+import { saltpanArea } from './massing-saltpan.ts';
+import { quayArea } from './massing-quay.ts';
 import { AREA_CENTRES, FREE_MORE, MOUNT_NEAR } from './leg2-layout.ts';
 import { drawGreyBoxes } from './boxes.ts';
 import type { Placement } from '../../prefab/types.ts';
@@ -37,6 +39,8 @@ type Area = {
   near?: number;
 };
 const AREAS: readonly Area[] = [
+  saltpanArea,
+  quayArea,
   { id: 'gorge', centre: AREA_CENTRES.gorge, build: () => gorgePlacements },
   { id: 'bell', centre: AREA_CENTRES.bell, build: bellMassing, extras: bellExtras },
   { id: 'west', centre: AREA_CENTRES.west, build: westMassing, extras: westExtras },

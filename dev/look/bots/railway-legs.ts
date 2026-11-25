@@ -14,7 +14,7 @@
 // Inspection observes; it never seeds a world or moves a player. A fall into the sea is a finding (no recovery).
 import type { Bot } from '../bot.ts';
 import { legDone, legRow, routeRow } from '../../../src/sim/railway-queries-route.ts';
-import { account, aperture, rail, railAt, railPid, railRead, rw, trains } from '../rail-read.ts';
+import { account, aperture, inspectRailway, rail, railAt, railPid, railRead, rw, trains } from '../rail-read.ts';
 import { me } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { interactTarget } from '../../../src/player/hands.ts';
@@ -539,6 +539,13 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   check(await bot.until(() => !atOrBound(), 600000), "Canopy's platform cleared before the homeward walk");
   await rowRide(canopy.line, canopyEnd, 0, 'bay line');
   await stepOff(westLanding, 'stepped off at the West landing');
+  check(
+    await bot.until(
+      () => inspectRailway()?.worksView?.legView?.objective === 'Open the sea-cave plug at the West landing',
+      10000,
+    ),
+    'the cloth points back to the sea-cave plug',
+  );
   logFleet('home from Canopy Town');
   await checkpoint('canopy home');
 }

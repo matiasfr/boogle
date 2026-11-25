@@ -11,6 +11,7 @@ export const LEG2_TEXT: Readonly<Record<string, readonly string[]>> = {
   'bell.market': ['Market board (placeholder)'],
   'west.board': ['LINE TO BELL ROCK', 'UNDER CONSTRUCTION'],
   'west.hood': ['Sea cave (placeholder)'],
+  'quay.wall': ['LINE TO HIGH GORGE', 'LATER'],
   // Greybox leg 3 (docs/plans/greybox-leg3.md, "Controls and copy"): beside the Notch barrier at Canopy Town's buffers.
   'canopy.notch': ['LINE TO LANTERN NOTCH', 'LATER'],
 };
@@ -21,6 +22,8 @@ export const AREA_CENTRES = {
   west: { x: 801 + (-0.6155 / westLength) * 20, z: 10 + (-0.7881 / westLength) * 20 },
   // Canopy isle's map centre (docs/world/map-prototypes.html, `canopy-isle`): the isle, its islets and Canopy Town.
   canopy: { x: -1060, z: -300 },
+  saltpan: { x: 550, z: 700 },
+  quay: { x: -190, z: 1080 },
 } as const;
 export { PAD_SIZE } from '../../prefab/greybox-constants.ts';
 /** The usual distance an area mounts within (route-greybox/index.ts; freed past it plus FREE_MORE). */
