@@ -472,6 +472,14 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
     await buildRowLeg(wallSlot, 'White Wall', async (k) => {
       if (wall.sections[k]!.gate === barrier && !(route().gates & (1 << barrier))) await openDeepSpan();
     });
+    check(
+      await bot.until(
+        () => inspectRailway()?.worksView?.legView?.objective === 'Open the Notch barrier at Canopy Town (placeholder)',
+        10000,
+        'Notch barrier objective',
+      ),
+      'The completed Wall points to the Notch barrier at Canopy Town',
+    );
     await checkpoint('wall reached');
     await rideGorgeHome();
     await checkpoint('wall home');

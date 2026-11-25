@@ -528,6 +528,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     const deckBodies: Body[] = [];
     const standing = { boxes: [] as GreyBox[], bodies: new Map<GreyBox, Body>() };
     const temporaryHeads = new Map<number, GreyBox[]>();
+    let endBuffers: GreyBox[] = [];
     const retiring = new Map<GreyBox[], { clearance: Clearing<{ shapes: Shape[]; on(): void }>; bodies: Body[] }>();
     /** A box along the line from (`s0`, `lat0`) to (`s1`, `lat1`), its top `up` over the rails. */
     function along(s0: number, s1: number, lat0: number, lat1: number, up: number, w: number, h: number, c: string) {
@@ -695,7 +696,10 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       const end = END[laid]!,
         face = laid === 0 ? end - 0.5 : end - 1.8;
       for (const t of tracks) {
-        if (!through) box(face, face + 0.6, t, 1.4, 1.4, 2.6, 1.2, GREY_DARK);
+        if (!through) {
+          box(face, face + 0.6, t, 1.4, 1.4, 2.6, 1.2, GREY_DARK);
+          endBuffers.push(out.at(-1)!);
+        }
         if (sp.row && !sp.joins) box(sp.from, sp.from + 0.6, t, 1.4, 1.4, 2.6, 1.2, GREY_DARK);
       }
       // The heads that are stops now: head j from its section's lay until it closes behind two lays on; the last
@@ -751,8 +755,10 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         return;
       }
       stood = key;
-      for (const [head, boxes] of temporaryHeads) {
-        if (laid < head + 2) continue;
+      const removed = [...temporaryHeads].filter(([head]) => laid >= head + 2).map(([, boxes]) => boxes);
+      if (through && endBuffers.length) removed.push(endBuffers);
+      endBuffers = [];
+      for (const boxes of removed) {
         // Keep the whole closed head under its occupant, including across later lays. Only geometry
         // actually mounted on this client can retire, so a fresh view never creates an old head.
         const active = boxes.filter((box) => standing.bodies.has(box));
@@ -783,7 +789,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
             ),
         })),
         me.body,
-        { lift: sp.leg.id === 'wall' },
+        { lift: sp.leg.id === 'wall' || sp.leg.id === 'notch-tunnel' || sp.leg.id === 'causeway' },
       );
     }
     /** Takes the deck's slabs and the standing pieces' colliders away (and forgets what was drawn), until next shown. */
@@ -1250,10 +1256,14 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
   function canopy(r: NonNullable<ReturnType<typeof rows>>) {
     if (!nearCanopy()) return;
     areaBoardVisibility.get('canopy.notch')?.(!done(r, 'notch-tunnel'));
-    areaLabels.get('canopy.notch')?.([
-      'LINE TO LANTERN NOTCH',
-      legOpen(r.wd, legIndex.get('notch-tunnel')!) ? UNDER_WAY : 'LATER',
-    ]);
+    const label = 'canopy.notch';
+    const relabel = areaLabels.get(label);
+    const text = legOpen(r.wd, legIndex.get('notch-tunnel')!) ? UNDER_WAY : 'LATER';
+    const previous = padPainted.get(label);
+    if (relabel && (previous?.by !== relabel || previous.text !== text)) {
+      relabel(['LINE TO LANTERN NOTCH', text]);
+      padPainted.set(label, { by: relabel, text });
+    }
     if (!(r.grants & (1 << CLOTH)))
       things.box(
         CLOTH_AT.x,
