@@ -573,6 +573,24 @@ The kit adds 13,540 triangles per pass. At the mouth camera that is 27,080 trian
 | Far Head | 291 → 291 | 844,745 → 844,745 |
 | Summit | 346 → 346 | 1,006,978 → 1,006,978 |
 
+## Step 5 as built
+
+The [matched views](cliff-kit-everywhere/north-ridge-before-after.jpg) show the camp path, the east cutting and the ridge at eye level. Each wall mounts separately. The generator seats the ends and middle of each face against its own census wall. It clips the courses at grass and leaves the remote ground bare.
+
+The north ridge has 11 crowned faces. Its closest sampled solid is 3.47 m outside the tread. The controller walked the camp path out and back without falling and moved 0 m over five seconds at idle. The east cutting has five faces. The highest solid sample is at 22.67 m, below both 24.30 m railheads. The reverse floods found zero places walled off, with 37,249 nodes at the ridge and 68,121 at the cutting.
+
+The kit adds 9,416 triangles per pass. The largest measured change was 10,460 triangles and four draws from the gorge mouth.
+
+| Census camera | Draws, main → step 5 | Triangles, main → step 5 |
+| --- | ---: | ---: |
+| shore | 163 → 163 | 782,735 → 782,735 |
+| shore climb | 381 → 383 | 1,031,181 → 1,034,041 |
+| canyon climb | 206 → 208 | 829,299 → 835,855 |
+| gorge rim | 372 → 375 | 967,485 → 976,505 |
+| gorge mouth | 436 → 440 | 1,027,960 → 1,038,420 |
+| Far Head | 291 → 293 | 844,745 → 851,301 |
+| summit | 346 → 347 | 1,006,978 → 1,012,094 |
+
 ## Design review (2026-11-24)
 
 Run by the plan's author in the same context (design-review skill). Read for it: DESIGN.md, owner calls (Look and art,
