@@ -6,6 +6,7 @@ const { teleport } = (await import(
   '/src/physics/engine.ts' as string
 )) as typeof import('../../../src/physics/engine.ts');
 const { H } = (await import('/src/place/land.ts' as string)) as typeof import('../../../src/place/land.ts');
+const { fallArrival } = (await import('/src/fall/arrival.ts' as string)) as typeof import('../../../src/fall/arrival.ts');
 const { ORIGIN } = (await import('/src/place/layout.ts' as string)) as typeof import('../../../src/place/layout.ts');
 const { padById, LEVER } = (await import(
   '/src/place/tech-layout.ts' as string
@@ -26,11 +27,11 @@ async function until(ok: () => unknown, label: string, timeout = 6000) {
   const end = performance.now() + timeout;
   while (!ok()) {
     if (performance.now() > end)
-      throw new Error(`${label}: feet ${me.body ? me.body.position.y - PLAYER_R : 'absent'}`);
+      throw new Error(`${label}: body ${JSON.stringify(me.body?.position)}`);
     await wait(16);
   }
 }
-await until(() => R.railRead()?.ready() && me.body, 'arrival', 60000);
+await until(() => R.railRead()?.ready() && me.body && !fallArrival.active && me.coyote > 0, 'arrival', 60000);
 const id = new URLSearchParams(location.search).get('ledge');
 if (id !== 'alcove' && id !== 'lookout' && id !== 'apron') throw new Error('Choose an order-pick ledge');
 if (!R.rail(R.rw()).jump || R.rail(R.rw()).pack || R.railStation(1).start >= 0)
@@ -39,8 +40,8 @@ const pad = padById(id),
   x = ORIGIN.x + pad.x,
   z = pad.z;
 // The alcove sits above water. Approach from the dry plateau to its northeast.
-const dx = id === 'alcove' ? 7 : id === 'lookout' ? pad.hx + 1.4 : 0;
-const dz = id === 'apron' ? pad.hz + 1.4 : id === 'alcove' ? -7 : 0;
+const dx = id === 'alcove' ? 10 : id === 'lookout' ? pad.hx + 1.4 : 0;
+const dz = id === 'apron' ? pad.hz + 1.4 : id === 'alcove' ? -5 : 0;
 const body = me.body!;
 teleport(body, x + dx, H(x + dx, z + dz) + PLAYER_R + 0.5, z + dz);
 body.velocity.set(0, 0, 0);
@@ -51,12 +52,17 @@ if (me.swimming || me.coyote <= 0 || (id !== 'alcove' && feet() >= pad.top))
   throw new Error(`${id}: expected a supported dry approach`);
 const used = R.inspectRailway()!.reward.tools.jumps;
 try {
-  if (id === 'alcove') input.keys.add('KeyW');
-  pressJump();
-  await until(() => me.coyote <= 0 && body.velocity.y > 0, 'first jump');
-  await until(() => body.velocity.y < 1.5, 'first apex');
-  releaseJump();
+  if (id !== 'alcove') {
+    pressJump();
+    await until(() => me.coyote <= 0 && body.velocity.y > 0, 'first jump');
+    await until(() => body.velocity.y < 1.5, 'first apex');
+    releaseJump();
+  }
   input.keys.add('KeyW');
+  if (id === 'alcove') {
+    input.keys.add('ShiftLeft');
+    await until(() => me.coyote <= 0 && body.velocity.y < -1, 'left the plateau');
+  }
   pressJump();
   await until(() => R.inspectRailway()!.reward.tools.jumps > used, 'air jump');
   await until(
@@ -66,6 +72,7 @@ try {
 } finally {
   releaseJump();
   input.keys.delete('KeyW');
+  input.keys.delete('ShiftLeft');
 }
 await until(() => me.coyote > 0 && !me.swimming && Math.abs(feet() - pad.top) < 0.35, 'landed on pad');
 if (id === 'apron') {
