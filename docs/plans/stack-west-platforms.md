@@ -1,4 +1,12 @@
-> **Status, 18 November 2026: planned, nothing built.** Planned against main `51d17145c` (world v60; measured at `ad7405c34`, docs-only changes since). Source: the P3
+> **Status, 25 November 2026: step 1 re-planned for way 1, nothing built.** The first step 1 build stopped before any
+> edit (19 November): the planks at r − 31.3 to r − 28.9 lay on the stack crossover's toe, blades and points lever that
+> turnouts step 7 drew at every head. The owner took way 1
+> ([25 November, item 4](../decisions-rail.md#d-2026-11-25-recommendations-taken-rail)): planks 1.6 m wide at r − 28.5
+> to r − 26.9, both ramps running into the decks' first 2 m. Step 1, the geometry table, findings 1, 3 and 4 and the
+> [way 1 design review](#design-review-2026-11-25-way-1) are revised on main `bf315bacf` (world v72); steps 2 to 4 stand
+> with the numbers noted there. **World version:** the owner approved this row's reset on 18 November ("All three
+> heads, with the v62 reset"); main has moved on since, so step 2 takes the next free `WORLD_NS` when it ships.
+> First planned 18 November against main `51d17145c` (world v60; measured at `ad7405c34`, docs-only changes since). Source: the P3
 > backlog row "Small fixes found in the coach work", item (1), the only one left; [rider-coach](rider-coach.md),
 > Level finding 12, and its [R2b.1 report](../reports/rider-coach-r2b1.md) for the shape of the work. Authority:
 > [trains stop on request; one lever per platform side](../decisions-rail.md#d-2026-11-10-trains-stop-on-request-at-the),
@@ -98,26 +106,53 @@ stage hash moves (platform points are not state); the server host trace's checkp
 
 ### The geometry (line 2 metres: `s` along, `lat` + east; `r` = the head's section end)
 
-Everything mirrors the east deck about the formation's middle (lat −2) except the crossing, which joins them.
+Everything mirrors the east deck about the formation's middle (lat −2) except the crossing, which joins them. **Way 1
+(25 November):** the crossing sits between the stack crossover's last timber and a standing train's tail, and the
+ramps take the decks' first 2 m, so both decks are flat from r − 23 (the east deck's home end moves 2 m; its sea
+ramp's landing moves with it).
 
 | Piece | s | lat | Top over the rails (rail level 4.00 m) | Solid |
 | --- | --- | --- | --- | --- |
-| West deck (25 m × 4.5 m), 5 m segments, a pile under each to the sea bed | r − 25 .. r | −10.3 .. −5.8 (centre −8.05) | +0.90 (4.90 m) | yes |
-| West sea ramp: landing, then a slip into the sea at the leg's sea-ramp pitch (0.54, 28.4°) | landing r − 25 .. r − 22; slip r − 22 .. r − 10.5 | −12.3 .. −10.3 | +0.90, slip down to 1.3 m under the sea | yes |
-| Planks over both tracks, five spans with a flangeway (0.08 m clear) by each rail | r − 31.3 .. r − 28.9 | +1.8 .. −5.8 | +0.29 (the rail tops), drawn | drawn only |
-| One slab under the planks | r − 31.3 .. r − 28.9 | +1.8 .. −5.8 | +0.29 | yes |
-| East and west landings | r − 31.4 .. r − 28.9 | +1.8 .. +6.3 / −10.3 .. −5.8 | +0.29 | yes |
-| East and west ramps, each its deck's full width, starting at the planks' top (no step; #2176's lesson at the Pier and Quarry) | r − 28.9 .. r − 25 | as the landings | +0.29 rising to +0.90 (0.61 m over 3.9 m, 8.9°) | yes |
-| West lever, plaque ×2 facing onto the deck | r − 22 (9.5 m toward home of the deck's middle, `RING_LEVER_OFF`) | −6.3 (0.5 m in, as Ring Island's and the Joint's west levers) | deck | prefab lever, no collider |
-| Catalog west point (`platforms[1]`) | r − 12.5 (the deck's middle) | −8.05 | +0.90, reach 12.6 m | server data |
+| East deck, flat (today r − 25 .. r): segments from its new home end, a pile under each to the sea bed | r − 23 .. r | +1.8 .. +6.3 (centre +4.05) | +0.90 (4.90 m) | yes, whenever the east deck stands (call 13) |
+| West deck, flat, the east mirrored | r − 23 .. r | −10.3 .. −5.8 (centre −8.05) | +0.90 | yes |
+| Sea ramps, east and west: landing beside the flat deck, then a slip into the sea at the leg's sea-ramp pitch (0.54, 28.4°) | landing r − 23 .. r − 20; slip r − 20 .. r − 8.52 (today r − 25 .. r − 22 and r − 22 .. r − 10.52) | +6.3 .. +8.3 / −12.3 .. −10.3 | +0.90, slip down to 1.3 m under the sea | yes |
+| Planks over both tracks, 1.6 m, five spans with a flangeway (0.08 m clear) by each rail | r − 28.5 .. r − 26.9 | +1.8 .. −5.8 | +0.29 (the rail tops), drawn | drawn only |
+| One slab under the planks | r − 28.5 .. r − 26.9 | +1.8 .. −5.8 | +0.29 | yes |
+| East and west landings, with a pile each | r − 28.5 .. r − 26.9 | +1.8 .. +6.3 / −10.3 .. −5.8 | +0.29 | yes (the east one whenever the east deck stands) |
+| East and west ramps, each its deck's full width, from the planks' top to the flat deck (no step at either end; #2176's lesson at the Pier and Quarry) | r − 26.9 .. r − 23 (1.9 m beyond the old deck end and its first 2 m) | as the landings | +0.29 rising to +0.90 (0.61 m over 3.9 m, 8.89°) | yes |
+| West lever, plaque ×2 facing onto the deck | r − 22 (9.5 m toward home of the 25 m stretch's middle, `RING_LEVER_OFF`; 1.0 m past the ramp top) | −6.3 (0.5 m in, as Ring Island's and the Joint's west levers) | deck | prefab lever, no collider |
+| Catalog west point (`platforms[1]`), unchanged by way 1 | r − 12.5 | −8.05 | +0.90, reach 12.6 m | server data |
 
-World positions (x, z, from the probe): planks' middle at head 1 (1001.66, −911.64), head 2 (578.94, −1174.72), Stack
-halt (232.96, −1544.07); west lever at (993.04, −908.42), (570.05, −1176.89), (224.94, −1548.52).
+**What way 1 sits between** (production code, all three heads alike; `.look/stack-west/crossing.ts`, scratch):
 
-Nothing else at a head moves: the east deck, its sea ramp, its board (lat 5.8, r − 13), its outward lever (r − 6), the
-frame and rack (east, only while the head is the railhead), the block signal (between the tracks, r + 3), the buffers
-and end board (only at the end). Copy: none. The west lever's plaque names its destination with the existing lever
-label code (`targetsFor`); no new string.
+| At every head (r = 1700.1, 2210.2, 2720.3) | s | lat | Source |
+| --- | --- | --- | --- |
+| J12.k's down-track toe `b` (the stub's merge, the stop less 20 m) | r − 30.00 | 0 | `src/place/junctions.ts:153` (`[m − TURNOUT, m]`), `src/sim/railway-lines.ts:156` (`HEAD_MERGE_CM`), `:182` |
+| Its blades, toward home of the toe | r − 32.4 .. r − 30.00 | 0 ± 0.5 | `src/place/junctions.ts:203-206`; `KIT.bladeMax` 2.4 |
+| Its points lever's pivot (0.2 m behind the toe, 2.0 m to the through road's right: between the tracks) | r − 29.80 | −2.00 (fit 0.004 m) | `src/place/turnout.ts:94-95`, `:298`; `lever: 1` at `junctions.ts:171` |
+| The lever's box (0.8 m along, 0.5 across) and arm (0.85 m, leaning ±0.45 rad across the track: ±0.37 m) | r − 30.20 .. r − 29.40 | −2.25 .. −1.75; arm −2.37 .. −1.63 | `src/entities/railway/turnout-blades.ts:25-27`, `:124`, `:126-137` |
+| The last headblock timber (0.3 m thick), its +s face | centre r − 28.82, face r − 28.67 | −2.35 .. +1.15 | `junctions.ts:232-236` (stations 1.176 m), `turnout.ts:89-91` (headblock 1.2 m on the lever side); `leg-view.ts:553-556` draws it |
+| A train standing at the stop, either way: its reserved tail (`TRAIN_EXTENT.behindCm` 1610) | r − 26.10 | both tracks | `src/sim/railway-lines.ts:126`, the stop at r − 10 (`HEAD_BACK_CM`, `railway-route.ts:142`) |
+| A train held at the head's block signal (s = r) | tail r − 16.10 | | `railway-lines.ts:557-559` |
+| The rack and its plate while the head is the railhead (pallet 2.6 m along; plate 1.6 m toward home of it) | r − 19.3 .. r − 16.7, plate about r − 19.6 | +4.8 | `src/sim/railway-route.ts:516-519`, `leg-view.ts:1052-1054`, `:1095` |
+| The frame (2.6 m along) | r − 9.3 .. r − 6.7 | +4.8 | `railway-route.ts:510-513`, `leg-view.ts:1056-1061` |
+| The east levers (homeward at the stop, outward 4 m on), lat 2.45 | r − 10, r − 6 | +2.45 | `src/entities/railway/halts-view.ts:507-532` |
+
+So the planks' home edge clears the last timber by **0.17 m**, the lever's box by **0.90 m** and its arm by **1.26 m**,
+the blades by 1.50 m; their far edge stops **0.80 m** short of a standing train's tail (minimum 0.60, the Pier's) and
+10.80 m short of a signal-held train's. The ramp top at r − 23 is 3.7 m short of the rack's pallet and 13 m short of
+the homeward lever.
+
+World positions (x, z, `line2World`): planks' middle at head 1 (999.27, −911.94), head 2 (577.16, −1176.32), Stack halt
+(231.65, −1546.08) (the first plan's, at r − 30.1, were (1001.66, −911.64), (578.94, −1174.72), (232.96, −1544.07): the
+same probe reproduces them); west lever, unchanged, at (993.04, −908.42), (570.05, −1176.89), (224.94, −1548.52); east
+ramp top (r − 23, lat 4.05) at (995.39, −918.55), (577.67, −1183.96), (234.16, −1553.32); west ramp top at (993.82,
+−906.55), (569.63, −1174.92), (224.02, −1546.72).
+
+Nothing else at a head moves: the east deck's outer 23 m, its board (lat 5.8, r − 13), its levers (r − 10 and r − 6),
+the frame and rack (east, only while the head is the railhead), the crossover, the block signal (between the tracks,
+r + 3), the buffers and end board (only at the end). Copy: none. The west lever's plaque names its destination with
+the existing lever label code (`targetsFor`); no new string.
 
 ## Steps
 
@@ -125,47 +160,88 @@ Each leaves `node dev/ship-check.ts origin/main HEAD` green. Builders and review
 `npm run review-stamp` prints for the step's files. Order: view first, then the catalog and its bump (alone), then the
 levers, which need the moved point to offer a prompt.
 
-- [ ] **1. The west decks and the foot crossing (S).** Sync: Local. Tier: normal + visual (no file under
-  `src/sim|net|world|ecs`, `server/src`). Build: Codex gpt-6.2-astra medium (player-visible). **Bump: no.**
+- [ ] **1. The west decks and the foot crossing, way 1 (S; re-planned 25 November).** Sync: Local. Tier: normal +
+  visual (no file under `src/sim|net|world|ecs`, `server/src`). Build: by `npm run models` (Astra, player-visible).
+  **Bump: no.** Read first: the geometry table above and "what way 1 sits between" (every number below is in metres
+  short of the head's section end `r`).
   - New `src/entities/route-greybox/stack-halts.ts` (pure numbers, no three.js): `STACK_EAST = { len: 25, lat: 4.05, w:
-    4.5, up: 0.9 }` (leg-view's `PLAT`, moved here), `STACK_WEST = { ...STACK_EAST, lat: -8.05 }`,
-    `STACK_CROSSING = { width: 2.4, ramp: 3.9, top: 0.29 }` (planks' +s edge at `r − len − ramp`), `STACK_WEST_LEVER =
-    { lat: -6.3 }`, and `westStands(j, laid)` = the east deck's existing predicate (`laid ≥ j` and not closed behind,
-    read from `RAIL_LINES[LINE2].halts[railheadHalt + j − 1].closesAt`) **and** `laid > j`. Register the module if
+    4.5, up: 0.9 }` (the stack spec's `plat`, `leg-view.ts:286`, moved here and read from there), `STACK_WEST = {
+    ...STACK_EAST, lat: -8.05 }`, `STACK_CROSSING = { from: 28.5, to: 26.9, top: 0.29, rampTop: 23 }` (planks r − 28.5
+    .. r − 26.9 across lat +1.8 .. −5.8; ramps r − 26.9 .. r − 23; each deck flat from r − 23; the sea ramps' landings
+    r − 23 .. r − 20), `STACK_WEST_LEVER = { back: 22, lat: -6.3 }`, and `westStands(j, laid)` = the east deck's
+    existing predicate (`laid ≥ j` and not closed behind, read from `RAIL_LINES[LINE2].halts[railheadHalt + j −
+    1].closesAt`, as `leg-view.ts:690-691`) **and** `laid > j`. A header comment cites this plan and says why the
+    planks sit where they do (between J12's last headblock timber and a standing train's tail). Register the module if
     `npm run registry` asks.
-  - `leg-view.ts`: `PLAT` reads `STACK_EAST`; in `pieces(laid)`, for each head with `westStands`, push the west deck's
-    segments and piles (as the east's, at `STACK_WEST.lat`), the mirrored sea ramp (landing and slip at
-    `STACK_WEST.lat − w/2 − 1`), the planks' slab, the two landings and the two ramps (`box(s0, s1, lat, up0, up1, w, h,
-    c)` already pitches a ramp), a pile under each landing as under the deck, all in `standing`, so they become colliders exactly as the east deck's do; draw the five
-    plank spans in `things` only (flangeways by the rails at lat ±0.5 and −4 ± 0.5), in the file's existing timber
-    tone (`LOG`) over the slab in `BED`; decks, landings and ramps in the east deck's `GREY_LIGHT`/`GREY`. The header comment's "the
-    heads" line gains the west deck and the crossing.
+  - `leg-view.ts` `pieces(laid, through)` (`:653-727`), the stack's heads only (give the stack spec a `crossing:
+    STACK_CROSSING` field, so the row legs' and the Wall's heads are untouched):
+    - **East, whenever its deck stands** (call 13): the flat deck from r − 23 (a 3 m segment r − 23 .. r − 20, then
+      the 5 m segments as today, a pile under each); the east ramp (`box(r − 26.9, r − 23, 4.05, 0.29, 0.90, 4.5, …)`:
+      `box` already pitches a ramp); the east landing r − 28.5 .. r − 26.9 at +0.29 with a pile; the sea ramp's landing
+      r − 23 .. r − 20 and its slip from r − 20 (`:715-720`: the `r − plat.len` offsets become `r − rampTop`).
+    - **West, while `westStands`:** the mirror of all of that at `STACK_WEST.lat` (deck, piles, ramp, landing, sea ramp
+      at lat −(8.05 + 2.25 + 1)), and the planks' slab r − 28.5 .. r − 26.9, lat +1.8 .. −5.8, top +0.29.
+    - All of it in `standing`, so it becomes colliders exactly as the east deck's do (`stand`, `:729`: a collider
+      waits for a player to step out; nothing moves anyone). The five plank spans drawn in `things` only (flangeways
+      by the rails at lat ±0.5 and −4 ± 0.5), in the file's timber tone (`LOG`) over the slab in `BED`; decks,
+      landings and ramps in the east deck's `GREY_LIGHT`/`GREY`. The header comment's "the heads" line (`:16`) gains
+      the ramp, the west deck and the crossing.
   - New level report `dev/level/stack-halts.ts`, run from `dev/level/check.ts` beside `checkRing`/`checkRiderCoach`
-    (rows with design minima and ±0.01 m pins, as the R2b rows): for each head, the planks' +s edge past the reserved
-    tail (`TRAIN_EXTENT.behindCm`) of a train standing at the stop (minimum 0.60, the Pier's; pin 2.80) and of a train
-    held at the head's block signal (minimum 0.60; pin 12.80); the planks over no rail (0.08 m clear); landings and
-    planks at the rail tops; ramps ≤ 15° and walkable at `WALKABLE_NY` (pin 8.89°), starting at the planks' top (step
-    0, pin 0); the west sea ramp walkable (28.37°); the west deck, landings and ramps overlap no other standing piece of
-    the head (east deck, sea ramps, board stand) and the formation slab only by the deck's 0.5 m lip (as the east);
-    `westStands` is false while the head is the end and false once it is closed behind, at every `laid` 0..4.
-  - `dev/level/rider-coach.ts`: delete `knownGaps`; add rows `Stack head k homeward` with
-    `curvedMargin(d, r − 25, r, STACK_WEST.lat, 5)` and `sideAt(s + offset, STACK_WEST.lat, STACK_WEST.w / 2, −4)`
-    (the Joint row's form). Expected from the probe: players' car lateral **0.70**, coach **1.00**; players' car on the
-    deck s r − 11.6..r − 8.4, coach r − 14.9..r − 12.0. Restate the coverage line (no retained gaps).
+    (rows with design minima and ±0.01 m pins, as the R2b rows), each **read from production code**
+    (`seaCrossovers()`/`crossoverPlan()`, `turnout()`, `TRAIN_EXTENT`, the catalog's stops and signals, the view's own
+    `pieces()` boxes), at each head k = 1, 2, 3:
+    1. _Crossover timber:_ the planks' home edge past J12.k's last timber's +s face (`max(t.s) + 0.15`): minimum 0.10,
+       pin 0.17.
+    2. _Crossover lever:_ the planks' home edge past the lever box's +s face (pivot s + 0.4): minimum 0.50, pin 0.90;
+       past its arm (pivot s + 0.04): pin 1.26; the box's and the leaned arm's footprints (lat −2.37 .. −1.63) inside
+       no plank, landing or ramp box (0 overlaps). Past the blades' toe (r − 30): pin 1.50.
+    3. _Standing train:_ the planks' far edge short of the reserved tail of a train standing at the stop, either way
+       (`stop − TRAIN_EXTENT.behindCm`): minimum 0.60 (the Pier's), pin 0.80; of a train held at the head's block
+       signal (s = r): minimum 0.60, pin 10.80. The one retained departure after a lay: its lateral over the planks
+       within 0.05 m of its own track (`line2Lat`; it has merged at r − 30).
+    4. _Planks:_ 1.60 m along; over no rail (0.08 m flangeway clear by each rail); planks and both landings at the rail
+       tops (+0.29, pin 0).
+    5. _Ramps, both:_ r − 26.9 .. r − 23, ≤ 15° and walkable at `WALKABLE_NY` (pin 8.89°); the step at the foot
+       (landing to ramp) and at the top (ramp to flat deck) 0, pins 0.
+    6. _Decks:_ both flat from r − 23 (pin 23.00); the rack's pallet and plate, the frame, the board stand and both
+       east levers on the flat deck, at least 0.5 m past the ramp top (expected: plate about 3.4, pallet 3.7, homeward
+       lever 13.0).
+    7. _Sea ramps, both:_ landing r − 23 .. r − 20 level with the deck beside it (step 0); the slip walkable (28.37°);
+       each touches its crossing ramp only at the corner (r − 23, lat +6.3 / −10.3).
+    8. _West lever:_ on the flat deck, 1.00 m past the ramp top (minimum 0.50) and 0.5 m in from its inner edge. Its
+       reach from the moved catalog point is step 2's row (9.66 to 9.87 m of 12.6, the prompt's 1.8 m inside).
+    9. _Overlaps:_ no standing piece of the head overlaps another (decks, landings, ramps, sea ramps, the board stand)
+       or the crossover's timbers, and the formation slab only by the decks' 0.5 m lip (as the east today).
+    10. _When:_ `westStands` false while the head is the end and once closed behind, true between, at every `laid`
+        0..4; the east ramp and landing stand exactly when the east deck does.
+  - `dev/level/rider-coach.ts`: delete `knownGaps` (`:96-100`) and its report field; add rows `Stack head k homeward`
+    with `curvedMargin(d, r − 23, r, STACK_WEST.lat, 5)` and `sideAt(s + offset, STACK_WEST.lat, STACK_WEST.w / 2, −4)`
+    (the Joint row's form, `:175-180`); the stack heads' east rows (outward, `:204-214`, and terminal homeward,
+    `:166-173`) measure from r − 23 (`s − 13`, read from `STACK_CROSSING`), High Gorge's unchanged. Expected: players'
+    car lateral **0.70**, coach **1.00**; players' car on the deck s r − 11.6 .. r − 8.4 (11.4 m past its home end, was
+    13.4), coach r − 14.9 .. r − 12.0 (8.1 m, was 10.1). Restate the coverage line (`:255`: no retained gaps).
   - `dev/level/rider-coach-stop.ts`: measure against `STACK_WEST` (gap 1.00 m for the coach) and say the finding is
     closed; or delete it with the rows above standing in for it (builder's call; say which).
-  - `docs/game-design/place.md`: the stack line's paragraph ("At each railhead stand ...") gains the west deck and
-    crossing once a head is passed; the rider-coach paragraph's "one-sided Stack heads remain a separate pre-existing
-    level gap" sentence is replaced by what is built.
+  - `docs/game-design/place.md`: the stack line's paragraph ("At each railhead stand ...") gains the ramp at each
+    deck's home end and, once a head is passed, the west deck and the planks; the rider-coach paragraph's "one-sided
+    Stack heads remain a separate pre-existing level gap" sentence is replaced by what is built.
   - **Verify:** `npm run typecheck`, `npm run lint -- <files>`, `npm run level-check` (exit 0 with the new rows),
-    `node dev/ship-check.ts origin/main HEAD`. **Look (the step's one still, opened):** `npm run look -- --rail-seed
-    gorge-reached --cam 241.7,6.6,-1538.0 --look 220.3,5.0,-1559.8 --name stack-west-approach` (the same camera as the
-    plan's "before" still: an outward rider's first sight of Stack halt, 30 m out on the formation's east edge).
-- [ ] **2. The heads' homeward platform point, `WORLD_NS` v61 (S). Its own commit.** Sync: Server data (catalog).
-  Tier: **independent review** (`src/sim`, `src/world`). Build: Codex gpt-6.2-astra medium. **Bump: v61** ("the stack
-  heads' homeward platform is their west deck: `RailHalt.platforms[1]` at each head's west deck middle; no state,
-  op or save shape change; rooms start fresh"). If main has taken v61 by then, take the next and say so.
-  - `src/sim/railway-route.ts`: export `rowSide` (unchanged body; one more public name, `npm run registry`).
+    `node dev/ship-check.ts origin/main HEAD`. **Stills, each opened:** (a) the plan's approach camera, `npm run look
+    -- --rail-seed gorge-reached --cam 241.7,6.6,-1538.0 --look 220.3,5.0,-1559.8 --name stack-west-approach`; (b) the
+    crossing from the east ramp's top, eye 1.7 m over the deck, looking across the planks at the west ramp with the
+    crossover's lever in frame: `--cam 234.16,<deck y + 1.7>,-1553.32 --look 224.02,<deck y>,-1546.72 --name
+    stack-west-crossing` (read the deck's y from `line2Y`); (c) top-down over r − 35 .. r at Stack halt, `--name
+    stack-west-top`, the timbers, the lever box and the planks' 0.17 m gap readable. Say what each shows and what was
+    not seen (no train stands in these seeds' stills).
+- [ ] **2. The heads' homeward platform point, the next free `WORLD_NS` (S). Its own commit.** Sync: Server data
+  (catalog). Tier: **independent review** (`src/sim`, `src/world`). Build: by `npm run models`. **Bump: the next free
+  number when it ships** (main is v72 on 25 November and moves often; the owner approved this row's reset on 18
+  November, then numbered v62; v61 below means that number): "the stack heads' homeward platform is their west deck:
+  `RailHalt.platforms[1]` at each head's west deck middle; no state, op or save shape change; rooms start fresh".
+  Way 1 changes nothing in this step: the point stays at r − 12.5, lat −8.05 (on the flat deck, 10.5 m past its home
+  end), and the lever spot (r − 22) is where it was.
+  - `src/sim/railway-route.ts`: `rowSide` is exported already (`:456`); `HALT_REACH` (`:120`, 1260) is not, so use 1260
+    with a comment or export it.
   - `src/sim/railway-lines.ts` `STACK_HALTS`: `platforms: [STACK_HEAD_PLATFORMS[k], STACK_HEAD_WEST[k]]` where
     `STACK_HEAD_WEST = STACK_HEADS.map((at) => rowSide('ring', at + ROW_SHIFT.ring − 250, −805, 90, HALT_REACH))`
     (the deck's middle is the stop less 2.5 m: r − 12.5; lat −8.05; 0.90 m over the rails; reach 12.6 m; `HALT_REACH`
@@ -196,13 +272,14 @@ levers, which need the moved point to offer a prompt.
   gpt-6.2-astra medium. **Bump: no** (rides v61).
   - `dev/prefab/halts.ts`: for each stack head (a `leg` stub halt), a third placement `halt-ring-lever-<stop>-west`,
     `side: −1`, `plaque: 2`, `ring: true`; `npm run prefabs` and `npm run prefabs -- --check`.
-  - `src/entities/railway/halts-view.ts`, the stack heads' loop (:482–517): `ringSpot` takes an optional placement key
-    (the id is today built from `up`); the east homeward lever's `need` becomes `!shut() && platformEnd(LINE2, stop)`
+  - `src/entities/railway/halts-view.ts`, the stack heads' loop (`:507-532` on `bf315bacf`; `ringSpot` at `:418`
+    already takes `west`): `ringSpot` takes an optional placement key
+    (the id is today built from `up`, `:431`); the east homeward lever's `need` becomes `!shut() && platformEnd(LINE2, stop)`
     (it calls the train home only while the head is the end or its retained departure stands); add the west lever:
     `ringSpot(stop, true, STACK_WEST_LEVER.lat, () => (h.s − RING_S_HEAD) / 100 − 2.5 − RING_LEVER_OFF, () => !shut()
     && !platformEnd(LINE2, stop) && stopsNow[LINE2].length > stop + 1, HOME, true)` with key `west`. Update the loop's
     comment (one homeward lever on the deck its train stops at; the outward lever stays on the east deck).
-  - `test/prefab-halts.test.ts` fixtures (`GOLDEN=1`): `levers.length` 20 → 23; the new placements and the stack
+  - `test/prefab-halts.test.ts` fixtures (`GOLDEN=1`): `levers.length` + 3 (59 → 62 on `bf315bacf`, `:330`); the new placements and the stack
     snapshots (`gorge-mid`, `stack-3`, `gorge-reached`) change only the stack heads' lever rows; `prefab-halt-requests.json`
     gains the west levers' accepted calls. Write the delta's summary in the commit (as R2b.1's 79 values).
   - `dev/look/evals/stack-levers.ts`: frame each lever on its own deck (`lever=home` now stands on the west deck); its
@@ -216,8 +293,9 @@ levers, which need the moved point to offer a prompt.
   - `npm run check:full` (the bump; `src/world/namespace.ts`), `npm run test:net`, `npm run level-check`,
     `npm run checkpoints -- gorge-mid gorge-reached` (host save path at both served stages).
   - **The one proof look:** a homeward call at Stack halt in the running game at `gorge-reached`: the production bot
-    walks from the east deck's outward door spot down the east ramp, across the planks, up the west ramp to the west
-    lever (`bot.walk` along the plan's waypoints, as R2b.1's walk), presses it (real Interact), waits for a homeward
+    walks from the east deck's outward door spot down the east ramp (r − 23 to r − 26.9), across the planks (along
+    their middle, r − 27.7, 2.1 m on from the crossover's points lever), up the west ramp to the west lever (`bot.walk`
+    along the plan's waypoints, as R2b.1's walk), presses it (real Interact), waits for a homeward
     train to stand at stop 8 on track 1, and boards it by `railway-ride.ts`'s real jump. Stills, opened: (a) from the
     west deck beside the players' car's door (eye 1.7 m over the deck, looking along the car), the door and deck edge
     in frame, the gap **0.70 m measured** by the level row and seen; (b) the coach's steps folded onto the west deck;
@@ -235,11 +313,14 @@ the real coach consist, chord and buffer placement), `TRAIN_EXTENT`, the catalog
 Probes are scratch, uncommitted: `.look/stack-west/probe.ts`, `planned.ts`, `catalog.ts` (run with
 `node --import ./dev/sim/hooks.ts <file>`); `npm run level-check` on main: exit 0, the three Stack homeward gaps listed as
 known (`rider-coach` `knownGaps`). The planned rows are step 1's and step 2's level report; the numbers below are what
-they should pin.
+they should pin. **Way 1 (25 November)** re-measured the crossing against the stack crossover on main `bf315bacf`
+(`.look/stack-west/crossing.ts` and `pos.ts`, scratch); where a finding below changed, it says so.
 
 1. **Reach on foot.** From the east deck (where outward trains and the lay put players) to the west lever: east deck to
-   its home end, down the east ramp, over the planks, up the west ramp: **42.1 m, 7.5 s** at 5.6 m/s; lever to the
-   players' car's home end 10.4 m (1.9 s). The ramps rise 0.61 m over 3.9 m, **8.9°** (≤ 15°, walkable; the Pier's
+   its home end, down the east ramp, over the planks, up the west ramp: **42.1 m, 7.5 s** at 5.6 m/s on the first plan; way 1 moves the
+   crossing 2.4 m on and the ramps' tops 2 m on, so each deck's leg along s is 2 m shorter: **about 38.1 m, 6.8 s**
+   (arithmetic on the first measurement; step 4's walk measures it). Lever to the players' car's home end 10.4 m
+   (1.9 s), unchanged. The ramps rise 0.61 m over 3.9 m, **8.89°** (≤ 15°, walkable; the Pier's
    9.4 m ramp is 4.1°, Ring Island's 9.6°), and start at the planks' top: no step. The shortcut: drop 0.90 m into the
    bed, cross 7.6 m, jump the 0.90 m kerb (jump height 1.60 m): about 3 s. It skips a walk, never work (no gate here):
    allowed by the route contract. From the sea: the west deck's own sea ramp (28.4°, the leg's sea-ramp pitch; walkable
@@ -247,7 +328,9 @@ they should pin.
 2. **The train beside the deck.** Homeward at the stop, every car on track 1 at lat −4.00 (±0.002): lateral gap to the
    west deck **0.70 m** (players' car, kit, wagon, steel), **1.00 m** (coach), 0.79–0.80 m (engine): the east deck's
    outward 0.70 m and Ring Island's west 0.70 m. Players' car on the deck s r − 11.6..r − 8.4, coach r − 14.9..r − 12.0;
-   the steel car's rear hangs 1.03 m past the deck's home end, beside the west ramp 0.7 m off it (freight, as the east).
+   the steel car's rear hangs 1.03 m past the old deck end (r − 26.03), so with way 1 the steel car's last 3.03 m stand
+   beside the ramp, 0.7 m off it, 0.87 m short of the planks (freight, as the east); both passenger cars stand beside
+   the flat deck, the coach's rear 8.1 m past its home end.
 3. **What stands in the way.**
    - *Terrain:* none. Open sea under every footprint (Place terrain −6 m at all samples s r − 32..r + 1, lat −13..+7;
      the leg view's sea bed −8 m). No land or prefab level within 99 m (the bay-trestle row's nearest vertex to head 1;
@@ -256,22 +339,28 @@ they should pin.
      bent posts at lat −5.4 and +1.4 and their caps are under the slab (visual only, no collider); the block signal post
      between the tracks at r + 3 (33 m from the planks); the board stand on the east deck (lat 5.8, r − 13); the frame
      and rack on the east deck only while the head is the railhead, when no west piece stands; the buffers and end
-     board only at the end. The east and west sea-ramp landings touch the crossing ramps only at a corner (r − 25, lat
-     ±6.3 / −10.3); nothing overlaps.
+     board only at the end. The east and west sea-ramp landings (moved to r − 23 .. r − 20) touch the crossing ramps only
+     at a corner (r − 23, lat +6.3 / −10.3); nothing overlaps. The rack's pallet starts 3.7 m past the ramp top
+     (r − 19.3), its plate about 3.4 m.
+   - *The stack crossover (J12.k, turnouts step 7; way 1's reason):* toe `b` at r − 30.00 on the down track, its blades
+     home of it, its points lever between the tracks at r − 29.80, lat −2.00 (box to r − 29.40, arm ±0.37 m across),
+     its last headblock timber to r − 28.67. The planks' home edge clears them by 0.17 m (timber), 0.90 m (lever box),
+     1.26 m (arm), 1.50 m (blades); the same at all three heads (the merge is the stop less 20 m at each). The first
+     plan's planks (r − 31.3 .. r − 28.9) lay over all of it.
    - *The outward track's clearance envelope:* nothing new stands beside the outward track except the planks, flush
      with the rail tops with flangeways (as every plank crossing). The west deck, landings and ramps stand outside the
      homeward track's cars (0.70 m), lower than or level with every other deck.
-   - *Trains on the planks:* a train standing at the stop, either way, ends 2.80 m short of the planks (its 16.10 m
-     reserved tail; the extent is fixed in s, the engine at +s both ways); one held at the head's signal (s = r) ends
-     12.80 m short. Pier minimum 0.60. Nothing stands on them but a train passing. The one retained departure after a
+   - *Trains on the planks:* a train standing at the stop, either way, ends **0.80 m** short of the planks (its 16.10 m
+     reserved tail at r − 26.10; the extent is fixed in s, the engine at +s both ways; was 2.80 m); one held at the
+     head's signal (s = r) ends 10.80 m short (was 12.80). Pier minimum 0.60. Nothing stands on them but a train passing. The one retained departure after a
      lay leaves the old end over its stub turnout, which starts at r − 30: its lateral at the planks is under 0.05 m
      (`line2Lat`'s ease), so it crosses them on its own track.
 4. **What a player sees first.** Today's still from 30 m out on the formation's east edge (`stack-west-approach`,
    opened): the line runs straight to the Gorge's stacks on the horizon; the east deck is the only shape beside the
    track, with its piles and sea ramp, two lever posts and the board; open water on the left. After the change: the
-   planks across both tracks are the first new thing, about 10 m ahead of that camera and a ramp's length (3.9 m)
-   before both decks; then
-   the west deck mirrors the east across the tracks, its lever at its near (home) end, 3 m up from the ramp top. From
+   planks across both tracks are the first new thing, about 13 m ahead of that camera (way 1: 2.4 m further on; was about 10.6), just
+   past the crossover's points lever, with both ramps rising from them; then the west deck mirrors the east across the
+   tracks, its lever at its near (home) end, 1 m on from the ramp top (way 1; was 3 m). From
    the east deck after alighting, the west lever stands across the tracks, plaque away (it faces its own deck, as Ring
    Island's); the planks lie behind you toward home. From the homeward players' car, the west deck's edge is 0.70 m
    off the door. Top-down at Stack halt (`stack-west-top`, opened): the formation and its two tracks, the east deck with
@@ -279,7 +368,7 @@ they should pin.
    the tracks just past the deck's far end, open water west of the formation for the whole length. Not seen: the
    planned geometry itself (not built), any train at the stop, the homeward car's eye view (that capture was queued
    behind other worktrees' runs and stopped), the head at `gorge-mid`.
-5. **Co-op spacing.** Two to three players fit on a 25 × 4.5 m deck beside a train whose two passenger cars use 6.5 m of
+5. **Co-op spacing.** Two to three players fit on a 23 × 4.5 m flat deck (way 1) beside a train whose two passenger cars use 6.5 m of
    it; the lever stands 10.4 m from the players' car, so one friend can call while the others wait at the door.
 6. **Reached before the ability that should gate it:** nothing here is gated. The decks stand only when trains serve
    them.
@@ -335,7 +424,7 @@ Place; none reaches the stack line.
 | 11 | No board, sign or other furniture on the west deck | Default | Place's up platforms have "a lever each, no board or signal"; greybox before detail |
 | 12 | The homeward platform point (server reach, coach steps) is the west deck's middle; v61 | Default | Every other two-sided halt's catalog; one source for reach and steps |
 
-**Counts:** 2 Decided, 10 Default, 0 New. **Findings and what they changed:**
+**Counts:** 2 Decided, 10 Default, 0 New. Calls 6 to 9 and 12 are re-reviewed for way 1 in the [25 November review](#design-review-2026-11-25-way-1); the first plan's crossing position (call 6) and ramps (call 7) are superseded there. **Findings and what they changed:**
 - *The brief's lever spot was wrong for the rules.* Mirroring the east homeward lever (at the stop) puts it 2 m from the
   players' car but not at the end its train leaves toward, and 13.6 m from today's centreline reach point: no prompt.
   Changed: the lever follows the line 2 west-platform precedent (call 9) and step 2 moves the reach point (call 12).
@@ -353,14 +442,93 @@ Place; none reaches the stack line.
 
 **Copy:** none written or changed; no suspect line of The Boogler's.
 
+## Design review (2026-11-25): way 1
+
+Reviewed by the planner in the same context, on the two calls the owner's
+[25 November item 4](../decisions-rail.md#d-2026-11-25-recommendations-taken-rail) changed (calls 6 and 7) and on what
+they move (calls 8, 9 and 12, and a new call 13). Read this session: DESIGN.md (principles 7, 8, 10, 11), owner-calls
+(level and world building; saves and rooms: "Nothing waits on a world bump", "Save resets never block"),
+decisions-rail's 18 November and 25 November entries and the orchestrator log's 19 November finding, turnouts step 7,
+and the code cited in the geometry table. No playtest since 14 November reaches the stack line
+(`docs/playtests.md`); the 18 November review's other reading stands for the calls not listed here. Research:
+[level-design](../research/level-design.md) and [route-contract](../research/route-contract.md) as lenses, nothing
+departed from.
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 6 | The foot crossing at the decks' home end, **planks 1.6 m at r − 28.5 .. r − 26.9**, between J12's last timber (0.17 m) and a standing train's tail (0.80 m) | Decided | [25 November, item 4](../decisions-rail.md#d-2026-11-25-recommendations-taken-rail) ("way 1, planks 1.6 m wide at r − 28.5 to r − 26.9"); was Default on 18 November |
+| 7 | **Ramps r − 26.9 .. r − 23 (3.9 m, 8.89°)**, running into the decks' first 2 m, starting at the planks' top; the east deck's home end moves to r − 23 | Decided | The same item ("both ramps running into the decks' first 2 m (8.9°), which moves the east deck's home end"); no step at either end, #2176's lesson |
+| 8 | The sea ramps' landings move with the decks' home ends, to r − 23 .. r − 20, the slip after them at the same pitch (28.4°), on both decks | Decided (that it moves), Default (where) | The same item ("and its sea-ramp landing"); beside the flat deck the landing is level with it, where beside the ramp it would stand up to 0.37 m over the ramp's side |
+| 9 | The west lever stays at r − 22 (9.5 m toward home of the 25 m stretch's middle), now 1.0 m past the ramp top, 0.5 m in | Default | `RING_LEVER_OFF` as Ring Island and the Joint; it stays the end the train leaves toward and inside the unchanged reach. Moving it to keep the first plan's 3 m from the ramp top would take it 2 m nearer the players' car for no gain |
+| 12 | The catalog's west point stays at r − 12.5, lat −8.05 | Default | Unchanged; 10.5 m onto the flat deck, the lever 9.66 to 9.87 m from it of 12.6 |
+| 13 | **New:** the east deck's ramp and landing stand whenever the east deck does, including while its head is the line's end (no planks then; the ramp leads down to the track bed, 0.29 m over the slab) | Default | One shape for the deck the whole party stands on at the lay: nothing under them changes when a head becomes a stop, and the level rows measure one east deck. Owner question 3 |
+
+**Counts (this review):** 3 Decided (6, 7, and 8's move), 4 Default (8's place, 9, 12, 13), 0 New. **Findings:**
+
+- *The first plan's call 6 was placed against a track that changed under it.* Turnouts step 7 (19 November) drew the
+  crossover the planks then covered: the lever's arm would have stood up through them. The level rows now read the
+  crossover from `crossoverPlan()` and the lever from `turnout()`, so a later move of either fails `level-check` instead
+  of a builder finding it (step 1's rows 1 and 2). Changed: step 1.
+- *Flow (rule 3, nobody stranded):* holds. Both decks keep a walked way to each other and a way out of the sea; the
+  planks are 1.6 m along the line (the first plan's 2.4), room for two players abreast; the 0.9 m kerb shortcut
+  stays.
+- *Rule 1, the next goal can be found:* holds and reads better. The planks now start where both ramps do, so from the
+  approach camera the crossing, its two ramps and the crossover's lever read as one place at the decks' end; from the
+  east deck the ramp down leads straight onto them.
+- *Something to notice:* the walk is about 4 m shorter (about 6.8 s), passing the points lever 2.1 m away; the moving
+  blades and lever (`turnout-blades.ts`) are the stack's one moving thing at the head, now beside the walk.
+- *Slapstick (10):* a player on the planks stands 0.80 m beyond a standing train's reserved tail (the Pier's minimum is
+  0.60) and on a passing train's track, as every plank crossing; the push-aside rule (Risks) covers it when built.
+- *Call 13's cost at an end head:* a ramp that leads to the bed and no planks is a mild invitation onto the track, where
+  a player can already drop. Seen in step 1's still at Stack halt while it is the end (`--rail-seed stack-laid-3`), judged there.
+- **Not seen:** the built geometry (none), a still of the crossover's lever at a head (the code was read, not looked
+  at), a train at the stop. Step 1's stills (b) and (c) and step 4's proof look owe them.
+
+Every Default above is in [agent-calls](../agent-calls.md) (Rail, 25 November). **Copy:** none; no suspect line of The
+Boogler's.
+
+## Build hand-off (25 November)
+
+For an Astra builder (models by `npm run models`), in order; each commit leaves `node dev/ship-check.ts origin/main
+HEAD` green. Read this plan's geometry section (under Design) first.
+
+1. **Step 1 (view, no bump):** `src/entities/route-greybox/stack-halts.ts` (new), `src/entities/route-greybox/leg-view.ts`
+   (`pieces`, the stack spec's `plat` and `crossing`), `dev/level/stack-halts.ts` (new) and `dev/level/check.ts`,
+   `dev/level/rider-coach.ts`, `dev/level/rider-coach-stop.ts`, `docs/game-design/place.md`. Checks: typecheck, lint
+   on the files, `npm run level-check` (the ten row groups, exit 0), `npm run registry` if asked, the ship check. Stills
+   (opened): `stack-west-approach`, `stack-west-crossing`, `stack-west-top` at `gorge-reached`, and one at `--rail-seed stack-laid-3`
+   (Stack halt the end: the east ramp alone, call 13). Its own commit.
+2. **Step 2 (catalog, the bump):** `src/sim/railway-lines.ts` (`STACK_HALTS` `platforms[1]`), `src/world/namespace.ts`
+   (**the next free `WORLD_NS`**: read it from main when the commit is made, never a number from this plan; a dated
+   history line), the halt prefab (`npm run prefabs`, `--check`), re-pins (host trace, prefab-halts `catalogs`,
+   golden only if `worldNs` moves: no stage hash may move), the lever-judging test in
+   `test/helpers/railway-route-rules.ts`, step 2's `stack-halts` rows. Independent review. Its own commit, rebased onto
+   main just before the ship so the number is still free.
+3. **Step 3 (levers, rides step 2's number):** `dev/prefab/halts.ts`, `src/entities/railway/halts-view.ts`, the prefab
+   fixtures (`levers.length` + 3), `dev/look/evals/stack-levers.ts`. Still: `stack-west-lever`. Independent read of the
+   fixture delta.
+4. **Step 4 (checkpoint):** `npm run check:full`, `npm run test:net`, `npm run level-check`, `npm run checkpoints --
+   gorge-mid gorge-reached`, the production bot's walk and boarding at Stack halt with stills (a) to (c) and the clip,
+   and the leg bot once.
+
+**In flight** on 25 November (`npm run inflight`): nothing unmerged touches these files.
+
 ## Open questions for the owner
+
+Questions 1 and 2 were answered on 18 November ([decisions page](../decisions-rail.md#d-2026-11-18-decisions-page-rail));
+way 1 was taken on 25 November. Question 3 is new and does not block: the build proceeds on its recommendation.
 
 1. **West decks at all three heads, or Stack halt alone?** Heads 1 and 2 are homeward stops for one section each, but
    that section starts with everyone standing on them (the lay happens at their frame). **Recommended: all three**,
    same build. Does not block: the steps are the same either way; answer "Stack halt alone" and the builder filters
-   heads 1 and 2 out of `westStands` and their rows.
+   heads 1 and 2 out of `westStands` and their rows. *Answered 18 November: all three heads.*
 2. **Fix the outward step side and the terminal riders' crowd at the stack heads in the same v61?** Both come from the
    heads' east catalog point sitting on the track centreline (finding 7a, 7b; the crowd is read from code, not seen).
    **Recommended: yes, as its own small row after this one** (move `platforms[0]` to the east deck's middle, one line
    in `STACK_HALTS`, look at a terminal head with riders waiting). Does not block this build; if the answer is "fold it
-   in", it joins step 2's commit and its look joins step 4.
+   in", it joins step 2's commit and its look joins step 4. *Answered 18 November: its own row afterwards.*
+3. **While a stack head is the line's end, does its east deck keep the new ramp at its home end?** Way 1 turns the
+   deck's first 2 m into a ramp down to the planks. **Recommended: yes, always** (call 13): the deck the party stands
+   on at the lay keeps one shape, and at an end head the ramp leads down to the track bed, where a player can already
+   drop. The other way: the east deck stays flat to r − 25 until the lay that makes its head a stop, and changes then
+   under whoever stands at its home end (they drop up to 0.37 m). Either is one predicate in step 1.
