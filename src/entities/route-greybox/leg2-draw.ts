@@ -4,7 +4,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
 import { loadLevelArtifact } from '../../prefab/validate.ts';
 import { LEG2_TEXT } from './leg2-layout.ts';
-import { areaLabels } from './state.ts';
+import { areaBoardVisibility, areaLabels } from './state.ts';
 function compiled(input: unknown) {
   const value = loadLevelArtifact(input, records.prefabs);
   for (const p of value.placements)
@@ -32,7 +32,12 @@ export function leg2Extras(owner: OwnedView, value: unknown) {
     for (const [name, key] of Object.entries(p.labels ?? {})) {
       const relabel = (lines: readonly string[]) => made.relabel(name, lines);
       areaLabels.set(key, relabel);
+      const visible = (on: boolean) => {
+        made.root.visible = on;
+      };
+      areaBoardVisibility.set(key, visible);
       owner.cleanup(() => {
+        if (areaBoardVisibility.get(key) === visible) areaBoardVisibility.delete(key);
         if (areaLabels.get(key) === relabel) areaLabels.delete(key);
       });
     }

@@ -229,10 +229,20 @@ const rings = {
   ],
 } as const;
 
-const centres = { 'wall-s2': [-720, 760], 'wall-s1': [-960, 360], 'wall-n2': [-760, -1030], 'wall-n1': [-460, -1490] } as const;
+const centres = {
+  'wall-s2': [-720, 760],
+  'wall-s1': [-960, 360],
+  'wall-n2': [-760, -1030],
+  'wall-n1': [-460, -1490],
+} as const;
 export const prefabs = (Object.keys(rings) as (keyof typeof rings)[]).map((id) => {
   const ring = rings[id];
   const points = ring.map(([x, z]) => ({ x, z }));
   const [cx, cz] = centres[id];
-  return definePrefab({ key: 'greybox.' + id, scope: 'place', visual: { none: true }, colliders: [landPrism(points, 120, cx, cz, -10)] });
+  return definePrefab({
+    key: `greybox.${id}`,
+    scope: 'place',
+    visual: { none: true },
+    colliders: [landPrism(points, 120, cx, cz, -10)],
+  });
 });

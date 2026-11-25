@@ -78,7 +78,7 @@ import { canopyGround } from './massing-canopy.ts';
 import { liftOrWait } from '../../prefab/instantiate.ts';
 import type { Clearing } from '../../place/clearance.ts';
 import { AREA_CENTRES, LEG2_TEXT } from './leg2-layout.ts';
-import { areaLabels } from './state.ts';
+import { areaBoardVisibility, areaLabels } from './state.ts';
 import type { GreyBox } from './boxes.ts';
 
 // Placeholder labels (the step 4 design review's answers b, e, i, k and l; none is The Boogler's).
@@ -122,6 +122,8 @@ export const LEG_OBJECTIVES = {
   cloth: 'Take the glider cloth',
   plug: 'Open the sea-cave plug at the West landing',
   cave: 'Build the cave line to Port Quay',
+  wall: 'Build the line along the White Wall to High Gorge (placeholder)',
+  deepSpan: "Open the deep span's barrier (placeholder)",
   home: "Ride home: the next line isn't built yet",
 } as const;
 /** The steel loop's steps, from the rivet to the longer boiler (docs/plans/ring-island-build2.md, section 1). Draft
@@ -333,6 +335,7 @@ function rowSpec(
 /** Line 2's High Gorge stop, metres along line 2, and the line 2 kit car's offset behind it there (railway-route.ts). */
 const GORGE_S = sectionEnds(RAIL_LEGS[0]!).at(-1)!,
   GORGE_KIT_CAR = 7.1;
+const QUAY_STOP = sectionEnds(RAIL_LEGS[4]!).at(-1)!;
 const SPECS: readonly LegSpec[] = [
   stackSpec(),
   // The incline: its rails from incline-s's and incline-n's start (t 16; leg 1's south platform crosses the row to t
@@ -376,6 +379,17 @@ const SPECS: readonly LegSpec[] = [
       name: 'LINE TO PORT QUAY',
     },
   ),
+  rowSpec(
+    'wall',
+    { frame: [QUAY_STOP + 12, -1], rack: [QUAY_STOP + 2, -1] },
+    QUAY_STOP + 23 + 1.8,
+    (ends) => ends.at(-1)! + 23.01,
+    [
+      [1246, 1300],
+      [3498, 3528],
+    ],
+    { name: 'LINE TO HIGH GORGE', joins: 'cave', ground: canopyGround },
+  ),
 ].filter((sp) => legBuilt(sp.k));
 
 /** Bell Rock (greybox leg 2): the seeds post, the Canopy barrier (RAIL_GATES[1], shut until leg 3 is built: it stands
@@ -390,6 +404,9 @@ const SEEDS = RAIL_GRANTS.findIndex((g) => g.id === 'seeds'),
   CANOPY_SITE = siteAt(legFrame(canopyLeg, 0), canopyGeo, 1229, -1);
 const PLUG = RAIL_GATES.findIndex((g) => g.id === 'plug');
 const plugSite = SPECS.find((sp) => sp.leg.id === 'cave')?.frames[0];
+const wall = SPECS.find((sp) => sp.leg.id === 'wall')!;
+const deepSpan = RAIL_GATES.findIndex((g) => g.id === 'deep-span');
+const deepSite = wall.frames[5]!;
 const STALLS: Readonly<Record<string, string>> = {
   'bell.pad-gorge': 'incline',
   'bell.pad-ring': 'incline',
@@ -426,7 +443,7 @@ const HOME_BOARD_S = BAY_CUT_END - 19.5;
 
 export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
   const [{ addStatic, slab }, ground] = await Promise.all([import('../../place/land.ts'), islandGround()]);
-  const deck = createBoxBatch(owner, 6500, false),
+  const deck = createBoxBatch(owner, 10500, false),
     things = createBoxBatch(owner, 700, false);
   // Named, so a look can count what the leg's views add to a frame (dev/look/evals/stack-draws.ts).
   deck.mesh.name = 'route-greybox:deck';
@@ -666,7 +683,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       const { plat } = sp;
       for (let j = 1; j < n; j++) {
         // Saltpan Halt has permanent platforms on the flats.
-        if (sp.leg.id === 'cave' && j === 2) continue;
+        if ((sp.leg.id === 'cave' && j === 2) || (sp.leg.id === 'wall' && j === 3)) continue;
         const closes = RAIL_LINES[sp.leg.line]!.halts[sp.leg.railheadHalt + j - 1]!.closesAt;
         if (laid < j || (closes !== undefined && laid >= j + 2)) continue;
         const r = R[j - 1]!;
@@ -721,7 +738,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
             ),
         })),
         me.body,
-        { lift: false },
+        { lift: sp.leg.id === 'wall' },
       );
     }
     /** Takes the deck's slabs and the standing pieces' colliders away (and forgets what was drawn), until next shown. */
@@ -797,7 +814,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         // The end board, 1.5 m behind the buffers' faces, facing back down the line: the stack's blank until the
         // rivet, then the line's name; it travels with the head and is gone at the destination (answer i). A row's
         // stands from its first lay (the West landing's own board says the same before it).
-        if (laid < n && (!sp.row || laid > 0)) {
+        if ((laid < n || sp === wall) && (!sp.row || laid > 0)) {
           const s = !sp.row && laid === 0 ? END[0]! + 0.6 : END[laid]! - 0.3;
           geo.at(s, P);
           geo.world(s, mid, q);
@@ -807,12 +824,14 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
             geo.y(s),
             -P.ux,
             -P.uz,
-            joined
-              ? [
-                  { t: sp.name, size: 0.34 },
-                  { t: UNDER_WAY, size: 0.22 },
-                ]
-              : [],
+            sp === wall && laid === n
+              ? [{ t: 'WHITE WALL LINE (placeholder)', size: 0.34 }]
+              : joined
+                ? [
+                    { t: sp.name, size: 0.34 },
+                    { t: UNDER_WAY, size: 0.22 },
+                  ]
+                : [],
           );
         }
         // The block signals the line has passed (answer e): a post between the tracks 3 m beyond each section end,
@@ -976,7 +995,9 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     yard(r);
     gorge(r);
     bell(r);
+    areaBoardVisibility.get('quay.wall')?.(legRow(r.wd, wall.k).laid === 0);
     if (plugSite && near(plugSite, 450)) barrier(plugSite, !!(r.gates & (1 << PLUG)));
+    if (near(deepSite, 450)) barrier(deepSite, !!(r.gates & (1 << deepSpan)));
     canopy(r);
     things.commit();
     note(r);
@@ -1166,7 +1187,10 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     if (!done(r, 'bell-canopy')) return LEG_OBJECTIVES.canopy;
     if (!(r.grants & (1 << CLOTH))) return LEG_OBJECTIVES.cloth;
     if (!(r.gates & (1 << PLUG))) return LEG_OBJECTIVES.plug;
-    return done(r, 'cave') ? LEG_OBJECTIVES.home : LEG_OBJECTIVES.cave;
+    if (!done(r, 'cave')) return LEG_OBJECTIVES.cave;
+    if (done(r, 'wall')) return LEG_OBJECTIVES.home;
+    if (legRow(r.wd, wall.k).laid === 5 && !(r.gates & (1 << deepSpan))) return LEG_OBJECTIVES.deepSpan;
+    return LEG_OBJECTIVES.wall;
   }
   /** The objective line's text, to the play record (no on-screen line on the route). */
   function note(r: NonNullable<ReturnType<typeof rows>>) {
@@ -1293,7 +1317,10 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         const target = { id, verb: OPEN_GATE, at: v3(at, at.y + 1.6) },
           shuts = gateLeg(k);
         out.push(
-          shuts && legOpen(wd, shuts.leg) && r.grants & (1 << RAIL_GATES[k]!.needs)
+          shuts &&
+            legOpen(wd, shuts.leg) &&
+            legRow(wd, shuts.leg).laid === shuts.section &&
+            r.grants & (1 << RAIL_GATES[k]!.needs)
             ? { ...target, run: () => void adapter.openGate(k) }
             : { ...target, blocked },
         );
@@ -1302,6 +1329,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       if (plugSite)
         gate(PLUG, 'railway-leg-plug', plugSite, r.pick ? 'After the line to Canopy (placeholder)' : NEEDS_PICK);
       gate(NOTCH, 'railway-leg-notch', NOTCH_AT);
+      gate(deepSpan, 'railway-leg-deep-span', deepSite, r.grants & (1 << SEEDS) ? NO_LINE : 'Needs the crystal seeds');
       return out;
     },
     inspect: () => {

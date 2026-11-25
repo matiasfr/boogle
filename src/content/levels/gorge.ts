@@ -26,13 +26,6 @@ function levelBox(a0: Scalar, a1: number, c0: number, c1: number, y0: Scalar, y1
 
 function placements() {
   const out: unknown[] = [];
-  for (const c of [-5.8, 5.8]) {
-    out.push(levelBox(-51, -11, c - 2, c + 2, GORGE_DECK - 0.5, GORGE_DECK, GREY_LIGHT));
-    for (const a of [-49, -40, -31, -22, -13])
-      out.push(levelBox(a - 0.25, a + 0.25, c - 0.25, c + 0.25, -8, GORGE_DECK - 0.5, GREY_DARK));
-    out.push(levelBox(-11, -4, c - 2, c + 2, GORGE_DECK - 0.5, GORGE_DECK));
-  }
-  out.push(span(gorgeAt(-72, 5.8, -1.4), gorgeAt(-51, 5.8, GORGE_DECK), 3, 0.3, GREY_LIGHT));
   // The platforms: 40 m both sides (call 27), each 4.5 m deep, the north one the down track's (lat +1.8 to +6.3), the
   // south one the up track's (lat -10.3 to -5.8), in 8 m lengths along the row's curve, on posts in the water.
   for (const lat of [4.05, -8.05])
@@ -167,6 +160,13 @@ function placements() {
         ),
       );
   }
+  for (const c of [-5.8, 5.8]) {
+    out.push(levelBox(-51, -11, c - 2, c + 2, GORGE_DECK - 0.5, GORGE_DECK, GREY_LIGHT));
+    for (const a of [-49, -40, -31, -22, -13])
+      out.push(levelBox(a - 0.25, a + 0.25, c - 0.25, c + 0.25, -8, GORGE_DECK - 0.5, GREY_DARK));
+    out.push(levelBox(-11, -4, c - 2, c + 2, GORGE_DECK - 0.5, GORGE_DECK));
+  }
+  out.push(span(gorgeAt(-72, 5.8, -1.4), gorgeAt(-51, 5.8, GORGE_DECK), 3, 0.3, GREY_LIGHT));
   return { place: 'gorge', placements: [], layout: layoutData({ kind: 'gorge', boxes: out, incline: inclineLayout }) };
 }
 export const levels = [defineLevel(placements())];

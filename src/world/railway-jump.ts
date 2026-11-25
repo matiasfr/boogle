@@ -335,7 +335,13 @@ export const JUMPS: readonly Jump[] = [
     line: 'The barrier stands at the last frame',
     land: betweenRackAndFrame(5, 5),
   },
-  { stage: 'wall-closed', menu: false, label: 'White Wall laid', line: 'The cave line reaches High Gorge' },
+  {
+    stage: 'wall-closed',
+    menu: false,
+    label: 'White Wall laid',
+    line: 'The cave line reaches High Gorge',
+    land: { x: -132.55, z: -1999.03, y: 3.9, yaw: -2.11 },
+  },
   // Garage step 4 (docs/plans/garage-step4.md, step 3): placeholder tooling copy for the owner, no landings (the usual
   // spawn at Home is the post's side of the island; trade-held's train stands at Bell Rock, which canopy-open's note
   // above keeps unlanded).

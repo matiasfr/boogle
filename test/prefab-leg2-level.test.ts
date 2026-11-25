@@ -765,6 +765,7 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
       legYardFlight: { logs: 0, rails: 0 },
       bellPads: [],
       areaLabels: new Map(),
+      areaBoardVisibility: new Map(),
       ringIslandNear: { mounted: false },
       me: { body: bodyOf(position) },
       camera: { position },
@@ -893,6 +894,7 @@ async function mountAt(position: THREE.Vector3) {
       loadLevelArtifact: validation.loadLevelArtifact,
       LEG2_TEXT,
       areaLabels: new Map(),
+      areaBoardVisibility: new Map(),
       instantiate,
     },
   );
@@ -908,6 +910,7 @@ async function mountAt(position: THREE.Vector3) {
   sourceModule(fs.readFileSync('src/entities/route-greybox/index.ts', 'utf8'), {
     productionRailway: true,
     saltpanArea: { id: 'saltpan', centre: AREA_CENTRES.saltpan, build: () => [] },
+    wallAreas: [],
     quayArea: { id: 'quay', centre: AREA_CENTRES.quay, build: () => [] },
     location: { search: '' },
     AREA_CENTRES,

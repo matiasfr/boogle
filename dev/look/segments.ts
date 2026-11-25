@@ -46,6 +46,7 @@ export const RAIL_STOPS = {
   bay: 'bay reached',
   canopy: 'canopy home',
   port: 'port home',
+  'deep-span': 'deep span open',
 } as const;
 export type RailStop = keyof typeof RAIL_STOPS;
 /** The greybox legs' stops (dev/look/bots/railway-legs.ts). */
@@ -80,6 +81,7 @@ export const RAIL_FROM = {
   'bay-mid': { railFrom: 'legs', after: 'bell', bot: 'railway-legs-bot.ts' },
   'trade-ready': { railFrom: 'legs', after: 'bell', bot: 'railway-legs-bot.ts' },
   // Leg 4 starts with the Canopy line laid. The bot collects the cloth and rides home before opening the plug.
+  'wall-deep': { railFrom: 'legs', after: 'port', bot: 'railway-legs-bot.ts' },
   'canopy-reached': { railFrom: 'legs', after: 'bay', bot: 'railway-legs-bot.ts' },
 } as const satisfies Record<string, { railFrom: string; after: RailStop; bot: string }>;
 /** Beats both peers pass in a two-player run; the follower watches line two from the village. */

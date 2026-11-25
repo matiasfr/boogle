@@ -229,5 +229,6 @@ test('mid-build cave and Wall jumps land between the active rack and frame', asy
     assert.deepEqual([land.x, land.z, land.y], [(frame.x + rack.x) / 200, (frame.z + rack.z) / 200, frame.y / 100]);
     assert.ok(Math.abs(land.yaw! - Math.atan2(rack.x - frame.x, rack.z - frame.z)) < 0.001);
   }
-  for (const name of ['cave-open', 'port-reached', 'wall-closed']) assert.equal(jumpOf(name)!.land, undefined);
+  assert.deepEqual(jumpOf('wall-closed')!.land, { x: -132.55, z: -1999.03, y: 3.9, yaw: -2.11 });
+  for (const name of ['cave-open', 'port-reached']) assert.equal(jumpOf(name)!.land, undefined);
 });

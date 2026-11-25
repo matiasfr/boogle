@@ -1514,6 +1514,8 @@ in the same second. Ring Island's low map table carries the halt map from the ri
 no train markers); before the rivet it is the painted table it was. Placeholder marks and labels. Not tested on a
 device.
 
+The White Wall line arrives at two 40 m platforms in the west half of the split. Both lead to line 2's concourse, and a swimmer can climb the ramp to the south platform. Four sheer chalk islets along the line have 120 m tops and no beach.
+
 High Gorge's static massing is authored in `src/content/levels/gorge.ts` and loaded from compiled JSON through
 the prefab runtime (prefab-data step 6). Its 86 placements retain 84 visible boxes, two hidden stack colliders,
 55 bodies and one shared massing batch. Positions, colours, collider recipes and insertion order match the
