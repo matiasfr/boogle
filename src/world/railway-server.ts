@@ -10,7 +10,13 @@ import { HALL, TILL } from '../place/home-station.ts';
 import { railInt, railYaw, railSource, RAILWAY_MAX_INT, type RailAction, type RailResult } from '../sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../sim/railway-layout.ts';
 import { MAX_KIND_CAPACITY } from '../sim/railway-queries.ts';
-import { LINE1_STATIONS, LINE1_GREAT_TREE, LINE1_HARDWOODS, LINE1_JUMP_DEVICE } from '../sim/railway-line-layout.ts';
+import {
+  LINE1_STATIONS,
+  LINE1_GREAT_TREE,
+  LINE1_HARDWOODS,
+  LINE1_JUMP_DEVICE,
+  LINE1_PICK_STANDS,
+} from '../sim/railway-line-layout.ts';
 import { lineTiming } from '../sim/railway-line.ts';
 import {
   LINE2_FORGE,
@@ -260,7 +266,12 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     case 'rail.beamDeposit':
       return e.station === 'T3' && railInt(e.revision) && near(LINE1_STATIONS[2]!.x, LINE1_STATIONS[2]!.z, T1.reach);
     case 'rail.jump':
-      return actor.height(LINE1_JUMP_DEVICE.y, 220) && near(LINE1_JUMP_DEVICE.x, LINE1_JUMP_DEVICE.z, 300);
+      if (e.station === 'T1') return at(LINE1_PICK_STANDS.jump);
+      return (
+        e.station === undefined &&
+        actor.height(LINE1_JUMP_DEVICE.y, 220) &&
+        near(LINE1_JUMP_DEVICE.x, LINE1_JUMP_DEVICE.z, 300)
+      );
     case 'rail.forgeTake':
       return near(LINE2_FORGE.rackX, LINE2_FORGE.rackZ, 340);
     case 'rail.depotTake': {
@@ -274,7 +285,8 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
       return spec.shelf && near(spec.x, spec.z, depotReach(spec));
     }
     case 'rail.pack':
-      return near(LINE2_PACK.x, LINE2_PACK.z, 340);
+      if (e.station === 'T1') return at(LINE1_PICK_STANDS.pack);
+      return e.station === undefined && near(LINE2_PACK.x, LINE2_PACK.z, 340);
     case 'rail.yoke':
       return near(LINE2_YOKE.x, LINE2_YOKE.z, LINE2_YOKE.reach);
     case 'rail.lever':

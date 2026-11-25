@@ -22,7 +22,8 @@ export type RailwayIntent =
   | { op: 'rail.wake'; tk?: number }
   | { op: 'rail.chop'; id: number; yaw?: number; collapsed?: boolean }
   | { op: 'rail.mine'; id: number }
-  | { op: 'rail.axe' | 'rail.beamChop' | 'rail.jump' | 'rail.sack' }
+  | { op: 'rail.axe' | 'rail.beamChop' | 'rail.sack' }
+  | { op: 'rail.jump' | 'rail.pack'; station?: 'T1' }
   | {
       op:
         | 'rail.forgeTake'
@@ -32,7 +33,6 @@ export type RailwayIntent =
         | 'rail.seaSwitch'
         | 'rail.hook'
         | 'rail.glide'
-        | 'rail.pack'
         | 'rail.yoke'
         | 'rail.breaker'
         | 'rail.kiln'
@@ -68,6 +68,8 @@ export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   if (e.op === 'rail.buy' && pricedPlot(e.id)) return { op: e.op, id: e.id };
   if (e.op === 'rail.wake') return { op: e.op };
   if (e.op === 'rail.sack') return { op: e.op };
+  if (e.op === 'rail.jump' || e.op === 'rail.pack')
+    return e.station === 'T1' ? { op: e.op, station: 'T1' } : e.station === undefined ? { op: e.op } : null;
   const kind = e.kind === 1 ? 1 : e.kind === 2 ? 2 : 0;
   if (e.op === 'rail.breaker' || e.op === 'rail.kiln' || e.op === 'rail.cradle' || e.op === 'rail.steel')
     return { op: e.op };
@@ -111,7 +113,6 @@ export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   if (
     e.op === 'rail.axe' ||
     e.op === 'rail.beamChop' ||
-    e.op === 'rail.jump' ||
     e.op === 'rail.forgeTake' ||
     e.op === 'rail.depotTake' ||
     e.op === 'rail.lever' ||
@@ -119,7 +120,6 @@ export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
     e.op === 'rail.hook' ||
     e.op === 'rail.glide' ||
     e.op === 'rail.depotRailTake' ||
-    e.op === 'rail.pack' ||
     e.op === 'rail.yoke'
   )
     return { op: e.op };
@@ -237,7 +237,7 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
     buy: (slot: number) => pricedPlot(slot) && submit({ op: 'rail.buy', id: slot }),
     sack: () => submit({ op: 'rail.sack' }),
     openAxe: () => submit({ op: 'rail.axe' }),
-    claimJump: () => submit({ op: 'rail.jump' }),
+    claimJump: (station?: 'T1') => submit({ op: 'rail.jump', station }),
     /** False (rebound now) when the rule would refuse the stroke: before Station 3 opens or once the tree is down. */
     beamChop: () => railBeamChoppable(view()) && submit({ op: 'rail.beamChop' }),
     beamTake: (revision: number) => railInt(revision) && submit({ op: 'rail.beamTake', revision }),
@@ -274,7 +274,7 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
     forgeTake: () => submit({ op: 'rail.forgeTake' }),
     depotTake: () => submit({ op: 'rail.depotTake' }),
     depotRailTake: () => submit({ op: 'rail.depotRailTake' }),
-    openPack: () => submit({ op: 'rail.pack' }),
+    openPack: (station?: 'T1') => submit({ op: 'rail.pack', station }),
     takeYoke: () => submit({ op: 'rail.yoke' }),
     takeBoiler: (revision: number) => railInt(revision) && submit({ op: 'rail.boilerTake', revision }),
     dropBoiler: (x: number, y: number, z: number, revision: number) =>

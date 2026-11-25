@@ -72,6 +72,8 @@ export function checkLine1(w: World) {
     }
   });
   if (r0.axe && !(forge(w).lit >= 0)) bad('axe before the forge');
+  if ((r0.jump || r0.pack) && jobs[0]!.job.start < 0) bad('part before Station 1 funding');
+  if (r0.jump && r0.pack && !jobs[2]!.job.completion) bad('both parts before Station 3');
   const ts = trees(w);
   if (
     ts.some((t) => t.left > (t.big ? 15 : 10)) ||

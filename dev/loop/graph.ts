@@ -659,7 +659,7 @@ export const NODES: readonly LoopNode[] = [
         status: 'decided',
         by: 'world',
         source:
-          'decisions.md 2026-11-09 loop orders: the second jump comes after station 3 (the p1 lip joins once the gantry passes, src/entities/railway/tools.ts:92)',
+          'The pillar route requires T3. The jump-first order takes the drum at T1 instead (order-picks, 25 November).',
       },
     ],
     cue: [onMain('world', 'the jump device on the first pillar', 'src/entities/railway/tools.ts:92,268-274')],
@@ -1358,6 +1358,11 @@ export function proposeOrders(): { name: string; order: NodeId[]; flipped?: { fr
   const orders: { name: string; order: NodeId[]; flipped?: { from: NodeId; on: NodeId } }[] = [
     { name: 'canonical', order: topo()! },
   ];
+  for (const part of ['pack', 'jump'] as const) {
+    const order = orders[0]!.order.filter((id) => id !== part) as NodeId[];
+    order.splice(order.indexOf('T1') + 1, 0, part);
+    orders.push({ name: `${part}-first`, order });
+  }
   for (const { n, e } of soft) {
     const order = topo({ from: n, on: e.on });
     if (order) orders.push({ name: `${n} before ${e.on}`, order, flipped: { from: n, on: e.on } });

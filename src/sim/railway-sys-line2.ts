@@ -21,7 +21,7 @@ import { legKitLifted } from './railway-sys-route-kit.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { RAILWAY_MAX_INT } from './railway.ts';
 import { railPos } from './railway-route.ts';
-import { line2YokeReady } from './railway-queries-line2.ts';
+import { line2PackReady, line2YokeReady } from './railway-queries-line2.ts';
 import {
   Account,
   Aperture,
@@ -54,6 +54,7 @@ import {
   gateDown,
   held,
   jobId,
+  line1PickReady,
   LINE2_SLOTS,
   qActive,
   qCompleted,
@@ -300,12 +301,19 @@ export const depotRailTake = defineSystem(
     return n;
   },
 );
-/** The pack chest: there once the forge has its first bill; one open gives every back LINE2_PACK.carry logs. */
-export const pack = defineSystem('rail.pack', { reads: [Forge], writes: [Rail], phase: 'act', order: 26 }, (w) => {
-  if (w.get(Forge, forgeId(w))!.used < FORGE.bills[0] || w.get(Rail, railId(w))!.pack) return 0;
-  w.mut(Rail, railId(w))!.pack = true;
-  return 1;
-});
+/** The room can take its pack from the T1 stand or from the forge's finished frame. */
+export const pack = defineSystem(
+  'rail.pack',
+  { reads: [Job, Forge], writes: [Rail], phase: 'act', order: 26 },
+  (w, { e }: Act) => {
+    if (w.get(Rail, railId(w))!.pack) return 0;
+    if (e.station === 'T1') {
+      if (!line1PickReady(w)) return 0;
+    } else if (e.station !== undefined || !line2PackReady(w)) return 0;
+    w.mut(Rail, railId(w))!.pack = true;
+    return 1;
+  },
+);
 /** The Rail yoke: made at the forge rail rack once Q1's bill is in (forge-made rewards); one take gives every back
  * RAILWAY_CAPACITY.railsYoke rails instead of 8. */
 export const yoke = defineSystem('rail.yoke', { reads: [QJob], writes: [Rail], phase: 'act', order: 27 }, (w) => {

@@ -145,7 +145,8 @@
 // replacing boiler + cradle), `Shed.tableLine`, `Shed.bringRev` and `Shed.brought`; rail.install widened to the trade
 // lines' Quick (5) and Strong (6) boilers on `Line.rev`; the new rail.bring; the table's hold; a train adopts a lower
 // row at halt 0 unless its kit aboard would not fit.
-export const WORLD_NS = 'v67';
+// v68 (2026-11-25): T1 offers the room's first pack or jump. These takes can name T1, and Q1 costs 32 logs.
+export const WORLD_NS = 'v68';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

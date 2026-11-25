@@ -60,25 +60,25 @@ const HOST_READS = [
   ['awake', 'idle', 0, 56, -1, 0, false, 125, 0, 3790, 0, 40],
   // From q1-done the seeds hold the proper axe (taken at the lit forge): each tree its first stroke makes big adds 5
   // logs to the total (18 November, seed data only).
-  // v63: q1-done is reached 40 ticks later (T1 to T3 and Q1 each lay 10 ticks longer), so the forge has poured 35 rails, not 33.
-  ['q1-done', 'done', 56, 0, 1, 1, false, 221, 6340, 3824, 35, 40],
+  // Q1's extra 16 logs add 240 score. The seed chops more trees and its longer feeding time lets the forge pour 37 rails.
+  ['q1-done', 'done', 56, 0, 1, 1, false, 221, 6580, 3829, 37, 40],
   // 19 November, seed data only (the Rail yoke, rail-yoke step 2): the seeds take the yoke at Q1, so Q2's and Q3's
   // rails come off the forge rack in one take each; the rack (24 at most) stands full less and has poured 8 more rails
   // by the same tick from q3-done on (rails.total; every rail conserved).
-  ['q3-done', 'done', 56, 0, 3, 3, false, 221, 8900, 3834, 69, 40],
-  ['q4-done', 'done', 56, 0, 4, 4, true, 221, 10280, 3844, 85, 40],
-  ['q5-finishing', 'done', 56, 0, 4, 4, true, 221, 11600, 3849, 109, 40],
-  ['glide-earned', 'done', 56, 0, 2, 2, false, 221, 7680, 3829, 53, 40],
-  ['boiler', 'done', 56, 0, 5, 5, true, 221, 12100, 3849, 109, 40],
-  ['trains-on', 'done', 56, 0, 5, 5, true, 221, 12100, 3881, 109, 40],
-  ['q6-done', 'done', 56, 0, -1, 6, true, 221, 14360, 3881, 141, 40],
-  ['works-open', 'done', 56, 0, -1, 6, true, 221, 14360, 3881, 141, 40],
-  ['works-lit', 'done', 56, 0, -1, 6, true, 221, 14360, 3886, 141, 40],
-  ['crossing-finishing', 'done', 56, 0, -1, 6, true, 221, 14360, 3886, 149, 40],
-  ['crossing-done', 'done', 56, 0, 6, 6, true, 221, 14360, 3886, 149, 40],
-  ['deck-laid', 'done', 56, 0, -1, 7, true, 221, 15960, 3906, 169, 40],
+  ['q3-done', 'done', 56, 0, 3, 3, false, 221, 9140, 3844, 69, 40],
+  ['q4-done', 'done', 56, 0, 4, 4, true, 221, 10520, 3849, 85, 40],
+  ['q5-finishing', 'done', 56, 0, 4, 4, true, 221, 11840, 3854, 109, 40],
+  ['glide-earned', 'done', 56, 0, 2, 2, false, 221, 7920, 3834, 53, 40],
+  ['boiler', 'done', 56, 0, 5, 5, true, 221, 12340, 3854, 109, 40],
+  ['trains-on', 'done', 56, 0, 5, 5, true, 221, 12340, 3886, 109, 40],
+  ['q6-done', 'done', 56, 0, -1, 6, true, 221, 14600, 3886, 141, 40],
+  ['works-open', 'done', 56, 0, -1, 6, true, 221, 14600, 3886, 141, 40],
+  ['works-lit', 'done', 56, 0, -1, 6, true, 221, 14600, 3891, 141, 40],
+  ['crossing-finishing', 'done', 56, 0, -1, 6, true, 221, 14600, 3891, 149, 40],
+  ['crossing-done', 'done', 56, 0, 6, 6, true, 221, 14600, 3891, 149, 40],
+  ['deck-laid', 'done', 56, 0, -1, 7, true, 221, 16200, 3911, 169, 40],
   // v46: the seed waits for the haul; no train has loaded the steel kit at this new fleet phase yet.
-  ['ring-joined', 'done', 56, 0, -1, 7, true, 221, 15960, 3906, 169, 40],
+  ['ring-joined', 'done', 56, 0, -1, 7, true, 221, 16200, 3911, 169, 40],
 ] as const;
 // Built at module scope, outside the 5 s test timeout (as the golden shards do); STAGES below is a subset.
 for (const [stage] of HOST_READS) if (stage !== 'fresh') seedOf(stage);
@@ -245,15 +245,15 @@ for (const stage of STAGES)
   });
 // A room resumed after three days away (yard credit included), then the host's reads: [stage, job ticks credited,
 // then the HOST_READS row after the credit]. No stage has a job laying, so none credits job ticks; the yard's credit
-// shows in the rails (q1-done's 35 become 37). The mid-job test below holds the cap on a laying job. Recorded on 5241b102f from the host (unchanged since 9e7dfcbde, where the
+// can show in the rails (Q1's rack is already full). The mid-job test below holds the cap on a laying job. Recorded on 5241b102f from the host (where the
 // deleted M11 proof held the same reads equal to the read model's).
 const DAYS_AWAY = [
   ['awake', 0, 'idle', 0, 56, -1, 0, false, 125, 0, 3790, 0, 40],
-  ['q1-done', 0, 'done', 56, 0, 1, 1, false, 221, 6340, 3824, 37, 40],
-  ['q4-done', 0, 'done', 56, 0, 4, 4, true, 221, 10280, 3844, 85, 40],
-  ['q6-done', 0, 'done', 56, 0, -1, 6, true, 221, 14360, 3881, 141, 40],
-  ['works-lit', 0, 'done', 56, 0, -1, 6, true, 221, 14360, 3886, 141, 40],
-  ['ring-joined', 0, 'done', 56, 0, -1, 7, true, 221, 15960, 3906, 169, 40], // v46: no steel kit loaded, as above
+  ['q1-done', 0, 'done', 56, 0, 1, 1, false, 221, 6580, 3829, 37, 40],
+  ['q4-done', 0, 'done', 56, 0, 4, 4, true, 221, 10520, 3849, 85, 40],
+  ['q6-done', 0, 'done', 56, 0, -1, 6, true, 221, 14600, 3886, 141, 40],
+  ['works-lit', 0, 'done', 56, 0, -1, 6, true, 221, 14600, 3891, 141, 40],
+  ['ring-joined', 0, 'done', 56, 0, -1, 7, true, 221, 16200, 3911, 169, 40], // v46: no steel kit loaded, as above
 ] as const;
 test('M11 review: a room resumed after three days is capped, credited and read as recorded', () => {
   const days = 3 * 24 * 36000; // ticks of 100 ms

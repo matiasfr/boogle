@@ -12,8 +12,9 @@ import { createStore } from '../src/store.ts';
 import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
-import { rail } from '../../test/helpers/rail.ts';
-import { LINE1_JUMP_DEVICE } from '../../src/sim/railway-line-layout.ts';
+import { buildSeedWorld, logs, rail } from '../../test/helpers/rail.ts';
+import { LINE1_JUMP_DEVICE, LINE1_PICK_STANDS, LINE1_STATIONS } from '../../src/sim/railway-line-layout.ts';
+import { railwayCheck } from '../../src/sim/railway-check.ts';
 
 const START = 1800000000000;
 type Obj = Record<string, unknown>;
@@ -71,12 +72,18 @@ async function fixture() {
     assert.ok(msg);
     return msg.epoch as number;
   };
-  /** Take the double jump at its device, standing where the server's reach check wants the actor. */
-  const claimJump = async (sid: string, epoch: number) => {
-    const d = LINE1_JUMP_DEVICE;
-    host.deliver({ t: 'r:edit', e: { op: 'rail.jump', epoch, request: 1, at: [d.x, d.y, d.z], ms: now - START } }, sid);
+  const claimJump = async (
+    sid: string,
+    epoch: number,
+    request = 1,
+    d: { x: number; y: number; z: number } = LINE1_PICK_STANDS.jump,
+  ) => {
+    host.deliver(
+      { t: 'r:edit', e: { op: 'rail.jump', station: 'T1', epoch, request, at: [d.x, d.y, d.z], ms: now - START } },
+      sid,
+    );
     await step(3);
-    return host.rules.railway.outcome(pids.get(sid)!, epoch, 1);
+    return host.rules.railway.outcome(pids.get(sid)!, epoch, request);
   };
   const jump = (cid: string) => {
     const m = mirrors.get(cid)!;
@@ -114,12 +121,20 @@ async function fixture() {
 test("one player's double jump reaches every connected player at once, a reconnect and a late joiner, and survives a crash and a restart", async () => {
   const f = await fixture();
   try {
+    const seed = buildSeedWorld('awake');
+    logs(seed, 'a', 'T1', LINE1_STATIONS[0]!.bill[0]);
+    await f.step(seed.t);
+    f.host.rules.railway.world().load(seed.w.snapshot(), railwayCheck);
+    f.host.rules.railway.touchAll();
     f.connect('a');
     f.connect('b');
     await f.step(3);
     assert.equal(f.jump('a'), false);
     assert.equal(f.jump('b'), false);
-    const outcome = await f.claimJump('a', f.open('a'));
+    const epoch = f.open('a');
+    assert.equal((await f.claimJump('a', epoch, 1, LINE1_JUMP_DEVICE))?.status, 'rejected');
+    assert.equal((await f.claimJump('a', epoch, 2, LINE1_PICK_STANDS.pack))?.status, 'rejected');
+    const outcome = await f.claimJump('a', epoch, 3);
     assert.equal(outcome?.status, 'accepted');
     assert.equal(rail(f.host.rules.railway.world()).jump, true);
     // Both mirrors show it from the same packets: the finder and the friend who did nothing.

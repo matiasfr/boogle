@@ -28,6 +28,7 @@
 // Re-recorded 19 November for seed data only (rail-yoke step 2; owner-calls.md#seed-goldens): the seeds take the Rail
 // yoke at Q1, so every stage from q1-done on moves (76 of 82 traces, 1,152 marks; fresh and awake unchanged; no trace
 // length changes).
+// Q1 at 32 logs changes the same 76 traces from q1-done on. Every client trace keeps its frame count.
 // The value is the trace's FNV hash per client, with a checkpoint every 25 frames so a difference can be found.
 import test from 'node:test';
 import assert from 'node:assert/strict';

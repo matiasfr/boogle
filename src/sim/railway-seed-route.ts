@@ -101,7 +101,7 @@ export function railwayAtForgeLast(last: 'frame' | 'lit'): Seed {
   need(invariant(s.w) === null, `railwayAtForgeLast ${last}: invariant`);
   return s;
 }
-/** Look and tests: the forge lit, the axe taken, Q1's 16 logs and 5 of its 6 rails in, and `a` carrying rails from
+/** Look and tests: the forge lit, the axe taken, Q1's logs and all but one rail in, and `a` carrying rails from
  * the rack (taken as `rails` would take them for the sixth), so a deposit plays the live edge that makes the Rail
  * yoke. */
 export function railwayAtQ1Last(): Seed {
@@ -113,7 +113,7 @@ export function railwayAtQ1Last(): Seed {
   // moved onto the breaker's and the axe's "Open" took the target there.
   need(act(s, 'a', 'rail.axe') === 1, 'the proper axe taken at the lit forge');
   advance(s, LINE2_FORGE.turnTicks);
-  logs(s, 'b', 'Q1', 16);
+  logs(s, 'b', 'Q1', LINE2_STATIONS[0]!.bill[0]);
   rails(s, 'a', 'Q1', LINE2_STATIONS[0]!.bill[1] - 1);
   if (!account(s.w, 'a')!.rails) forgeTake(s, 'a');
   need(qjob(s.w, 0).start < 0, "Q1's bill still owed");

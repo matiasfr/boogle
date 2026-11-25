@@ -13,6 +13,7 @@
 // seed data only (step 2: the seeds take the yoke at Q1; all 12 rows are built on railwayAtQ2): every per-tick system
 // sequence and start tick the same, every hash moves. Re-recorded for v65's halt yards (four empty rows, later ids on
 // by 4): every sequence, per-tick count and start tick the same, all 14,400 hashes move.
+// Q1 at 32 logs: every stage starts 11 ticks later. Only the start ticks and hashes change in the twelve rows.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
