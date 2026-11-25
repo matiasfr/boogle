@@ -30,7 +30,18 @@ function linesOf(w: ReadWorld): LineFacts[] {
   }));
 }
 
-/** `tick` is the room's (`adapter.read.tickNow()`), for the table's hold after a bring or an install. */
+/** The garage's facts as a frame reads them. The table's hold is judged on the action tick (`read.tick()`), the clock
+ * the garage's install and bring are sent on: whole, never going backwards between whole states (it is re-seated once
+ * when one lands, after a lost link), and capped at two ticks (LEAD_STEPS) past the newest server step heard. So the
+ * screen offers Install at most two ticks before the server's hold ends; the hold itself (600 to 1200 ms) is sent
+ * after it, so the install reaches a free table unless the page stalls. If the server refuses one anyway, `deny`
+ * lowers the part with the deny sound and the hold can be made again at once. Only the re-seat after a lost link can
+ * turn the offer back off, once, when the room stood still meanwhile (intended: the server still holds the table).
+ * Not `tickNow()`: the movers' RTT-compensated time can run further ahead of the room and step back at any frame
+ * (garage step 4's Checkpoint, "the early Install"). */
+export const garageFacts = (read: { world(): ReadWorld; tick(): number }) => roomFacts(read.world(), read.tick());
+
+/** `tick` is the room's action tick (see `garageFacts`), for the table's hold after a bring or an install. */
 export function roomFacts(w: ReadWorld, tick = Infinity): RoomFacts {
   const wagonCoupled = trains(w).some((r) => r.wagon);
   const boiler = line(w, LINE2).boiler;

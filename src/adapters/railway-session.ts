@@ -129,14 +129,22 @@ export function createRailwayAdapter({
   let probeAt = -Infinity;
   let resyncAt = -Infinity;
   const stopped = () => status === 'storage' || status === 'full';
-  // The estimated server tick, never going backwards (a late stamp can re-anchor the estimate a little lower). It
-  // follows the server's step as of one one-way delay ago, so an action predicted at it reaches the server at the
-  // same tick or later: a tick-gated rule (the wake's readiness) the prediction accepts, the server accepts too.
+  // The estimated server tick (the action tick). Between whole states it never goes backwards (a late stamp can
+  // re-anchor the estimate a little lower). Connected, it follows the newest step heard plus the time since, capped
+  // at LEAD_STEPS (two ticks) past that step, so an action predicted at it usually reaches the server at the same tick
+  // or later, and at most two ticks early: a tick-gated rule (the wake's readiness) the prediction accepts, the server
+  // accepts too, or refuses as it would any other late correction. With the link down it runs on the page clock,
+  // uncapped; a room that paused meanwhile stood still, so when a whole state lands (`reseatTick`, from settle's
+  // rebuild) it is re-seated on the mirror's capped estimate and can step back once, there and nowhere else.
   let shownTick = 0;
   const tick = () => {
     const step = rail.mirror.step(now(), frozen !== null && !connected);
     if (step >= 0) shownTick = Math.max(shownTick, Math.floor(step / RULE_STEPS));
     return shownTick;
+  };
+  const reseatTick = () => {
+    shownTick = 0;
+    tick();
   };
   // All replicated movers use one RTT-compensated room time. The conservative tick above remains for actions.
   const moverClock = createRailwayClock();
@@ -391,6 +399,7 @@ export function createRailwayAdapter({
       // after a refill: no snap), and playing its events or corrections would replay effects.
       const soft = frozen !== null;
       frozen = null;
+      reseatTick();
       predictor.invalidate();
       for (const fn of resets) fn(soft);
       notifyReady();

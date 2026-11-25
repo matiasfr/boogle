@@ -60,6 +60,8 @@ import { RAILS } from '../src/sim/railway-line2-layout.ts';
 import type { World } from '../src/ecs/index.ts';
 import { footCap } from '../src/sim/railway-queries-trade.ts';
 import { tableFree } from '../src/sim/railway-queries-works.ts';
+import { garageFacts } from '../src/entities/railway/garage-state.ts';
+import { ROTA_TICKS, shiftAt, shiftChange } from '../src/entities/ring-folk/shape.ts';
 import { STEEL } from '../src/sim/railway-ring-layout.ts';
 import { fuzzTicks } from './helpers/fuzz.ts';
 import { railRoom } from './helpers/rail-room.ts';
@@ -612,16 +614,16 @@ for (const [fleet, seed, headPct] of [
     assert.ok(r.longest < 1200, 'no line 2 train stands two minutes');
   });
 
-for (const [seed, headPct] of [[0xb011e7, TRAIN_HEAD_PCT], [0x0fa575, 0]] as const)
-  test(
-    `longer fleet ${seed.toString(16)} at ${headPct}%: service health and mean wait`,
-    (t) => {
-      const r = fleetRun('longer', seed, headPct);
-      for (const n of r.notes) t.diagnostic(n);
-      assert.deepEqual(r.health.failures, []);
-      assert.ok(r.mean <= MEAN_BOUND, `mean wait ${r.mean} ticks (bound ${MEAN_BOUND})`);
-    },
-  );
+for (const [seed, headPct] of [
+  [0xb011e7, TRAIN_HEAD_PCT],
+  [0x0fa575, 0],
+] as const)
+  test(`longer fleet ${seed.toString(16)} at ${headPct}%: service health and mean wait`, (t) => {
+    const r = fleetRun('longer', seed, headPct);
+    for (const n of r.notes) t.diagnostic(n);
+    assert.deepEqual(r.health.failures, []);
+    assert.ok(r.mean <= MEAN_BOUND, `mean wait ${r.mean} ticks (bound ${MEAN_BOUND})`);
+  });
 
 // The hand-held mixed fleet, a safety test: spacing, end blocks and the load check hold with a faster train behind and
 // ahead of slower ones for the whole run. Its waits are printed only.
@@ -748,6 +750,179 @@ function raw(w: World, op: string, fields: Record<string, unknown>, t: number, p
   return apply(w, pid, { op, epoch: a.epoch, request: a.request + 1, ...fields } as never, t).accepted;
 }
 
+test('the garage judges a bring’s table hold on the action tick: never free before the server, never back on', () => {
+  // Garage step 4's Checkpoint, "the early Install": the screen read the hold on `tickNow()`, the movers' estimate,
+  // which runs ahead of the room when the page's clock jumps (a busy frame) and can step back. The client's clock
+  // jumps ahead of the room's steps here; the screen's `held` must clear no earlier than the server's tick reaches the
+  // hold's end, and once clear must stay clear.
+  const s = tradeReady();
+  assert.equal(bring(s, NS), 1);
+  const free = tableFree(s.w);
+  assert.equal(free, s.t + BRING_TICKS);
+  const room = railRoom(s);
+  const c = room.join('installer', 'a', 4);
+  room.ready();
+  let cleared = -1;
+  for (let k = 0; k < 600 && room.sync.world.tick < free + 20; k++) {
+    if (k % 20 === 10) room.advance(300);
+    room.run(1);
+    const server = room.sync.world.tick;
+    const held = garageFacts(c.adapter.read).held;
+    if (!held && cleared < 0) cleared = server;
+    assert.ok(held || server >= free, `the screen's hold cleared at server tick ${server}, before ${free}`);
+    assert.ok(
+      !held || cleared < 0,
+      `the screen's hold came back at server tick ${server} after clearing at ${cleared}`,
+    );
+  }
+  assert.equal(tableFree(room.serverWorld() as never), free, 'the server holds the table to the same tick');
+  assert.ok(cleared >= free && cleared <= free + 10, `the screen frees the table near the hold's end (${cleared})`);
+});
+
+test('the garage holds the table after a dropped link while the room stood paused', () => {
+  // A solo player's link drops and the room pauses (it stops simulating once empty, RAIL_AWAY.pauseMs). While the
+  // link is down the session's action tick runs on with the page clock, latched: it never goes backwards. Back in, the
+  // server's tick is where the room stopped, so the screen must still hold the table the server holds.
+  const s = tradeReady();
+  assert.equal(bring(s, NS), 1);
+  const free = tableFree(s.w);
+  const room = railRoom(s);
+  const c = room.join('installer', 'a', 4);
+  room.ready();
+  assert.ok(garageFacts(c.adapter.read).held, 'held before the drop');
+  c.disconnect();
+  // 40 s offline: the tab keeps drawing frames; the server does not step (paused).
+  for (let k = 0; k < 2400; k++) {
+    room.advance(17);
+    c.adapter.update(room.clock.now);
+    garageFacts(c.adapter.read);
+  }
+  c.reconnect();
+  room.ready();
+  for (let k = 0; k < 60; k++) room.run(1);
+  const server = room.sync.world.tick;
+  assert.ok(server < free, `the server still holds the table (tick ${server} < ${free})`);
+  assert.ok(
+    garageFacts(c.adapter.read).held,
+    `the screen freed the table at server tick ${server}, before ${free} (action tick ${c.adapter.read.tick()})`,
+  );
+});
+
+// Re-check of the re-seat (claude/recheck-garage-install-clock). The real path: after a paused room's reconnect, the
+// first frame the screen offers Install, the install goes through the session's own transport to the room's server;
+// the server must accept it (the table is free when it lands), with no refusal and no deny.
+test('re-check: after a paused room’s reconnect, the first Install the screen offers reaches a free table', () => {
+  const s = tradeReady();
+  assert.equal(bring(s, NS), 1);
+  const free = tableFree(s.w);
+  const fittedBefore = lineRow(s.w, NS).fitted;
+  const room = railRoom(s);
+  const c = room.join('installer', 'a', 4);
+  const refusals: RailwayRefusal[] = [];
+  const corrections: unknown[] = [];
+  c.adapter.onRefused((r) => refusals.push(r));
+  c.adapter.onCorrected((x) => corrections.push(x));
+  room.ready();
+  c.disconnect();
+  for (let k = 0; k < 2400; k++) {
+    room.advance(17);
+    c.adapter.update(room.clock.now);
+    garageFacts(c.adapter.read);
+  }
+  c.reconnect();
+  room.ready();
+  let sentAt = -1;
+  for (let k = 0; k < 3000 && sentAt < 0; k++) {
+    room.run(1);
+    if (!c.adapter.read.ready() || garageFacts(c.adapter.read).held) continue;
+    const rev = lineRow(c.adapter.read.world(), NS).rev;
+    assert.equal(c.adapter.installPart(NS, 5, rev), true, 'the screen offered Install and the session sent it');
+    sentAt = room.sync.world.tick;
+  }
+  assert.ok(sentAt >= 0, 'the screen offered Install at some point');
+  assert.ok(sentAt >= free - 2, `sent at server tick ${sentAt}, at most two ticks before the hold ends (${free})`);
+  room.run(120);
+  const sv = lineRow(room.serverWorld() as never, NS);
+  assert.ok(
+    sv.fitted > fittedBefore && sv.fitted >= sentAt,
+    `the server accepted the install (fitted ${sv.fitted}, boiler ${sv.boiler}, rev ${sv.rev}; sent at ${sentAt}, free ${free}; refusals ${JSON.stringify(refusals)})`,
+  );
+  assert.deepEqual(refusals, [], 'no refusal');
+  assert.deepEqual(corrections, [], 'no correction');
+});
+
+// The question-3 case: a whole state that lands while connected (a refused packet asks for a resync). The action tick
+// must not step back there: both the step estimate and the newest step heard only grow, so the re-seat re-reads at
+// least what it showed.
+test('re-check: a connected resync never steps the action tick back', () => {
+  const room = railRoom(copy(HOME));
+  const c = room.join('a', 'a', 3);
+  room.ready();
+  for (let k = 0; k < 120; k++) room.run(1);
+  const before = c.adapter.read.tick();
+  // A packet the mirror must refuse: once whole, the session refills and sends r:resync.
+  c.mirror.mirror.apply({ tk: 1, c: [['nope', 1, {}]] }, room.clock.now);
+  assert.equal(c.adapter.read.debug().synced, false, 'the session is refilling');
+  let lowest = Infinity,
+    rebuilt = false;
+  for (let k = 0; k < 600 && !(rebuilt && c.adapter.read.ready()); k++) {
+    room.run(1);
+    lowest = Math.min(lowest, c.adapter.read.tick());
+    rebuilt ||= c.adapter.read.debug().synced;
+  }
+  assert.ok(rebuilt && c.adapter.read.ready(), 'the whole state came back');
+  assert.ok(lowest >= before, `the action tick stepped back to ${lowest} from ${before}`);
+});
+
+// A reader with an edge latched on the action tick (ring-folk/view.ts: a shift change one past the last whistles, any
+// other change snaps). A solo link drops for 90 s: the room runs 30 s more (RAIL_AWAY.pauseMs), then stands paused;
+// the page keeps drawing frames and its action tick runs on. Each shift change should whistle once, offline or not.
+test('re-check: across a long dropped link the ring crew whistles each shift change once', () => {
+  const room = railRoom(copy(HOME));
+  const c = room.join('a', 'a', 3);
+  room.ready();
+  const whistles = new Map<number, number>();
+  let last: number | null = null;
+  let top = -Infinity;
+  // Mirrors `topShift` in src/entities/ring-folk/view.ts (a shift at or below the highest shown never whistles); it
+  // models the view's rule and does not run the view.
+  const frame = () => {
+    const shift = shiftAt(c.adapter.read.tick());
+    if (shiftChange(last, shift) === 'whistle' && shift > top) whistles.set(shift, (whistles.get(shift) ?? 0) + 1);
+    top = Math.max(top, shift);
+    last = shift;
+  };
+  frame();
+  c.disconnect();
+  // 30 s: the room runs on, emptied (1765 steps of 17 ms).
+  for (let k = 0; k < 1765; k++) {
+    room.run(1);
+    frame();
+  }
+  // 60 s more: the room is paused; only the page's clock moves.
+  for (let k = 0; k < 3530; k++) {
+    room.advance(17);
+    c.adapter.update(room.clock.now);
+    frame();
+  }
+  c.reconnect();
+  for (let k = 0; k < 300 && !c.adapter.read.ready(); k++) {
+    room.run(1);
+    frame();
+  }
+  // 70 s back in: the room's clock passes the shifts the page already whistled offline.
+  for (let k = 0; k < 4120; k++) {
+    room.run(1);
+    frame();
+  }
+  const twice = [...whistles].filter(([, n]) => n > 1).map(([s]) => s);
+  assert.deepEqual(
+    twice,
+    [],
+    `shifts whistled twice: ${twice.join(', ')} (ROTA_TICKS ${ROTA_TICKS}; whistles ${JSON.stringify([...whistles])})`,
+  );
+});
+
 test('trade installs: refusals, the first fit spends 1, swaps spend nothing, ten swaps, two on one tick fit once', () => {
   const s = tradeReady();
   assert.deepEqual([tradeOpen(s.w, NS), tradeOpen(s.w, BAYL)], [true, true]);
@@ -764,7 +939,8 @@ test('trade installs: refusals, the first fit spends 1, swaps spend nothing, ten
   for (const bad of [4, 7, '6', 5.5, null]) assert.equal(fit(s, BAYL, bad), 0, `part ${String(bad)}`);
   // The roll-out reserves the table (a hand-made state, so applied without the load check).
   const busy = restore(s.w);
-  for (const k of LINE_SLOTS[LINE2]!) Object.assign(busy.mut(Train, busy.lookup(Train, k)!)!, { wagon: false, foot: 0 });
+  for (const k of LINE_SLOTS[LINE2]!)
+    Object.assign(busy.mut(Train, busy.lookup(Train, k)!)!, { wagon: false, foot: 0 });
   busy.mut(Shed, busy.single(Shed))!.ready = s.t + 10;
   assert.equal(raw(busy, 'rail.install', { line: BAYL, part: 6, revision: 0 }, s.t), 0, 'the table is busy');
   assert.equal(raw(busy, 'rail.bring', { line: NS, revision: 1 }, s.t), 0, 'no bring mid roll-out');
@@ -805,11 +981,17 @@ test('trade installs: refusals, the first fit spends 1, swaps spend nothing, ten
   assert.equal(fit(dry, BAYL, 5), 0, 'an empty pool');
   const loaded = restore(s.w);
   assert.equal(invariant(loaded), null);
-  assert.deepEqual([lineRow(loaded, BAYL).rev, lineRow(loaded, NS).rev, shed(loaded).tableLine, shed(loaded).bringRev], [11, 1, NS, 2]);
+  assert.deepEqual(
+    [lineRow(loaded, BAYL).rev, lineRow(loaded, NS).rev, shed(loaded).tableLine, shed(loaded).bringRev],
+    [11, 1, NS, 2],
+  );
 });
 
 test('line 2 refuses trade parts in the legacy adapter and the receipt decoder', () => {
-  const acts = railwayActs(() => true, () => HOME.w);
+  const acts = railwayActs(
+    () => true,
+    () => HOME.w,
+  );
   for (const part of [5, 6] as const) {
     const event = { op: 'rail.install', line: LINE2, part, revision: 1 };
     assert.deepEqual([acts.installBoiler(1, part), intentOf(event)], [false, null]);
@@ -923,7 +1105,8 @@ test('a Strong train with two bills aboard, swapped to Quick, keeps Strong until
       const was = row().boiler;
       advance(s, 1);
       // The row changes only standing at halt 0, and only to a row whose kit bills hold the kit aboard.
-      if (row().boiler !== was) assert.ok(row().at === 0 && Math.max(row().logs, row().rails) <= bill * kitBills(row().boiler));
+      if (row().boiler !== was)
+        assert.ok(row().at === 0 && Math.max(row().logs, row().rails) <= bill * kitBills(row().boiler));
       assert.ok(Math.max(row().logs, row().rails) <= bill * kitBills(row().boiler), `the cargo bound at ${s.t}`);
       if (k % 100 === 0) assert.equal(invariant(s.w), null, `invariant at ${s.t}`);
     }

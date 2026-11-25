@@ -72,6 +72,9 @@ export function createRingFolk(adapter: RailwayAdapter, owner: OwnedView) {
     crew: Figure[] = [],
     hooter: Figure | null = null,
     lastShift: number | null = null,
+    // The highest shift this page has shown. A restore keeps it: the action tick steps back once when a whole state
+    // lands after a lost link, and a shift already shown offline is snapped to again, never whistled twice.
+    topShift = -Infinity,
     wasMounted = false,
     whistled = 0,
     lastSwim = -1e9,
@@ -199,7 +202,9 @@ export function createRingFolk(adapter: RailwayAdapter, owner: OwnedView) {
       }
       const shift = shiftAt(adapter.read.tick());
       // A remount (the camera came back within range) is a first look: no whistle for a swap you didn't see.
-      const change = wasMounted ? shiftChange(lastShift, shift) : 'snap';
+      const edge = wasMounted ? shiftChange(lastShift, shift) : 'snap';
+      const change = edge === 'whistle' && shift <= topShift ? 'snap' : edge;
+      topShift = Math.max(topShift, shift);
       wasMounted = true;
       if (change === 'snap') snap(shift);
       else if (change === 'whistle') swap(shift);
