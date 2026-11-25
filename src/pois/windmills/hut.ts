@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { ROOM_GROUP } from '../../constants.ts';
-import { getMask } from '../../physics/engine.ts';
+import { CAVE_GROUP, ROOM_GROUP } from '../../constants.ts';
+
 import { makeCameraArm } from '../../player/camera-arm.ts';
 import { camConstraints, me } from '../../player/player.ts';
 import { definitions } from '../../prefab/catalogue.ts';
@@ -39,7 +39,7 @@ export function standHut(owner: OwnedView, material: THREE.Material, x: number, 
     cut = inside;
     if (inside && body && p) {
       pos.y = Math.max(pos.y, floor + 0.5);
-      arm.solve(head.set(p.x, p.y + 1.35, p.z), pos, getMask(body) & ~ROOM_GROUP);
+      arm.solve(head.set(p.x, p.y + 1.35, p.z), pos, ~(CAVE_GROUP | ROOM_GROUP));
     } else arm.reset();
     for (const { face, mesh } of meshes) {
       mesh.visible =
