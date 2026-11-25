@@ -42,7 +42,11 @@ that writes the plan carries it out, so it can change the plan when a step turns
    set, until they are clear. Never push sideways, never move a player to a spot with no ground, never switch a solid
    off on contact. An area that mounts far from players is an ordinary static: placing a returning or teleported player
    is `src/place/pose.ts`'s job. Use the shared helper: `liftOrWait` from `src/prefab/instantiate.ts` (`src/place/clearance.ts`). This one class cost
-   three branches 2 to 5 review rounds each on 24 November (rule 67 in docs/agents/orchestrator-state.md).
+   three branches 2 to 5 review rounds each on 24 November (rule 67 in docs/agents/orchestrator-state.md). The reverse
+   holds too: a solid that goes away on a schedule or a rule (a temporary head closing, a ramp retired, a deck moved on)
+   stays solid and drawn while any player stands within a small step of it, and goes once they are clear. Search for
+   every solid your change removes as well as every one it adds (greybox leg 5 step 5, 25 November: a closing Wall
+   head dropped a player into the sea, a fix round).
 10. **Owed proofs are yours.** A rebase, bot run, still or tick mark your branch still owes comes back to this same
    thread; you have the context a fresh agent would lack.
 11. **A test must be able to fail.** See a regression or proof test fail once on the code without your change (or with
