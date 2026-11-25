@@ -17,6 +17,7 @@ import { advance, logs, type Seed } from '../src/sim/railway-seed-route.ts';
 import { chopTo } from '../src/sim/railway-seed-works.ts';
 import { railPredict } from '../src/world/railway-predict.ts';
 import { accepted } from '../src/adapters/railway-effects.ts';
+import { railRoom } from './helpers/rail-room.ts';
 import {
   account,
   apply,
@@ -70,6 +71,29 @@ function advanceToStation3(s: Seed): Seed {
   advance(s, 300);
   return s;
 }
+
+test('both players see only the accepted Station 1 pick when their holds race', () => {
+  for (const winner of ['pack', 'jump'] as const) {
+    const seed = buildSeedWorld('awake');
+    logs(seed, 'a', 'T1', LINE1_STATIONS[0]!.bill[0]);
+    const room = railRoom(seed);
+    const clients = [room.join('a', 'a', 4), room.join('b', 'b', 4)] as const;
+    room.ready();
+    const receipts = clients.map(({ adapter }) => {
+      const heard: string[] = [];
+      adapter.onAccepted((e) => {
+        if (e.op === 'rail.pack' || e.op === 'rail.jump') heard.push([e.op, e.station, e.pid].join('/'));
+      });
+      return heard;
+    });
+    const [a, b] = clients;
+    assert.ok(winner === 'pack' ? a.adapter.openPack('T1') : a.adapter.claimJump('T1'));
+    assert.ok(winner === 'pack' ? b.adapter.claimJump('T1') : b.adapter.openPack('T1'));
+    assert.deepEqual(receipts, [[], []], 'neither player predicts a card');
+    room.run(30);
+    for (const heard of receipts) assert.deepEqual(heard, ['rail.' + winner + '/T1/a']);
+  }
+});
 
 test('Station 1 gives the room one pick and the other part keeps its original gate after a reload', () => {
   for (const first of ['pack', 'jump'] as const) {
