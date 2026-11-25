@@ -61,6 +61,7 @@ import type { World } from '../src/ecs/index.ts';
 import { footCap } from '../src/sim/railway-queries-trade.ts';
 import { tableFree } from '../src/sim/railway-queries-works.ts';
 import { garageFacts } from '../src/entities/railway/garage-state.ts';
+import { ROTA_TICKS, shiftAt, shiftChange } from '../src/entities/ring-folk/shape.ts';
 import { STEEL } from '../src/sim/railway-ring-layout.ts';
 import { fuzzTicks } from './helpers/fuzz.ts';
 import { railRoom } from './helpers/rail-room.ts';
@@ -804,6 +805,108 @@ test('the garage holds the table after a dropped link while the room stood pause
   assert.ok(
     garageFacts(c.adapter.read).held,
     `the screen freed the table at server tick ${server}, before ${free} (action tick ${c.adapter.read.tick()})`,
+  );
+});
+
+// Re-check of the re-seat (claude/recheck-garage-install-clock). The real path: after a paused room's reconnect, the
+// first frame the screen offers Install, the install goes through the session's own transport to the room's server;
+// the server must accept it (the table is free when it lands), with no refusal and no deny.
+test('re-check: after a paused room’s reconnect, the first Install the screen offers reaches a free table', () => {
+  const s = tradeReady();
+  assert.equal(bring(s, NS), 1);
+  const free = tableFree(s.w);
+  const fittedBefore = lineRow(s.w, NS).fitted;
+  const room = railRoom(s);
+  const c = room.join('installer', 'a', 4);
+  const refusals: RailwayRefusal[] = [];
+  const corrections: unknown[] = [];
+  c.adapter.onRefused((r) => refusals.push(r));
+  c.adapter.onCorrected((x) => corrections.push(x));
+  room.ready();
+  c.disconnect();
+  for (let k = 0; k < 2400; k++) {
+    room.advance(17);
+    c.adapter.update(room.clock.now);
+    garageFacts(c.adapter.read);
+  }
+  c.reconnect();
+  room.ready();
+  let sentAt = -1;
+  for (let k = 0; k < 3000 && sentAt < 0; k++) {
+    room.run(1);
+    if (!c.adapter.read.ready() || garageFacts(c.adapter.read).held) continue;
+    const rev = lineRow(c.adapter.read.world(), NS).rev;
+    assert.equal(c.adapter.installPart(NS, 5, rev), true, 'the screen offered Install and the session sent it');
+    sentAt = room.sync.world.tick;
+  }
+  assert.ok(sentAt >= 0, 'the screen offered Install at some point');
+  assert.ok(sentAt >= free - 2, `sent at server tick ${sentAt}, at most two ticks before the hold ends (${free})`);
+  room.run(120);
+  const sv = lineRow(room.serverWorld() as never, NS);
+  assert.ok(
+    sv.fitted > fittedBefore && sv.fitted >= sentAt,
+    `the server accepted the install (fitted ${sv.fitted}, boiler ${sv.boiler}, rev ${sv.rev}; sent at ${sentAt}, free ${free}; refusals ${JSON.stringify(refusals)})`,
+  );
+  assert.deepEqual(refusals, [], 'no refusal');
+  assert.deepEqual(corrections, [], 'no correction');
+});
+
+// The question-3 case: a whole state that lands while connected (a refused packet asks for a resync). The action tick
+// must not step back there: both the step estimate and the newest step heard only grow, so the re-seat re-reads at
+// least what it showed.
+test('re-check: a connected resync never steps the action tick back', () => {
+  const room = railRoom(copy(HOME));
+  const c = room.join('a', 'a', 3);
+  room.ready();
+  for (let k = 0; k < 120; k++) room.run(1);
+  const before = c.adapter.read.tick();
+  // A packet the mirror must refuse: once whole, the session refills and sends r:resync.
+  c.mirror.mirror.apply({ tk: 1, c: [['nope', 1, {}]] }, room.clock.now);
+  assert.equal(c.adapter.read.debug().synced, false, 'the session is refilling');
+  let lowest = Infinity,
+    rebuilt = false;
+  for (let k = 0; k < 600 && !(rebuilt && c.adapter.read.ready()); k++) {
+    room.run(1);
+    lowest = Math.min(lowest, c.adapter.read.tick());
+    rebuilt ||= c.adapter.read.debug().synced;
+  }
+  assert.ok(rebuilt && c.adapter.read.ready(), 'the whole state came back');
+  assert.ok(lowest >= before, `the action tick stepped back to ${lowest} from ${before}`);
+});
+
+// A reader with an edge latched on the action tick (ring-folk/view.ts: a shift change one past the last whistles, any
+// other change snaps). A solo link drops for 90 s: the room runs 30 s more (RAIL_AWAY.pauseMs), then stands paused;
+// the page keeps drawing frames and its action tick runs on. Each shift change should whistle once, offline or not.
+test('re-check: across a long dropped link the ring crew whistles each shift change once', () => {
+  const room = railRoom(copy(HOME));
+  const c = room.join('a', 'a', 3);
+  room.ready();
+  const whistles = new Map<number, number>();
+  let last: number | null = null;
+  const frame = () => {
+    const shift = shiftAt(c.adapter.read.tick());
+    if (shiftChange(last, shift) === 'whistle') whistles.set(shift, (whistles.get(shift) ?? 0) + 1);
+    last = shift;
+  };
+  frame();
+  c.disconnect();
+  // 30 s: the room runs on, emptied (1765 steps of 17 ms).
+  for (let k = 0; k < 1765; k++) (room.run(1), frame());
+  // 60 s more: the room is paused; only the page's clock moves.
+  for (let k = 0; k < 3530; k++) {
+    room.advance(17);
+    c.adapter.update(room.clock.now);
+    frame();
+  }
+  c.reconnect();
+  for (let k = 0; k < 300 && !c.adapter.read.ready(); k++) (room.run(1), frame());
+  // 70 s back in: the room's clock passes the shifts the page already whistled offline.
+  for (let k = 0; k < 4120; k++) (room.run(1), frame());
+  const twice = [...whistles].filter(([, n]) => n > 1).map(([s]) => s);
+  assert.deepEqual(
+    twice,
+    [],
+    `shifts whistled twice: ${twice.join(', ')} (ROTA_TICKS ${ROTA_TICKS}; whistles ${JSON.stringify([...whistles])})`,
   );
 });
 
