@@ -95,6 +95,23 @@ test('both players see only the accepted Station 1 pick when their holds race', 
   }
 });
 
+test('a losing Station 1 pack hold receives its refusal', () => {
+  const seed = buildSeedWorld('awake');
+  logs(seed, 'a', 'T1', LINE1_STATIONS[0]!.bill[0]);
+  const room = railRoom(seed);
+  const winner = room.join('a', 'a', 4);
+  const loser = room.join('b', 'b', 4);
+  room.ready();
+  const refused: string[] = [];
+  loser.adapter.onRefused(({ intent }) => refused.push(intent.op));
+  assert.ok(winner.adapter.claimJump('T1'));
+  assert.ok(loser.adapter.openPack('T1'));
+  room.run(30);
+  assert.equal(rail(room.serverWorld()).jump, true);
+  assert.equal(loser.adapter.read.pending(), 0);
+  assert.deepEqual(refused, ['rail.pack']);
+});
+
 test('Station 1 gives the room one pick and the other part keeps its original gate after a reload', () => {
   for (const first of ['pack', 'jump'] as const) {
     const other = first === 'pack' ? 'jump' : 'pack';
