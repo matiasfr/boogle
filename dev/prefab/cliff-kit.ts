@@ -26,7 +26,7 @@ import { GAUGE } from '../../src/entities/ring-island/bracket.ts';
 import { KIT } from '../../src/place/turnout.ts';
 import type { prefabs } from '../../src/content/prefabs/terrain.ts';
 import { baseSites } from '../level/sites.ts';
-import { solidBoxes, solidSamples } from './cliff-kit-solids.ts';
+import { solidHulls, solidSamples, type V3 } from './cliff-kit-solids.ts';
 import { drawnTracks } from '../level/rail-network.ts';
 import { canyon } from './cliff-kit-canyon.ts';
 import { shore } from './cliff-kit-shore.ts';
@@ -54,7 +54,7 @@ export const AREAS: readonly Area[] = [canyon, shore];
 /** The level an area writes. */
 export const levelOf = (area: Area) => area.level ?? `cliff-kit-${area.id}`;
 
-export { solidBoxes, solidSamples };
+export { solidHulls, solidSamples };
 export const CLEAR = 0.4; // m, a collider's footprint outside the tread's edge
 
 /** A run along a wall (docs/plans/cliff-kit-everywhere.md, "runs, not stations"): a polyline of Place-local (x, z)
@@ -120,16 +120,10 @@ const GATED: readonly { what: string; x: number; z: number; r: number }[] = [
   ),
 ];
 
-/** How far a point (x, z) is, across the ground, from a box: the distance to its footprint, the outline of its eight
+/** How far a point (x, z) is, across the ground, from a solid: the distance to its footprint, the outline of its
  * corners seen from above (0 inside it). */
-function footprint(box: ReturnType<typeof solidBoxes>[number]) {
-  const corners: [number, number][] = [];
-  for (const u of [-1, 1])
-    for (const v of [-1, 1])
-      for (const w of [-1, 1]) {
-        const q = box(u, v, w);
-        corners.push([q[0], q[2]]);
-      }
+function footprint(points: readonly V3[]) {
+  const corners = points.map((q): [number, number] => [q[0], q[2]]);
   // The outline: the convex hull of the corners (monotone chain), counter-clockwise.
   corners.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
   const cross = (o: number[], a: number[], b: number[]) =>
@@ -227,7 +221,7 @@ export function kitPieceProblems(p: Placement, keepClear: Area['keepClear'] = []
     problems.push(`${p.id} (${p.prefab}) narrows the tread: its solid comes ${tread.toFixed(3)} m from the edge`);
   if (gauge)
     problems.push(`${p.id} (${p.prefab}) inside a rail's gauge at (${gauge.map((n) => n.toFixed(2)).join(', ')})`);
-  const outlines = solidBoxes(p).map(footprint);
+  const outlines = solidHulls(p).map((h) => footprint(h.points));
   for (const g of [...GATED, ...keepClear.map(([x, z]) => ({ what: "the area's gated place", x, z, r: 0 }))]) {
     const near = Math.min(...outlines.map((distance) => distance(g.x, g.z))) - g.r;
     if (near < KEEP_AWAY)

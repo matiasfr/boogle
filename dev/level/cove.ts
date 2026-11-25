@@ -1,14 +1,13 @@
 // `npm run level-check -- --cove`: the cove's ground in Rapier (docs/plans/cliff-kit-everywhere.md, step 1). The sculpted
 // face and its trimesh are gone; its bluff is the heightfield's, and the cliff kit's shore pieces stand over its front
-// as box solids. In one Rapier scene, the real heightfield facade (four coarse partitions and the 1 m cove patch) and
-// every shore piece's boxes:
+// as solids. In one Rapier scene, the real heightfield facade (four coarse partitions and the 1 m cove patch) and
+// every shore piece's solids:
 // - parity: every downward ray over the cove patch off the kit lands on the heightfield within 0.03 m of H;
 // - the walk is ground: every sample on the bluff's walkable end (sand to top, z 34 to 48) and along its top lands on
 //   the heightfield, never a kit box, within 0.03 m of H, on walkable ground;
 // - protection: the 1 m patch equals the coarse triangles wherever the path, rail and landing shoulders are protected.
 import fs from 'node:fs';
 import path from 'node:path';
-import * as THREE from 'three';
 import { sourceBuild } from './build.ts';
 import { openScene, type Solid } from './scene.ts';
 
@@ -25,30 +24,20 @@ export async function auditCove() {
   const { coveEdge } = await import('../../src/place/cove.ts');
   const { ORIGIN } = await import('../../src/place/layout.ts');
   const { AREAS } = await import('../prefab/cliff-kit.ts');
-  const { solidBoxes } = await import('../prefab/cliff-kit-solids.ts');
+  const { solidHulls } = await import('../prefab/cliff-kit-solids.ts');
   const { placementsOf } = await import('./cliff-kit.ts');
   const { walkable } = await import('./cliff-kit-standing.ts');
   const placements = placementsOf(AREAS.find((a) => a.id === 'shore')!);
   const tiles = T.terrainCollisionTiles();
+  // Each piece's solids as placed, closed trimeshes in Place-local metres moved to the world.
   const kit: Solid[] = placements.flatMap((p) =>
-    solidBoxes(p).map((box, n) => {
-      const c = box(0, 0, 0);
-      const axis = (u: number, v: number, w: number) => {
-        const q = box(u, v, w);
-        return new THREE.Vector3(q[0] - c[0], q[1] - c[1], q[2] - c[2]).normalize();
-      };
-      const q = new THREE.Quaternion().setFromRotationMatrix(
-        new THREE.Matrix4().makeBasis(axis(1, 0, 0), axis(0, 1, 0), axis(0, 0, 1)),
-      );
-      return {
-        id: `kit ${p.id}.${n}`,
-        source: { file: 'src/entities/terrain-kit/view.ts', symbol: 'createTerrainKitView' },
-        shape: { kind: 'box' as const, hx: box.half[0], hy: box.half[1], hz: box.half[2] },
-        position: { x: c[0] + ORIGIN.x, y: c[1], z: c[2] + ORIGIN.z },
-        rotation: { x: q.x, y: q.y, z: q.z, w: q.w },
-        support: 'embedded' as const,
-      };
-    }),
+    solidHulls(p).map((hull, n) => ({
+      id: `kit ${p.id}.${n}`,
+      source: { file: 'src/entities/terrain-kit/view.ts', symbol: 'createTerrainKitView' },
+      shape: { kind: 'trimesh' as const, vertices: hull.points.flat(), indices: hull.triangles.flat() },
+      position: { x: ORIGIN.x, y: 0, z: ORIGIN.z },
+      support: 'embedded' as const,
+    })),
   );
   const solids: Solid[] = [
     ...tiles.map((tile, i) => ({
@@ -146,7 +135,7 @@ export async function auditCove() {
       coverage: {
         included: [
           'four coarse heightfield partitions and one 1 m cove heightfield',
-          "every shore kit piece's boxes",
+          "every shore kit piece's solids",
           "the bluff's walkable end and its top walk",
           'protected fine-grid path/rail/landing samples',
         ],

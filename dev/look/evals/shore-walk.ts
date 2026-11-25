@@ -5,6 +5,7 @@
 // - The bluff's walkable end, both ways: from the sand at its foot (z 36.5) up the graded end to its top at z 47 and
 //   back down, each leg arriving within 1 m, with no fall (a drop faster than 7 m/s) and no stall (no metre of
 //   progress in 3 s).
+// - The shore climb from the landing to its top and back, past the faces beside it, arriving the same way.
 // - Idle stance: stood still 5 s on the landing, on the graded end and on the shore climb, Buddy creeps under 0.05 m
 //   (src/place/cove-stop.ts holds an idle player on static ground).
 // Prints SHORE WALK {...}; the clip (shoreClip=1) walks from the landing up the climb for the camera instead.
@@ -73,6 +74,20 @@ if (new URLSearchParams(location.search).get('shoreClip') === '1') {
   result.down = await walk([
     [805, 40],
     [802, 36.5],
+  ]);
+  // The landing up the shore climb, past the dressed wall beside it, and back down.
+  await stand(805, 10);
+  result.climb = await walk([
+    [813, 10],
+    [818, 17],
+    [823, 28],
+    [835, 32],
+  ]);
+  result.climbDown = await walk([
+    [823, 28],
+    [818, 17],
+    [813, 10],
+    [805, 10],
   ]);
   for (const [name, x, z] of [
     ['landing', 801, 10],
