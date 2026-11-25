@@ -14,10 +14,10 @@ const { rowAt } = (await import(
 const { ROW_LINE } = (await import(
   '/src/sim/railway-route.ts' as string
 )) as typeof import('../../../src/sim/railway-route.ts');
-const { RAIL_HALTS, ROW_PLATFORM } = (await import(
+const { RAIL_HALTS } = (await import(
   '/src/sim/railway-lines.ts' as string
 )) as typeof import('../../../src/sim/railway-lines.ts');
-const { rowWorld } = (await import(
+const { rowWorld, ROW_PLATFORM } = (await import(
   '/src/entities/railway/row-path.ts' as string
 )) as typeof import('../../../src/entities/railway/row-path.ts');
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');

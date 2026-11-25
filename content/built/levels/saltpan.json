@@ -837,6 +837,1124 @@
           "id": "platform-1-1",
           "tone": "light",
           "top": 3.9
+        },
+        {
+          "bounds": [
+            0,
+            10,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 583.13,
+              "y": 3.85,
+              "z": 589.58
+            },
+            "u": {
+              "axis": {
+                "x": -288,
+                "z": 958
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -288,
+                  "z": 958
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-0",
+          "rise": {
+            "a": 3.85,
+            "b": 3.85,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.85
+        },
+        {
+          "bounds": [
+            0,
+            10,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 580.25,
+              "y": 3.85,
+              "z": 599.16
+            },
+            "u": {
+              "axis": {
+                "x": -287,
+                "z": 958
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -287,
+                  "z": 958
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-1",
+          "rise": {
+            "a": 3.85,
+            "b": 3.85,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.85
+        },
+        {
+          "bounds": [
+            0,
+            10,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 577.38,
+              "y": 3.85,
+              "z": 608.74
+            },
+            "u": {
+              "axis": {
+                "x": -287,
+                "z": 958
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -287,
+                  "z": 958
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-2",
+          "rise": {
+            "a": 3.85,
+            "b": 3.85,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.85
+        },
+        {
+          "bounds": [
+            0,
+            10,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 574.51,
+              "y": 3.85,
+              "z": 618.32
+            },
+            "u": {
+              "axis": {
+                "x": -288,
+                "z": 958
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -288,
+                  "z": 958
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-3",
+          "rise": {
+            "a": 3.85,
+            "b": 3.85,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.85
+        },
+        {
+          "bounds": [
+            0,
+            9.99,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 571.63,
+              "y": 3.85,
+              "z": 627.9
+            },
+            "u": {
+              "axis": {
+                "x": -287,
+                "z": 957
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -287,
+                  "z": 957
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-4",
+          "rise": {
+            "a": 3.85,
+            "b": 3.85,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.85
+        },
+        {
+          "bounds": [
+            0,
+            10,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 568.76,
+              "y": 3.85,
+              "z": 637.47
+            },
+            "u": {
+              "axis": {
+                "x": -287,
+                "z": 958
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -287,
+                  "z": 958
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-5",
+          "rise": {
+            "a": 3.85,
+            "b": 3.85,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.85
+        },
+        {
+          "bounds": [
+            0,
+            10,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 565.89,
+              "y": 3.85,
+              "z": 647.05
+            },
+            "u": {
+              "axis": {
+                "x": -288,
+                "z": 958
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -288,
+                  "z": 958
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-6",
+          "rise": {
+            "a": 3.55,
+            "b": 3.85,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.85
+        },
+        {
+          "bounds": [
+            0,
+            10,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 563.01,
+              "y": 3.55,
+              "z": 656.63
+            },
+            "u": {
+              "axis": {
+                "x": -287,
+                "z": 958
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -287,
+                  "z": 958
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-7",
+          "rise": {
+            "a": 3.16,
+            "b": 3.55,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.55
+        },
+        {
+          "bounds": [
+            0,
+            10,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 560.14,
+              "y": 3.16,
+              "z": 666.21
+            },
+            "u": {
+              "axis": {
+                "x": -291,
+                "z": 957
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -291,
+                  "z": 957
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-8",
+          "rise": {
+            "a": 3.03,
+            "b": 3.16,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.16
+        },
+        {
+          "bounds": [
+            0,
+            9.98,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 557.23,
+              "y": 3.03,
+              "z": 675.78
+            },
+            "u": {
+              "axis": {
+                "x": -397,
+                "z": 916
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -397,
+                  "z": 916
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-9",
+          "rise": {
+            "a": 3.03,
+            "b": 3.03,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.03
+        },
+        {
+          "bounds": [
+            0,
+            9.99,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 553.26,
+              "y": 3.03,
+              "z": 684.94
+            },
+            "u": {
+              "axis": {
+                "x": -542,
+                "z": 839
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -542,
+                  "z": 839
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-10",
+          "rise": {
+            "a": 3.03,
+            "b": 3.03,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.03
+        },
+        {
+          "bounds": [
+            0,
+            9.99,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 547.84,
+              "y": 3.03,
+              "z": 693.33
+            },
+            "u": {
+              "axis": {
+                "x": -675,
+                "z": 737
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -675,
+                  "z": 737
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-11",
+          "rise": {
+            "a": 3.03,
+            "b": 3.03,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.03
+        },
+        {
+          "bounds": [
+            0,
+            9.99,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 541.09,
+              "y": 3.03,
+              "z": 700.7
+            },
+            "u": {
+              "axis": {
+                "x": -788,
+                "z": 614
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -788,
+                  "z": 614
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-12",
+          "rise": {
+            "a": 3.03,
+            "b": 3.03,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.03
+        },
+        {
+          "bounds": [
+            0,
+            9.99,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 533.21,
+              "y": 3.03,
+              "z": 706.84
+            },
+            "u": {
+              "axis": {
+                "x": -878,
+                "z": 476
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -878,
+                  "z": 476
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-13",
+          "rise": {
+            "a": 3.03,
+            "b": 3.03,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.03
+        },
+        {
+          "bounds": [
+            0,
+            9.99,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 524.43,
+              "y": 3.03,
+              "z": 711.6
+            },
+            "u": {
+              "axis": {
+                "x": -910,
+                "z": 413
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -910,
+                  "z": 413
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-14",
+          "rise": {
+            "a": 3.27,
+            "b": 3.03,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.03
+        },
+        {
+          "bounds": [
+            0,
+            10,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 515.33,
+              "y": 3.27,
+              "z": 715.73
+            },
+            "u": {
+              "axis": {
+                "x": -911,
+                "z": 413
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -911,
+                  "z": 413
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-15",
+          "rise": {
+            "a": 3.66,
+            "b": 3.27,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.27
+        },
+        {
+          "bounds": [
+            0,
+            10,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 506.22,
+              "y": 3.66,
+              "z": 719.86
+            },
+            "u": {
+              "axis": {
+                "x": -910,
+                "z": 414
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -910,
+                  "z": 414
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-16",
+          "rise": {
+            "a": 3.85,
+            "b": 3.66,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.66
+        },
+        {
+          "bounds": [
+            0,
+            10,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 497.12,
+              "y": 3.85,
+              "z": 724
+            },
+            "u": {
+              "axis": {
+                "x": -911,
+                "z": 413
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -911,
+                  "z": 413
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-17",
+          "rise": {
+            "a": 3.85,
+            "b": 3.85,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.85
+        },
+        {
+          "bounds": [
+            0,
+            10,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 488.01,
+              "y": 3.85,
+              "z": 728.13
+            },
+            "u": {
+              "axis": {
+                "x": -911,
+                "z": 413
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -911,
+                  "z": 413
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-18",
+          "rise": {
+            "a": 3.85,
+            "b": 3.85,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.85
+        },
+        {
+          "bounds": [
+            0,
+            9.99,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 478.9,
+              "y": 3.85,
+              "z": 732.26
+            },
+            "u": {
+              "axis": {
+                "x": -910,
+                "z": 413
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -910,
+                  "z": 413
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-19",
+          "rise": {
+            "a": 3.85,
+            "b": 3.85,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.85
+        },
+        {
+          "bounds": [
+            0,
+            10,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 469.8,
+              "y": 3.85,
+              "z": 736.39
+            },
+            "u": {
+              "axis": {
+                "x": -911,
+                "z": 413
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -911,
+                  "z": 413
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-20",
+          "rise": {
+            "a": 3.85,
+            "b": 3.85,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.85
+        },
+        {
+          "bounds": [
+            0,
+            10,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 460.69,
+              "y": 3.85,
+              "z": 740.52
+            },
+            "u": {
+              "axis": {
+                "x": -911,
+                "z": 413
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -911,
+                  "z": 413
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-21",
+          "rise": {
+            "a": 3.85,
+            "b": 3.85,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.85
+        },
+        {
+          "bounds": [
+            0,
+            9.99,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 451.58,
+              "y": 3.85,
+              "z": 744.65
+            },
+            "u": {
+              "axis": {
+                "x": -910,
+                "z": 413
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -910,
+                  "z": 413
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-22",
+          "rise": {
+            "a": 3.85,
+            "b": 3.85,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.85
+        },
+        {
+          "bounds": [
+            0,
+            10.01,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 442.48,
+              "y": 3.85,
+              "z": 748.78
+            },
+            "u": {
+              "axis": {
+                "x": -911,
+                "z": 414
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -911,
+                  "z": 414
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-23",
+          "rise": {
+            "a": 3.85,
+            "b": 3.85,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.85
+        },
+        {
+          "bounds": [
+            0,
+            10,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 433.37,
+              "y": 3.85,
+              "z": 752.92
+            },
+            "u": {
+              "axis": {
+                "x": -911,
+                "z": 413
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -911,
+                  "z": 413
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-24",
+          "rise": {
+            "a": 3.85,
+            "b": 3.85,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.85
+        },
+        {
+          "bounds": [
+            0,
+            9.99,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": 424.26,
+              "y": 3.85,
+              "z": 757.05
+            },
+            "u": {
+              "axis": {
+                "x": -910,
+                "z": 413
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": -910,
+                  "z": 413
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "h": 0.3,
+          "id": "bed-25",
+          "rise": {
+            "a": 3.85,
+            "b": 3.85,
+            "compute": "sub"
+          },
+          "tone": "dark",
+          "top": 3.85
         }
       ],
       "posts": [],

@@ -1,4 +1,4 @@
-// Catalog marks for leg 4. Steps 4 and 5 add the placed platforms, hood and flood.
+// Verify the cave row and flood the compiled island colliders.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { ORIGIN } from '../../src/place/layout.ts';
 import { inside, layout, parseMapPage, type XZ } from '../../src/sickle/map-data.ts';
@@ -65,17 +65,21 @@ function bake() {
       return { x: p.x / 100, z: p.z / 100 };
     }),
   );
-  return { saltLand: land('salt-land'), portIsle: land('port-isle'), portTop: land('port-top'), salt };
+  const saltBed = Array.from({ length: 27 }, (_, i) => {
+    const p = rowPoint('cave', 62500 + i * 1000);
+    return { x: p.x / 100, z: p.z / 100, y: round(Math.max(3.03, p.y / 100 - 0.15)) };
+  });
+  return { saltBed, saltLand: land('salt-land'), portIsle: land('port-isle'), portTop: land('port-top'), salt };
 }
 
 function bakedBlocks(write: boolean) {
-  const { saltLand, portIsle, portTop, salt } = bake();
+  const { saltLand, portIsle, portTop, salt, saltBed } = bake();
   const shore = ({ centre, beach }: typeof saltLand) => ({ centre, beach });
   const outline = ({ centre, ring }: typeof saltLand) => ({ centre, ring });
   const files = [
     [
       new URL('../../src/content/levels/leg4.ts', import.meta.url),
-      { saltLand: shore(saltLand), portIsle: shore(portIsle), salt },
+      { saltLand: shore(saltLand), portIsle: shore(portIsle), salt, saltBed },
     ],
     [
       new URL('../../src/content/prefabs/leg4-lands.ts', import.meta.url),
@@ -127,12 +131,10 @@ function coastalReach(check: (message: string, passed: boolean) => void, id: 'sa
   for (const c of colliders) {
     const tris = c.volume.triangles;
     for (const tri of tris) {
-      const pts = [tri.a, tri.b, tri.c];
-      const xs = pts.map((p) => ix(p.x)),
-        zs = pts.map((p) => iz(p.z));
-      for (let i = Math.max(0, Math.min(...xs) - 1); i <= Math.min(n - 1, Math.max(...xs) + 1); i++)
-        for (let j = Math.max(0, Math.min(...zs) - 1); j <= Math.min(n - 1, Math.max(...zs) + 1); j++) {
-          const y = heightAt([tri], { x: centre.x + (i - (n - 1) / 2) * cell, z: centre.z + (j - (n - 1) / 2) * cell });
+      const face = [tri];
+      for (let i = Math.max(0, ix(tri.x0) - 1); i <= Math.min(n - 1, ix(tri.x1) + 1); i++)
+        for (let j = Math.max(0, iz(tri.z0) - 1); j <= Math.min(n - 1, iz(tri.z1) + 1); j++) {
+          const y = heightAt(face, { x: centre.x + (i - (n - 1) / 2) * cell, z: centre.z + (j - (n - 1) / 2) * cell });
           if (y !== null && y > h[i * n + j]!) h[i * n + j] = y;
         }
     }
@@ -147,8 +149,8 @@ function coastalReach(check: (message: string, passed: boolean) => void, id: 'sa
           home,
           slab: at(s - 2200, 0),
           apron: at(s, -1600),
-          foot: { x: 104, z: 973 },
-          head: { x: 10, z: 996 },
+          foot: { x: 97, z: 971 },
+          head: { x: 4, z: 997 },
           top: { x: 0, z: 1000 },
         },
   ))
@@ -218,5 +220,5 @@ export function checkLeg4() {
     `Planned hood over crossover at ${crossover} m: ${side.toFixed(2)} m side, ${overhead.toFixed(3)} m overhead`,
     crossover - 10 >= 45 && crossover + 10 <= 80 && side > 0 && overhead > 0,
   );
-  return { level: 'route leg 4 (planned)', entries, failures: entries.filter((e) => !e.passed).length };
+  return { level: 'route leg 4', entries, failures: entries.filter((e) => !e.passed).length };
 }

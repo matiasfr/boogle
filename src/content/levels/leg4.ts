@@ -696,6 +696,143 @@ const shores = {
     "z": 703.84
    }
   ]
+ ],
+ "saltBed": [
+  {
+   "x": 583.13,
+   "z": 589.58,
+   "y": 3.85
+  },
+  {
+   "x": 580.25,
+   "z": 599.16,
+   "y": 3.85
+  },
+  {
+   "x": 577.38,
+   "z": 608.74,
+   "y": 3.85
+  },
+  {
+   "x": 574.51,
+   "z": 618.32,
+   "y": 3.85
+  },
+  {
+   "x": 571.63,
+   "z": 627.9,
+   "y": 3.85
+  },
+  {
+   "x": 568.76,
+   "z": 637.47,
+   "y": 3.85
+  },
+  {
+   "x": 565.89,
+   "z": 647.05,
+   "y": 3.85
+  },
+  {
+   "x": 563.01,
+   "z": 656.63,
+   "y": 3.55
+  },
+  {
+   "x": 560.14,
+   "z": 666.21,
+   "y": 3.16
+  },
+  {
+   "x": 557.23,
+   "z": 675.78,
+   "y": 3.03
+  },
+  {
+   "x": 553.26,
+   "z": 684.94,
+   "y": 3.03
+  },
+  {
+   "x": 547.84,
+   "z": 693.33,
+   "y": 3.03
+  },
+  {
+   "x": 541.09,
+   "z": 700.7,
+   "y": 3.03
+  },
+  {
+   "x": 533.21,
+   "z": 706.84,
+   "y": 3.03
+  },
+  {
+   "x": 524.43,
+   "z": 711.6,
+   "y": 3.03
+  },
+  {
+   "x": 515.33,
+   "z": 715.73,
+   "y": 3.27
+  },
+  {
+   "x": 506.22,
+   "z": 719.86,
+   "y": 3.66
+  },
+  {
+   "x": 497.12,
+   "z": 724,
+   "y": 3.85
+  },
+  {
+   "x": 488.01,
+   "z": 728.13,
+   "y": 3.85
+  },
+  {
+   "x": 478.9,
+   "z": 732.26,
+   "y": 3.85
+  },
+  {
+   "x": 469.8,
+   "z": 736.39,
+   "y": 3.85
+  },
+  {
+   "x": 460.69,
+   "z": 740.52,
+   "y": 3.85
+  },
+  {
+   "x": 451.58,
+   "z": 744.65,
+   "y": 3.85
+  },
+  {
+   "x": 442.48,
+   "z": 748.78,
+   "y": 3.85
+  },
+  {
+   "x": 433.37,
+   "z": 752.92,
+   "y": 3.85
+  },
+  {
+   "x": 424.26,
+   "z": 757.05,
+   "y": 3.85
+  },
+  {
+   "x": 415.16,
+   "z": 761.18,
+   "y": 3.85
+  }
  ]
 };
 // </baked>
@@ -736,9 +873,25 @@ const saltPieces = shores.salt.flatMap((cuts, side) =>
     ];
   }),
 );
+const saltBed = shores.saltBed.slice(1).map((b, i) => {
+  const a = shores.saltBed[i]!;
+  const dx = Math.round((b.x - a.x) * 100),
+    dz = Math.round((b.z - a.z) * 100);
+  const along = unit(dx, dz);
+  return frame(a, along, perp(along)).ramp(
+    'bed-' + i,
+    0,
+    a.y,
+    Math.round(Math.hypot(dx, dz)) / 100,
+    b.y,
+    -3.8,
+    3.8,
+    'dark',
+  );
+});
 const saltFrame = frame(shores.saltLand.centre, unit(0, 1), unit(1, 0));
 // From the waterfront apron to the east rim of the 55 m top. The head overlaps the rim.
-const rampFrame = frame({ x: 104, z: 973 }, unit(-93, 23), unit(23, 93));
+const rampFrame = frame({ x: 97, z: 971 }, unit(-93, 26), unit(26, 93));
 const quayPieces = [
   ...shorePieces(shores.portIsle),
   quay.box('quay-slab', -26, 26, -10, 18, 2.96, 2, 'grey'),
@@ -756,7 +909,7 @@ const areas = [
     basis: saltFrame.basis,
     origin: shores.saltLand.centre,
     key: 'greybox.salt-land',
-    pieces: [...shorePieces(shores.saltLand), ...saltPieces],
+    pieces: [...shorePieces(shores.saltLand), ...saltPieces, ...saltBed],
     posts: [],
     reserves: [],
   },
