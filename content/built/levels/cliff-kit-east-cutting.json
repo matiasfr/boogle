@@ -1,0 +1,15 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "place": "cliff-kit-east-cutting",
+  "placements": [
+    {"id":"east-cutting.0","pos":[190.41,6.26,-47.29],"prefab":"terrain.sea-face-10","rot":[1.99,0,0]},
+    {"id":"east-cutting.1","pos":[194.39,6.17,-38.58],"prefab":"terrain.sea-face-10","rot":[2.01,0,0]},
+    {"id":"east-cutting.2","pos":[189.25,11.61,-40.4],"prefab":"terrain.sea-face-10","rot":[2.01,0,0]},
+    {"id":"east-cutting.3","pos":[192.31,13.5,-33.73],"prefab":"terrain.sea-face-6","rot":[1.95,0,0]},
+    {"id":"east-cutting.4","pos":[189.26,16.67,-36.7],"prefab":"terrain.sea-face-10","rot":[2.05,0,0]}
+  ],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}
