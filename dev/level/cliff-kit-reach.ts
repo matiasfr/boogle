@@ -95,11 +95,13 @@ export function kitReach(placements: readonly Placement[]): Reach {
     climbs: (from, to) => !piece(from) || kit[to]! - kit[from]! <= STEP,
   });
   const fresh: Reach['fresh'] = [];
-  for (let k = 0; k < n * n; k++)
-    if (free[k]! >= 0 && stand[k] && (unaided[k]! < 0 || (unaided[k]! - free[k]!) * CELL >= SHORTCUT)) {
+  for (let k = 0; k < n * n; k++) {
+    if (free[k]! < 0 || !stand[k]) continue;
+    const saved = unaided[k]! < 0 ? null : (unaided[k]! - free[k]!) * CELL;
+    if (saved === null || saved >= SHORTCUT) {
       const i = Math.floor(k / n);
-      const saved = unaided[k]! < 0 ? null : (unaided[k]! - free[k]!) * CELL;
       fresh.push({ x: x0 + i * CELL, z: z0 + (k - i * n) * CELL, y: kit[k]!, saved });
     }
+  }
   return { cells: n * n, fresh };
 }

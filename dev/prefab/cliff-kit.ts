@@ -14,7 +14,8 @@
 //   (dev/level/home-cart.ts, rider-coach R1b).
 // - Art only stands, never a new way up (the reach flood, in level-check).
 // Areas: the canyon (dev/prefab/cliff-kit-canyon.ts). No other area is dressed yet.
-import type { LevelDef, Placement, PrefabKey, Vec3 } from '../../src/prefab/types.ts';
+import type { LevelDef, Placement, Vec3 } from '../../src/prefab/types.ts';
+import { segDist } from '../../src/island/stamps.ts';
 import { ORIGIN } from '../../src/place/layout.ts';
 import { pathAt } from '../../src/place/path-field.ts';
 import { DEVICES, PADS, PILLARS, SECRETS } from '../../src/place/tech-layout.ts';
@@ -32,8 +33,9 @@ export type Kit = { place(prefab: Key, pos: Vec3, rot: Vec3, where: string): voi
 export type Area = {
   /** Its placements' id prefix. */
   id: string;
-  /** The level it writes: content/built/levels/<level>.json (the canyon keeps its first name, canyon-kit). */
-  level: string;
+  /** The level it writes, content/built/levels/<level>.json: cliff-kit-<id> unless set (the canyon keeps its first
+   * name, canyon-kit, inside its bytes). */
+  level?: string;
   /** A Place-local point on each census wall it dresses (dev/ground/cliff-walls.ts `wallAt`). */
   walls: readonly (readonly [number, number])[];
   /** Gated places of its own, beyond the layout's (Place-local x, z). */
@@ -41,6 +43,8 @@ export type Area = {
   dress(kit: Kit): void;
 };
 export const AREAS: readonly Area[] = [canyon];
+/** The level an area writes. */
+export const levelOf = (area: Area) => area.level ?? `cliff-kit-${area.id}`;
 
 export const CLEAR = 0.4; // m, a collider's footprint outside the tread's edge
 export const KEEP_AWAY = 6; // m
@@ -99,9 +103,9 @@ export function* solidSamples(p: Placement, spacing: number) {
           yield box((2 * i) / steps[0]! - 1, (2 * j) / steps[1]! - 1, (2 * k) / steps[2]! - 1);
   }
 }
-/** How far (x, z) is, across the ground, from a box: the distance to its footprint, the outline of its eight corners
- * seen from above (0 inside it). */
-function footprintDistance(box: ReturnType<typeof solidBoxes>[number], x: number, z: number) {
+/** How far a point (x, z) is, across the ground, from a box: the distance to its footprint, the outline of its eight
+ * corners seen from above (0 inside it). */
+function footprint(box: ReturnType<typeof solidBoxes>[number]) {
   const corners: [number, number][] = [];
   for (const u of [-1, 1])
     for (const v of [-1, 1])
@@ -122,22 +126,21 @@ function footprintDistance(box: ReturnType<typeof solidBoxes>[number], x: number
     return out.slice(0, -1);
   };
   const hull = [...half(corners), ...half([...corners].reverse())];
-  let inside = hull.length > 2,
-    near = Infinity;
-  for (let i = 0; i < hull.length; i++) {
-    const a = hull[i]!,
-      b = hull[(i + 1) % hull.length]!;
-    if (cross(a, b, [x, z]) < 0) inside = false;
-    const ex = b[0] - a[0],
-      ez = b[1] - a[1];
-    const t = Math.max(0, Math.min(1, ((x - a[0]) * ex + (z - a[1]) * ez) / (ex * ex + ez * ez || 1)));
-    near = Math.min(near, Math.hypot(x - a[0] - ex * t, z - a[1] - ez * t));
-  }
-  return inside ? 0 : near;
+  return (x: number, z: number) => {
+    let inside = hull.length > 2,
+      near = Infinity;
+    for (let i = 0; i < hull.length; i++) {
+      const a = hull[i]!,
+        b = hull[(i + 1) % hull.length]!;
+      if (cross(a, b, [x, z]) < 0) inside = false;
+      near = Math.min(near, segDist(x, z, a[0], a[1], b[0], b[1]).d);
+    }
+    return inside ? 0 : near;
+  };
 }
 
 /** Every drawn track's segments (live, drawn and Ring Island's planned ones), Place-local with the rail top's height,
- * binned on a RAIL_BIN m grid; built on first use. */
+ * binned on a RAIL_BIN m grid, built on first use: those in the bins round (x, z), every segment within RAIL_BIN m. */
 const RAIL_BIN = 8;
 let railBins: Map<string, [number, number, number, number, number, number][]> | undefined;
 function railsNear(x: number, z: number) {
@@ -178,12 +181,9 @@ const STATIC = 0.25,
   GEAR_HALF = KIT.gauge / 2 + STATIC;
 /** Whether a point is inside a rail's loading gauge: over the rail's top there, from GAUGE.y0 up to the cars' floor
  * within GEAR_HALF of the track's centre line across the ground, and from the floor up to GAUGE.y1 within BODY_HALF. */
-function inGauge(x: number, y: number, z: number) {
-  for (const [ax, az, ay, bx, bz, by] of railsNear(x, z)) {
-    const ex = bx - ax,
-      ez = bz - az;
-    const t = Math.max(0, Math.min(1, ((x - ax) * ex + (z - az) * ez) / (ex * ex + ez * ez || 1)));
-    const across = Math.hypot(x - ax - ex * t, z - az - ez * t);
+function inGauge(rails: ReturnType<typeof railsNear>, x: number, y: number, z: number) {
+  for (const [ax, az, ay, bx, bz, by] of rails) {
+    const { d: across, t } = segDist(x, z, ax, az, bx, bz);
     if (across >= BODY_HALF) continue;
     const up = y - (ay + (by - ay) * t);
     if (up > GAUGE.y0 && up < GAUGE.y1 && (up >= FLOOR || across < GEAR_HALF)) return true;
@@ -192,16 +192,17 @@ function inGauge(x: number, y: number, z: number) {
 }
 
 /** What a placed piece breaks: its solids over or within CLEAR of a tread (sampled through each box no more than 0.5 m
- * apart) or inside a rail's gauge (0.25 m apart, where a track runs within a bin of it), or within KEEP_AWAY of a gated
- * place (exactly, beyond the place's own radius). */
+ * apart) or inside a rail's gauge (0.25 m apart, against the tracks in the bins round the piece: every solid is within
+ * RAIL_BIN m of its origin), or within KEEP_AWAY of a gated place (exactly, beyond the place's own radius). */
 export function kitPieceProblems(p: Placement, keepClear: Area['keepClear'] = []): string[] {
   const problems: string[] = [];
   let tread = Infinity,
     gauge: readonly number[] | undefined;
   for (const q of solidSamples(p, 0.5)) tread = Math.min(tread, pathAt(q[0], q[2]).edge);
-  if (railsNear(p.pos[0], p.pos[2]).length)
+  const rails = railsNear(p.pos[0], p.pos[2]);
+  if (rails.length)
     for (const q of solidSamples(p, 0.25))
-      if (inGauge(q[0], q[1], q[2])) {
+      if (inGauge(rails, q[0], q[1], q[2])) {
         gauge = q;
         break;
       }
@@ -209,9 +210,9 @@ export function kitPieceProblems(p: Placement, keepClear: Area['keepClear'] = []
     problems.push(`${p.id} (${p.prefab}) narrows the tread: its solid comes ${tread.toFixed(3)} m from the edge`);
   if (gauge)
     problems.push(`${p.id} (${p.prefab}) inside a rail's gauge at (${gauge.map((n) => n.toFixed(2)).join(', ')})`);
-  const boxes = solidBoxes(p);
+  const outlines = solidBoxes(p).map(footprint);
   for (const g of [...GATED, ...keepClear.map(([x, z]) => ({ what: "the area's gated place", x, z, r: 0 }))]) {
-    const near = Math.min(...boxes.map((box) => footprintDistance(box, g.x, g.z))) - g.r;
+    const near = Math.min(...outlines.map((distance) => distance(g.x, g.z))) - g.r;
     if (near < KEEP_AWAY)
       problems.push(
         `${p.id} (${p.prefab}) within ${KEEP_AWAY} m of ${g.what} (${g.x.toFixed(1)}, ${g.z.toFixed(1)}): ${near.toFixed(3)} m`,
@@ -224,7 +225,7 @@ export function kitPieceProblems(p: Placement, keepClear: Area['keepClear'] = []
 export function generateArea(area: Area): Placement[] {
   const placements: Placement[] = [];
   area.dress({
-    place(prefab: PrefabKey, pos, rot, where) {
+    place(prefab, pos, rot, where) {
       const placement: Placement = { id: `${area.id}.${placements.length}`, prefab, pos, rot };
       const problems = kitPieceProblems(placement, area.keepClear);
       if (problems.length) throw new Error(`cliff kit, ${area.id} ${where}: ${problems.join('; ')}`);
@@ -234,9 +235,9 @@ export function generateArea(area: Area): Placement[] {
   return placements;
 }
 
-// Generated at import too, so a placement that breaks a rule fails `npm run prefabs` and any audit that loads this file.
-for (const area of AREAS) generateArea(area);
-/** A fresh generation each call, one level an area (the portability test's perturbed Math runs through it). */
-export const cliffKitContent = (): { levels: LevelDef[] } => ({
-  levels: AREAS.map((area) => ({ place: area.level, placements: generateArea(area) })),
+// Generated at import, so a placement that breaks a rule fails `npm run prefabs` and any audit that loads this file.
+const built = AREAS.map(generateArea);
+/** One level an area: as generated at import, or `fresh` (the portability test's perturbed Math runs through it). */
+export const cliffKitContent = (fresh = false): { levels: LevelDef[] } => ({
+  levels: AREAS.map((area, n) => ({ place: levelOf(area), placements: fresh ? generateArea(area) : built[n]! })),
 });

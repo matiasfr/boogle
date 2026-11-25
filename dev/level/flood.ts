@@ -53,7 +53,10 @@ const STEPS: [number, number][] = [
 
 /** 1 for each node reached from `starts` (node indices). */
 export function flood(grid: Grid, mover: Mover, starts: number[], options: FloodOptions = {}) {
-  return Uint8Array.from(hops(grid, mover, starts, options), (d) => (d >= 0 ? 1 : 0));
+  const steps = hops(grid, mover, starts, options),
+    seen = new Uint8Array(steps.length);
+  for (let k = 0; k < steps.length; k++) if (steps[k]! >= 0) seen[k] = 1;
+  return seen;
 }
 
 /** For each node, the fewest steps from `starts` that reach it (-1: none do). Breadth first, so the same nodes as

@@ -79,16 +79,14 @@ async function build(owner: ReturnType<typeof createOwnedView>) {
   }
   setTerrainKit(pieces);
 
-  let batches = 0;
-  const things = KIT_AREAS.flatMap((level) => {
-    // An area's own batches: an instanced mesh culls as one, so an area behind you submits nothing.
+  // Each area its own batches: an instanced mesh culls as one, so an area behind you submits nothing.
+  const areas = KIT_AREAS.map((level) => {
     const placements = loadLevelArtifact(level, definitions).placements;
     const counts = new Map<PrefabKey, number>();
     for (const p of placements) counts.set(p.prefab, (counts.get(p.prefab) ?? 0) + 1);
     const area = new Map([...counts].map(([key, n]) => [key, createPrefabBatch(key, n, owner)]));
-    batches += area.size;
     const used = new Map<PrefabKey, number>();
-    return placements.map((p) => {
+    const things = placements.map((p) => {
       const index = used.get(p.prefab) ?? 0;
       used.set(p.prefab, index + 1);
       return instantiate(
@@ -97,7 +95,10 @@ async function build(owner: ReturnType<typeof createOwnedView>) {
         { owner, batch: { target: area.get(p.prefab)!, index }, still: true },
       );
     });
+    return { batches: area.size, things };
   });
+  const things = areas.flatMap((a) => a.things),
+    batches = areas.reduce((n, a) => n + a.batches, 0);
 
   // Mount-time clearance: the pieces whose solids hold Buddy when the kit mounts wait, neither drawn nor solid (an
   // instance batch draws a piece only while it is enabled), as one set until Buddy is clear of them all, then turn solid

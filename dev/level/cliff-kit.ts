@@ -1,18 +1,25 @@
 // The cliff kit as built (content/built/levels/<area>.json, dev/prefab/cliff-kit.ts): every area's placed pieces against
 // the kit's piece rules (`kitPieceProblems`: 0.4 m off every tread, 6 m from every gated place in the layout, outside the
 // rails' gauge) and the reach flood (./cliff-kit-reach.ts: the pieces open no new way up), each area on the census wall
-// it names (dev/ground/cliff-walls.ts) and mounted by the view (src/entities/terrain-kit/areas.ts).
+// it names (dev/ground/cliff-walls.ts) and mounted by the view (src/entities/terrain-kit/areas.ts KIT_AREAS).
 import fs from 'node:fs';
 import { loadLevelArtifact } from '../../src/prefab/validate.ts';
 import { compiled } from '../../src/prefab/catalogue.ts';
-import { AREAS, kitPieceProblems, type Area } from '../prefab/cliff-kit.ts';
+import type { Placement } from '../../src/prefab/types.ts';
+import { AREAS, kitPieceProblems, levelOf, type Area } from '../prefab/cliff-kit.ts';
+import { KIT_AREAS } from '../../src/entities/terrain-kit/areas.ts';
 import { censusWalls } from '../ground/cliff-walls.ts';
 import { kitReach } from './cliff-kit-reach.ts';
 
 /** Shown in a failure: the first few cells only the kit reaches. */
 const SHOWN = 5;
 
-export function checkCliffKitArea(area: Area, placements = load(area), wallAt = censusWalls().wallAt) {
+/** One area's audit, of `placements` (its built level's, or a seeded set's). */
+export function checkCliffKitArea(
+  area: Area,
+  placements: readonly Placement[],
+  wallAt: ReturnType<typeof censusWalls>['wallAt'],
+) {
   const problems = placements.flatMap((p) => kitPieceProblems(p, area.keepClear));
   const walls = area.walls.map(([x, z]) => {
     const wall = wallAt(x, z);
@@ -30,8 +37,8 @@ export function checkCliffKitArea(area: Area, placements = load(area), wallAt = 
         )
         .join(', ')}`,
     );
-  if (!fs.readFileSync('src/entities/terrain-kit/areas.ts', 'utf8').includes(`levels/${area.level}.json'`))
-    problems.push(`${area.id}: src/entities/terrain-kit/areas.ts does not mount levels/${area.level}.json`);
+  if (!KIT_AREAS.some((level) => level.place === levelOf(area)))
+    problems.push(`${area.id}: src/entities/terrain-kit/areas.ts does not mount levels/${levelOf(area)}.json`);
   return {
     area: area.id,
     pieces: placements.length,
@@ -42,7 +49,7 @@ export function checkCliffKitArea(area: Area, placements = load(area), wallAt = 
   };
 }
 function load(area: Area) {
-  const file = `content/built/levels/${area.level}.json`;
+  const file = `content/built/levels/${levelOf(area)}.json`;
   return loadLevelArtifact(JSON.parse(fs.readFileSync(file, 'utf8')) as unknown, compiled.prefabs).placements;
 }
 

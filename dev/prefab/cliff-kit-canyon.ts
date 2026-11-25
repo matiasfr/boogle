@@ -10,6 +10,7 @@ import { H } from '../../src/place/terrain.ts';
 import { ORIGIN, PATHS } from '../../src/place/layout.ts';
 import { pathAt } from '../../src/place/path-field.ts';
 import { BOULDER_SIZE } from '../../src/content/prefabs/terrain.ts';
+import { r2 as round } from '../../src/math.ts';
 import { CLEAR, type Area, type Key, type Kit } from './cliff-kit.ts';
 
 const CLIMB = PATHS[0]!.pts;
@@ -24,7 +25,6 @@ function leg(a: readonly number[], b: readonly number[]) {
     facing: Math.atan2(-r.x, -r.z),
   };
 }
-const round = (n: number) => Math.round(n * 100) / 100;
 const ground = (x: number, z: number) => H(x + ORIGIN.x, z);
 
 function dress(kit: Kit, run: ReturnType<typeof leg>) {

@@ -2,4 +2,5 @@
 // this list does not mount). Each stands as its own instance batches, so an area behind you draws nothing.
 import canyon from '../../../content/built/levels/canyon-kit.json' with { type: 'json' };
 
-export const KIT_AREAS: readonly unknown[] = [canyon];
+/** Each area's built level, checked on load (src/prefab/validate.ts loadLevelArtifact). */
+export const KIT_AREAS: readonly { place: string }[] = [canyon];

@@ -204,7 +204,7 @@ test('artifact serialization is independent of runtime native transcendental res
           ...secretsLevels,
           ...haltKitContent().levels,
           ...rotundaContent().levels,
-          ...cliffKitContent().levels,
+          ...cliffKitContent(true).levels,
         ],
       ),
       'content/built',

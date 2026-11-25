@@ -67,7 +67,7 @@ const ANCHORS: [string, number, number][] = [
 /** Whether an edge cell is dressed with faces: within `within` m of a tread or rail, or at the sea. */
 export const dressed = (c: EdgeCell, within = DRESS) => c.near < within || c.y < SEA_Y;
 
-/** The census: every wall of at least `min` vertices, largest first, with its toe and rim cells and the view samples. */
+/** The census: every wall of at least `min` vertices, largest first, with its toe cells, the view samples and a lookup by place. */
 export function censusWalls(min = 25) {
   // The material's rock mask at each grid vertex, without its per-pixel wander: rock past half strength.
   const layers = { steep: new Float32Array(1), foot: new Float32Array(1), soil: new Float32Array(1) };
@@ -87,16 +87,40 @@ export function censusWalls(min = 25) {
     for (let k = 0; k < line.xs.length; k += 2) views.rail.push([line.xs[k]!, line.zs[k]!]);
   for (let j = 1; j < NZ - 1; j += 2)
     for (let i = 1; i < NX - 1; i += 2) if (heights[at(i, j)]! < -0.5) views.sea.push([cellX(i), cellZ(j)]);
+  // Nearest-distance queries over each list, binned on a BIN m grid and searched ring by ring outward.
+  const BIN = 16,
+    RINGS = Math.ceil((Math.max(NX, NZ) * CELL) / BIN) + 1;
+  const binned = new Map<[number, number][], Map<number, [number, number][]>>();
+  const key = (i: number, j: number) => i * 4096 + j;
   const nearest = (list: [number, number][], x: number, z: number) => {
+    let bins = binned.get(list);
+    if (!bins) {
+      bins = new Map();
+      for (const q of list) {
+        const k = key(Math.floor(q[0] / BIN), Math.floor(q[1] / BIN));
+        (bins.get(k) ?? bins.set(k, []).get(k)!).push(q);
+      }
+      binned.set(list, bins);
+    }
+    const i = Math.floor(x / BIN),
+      j = Math.floor(z / BIN);
     let best = Infinity;
-    for (const [px, pz] of list) best = Math.min(best, (px - x) ** 2 + (pz - z) ** 2);
+    for (let ring = 0; ring <= RINGS; ring++) {
+      for (let di = -ring; di <= ring; di++)
+        for (let dj = -ring; dj <= ring; dj++) {
+          if (Math.max(Math.abs(di), Math.abs(dj)) !== ring) continue;
+          for (const [px, pz] of bins.get(key(i + di, j + dj)) ?? [])
+            best = Math.min(best, (px - x) ** 2 + (pz - z) ** 2);
+        }
+      // Every point in the next ring out is at least ring BIN m away.
+      if (best <= (ring * BIN) ** 2) break;
+    }
     return Math.sqrt(best);
   };
 
   const seen = new Uint8Array(NX * NZ);
   const walls: Wall[] = [];
   const toes = new Map<Wall, EdgeCell[]>();
-  const rims = new Map<Wall, EdgeCell[]>();
   const cellsOf = new Map<Wall, number[]>();
   for (let start = 0; start < NX * NZ; start++) {
     if (!rock[start] || seen[start]) continue;
@@ -219,16 +243,17 @@ export function censusWalls(min = 25) {
     };
     walls.push(wall);
     toes.set(wall, toe);
-    rims.set(wall, rim);
     cellsOf.set(wall, cells);
   }
   walls.sort((a, b) => b.vertices - a.vertices);
   for (const [n, w] of walls.entries()) w.id = n;
+  const label = new Int32Array(NX * NZ).fill(-1);
+  for (const w of walls) for (const k of cellsOf.get(w)!) label[k] = w.id;
   /** The wall holding the grid vertex nearest Place-local (x, z), if any. */
   const wallAt = (x: number, z: number) => {
     const i = Math.round((x - cellX(0)) / CELL),
       j = Math.round((z - cellZ(0)) / CELL);
-    return walls.find((w) => cellsOf.get(w)!.includes(at(i, j)));
+    return i < 0 || j < 0 || i >= NX || j >= NZ ? undefined : walls[label[at(i, j)]!];
   };
-  return { walls, toes, rims, views, nearest, wallAt };
+  return { walls, toes, views, nearest, wallAt };
 }
