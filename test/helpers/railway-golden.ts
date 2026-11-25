@@ -89,6 +89,9 @@ export const SHARDS: readonly (readonly SeedStage[])[] = [
     'cave-open',
     'cave-mid',
     'port-reached',
+    'wall-mid',
+    'wall-deep',
+    'wall-closed',
     // Garage step 4 (docs/plans/garage-step4.md, step 3): the trade's seeds, built on bay-mid.
     'trade-ready',
     'trade-fitted',

@@ -169,6 +169,9 @@ test('the menu lists the rows it always did: the house and leg 1 stages are tool
     'cave-open',
     'cave-mid',
     'port-reached',
+    'wall-mid',
+    'wall-deep',
+    'wall-closed',
     'trade-ready',
     'trade-fitted',
     'trade-held',
@@ -193,6 +196,7 @@ test('the menu lists the rows it always did: the house and leg 1 stages are tool
         'canopy-reached',
         'cave-open',
         'port-reached',
+        'wall-closed',
         // Garage step 4's trade rows keep the usual spawn at Home, the post's island (docs/plans/garage-step4.md).
         'trade-ready',
         'trade-fitted',
@@ -212,12 +216,18 @@ test("Canopy's landings: canopy-mid on head 1's platform; canopy-open and canopy
   assert.deepEqual(jumpOf('canopy-mid')?.land, { x: -525.13, y: 4.9, z: -673.36, yaw: 1.935 });
 });
 
-test('only cave-mid targets a platform, between the second rack and frame', async () => {
+test('mid-build cave and Wall jumps land between the active rack and frame', async () => {
   const { RAIL_LEGS, legFrame, legRack } = await import('../src/sim/railway-route.ts');
-  const frame = legFrame(RAIL_LEGS[4]!, 1),
-    rack = legRack(RAIL_LEGS[4]!, 1);
-  const land = jumpOf('cave-mid')!.land!;
-  assert.deepEqual([land.x, land.z, land.y], [(frame.x + rack.x) / 200, (frame.z + rack.z) / 200, frame.y / 100]);
-  assert.ok(Math.abs(land.yaw! - Math.atan2(rack.x - frame.x, rack.z - frame.z)) < 0.001);
-  for (const name of ['cave-open', 'port-reached']) assert.equal(jumpOf(name)!.land, undefined);
+  for (const [stage, slot, section] of [
+    ['cave-mid', 4, 1],
+    ['wall-mid', 5, 2],
+    ['wall-deep', 5, 5],
+  ] as const) {
+    const frame = legFrame(RAIL_LEGS[slot]!, section),
+      rack = legRack(RAIL_LEGS[slot]!, section);
+    const land = jumpOf(stage)!.land!;
+    assert.deepEqual([land.x, land.z, land.y], [(frame.x + rack.x) / 200, (frame.z + rack.z) / 200, frame.y / 100]);
+    assert.ok(Math.abs(land.yaw! - Math.atan2(rack.x - frame.x, rack.z - frame.z)) < 0.001);
+  }
+  for (const name of ['cave-open', 'port-reached', 'wall-closed']) assert.equal(jumpOf(name)!.land, undefined);
 });

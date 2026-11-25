@@ -325,7 +325,8 @@ test('halt kit placements, colliders, lever plaques and ordered prompts match th
   // Leg 3 adds both directions at two heads and one homeward lever at Canopy. Step 6: every later halt of a row line
   // gains a homeward lever (row-path.ts rowHomewardLever): the ns and bay lines' Bell Rock and Canopy.
   // Leg 4 adds the West landing's outward lever and both sides at its three later stops.
-  assert.equal(levers.length, 43);
+  // The Wall adds six stops beyond the quay, each served in both directions.
+  assert.equal(levers.length, 55);
   for (const [k, leg] of RAIL_LEGS.entries())
     if (catalog.legBuilt(k)) seed.w.mut(Leg, legId(seed.w, k))!.laid = leg.sections.length;
   halt.restore();

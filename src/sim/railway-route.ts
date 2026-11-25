@@ -125,11 +125,11 @@ const haltAt = (id: RowId, k: number): RailPlatform => {
 
 // ---- the cuts: sections end at a place (design review, change 4)
 // The White Wall's islets, as the cm along the `cave` row where the row passes closest to the islet's centre in
-// docs/world/map-prototypes.html (wall-s2, wall-s1, wall-n2, wall-n1; the centre is the land's `c` plus the map origin).
+// docs/world/map-prototypes.html (wall-s2, wall-s1, wall-n2). Wall-n1 uses its outline's closest tip instead.
 // wall-cs and wall-cn lie inside the sections that end at Canopy Town and at wall-n2; the sixth section is the deep gap
 // to the stacks. test/railway-route.test.ts recomputes each from the map and the row and fails if one is over 1 m off;
 // the legs' other cuts (halts) come from the row itself.
-export const WALL_ISLETS = { 'wall-s2': 209692, 'wall-s1': 253362, 'wall-n2': 417383, 'wall-n1': 471344 } as const;
+export const WALL_ISLETS = { 'wall-s2': 210553, 'wall-s1': 254177, 'wall-n2': 391369, 'wall-n1': 459379 } as const;
 const WALL_S2 = WALL_ISLETS['wall-s2'];
 const WALL_S1 = WALL_ISLETS['wall-s1'];
 const WALL_N2 = WALL_ISLETS['wall-n2'];
@@ -234,11 +234,12 @@ const SPECS: readonly Spec[] = [
     row: 'cave',
     from: 2,
     dest: 4,
-    cuts: [WALL_S2, WALL_S1, stopCm('cave', 3), WALL_N2, WALL_N1, stopCm('cave', 4)],
+    cuts: [WALL_S2, WALL_S1, stopCm('cave', 3) + HEAD_BACK_CM, WALL_N2, WALL_N1, stopCm('cave', 4)],
     bill: BILL,
     gated: [[5, 3]],
     after: 4,
     kit: 'home',
+    built: true,
   },
   {
     id: 'notch-tunnel',
@@ -271,7 +272,7 @@ const SPECS: readonly Spec[] = [
 const SIM_BASE: Readonly<Record<RowId, number>> = { ring: 5, ns: 0, bay: 0, cave: 0 };
 /** How many extra stops a built leg inserts before a catalog halt. A head on a named halt shares its slot. */
 export function insertedHeadsBefore(stops: readonly number[], cuts: readonly number[], halt: number) {
-  return cuts.slice(0, -1).filter(end => {
+  return cuts.slice(0, -1).filter((end) => {
     const head = end - HEAD_BACK_CM;
     return head < stops[halt]! && !stops.includes(head);
   }).length;
@@ -336,8 +337,9 @@ export const RAIL_GRANTS: readonly { id: string; label: string; leg: number; at:
 ];
 const grant = (id: string) => RAIL_GRANTS.findIndex((g) => g.id === id);
 
-/** A barrier on a section's frame (`RouteSection.gate`): it opens for anyone once the room holds the `needs` grant. It
- * stands at the frame, the section's first centimetre. */
+/** A frame's and a rack's reach (the design review of step 4, b: 4 m, not a halt's 12.6). */
+export const LEG_SITE_REACH = 400;
+/** A barrier opens at its frame when the section is current and the room holds its grant. */
 export const RAIL_GATES: readonly { id: string; label: string; needs: number; at: RailPlatform }[] = [
   // At the incline's first frame on incline-s (greybox-leg2.md, step 1): t 24, 1 m in from its edge.
   { id: 'incline', label: "The incline's first frame", needs: grant('pick'), at: rowSide('ns', 2400, -480, 90, 400) },
@@ -353,7 +355,7 @@ export const RAIL_GATES: readonly { id: string; label: string; needs: number; at
     id: 'deep-span',
     label: 'The deep span to the stacks',
     needs: grant('seeds'),
-    at: pointAt('cave', WALL_N1),
+    at: legFrame(RAIL_LEGS[5]!, 5),
   },
   {
     id: 'notch',
@@ -371,7 +373,7 @@ export const RAIL_YARDS: readonly { id: string; halt: number; fedBy: number }[] 
 /** Places the catalog draws once per row: the same place, a few metres apart. Sectioning and the rules treat each as one
  * place (Ring Island's halt differs by 30 m between `ring` and `bay-trestle`; West landing by 37 m between `bay` and
  * `cave`). `halts`: [row, halt index]. */
-export const RAIL_PLACES: readonly { id: string; halts: readonly (readonly [string, number])[] }[] = [
+export const RAIL_PLACES: readonly { id: string; boundCm?: number; halts: readonly (readonly [string, number])[] }[] = [
   {
     id: 'ring-island',
     halts: [
@@ -381,6 +383,7 @@ export const RAIL_PLACES: readonly { id: string; halts: readonly (readonly [stri
   },
   {
     id: 'gorge',
+    boundCm: 6500,
     halts: [
       ['ring', 1],
       ['ns', 0],
@@ -404,6 +407,7 @@ export const RAIL_PLACES: readonly { id: string; halts: readonly (readonly [stri
   },
   {
     id: 'canopy',
+    boundCm: 30000,
     halts: [
       ['bay', 2],
       ['cave', 3],
@@ -444,8 +448,6 @@ export function rowSide(id: RowId, cm: number, lat: number, up: number, reach: n
     len = Math.sqrt(dx * dx + dz * dz);
   return { x: Math.round(p.x - (dz * lat) / len), z: Math.round(p.z + (dx * lat) / len), y: p.y + up, reach };
 }
-/** A frame's and a rack's reach (the design review of step 4, b: 4 m, not a halt's 12.6). */
-export const LEG_SITE_REACH = 400;
 /** Line 2's kit car standing at High Gorge: 7.1 m behind the train's along (src/entities/railway/cars.ts, the coach
  * train's `kit` offset), so the incline's first rack stands abreast of it. */
 const GORGE_KIT_CAR_CM = 710;
@@ -474,6 +476,10 @@ const FIRST_SITE: Readonly<Record<string, { frame: RailPlatform; rack: RailPlatf
   cave: {
     frame: RAIL_GATES[2]!.at,
     rack: rowSide('cave', 600, -980, 90, LEG_SITE_REACH),
+  },
+  wall: {
+    frame: rowSide('cave', stopCm('cave', 2) + 1200, 480, 90, LEG_SITE_REACH),
+    rack: rowSide('cave', stopCm('cave', 2) + 200, 480, 90, LEG_SITE_REACH),
   },
 };
 if (

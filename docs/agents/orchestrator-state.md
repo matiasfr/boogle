@@ -11,7 +11,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
 | Cliff kit step 9: the Sickle horizon | Terrain clean-up | codex/cliff-kit-horizon | live session, Codex Astra medium | 2026-11-25 | built; held for his word on the White Wall's colour |
-| Greybox leg 5 steps 1 to 3: the Wall's catalog, rules and bump (v71), seeds | The greybox route | codex/greybox-leg5-rules | heartbeat, Codex Astra high | 2026-11-25 13:42 | running |
+| Greybox leg 5 step 4: Port Quay and Canopy re-laid for the Wall | The greybox route | codex/greybox-leg5-relay | heartbeat, Codex Astra medium | 2026-11-25 15:00 | running |
 
 ## Where the work stands
 

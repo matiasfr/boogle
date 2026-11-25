@@ -29,7 +29,8 @@ function ledger(s: Seed) {
   ] as const) {
     const laid = leg.sections.slice(0, r.laid).reduce((n, sec) => n + sec[kind], 0);
     const aboard = LINE_SLOTS[cave]!.reduce((n, j) => n + train(s.w, j)[kind], 0);
-    assert.equal(r[loaded], laid + r[kind] + aboard + rack[depot] + r[held], kind);
+    // At Port Quay the same trains and rack begin carrying the next leg's first kit.
+    assert.equal(r[loaded] + legRow(s.w, 5)[loaded], laid + r[kind] + aboard + rack[depot] + r[held], kind);
   }
   assert.equal(invariant(s.w), null);
 }
@@ -64,9 +65,20 @@ test('the plug needs the pick and Canopy laid, and the stocked first frame waits
 test('the cave fleet carries each kit forward, keeps Saltpan open and closes the sea head at the quay', () => {
   assert.deepEqual(
     RAIL_LINES[cave]!.halts.map((h) => h.name),
-    ['West landing', 'Cave head 1', 'Saltpan Halt', 'Port Quay', 'Canopy Town', 'High Gorge'],
+    [
+      'West landing',
+      'Cave head 1',
+      'Saltpan Halt',
+      'Port Quay',
+      'Wall head 1',
+      'Wall head 2',
+      'Canopy Town',
+      'Wall head 4',
+      'Wall head 5',
+      'High Gorge',
+    ],
   );
-  assert.deepEqual(LINE_SLOTS[cave], [12, 13]);
+  assert.deepEqual(LINE_SLOTS[cave], [12, 13, 14, 15, 16]);
   assert.ok(LINE_SLOTS[cave]!.every((slot) => RAIL_TRAINS[slot]!.shed));
   assert.equal(routeRow(open.w).grants & (1 << cloth), 1 << cloth);
   assert.equal(routeRow(open.w).gates & (1 << plug), 1 << plug);
@@ -79,6 +91,9 @@ test('the cave fleet carries each kit forward, keeps Saltpan open and closes the
     LINE_SLOTS[cave]!.map((j) => [train(s.w, j).logs, train(s.w, j).rails]),
     [
       [20, 20],
+      [0, 0],
+      [0, 0],
+      [0, 0],
       [0, 0],
     ],
   );

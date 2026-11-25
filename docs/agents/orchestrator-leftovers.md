@@ -4,6 +4,7 @@ Proof debts, things jobs reported and did not fix, and older parked items. Split
 
 ## From 25 November
 
+- P3 · From greybox leg 5 steps 1 to 3's review (Astra high): the checkpoint validator passes a completed Wall whose deep-span barrier is still shut (`src/sim/railway-check-route.ts`, near line 72); play enforces the gate before the final lay, so only a hand-edited fixture shows it. Failing test `the world check refuses a completed Wall with its deep-span barrier still shut` is on the reviewer's branch `review/greybox-leg5-rules` (`dab59ad05`, `test/railway-leg5-rules.test.ts`).
 - P3 · From friends voice step 5 (the honk reply): a honk replaces the same player's "On my way" row with "Name ♪", so the card loses that they are coming (`src/features/ping.ts`, `reply`, the shared `replies` row per player).
 - P3 · Same job's stills: on the pinger's screen the card sits pinned to the top edge with its arrow while the ping's ring is on screen at 16 m (`docs/plans/friends-ping/honk-still.png`); card placement predates step 5; check whether the anchor 1.4 m above the ring is placed off screen when the camera looks steeply down.
 - P3, copy, the owner's · From order picks B2's review (#2393): during the trade hold the garage readout says "Kit a trip: Nothing to build" beside "Held while the line builds" (`kitTrip` needs two sections left), so the two lines read as contradicting each other. The screen's new strings are placeholders for him: "Held while the line builds", "Held until the line is laid", "Re-pick used", "Swap (once)".

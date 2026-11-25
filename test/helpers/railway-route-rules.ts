@@ -78,7 +78,9 @@ export function routeRulesShard(shard: number) {
   let caseIndex = 0;
   function test(name: string, optionsOrFn: TestOptions | TestFn, fn?: TestFn) {
     // The opt-in schedule cases populate one shared distribution: keep its producers and consumer together.
-    if (name.startsWith('lost ask fuzz ')) {
+    if (name.startsWith('wall service health')) {
+      if (shard !== 4) return;
+    } else if (name.startsWith('lost ask fuzz ')) {
       if (shard !== 0) return;
     } else if (caseIndex++ % 4 !== shard) return;
     if (typeof optionsOrFn === 'function') void nodeTest(name, optionsOrFn);
@@ -188,7 +190,7 @@ export function routeRulesShard(shard: number) {
       assert.equal(l.id, id);
       assert.equal(l.trains, 0, `${id}: no train at first`);
       const open = trainStopsOf(ROW_LINE[id], 7, { head: 7, joined: true }, [N, 2, 2, 3, 3, 6, 1, 1]);
-      assert.equal(open.length, { ns: 3, bay: 6, cave: 4 }[id], `${id}: open through its last built leg`);
+      assert.equal(open.length, { ns: 3, bay: 6, cave: 10 }[id], `${id}: open through its last built leg`);
       assert.ok(
         l.halts.slice(open.length).every((h) => h.shut),
         `${id}: its later halts shut`,
@@ -196,8 +198,8 @@ export function routeRulesShard(shard: number) {
     }
     assert.deepEqual(
       RAIL_LEGS.map((_l, k) => legBuilt(k)),
-      [true, true, true, true, true, false, false, false],
-      'built through Port Quay',
+      [true, true, true, true, true, true, false, false],
+      'built through the White Wall',
     );
   });
 
@@ -245,12 +247,15 @@ export function routeRulesShard(shard: number) {
         [3, true],
         [4, true],
         [4, true],
+        [4, true],
+        [4, true],
+        [4, true],
       ],
     );
     const w = createRailwayWorld();
     assert.deepEqual(
       trains(w).map((r) => r.phase),
-      [0, 0, ...Array.from({ length: 12 }, () => TRAIN_PHASE.SHED)],
+      [0, 0, ...Array.from({ length: 15 }, () => TRAIN_PHASE.SHED)],
     );
     // Spawned last, in catalog order, nothing laid.
     assert.equal(w.count(Leg), RAIL_LEGS.length);
@@ -722,7 +727,8 @@ export function routeRulesShard(shard: number) {
     });
   }
   // Retained physical arrival and freight proofs, separate from lever service health.
-  const SETTLED_CAP = 1158, PRINT_OVER = 1350;
+  const SETTLED_CAP = 1158,
+    PRINT_OVER = 1350;
   /** The gate fuzzes' length: 20,000 in the long run (ROUTE_GATES=1), 3,000 otherwise (test/helpers/fuzz.ts). */
   const FUZZ = routeTicks();
   // Round 3, ruling 1: the waits are owed at the shipped hold (75%) on four seeds; at 0% two seeds run for the structural
@@ -759,8 +765,10 @@ export function routeRulesShard(shard: number) {
           const id = askPool(s.w)[Math.floor(rand() * askPool(s.w).length)]!,
             dir = rand() < 0.5 ? -1 : 1;
           const h = RAIL_HALTS[id]!;
-          if (h.stop < stopsOf(s.w, h.line).length && ask(s, { id, dir }) && !asked.has(`${id}/${dir}`))
-            { health.ask(s.w, id, dir, s.t); asked.set(`${id}/${dir}`, s.t); }
+          if (h.stop < stopsOf(s.w, h.line).length && ask(s, { id, dir }) && !asked.has(`${id}/${dir}`)) {
+            health.ask(s.w, id, dir, s.t);
+            asked.set(`${id}/${dir}`, s.t);
+          }
         }
         if (rand() < 0.03 && n2 > 2) {
           const serving = servingSlots((j) => train(s.w, j), LINE2);
@@ -850,7 +858,9 @@ export function routeRulesShard(shard: number) {
         if (headPct === 75) assert.equal(toRailhead.length, N, 'a train reached the new railhead after every lay');
       }
       health.drain(s.w, s.t, () => railTick(s.w, ++s.t, headPct));
-      t.diagnostic(`stage headways and bounds: ${[...health.stages].join('; ')}; max served ${health.worst.get(LINE2)}`);
+      t.diagnostic(
+        `stage headways and bounds: ${[...health.stages].join('; ')}; max served ${health.worst.get(LINE2)}`,
+      );
       if (headPct === 75) assert.deepEqual(health.failures, []);
       else assert.equal(health.pending.size, 0, 'every remaining call served');
       assert.ok(longest < 1200, 'no line-2 train stands two minutes');
@@ -1032,7 +1042,7 @@ export function routeRulesShard(shard: number) {
   }
   /** The lever waits the WAIT_BOUND way (test/railway-trains.test.ts): asks at 5% a tick from askPool, riders' asks, junk calls and
    * restores, nothing fed; line 2's served waits, the worst and the mean. Spacing checked as it runs. */
-  function leverWaits(base: Seed, seed: number, headPct: number, ticks: number, mixed?: "growing" | "settled") {
+  function leverWaits(base: Seed, seed: number, headPct: number, ticks: number, mixed?: 'growing' | 'settled') {
     let s = unaudited({ w: restore(base.w), t: base.t });
     const health = new ServiceHealth([LINE2], s.w);
     const rand = mulberry32(seed),
@@ -1049,14 +1059,16 @@ export function routeRulesShard(shard: number) {
     };
     let mixedTicks = 0;
     for (let k = 0; k < ticks; k++) {
-      if (mixed === "growing" && k % 30 === 0) stock(s);
+      if (mixed === 'growing' && k % 30 === 0) stock(s);
       const n2 = stopsOf(s.w, LINE2).length;
       if (rand() < 0.05) {
         const id = askPool(s.w)[Math.floor(rand() * askPool(s.w).length)]!,
           dir = rand() < 0.5 ? -1 : 1;
         const h = RAIL_HALTS[id]!;
-        if (h.stop < stopsOf(s.w, h.line).length && ask(s, { id, dir }) && !asked.has(`${id}/${dir}`))
-          { health.ask(s.w, id, dir, s.t); asked.set(`${id}/${dir}`, s.t); }
+        if (h.stop < stopsOf(s.w, h.line).length && ask(s, { id, dir }) && !asked.has(`${id}/${dir}`)) {
+          health.ask(s.w, id, dir, s.t);
+          asked.set(`${id}/${dir}`, s.t);
+        }
       }
       if (rand() < 0.03 && n2 > 2) {
         const serving = servingSlots((j) => train(s.w, j), LINE2);
@@ -1076,7 +1088,7 @@ export function routeRulesShard(shard: number) {
           assert.equal(train(s.w, slot).from, stopsOf(s.w, LINE2)[0]);
           s.w.mut(Train, s.w.lookup(Train, slot)!)!.boiler = 1;
         }
-        if (servingSlots(j => train(s.w,j), LINE2).some(j => train(s.w,j).boiler === 2)) mixedTicks++;
+        if (servingSlots((j) => train(s.w, j), LINE2).some((j) => train(s.w, j).boiler === 2)) mixedTicks++;
       }
       health.tick(s.w, s.t);
       for (const [key, since] of asked) {
@@ -1113,7 +1125,10 @@ export function routeRulesShard(shard: number) {
     health.drain(s.w, s.t, () => railTick(s.w, ++s.t, headPct));
     assert.equal(invariant(s.w), null);
     return {
-      health, long, mixedTicks, laid: legRow(s.w, STACK).laid,
+      health,
+      long,
+      mixedTicks,
+      laid: legRow(s.w, STACK).laid,
       over1050: waits.filter((v) => v > 1050).length,
       worst: Math.max(0, ...waits),
       mean: Math.round(waits.reduce((a, b) => a + b, 0) / Math.max(1, waits.length)),
@@ -1122,7 +1137,7 @@ export function routeRulesShard(shard: number) {
     };
   }
   const SEEDS = [0xc0ffee, 0x777, 0x5eed, 0xbadd] as const;
-  test('mixed stack service health, growing and settled at 75%', t => {
+  test('mixed stack service health, growing and settled at 75%', (t) => {
     const errors: string[] = [];
     for (const mode of ['growing', 'settled'] as const) {
       const base = unaudited(copy(buildSeedWorld('steel-home')));
@@ -1133,13 +1148,15 @@ export function routeRulesShard(shard: number) {
         assert.ok(r.mixedTicks > 0);
         if (ROUTE_GATES) assert.equal(r.laid, N);
         t.diagnostic(`${mode} ${seed.toString(16)} mixed ${r.mixedTicks}, worst served ${r.health.worst.get(LINE2)}`);
-        errors.push(...r.health.failures.map(f => `${mode} ${seed.toString(16)}: ${f}`));
+        errors.push(...r.health.failures.map((f) => `${mode} ${seed.toString(16)}: ${f}`));
       }
     }
     // The harness repeatedly downgrades a leader at Home, which players cannot do.
     // Keep the live-call drain, spacing and 3x stall checks in both modes.
-    t.diagnostic(`forced mixed stack: ${errors.filter(line => line.includes(' served ')).length} completed waits above budget`);
-    for (const error of errors.filter(line => line.includes(' served '))) t.diagnostic(error);
+    t.diagnostic(
+      `forced mixed stack: ${errors.filter((line) => line.includes(' served ')).length} completed waits above budget`,
+    );
+    for (const error of errors.filter((line) => line.includes(' served '))) t.diagnostic(error);
   });
   const SETTLED_FUZZ = routeTicks();
 
@@ -1468,7 +1485,15 @@ export function routeRulesShard(shard: number) {
               for (const renew of [false, true]) {
                 const result = renew ? headWait(s, [delay], true) : automatic,
                   wait = result.waits[renew ? 0 : j]!,
-                  row = { stage, section: before + 1, seed, delay, renew, wait, bound: serviceBudget(s.w, LINE2).bound };
+                  row = {
+                    stage,
+                    section: before + 1,
+                    seed,
+                    delay,
+                    renew,
+                    wait,
+                    bound: serviceBudget(s.w, LINE2).bound,
+                  };
                 totals.push(row);
                 t.diagnostic(`CASE ${JSON.stringify(row)}`);
                 if (wait === null || wait > 1200)
@@ -1779,61 +1804,72 @@ export function routeRulesShard(shard: number) {
     }
   });
 
-  test('cave service health at 75% headway on growing and settled track', { timeout: 480000 }, (t) => {
-    const k = RAIL_LEGS.findIndex((l) => l.id === 'cave'),
-      line = ROW_LINE.cave;
-    // Play forward from the shard's joined island. Each settled trial starts with its own stage's fleet.
-    const open = legStagesOn(unaudited(JOINED), 'gorge-open', 'cave-open');
-    const stages = [open];
-    for (let laid = 1; laid <= 3; laid++) {
-      const s = unaudited(stages[laid - 1]!);
-      feedSection(s, k);
-      advance(s, cycleTicks(line, stopsOf(s.w, line), 0));
-      stages.push(s);
-    }
-    const ids = RAIL_HALTS.flatMap((h, id) => (h.line === line ? [id] : []));
-    const duration = routeTicks();
-    for (const seed of ROUTE_GATES ? SEEDS : SEEDS.slice(0, 1)) {
-      for (const [stage, base] of stages.entries()) {
-        let s = unaudited(base),
-          accepted = 0;
-        const health = new ServiceHealth([line], s.w),
-          rand = mulberry32(seed);
-        const step = () => {
-          railTick(s.w, ++s.t, 75);
-          assert.equal(
-            trainSpacing(
-              (j) => train(s.w, j),
-              (l) => stopsOf(s.w, l),
-              s.t,
-            ),
-            null,
-          );
-        };
-        for (let i = 0; i < duration; i++) {
-          const n = stopsOf(s.w, line).length;
-          if (n && rand() < 0.05) {
-            const id = ids[Math.floor(rand() * n)]!,
-              dir = rand() < 0.5 ? -1 : 1;
-            if (ask(s, { id, dir })) {
-              health.ask(s.w, id, dir, s.t);
-              accepted++;
-            }
-          }
-          if (stage === 0 && i % 10 === 0 && legOpen(s.w, k)) stock(s, k);
-          step();
-          health.tick(s.w, s.t);
-          if (i === Math.floor(duration / 2)) s = unaudited(s);
-        }
-        health.drain(s.w, s.t, step);
-        assert.equal(legRow(s.w, k).laid, stage || 3);
-        assert.ok(accepted > 0 && health.worst.has(line), 'accepted and served a cave call');
-        assert.deepEqual(health.failures, []);
-        assert.equal(invariant(s.w), null);
-        t.diagnostic(
-          `${seed.toString(16)} ${stage ? 'settled ' + stage : 'growing'}: ${accepted} accepted, worst ${health.worst.get(line)} ticks; ${[...health.stages].join('; ')}`,
-        );
+  for (const legId of ['cave', 'wall'] as const)
+    test(`${legId} service health at 75% headway on growing and settled track`, { timeout: 480000 }, (t) => {
+      const k = RAIL_LEGS.findIndex((l) => l.id === legId),
+        line = ROW_LINE.cave;
+      const count = RAIL_LEGS[k]!.sections.length;
+      const unlock = (s: Seed) => {
+        if (legId === 'wall' && legRow(s.w, k).laid === 5 && !(routeRow(s.w).gates & (1 << 3)))
+          assert.equal(act(s, 'a', 'rail.gate', { id: 3 }), 1);
+      };
+      // Play forward from the shard's joined island. Each settled trial starts with its own stage's fleet.
+      const open = legStagesOn(unaudited(JOINED), 'gorge-open', legId === 'wall' ? 'port-reached' : 'cave-open');
+      const stages = [open];
+      for (let laid = 1; laid <= count; laid++) {
+        const s = unaudited(stages[laid - 1]!);
+        unlock(s);
+        feedSection(s, k);
+        advance(s, cycleTicks(line, stopsOf(s.w, line), 0));
+        stages.push(s);
       }
-    }
-  });
+      const ids = RAIL_HALTS.flatMap((h, id) => (h.line === line ? [id] : []));
+      const duration = routeTicks();
+      for (const seed of ROUTE_GATES ? SEEDS : SEEDS.slice(0, 1)) {
+        for (const [stage, base] of stages.entries()) {
+          let s = unaudited(base),
+            accepted = 0;
+          const health = new ServiceHealth([line], s.w),
+            rand = mulberry32(seed);
+          const step = () => {
+            railTick(s.w, ++s.t, 75);
+            assert.equal(
+              trainSpacing(
+                (j) => train(s.w, j),
+                (l) => stopsOf(s.w, l),
+                s.t,
+              ),
+              null,
+            );
+          };
+          for (let i = 0; i < duration; i++) {
+            const n = stopsOf(s.w, line).length;
+            if (n && rand() < 0.05) {
+              const id = ids[Math.floor(rand() * n)]!,
+                dir = rand() < 0.5 ? -1 : 1;
+              if (ask(s, { id, dir })) {
+                health.ask(s.w, id, dir, s.t);
+                accepted++;
+              }
+            }
+            if (stage === 0 && i % 10 === 0 && legOpen(s.w, k)) {
+              unlock(s);
+              stock(s, k);
+            }
+            step();
+            health.tick(s.w, s.t);
+            if (i === Math.floor(duration / 2)) s = unaudited(s);
+          }
+          health.drain(s.w, s.t, step);
+          if (stage || ROUTE_GATES || legId === 'cave') assert.equal(legRow(s.w, k).laid, stage || count);
+          else assert.ok(legRow(s.w, k).laid > 0, 'the Wall advanced under load');
+          assert.ok(accepted > 0 && health.worst.has(line), 'accepted and served a cave call');
+          assert.deepEqual(health.failures, []);
+          assert.equal(invariant(s.w), null);
+          t.diagnostic(
+            `${seed.toString(16)} ${stage ? 'settled ' + stage : 'growing'}: ${accepted} accepted, worst ${health.worst.get(line)} ticks; ${[...health.stages].join('; ')}`,
+          );
+        }
+      }
+    });
 }

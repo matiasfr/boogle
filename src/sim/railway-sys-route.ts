@@ -165,6 +165,7 @@ export const gate = defineSystem(
     const r = routeRow(w),
       at = gateLeg(e.id);
     if (r.gates & bit(e.id) || !(r.grants & bit(RAIL_GATES[e.id]!.needs)) || !at || !legOpen(w, at.leg)) return 0;
+    if (legRow(w, at.leg).laid !== at.section) return 0;
     w.mut(Route, routeId(w))!.gates = r.gates | bit(e.id);
     return 1;
   },

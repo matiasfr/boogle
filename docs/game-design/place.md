@@ -1611,6 +1611,11 @@ At the Saltpan, two low platforms follow the curve across the salt flats. Port Q
 From their apron a ramp climbs to High Port?s 55 m top. The apron reserves room for the Roundhouse and a town.
 The board at the buffers marks the future Wall line. Finishing the cave line opens the Port Quay stall at Bell Rock. [Leg 4 plan](../plans/greybox-leg4.md)
 
+**White Wall catalog and rules (local v71 branch).** Once the line reaches Port Quay, cave trains bring the next
+six kits along the Wall. The line serves a second Canopy halt on the isle's east side and crosses above the bay line.
+At the fifth head the room's crystal seeds open the deep span. The last lay reaches High Gorge beside line 2.
+The quay, head platforms, crossing and Gorge arrival await the leg's massing steps. [Leg 5 plan](../plans/greybox-leg5.md)
+
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 
 **Rotunda step 1a (14 November, local branch; v45 not shipped).** The shared kit is data: 20° wedge bays,
