@@ -68,14 +68,21 @@ export function rails(s: Seed, pid: string, station: string, n: number) {
     n -= moved;
   }
 }
-/** Players `a` and `b`, line one laid to the forge with nothing in its bill yet. */
-function railwayAtForgeBill(): Seed {
+/** Players a and b after funding Station 1, with the chosen stand taken if requested. */
+export function railwayAtFirstPick(pick?: 'jump' | 'pack'): Seed {
   const w = createRailway();
   for (const pid of ['a', 'b']) railSession(w, pid, 1);
   need(apply(w, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0).accepted === 1, 'the wake');
   const s = { w, t: 40 };
   logs(s, 'a', 'T1', 24);
+  if (pick) need(act(s, 'a', `rail.${pick}`, { station: 'T1' }) === 1, `T1 granted ${pick}`);
   advance(s, 300);
+  return s;
+}
+/** Players a and b, line one laid to the forge with nothing in its bill yet. */
+function railwayAtForgeBill(): Seed {
+  const s = railwayAtFirstPick();
+  const { w } = s;
   for (let i = 0; i < 8;) {
     const n = act(s, 'b', 'rail.mine', { id: rocks(w).findIndex((r) => r.left > 0) });
     need(n > 0, 'stone mined');
