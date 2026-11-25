@@ -7,7 +7,8 @@
 // and build the bay cut, riding `bay` trains to Bell Rock's upper platform. Leg 3: open the Canopy barrier on frame 1 there, build the three sections
 // riding `bay` trains over the strait to each head and on to Canopy Town, take the glider cloth round the buffers and
 // ride home on the same line to the West landing. Leg 4: walk round the root to the cave apron, open the plug,
-// build the three sections to Port Quay and ride back to the West landing.
+// build the three sections to Port Quay and ride back to the West landing. Leg 5: return to Port Quay, build the
+// White Wall to High Gorge, opening the deep span at frame six, then take line 2 home.
 // Prompts are pressed by id (`railway-leg-take-logs`, `-take-rails`,
 // `-feed`, `-pick`, `-gate`, `-seeds`, `-canopy`, `-cloth`). Each phase reads the rows first, so it resumes from
 // `ring-joined`, `gorge-open`, `gorge-mid`, `gorge-reached`, `bay-mid`, `trade-ready`, `bay-reached` and `canopy-reached` (a seed starts
@@ -33,6 +34,7 @@ import {
   legFrame,
   legRack,
   rowHalt,
+  rowSide,
   type RouteLeg,
 } from '../../../src/sim/railway-route.ts';
 import { HALT, line2Rides } from './railway-ride.ts';
@@ -299,7 +301,7 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   /** Build leg `slot` (a row line of its own) from where its open section's frame is reached: feed each section, ride
    * the train its lay asks for to the new head (stepping off at the next frame), and at the last lay ride on to its
    * destination halt and step off there. */
-  const buildRowLeg = async (slot: number, name: string) => {
+  const buildRowLeg = async (slot: number, name: string, beforeFeed?: (section: number) => Promise<void>) => {
     const leg = RAIL_LEGS[slot]!,
       m = leg.sections.length,
       at = () => legRow(rw(), slot).laid;
@@ -309,6 +311,7 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
       check(await bot.walk(frame.x / 100, frame.z / 100, 3), `walked to ${name} section ${k + 1}'s frame`);
       // The section in words: the playthrough's stall check counts a beat as new only with its digits ignored.
       await checkpoint(`${name} section ${ORDINAL[k]} frame reached`);
+      await beforeFeed?.(k);
       await feedSection(slot, k, `${name} section ${k + 1}`);
       await checkpoint(`${name} section ${ORDINAL[k]} laid`);
       const last = at() >= m;
@@ -416,16 +419,30 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
     await hopTo(at.x / 100, at.z / 100, beat);
     await until(() => me.coyote > 0 && !me.swimming, `${beat}: standing`, 10000);
   };
-  // The deep-span seed places the player between the last rack and frame.
+  const rideGorgeHome = async () => {
+    const gorgeLever = () => ringLevers().find((l) => l.halt === GORGE_STOP && l.dir === -1 && l.on);
+    const watch = watchTrains(L.line, GORGE_STOP);
+    try {
+      await rideFrom(
+        {
+          name: 'High Gorge',
+          stop: GORGE_STOP,
+          stands: () => ringLevers().some((l) => l.halt === GORGE_STOP && l.stands),
+          handle: () => gorgeLever(),
+          before: async (handle) => check(await bot.walk(handle.x, handle.z, 0.6), "walked to High Gorge's lever"),
+          calling: () => !!gorgeLever()?.over,
+          wait: cm(gorge),
+        },
+        view().halts[HALT.village2]!.stop,
+      );
+    } finally {
+      clearInterval(watch);
+    }
+  };
   const wallSlot = legOf('wall');
   const wall = RAIL_LEGS[wallSlot]!;
   const barrier = wall.sections[5]!.gate!;
-  if (legRow(rw(), wallSlot).laid === 5 && !(routeRow(rw()).gates & (1 << barrier))) {
-    if (!near(legFrame(wall, 5), 40)) {
-      check(await bot.walk(westLanding.x / 100, westLanding.z / 100, 3), 'walked to the cave line');
-      await rowRide(wall.line, 0, wall.railheadHalt + 4, 'White Wall');
-      await stepOff(legFrame(wall, 5), 'stepped off at the deep span frame');
-    }
+  const openDeepSpan = async () => {
     check(
       await bot.until(
         () => inspectRailway()?.worksView?.legView?.objective === "Open the deep span's barrier (placeholder)",
@@ -437,6 +454,33 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
     await press('railway-leg-deep-span', RAIL_GATES[barrier]!.at, 'open the deep span');
     check(routeRow(rw()).gates & (1 << barrier), 'deep span opened at frame six');
     await checkpoint('deep span open');
+  };
+  // The deep-span jump seed places the player between the last rack and frame.
+  if (legRow(rw(), wallSlot).laid === 5 && !(route().gates & (1 << barrier))) {
+    if (!near(legFrame(wall, 5), 40)) {
+      check(await bot.walk(westLanding.x / 100, westLanding.z / 100, 3), 'walked to the cave line');
+      await rowRide(wall.line, 0, wall.railheadHalt + 4, 'White Wall');
+      await stepOff(legFrame(wall, 5), 'stepped off at the deep span frame');
+    }
+    await openDeepSpan();
+    return;
+  }
+  const startWall = async () => {
+    await rowRide(wall.line, 0, fromStop(wall), 'cave');
+    // Land beside the halt, clear of the rack between the train and the first frame.
+    await stepOff(rowSide(wall.row, wall.fromCm, (ROW_PLATFORM + 1) * 100, 0, 0), 'stepped off at Port Quay');
+    await buildRowLeg(wallSlot, 'White Wall', async (k) => {
+      if (wall.sections[k]!.gate === barrier && !(route().gates & (1 << barrier))) await openDeepSpan();
+    });
+    await checkpoint('wall reached');
+    await rideGorgeHome();
+    await checkpoint('wall home');
+  };
+  // A port-reached save starts in the Village with the cave leg already laid.
+  if (legDone(rw(), CAVE)) {
+    const root = rowWorld(wall.line, 0, 0, { x: 0, z: 0 });
+    check(await bot.walk(root.x, root.z, 1), 'walked from the Village to the cave apron');
+    await startWall();
     return;
   }
   /** From the Village (where a seed starts): walk to the West landing and ride a bay train out to stop `to`. */
@@ -491,21 +535,7 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
     const nsGorge = rowHalt('ns', 0);
     await hopTo(nsGorge.x / 100, nsGorge.z / 100, "stepped off at the incline's High Gorge platform");
     await until(() => me.coyote > 0 && !me.swimming, 'standing at High Gorge again', 10000);
-    const gorgeLever = () => ringLevers().find((l) => l.halt === GORGE_STOP && l.dir === -1 && l.on);
-    const watch = watchTrains(L.line, GORGE_STOP);
-    await rideFrom(
-      {
-        name: 'High Gorge',
-        stop: GORGE_STOP,
-        stands: () => ringLevers().some((l) => l.halt === GORGE_STOP && l.stands),
-        handle: () => gorgeLever(),
-        before: async (handle) => check(await bot.walk(handle.x, handle.z, 0.6), "walked to High Gorge's lever"),
-        calling: () => !!gorgeLever()?.over,
-        wait: cm(gorge),
-      },
-      view().halts[HALT.village2]!.stop,
-    );
-    clearInterval(watch);
+    await rideGorgeHome();
     await checkpoint('village reached');
     check(
       await bot.walk(westLanding.x / 100, westLanding.z / 100, 3),
@@ -603,4 +633,5 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   const home = rowLever(cave.line, caveStart);
   await stepOff({ x: home.x * 100, z: home.z * 100 }, 'stepped off the cave train at the West landing');
   await checkpoint('port home');
+  await startWall();
 }

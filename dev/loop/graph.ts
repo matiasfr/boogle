@@ -108,6 +108,7 @@ export type NodeId =
   | 'seeds'
   | 'canopy-gate'
   | 'plug-gate'
+  | 'deep-gate'
   | 'cloth';
 /** The greybox legs' sections (ROUTE_SECTIONS). */
 export type SectionId =
@@ -124,7 +125,13 @@ export type SectionId =
   | 'canopy-3'
   | 'cave-1'
   | 'cave-2'
-  | 'cave-3';
+  | 'cave-3'
+  | 'wall-1'
+  | 'wall-2'
+  | 'wall-3'
+  | 'wall-4'
+  | 'wall-5'
+  | 'wall-6';
 
 /** World centimetres, as the catalogs pin them. `y` only where the catalog gives a height. */
 export type Point = { x: number; z: number; y?: number };
@@ -395,7 +402,8 @@ const STACK = legOf('stack'),
   INCLINE = legOf('incline'),
   BAY = legOf('bay-cut'),
   CANOPY = legOf('bell-canopy'),
-  CAVE = legOf('cave');
+  CAVE = legOf('cave'),
+  WALL = legOf('wall');
 const grantOf = (id: string) => RAIL_GRANTS.findIndex((g) => g.id === id);
 /** Who brings section k's kit to its rack (src/sim/railway-queries-route.ts: MINT_LEGS, YARD_LEGS, STOCKED_LEGS). */
 const KIT_BY: Record<string, (k: number) => string> = {
@@ -412,6 +420,7 @@ const KIT_BY: Record<string, (k: number) => string> = {
       : 'a bay train from the West landing (a Strong train holds at the railhead with the next bill)',
   cave: (k) =>
     k === 0 ? "stocked on the West landing's cave rack (the stand-in: no train)" : 'a cave train from the West landing',
+  wall: () => 'a cave train from the West landing',
 };
 /** A leg's node prefix, where it is not the leg's id. */
 const NODE_PREFIX: Readonly<Record<string, string>> = { 'bay-cut': 'bay', 'bell-canopy': 'canopy' };
@@ -423,6 +432,7 @@ export const ROUTE_SECTIONS: readonly { id: SectionId; leg: number; section: num
   BAY,
   CANOPY,
   CAVE,
+  WALL,
 ].flatMap((leg) =>
   leg.sections.map((_s, section) => ({ id: legNodeId(leg, section), leg: RAIL_LEGS.indexOf(leg), section })),
 );
@@ -620,6 +630,31 @@ const ROUTE_NODES: readonly LoopNode[] = [
       `West landing to Port Quay, section ${k + 1} of ${CAVE.sections.length}`,
       k === 0 ? [dec('plug-gate', 'rules', `${RULES_ROUTE} legStock: refused while the frame's barrier is shut`)] : [],
       k === CAVE.sections.length - 1 ? ['port'] : [],
+    ),
+  ),
+  {
+    id: 'deep-gate',
+    label: 'Open the deep span to the stacks',
+    area: 'route',
+    at: p(RAIL_GATES[WALL.sections[5]!.gate!]!.at),
+    bill: {},
+    supply: {},
+    ops: ['rail.gate'],
+    reached: { mark: 'route barrier opened', nth: 4 },
+    stops: ['deep-span'],
+    requires: [
+      dec('wall-5', 'rules', `${RULES_ROUTE} gate: the first five White Wall sections are laid`),
+      dec('seeds', 'rules', `${RULES_ROUTE} gate: the room holds its needs grant (the seeds)`),
+    ],
+    cue: [onMain('world', 'the deep-span barrier on the sixth White Wall frame', LEG_VIEW)],
+  },
+  ...WALL.sections.map((_s, k) =>
+    legSection(
+      WALL,
+      k,
+      `Port Quay to High Gorge, section ${k + 1} of ${WALL.sections.length}`,
+      k === 5 ? [dec('deep-gate', 'rules', `${RULES_ROUTE} legStock: refused while the frame's barrier is shut`)] : [],
+      k === 5 ? ['gorge'] : [],
     ),
   ),
 ];

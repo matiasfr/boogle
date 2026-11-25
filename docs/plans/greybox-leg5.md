@@ -313,7 +313,7 @@ The models table's rows are named per step; the orchestrator reads them when it 
       `wall-s2`, over the bay line at the crossing (and from a bay train under it), head 5 with the stacks across the
       gap, arriving in the split end-on beside line 2; mesh and collider counts with each new area resident and not;
       the boot probe (rule 61).
-- [ ] **6. The bot and the loop (M; "Implementation from a brief or an approved plan").** Files: `dev/loop/graph.ts`
+- [x] **6. The bot and the loop (M; "Implementation from a brief or an approved plan").** Files: `dev/loop/graph.ts`
       (`wall-1` to `wall-6`: `legSection` on `wall`, `KIT_BY.wall` "a cave train from the West landing"; `deep-gate`:
       `rail.gate`, requires `wall-5` and `seeds`; `wall-6` with `stops: ['gorge']`; `GENERIC_OPS` and `ACTIVITY_MARKS`
       unchanged, the file listed (rule 63)); `dev/loop/standins.ts` drops `wall` (the ending's stand-in requires
@@ -321,7 +321,7 @@ The models table's rows are named per step; the orchestrator reads them when it 
       six sections riding cave trains to each head, the barrier `railway-leg-deep-span`, into the split, line 2 home to
       the Village; `--from port-reached` a leg seed); `dev/look/segments.ts` (`RAIL_STOPS.wall`, `LEG_STOPS`). Verify:
       `npm run loop -- node deep-gate` and `-- node wall-6`; `npm run loop -- run`; `npm run playthrough -- --from
-      port-reached --to wall`; `test/loop-graph.test.ts`.
+      port-reached --to wall --long`; `test/loop-graph.test.ts`.
 
 ### Checkpoint E (leg 5 playable)
 
@@ -329,7 +329,7 @@ After steps 1 to 6 are on main; named proofs, once, with the tools as Checkpoint
 
 - [ ] `npm run loop -- run` for one to three players: `idle s` per node (`wall-1` to `wall-6`, `deep-gate`), area 8's
       minutes beside its 48, the whole route's; any wait over 60 s with nothing to do is a finding for the designer.
-- [ ] The bot segment `--from port-reached --to wall`: a pass verdict, the load noted.
+- [ ] The bot segment `--from port-reached --to wall --long`: a pass verdict, the load noted.
 - [ ] `npm run test:net`, with `railwayLegRejoin` (`dev/peer-test/ws-railway.ts`) taking `wall` at `wall-mid`: the seed
       doc written before any page opens; a second tab joins; head 2's rack holds section 3's bill; the carrier leaves,
       the server restarts, it rejoins; the leg row, the rack, the kit aboard and the carrier's back exact at every
