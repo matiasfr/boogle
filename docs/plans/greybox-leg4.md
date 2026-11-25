@@ -391,7 +391,8 @@ is an independent one before merge (src/sim, src/world): **gpt-6.2-astra medium*
       and brings swimmers ashore from two approaches to each island. Both apron reserves are clear. The playable quay
       hides the horizon's cranes, warehouses and breakwater while resident. The horizon keeps its single draw.
       At the Saltpan the area owns 1 mesh with 86 box instances and 87 colliders. At the quay it owns 2 meshes,
-      63 box instances and 65 colliders. Both unload at Bell Rock. The cloth press pointed to the West landing;
+      63 box instances and 65 colliders. Both unload at Bell Rock. From the Canopy-reached seed the real-input bot took the cloth and rode
+      home to the West landing without recovery. The cloth press pointed to the West landing;
       opening the plug changed the objective to building the cave line. The prefab check, level check and local ship
       check passed. The offline production build reached interactive in 7.1 seconds. Not tested on a device.
       Stills from [under the hood](greybox-leg4/under-hood.png), [past the face](greybox-leg4/past-face.png)
