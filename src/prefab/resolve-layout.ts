@@ -242,22 +242,32 @@ export function resolveLayout(level: LevelDef): LevelDef {
     if (b.colour !== undefined) name(b.colour);
     flags(b, ['hidden', 'solid']);
   }
+  const inclineAt = layout.inclineAt ?? boxes.length;
+  if (typeof inclineAt !== 'number' || !Number.isInteger(inclineAt) || inclineAt < 0 || inclineAt > boxes.length)
+    throw new Error('prefabs: invalid Gorge incline insertion index');
+  const incline = expandLeg2('gorge', area(evaluate(layout.incline!)));
   const base: Placement[] = boxes.map((b, i) => ({
-    id: i < 10 && i % 2 === 0 ? `gorge.platform-n.${i / 2}` : `gorge.massing.${i}`,
+    id:
+      i < 10 && i % 2 === 0
+        ? `gorge.platform-n.${i / 2}`
+        : `gorge.massing.${i < inclineAt ? i : i + incline.placements.length}`,
     prefab: boxPrefab(b),
     pos: [b.x, b.y, b.z],
     rot: [b.yaw, -(b.pitch ?? 0), 0],
     scale: [b.w, b.h, b.d],
     params: { colour: b.colour ?? COLOURS.grey },
   }));
-  const incline = expandLeg2('gorge', area(evaluate(layout.incline!)));
-  const ids = new Map(incline.placements.map((p, i) => [p.id, `gorge.massing.${base.length + i}`]));
+  const ids = new Map(incline.placements.map((p, i) => [p.id, `gorge.massing.${inclineAt + i}`]));
   const analysis = incline.analysis! as JsonObject & { surfaces: { id: string; name: string; over: boolean }[] };
   const header = { ...level };
   delete header.layout;
   return {
     ...header,
-    placements: [...base, ...incline.placements.map((p) => ({ ...p, id: ids.get(p.id)! }))],
+    placements: [
+      ...base.slice(0, inclineAt),
+      ...incline.placements.map((p) => ({ ...p, id: ids.get(p.id)! })),
+      ...base.slice(inclineAt),
+    ],
     analysis: { ...analysis, surfaces: analysis.surfaces.map((s) => ({ ...s, id: ids.get(s.id)! })) },
   };
 }
