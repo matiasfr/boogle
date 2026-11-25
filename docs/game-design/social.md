@@ -16,6 +16,8 @@
 - **Reply.** Ping within 6° of a friend's live marker or tap their card on touch. Everyone who can still see that ping
   sees your name and “On my way” in your colour and hears your chime. Each reply extends the card by 2 s and shares
   the ping cooldown. “Train!”, “Rails here” and “On my way” are placeholder words for the owner.
+  Honk while someone else's ping is the newest live marker and its card shows your name and a musical note in
+  your colour. Each tab updates the same reply row when it hears the honk, at any distance.
 - **Ping sound.** Two soft sine notes in your colour's pitch an octave up (a fifth for ball, sixth for train, fourth for rails and third for look),
   quiet, with a gentle onset and a short tail.
 - **Sync kind.** Neither is state: reliable room messages `{ t: 'honk', v }` (v: the shape, 0 to 3; missing reads as

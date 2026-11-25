@@ -16,7 +16,7 @@ import { net, remotes, onRoomReady } from '../netplay/net.ts';
 import { getAudio } from '../render/audio.ts';
 import { onStart } from '../loop.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
-import { registerAction } from '../player/controls.ts';
+import { registerAction, wrapAction } from '../player/controls.ts';
 import {
   MAX_PING_SEQ,
   PING_KINDS,
@@ -143,14 +143,29 @@ const over = new THREE.Vector3(),
 const layer = document.createElement('div');
 layer.className = 'ping-layer';
 type Marker = {
+  born: number;
   seq: number;
   entity: GameEntity;
   own: boolean;
   expires: number;
   at: THREE.Vector3;
-  reply: (id: string, name: string, colorIdx: number, own: boolean) => void;
+  reply: (id: string, name: string, colorIdx: number, own: boolean, honk?: boolean) => void;
 };
 const pings = new Map<string, Marker>();
+const incomingHonks = createLimiter(3, 1000);
+
+function answerWithHonk(id: string, name: string, color: number) {
+  const now = performance.now();
+  let newest: Marker | undefined;
+  let pinger: string | undefined;
+  for (const [from, marker] of pings) {
+    if (marker.expires > now && (!newest || marker.born >= newest.born)) {
+      newest = marker;
+      pinger = from;
+    }
+  }
+  if (id !== pinger) newest?.reply(id, name, color, false, true);
+}
 
 const ringGeo = new THREE.RingGeometry(0.55, 0.7, 36).rotateX(-Math.PI / 2);
 
@@ -247,19 +262,21 @@ function addPing(from: string, p: Ping, name: string, colorIdx: number, own: boo
   });
   const replies = new Map<string, HTMLElement>();
   const marker: Marker = {
+    born,
     seq: p.seq,
     entity,
     own,
     expires: born + TUNE.lifeMs,
     at: new THREE.Vector3(p.x, p.y + 1.4, p.z),
-    reply(id, name, colorIdx, local) {
+    reply(id, name, colorIdx, local, honk = false) {
       if (performance.now() >= marker.expires) return;
       const row = replies.get(id) ?? document.createElement('span');
       row.className = 'ping-reply';
-      row.textContent = name + ' · On my way'; // Placeholder for the owner's words.
+      row.textContent = name + (honk ? ' ♪' : ' · On my way'); // Placeholder for the owner's words.
       row.style.backgroundColor = COLORS[colorIdx] ?? COLORS[0]!;
       replies.set(id, row);
       card.append(row);
+      if (honk) return;
       marker.expires += 2000;
       chime(colorIdx, p.k, local);
     },
@@ -295,9 +312,15 @@ export function chime(colorIdx: number, kind: Ping['k'], own: boolean) {
 // ---------------------------------------------------------------- wiring
 onRoomReady((room) =>
   room.onMessage((msg, from) => {
-    if ((msg as { t?: unknown } | null)?.t !== 'ping') return;
+    const type = (msg as { t?: unknown } | null)?.t;
+    if (typeof from !== 'string') return;
+    if (type === 'honk' && incomingHonks.allow(from, performance.now())) {
+      const remote = remotes.get(from);
+      answerWithHonk(from, remote?.name || 'Someone', remote?.colorIdx ?? 0);
+    }
+    if (type !== 'ping') return;
     const p = validatePing(msg);
-    if (!p || typeof from !== 'string' || !incoming.allow(from, performance.now())) return;
+    if (!p || !incoming.allow(from, performance.now())) return;
     const r = remotes.get(from);
     const name = r?.name || 'Someone',
       color = r?.colorIdx ?? 0;
@@ -309,6 +332,16 @@ onRoomReady((room) =>
 );
 
 onStart(() => {
+  let lastHonk = -Infinity;
+  wrapAction('honk', {
+    down(next) {
+      next();
+      const now = performance.now();
+      if (!me.entered || !me.body || me.down || now - lastHonk < 300) return;
+      lastHonk = now;
+      answerWithHonk(net.room?.selfId ?? 'me', me.name, me.colorIdx);
+    },
+  });
   (document.querySelector('.hud') ?? document.body).append(layer);
 
   registerAction('ping', {

@@ -4,6 +4,8 @@ Proof debts, things jobs reported and did not fix, and older parked items. Split
 
 ## From 25 November
 
+- P3 · From friends voice step 5 (the honk reply): a honk replaces the same player's "On my way" row with "Name ♪", so the card loses that they are coming (`src/features/ping.ts`, `reply`, the shared `replies` row per player).
+- P3 · Same job's stills: on the pinger's screen the card sits pinned to the top edge with its arrow while the ping's ring is on screen at 16 m (`docs/plans/friends-ping/honk-still.png`); card placement predates step 5; check whether the anchor 1.4 m above the ring is placed off screen when the camera looks steeply down.
 - P3, copy, the owner's · From order picks B2's review (#2393): during the trade hold the garage readout says "Kit a trip: Nothing to build" beside "Held while the line builds" (`kitTrip` needs two sections left), so the two lines read as contradicting each other. The screen's new strings are placeholders for him: "Held while the line builds", "Held until the line is laid", "Re-pick used", "Swap (once)".
 - P3 · Same review: during the hold the garage's 3D view still shows the held boiler's faded preview, as swap and steel already do in `showSelection` (`src/entities/railway/garage-view.ts`, near line 1199).
 - P3 · Same review: `src/features/garage.css` raises the global `.notify`'s z-index while the garage is open (`body.garage-open .notify`), coupling the garage's styles to another feature; harmless today.
