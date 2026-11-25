@@ -5,7 +5,8 @@ import { ORIGIN } from '../../src/place/layout.ts';
 import { H } from '../../src/place/terrain.ts';
 import { r2 } from '../../src/math.ts';
 import { pathAt } from '../../src/place/path-field.ts';
-import { kitPieceProblems, layCourses, runAlong, type Area, type Kit } from './cliff-kit.ts';
+import { FACE_TOP, SEA_FACE } from '../../src/content/prefabs/terrain.ts';
+import { kitPieceProblems, layAlong, layCourses, runAlong, type Area, type Kit } from './cliff-kit.ts';
 
 type Point = [number, number];
 
@@ -22,22 +23,48 @@ function bank(kit: Kit, spine: Point[], uphill: 1 | -1, width: number, top: numb
       }
     return { x, z, reach };
   });
-  for (let level = 2; level <= top; level += 3) {
+  const lookoutBank = uphill === -1;
+  for (let level = lookoutBank ? 2 : 5; level <= top; level += lookoutBank ? 3 : 6) {
     let contour: Point[] = [];
     function lay() {
       if (contour.length < 2) return;
       const run = runAlong(contour);
-      layCourses(run, uphill, (prefab, c, yaw, s) => {
+      const put: Parameters<typeof layAlong>[5] = (shortFace, c, yaw, s) => {
         // The six original canyon faces already cover the first 14 m above
         // their bench. Only add the high courses on that part of the shoulder.
         if (shoulder && c.z > -138 && c.z < -95 && level <= pathAt(c.x, c.z).height + 13) return;
-        // Seat the back of the upper course in the bank. At a sheer cut the
-        // face must stand proud of the contour for its bevels to show.
-        const pos: [number, number, number] = [r2(c.x + c.nx * 1.2), level - 6, r2(c.z + c.nz * 1.2)];
+        // The near-vertical river cut north of the bend has room for the
+        // canyon's tall slabs. Each replaces two overlapping two-course faces.
+        const highCut = !shoulder && uphill === 1 && c.z < -132;
+        if (highCut && (level === 5 || level === 17)) return;
+        const tall = highCut && (level === 11 || level === 23);
+        const prefab = tall ? (shortFace === 'terrain.sea-face-10' ? 'terrain.face-10' : 'terrain.face-6') : shortFace;
+        // Seat the upper lip in the sheer cut. An overhanging cap here shows
+        // its flat top to anyone looking out from the opposite bank.
+        // The tall slab's six courses lean back nearly 2 m from its origin.
+        const out = tall ? 2.2 : highCut || shortFace === 'terrain.low-face' ? 0.4 : 1.2;
+        const pos: [number, number, number] = [
+          r2(c.x + c.nx * out),
+          r2(level - (tall ? FACE_TOP : shortFace === 'terrain.low-face' ? 2.9 : SEA_FACE)),
+          r2(c.z + c.nz * out),
+        ];
         const rot: [number, number, number] = [r2(yaw), 0, 0];
         if (!kitPieceProblems({ id: 'rim', prefab, pos, rot }).length)
           kit.place(prefab, pos, rot, `tier ${level}, station ${s.toFixed(1)}`);
-      });
+      };
+      // Short intermediate courses follow the descending lookout path where a
+      // full two-course slab would overlap the row below or cross the tread.
+      if (lookoutBank && level % 6 === 2) {
+        const count = Math.floor((run.length - 0.4) / 4.6);
+        layAlong(
+          run,
+          0,
+          Array.from({ length: count }, () => ['terrain.low-face', 5] as const),
+          -0.4,
+          uphill,
+          put,
+        );
+      } else layCourses(run, uphill, put);
     }
     for (const { x, z, reach } of rays) {
       let d = 0;
