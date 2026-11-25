@@ -423,7 +423,7 @@ export const WORLD_LINES: readonly WorldLine[] = [
     ],
     ends: [
       { at: 'start', kind: 'crossover', sCm: 5500, x: 79594, z: 6476, y: 400 },
-      { at: 'end', kind: 'crossover', sCm: 530050, x: -15060, z: -201656, y: 300 },
+      { at: 'end', kind: 'crossover', sCm: 529300, x: -15703, z: -202043, y: 300 },
     ],
     legs: [
       { id: 'seacave', reverse: false, fromCm: 0, toCm: 73861, stage: [6, 6] },

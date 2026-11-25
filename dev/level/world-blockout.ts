@@ -556,7 +556,7 @@ function build(svc: Service): Built {
     const [x, z, y] = at(stops[stop]!);
     return { name: h.name, stop, x, z, y, reach: 1260 };
   });
-  // The crossover's middle stands 35 m inside the terminus halt (clear of its 40 m platforms); a loop's centre stands
+  // The usual crossover setback is 35 m. The Wall uses 32 m for its 20 m half-platform and 12 m approach. A loop's centre stands
   // one radius to the side of the line's end, so the circle touches the line there and a train runs round it and back.
   const ends: Built['ends'] = [];
   (['start', 'end'] as const).forEach((side, k) => {
@@ -569,7 +569,7 @@ function build(svc: Service): Built {
       // The catalog and flag-only world blockout's X share it; other termini keep their standard setback.
       const sCm =
         MAP.options.find((o) => o.id === 'sickle')!.turnbacks?.[svc.id]?.[side] ??
-        (side === 'start' ? stop + 3500 : stop - (svc.id === 'cave' ? 2450 : 3500));
+        (side === 'start' ? stop + 3500 : stop - (svc.id === 'cave' ? 3200 : 3500));
       const [x, z, y] = at(sCm);
       ends.push({ at: side, kind, sCm, x, z, y });
     } else {

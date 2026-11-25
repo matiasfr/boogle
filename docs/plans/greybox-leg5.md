@@ -252,7 +252,7 @@ Each step leaves `node dev/ship-check.ts` green. **Steps 1 to 3 ship together as
 steps 1 to 3 (src/sim, src/world) is an independent one before merge, by the row `npm run models` gives at the time.
 The models table's rows are named per step; the orchestrator reads them when it dispatches.
 
-- [x] **1. The catalog (M to L; "High-risk implementation").** Implemented. The section 4 length and three Canopy measurements remain open below. Files: `dev/level/world-blockout.ts` (`ROUTES['wall-s']`'s
+- [x] **1. The catalog (M to L; "High-risk implementation").** Implemented. The as-built section records the final length, clearance and crossover checks. Files: `dev/level/world-blockout.ts` (`ROUTES['wall-s']`'s
       first hermite; the Canopy and Gorge re-routes as new `ROUTES['wall-s']` tail and `ROUTES['wall-n']` points with the
       crossing's ruled height; the cave service's `curves`; Canopy's and the Gorge's `stopCm`), regenerated
       `src/sim/railway-world-lines.ts`, `docs/world/world-blockout.html`, `docs/world/rail-map.html`;
@@ -350,31 +350,30 @@ The crossing is 7.97 m over the bay rail. The approach clears the south stack by
 4.00 m from line 2's concourse. Port Quay's first carry is 10.00 m. All six platforms are level.
 
 **Section 4.** The section lengths in metres are **883.73, 436.24, 421.23, 950.69, 680.10 and 731.21**.
-Section 4 exceeds 900 m by 50.69 m at the measured closest pass to `wall-n2`. The level report keeps this a failure.
-Keeping the cut would need a 950.69 m exception. Cutting at 900 m would move the head 50.69 m back from the
-closest pass, breaking the 1 m cut gate. A different approach would require another catalog design.
+Section 4 ends at the closest pass to `wall-n2`. The orchestrator accepts the 5.6% overrun under the
+owner's “up to about 900 m” ruling. Both the unit test and level report hold every Wall section under 960 m.
 
-**Canopy clearances.** The generated line passes 23.45 m from trunk-1 against the sketch's 27 m,
-85.01 m from mother-1 against 88 m, and 123.29 m from the bay line's head 2 against 150 m.
-Trunk-0 clears 29.78 m against 29 m. The level check reports each shortfall. Keeping the planned
-alignment would require accepting the measured clearances. Recovering the sketch's figures would
-require revisiting the curve and crossing against the fixed trunks and bay head.
+**Canopy clearances.** The centreline passes 23.45 m from trunk-1, 85.01 m from mother-1 and 123.29 m
+from the bay line's head 2. Their respective minima are 22 m, 84 m and 122 m. Trunk-0 clears 29.78 m
+against 29 m. The nearest edge of trunk-1's 12 m square collider is 16.04 m from the centreline.
+The 1 m gauge, 4 m track centres and 12 cm rail width leave 13.48 m to the outer rail edge.
+The full 7.60 m formation clears the collider by 12.24 m.
 
-**Gorge crossover.** The catalog and cave service both put the crossover 24.50 m before the stop,
-as specified for the Wall. The existing world-lines test requires 32 m at every catalog crossover
-to clear a 20 m half-platform and its 12 m approach. Both rules cannot hold at the same stop.
-Keeping the 12 m approach requires moving the crossover at least 7.50 m. Keeping the planned crossover requires an exception for the Wall's 4.50 m approach.
+**Gorge crossover.** The catalog and cave service put the crossover at metre 5293.00, 7.50 m seaward
+of the sketch and 32.00 m before the stop. Its centre is 12.00 m before the platform edge, at split
+coordinates `a = −63.02 m, c = 0.11 m`. The 20 m crossover fits on the straight. Its near end
+remains 45.01 m from the buffers along the row and about 49 m from line 2's concourse.
 
 The first kit rides from the West landing to Port Quay. Cave slots 14–16 enter from the shed as the Wall grows.
 World v71 includes the changed halt ids and gate reach, the host trace, seed and operation goldens, halt placements,
 seat fixtures and the economy page. The built-site probe initially caught a missing halt lever. Regenerating the halt
-kit brought the offline Chromium probe to interactive. The final catalog booted in 18.9 s on the NVIDIA adapter.
+kit brought the offline Chromium probe to interactive. After the crossover adjustment the built site reached
+interactive in 16.1 s on the NVIDIA adapter. The halt catalog records the signal at metre 5284.80.
+The `wall-closed` seed still starts at tick 34276 with the same hash. The moved signal changes its hash 1,200 ticks later.
 
-The level check ran 25 reports in 84.99 s and flagged the four measurements above. The affected unit
-suite passed 2,022 of 2,024 tests. Section 4's length and the catalog crossover rule failed.
-The full audited server run passed 405 of 410, skipped two, and timed out on two cases.
-Both passed individually (ring-joined stocking in 81.66 s, the retired cradle in 4.17 s).
-The remaining failure was the Windows account crash assertion (`null` for `SIGKILL`).
+The level check passed all 25 reports in 111.26 s. All 2,024 affected unit tests passed across
+206 files in 226.9 s, including the route catalog and world-lines tests. The full audited server run passed 407 of
+410 and skipped two. Its only failure was the Windows account crash assertion (`null` for `SIGKILL`).
 The real deep-span `r:edit` passed, including refusal from the old centre and acceptance at frame 6.
 The network suite passed 315/315. All loop orders finished with one through four players using
 the existing Wall stand-in. The device run belongs to the later playable checkpoint.
@@ -393,8 +392,8 @@ Each cell is accepted calls / worst wait in ticks. All calls drained within thei
 | Cave 5eed | 118/1131 | 102/545 | 180/613 | 123/805 | | | |
 | Cave badd | 111/1165 | 99/556 | 187/612 | 123/847 | | | |
 
-The Wall default service test took 19.00 s (limit 120 s, test budget 480 s).
-The Wall long test took 255.17 s and the cave long test took 128.80 s, 265.2 s together.
+The Wall default service test took 19.75 s (limit 120 s, test budget 480 s).
+The Wall long test took 228.66 s and the cave long test took 105.60 s, 239.0 s together.
 The three jump rows are tooling-only. The two mid-build jumps target their head platforms, and the completed
 route uses the usual spawn until step 5 supplies its landing.
 

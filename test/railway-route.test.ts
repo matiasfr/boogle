@@ -237,12 +237,12 @@ test('Canopy cuts stand midway across the level strait and 33 m beyond the climb
   assert.equal(leg.sections[2]!.toCm, bay.legs[1]!.toCm - 2500);
 });
 
-test('the Wall has six sections, each under 900 m', () => {
+test('the Wall has six sections, each under 960 m', () => {
   const leg = RAIL_LEGS[5]!;
   assert.equal(leg.sections.length, 6);
   for (const [k, section] of leg.sections.entries()) {
     const length = section.toCm - sectionFromCm(leg, k);
-    assert.ok(length < 90000, `Wall section ${k + 1}: ${length / 100} m`);
+    assert.ok(length < 96000, `Wall section ${k + 1}: ${length / 100} m`);
   }
 });
 

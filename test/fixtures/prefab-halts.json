@@ -984,9 +984,9 @@
       ],
       "end": {
         "kind": "crossover",
-        "mergeCm": 530050,
-        "edgeCm": 530050,
-        "signalCm": 529230
+        "mergeCm": 529300,
+        "edgeCm": 529300,
+        "signalCm": 528480
       },
       "line": 4,
       "stop": 9
