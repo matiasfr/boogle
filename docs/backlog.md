@@ -19,11 +19,11 @@ Reconciled on 16 November 2026 at `3720b4c3b` (#1905, world v52), on the owner's
 
 ## The checkpoint we work toward
 
-**Canopy and the first real choice** (set 24 November 2026 on the owner's "Set a good checkpoint to work towards"; the orchestrator's pick, his to change). It is where the P1 focus, choice and payoff ([16 November](decisions-process.md#d-2026-11-16-focus-choice-and-payoff)), lands: garage step 4 is the payoff, and it waits only on greybox leg 3 ([call](decisions-rewards.md#d-2026-11-19-garage-step4-waits-for-leg3)). Done when:
+**The route to the ending** (owner, 25 November 2026: "Route to the ending (Recommended)", [entry](decisions-process.md#d-2026-11-25-workflow-changes-and-checkpoint)). The previous checkpoint, Canopy and the first real choice, is built but for his play and the Mac reading. Done when:
 
-1. Greybox leg 3 is playable: steps 6 and 7 on main and Checkpoints G and C proved ([greybox-leg3](plans/greybox-leg3.md)): a room opens the Canopy barrier, lays the bay line to Canopy Town, takes the glider cloth and rides home.
-2. Garage step 4 is on main ([garage-step4](plans/garage-step4.md)): at the Roundhouse a room picks Quick or Strong per line, and Strong's hold on the bay line saves a measured amount (under 15 s solo at `bay-reached` goes to him with the table first, as the leg 3 plan says).
-3. The bot segment `--from bay-reached --to canopy` passes with a choice made.
+1. Greybox legs 4, 5 and 6 are on main with their checkpoints proved ([greybox-leg4](plans/greybox-leg4.md), [greybox-leg5](plans/greybox-leg5.md), [greybox-leg6](plans/greybox-leg6.md)): the cave line, the White Wall, the Notch and the causeway to the classic island's post.
+2. The bot and `npm run loop -- run` reach the post with no skips, solo and for two and three players.
+3. A table of minutes per area against six hours (the campaign outline's allowance).
 4. He plays it; nothing waits for that.
 
 Free job slots go to this checkpoint's next step first; other rows fill what is left, by rank.
