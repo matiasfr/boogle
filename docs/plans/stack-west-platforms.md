@@ -1,4 +1,16 @@
-> **Status, 25 November 2026: step 1 re-planned for way 1, nothing built.** The first step 1 build stopped before any
+> **Build, 25 November 2026:** Way 1 is implemented on the builder's branch at world v73. The 156 stack measurements
+> pass at all three heads and both host checkpoints load. The production bot walked the planks at Stack halt,
+> used the west lever, waited for a train on track 1 and jumped into the players' car. The 57.2 s clip includes
+> the full walk and boarding. The outward leg bot reached High Gorge without recovery. The network suite passed
+> all 338 checks, both standalone and in `check:full`. The full run also passed 2,442 unit tests and 409 server
+> tests, with one unit test and two server tests skipped. The halt prefab now contains 62 request levers.
+> No player-facing words were added.
+> The 3 m first deck panel supplies the home-end face for the coach-fit check. On the curve, adjoining rectangular
+> deck panels share up to 24.64 mm at the inside edge. The overlap check allows 25 mm at seams. At head 1 the east
+> homeward lever's pivot falls 3.60 mm into the panel seam, so its deck footprint check allows 5 mm there. The six sea slips
+> keep the specified 0.54 nominal grade and measure 28.07° to 28.57° on their offset tracks.
+>
+> **Planning history:** The first step 1 build stopped before any
 > edit (19 November): the planks at r − 31.3 to r − 28.9 lay on the stack crossover's toe, blades and points lever that
 > turnouts step 7 drew at every head. The owner took way 1
 > ([25 November, item 4](../decisions-rail.md#d-2026-11-25-recommendations-taken-rail)): planks 1.6 m wide at r − 28.5
@@ -160,7 +172,7 @@ Each leaves `node dev/ship-check.ts origin/main HEAD` green. Builders and review
 `npm run review-stamp` prints for the step's files. Order: view first, then the catalog and its bump (alone), then the
 levers, which need the moved point to offer a prompt.
 
-- [ ] **1. The west decks and the foot crossing, way 1 (S; re-planned 25 November).** Sync: Local. Tier: normal +
+- [x] **1. The west decks and the foot crossing, way 1 (S; re-planned 25 November).** Sync: Local. Tier: normal +
   visual (no file under `src/sim|net|world|ecs`, `server/src`). Build: by `npm run models` (Astra, player-visible).
   **Bump: no.** Read first: the geometry table above and "what way 1 sits between" (every number below is in metres
   short of the head's section end `r`).
@@ -208,7 +220,8 @@ levers, which need the moved point to offer a prompt.
     6. _Decks:_ both flat from r − 23 (pin 23.00); the rack's pallet and plate, the frame, the board stand and both
        east levers on the flat deck, at least 0.5 m past the ramp top (expected: plate about 3.4, pallet 3.7, homeward
        lever 13.0).
-    7. _Sea ramps, both:_ landing r − 23 .. r − 20 level with the deck beside it (step 0); the slip walkable (28.37°);
+    7. _Sea ramps, both:_ landing r − 23 .. r − 20 level with the deck beside it (step 0); the slip walkable
+       (0.54 nominal grade, measured pitches 28.07° to 28.57°);
        each touches its crossing ramp only at the corner (r − 23, lat +6.3 / −10.3).
     8. _West lever:_ on the flat deck, 1.00 m past the ramp top (minimum 0.50) and 0.5 m in from its inner edge. Its
        reach from the moved catalog point is step 2's row (9.66 to 9.87 m of 12.6, the prompt's 1.8 m inside).
@@ -235,7 +248,7 @@ levers, which need the moved point to offer a prompt.
     stack-west-crossing` (read the deck's y from `line2Y`); (c) top-down over r − 35 .. r at Stack halt, `--name
     stack-west-top`, the timbers, the lever box and the planks' 0.17 m gap readable. Say what each shows and what was
     not seen (no train stands in these seeds' stills).
-- [ ] **2. The heads' homeward platform point, the next free `WORLD_NS` (S). Its own commit.** Sync: Server data
+- [x] **2. The heads' homeward platform point, the next free `WORLD_NS` (S). Its own commit.** Sync: Server data
   (catalog). Tier: **independent review** (`src/sim`, `src/world`). Build: by `npm run models`. **Bump: the next free
   number when it ships** (main is v72 on 25 November and moves often; the owner approved this row's reset on 18
   November, then numbered v62; v61 below means that number): "the stack heads' homeward platform is their west deck:
@@ -269,7 +282,7 @@ levers, which need the moved point to offer a prompt.
     `node --test server/test/world-host-trace.test.ts` after re-recording; the full server suite is not required
     (`server/src` unchanged) but the bump is a checkpoint trigger (step 4). Visible effect alone: a homeward coach's steps
     fold down on the west, onto the step 1 deck.
-- [ ] **3. The west lever; the east homeward lever only while the head is the end (S).** Sync: Local. Tier: normal +
+- [x] **3. The west lever; the east homeward lever only while the head is the end (S).** Sync: Local. Tier: normal +
   visual; the prefab fixture delta is read by an independent reviewer before ship (R2b.1's precedent). Build: Codex
   gpt-6.2-astra medium. **Bump: no** (rides v61).
   - `dev/prefab/halts.ts`: for each stack head (a `leg` stub halt), a third placement `halt-ring-lever-<stop>-west`,
@@ -290,7 +303,7 @@ levers, which need the moved point to offer a prompt.
     `node dev/ship-check.ts origin/main HEAD`. **Look:** `npm run look -- --rail-seed gorge-reached --eval
     dev/look/evals/stack-levers.ts --query 'head=3&lever=home' --until window.__leverDone --name stack-west-lever` (the
     west lever's prompt up on the west deck), opened.
-- [ ] **4. Checkpoint (the bump's): proofs and the row (S).** Runner: the builder's thread (`npm run models`, "Owed
+- [x] **4. Checkpoint (the bump's): proofs and the row (S).** Runner: the builder's thread (`npm run models`, "Owed
   proofs"). Tier: none beyond the steps'.
   - `npm run check:full` (the bump; `src/world/namespace.ts`), `npm run test:net`, `npm run level-check`,
     `npm run checkpoints -- gorge-mid gorge-reached` (host save path at both served stages).
