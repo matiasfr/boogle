@@ -18,7 +18,7 @@ export const gorgeMouth: Area = {
     courses('east bank', raysAlong(-22, 138, -26, 177, 1, 0), [2, 7, 12, 17]);
     // At the west toe the rock rises almost vertically. One full-height canyon face can
     // replace that cut, with its crown below the lower of the two ends of the rim.
-    const west = runAlong([[-46.6, 156], [-48.6, 159], [-50.2, 165], [-52.4, 175]]);
+    const west = runAlong([[-47.9, 158], [-48.6, 159], [-50.2, 165], [-52.4, 175]]);
     layCourses(west, -1, (seaFace, c, yaw) => {
       const half = seaFace === 'terrain.sea-face-10' ? 4.8 : 2.8;
       let foot = Infinity, rim = Infinity;
