@@ -424,6 +424,61 @@ is measured across the ground, so a face at a toe counts against a pad floating 
 tower). Steps 3 and 6 plan round them; step 3 settles whether a floating pad's keep-clear is its column or its
 approach (design review, revised, finding 4).
 
+## Step 1 as built
+
+On `claude/cliff-kit-shore` (24 November 2026). Matched stills:
+[before and after sheet](cliff-kit-everywhere/shore-before-after.jpg) (the census's two cameras and one from the sea),
+the single stills under [cliff-kit-everywhere/shore/](cliff-kit-everywhere/shore/) (those three cameras and the
+landing at player height, before and after, and the climb at player height after). Stills were taken under shared
+load: shape and colour only. Not tested on a device.
+
+- **The cove face is ground and kit.** The sculpted face, its three boulders, its trimesh and its view
+  (`src/place/cove-view.ts`) are gone. Its bluff is the heightfield's (`src/place/cove.ts` `coveBluff`, through
+  `coveGround`): the sculpted face's profile, its front blended from steep to the broad end along its across axis as
+  the face's was, its top `coveCrest`. The walkable end from the sand at z 34 to 36 up to 1.7 m at z 38 and 4.5 m by
+  z 48 is ground; against the old face's top it is within 0.5 m along the walk, its west lip 0.6 m broader (a
+  scripted walk slid off the first version), and its back corner over the pocket about a metre narrower where the
+  landing's protection holds the ground (z 38 to 42). `H`, the water bed and the ground verifier read the
+  heightfield alone; the coast bake's pins are re-pinned (`test/coast-regions.test.ts`).
+- **New pieces** (`assets/src/terrain-kit.py`; the canyon's seven are byte-identical): sea-cliff faces 6 and 10 m
+  wide, two courses over a darker 1.2 m wave-cut foot set back 0.45 m (about 6 m, a near-level top, 396 and 616
+  triangles); a low face 5 m wide and about 3 m tall (176); an outside corner of sea-cliff courses, two 4 m legs (440);
+  shore rocks 1.2, 2 and 3.2 m across (about 130 each). In the asset viewer as the Cliff kit.
+- **The shore area** (`dev/prefab/cliff-kit-shore.ts`, 18 pieces, `content/built/levels/cliff-kit-shore.json`), laid
+  by the shared run helpers (`dev/prefab/cliff-kit.ts` `runAlong`, `layAlong`): three sea-cliff faces along the bluff's
+  front from z 49 with their tops flush with its top walk, the corner where it tucks under the beach at z 71, five
+  shore rocks in the water off their foot; on the shore climb's wall (census wall 9) a face 6, a face 10 and a face 6
+  from z -7 to 11, each top as high as it can stand under the wall's ledges and be no step up from ground round it,
+  and broken caps along its whole rim. Its gated places: the landing, the end of its timber stage, the board at the
+  shore path's foot and the shore hop.
+- **Not dressed, and why** (the gate, not taste): the wall's north end by the landing hill (z -16 to -7) and its south
+  part beside the climb (z 11 to 17), and the pocket's east wall behind the board, take no faces: walkable ground stands
+  round them at every height, so any face top there is a step up from somewhere. They keep the kit's colour, and wall
+  9's rim has caps all along. A low face on the walkable end's flank snagged the scripted walk and was taken out: the
+  low face is in the kit, unused at the shore. From the landing at player height, then, the rock in view is mostly
+  the ground's own slopes in the kit's colour; the faces read from the sea and from the climb's foot.
+- **Colour.** The landing's ground takes the cliffs' rock (`ground-material.ts` `beddedRock`, shared with Home's
+  ground); its sand, turf, wet and relief terms are its own, and the cove's tunables keep their names (the band
+  controls are unused now). The shore hop keeps its place, solid and colour (step 7 moves it with Needle Bell's).
+- **The idle hold** (`holdCoveStop`) is spawned by the land's ground with its view (`src/place/land.ts`).
+- **Proofs.** `npm run level-check -- --cove` (rewritten: the heightfield facade and the kit's 19 boxes in Rapier;
+  14,625 rays, those off the kit within 0.03 m of `H`; 66 walk samples on the end and the top all on the heightfield,
+  walkable, none on a kit top; the protected fine samples unchanged): 0 findings. `npm run level-check`: the shore
+  area 0 problems (the piece rules, the gate, and the new reverse flood: 48,841 nodes, none lost; a ring of faces round
+  the end, tried by hand, loses 500). `dev/look/evals/shore-walk.ts` (held W, real controller): up the end from the
+  sand to its top and back, both legs arrive with no fall, on two runs in a row; idle 5 s after landing, creep 0 m on
+  the landing, the graded end and the climb, 0.04 m on the bluff's top (a landing settle that stops, measured: 0.07 m
+  in the first 2 s, then none). Walk clip from the landing up the climb: `.look/shore-clip-realtime.webm` (local).
+- **Counts** at the census cameras (`dev/look/evals/cliff-counts.ts`, both passes, against main): from the landing
+  147 to 156 draws (+9), 537,559 to 540,875 triangles (+3,316); the climb from the sea 360 to 373 draws (+13), 756,177
+  to 762,661 (+6,484). The kit's instances 26 to 44, 6,688 to 12,092 triangles a pass. Within the shore's line in the
+  budget. Not timed (shared machine); the bot's arrival walk on the quiet Mac is still owed.
+
+**Design review, step 1** (same context; calls beyond the plan's): the bluff's end 0.6 m broader at its lip (a
+default: a walker keeps footing); faces left off where the gate allows none (a default under the gate; the owner may
+prefer faces with their tops made unreachable another way); the low face unused at the shore (a default: nothing of
+the kit by the walk); the shore hop's colour left for step 7 (the plan's own split). No copy changed.
+
 ## Design review (2026-11-24)
 
 Run by the plan's author in the same context (design-review skill). Read for it: DESIGN.md, owner calls (Look and art,
