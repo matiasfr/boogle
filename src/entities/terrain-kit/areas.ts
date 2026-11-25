@@ -6,8 +6,9 @@ import gorgeRim from '../../../content/built/levels/cliff-kit-gorge-rim.json' wi
 import gorgeWalls from '../../../content/built/levels/cliff-kit-gorge-walls.json' with { type: 'json' };
 import gorgeMouth from '../../../content/built/levels/cliff-kit-gorge-mouth.json' with { type: 'json' };
 
+import farHead from '../../../content/built/levels/cliff-kit-far-head.json' with { type: 'json' };
 import northRidge from '../../../content/built/levels/cliff-kit-north-ridge.json' with { type: 'json' };
 import eastCutting from '../../../content/built/levels/cliff-kit-east-cutting.json' with { type: 'json' };
 
 /** Each area's built level, checked on load (src/prefab/validate.ts loadLevelArtifact). */
-export const KIT_AREAS: readonly { place: string }[] = [canyon, shore, gorgeRim, gorgeWalls, gorgeMouth, northRidge, eastCutting];
+export const KIT_AREAS: readonly { place: string }[] = [canyon, shore, gorgeRim, gorgeWalls, gorgeMouth, northRidge, eastCutting, farHead];

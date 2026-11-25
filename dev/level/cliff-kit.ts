@@ -35,6 +35,9 @@ export function strandedNodes(area: Area, placements: readonly Placement[]) {
       h[i * n + j] = H(x(i) + ORIGIN.x, z(j));
       if (pathAt(x(i), z(j)).edge < 0) starts.push(i * n + j);
     }
+  // A rail-served island has a platform approach instead of a painted tread.
+  const landing = area.stranded.landing;
+  if (landing) starts.push(Math.round((landing[0] - cx + half) / cell) * n + Math.round((landing[1] - cz + half) / cell));
   const blocked = new Uint8Array(n * n);
   for (const p of placements)
     for (const q of solidSamples(p, 0.25)) {
