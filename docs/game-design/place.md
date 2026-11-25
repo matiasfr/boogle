@@ -1551,6 +1551,11 @@ its posts and both parapets were removed in start-area S1 (15 November): they cr
 competing way into town. The bare cliff cannot be walked up. The [owner's Q1/Q2 answers](../plans/start-area.md#owner-answers-15-november)
 set the future station's trigger and terrain rule; S5/S6 remain separate work.
 
+**West landing after the bay build and leg 4 step 4.** From the bay platforms, walk around the shared
+root to the cave apron on the cliff side. Both cave platforms run to s 40. A slipway at the water-side
+platform gives swimmers a way up. Beyond the platforms the sandstone hood follows the curve of the row
+from s 45 to s 80, with both ends open and the crossover beneath its roof.
+
 **High Gorge** gains the incline's two 40 m platforms beside the north-south row, level with the stack line's
 south platform. Not tested on a device.
 

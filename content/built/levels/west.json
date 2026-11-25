@@ -333,7 +333,7 @@
           },
           "h": 14,
           "id": "hood-in-cliff",
-          "tone": "grey",
+          "tone": "sandstone",
           "top": 11
         },
         {
@@ -349,7 +349,7 @@
           },
           "h": 14,
           "id": "hood-in-sea",
-          "tone": "grey",
+          "tone": "sandstone",
           "top": 11
         },
         {
@@ -365,7 +365,7 @@
           },
           "h": 1,
           "id": "hood-in-roof",
-          "tone": "pale",
+          "tone": "sandstone",
           "top": 12
         },
         {
@@ -381,7 +381,7 @@
           },
           "h": 14,
           "id": "hood-out-cliff",
-          "tone": "grey",
+          "tone": "sandstone",
           "top": 11
         },
         {
@@ -397,7 +397,7 @@
           },
           "h": 14,
           "id": "hood-out-sea",
-          "tone": "grey",
+          "tone": "sandstone",
           "top": 11
         },
         {
@@ -413,7 +413,7 @@
           },
           "h": 1,
           "id": "hood-out-roof",
-          "tone": "pale",
+          "tone": "sandstone",
           "top": 12
         },
         {

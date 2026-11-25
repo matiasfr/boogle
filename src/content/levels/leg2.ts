@@ -312,9 +312,9 @@ function west() {
   const strait = unit(-125, 225);
   const exit = frame({ x: 795, z: 75 }, strait, perp(strait));
   const hood = (row: typeof cave, id: string, start: number, end: number) => [
-    row.box(id + '-cliff', start, end, 6.5, 7.5, 11, 14, 'grey'),
-    row.box(id + '-sea', start, end, -7.5, -6.5, 11, 14, 'grey'),
-    row.box(id + '-roof', start, end, -7.5, 7.5, 12, 1, 'pale'),
+    row.box(id + '-cliff', start, end, 6.5, 7.5, 11, 14, 'sandstone'),
+    row.box(id + '-sea', start, end, -7.5, -6.5, 11, 14, 'sandstone'),
+    row.box(id + '-roof', start, end, -7.5, 7.5, 12, 1, 'sandstone'),
   ];
   return {
     /** The stop, s 20. */

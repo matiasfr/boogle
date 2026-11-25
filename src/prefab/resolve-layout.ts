@@ -6,7 +6,7 @@ import { expandHaltKit } from './halt-layout.ts';
 import { expandOperands } from './operands.ts';
 import { PAD_SIZE } from './greybox-constants.ts';
 type XZ = { x: number; z: number };
-type Tone = 'grey' | 'light' | 'dark' | 'pale' | 'black';
+type Tone = 'grey' | 'light' | 'dark' | 'pale' | 'black' | 'sandstone';
 /** One box: a rectangle on the ground (centre, yaw of its length, `w` across, `d` along) under a top face that is
  * level at `top`, or runs from `top` at its -d/2 end to `top + rise` at its +d/2 end (a ramp), `h` thick. */
 type Surface = {
@@ -266,6 +266,7 @@ const COLOURS: Record<Tone, string> = {
   light: '#b4b6b8',
   dark: '#6f7275',
   pale: '#e4e5e6',
+  sandstone: '#b79d80',
   black: '#101113',
 };
 type XYZ = { x: number; y: number; z: number };
