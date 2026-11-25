@@ -582,7 +582,7 @@ function* cradle(g: Game, pl: Player): Policy {
 }
 
 // ---------------------------------------------------------------- the greybox route's legs
-/** The route's pickups and barrier: each node's op and its catalog index (RAIL_GRANTS or RAIL_GATES). */
+/** The route's pickups and barriers: each node's op and its catalog index (RAIL_GRANTS or RAIL_GATES). */
 const ROUTE_PRESS: Partial<Record<NodeId, { op: 'rail.grant' | 'rail.gate'; id: number }>> = {
   pick: { op: 'rail.grant', id: RAIL_GRANTS.findIndex((x) => x.id === 'pick') },
   'incline-gate': { op: 'rail.gate', id: RAIL_GATES.findIndex((x) => x.id === 'incline') },

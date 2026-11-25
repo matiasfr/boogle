@@ -383,7 +383,7 @@ const steelKit = (foot: HandSupply): Supply => ({
   foot,
 });
 
-// The greybox route's legs (docs/plans/greybox-route.md, greybox-leg2.md step 5, greybox-leg3.md step 7): each
+// The greybox route's built legs (docs/plans/greybox-leg4.md step 6 and earlier legs): each
 // section is a node, fed at its frame off its rack; bills, frames and racks are RAIL_LEGS's. The rules:
 // src/sim/railway-sys-route.ts (legStock, grant, gate), the facts src/sim/railway-queries-route.ts (legReached: a leg's
 // `after` complete).
