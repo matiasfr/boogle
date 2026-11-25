@@ -40,3 +40,5 @@ The offline economy and its playable 2D page use this service ladder, shared by 
 | 40 | 7 | 2 | 5 |
 
 Short rail trips use triangular acceleration; longer trips use rest-to-rest trapezoidal acceleration. Freight omits boarding and retains its transfer time. The map/greybox panel uses base-service values and plan lengths; cruise timing includes the rendered elevation. Economy hauls below the existing 0.8 km threshold remain walks. `play-sim.ts` inherits the shared ride and freight helpers. Numbers are model assumptions, not live train upgrades. Serves DESIGN 7 (Telegraph everything) and 11 (Show, don't tell).
+
+At Canopy the homeward deck holds the cloth and the Notch board. Bell Rock's lower east platform holds the causeway work sites. Two platforms on the Notch reef lead down to the arch. The causeway halt stands on posts off the classic island's north beach, with ramps down to the sand.

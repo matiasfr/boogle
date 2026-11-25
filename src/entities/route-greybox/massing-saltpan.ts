@@ -4,7 +4,10 @@ import { leg2Extras, leg2Massing, leg2Placements } from './leg2-draw.ts';
 import { coverNear, AREA_CENTRES } from './leg2-layout.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 
-export function coastalArea(id: 'saltpan' | 'quay' | 'wall-south' | 'wall-north', value: unknown) {
+export function coastalArea(
+  id: 'saltpan' | 'quay' | 'wall-south' | 'wall-north' | 'notch' | 'original',
+  value: unknown,
+) {
   const centre = AREA_CENTRES[id];
   const boxes = leg2Massing(value);
   return {

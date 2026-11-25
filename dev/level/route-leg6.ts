@@ -11,6 +11,13 @@ import {
   RAIL_GRANTS,
   RAIL_LEGS,
 } from '../../src/sim/railway-route.ts';
+import { loadLevelArtifact } from '../../src/prefab/validate.ts';
+import { compiled } from '../../src/prefab/catalogue.ts';
+import notch from '../../content/built/levels/notch.json' with { type: 'json' };
+import original from '../../content/built/levels/original.json' with { type: 'json' };
+import { heightAt, resolvePlacedColliders } from './prefab-colliders.ts';
+import { flood } from './flood.ts';
+import { MOVER } from './mover.ts';
 import { tracks } from './rail-network.ts';
 import { shoreDistance } from './route-leg4.ts';
 import { circumradius, measure } from './track-continuity.ts';
@@ -104,5 +111,39 @@ export function checkLeg6() {
     `Meeting marker on beach at ${y.toFixed(2)} m outside keep-outs`,
     Math.abs(y - RAIL_ARRIVAL.y / 100) < 0.1 && !island.keptOut(x, z),
   );
+  for (const raw of [notch, original]) {
+    const level = loadLevelArtifact(raw, compiled.prefabs);
+    const reef = level.place === 'notch';
+    const cell = reef ? 1 : 0.5;
+    const n = reef ? 251 : 161;
+    const ox = reef ? -1650 : -45,
+      oz = reef ? -1080 : -165;
+    const h = new Float32Array(n * n);
+    const triangles = resolvePlacedColliders(level, compiled.prefabs).colliders.flatMap((c) => c.volume.triangles);
+    const node = (p: { x: number; z: number }) => Math.round((p.x - ox) / cell) * n + Math.round((p.z - oz) / cell);
+    for (let i = 0; i < n; i++)
+      for (let j = 0; j < n; j++) {
+        const p = { x: ox + i * cell, z: oz + j * cell };
+        h[i * n + j] = Math.max(heightAt(triangles, p) ?? -20, reef ? -20 : island.heightAt(p.x, p.z));
+      }
+    const g = { n, cell, h },
+      m = (level.analysis as { marks: Record<'out' | 'home' | 'ramp', { x: number; z: number }> }).marks;
+    const target = reef ? { x: lantern.x / 100, z: lantern.z / 100 } : { x, z };
+    const goal = node(target);
+    for (const side of ['out', 'home'] as const) {
+      const start = node(m[side]);
+      const seen = flood(g, MOVER, [start]);
+      check(
+        level.place + ' ' + side + ' platform to ' + (reef ? 'lantern' : 'beach marker'),
+        Math.abs(h[start]! - (reef ? 7.9 : 4.9)) < 0.02 && !!seen[goal],
+      );
+    }
+    const water = node(reef ? { x: -1404, z: -960 } : { x: 18, z: -145 });
+    const seen = flood(g, MOVER, [water], { swim: true });
+    check(
+      'Swimmer from open water onto ' + (reef ? 'the Notch reef' : 'the island halt ramp'),
+      h[water]! < -MOVER.wade && !!seen[reef ? goal : node(m.ramp)],
+    );
+  }
   return { level: 'route leg 6', entries, failures: entries.filter((e) => !e.passed).length };
 }

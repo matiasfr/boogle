@@ -201,6 +201,11 @@ function bell(entries: Entry[]) {
     ['the west rock', on(low, M.westRock)],
   ]);
   assertion(fromLow.ok, `on foot from the lower west platform: ${fromLow.text}`);
+  const fromRamp = reach2(under, over, [g.node(M.rampFoot)], false);
+  assertion(
+    on(fromRamp, { x: -54.95, z: -847.04 }),
+    'on foot from the ramp foot across the ns bed to causeway frame 1',
+  );
   const up = reach2(under, over, [g.node(M.upperDeck)], false);
   const fromUp = list([
     ['the in half north platform', on(up, M.upperInN, true)],

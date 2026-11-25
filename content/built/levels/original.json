@@ -1,0 +1,320 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "layout": {
+    "area": "original",
+    "data": {
+      "basis": {
+        "operand": 0
+      },
+      "extras": [],
+      "marks": {
+        "home": {
+          "at": [
+            0,
+            -5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "operand": 0
+          }
+        },
+        "out": {
+          "at": [
+            0,
+            5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "operand": 0
+          }
+        },
+        "ramp": {
+          "at": [
+            22,
+            5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "operand": 0
+          }
+        }
+      },
+      "origin": {
+        "x": -6.19,
+        "z": -135.05
+      },
+      "pads": [],
+      "pieces": [
+        {
+          "bounds": [
+            -20,
+            20,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.4,
+          "id": "platform--1",
+          "tone": "light",
+          "top": 4.9
+        },
+        {
+          "bounds": [
+            20,
+            24.8,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.3,
+          "id": "landward-steps--1",
+          "rise": {
+            "a": 2.3,
+            "b": 4.9,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 4.9
+        },
+        {
+          "bounds": [
+            -18.25,
+            -17.75,
+            -6.05,
+            -5.55
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 12.5,
+          "id": "pile--1--18",
+          "tone": "dark",
+          "top": 4.5
+        },
+        {
+          "bounds": [
+            -9.25,
+            -8.75,
+            -6.05,
+            -5.55
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 12.5,
+          "id": "pile--1--9",
+          "tone": "dark",
+          "top": 4.5
+        },
+        {
+          "bounds": [
+            -0.25,
+            0.25,
+            -6.05,
+            -5.55
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 12.5,
+          "id": "pile--1-0",
+          "tone": "dark",
+          "top": 4.5
+        },
+        {
+          "bounds": [
+            8.75,
+            9.25,
+            -6.05,
+            -5.55
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 12.5,
+          "id": "pile--1-9",
+          "tone": "dark",
+          "top": 4.5
+        },
+        {
+          "bounds": [
+            16.75,
+            17.25,
+            -6.05,
+            -5.55
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 12.5,
+          "id": "pile--1-17",
+          "tone": "dark",
+          "top": 4.5
+        },
+        {
+          "bounds": [
+            -20,
+            20,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.4,
+          "id": "platform-1",
+          "tone": "light",
+          "top": 4.9
+        },
+        {
+          "bounds": [
+            20,
+            24.8,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.3,
+          "id": "landward-steps-1",
+          "rise": {
+            "a": 2.3,
+            "b": 4.9,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 4.9
+        },
+        {
+          "bounds": [
+            -18.25,
+            -17.75,
+            5.55,
+            6.05
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 12.5,
+          "id": "pile-1--18",
+          "tone": "dark",
+          "top": 4.5
+        },
+        {
+          "bounds": [
+            -9.25,
+            -8.75,
+            5.55,
+            6.05
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 12.5,
+          "id": "pile-1--9",
+          "tone": "dark",
+          "top": 4.5
+        },
+        {
+          "bounds": [
+            -0.25,
+            0.25,
+            5.55,
+            6.05
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 12.5,
+          "id": "pile-1-0",
+          "tone": "dark",
+          "top": 4.5
+        },
+        {
+          "bounds": [
+            8.75,
+            9.25,
+            5.55,
+            6.05
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 12.5,
+          "id": "pile-1-9",
+          "tone": "dark",
+          "top": 4.5
+        },
+        {
+          "bounds": [
+            16.75,
+            17.25,
+            5.55,
+            6.05
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 12.5,
+          "id": "pile-1-17",
+          "tone": "dark",
+          "top": 4.5
+        }
+      ],
+      "posts": [],
+      "reserves": []
+    },
+    "kind": "leg2",
+    "operands": [
+      {
+        "o": {
+          "x": -6.19,
+          "z": -135.05
+        },
+        "u": {
+          "axis": {
+            "x": 309,
+            "z": 951
+          },
+          "compute": "unit"
+        },
+        "v": {
+          "axis": {
+            "axis": {
+              "x": 309,
+              "z": 951
+            },
+            "compute": "unit"
+          },
+          "compute": "perp",
+          "sign": 1
+        }
+      }
+    ]
+  },
+  "place": "original",
+  "placements": [],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}

@@ -20,6 +20,7 @@ import { westExtras, westMassing } from './massing-west.ts';
 import { canopyExtras, canopyMassing, canopyNear } from './massing-canopy.ts';
 import { saltpanArea } from './massing-saltpan.ts';
 import { quayArea } from './massing-quay.ts';
+import { notchAreas } from './massing-notch.ts';
 import { wallAreas } from './massing-wall.ts';
 import { AREA_CENTRES, FREE_MORE, MOUNT_NEAR } from './leg2-layout.ts';
 import { drawGreyBoxes } from './boxes.ts';
@@ -43,6 +44,7 @@ const AREAS: readonly Area[] = [
   saltpanArea,
   quayArea,
   ...wallAreas,
+  ...notchAreas,
   { id: 'gorge', centre: AREA_CENTRES.gorge, build: () => gorgePlacements },
   { id: 'bell', centre: AREA_CENTRES.bell, build: bellMassing, extras: bellExtras },
   { id: 'west', centre: AREA_CENTRES.west, build: westMassing, extras: westExtras },

@@ -251,6 +251,8 @@ function bell() {
         BAY_RAIL,
         BAY_RAIL + LOADING,
       ),
+      { id: 'Causeway frame and barrier', x: -54.95, z: -847.04, yaw: 0, w: 2, d: 2, y0: LOWER, y1: LOWER + CLEAR },
+      { id: 'Causeway rack', x: -54.31, z: -857.12, yaw: 0, w: 2, d: 2, y0: LOWER, y1: LOWER + CLEAR },
       ne.reserve('seeds spot', -5.5, -2.5, -16.5, -13.5, LOWER, LOWER + CLEAR),
       { id: 'Canopy frame and barrier', x: -54.1, z: -848.23, yaw: 0, w: 2, d: 2, y0: UPPER, y1: UPPER + CLEAR },
       { id: 'Canopy rack', x: -43.36, z: -847.01, yaw: 0, w: 2, d: 2, y0: UPPER, y1: UPPER + CLEAR },

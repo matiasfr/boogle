@@ -358,7 +358,7 @@ Every brief starts with `git fetch origin` and `git checkout -B <branch> origin/
       on the island's platform; the others on the spawn until step 5's stills, leg 3's reason). Verify:
       `test/railway-jump.test.ts`; each stage's invariant check; the whole server suite and `npm run test:net` (rule 55).
       **Brief lines:** rules 53, 55, 74, 15 (the golden moves inside the bump).
-- [ ] **4. The massing: Canopy, Bell Rock, the Notch and the island halt (M; "Player-visible implementation").** Files:
+- [x] **4. The massing: Canopy, Bell Rock, the Notch and the island halt (M; "Player-visible implementation").** Files:
       `src/content/levels/leg3.ts` and `leg2.ts` (as [above](#the-massing-steps-4-and-5)), new `src/content/levels/leg6.ts`
       (`notch`, `original`), `content/built/levels/` for each, new `src/entities/route-greybox/massing-notch.ts`, registered
       in `index.ts`'s `AREAS` and `leg2-layout.ts`'s `AREA_CENTRES` with their `coverNear` distances;

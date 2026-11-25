@@ -37,6 +37,8 @@ import { levels as leg4 } from '../src/content/levels/leg4.ts';
 import { levels as leg5 } from '../src/content/levels/leg5.ts';
 import { prefabs as wallLands } from '../src/content/prefabs/wall-lands.ts';
 import { levels as leg2 } from '../src/content/levels/leg2.ts';
+import { prefabs as notchReef } from '../src/content/prefabs/notch-reef.ts';
+import { levels as leg6 } from '../src/content/levels/leg6.ts';
 import { levels as leg3 } from '../src/content/levels/leg3.ts';
 import { levels as gorge } from '../src/content/levels/gorge.ts';
 import { levels as workshop } from '../src/content/levels/workshop.ts';
@@ -163,6 +165,7 @@ test('artifact serialization is independent of runtime native transcendental res
           ...plotHouses,
           ...rock,
           ...canopyLands,
+          ...notchReef,
           ...caveLands,
           ...wallLands,
           ...railway,
@@ -191,6 +194,7 @@ test('artifact serialization is independent of runtime native transcendental res
         [
           ...leg2,
           ...leg3,
+          ...leg6,
           ...leg4,
           ...leg5,
           ...tillLevels,

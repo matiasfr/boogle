@@ -15,7 +15,7 @@ import {
 import { RING_HALT, RING_HEAD, RING_JOINT_UP, RING_STEEL_WORKS, ringAt } from '../sim/railway-ring-layout.ts';
 import { CROSSING_BENTS, PIER_STOP, SHED_TABLE, WORKS_KILN, WORKS_RACK } from '../sim/railway-works-layout.ts';
 import { RAIL_LINES } from '../sim/railway-lines.ts';
-import { RAIL_ARRIVAL, RAIL_GRANTS, RAIL_LEGS, legFrame, legRack, rowSide } from '../sim/railway-route.ts';
+import { RAIL_GRANTS, RAIL_LEGS, legFrame, legRack } from '../sim/railway-route.ts';
 
 /** Where a jump-in lands, in metres on world axes; y is the surface stood on (terrain, pad or deck). */
 export type JumpLand = { x: number; y: number; z: number; yaw?: number };
@@ -353,7 +353,7 @@ export const JUMPS: readonly Jump[] = [
     menu: false,
     label: 'Notch reached',
     line: 'Take the lantern at Lantern Notch (placeholder)',
-    land: near(rowSide('bay', RAIL_LEGS[6]!.sections[0]!.toCm, 480, 90, 400), 0, 0, 7.9, RAIL_GRANTS[3]!.at),
+    // Keep the spawn for canopy-reached's reason: the halt mounts by distance.
   },
   {
     stage: 'causeway-open',
@@ -367,7 +367,7 @@ export const JUMPS: readonly Jump[] = [
     menu: false,
     label: 'Island reached',
     line: 'Arrive (placeholder)',
-    land: near(rowSide('ns', RAIL_LEGS[7]!.sections[0]!.toCm, 480, 90, 400), 0, 0, 4.9, RAIL_ARRIVAL),
+    // Keep the spawn for canopy-reached's reason: the halt mounts by distance.
   },
   { stage: 'arrived', menu: false, label: 'Arrived', line: 'Arrived (placeholder)' },
   // Garage step 4 (docs/plans/garage-step4.md, step 3): placeholder tooling copy for the owner, no landings (the usual

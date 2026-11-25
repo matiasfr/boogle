@@ -13,6 +13,11 @@
     {
       "kind": "assertion",
       "passed": true,
+      "message": "on foot from the ramp foot across the ns bed to causeway frame 1"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
       "message": "on foot from the upper deck: the in half north platform, the in half south platform, the out half north platform, the out half south platform, the east rock, the pinnacle's foot, the lower west platform (back down)"
     },
     {
@@ -76,7 +81,7 @@
     {
       "kind": "assertion",
       "passed": true,
-      "message": "room left for the rules plan is clear of leg 2's boxes, pads and posts: ns row, bay approach, bay track 0, bay track 1, bay track 2, bay track 3, bay exit curve, bay exit, seeds spot, Canopy frame and barrier, Canopy rack, lower-east lever end, lower-west lever end, upper-in-n lever end, upper-in-s lever end, upper-out-n lever end, upper-out-s lever end"
+      "message": "room left for the rules plan is clear of leg 2's boxes, pads and posts: ns row, bay approach, bay track 0, bay track 1, bay track 2, bay track 3, bay exit curve, bay exit, Causeway frame and barrier, Causeway rack, seeds spot, Canopy frame and barrier, Canopy rack, lower-east lever end, lower-west lever end, upper-in-n lever end, upper-in-s lever end, upper-out-n lever end, upper-out-s lever end"
     },
     {
       "kind": "section",
