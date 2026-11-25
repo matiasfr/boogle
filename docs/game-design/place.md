@@ -2895,6 +2895,8 @@ yet. `?works=0` disables both for comparison. The outcrop and stall each use one
 boiler cylinder. The smaller 4 × 9 m stall clears the existing path and rotated hall; its road bends from the
 table. Serves DESIGN.md **7. Telegraph everything** and **11. Show, don't tell**. Not tested on a device.
 
+Loose boulders on the classic island use three sizes of the cliff kit at their seeded positions. The five quarry and Works rocks share the sandstone palette. Their clustered lumps and orange bands mark the rocks that yield stone.
+
 **Split-rock and the Roundhouse, live (9 November; J4).** The forge casts the breaker onto the boiler's old
 pedestal: a 1.4 m broad-faced hammer with gold motes, under a tall steam plume, and a whistle that carries about
 900 m on the frame it appears. The boiler uses the same call (`forge-call.ts`, Home flow findings 2 and 3). **Take
