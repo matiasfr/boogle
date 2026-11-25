@@ -49,8 +49,8 @@ import { CAVE_GROUP } from '../constants.ts';
 import { makeGreyboxLabel } from './builders/greybox-label.ts';
 import { registerSeat, type Seat } from '../entities/railway/seat.ts';
 import { ROOM_GROUP, staticBody } from '../place/land.ts';
-import { capsuleOverlaps, type Body, type Shape, type V3 } from '../physics/engine.ts';
-import { createLiftOrWait, playerOverlaps, STEP, type Clearing, type Solid } from '../place/clearance.ts';
+import { capsuleOverlaps, type Body, type Shape } from '../physics/engine.ts';
+import { createLiftOrWait, type Clearing, type Solid } from '../place/clearance.ts';
 import type { OwnedView } from '../render/owned-view.ts';
 import type { Platform } from '../physics/platforms.ts';
 
@@ -64,13 +64,11 @@ let lifter: ReturnType<typeof createLiftOrWait> | undefined;
 export function liftOrWait<S extends Solid>(
   solids: readonly S[],
   body: Parameters<NonNullable<typeof lifter>>[1],
-  o: { lift: boolean },
+  o: Parameters<NonNullable<typeof lifter>>[2],
 ): Clearing<S> {
   lifter ??= createLiftOrWait(capsuleOverlaps); // on first use: loading the door builds nothing
   return lifter(solids, body, o);
 }
-/** A closing support must remain while a player's capsule is within a step of its shapes. */
-export const supportOccupiedAt = (shapes: readonly Shape[], at: V3) => playerOverlaps(capsuleOverlaps, shapes, at, STEP);
 for (const name of names.builders)
   if (!builders.has(name as BuilderName)) throw new Error(`prefabs: missing builder ${name}`);
 const euler = (v: Vec3 = [0, 0, 0]) => new THREE.Euler(v[1], v[0], v[2], 'YXZ');

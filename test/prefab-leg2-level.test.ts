@@ -40,7 +40,7 @@ import { CANOPY_CENTRES, isleGround, landPoints } from '../src/content/levels/le
 import type { Body, Shape } from '../src/physics/engine.ts';
 import { resident } from '../src/render/lod-level.ts';
 import { CAVE_GROUP, HEAD_OFFSET, PLAYER_R } from '../src/constants.ts';
-import { createLiftOrWait, playerOverlaps, STEP, type Solid } from '../src/place/clearance.ts';
+import { createLiftOrWait, STEP, type Solid } from '../src/place/clearance.ts';
 import canopy from '../content/built/levels/canopy.json' with { type: 'json' };
 import south from '../content/built/levels/wall-south.json' with { type: 'json' };
 import north from '../content/built/levels/wall-north.json' with { type: 'json' };
@@ -788,7 +788,6 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
       ],
       liftOrWait,
       frameOccupied: (frame: { holds(p: THREE.Vector3): boolean }) => frame.holds(position) || frame.holds(peerPosition),
-      supportOccupiedAt: (shapes: Shape[], p: THREE.Vector3) => playerOverlaps(physics.capsuleOverlaps, shapes, p, STEP),
       signBoard: () => ({ mesh: new THREE.Group() }),
       paintPlate: (s: { mesh: THREE.Group }, entries: { t: string }[]) =>
         signs.set(
@@ -894,9 +893,9 @@ test('closing Wall head one keeps the floor under a player still standing on its
   const top = row.rowY(leg.line, s) + 0.9;
   const view = await reachedView(1300, 0, 3, undefined, 2);
   view.position.set(at.x, top + PLAYER_R, at.z);
-  const floor = () =>
+  const floor = (pieces = view.pieces) =>
     placed.heightAt(
-      view.pieces.flatMap((p) => p.volume.triangles),
+      pieces.flatMap((p) => p.volume.triangles),
       at,
     );
   assert.ok(Math.abs(floor()! - top) < 0.01);
@@ -912,6 +911,8 @@ test('closing Wall head one keeps the floor under a player still standing on its
   view.peerPosition.x += 50;
   view.update();
   assert.ok(floor() === null || Math.abs(floor()! - top) > 0.01, 'head one stayed after the player left');
+  const fresh = await reachedView(1300, 0, 3, undefined, 4);
+  assert.equal(floor(fresh.pieces), floor(), 'a fresh view rebuilt an already closed head');
 });
 
 test('the deep-span barrier first appears when the fifth Wall platform supports its frame', async () => {

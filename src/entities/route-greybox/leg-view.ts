@@ -76,7 +76,7 @@ import { islandGround, ringIslandNear } from '../ring-island/state.ts';
 import { GATE_AT, GORGE_DECK, PICK_AT, TOWN_PAD, gorgeAt } from './massing.ts';
 import { bellPads } from './massing-bell.ts';
 import { canopyGround } from './massing-canopy.ts';
-import { liftOrWait, supportOccupiedAt } from '../../prefab/instantiate.ts';
+import { liftOrWait } from '../../prefab/instantiate.ts';
 import type { Clearing } from '../../place/clearance.ts';
 import { AREA_CENTRES, LEG2_TEXT } from './leg2-layout.ts';
 import { areaBoardVisibility, areaLabels } from './state.ts';
@@ -511,7 +511,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     const deckBodies: Body[] = [];
     const standing = { boxes: [] as GreyBox[], bodies: new Map<GreyBox, Body>() };
     const temporaryHeads = new Map<number, GreyBox[]>();
-    const retiring = new Map<GreyBox[], { shapes: Shape[]; bodies: Body[] }>();
+    const retiring = new Map<GreyBox[], { clearance: Clearing<{ shapes: Shape[]; on(): void }>; bodies: Body[] }>();
     /** A box along the line from (`s0`, `lat0`) to (`s1`, `lat1`), its top `up` over the rails. */
     function along(s0: number, s1: number, lat0: number, lat1: number, up: number, w: number, h: number, c: string) {
       geo.world(s0, lat0, q);
@@ -730,7 +730,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       const key = 2 * laid + Number(through);
       if (key === stood) {
         standClear?.retry(me.body);
-        releaseEmptyHeads();
+        for (const head of retiring.values()) head.clearance.retry(null);
         return;
       }
       stood = key;
@@ -741,9 +741,16 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         const active = boxes.filter((box) => standing.bodies.has(box));
         const bodies = active.map((box) => standing.bodies.get(box)!);
         for (const box of active) standing.bodies.delete(box);
-        retiring.set(active, { shapes: active.map(boxShape), bodies });
+        const release = {
+          shapes: active.map(boxShape),
+          on() {
+            for (const body of bodies) owner.removeBody(body);
+            retiring.delete(active);
+          },
+        };
+        const clearance = liftOrWait([release], null, { lift: false, occupied: frameOccupied });
+        if (clearance.waiting.length) retiring.set(active, { clearance, bodies });
       }
-      releaseEmptyHeads();
       temporaryHeads.clear();
       for (const body of standing.bodies.values()) owner.removeBody(body);
       standing.bodies.clear();
@@ -761,13 +768,6 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         me.body,
         { lift: sp.leg.id === 'wall' },
       );
-    }
-    function releaseEmptyHeads() {
-      for (const [boxes, head] of retiring) {
-        if (frameOccupied({ holds: (p) => supportOccupiedAt(head.shapes, p) })) continue;
-        for (const body of head.bodies) owner.removeBody(body);
-        retiring.delete(boxes);
-      }
     }
     /** Takes the deck's slabs and the standing pieces' colliders away (and forgets what was drawn), until next shown. */
     function clear() {
@@ -916,6 +916,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     const i = legIndex.get(id);
     return i !== undefined && r.per[i]!.done;
   };
+  const deepFrameBuilt = (r: { per: readonly LegRows[] }) => r.per[legIndex.get('wall')!]!.laid >= 5;
   /** Whether a leg's views stand: the stack's only with a section laid or Ring Island's near view mounted (its end is
    * the island's run-off till then); every other leg's always. */
   const shown = (l: (typeof legs)[number], lr: LegRows | null) =>
@@ -1031,7 +1032,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     bell(r);
     areaBoardVisibility.get('quay.wall')?.(legRow(r.wd, wall.k).laid === 0);
     if (plugSite && near(plugSite, 450)) barrier(plugSite, !!(r.gates & (1 << PLUG)));
-    if (r.per[legIndex.get('wall')!]!.laid >= 5 && near(deepSite, 450)) barrier(deepSite, !!(r.gates & (1 << deepSpan)));
+    if (deepFrameBuilt(r) && near(deepSite, 450)) barrier(deepSite, !!(r.gates & (1 << deepSpan)));
     canopy(r);
     things.commit();
     note(r);
@@ -1363,7 +1364,8 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       if (plugSite)
         gate(PLUG, 'railway-leg-plug', plugSite, r.pick ? 'After the line to Canopy (placeholder)' : NEEDS_PICK);
       gate(NOTCH, 'railway-leg-notch', NOTCH_AT);
-      gate(deepSpan, 'railway-leg-deep-span', deepSite, r.grants & (1 << SEEDS) ? NO_LINE : 'Needs the crystal seeds');
+      if (deepFrameBuilt(r))
+        gate(deepSpan, 'railway-leg-deep-span', deepSite, r.grants & (1 << SEEDS) ? NO_LINE : 'Needs the crystal seeds');
       return out;
     },
     inspect: () => {
