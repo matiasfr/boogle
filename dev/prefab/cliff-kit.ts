@@ -36,6 +36,7 @@ import { gorgeRim } from './cliff-kit-gorge-rim.ts';
 import { gorgeMouth } from './cliff-kit-gorge-mouth.ts';
 import { gorgeWalls } from './cliff-kit-gorge-walls.ts';
 
+import { farHead } from './cliff-kit-far-head.ts';
 import { northRidge, eastCutting } from './cliff-kit-north-ridge.ts';
 
 export type Key = (typeof prefabs)[number]['key'];
@@ -57,7 +58,7 @@ export type Area = {
   stranded?: { x: number; z: number; half: number };
   dress(kit: Kit): void;
 };
-export const AREAS: readonly Area[] = [canyon, shore, gorgeRim, gorgeWalls, gorgeMouth, northRidge, eastCutting];
+export const AREAS: readonly Area[] = [canyon, shore, gorgeRim, gorgeWalls, gorgeMouth, northRidge, eastCutting, farHead];
 /** The level an area writes. */
 export const levelOf = (area: Area) => area.level ?? `cliff-kit-${area.id}`;
 
