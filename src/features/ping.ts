@@ -1,7 +1,4 @@
-// Context ping (G, middle click, or the touch Ping button): drops a marker where you are aiming, "Ball!" near the
-// ball, "Look!" otherwise. Everyone sees it in the pinger's colour with their name for a few
-// seconds, pinned to the screen edge with an arrow when it is off-screen. Sent as a reliable room message
-// { t:'ping', x, y, z, k }, validated and rate limited on receipt (src/sim/social.ts). No scores, no sim state.
+// A reliable, short-lived marker where you aim. Ping a friend's live marker to answer them.
 import './ping.css';
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
@@ -12,14 +9,23 @@ import { groundHeight } from '../island/terrain.ts';
 import { waterField } from '../physics/water-field.ts';
 import { raycastClosest, rayHit } from '../physics/engine.ts';
 import { GROUP } from '../physics/physics.ts';
-import { me, camForward } from '../player/player.ts';
+import { me } from '../player/player.ts';
 import { ball } from '../entities/ball/state.ts';
+import { pingHint } from '../player/ping-hints.ts';
 import { net, remotes, onRoomReady } from '../netplay/net.ts';
 import { getAudio } from '../render/audio.ts';
 import { onStart } from '../loop.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
 import { registerAction } from '../player/controls.ts';
-import { PING_KINDS, validatePing, createLimiter, honkFreq, type Ping } from '../sim/social.ts';
+import {
+  MAX_PING_SEQ,
+  PING_KINDS,
+  validatePing,
+  createLimiter,
+  honkFreq,
+  type Ping,
+  type PingReply,
+} from '../sim/social.ts';
 
 const TUNE = {
   lifeMs: 4000,
@@ -37,8 +43,8 @@ const contact = (x: number, y: number, z: number) =>
   Math.max(groundHeight(x, z), waterField.moving ? waterField.nearby({ x, y, z }).height : SEA);
 
 // ---------------------------------------------------------------- aiming
-function aimPing() {
-  camForward(fwd);
+function aimPing(): Omit<Ping, 'seq'> {
+  camera.getWorldDirection(fwd);
   const o = camera.position;
   // Authored places sit outside the original island grid; use their actual solid surfaces too.
   tmp.copy(o).addScaledVector(fwd, TUNE.maxRange);
@@ -69,40 +75,64 @@ function aimPing() {
       }
       const hx = o.x + fwd.x * hi,
         hz = o.z + fwd.z * hi;
-      return { x: hx, y: contact(hx, o.y + fwd.y * hi, hz), z: hz, k: 'look' };
+      return hintOrLook(tmp.set(hx, contact(hx, o.y + fwd.y * hi, hz), hz));
     }
     prev = s;
   }
-  if (solid) return { ...hit.hitPointWorld, k: 'look' };
+  if (solid) return hintOrLook(tmp.copy(hit.hitPointWorld));
   // A miss stays near the view, never clamped back to the original island hundreds of metres away.
-  const d = 30;
-  return {
-    x: o.x + fwd.x * d,
-    y: o.y + fwd.y * d,
-    z: o.z + fwd.z * d,
-    k: 'look',
-  };
+  return hintOrLook(tmp.copy(o).addScaledVector(fwd, TUNE.maxRange), true);
+}
+
+function hintOrLook(end: THREE.Vector3, miss = false): Omit<Ping, 'seq'> {
+  const hint = pingHint(camera.position, end);
+  const { x, y, z } = hint?.at ?? (miss ? end.copy(camera.position).addScaledVector(fwd, 30) : end);
+  return { x, y, z, k: hint?.k ?? 'look' };
 }
 
 let lastOwn = -1e9;
-function pingNow() {
-  const now = performance.now();
-  if (!me.entered || !me.body || now - lastOwn < TUNE.ownGapMs) return;
-  lastOwn = now;
-  const a = aimPing();
-  const msg = {
-    t: 'ping',
-    x: Math.round(a.x * 10) / 10,
-    y: Math.round(a.y * 10) / 10,
-    z: Math.round(a.z * 10) / 10,
-    k: a.k as Ping['k'],
-  };
+let nextSeq = 0;
+function sendPing(message: Ping | PingReply) {
   try {
-    net.room?.send(msg);
+    net.room?.send({ t: 'ping', ...message });
   } catch (e) {
     console.warn('[ping] send failed', e);
   }
-  addPing('me', msg, me.name, me.colorIdx, true);
+}
+function pingNow(tapped?: string) {
+  const now = performance.now();
+  if (!me.entered || !me.body || now - lastOwn < TUNE.ownGapMs) return;
+  camera.getWorldDirection(fwd);
+  let of = tapped;
+  let best = Math.cos((6 * Math.PI) / 180);
+  for (const [id, marker] of pings) {
+    if (tapped !== undefined || marker.own || marker.expires <= now) continue;
+    const cosine = tmp.copy(marker.at).sub(camera.position).normalize().dot(fwd);
+    if (cosine >= best) {
+      best = cosine;
+      of = id;
+    }
+  }
+  if (of !== undefined) {
+    const marker = pings.get(of);
+    if (!marker || marker.own || marker.expires <= now) return;
+    lastOwn = now;
+    sendPing({ k: 'omw', of, seq: marker.seq });
+    marker.reply(net.room?.selfId ?? 'me', me.name, me.colorIdx, true);
+    return;
+  }
+  lastOwn = now;
+  const a = aimPing();
+  const msg = {
+    x: Math.round(a.x * 10) / 10,
+    y: Math.round(a.y * 10) / 10,
+    z: Math.round(a.z * 10) / 10,
+    k: a.k,
+    seq: nextSeq,
+  };
+  nextSeq = (nextSeq + 1) % (MAX_PING_SEQ + 1);
+  sendPing(msg);
+  addPing(net.room?.selfId ?? 'me', msg, me.name, me.colorIdx, true);
 }
 
 // ---------------------------------------------------------------- markers
@@ -112,7 +142,15 @@ const over = new THREE.Vector3(),
   onScreen = { x: 0, y: 0, behind: false };
 const layer = document.createElement('div');
 layer.className = 'ping-layer';
-const pings = new Map<string, GameEntity>(); // sender -> what is drawn
+type Marker = {
+  seq: number;
+  entity: GameEntity;
+  own: boolean;
+  expires: number;
+  at: THREE.Vector3;
+  reply: (id: string, name: string, colorIdx: number, own: boolean) => void;
+};
+const pings = new Map<string, Marker>();
 
 const ringGeo = new THREE.RingGeometry(0.55, 0.7, 36).rotateX(-Math.PI / 2);
 
@@ -122,13 +160,19 @@ defineKind('ping', { lateUpdate: 0 });
 
 function addPing(from: string, p: Ping, name: string, colorIdx: number, own: boolean) {
   const old = pings.get(from);
-  if (old) despawn(old);
+  if (old) despawn(old.entity);
   const color = COLORS[colorIdx] ?? COLORS[0]!;
   const el = document.createElement('div');
   el.className = 'ping';
   el.style.setProperty('--c', color);
   const card = document.createElement('div');
   card.className = 'ping-card';
+  if (!own) {
+    card.classList.add('replyable');
+    card.addEventListener('click', () => {
+      if (pings.get(from) === marker) pingNow(from);
+    });
+  }
   const label = document.createElement('b');
   label.textContent = PING_KINDS[p.k];
   const who = document.createElement('span');
@@ -155,12 +199,12 @@ function addPing(from: string, p: Ping, name: string, colorIdx: number, own: boo
     mesh: ring,
     lateUpdate({ now }) {
       const age = now - born;
-      if (age > TUNE.lifeMs) {
+      if (now >= marker.expires) {
         despawn(entity);
-        pings.delete(from);
+        if (pings.get(from) === marker) pings.delete(from);
         return;
       }
-      const fade = Math.min(1, (TUNE.lifeMs - age) / TUNE.fadeMs);
+      const fade = Math.min(1, (marker.expires - now) / TUNE.fadeMs);
       el.style.opacity = fade.toFixed(2);
       // The ground ring pulses outward a couple of times, then rests.
       const pulse = reducedMotion ? 1 : 1 + 0.35 * Math.sin(age * 0.008) * Math.exp(-age / 1500);
@@ -201,7 +245,26 @@ function addPing(from: string, p: Ping, name: string, colorIdx: number, own: boo
       ring.material.dispose();
     },
   });
-  pings.set(from, entity);
+  const replies = new Map<string, HTMLElement>();
+  const marker: Marker = {
+    seq: p.seq,
+    entity,
+    own,
+    expires: born + TUNE.lifeMs,
+    at: new THREE.Vector3(p.x, p.y + 1.4, p.z),
+    reply(id, name, colorIdx, local) {
+      if (performance.now() >= marker.expires) return;
+      const row = replies.get(id) ?? document.createElement('span');
+      row.className = 'ping-reply';
+      row.textContent = name + ' · On my way'; // Placeholder for the owner's words.
+      row.style.backgroundColor = COLORS[colorIdx] ?? COLORS[0]!;
+      replies.set(id, row);
+      card.append(row);
+      marker.expires += 2000;
+      chime(colorIdx, p.k, local);
+    },
+  };
+  pings.set(from, marker);
   chime(colorIdx, p.k, own);
 }
 
@@ -211,7 +274,7 @@ export function chime(colorIdx: number, kind: Ping['k'], own: boolean) {
   const { ctx, out } = a;
   const f = honkFreq(colorIdx)! * 2;
   const t = ctx.currentTime + 0.005;
-  const notes = kind === 'ball' ? [f, f * 1.5] : [f, f * 1.25];
+  const notes = [f, f * { ball: 1.5, look: 1.25, rails: 4 / 3, train: 5 / 3 }[kind]];
   notes.forEach((hz, k) => {
     const o = ctx.createOscillator();
     o.type = 'sine';
@@ -236,7 +299,12 @@ onRoomReady((room) =>
     const p = validatePing(msg);
     if (!p || typeof from !== 'string' || !incoming.allow(from, performance.now())) return;
     const r = remotes.get(from);
-    addPing(from, p, r?.name || 'Someone', r?.colorIdx ?? 0, false);
+    const name = r?.name || 'Someone',
+      color = r?.colorIdx ?? 0;
+    if (p.k === 'omw') {
+      const marker = pings.get(p.of);
+      if (marker?.seq === p.seq) marker.reply(from, name, color, false);
+    } else addPing(from, p, name, color, false);
   }),
 );
 

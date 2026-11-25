@@ -40,6 +40,17 @@
   border-top: 9px solid var(--ink, #13243f);
   border-bottom: 0;
 }
+@media (any-pointer: coarse) {
+  .ping-card.replyable {
+    pointer-events: auto;
+    touch-action: manipulation;
+  }
+}
+.ping-card .ping-reply {
+  padding: 2px 5px;
+  border-radius: 5px;
+  opacity: 1;
+}
 .ping-card b {
   font: 400 24px/1 var(--font-display, 'Lilita One', system-ui, sans-serif);
   letter-spacing: 0.01em;

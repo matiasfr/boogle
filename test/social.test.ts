@@ -1,5 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { Line3, PerspectiveCamera, Vector3 } from 'three';
+import { nearPingDeck } from '../src/player/ping-hints.ts';
+import { sourceFunction } from '../dev/level/source.ts';
 import {
   validatePing,
   createLimiter,
@@ -11,18 +14,79 @@ import {
 } from '../src/sim/social.ts';
 
 test('validatePing accepts good pings and rejects junk', () => {
-  assert.deepEqual(validatePing({ t: 'ping', x: 1.234, y: 2, z: -3, k: 'ball' }), { x: 1.2, y: 2, z: -3, k: 'ball' });
-  assert.deepEqual(validatePing({ t: 'ping', x: 999, y: 120, z: -3, k: 'look' }), { x: 999, y: 120, z: -3, k: 'look' });
+  assert.deepEqual(validatePing({ t: 'ping', seq: 7, x: 1.234, y: 2, z: -3, k: 'ball' }), {
+    seq: 7,
+    x: 1.2,
+    y: 2,
+    z: -3,
+    k: 'ball',
+  });
+  assert.deepEqual(validatePing({ t: 'ping', seq: 7, x: 999, y: 120, z: -3, k: 'look' }), {
+    seq: 7,
+    x: 999,
+    y: 120,
+    z: -3,
+    k: 'look',
+  });
   for (const bad of [
     null,
-    { t: 'ping', x: NaN, y: 0, z: 0, k: 'ball' },
-    { t: 'ping', x: 1, y: 0, z: 0, k: 'toString' },
-    { t: 'ping', x: 4097, y: 0, z: 0, k: 'look' },
-    { t: 'ping', x: 0, y: 0, z: 0, k: 'dig' }, // retired kind
-    { t: 'ping', x: '1', y: 0, z: 0, k: 'look' },
-    { t: 'ping', x: 1, y: 0, z: 0 },
+    { t: 'ping', seq: 7, x: NaN, y: 0, z: 0, k: 'ball' },
+    { t: 'ping', seq: 7, x: 1, y: 0, z: 0, k: 'toString' },
+    { t: 'ping', seq: 7, x: 4097, y: 0, z: 0, k: 'look' },
+    { t: 'ping', seq: 7, x: 0, y: 0, z: 0, k: 'dig' }, // retired kind
+    { t: 'ping', seq: 7, x: '1', y: 0, z: 0, k: 'look' },
+    { t: 'ping', seq: 7, x: 1, y: 0, z: 0 },
   ])
     assert.equal(validatePing(bad), null);
+});
+
+test('rail pings and replies carry only their validated fields', () => {
+  for (const k of ['rails', 'train']) {
+    const point = { seq: 7, x: 1, y: 2, z: 3, k };
+    assert.deepEqual(validatePing({ t: 'ping', ...point, of: 'ignored' }), point);
+  }
+  const of = 'a'.repeat(64);
+  assert.deepEqual(validatePing({ t: 'ping', k: 'omw', seq: 7, of, x: 4 }), { k: 'omw', seq: 7, of });
+  for (const invalid of [undefined, 3, of + 'a'])
+    assert.equal(validatePing({ t: 'ping', k: 'omw', seq: 7, of: invalid }), null);
+});
+
+test('the relay preserves which of two successive markers a friend answered', () => {
+  // A friend answers the station while the pinger replaces it with a marker on a train.
+  // Use a sequence as a candidate marker identifier. Both replies must remain distinguishable.
+  const reply = { t: 'ping', k: 'omw', of: 'pinger' };
+  const station = validatePing({ ...reply, seq: 1 });
+  const train = validatePing({ ...reply, seq: 2 });
+  assert.ok(station && train);
+  assert.notDeepEqual(station, train);
+  for (const seq of [undefined, -1, 65536, 0.5, '1']) {
+    assert.equal(validatePing({ ...reply, seq }), null);
+    assert.equal(validatePing({ t: 'ping', k: 'train', x: 0, y: 0, z: 0, seq }), null);
+  }
+});
+
+test('a marker centred after the camera rises over terrain receives the reply', () => {
+  const camera = new PerspectiveCamera();
+  camera.position.set(0, 2, 5);
+  camera.lookAt(0, 0, -8);
+  const at = camera.getWorldDirection(new Vector3()).multiplyScalar(25).add(camera.position);
+  const messages: unknown[] = [];
+  const ping = sourceFunction<() => void>('src/features/ping.ts', 'pingNow', {
+    camera,
+    camForward: (out: Vector3) => out.set(0, 0, -1),
+    fwd: new Vector3(),
+    tmp: new Vector3(),
+    lastOwn: -Infinity,
+    me: { entered: true, body: {} },
+    TUNE: { ownGapMs: 1000 },
+    net: {},
+    pings: new Map([['friend', { at, seq: 7, expires: Infinity, reply() {} }]]),
+    sendPing: (msg: unknown) => messages.push(msg),
+    aimPing: () => ({ k: 'look', x: 0, y: 0, z: 0 }),
+    addPing() {},
+  });
+  ping();
+  assert.deepEqual(messages, [{ k: 'omw', of: 'friend', seq: 7 }]);
 });
 
 test('limiter allows N per window per sender', () => {
@@ -67,4 +131,27 @@ test('honks take tones from one shared chord', () => {
   assert.notEqual(honkNotes(0, 0, 0)[0], honkNotes(0, 0, 1)[0]); // a honk isn't always the same note
   assert.equal(honkShape({ t: 'honk', v: 2 }), 2);
   for (const bad of [{ t: 'honk' }, { v: 9 }, { v: 1.5 }, { v: '1' }, null]) assert.equal(honkShape(bad), 0);
+});
+
+test('a train deck centred after terrain lifts the camera gets a train ping', () => {
+  const camera = new PerspectiveCamera();
+  camera.position.set(0, 8, 5);
+  camera.lookAt(0, 6, -8);
+  const deck = camera.getWorldDirection(new Vector3()).multiplyScalar(40).add(camera.position);
+  const aim = sourceFunction<() => { k: string }>('src/features/ping.ts', 'aimPing', {
+    camera,
+    camForward: (out: Vector3) => out.set(0, 0, -1),
+    fwd: new Vector3(),
+    tmp: new Vector3(),
+    ball: { pose: { p: new Vector3(80, 0, 0) } },
+    TUNE: { maxRange: 90, ballRadius: 1.6 },
+    contact: () => 0,
+    raycastClosest: () => false,
+    GROUP: { SCENERY: 1, CAVE: 2 },
+    hit: {},
+    hintOrLook: (end: Vector3) => ({
+      k: nearPingDeck(new Line3(camera.position, end), deck, 0, 1, 2) ? 'train' : 'look',
+    }),
+  });
+  assert.equal(aim().k, 'train');
 });

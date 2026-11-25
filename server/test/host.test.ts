@@ -585,17 +585,17 @@ test('production railway relays bounded social cues without opening material or 
     const b = connect(base, roomId, 'bbb');
     await Promise.all([a.next(is('list')), b.next(is('list'))]);
     // Main expanded the cosmetic world envelope to 4096 m for Place; stay outside that real bound.
-    a.send({ t: 'm', d: { t: 'ping', x: 0, y: 0, z: 4097, k: 'look' } });
+    a.send({ t: 'm', d: { t: 'ping', seq: 7, x: 0, y: 0, z: 4097, k: 'look' } });
     a.send({ t: 'm', d: { t: 'honk', big: 'x'.repeat(16001) } });
     a.send({ t: 'm', d: { t: 'w:c', ht: 5 } });
     a.send({ t: 'm', d: { t: 'r:result', status: 'accepted' } });
     a.send({ t: 'm', d: { t: 'placeCoop', n: 8 } });
-    a.send({ t: 'm', d: { t: 'ping', x: 1.23, y: 2.34, z: -3.45, k: 'look', material: { n: 8 } } });
+    a.send({ t: 'm', d: { t: 'ping', seq: 7, x: 1.23, y: 2.34, z: -3.45, k: 'look', material: { n: 8 } } });
     a.send({ t: 'm', d: { t: 'honk', v: 2, material: { n: 8 } } });
     assert.deepEqual(await b.next(isWorld('ping')), {
       t: 'm',
       from: 'aaa',
-      d: { t: 'ping', x: 1.2, y: 2.3, z: -3.4, k: 'look' },
+      d: { t: 'ping', seq: 7, x: 1.2, y: 2.3, z: -3.4, k: 'look' },
     });
     assert.deepEqual(await b.next(isWorld('honk')), { t: 'm', from: 'aaa', d: { t: 'honk', v: 2 } });
     assert.deepEqual(
