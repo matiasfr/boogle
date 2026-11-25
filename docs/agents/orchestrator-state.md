@@ -10,7 +10,6 @@ The one record of who is running what, and what the eight-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Greybox leg 4 Checkpoint D: the named proofs, run once | The greybox route | codex/greybox-leg4-checkpoint-d | live session, Codex Sol medium | 2026-11-25 | running: browser-heavy |
 | Friends voice step 1: nearby voice on desktop and Android | Friends hear and signal each other | codex/friends-voice-nearby | heartbeat, Codex Astra medium | 2026-11-25 12:10 | running: browser-heavy (two-tab proof) |
 | Cliff kit step 9: the Sickle horizon | Terrain clean-up | codex/cliff-kit-horizon | live session, Codex Astra medium | 2026-11-25 | running |
 
