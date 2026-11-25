@@ -12,7 +12,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 | --- | --- | --- | --- | --- | --- |
 | Greybox leg 4 steps 1 to 3: the catalog, the rules and the seeds, one world bump (fixed order) | The greybox route | codex/greybox-leg4-rules | heartbeat 05:05, Codex gpt-6.2-astra high | 2026-11-25 05:12 | fix round since 06:16 UTC (review: fix first, the hood check and the 2° gate); its report wakes the heartbeat’s thread; a fresh Astra re-check, then the server ships before the client |
 | Order picks A2: the pick in the world (view) | Small choices and felt inflation | codex/order-pick-world | heartbeat 05:05, Codex gpt-6.2-astra medium | 2026-11-25 05:12 | running: its report wakes the heartbeat’s thread; independent review before merge |
-| Cliff kit: frame-time reading of the dressed areas before step 4 | Terrain clean-up | codex/cliff-kit-perf | live session, Codex Sol medium | 2026-11-25 | running: restarted after the Codex login fix |
+| Cliff kit step 4: the gorge mouth and the south sea cliff | Terrain clean-up | codex/cliff-kit-gorge-mouth | live session, Codex Astra medium | 2026-11-25 | running |
 
 ## Where the work stands
 
