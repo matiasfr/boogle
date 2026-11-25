@@ -20,8 +20,7 @@ import { createSchedule, type System, type World } from '../ecs/index.ts';
 import { LINE_TIMING } from './railway-line.ts';
 import type { LineTiming } from './railway-line-schedule.ts';
 import { TRAIN_HEAD_PCT } from './railway-trains.ts';
-import type { RailAction } from './railway.ts';
-import type { RailResult } from './railway.ts';
+import type { RailAction, RailResult, TradeRefusal } from './railway.ts';
 import { Account } from './railway-components.ts';
 import { jobClock, receipt, remember, session, wake, type Act } from './railway-sys-core.ts';
 import {
@@ -85,7 +84,7 @@ import { haltPut, haltTake } from './railway-sys-yard.ts';
 
 /** The systems for each op, in the order they are tried: the first that moves something answers. */
 // An op system that reads no action (the axe, the jump, the lever, the hook, the glider) takes it all the same.
-const OPS: Record<string, readonly System<never, number>[]> = {
+const OPS: Record<string, readonly System<never, number | TradeRefusal>[]> = {
   'rail.wake': [wake],
   'rail.buy': [buy],
   'rail.sack': [sack],
@@ -156,14 +155,15 @@ export function railApply(
   // the receipt answers 'snapshot-required' to any other caller.
   if (previous) return previous;
   const a = w.lookup(Account, pid)!;
-  let n = 0;
+  let result: number | TradeRefusal = 0;
   for (const sys of Object.hasOwn(OPS, e.op) ? OPS[e.op]! : [])
-    if ((n = w.run(sys as System<Act, number>, { a, e, tick, timing, pricePct }))) break;
+    if ((result = w.run(sys as System<Act, number | TradeRefusal>, { a, e, tick, timing, pricePct }))) break;
   return w.run(remember, {
     a,
     e,
-    n,
-    rejected: e.op === 'rail.reject' || ((e.op === 'rail.buy' || e.op === 'rail.sack') && n === 0),
+    n: typeof result === 'number' ? result : 0,
+    reason: typeof result === 'string' ? result : undefined,
+    rejected: e.op === 'rail.reject' || ((e.op === 'rail.buy' || e.op === 'rail.sack') && result === 0),
   });
 }
 
@@ -214,7 +214,7 @@ export const RAIL_ENTRIES: readonly System<never, unknown>[] = [
   legKitRelease,
 ];
 /** The op table, by op name. */
-export const RAIL_OPS: Readonly<Record<string, readonly System<never, number>[]>> = OPS;
+export const RAIL_OPS: Readonly<typeof OPS> = OPS;
 /** Every railway system: the op table's, the tick's and the entry points' (each once: test/railway-census.test.ts). */
 export const RAIL_SYSTEMS: readonly System<never, unknown>[] = [
   ...Object.values(OPS).flat(),

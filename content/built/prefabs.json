@@ -6586,17 +6586,6 @@
         }
       }
     },
-    "roundhouse.bigger-cradle": {
-      "colliders": [],
-      "key": "roundhouse.bigger-cradle",
-      "scope": "owner",
-      "visual": {
-        "builder": "roundhouse.bay",
-        "params": {
-          "part": "cradle"
-        }
-      }
-    },
     "roundhouse.copy-flatbed": {
       "colliders": [
         {

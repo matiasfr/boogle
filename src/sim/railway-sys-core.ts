@@ -4,7 +4,7 @@
 import { defineSystem, type World } from '../ecs/index.ts';
 import { MAX_PLAYERS, okPid } from './roster.ts';
 import type { LineTiming } from './railway-line-schedule.ts';
-import { railInt, RAILWAY_MAX_INT, RAILWAY_OUTCOMES } from './railway.ts';
+import { isTradeRefusal, railInt, RAILWAY_MAX_INT, RAILWAY_OUTCOMES } from './railway.ts';
 import type { RailAction, RailResult } from './railway.ts';
 import { Account, Beam, Boiler, Job, JobRun, Outcome, QJob, QJobRun, Rail, RAIL_STATUS } from './railway-components.ts';
 import { beamId, boilerHeld, boilerId, held, railId } from './railway-queries.ts';
@@ -27,8 +27,10 @@ export const receipt = defineSystem(
   (w, q: { pid: string; epoch: number; request: number }): RailResult | null => {
     let old: RailResult | null = null;
     w.each([Outcome], (_id, r) => {
-      if (!old && r.pid === q.pid && r.epoch === q.epoch && r.request === q.request)
-        old = { ...r, status: RAIL_STATUS[r.status]! };
+      if (!old && r.pid === q.pid && r.epoch === q.epoch && r.request === q.request) {
+        const status = RAIL_STATUS[r.status]!;
+        old = isTradeRefusal(status) ? { ...r, status: 'rejected', reason: status } : { ...r, status };
+      }
     });
     if (old) return old;
     const id = w.lookup(Account, q.pid);
@@ -41,14 +43,14 @@ export const receipt = defineSystem(
 export const remember = defineSystem(
   'rail.remember',
   { writes: [Account, Outcome], phase: 'act', order: 100 },
-  (w, q: { a: number; e: RailAction; n: number; rejected: boolean }): RailResult => {
+  (w, q: { a: number; e: RailAction; n: number; rejected: boolean; reason?: RailResult['reason'] }): RailResult => {
     const a = w.mut(Account, q.a)!;
     a.request = q.e.request;
-    const status = q.rejected ? 'rejected' : q.n ? 'accepted' : 'noop';
+    const status = q.reason || q.rejected ? 'rejected' : q.n ? 'accepted' : 'noop';
     const r: RailResult = { pid: a.pid, epoch: q.e.epoch, request: q.e.request, status, accepted: q.n };
-    w.spawn([Outcome, { ...r, status: RAIL_STATUS.indexOf(status) }]);
+    w.spawn([Outcome, { ...r, status: RAIL_STATUS.indexOf(q.reason ?? status) }]);
     if (w.count(Outcome) + 1 > RAILWAY_OUTCOMES) w.despawn(w.ids(Outcome)[0]!);
-    return { ...r };
+    return q.reason ? { ...r, reason: q.reason } : r;
   },
 );
 export const wake = defineSystem('rail.wake', { writes: [Rail], phase: 'act', order: 1 }, (w, { tick }: Act) => {

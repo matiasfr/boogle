@@ -35,7 +35,6 @@ test('stepping through the tabs draws a frame and a ghost car, and disposing the
 
   const bench: Focus = { c: [0, 1.3, 0], s: [2.3, 1.2, 3.3] };
   const wagon: Focus = { c: [0, 0.5, -7.4], s: [2.3, 1, 3.3], ghost: { z: -7.4, top: 0.5 } };
-  const cradle: Focus = { c: [0, 1.05, -7.4], s: [2, 1.1, 2.9], ghost: { z: -7.4, top: 0.5 } };
   const roof: Focus = { c: [0, 1.75, 0], s: [2.6, 2.1, 3.4] };
 
   selection.show(0.016, 'cars/four', bench, true, false);
@@ -46,11 +45,9 @@ test('stepping through the tabs draws a frame and a ghost car, and disposing the
   assert.ok(made.car.position.y > 0, 'it drops in');
   for (let i = 0; i < 30; i++) selection.show(0.016, 'cargo/wagon', wagon, true, false);
   assert.ok(Math.abs(made.car.position.y) < 1e-9, 'and settles on the rail');
-  selection.show(0.016, 'cargo/cradle', cradle, false, false);
+  selection.show(0.016, 'looks/roof', roof, false, false);
   const dashed = selection.inspect();
-  assert.ok(dashed.whole === 0 && dashed.dashed > 12 && dashed.ghostCar, 'a part to come: dashed, over its wagon');
-  selection.show(0.016, 'looks/roof', roof, false, true);
-  assert.equal(selection.inspect().ghostCar, false);
+  assert.ok(dashed.whole === 0 && dashed.dashed > 12 && !dashed.ghostCar, 'the roof to come has a dashed frame');
   selection.show(0.016, null, null, false, false);
   assert.deepEqual(selection.inspect(), { key: '', whole: 0, dashed: 0, ghostCar: false });
   // Drawn again, so the ghost and a frame exist at teardown.

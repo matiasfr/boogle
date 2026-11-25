@@ -178,7 +178,7 @@ for (let t = 0; shed(PAID.w).steel < STEEL.total; t++) {
 const PAID_GORGE = { w: restore(PAID.w), t: PAID.t };
 while (legRow(PAID_GORGE.w, 0).laid < RAIL_LEGS[0]!.sections.length) laySection(PAID_GORGE);
 
-test('paid host: cradle and big boiler cross r:edit, share the pool, replicate and survive restart', async () => {
+test('paid host: a retired cradle request cannot spend the big boiler’s steel, including after restart', async () => {
   const r = await host('paid', PAID_GORGE, { s: 'a', peer: 'b' });
   try {
     const mirror = r.connect('viewer');
@@ -189,26 +189,19 @@ test('paid host: cradle and big boiler cross r:edit, share the pool, replicate a
         [install(rev, LINE2, 4), spot(SHED_TABLE), 's'],
         [install(rev, LINE2, 3), spot(SHED_TABLE), 'peer'],
       ]),
-      ['accepted', 'noop'],
-      'the cradle wins the cross-part race',
+      ['rejected', 'accepted'],
+      'the removed part leaves the revision and the steel available',
     );
-    assert.equal(shed(r.w).spent, INSTALL_STEEL[4]);
-    assert.equal(await r.action(install(rev + 1, LINE2, 4), spot(SHED_TABLE)), 'noop');
-    assert.equal(await r.action(install(rev + 1, LINE2, 3), spot(SHED_TABLE)), 'noop', "the cradle's table hold");
-    await r.ticks(WORKS.upgradeTicks);
-    assert.equal(await r.action(install(rev + 1, LINE2, 3), spot(SHED_TABLE)), 'accepted');
-    assert.equal(await r.action(install(rev + 2, LINE2, 3), spot(SHED_TABLE)), 'noop');
+    assert.equal(await r.action(install(rev + 1, LINE2, 3), spot(SHED_TABLE)), 'noop');
     await r.ticks(3);
     for (const w of [r.w, mirror()!]) {
       assert.equal(line(w, LINE2).boiler, 3);
-      assert.equal(line(w, LINE2).cradle, 1);
-      assert.equal(shed(w).spent, INSTALL_STEEL[3] + INSTALL_STEEL[4]);
-      assert.equal(steelPool(shed(w)), STEEL.total - INSTALL_STEEL[3] - INSTALL_STEEL[4]);
+      assert.equal(shed(w).spent, INSTALL_STEEL[3]);
+      assert.equal(steelPool(shed(w)), STEEL.total - INSTALL_STEEL[3]);
     }
     await r.restart();
-    assert.equal(line(r.w, LINE2).cradle, 1);
     assert.equal(line(r.w, LINE2).boiler, 3);
-    assert.equal(shed(r.w).spent, INSTALL_STEEL[3] + INSTALL_STEEL[4]);
+    assert.equal(shed(r.w).spent, INSTALL_STEEL[3]);
     const late = r.connect('late');
     await r.ticks(3);
     assert.equal(shed(late()!).spent, shed(r.w).spent);
@@ -217,17 +210,15 @@ test('paid host: cradle and big boiler cross r:edit, share the pool, replicate a
   }
 });
 
-test('paid host: short pool and early big boiler refuse through r:edit without spending', async () => {
+test('paid host: the retired cradle and early big boiler refuse through r:edit without spending', async () => {
   const r = await host('paid-short', fixture('steel-home'));
   try {
     assert.equal(await r.action(install(1, LINE2, 2), spot(SHED_TABLE)), 'accepted');
     // The garage table's hold (garage step 4) after the longer boiler's install.
     await r.ticks(WORKS.upgradeTicks);
     assert.equal(await r.action(install(2, LINE2, 3), spot(SHED_TABLE)), 'noop');
-    assert.equal(await r.action(install(2, LINE2, 4), spot(SHED_TABLE)), 'accepted');
-    assert.ok(steelPool(shed(r.w)) < INSTALL_STEEL[3]);
-    assert.equal(await r.action(install(3, LINE2, 3), spot(SHED_TABLE)), 'noop');
-    assert.equal(shed(r.w).spent, INSTALL_STEEL[4]);
+    assert.equal(await r.action(install(2, LINE2, 4), spot(SHED_TABLE)), 'rejected');
+    assert.equal(shed(r.w).spent, 0);
   } finally {
     await r.done();
   }

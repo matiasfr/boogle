@@ -336,7 +336,7 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     case 'rail.steel':
       return at(RING_STEEL_WORKS);
     case 'rail.install':
-      // At Home's table post: line 2's upgrade (1), longer boiler (2), big boiler (3), bigger cradle (4); a trade
+      // At Home's table post: line 2's upgrade (1), longer boiler (2), big boiler (3); a trade
       // line's Quick (5) or Strong (6) boiler (garage step 4), on the line's install revision.
       return installAdmits(e.line, e.part) && railInt(e.revision) && at(SHED_TABLE);
     case 'rail.bring':

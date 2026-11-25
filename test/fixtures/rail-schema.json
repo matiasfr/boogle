@@ -1,5 +1,5 @@
 {
- "worldNs": "v67",
+ "worldNs": "v69",
  "components": [
   {
    "kind": "rail",
@@ -1015,10 +1015,6 @@
     [
      "fitted",
      "int"
-    ],
-    [
-     "cradle",
-     "u8"
     ],
     [
      "rev",

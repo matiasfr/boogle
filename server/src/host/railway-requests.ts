@@ -315,7 +315,7 @@ export function createRailwayRequests({
           request,
           old?.status === 'rejected',
           old?.status === 'accepted' ? old.accepted : 0,
-          current.reasons.get(request),
+          old?.reason ?? current.reasons.get(request),
         );
       }
       // A held durable receipt cannot grow an unbounded queue; clients already use this action window.
@@ -349,7 +349,7 @@ export function createRailwayRequests({
         // like a failed command apply; neither the next timer tick nor a pending durable command may save it.
         return storageFailure(from, epoch, request);
       }
-      complete(pid, current, request, result.status === 'rejected', result.accepted);
+      complete(pid, current, request, result.status === 'rejected', result.accepted, false, result.reason);
       if (result.effect) {
         const event: Record<string, string | number | boolean> = {
           op: clean.op,

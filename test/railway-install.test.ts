@@ -52,7 +52,7 @@ import {
 } from '../src/sim/railway-trains.ts';
 import { trainStops } from '../src/sim/railway-queries-trains.ts';
 import { apply } from '../src/sim/railway-drive.ts';
-import { BRING_TICKS, CRADLE_CAP, INSTALL_STEEL, WORKS, steelPool } from '../src/sim/railway-works-layout.ts';
+import { BRING_TICKS, INSTALL_STEEL, WORKS, steelPool } from '../src/sim/railway-works-layout.ts';
 import { RAIL_GATES, RAIL_LEGS, ROW_LINE } from '../src/sim/railway-route.ts';
 import { legDone, legOpen, legRow, routeRow, tradeOpen } from '../src/sim/railway-queries-route.ts';
 import { laySection, legStagesOn } from '../src/sim/railway-seed-legs.ts';
@@ -110,57 +110,13 @@ function landed(source: Seed, count: number) {
 const FULL_HOME = landed(HOME, STEEL.total);
 const FULL_GORGE = landed(GORGE, STEEL.total);
 
-test('paid installs spend only the shared pool, refuse short/stale/repeated holds and restore', () => {
-  const s = landed(GORGE, INSTALL_STEEL[3]);
-  assert.equal(install(s), 1);
-  assert.equal(install(s, 'a', { part: 3 }), 0, "the table's hold");
-  settle(s);
-  assert.equal(install(s, 'a', { part: 3 }), 1);
-  settle(s);
-  assert.ok(steelPool(shed(s.w)) < INSTALL_STEEL[4]);
-  assert.equal(install(s, 'a', { part: 4 }), 0, 'short pool');
-  const shortBig = landed(GORGE, INSTALL_STEEL[3]);
-  assert.equal(install(shortBig), 1);
-  settle(shortBig);
-  assert.equal(install(shortBig, 'a', { part: 4 }), 1);
-  settle(shortBig);
-  assert.ok(steelPool(shed(shortBig.w)) < INSTALL_STEEL[3]);
-  assert.equal(install(shortBig, 'a', { part: 3 }), 0, 'short pool at High Gorge');
-  const full = copy(FULL_HOME);
-  const rev = lineRow(full.w, LINE2).rev;
-  const original = trains(full.w).map((r) => ({ ...r }));
-  assert.equal(install(full, 'a', { part: 4, revision: rev }), 1);
-  assert.deepEqual(trains(full.w), original, 'capacity changes no cargo or running leg');
-  assert.equal(shed(full.w).steel, STEEL.total, 'landed does not go backwards');
-  assert.equal(shed(full.w).spent, INSTALL_STEEL[4]);
-  assert.equal(steelPool(shed(full.w)), STEEL.total - INSTALL_STEEL[4]);
-  assert.equal(install(full, 'b', { part: 2, revision: rev }), 0, 'cross-part race is stale');
-  assert.equal(install(full, 'b', { part: 4 }), 0, 'new request cannot buy it twice');
-  const resumed = copy(full);
-  assert.equal(install(full, 'b'), 0, 'the cradle holds the table even on the new revision');
-  advance(resumed, WORKS.upgradeTicks - 1);
-  assert.equal(install(resumed, 'b'), 0, 'the cradle hold survives a save');
-  settle(full);
-  assert.equal(install(full), 1, 'free longer boiler still reads landed steel');
-  assert.equal(shed(full.w).spent, INSTALL_STEEL[4]);
-  const wagon = trains(full.w).find((r) => r.wagon)!;
-  assert.equal(footCap(full.w, wagon), CRADLE_CAP[1]);
-  assert.equal(
-    footCap(
-      FULL_HOME.w,
-      trains(FULL_HOME.w).find((r) => r.wagon)!,
-    ),
-    CRADLE_CAP[0],
-  );
-  assert.equal(
-    footCap(
-      full.w,
-      trains(full.w).find((r) => !r.wagon)!,
-    ),
-    WORKS.loaderCap,
-  );
-  assert.equal(lineRow(restore(full.w), LINE2).cradle, 1);
-  assert.equal(invariant(full.w), null);
+test('the retired cradle cannot spend steel or change the footing wagon', () => {
+  const s = copy(FULL_HOME);
+  assert.equal(install(s, 'a', { part: 4 }), 0);
+  const w = restore(s.w);
+  assert.equal(steelPool(shed(w)), STEEL.total);
+  assert.equal(footCap(trains(w).find((r) => r.wagon)!), 6);
+  assert.equal(footCap(trains(w).find((r) => !r.wagon)!), WORKS.loaderCap);
 });
 
 test('big boiler needs High Gorge and row 2; fits once, spends six, then adopts only at Home', () => {
@@ -172,15 +128,13 @@ test('big boiler needs High Gorge and row 2; fits once, spends six, then adopts 
   assert.equal(install(s, 'a', { part: 3 }), 0, 'cannot skip longer boiler');
   assert.equal(install(s), 1);
   settle(s);
-  assert.equal(install(s, 'a', { part: 4 }), 1);
-  settle(s);
   const rev = lineRow(s.w, LINE2).rev;
   const before = trains(s.w).map((r) => ({ ...r }));
   assert.equal(install(s, 'a', { part: 3, revision: rev }), 1);
   assert.equal(install(s, 'b', { part: 3, revision: rev }), 0);
   assert.equal(install(s, 'a', { part: 3 }), 0);
   assert.deepEqual(trains(s.w), before);
-  assert.equal(shed(s.w).spent, INSTALL_STEEL[3] + INSTALL_STEEL[4]);
+  assert.equal(shed(s.w).spent, INSTALL_STEEL[3]);
   const pending = new Set(servingSlots((k) => train(s.w, k), LINE2));
   for (let t = 0; pending.size; t++) {
     assert.ok(t < 10000, 'all serving trains adopt');
@@ -923,7 +877,7 @@ test('re-check: across a long dropped link the ring crew whistles each shift cha
   );
 });
 
-test('trade installs: refusals, the first fit spends 1, swaps spend nothing, ten swaps, two on one tick fit once', () => {
+test('trade installs: refusals, the first fit spends 1 per line and two on one tick fit once', () => {
   const s = tradeReady();
   assert.deepEqual([tradeOpen(s.w, NS), tradeOpen(s.w, BAYL)], [true, true]);
   assert.equal(shed(s.w).tableLine, LINE2, "line 2's copy stands on the table");
@@ -962,12 +916,7 @@ test('trade installs: refusals, the first fit spends 1, swaps spend nothing, ten
   advance(s, 1);
   assert.equal(fit(s, BAYL, 6), 0, 'the current row again');
   assert.equal(steelPool(shed(s.w)), pool - 1);
-  for (let k = 0; k < 10; k++) {
-    assert.equal(fit(s, BAYL, k % 2 ? 6 : 5), 1, `swap ${k + 1}`);
-    advance(s, WORKS.upgradeTicks);
-  }
-  assert.deepEqual({ boiler: lineRow(s.w, BAYL).boiler, rev: lineRow(s.w, BAYL).rev }, { boiler: 5, rev: 11 });
-  assert.equal(shed(s.w).spent, spent + 1, 'swaps are free');
+  assert.equal(fit(s, BAYL, 5), 0, 'the line is still building');
   // The other line's first fit spends its own one.
   brought(s, NS);
   assert.equal(fit(s, NS, 5), 1);
@@ -983,7 +932,44 @@ test('trade installs: refusals, the first fit spends 1, swaps spend nothing, ten
   assert.equal(invariant(loaded), null);
   assert.deepEqual(
     [lineRow(loaded, BAYL).rev, lineRow(loaded, NS).rev, shed(loaded).tableLine, shed(loaded).bringRev],
-    [11, 1, NS, 2],
+    [1, 1, NS, 2],
+  );
+});
+
+test('the bay fit holds across a rejoin until the last lay, then two peers race for one free re-pick', () => {
+  const seed = tradeReady();
+  brought(seed, BAYL);
+  const pool = steelPool(shed(seed.w));
+  assert.equal(fit(seed, BAYL, 6), 1);
+  settle(seed);
+  const s = copy(seed);
+  const room = railRoom(s);
+  const c = room.join('rejoin', 'b');
+  const refused: RailwayRefusal[] = [];
+  c.adapter.onRefused((r) => refused.push(r));
+  room.ready();
+  assert.equal(lineRow(c.adapter.read.world(), BAYL).boiler, 5);
+  assert.ok(c.adapter.installPart(BAYL, 5, 1));
+  room.run(30);
+  assert.equal(refused.at(-1)?.reason, 'trade-building');
+  legStagesOn(s, 'bay-mid', 'bay-reached');
+  assert.equal(fit(s, BAYL, 5), 0, 'the bay cut alone does not finish the build');
+  legStagesOn(s, 'bay-reached', 'canopy-mid');
+  laySection(s, CUT + 1);
+  assert.equal(fit(s, BAYL, 5), 0, 'one section left');
+  laySection(s, CUT + 1);
+  assert.equal(fit(s, BAYL, 5, 'b', { revision: 1 }), 1);
+  assert.equal(fit(s, BAYL, 5, 'a', { revision: 1 }), 0);
+  settle(s);
+  const loaded = copy(s);
+  const a = account(loaded.w, 'a')!;
+  const request = { op: 'rail.install', line: BAYL, part: 6, revision: 2, epoch: a.epoch, request: a.request + 1 };
+  const receipt = apply(loaded.w, 'a', request, loaded.t);
+  assert.equal(receipt.reason, 'trade-repicked');
+  assert.deepEqual(apply(restore(loaded.w), 'a', request, loaded.t), receipt);
+  assert.deepEqual(
+    [lineRow(loaded.w, BAYL).boiler, lineRow(loaded.w, BAYL).rev, steelPool(shed(loaded.w))],
+    [4, 2, pool - 1],
   );
 });
 
@@ -1046,24 +1032,24 @@ test('a save with no bring history must still have the original table copy', () 
   assert.throws(() => restore(s.w), /garage table/);
 });
 
-test("line 2's install revision is its two fits' sum across its whole install order", () => {
+test("line 2's install revision follows its boiler row", () => {
   const s = copy(railwayAtWorks('cradle-fitted'));
-  const sum = (w: World) => assert.equal(lineRow(w, LINE2).rev, lineRow(w, LINE2).boiler + lineRow(w, LINE2).cradle);
+  const sum = (w: World) => assert.equal(lineRow(w, LINE2).rev, lineRow(w, LINE2).boiler);
   sum(s.w);
   assert.equal(act(s, 'a', 'rail.turn', { to: 1, revision: shed(s.w).tableRev }), 1);
   assert.equal(install(s, 'a', { part: 1 }), 1);
   sum(s.w);
   assert.equal(lineRow(s.w, 0).rev, 0, 'line 1 takes the table fit and no revision');
   const g = copy(FULL_GORGE);
-  for (const part of [2, 4, 3]) {
+  for (const part of [2, 3]) {
     assert.equal(install(g, 'a', { part }), 1, `part ${part}`);
     sum(g.w);
     settle(g);
   }
-  assert.equal(lineRow(g.w, LINE2).rev, 4);
+  assert.equal(lineRow(g.w, LINE2).rev, 3);
 });
 
-test('a trade fit adopts only standing at its halt 0, never in flight, and a swap back adopts', () => {
+test('a trade fit and its re-pick adopt only standing at halt 0, never in flight', () => {
   // The ns line from bay-mid: the incline is laid and the causeway unbuilt, so no kit runs and the kit guard never
   // holds a row (its own test is below).
   const s = tradeReady();
@@ -1071,7 +1057,6 @@ test('a trade fit adopts only standing at its halt 0, never in flight, and a swa
   for (const [part, row] of [
     [6, 5],
     [5, 4],
-    [6, 5],
   ] as const) {
     advance(s, Math.max(0, tableFree(s.w) - s.t));
     assert.equal(fit(s, NS, part), 1);
@@ -1092,7 +1077,7 @@ test('a trade fit adopts only standing at its halt 0, never in flight, and a swa
   }
 });
 
-test('a Strong train with two bills aboard, swapped to Quick, keeps Strong until its kit fits one bill', () => {
+test('a Strong train keeps both bills through a held swap and delivers the first at Bell Rock', () => {
   const s = tradeReady();
   brought(s, BAYL);
   assert.equal(fit(s, BAYL, 6), 1);
@@ -1111,7 +1096,7 @@ test('a Strong train with two bills aboard, swapped to Quick, keeps Strong until
       if (k % 100 === 0) assert.equal(invariant(s.w), null, `invariant at ${s.t}`);
     }
   };
-  // Standing at the West landing with both bills, the table free for the swap.
+  // The short table hold is over, but the bay is still building.
   until(
     () =>
       row().logs === 40 &&
@@ -1122,17 +1107,15 @@ test('a Strong train with two bills aboard, swapped to Quick, keeps Strong until
       s.t >= tableFree(s.w),
     'two bills aboard, standing at the West landing',
   );
-  assert.equal(fit(s, BAYL, 5), 1, 'swapped to Quick with two bills aboard');
+  assert.equal(fit(s, BAYL, 5), 0, 'the build holds the fit with two bills aboard');
   advance(s, 1);
-  assert.equal(row().boiler, 5, 'two bills do not fit a Quick train: it keeps Strong');
+  assert.equal(row().boiler, 5, 'the refused swap leaves both bills aboard the Strong train');
   assert.equal(invariant(s.w), null);
   laySection(s, CUT);
   assert.equal(act(s, 'a', 'rail.gate', { id: CANOPY_GATE }), 1);
   until(() => row().at === 2 && row().phase === TRAIN_PHASE.STAND && row().logs === bill, 'one bill off at Bell Rock');
   assert.equal(row().boiler, 5, 'never adopts in flight');
-  until(() => row().boiler === 4, 'adopts Quick at a later halt 0 stand');
-  assert.equal(row().at, 0);
-  assert.ok(row().logs <= bill && row().rails <= bill);
+  assert.equal(lineRow(s.w, BAYL).boiler, 5);
   assert.equal(invariant(s.w), null);
 });
 

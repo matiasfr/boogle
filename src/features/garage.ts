@@ -302,7 +302,7 @@ function refresh() {
   const rows =
     snap.facts.tableLine !== GARAGE_LINE && table
       ? tradeRowsFor(snap.cat, snap.sel, row, table.line, table.kitTrip)
-      : rowsFor(snap.cat, snap.sel, row, landing && snap.sel === 'cradle' ? false : snap.facts.cradleFitted);
+      : rowsFor(snap.cat, snap.sel, row);
   const html = rows.map((r, i) => rowHtml(r, i, snap)).join('');
   if (html !== shownKey) {
     shownKey = html;

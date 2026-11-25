@@ -122,13 +122,6 @@ registerBuilder('roundhouse.bay', (params, batch) => {
   };
 
   switch (params.part) {
-    case 'cradle':
-      for (const z of [-0.8, 0.8]) box(0, 0.08, z, 1.5, 0.16, 1.3, '#e8742c');
-      for (const x of [-0.95, 0.95]) {
-        for (const z of [-1.35, -0.25, 0.25, 1.35]) box(x, 0.95, z, 0.1, 1.8, 0.1, '#e8742c');
-        box(x, 1.85, 0, 0.12, 0.12, 2.9, '#e8742c');
-      }
-      break;
     case 'pallet':
       box(0, 0.09, 0, 1.5, 0.18, 2.1, '#6f7275');
       break;

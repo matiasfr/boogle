@@ -3,12 +3,7 @@
 // railway's own leg maths (src/sim/railway-train.ts) so a number on the screen is the number the timetable gives.
 import { BOILER, boilerCars, boilerSpeed, kitBills, trainLegTicks, TRAIN } from '../../sim/railway-train.ts';
 import { LINE2, RAIL_LINES } from '../../sim/railway-lines.ts';
-import {
-  CRADLE_CAP,
-  INSTALL_STEEL,
-  TRADE_ROW as SIM_TRADE_ROW,
-  type InstallPart,
-} from '../../sim/railway-works-layout.ts';
+import { WORKS, INSTALL_STEEL, TRADE_ROW as SIM_TRADE_ROW, type InstallPart } from '../../sim/railway-works-layout.ts';
 import { TRADE } from '../../sim/railway-trade-layout.ts';
 import { LINE2_KIT } from '../../sim/railway-line2-layout.ts';
 import { prefabs as railwayPrefabs } from '../../content/prefabs/railway.ts';
@@ -49,9 +44,8 @@ export type RoomFacts = {
   longFitted: boolean;
   /** The boiler row this tab last saw (`Line.boiler`). */
   boilerRev: number;
-  /** Shared revision of the line's monotone boiler and cradle fits. */
+  /** Shared revision of the line's boiler fits. */
   installRev: number;
-  cradleFitted: boolean;
   gorgeReached: boolean;
   /** Garage step 4: whose copy stands on the table (`Shed.tableLine`), the table's bring revision (`Shed.bringRev`),
    * the table's hold after a bring or an install (the server refuses both until it runs out), and the chips. */
@@ -74,7 +68,6 @@ export type PartId =
   | 'kitcar'
   | 'wagon'
   | 'steelcar'
-  | 'cradle'
   | 'roof'
   | 'toot'
   | 'two'
@@ -102,7 +95,7 @@ export type Standing =
 export type Bill = { what: string; need: number; have: number };
 /** The longer boiler needs steel home (`Shed.steel` of 1 or more: the server's rule for `rail.install`). */
 export const LONG_NEEDS_STEEL = 1;
-export const INSTALL_PART = { blast: 1, long: 2, big: 3, cradle: 4, quick: 5, strong: 6 } as const;
+export const INSTALL_PART = { blast: 1, long: 2, big: 3, quick: 5, strong: 6 } as const;
 export type InstallId = keyof typeof INSTALL_PART;
 export const isInstall = (id: PartId): id is InstallId => Object.hasOwn(INSTALL_PART, id);
 /** `INSTALL_PART` the other way: the part an install number fits. */
@@ -225,8 +218,8 @@ export const readyAnywhere = (room: RoomFacts) =>
 /** The parts of `line`'s copy (the table's by default): line 2's catalogue, or a trade line's. */
 export function partsOf(room: RoomFacts, line = room.tableLine): Part[] {
   if (line !== GARAGE_LINE) return tradeParts(room, line);
-  const paid = (id: 'big' | 'cradle', available: boolean, installed: boolean) => {
-    const need = INSTALL_STEEL[INSTALL_PART[id]],
+  const bigBoilerBill = (available: boolean, installed: boolean) => {
+    const need = INSTALL_STEEL[INSTALL_PART.big],
       have = Math.min(room.steel, need);
     const standing: Standing = installed ? 'installed' : !available ? 'later' : have >= need ? 'ready' : 'steel';
     return {
@@ -274,7 +267,7 @@ export function partsOf(room: RoomFacts, line = room.tableLine): Part[] {
       name: 'Big boiler',
       desc: `${BOILER[3].speed / 10} m/s. The same cars.`,
       size: 'large',
-      ...paid('big', room.gorgeReached && room.longFitted, room.boilerRev >= 3),
+      ...bigBoilerBill(room.gorgeReached && room.longFitted, room.boilerRev >= 3),
     },
     {
       id: 'plough',
@@ -308,7 +301,7 @@ export function partsOf(room: RoomFacts, line = room.tableLine): Part[] {
           id: 'wagon',
           cat: 'cargo',
           name: 'Footing wagon',
-          desc: `It rolled out of the stall when the kiln lit. ${CRADLE_CAP[Number(room.cradleFitted)]} footings a trip, Quarry to Pier.`,
+          desc: `It rolled out of the stall when the kiln lit. ${WORKS.wagonCap} footings a trip, Quarry to Pier.`,
           standing: 'free',
           pill: 'Free with the kiln',
           size: 'medium',
@@ -343,14 +336,6 @@ export function partsOf(room: RoomFacts, line = room.tableLine): Part[] {
           pill: 'Later',
           size: 'medium',
         },
-    {
-      id: 'cradle',
-      cat: 'cargo',
-      name: 'Bigger cradle',
-      desc: `${CRADLE_CAP[0]} → ${CRADLE_CAP[1]} footings a trip.`,
-      ...paid('cradle', room.steelHome, room.cradleFitted),
-      size: 'medium',
-    },
     ...COSMETICS,
   ];
 }
@@ -376,7 +361,6 @@ export const MOMENT_FROM: Record<Exclude<InstallId, 'quick' | 'strong'>, BoilerI
   blast: 'boiler',
   long: 'table',
   big: 'long',
-  cradle: 'table',
 };
 /** The line's run for the readouts: the Village stop to the line's last stop, in centimetres, or, until the island
  * halt is in the catalogue (generic-lines v26/v27), the brief's planned 1.2 km, which is the run the 10-second rule
@@ -424,11 +408,11 @@ export const rowChanged = (r: Row) => r.kind !== 'text' && r.now !== r.then;
 /** The rows a part shows, for the part chosen against what the category has now. Only rows the part changes carry a
  * preview (brief, call 37); a part that changes nothing shows what the category is today. `fitted`: the room wears
  * the longer boiler, so today's numbers are its and no row carries a preview. */
-export function rowsFor(cat: CatId, chosen: PartId, boiler = 0, cradle = false): Row[] {
+export function rowsFor(cat: CatId, chosen: PartId, boiler = 0): Row[] {
   const gorge = RAIL_LINES[LINE2]!.halts.find((h) => h.name === 'High Gorge')!;
   const { cm, end } =
     chosen === 'big' ? { cm: gorge.s - RAIL_LINES[LINE2]!.halts[0]!.s, end: gorge.name } : lineRunCm();
-  const cap = CRADLE_CAP[Number(cradle)]!;
+  const cap = WORKS.wagonCap;
   if (cat === 'engine') {
     const a = boiler >= 3 ? BOILERS.big : boiler === 2 ? BOILERS.long : boiler === 1 ? BOILERS.table : BOILERS.boiler,
       b =
@@ -469,17 +453,16 @@ export function rowsFor(cat: CatId, chosen: PartId, boiler = 0, cradle = false):
       { id: 'riders', label: 'Riders', kind: 'number', now: TRADE.riderPlaces, then: TRADE.riderPlaces },
     ];
   if (cat === 'cargo') {
-    const capB = chosen === 'cradle' ? CRADLE_CAP[1] : cap,
-      run = runSeconds(cm, BOILER[boiler]!.speed);
+    const run = runSeconds(cm, BOILER[boiler]!.speed);
     return [
-      { id: 'footTrip', label: 'Footings a trip', kind: 'number', now: cap, then: capB },
+      { id: 'footTrip', label: 'Footings a trip', kind: 'number', now: cap, then: cap },
       {
         id: 'footRate',
         label: 'Footings a minute',
         kind: 'number',
         digits: 1,
         now: perMinute(cap, run),
-        then: perMinute(capB, run),
+        then: perMinute(cap, run),
       },
       { id: 'kitTrip', label: 'Rails a trip', kind: 'number', now: LINE2_KIT.rails, then: LINE2_KIT.rails },
     ];

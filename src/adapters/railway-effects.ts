@@ -1,7 +1,7 @@
 // What the railway's actions did, as the session hands them to the views (docs/plans/ecs-m12-m13.md, M12f): an
 // accepted action (yours predicted, or anyone's from the server) and a correction of one, plus the wire reads that
 // build them. The session's settle and submit play them; nothing here does.
-import { railInt, RAILWAY_MAX_INT } from '../sim/railway.ts';
+import { railInt, RAILWAY_MAX_INT, type TradeRefusal } from '../sim/railway.ts';
 import { MAX_ACCEPTED } from '../sim/railway-queries.ts';
 import { railPos } from '../sim/railway-route.ts';
 import { RAIL_TRAINS } from '../sim/railway-lines.ts';
@@ -57,7 +57,11 @@ export type RailwayCorrection = Readonly<{
 
 /** An action that is not predicted came to nothing: the server refused it, or acknowledged it without accepting it.
  * Local delivery only (railway-session.ts `onRefused`); nothing was shown for it, so nothing is given back. */
-export type RailwayRefusal = Readonly<{ intent: RailwayIntent; request: number; reason: 'refused' | 'noop' }>;
+export type RailwayRefusal = Readonly<{
+  intent: RailwayIntent;
+  request: number;
+  reason: 'refused' | 'noop' | TradeRefusal;
+}>;
 
 /** What an event's own action left behind (src/world/railway-predict.ts RailEffect): several events can share one
  * packet, so effects read these rather than the packet's final state. */

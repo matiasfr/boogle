@@ -78,8 +78,7 @@ export function checkWorks(w: World) {
     bad('wagon rollout');
   if (
     ts.some(
-      (r, slot) =>
-        (r.wagon && RAIL_TRAINS[slot]!.line !== LINE2) || r.foot > footCap(w, r) || (r.wagon && h.fitted < 0),
+      (r, slot) => (r.wagon && RAIL_TRAINS[slot]!.line !== LINE2) || r.foot > footCap(r) || (r.wagon && h.fitted < 0),
     )
   )
     bad('wagon');

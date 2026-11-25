@@ -151,6 +151,8 @@ export const YARD_LEGS: readonly (readonly number[])[] = RAIL_LINES.map((_l, lin
 export const SERVED_LEGS: readonly (readonly number[])[] = RAIL_LINES.map((_l, line) =>
   [...MINT_LEGS[line]!, ...YARD_LEGS[line]!].sort((a, b) => a - b),
 );
+/** The last section of every built leg this line carries kit for has actually been laid. */
+export const tradeBuildDone = (w: World, line: number) => SERVED_LEGS[line]!.every((k) => legDone(w, k));
 /** Built legs whose first kit is stocked (the stand-in, legKitStock): minted at their own line's home, on a line their
  * first section gives its track (its first halt opens with it, so no train can bring that kit). */
 export const STOCKED_LEGS: readonly number[] = RAIL_LEGS.flatMap((l, k) =>

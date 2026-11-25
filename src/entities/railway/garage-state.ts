@@ -57,7 +57,6 @@ export function roomFacts(w: ReadWorld, tick = Infinity): RoomFacts {
     longFitted: boiler >= 2,
     boilerRev: boiler,
     installRev: line(w, LINE2).rev,
-    cradleFitted: line(w, LINE2).cradle > 0,
     gorgeReached: leg(w, 0).laid >= RAIL_LEGS[0]!.sections.length,
     tableLine: shed(w).tableLine,
     bringRev: shed(w).bringRev,

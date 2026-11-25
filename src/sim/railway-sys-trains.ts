@@ -127,7 +127,7 @@ function footingsArrive(w: World, row: Row<typeof Train>, tick: number) {
   if (row.at === 1 && (row.wagon || trainDir(row) > 0)) {
     const works = w.get(Works, worksId(w))!;
     const need = footOwed(w, aboard(w, 'foot'));
-    const n = Math.min(footCap(w, row) - row.foot, works.rack, need);
+    const n = Math.min(footCap(row) - row.foot, works.rack, need);
     if (n <= 0) return;
     w.mut(Works, worksId(w))!.rack -= n;
     row.foot += n;
@@ -160,7 +160,7 @@ function serviceOf(w: World, slot: number, r: Readonly<Row<typeof Train>>, tick:
     freight(k, dir) ||
     (k === 0 && dir < 0 && kitOwed(w, r)) ||
     (k === kitStop(w) && r.logs + r.rails > 0) ||
-    (k === 1 && dir > 0 && footCarrier(w, r, tick) && r.foot < footCap(w, r) && footOwed(w, aboard(w, 'foot')) > 0) ||
+    (k === 1 && dir > 0 && footCarrier(w, r, tick) && r.foot < footCap(r) && footOwed(w, aboard(w, 'foot')) > 0) ||
     (k === 3 && footCarrier(w, r, tick) && r.foot > 0 && !q7Laid(w)) ||
     (k === 4 && dir > 0 && footCarrier(w, r, tick) && r.foot > 0) ||
     steelService(w, r, k, dir);
