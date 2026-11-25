@@ -342,7 +342,9 @@ After steps 1 to 6 are on main; named proofs, once, with the tools as Checkpoint
 
 ### Steps 1 to 3 as built on HOTBOX
 
-The Wall runs 4,103.2 m from Port Quay's stop to High Gorge's. Its largest joint turns 1.717° and its smallest radius is 46.54 m.
+The Wall runs 4,103.2 m from Port Quay's stop to High Gorge's. Its largest chord turn is 1.997°.
+The smallest radius is 46.43 m on the continuity report's 5 m samples and 44.61 m on the catalog chords.
+The Gorge turn's tightest catalog chord radius is 100.42 m.
 The formation clears High Port by 8.46 m. The Canopy halt is 25.42 m before the curve's tangent point.
 The crossing is 7.97 m over the bay rail. The approach clears the south stack by 24.47 m and the buffers stop
 4.00 m from line 2's concourse. Port Quay's first carry is 10.00 m. All six platforms are level.
@@ -367,6 +369,15 @@ The first kit rides from the West landing to Port Quay. Cave slots 14–16 enter
 World v71 includes the changed halt ids and gate reach, the host trace, seed and operation goldens, halt placements,
 seat fixtures and the economy page. The built-site probe initially caught a missing halt lever. Regenerating the halt
 kit brought the offline Chromium probe to interactive. The final catalog booted in 18.9 s on the NVIDIA adapter.
+
+The level check ran 25 reports in 84.99 s and flagged the four measurements above. The affected unit
+suite passed 2,022 of 2,024 tests. Section 4's length and the catalog crossover rule failed.
+The full audited server run passed 405 of 410, skipped two, and timed out on two cases.
+Both passed individually (ring-joined stocking in 81.66 s, the retired cradle in 4.17 s).
+The remaining failure was the Windows account crash assertion (`null` for `SIGKILL`).
+The real deep-span `r:edit` passed, including refusal from the old centre and acceptance at frame 6.
+The network suite passed 315/315. All loop orders finished with one through four players using
+the existing Wall stand-in. The device run belongs to the later playable checkpoint.
 
 **Long service trials.** 75% headway, 20,000 ticks per mode, save/restore in each trial.
 Each cell is accepted calls / worst wait in ticks. All calls drained within their applicable budgets.
