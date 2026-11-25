@@ -2,6 +2,11 @@
 
 Proof debts, things jobs reported and did not fix, and older parked items. Split from the [orchestrator state](orchestrator-state.md) on 17 November 2026, word for word, so that file stays short. Read it before picking a small job; add a leftover here the day a job reports it, ranked, and delete it when it lands.
 
+## From 25 November
+
+- P3 · From the order picks A1 + C1 review (#2390): the pillar drum's `rail.jump` is refused for about 5.7 s after its lip opens while Station 3 lays, because `src/sim/railway-sys-line1.ts` (near line 363) waits for Station 3's completion. Fix: gate it on Station 3 funded (`start >= 0`) instead, and change the save check's "both parts before Station 3" (`src/sim/railway-check-line1.ts`, near line 76) the same way. The reviewer's failing test is on local `review/order-pick-rules` @ `208d6a903` (worktree `C:/Users/matia/.t3/worktrees/boogle/t3-91919a26-c25f7944776187d7`).
+- P3, docs · `docs/game-design/place.md`'s Station 1 bullet (near line 423 on main; the review cited line 66) describes the two stands beside the frame before A2 builds them; reword it to the present state, or let A2 make it true.
+
 ## From 24 November
 
 - P3 · The shared lift-or-wait helper (#2365): never measured on a busy island (its world query walks every built body on a lift attempt and on each retry while slabs wait; about 83 µs a lift on the four greybox levels in Node); never looked at in game: the canyon kit's pieces waiting as one set, and greybox leg 3's standing pieces hidden while they wait. A quiet-machine `perf` reading and one look each.

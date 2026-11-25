@@ -10,8 +10,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Order picks A1 + C1: the pack-or-jump pick's rules at Station 1, and Q1 at 32 logs | Small choices and felt inflation | codex/order-pick-rules | the orchestrator thread, Astra high | 2026-11-25 02:10 | running: a delegate of the orchestrator thread; src/sim, src/world, adapters; one world bump; an Opus review before it ships (Astra built it) |
-| Order picks B1 + C2: the boiler trade held while the line builds, one re-pick; the bigger cradle dropped | Small choices and felt inflation | codex/trade-hold-rules | the orchestrator thread, Astra high | 2026-11-25 02:10 | running: a delegate of the orchestrator thread; src/sim steel and garage data; one world bump; an Opus review before it ships (Astra built it) |
+| Order picks B1 + C2: the boiler trade held while the line builds, one re-pick; the bigger cradle dropped | Small choices and felt inflation | codex/trade-hold-rules | the orchestrator thread, Astra high | 2026-11-25 02:10 | running: its Opus review said ship with one P2 (the garage still offers a Swap the server refuses), so at 03:20 UTC its builder thread was sent step B2 (the garage reads the hold) on the same branch with the reviewer's test, and the rebase onto #2390 (world v69, fixtures regenerated); B2's diff gets its own Opus review before it ships (Astra built it) |
 | Cliff kit step 1: the shore (cove face replaced, kit faces and shore rocks, before/after sheet) | Terrain clean-up | claude/cliff-kit-shore | live session, Opus medium | 2026-11-25 | running: built on step 0's branch, rebases once step 0 is on main |
 
 ## Where the work stands
