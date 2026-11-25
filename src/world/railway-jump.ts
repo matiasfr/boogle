@@ -71,15 +71,13 @@ const LOADER_LAND = near(QUARRY_LINE2, 0, 0, QUARRY_LINE2.y / 100, WORKS_RACK);
  * apart (deck 8.9 m): land between them, in the 4 m reach of both, facing the frame. The Gorge: the north platform at
  * the halt's stop, on its deck (the halt's catalog point is the rail, 3.0 m, and the deck stands 0.9 m over it),
  * facing the pickup post on the north rim, where the objective points. */
-const STACK_FRAME_1 = legFrame(RAIL_LEGS[0]!, 0),
-  STACK_RACK_1 = legRack(RAIL_LEGS[0]!, 0);
-const STACK_LAND = near(
-  { x: (STACK_FRAME_1.x + STACK_RACK_1.x) / 2, z: (STACK_FRAME_1.z + STACK_RACK_1.z) / 2 },
-  0,
-  0,
-  STACK_FRAME_1.y / 100,
-  STACK_FRAME_1,
-);
+function betweenRackAndFrame(slot: number, section: number): JumpLand {
+  const leg = RAIL_LEGS[slot]!,
+    frame = legFrame(leg, section),
+    rack = legRack(leg, section);
+  return near({ x: (frame.x + rack.x) / 2, z: (frame.z + rack.z) / 2 }, 0, 0, frame.y / 100, frame);
+}
+const STACK_LAND = betweenRackAndFrame(0, 0);
 const GORGE_HALT = RAIL_LINES[1]!.halts.find((h) => h.name === 'High Gorge')!.platforms[0],
   // The halt's point is on the rails; the north platform (the down track's, lat +1.8 to +6.3: route-greybox/massing.ts)
   // lies 4 m to the north, along -C of the split's frame (-0.5162, 0.8565), and a train stands on the rails.
@@ -310,6 +308,17 @@ export const JUMPS: readonly Jump[] = [
     land: { x: -525.13, y: 4.9, z: -673.36, yaw: 1.935 },
   },
   { stage: 'canopy-reached', menu: false, label: 'Canopy reached', line: 'The cloth waits at Canopy Town' },
+  // Placeholder tooling rows. The head platform and quay arrive with leg 4's views (step 5).
+  { stage: 'cave-open', menu: false, label: 'Cave line open', line: 'The plug is open at the West landing' },
+  {
+    stage: 'cave-mid',
+    menu: false,
+    label: 'Cave line building',
+    line: 'The second kit is aboard a cave train',
+    // Between rack 2 and frame 2. Arrival requires a supporting surface and keeps spawn until step 5 builds it.
+    land: betweenRackAndFrame(4, 1),
+  },
+  { stage: 'port-reached', menu: false, label: 'Port Quay reached', line: 'The cave line runs to Port Quay' },
   // Garage step 4 (docs/plans/garage-step4.md, step 3): placeholder tooling copy for the owner, no landings (the usual
   // spawn at Home is the post's side of the island; trade-held's train stands at Bell Rock, which canopy-open's note
   // above keeps unlanded).

@@ -129,7 +129,7 @@ const haltAt = (id: RowId, k: number): RailPlatform => {
 // wall-cs and wall-cn lie inside the sections that end at Canopy Town and at wall-n2; the sixth section is the deep gap
 // to the stacks. test/railway-route.test.ts recomputes each from the map and the row and fails if one is over 1 m off;
 // the legs' other cuts (halts) come from the row itself.
-export const WALL_ISLETS = { 'wall-s2': 210027, 'wall-s1': 253697, 'wall-n2': 417718, 'wall-n1': 471680 } as const;
+export const WALL_ISLETS = { 'wall-s2': 209692, 'wall-s1': 253362, 'wall-n2': 417383, 'wall-n1': 471344 } as const;
 const WALL_S2 = WALL_ISLETS['wall-s2'];
 const WALL_S1 = WALL_ISLETS['wall-s1'];
 const WALL_N2 = WALL_ISLETS['wall-n2'];
@@ -138,6 +138,8 @@ const WALL_N1 = WALL_ISLETS['wall-n1'];
 export const CANOPY_STRAIT = 174323,
   CANOPY_EDGE = 214613;
 const CANOPY_KINK = row('bay').legs[1]!.toCm;
+/** A temporary head stops 10 m short of the laid deck's end. */
+export const HEAD_BACK_CM = 1000;
 
 const BILL = { logs: 20, rails: 20 } as const; // one train load, Q7's bill (call 21)
 const BILL_END = { logs: 6, rails: 6 } as const; // the ending's two
@@ -219,11 +221,12 @@ const SPECS: readonly Spec[] = [
     row: 'cave',
     from: 0,
     dest: 2,
-    cuts: [...sectionsOf(span('cave', 0, 1), 2), stopCm('cave', 2)],
+    cuts: [sectionsOf(span('cave', 0, 1), 2)[0]!, stopCm('cave', 1) + HEAD_BACK_CM, stopCm('cave', 2)],
     bill: BILL,
     gated: [[0, 2]],
     after: 3,
     kit: 'home',
+    built: true,
   },
   {
     id: 'wall',
@@ -266,12 +269,23 @@ const SPECS: readonly Spec[] = [
 /** Where a row's first catalog halt stands on its sim line: line 2's Ring Island halt is its sixth (Village to Ring
  * Island are built before the row); the other rows are lines of their own. */
 const SIM_BASE: Readonly<Record<RowId, number>> = { ring: 5, ns: 0, bay: 0, cave: 0 };
+/** How many extra stops a built leg inserts before a catalog halt. A head on a named halt shares its slot. */
+export function insertedHeadsBefore(stops: readonly number[], cuts: readonly number[], halt: number) {
+  return cuts.slice(0, -1).filter(end => {
+    const head = end - HEAD_BACK_CM;
+    return head < stops[halt]! && !stops.includes(head);
+  }).length;
+}
 /** A catalog halt's index on its row's sim line (docs/plans/greybox-leg2.md, step 1): a sim line's halts are its row's
  * catalog halts in order, with each built leg's heads (one a section but the last) after its from halt. A leg not yet
  * built then points (simHalt of its from halt, + 1) at the next catalog halt, untagged, until its rules insert heads. */
 export function simHalt(id: RowId, catalogHalt: number): number {
   let k = SIM_BASE[id] + catalogHalt;
-  for (const sp of SPECS) if (sp.built && sp.row === id && sp.from < catalogHalt) k += sp.cuts.length - 1;
+  const stops = row(id).stops;
+  for (const sp of SPECS) {
+    if (!sp.built || sp.row !== id || sp.from >= catalogHalt) continue;
+    k += insertedHeadsBefore(stops, sp.cuts, catalogHalt);
+  }
   return k;
 }
 
@@ -334,7 +348,7 @@ export const RAIL_GATES: readonly { id: string; label: string; needs: number; at
     needs: grant('seeds'),
     at: rowSide('bay', 122900, 480, 90, 400),
   },
-  { id: 'plug', label: 'The sea-cave plug', needs: grant('pick'), at: haltAt('cave', 0) },
+  { id: 'plug', label: 'The sea-cave plug', needs: grant('pick'), at: rowSide('cave', 1200, -980, 90, 400) },
   {
     id: 'deep-span',
     label: 'The deep span to the stacks',
@@ -456,6 +470,10 @@ const FIRST_SITE: Readonly<Record<string, { frame: RailPlatform; rack: RailPlatf
   'bell-canopy': {
     frame: RAIL_GATES[1]!.at,
     rack: rowSide('bay', 121900, 480, 90, LEG_SITE_REACH),
+  },
+  cave: {
+    frame: RAIL_GATES[2]!.at,
+    rack: rowSide('cave', 600, -980, 90, LEG_SITE_REACH),
   },
 };
 if (

@@ -1595,6 +1595,12 @@ halt, gains a homeward lever on its homeward platform. Leg 3's objective texts (
 the line to Canopy Town", "Take the glider cloth", "Ride home: the next line isn't built yet") go to the play record
 only. All copy is placeholder. Not tested on a device.
 
+**The cave line to Port Quay (25 November 2026, v70 rules).** After the Canopy line is laid, the powered pick opens
+the plug at the first cave frame on the West landing. Its rack holds the first 20 logs and 20 rails. Standard cave
+trains bring the next two kits. The first lay opens the sea head and one train enters service. The second reaches
+Saltpan Halt and a second train joins. At Port Quay the sea head closes and Saltpan remains a request stop both ways.
+The playable barrier, decks and islands belong to steps 4 and 5. [Leg 4 plan](../plans/greybox-leg4.md)
+
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 
 **Rotunda step 1a (14 November, local branch; v45 not shipped).** The shared kit is data: 20° wedge bays,

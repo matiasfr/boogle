@@ -13,9 +13,11 @@ import {
   RING_PATH,
 } from './railway-ring-layout.ts';
 import {
+  HEAD_BACK_CM,
   RAIL_LEGS,
   ROW_LINE,
   ROW_SHIFT,
+  type RowId,
   legS,
   legStartS,
   pathOf,
@@ -151,8 +153,7 @@ const ringRow = WORLD_LINES.find((l) => l.id === 'ring')!;
 const STACK_LEG = RAIL_LEGS.findIndex((l) => l.row === 'ring');
 const STACK = RAIL_LEGS[STACK_LEG]!;
 /** A moving railhead's stop stands 10 m short of the laid end, its stub merging 20 m short of the stop (RING_HEAD's). */
-const HEAD_BACK_CM = 1000,
-  HEAD_MERGE_CM = 2000;
+const HEAD_MERGE_CM = 2000;
 /** Line 2's path on from s 1220 m (its index stays s / 1000) to the `ring` row's end, past the Gorge's buffers. */
 export const LINE2_ON: readonly number[] = (() => {
   const out: number[] = [];
@@ -219,7 +220,7 @@ function rowLine(id: 'ns' | 'bay' | 'cave'): RailLineDef {
 /** A built leg's halt platforms by right-hand running (owner, 18 November: "Yes, every line"; docs/plans/running-side.md):
  * [outward, homeward], each 5.8 m off the row's centre on its own side (the formation's platforms), on the deck 0.9 m
  * over the rail, with a halt's reach. */
-const legPlatforms = (id: 'ns' | 'bay', cm: number): readonly [RailPlatform, RailPlatform] => [
+const legPlatforms = (id: RowId, cm: number): readonly [RailPlatform, RailPlatform] => [
   rowSide(id, cm, 580, 90, 1260),
   rowSide(id, cm, -580, 90, 1260),
 ];
@@ -234,12 +235,16 @@ function appendLeg(
 ): RailLineDef {
   const slot = RAIL_LEGS.findIndex((l) => l.id === legId),
     leg = RAIL_LEGS[slot]!,
-    id = leg.row as 'ns' | 'bay',
+    id = leg.row,
     r = WORLD_LINES.find((l) => l.id === id)!,
     last = leg.sections.length - 1,
     heads = leg.sections.slice(0, -1).map((sec) => legS(leg, sec.toCm) - HEAD_BACK_CM),
     from = r.stops[0]!,
     dest = legS(leg, leg.sections[last]!.toCm);
+  for (const stop of r.stops) {
+    if (stop > leg.fromCm && stop < dest && !heads.includes(stop))
+      throw new Error(`railway: ${leg.id} has no head for catalog stop ${stop}`);
+  }
   const halts: RailHalt[] = [
     ...(base.fleet
       ? base.halts.slice(0, leg.railheadHalt)
@@ -256,7 +261,7 @@ function appendLeg(
     // One halt a head (call 88), a stub end while it is the line's last; a two-section leg's one head stays a request
     // stop both ways once passed (the stack's third head's rule: nothing lays after next to close it behind).
     ...heads.map((at, k): RailHalt => ({
-      name: `${headName} ${k + 1}`,
+      name: r.halts[r.stops.indexOf(at)]?.name ?? `${headName} ${k + 1}`,
       s: at,
       opens: -1,
       leg: { slot, section: k },
@@ -272,7 +277,7 @@ function appendLeg(
       platforms: legPlatforms(id, dest),
       end: railEnd('crossover', destEnd, 1),
     },
-    ...base.halts.slice(leg.railheadHalt + 1),
+    ...base.halts.filter((halt) => halt.s > dest),
   ];
   return {
     ...base,
@@ -562,7 +567,13 @@ export const RAIL_LINES: readonly RailLineDef[] = [
     236000,
     [2, 2, 3, 3],
   ),
-  rowLine('cave'),
+  appendLeg(
+    rowLine('cave'),
+    'cave',
+    'Cave head',
+    WORLD_LINES.find((l) => l.id === 'cave')!.stops[2]! - 2450,
+    [0, 1, 2, 2],
+  ),
 ];
 
 /** Line 2's index: the line that carries cargo (the Q6 and Q7 kits, the footing wagon). */

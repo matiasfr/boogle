@@ -324,7 +324,8 @@ test('halt kit placements, colliders, lever plaques and ordered prompts match th
   assert.deepEqual(calls, JSON.parse(fs.readFileSync(requests, 'utf8')));
   // Leg 3 adds both directions at two heads and one homeward lever at Canopy. Step 6: every later halt of a row line
   // gains a homeward lever (row-path.ts rowHomewardLever): the ns and bay lines' Bell Rock and Canopy.
-  assert.equal(levers.length, 36);
+  // Leg 4 adds the West landing's outward lever and both sides at its three later stops.
+  assert.equal(levers.length, 43);
   for (const [k, leg] of RAIL_LEGS.entries())
     if (catalog.legBuilt(k)) seed.w.mut(Leg, legId(seed.w, k))!.laid = leg.sections.length;
   halt.restore();

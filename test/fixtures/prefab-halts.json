@@ -681,111 +681,170 @@
       "name": "West landing",
       "s": 2000,
       "opens": -1,
-      "shut": true,
+      "leg": {
+        "slot": 4,
+        "section": 0
+      },
       "platforms": [
         {
-          "x": 79916,
-          "z": 2991,
-          "y": 400,
+          "x": 79338,
+          "z": 2939,
+          "y": 490,
           "reach": 1260
         },
         {
-          "x": 79916,
-          "z": 2991,
-          "y": 400,
+          "x": 80494,
+          "z": 3045,
+          "y": 490,
           "reach": 1260
         }
       ],
+      "end": {
+        "kind": "crossover",
+        "mergeCm": 5500,
+        "edgeCm": 5500,
+        "signalCm": 7110
+      },
       "line": 4,
       "stop": 0
     },
     {
-      "name": "Saltpan Halt",
-      "s": 74000,
+      "name": "Cave head 1",
+      "s": 36950,
       "opens": -1,
-      "shut": true,
+      "leg": {
+        "slot": 4,
+        "section": 0
+      },
       "platforms": [
         {
-          "x": 55008,
-          "z": 69972,
-          "y": 300,
+          "x": 65097,
+          "z": 34324,
+          "y": 490,
           "reach": 1260
         },
         {
-          "x": 55008,
-          "z": 69972,
-          "y": 300,
+          "x": 66211,
+          "z": 34648,
+          "y": 490,
           "reach": 1260
         }
       ],
+      "end": {
+        "kind": "stub",
+        "mergeCm": 34950,
+        "edgeCm": 32950,
+        "signalCm": 32130
+      },
+      "closesAt": 4,
       "line": 4,
       "stop": 1
     },
     {
-      "name": "Port Quay",
-      "s": 125000,
+      "name": "Saltpan Halt",
+      "s": 73900,
       "opens": -1,
-      "shut": true,
+      "leg": {
+        "slot": 4,
+        "section": 1
+      },
       "platforms": [
         {
-          "x": 12012,
-          "z": 95988,
-          "y": 300,
+          "x": 54095,
+          "z": 69255,
+          "y": 390,
           "reach": 1260
         },
         {
-          "x": 12012,
-          "z": 95988,
-          "y": 300,
+          "x": 54961,
+          "z": 70027,
+          "y": 390,
           "reach": 1260
         }
       ],
+      "end": {
+        "kind": "stub",
+        "mergeCm": 71900,
+        "edgeCm": 69900,
+        "signalCm": 69080
+      },
       "line": 4,
       "stop": 2
     },
     {
-      "name": "Canopy Town",
-      "s": 335900,
+      "name": "Port Quay",
+      "s": 122180,
       "opens": -1,
-      "shut": true,
+      "leg": {
+        "slot": 4,
+        "section": 2
+      },
       "platforms": [
         {
-          "x": -109991,
-          "z": -30000,
-          "y": 1300,
+          "x": 13347,
+          "z": 93818,
+          "y": 390,
           "reach": 1260
         },
         {
-          "x": -109991,
-          "z": -30000,
-          "y": 1300,
+          "x": 14173,
+          "z": 94632,
+          "y": 390,
           "reach": 1260
         }
       ],
+      "end": {
+        "kind": "crossover",
+        "mergeCm": 119730,
+        "edgeCm": 119730,
+        "signalCm": 118910
+      },
       "line": 4,
       "stop": 3
     },
     {
-      "name": "High Gorge",
-      "s": 530962,
+      "name": "Canopy Town",
+      "s": 335600,
       "opens": -1,
       "shut": true,
       "platforms": [
         {
-          "x": -11174,
-          "z": -197000,
-          "y": 300,
+          "x": -109981,
+          "z": -30022,
+          "y": 1300,
           "reach": 1260
         },
         {
-          "x": -11174,
-          "z": -197000,
-          "y": 300,
+          "x": -109981,
+          "z": -30022,
+          "y": 1300,
           "reach": 1260
         }
       ],
       "line": 4,
       "stop": 4
+    },
+    {
+      "name": "High Gorge",
+      "s": 530624,
+      "opens": -1,
+      "shut": true,
+      "platforms": [
+        {
+          "x": -11174,
+          "z": -197000,
+          "y": 300,
+          "reach": 1260
+        },
+        {
+          "x": -11174,
+          "z": -197000,
+          "y": 300,
+          "reach": 1260
+        }
+      ],
+      "line": 4,
+      "stop": 5
     }
   ],
   "boxValues": [
@@ -22554,6 +22613,3030 @@
       },
       "castShadow": true,
       "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9957666790179744,
+        0,
+        0.09191692421700301,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.09191692421700301,
+        0,
+        0.9957666790179744,
+        0,
+        794.3053840195254,
+        4.96,
+        19.424548629720828,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.34,
+        "height": 0.12,
+        "depth": 0.66,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9957666790179744,
+        0,
+        0.09191692421700301,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.09191692421700301,
+        0,
+        0.9957666790179744,
+        0,
+        794.3053840195254,
+        5.33,
+        19.424548629720828,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.22,
+        "height": 0.62,
+        "depth": 0.56,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9957666790179744,
+        0,
+        0.09191692421700301,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.09191692421700301,
+        0,
+        0.9957666790179744,
+        0,
+        794.2842431269555,
+        5.74,
+        19.65357496589496,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.14,
+        "height": 0.14,
+        "depth": 0.14,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9957666790179744,
+        0,
+        0.09191692421700301,
+        0,
+        0.03151811178205921,
+        0.9393727128473789,
+        -0.34144621097245964,
+        0,
+        -0.08634425045831305,
+        0.34289780745545134,
+        0.9353960466321398,
+        0,
+        794.3151546341778,
+        5.931205540982688,
+        19.318700304319364,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.05,
+        "height": 0.62,
+        "depth": 0.05,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9957666790179744,
+        0,
+        0.09191692421700301,
+        0,
+        0.03151811178205921,
+        0.9393727128473789,
+        -0.34144621097245964,
+        0,
+        -0.08634425045831305,
+        0.34289780745545134,
+        0.9353960466321398,
+        0,
+        794.3255556110659,
+        6.241198536222323,
+        19.206023054698456,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.09,
+        "height": 0.12,
+        "depth": 0.09,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        -0.09191692421700279,
+        0,
+        0.9957666790179744,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.9957666790179744,
+        0,
+        -0.09191692421700279,
+        0,
+        794.1908708514383,
+        5.4,
+        19.413978183435873,
+        1
+      ],
+      "geometry": "PlaneGeometry",
+      "parameters": {
+        "width": 0.24,
+        "height": 0.09,
+        "widthSegments": 1,
+        "heightSegments": 1
+      },
+      "castShadow": false,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.979678766640408,
+        0.17902957342582415,
+        0.09043188615138215,
+        0,
+        -0.17827168377623753,
+        0.9838436927881214,
+        -0.016455847733183853,
+        0,
+        -0.09191692421700301,
+        0,
+        0.9957666790179744,
+        0,
+        794.2441388975203,
+        5.837142857142857,
+        19.42750310228495,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.979678766640408,
+        0.17902957342582415,
+        0.09043188615138215,
+        0,
+        -0.17827168377623753,
+        0.9838436927881214,
+        -0.016455847733183853,
+        0,
+        -0.09191692421700301,
+        0,
+        0.9957666790179744,
+        0,
+        794.2212253214119,
+        5.711428571428572,
+        19.442603739834894,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.06,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.979678766640408,
+        0.17902957342582415,
+        0.09043188615138215,
+        0,
+        -0.17827168377623753,
+        0.9838436927881214,
+        -0.016455847733183853,
+        0,
+        -0.09191692421700301,
+        0,
+        0.9957666790179744,
+        0,
+        794.1983117453035,
+        5.585714285714286,
+        19.457704377384836,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.979678766640408,
+        0.17902957342582415,
+        0.09043188615138215,
+        0,
+        -0.17827168377623753,
+        0.9838436927881214,
+        -0.016455847733183853,
+        0,
+        -0.09191692421700301,
+        0,
+        0.9957666790179744,
+        0,
+        794.1753981691951,
+        5.460000000000001,
+        19.47280501493478,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.06,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.979678766640408,
+        0.17902957342582415,
+        0.09043188615138215,
+        0,
+        -0.17827168377623753,
+        0.9838436927881214,
+        -0.016455847733183853,
+        0,
+        -0.09191692421700301,
+        0,
+        0.9957666790179744,
+        0,
+        794.1524845930867,
+        5.3342857142857145,
+        19.487905652484724,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.979678766640408,
+        0.17902957342582415,
+        0.09043188615138215,
+        0,
+        -0.17827168377623753,
+        0.9838436927881214,
+        -0.016455847733183853,
+        0,
+        -0.09191692421700301,
+        0,
+        0.9957666790179744,
+        0,
+        794.1295710169783,
+        5.208571428571429,
+        19.50300629003467,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.06,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.979678766640408,
+        0.17902957342582415,
+        0.09043188615138215,
+        0,
+        -0.17827168377623753,
+        0.9838436927881214,
+        -0.016455847733183853,
+        0,
+        -0.09191692421700301,
+        0,
+        0.9957666790179744,
+        0,
+        794.10665744087,
+        5.082857142857144,
+        19.51810692758461,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9957666790179744,
+        0,
+        0.09191692421700301,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.09191692421700301,
+        0,
+        0.9957666790179744,
+        0,
+        794.1275477503965,
+        5.416,
+        19.47441356110858,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.08,
+        "height": 0.1,
+        "depth": 0.05,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9578285499249362,
+        0,
+        0.2873403364456409,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.2873403364456409,
+        0,
+        0.9578285499249362,
+        0,
+        650.9876100662059,
+        4.96,
+        343.19132508305944,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.34,
+        "height": 0.12,
+        "depth": 0.66,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9578285499249362,
+        0,
+        0.2873403364456409,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.2873403364456409,
+        0,
+        0.9578285499249362,
+        0,
+        650.9876100662059,
+        5.33,
+        343.19132508305944,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.22,
+        "height": 0.62,
+        "depth": 0.56,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9578285499249362,
+        0,
+        0.2873403364456409,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.2873403364456409,
+        0,
+        0.9578285499249362,
+        0,
+        650.9215217888234,
+        5.74,
+        343.4116256495422,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.14,
+        "height": 0.14,
+        "depth": 0.14,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9578285499249362,
+        0,
+        0.2873403364456409,
+        0,
+        0.09852837136072198,
+        0.9393727128473789,
+        -0.3284373096874949,
+        0,
+        -0.26991967135742023,
+        0.34289780745545134,
+        0.8997580033856584,
+        0,
+        651.0181538613277,
+        5.931205540982688,
+        343.08950951705634,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.05,
+        "height": 0.62,
+        "depth": 0.05,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9578285499249362,
+        0,
+        0.2873403364456409,
+        0,
+        0.09852837136072198,
+        0.9393727128473789,
+        -0.3284373096874949,
+        0,
+        -0.26991967135742023,
+        0.34289780745545134,
+        0.8997580033856584,
+        0,
+        651.0506682238768,
+        6.241198536222323,
+        342.98112520485944,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.09,
+        "height": 0.12,
+        "depth": 0.09,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        -0.28734033644564067,
+        0,
+        0.9578285499249363,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.9578285499249363,
+        0,
+        -0.28734033644564067,
+        0,
+        650.8774597829645,
+        5.4,
+        343.1582809443682,
+        1
+      ],
+      "geometry": "PlaneGeometry",
+      "parameters": {
+        "width": 0.24,
+        "height": 0.09,
+        "widthSegments": 1,
+        "heightSegments": 1
+      },
+      "castShadow": false,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9423535776160408,
+        0.17902957342582415,
+        0.2826979776956606,
+        0,
+        -0.17147963670813704,
+        0.9838436927881214,
+        -0.05144241786189588,
+        0,
+        -0.2873403364456409,
+        0,
+        0.9578285499249362,
+        0,
+        650.9269932727909,
+        5.837142857142857,
+        343.1820893787746,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9423535776160408,
+        0.17902957342582415,
+        0.2826979776956606,
+        0,
+        -0.17147963670813704,
+        0.9838436927881214,
+        -0.05144241786189588,
+        0,
+        -0.2873403364456409,
+        0,
+        0.9578285499249362,
+        0,
+        650.9015425409534,
+        5.711428571428572,
+        343.19235200384946,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.06,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9423535776160408,
+        0.17902957342582415,
+        0.2826979776956606,
+        0,
+        -0.17147963670813704,
+        0.9838436927881214,
+        -0.05144241786189588,
+        0,
+        -0.2873403364456409,
+        0,
+        0.9578285499249362,
+        0,
+        650.876091809116,
+        5.585714285714286,
+        343.2026146289244,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9423535776160408,
+        0.17902957342582415,
+        0.2826979776956606,
+        0,
+        -0.17147963670813704,
+        0.9838436927881214,
+        -0.05144241786189588,
+        0,
+        -0.2873403364456409,
+        0,
+        0.9578285499249362,
+        0,
+        650.8506410772785,
+        5.460000000000001,
+        343.21287725399924,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.06,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9423535776160408,
+        0.17902957342582415,
+        0.2826979776956606,
+        0,
+        -0.17147963670813704,
+        0.9838436927881214,
+        -0.05144241786189588,
+        0,
+        -0.2873403364456409,
+        0,
+        0.9578285499249362,
+        0,
+        650.8251903454411,
+        5.3342857142857145,
+        343.2231398790741,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9423535776160408,
+        0.17902957342582415,
+        0.2826979776956606,
+        0,
+        -0.17147963670813704,
+        0.9838436927881214,
+        -0.05144241786189588,
+        0,
+        -0.2873403364456409,
+        0,
+        0.9578285499249362,
+        0,
+        650.7997396136036,
+        5.208571428571429,
+        343.233402504149,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.06,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9423535776160408,
+        0.17902957342582415,
+        0.2826979776956606,
+        0,
+        -0.17147963670813704,
+        0.9838436927881214,
+        -0.05144241786189588,
+        0,
+        -0.2873403364456409,
+        0,
+        0.9578285499249362,
+        0,
+        650.7742888817662,
+        5.082857142857144,
+        343.24366512922387,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9578285499249362,
+        0,
+        0.2873403364456409,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.2873403364456409,
+        0,
+        0.9578285499249362,
+        0,
+        650.8034201791385,
+        5.416,
+        343.20497555931763,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.08,
+        "height": 0.1,
+        "depth": 0.05,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9578285499249549,
+        0,
+        0.2873403364455784,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.2873403364455784,
+        0,
+        0.9578285499249549,
+        0,
+        662.0984212453357,
+        4.96,
+        346.52447298582734,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.34,
+        "height": 0.12,
+        "depth": 0.66,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9578285499249549,
+        0,
+        0.2873403364455784,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.2873403364455784,
+        0,
+        0.9578285499249549,
+        0,
+        662.0984212453357,
+        5.33,
+        346.52447298582734,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.22,
+        "height": 0.62,
+        "depth": 0.56,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9578285499249549,
+        0,
+        0.2873403364455784,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.2873403364455784,
+        0,
+        0.9578285499249549,
+        0,
+        662.0323329679532,
+        5.74,
+        346.7447735523101,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.14,
+        "height": 0.14,
+        "depth": 0.14,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9578285499249549,
+        0,
+        0.2873403364455784,
+        0,
+        0.09852837136070054,
+        0.9393727128473789,
+        -0.32843730968750134,
+        0,
+        -0.26991967135736156,
+        0.34289780745545134,
+        0.899758003385676,
+        0,
+        662.1289650404575,
+        5.931205540982688,
+        346.42265741982425,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.05,
+        "height": 0.62,
+        "depth": 0.05,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9578285499249549,
+        0,
+        0.2873403364455784,
+        0,
+        0.09852837136070054,
+        0.9393727128473789,
+        -0.32843730968750134,
+        0,
+        -0.26991967135736156,
+        0.34289780745545134,
+        0.899758003385676,
+        0,
+        662.1614794030065,
+        6.241198536222323,
+        346.31427310762734,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.09,
+        "height": 0.12,
+        "depth": 0.09,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.2873403364455786,
+        0,
+        -0.9578285499249548,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0.9578285499249548,
+        0,
+        0.2873403364455786,
+        0,
+        662.2085715285771,
+        5.4,
+        346.5575171245186,
+        1
+      ],
+      "geometry": "PlaneGeometry",
+      "parameters": {
+        "width": 0.24,
+        "height": 0.09,
+        "widthSegments": 1,
+        "heightSegments": 1
+      },
+      "castShadow": false,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9423535776160592,
+        -0.17902957342582415,
+        0.28269797769559907,
+        0,
+        0.1714796367081404,
+        0.9838436927881214,
+        0.05144241786188469,
+        0,
+        -0.2873403364455784,
+        0,
+        0.9578285499249549,
+        0,
+        662.1541122044116,
+        5.837142857142857,
+        346.5501286081109,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9423535776160592,
+        -0.17902957342582415,
+        0.28269797769559907,
+        0,
+        0.1714796367081404,
+        0.9838436927881214,
+        0.05144241786188469,
+        0,
+        -0.2873403364455784,
+        0,
+        0.9578285499249549,
+        0,
+        662.1697112675708,
+        5.711428571428572,
+        346.57270581903344,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.06,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9423535776160592,
+        -0.17902957342582415,
+        0.28269797769559907,
+        0,
+        0.1714796367081404,
+        0.9838436927881214,
+        0.05144241786188469,
+        0,
+        -0.2873403364455784,
+        0,
+        0.9578285499249549,
+        0,
+        662.1853103307302,
+        5.585714285714286,
+        346.59528302995597,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9423535776160592,
+        -0.17902957342582415,
+        0.28269797769559907,
+        0,
+        0.1714796367081404,
+        0.9838436927881214,
+        0.05144241786188469,
+        0,
+        -0.2873403364455784,
+        0,
+        0.9578285499249549,
+        0,
+        662.2009093938896,
+        5.460000000000001,
+        346.61786024087854,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.06,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9423535776160592,
+        -0.17902957342582415,
+        0.28269797769559907,
+        0,
+        0.1714796367081404,
+        0.9838436927881214,
+        0.05144241786188469,
+        0,
+        -0.2873403364455784,
+        0,
+        0.9578285499249549,
+        0,
+        662.2165084570489,
+        5.3342857142857145,
+        346.64043745180106,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9423535776160592,
+        -0.17902957342582415,
+        0.28269797769559907,
+        0,
+        0.1714796367081404,
+        0.9838436927881214,
+        0.05144241786188469,
+        0,
+        -0.2873403364455784,
+        0,
+        0.9578285499249549,
+        0,
+        662.2321075202082,
+        5.208571428571429,
+        346.66301466272364,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.06,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9423535776160592,
+        -0.17902957342582415,
+        0.28269797769559907,
+        0,
+        0.1714796367081404,
+        0.9838436927881214,
+        0.05144241786188469,
+        0,
+        -0.2873403364455784,
+        0,
+        0.9578285499249549,
+        0,
+        662.2477065833675,
+        5.082857142857144,
+        346.68559187364616,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.9578285499249549,
+        0,
+        0.2873403364455784,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.2873403364455784,
+        0,
+        0.9578285499249549,
+        0,
+        662.2446822079924,
+        5.416,
+        346.63725587815924,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.08,
+        "height": 0.1,
+        "depth": 0.05,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7675137699764176,
+        0,
+        0.641032458535905,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.641032458535905,
+        0,
+        0.7675137699764176,
+        0,
+        540.6835597173301,
+        3.96,
+        692.3349203776971,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.34,
+        "height": 0.12,
+        "depth": 0.66,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7675137699764176,
+        0,
+        0.641032458535905,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.641032458535905,
+        0,
+        0.7675137699764176,
+        0,
+        540.6835597173301,
+        4.33,
+        692.3349203776971,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.22,
+        "height": 0.62,
+        "depth": 0.56,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7675137699764176,
+        0,
+        0.641032458535905,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.641032458535905,
+        0,
+        0.7675137699764176,
+        0,
+        540.5361222518669,
+        4.74,
+        692.5114485447917,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.14,
+        "height": 0.14,
+        "depth": 0.14,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7675137699764176,
+        0,
+        0.641032458535905,
+        0,
+        0.21980862453973934,
+        0.9393727128473789,
+        -0.2631787889167812,
+        0,
+        -0.602168399598098,
+        0.34289780745545134,
+        0.7209814922504666,
+        0,
+        540.7517003909375,
+        4.931205540982687,
+        692.2533349531329,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.05,
+        "height": 0.62,
+        "depth": 0.05,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7675137699764176,
+        0,
+        0.641032458535905,
+        0,
+        0.21980862453973934,
+        0.9393727128473789,
+        -0.2631787889167812,
+        0,
+        -0.602168399598098,
+        0.34289780745545134,
+        0.7209814922504666,
+        0,
+        540.8242372370355,
+        5.241198536222322,
+        692.1664859527904,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.09,
+        "height": 0.12,
+        "depth": 0.09,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        -0.6410324585359047,
+        0,
+        0.7675137699764177,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.7675137699764177,
+        0,
+        -0.6410324585359047,
+        0,
+        540.5952956337828,
+        4.4,
+        692.2612016449655,
+        1
+      ],
+      "geometry": "PlaneGeometry",
+      "parameters": {
+        "width": 0.24,
+        "height": 0.09,
+        "widthSegments": 1,
+        "heightSegments": 1
+      },
+      "castShadow": false,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7551135817193315,
+        0.17902957342582415,
+        0.6306757412030131,
+        0,
+        -0.13740766283732417,
+        0.9838436927881214,
+        -0.11476376760379037,
+        0,
+        -0.641032458535905,
+        0,
+        0.7675137699764176,
+        0,
+        540.6314661030798,
+        4.837142857142857,
+        692.3025792393144,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7551135817193315,
+        0.17902957342582415,
+        0.6306757412030131,
+        0,
+        -0.13740766283732417,
+        0.9838436927881214,
+        -0.11476376760379037,
+        0,
+        -0.641032458535905,
+        0,
+        0.7675137699764176,
+        0,
+        540.6040302515769,
+        4.711428571428572,
+        692.3020002084025,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.06,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7551135817193315,
+        0.17902957342582415,
+        0.6306757412030131,
+        0,
+        -0.13740766283732417,
+        0.9838436927881214,
+        -0.11476376760379037,
+        0,
+        -0.641032458535905,
+        0,
+        0.7675137699764176,
+        0,
+        540.5765944000739,
+        4.585714285714285,
+        692.3014211774906,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7551135817193315,
+        0.17902957342582415,
+        0.6306757412030131,
+        0,
+        -0.13740766283732417,
+        0.9838436927881214,
+        -0.11476376760379037,
+        0,
+        -0.641032458535905,
+        0,
+        0.7675137699764176,
+        0,
+        540.549158548571,
+        4.46,
+        692.3008421465787,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.06,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7551135817193315,
+        0.17902957342582415,
+        0.6306757412030131,
+        0,
+        -0.13740766283732417,
+        0.9838436927881214,
+        -0.11476376760379037,
+        0,
+        -0.641032458535905,
+        0,
+        0.7675137699764176,
+        0,
+        540.521722697068,
+        4.3342857142857145,
+        692.3002631156669,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7551135817193315,
+        0.17902957342582415,
+        0.6306757412030131,
+        0,
+        -0.13740766283732417,
+        0.9838436927881214,
+        -0.11476376760379037,
+        0,
+        -0.641032458535905,
+        0,
+        0.7675137699764176,
+        0,
+        540.494286845565,
+        4.208571428571428,
+        692.299684084755,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.06,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7551135817193315,
+        0.17902957342582415,
+        0.6306757412030131,
+        0,
+        -0.13740766283732417,
+        0.9838436927881214,
+        -0.11476376760379037,
+        0,
+        -0.641032458535905,
+        0,
+        0.7675137699764176,
+        0,
+        540.466850994062,
+        4.082857142857143,
+        692.299105053843,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7675137699764176,
+        0,
+        0.641032458535905,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.641032458535905,
+        0,
+        0.7675137699764176,
+        0,
+        540.5088554497459,
+        4.416,
+        692.2749981874181,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.08,
+        "height": 0.1,
+        "depth": 0.05,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7632783566908214,
+        0,
+        0.6460697719343934,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.6460697719343934,
+        0,
+        0.7632783566908214,
+        0,
+        549.3698571128118,
+        3.96,
+        700.0231085619997,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.34,
+        "height": 0.12,
+        "depth": 0.66,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7632783566908214,
+        0,
+        0.6460697719343934,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.6460697719343934,
+        0,
+        0.7632783566908214,
+        0,
+        549.3698571128118,
+        4.33,
+        700.0231085619997,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.22,
+        "height": 0.62,
+        "depth": 0.56,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7632783566908214,
+        0,
+        0.6460697719343934,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.6460697719343934,
+        0,
+        0.7632783566908214,
+        0,
+        549.221261065267,
+        4.74,
+        700.1986625840386,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.14,
+        "height": 0.14,
+        "depth": 0.14,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7632783566908214,
+        0,
+        0.6460697719343934,
+        0,
+        0.221535908259547,
+        0.9393727128473789,
+        -0.2617264749874826,
+        0,
+        -0.6069003143506985,
+        0.34289780745545134,
+        0.7170028605823463,
+        0,
+        549.4385332443723,
+        4.931205540982687,
+        699.9419733547536,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.05,
+        "height": 0.62,
+        "depth": 0.05,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7632783566908214,
+        0,
+        0.6460697719343934,
+        0,
+        0.221535908259547,
+        0.9393727128473789,
+        -0.2617264749874826,
+        0,
+        -0.6069003143506985,
+        0.34289780745545134,
+        0.7170028605823463,
+        0,
+        549.511640094098,
+        5.241198536222322,
+        699.8556036180078,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.09,
+        "height": 0.12,
+        "depth": 0.09,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.6460697719343936,
+        0,
+        -0.7632783566908213,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0.7632783566908213,
+        0,
+        0.6460697719343936,
+        0,
+        549.4576341238312,
+        4.4,
+        700.0974065857722,
+        1
+      ],
+      "geometry": "PlaneGeometry",
+      "parameters": {
+        "width": 0.24,
+        "height": 0.09,
+        "widthSegments": 1,
+        "heightSegments": 1
+      },
+      "castShadow": false,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7509465970719467,
+        -0.17902957342582415,
+        0.635631670218713,
+        0,
+        0.13664939860352182,
+        0.9838436927881214,
+        0.11566559567273395,
+        0,
+        -0.6460697719343934,
+        0,
+        0.7632783566908214,
+        0,
+        549.4106612721372,
+        4.837142857142857,
+        700.0688766126387,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7509465970719467,
+        -0.17902957342582415,
+        0.635631670218713,
+        0,
+        0.13664939860352182,
+        0.9838436927881214,
+        0.11566559567273395,
+        0,
+        -0.6460697719343934,
+        0,
+        0.7632783566908214,
+        0,
+        549.4159417551189,
+        4.711428571428572,
+        700.0958057367235,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.06,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7509465970719467,
+        -0.17902957342582415,
+        0.635631670218713,
+        0,
+        0.13664939860352182,
+        0.9838436927881214,
+        0.11566559567273395,
+        0,
+        -0.6460697719343934,
+        0,
+        0.7632783566908214,
+        0,
+        549.4212222381004,
+        4.585714285714285,
+        700.1227348608082,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7509465970719467,
+        -0.17902957342582415,
+        0.635631670218713,
+        0,
+        0.13664939860352182,
+        0.9838436927881214,
+        0.11566559567273395,
+        0,
+        -0.6460697719343934,
+        0,
+        0.7632783566908214,
+        0,
+        549.4265027210821,
+        4.46,
+        700.149663984893,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.06,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7509465970719467,
+        -0.17902957342582415,
+        0.635631670218713,
+        0,
+        0.13664939860352182,
+        0.9838436927881214,
+        0.11566559567273395,
+        0,
+        -0.6460697719343934,
+        0,
+        0.7632783566908214,
+        0,
+        549.4317832040638,
+        4.3342857142857145,
+        700.1765931089777,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7509465970719467,
+        -0.17902957342582415,
+        0.635631670218713,
+        0,
+        0.13664939860352182,
+        0.9838436927881214,
+        0.11566559567273395,
+        0,
+        -0.6460697719343934,
+        0,
+        0.7632783566908214,
+        0,
+        549.4370636870453,
+        4.208571428571428,
+        700.2035222330624,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.06,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7509465970719467,
+        -0.17902957342582415,
+        0.635631670218713,
+        0,
+        0.13664939860352182,
+        0.9838436927881214,
+        0.11566559567273395,
+        0,
+        -0.6460697719343934,
+        0,
+        0.7632783566908214,
+        0,
+        549.442344170027,
+        4.082857142857143,
+        700.2304513571471,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7632783566908214,
+        0,
+        0.6460697719343934,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.6460697719343934,
+        0,
+        0.7632783566908214,
+        0,
+        549.4588820243933,
+        4.416,
+        700.1849319692,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.08,
+        "height": 0.1,
+        "depth": 0.05,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7101093170041615,
+        0,
+        0.7040914414363261,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        139.47091436638306,
+        3.96,
+        932.1262122739355,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.34,
+        "height": 0.12,
+        "depth": 0.66,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7101093170041615,
+        0,
+        0.7040914414363261,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        139.47091436638306,
+        4.33,
+        932.1262122739355,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.22,
+        "height": 0.62,
+        "depth": 0.56,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7101093170041615,
+        0,
+        0.7040914414363261,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        139.3089733348527,
+        4.74,
+        932.2895374168464,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.14,
+        "height": 0.14,
+        "depth": 0.14,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7101093170041615,
+        0,
+        0.7040914414363261,
+        0,
+        0.24143141151666453,
+        0.9393727128473789,
+        -0.243494927854415,
+        0,
+        -0.6614042874346631,
+        0.34289780745545134,
+        0.6670573155323986,
+        0,
+        139.54575810395323,
+        4.931205540982687,
+        932.0507288463007,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.05,
+        "height": 0.62,
+        "depth": 0.05,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7101093170041615,
+        0,
+        0.7040914414363261,
+        0,
+        0.24143141151666453,
+        0.9393727128473789,
+        -0.243494927854415,
+        0,
+        -0.6614042874346631,
+        0.34289780745545134,
+        0.6670573155323986,
+        0,
+        139.62543046975372,
+        5.241198536222322,
+        931.9703755201086,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.09,
+        "height": 0.12,
+        "depth": 0.09,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        -0.704091441436326,
+        0,
+        0.7101093170041616,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.7101093170041616,
+        0,
+        -0.704091441436326,
+        0,
+        139.3892517949276,
+        4.4,
+        932.0452417581703,
+        1
+      ],
+      "geometry": "PlaneGeometry",
+      "parameters": {
+        "width": 0.24,
+        "height": 0.09,
+        "widthSegments": 1,
+        "heightSegments": 1
+      },
+      "castShadow": false,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.698636572724625,
+        0.17902957342582415,
+        0.6927159238032264,
+        0,
+        -0.12713056810895837,
+        0.9838436927881214,
+        -0.1260531904131191,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        139.42176551692407,
+        4.837142857142857,
+        932.0895505162797,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.698636572724625,
+        0.17902957342582415,
+        0.6927159238032264,
+        0,
+        -0.12713056810895837,
+        0.9838436927881214,
+        -0.1260531904131191,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        139.3944787497065,
+        4.711428571428572,
+        932.0866361451119,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.06,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.698636572724625,
+        0.17902957342582415,
+        0.6927159238032264,
+        0,
+        -0.12713056810895837,
+        0.9838436927881214,
+        -0.1260531904131191,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        139.36719198248892,
+        4.585714285714285,
+        932.083721773944,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.698636572724625,
+        0.17902957342582415,
+        0.6927159238032264,
+        0,
+        -0.12713056810895837,
+        0.9838436927881214,
+        -0.1260531904131191,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        139.33990521527136,
+        4.46,
+        932.0808074027763,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.06,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.698636572724625,
+        0.17902957342582415,
+        0.6927159238032264,
+        0,
+        -0.12713056810895837,
+        0.9838436927881214,
+        -0.1260531904131191,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        139.3126184480538,
+        4.3342857142857145,
+        932.0778930316084,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.698636572724625,
+        0.17902957342582415,
+        0.6927159238032264,
+        0,
+        -0.12713056810895837,
+        0.9838436927881214,
+        -0.1260531904131191,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        139.2853316808362,
+        4.208571428571428,
+        932.0749786604405,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.06,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.698636572724625,
+        0.17902957342582415,
+        0.6927159238032264,
+        0,
+        -0.12713056810895837,
+        0.9838436927881214,
+        -0.1260531904131191,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        139.25804491361865,
+        4.082857142857143,
+        932.0720642892727,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7101093170041615,
+        0,
+        0.7040914414363261,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        139.30195047406505,
+        4.416,
+        932.05162371521,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.08,
+        "height": 0.1,
+        "depth": 0.05,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7101093170041615,
+        0,
+        0.7040914414363261,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        147.70818244363147,
+        3.96,
+        940.2936729945967,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.34,
+        "height": 0.12,
+        "depth": 0.66,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7101093170041615,
+        0,
+        0.7040914414363261,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        147.70818244363147,
+        4.33,
+        940.2936729945967,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.22,
+        "height": 0.62,
+        "depth": 0.56,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7101093170041615,
+        0,
+        0.7040914414363261,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        147.54624141210112,
+        4.74,
+        940.4569981375076,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.14,
+        "height": 0.14,
+        "depth": 0.14,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7101093170041615,
+        0,
+        0.7040914414363261,
+        0,
+        0.24143141151666453,
+        0.9393727128473789,
+        -0.243494927854415,
+        0,
+        -0.6614042874346631,
+        0.34289780745545134,
+        0.6670573155323986,
+        0,
+        147.78302618120165,
+        4.931205540982687,
+        940.2181895669619,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.05,
+        "height": 0.62,
+        "depth": 0.05,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7101093170041615,
+        0,
+        0.7040914414363261,
+        0,
+        0.24143141151666453,
+        0.9393727128473789,
+        -0.243494927854415,
+        0,
+        -0.6614042874346631,
+        0.34289780745545134,
+        0.6670573155323986,
+        0,
+        147.86269854700214,
+        5.241198536222322,
+        940.1378362407698,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.09,
+        "height": 0.12,
+        "depth": 0.09,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7040914414363262,
+        0,
+        -0.7101093170041614,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0.7101093170041614,
+        0,
+        0.7040914414363262,
+        0,
+        147.78984501508694,
+        4.4,
+        940.3746435103619,
+        1
+      ],
+      "geometry": "PlaneGeometry",
+      "parameters": {
+        "width": 0.24,
+        "height": 0.09,
+        "widthSegments": 1,
+        "heightSegments": 1
+      },
+      "castShadow": false,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.698636572724625,
+        -0.17902957342582415,
+        0.6927159238032264,
+        0,
+        0.12713056810895837,
+        0.9838436927881214,
+        0.1260531904131191,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        147.7452611540944,
+        4.837142857142857,
+        940.3425080548296,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.698636572724625,
+        -0.17902957342582415,
+        0.6927159238032264,
+        0,
+        0.12713056810895837,
+        0.9838436927881214,
+        0.1260531904131191,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        147.7484076433199,
+        4.711428571428572,
+        940.3697690311519,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.06,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.698636572724625,
+        -0.17902957342582415,
+        0.6927159238032264,
+        0,
+        0.12713056810895837,
+        0.9838436927881214,
+        0.1260531904131191,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        147.75155413254535,
+        4.585714285714285,
+        940.3970300074742,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.698636572724625,
+        -0.17902957342582415,
+        0.6927159238032264,
+        0,
+        0.12713056810895837,
+        0.9838436927881214,
+        0.1260531904131191,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        147.7547006217708,
+        4.46,
+        940.4242909837965,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.06,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.698636572724625,
+        -0.17902957342582415,
+        0.6927159238032264,
+        0,
+        0.12713056810895837,
+        0.9838436927881214,
+        0.1260531904131191,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        147.75784711099627,
+        4.3342857142857145,
+        940.4515519601188,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.698636572724625,
+        -0.17902957342582415,
+        0.6927159238032264,
+        0,
+        0.12713056810895837,
+        0.9838436927881214,
+        0.1260531904131191,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        147.76099360022175,
+        4.208571428571428,
+        940.478812936441,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.06,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.698636572724625,
+        -0.17902957342582415,
+        0.6927159238032264,
+        0,
+        0.12713056810895837,
+        0.9838436927881214,
+        0.1260531904131191,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        147.7641400894472,
+        4.082857142857143,
+        940.5060739127633,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.035,
+        "height": 0.1,
+        "depth": 0.02,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
+    },
+    {
+      "matrix": [
+        0.7101093170041615,
+        0,
+        0.7040914414363261,
+        0,
+        0,
+        1,
+        0,
+        0,
+        -0.7040914414363261,
+        0,
+        0.7101093170041615,
+        0,
+        147.7842062656799,
+        4.416,
+        940.4619959831667,
+        1
+      ],
+      "geometry": "BoxGeometry",
+      "parameters": {
+        "width": 0.08,
+        "height": 0.1,
+        "depth": 0.05,
+        "widthSegments": 1,
+        "heightSegments": 1,
+        "depthSegments": 1
+      },
+      "castShadow": true,
+      "receiveShadow": false
     }
   ],
   "states": [
@@ -24069,6 +27152,20 @@
         ">",
         "West landing",
         "<",
+        "West landing",
+        ">",
+        "West landing",
+        "<",
+        "West landing",
+        ">",
+        "West landing",
+        "<",
+        "West landing",
+        ">",
+        "West landing",
+        "<",
+        "West landing",
+        ">",
         "West landing",
         ">",
         "West landing",

@@ -116,6 +116,9 @@ export const SEED_STAGES = [
   'canopy-open',
   'canopy-mid',
   'canopy-reached',
+  'cave-open',
+  'cave-mid',
+  'port-reached',
   // Garage step 4 (./railway-seed-garage.ts): the per-line Quick or Strong trade, built on bay-mid; trade-held is played
   // on to Canopy's gate, so the three follow the leg stages.
   'trade-ready',

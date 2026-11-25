@@ -119,8 +119,8 @@ function captureSeats() {
   return { owner, registered, flatbed, cars, bodies };
 }
 
-// The two additional bay trains in v66 each bring four passenger seats and one passenger car body.
-test('all 51 seat ids match bytes and poses match the pre-prefab construction numerically', () => {
+// Each of the two cave trains adds four passenger seats and one passenger car body.
+test('all 59 seat ids match bytes and poses match the pre-prefab construction numerically', () => {
   const h = captureSeats();
   const moving = h.registered.map((s) => ({
     id: s.id,
@@ -136,8 +136,8 @@ test('all 51 seat ids match bytes and poses match the pre-prefab construction nu
   }));
   const workshop = captureWorkshop().placement.seats as { id: string }[];
   const ids = [...moving, ...workshop].map((s) => s.id);
-  assert.equal(ids.length, 51);
-  assert.equal(new Set(ids).size, 51);
+  assert.equal(ids.length, 59);
+  assert.equal(new Set(ids).size, 59);
   for (const id of ids) assert.match(id, SEAT_ID);
   for (const [name, value] of [
     ['ids', ids],
@@ -212,7 +212,7 @@ test('bench and stools follow their moving parent; contention retains the other 
       id: `machine-deck-${index}`,
       alt: [`machine-deck-${alternate}`],
     });
-  assert.equal(h.bodies.size, 13);
+  assert.equal(h.bodies.size, 15);
   h.owner.dispose();
   h.owner.dispose();
   assert.equal(h.registered.length, 0);

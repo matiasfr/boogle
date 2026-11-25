@@ -80,6 +80,7 @@
 // v69 trade hold: the 205 checkpoints lose their five zero Line.cradle cells. The namespace, hash, checksum and
 // 5,679 snapBytes samples change. All 8,620 records retain their order, including 58 identical inputs, 2,220
 // identical messages and 458 identical replica packets. Every other saved column matches v68.
+// v70 adds two cave shed trains. Only 205 checkpoints and 5,679 status records change in the 8,620-record trace.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';

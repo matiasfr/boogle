@@ -292,6 +292,11 @@ async function runChecks() {
     failed += leg3.failures;
     report.push(leg3);
     if (!json) for (const entry of leg3.entries) console.log(`  ${entry.passed ? 'ok' : 'FAIL'}  ${entry.message}`);
+    const { checkLeg4 } = await import('./route-leg4.ts');
+    const leg4 = checkLeg4();
+    failed += leg4.failures;
+    report.push(leg4);
+    if (!json) for (const entry of leg4.entries) console.log(`  ${entry.passed ? 'ok' : 'FAIL'}  ${entry.message}`);
     // Track continuity measures physical original/offset sides independently of train direction (rail-map.md).
     const { checkContinuity, printContinuity } = await import('./track-continuity.ts');
     const continuity = checkContinuity();
