@@ -88,16 +88,29 @@ test('rank: P1 before P2 before P3 among waiting runs of the same length; a P3 w
 
 test('a short job queued after a long one takes the freed slot first', async () => {
   const order: string[] = [];
-  const first = await acquireBotSlot('first', undefined, false);
-  const long = acquireBotSlot('long', undefined, true).then((lease) => (order.push('long'), lease));
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  const short = acquireBotSlot('short', undefined, false).then((lease) => (order.push('short'), lease));
-  await new Promise((resolve) => setTimeout(resolve, 900));
+  const polls: (() => void)[] = [];
+  const timing = { wait: () => new Promise<void>((resolve) => polls.push(resolve)), readLoad: () => 0 };
+  const poll = async () => {
+    assert.ok(polls.length, 'a job is waiting to poll');
+    for (const resume of polls.splice(0)) resume();
+    await Promise.resolve();
+  };
+  const firstJob = acquireBotSlot('first', undefined, false, timing);
+  await poll();
+  await poll();
+  const first = await firstJob;
+  // Each acquisition publishes its numbered ticket before its first wait.
+  const long = acquireBotSlot('long', undefined, true, timing).then((lease) => (order.push('long'), lease));
+  const short = acquireBotSlot('short', undefined, false, timing).then((lease) => (order.push('short'), lease));
+  await poll();
+  await poll();
   assert.deepEqual(order, []);
   first.release();
+  await poll();
   const shortLease = await short;
   assert.deepEqual(order, ['short']);
   shortLease.release();
+  await poll();
   (await long).release();
   assert.deepEqual(order, ['short', 'long']);
 });
