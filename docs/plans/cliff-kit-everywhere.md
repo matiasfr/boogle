@@ -512,6 +512,41 @@ on the lookout bank cuts that increase to 83,248 across both passes. Main counte
 and the revised gorge counted 364 draws and 766,637 triangles. This is 13,248 triangles above the camera guide.
 Frame time on a device is unverified.
 
+## Step 3 as built
+
+The long east and west gorge walls (census 2 and 3) carry 108 crowned faces and three rim caps facing the village.
+The generator traces each bank at two heights. Long runs use 10 m pieces, and the lower banks need only one tier.
+On the first pass the east wall looked smooth above the river because its crest flattens behind the cut.
+Tracing the upper tier 3.5 m below its top exposes the courses up to the rim.
+
+From Line 2, both banks lead the eye down to the quarry footbridge. From the village, the east wall reads behind
+the hook pillar. At river height the courses meet the sandy toe and Needle Bell’s floating pads remain visible.
+Opened all three after stills and found no detached cliff faces or stray flat slabs.
+[Matched views](cliff-kit-everywhere/gorge-walls-before-after.jpg) · [Individual stills](cliff-kit-everywhere/gorge-walls/)
+
+High floating pads and the summit reserve their column once they stand more than 14.4 m above ground. Their
+pulls reserve body clearance from the previous landing to the ring at its actual height. Ground gates keep 6 m.
+The closest tread sample is 1.65 m outside the edge. The rail gauge is clear. All four kit areas passed
+level-check, and the 543,169-node reverse flood lost zero nodes with all four kits together.
+The canyon, shore and gorge-rim levels are byte-identical to main.
+
+The controller walked from the quarry path’s west bank down to the bridge, across it, and back. Its fastest
+descent was 2.22 m/s. Releasing W took 0.18 m to stop. After settling for three seconds, five seconds idle
+gave zero horizontal drift.
+
+| Census camera | Draws, main → long walls | Triangles, main → long walls |
+| --- | ---: | ---: |
+| Shore | 153 → 158 | 579,243 → 758,059 |
+| Shore climb | 369 → 375 | 827,253 → 1,006,465 |
+| Canyon climb | 202 → 206 | 640,891 → 818,475 |
+| Gorge rim | 364 → 369 | 766,637 → 944,617 |
+| Gorge mouth | 419 → 426 | 809,096 → 989,540 |
+| Far Head | 289 → 291 | 745,129 → 833,921 |
+| Summit | 341 → 346 | 817,862 → 995,842 |
+
+The new area adds 90,420 kit triangles per pass. The gorge-mouth camera adds 180,444 triangles across both
+passes, above the step’s 58,000 guide, and seven draws. Device frame time is unverified.
+
 ## Design review (2026-11-24)
 
 Run by the plan's author in the same context (design-review skill). Read for it: DESIGN.md, owner calls (Look and art,
