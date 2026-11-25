@@ -11,7 +11,6 @@ The one record of who is running what, and what the eight-job limit is counted f
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
 | Greybox leg 4 step 6: the bot and the loop | The greybox route | codex/greybox-leg4-bot | live session, Codex Sol medium | 2026-11-25 | running: step 5 shipped (#2423) |
-| Friends voice: the plan and its design review | Friends hear and signal each other | claude/friends-voice-plan | heartbeat, Claude Opus high (planner) | 2026-11-25 11:10 | running |
 | Cliff kit step 7: Needle Bell | Terrain clean-up | codex/cliff-kit-needle-bell | live session, Codex Astra medium | 2026-11-25 | running |
 
 ## Where the work stands
@@ -41,6 +40,8 @@ Cleaned on 24 November: every item from 5 to 19 November is in [the log](orchest
 - The plug refuses with the pick in hand from High Gorge until Canopy’s line is laid: keep the decided fixed order and say "After the line to Canopy (placeholder)" (recommended), or open the cave leg after the bay cut, a branch against the fixed order.
 - Whether the cave line gets Quick or Strong: answered yes, when its garage step comes ([25 November](../decisions-core-loop.md#d-2026-11-25-order-picks-answers)).
 - The plan’s New call (26), the cave line runs standard trains only, holds for leg 4 itself; the garage step that follows offers the trade there (his answer 6, 25 November). A world bump (v68) rides with steps 1 to 3.
+
+**Friends voice’s plan** ([friends-voice](../plans/friends-voice.md#open-questions), on main, 25 November; nothing waits, each proceeds on its recommendation): (1) Nearby is each listener’s own choice, not a room switch; (2) no listening without Join voice; (3) both replies, "On my way" by pinging a friend’s marker and a honk counting as heard; (4) two rail labels for now, `Rails here` and `Train!`; (5) if Nearby on iOS echoes or is too quiet, ship it for desktop and Android with the toggle off on iOS. The labels and setting words are placeholders for his words.
 
 **Changes to how work runs** (each recommended, none started because it changes a skill or workflow):
 - A session with delegates running asks him nothing modal, even while he is in the conversation: it writes the question in its reply and ends its turn, and his answer arrives as his next message (25 November: the live session asked a modal question at 08:02 UTC while he was there; he answered at 08:47, and the reports of cliff kit step 4 (08:04), order picks A3 (08:09) and leg 4 step 4 (08:17) waited behind it for 30 to 43 minutes each, the hour's biggest loss). Recommended: extend rule 48 to say so.
