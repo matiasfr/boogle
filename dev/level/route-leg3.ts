@@ -155,7 +155,7 @@ export function bakeCanopy(land: readonly Land[], terrain: readonly Terrain[]) {
   for (const [i, [x, z]] of (forest.mothers ?? []).entries())
     trunks.push([`mother-${i}`, r2(x + ORIGIN.x), r2(z + ORIGIN.z), 10, motherTop, motherTop - 11.5]);
   // The bank's chords past the straight (s 2413) to the drawn end (the buffers' face s 2423.93, the end 2425.73).
-  const at = [2413, 2416, 2420, 2423.93, 2425.73].map((s) => {
+  const at = [2413, 2416, 2420, 2423.93, 2425.73, ...Array.from({ length: 19 }, (_, i) => 2430 + 5 * i)].map((s) => {
     rowWorld(3, s, 0, q);
     return { x: r2(q.x), z: r2(q.z) };
   });
@@ -281,10 +281,11 @@ function canopyEntries(map: ReturnType<typeof layout>) {
     ['the homeward platform', M.platformHome],
     ['the deck', M.deck],
     ['the cloth post', M.cloth],
-    ['the Notch barrier', M.notch],
+    ['Notch frame 1 and barrier', M.notch],
     ["the stand-in town's room", M.town],
   ]);
   check(`Canopy on foot from the outward platform: ${fromOut.text}`, fromOut.ok);
+  check('Homeward deck to the cloth post', !!flood(halt.g, MOVER, [halt.node(M.deck)])[halt.node(M.cloth)]);
   const fromGround = reached(flood(halt.g, MOVER, [halt.node(M.town)]), halt.node, [
     ['the outward platform', M.platformOut],
     ['the homeward platform', M.platformHome],

@@ -124,6 +124,25 @@ export const CANOPY_CURVE = [
   [-1092.6, -306.59, -1095.59, -303.94, 4],
   [-1095.59, -303.94, -1098.61, -301.42, 3.93],
   [-1098.61, -301.42, -1100.01, -300.3, 1.79],
+  [-1100.01, -300.3, -1103.42, -297.76, 4.25],
+  [-1103.42, -297.76, -1107.61, -295.13, 4.95],
+  [-1107.61, -295.13, -1112.06, -292.97, 4.95],
+  [-1112.06, -292.97, -1116.73, -291.35, 4.94],
+  [-1116.73, -291.35, -1121.56, -290.31, 4.94],
+  [-1121.56, -290.31, -1126.48, -289.84, 4.94],
+  [-1126.48, -289.84, -1131.43, -289.96, 4.95],
+  [-1131.43, -289.96, -1136.32, -290.67, 4.94],
+  [-1136.32, -290.67, -1141.09, -291.96, 4.94],
+  [-1141.09, -291.96, -1145.68, -293.8, 4.95],
+  [-1145.68, -293.8, -1150.02, -296.17, 4.94],
+  [-1150.02, -296.17, -1154.04, -299.05, 4.95],
+  [-1154.04, -299.05, -1157.7, -302.38, 4.95],
+  [-1157.7, -302.38, -1160.93, -306.12, 4.94],
+  [-1160.93, -306.12, -1163.69, -310.21, 4.93],
+  [-1163.69, -310.21, -1165.95, -314.61, 4.95],
+  [-1165.95, -314.61, -1167.69, -319.24, 4.95],
+  [-1167.69, -319.24, -1169.01, -324.03, 4.97],
+  [-1169.01, -324.03, -1170.02, -328.92, 4.99],
 ] as const;
 export const CANOPY_CLOTH_POST = [-1091.99, -294.01] as const;
 // </baked>
@@ -189,7 +208,7 @@ function bank() {
     { ...cf.ramp('bank-climb', N_SHORE, 12.59, N_LEVEL, BANK_TOP, -BED, BED, 'dark'), h: BANK_H },
     cf.box('bank', N_LEVEL, N_CURVE, -BED, BED, BANK_TOP, BANK_H, 'dark'),
     // The last chords under the smoothed curve, from the straight's end; each overlaps the one before by 0.35 m.
-    ...CANOPY_CURVE.map(([ax, az, bx, bz, len], i) => {
+    ...CANOPY_CURVE.slice(0, 4).map(([ax, az, bx, bz, len], i) => {
       const along: Axis = { compute: 'unit', axis: mix({ x: bx, z: bz }, { x: ax, z: az }, 1, -1) };
       return frame({ x: ax, z: az }, along, perp(along, -1)).box(
         `bank-curve-${i}`,
@@ -248,9 +267,8 @@ function canopy() {
     // starts to bend toward it; the homeward one runs on to the end deck.
     cf.box('platform-out', -33, 12, BED, PLAT, DECK, h, 'light'),
     cf.box('platform-home', -33, 23, -PLAT, -BED, DECK, h, 'light'),
-    // The deck on the homeward side, round the buffers to the cloth post and across the row to the Notch barrier.
+    // The deck on the homeward side, beside the cloth post and the Notch board.
     cf.box('deck', -33, 30, -13.8, -PLAT, DECK, h, 'grey'),
-    cf.box('deck-end', 23, 30, -PLAT, PLAT + 0.2, DECK, h, 'grey'),
     // Down to the isle: each platform's home end, and one off the deck's side.
     ramp('platform-out-ramp', -33, -36.5, BED, PLAT),
     ramp('platform-home-ramp', -33, -36.5, -13.8, -BED),
@@ -263,8 +281,8 @@ function canopy() {
     pieces,
     pads: [],
     posts: [
-      // Beside the Notch barrier (the row's kink, n 24.9), facing back down the line (call 21).
-      { id: 'notch-board', ...cf.at(26.5, -5.4), y: DECK, facing: unit(19030, -16944), label: 'canopy.notch' },
+      // On the homeward deck beside the cloth post, facing back down the line.
+      { id: 'notch-board', ...cf.at(24, -11), y: DECK, facing: unit(19030, -16944), label: 'canopy.notch' },
     ],
     reserves: [
       bridge.reserve('Wall overbridge', -15, 15, -BED, BED, 12, 14),
@@ -272,7 +290,18 @@ function canopy() {
       cf.reserve('platform-out lever end', -10, -7, BED, PLAT, DECK, add(DECK, CLEAR)),
       cf.reserve('platform-out board', -5.5, -2.5, BED, PLAT, DECK, add(DECK, CLEAR)),
       frame(cloth, cf.u, cf.v).reserve('cloth spot', -1, 1, -1, 1, DECK, add(DECK, CLEAR)),
-      cf.reserve('Notch barrier', 24.4, 25.4, -BED, BED, DECK, add(DECK, CLEAR)),
+      ...CANOPY_CURVE.map(([ax, az, bx, bz, len], i) => {
+        const along: Axis = { compute: 'unit', axis: mix({ x: bx, z: bz }, { x: ax, z: az }, 1, -1) };
+        return frame({ x: ax, z: az }, along, perp(along)).reserve(
+          'bay curve ' + i,
+          0,
+          len,
+          -BED,
+          BED,
+          RAIL,
+          RAIL + LOADING,
+        );
+      }),
       // The hub stand-in town's room (open question 5): 30 by 30 m on the ground, homeward side, within 60 m of the
       // platforms, behind the mother trunk that stands 33 m off the homeward side.
       cf.reserve('stand-in town', -72, -42, -50, -20, ISLE, add(ISLE, CLEAR)),
@@ -285,7 +314,7 @@ function canopy() {
       platformHome: cf.at(-10, -5.8),
       deck: cf.at(0, -11),
       cloth,
-      notch: cf.at(26, 4),
+      notch: { x: -1086.81, z: -318.18 },
       town: cf.at(-57, -35),
       // On the isle by head 2 (s 2136, n -265), either side of the bank.
       head2North: cf.at(-265, 12),

@@ -42,6 +42,8 @@ import { resident } from '../src/render/lod-level.ts';
 import { CAVE_GROUP, HEAD_OFFSET, PLAYER_R } from '../src/constants.ts';
 import { createLiftOrWait, STEP, type Solid } from '../src/place/clearance.ts';
 import canopy from '../content/built/levels/canopy.json' with { type: 'json' };
+import notch from '../content/built/levels/notch.json' with { type: 'json' };
+import original from '../content/built/levels/original.json' with { type: 'json' };
 import south from '../content/built/levels/wall-south.json' with { type: 'json' };
 import north from '../content/built/levels/wall-north.json' with { type: 'json' };
 import quay from '../content/built/levels/quay.json' with { type: 'json' };
@@ -787,7 +789,8 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
         { outOf: sourceFunction('src/place/sites.ts', 'outOf', {}) },
       ],
       liftOrWait,
-      frameOccupied: (frame: { holds(p: THREE.Vector3): boolean }) => frame.holds(position) || frame.holds(peerPosition),
+      frameOccupied: (frame: { holds(p: THREE.Vector3): boolean }) =>
+        frame.holds(position) || frame.holds(peerPosition),
       signBoard: () => ({ mesh: new THREE.Group() }),
       paintPlate: (s: { mesh: THREE.Group }, entries: { t: string }[]) =>
         signs.set(
@@ -960,7 +963,7 @@ async function mountAt(position: THREE.Vector3) {
   const pending: Promise<void>[] = [];
   const on = new Set<string>(),
     shapes = new Map<string, Shape[]>();
-  const colliders = [canopy, south, north].flatMap(ground);
+  const colliders = [canopy, south, north, notch, original].flatMap(ground);
   const instantiate = (_key: string, placement: { id: string }) => {
     const mine = colliders.filter((c) => c.placement.id === placement.id);
     shapes.set(placement.id, mine.map(shapeOf));
@@ -1001,19 +1004,21 @@ async function mountAt(position: THREE.Vector3) {
     }),
     instantiate,
   });
+  const area = (input: typeof south | typeof north | typeof notch | typeof original) => {
+    const centre = AREA_CENTRES[input.place as keyof typeof AREA_CENTRES];
+    return {
+      id: input.place,
+      centre,
+      near: coverNear(helpers.leg2Placements(input), artifact.prefabs, centre),
+      build: () => helpers.leg2Massing(input),
+      extras: (owner: Parameters<typeof helpers.leg2Extras>[0]) => helpers.leg2Extras(owner, input),
+    };
+  };
   sourceModule(fs.readFileSync('src/entities/route-greybox/index.ts', 'utf8'), {
     productionRailway: true,
     saltpanArea: { id: 'saltpan', centre: AREA_CENTRES.saltpan, build: () => [] },
-    wallAreas: [south, north].map((input) => {
-      const centre = AREA_CENTRES[input.place as 'wall-south' | 'wall-north'];
-      return {
-        id: input.place,
-        centre,
-        near: coverNear(helpers.leg2Placements(input), artifact.prefabs, centre),
-        build: () => helpers.leg2Massing(input),
-        extras: (owner: Parameters<typeof helpers.leg2Extras>[0]) => helpers.leg2Extras(owner, input),
-      };
-    }),
+    wallAreas: [south, north].map(area),
+    notchAreas: [notch, original].map(area),
     quayArea: { id: 'quay', centre: AREA_CENTRES.quay, build: () => [] },
     location: { search: '' },
     AREA_CENTRES,
@@ -1176,3 +1181,14 @@ test('a stack deck becoming solid at High Gorge leaves room for the player’s h
     `deck lifted the player into High Gorge at ${position.toArray()}`,
   );
 });
+
+for (const raw of [notch, original]) {
+  const level = validation.loadLevelArtifact(raw, artifact.prefabs);
+  test(level.place + ' platforms stand 90 cm above rail for the full 40 m stop', () => {
+    for (const side of [-1, 1]) {
+      const deck = level.placements.find((p) => p.id === level.place + '.platform-' + side)!;
+      assert.deepEqual(deck.scale, [4, 0.4, 40]);
+      assert.equal(deck.pos[1], level.place === 'notch' ? 7.7 : 4.7);
+    }
+  });
+}

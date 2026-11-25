@@ -21,6 +21,8 @@ export const AREA_CENTRES = {
   bell: { x: -50, z: -850 },
   west: { x: 801 + (-0.6155 / westLength) * 20, z: 10 + (-0.7881 / westLength) * 20 },
   // Canopy isle's map centre (docs/world/map-prototypes.html, `canopy-isle`): the isle, its islets and Canopy Town.
+  notch: { x: -1600, z: -1000 },
+  original: { x: -6.19, z: -135.05 },
   canopy: { x: -1060, z: -300 },
   saltpan: { x: 550, z: 700 },
   quay: { x: -190, z: 1080 },
