@@ -1604,7 +1604,10 @@ only. All copy is placeholder. Not tested on a device.
 the plug at the first cave frame on the West landing. Its rack holds the first 20 logs and 20 rails. Standard cave
 trains bring the next two kits. The first lay opens the sea head and one train enters service. The second reaches
 Saltpan Halt and a second train joins. At Port Quay the sea head closes and Saltpan remains a request stop both ways.
-The playable barrier, decks and islands belong to steps 4 and 5. [Leg 4 plan](../plans/greybox-leg4.md)
+At the West landing the plug stands beside frame 1. The first sea head has a ramp down to the water.
+At the Saltpan, two low platforms follow the curve across the salt flats. Port Quay?s platforms stand on made ground.
+From their apron a ramp climbs to High Port?s 55 m top. The apron reserves room for the Roundhouse and a town.
+The board at the buffers marks the future Wall line. Finishing the cave line opens the Port Quay stall at Bell Rock. [Leg 4 plan](../plans/greybox-leg4.md)
 
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 

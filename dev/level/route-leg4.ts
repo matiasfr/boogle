@@ -73,8 +73,14 @@ function bakedBlocks(write: boolean) {
   const shore = ({ centre, beach }: typeof saltLand) => ({ centre, beach });
   const outline = ({ centre, ring }: typeof saltLand) => ({ centre, ring });
   const files = [
-    [new URL('../../src/content/levels/leg4.ts',import.meta.url), { saltLand: shore(saltLand), portIsle: shore(portIsle), salt }],
-    [new URL('../../src/content/prefabs/leg4-lands.ts',import.meta.url), { saltLand: outline(saltLand), portIsle: outline(portIsle), portTop: outline(portTop) }],
+    [
+      new URL('../../src/content/levels/leg4.ts', import.meta.url),
+      { saltLand: shore(saltLand), portIsle: shore(portIsle), salt },
+    ],
+    [
+      new URL('../../src/content/prefabs/leg4-lands.ts', import.meta.url),
+      { saltLand: outline(saltLand), portIsle: outline(portIsle), portTop: outline(portTop) },
+    ],
   ] as const;
   return files
     .map(([path, data]) => {
@@ -93,7 +99,14 @@ function coastalReach(check: (message: string, passed: boolean) => void, id: 'sa
   const defs: unknown = prefabInput;
   validateArtifact(defs);
   const level = loadLevelArtifact(
-    JSON.parse(readFileSync(id==='quay'?new URL('../../content/built/levels/quay.json', import.meta.url):new URL('../../content/built/levels/saltpan.json', import.meta.url), 'utf8')),
+    JSON.parse(
+      readFileSync(
+        id === 'quay'
+          ? new URL('../../content/built/levels/quay.json', import.meta.url)
+          : new URL('../../content/built/levels/saltpan.json', import.meta.url),
+        'utf8',
+      ),
+    ),
     defs.prefabs,
   );
   const { colliders } = resolvePlacedColliders(level, defs.prefabs);

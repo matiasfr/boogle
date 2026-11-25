@@ -722,7 +722,16 @@ const saltPieces = shores.salt.flatMap((cuts, side) =>
       f = frame(a, u, perp(u)),
       length = Math.round(Math.hypot(dx, dz)) / 100;
     return [
-      f.box('platform-' + side + '-' + i, i===0?0:-0.45, i===0?Math.round((length+0.45)*100)/100:length, -1.85, 1.85, 3.9, 1, 'light'),
+      f.box(
+        'platform-' + side + '-' + i,
+        i === 0 ? 0 : -0.45,
+        i === 0 ? Math.round((length + 0.45) * 100) / 100 : length,
+        -1.85,
+        1.85,
+        3.9,
+        1,
+        'light',
+      ),
       ...(i === 0 ? [f.ramp('platform-step-' + side, 0, 3.9, -3, 3, -1.85, 1.85, 'grey')] : []),
     ];
   }),
