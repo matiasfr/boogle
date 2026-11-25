@@ -23,7 +23,7 @@ import { GAUGE } from '../../src/entities/ring-island/bracket.ts';
 import { KIT } from '../../src/place/turnout.ts';
 import { prefabs } from '../../src/content/prefabs/terrain.ts';
 import { baseSites } from '../level/sites.ts';
-import { tracks } from '../level/rail-network.ts';
+import { drawnTracks } from '../level/rail-network.ts';
 import { canyon } from './cliff-kit-canyon.ts';
 
 export type Key = (typeof prefabs)[number]['key'];
@@ -140,43 +140,31 @@ function footprint(box: ReturnType<typeof solidBoxes>[number]) {
 }
 
 /** Every drawn track's segments (live, drawn and Ring Island's planned ones), Place-local with the rail top's height,
- * binned on a RAIL_BIN m grid in every bin they cross (sampled every half bin, so a long segment's middle is binned too),
- * built on first use: those in the bins round (x, z), every segment passing within RAIL_BIN m. */
+ * binned on a RAIL_BIN m grid in every bin their bounding box covers (so a long segment's middle is binned too), built
+ * on first use: those in the bins round (x, z), every segment passing within RAIL_BIN m. */
 const RAIL_BIN = 8;
-let railBins: Map<string, [number, number, number, number, number, number][]> | undefined;
+type Segment = [number, number, number, number, number, number];
+let railBins: Map<string, Segment[]> | undefined;
 function railsNear(x: number, z: number) {
   if (!railBins) {
     railBins = new Map();
-    for (const t of tracks()) {
-      if (!t.enforce && t.status !== 'v27') continue;
+    for (const t of drawnTracks())
       for (let n = 0; n + 1 < t.pts.length; n++) {
         const a = t.pts[n]!,
           b = t.pts[n + 1]!;
-        const seg: [number, number, number, number, number, number] = [
-          a.x - ORIGIN.x,
-          a.z - ORIGIN.z,
-          a.y,
-          b.x - ORIGIN.x,
-          b.z - ORIGIN.z,
-          b.y,
-        ];
-        const keys = new Set<string>();
-        const steps = Math.ceil(Math.hypot(seg[3] - seg[0], seg[4] - seg[1]) / (RAIL_BIN / 2));
-        for (let k = 0; k <= steps; k++) {
-          const x = seg[0] + ((seg[3] - seg[0]) * k) / steps,
-            z = seg[1] + ((seg[4] - seg[1]) * k) / steps;
-          keys.add(`${Math.floor(x / RAIL_BIN)},${Math.floor(z / RAIL_BIN)}`);
-        }
-        for (const key of keys) (railBins.get(key) ?? railBins.set(key, []).get(key)!).push(seg);
+        const seg: Segment = [a.x - ORIGIN.x, a.z - ORIGIN.z, a.y, b.x - ORIGIN.x, b.z - ORIGIN.z, b.y];
+        const bin = (v: number) => Math.floor(v / RAIL_BIN);
+        for (let i = bin(Math.min(seg[0], seg[3])); i <= bin(Math.max(seg[0], seg[3])); i++)
+          for (let j = bin(Math.min(seg[1], seg[4])); j <= bin(Math.max(seg[1], seg[4])); j++)
+            (railBins.get(`${i},${j}`) ?? railBins.set(`${i},${j}`, []).get(`${i},${j}`)!).push(seg);
       }
-    }
   }
   const i = Math.floor(x / RAIL_BIN),
     j = Math.floor(z / RAIL_BIN);
-  const out = new Set<[number, number, number, number, number, number]>();
+  const out: Segment[] = [];
   for (let di = -1; di <= 1; di++)
-    for (let dj = -1; dj <= 1; dj++) for (const seg of railBins.get(`${i + di},${j + dj}`) ?? []) out.add(seg);
-  return [...out];
+    for (let dj = -1; dj <= 1; dj++) out.push(...(railBins.get(`${i + di},${j + dj}`) ?? []));
+  return out;
 }
 /** The loading gauge over a rail's top, m: a car's floor (src/entities/railway/car.ts BOTTOM) and body half width
  * (dev/level/track-continuity.ts CAR_HX), the running gear's half width under the floor, and the static clearance. */

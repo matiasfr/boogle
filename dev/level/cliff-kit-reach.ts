@@ -3,42 +3,41 @@
 // the game builds stands with every piece's solids on it (each column's height is the highest solid over it). Somewhere
 // to stand is bare ground with a walkable quad beside it (./flood.ts `standable`), or, over a piece, a box's top face
 // that is the column's highest solid and walkable (WALKABLE_NY): a slab's steep front, binned onto the grid, is no
-// ledge. From every tread cell in the window, every cell of deep water, and the roof of a train anywhere along every
-// drawn track (the highest car's), a player moves:
-// - a step to a neighbouring cell, as the controller allows (./flood.ts's rules: a fall anywhere; up, ground at both
-//   ends and a step within the walkable slope or one jump; out of deep water, a swimmer's hop);
+// ledge. From every tread cell in the window, every cell of deep water not under a piece, and the highest top aboard a
+// train (./rail-network.ts TRAIN_TOP, the cab roof) every ROOF m along every drawn track, a player moves:
+// - a step to a neighbouring cell, as the controller allows (./flood.ts `steps`);
 // - from somewhere to stand, a double jump to any standable cell within TWO_REACH m and TWO_JUMPS m up (falling, one
 //   jump: JUMP_REACH and ONE_JUMP);
-// - a glide after those jumps to any cell within GLIDE(drop) m (./mover.ts, the abilities check's own numbers).
+// - a glide after those jumps to any cell within GLIDE(drop) m (./abilities.ts, the abilities check's own numbers).
 // Jumps and glides ignore what is in the way, so the check errs strict. Twice: freely, and with the kit as no climbing
-// aid: standing on a piece, a player moves as if from the height of the ground (or roof) they got onto it from, never
-// higher than the piece itself; falling onto a piece, as from the piece. Each search costs a route its length plus its
-// start's height times SHORTCUT, so a cell reached from lower ground is reached sooner (every start in the window is
-// one: the plateau's own path must not hide a staircase up to it from the climb). A standable cell the free search
-// reaches is a new way up when the second does not reach it, or reaches it only SHORTCUT m or more later (the kit is a
-// short cut, or lets a player up from lower ground: a metre lower counts as SHORTCUT m). Hopping onto a boulder passes; a staircase, a ramp, a perch that
-// launches a longer glide, or steps off a train's roof fail. Starting only from the window's treads is strict too.
+// aid: standing on a piece counts as standing on the ground under it or where the player came from, whichever is
+// lower, so a piece lends neither height nor a step out over a drop; falling onto one counts as falling past it. Each
+// search costs a route its length plus its start's height times SHORTCUT, so a cell reached from lower ground is
+// reached sooner (every start in the window is one: the plateau's own path must not hide a staircase up to it from the
+// climb). A standable cell the free search reaches is a new way up when the second does not reach it, or reaches it only
+// SHORTCUT m or more later (a short cut, or a way up from lower ground: a metre lower counts as SHORTCUT m). Hopping
+// onto a boulder passes; a staircase, a ramp, a perch, or steps off a train's roof fail. Starting only from the
+// window's treads and water is strict too.
 import { H } from '../../src/place/terrain.ts';
 import { ORIGIN } from '../../src/place/layout.ts';
 import { pathAt } from '../../src/place/path-field.ts';
 import type { Placement } from '../../src/prefab/types.ts';
 import { solidBoxes, solidSamples } from '../prefab/cliff-kit.ts';
 import { WALKABLE_NY } from '../../src/constants.ts';
-import { LOCO, RIDER_CAR, TRAILER, WAGON_CAR } from '../../src/entities/railway/cars.ts';
-import { standable } from './flood.ts';
-import { GLIDE, JUMP_REACH, MOVER, ONE_JUMP, TWO_JUMPS, TWO_REACH } from './mover.ts';
-import { tracks } from './rail-network.ts';
+import { standable, steps } from './flood.ts';
+import { MOVER } from './mover.ts';
+import { GLIDE, JUMP_REACH, ONE_JUMP, TWO_JUMPS, TWO_REACH } from './abilities.ts';
+import { TRAIN_TOP, alongTrack, drawnTracks } from './rail-network.ts';
 
 /** Grid spacing, m; how far past the pieces' solids the window reaches; the shortest detour the kit may not cut, m; the
- * spacing of glide landings on open ground (every piece's standable cell is one too), cells; a roof every ROOF m. */
+ * spacing of glide landings on open ground (every piece's standable cell is one too), cells; a roof every ROOF m; a
+ * standing lift on a piece, rounded down to LIFT m (strict), which bounds the states a cell keeps. */
 const CELL = 0.5,
   MARGIN = 16,
   SHORTCUT = 10,
   LANDING = 4,
   ROOF = 2,
   LIFT = 0.1;
-/** The highest roof a player rides, over the rail's top. */
-const ROOF_TOP = Math.max(LOCO.top, RIDER_CAR.top, TRAILER.top, WAGON_CAR.top);
 
 export type Reach = { cells: number; fresh: { x: number; z: number; y: number; saved: number | null }[] };
 
@@ -106,78 +105,16 @@ export function kitReach(placements: readonly Placement[]): Reach {
   const stand = standable({ n, cell: CELL, h: kit }, MOVER).map((g, k) =>
     piece[k] ? (tops[k]! >= kit[k]! - 0.05 ? 1 : 0) : g,
   );
-  // Roofs: a train's highest roof every ROOF m along every drawn track inside the window.
-  const roofs: { x: number; z: number; y: number }[] = [];
-  for (const t of tracks()) {
-    if (!t.enforce && t.status !== 'v27') continue;
-    let last = -Infinity;
-    for (const q of t.pts) {
-      const x = q.x - ORIGIN.x,
-        z = q.z - ORIGIN.z;
-      if (x < x0 || z < z0 || x > x0 + (n - 1) * CELL || z > z0 + (n - 1) * CELL || q.s - last < ROOF) continue;
-      last = q.s;
-      roofs.push({ x, z, y: q.y + ROOF_TOP });
-    }
-  }
-  const world = { n, x0, z0, bare, kit, piece, stand, starts, roofs };
-  const free = travel(world, true),
-    unaided = travel(world, false);
-  const fresh: Reach['fresh'] = [];
-  for (let k = 0; k < n * n; k++) {
-    if (free[k] === Infinity || !stand[k]) continue;
-    const saved = unaided[k] === Infinity ? null : unaided[k]! - free[k]!;
-    if (saved === null || saved >= SHORTCUT) {
-      const i = Math.floor(k / n);
-      fresh.push({ x: x0 + i * CELL, z: z0 + (k - i * n) * CELL, y: kit[k]!, saved });
-    }
-  }
-  return { cells: n * n, fresh };
-}
-
-type World = {
-  n: number;
-  x0: number;
-  z0: number;
-  bare: Float32Array;
-  kit: Float32Array;
-  piece: Uint8Array;
-  stand: Uint8Array;
-  starts: number[];
-  roofs: { x: number; z: number; y: number }[];
-};
-
-/** The shortest way, m across the ground, from the starts and roofs to every cell (Infinity: none). `aided`: the kit is
- * ground like any other. Otherwise a state on a piece carries `lift`, the height a player really has there. Got up onto
- * it from lower ground (or a roof): standing, as on the ground under the piece or where they came from, whichever is
- * lower (lift, rounded down to LIFT), so a piece lends neither height nor a step out over a drop. Came down onto it:
- * falling past the piece's top, as without the piece (lift is the top; one jump left, no grip to climb). A
- * piece cell keeps every state that no other of the same kind beats both nearer and higher. */
-function travel({ n, x0, z0, bare, kit, piece, stand, starts, roofs }: World, aided: boolean) {
-  const { walkSlope, jumpHeight, wade, swimHop } = MOVER;
-  const at = kit.map((h) => Math.max(h, -wade)), // what you stand or float at
-    under = bare.map((h) => Math.max(h, -wade)); // and without the kit
-  const level = (k: number) => at[k]!;
-  const deep = (k: number) => kit[k]! < -wade;
-  const dist = new Float64Array(n * n).fill(Infinity);
-  /** Each piece cell's kept states, [distance, lift] (only without the kit's aid). */
-  const kept = new Map<number, [number, number][]>();
-  const heap = new Heap();
-  const push = (k: number, d: number, from: number) => {
-    const lift = !aided && piece[k] && from < level(k) ? Math.floor(Math.min(from, under[k]!) / LIFT) * LIFT : level(k);
-    if (!aided && piece[k]) {
-      const states = kept.get(k) ?? kept.set(k, []).get(k)!;
-      const beats = (a: number, al: number, b: number, bl: number) =>
-        a <= b && al >= bl && (al === level(k)) === (bl === level(k));
-      for (const [sd, sl] of states) if (beats(sd, sl, d, lift)) return;
-      // Keep only the states the new one does not beat.
-      let w = 0;
-      for (const st of states) if (!beats(d, lift, st[0], st[1])) states[w++] = st;
-      states.length = w;
-      states.push([d, lift]);
-    } else if (d >= dist[k]!) return;
-    dist[k] = Math.min(dist[k]!, d);
-    heap.push(d, k, lift);
-  };
+  const at = kit.map((h) => Math.max(h, -MOVER.wade)), // what you stand or float at
+    under = bare.map((h) => Math.max(h, -MOVER.wade)); // and without the kit
+  const deep = (k: number) => kit[k]! < -MOVER.wade;
+  // Roofs: a train's highest top every ROOF m along every drawn track inside the window.
+  const inside = (x: number, z: number) => x >= x0 && z >= z0 && x <= x0 + (n - 1) * CELL && z <= z0 + (n - 1) * CELL;
+  const roofs = drawnTracks().flatMap((t) =>
+    alongTrack(t, ROOF)
+      .map((q) => ({ x: q.x - ORIGIN.x, z: q.z - ORIGIN.z, y: q.y + TRAIN_TOP }))
+      .filter((q) => inside(q.x, q.z)),
+  );
   // Glides land on every LANDING-th cell of open ground and on every standable piece cell, binned BIN cells a side
   // with each bin's lowest landing, so a launch skips the bins no glide from it reaches.
   const BIN = 16,
@@ -190,77 +127,131 @@ function travel({ n, x0, z0, bare, kit, piece, stand, starts, roofs }: World, ai
       if (!(piece[k] && stand[k]) && (i % LANDING || j % LANDING)) continue;
       const b = Math.floor(i / BIN) * bins + Math.floor(j / BIN);
       landings[b]!.push(k);
-      lowest[b] = Math.min(lowest[b]!, level(k));
+      lowest[b] = Math.min(lowest[b]!, at[k]!);
     }
-  // The cells a jump reaches, as offsets with their distance, nearest first.
-  const disk: [number, number, number][] = [];
+  // The cells a jump reaches, as offsets with their distance, nearest first; the first `oneJump` within JUMP_REACH.
   const reach = Math.ceil(TWO_REACH / CELL);
+  const offsets: [number, number, number][] = [];
   for (let di = -reach; di <= reach; di++)
     for (let dj = -reach; dj <= reach; dj++) {
       const c = Math.hypot(di, dj) * CELL;
-      if (c <= TWO_REACH && (di || dj)) disk.push([di, dj, c]);
+      if (c <= TWO_REACH && (di || dj)) offsets.push([di, dj, c]);
     }
-  disk.sort((a, b) => a[2] - b[2]);
-  /** Jumps and glides from (x, z), launched at `from` (two jumps if standing, one if falling). */
-  const launch = (x: number, z: number, from: number, d: number, standing: boolean) => {
-    const rise = standing ? TWO_JUMPS : ONE_JUMP,
-      far = standing ? TWO_REACH : JUMP_REACH;
-    const ci = Math.round((x - x0) / CELL),
-      cj = Math.round((z - z0) / CELL);
-    for (const [di, dj, c] of disk) {
-      if (c > far) break;
-      const i = ci + di,
-        j = cj + dj;
-      if (i < 0 || j < 0 || i >= n || j >= n) continue;
-      const q = i * n + j;
-      if (stand[q] && at[q]! - from <= rise) push(q, d + c, from);
-    }
-    const top = from + rise;
-    for (let bi = 0; bi < bins; bi++)
-      for (let bj = 0; bj < bins; bj++) {
-        const b = bi * bins + bj,
-          most = GLIDE(top - lowest[b]!);
-        if (!most) continue;
-        // The nearest point of the bin's square.
-        const nx = Math.max(x0 + bi * BIN * CELL, Math.min(x, x0 + ((bi + 1) * BIN - 1) * CELL)),
-          nz = Math.max(z0 + bj * BIN * CELL, Math.min(z, z0 + ((bj + 1) * BIN - 1) * CELL));
-        if (Math.hypot(nx - x, nz - z) > most) continue;
-        for (const q of landings[b]!) {
-          const i = Math.floor(q / n),
-            c = Math.hypot(x0 + i * CELL - x, z0 + (q - i * n) * CELL - z);
-          if (level(q) < top && c <= GLIDE(top - level(q))) push(q, d + c, from);
+  offsets.sort((a, b) => a[2] - b[2]);
+  const DI = Int32Array.from(offsets, (o) => o[0]),
+    DJ = Int32Array.from(offsets, (o) => o[1]),
+    DC = Float64Array.from(offsets, (o) => o[2]);
+  const oneJump = offsets.findIndex((o) => o[2] > JUMP_REACH);
+
+  /** The shortest way, m across the ground (plus a start's height times SHORTCUT), from the starts and roofs to every
+   * cell (Infinity: none). `aided`: the kit is ground like any other. Otherwise a player who got up onto a piece from
+   * lower ground is standing there with `lift` below the piece's top (the lower of the ground under it and where they
+   * came from, rounded down to LIFT); every other state is at the cell's own height (on ground, or falling past a
+   * piece: one jump left, no grip to climb). A cell keeps one state at its own height, the nearest, and the standing
+   * states that rise above every one settled before them. */
+  const travel = (aided: boolean) => {
+    const own = new Float64Array(n * n).fill(Infinity), // the nearest state at the cell's own height
+      climbed = new Float32Array(n * n).fill(-Infinity), // the highest standing lift settled on a piece
+      out = new Float64Array(n * n).fill(Infinity);
+    /** A piece cell's standing states pushed and not beaten: distance and lift, in turn. */
+    const pending = new Map<number, number[]>();
+    const heap = new Heap();
+    const push = (k: number, d: number, from: number) => {
+      if (!aided && piece[k] && from < at[k]!) {
+        const lift = Math.floor(Math.min(from, under[k]!) / LIFT) * LIFT;
+        if (lift <= climbed[k]!) return;
+        const states = pending.get(k) ?? pending.set(k, []).get(k)!;
+        for (let s = 0; s < states.length; s += 2) if (states[s]! <= d && states[s + 1]! >= lift) return;
+        // Drop the states this one beats, then keep it.
+        let w = 0;
+        for (let s = 0; s < states.length; s += 2)
+          if (!(d <= states[s]! && lift >= states[s + 1]!)) {
+            states[w++] = states[s]!;
+            states[w++] = states[s + 1]!;
+          }
+        states.length = w;
+        states.push(d, lift);
+        heap.push(d, k, lift);
+      } else if (d < own[k]!) {
+        own[k] = d;
+        heap.push(d, k, at[k]!);
+      }
+    };
+    /** Could a move landing on q at distance d settle anything new? */
+    const worth = (q: number, d: number) => d < own[q]! || (!aided && piece[q] === 1);
+    /** Jumps and glides from (x, z), launched at `from` (two jumps if standing, one if falling). */
+    const launch = (x: number, z: number, from: number, d: number, standing: boolean) => {
+      const rise = standing ? TWO_JUMPS : ONE_JUMP,
+        last = standing ? DI.length : oneJump;
+      const ci = Math.round((x - x0) / CELL),
+        cj = Math.round((z - z0) / CELL);
+      for (let o = 0; o < last; o++) {
+        const i = ci + DI[o]!,
+          j = cj + DJ[o]!;
+        if (i < 0 || j < 0 || i >= n || j >= n) continue;
+        const q = i * n + j,
+          c = DC[o]!;
+        if (stand[q] && at[q]! - from <= rise && worth(q, d + c)) push(q, d + c, from);
+      }
+      const top = from + rise;
+      for (let bi = 0; bi < bins; bi++)
+        for (let bj = 0; bj < bins; bj++) {
+          const b = bi * bins + bj,
+            most = GLIDE(top - lowest[b]!);
+          if (!most) continue;
+          // The nearest point of the bin's square.
+          const nx = Math.max(x0 + bi * BIN * CELL, Math.min(x, x0 + ((bi + 1) * BIN - 1) * CELL)),
+            nz = Math.max(z0 + bj * BIN * CELL, Math.min(z, z0 + ((bj + 1) * BIN - 1) * CELL));
+          if (Math.hypot(nx - x, nz - z) > most) continue;
+          for (const q of landings[b]!) {
+            const i = Math.floor(q / n),
+              c = Math.hypot(x0 + i * CELL - x, z0 + (q - i * n) * CELL - z);
+            if (at[q]! < top && worth(q, d + c) && c <= GLIDE(top - at[q]!)) push(q, d + c, from);
+          }
         }
-      }
+    };
+    // A start costs its height: starting a metre lower is worth SHORTCUT m of walking.
+    for (const k of starts) push(k, at[k]! * SHORTCUT, at[k]!);
+    for (const r of roofs) launch(r.x, r.z, r.y, r.y * SHORTCUT, true);
+    while (heap.size) {
+      const [d, k, lift] = heap.pop();
+      if (lift === at[k]) {
+        if (d > own[k]!) continue;
+      } else if (lift <= climbed[k]!) continue;
+      else climbed[k] = lift;
+      out[k] = Math.min(out[k]!, d);
+      const i = Math.floor(k / n),
+        j = k - i * n;
+      // Standing here: on ground, or (without the kit's aid) on a piece they got up onto; falling past one, not.
+      const standing = stand[k] === 1 && (aided || !piece[k] || lift < at[k]!);
+      for (let di = -1; di <= 1; di++)
+        for (let dj = -1; dj <= 1; dj++) {
+          const a = i + di,
+            b = j + dj;
+          if ((!di && !dj) || a < 0 || b < 0 || a >= n || b >= n) continue;
+          const q = a * n + b,
+            c = di && dj ? CELL * Math.SQRT2 : CELL;
+          if (steps(MOVER, at[q]! - lift, c, deep(k), standing && stand[q] === 1)) push(q, d + c, lift);
+        }
+      if (!deep(k)) launch(x0 + i * CELL, z0 + j * CELL, lift, d, standing);
+    }
+    return out;
   };
-  // A start costs its height: starting a metre lower is worth SHORTCUT m of walking, so a way up from lower ground shows.
-  for (const k of starts) push(k, level(k) * SHORTCUT, level(k));
-  for (const r of roofs) launch(r.x, r.z, r.y, r.y * SHORTCUT, true);
-  while (heap.size) {
-    const [d, k, lift] = heap.pop();
-    if (aided || !piece[k] ? d > dist[k]! : !kept.get(k)!.some(([sd, sl]) => sd === d && sl === lift)) continue;
-    const i = Math.floor(k / n),
-      j = k - i * n;
-    // Standing here: on ground, or (without the kit's aid) on a piece they got up onto; falling past one, not.
-    const standing = stand[k] === 1 && (aided || !piece[k] || lift < level(k));
-    for (let di = -1; di <= 1; di++)
-      for (let dj = -1; dj <= 1; dj++) {
-        const a = i + di,
-          b = j + dj;
-        if ((!di && !dj) || a < 0 || b < 0 || a >= n || b >= n) continue;
-        const q = a * n + b,
-          c = di && dj ? CELL * Math.SQRT2 : CELL,
-          rise = level(q) - lift;
-        const ok =
-          rise <= 0 ||
-          (deep(k) ? rise <= swimHop : standing && stand[q] && (rise <= jumpHeight || rise <= walkSlope * c));
-        if (ok) push(q, d + c, lift);
-      }
-    if (!deep(k)) launch(x0 + i * CELL, z0 + j * CELL, lift, d, standing);
+  const free = travel(true),
+    unaided = travel(false);
+  const fresh: Reach['fresh'] = [];
+  for (let k = 0; k < n * n; k++) {
+    if (free[k] === Infinity || !stand[k]) continue;
+    const saved = unaided[k] === Infinity ? null : unaided[k]! - free[k]!;
+    if (saved === null || saved >= SHORTCUT) {
+      const i = Math.floor(k / n);
+      fresh.push({ x: x0 + i * CELL, z: z0 + (k - i * n) * CELL, y: kit[k]!, saved });
+    }
   }
-  return dist;
+  return { cells: n * n, fresh };
 }
 
-/** A binary min-heap of [distance, cell, lift]. */
+/** A binary min-heap of [distance, cell, lift], kept in three parallel arrays. */
 class Heap {
   private d: number[] = [];
   private k: number[] = [];
@@ -269,39 +260,46 @@ class Heap {
     return this.d.length;
   }
   push(d: number, k: number, l: number) {
-    let i = this.d.length;
-    this.d.push(d);
-    this.k.push(k);
-    this.l.push(l);
+    // Sift a hole up from the end, then fill it.
+    const { d: D, k: K, l: L } = this;
+    let i = D.length;
+    D.push(d);
+    K.push(k);
+    L.push(l);
     while (i > 0) {
       const p = (i - 1) >> 1;
-      if (this.d[p]! <= d) break;
-      this.swap(i, p);
+      if (D[p]! <= d) break;
+      D[i] = D[p]!;
+      K[i] = K[p]!;
+      L[i] = L[p]!;
       i = p;
     }
+    D[i] = d;
+    K[i] = k;
+    L[i] = l;
   }
   pop(): [number, number, number] {
-    const out: [number, number, number] = [this.d[0]!, this.k[0]!, this.l[0]!];
-    const last = this.d.length - 1;
-    this.swap(0, last);
-    this.d.pop();
-    this.k.pop();
-    this.l.pop();
-    for (let i = 0; ;) {
-      const a = 2 * i + 1,
-        b = a + 1;
-      let m = i;
-      if (a < this.d.length && this.d[a]! < this.d[m]!) m = a;
-      if (b < this.d.length && this.d[b]! < this.d[m]!) m = b;
-      if (m === i) break;
-      this.swap(i, m);
+    const { d: D, k: K, l: L } = this;
+    const top: [number, number, number] = [D[0]!, K[0]!, L[0]!];
+    const d = D.pop()!,
+      k = K.pop()!,
+      l = L.pop()!;
+    if (!D.length) return top;
+    // Sift a hole down from the root for the last entry, then fill it.
+    let i = 0;
+    for (;;) {
+      let m = 2 * i + 1;
+      if (m >= D.length) break;
+      if (m + 1 < D.length && D[m + 1]! < D[m]!) m++;
+      if (D[m]! >= d) break;
+      D[i] = D[m]!;
+      K[i] = K[m]!;
+      L[i] = L[m]!;
       i = m;
     }
-    return out;
-  }
-  private swap(a: number, b: number) {
-    [this.d[a], this.d[b]] = [this.d[b]!, this.d[a]!];
-    [this.k[a], this.k[b]] = [this.k[b]!, this.k[a]!];
-    [this.l[a], this.l[b]] = [this.l[b]!, this.l[a]!];
+    D[i] = d;
+    K[i] = k;
+    L[i] = l;
+    return top;
   }
 }

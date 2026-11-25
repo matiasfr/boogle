@@ -132,7 +132,7 @@ test('cliff kit gauge: a rock 0.14 m over the railhead, across the rails, is in 
 test("cliff kit gauge: a cap on the middle of the ring loop's 30.6 m straight is in the gauge", () => {
   const loop = tracks().find((t) => t.id === 'ring-loop')!;
   const [a, b] = [loop.pts[1]!, loop.pts[2]!];
-  assert.ok(Math.hypot(b.x - a.x, b.z - a.z) > 3 * 8); // longer than the rail bins round a point
+  assert.ok(Math.hypot(b.x - a.x, b.z - a.z) > 24); // longer than the three 8 m rail bins round a point
   const mid: Placement = {
     id: 'mid',
     prefab: 'terrain.rim-cap',

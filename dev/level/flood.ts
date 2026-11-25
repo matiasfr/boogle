@@ -49,23 +49,32 @@ const STEPS: [number, number][] = [
   [-1, -1],
 ];
 
+/** Whether the controller takes a step rising `rise` m over `c` m: down always; out of deep water, a swimmer's hop;
+ * otherwise, with ground to stand on at both ends (`grip`), a slope within `walkSlope` or one jump. */
+export function steps(
+  { walkSlope, jumpHeight, swimHop }: Mover,
+  rise: number,
+  c: number,
+  deep: boolean,
+  grip: boolean,
+) {
+  if (rise <= 0) return true;
+  if (deep) return rise <= swimHop;
+  return grip && (rise <= jumpHeight || rise <= walkSlope * c);
+}
+
 /** 1 for each node reached from `starts` (node indices). */
 export function flood(grid: Grid, mover: Mover, starts: number[], options: FloodOptions = {}) {
   const { n, cell, h } = grid;
   const { swim = false, blocked, reverse = false } = options;
-  const { walkSlope, jumpHeight, wade, swimHop } = mover;
+  const { wade } = mover;
   const stand = standable(grid, mover);
   const deep = (k: number) => h[k]! < -wade;
   const level = (k: number) => Math.max(h[k]!, -wade); // what you stand or float at
   const open = (k: number) => !blocked?.[k] && (swim || !deep(k));
   const grips = (k: number) => stand[k]! === 1;
   // Can you go from a to b, c metres apart?
-  const can = (a: number, b: number, c: number) => {
-    const rise = level(b) - level(a);
-    if (rise <= 0) return true;
-    if (deep(a)) return rise <= swimHop;
-    return grips(a) && grips(b) && (rise <= jumpHeight || rise <= walkSlope * c);
-  };
+  const can = (a: number, b: number, c: number) => steps(mover, level(b) - level(a), c, deep(a), grips(a) && grips(b));
   const seen = new Uint8Array(n * n);
   const stack: number[] = [];
   for (const k of starts) {

@@ -9,7 +9,7 @@ import { act } from '../../src/sim/railway-seed-route.ts';
 import { account, qjob, rail, trees } from '../../src/sim/railway-rows.ts';
 import { line2Routes, LINE2_SEA } from '../../src/sim/railway-line2-layout.ts';
 import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
-import { GLIDE, JUMP_REACH, ONE_JUMP, TWO_JUMPS, TWO_REACH } from '../level/mover.ts';
+import { GLIDE, JUMP_REACH, ONE_JUMP, TWO_JUMPS, TWO_REACH } from '../level/abilities.ts';
 import { WALKABLE_NY } from '../../src/constants.ts';
 import { CELL, H, NX, NZ, PATH_SAMPLES, at as cellAt, cellX, cellZ, heights } from '../../src/place/terrain.ts';
 import {
@@ -208,7 +208,7 @@ export function runPlaceLevelCheck() {
 
   // ---------------------------------------------------------------- abilities: what each state of the run can reach
   // The flood above is walking. Over it, the moves as numbers, from the real controller's constants: one jump's rise, two jumps',
-  // a hook's 24 m to a ring, and the glide's budget with the research's margins (the numbers: dev/level/mover.ts). Each edge names what it needs, so a state's list is
+  // a hook's 24 m to a ring, and the glide's budget with the research's margins (the numbers: dev/level/abilities.ts). Each edge names what it needs, so a state's list is
   // everything you can stand on with what you have then. Not physics: the bot (the railway bot, dev/look/bots/railway.ts) does those moves
   // for real. This one looks for what shouldn't be possible yet.
   type Have = { jump: boolean; hook: boolean; glide: boolean };
