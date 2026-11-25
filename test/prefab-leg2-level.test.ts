@@ -783,7 +783,7 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
           s.mesh,
           entries.map((l) => l.t),
         ),
-      createBoxBatch: (_owner: unknown) => ({
+      createBoxBatch: () => ({
         mesh: new THREE.Group(),
         begin() {
           if (this.mesh.name === 'route-greybox:deck') drawnDeck.length = 0;

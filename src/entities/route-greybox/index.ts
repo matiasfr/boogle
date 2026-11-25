@@ -68,9 +68,10 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
     };
     async function mount() {
       building = true;
-      const owner = createOwnedView(),
-        { mesh, solids } = await drawGreyBoxes(owner, area.build()),
-        more = area.extras?.(owner) ?? 0;
+      const owner = createOwnedView();
+      const boxes = area.build();
+      const batch = boxes.length ? await drawGreyBoxes(owner, boxes) : null;
+      const more = area.extras?.(owner) ?? 0;
       // Its pipeline compiles off the frame before it first shows (src/render/precompile.ts).
       owner.root.visible = false;
       await precompile(owner.root);
@@ -80,8 +81,8 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
       mounted = {
         owner,
         entity: spawn({ kind: 'route-greybox-area', mesh: owner.root }),
-        boxes: mesh.count,
-        solids: solids + more,
+        boxes: batch?.mesh.count ?? 0,
+        solids: (batch?.solids ?? 0) + more,
       };
       residency.mounted = true;
       routeSceneryMounted();
