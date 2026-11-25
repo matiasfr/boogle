@@ -56,9 +56,21 @@ export function coveBluff(x: number, z: number) {
   if (z < 33 || z > 75) return -Infinity;
   const d = x - coveEdge(z),
     rear = coveRear(z);
-  const tall = smoothstep(-2, 0.5, d);
-  const round = d >= 0.5 ? 1 : Math.max(0, 1 - ((0.5 - d) / 5.5) ** 2);
-  const h = tall + (round - tall) * (1 - smoothstep(42, 51, z));
+  // The face's profile as the sculpted face had it: each height fraction h stood at d = across(h) from its front, a
+  // steep face blended toward a broad quarter-ellipse south of z 51, blended in d, not in height. Solved for h.
+  const broad = 1 - smoothstep(42, 51, z);
+  // The broad end's top reaches 0.6 m further out than the sculpted face's did: a walker on its west lip keeps footing.
+  const across = (f: number) => -2 + 2.5 * f + (-0.1 - 5.5 * Math.sqrt(1 - f) - (-2 + 2.5 * f)) * broad;
+  let lo = 0,
+    hi = 1;
+  if (d >= across(1)) lo = 1;
+  else if (d > across(0))
+    for (let k = 0; k < 24; k++) {
+      const mid = (lo + hi) / 2;
+      if (across(mid) < d) lo = mid;
+      else hi = mid;
+    }
+  const h = lo;
   // Its far end tucks under the beach there by z 74, as the sculpted face's did.
   const end = 1 - smoothstep(69, 74, z);
   return -2.4 + (coveCrest(z) + 2.4) * h * end * smoothstep(rear + 1.5, rear - 0.5, x);

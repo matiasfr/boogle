@@ -5,6 +5,7 @@
 // and the shore climb's wall (census wall 9) as scenery with box solids, laid by runs along them. Its rules beyond the
 // kit's own:
 // - Nothing on the walk: the bluff's walkable end (z 36 to 50, its west flank to the beach included) stays bare ground.
+//   (A low face on that flank snagged a controller walking up the end's west edge: it is left bare.)
 // - Tops are flush with the ground behind them, so the bluff's top walk runs on over a face's top a step at most.
 // - Shore rocks stand in the water at the faces' foot, low and dark, where the old cove's three boulders stood.
 // - The shore hop (src/place/shore-layout.ts SHORE_HOP) keeps its place and solid; it is not a kit piece.
@@ -167,14 +168,6 @@ export const shore: Area = {
         put(kit, prefab, x, top - TOP[prefab]! + 0.05, z, yaw, `bluff s ${s.toFixed(1)}`);
       },
     );
-    // A low face where the bluff steps down toward its walkable end, on the flank's lower half, its top flush with the
-    // flank behind it: south of it the flank is bare ground down to the beach, the walk off the sand.
-    {
-      const z = 47,
-        x = coveEdge(z) - 2.6;
-      const top = ground(x + TOP_BACK, z);
-      put(kit, 'terrain.low-face', x, top - LOW_FACE + 0.05, z, -Math.PI / 2 - 0.05, 'bluff low face');
-    }
     // The corner where the bluff's front turns in and tucks under the beach: its west leg on from the faces, its south
     // leg facing the beach beyond.
     {
