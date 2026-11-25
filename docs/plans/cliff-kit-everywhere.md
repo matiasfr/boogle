@@ -606,6 +606,20 @@ Far Head has no painted tread in its flood square. The flood checks returns to t
 | Far Head from sea | 291 | 295 | 867,857 | 1,134,321 |
 | Summit | 347 | 348 | 1,031,530 | 1,163,970 |
 
+## Step 7 as built
+
+The [matched village, river and first-pad views](cliff-kit-everywhere/needle-bell-before-after.jpg) show shallow, bevelled courses cut into the five original drum envelopes. The upper lips catch more light toward the summit. From the river the beds read as the gorge walls' and Far Head's sandstone. The courses stay attached in all three views. The shore hop shares the pigment. Place progression passes for the existing 26 pads and 10 secrets.
+
+| Census camera | Draws, main → step 7 | Triangles, main → step 7 |
+| --- | ---: | ---: |
+| Shore | 164 → 164 | 782,771 → 782,771 |
+| Shore climb | 385 → 384 | 1,171,181 → 1,171,225 |
+| Canyon climb | 208 → 208 | 853,887 → 854,251 |
+| Gorge rim | 377 → 377 | 1,132,037 → 1,133,367 |
+| Gorge mouth | 441 → 441 | 1,191,556 → 1,194,644 |
+| Far Head | 295 → 295 | 1,134,321 → 1,134,321 |
+| Summit | 349 → 349 | 1,164,006 → 1,165,490 |
+
 ## Design review (2026-11-24)
 
 Run by the plan's author in the same context (design-review skill). Read for it: DESIGN.md, owner calls (Look and art,

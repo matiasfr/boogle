@@ -179,7 +179,7 @@ export async function checkPropGrounding() {
     FLAT: () => mat,
     TIMBER: () => mat,
     paletteMaterial: (source: THREE.Material) => source,
-    spireRock: (s: string) => s,
+    spireStone: () => mat,
     addStatic: () => {},
     // The landing's deck boards are mounted, so only their underside is read; its posts reach `addMerged` whole.
     plankPiece: (

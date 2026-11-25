@@ -777,6 +777,8 @@ so between its two bills (24, then 32 logs) it does not read shut. Local view (`
 
 ### Production Needle Bell hook climb (8 November 2026)
 
+The five leaning drums show the gorge's sandstone beds, with shallow bevels between courses and paler sunlit edges toward the summit. The shore hop boulder shares their stone.
+
 The production bot now marks `hook taken` after the demo lands on t0, requires the six remaining upward pulls and a dry `needle bell summit` landing, then takes the glider and flies to the forge on that first climb (15 November, fly first). The descending rings remain available. Each pull uses the registered action and requires a clear path and landing; climb and descent spend no air jump.
 
 **Falling and returning:** the gorge has an existing exit. From its low floor, follow the low quarry footbridge and graded quarry path up the east bank. Round the north side of Q3's frame and the parked track layer, then use a normal jump over the raised timber track edge at s=112 and walk back to s=84. A summit fall can land on the upper bank and join this route directly. Both drop returns have passed without relocation recovery; no new stair, ramp, ladder or other exit geometry was added. Surface swimming is allowed in the bot's return mode, while the successful t3 route needed walking and a ground jump. The p2 ring is outside its 24 m range at the observed drop landings (about 62 m from t3's floor landing, 44 m from the summit's bank landing).
