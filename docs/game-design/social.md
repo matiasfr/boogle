@@ -51,9 +51,9 @@ mask the PIN before taking screenshots. Files: [account-page.ts](../../src/playe
 
 ## Voice chat
 
-Added for the 9 November playtest. Voice is room-wide, not by distance, and off until you press **Join voice** in the
+Added for the 9 November playtest. Voice is room-wide by default and off until you press **Join voice** in the
 Pause main page. That press opens the mic prompt; on iOS, media is also allowed to play while the mic is open. After
-that you hear everyone else in voice and they hear you. Pause shows **Mute** / **Unmute** and **Leave voice**, plus a
+that each listener hears other voices at their chosen range. Pause shows **Mute** / **Unmute** and **Leave voice**, plus a
 chip for each person in voice: a green dot glows while they talk, grey means connecting or muted, and coral reads
 "Can't connect". While you are in voice a small pill sits beside the corner menu: a mic icon and the names of whoever
 is talking, or the count of people in voice. When you are muted the pill greys and the mic is struck through in coral.
@@ -81,8 +81,11 @@ it does nothing outside voice. It is kept off the controls guide, and while you 
   room keeps every peer's presence through it.
 - **Sound.** Each voice plays from its own `<audio>` element. The game's WebAudio context only meters levels for the
   talking dots. On Safari the audio session switches to play-and-record while the mic is open and back to playback
-  after. One volume point per peer (`peerVolume` in voice.ts) is the seam for a later proximity fade. Element volume is
-  read-only on iOS, so proximity there would route voices through WebAudio.
+  after. In Pause, **Hear** offers **Everyone** and **Nearby** even before joining (placeholder copy).
+  Nearby remembers each listener's choice locally. On desktop and Android, each peer's audio element plays at full
+  volume through 6 m of horizontal distance, fades along a smoothstep curve and reaches silence at 30 m. Below 5%
+  volume their chip dims and adds “· far” (placeholder). The talking dot and HUD still identify distant speakers.
+  Element volume is read-only on iOS.
 - **Files.** [src/features/voice.ts](../../src/features/voice.ts), [voice.css](../../src/features/voice.css),
   [src/netplay/voice-mesh.ts](../../src/netplay/voice-mesh.ts), [src/net/rtc-wire.ts](../../src/net/rtc-wire.ts), the
   relay in [server/src/host/hosted-room.ts](../../server/src/host/hosted-room.ts). Proof: `node dev/look/voice-proof.ts`.
