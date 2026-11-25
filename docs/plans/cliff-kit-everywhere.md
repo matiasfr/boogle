@@ -624,7 +624,7 @@ The [matched village, river and first-pad views](cliff-kit-everywhere/needle-bel
 
 The [matched prop views](cliff-kit-everywhere/props-before-after.jpg) show the Works bowl, a boulder from the lighthouse path and the south cave mouth. The honey-coloured tops and darker courses read as the same sandstone as the gorge and Needle Bell. The orange band still picks out the work rock. The path rock meets the downhill grass, and the cave courses continue across the cut around the timber entrance.
 
-Three instance batches draw the loose boulders at the original seeded positions. Their bases extend down to the slope while their tops match the existing sphere tops. The five breakable rocks keep their original meshes and bands. Each cave mouth has a painted approach tread, so two low kit faces flank each collar. The existing solids and cave bore determine where Buddy can walk.
+Three instance batches draw the loose boulders at the original seeded positions. Their bases extend down to the slope while their tops match the existing sphere tops. The five mineable rocks are grey again (owner call, 25 November) and keep their original meshes and bands. Each cave mouth has a painted approach tread, so two low kit faces flank each collar. The existing solids and cave bore determine where Buddy can walk.
 
 The Works kiln action used the Chop prompt on the last stone in the seeded bowl rock and then filled the kiln. Earlier cliff-kit levels are byte-identical. The seven census poses include colour and shadow passes.
 

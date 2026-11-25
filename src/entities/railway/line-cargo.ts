@@ -10,7 +10,6 @@ import { addPresenceField, onRemotePresence, remotes } from '../../netplay/net.t
 import { RAIL_ROCKS } from '../../sim/railway-works-layout.ts';
 import { account, accounts, beam as beamRow, rail, rock as rockRow } from '../../sim/railway-rows.ts';
 import { railPhase } from '../../sim/railway-queries-line1.ts';
-import { spireStone } from '../../place/spire-stone.ts';
 import { GOLD_ROPE } from '../../render/gold-rope.ts';
 import { fitOf } from '../../render/haul-bundle.ts';
 import { emit } from '../../render/particles.ts';
@@ -52,7 +51,7 @@ export async function createLineCargo(adapter: RailwayAdapter, owner: OwnedView,
     const root = new THREE.Group();
     root.position.set(x, y, z);
     const lumps = Array.from({ length: 5 }, (_, k) => {
-      const lump = new THREE.Mesh(new THREE.DodecahedronGeometry(1, 0), spireStone());
+      const lump = new THREE.Mesh(new THREE.DodecahedronGeometry(1, 0), flat('#b0ab9d'));
       const angle = (k / 5) * Math.PI * 2 + i;
       lump.position.set(
         k ? Math.cos(angle) * radius * 0.55 : 0,
