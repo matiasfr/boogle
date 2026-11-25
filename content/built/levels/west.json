@@ -9,6 +9,46 @@
       },
       "extras": [],
       "marks": {
+        "caveApron": {
+          "at": [
+            10,
+            9.8
+          ],
+          "compute": "point",
+          "frame": {
+            "operand": 1
+          }
+        },
+        "caveHome": {
+          "at": [
+            20,
+            5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "operand": 1
+          }
+        },
+        "caveOut": {
+          "at": [
+            20,
+            -5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "operand": 1
+          }
+        },
+        "caveSea": {
+          "at": [
+            63,
+            -5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "operand": 1
+          }
+        },
         "cliffFoot": {
           "x": 808,
           "z": -3
@@ -90,6 +130,16 @@
           "compute": "point",
           "frame": {
             "operand": 0
+          }
+        },
+        "seaInV": {
+          "at": [
+            30,
+            -18
+          ],
+          "compute": "point",
+          "frame": {
+            "operand": 1
           }
         },
         "stop": {
@@ -202,17 +252,222 @@
           "id": "apron",
           "tone": "grey",
           "top": 4.9
+        },
+        {
+          "bounds": [
+            0,
+            60,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 1,
+          "id": "cave-bed",
+          "posts": true,
+          "tone": "dark",
+          "top": 3.9
+        },
+        {
+          "bounds": [
+            0,
+            40,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 1,
+          "id": "cave-home",
+          "posts": true,
+          "tone": "light",
+          "top": 4.9
+        },
+        {
+          "bounds": [
+            4,
+            40,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 1,
+          "id": "cave-out",
+          "posts": true,
+          "tone": "light",
+          "top": 4.9
+        },
+        {
+          "bounds": [
+            4,
+            16,
+            7.8,
+            11.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 2,
+          "id": "cave-apron",
+          "tone": "grey",
+          "top": 4.9
+        },
+        {
+          "bounds": [
+            45,
+            66.9,
+            6.5,
+            7.5
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 14,
+          "id": "hood-in-cliff",
+          "tone": "sandstone",
+          "top": 11
+        },
+        {
+          "bounds": [
+            45,
+            65.3,
+            -7.5,
+            -6.5
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 14,
+          "id": "hood-in-sea",
+          "tone": "sandstone",
+          "top": 11
+        },
+        {
+          "bounds": [
+            45,
+            66.9,
+            -7.5,
+            7.5
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 1,
+          "id": "hood-in-roof",
+          "tone": "sandstone",
+          "top": 12
+        },
+        {
+          "bounds": [
+            -1.6,
+            14.7,
+            6.5,
+            7.5
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 2
+          },
+          "h": 14,
+          "id": "hood-out-cliff",
+          "tone": "sandstone",
+          "top": 11
+        },
+        {
+          "bounds": [
+            0,
+            14.7,
+            -7.5,
+            -6.5
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 2
+          },
+          "h": 14,
+          "id": "hood-out-sea",
+          "tone": "sandstone",
+          "top": 11
+        },
+        {
+          "bounds": [
+            -1.6,
+            14.7,
+            -7.5,
+            7.5
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 2
+          },
+          "h": 1,
+          "id": "hood-out-roof",
+          "tone": "sandstone",
+          "top": 11.97
+        },
+        {
+          "bounds": [
+            40,
+            60,
+            -6.1,
+            -3.9
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.3,
+          "id": "cave-slip",
+          "rise": {
+            "a": -1.4,
+            "b": 4.9,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 4.9
         }
       ],
       "posts": [
         {
+          "at": [
+            37,
+            5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "operand": 1
+          },
+          "id": "hood-sign",
+          "label": "west.hood",
+          "nx": -0.8,
+          "nz": -0.6,
+          "y": 4.9
+        },
+        {
+          "at": [
+            20,
+            6.7
+          ],
+          "compute": "point",
+          "frame": {
+            "operand": 0
+          },
           "id": "board",
           "label": "west.board",
           "nx": 1,
           "nz": 0,
-          "x": 805,
-          "y": 3,
-          "z": 20.5
+          "y": 4.9
         }
       ],
       "reserves": [
@@ -275,6 +530,21 @@
           "id": "platform-b lever end",
           "y0": 4.9,
           "y1": 7.9
+        },
+        {
+          "bounds": [
+            4,
+            16,
+            7.8,
+            11.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "id": "cave apron",
+          "y0": 4.9,
+          "y1": 7.9
         }
       ],
       "staked": false
@@ -303,6 +573,54 @@
           },
           "compute": "perp",
           "sign": -1
+        }
+      },
+      {
+        "o": {
+          "x": 801,
+          "z": 10
+        },
+        "u": {
+          "axis": {
+            "x": -6,
+            "z": 65
+          },
+          "compute": "unit"
+        },
+        "v": {
+          "axis": {
+            "axis": {
+              "x": -6,
+              "z": 65
+            },
+            "compute": "unit"
+          },
+          "compute": "perp",
+          "sign": 1
+        }
+      },
+      {
+        "o": {
+          "x": 795,
+          "z": 75
+        },
+        "u": {
+          "axis": {
+            "x": -125,
+            "z": 225
+          },
+          "compute": "unit"
+        },
+        "v": {
+          "axis": {
+            "axis": {
+              "x": -125,
+              "z": 225
+            },
+            "compute": "unit"
+          },
+          "compute": "perp",
+          "sign": 1
         }
       }
     ]

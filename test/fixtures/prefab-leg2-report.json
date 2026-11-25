@@ -112,13 +112,53 @@
       "message": "on foot from the commons down to platform A (the flood only; step 5 walks it)"
     },
     {
+      "kind": "assertion",
+      "passed": true,
+      "message": "on foot from platform A to the cave apron (the flood only; step 5 walks it)"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "on foot from platform B to the cave apron (the flood only; step 5 walks it)"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "on foot from the apron to the cave homeward platform (the flood only; step 5 walks it)"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "on foot from the apron to the cave outward platform (the flood only; step 5 walks it)"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "on foot from the commons to the cave homeward platform (the flood only; step 5 walks it)"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "on foot from the commons to the cave outward platform (the flood only; step 5 walks it)"
+    },
+    {
       "kind": "fact",
       "message": "  build: West landing platforms stand"
     },
     {
       "kind": "assertion",
       "passed": true,
-      "message": "room left for the rules plan is clear of leg 2's boxes, pads and posts: bay row, apron, platform-a lever end, platform-b lever end, cave row (0.0 to 65.3 m), cave row (65.3 to 80.0 m)"
+      "message": "a swimmer inside the V reaches the cave platform"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "a swimmer off the hood reaches the cave platform"
+    },
+    {
+      "kind": "assertion",
+      "passed": true,
+      "message": "room left for the rules plan is clear of leg 2's boxes, pads and posts: bay row, apron, platform-a lever end, platform-b lever end, cave apron, cave row (0.0 to 65.3 m), cave row (65.3 to 80.0 m)"
     },
     {
       "kind": "section",

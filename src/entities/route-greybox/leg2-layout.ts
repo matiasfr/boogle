@@ -10,6 +10,7 @@ export const LEG2_TEXT: Readonly<Record<string, readonly string[]>> = {
   'bell.pad-quay': stall('Port Quay'),
   'bell.market': ['Market board (placeholder)'],
   'west.board': ['LINE TO BELL ROCK', 'UNDER CONSTRUCTION'],
+  'west.hood': ['Sea cave (placeholder)'],
   // Greybox leg 3 (docs/plans/greybox-leg3.md, "Controls and copy"): beside the Notch barrier at Canopy Town's buffers.
   'canopy.notch': ['LINE TO LANTERN NOTCH', 'LATER'],
 };
