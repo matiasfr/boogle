@@ -8,6 +8,7 @@ import { consistOf, offsetOf } from '../../src/entities/railway/cars.ts';
 import { ORIGIN } from '../../src/place/layout.ts';
 import { inside, layout, parseMapPage } from '../../src/sickle/map-data.ts';
 import {
+  CANOPY_CLOTH,
   legFrame,
   legRack,
   RAIL_GATES,
@@ -77,7 +78,8 @@ export function checkLeg3() {
     check(`Canopy platforms to ${id} tip ${nearest.toFixed(2)} m`, nearest > 3.8 + 1.1);
   }
   const distance = apart(RAIL_GRANTS.find((g) => g.id === 'cloth')!.at, RAIL_GATES.find((g) => g.id === 'notch')!.at);
-  check(`Cloth to Notch barrier ${distance.toFixed(2)} m`, Math.abs(distance - 10) < 0.1);
+  // greybox-leg6.md, Level findings: the cloth stays pinned as the barrier moves to frame 1.
+  check(`Cloth to Notch barrier ${distance.toFixed(2)} m`, Math.abs(distance - CANOPY_CLOTH.barrierGapCm / 100) < 0.1);
   entries.push(...canopyEntries(map));
   return { level: 'route leg 3', entries, failures: entries.filter((e) => !e.passed).length };
 }
@@ -161,7 +163,7 @@ export function bakeCanopy(land: readonly Land[], terrain: readonly Terrain[]) {
     const a = at[i]!;
     return [a.x, a.z, b.x, b.z, r2(Math.hypot(b.x - a.x, b.z - a.z))];
   });
-  return { rings, centres, beach, trunks, curve };
+  return { rings, centres, beach, trunks, curve, cloth: [CANOPY_CLOTH.x / 100, CANOPY_CLOTH.z / 100] };
 }
 function bakedText(b: ReturnType<typeof bakeCanopy>) {
   const list = (rows: readonly (readonly (string | number)[])[]) =>
@@ -187,6 +189,7 @@ function bakedText(b: ReturnType<typeof bakeCanopy>) {
     'export const CANOPY_CURVE = [',
     list(b.curve),
     '] as const;',
+    `export const CANOPY_CLOTH_POST = [${b.cloth.join(', ')}] as const;`,
   ].join('\n');
 }
 const BAKED = /\/\/ <baked>[^\n]*\n[^\n]*\n([\s\S]*?)\/\/ <\/baked>\n/;
@@ -226,6 +229,7 @@ function canopyEntries(map: ReturnType<typeof layout>) {
     off(L3.CANOPY_BEACH, fresh.beach),
     off(L3.CANOPY_TRUNKS, fresh.trunks),
     off(L3.CANOPY_CURVE, fresh.curve),
+    off(L3.CANOPY_CLOTH_POST, fresh.cloth),
   );
   check(
     `leg3.ts's baked outlines, beach, trunks and curve match a fresh bake (worst ${worst.toFixed(3)} m)`,

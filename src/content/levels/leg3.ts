@@ -120,11 +120,12 @@ export const CANOPY_TRUNKS = [
 ] as const;
 /** The drawn row past s 2413 (railway/row-path.ts, smoothed through the kink): [ax, az, bx, bz, length]. */
 export const CANOPY_CURVE = [
-  [-1090.36, -308.58, -1092.57, -306.75, 2.87],
-  [-1092.57, -306.75, -1095.46, -304.74, 3.52],
-  [-1095.46, -304.74, -1098.07, -304.14, 2.68],
-  [-1098.07, -304.14, -1099.21, -304.16, 1.14],
+  [-1090.36, -308.58, -1092.6, -306.59, 3],
+  [-1092.6, -306.59, -1095.59, -303.94, 4],
+  [-1095.59, -303.94, -1098.61, -301.42, 3.93],
+  [-1098.61, -301.42, -1100.01, -300.3, 1.79],
 ] as const;
+export const CANOPY_CLOTH_POST = [-1091.99, -294.01] as const;
 // </baked>
 export type CanopyLand = keyof typeof CANOPY_LANDS;
 /** Each land's flat top (the map's `top`) and how far down its solid walls go (the horizon's -10). */
@@ -223,6 +224,7 @@ const beach = () =>
     tone: 'pale',
   }));
 function canopy() {
+  const cloth = { x: CANOPY_CLOTH_POST[0], z: CANOPY_CLOTH_POST[1] };
   const heading = unit(-5, -100);
   const wall = frame({ x: -889.06, z: -89.93 }, heading, perp(heading, -1));
   const bridgeHeading = unit(18.41, -37);
@@ -269,7 +271,7 @@ function canopy() {
       cf.reserve('bay row', N_LEVEL, N_CURVE, -BED, BED, RAIL, RAIL + LOADING),
       cf.reserve('platform-out lever end', -10, -7, BED, PLAT, DECK, add(DECK, CLEAR)),
       cf.reserve('platform-out board', -5.5, -2.5, BED, PLAT, DECK, add(DECK, CLEAR)),
-      cf.reserve('cloth spot', 21.9, 23.9, -10.8, -8.8, DECK, add(DECK, CLEAR)),
+      frame(cloth, cf.u, cf.v).reserve('cloth spot', -1, 1, -1, 1, DECK, add(DECK, CLEAR)),
       cf.reserve('Notch barrier', 24.4, 25.4, -BED, BED, DECK, add(DECK, CLEAR)),
       // The hub stand-in town's room (open question 5): 30 by 30 m on the ground, homeward side, within 60 m of the
       // platforms, behind the mother trunk that stands 33 m off the homeward side.
@@ -282,7 +284,7 @@ function canopy() {
       platformOut: cf.at(-10, 5.8),
       platformHome: cf.at(-10, -5.8),
       deck: cf.at(0, -11),
-      cloth: cf.at(22.9, -9.8),
+      cloth,
       notch: cf.at(26, 4),
       town: cf.at(-57, -35),
       // On the isle by head 2 (s 2136, n -265), either side of the bank.

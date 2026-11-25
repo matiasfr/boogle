@@ -482,6 +482,8 @@ v71, this); G2's reserve is not taken (no catalog row is added or reordered: bot
 
 ## Level findings
 
+The pinned cloth and the Notch barrier at frame 1 are 24.72 m apart, pending the owner's word on leg 3's call 20.
+
 `npm run level-check` ran on 25 November (main `3db6cbf36`, world v71; the two commits since are docs): **25 reports, no
 failure, 74 s.** Every leg 2 to 5 line is "ok" (Bell Rock's two levels, Canopy's floods and reserves, the Wall). The
 check does not yet walk the Notch, the island halt or the Canopy curve (no artifact exists; step 1 adds `route-leg6`), so

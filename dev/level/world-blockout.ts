@@ -64,8 +64,8 @@ const FORMATION = { tracks: 2, centresCm: 400, gaugeCm: 100, deckCm: 760, platfo
  * platform, or a single-track balloon loop past it where the island has room. Null: the line runs on (line 2's end). */
 const TURNBACKS: Record<string, [start: Turn, end: Turn]> = {
   ring: [null, 'crossover'],
-  ns: ['crossover', 'loop'],
-  bay: ['crossover', 'loop'],
+  ns: ['crossover', 'crossover'],
+  bay: ['crossover', 'crossover'],
   'bay-trestle': ['crossover', 'crossover'],
   cave: ['crossover', 'crossover'],
 };
@@ -90,6 +90,7 @@ const SERVICES: Service[] = [
   {
     id: 'ns',
     name: 'North-south line',
+    curves: [{ near: [-75, -347], radiusCm: 30000, segments: 16 }],
     legs: [{ id: 'incline', reverse: true }, { id: 'final' }],
     halts: [
       // s 36, clear of the bore (call 118, confirmed 16 November; docs/plans/greybox-leg2.md, step 1).
@@ -260,6 +261,107 @@ const lineOf = (id: string): Line => {
   return { ...l, pts, heights };
 };
 const NULLS = (n: number) => Array.from({ length: n }, () => null);
+/** From Canopy's buffers, a 42 m turn between the trunks, then a 300 m turn toward the arch. */
+function notchRoute(): Route {
+  const arch: XZ = [-2620, -1000];
+  const north = (261 * Math.PI) / 180,
+    final = Math.atan2(-182, -222);
+  // Surveyed cm-grid chords of the 42 m circle tangent to Canopy at its old buffers.
+  // Chord lengths vary slightly to keep the rounded joints below 2 degrees and above 40 m radius.
+  const pts: XZ[] = [
+    [-2100, -300],
+    [-2100.83, -299.28],
+    [-2101.87, -298.43],
+    [-2103.05, -297.53],
+    [-2104.22, -296.7],
+    [-2105.45, -295.89],
+    [-2106.51, -295.24],
+    [-2107.52, -294.66],
+    [-2108.6, -294.08],
+    [-2109.7, -293.53],
+    [-2111.07, -292.9],
+    [-2112.31, -292.38],
+    [-2113.43, -291.95],
+    [-2114.93, -291.43],
+    [-2115.89, -291.13],
+    [-2117.28, -290.74],
+    [-2118.63, -290.41],
+    [-2120.12, -290.1],
+    [-2121.14, -289.92],
+    [-2122.5, -289.72],
+    [-2123.71, -289.58],
+    [-2125.3, -289.45],
+    [-2126.28, -289.4],
+    [-2127.57, -289.37],
+    [-2128.96, -289.38],
+    [-2130.22, -289.43],
+    [-2131.62, -289.53],
+    [-2132.88, -289.66],
+    [-2134.47, -289.88],
+    [-2135.74, -290.1],
+    [-2136.87, -290.33],
+    [-2138.23, -290.65],
+    [-2139.63, -291.03],
+    [-2140.65, -291.34],
+    [-2142.1, -291.83],
+    [-2143.17, -292.23],
+    [-2144.49, -292.77],
+    [-2145.76, -293.34],
+    [-2146.73, -293.81],
+    [-2148.25, -294.61],
+    [-2149.18, -295.14],
+    [-2150.52, -295.96],
+    [-2151.64, -296.7],
+    [-2152.66, -297.42],
+    [-2153.45, -298.01],
+    [-2154.5, -298.84],
+    [-2155.69, -299.85],
+    [-2156.68, -300.75],
+    [-2157.63, -301.67],
+    [-2158.38, -302.44],
+    [-2159.45, -303.61],
+    [-2160.32, -304.63],
+    [-2161.12, -305.63],
+    [-2161.85, -306.6],
+    [-2162.64, -307.72],
+    [-2163.39, -308.86],
+    [-2164.1, -310.02],
+    [-2164.65, -310.98],
+    [-2165.26, -312.12],
+    [-2165.85, -313.31],
+    [-2166.49, -314.72],
+    [-2166.99, -315.93],
+    [-2167.49, -317.26],
+    [-2167.92, -318.53],
+    [-2168.32, -319.85],
+    [-2168.62, -320.96],
+    [-2168.89, -322.08],
+    [-2169.18, -323.47],
+    [-2169.41, -324.8],
+  ];
+  const arc = (from: number, to: number, radius: number, count: number) => {
+    const [x, z] = pts.at(-1)!;
+    for (let i = 1; i <= count; i++) {
+      const angle = from + ((to - from) * i) / count;
+      const cx = x - radius * Math.sin(from),
+        cz = z + radius * Math.cos(from);
+      pts.push([cx + radius * Math.sin(angle), cz - radius * Math.cos(angle)]);
+    }
+  };
+  const [x, z] = pts.at(-1)!;
+  const intersection = ((arch[0] - x) * Math.sin(final) - (arch[1] - z) * Math.cos(final)) / Math.sin(final - north);
+  const straight = intersection - 300 * Math.tan((north - (final + 2 * Math.PI)) / 2);
+  pts.push([x + straight * Math.cos(north), z + straight * Math.sin(north)]);
+  arc(north, final + 2 * Math.PI, -300, 36);
+  for (const back of [140, 40]) pts.push([arch[0] - back * Math.cos(final), arch[1] - back * Math.sin(final)]);
+  let distance = 0;
+  const heights = pts.map((p, i) => {
+    const prev = pts[i - 1];
+    if (prev) distance += Math.hypot(p[0] - prev[0], p[1] - prev[1]);
+    return distance <= 375 ? 13 : i >= pts.length - 2 ? 7 : null;
+  });
+  return { pts, heights, ruled: true };
+}
 const QUAY_TURN = hermite(
   [
     [[-880, 960], 134.8, 250],
@@ -274,6 +376,7 @@ const QUAY_TURN = hermite(
 /** The links the rulings redraw; every other link runs as the map JSON draws it. `ruled`: its heights are the rulings' own
  * (the bow's 24.3 m is not a cliff). */
 const ROUTES: Record<string, Route> = {
+  'notch-tunnel': notchRoute(),
   // The bow ends at the island halt (no Ring top); the pier head and first bent at 24.3 m, then 4% down to the halt.
   ringx: { pts: lineOf('ringx').pts.slice(0, 5), heights: [24.3, 24.3, null, null, null], ruled: true },
   ledge: { pts: STACK_LEDGE },
@@ -569,7 +672,7 @@ function build(svc: Service): Built {
       // The catalog and flag-only world blockout's X share it; other termini keep their standard setback.
       const sCm =
         MAP.options.find((o) => o.id === 'sickle')!.turnbacks?.[svc.id]?.[side] ??
-        (side === 'start' ? stop + 3500 : stop - (svc.id === 'cave' ? 3200 : 3500));
+        (side === 'start' ? stop + 3500 : stop - (['bay', 'ns', 'cave'].includes(svc.id) ? 3200 : 3500));
       const [x, z, y] = at(sCm);
       ends.push({ at: side, kind, sCm, x, z, y });
     } else {

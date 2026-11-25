@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import {
   RAIL_GATES,
+  RAIL_ARRIVAL,
   RAIL_GRANTS,
   RAIL_LEGS,
   RAIL_PLACES,
@@ -19,6 +20,7 @@ import {
   simHalt,
 } from '../src/sim/railway-route.ts';
 import { WORLD_LINES, type WorldLine } from '../src/sim/railway-world-lines.ts';
+import { CANOPY_CLOTH_POST } from '../src/content/levels/leg3.ts';
 import { ORIGIN } from '../src/place/layout.ts';
 import { layout, parseMapPage } from '../src/sickle/map-data.ts';
 import { standInRoute } from '../dev/loop/standins.ts';
@@ -183,13 +185,7 @@ test('each gate shuts the section it names and stands at that frame', () => {
     const [legId, k] = frames[g.id]!;
     const leg = RAIL_LEGS.find((l) => l.id === legId)!;
     leg.sections.forEach((s, j) => assert.equal(s.gate === gi, j === k, `${g.id} on ${legId} section ${j}`));
-    // The built barriers share the frame's point. The Notch barrier stands at the kink past Canopy.
-    if (g.id === 'incline' || g.id === 'canopy' || g.id === 'plug')
-      return assert.deepEqual(g.at, { ...legFrame(leg, 0), reach: 400 }, g.id);
-    if (g.id === 'notch') return assert.ok(Math.hypot(g.at.x + 110000, g.at.z + 30000) < 5);
-    if (g.id === 'deep-span') return assert.deepEqual(g.at, legFrame(leg, 5));
-    const p = rowPoint(row(leg.row), sectionFromCm(leg, k));
-    assert.ok(Math.hypot(g.at.x - p.x, g.at.z - p.z) <= 500, `${g.id} stands at its frame`);
+    assert.deepEqual(g.at, legFrame(leg, k), g.id);
   });
 });
 
@@ -210,13 +206,18 @@ test("the grants after the first stand at their leg's destination halt; `pick` o
     Math.hypot(seeds.x - bell.x, seeds.z - bell.z) < 2000 && seeds.reach === 400,
     'the seeds on the lower deck',
   );
-  const cloth = RAIL_GRANTS[2]!.at,
-    lock = RAIL_GATES.find((g) => g.id === 'notch')!.at;
-  assert.ok(Math.abs(Math.hypot(cloth.x - lock.x, cloth.z - lock.z) - 1000) < 5 && cloth.reach === 400);
-  for (const g of RAIL_GRANTS.slice(3)) {
-    const leg = RAIL_LEGS[g.leg]!;
-    const h = row(leg.row).halts[leg.destRowHalt]!;
-    assert.deepEqual(g.at, { x: h.x, z: h.z, y: h.y, reach: h.reach }, g.id);
+  assert.deepEqual(RAIL_GRANTS[2]!.at, {
+    x: Math.round(100 * CANOPY_CLOTH_POST[0]),
+    z: Math.round(100 * CANOPY_CLOTH_POST[1]),
+    y: 1390,
+    reach: 400,
+  });
+  assert.deepEqual(RAIL_GRANTS[3]!.at, { x: -162000, z: -98600, y: 600, reach: 400 });
+  const end = row('ns').pts.at(-1)!;
+  assert.ok(Math.abs(Math.hypot(RAIL_ARRIVAL.x - end[0], RAIL_ARRIVAL.z - end[1]) - 1200) < 5);
+  for (const leg of RAIL_LEGS.slice(-2)) {
+    assert.equal(leg.sections.length, 1);
+    assert.ok(leg.sections[0]!.toCm - leg.fromCm < 96000);
   }
 });
 
