@@ -94,13 +94,16 @@ EOF
   # A new branch per ship. Shipping again before the last one merged opens a second PR that also carries the
   # first's commits; both merge cleanly (merge commits keep your commits as they are), and automerge.yml closes a PR
   # whose commits are already on main.
-  local who branch n repo
+  local who branch n repo tip
   who=$(git config user.name || true)
   who=$(printf '%s' "${who:-someone}" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-*//;s/-*$//' | cut -c1-20)
-  branch="ship/${who:-someone}-$(git rev-parse --short=7 HEAD)"
-  n=$(git rev-list --count origin/main..HEAD)
+  # Resolve the commit once and push that, never HEAD again: a session that moved this worktree during the pre-push
+  # gate made the push carry main's tip under this branch's name (25 November, the honk step's first ship).
+  tip=$(git rev-parse HEAD)
+  branch="ship/${who:-someone}-$(git rev-parse --short=7 "$tip")"
+  n=$(git rev-list --count "origin/main..$tip")
   # The hook owns the pre-push gate (also for direct pushes). A full run above is intentionally opt-in.
-  git push -q origin "HEAD:refs/heads/$branch"
+  git push -q origin "$tip:refs/heads/$branch"
 
   # Your `npm run wip` markers whose commits this ship carries are done (dev/inflight.ts).
   git fetch -q origin "+refs/heads/wip/${who:-someone}/*:refs/remotes/origin/wip/${who:-someone}/*" 2>/dev/null || true
@@ -119,8 +122,7 @@ EOF
   [ "$wait" = 1 ] || exit 0
 
   # Merge commits keep our commits as they are, so "on main" is plain ancestry.
-  local head
-  head=$(git rev-parse HEAD)
+  local head=$tip
   for _ in $(seq 1 60); do
     sleep 15
     git fetch -q origin main

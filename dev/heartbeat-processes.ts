@@ -35,7 +35,10 @@ function snapshot(): Proc[] {
   const json = powershell(
     "Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,@{n='Start';e={if ($_.CreationDate) { $_.CreationDate.ToUniversalTime().ToString('o') }}},CommandLine,KernelModeTime,UserModeTime | ConvertTo-Json -Compress",
   );
-  return JSON.parse(json) as Proc[];
+  // Windows PowerShell's ConvertTo-Json can leave control characters raw inside a command line, which JSON.parse
+  // refuses (25 November: the whole bottleneck section failed). A space is harmless between tokens and inside a string.
+  // eslint-disable-next-line no-control-regex
+  return JSON.parse(json.replace(/[\u0000-\u001f]/g, ' ')) as Proc[];
 }
 
 // The same jobs dev/heartbeat.sh greps for, allowing node.exe, quoted paths and backslashes.
