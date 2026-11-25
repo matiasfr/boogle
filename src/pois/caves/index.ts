@@ -35,6 +35,8 @@ import {
   If,
   rand,
 } from 'three/tsl';
+import { terrainKitGeometry } from '../../entities/terrain-kit/geometry.ts';
+import { kitMaterial } from '../../prefab/builders/terrain-kit.ts';
 import { beddedRock } from '../../place/ground-material.ts';
 import { camera } from '../../render/scene.ts';
 import { createOwnedView } from '../../render/owned-view.ts';
@@ -194,6 +196,28 @@ function makeCollars({ positions, indices }: { positions: Float32Array; indices:
   return mesh;
 }
 
+// Each mouth opens onto its own painted approach tread (site.ts). Two thin kit faces
+// sit on the collar's cheeks, outside the 2.16 m bore and below the crown.
+async function dressMouths() {
+  const geometry = (await terrainKitGeometry()).get('low_face')!;
+  const cheeks = new THREE.InstancedMesh(geometry, kitMaterial(), MOUTHS.length * 2);
+  const pose = new THREE.Object3D();
+  pose.scale.set(0.24, 0.65, 0.22);
+  let i = 0;
+  for (const m of MOUTHS) {
+    pose.rotation.y = Math.atan2(m.ox, m.oz);
+    for (const side of [-2.95, 2.95]) {
+      pose.position.set(m.x + m.ox * 1.25 + m.oz * side, m.y - 0.18, m.z + m.oz * 1.25 - m.ox * side);
+      pose.updateMatrix();
+      cheeks.setMatrixAt(i++, pose.matrix);
+    }
+  }
+  cheeks.castShadow = cheeks.receiveShadow = true;
+  owner.add(cheeks);
+  freezeStatic(cheeks);
+  await precompile(cheeks);
+}
+
 function* build() {
   const steps = buildCaveMeshSteps();
   let r = steps.next();
@@ -223,6 +247,7 @@ function* build() {
   owner.add(collarMesh);
   freezeStatic(collarMesh);
   background(precompile(collarMesh), 'cave mouth shaders');
+  background(dressMouths(), 'cave mouth kit faces');
   yield;
 
   buildDecor(owner);

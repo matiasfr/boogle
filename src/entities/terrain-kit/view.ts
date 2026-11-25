@@ -21,7 +21,7 @@ export async function createTerrainKitView() {
   try {
     return await build(owner);
   } catch (error) {
-    owner.dispose(); // whatever the failed build made, baked pieces included, goes with it
+    owner.dispose(); // release the failed mount; the shared kit geometry belongs to the asset cache
     throw error;
   }
 }
