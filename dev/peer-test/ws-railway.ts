@@ -1399,16 +1399,18 @@ export async function railwayCarrierLeaves(c: Ctx) {
 // server/src/host/host-maintenance.ts): a leaver's lifted leg units stay on their back and counted held for the leg
 // through `railBeamGraceS` (180 s); past it legKitRelease takes them off the held count only. The grace clock lives in
 // the host's memory, so a restart starts it again for anyone still away.
-export async function railwayLegRejoin(c: Ctx) {
+type RejoinSeed = 'canopy-mid' | 'cave-mid';
+
+export async function railwayLegRejoin(c: Ctx, seed: RejoinSeed) {
   // The whole case, the seed build included (about two minutes on HOTBOX), within its own deadline.
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     await Promise.race([
-      legRejoin(c),
+      legRejoin(c, seed),
       new Promise<never>(
         (_, reject) =>
           (timer = setTimeout(
-            () => reject(new Error('Leg rejoin proof stopped: past its 8-minute deadline')),
+            () => reject(new Error(`Leg rejoin proof stopped (${seed}): past its 8-minute deadline`)),
             480_000,
           )),
       ),
@@ -1417,7 +1419,7 @@ export async function railwayLegRejoin(c: Ctx) {
     clearTimeout(timer);
   }
 }
-async function legRejoin(c: Ctx) {
+async function legRejoin(c: Ctx, seed: RejoinSeed) {
   const { RAIL_LEGS, legRack } = await import('../../src/sim/railway-route.ts');
   const { RAIL_LINES } = await import('../../src/sim/railway-lines.ts');
   const { RAILWAY_CAPACITY } = await import('../../src/sim/railway-layout.ts');
@@ -1425,10 +1427,11 @@ async function legRejoin(c: Ctx) {
   const { account, rail: railRow } = await import('../../src/sim/railway-rows.ts');
   const { LINE_SLOTS, cycleTicks } = await import('../../src/sim/railway-trains.ts');
   const legCheck = (name: string, ok: boolean, detail = '') => {
-    c.check(`leg rejoin: ${name}`, ok, detail);
-    if (!ok) throw new Error(`Leg rejoin proof stopped: ${name}${detail ? ` (${detail})` : ''}`);
+    c.check(`leg rejoin (${seed}): ${name}`, ok, detail);
+    if (!ok) throw new Error(`Leg rejoin proof stopped (${seed}): ${name}${detail ? ` (${detail})` : ''}`);
   };
-  const k = RAIL_LEGS.findIndex((l) => l.id === 'bell-canopy'),
+  const legId = seed === 'cave-mid' ? 'cave' : 'bell-canopy';
+  const k = RAIL_LEGS.findIndex((l) => l.id === legId),
     leg = RAIL_LEGS[k]!;
   /** A bay train's round trip from the line's start to head 1, dwells included: the rack sees every train once. */
   const roundTrip = cycleTicks(
@@ -1475,14 +1478,14 @@ async function legRejoin(c: Ctx) {
   // The seed doc a jump-in writes, written into the server's store before any page opens (as `look --rail-seed`):
   // POST /jump builds an unprebuilt stage in a worker with a 60 s limit (server/src/jump.ts), and canopy-mid, built
   // from ring-joined through every leg stage, takes longer than that on HOTBOX.
-  const room = `${c.room}-leg`,
+  const room = `${c.room}-${legId === 'cave' ? 'cave' : 'leg'}`,
     roomId = railwayRoomId(room);
   const { writeRailSeed } = await import('../look/rail-seed.ts');
-  const wrote = await writeRailSeed(c.dataDir, room, 'canopy-mid', 1000).then(
+  const wrote = await writeRailSeed(c.dataDir, room, seed, 1000).then(
     () => '',
     (e: unknown) => String(e),
   );
-  legCheck('the canopy-mid seed is written to the server store', wrote === '', wrote);
+  legCheck('the seed is written to the server store', wrote === '', wrote);
   console.log(`\nLeg rejoin room: ${roomId}`);
   const url = (pid: string) => `room=${roomId}&server=http://127.0.0.1:${c.port()}&pid=${pid}&adapter=1`;
   let A = await c.web.open('L0', url('leg0'));
@@ -1578,7 +1581,7 @@ async function legRejoin(c: Ctx) {
   };
 
   legCheck(
-    'both tabs are ready on the canopy-mid seed',
+    'both tabs are ready on the seed',
     (await Promise.all([A, B].map(ready))).every((t) => t >= 0),
   );
   legCheck('the second tab joined: each sees the other', await meet(A, B));
@@ -1629,7 +1632,9 @@ async function legRejoin(c: Ctx) {
   );
   await cycle();
   const later = await at('a round trip after the rejoin', 'carried', [A, B], KIT);
-  console.log(`  leg rejoin: round trip ${roundTrip} ticks, pickup ${PICKUP}; ${JSON.stringify({ before, later })}`);
+  console.log(
+    `  leg rejoin (${seed}): round trip ${roundTrip} ticks, pickup ${PICKUP}; ${JSON.stringify({ before, later })}`,
+  );
   await Promise.all([A, B].map((p) => p.page.close()));
 }
 
