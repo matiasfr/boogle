@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import type { Browser, Page } from 'playwright';
-import { startStack, enterGame, root, sleep } from './lib.ts';
+import { startStack, enterGame, root, sleep, gpuAngle, browserChannel } from './lib.ts';
 import { acquireBotSlot } from './bot-queue.ts';
 
 const require = createRequire(import.meta.url);
@@ -50,14 +50,14 @@ const check = (ok: boolean, what: string) => {
   if (!ok) failures.push(what);
 };
 try {
-  const args = ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist', '--use-angle=metal'];
+  const args = ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist', gpuAngle()];
   args.push(
     '--use-fake-device-for-media-stream',
     '--use-fake-ui-for-media-stream',
     '--autoplay-policy=no-user-gesture-required',
     '--disable-features=WebRtcHideLocalIpsWithMdns',
   );
-  browser = (await chromium.launch({ args, headless: true })) as Browser;
+  browser = (await chromium.launch({ args, headless: true, ...browserChannel() })) as Browser;
   const url = `${stack.base}?room=${room}&sw=0`;
   async function player(name: string, phone = false) {
     const ctx = await browser!.newContext(
