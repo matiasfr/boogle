@@ -39,7 +39,7 @@ import {
   type RailwayCorrection,
   type RailwayRefusal,
 } from './railway-effects.ts';
-import { railInt, RAILWAY_MAX_INT, RAILWAY_WINDOW, type RailAction } from '../sim/railway.ts';
+import { isTradeRefusal, railInt, RAILWAY_MAX_INT, RAILWAY_WINDOW, type RailAction } from '../sim/railway.ts';
 import { account as accountRow, beam as beamRow, boiler as boilerRow } from '../sim/railway-rows.ts';
 import { cloneWorld } from '../sim/railway-queries.ts';
 import type { World } from '../ecs/index.ts';
@@ -339,11 +339,11 @@ export function createRailwayAdapter({
     const moved = new Map<number, number>();
     for (const [e, r, n] of p.ok ?? []) if (e === ep) moved.set(r, n);
     // What this packet settled: refusals by reason, then everything up to the ack.
-    const settled = new Map<number, RailwayCorrection['reason']>();
+    const settled = new Map<number, RailwayRefusal['reason']>();
     let sessionLost: number | null = null; // the first request a session or order refusal named
     for (const [e, r, reason] of p.rej ?? []) {
       if (e !== ep) continue;
-      settled.set(r, 'refused');
+      settled.set(r, isTradeRefusal(reason) ? reason : 'refused');
       predictor.reject([e, r]);
       if (reason === 'order' || reason === 'session') sessionLost = Math.min(sessionLost ?? r, r);
     }
@@ -373,13 +373,13 @@ export function createRailwayAdapter({
         // one, the request is settled and nothing came of it.
         const intent = pending.get(r);
         if (intent && !RAIL_PREDICTED.has(intent.op) && !events.some((e) => e.pid === pid && e.request === r))
-          refused.push({ intent, request: r, reason: reason === 'refused' ? 'refused' : 'noop' });
+          refused.push({ intent, request: r, reason });
         continue;
       }
       shown.delete(r);
-      const kept = reason === 'refused' ? 0 : (moved.get(r) ?? 0);
+      const kept = reason === 'noop' ? (moved.get(r) ?? 0) : 0;
       if (kept === was.n) stats.confirmed++;
-      differ(was, kept, kept > 0 ? 'contested' : reason);
+      differ(was, kept, kept > 0 ? 'contested' : reason === 'noop' ? 'noop' : 'refused');
     }
     if (sessionLost !== null) lose(sessionLost);
     // Replay what is still pending on the new mirror: an action that now moves less (someone took part of the pile

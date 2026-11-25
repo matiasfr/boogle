@@ -77,6 +77,9 @@
 // regenerated it: 8,620 records; every other column, input, result, message and replica packet is exact.
 // v68: the sweep never funds T1. Across 8,620 records only 205 checkpoint namespaces and checksums
 // and 1,994 derived snapBytes samples change.
+// v69 trade hold: the 205 checkpoints lose their five zero Line.cradle cells. The namespace, hash, checksum and
+// 5,679 snapBytes samples change. All 8,620 records retain their order, including 58 identical inputs, 2,220
+// identical messages and 458 identical replica packets. Every other saved column matches v68.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';

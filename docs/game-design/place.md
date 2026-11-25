@@ -1339,9 +1339,8 @@ car, the Cargo camera sliding back along the train to it. A replaced part has no
 through a hold and a moment. There is no button and nothing is tried on: no real train changes until an install.
 Local: nobody else sees a selection. Per tab: Engine frames the barrel (Boiler, Longer boiler, with its seat ghost)
 or the nose (Plough and headlamp, dashed); Cars frames the bench on the first car; Cargo frames each car's place in
-the train, with the ghost for an owned one, and the Bigger cradle's place over the wagon's; Looks frames the roof's
-place over the first car (dashed); Whistle frames the chimney's cap, where the whistle's steam leaves. The Bigger
-cradle's dashed box stands over a ghost of the footing wagon once the wagon has coupled. On Looks and Whistle the
+the train, with the ghost for an owned one. Looks frames the roof's place over the first car (dashed). Whistle
+frames the chimney's cap, where the whistle's steam leaves. On Looks and Whistle the
 table holds still (it used to turn idly there, carrying the frame behind the engine), and the Whistle shot is its own
 camera row on the chimney (it was close on the cab).
 **The 20 m/s upgrade (G-a, 16 November, v53):** after the cradle is fitted and the table turned, the works copy
@@ -1360,11 +1359,9 @@ the install hold and roll-out: `TRAIN.dwellTicks + WORKS.upgradeTicks + WORKS.ro
 The longer boiler remains part 2, needs landed
 steel, and stays free. The boiler-fit copy remains “The first install. It woke the trains.”
 
-**Steel is spent (17 November, garage choices step 3).** Line 2's Bigger cradle is offered beside the free longer
-boiler once steel lands. It costs 4 steel and raises the footing wagon's capacity from 6 to 10 on its next load;
-it does not change cargo already aboard or the loader deck. The footing wagon's tile says the live count: 6
-footings a trip, or 10 once the Bigger cradle is in (owner, 18 November 2026,
-[decision](../decisions-controls.md#d-2026-11-18-decisions-page-controls)). The Big boiler follows the longer boiler once all four
+**Steel is spent.** The footing wagon carries six footings a trip. The bigger cradle has left the Cargo tab and
+its four steel stay in the pool ([25 November](../decisions-core-loop.md#d-2026-11-25-order-picks-answers)).
+The Big boiler follows the longer boiler once all four
 sections to High Gorge are laid: 6 steel, 30 m/s, the same cars, adoption at the next Home stand. Its install
 moment's wheels start from the longer boiler's rate (25 m/s) and run up to 30, as every other install starts from
 the boiler it replaces (owner, 18 November 2026, [decision](../decisions-look.md#d-2026-11-18-decisions-page-look)). Its own braking
@@ -1392,7 +1389,11 @@ The chips dim and say the table's busy for 6 s after a bring and 5 s after any i
 air. The brought copy arrives under the table's steam puff and toot, wearing its line's row, and the screen lands on
 its Engine tab. **The trade's tiles:** a trade line's Engine tab has Quick boiler (25 m/s, the same cars) and Strong
 boiler (20 m/s, one more car) side by side. Before the line is paid both read "STEEL n/1" or Ready; the first fit costs
-1 steel from the pool, after which the fitted one reads Installed and the other "Swap", free, any number of times. The
+1 steel from the pool. The pick holds through the last lay of every built leg the line carries kit for. On the bay
+line this is Bell–Canopy's third lay. On the north–south line the incline is already laid when the trade opens.
+During the build the other tile reads "Held while the line builds". Selecting it shows "Held until the line is laid"
+and withholds Install. After completion the tile reads "Swap (once)" and the room can re-pick for free. After the
+re-pick the other tile reads "Re-pick used" and Install is withheld. The
 readouts are top speed, cars it pulls (2, or 3 with Strong) and "Kit a trip" (1 section, or 2 with Strong) while a leg
 the line's trains carry kit for has two or more sections to lay; otherwise that row reads "Nothing to build" (always on
 the north–south line today, and on the bay line from leg 3's second lay). Cars has the four seats; Cargo the kit car

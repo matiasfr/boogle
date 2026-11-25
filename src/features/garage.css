@@ -168,9 +168,17 @@
   color: var(--g-soft);
   text-decoration: line-through;
 }
-.pill.later {
+.pill.later,
+.pill.trade-repicked,
+.pill.trade-building {
   background: #2b3a57;
   color: var(--g-soft);
+}
+.garage-ui .pill.trade-building {
+  white-space: normal;
+}
+body.garage-open .notify {
+  z-index: 41;
 }
 .g-panel {
   position: absolute;

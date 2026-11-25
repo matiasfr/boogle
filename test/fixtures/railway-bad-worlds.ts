@@ -27,6 +27,7 @@ import {
   QJobRun,
   Rail,
   RailClock,
+  RAIL_STATUS,
   Rock,
   Shed,
   Steel,
@@ -113,7 +114,7 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     site: 'check outcomes',
     message: 'railway: outcomes',
     stage: A,
-    break: (w) => set(w, Outcome, { status: 3 }, w.ids(Outcome)[0]!),
+    break: (w) => set(w, Outcome, { status: RAIL_STATUS.length }, w.ids(Outcome)[0]!),
   },
   { site: 'check supply age', message: 'railway: supply age', stage: A, break: (w) => set(w, Rail, { produced: 3 }) },
   {
@@ -556,7 +557,7 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     site: 'steel spent',
     message: 'railway: steel spent',
     stage: J,
-    break: (w) => set(w, Line, { cradle: 1 }, LINE2),
+    break: (w) => set(w, Line, { boiler: 3 }, LINE2),
   },
   {
     site: 'boiler fit',

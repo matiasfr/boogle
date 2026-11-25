@@ -29,12 +29,6 @@ const BAY_SOLIDS = [
 
 export const prefabs = [
   definePrefab({
-    key: 'roundhouse.bigger-cradle',
-    visual: { builder: 'roundhouse.bay', params: { part: 'cradle' } },
-    colliders: [],
-    scope: 'owner',
-  }),
-  definePrefab({
     key: 'roundhouse.steel-pallet',
     visual: { builder: 'roundhouse.bay', params: { part: 'pallet' } },
     colliders: [box(0, 0.09, 0, 0.75, 0.09, 1.05)],

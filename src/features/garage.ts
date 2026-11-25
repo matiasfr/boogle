@@ -23,6 +23,7 @@ import {
   tradeRowsFor,
   lineFacts,
   GARAGE_LINE,
+  TRADE_DENIAL,
   type CatId,
   type Group,
   type Part,
@@ -287,7 +288,10 @@ function refresh() {
     els.pill.textContent = part.pill;
     els.pill.className = `g-pill pill ${part.standing}`;
     els.desc.textContent = part.desc;
-    els.note.textContent = part.price ?? (snap.cat === 'looks' ? 'A look never changes what the train does.' : '');
+    els.note.textContent =
+      part.standing === 'trade-building'
+        ? TRADE_DENIAL[part.standing]
+        : (part.price ?? (snap.cat === 'looks' ? 'A look never changes what the train does.' : ''));
     // What is missing, as a bill (what is needed, how many are in): shown where Install would be, with no button.
     els.need.hidden = !part.needs;
     els.need.innerHTML = part.needs
@@ -302,7 +306,7 @@ function refresh() {
   const rows =
     snap.facts.tableLine !== GARAGE_LINE && table
       ? tradeRowsFor(snap.cat, snap.sel, row, table.line, table.kitTrip)
-      : rowsFor(snap.cat, snap.sel, row, landing && snap.sel === 'cradle' ? false : snap.facts.cradleFitted);
+      : rowsFor(snap.cat, snap.sel, row);
   const html = rows.map((r, i) => rowHtml(r, i, snap)).join('');
   if (html !== shownKey) {
     shownKey = html;
@@ -312,7 +316,8 @@ function refresh() {
   const label = els.btn.querySelector('.g-label')!;
   // No try-on (owner, 14 November 2026): the button is there only when the part can go on now, or is going on. A
   // part the room cannot install yet shows its bill instead, and no button.
-  const act = snap.cat === 'whistle' ? 'hear' : landing || snap.canInstall ? 'install' : 'none';
+  const heldTrade = part.standing === 'trade-building' || part.standing === 'trade-repicked';
+  const act = snap.cat === 'whistle' ? 'hear' : (landing && !heldTrade) || snap.canInstall ? 'install' : 'none';
   els.btn.dataset.act = act;
   els.btn.hidden = act === 'none';
   // "Installed" lands with the hit, as the tile's pill turns.

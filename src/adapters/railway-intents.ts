@@ -315,7 +315,7 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
      * into it; Pick up fills your back's room for `kind` from it. */
     haltPut: halt('rail.haltPut'),
     haltTake: halt('rail.haltTake'),
-    /** Install at Home on the shared revision of line 2's boiler and cradle fits. */
+    /** Install at Home on the revision of line 2's boiler fit. */
     installBoiler: (revision: number, part: InstallPart = 2) =>
       installAdmits(LINE2, part) &&
       railInt(revision, BOILER_MAX + 1) &&
@@ -323,7 +323,7 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
     /** Garage step 4: bring `line`'s copy to the garage table on the bring revision this tab saw (`Shed.bringRev`). */
     bringLine: (line: number, revision: number) =>
       railInt(line, RAIL_LINES.length - 1) && railInt(revision) && submit({ op: 'rail.bring', line, revision }),
-    /** Install `part` on `line` (line 2's 1 to 4, a trade line's 5 Quick and 6 Strong) on its `Line.rev`. */
+    /** Install `part` on `line` (line 2's 1 to 3, a trade line's 5 Quick and 6 Strong) on its `Line.rev`. */
     installPart: (line: number, part: InstallPart, revision: number) =>
       installAdmits(line, part) && railInt(revision) && submit({ op: 'rail.install', line, part, revision }),
     /** The greybox route: feed your back's logs and rails into leg `leg`'s current frame (a RAIL_LEGS index); take a

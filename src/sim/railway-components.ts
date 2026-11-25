@@ -20,7 +20,7 @@ import { LINE2, RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { TRADE, TRADE_TOWNS } from './railway-trade-layout.ts';
 import { RAIL_LEGS, RAIL_YARDS } from './railway-route.ts';
 import { HALT_YARDS } from './railway-yard-layout.ts';
-import type { RailResult } from './railway.ts';
+import type { RailResult, TradeRefusal } from './railway.ts';
 
 /** A job's timing fields, in wire order (the job's schedule reads them: railway-line-schedule.ts). */
 export const TIMING = {
@@ -186,12 +186,11 @@ export const Steel = defineComponent(
 /** A line's shared row (docs/plans/generic-lines.md, v26), by line index: its halts' lever asks (Train.req's digits)
  * and the tick a train last left its start end and its far end (-1 never), for the headway hold. Since v28
  * (ring-island-build2, R3) the room's boiler fit for the line (`boiler`, BOILER_SPEED's row; rail.install) and the
- * tick of its last accepted install (`fitted`, -1 never; v67: the cradle's too, for the table's hold). Since v67 (garage step 4) `rev`, the line's install revision: +1 on
- * every accepted rail.install of the line, so a stale hold refuses even when a swap returns to a row (on line 2 it
- * equals `boiler + cradle`). */
+ * tick of its last accepted install (`fitted`, -1 never). Each accepted install increments `rev`: on a trade line
+ * 0 is unfitted, 1 is the first fit and 2 has used the re-pick. On line 2 it equals the boiler row. */
 export const Line = defineComponent(
   'line',
-  { slot: 'int', req: 'int', left0: 'int', left1: 'int', boiler: 'u8', fitted: 'int', cradle: 'u8', rev: 'int' },
+  { slot: 'int', req: 'int', left0: 'int', left1: 'int', boiler: 'u8', fitted: 'int', rev: 'int' },
   { key: 'slot', defaults: { left0: -1, left1: -1, fitted: -1 } },
 );
 /** Split-rock Works (./railway-works.ts): the breaker, the seams, the kiln, its rack and the pier's footings. */
@@ -422,7 +421,14 @@ export const RAIL_COMPONENTS: readonly AnyComponent[] = [
 ];
 /** What a client is sent: the replicated components (the wire schema, one source with the save). */
 export const RAIL_REPLICATED = RAIL_COMPONENTS.filter((c) => c.replicate);
-export const RAIL_STATUS = ['accepted', 'noop', 'rejected'] as const satisfies readonly RailResult['status'][];
+// A specific refusal is stored in the existing outcome status byte, so retries return its original reason.
+export const RAIL_STATUS = [
+  'accepted',
+  'noop',
+  'rejected',
+  'trade-building',
+  'trade-repicked',
+] as const satisfies readonly (RailResult['status'] | TradeRefusal)[];
 export const DEPOT_OUT = ['out0', 'out1', 'out2', 'out3', 'out4', 'out5', 'out6'] as const;
 if (LINE2_STATIONS.length !== DEPOT_OUT.length) throw new Error('railway: depot outputs');
 

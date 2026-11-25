@@ -18,6 +18,8 @@ import { clank, thump, chuff, whistle, cordPull } from '../../render/machine-sfx
 import { emit } from '../../render/particles.ts';
 import { dustRing } from '../../render/particle-effects.ts';
 import { uiSound } from '../../ui/ui-sound.ts';
+import { notify } from '../../ui/notify.ts';
+import type { TradeRefusal } from '../../sim/railway.ts';
 import { createGarageSelection, type Focus } from './garage-selection.ts';
 import {
   BOILERS,
@@ -35,6 +37,7 @@ import {
   tradeFromSpeed,
   GARAGE_LINE,
   TRADE_ROW,
+  TRADE_DENIAL,
   type CatId,
   type InstallId,
   type Part,
@@ -44,7 +47,6 @@ import {
 } from './garage-data.ts';
 import { garage, type GarageSnap } from './garage-state.ts';
 import { garageFlip, polarAt, STAND_LEGS, type GarageGeo } from './garage-geo.ts';
-import { instantiate } from '../../prefab/instantiate.ts';
 import type { InstallPart } from '../../sim/railway-works-layout.ts';
 
 /** The table's centre and rail height, the post (the row's, placed by the caller), and the ground the post, jib, stand
@@ -258,7 +260,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   // train's own frame, so it stands on the deck's rails (`geo.y`) wherever the ground around the table is.
   const selection = createGarageSelection(owner, train);
   /** Where a part is, or goes, in the train's frame, with the ghost car to draw for it: a car the room owns that the
-   * copy does not carry, and the wagon under the cradle's place once the wagon has coupled. */
+   * copy does not carry. */
   function focusOf(p: PartId): Focus {
     const b = ENGINE_BOILER,
       at = displayOffset('engine'),
@@ -297,12 +299,6 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
         return car(displayOffset('wagon'), WAGON_CAR.top, facts.wagonCoupled);
       case 'steelcar':
         return car(steelOffsets[Number(facts.wagonCoupled)]!, STEEL_CAR.top, facts.longFitted);
-      case 'cradle':
-        return {
-          c: [0, WAGON_CAR.top + 0.55, displayOffset('wagon')],
-          s: [2.0, 1.1, 2.9],
-          ...(facts.wagonCoupled ? { ghost: { z: displayOffset('wagon'), top: WAGON_CAR.top } } : {}),
-        };
       case 'toot':
       case 'two':
         return { c: [0, b.chimney.y + (wearsLong() ? 0.17 : 0), at + b.chimney.z + long], s: [0.7, 0.7, 0.7] };
@@ -325,18 +321,6 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   const liftedPipe = new THREE.Mesh(pipeGeo, brass);
   liftedPipe.castShadow = true;
   partGroup.add(liftedPipe);
-  const cradleCopy = instantiate(
-    'roundhouse.bigger-cradle',
-    { id: 'garage.cradle', prefab: 'roundhouse.bigger-cradle', pos: [0, WAGON_CAR.top, displayOffset('wagon')] },
-    { owner },
-  );
-  train.add(cradleCopy.root);
-  const cradleLift = instantiate(
-    'roundhouse.bigger-cradle',
-    { id: 'garage.cradle-lift', prefab: 'roundhouse.bigger-cradle', pos: [0, 0, 0] },
-    { owner },
-  );
-  partGroup.add(cradleLift.root);
   root.add(partGroup);
   const flashMat = new THREE.MeshBasicNodeMaterial({ color: '#ffffff', transparent: true, opacity: 0.8 });
   const flash = new THREE.Group();
@@ -472,7 +456,6 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       longFitted: false,
       boilerRev: 0,
       installRev: 0,
-      cradleFitted: false,
       gorgeReached: false,
       tableLine: GARAGE_LINE,
       bringRev: 0,
@@ -541,17 +524,15 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     !facts.held &&
     !bringing &&
     facts.boilerFitted;
-  const size = () => SIZES[activePart() === 'blast' || activePart() === 'cradle' ? 'medium' : 'large'];
+  const size = () => SIZES[activePart() === 'blast' ? 'medium' : 'large'];
   function showPart() {
-    const blast = activePart() === 'blast',
-      cradle = activePart() === 'cradle';
+    const blast = activePart() === 'blast';
     liftedPipe.visible = blast;
-    cradleLift.root.visible = cradle;
     const short = activePart() === 'strong';
-    lifted.forEach((m) => (m.visible = !blast && !cradle && !short));
+    lifted.forEach((m) => (m.visible = !blast && !short));
     liftedShort.forEach((m) => (m.visible = short));
     pipeFlash.visible = blast;
-    for (const m of longFlash) m.visible = !blast && !cradle && !short;
+    for (const m of longFlash) m.visible = !blast && !short;
     for (const m of shortFlash) m.visible = short;
     pipeStand.visible = blast;
     const ghostBlast = (phase === 'idle' ? sel : momentPart) === 'blast';
@@ -629,10 +610,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   }
 
   const soundAt = (p: { x: number; z: number }, fn: (x: number, z: number) => void) => fn(p.x, p.z);
-  const seatPos = () =>
-    activePart() === 'cradle'
-      ? train.localToWorld(engineWorld.set(0, WAGON_CAR.top, displayOffset('wagon')))
-      : engine.getWorldPosition(engineWorld);
+  const seatPos = () => engine.getWorldPosition(engineWorld);
   const steam = new THREE.Color('#e9eef2'),
     spark = new THREE.Color('#ffd27a');
   const chimney = () =>
@@ -686,7 +664,6 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   function wearRows() {
     setLong(wearsLong());
     wornRow = tableRow();
-    cradleCopy.root.visible = !trade() && facts.cradleFitted;
     pipe.visible = !trade() && facts.boilerRev === 1;
     for (const b of bolts) {
       b.visible = wearsLong();
@@ -729,14 +706,9 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     // From the stand, up and over, to hanging 0.6 m above the seat (`drop` lowers it the last 0.6 m).
     showPart();
     seatP.copy(seatPos());
-    if (activePart() !== 'cradle') seatP.y = tableTop;
+    seatP.y = tableTop;
     const u = smooth(clamp01(lift));
-    const from =
-      activePart() === 'blast'
-        ? pipeStandRest
-        : activePart() === 'cradle'
-          ? seatP.clone().set(stand.x, geo.ground + LEG.h, stand.z)
-          : standRest;
+    const from = activePart() === 'blast' ? pipeStandRest : standRest;
     partGroup.position.lerpVectors(from, seatP, u);
     partGroup.position.y += Math.sin(u * Math.PI) * 0.9 + u * MOMENT.hang - drop * MOMENT.hang;
     partGroup.rotation.y = standYaw + wrap(yaw - standYaw) * u;
@@ -752,7 +724,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     const held = partGroup.visible;
     const p = held ? partGroup.position : standRest,
       at = held ? partGroup.rotation.y : standYaw;
-    const mid = activePart() === 'blast' ? ENGINE_BOILER.chimney.z : activePart() === 'cradle' ? 0 : hookMid;
+    const mid = activePart() === 'blast' ? ENGINE_BOILER.chimney.z : hookMid;
     const hx = p.x + Math.sin(at) * mid,
       hz = p.z + Math.cos(at) * mid;
     const pointing = held || phase === 'moment';
@@ -769,13 +741,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     armPivot.rotation.y = armYaw;
     trolley.position.set(hx, geo.ground + row.mast - 0.3, hz);
     const top = trolley.position.y - 0.08,
-      bottom =
-        p.y +
-        (activePart() === 'blast'
-          ? ENGINE_BOILER.chimney.y + 0.25
-          : activePart() === 'cradle'
-            ? 1.85
-            : ENGINE_BOILER.top);
+      bottom = p.y + (activePart() === 'blast' ? ENGINE_BOILER.chimney.y + 0.25 : ENGINE_BOILER.top);
     chain.scale.y = Math.max(0.1, top - bottom);
     chain.position.set(hx, bottom + chain.scale.y / 2, hz);
     // The trolley and chain show once the arm is over the hook.
@@ -850,13 +816,14 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     if (!deps.install(facts.tableLine, rev, INSTALL_PART[momentPart])) deny();
   }
   /** No answer, a refusal or a lost connection: the part lowers to its stand and the hold can be made again at once. */
-  function deny() {
+  function deny(reason?: TradeRefusal) {
     if (!real || !waiting) return;
     real = waiting = false;
     phase = 'holding'; // the ring drains and the part goes back down the way it came up
     holding = false;
     ring = 1;
-    uiSound('deny');
+    if (reason) notify(TRADE_DENIAL[reason], { kind: 'deny' });
+    else uiSound('deny');
   }
   /** Someone's install was accepted and it is not this tab's running hold (G4): this tab's own hold is
    * dropped, the part lifts off its stand in `MOMENT.catchUp` and the same moment plays, in the garage or out in the
@@ -866,7 +833,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     if (!shown) return;
     momentPart = INSTALL_ID[part];
     sel = momentPart;
-    cat = part === 4 ? 'cargo' : 'engine';
+    cat = 'engine';
     const hanging = phase === 'moment' && real && waiting;
     holding = false;
     real = true;
@@ -881,10 +848,9 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     // The look before the fit: a trade line's from the row the copy last wore (the rows already say fitted).
     if (!hanging) fromRow = wornRow;
     setLong(isTrade(momentPart) ? fromRow === TRADE_ROW.quick : part >= 3 && facts.longFitted);
-    if (part === 4) cradleCopy.root.visible = false;
     pipe.visible = !isTrade(momentPart) && part === 2;
     for (const b of bolts) b.visible = false;
-    spinRate = part === 4 ? today() : fromRate();
+    spinRate = fromRate();
     phase = 'moment';
     partGroup.visible = true;
     if (hanging) ms = Math.min(ms, MOMENT.quiet - 0.001);
@@ -983,7 +949,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       steamPuff(14, 2.6);
       const p = seatPos();
       soundAt(p, (x, z) => whistle(x, z, WHISTLE_HEAR));
-      showTurn = reducedMotion || momentPart === 'blast' || momentPart === 'cradle' ? -1 : 0;
+      showTurn = reducedMotion || momentPart === 'blast' ? -1 : 0;
     }
     if (c >= MOMENT.rest) finish();
   }
@@ -1275,7 +1241,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       spinRate = today();
       // It opens on the part you came to install when there is one.
       sel = offered() ?? (trade() ? 'quick' : facts.boilerRev === 1 ? 'blast' : 'boiler');
-      cat = sel === 'cradle' ? 'cargo' : 'engine';
+      cat = 'engine';
       if (sel === 'long') ghostT = 0;
       inputState.held = ownsHold = true;
       inputState.holder = 'garage';
