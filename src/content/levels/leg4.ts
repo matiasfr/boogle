@@ -833,6 +833,63 @@ const shores = {
    "z": 761.18,
    "y": 3.85
   }
+ ],
+ "quayBed": [
+  {
+   "x": 120,
+   "z": 960,
+   "y": 3.05
+  },
+  {
+   "x": 116.29,
+   "z": 963.34,
+   "y": 3.24
+  },
+  {
+   "x": 112.24,
+   "z": 966.27,
+   "y": 3.43
+  },
+  {
+   "x": 107.91,
+   "z": 968.76,
+   "y": 3.63
+  },
+  {
+   "x": 103.36,
+   "z": 970.83,
+   "y": 3.82
+  },
+  {
+   "x": 98.64,
+   "z": 972.49,
+   "y": 3.85
+  },
+  {
+   "x": 93.82,
+   "z": 973.8,
+   "y": 3.85
+  },
+  {
+   "x": 88.91,
+   "z": 974.76,
+   "y": 3.85
+  },
+  {
+   "x": 83.96,
+   "z": 975.45,
+   "y": 3.85
+  },
+  {
+   "x": 78.98,
+   "z": 975.87,
+   "y": 3.85
+  },
+  {
+   "x": 73.98,
+   "z": 976.06,
+   "y": 3.85
+  }
  ]
 };
 // </baked>
@@ -873,36 +930,45 @@ const saltPieces = shores.salt.flatMap((cuts, side) =>
     ];
   }),
 );
-const saltBed = shores.saltBed.slice(1).map((b, i) => {
-  const a = shores.saltBed[i]!;
-  const dx = Math.round((b.x - a.x) * 100),
-    dz = Math.round((b.z - a.z) * 100);
-  const along = unit(dx, dz);
-  return frame(a, along, perp(along)).ramp(
-    'bed-' + i,
-    0,
-    a.y,
-    Math.round(Math.hypot(dx, dz)) / 100,
-    b.y,
-    -3.8,
-    3.8,
-    'dark',
-  );
-});
+const bedPieces = (points: typeof shores.saltBed) =>
+  points.slice(1).map((b, i) => {
+    const a = points[i]!;
+    const dx = Math.round((b.x - a.x) * 100),
+      dz = Math.round((b.z - a.z) * 100);
+    const along = unit(dx, dz);
+    return frame(a, along, perp(along)).ramp(
+      'bed-' + i,
+      0,
+      a.y,
+      Math.round(Math.hypot(dx, dz)) / 100,
+      b.y,
+      -3.8,
+      3.8,
+      'dark',
+    );
+  });
 const saltFrame = frame(shores.saltLand.centre, unit(0, 1), unit(1, 0));
 // From the waterfront apron to the east rim of the 55 m top. The head overlaps the rim.
-const rampFrame = frame({ x: 104, z: 973 }, unit(-93, 23), unit(23, 93));
+const rampFrame = frame({ x: 109, z: 982 }, unit(-99, 14), unit(14, 99));
 const quayPieces = [
+  ...bedPieces(shores.quayBed),
   ...shorePieces(shores.portIsle),
   quay.box('quay-slab', -26, 26, -10, 18, 2.96, 2, 'grey'),
   ...[-1, 1].flatMap((side) => [
     quay.box('platform-' + (side + 1), -20, 20, side * 5.8 - 2, side * 5.8 + 2, 3.9, 1, 'light'),
     quay.ramp('platform-step-' + (side + 1), -20, 3.9, -23, 3, side * 5.8 - 2, side * 5.8 + 2, 'grey'),
   ]),
-  quay.box('apron', -31, 64, -70, -7.8, 3.02, 1, 'grey'),
-  quay.box('ramp-landing', 39, 51, -7.8, 2, 3.02, 1, 'grey'),
-  rampFrame.ramp('high-port-ramp', 0, 3, 98, 55, -3, 3, 'grey'),
-  { ...rampFrame.ramp('high-port-parapet', 0, 4, 98, 56, 3, 3.3, 'pale'), h: 1 },
+  quay.box('apron', -31, 35, -70, -7.8, 3.02, 1, 'grey'),
+  quay.box('apron-mid', 35, 48, -70, -12, 3.02, 1, 'grey'),
+  quay.box('apron-end', 48, 64, -70, -24, 3.02, 1, 'grey'),
+  quay.box('apron-ramp-side', 25, 52, 5, 12, 3.02, 1, 'grey'),
+  quay.ramp('platform-crossing-step', 20, 3.9, 28, 3.35, -7.8, -3.8, 'grey'),
+  ...Array.from({ length: 16 }, (_, i) =>
+    quay.box('foot-plank-' + i, 28, 30, (100 * i - 780) / 100, (100 * i - 682) / 100, 3.35, 0.24, 'sandstone'),
+  ),
+  rampFrame.box('ramp-landing', -5, 0, -3, 3, 3.02, 1, 'grey'),
+  rampFrame.ramp('high-port-ramp', 0, 3, 100, 55, -3, 3, 'grey'),
+  { ...rampFrame.ramp('high-port-parapet', 0, 4, 100, 56, 3, 3.3, 'pale'), h: 1 },
 ];
 const areas = [
   {
@@ -910,7 +976,7 @@ const areas = [
     basis: saltFrame.basis,
     origin: shores.saltLand.centre,
     key: 'greybox.salt-land',
-    pieces: [...shorePieces(shores.saltLand), ...saltPieces, ...saltBed],
+    pieces: [...shorePieces(shores.saltLand), ...saltPieces, ...bedPieces(shores.saltBed)],
     posts: [],
     reserves: [],
   },
@@ -923,7 +989,7 @@ const areas = [
     posts: [{ id: 'end-board', ...quay.at(24, 5.8), y: 3, facing: unit(17.6, -17.75), label: 'quay.wall' }],
     reserves: [
       quay.reserve('Roundhouse', -30, 30, -69, -9, 3.02, 12),
-      quay.reserve('town', 33, 63, -55, -25, 3.02, 12),
+      quay.reserve('town', 33, 63, -67, -37, 3.02, 12),
     ],
   },
 ];

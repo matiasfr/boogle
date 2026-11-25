@@ -69,17 +69,28 @@ function bake() {
     const p = rowPoint('cave', 62500 + i * 1000);
     return { x: p.x / 100, z: p.z / 100, y: round(Math.max(3.03, p.y / 100 - 0.15)) };
   });
-  return { saltBed, saltLand: land('salt-land'), portIsle: land('port-isle'), portTop: land('port-top'), salt };
+  const quayBed = Array.from({ length: 11 }, (_, i) => {
+    const p = rowPoint('cave', 124680 + i * 500);
+    return { x: p.x / 100, z: p.z / 100, y: round(p.y / 100 - 0.15) };
+  });
+  return {
+    saltBed,
+    quayBed,
+    saltLand: land('salt-land'),
+    portIsle: land('port-isle'),
+    portTop: land('port-top'),
+    salt,
+  };
 }
 
 function bakedBlocks(write: boolean) {
-  const { saltLand, portIsle, portTop, salt, saltBed } = bake();
+  const { saltLand, portIsle, portTop, salt, saltBed, quayBed } = bake();
   const shore = ({ centre, beach }: typeof saltLand) => ({ centre, beach });
   const outline = ({ centre, ring }: typeof saltLand) => ({ centre, ring });
   const files = [
     [
       new URL('../../src/content/levels/leg4.ts', import.meta.url),
-      { saltLand: shore(saltLand), portIsle: shore(portIsle), salt, saltBed },
+      { saltLand: shore(saltLand), portIsle: shore(portIsle), salt, saltBed, quayBed },
     ],
     [
       new URL('../../src/content/prefabs/leg4-lands.ts', import.meta.url),
@@ -149,7 +160,8 @@ function coastalReach(check: (message: string, passed: boolean) => void, id: 'sa
           home,
           slab: at(s - 2200, 0),
           apron: at(s, -1600),
-          foot: { x: 104, z: 973 },
+          crossing: at(s + 2900, 0),
+          foot: { x: 109, z: 982 },
           head: { x: 10, z: 996 },
           top: { x: 0, z: 1000 },
         },
@@ -165,11 +177,36 @@ function coastalReach(check: (message: string, passed: boolean) => void, id: 'sa
       h[node(p)]! < 0 && !!reach(p, true)[node(home)] && !!reach(p, true)[node(outside)],
     );
   }
-  if (!salt)
+  if (!salt) {
+    // Sample the catalog every 10 cm. Subtract half a sample as well as the formation half-width.
+    const gap = (r: Pick<Reserve, 'x' | 'z' | 'yaw' | 'w' | 'd'>) => {
+      let nearest = Infinity;
+      for (let cm = s; cm <= s + 30000; cm += 10) {
+        const p = rowPoint('cave', cm),
+          x = p.x / 100 - r.x,
+          z = p.z / 100 - r.z;
+        const across = Math.abs(x * Math.cos(r.yaw) - z * Math.sin(r.yaw)) - r.w / 2;
+        const along = Math.abs(x * Math.sin(r.yaw) + z * Math.cos(r.yaw)) - r.d / 2;
+        nearest = Math.min(nearest, Math.hypot(Math.max(0, across), Math.max(0, along)));
+      }
+      return nearest - 3.8 - 0.05;
+    };
     for (const r of (level.analysis as unknown as { reserves: Reserve[] }).reserves) {
       const intruders = colliders.filter((c) => volumesOverlap(c.volume, reserveVolume(r)));
       check('Port Quay ' + r.id + ' reserve clear', intruders.length === 0);
+      const clearance = gap(r);
+      check(`Port Quay ${r.id} reserve clears Wall formation by ${clearance.toFixed(2)} m`, clearance > 0);
     }
+    const landing = level.placements.find((p) => p.id === 'quay.ramp-landing')!;
+    const clearance = gap({
+      x: landing.pos[0],
+      z: landing.pos[2],
+      yaw: landing.rot![0],
+      w: landing.scale![0],
+      d: landing.scale![2],
+    });
+    check(`Port Quay ramp foot and landing clear Wall formation by ${clearance.toFixed(2)} m`, clearance >= 1);
+  }
 }
 
 export function checkLeg4() {

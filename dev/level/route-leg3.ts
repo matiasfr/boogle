@@ -288,6 +288,18 @@ function canopyEntries(map: ReturnType<typeof layout>) {
   ]);
   check(`Canopy on foot from the isle's ground: ${fromGround.text}`, fromGround.ok);
   const isle = grid({ x: -1085, z: -300 }, 480, 2);
+  const walking = { ...MOVER, jumpHeight: 0 };
+  for (const reverse of [false, true]) {
+    const seen = flood(isle.g, walking, [isle.node(M.deck)], { reverse });
+    for (const [name, p] of [
+      ['outward', M.wallOut],
+      ['homeward', M.wallHome],
+    ] as const)
+      check(
+        `Wall ${name} platform ${reverse ? 'to' : 'from'} the bay homeward deck on foot`,
+        Math.abs(isle.g.h[isle.node(p)]! - 13.9) < 0.01 && !!seen[isle.node(p)],
+      );
+  }
   for (const [name, at] of [
     ['east', { x: -650, z: -300 }],
     ['north-east', { x: -820, z: -680 }],
@@ -300,6 +312,8 @@ function canopyEntries(map: ReturnType<typeof layout>) {
         ["head 2's ground (north)", M.head2North],
         ["head 2's ground (south)", M.head2South],
         ['Canopy Town', M.platformOut],
+        ['Wall outward platform', M.wallOut],
+        ['Wall homeward platform', M.wallHome],
       ]);
     check(`a swimmer in the sea ${name} of the isle${water ? '' : ' (NOT open water)'}: ${got.text}`, got.ok && water);
   }

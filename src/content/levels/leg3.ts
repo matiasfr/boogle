@@ -223,6 +223,10 @@ const beach = () =>
     tone: 'pale',
   }));
 function canopy() {
+  const heading = unit(-5, -100);
+  const wall = frame({ x: -889.06, z: -89.93 }, heading, perp(heading, -1));
+  const bridgeHeading = unit(18.41, -37);
+  const bridge = frame({ x: -689.91, z: -605.17 }, bridgeHeading, perp(bridgeHeading));
   const h = DECK_H,
     ramp = (id: string, a0: number, a1: number, b0: number, b1: number, f = cf) => ({
       ...f.ramp(id, a0, DECK, a1, ISLE, b0, b1, 'grey'),
@@ -232,6 +236,12 @@ function canopy() {
     ...trunks(),
     ...beach(),
     ...bank(),
+    ...[-1, 1].flatMap((side) => {
+      const inner = side * 5.8 - 2,
+        outer = inner + 4;
+      const id = side > 0 ? 'platform-wall-out' : 'platform-wall-home';
+      return [wall.box(id, -20, 20, inner, outer, DECK, h, 'light'), ramp(id + '-ramp', -20, -24, inner, outer, wall)];
+    }),
     // Two platforms after the crossover (s 2350 to 2370), round the stop. The outward one stops where the drawn row
     // starts to bend toward it; the homeward one runs on to the end deck.
     cf.box('platform-out', -33, 12, BED, PLAT, DECK, h, 'light'),
@@ -255,6 +265,7 @@ function canopy() {
       { id: 'notch-board', ...cf.at(26.5, -5.4), y: DECK, facing: unit(19030, -16944), label: 'canopy.notch' },
     ],
     reserves: [
+      bridge.reserve('Wall overbridge', -15, 15, -BED, BED, 12, 14),
       cf.reserve('bay row', N_LEVEL, N_CURVE, -BED, BED, RAIL, RAIL + LOADING),
       cf.reserve('platform-out lever end', -10, -7, BED, PLAT, DECK, add(DECK, CLEAR)),
       cf.reserve('platform-out board', -5.5, -2.5, BED, PLAT, DECK, add(DECK, CLEAR)),
@@ -266,6 +277,8 @@ function canopy() {
     ],
     /** Where the level report stands. */
     marks: {
+      wallOut: wall.at(0, 5.8),
+      wallHome: wall.at(0, -5.8),
       platformOut: cf.at(-10, 5.8),
       platformHome: cf.at(-10, -5.8),
       deck: cf.at(0, -11),

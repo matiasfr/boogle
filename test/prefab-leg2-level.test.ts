@@ -41,8 +41,18 @@ import { resident } from '../src/render/lod-level.ts';
 import { CAVE_GROUP, HEAD_OFFSET, PLAYER_R } from '../src/constants.ts';
 import { createLiftOrWait, STEP, type Solid } from '../src/place/clearance.ts';
 import canopy from '../content/built/levels/canopy.json' with { type: 'json' };
+import quay from '../content/built/levels/quay.json' with { type: 'json' };
 
 validation.validateArtifact(artifact);
+const canopyLevel = validation.loadLevelArtifact(canopy, artifact.prefabs);
+test('both Wall decks seat the Canopy stop 90 cm over rail and extend into the isle', () => {
+  for (const name of ['out', 'home']) {
+    const deck = canopyLevel.placements.find((p) => p.id === 'canopy.platform-wall-' + name)!;
+    assert.deepEqual(deck.scale, [4, 2.4, 40]);
+    assert.equal(Math.round(100 * (deck.pos[1] + deck.scale![1] / 2)), 1390);
+    assert.equal(Math.round(100 * (deck.pos[1] - deck.scale![1] / 2)), 1150);
+  }
+});
 const bell = validation.loadLevelArtifact(bellRaw, artifact.prefabs),
   west = validation.loadLevelArtifact(westRaw, artifact.prefabs),
   gorge = validation.loadLevelArtifact(gorgeRaw, artifact.prefabs);
@@ -669,6 +679,17 @@ const ground = (value: unknown) =>
     validation.loadLevelArtifact(value, artifact.prefabs as unknown as Readonly<Record<string, PrefabDef>>),
     artifact.prefabs as unknown as Readonly<Record<string, PrefabDef>>,
   ).colliders;
+
+test('the quay planks carry both tracks at rail height beyond the temporary buffers', () => {
+  const planks = ground(quay)
+    .filter((c) => c.placement.id.startsWith('quay.foot-plank-'))
+    .flatMap((c) => c.volume.triangles);
+  const wall = route.RAIL_LEGS.find((leg) => leg.id === 'wall')!;
+  for (const lateral of [-600, -200, 0, 200, 600]) {
+    const p = route.rowSide('cave', wall.fromCm + 2900, lateral, 0, 0);
+    assert.equal(placed.heightAt(planks, { x: p.x / 100, z: p.z / 100 }), p.y / 100);
+  }
+});
 
 test('the West landing supports the cave frame and rack at their catalog heights', () => {
   const cave = route.RAIL_LEGS.find((leg) => leg.id === 'cave')!;
