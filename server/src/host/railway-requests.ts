@@ -66,7 +66,7 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
   )
     clean.id = e.id;
   // The greybox route's frame feed names its leg (a RAIL_LEGS index); the rules validate it.
-  if (e.op === 'rail.legStock') clean.leg = e.leg;
+  if (e.op === 'rail.legStock' || e.op === 'rail.depotTake' || e.op === 'rail.depotRailTake') clean.leg = e.leg;
   // A halt yard's put and take name the yard (a HALT_YARDS index) and the kind; the rules validate both.
   if (e.op === 'rail.haltPut' || e.op === 'rail.haltTake') clean.yard = e.yard;
   if (e.op === 'rail.footTake') clean.rack = e.rack;

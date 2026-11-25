@@ -59,7 +59,7 @@ const report = () =>
   JSON.stringify({
     tick: railAt(),
     leg: (({ laid, logs, rails, start }) => ({ laid, logs, rails, start }))(legRow(rw(), LEG)),
-    rack: { logs: rail(rw()).depot, rails: rail(rw()).depotRails },
+    rack: { logs: legRow(rw(), LEG).rackLogs, rails: legRow(rw(), LEG).rackRails },
     trains: slots.map((k) => {
       const t = train(rw(), k);
       return [k, t.phase, t.at, t.to, t.track, t.logs, t.rails, +!!t.legKit, view()!.trains![k]?.kitBoard ?? ''].join(
@@ -149,7 +149,7 @@ if (mode === 'car') {
       page.__kitReady = true;
     }
     const f = view()!.legKitFlying!,
-      text = `flying ${f.logs}+${f.rails} rack ${rail(rw()).depot}+${rail(rw()).depotRails} crates ${slots.map((k) => view()!.trains![k]?.crates).join(',')}`;
+      text = `flying ${f.logs}+${f.rails} rack ${legRow(rw(), LEG).rackLogs}+${legRow(rw(), LEG).rackRails} crates ${slots.map((k) => view()!.trains![k]?.crates).join(',')}`;
     if (page.__kitReady && text !== last)
       console.log('KIT hop', Math.round(performance.now() - began), 'ms', (last = text));
   }, 50);

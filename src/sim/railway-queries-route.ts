@@ -58,8 +58,7 @@ function alsoReached(w: World, k: number) {
 }
 /** Leg k takes kit and feeding now: reached (legReached) and not complete. */
 export const legOpen = (w: World, k: number) => legReached(w, k) && !legDone(w, k);
-/** The open leg on `line` whose kit loads at the line's home halt, or -1 (the catalog opens one leg at a time: each
- * leg's `after` is the one before it). */
+/** The open leg on this line whose kit loads at its home halt, or -1. */
 export const openLeg = (w: World, line: number) =>
   RAIL_LEGS.findIndex((l, k) => l.line === line && l.kit === 'home' && legOpen(w, k));
 /** The section of leg k being fed or laid now, or -1 once it is complete. */
@@ -182,8 +181,8 @@ export function legYardDrop(k: number) {
 export const legYardId = (w: World, k: number) => w.lookup(LegYard, RAIL_LEGS[k]!.kit as number)!;
 export const legYard = (w: World, k: number) => w.get(LegYard, legYardId(w, k))!;
 /** What leg k still lacks for the sections owed ahead (ruling 1.4, "the kit runs ahead by the whole leg": the current
- * section and the next LEG_TUNE.kitLead - 1), less what is fed, on the rack (Rail.depot, Rail.depotRails, the open
- * leg's: one leg is open at a time) and lifted off the rack onto backs (heldKit; the step 3 review's P2-2: not every
+ * section and the next LEG_TUNE.kitLead - 1), less what is fed, on this leg's rack,
+ * and lifted off that rack onto backs (heldKit; the step 3 review's P2-2: not every
  * back's logs and rails, so the steel works' rails held, or a leaver's, never short it). A unit lifted off the rack
  * and then dropped, or fed to another bill, is owed again (the step 4 review's finding 2), so the leg can always
  * complete. */

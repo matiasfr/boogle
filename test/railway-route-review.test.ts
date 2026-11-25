@@ -3,6 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Account, Leg, Steel } from '../src/sim/railway-components.ts';
+import { checkRoute } from '../src/sim/railway-check-route.ts';
 import { LINE2, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import { RAIL_LEGS } from '../src/sim/railway-route.ts';
 import { trains } from '../src/sim/railway-rows.ts';
@@ -56,6 +57,7 @@ test('a full last rack survives a hand feed and save, but cannot exceed its sect
   assert.equal(legHeldRoom(s.w, STACK).logs, 12);
   assert.equal(legRow(restore(s.w), STACK).rackLogs, 20);
   s.w.mut(Leg, s.w.lookup(Leg, STACK)!)!.rackLogs++;
+  assert.throws(() => checkRoute(s.w), /leg rack/);
   assert.ok(invariant(s.w));
 });
 

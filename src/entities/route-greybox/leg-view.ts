@@ -498,8 +498,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     s.mesh.rotation.y = Math.atan2(nx, nz);
     s.mesh.visible = true;
   }
-  // The bill's foot clears the frame's top rail (1.7 m), which covered its last line from across the tracks. One bill,
-  // rack plate and yard plate: one leg is open at a time on the whole route.
+  // The bill's foot clears the frame's top rail. The cave can show a second set beside its own rack.
   const bill = sign(4.2, 1.8, 1.8, 'one', 768),
     plate = sign(1.9, 0.8, 1.3, 'one', 384),
     caveBill = sign(4.2, 1.8, 1.8, 'one', 768),
@@ -1007,10 +1006,9 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     return {
       wd,
       per,
-      /** The open leg's index into `legs`, or -1 (one is open at a time on the whole route). */
+      /** Indices into the mounted legs. */
       open,
       joined: aperture(wd).joined >= 0,
-      // The racks are the open leg's only once it is open (before, Rail.depot is a Q job's).
       grants: route.grants,
       gates: route.gates,
       reached: route.reached >= 0,
@@ -1086,6 +1084,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     yard(r);
     gorge(r);
     bell(r);
+    if (done(r, 'cave') && !done(r, 'bell-canopy')) framePosts(wall.frames[0]!);
     areaBoardVisibility.get('quay.wall')?.(legRow(r.wd, wall.k).laid === 0);
     if (plugSite && near(plugSite, 450)) barrier(plugSite, !!(r.gates & (1 << PLUG)));
     if (deepFrameBuilt(r) && near(deepSite, 450)) barrier(deepSite, !!(r.gates & (1 << deepSpan)));
@@ -1539,7 +1538,18 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
           gate: r?.gate ?? false,
           objective,
           legs: Object.fromEntries(
-            legs.map((l, i) => [l.sp.leg.id, { laid: r?.per[i]?.laid ?? null, ...l.inspect() }]),
+            legs.map((l, i) => {
+              const lr = r?.per[i];
+              return [
+                l.sp.leg.id,
+                {
+                  laid: lr?.laid ?? null,
+                  open: lr?.open ?? false,
+                  rack: lr ? { logs: lr.row.rackLogs, rails: lr.row.rackRails } : null,
+                  ...l.inspect(),
+                },
+              ];
+            }),
           ),
         },
       };

@@ -228,6 +228,7 @@ test("Canopy's landings: head 1 and the homeward platform", () => {
 test('mid-build cave and Wall jumps land between the active rack and frame', async () => {
   const { RAIL_LEGS, legFrame, legRack } = await import('../src/sim/railway-route.ts');
   for (const [stage, slot, section] of [
+    ['cave-first-open', 4, 0],
     ['cave-mid', 4, 1],
     ['wall-mid', 5, 2],
     ['wall-deep', 5, 5],
@@ -239,5 +240,5 @@ test('mid-build cave and Wall jumps land between the active rack and frame', asy
     assert.ok(Math.abs(land.yaw! - Math.atan2(rack.x - frame.x, rack.z - frame.z)) < 0.001);
   }
   assert.deepEqual(jumpOf('wall-closed')!.land, { x: -132.55, z: -1999.03, y: 3.9, yaw: -2.11 });
-  for (const name of ['cave-open', 'port-reached']) assert.equal(jumpOf(name)!.land, undefined);
+  for (const name of ['cave-open', 'cave-first-reached', 'port-reached']) assert.equal(jumpOf(name)!.land, undefined);
 });

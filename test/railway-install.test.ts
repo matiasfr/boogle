@@ -1209,8 +1209,8 @@ function swapFuzz(seed: number) {
     const open = RAIL_LEGS.findIndex((_l, j) => legOpen(s.w, j));
     if (open >= 0 && legRow(s.w, open).start < 0)
       for (const pid of ['a', 'b']) {
-        if (roomOf(s.w, account(s.w, pid)!, LOGS) > 0) op('rail.depotTake', {}, pid);
-        if (roomOf(s.w, account(s.w, pid)!, RAILS) > 0) op('rail.depotRailTake', {}, pid);
+        if (roomOf(s.w, account(s.w, pid)!, LOGS) > 0) op('rail.depotTake', { leg: open }, pid);
+        if (roomOf(s.w, account(s.w, pid)!, RAILS) > 0) op('rail.depotRailTake', { leg: open }, pid);
         op('rail.legStock', { leg: open }, pid);
       }
     if (legDone(s.w, CUT) && !(routeRow(s.w).gates & (1 << CANOPY_GATE))) op('rail.gate', { id: CANOPY_GATE });

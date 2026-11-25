@@ -1434,7 +1434,7 @@ async function legRejoin(c: Ctx, seed: RejoinSeed) {
   const { RAIL_LINES } = await import('../../src/sim/railway-lines.ts');
   const { RAILWAY_CAPACITY } = await import('../../src/sim/railway-layout.ts');
   const { legRow } = await import('../../src/sim/railway-queries-route.ts');
-  const { account, rail: railRow } = await import('../../src/sim/railway-rows.ts');
+  const { account } = await import('../../src/sim/railway-rows.ts');
   const { LINE_SLOTS, cycleTicks } = await import('../../src/sim/railway-trains.ts');
   const legCheck = (name: string, ok: boolean, detail = '') => {
     c.check(`leg rejoin (${seed}): ${name}`, ok, detail);
@@ -1510,7 +1510,6 @@ async function legRejoin(c: Ctx, seed: RejoinSeed) {
   const state = async () => {
     const w = await live();
     const a = account(w, 'leg0');
-    const rr = railRow(w);
     const row = legRow(w, k);
     return {
       row: {
@@ -1524,7 +1523,7 @@ async function legRejoin(c: Ctx, seed: RejoinSeed) {
         heldRails: row.heldRails,
       },
       trains: trainsOf((slot) => trainRow(w, slot)),
-      rack: { logs: rr.depot, rails: rr.depotRails },
+      rack: { logs: row.rackLogs, rails: row.rackRails },
       back: { rails: a?.rails, legRails: a?.legRails },
     };
   };
@@ -1594,11 +1593,11 @@ async function legRejoin(c: Ctx, seed: RejoinSeed) {
   legCheck('the first tab has a live session', (await ready(A)) >= 0);
   await ev(
     A.page,
-    ({ at }) => {
+    ({ at, leg }) => {
       window.T.railStand(at.x, at.y, at.z);
-      return window.T.railIntent({ op: 'rail.depotRailTake' } as never);
+      return window.T.railIntent({ op: 'rail.depotRailTake', leg } as never);
     },
-    { at: { x: rack.x, y: rack.y, z: rack.z } },
+    { leg: k, at: { x: rack.x, y: rack.y, z: rack.z } },
   );
   legCheck(
     'the take is settled on the first tab',

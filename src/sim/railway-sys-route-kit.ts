@@ -9,7 +9,7 @@
 // works wants none, onto a train not carrying the works', and is marked `Train.legKit` so neither side reads the other's.
 //
 //   legKitService(w, slot, r)   the kit's service stops: each open leg's drop while this train carries kit it can unload
-//   legKitArrive(w, slot)       come to a stand: unload onto the rack (Rail.depot and Rail.depotRails), then a yard
+//   legKitArrive(w, slot)       come to a stand: unload onto the rack (Leg.rackLogs and Leg.rackRails), then a yard
 //                               leg's yard (LegYard); at the kit halt the kit no leg can use goes home (logs unmade,
 //                               rails to the forge rack)
 //   legKitLoad(w, slot, tick)   standing at the kit halt: load (minted, holding for the forge's rails as Q6's and Q7's
@@ -67,7 +67,7 @@ export function legKitService(w: World, slot: number, r: Readonly<RailTrain>): S
   return (stop) => at.includes(stop);
 }
 /** Train `slot` has come to a stand: at each open leg's drop halt it unloads what that leg may take (legKitRoom), the
- * rack's first (Rail.depot and Rail.depotRails), then the yard's (LegYard), up to what it carries; at its kit halt the
+ * rack's first (Leg.rackLogs and Leg.rackRails), then the yard's (LegYard), up to what it carries; at its kit halt the
  * kit no leg it serves can use goes home (legKitHome). */
 export function legKitArrive(w: World, slot: number) {
   const line = RAIL_TRAINS[slot]!.line,
@@ -282,8 +282,6 @@ export function legRailheadHold(w: World, slot: number, tick: number): 'hold' | 
 // Each account counts what it lifted off the open leg's rack and still carries toward its frame (Account.legLogs,
 // Account.legRails); the leg's held counts (Leg.heldLogs, Leg.heldRails) are their sum, moved with them, so the kit
 // owed reads one number and a release takes off one account's own units only.
-/** The open leg, whose rack is the depot shelf (Rail.depot, Rail.depotRails), or -1 (the catalog opens one leg at a
- * time, whichever line mints its kit). */
 const LIFT_MAX = 255;
 /** Move account `aid`'s lifted counts and leg k's held counts together by `dl` logs and `dr` rails. */
 function moveHeld(w: World, aid: number, k: number, dl: number, dr: number) {
@@ -302,12 +300,13 @@ function moveHeld(w: World, aid: number, k: number, dl: number, dr: number) {
   m.heldLogs += dl;
   m.heldRails += dr;
 }
-/** The leg whose held counts are nonzero (the open rack leg, or one that just completed), or -1. */
 /** `logs` and `rails` lifted off the leg rack onto account `aid`'s back (rail.depotTake, rail.depotRailTake): counted
  * on that account and its open leg, up to what the leg's remaining sections still lack (legHeldRoom), so a train does
  * not load them twice while they are carried to the frame. */
 export function legKitLifted(w: World, aid: number, k: number, logs: number, rails: number) {
-  if (k < 0 || logs + rails <= 0) return;
+  if (logs + rails <= 0) return;
+  const before = w.get(Account, aid)!;
+  if (before.liftLeg >= 0 && before.liftLeg !== k) moveHeld(w, aid, before.liftLeg, -before.legLogs, -before.legRails);
   const room = legHeldRoom(w, k),
     row = legRow(w, k),
     a = w.get(Account, aid)!;
@@ -337,8 +336,9 @@ export function trimLegHeld(w: World) {
   for (let k = 0; k < RAIL_LEGS.length; k++) trimHeld(w, k);
 }
 function trimHeld(w: World, k: number) {
-  const room = legHeldRoom(w, k),
-    row = legRow(w, k);
+  const row = legRow(w, k);
+  if (!row.heldLogs && !row.heldRails) return;
+  const room = legHeldRoom(w, k);
   let logs = Math.max(0, row.heldLogs - room.logs),
     rails = Math.max(0, row.heldRails - room.rails);
   if (!logs && !rails) return;

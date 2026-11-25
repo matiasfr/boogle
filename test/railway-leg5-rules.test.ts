@@ -6,7 +6,7 @@ import { stopsOf } from '../src/sim/railway-queries.ts';
 import { RAIL_HALTS, RAIL_LINES, trainPassesBy } from '../src/sim/railway-lines.ts';
 import { fleetOf, TRAIN_PHASE, reqHas, trainRequestable } from '../src/sim/railway-train.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
-import { rail, train } from '../src/sim/railway-rows.ts';
+import { train } from '../src/sim/railway-rows.ts';
 import { Route } from '../src/sim/railway-components.ts';
 import { laySection } from '../src/sim/railway-seed-legs.ts';
 import { legRailheadHold } from '../src/sim/railway-sys-route-kit.ts';
@@ -53,12 +53,12 @@ test('cave trains relay six Wall kits through the prefix of open halts', () => {
       for (const dir of [-1, 1])
         assert.equal(trainPassesBy(line, head + 3, dir, stops.length), [1, 2, 4].includes(head) && laid >= head + 2);
     for (const [kind, loaded, depot, held] of [
-      ['logs', 'loadedLogs', 'depot', 'heldLogs'],
-      ['rails', 'loadedRails', 'depotRails', 'heldRails'],
+      ['logs', 'loadedLogs', 'rackLogs', 'heldLogs'],
+      ['rails', 'loadedRails', 'rackRails', 'heldRails'],
     ] as const)
       assert.equal(
         r[loaded],
-        20 * laid + r[kind] + r[held] + rail(w)[depot] + slots.reduce((n, j) => n + train(w, j)[kind], 0),
+        20 * laid + r[kind] + r[held] + r[depot] + slots.reduce((n, j) => n + train(w, j)[kind], 0),
       );
     assert.equal(invariant(w), null);
     if (laid === 6) break;

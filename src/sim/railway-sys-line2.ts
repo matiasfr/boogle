@@ -58,6 +58,7 @@ import {
   line1PickReady,
   LINE2_SLOTS,
   qActive,
+  q7Laid,
   qCompleted,
   qjobId,
   railId,
@@ -270,54 +271,35 @@ export const forgeTake = defineSystem(
     return n;
   },
 );
+function takeFromRack(w: World, { a: aid, e }: Act, kind: typeof LOGS | typeof RAILS) {
+  const a = w.mut(Account, aid)!;
+  const room = roomOf(w, a, kind);
+  if (room <= 0) return 0;
+  let n: number;
+  if (e.leg === undefined) {
+    if (q7Laid(w)) return 0;
+    const rail = w.mut(Rail, railId(w))!, key = kind === LOGS ? 'depot' : 'depotRails';
+    n = Math.min(rail[key], room);
+    rail[key] -= n;
+  } else {
+    if (!railInt(e.leg, RAIL_LEGS.length - 1) || !legOpen(w, e.leg)) return 0;
+    const leg = w.mut(Leg, legId(w, e.leg))!, key = kind === LOGS ? 'rackLogs' : 'rackRails';
+    n = Math.min(leg[key], room);
+    leg[key] -= n;
+    legKitLifted(w, aid, e.leg, kind === LOGS ? n : 0, kind === RAILS ? n : 0);
+  }
+  a[kind === LOGS ? 'carry' : 'rails'] += n;
+  return n;
+}
 export const depotTake = defineSystem(
   'rail.depotTake',
   { reads: [Boiler, Beam, Aperture, Pile, QJob], writes: [Rail, Account, Leg], phase: 'act', order: 22 },
-  (w, { a: aid, e }: Act) => {
-    const a = w.mut(Account, aid)!;
-    const room = roomOf(w, a, LOGS);
-    if (room <= 0) return 0;
-    let n: number;
-    if (e.leg === undefined) {
-      if (w.get(QJob, qjobId(w, LINE2_STATIONS.length - 1))!.completion) return 0;
-      const rail = w.mut(Rail, railId(w))!;
-      n = Math.min(rail.depot, room);
-      rail.depot -= n;
-    } else {
-      if (!railInt(e.leg, RAIL_LEGS.length - 1) || !legOpen(w, e.leg)) return 0;
-      const leg = w.mut(Leg, legId(w, e.leg))!;
-      n = Math.min(leg.rackLogs, room);
-      leg.rackLogs -= n;
-      legKitLifted(w, aid, e.leg, n, 0);
-    }
-    a.carry += n;
-    return n;
-  },
+  (w, act: Act) => takeFromRack(w, act, LOGS),
 );
-/** Rails from the shelf by a `shelf` stretch's rack (moved there from the forge; railValid checks the stretch). */
 export const depotRailTake = defineSystem(
   'rail.depotRailTake',
   { reads: [Boiler, Beam, Aperture, Pile, QJob], writes: [Rail, Account, Leg], phase: 'act', order: 25 },
-  (w, { a: aid, e }: Act) => {
-    const a = w.mut(Account, aid)!;
-    const room = roomOf(w, a, RAILS);
-    if (room <= 0) return 0;
-    let n: number;
-    if (e.leg === undefined) {
-      if (w.get(QJob, qjobId(w, LINE2_STATIONS.length - 1))!.completion) return 0;
-      const rail = w.mut(Rail, railId(w))!;
-      n = Math.min(rail.depotRails, room);
-      rail.depotRails -= n;
-    } else {
-      if (!railInt(e.leg, RAIL_LEGS.length - 1) || !legOpen(w, e.leg)) return 0;
-      const leg = w.mut(Leg, legId(w, e.leg))!;
-      n = Math.min(leg.rackRails, room);
-      leg.rackRails -= n;
-      legKitLifted(w, aid, e.leg, 0, n);
-    }
-    a.rails += n;
-    return n;
-  },
+  (w, act: Act) => takeFromRack(w, act, RAILS),
 );
 /** The room can take its pack from the T1 stand or from the forge's finished frame. */
 export const pack = defineSystem(

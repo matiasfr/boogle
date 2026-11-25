@@ -18,6 +18,8 @@ import { roomIgnoringBig } from '../../sim/railway-queries-line1.ts';
 import { account, qjob, rail } from '../../sim/railway-rows.ts';
 import { goldMote } from './breaker-view.ts';
 import { reducedMotion } from '../../constants.ts';
+import { RAIL_LEGS, legRack } from '../../sim/railway-route.ts';
+import { legRow } from '../../sim/railway-queries-route.ts';
 
 const MAX_RAILS = Math.max(...LINE2_STATIONS.map((station) => station.bill[1]));
 const REACH = 3.2;
@@ -172,9 +174,11 @@ export async function createRailwayShelf(
     const w = adapter.read.world();
     const depotRails = rail(w).depotRails,
       carried = account(w, adapter.read.pid)?.rails ?? 0;
+    const rack = event.leg === undefined ? null : legRack(RAIL_LEGS[event.leg]!, legRow(w, event.leg).laid);
     const n = event.accepted - (event.returned ?? 0);
     for (let i = 0; i < n; i++) {
-      top(depotRails + n - i, from);
+      if (rack) from.set(rack.x / 100, rack.y / 100 + 0.3, rack.z / 100);
+      else top(depotRails + n - i, from);
       pieces.send(
         'rail',
         from,
@@ -193,13 +197,16 @@ export async function createRailwayShelf(
     if (c.event.op !== 'rail.depotRailTake') return;
     const w = adapter.read.world();
     const k = line2Active(w);
-    if (k < 0) return;
-    place(k);
+    const leg = c.event.leg;
+    const rack = leg === undefined ? null : legRack(RAIL_LEGS[leg]!, legRow(w, leg).laid);
+    if (!rack && k < 0) return;
+    if (!rack) place(k);
     const carried = account(w, adapter.read.pid)?.rails ?? 0,
       depotRails = rail(w).depotRails;
     for (let i = 0; i < c.lost; i++) {
       if (!bundleOrigin(adapter.read.pid, carried + c.lost - i - 1, from)) continue;
-      top(depotRails + i + 1, to);
+      if (rack) to.set(rack.x / 100, rack.y / 100 + 0.3, rack.z / 100);
+      else top(depotRails + i + 1, to);
       pieces.send('rail', from, to.clone(), { dur: 0.3, apex: 0.8, land: () => sounds.knock(0.3, 0.6) }, owner);
     }
   }

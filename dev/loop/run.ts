@@ -72,7 +72,7 @@ import {
 import { LINE2 } from '../../src/sim/railway-lines.ts';
 import type { RailAction } from '../../src/sim/railway.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, legRack } from '../../src/sim/railway-route.ts';
-import { legOpen, legRow, routeRow } from '../../src/sim/railway-queries-route.ts';
+import { legDone, legOpen, legRow, routeRow } from '../../src/sim/railway-queries-route.ts';
 import {
   DETOUR,
   NODES,
@@ -1120,8 +1120,9 @@ export function playOrder(
       if (done[id]()) {
         if (id === 'cave-3') {
           const wall = RAIL_LEGS.findIndex((leg) => leg.id === 'wall');
-          if (!legOpen(g.w, wall) || legRow(g.w, wall).laid !== 0)
-            throw new Error('Port Quay must hand the ready room to the first White Wall frame');
+          const canopy = RAIL_LEGS[wall]!.alsoAfter!;
+          if (legOpen(g.w, wall) !== legDone(g.w, canopy) || legRow(g.w, wall).laid !== 0)
+            throw new Error('The first White Wall frame opens once both branches are laid');
         }
         t.tick = h.tick();
         lastProgress = h.tick();

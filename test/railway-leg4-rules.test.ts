@@ -7,8 +7,9 @@ import { legRow, routeRow } from '../src/sim/railway-queries-route.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, ROW_LINE } from '../src/sim/railway-route.ts';
 import { account, train } from '../src/sim/railway-rows.ts';
 import { laySection } from '../src/sim/railway-seed-legs.ts';
+import { railLegKitRelease } from '../src/sim/railway-sys-route-kit.ts';
 import { LINE_SLOTS, servingSlots } from '../src/sim/railway-trains.ts';
-import { act, advance, buildSeedWorld, invariant, unaudited, type Seed } from './helpers/rail.ts';
+import { act, advance, buildSeedWorld, invariant, restore, unaudited, type Seed } from './helpers/rail.ts';
 
 const cave = ROW_LINE.cave,
   k = RAIL_LEGS.findIndex((l) => l.id === 'cave'),
@@ -78,6 +79,20 @@ test('the room can feed across the fork, finish the cave first, then release the
   while (legRow(s.w,3).laid < RAIL_LEGS[3]!.sections.length) laySection(s,3);
   laySection(s,5);
   assert.equal(invariant(s.w),null);
+});
+
+test('two lifted kits survive a save and releasing one back only changes its own leg', () => {
+  const s = unaudited(buildSeedWorld('cave-first-open'));
+  const canopyTake = act(s, 'a', 'rail.depotTake', { leg: 3 });
+  const caveTake = act(s, 'b', 'rail.depotRailTake', { leg: k });
+  assert.ok(canopyTake > 0 && caveTake > 0);
+  const w = restore(s.w);
+  assert.deepEqual([account(w, 'a')!.liftLeg, account(w, 'b')!.liftLeg], [3, k]);
+  assert.deepEqual([legRow(w, 3).heldLogs, legRow(w, k).heldRails], [canopyTake, caveTake]);
+  assert.equal(railLegKitRelease(w, 'a', account(w, 'a')!.epoch), canopyTake);
+  assert.deepEqual([legRow(w, 3).heldLogs, legRow(w, k).heldRails], [0, caveTake]);
+  assert.deepEqual([account(w, 'b')!.legRails, account(w, 'b')!.liftLeg], [caveTake, k]);
+  assert.equal(invariant(w), null);
 });
 
 test('the cave fleet carries each kit forward, keeps Saltpan open and closes the sea head at the quay', () => {
