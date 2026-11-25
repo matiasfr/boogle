@@ -1,0 +1,27 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "place": "cliff-kit-east-cutting",
+  "placements": [
+    {"id":"east-cutting.0","pos":[190.23,6,-49.72],"prefab":"terrain.sea-face-6","rot":[2,0,0]},
+    {"id":"east-cutting.1","pos":[192.73,6,-44.22],"prefab":"terrain.sea-face-6","rot":[2,0,0]},
+    {"id":"east-cutting.2","pos":[195.23,6,-38.72],"prefab":"terrain.sea-face-6","rot":[2,0,0]},
+    {"id":"east-cutting.3","pos":[197.74,6,-33.23],"prefab":"terrain.sea-face-6","rot":[2,0,0]},
+    {"id":"east-cutting.4","pos":[188.69,9,-48.23],"prefab":"terrain.sea-face-6","rot":[2,0,0]},
+    {"id":"east-cutting.5","pos":[190.99,9,-43.16],"prefab":"terrain.sea-face-6","rot":[2,0,0]},
+    {"id":"east-cutting.6","pos":[193.3,9,-38.09],"prefab":"terrain.sea-face-6","rot":[2,0,0]},
+    {"id":"east-cutting.7","pos":[195.59,9,-33.01],"prefab":"terrain.sea-face-6","rot":[1.99,0,0]},
+    {"id":"east-cutting.8","pos":[189.21,12,-42.76],"prefab":"terrain.sea-face-6","rot":[2.14,0,0]},
+    {"id":"east-cutting.9","pos":[191.79,12,-37.87],"prefab":"terrain.sea-face-6","rot":[1.97,0,0]},
+    {"id":"east-cutting.10","pos":[193.8,12,-32.9],"prefab":"terrain.sea-face-6","rot":[1.94,0,0]},
+    {"id":"east-cutting.11","pos":[188.48,15,-41.16],"prefab":"terrain.sea-face-6","rot":[2.34,0,0]},
+    {"id":"east-cutting.12","pos":[191.28,15,-37.02],"prefab":"terrain.sea-face-6","rot":[2,0,0]},
+    {"id":"east-cutting.13","pos":[193.06,15,-32.54],"prefab":"terrain.sea-face-6","rot":[1.89,0,0]},
+    {"id":"east-cutting.14","pos":[188.73,17,-40.14],"prefab":"terrain.sea-face-6","rot":[2.18,0,0]},
+    {"id":"east-cutting.15","pos":[190.97,17,-36.34],"prefab":"terrain.sea-face-6","rot":[2.04,0,0]},
+    {"id":"east-cutting.16","pos":[192.57,17,-32.23],"prefab":"terrain.sea-face-6","rot":[1.84,0,0]}
+  ],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}

@@ -573,6 +573,26 @@ The kit adds 13,540 triangles per pass. At the mouth camera that is 27,080 trian
 | Far Head | 291 → 291 | 844,745 → 844,745 |
 | Summit | 346 → 346 | 1,006,978 → 1,006,978 |
 
+## Step 5 as built
+
+The [matched sheet](cliff-kit-everywhere/north-ridge-before-after.jpg) shows the camp path, Line 2 passing the cutting, the ridge at eye level and the sandstone below the trestle. Each pair keeps the original main camera. Both walls now use the gorge's continuous courses. The trestle hides much of the cutting from the passing train.
+
+The generator traces each course horizontally across surveyed toe-to-rim sections. At transitions to grass, the contour ends. Seating the faces near their middle height exposes the courses across the slope and buries their feet. The ridge uses 62 crowned faces across eight levels and the cutting uses 17 across six. Each area culls separately.
+
+The nearest ridge solid is 0.55 m outside the tread. The camp path controller reached both ends without falling and moved 0 m over five seconds at idle. The reverse floods found zero places walled off across 37,249 ridge nodes and 68,121 cutting nodes. The highest cutting solid is at 23.00 m, 1.30 m below both railheads.
+
+The kit adds 31,284 triangles per pass. Census measurements include colour and shadow passes.
+
+| Census camera | Draws, main → step 5 | Triangles, main → step 5 |
+| --- | ---: | ---: |
+| shore | 163 → 163 | 782,735 → 782,735 |
+| shore climb | 381 → 382 | 1,031,181 → 1,037,913 |
+| canyon climb | 206 → 207 | 829,299 → 853,851 |
+| gorge rim | 372 → 374 | 967,485 → 998,769 |
+| gorge mouth | 436 → 439 | 1,027,960 → 1,060,684 |
+| Far Head | 291 → 292 | 844,745 → 869,297 |
+| summit | 346 → 347 | 1,006,978 → 1,031,530 |
+
 ## Design review (2026-11-24)
 
 Run by the plan's author in the same context (design-review skill). Read for it: DESIGN.md, owner calls (Look and art,
