@@ -161,15 +161,7 @@ export function createBackdrop() {
     flatShading: true,
     side: THREE.DoubleSide,
   });
-  function meshFromParts(name: string) {
-    const mesh = new THREE.Mesh(mergeParts(parts), material);
-    for (const part of parts) part.dispose();
-    parts.length = 0;
-    mesh.name = name;
-    freezeInPlace(mesh);
-    return mesh;
-  }
-  const horizon = meshFromParts('Sickle Isles horizon');
+  const playableVertices = parts.reduce((n, part) => n + part.attributes.position!.count, 0);
   // The map's harbour props are skyline silhouettes. The playable apron and track replace them up close.
   for (const lm of map.landmarks) {
     if (lm.kind !== 'crane' || !lm.at) continue;
@@ -203,7 +195,10 @@ export function createBackdrop() {
       }
     for (const [x, z, w, d, h] of harbour.warehouses) box(x, 3 + h / 2, z, w, h, d);
   }
-  const harbourProps = meshFromParts('Port Quay horizon props');
-  horizon.add(harbourProps);
-  return { horizon, harbourProps };
+  const geometry = mergeParts(parts);
+  for (const part of parts) part.dispose();
+  const horizon = new THREE.Mesh(geometry, material);
+  horizon.name = 'Sickle Isles horizon';
+  freezeInPlace(horizon);
+  return { horizon, playableVertices };
 }
