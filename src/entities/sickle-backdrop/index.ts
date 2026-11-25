@@ -1,9 +1,20 @@
-// Local scenery only: no bodies, state, review controls or frame work. Keep the walkable dev greybox separate.
+// Local scenery only: no bodies, state or review controls. Keep the walkable dev greybox separate.
 import { defineKind, spawn } from '../../entity/entity.ts';
 import { createBackdrop } from './view.ts';
 
-defineKind('sickle-backdrop', {});
+import { routeAreas } from '../route-greybox/state.ts';
+
+defineKind('sickle-backdrop', { update: 14 });
 // The dev review and the walkable ?blockout=world build these same islands, with their own collision.
 const q = new URLSearchParams(location.search);
 const reviewing = (import.meta.env.DEV && q.has('greybox')) || q.get('blockout') === 'world';
-if (!reviewing) spawn({ kind: 'sickle-backdrop', mesh: createBackdrop() });
+if (!reviewing) {
+  const { horizon, harbourProps } = createBackdrop();
+  spawn({
+    kind: 'sickle-backdrop',
+    mesh: horizon,
+    update() {
+      harbourProps.visible = !routeAreas.get('quay')?.mounted;
+    },
+  });
+}

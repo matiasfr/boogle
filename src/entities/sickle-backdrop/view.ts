@@ -131,15 +131,7 @@ export function createBackdrop() {
     const [x, z] = lm.at,
       base = lm.base ?? 0,
       h = lm.h ?? 20;
-    if (lm.kind === 'crane') {
-      const quay = map.places.find((p) => p.id === 'quay')?.at ?? [x + 1, z];
-      const angle = Math.atan2(quay[1] - z, quay[0] - x),
-        jib = lm.jib ?? h * 0.9;
-      const w = Math.max(2, h / 18);
-      box(x, base + h / 2, z, w, h, w);
-      box(x + Math.cos(angle) * jib * 0.35, base + h, z + Math.sin(angle) * jib * 0.35, jib, w, w, DARK, -angle);
-      box(x + Math.cos(angle) * jib * 0.8, base + h * 0.78, z + Math.sin(angle) * jib * 0.8, 0.8, h * 0.45, 0.8);
-    } else if (lm.kind === 'arch') {
+    if (lm.kind === 'arch') {
       const angle = ((lm.bearing ?? 0) * Math.PI) / 180,
         span = lm.span ?? 30;
       for (const sign of [-1, 1])
@@ -156,6 +148,41 @@ export function createBackdrop() {
       box(x, base + h + 7, z, span + 44, 14, 26, '#bdb5a2', -angle);
       if (lm.lantern) box(x, base + h + 18, z, 5, 8, 5);
     } else if (lm.kind === 'pinnacle') box(x, base + h / 2, z, 22, h, 18, '#7a766d');
+  }
+  const city = map.option.backdrop;
+  if (city) {
+    for (const [x, z, h] of city.towers) box(x, 10 + h / 2, z, 22, h, 18, '#474b54');
+    const [x, z, h] = city.lighthouse;
+    box(x, 10 + h / 2, z, 8, h, 8, '#eeeae2');
+  }
+  const material = new THREE.MeshStandardNodeMaterial({
+    vertexColors: true,
+    roughness: 0.95,
+    flatShading: true,
+    side: THREE.DoubleSide,
+  });
+  function meshFromParts(name: string) {
+    const mesh = new THREE.Mesh(mergeParts(parts), material);
+    for (const part of parts) part.dispose();
+    parts.length = 0;
+    mesh.name = name;
+    freezeInPlace(mesh);
+    return mesh;
+  }
+  const horizon = meshFromParts('Sickle Isles horizon');
+  // The map's harbour props are skyline silhouettes. The playable apron and track replace them up close.
+  for (const lm of map.landmarks) {
+    if (lm.kind !== 'crane' || !lm.at) continue;
+    const [x, z] = lm.at,
+      base = lm.base ?? 0,
+      h = lm.h ?? 20;
+    const quay = map.places.find((p) => p.id === 'quay')?.at ?? [x + 1, z];
+    const angle = Math.atan2(quay[1] - z, quay[0] - x),
+      jib = lm.jib ?? h * 0.9;
+    const w = Math.max(2, h / 18);
+    box(x, base + h / 2, z, w, h, w);
+    box(x + Math.cos(angle) * jib * 0.35, base + h, z + Math.sin(angle) * jib * 0.35, jib, w, w, DARK, -angle);
+    box(x + Math.cos(angle) * jib * 0.8, base + h * 0.78, z + Math.sin(angle) * jib * 0.8, 0.8, h * 0.45, 0.8);
   }
   const harbour = map.option.harbour;
   if (harbour) {
@@ -176,25 +203,7 @@ export function createBackdrop() {
       }
     for (const [x, z, w, d, h] of harbour.warehouses) box(x, 3 + h / 2, z, w, h, d);
   }
-  const city = map.option.backdrop;
-  if (city) {
-    for (const [x, z, h] of city.towers) box(x, 10 + h / 2, z, 22, h, 18, '#474b54');
-    const [x, z, h] = city.lighthouse;
-    box(x, 10 + h / 2, z, 8, h, 8, '#eeeae2');
-  }
-  const geometry = mergeParts(parts);
-  for (const part of parts) part.dispose();
-  // Double-sided flat faces tolerate either winding of the page's authored outlines; no material groups/draw splits.
-  const mesh = new THREE.Mesh(
-    geometry,
-    new THREE.MeshStandardNodeMaterial({
-      vertexColors: true,
-      roughness: 0.95,
-      flatShading: true,
-      side: THREE.DoubleSide,
-    }),
-  );
-  mesh.name = 'Sickle Isles horizon';
-  freezeInPlace(mesh); // world-space geometry, straight under the scene: never moves
-  return mesh;
+  const harbourProps = meshFromParts('Port Quay horizon props');
+  horizon.add(harbourProps);
+  return { horizon, harbourProps };
 }
