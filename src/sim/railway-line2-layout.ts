@@ -39,7 +39,7 @@ export type Line2Station = Omit<LineStation, 'id'> & {
 export const LINE2_STATIONS: readonly Line2Station[] = [
   {
     id: 'Q1',
-    bill: [16, 6],
+    bill: [32, 6],
     beam: 0,
     fromCm: 700,
     toCm: 4200,

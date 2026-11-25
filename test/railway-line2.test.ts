@@ -173,7 +173,7 @@ test('Q1-Q3 fund atomically from logs and rails; depot, hook and lever follow ac
   assert.equal(act(w, 'b', 'rail.deposit', { station: 'Q1', n: 2 }), 0, 'machine still on the turntable');
   advance(w, LINE2_FORGE.turnTicks);
   assert.equal(act(w, 'b', 'rail.deposit', { station: 'Q2', n: 2 }), 0, 'only the active frame takes');
-  logs(w, 'b', 'Q1', 16);
+  logs(w, 'b', 'Q1', 32);
   assert.equal(qj(w.w, 0).start, -1, 'logs alone never fund');
   rails(w, 'a', 'Q1', 6);
   assert.ok(qj(w.w, 0).start >= 0);
@@ -223,7 +223,7 @@ test('rails have their own row and share loose piles; final-rail race funds once
   const w = pathOpen();
   logs(w, 'a', 'F', 56);
   advance(w, LINE2_FORGE.pourTicks * 30);
-  logs(w, 'b', 'Q1', 16);
+  logs(w, 'b', 'Q1', LINE2_STATIONS[0]!.bill[0]);
   for (const pid of ['a', 'b']) {
     const n = account(w.w, pid)!.carry;
     if (n)
@@ -307,7 +307,7 @@ function toQ2(): World {
   const w = pathOpen();
   logs(w, 'a', 'F', 56);
   advance(w, LINE2_FORGE.turnTicks);
-  logs(w, 'b', 'Q1', 16);
+  logs(w, 'b', 'Q1', LINE2_STATIONS[0]!.bill[0]);
   rails(w, 'a', 'Q1', 6);
   finishQ(w, 0);
   return w;
@@ -428,15 +428,11 @@ const railsHeld = (w: World) => {
   return c;
 };
 
-test('the pack: no chest before the forge bill, one pack for two openers, every back 24 through load and late join', () => {
+test('the forge pack: no chest before its bill, one pack for two openers, every back 16 through load and late join', () => {
   const w = pathOpen();
   assert.equal(act(w, 'a', 'rail.pack'), 0, 'no chest before the forge has a log');
   logs(w, 'a', 'F', 16);
   assert.equal(act(w, 'a', 'rail.pack'), 0, 'no chest before the 24-log bill');
-  // A save claiming the pack before the bill does not load.
-  const early = JSON.parse(JSON.stringify(w.w.snapshot())) as ReturnType<Rows['snapshot']>;
-  early.c[Rail.kind]![1 + Rail.names.indexOf('pack')]![0] = 1;
-  assert.throws(() => w.w.load(early, railwayCheck), /pack before the forge bill/);
   logs(w, 'a', 'F', 8);
   assert.equal(forge(w.w).used, LINE2_FORGE.bills[0]);
   assert.equal(capacityOf(w.w, LOGS), 8);

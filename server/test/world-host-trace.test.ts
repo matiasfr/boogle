@@ -75,6 +75,8 @@
 // 205 checkpoints append Line.rev (0 on all five lines) and Shed.tableLine/bringRev/brought (1, 0, -1) and change
 // namespace/hash/checksum; 5,677 snapBytes samples follow. Keyed comparison with the v66 fixture before the writer
 // regenerated it: 8,620 records; every other column, input, result, message and replica packet is exact.
+// v68: the sweep never funds T1. Across 8,620 records only 205 checkpoint namespaces and checksums
+// and 1,994 derived snapBytes samples change.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';

@@ -1,3 +1,5 @@
+// 2026-11-25: Q1's 32 logs change all 282 hashes in the boiler, call and foot streams. Labels and accepted counts
+// stay identical. The opening's jump is taken at T1 and the opening and axe hashes stay identical.
 // 2026-11-19 v65 halt yards: four empty HaltYard rows spawned last push every later entity id on by 4 and move all 321
 // hashes; every label and accepted count stays (keyed comparison with the v64 fixture, docs/plans/halt-yard.md step 1).
 // 2026-11-19 seed data only (rail-yoke step 2; owner-calls.md#seed-goldens): the seeds take the Rail yoke at Q1, so
@@ -84,8 +86,8 @@ scenario('opening', w1, (step) => {
     () =>
       act(w1, 'a', op, f);
   const tree = () => RAILWAY_SOURCES[trees(w1.w).findIndex((n) => n.left > 0)]![0];
-  step('jump', a('rail.jump'));
-  step('jump again', a('rail.jump'));
+  step('jump', a('rail.jump', { station: 'T1' }));
+  step('jump again', a('rail.jump', { station: 'T1' }));
   step('axe before the forge', a('rail.axe'));
   step('reject', a('rail.reject'));
   step('unknown op', a('rail.nonsense'));

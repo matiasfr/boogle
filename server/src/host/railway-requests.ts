@@ -117,6 +117,7 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
   )
     clean.revision = e.revision;
   if (e.op === 'rail.beamDeposit') clean.station = e.station;
+  if ((e.op === 'rail.jump' || e.op === 'rail.pack') && e.station !== undefined) clean.station = e.station;
   if (e.op === 'rail.beamDrop' || e.op === 'rail.boilerDrop' || e.op === 'rail.drop') {
     clean.x = e.x;
     clean.y = e.y;

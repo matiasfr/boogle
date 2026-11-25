@@ -26,7 +26,7 @@ import { RAIL_STOPS } from '../segments.ts';
 import { RAIL_STONE, WORKS_BREAKER } from '../../../src/sim/railway-works-layout.ts';
 import { splitRockToCrossing } from './railway-works.ts';
 export { splitRockToCrossing };
-import { LINE2_BOILER, RAILS } from '../../../src/sim/railway-line2-layout.ts';
+import { LINE2_BOILER, LINE2_STATIONS, RAILS } from '../../../src/sim/railway-line2-layout.ts';
 import { ISLAND_C, axisPoint } from '../../../src/place/home-station.ts';
 import { YOKE_VERB } from '../../../src/entities/railway/reward-data.ts';
 import { toWorld } from '../../../src/place/layout.ts';
@@ -1907,13 +1907,14 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       );
       await until(() => read().pending === 0, 'unload settles');
     };
-    // Q1, by hand beside the turntable: 16 logs and 6 rails.
+    // Q1, by hand beside the turntable.
     const q1 = v2().frames[0]!;
-    while (R.line2Station(0).start < 0 && R.line2Station(0).stock < 16) {
-      await fill(Math.min(R.capacityOf(R.rw(), R.LOGS), 16 - R.line2Station(0).stock));
+    const [q1Logs, q1Rails] = LINE2_STATIONS[0]!.bill;
+    while (R.line2Station(0).start < 0 && R.line2Station(0).stock < q1Logs) {
+      await fill(Math.min(R.capacityOf(R.rw(), R.LOGS), q1Logs - R.line2Station(0).stock));
       await deliver(0, q1);
     }
-    await takeRails(6);
+    await takeRails(q1Rails);
     await deliver(0, q1);
     await until(() => R.line2Station(0).start >= 0, 'Q1 funded from logs and rails');
     await checkpoint('Q1 funded');
