@@ -43,6 +43,8 @@ Timing is relative to the backlog as it stood on 17 November: **now** needs noth
 | 20 | **Group photo at each new connection,** hung in the Home hall as the room's record | after: the Round |
 | 21 | **A shared opening ritual.** Everyone present pulls the whistle when a line connects, growing with head count like the honk chord | now; sits on [cutscenes for everyone](../decisions-rewards.md#d-2026-11-17-cutscenes-for-everyone) |
 
+**25 November 2026:** ideas 7, 9 and 10 (voice, a ping reply, rail-aware labels) are a backlog row, with proximity voice off by default (owner: "Although let's have proximity chat off by default so everyone can hear each other"). The rest stay parked.
+
 ## What to try first
 
 1. **Proximity voice plus a ping reply** (7, 9): small, already asked for, and it changes how every other minute feels.
