@@ -103,7 +103,9 @@ say('screen during the swap', screen());
 
 if (second) {
   // Strong selected, then Interact held for a second while the copies swap: nothing may go on.
-  document.querySelector<HTMLElement>('.g-parts [data-part="strong"]')?.click();
+  const tile = '.g-parts [data-part="strong"]';
+  await until(() => document.querySelector(tile), 'the Strong tile on screen', 8000);
+  document.querySelector<HTMLElement>(tile)!.click();
   await wait(200);
   const before = screen();
   triggerAction('interact', 'down');
@@ -135,10 +137,12 @@ background(
         try {
           await until(
             () => {
-              const s = snap(),
-                c = clocks();
+              const s = snap();
               const k = `${s.phase}${s.held ? '+held' : ''}${s.waiting ? '+waiting' : ''}${s.canInstall ? '' : '-can'}${s.facts.held ? '+tablehold' : ''}`;
-              if (seen.at(-1)?.k !== k) seen.push({ k, railAt: c.railAt, tickNow: c.tickNow });
+              if (seen.at(-1)?.k !== k) {
+                const c = clocks();
+                seen.push({ k, railAt: c.railAt, tickNow: c.tickNow });
+              }
               began ||= s.phase !== 'idle';
               return line(rw(), BAY).boiler === STRONG || (began && s.phase === 'idle' && !s.waiting);
             },
@@ -181,7 +185,8 @@ background(
     const end = performance.now() + 180_000;
     let departed = false;
     while (!departed && performance.now() < end) {
-      for (const t of bayTrains()) {
+      const now = bayTrains();
+      for (const t of now) {
         const was = last.get(t.slot);
         if (was && was.boiler !== t.boiler)
           say('row change', {
@@ -207,9 +212,7 @@ background(
         }
         last.set(t.slot, t);
       }
-      const engine = bayTrains()
-        .find((t) => t.at === 0 || t.phase !== 0)
-        ?.cars.find((c) => c.role === 'engine');
+      const engine = now.find((t) => t.at === 0 || t.phase !== 0)?.cars.find((c) => c.role === 'engine');
       if (engine && me.body) {
         const p = me.body.position;
         cam.yaw = me.yaw = Math.atan2(p.x - engine.x, p.z - engine.z);

@@ -4,19 +4,19 @@
 // the trade's invariants (Line.rev, the steel spent) since world v67. `bay-mid` cannot pay a fit (its works are
 // unlit), so it and `bay-reached` run Standard only, Checkpoint G's baseline; the `ops` rows fit on `trade-ready`
 // (bay-mid with the works' 12 steel home) and on it run on to `bay-reached`.
-import { apply, invariant, need } from '../../src/sim/railway-drive.ts';
+import { apply, invariant, need, restore } from '../../src/sim/railway-drive.ts';
 import { LOGS, roomOf } from '../../src/sim/railway-queries.ts';
 import { RAILS } from '../../src/sim/railway-line2-layout.ts';
 import { legRow } from '../../src/sim/railway-queries-route.ts';
 import { RAIL_GATES, RAIL_LEGS, ROW_LINE } from '../../src/sim/railway-route.ts';
-import { account, rail, train } from '../../src/sim/railway-rows.ts';
+import { account, line, rail, shed, train } from '../../src/sim/railway-rows.ts';
 import { legRailheadHold } from '../../src/sim/railway-sys-route-kit.ts';
 import { LINE_SLOTS } from '../../src/sim/railway-trains.ts';
 import { TRAIN_PHASE } from '../../src/sim/railway-train.ts';
 import { legStagesOn, railwayAtLegs } from '../../src/sim/railway-seed-legs.ts';
 import { railwayAtGarage } from '../../src/sim/railway-seed-garage.ts';
-import { line, shed } from '../../src/sim/railway-rows.ts';
 import { tableFree } from '../../src/sim/railway-queries-works.ts';
+import { TRADE_ROW } from '../../src/sim/railway-works-layout.ts';
 import { act, advance, type Seed } from '../../src/sim/railway-seed-route.ts';
 
 const canopy = RAIL_LEGS.findIndex((l) => l.id === 'bell-canopy');
@@ -63,29 +63,38 @@ function fitByOps(s: Seed, boiler: number) {
   free();
   need(act(s, 'a', 'rail.bring', { line: ROW_LINE.bay, revision: shed(s.w).bringRev }), 'bay brought');
   free();
-  const part = boiler === 4 ? 5 : 6;
+  const part = Number(Object.keys(TRADE_ROW).find((k) => TRADE_ROW[Number(k) as keyof typeof TRADE_ROW] === boiler));
   need(
     act(s, 'a', 'rail.install', { line: ROW_LINE.bay, part, revision: line(s.w, ROW_LINE.bay).rev }),
     `part ${part}`,
   );
   need(line(s.w, ROW_LINE.bay).boiler === boiler, `bay line on row ${boiler}`);
 }
-const STAGES = {
-  'bay-mid': () => railwayAtLegs('bay-mid'),
-  'bay-reached': () => railwayAtLegs('bay-reached'),
-  'trade-ready ops': () => railwayAtGarage('trade-ready'),
-  'trade-ready to bay-reached ops': () => legStagesOn(railwayAtGarage('trade-ready'), 'bay-mid', 'bay-reached'),
-} as const;
+/** `trade-ready` run on to the bay cut laid, built once and restored per run (as the seed caches do). */
+let bayReachedOps: Seed | undefined;
+/** Each stage's seed, and whether it is fitted (by ops) or Standard only (Checkpoint G's baseline). */
+const STAGES: Record<string, { seed: () => Seed; fits: boolean }> = {
+  'bay-mid': { seed: () => railwayAtLegs('bay-mid'), fits: false },
+  'bay-reached': { seed: () => railwayAtLegs('bay-reached'), fits: false },
+  'trade-ready ops': { seed: () => railwayAtGarage('trade-ready'), fits: true },
+  'trade-ready to bay-reached ops': {
+    seed: () => {
+      bayReachedOps ??= legStagesOn(railwayAtGarage('trade-ready'), 'bay-mid', 'bay-reached');
+      return { w: restore(bayReachedOps.w), t: bayReachedOps.t };
+    },
+    fits: true,
+  },
+};
 const only = process.argv[2];
 console.log(
   'fit stage, boiler, players, offset, rack 1, rack 2, rack 3, total leg ticks, early departures after section',
 );
-for (const stage of Object.keys(STAGES) as (keyof typeof STAGES)[])
-  for (const boiler of [0, 4, 5])
+for (const [stage, { seed, fits }] of Object.entries(STAGES))
+  for (const boiler of fits ? [0, 4, 5] : [0])
     for (const players of [['a'], ['a', 'b']])
       for (const offset of offsets) {
-        if ((only && !stage.includes(only)) || (boiler && !stage.endsWith('ops'))) continue;
-        const s = STAGES[stage]();
+        if (only && !stage.includes(only)) continue;
+        const s = seed();
         advance(s, offset);
         if (boiler) fitByOps(s, boiler);
         if (legRow(s.w, bay).laid < RAIL_LEGS[bay]!.sections.length) section(s, bay, players, []);
