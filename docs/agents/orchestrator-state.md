@@ -12,7 +12,6 @@ The one record of who is running what, and what the eight-job limit is counted f
 | --- | --- | --- | --- | --- | --- |
 | Order picks A1 + C1: the pack-or-jump pick's rules at Station 1, and Q1 at 32 logs | Small choices and felt inflation | codex/order-pick-rules | the orchestrator thread, Astra high | 2026-11-25 02:10 | running: a delegate of the orchestrator thread; src/sim, src/world, adapters; one world bump; an Opus review before it ships (Astra built it) |
 | Order picks B1 + C2: the boiler trade held while the line builds, one re-pick; the bigger cradle dropped | Small choices and felt inflation | codex/trade-hold-rules | the orchestrator thread, Astra high | 2026-11-25 02:10 | running: a delegate of the orchestrator thread; src/sim steel and garage data; one world bump; an Opus review before it ships (Astra built it) |
-| Cliff kit: plan revised to his answers, then step 0 (the generator) | Terrain clean-up | claude/cliff-kit-step0 | live session, Opus medium | 2026-11-25 00:00 | running |
 | Cliff kit step 1: the shore (cove face replaced, kit faces and shore rocks, before/after sheet) | Terrain clean-up | claude/cliff-kit-shore | live session, Opus medium | 2026-11-25 | running: built on step 0's branch, rebases once step 0 is on main |
 
 ## Where the work stands
