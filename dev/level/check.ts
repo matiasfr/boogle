@@ -246,14 +246,17 @@ async function runChecks() {
     failed += homeSignals.failures;
     report.push(homeSignals);
     if (!json) console.log('Home held signals:', JSON.stringify(homeSignals));
-    const { checkCanyonKit } = await import('./canyon-kit.ts');
-    const canyonKit = checkCanyonKit();
-    failed += canyonKit.failures;
-    report.push(canyonKit);
-    if (!json) {
-      console.log(`canyon kit: ${canyonKit.pieces} pieces, ${canyonKit.failures} problems`);
-      for (const problem of canyonKit.problems) console.log(`  ${problem}`);
-    }
+    const { checkCliffKit } = await import('./cliff-kit.ts');
+    const cliffKit = checkCliffKit();
+    failed += cliffKit.failures;
+    report.push(cliffKit);
+    if (!json)
+      for (const a of cliffKit.areas) {
+        console.log(
+          `cliff kit, ${a.area}: ${a.pieces} pieces on census wall ${a.walls.join(', ')} (${a.toeDressed} m of toe in faces' reach), ${a.problems.length} problems`,
+        );
+        for (const problem of a.problems) console.log(`  ${problem}`);
+      }
     const { checkRiderCoach } = await import('./rider-coach.ts');
     const riderCoach = checkRiderCoach();
     failed += riderCoach.failures;

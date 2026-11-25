@@ -45,9 +45,18 @@ import {
   ringAt,
   ringDeckY,
 } from '../../src/sim/railway-ring-layout.ts';
-import { ENGINE } from '../../src/entities/railway/engine.ts';
+import { ENGINE, ENGINE_BOILER, ENGINE_CAB } from '../../src/entities/railway/engine.ts';
 import { BUFFERS, LEG, SPUR } from '../../src/place/home-station.ts';
-import { TRAILER, TRAIN_OFFSETS, consistOf, consistBounds } from '../../src/entities/railway/cars.ts';
+import {
+  LOCO,
+  RIDER_CAR,
+  STEEL_CAR,
+  TRAILER,
+  TRAIN_OFFSETS,
+  WAGON_CAR,
+  consistOf,
+  consistBounds,
+} from '../../src/entities/railway/cars.ts';
 import { line2World, line2Y } from '../../src/entities/railway/line2-path.ts';
 
 export type Pt = { x: number; z: number; y: number; s: number };
@@ -143,6 +152,17 @@ function futureLoop(cx: number, cz: number, tx: number, tz: number, y: number): 
 /** Map stage → status. Stage 2 is Ring Island (v27); 3-8 later. */
 const futureStatus = (id: string): Status => (id === 'ring' ? 'v27' : 'later');
 
+/** The highest top a player stands on aboard a train, over the rail: the engine's cab roof, chimney, boiler and running
+ * board and every car's deck or roof (the parts ./ring.ts lists as standable). */
+export const TRAIN_TOP = Math.max(
+  ENGINE_CAB.roofTop,
+  ENGINE_BOILER.chimney.y,
+  ENGINE_BOILER.top,
+  ENGINE.top,
+  ...[LOCO, RIDER_CAR, TRAILER, WAGON_CAR, STEEL_CAR].map((c) => c.top),
+);
+/** The tracks a train is drawn on today, and Ring Island's planned ones (v27): what scenery keeps clear of. */
+export const drawnTracks = () => tracks().filter((t) => t.enforce || t.status === 'v27');
 export function tracks(): Track[] {
   const out: Track[] = [];
   for (const L of LIVE) {

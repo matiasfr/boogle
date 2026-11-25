@@ -10,6 +10,7 @@ import { account, qjob, rail, trees } from '../../src/sim/railway-rows.ts';
 import { line2Routes, LINE2_SEA } from '../../src/sim/railway-line2-layout.ts';
 import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
 import { WALKABLE_NY } from '../../src/constants.ts';
+import { TWO_JUMPS } from '../level/mover.ts';
 import { CELL, H, NX, NZ, PATH_SAMPLES, at as cellAt, cellX, cellZ, heights } from '../../src/place/terrain.ts';
 import {
   DEVICES,
@@ -212,7 +213,6 @@ export function runPlaceLevelCheck() {
   // for real. This one looks for what shouldn't be possible yet.
   type Have = { jump: boolean; hook: boolean; glide: boolean };
   const ONE_JUMP = 1.68,
-    TWO_JUMPS = 3.03,
     JUMP_REACH = 4.7, // walking pace, one jump
     TWO_REACH = 8; // two
   // Course-only sprint envelopes; browser inputs supply the collision witness. Include coyote grace and body diameter.

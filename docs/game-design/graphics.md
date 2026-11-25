@@ -186,10 +186,14 @@
   bevels, a broken top), with boulders at its foot, broken caps on the plateau's lip and low rock at the waterline. The
   pieces wear the cliff's own rock (`rockLayers` in [ground-material.ts](../../src/place/ground-material.ts)), each block
   shaded a little lighter or darker and its sky-facing faces sun-bleached. They are scenery with box solids: the tread
-  keeps its full width (every solid 0.4 m outside its edge), the river side stays open, and nothing within 6 m of the
-  alcove, bell or first device pad. Records: `terrain.*` (src/content/prefabs/terrain.ts), placed by
-  [dev/prefab/canyon-kit.ts](../../dev/prefab/canyon-kit.ts) from the ground; seven instance batches, 6,688 triangles a
-  pass. Other wedges wait for the owner's word after he judges this one.
+  keeps its full width (every solid 0.4 m outside its edge), the river side stays open, nothing within 6 m of any
+  gated place in the layout (pads, secrets and where each is fetched from, devices, pillars, sites), no solid in a
+  rail's loading gauge, and no piece a new way up (every standable top flush, out of reach or a low perch, the gate in
+  `npm run level-check`).
+  Records: `terrain.*` (src/content/prefabs/terrain.ts), placed by the cliff kit's generator
+  [dev/prefab/cliff-kit.ts](../../dev/prefab/cliff-kit.ts), one level an area (the canyon is the first), from the
+  ground; each area its own instance batches (the canyon's seven, 6,688 triangles a pass). The kit goes on every cliff
+  area by area ([cliff-kit-everywhere](../plans/cliff-kit-everywhere.md)).
 - **Lighting model: three's plain Standard lighting** (10 November owner call: baseline shading, after trying toon
   style B live as the default). No stepped light, cool shade side or rim on characters or the world. The comparison
   is kept as research: [toon-shading](../research/toon-shading.md).
