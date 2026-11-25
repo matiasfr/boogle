@@ -129,16 +129,29 @@ if ! { git -C "$trusted" fetch -q origin && git -C "$trusted" checkout -q --deta
   echo "ship-queue: could not move the trusted checkout $trusted to origin/main; nothing shipped."
   exit 1
 fi
-bash "$trusted/dev/codex/ship-branch.sh" "$wt" 2>&1 | tail -6
-status=${PIPESTATUS[0]}
+out=$(bash "$trusted/dev/codex/ship-branch.sh" "$wt" 2>&1)
+status=$?
+printf '%s\n' "$out" | tail -6
 unlock
 trap - EXIT
 [ "$status" = 0 ] || exit "$status"
 [ "$wait" = 1 ] || exit 0
 
+# Wait on the commit the ship pushed, not the worktree's HEAD: a worktree another session moved to main mid-ship read
+# as "on main" while nothing had merged (25 November, the honk step).
 sha=$(git -C "$wt" rev-parse HEAD)
+pushed=$(printf '%s\n' "$out" | sed -n 's/^ship: pushed .* to \(ship\/[^ ]*\)\.$/\1/p' | tail -1)
+if [ -n "$pushed" ]; then
+  git -C "$wt" fetch -q origin "+refs/heads/$pushed:refs/remotes/origin/$pushed" 2>/dev/null || true
+  remote=$(git -C "$wt" rev-parse -q --verify "refs/remotes/origin/$pushed" || true)
+  if [ -n "$remote" ] && [[ "$remote" != "${pushed##*-}"* ]]; then
+    echo "ship: $pushed holds ${remote:0:9}, not the commit it is named for (the worktree moved during the ship); nothing will merge. Rerun ship-queue."
+    exit 5
+  fi
+  [ -z "$remote" ] || sha=$remote
+fi
 reran=0
-left() { git -C "$wt" fetch -q origin; git -C "$wt" log origin/main..HEAD --oneline | wc -l | tr -d ' '; }
+left() { git -C "$wt" fetch -q origin; git -C "$wt" log "origin/main..$sha" --oneline | wc -l | tr -d ' '; }
 for i in $(seq 1 90); do
   [ "$(left)" = 0 ] && { echo "ship: on main"; exit 0; }
   # A ship pull request that conflicts with main (another ship landed while this one was in CI) never merges: say so
