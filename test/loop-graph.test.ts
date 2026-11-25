@@ -29,8 +29,10 @@ const generic = new Set<string>(GENERIC_OPS);
 const pending = new Set<string>(PENDING_OPS);
 const owned = new Set(NODES.flatMap((n) => n.ops));
 
-test('a Canopy stop cannot be assigned to the Ring Island bot, which finishes at Ring Island', () => {
+test('the Ring Island bot cannot take a later leg stop', () => {
   assert.throws(() => railSegmentOptions(['--from', 'deck-laid', '--to', 'canopy']));
+  assert.throws(() => railSegmentOptions(['--from', 'deck-laid', '--to', 'port']));
+  assert.equal(railSegmentOptions(['--from', 'canopy-reached', '--to', 'port']).seed?.railFrom, 'legs');
 });
 
 // Exercise the real dev entry points with the browser inputs and sim clock under test control.

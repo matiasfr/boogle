@@ -6,9 +6,11 @@
 // take the crystal seeds, ride home the long way (`ns` to High Gorge, line 2 to the Village), walk to the West landing
 // and build the bay cut, riding `bay` trains to Bell Rock's upper platform. Leg 3: open the Canopy barrier on frame 1 there, build the three sections
 // riding `bay` trains over the strait to each head and on to Canopy Town, take the glider cloth round the buffers and
-// ride home on the same line to the West landing. Prompts are pressed by id (`railway-leg-take-logs`, `-take-rails`,
+// ride home on the same line to the West landing. Leg 4: walk round the root to the cave apron, open the plug,
+// build the three sections to Port Quay and ride back to the West landing.
+// Prompts are pressed by id (`railway-leg-take-logs`, `-take-rails`,
 // `-feed`, `-pick`, `-gate`, `-seeds`, `-canopy`, `-cloth`). Each phase reads the rows first, so it resumes from
-// `ring-joined`, `gorge-open`, `gorge-mid`, `gorge-reached`, `bay-mid`, `trade-ready` and `bay-reached` (a seed starts
+// `ring-joined`, `gorge-open`, `gorge-mid`, `gorge-reached`, `bay-mid`, `trade-ready`, `bay-reached` and `canopy-reached` (a seed starts
 // at the Village). Garage step 4: with `railFit=quick|strong` the bot fits the bay line at the Roundhouse post
 // (./railway-fit.ts) at Home before its next bay ride out; with none it never visits the post.
 // Inspection observes; it never seeds a world or moves a player. A fall into the sea is a finding (no recovery).
@@ -44,7 +46,8 @@ const legOf = (id: string) => RAIL_LEGS.findIndex((l) => l.id === id);
 const STACK = legOf('stack'),
   INCLINE = legOf('incline'),
   BAY = legOf('bay-cut'),
-  CANOPY = legOf('bell-canopy');
+  CANOPY = legOf('bell-canopy'),
+  CAVE = legOf('cave');
 const PICK = RAIL_GRANTS.findIndex((g) => g.id === 'pick'),
   SEEDS = RAIL_GRANTS.findIndex((g) => g.id === 'seeds'),
   CLOTH = RAIL_GRANTS.findIndex((g) => g.id === 'cloth');
@@ -548,4 +551,23 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   );
   logFleet('home from Canopy Town');
   await checkpoint('canopy home');
+
+  // ---------------------------------------------------------------- leg 4: West landing to Port Quay, and home
+  const cave = RAIL_LEGS[CAVE]!;
+  const caveGate = cave.sections[0]!.gate!;
+  const caveStart = fromStop(cave);
+  const caveEnd = cave.railheadHalt + cave.sections.length - 1;
+  const root = rowWorld(cave.line, 0, 0, { x: 0, z: 0 });
+  check(await bot.walk(root.x, root.z, 1), 'walked round the West landing root');
+  if (!(route().gates & (1 << caveGate))) {
+    await press('railway-leg-plug', RAIL_GATES[caveGate]!.at, 'open the sea-cave plug');
+    check(route().gates & (1 << caveGate), 'the sea-cave plug is open');
+    await checkpoint('plug opened');
+  }
+  await buildRowLeg(CAVE, 'cave');
+  await checkpoint('port reached');
+  await rowRide(cave.line, caveEnd, caveStart, 'cave');
+  const home = rowLever(cave.line, caveStart);
+  await stepOff({ x: home.x * 100, z: home.z * 100 }, 'stepped off the cave train at the West landing');
+  await checkpoint('port home');
 }

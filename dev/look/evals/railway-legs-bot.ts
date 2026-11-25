@@ -1,7 +1,7 @@
 // npm run playthrough -- --from ring-joined --to gorge
-//  (or --from gorge-reached --to bay, --from bay-reached --to canopy)
+//  (or --from gorge-reached --to bay, --from bay-reached --to canopy, --from canopy-reached --to port)
 //  (the harness runs this bot: railFrom=legs with a leg seed; railStop ends at a named checkpoint: gorge reached, bay
-//   reached, canopy home)
+//   reached, canopy home, port home)
 // The greybox route's built legs (dev/look/bots/railway-legs.ts) against an accepted host seed: ride out to each frame,
 // take the kit and feed it, wait out each lay, ride on to each new railhead, press the pickups and barriers, through
 // ordinary inputs and the legs' prompts. No teleport, direct op or recovery.
@@ -51,7 +51,7 @@ background(
     if (!(await railReady(300000)) || !(await bot.until(() => me.body && me.coyote > 0, 300000, 'Leg seed arrived')))
       throw new Error('Leg seed did not arrive');
     await legRoute({ bot, checkpoint: railCheckpoint(bot, 'Legs seeded', facts) });
-    bot.finish('Legs played to the West landing home from Canopy Town; no recovery');
+    bot.finish('Legs played to the West landing home from Port Quay; no recovery');
   })().catch((error: unknown) => {
     bot.never(`Legs: ${error instanceof Error ? error.message : String(error)}`);
     shot.__placeDone = true; // End the warm-up; background reports the error, so capture health still fails.
