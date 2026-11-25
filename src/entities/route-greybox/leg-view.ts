@@ -50,7 +50,7 @@ import {
   legS,
   type RouteLeg,
 } from '../../sim/railway-route.ts';
-import { account, aperture, line, rail, shed, steel, train, type ReadWorld } from '../../sim/railway-rows.ts';
+import { account, aperture, line, shed, steel, train, type ReadWorld } from '../../sim/railway-rows.ts';
 import { heldBig, LOGS, roomOf } from '../../sim/railway-queries.ts';
 import { RAILS } from '../../sim/railway-line2-layout.ts';
 import { gateLeg, legDone, legOpen, legReached, legRow, legYard, routeRow } from '../../sim/railway-queries-route.ts';
@@ -502,6 +502,8 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
   // rack plate and yard plate: one leg is open at a time on the whole route.
   const bill = sign(4.2, 1.8, 1.8, 'one', 768),
     plate = sign(1.9, 0.8, 1.3, 'one', 384),
+    caveBill = sign(4.2, 1.8, 1.8, 'one', 768),
+    cavePlate = sign(1.9, 0.8, 1.3, 'one', 384),
     pickPlate = sign(2.2, 0.9, 1.7, 'one', 384),
     gatePlate = sign(3, 1, 2.3, 'none', 384),
     townBoard = sign(3.2, 1.3, 1.2, 'two', 512),
@@ -973,6 +975,8 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
   const signs = [
     bill,
     plate,
+    caveBill,
+    cavePlate,
     pickPlate,
     gatePlate,
     townBoard,
@@ -998,9 +1002,8 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     if (!adapter.read.whole()) return null;
     const wd = adapter.read.world(),
       route = routeRow(wd),
-      stock = rail(wd),
       per = legs.map((l) => legRows(wd, l.sp.k)),
-      open = legs.findIndex((_l, i) => per[i]!.open);
+      open = legs.flatMap((_l, i) => (per[i]!.open ? [i] : []));
     return {
       wd,
       per,
@@ -1008,7 +1011,6 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       open,
       joined: aperture(wd).joined >= 0,
       // The racks are the open leg's only once it is open (before, Rail.depot is a Q job's).
-      rack: open >= 0 ? { logs: stock.depot, rails: stock.depotRails } : { logs: 0, rails: 0 },
       grants: route.grants,
       gates: route.gates,
       reached: route.reached >= 0,
@@ -1077,8 +1079,10 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     });
     // The open leg's current section: its frame, bill, rack and plate (the stack's while Ring Island's near view
     // stands, as its deck does with nothing laid).
-    const o = r.open >= 0 ? legs[r.open]! : null;
-    if (o && shown(o, r.per[r.open]!)) site(o, r, r.per[r.open]!);
+    for (const i of r.open) {
+      const o = legs[i]!;
+      if (shown(o, r.per[i]!)) site(o, r.per[i]!);
+    }
     yard(r);
     gorge(r);
     bell(r);
@@ -1142,7 +1146,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     for (const a of [-1.25, 1.25]) for (const t of [-0.95, 0.95]) put(f, a, t, 0.85, 0.1, 1.7, 0.1, GREY);
     for (const t of [-0.95, 0.95]) put(f, 0, t, 1.65, 0.1, 0.1, 2.6, GREY);
   }
-  function site(l: (typeof legs)[number], r: NonNullable<ReturnType<typeof rows>>, lr: LegRows) {
+  function site(l: (typeof legs)[number], lr: LegRows) {
     const { sp } = l,
       laid = lr.laid,
       n = sp.leg.sections.length,
@@ -1155,11 +1159,11 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     load(f, Math.min(lr.row.logs, sec.logs), Math.min(lr.row.rails, sec.rails));
     const where = laying
       ? 'LAYING THE SECTION'
-      : r.rack.logs + r.rack.rails > 0
+      : lr.row.rackLogs + lr.row.rackRails > 0
         ? 'KIT: ON THE RACK'
         : 'KIT: ON A TRAIN';
     show(
-      bill,
+      sp.leg.id === 'cave' ? caveBill : bill,
       local(f, 1.5, 0),
       f.y,
       f.tx,
@@ -1174,8 +1178,16 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     );
     // The rack: a pallet, the logs and rails a train has set down, and the plate with the section's number. A unit
     // still in the air from a kit car (railway/kit-board.ts) is drawn on the rack once it lands.
-    pile(k, r.rack.logs - legKitFlight.logs, r.rack.rails - legKitFlight.rails);
-    show(plate, local(k, -1.6, 0), k.y, k.tx, k.tz, [{ t: `KIT ${num}`, size: 0.5 }], num);
+    pile(k, lr.row.rackLogs - legKitFlight[sp.k]!.logs, lr.row.rackRails - legKitFlight[sp.k]!.rails);
+    show(
+      sp.leg.id === 'cave' ? cavePlate : plate,
+      local(k, -1.6, 0),
+      k.y,
+      k.tx,
+      k.tz,
+      [{ t: `KIT ${num}`, size: 0.5 }],
+      num,
+    );
   }
   /** High Gorge's yard (the incline's, greybox leg 2): the units line 2 has set down past what its first rack lacks,
    * on a pallet beside that rack, until the `ns` trains take them on. Unlabelled (no new copy). */
@@ -1309,7 +1321,11 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     if (!(r.grants & (1 << SEEDS))) return LEG_OBJECTIVES.seeds;
     if (!bay) return '';
     if (!done(r, 'bay-cut')) return LEG_OBJECTIVES.bay;
-    if (!(r.gates & (1 << CANOPY))) return LEG_OBJECTIVES.canopyGate;
+    if (!(r.gates & ((1 << CANOPY) | (1 << PLUG))))
+      return 'Build the line to Canopy Town or the cave line to Port Quay (placeholder)';
+    if (done(r, 'cave') && !done(r, 'bell-canopy'))
+      return 'Ride to Bell Rock and build the line to Canopy Town (placeholder)';
+    if (!(r.gates & (1 << CANOPY))) return LEG_OBJECTIVES.cave;
     if (!done(r, 'bell-canopy')) return LEG_OBJECTIVES.canopy;
     if (!(r.grants & (1 << CLOTH))) return LEG_OBJECTIVES.cloth;
     if (!(r.gates & (1 << PLUG))) return LEG_OBJECTIVES.plug;
@@ -1367,9 +1383,10 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       const { wd } = r,
         mine = account(wd, adapter.read.pid),
         out: Interactable[] = [];
-      const o = r.open >= 0 ? legs[r.open]! : null,
-        lr = o ? r.per[r.open]! : null;
-      if (o && lr && shown(o, lr)) {
+      for (const i of r.open) {
+        const o = legs[i]!,
+          lr = r.per[i]!;
+        if (!shown(o, lr)) continue;
         const { sp } = o,
           laid = lr.laid,
           f = sp.frames[laid]!,
@@ -1403,10 +1420,10 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
                 : null;
             return full ? { ...target, blocked: full } : { ...target, run };
           };
-          if (r.rack.logs > 0)
-            out.push(take('railway-leg-take-logs', TAKE_LOGS, LOGS, -0.6, () => void adapter.depotTake()));
-          if (r.rack.rails > 0)
-            out.push(take('railway-leg-take-rails', TAKE_RAILS, RAILS, 0.6, () => void adapter.depotRailTake()));
+          if (lr.row.rackLogs > 0)
+            out.push(take('railway-leg-take-logs', TAKE_LOGS, LOGS, -0.6, () => void adapter.depotTake(sp.k)));
+          if (lr.row.rackRails > 0)
+            out.push(take('railway-leg-take-rails', TAKE_RAILS, RAILS, 0.6, () => void adapter.depotRailTake(sp.k)));
         }
       }
       // The pickup refuses until the fourth section is laid ("Not yet": call 28); the barrier until the room holds
@@ -1458,8 +1475,14 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         );
       };
       gate(CANOPY, 'railway-leg-canopy', CANOPY_SITE);
-      if (plugSite)
-        gate(PLUG, 'railway-leg-plug', plugSite, r.pick ? 'After the line to Canopy (placeholder)' : NEEDS_PICK);
+      if (plugSite) gate(PLUG, 'railway-leg-plug', plugSite, r.pick ? 'After the bay line (placeholder)' : NEEDS_PICK);
+      if (done(r, 'cave') && !done(r, 'bell-canopy') && within(p, wall.frames[0]!, legFrame(wall.leg, 0).reach))
+        out.push({
+          id: 'railway-leg-feed',
+          verb: FEED,
+          at: v3(wall.frames[0]!, wall.frames[0]!.y + 1.5),
+          blocked: 'After the line to Canopy (placeholder)',
+        });
       gate(
         NOTCH,
         'railway-leg-notch',
@@ -1499,6 +1522,8 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     },
     inspect: () => {
       const r = rows(),
+        first = r?.open[0],
+        active = first === undefined ? null : r!.per[first]!.row,
         s = r?.per[legIndex.get('stack')!];
       return {
         legView: {
@@ -1508,8 +1533,8 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
           bill: bill.mesh.visible ? bill.text : null,
           plate: plate.mesh.visible ? plate.text : null,
           frame: s ? { logs: s.row.logs, rails: s.row.rails, laying: s.row.start >= 0 } : null,
-          rack: r?.rack ?? null,
-          open: r && r.open >= 0 ? legs[r.open]!.sp.leg.id : null,
+          rack: active ? { logs: active.rackLogs, rails: active.rackRails } : null,
+          open: first === undefined ? null : legs[first]!.sp.leg.id,
           pick: r?.pick ?? false,
           gate: r?.gate ?? false,
           objective,

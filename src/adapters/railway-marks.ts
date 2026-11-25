@@ -57,6 +57,7 @@ export function railwayActionMarks(intent: RailwayIntent, amount: number, mine: 
   if (intent.op === 'rail.beamDeposit') data.material = 'beam';
   if (intent.op === 'rail.depotTake') data.material = 'logs';
   if (intent.op === 'rail.depotRailTake') data.material = 'rails';
+  if (intent.op === 'rail.gate') data.gate = intent.id;
   if (intent.op === 'rail.call') data.halt = intent.id;
   if (intent.op === 'rail.strike') data.seam = intent.id;
   if (intent.op === 'rail.footTake') data.rack = intent.rack;
