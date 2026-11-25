@@ -1,0 +1,22 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "place": "boogler-hut",
+  "placements": [
+    {"id":"back","pos":[0,1.55,-2],"prefab":"poi.hut-plaster","scale":[5,3.3,0.24]},
+    {"id":"side-1","pos":[-2.38,1.55,0],"prefab":"poi.hut-plaster","scale":[0.24,3.3,4]},
+    {"id":"front-1","pos":[-1.8,1.55,2],"prefab":"poi.hut-plaster","scale":[1.4,3.3,0.24]},
+    {"id":"jamb-1","pos":[-1.15,1.42,2.02],"prefab":"poi.hut-timber","scale":[0.18,2.84,0.34]},
+    {"id":"side1","pos":[2.38,1.55,0],"prefab":"poi.hut-plaster","scale":[0.24,3.3,4]},
+    {"id":"front1","pos":[1.8,1.55,2],"prefab":"poi.hut-plaster","scale":[1.4,3.3,0.24]},
+    {"id":"jamb1","pos":[1.15,1.42,2.02],"prefab":"poi.hut-timber","scale":[0.18,2.84,0.34]},
+    {"id":"lintel","pos":[0,2.99,2],"prefab":"poi.hut-timber","scale":[5.1,0.42,0.34]},
+    {"id":"roof","pos":[0,3.29,0],"prefab":"poi.hut-timber","scale":[5.7,0.22,4.8]},
+    {"id":"hat-brim","pos":[-1.2,3.49,-0.7],"prefab":"poi.hut-felt","scale":[1.2,0.18,1.2]},
+    {"id":"hat-crown","pos":[-1.2,4.13,-0.7],"prefab":"poi.hut-felt","scale":[0.62,1.16,0.62]},
+    {"id":"bench","pos":[-1.35,0.23,-1.38],"prefab":"secrets.ledge","scale":[1.6,0.46,0.62]}
+  ],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}

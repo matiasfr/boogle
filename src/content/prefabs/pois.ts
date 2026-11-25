@@ -3,6 +3,24 @@
 import { definePrefab } from '../../prefab/types.ts';
 
 export const prefabs = [
+  definePrefab({
+    key: 'poi.hut-plaster',
+    scope: 'place',
+    visual: { builder: 'secrets.box', params: { color: '#e8dcc0' } },
+    colliders: [{ group: 'room', shape: 'box', at: [0, 0, 0], half: [0.5, 0.5, 0.5] }],
+  }),
+  definePrefab({
+    key: 'poi.hut-timber',
+    scope: 'place',
+    visual: { builder: 'secrets.box', params: { color: '#7f5630' } },
+    colliders: [{ group: 'room', shape: 'box', at: [0, 0, 0], half: [0.5, 0.5, 0.5] }],
+  }),
+  definePrefab({
+    key: 'poi.hut-felt',
+    scope: 'place',
+    visual: { builder: 'secrets.column', params: { color: '#393545', rTop: 1, rBottom: 0.96 } },
+    colliders: [{ group: 'room', shape: 'cylinder', at: [0, 0, 0], rTop: 1, rBottom: 0.96, h: 1, segments: 7 }],
+  }),
   // The striped tower on the hill, its gallery deck and the spiral stair round the outside. Origin: the middle of the
   // flat pad it stands on; the stair's foot faces local -x (inland).
   definePrefab({

@@ -9565,6 +9565,85 @@
         "params": {}
       }
     },
+    "poi.hut-felt": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "group": "room",
+          "h": 1,
+          "rBottom": 0.96,
+          "rTop": 1,
+          "segments": 7,
+          "shape": "cylinder"
+        }
+      ],
+      "key": "poi.hut-felt",
+      "scope": "place",
+      "visual": {
+        "builder": "secrets.column",
+        "params": {
+          "color": "#393545",
+          "rBottom": 0.96,
+          "rTop": 1
+        }
+      }
+    },
+    "poi.hut-plaster": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "group": "room",
+          "half": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "poi.hut-plaster",
+      "scope": "place",
+      "visual": {
+        "builder": "secrets.box",
+        "params": {
+          "color": "#e8dcc0"
+        }
+      }
+    },
+    "poi.hut-timber": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "group": "room",
+          "half": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "poi.hut-timber",
+      "scope": "place",
+      "visual": {
+        "builder": "secrets.box",
+        "params": {
+          "color": "#7f5630"
+        }
+      }
+    },
     "poi.lighthouse": {
       "colliders": [],
       "key": "poi.lighthouse",
