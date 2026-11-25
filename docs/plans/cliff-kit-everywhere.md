@@ -549,6 +549,30 @@ gave zero horizontal drift.
 The new area adds 90,420 kit triangles per pass. The gorge-mouth camera adds 180,444 triangles across both
 passes, above the step’s 58,000 guide, and seven draws. Device frame time is unverified.
 
+## Step 4 as built
+
+The gorge mouth and south sea cliff (walls 4, 7 and 8) carry 22 crowned faces and three waterline rocks.
+The census rock mask clips the east bank's courses. On the steep west bank, two taller canyon faces seat into the cut.
+The south coast has two outcrops with shorter upper courses and a grass break. The headlands between the trees
+and the crack beside the south path stay clear. The combined reverse flood lost zero cells across 121,801 samples.
+The closest tread sample clears the edge by 2.35 m.
+The rail gauge is clear. The canyon, shore, gorge rim and long gorge wall levels match main byte for byte.
+
+[Matched sea, path and eye-level stills](cliff-kit-everywhere/gorge-mouth-before-after.jpg).
+
+The controller walked 17 m east along the south path and held its horizontal position through two seconds idle.
+The kit adds 13,540 triangles per pass. At the mouth camera that is 27,080 triangles and ten draws across both passes.
+
+| Census camera | Draws, main → step 4 | Triangles, main → step 4 |
+| --- | ---: | ---: |
+| Shore | 158 → 163 | 769,195 → 782,735 |
+| Shore climb | 376 → 381 | 1,017,641 → 1,031,181 |
+| Canyon climb | 206 → 206 | 829,299 → 829,299 |
+| Gorge rim | 369 → 372 | 955,441 → 967,485 |
+| Gorge mouth | 427 → 437 | 1,003,924 → 1,031,004 |
+| Far Head | 291 → 291 | 844,745 → 844,745 |
+| Summit | 346 → 346 | 1,006,978 → 1,006,978 |
+
 ## Design review (2026-11-24)
 
 Run by the plan's author in the same context (design-review skill). Read for it: DESIGN.md, owner calls (Look and art,

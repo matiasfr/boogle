@@ -9,14 +9,16 @@
 // - Tops are flush with the ground behind them, so the bluff's top walk runs on over a face's top a step at most.
 // - Shore rocks stand in the water at the faces' foot, low and dark, where the old cove's three boulders stood.
 // - The shore hop (src/place/shore-layout.ts SHORE_HOP) keeps its place and solid; it is not a kit piece.
-import type { Placement, Vec3 } from '../../src/prefab/types.ts';
+import type { Vec3 } from '../../src/prefab/types.ts';
 import { H } from '../../src/place/terrain.ts';
 import { ORIGIN } from '../../src/place/layout.ts';
 import { coveEdge } from '../../src/place/cove.ts';
 import { SHORE_HOP, SHORE_LANDING } from '../../src/place/shore-layout.ts';
 import { SEA_FACE, SHORE_ROCK } from '../../src/content/prefabs/terrain.ts';
 import { r2 as round } from '../../src/math.ts';
-import { kitPieceProblems, layAlong, layCourses, runAlong, type Area, type Key, type Kit } from './cliff-kit.ts';
+import { layAlong, runAlong, type Area, type Key, type Kit } from './cliff-kit.ts';
+
+import { dressSlope, raysAlong } from './cliff-kit-slope.ts';
 
 const ground = (x: number, z: number) => H(x + ORIGIN.x, z);
 /** How far back from its front a face's top reaches (its slab's depth and lean), m: where its top meets the ground. */
@@ -34,62 +36,6 @@ function put(kit: Kit, prefab: Key, x: number, y: number, z: number, yaw: number
 
 /** The bluff's front, along coveEdge from the end of its walkable end to where it tucks under the beach. */
 const BLUFF = runAlong(Array.from({ length: 21 }, (_, k): [number, number] => [coveEdge(49 + k), 49 + k]));
-/** A slope dressed in tiers of sea-cliff faces along its contours (owner, 25 November 2026: non-standable kit
- * everywhere; a face's crowned solid offers no top, so faces may cover walkable rock slopes too). `rays` are lines
- * across the slope from its foot, each a start (Place-local x, z) and a unit direction uphill; on each, the first point
- * the ground reaches a tier's `level` is that tier's contour. Consecutive contour points less than 4 m apart make a run;
- * faces go end to end along it (10 m, then 6 m where 10 no longer fits), their foot SET_IN m into it and 0.5 m under the
- * contour, facing downhill. A face that would break a piece rule (the tread, a gated place, a rail) is left out, and
- * so is one whose middle stands in `keepOff` (the walks: nothing of the kit on them). */
-function dressSlope(
-  kit: Kit,
-  name: string,
-  rays: readonly (readonly [number, number, number, number])[],
-  levels: readonly number[],
-) {
-  for (const level of levels) {
-    const runs: { x: number; z: number; ux: number; uz: number }[][] = [[]];
-    for (const [x0, z0, ux, uz] of rays) {
-      let d = 0;
-      while (d < 30 && ground(x0 + ux * d, z0 + uz * d) < level) d += 0.25;
-      const run = runs[runs.length - 1]!;
-      const last = run[run.length - 1];
-      const point = d < 30 ? { x: x0 + ux * d, z: z0 + uz * d, ux, uz } : undefined;
-      if (!point || (last && Math.hypot(point.x - last.x, point.z - last.z) > 4)) runs.push([]);
-      if (point) runs[runs.length - 1]!.push(point);
-    }
-    for (const points of runs) {
-      if (points.length < 2) continue;
-      const run = runAlong(points.map((q) => [q.x, q.z] as const));
-      // The run's left normal faces downhill when it points against the rays.
-      const n = run.at(run.length / 2);
-      const side = n.nx * points[0]!.ux + n.nz * points[0]!.uz < 0 ? 1 : -1;
-      layCourses(run, side, (prefab, c, yaw, s) => {
-        const placement: Placement = {
-          id: 'trial',
-          prefab,
-          pos: [round(c.x - c.nx * SET_IN), round(level - 0.5), round(c.z - c.nz * SET_IN)],
-          rot: [round(yaw), 0, 0],
-        };
-        if (keepOff(c.x, c.z) || kitPieceProblems(placement, shore.keepClear).length) return;
-        kit.place(prefab, placement.pos, placement.rot!, `${name} ${level} m s ${s.toFixed(1)}`);
-      });
-    }
-  }
-}
-/** Rays `step` m apart along a line from (x0, z0) to (x1, z1), each starting `back` m downhill of it and running uphill
- * along (ux, uz). */
-function raysAlong(x0: number, z0: number, x1: number, z1: number, ux: number, uz: number, back = 8, step = 1) {
-  const length = Math.hypot(x1 - x0, z1 - z0);
-  return Array.from({ length: Math.floor(length / step) + 1 }, (_, k) => {
-    const t = (k * step) / length;
-    return [x0 + (x1 - x0) * t - ux * back, z0 + (z1 - z0) * t - uz * back, ux, uz] as const;
-  });
-}
-/** The walks the kit keeps off: the bluff's walkable end and its flank down to the sand, and the landing's level pad. */
-/** How far into the slope a tier face stands from its contour, m: its back buried, so no trough behind it walls a
- * player in (the area audit's reverse flood found pockets at 0.5 m). */
-const SET_IN = 1.5;
 const keepOff = (x: number, z: number) =>
   (x > -203 && x < -188 && z > 32 && z < 50) || Math.hypot(x - SHORE_LANDING.x, z - SHORE_LANDING.z) < 14;
 
@@ -157,12 +103,13 @@ export const shore: Area = {
     }
     // The shore's rock slopes, in tiers: the shore climb's wall (census wall 9) seen head on from the landing, its
     // part beside the climb, the pocket's east wall behind the board, the hill behind the bluff and the slope beyond it.
+    const walks = { keepClear: shore.keepClear, keepOff };
     const tiers = (from: number, to: number) =>
       Array.from({ length: Math.floor((to - from) / 3) + 1 }, (_, k) => from + 3 * k);
-    dressSlope(kit, 'climb wall', raysAlong(-189, -16, -189, 2, 1, 0), tiers(4, 13));
-    dressSlope(kit, 'climb side', raysAlong(-186, 2, -174, 17, 0.78, -0.63), tiers(7, 13));
-    dressSlope(kit, 'pocket wall', raysAlong(-189, 25, -189, 44, 1, 0), tiers(-1, 8));
-    dressSlope(kit, 'bluff hill', raysAlong(-184, 46, -184, 72, 1, 0, 2), tiers(6, 15));
-    dressSlope(kit, 'south slope', raysAlong(-190, 74, -190, 86, 1, 0), tiers(1, 13));
+    dressSlope(kit, 'climb wall', raysAlong(-189, -16, -189, 2, 1, 0), tiers(4, 13), walks);
+    dressSlope(kit, 'climb side', raysAlong(-186, 2, -174, 17, 0.78, -0.63), tiers(7, 13), walks);
+    dressSlope(kit, 'pocket wall', raysAlong(-189, 25, -189, 44, 1, 0), tiers(-1, 8), walks);
+    dressSlope(kit, 'bluff hill', raysAlong(-184, 46, -184, 72, 1, 0, 2), tiers(6, 15), walks);
+    dressSlope(kit, 'south slope', raysAlong(-190, 74, -190, 86, 1, 0), tiers(1, 13), walks);
   },
 };
