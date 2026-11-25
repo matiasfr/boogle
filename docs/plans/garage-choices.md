@@ -1,5 +1,5 @@
 > **Status: approved (2026-11-15), owner answers [below](#owner-questions); steps 1 to 3 build on them. Step 4 builds
-> the per-line trade in [garage-line-trade](../brainstorms/garage-line-trade.md).** Steps 0–3 are built (step 3 on main 2026-11-17, #2029, v59); steps 4–5 remain unbuilt. Original measurements below are from
+> the per-line trade in [garage-line-trade](../brainstorms/garage-line-trade.md).** Steps 0–3 are built (step 3 on main 2026-11-17, #2029, v59); step 4 shipped through its checkpoint (#2372). Step 5 remains open. Original measurements below are from
 > `eadecf32b` (v51). The train ladder (14, 20 and 25 m/s; one train, then a train per extension) is on main (#1903);
 > step 1 replaces its automatic table upgrade (as-built note in section 7).
 
