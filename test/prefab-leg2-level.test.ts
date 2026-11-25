@@ -777,7 +777,7 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
       bellMassing: () => leg2Massing(bellRaw),
       canopyMassing: () => leg2Massing(canopy),
       westMassing: () => leg2Massing(westRaw),
-      legKitFlight: { logs: 0, rails: 0 },
+      legKitFlight: route.RAIL_LEGS.map(() => ({ logs: 0, rails: 0 })),
       legYardFlight: { logs: 0, rails: 0 },
       bellPads: [],
       areaLabels: new Map(),

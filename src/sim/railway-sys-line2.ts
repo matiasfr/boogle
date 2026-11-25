@@ -278,12 +278,14 @@ function takeFromRack(w: World, { a: aid, e }: Act, kind: typeof LOGS | typeof R
   let n: number;
   if (e.leg === undefined) {
     if (q7Laid(w)) return 0;
-    const rail = w.mut(Rail, railId(w))!, key = kind === LOGS ? 'depot' : 'depotRails';
+    const rail = w.mut(Rail, railId(w))!,
+      key = kind === LOGS ? 'depot' : 'depotRails';
     n = Math.min(rail[key], room);
     rail[key] -= n;
   } else {
     if (!railInt(e.leg, RAIL_LEGS.length - 1) || !legOpen(w, e.leg)) return 0;
-    const leg = w.mut(Leg, legId(w, e.leg))!, key = kind === LOGS ? 'rackLogs' : 'rackRails';
+    const leg = w.mut(Leg, legId(w, e.leg))!,
+      key = kind === LOGS ? 'rackLogs' : 'rackRails';
     n = Math.min(leg[key], room);
     leg[key] -= n;
     legKitLifted(w, aid, e.leg, kind === LOGS ? n : 0, kind === RAILS ? n : 0);

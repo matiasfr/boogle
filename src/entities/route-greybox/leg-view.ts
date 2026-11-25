@@ -1326,7 +1326,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       return 'Ride to Bell Rock and build the line to Canopy Town (placeholder)';
     if (!(r.gates & (1 << CANOPY))) return LEG_OBJECTIVES.cave;
     if (!done(r, 'bell-canopy')) return LEG_OBJECTIVES.canopy;
-    if (!(r.grants & (1 << CLOTH))) return LEG_OBJECTIVES.cloth;
+    if (!done(r, 'cave') && !(r.grants & (1 << CLOTH))) return LEG_OBJECTIVES.cloth;
     if (!(r.gates & (1 << PLUG))) return LEG_OBJECTIVES.plug;
     if (!done(r, 'cave')) return LEG_OBJECTIVES.cave;
     if (done(r, 'wall')) {

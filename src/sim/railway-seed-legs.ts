@@ -62,11 +62,13 @@ const STACK = RAIL_LEGS.findIndex((l) => l.id === 'stack'),
 
 // Share only a serialized source fixture through restore, never a mutable world between callers.
 const cache = new Map<LegStage, Seed>();
-/** The railway at a leg stage, built on the stage before it in LEG_STAGES (`ring-joined` for the first). */
+const previousStage = (stage: LegStage) =>
+  stage === 'cave-first-open' ? 'bay-reached' : LEG_STAGES[LEG_STAGES.indexOf(stage) - 1];
+/** The railway at a leg stage, built on its predecessor (`ring-joined` for the first). */
 export function railwayAtLegs(stage: LegStage): Seed {
   let base = cache.get(stage);
   if (!base) {
-    const before = stage === 'cave-first-open' ? 'bay-reached' : LEG_STAGES[LEG_STAGES.indexOf(stage) - 1];
+    const before = previousStage(stage);
     base = build(before ? railwayAtLegs(before) : railwayAtRing('ring-joined'), stage);
     const broken = invariant(base.w);
     need(broken === null, `${stage}: ${broken}`);
@@ -104,10 +106,14 @@ export function laySection(s: Seed, k = STACK) {
 /** The leg stages after `from` up to `to` run on `s`, any seed in `from`'s state (garage step 4's tests start them
  * from worlds they already hold, such as High Gorge reached with steel home). Changes `s` in place and returns it. */
 export function legStagesOn(s: Seed, from: LegStage, to: LegStage): Seed {
-  const a = LEG_STAGES.indexOf(from),
-    b = LEG_STAGES.indexOf(to);
-  need(a >= 0 && b > a, `${from} to ${to}`);
-  for (const stage of LEG_STAGES.slice(a + 1, b + 1)) build(s, stage);
+  const stages: LegStage[] = [];
+  let at: LegStage | undefined = to;
+  while (at !== undefined && at !== from) {
+    stages.push(at);
+    at = previousStage(at);
+  }
+  need(at === from && stages.length > 0, `${from} to ${to}`);
+  for (const stage of stages.reverse()) build(s, stage);
   const broken = invariant(s.w);
   need(broken === null, `${to}: ${broken}`);
   return s;
@@ -183,11 +189,11 @@ function build(s: Seed, stage: LegStage): Seed {
       while (legRow(w, CANOPY).laid < RAIL_LEGS[CANOPY]!.sections.length) laySection(s, CANOPY);
       break;
     case 'cave-first-open':
-      need(act(s, 'a', 'rail.gate', { id: RAIL_GATES.findIndex(g => g.id === 'plug') }) === 1, 'plug opened first');
+      need(act(s, 'a', 'rail.gate', { id: RAIL_GATES.findIndex((g) => g.id === 'plug') }) === 1, 'plug opened first');
       until(s, () => racked(s, CANOPY) && racked(s, CAVE), 6000, 'both first racks stocked');
       break;
     case 'cave-first-reached':
-      while (legRow(w,CAVE).laid < RAIL_LEGS[CAVE]!.sections.length) laySection(s, CAVE);
+      while (legRow(w, CAVE).laid < RAIL_LEGS[CAVE]!.sections.length) laySection(s, CAVE);
       advance(s, 900);
       break;
     case 'cave-open':

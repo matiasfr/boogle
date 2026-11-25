@@ -70,15 +70,15 @@ test('the room can feed across the fork, finish the cave first, then release the
   assert.deepEqual([rack(3), rack(k)], [20, 20]);
   const n = act(s, 'a', 'rail.depotTake', { leg: 3 });
   assert.ok(n > 0);
-  assert.deepEqual([rack(3), rack(k), account(s.w,'a')!.liftLeg], [20-n,20,3]);
-  assert.equal(act(s, 'a', 'rail.legStock', {leg:k}), n);
-  assert.deepEqual([legRow(s.w,3).heldLogs, rack(k), legRow(s.w,k).logs], [0,20,n]);
-  while (legRow(s.w,k).laid < leg.sections.length) laySection(s,k);
-  assert.equal(legRow(s.w,5).loadedLogs, 0);
-  assert.equal(act(s,'b','rail.legStock',{leg:5}),0);
-  while (legRow(s.w,3).laid < RAIL_LEGS[3]!.sections.length) laySection(s,3);
-  laySection(s,5);
-  assert.equal(invariant(s.w),null);
+  assert.deepEqual([rack(3), rack(k), account(s.w, 'a')!.liftLeg], [20 - n, 20, 3]);
+  assert.equal(act(s, 'a', 'rail.legStock', { leg: k }), n);
+  assert.deepEqual([legRow(s.w, 3).heldLogs, rack(k), legRow(s.w, k).logs], [0, 20, n]);
+  while (legRow(s.w, k).laid < leg.sections.length) laySection(s, k);
+  assert.equal(legRow(s.w, 5).loadedLogs, 0);
+  assert.equal(act(s, 'b', 'rail.legStock', { leg: 5 }), 0);
+  while (legRow(s.w, 3).laid < RAIL_LEGS[3]!.sections.length) laySection(s, 3);
+  laySection(s, 5);
+  assert.equal(invariant(s.w), null);
 });
 
 test('two lifted kits survive a save and releasing one back only changes its own leg', () => {

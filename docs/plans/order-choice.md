@@ -286,6 +286,17 @@ medium first). Sizes are estimates.
       three players); `npm run playthrough -- --from bay-reached --to port --order cave` and `-- --from
       cave-first-reached --to canopy` (pass verdicts; timings under load are not evidence); `test/loop-graph.test.ts`.
 
+### Step 2 service checks, 25 November
+
+With Strong fitted on the bay line, both barriers open and both frames receiving kit, each seed ran 20,000 ticks at 75% headway. Every accepted call cleared within the service check's bound. Waits below are simulation ticks.
+
+| Seed | Bay calls | Cave calls | Longest bay wait | Longest cave wait |
+| --- | ---: | ---: | ---: | ---: |
+| c0ffee | 168 | 118 | 1,739 | 1,035 |
+| 777 | 173 | 124 | 1,647 | 1,173 |
+| 5eed | 174 | 129 | 1,523 | 1,101 |
+| badd | 172 | 117 | 1,553 | 1,084 |
+
 ### Checkpoint (both orders playable)
 
 After step 5, on HOTBOX, once:

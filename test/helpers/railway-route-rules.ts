@@ -1860,6 +1860,7 @@ export function routeRulesShard(shard: number) {
         health.tick(s.w, s.t);
       }
       health.drain(s.w, s.t, step);
+      assert.ok([3, 4].every((k) => legRow(s.w, k).laid > 0), 'both lines laid track');
       assert.ok(accepted.every((n) => n > 0) && lines.every((l) => health.worst.has(l)));
       assert.deepEqual(health.failures, []);
       assert.equal(invariant(s.w), null);

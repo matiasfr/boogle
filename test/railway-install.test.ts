@@ -956,6 +956,9 @@ test('the bay fit holds across a rejoin until the last lay, then two peers race 
   assert.equal(refused.at(-1)?.reason, 'trade-building');
   legStagesOn(s, 'bay-mid', 'bay-reached');
   assert.equal(fit(s, BAYL, 5), 0, 'the bay cut alone does not finish the build');
+  const caveFirst = legStagesOn(copy(s), 'bay-reached', 'cave-first-reached');
+  assert.equal(fit(caveFirst, BAYL, 5), 0, 'the bay pick still holds after building the cave first');
+  assert.equal(lineRow(caveFirst.w, BAYL).boiler, 5);
   legStagesOn(s, 'bay-reached', 'canopy-mid');
   laySection(s, CUT + 1);
   assert.equal(fit(s, BAYL, 5), 0, 'one section left');
