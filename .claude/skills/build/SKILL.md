@@ -55,6 +55,10 @@ that writes the plan carries it out, so it can change the plan when a step turns
    change that turns the reviewer's tests green; when the defect is one writer of a value several paths write, check
    every writer in that pass (24 November: a reconnect proof passed with the inventory stuck at zero, and one rider snap
    took three review rounds, a narrower case each time; rule 70 in docs/agents/orchestrator-state.md).
+12. **Jump landings load first.** A jump-in `land` (`src/world/railway-jump.ts`) in a greybox area that mounts by
+   distance (the AREAS list in `src/entities/route-greybox/index.ts`) keeps the spawn: arrival probes the surface before
+   the area is resident. Leave such a stage unlanded, as `canopy-reached` is, unless your step makes arrival wait for
+   the area (leg 3 and twice in leg 6’s reviews, 25 November).
 
 Report: the plan as built and where it changed, files changed, check results, the paths of the stills you looked at
 with your one-line gut check, what is unverified, and "not tested on a device" where it applies.
