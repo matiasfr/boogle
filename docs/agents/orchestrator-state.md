@@ -11,7 +11,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
 | Greybox leg 6 steps 1 to 3: the catalog, the rules and the bump, the seeds | The greybox route | codex/greybox-leg6-rules | the orchestrator thread, Codex Astra high | 2026-11-25 19:15 | running: a delegate of the orchestrator thread; src/sim, src/world, one world bump; an independent Opus review before it ships |
-| A little hut for The Boogler on his island | A hut for The Boogler | codex/boogler-hut | the orchestrator thread, Codex Astra medium | 2026-11-25 19:15 | running: a delegate of the orchestrator thread; view and level content on the classic island; stills for him |
+| The hut's indoor shade: a shadow-only roof so the sun doesn't flood the room (the hut is on main, #2486) | A hut for The Boogler | codex/boogler-hut-shade | the orchestrator thread, Codex Astra medium (the hut's builder thread) | 2026-11-25 21:00 | running: one mesh, view only; ships on the orchestrator's look at the retaken still |
 
 ## Where the work stands
 
