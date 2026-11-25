@@ -1,8 +1,6 @@
-> **Status, 25 November 2026: plan, not built; every call in it is the owner's to rule on.** Planner, against main
-> `d88237879` (world v67), which carries the decision this plan serves:
-> [order picks, a trade that holds, felt inflation](../decisions-core-loop.md#d-2026-11-25-order-picks-sticky-trades-felt-inflation).
-> Docs only: no code, tests or content changed. Garage step 4 as built (free swaps) stays live until he rules.
-> [Design review](#design-review-2026-11-25) near the end; [owner questions](#owner-questions) last.
+> **Status, 25 November 2026.** The owner answered the six questions. The first-line pick, sticky trade rules and garage screen shipped in #2390, #2393 and #2407. Both pick orders reached the lit forge in #2416. [C3 measurements](../reports/order-picks-measures.md) are recorded. The cave line's trade belongs to its garage step.
+>
+> [Owner answers](../decisions-core-loop.md#d-2026-11-25-order-picks-answers).
 
 # Order picks: the first line's pick, the trade that holds, and the audit
 

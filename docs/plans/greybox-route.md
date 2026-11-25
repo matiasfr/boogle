@@ -1,4 +1,4 @@
-> **Status, reconciled 16 November 2026 against main 3720b4c3b:** Leg 1 steps 1–5 and 4b are on main (#1642, #1647, #1675, #1678, #1688, #1719); leg 2 massing is on main (#1720), not its complete playable route. Built, not shipped: no additional implementation verified (local greybox/leg1-step5 is historical). Next: implement leg 2 rules, grants/gates and bot parity; full-route proofs remain unverified. Phase B of
+> **Status, 25 November 2026.** Legs 1 to 4 are on main. Leg 5 shipped through step 4 (#2454). Next is step 5 in the [leg 5 plan](greybox-leg5.md). Phase B of
 > [campaign-outline](campaign-outline.md): the whole route, rough. Its owner questions were answered on 12 November
 > (UTC) ([below](#owner-questions)); the open questions below are the planner's own.
 
