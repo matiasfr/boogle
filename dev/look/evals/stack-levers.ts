@@ -1,7 +1,6 @@
 // npm run look -- --rail-seed stack-laid-2 --eval dev/look/evals/stack-levers.ts --query 'head=1&lever=wide' --hud \
 //   --until window.__leverDone --name head1-wide
-// The request levers on a stack head's platform (halts-view.ts: the homeward one, and the outward one while the head is
-// an open middle stop): head 1's pair shows with exactly two sections laid (`stack-laid-2`), head 2's with three.
+// The request levers on a served stack head's two decks: outward on the east, homeward on the west.
 // Stands the body on the platform (a staging teleport) and frames the pair from the platform side at eye height:
 //   lever=wide     both levers, the player out of the frame (no prompt)
 //   lever=back     the same pair from over the track (the faces a rider sees from a train)
@@ -28,6 +27,12 @@ const { RAIL_LEGS } = (await import(
 const { stackDisplays } = (await import(
   '/src/entities/railway/halt-map.ts' as string
 )) as typeof import('../../../src/entities/railway/halt-map.ts');
+const { line2At } = (await import(
+  '/src/entities/railway/line2-path.ts' as string
+)) as typeof import('../../../src/entities/railway/line2-path.ts');
+const { RAIL_LINES, LINE2 } = (await import(
+  '/src/sim/railway-lines.ts' as string
+)) as typeof import('../../../src/sim/railway-lines.ts');
 
 type Lever = { halt: number; dir: number; label: string; on: boolean; over: boolean; x: number; y: number; z: number };
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -54,11 +59,9 @@ const out = levers().find((l) => l.dir === 1)!,
 const board = stackDisplays().find((d) => d.stop === halt)!;
 const mid = { x: (out.x + home.x) / 2, z: (out.z + home.z) / 2 };
 const len = Math.hypot(home.x - out.x, home.z - out.z);
-// Along the track from the homeward lever to the outward one (toward the railhead), and across it toward the
-// platform's far edge (the board stands at lat 5.8, the levers at 2.45).
-const t = { x: (out.x - home.x) / len, z: (out.z - home.z) / len };
-let n = { x: -t.z, z: t.x };
-if ((board.at.x - mid.x) * n.x + (board.at.z - mid.z) * n.z < 0) n = { x: -n.x, z: -n.z };
+const along = line2At(RAIL_LINES[LINE2]!.halts[halt]!.s / 100, { x: 0, z: 0, ux: 0, uz: 1 });
+const t = { x: along.ux, z: along.uz },
+  n = { x: -along.uz, z: along.ux };
 const deck = out.y - 1.38; // the knob stands 1.38 m over the lever's foot
 const at = (base: { x: number; z: number }, across: number, along: number) => ({
   x: base.x + n.x * across + t.x * along,
@@ -73,7 +76,7 @@ const SHOTS: Record<
   between: { body: at(mid, 0.3, 0), cam: at(mid, 3.8, 0), look: mid },
   near: { body: at(mid, 3.4, -9), cam: at(mid, 2, 0), look: mid },
   out: { body: at(out, 0.8, 0), cam: at(out, 3.3, 1.2), look: at(out, 0, -0.6) },
-  home: { body: at(home, 0.8, 0), cam: at(home, 3.3, -1.2), look: at(home, 0, 0.6) },
+  home: { body: at(home, -0.8, 0), cam: at(home, -3.3, -1.2), look: at(home, 0, 0.6) },
   press: { body: at(out, 0.8, 0), cam: at(mid, 5.2, -7), look: at(mid, -1.5, 2) },
 };
 const shot = SHOTS[shotName]!;

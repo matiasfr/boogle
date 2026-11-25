@@ -94,6 +94,15 @@ export function haltKitContent() {
         colliders: [],
       });
   }
+  for (const [row, h] of RAIL_HALTS.entries()) {
+    if (h.line !== 1 || !h.leg || h.end?.kind !== 'stub') continue;
+    entries.push({
+      id: `halt-ring-lever-${h.stop}-west`,
+      prefab: 'railway.halt-lever',
+      params: { row, up: true, piece: 'lever', ring: true, side: -1, plaque: 2 },
+      colliders: [],
+    });
+  }
   // The greybox route's own lines (docs/plans/greybox-leg2.md, step 4): a lever on each built halt's outward platform,
   // and on each head's and later halt's homeward one (right-hand running), stood by the view (railway/halts-view.ts
   // rowSpot).
