@@ -180,7 +180,7 @@ test('invalid PIN/token formats and unsupported profiles fail closed', async (t)
   }
 });
 
-test('SIGKILL retains committed guests and rolls back partial guest creation and PIN rotation', async (t) => {
+test('abrupt termination retains committed guests and rolls back partial guest creation and PIN rotation', async (t) => {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-account-crash-review-'));
   const store = createAccountStore({ dataDir });
   t.after(async () => {
@@ -194,7 +194,14 @@ test('SIGKILL retains committed guests and rolls back partial guest creation and
       { encoding: 'utf8', timeout: 10_000 },
     );
     assert.equal(child.error, undefined);
-    assert.equal(child.signal, 'SIGKILL', child.stderr);
+    if (process.platform === 'win32') {
+      // A Windows self-kill terminates with exit code 1. An uncaught fixture error also exits 1 and prints to stderr.
+      assert.equal(child.signal, null);
+      assert.equal(child.status, 1, child.stderr);
+      assert.equal(child.stderr, '');
+    } else {
+      assert.equal(child.signal, 'SIGKILL', child.stderr);
+    }
   };
   const owner = token();
   crash('commit', owner);

@@ -114,6 +114,7 @@ export async function acquireBotSlot(
   job = `${path.basename(process.cwd())}: ${process.argv.slice(1).join(' ')}`,
   queued: (message: string) => void = () => {},
   long = process.argv.includes('--long') || !!process.env.BOOGLE_BOT_LONG,
+  { wait = pause, readLoad = machineLoad } = {},
 ) {
   const inherited = process.env.BOOGLE_BOT_LEASE;
   if (inherited) {
@@ -123,7 +124,7 @@ export async function acquireBotSlot(
     fs.writeFileSync(inherited + '.tmp', JSON.stringify({ ...ticket, pid: process.pid }));
     fs.renameSync(inherited + '.tmp', inherited);
     // A broker from before the load gate writes no slot: its wait is unknown, and the load is read now.
-    acquired ??= ticket.slot ?? { queueWaitMs: 0, loadAtStart: machineLoad(), loadTimedOut: false };
+    acquired ??= ticket.slot ?? { queueWaitMs: 0, loadAtStart: readLoad(), loadTimedOut: false };
     inheritedFile = inherited;
     return { file: inherited, waitedMs: 0, release() {} };
   }
@@ -191,7 +192,7 @@ export async function acquireBotSlot(
     let loadTimedOut = false;
     // A short job may pass a waiting long one, so it lets any long job that scanned before this ticket appeared
     // finish taking the slot (its scan and its `held` write are one synchronous step) before the first check.
-    if (!long) for (let i = 0; i < 2; i++) await pause();
+    if (!long) for (let i = 0; i < 2; i++) await wait();
     for (;;) {
       const all = scan();
       // Any older ticket: first come, first served (its checkout knows no other order). Older tickets have no
@@ -203,7 +204,7 @@ export async function acquireBotSlot(
       const limit = Math.min(capacity, ...all.filter((t) => t.v === VERSION).map((t) => t.capacity));
       if (mayStart(me, lower, limit)) {
         // The slot is free; the machine may not be. The patience clock starts at the front of the queue.
-        const load = machineLoad();
+        const load = readLoad();
         loadSince ??= now;
         const gate = loadGate(load, loadLimit, now - loadSince, loadPatience);
         if (gate === 'timeout') {
@@ -221,7 +222,7 @@ export async function acquireBotSlot(
           loadSaid = now;
         }
         last = '';
-        await pause();
+        await wait();
         continue;
       }
       loadSaid = undefined;
@@ -232,11 +233,11 @@ export async function acquireBotSlot(
         queued(message);
       }
       last = behind;
-      await pause();
+      await wait();
     }
     const waitedMs = Date.now() - start;
     ticket.held = true;
-    ticket.slot = { queueWaitMs: waitedMs, loadAtStart: machineLoad(), loadTimedOut };
+    ticket.slot = { queueWaitMs: waitedMs, loadAtStart: readLoad(), loadTimedOut };
     acquired ??= ticket.slot;
     publish();
     // Shared: another run held a slot at any moment while this one did. Checked now and every second until release.
