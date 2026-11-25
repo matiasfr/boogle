@@ -12,12 +12,15 @@ The one record of who is running what, and what the eight-job limit is counted f
 | --- | --- | --- | --- | --- | --- |
 | Cliff kit step 9: the Sickle horizon | Terrain clean-up | codex/cliff-kit-horizon | live session, Codex Astra medium | 2026-11-25 | built; held for his word on the White Wall's colour |
 | Greybox leg 5 step 5: the Wall's areas, the Gorge's platforms and leg 5's views | The greybox route | codex/greybox-leg5-wall-views | heartbeat, Codex Astra medium | 2026-11-25 16:12 | running |
+| Tidy: simplify over `046c1c66c..328c3536c`, lower-risk areas (entities, features, prefabs, place, render, dev; not sim, world, net, server or tests; not the files above) | none (daily tidy) | tidy/simplify-1125 | the daily tidy, Codex Sol medium | 2026-11-25 17:05 | running; ships each area itself |
+| Tidy: simplify the high-risk areas over `046c1c66c..328c3536c` (sim, world, net, ecs, server/src; not tests or the files above) | none (daily tidy) | tidy/simplify-highrisk-1125 | the daily tidy, Codex Astra medium | 2026-11-25 17:05 | running; pushed but not shipped until a fresh Astra review |
+| Tidy: architecture review and docs audit through `328c3536c` (docs only; not the orchestrator files) | none (daily tidy) | tidy/docs-arch-1125 | the daily tidy, Codex Astra medium | 2026-11-25 17:05 | running |
 
 ## Where the work stands
 
 - **Machine:** HOTBOX (Windows, clone `C:\Users\matia\Claude work\boogle`) has orchestrated since 17 November; the MacBook's schedules are paused ([automations](automations.md)). The hourly heartbeat runs in its own thread with a fresh session each run (#2006). Sessions cannot message each other, so they split work through the table above and the Line Map board.
 - **The checkpoint we work toward:** Canopy and the first real choice ([backlog](../backlog.md#the-checkpoint-we-work-toward), set 24 November): greybox leg 3 playable to Canopy Town, then garage step 4's Quick or Strong per line. Free slots go to its next step first. World v67 is on main.
-- **Models** (owner, 24 and 25 November): Opus medium builds, Astra medium reviews, both at high when the task is tricky going in; Neon medium takes story, NPC, brainstorms, and fixes, tooling and mechanical jobs outside the high-risk paths, and reviews player-visible or tooling builds when Astra cannot run; Sol keeps images (`npm run models`).
+- **Models** (owner, 24 November, "Codex first while it has usage"; `dev/models.ts`, read `npm run models`): Codex Sol and Astra build, Astra reviews first, Opus orchestrates and plans; Neon takes story, NPC work and brainstorms; Sol keeps images.
 - **Proof debts and leftovers:** [orchestrator-leftovers](orchestrator-leftovers.md). Nothing from 16 or 17 November was tested on a device.
 - Older status, the 23 November pause and the old question list: [the log](orchestrator-log.md#24-november-resumed-state-file-cleaned).
 
