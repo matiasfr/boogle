@@ -15,7 +15,7 @@ import { siteExit } from '../../place/site-clearance.ts';
 import { TOWN_PROPS } from '../../place/town-plan.ts';
 import { FORGE } from '../../place/layout.ts';
 import { ROOM_CAM } from './rooms.ts';
-import { kitMaterial } from '../railway/seat.ts';
+import { kitMaterial } from '../../prefab/builders/seat-chair.ts';
 import { createOwnedView } from '../../render/owned-view.ts';
 import { instantiate, workshopChair } from '../../prefab/instantiate.ts';
 import { workshopKit } from './workshop-kit.ts';

@@ -10,8 +10,8 @@ import { me } from '../../player/player.ts';
 import { setJumpLabel } from '../../player/input.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { pop } from '../../render/fanfare.ts';
-import { flat } from '../../render/flat.ts';
 import { merged } from '../../render/part-geometry.ts';
+import { kitMaterial as chairMaterial } from '../../prefab/builders/seat-chair.ts';
 import { MACHINE_CHAIR_SEAT } from './machine-model.ts';
 import type { Part } from '../../render/cosmetic-parts.ts';
 import { onRailwayCommands } from './state.ts';
@@ -341,26 +341,6 @@ const lean = new THREE.Matrix4(),
 /** Avatars drawn leaning this frame and the last: the other views write only yaw, so one who stands is set upright. */
 let leaning = new Set<THREE.Object3D>(),
   leant = new Set<THREE.Object3D>();
-// Rigid Local geometry: all stools share one colored mesh.
-// The host surface still owns the matching solid and every seat anchor.
-const chairGeometry = merged([
-  ['b', 0, 0.49, 0, 0.8, 0.12, 0.65, '#bd8a50'],
-  ['b', -0.3, 0.23, 0, 0.12, 0.46, 0.55, '#bd8a50'],
-  ['b', 0.3, 0.23, 0, 0.12, 0.46, 0.55, '#bd8a50'],
-]);
-const chairMaterial = flat('#ffffff').clone();
-chairMaterial.vertexColors = true;
-/** The stool's vertex-coloured material, for other kit props to share (one program). */
-export const kitMaterial = chairMaterial;
-/** A plain low stool. Its matching solid is owned by the host surface. */
-export function seatMesh() {
-  const g = new THREE.Group();
-  const m = new THREE.Mesh(chairGeometry, chairMaterial);
-  m.name = 'place stool';
-  m.castShadow = m.receiveShadow = true;
-  g.add(m);
-  return g;
-}
 export const seatHeight = 0.55 + PLAYER_R;
 
 /** The seated pose (Driving_Loop) puts Buddy's hips this far under his capsule centre (measured on the bones, with
