@@ -311,10 +311,21 @@ function west() {
   const cave = frame(WEST_ROOT, shore, perp(shore));
   const strait = unit(-125, 225);
   const exit = frame({ x: 795, z: 75 }, strait, perp(strait));
-  const hood = (row: typeof cave, id: string, start: number, end: number) => [
-    row.box(id + '-cliff', start, end, 6.5, 7.5, 11, 14, 'sandstone'),
+  // The outside of the bend needs another 1.6 m on each chord to close the wall.
+  // Step the second roof down slightly where the two slabs lap.
+  const hood = (row: typeof cave, id: string, start: number, end: number, first: boolean) => [
+    row.box(id + '-cliff', first ? start : start - 1.6, first ? end + 1.6 : end, 6.5, 7.5, 11, 14, 'sandstone'),
     row.box(id + '-sea', start, end, -7.5, -6.5, 11, 14, 'sandstone'),
-    row.box(id + '-roof', start, end, -7.5, 7.5, 12, 1, 'sandstone'),
+    row.box(
+      id + '-roof',
+      first ? start : start - 1.6,
+      first ? end + 1.6 : end,
+      -7.5,
+      7.5,
+      first ? 12 : 11.97,
+      1,
+      'sandstone',
+    ),
   ];
   return {
     /** The stop, s 20. */
@@ -335,8 +346,8 @@ function west() {
           { ...cave.box('cave-home', 0, 40, BED, PLAT, top, 1, 'light'), posts: true },
           { ...cave.box('cave-out', 4, 40, -PLAT, -BED, top, 1, 'light'), posts: true },
           cave.box('cave-apron', 4, 16, PLAT, 11.8, top, 2, 'grey'),
-          ...hood(cave, 'hood-in', 45, 65.3),
-          ...hood(exit, 'hood-out', 0, 14.7),
+          ...hood(cave, 'hood-in', 45, 65.3, true),
+          ...hood(exit, 'hood-out', 0, 14.7, false),
           cave.ramp('cave-slip', 40, top, 60, -1.4, -6.1, -3.9, 'grey'),
           // Call 120 reversed (start-area S1): the shore path climbs to the commons and meets the end ramp's foot.
           // A second climb here crossed that path and read as the newcomer's way up.
