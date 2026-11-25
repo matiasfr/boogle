@@ -7,6 +7,7 @@ export const MILLS = [
   { x: 18, z: 3 },
 ];
 export const FARM_Y = 3.2; // the plain's height
+export const HUT = { x: 10, z: 26 };
 // The cart track from the middle mill out of the farm, through the wheat (local [x, z] points).
 export const TRACK: [number, number][] = [
   [1, -11],
@@ -61,5 +62,5 @@ export default {
     track(TRACK),
   ],
   keepOut: [{ r: 32 }],
-  reach: MILLS.map((m, k) => ({ name: `mill ${k + 1}`, x: m.x, z: m.z })),
+  reach: [...MILLS.map((m, k) => ({ name: `mill ${k + 1}`, x: m.x, z: m.z })), { name: 'hut floor', ...HUT }],
 } satisfies Site;

@@ -22,7 +22,7 @@ import { loadLevelArtifact } from '../../prefab/validate.ts';
 import { windmillKit } from '../../prefab/builders/poi-windmills.ts';
 import level from '../../../content/built/levels/windmills.json' with { type: 'json' };
 import { standHut } from './hut.ts';
-import site, { MILLS, TRACK } from './site.ts';
+import site, { HUT, MILLS, TRACK } from './site.ts';
 import { HUB_UP, SAIL_LEN } from './model.ts';
 import { sailAngle, sailSpeed } from './motion.ts';
 import type { Body } from '../../physics/engine.ts';
@@ -134,7 +134,7 @@ function build() {
   });
   for (const p of farmPlacements()) stand(p);
   // Inside the farm's existing 32 m exclusion, beyond the fields, bales and track.
-  const [hx, hz] = frame.toWorld(10, 26);
+  const [hx, hz] = frame.toWorld(HUT.x, HUT.z);
   standHut(owner, kit.material, hx, groundHeight(hx, hz), hz);
 
   const statics = new THREE.Mesh(mergeParts(staticParts), kit.material);
