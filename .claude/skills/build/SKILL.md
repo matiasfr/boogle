@@ -14,7 +14,12 @@ that writes the plan carries it out, so it can change the plan when a step turns
    you will check it. Keep it in your working notes and put the final version in your report; write a plan file only
    when the brief names one. A brief that names an approved plan in `docs/plans/` (high-risk work in `src/sim`,
    `src/net`, `src/world`, `server/` or the wire format, or one the owner asked for) is followed as written: tick its
-   checkboxes, and take a wrong step back to whoever sent you instead of redesigning it.
+   checkboxes, and take a wrong step back to whoever sent you instead of redesigning it. A slip is not a wrong step:
+   a figure the plan got slightly off, two of its lines that contradict each other, a check that rejects a valid
+   state. Fix it yourself, correct the plan's lines in your branch and list each fix in your report; stop only when
+   the fix changes what a player sees or does, or a recorded decision (25 November: two builders stopped on such
+   slips in one hour, a ramp pitch of 8.84° against 8.89° and a rack bound that rejected a valid save; rule 75 in
+   docs/agents/orchestrator-state.md).
 3. **Design calls.** If your plan sets numbers, rules, rewards, pacing, placement or what a character says, and the
    brief carries no design review covering them, run the [design-review skill](../design-review/SKILL.md) on your plan
    before building.
