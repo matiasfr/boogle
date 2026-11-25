@@ -626,6 +626,8 @@ The [matched prop views](cliff-kit-everywhere/props-before-after.jpg) show the W
 
 Three instance batches draw the loose boulders at the original seeded positions. Their bases extend down to the slope while their tops match the existing sphere tops. The five mineable rocks are grey again (owner call, 25 November) and keep their original meshes and bands. Each cave mouth has a painted approach tread, so two low kit faces flank each collar. The existing solids and cave bore determine where Buddy can walk.
 
+The [grey rock still](cliff-kit-everywhere/rocks-grey.jpg) shows the orange-banded Works rock beside a sandstone kit boulder staged for the comparison.
+
 The Works kiln action used the Chop prompt on the last stone in the seeded bowl rock and then filled the kiln. Earlier cliff-kit levels are byte-identical. The seven census poses include colour and shadow passes.
 
 | Census camera | Main draws | Step 8 draws | Main triangles | Step 8 triangles |
