@@ -722,7 +722,7 @@ const saltPieces = shores.salt.flatMap((cuts, side) =>
       f = frame(a, u, perp(u)),
       length = Math.round(Math.hypot(dx, dz)) / 100;
     return [
-      f.box('platform-' + side + '-' + i, -0.15, length, -1.85, 1.85, 3.9, 1, 'light'),
+      f.box('platform-' + side + '-' + i, i===0?0:-0.45, i===0?Math.round((length+0.45)*100)/100:length, -1.85, 1.85, 3.9, 1, 'light'),
       ...(i === 0 ? [f.ramp('platform-step-' + side, 0, 3.9, -3, 3, -1.85, 1.85, 'grey')] : []),
     ];
   }),
@@ -732,7 +732,7 @@ const saltFrame = frame(shores.saltLand.centre, unit(0, 1), unit(1, 0));
 const rampFrame = frame({ x: 104, z: 973 }, unit(-93, 23), unit(23, 93));
 const quayPieces = [
   ...shorePieces(shores.portIsle),
-  quay.box('quay-slab', -26, 26, -10, 18, 3, 2, 'grey'),
+  quay.box('quay-slab', -26, 26, -10, 18, 2.96, 2, 'grey'),
   ...[-1, 1].flatMap((side) => [
     quay.box('platform-' + (side + 1), -20, 20, side * 5.8 - 2, side * 5.8 + 2, 3.9, 1, 'light'),
     quay.ramp('platform-step-' + (side + 1), -20, 3.9, -23, 3, side * 5.8 - 2, side * 5.8 + 2, 'grey'),

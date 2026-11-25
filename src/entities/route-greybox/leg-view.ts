@@ -426,7 +426,7 @@ const HOME_BOARD_S = BAY_CUT_END - 19.5;
 
 export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
   const [{ addStatic, slab }, ground] = await Promise.all([import('../../place/land.ts'), islandGround()]);
-  const deck = createBoxBatch(owner, 4800, false),
+  const deck = createBoxBatch(owner, 6500, false),
     things = createBoxBatch(owner, 700, false);
   // Named, so a look can count what the leg's views add to a frame (dev/look/evals/stack-draws.ts).
   deck.mesh.name = 'route-greybox:deck';
