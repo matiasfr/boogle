@@ -17,7 +17,15 @@ import { getAudio } from '../render/audio.ts';
 import { onStart } from '../loop.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
 import { registerAction } from '../player/controls.ts';
-import { PING_KINDS, validatePing, createLimiter, honkFreq, type Ping, type PingReply } from '../sim/social.ts';
+import {
+  MAX_PING_SEQ,
+  PING_KINDS,
+  validatePing,
+  createLimiter,
+  honkFreq,
+  type Ping,
+  type PingReply,
+} from '../sim/social.ts';
 
 const TUNE = {
   lifeMs: 4000,
@@ -35,7 +43,7 @@ const contact = (x: number, y: number, z: number) =>
   Math.max(groundHeight(x, z), waterField.moving ? waterField.nearby({ x, y, z }).height : SEA);
 
 // ---------------------------------------------------------------- aiming
-function aimPing(): Ping {
+function aimPing(): Omit<Ping, 'seq'> {
   camForward(fwd);
   const o = camera.position;
   // Authored places sit outside the original island grid; use their actual solid surfaces too.
@@ -76,13 +84,14 @@ function aimPing(): Ping {
   return hintOrLook(tmp.copy(o).addScaledVector(fwd, TUNE.maxRange), true);
 }
 
-function hintOrLook(end: THREE.Vector3, miss = false): Ping {
+function hintOrLook(end: THREE.Vector3, miss = false): Omit<Ping, 'seq'> {
   const hint = pingHint(camera.position, end);
   const { x, y, z } = hint?.at ?? (miss ? end.copy(camera.position).addScaledVector(fwd, 30) : end);
   return { x, y, z, k: hint?.k ?? 'look' };
 }
 
 let lastOwn = -1e9;
+let nextSeq = 0;
 function sendPing(message: Ping | PingReply) {
   try {
     net.room?.send({ t: 'ping', ...message });
@@ -93,7 +102,7 @@ function sendPing(message: Ping | PingReply) {
 function pingNow(tapped?: string) {
   const now = performance.now();
   if (!me.entered || !me.body || now - lastOwn < TUNE.ownGapMs) return;
-  camForward(fwd);
+  camera.getWorldDirection(fwd);
   let of = tapped;
   let best = Math.cos((6 * Math.PI) / 180);
   for (const [id, marker] of pings) {
@@ -108,7 +117,7 @@ function pingNow(tapped?: string) {
     const marker = pings.get(of);
     if (!marker || marker.own || marker.expires <= now) return;
     lastOwn = now;
-    sendPing({ k: 'omw', of });
+    sendPing({ k: 'omw', of, seq: marker.seq });
     marker.reply(net.room?.selfId ?? 'me', me.name, me.colorIdx, true);
     return;
   }
@@ -119,7 +128,9 @@ function pingNow(tapped?: string) {
     y: Math.round(a.y * 10) / 10,
     z: Math.round(a.z * 10) / 10,
     k: a.k,
+    seq: nextSeq,
   };
+  nextSeq = (nextSeq + 1) % (MAX_PING_SEQ + 1);
   sendPing(msg);
   addPing(net.room?.selfId ?? 'me', msg, me.name, me.colorIdx, true);
 }
@@ -132,6 +143,7 @@ const over = new THREE.Vector3(),
 const layer = document.createElement('div');
 layer.className = 'ping-layer';
 type Marker = {
+  seq: number;
   entity: GameEntity;
   own: boolean;
   expires: number;
@@ -157,7 +169,9 @@ function addPing(from: string, p: Ping, name: string, colorIdx: number, own: boo
   card.className = 'ping-card';
   if (!own) {
     card.classList.add('replyable');
-    card.addEventListener('click', () => pingNow(from));
+    card.addEventListener('click', () => {
+      if (pings.get(from) === marker) pingNow(from);
+    });
   }
   const label = document.createElement('b');
   label.textContent = PING_KINDS[p.k];
@@ -187,7 +201,7 @@ function addPing(from: string, p: Ping, name: string, colorIdx: number, own: boo
       const age = now - born;
       if (now >= marker.expires) {
         despawn(entity);
-        pings.delete(from);
+        if (pings.get(from) === marker) pings.delete(from);
         return;
       }
       const fade = Math.min(1, (marker.expires - now) / TUNE.fadeMs);
@@ -233,6 +247,7 @@ function addPing(from: string, p: Ping, name: string, colorIdx: number, own: boo
   });
   const replies = new Map<string, HTMLElement>();
   const marker: Marker = {
+    seq: p.seq,
     entity,
     own,
     expires: born + TUNE.lifeMs,
@@ -286,8 +301,10 @@ onRoomReady((room) =>
     const r = remotes.get(from);
     const name = r?.name || 'Someone',
       color = r?.colorIdx ?? 0;
-    if (p.k === 'omw') pings.get(p.of)?.reply(from, name, color, false);
-    else addPing(from, p, name, color, false);
+    if (p.k === 'omw') {
+      const marker = pings.get(p.of);
+      if (marker?.seq === p.seq) marker.reply(from, name, color, false);
+    } else addPing(from, p, name, color, false);
   }),
 );
 

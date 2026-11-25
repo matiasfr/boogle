@@ -19,7 +19,8 @@
 - **Ping sound.** Two soft sine notes in your colour's pitch an octave up (a fifth for ball, sixth for train, fourth for rails and third for look),
   quiet, with a gentle onset and a short tail.
 - **Sync kind.** Neither is state: reliable room messages `{ t: 'honk', v }` (v: the shape, 0 to 3; missing reads as
-  0), `{ t: 'ping', x, y, z, k }` and `{ t: 'ping', k: 'omw', of }` (the pinger's tab ID), validated
+  0), `{ t: 'ping', x, y, z, k, seq }` and `{ t: 'ping', k: 'omw', of, seq }`. A reply names the pinger's tab
+  (`of`) and the original marker's 16-bit sequence number. Both must match the live marker. Messages are validated
   and rate limited on receipt ([src/sim/social.ts](../../src/sim/social.ts)).
 - **Files.** [src/features/honk.ts](../../src/features/honk.ts), [src/features/ping.ts](../../src/features/ping.ts),
   [src/sim/social.ts](../../src/sim/social.ts).

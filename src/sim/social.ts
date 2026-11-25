@@ -5,18 +5,19 @@
 export const PING_KINDS = { ball: 'Ball!', look: 'Look!', rails: 'Rails here', train: 'Train!' };
 const BOUND = 4096; // finite cosmetic message envelope, including authored places outside the classic island
 
-// Returns a clean { x, y, z, k } or null. Anything unexpected is rejected, never trusted.
-export type Ping = { x: number; y: number; z: number; k: keyof typeof PING_KINDS };
-export type PingReply = { k: 'omw'; of: string };
+export const MAX_PING_SEQ = 65535;
+export type Ping = { x: number; y: number; z: number; k: keyof typeof PING_KINDS; seq: number };
+export type PingReply = { k: 'omw'; of: string; seq: number };
 export function validatePing(msg: unknown): Ping | PingReply | null {
   if (!msg || typeof msg !== 'object' || (msg as { t?: unknown }).t !== 'ping') return null;
-  const { x, y, z, k, of } = msg as Record<string, unknown>;
-  if (k === 'omw') return typeof of === 'string' && of.length <= 64 ? { k, of } : null;
+  const { x, y, z, k, of, seq } = msg as Record<string, unknown>;
+  if (typeof seq !== 'number' || !Number.isInteger(seq) || seq < 0 || seq > MAX_PING_SEQ) return null;
+  if (k === 'omw') return typeof of === 'string' && of.length <= 64 ? { k, of, seq } : null;
   if (typeof x !== 'number' || typeof y !== 'number' || typeof z !== 'number') return null;
   if (![x, y, z].every((n) => Number.isFinite(n))) return null;
   if (Math.abs(x) > BOUND || Math.abs(z) > BOUND || y < -100 || y > 1024) return null;
   if (typeof k !== 'string' || !Object.hasOwn(PING_KINDS, k)) return null;
-  return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, z: Math.round(z * 10) / 10, k: k as Ping['k'] };
+  return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, z: Math.round(z * 10) / 10, k: k as Ping['k'], seq };
 }
 
 // At most `max` events per sender within `windowMs`. allow() records the event when it passes.
