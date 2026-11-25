@@ -132,7 +132,9 @@ export function createRailwayRead<D>({
   // is typed read-only, so a view cannot write to it or drain its changes.
   const facade = {
     world: () => view() as unknown as ReadWorld,
-    /** The estimated server tick (whole, never going backwards): the job clocks' `at`. In the frame loop it holds one
+    /** The estimated server tick (whole, never going backwards, except once when a whole state lands after a lost
+     * link: it is re-seated on the mirror's capped estimate, see railway-session.ts): the job clocks' `at`. In the
+     * frame loop it holds one
      * value for the whole frame, so it stays consistent with world() and with itself within a frame; outside the loop
      * it is live. */
     tick: frameTick,
