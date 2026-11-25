@@ -33,8 +33,10 @@ export const gorgeMouth: Area = {
       const base = Math.min(foot - 0.4, rim - (tall ? FACE_TOP : SEA_FACE) - 0.6);
       kit.place(face, [r2(c.x), r2(base), r2(c.z)], [r2(yaw), 0, 0], 'west rock cut');
     });
-    courses('south coast, west outcrop', raysAlong(40, 179, 56, 182, 0, -1), [8, 10]);
-    courses('south coast, east outcrop', raysAlong(69, 184, 92, 184, 0, -1), [7, 9.5]);
+    courses('south coast, west outcrop', raysAlong(40, 179, 56, 182, 0, -1), [7.5]);
+    courses('west outcrop crown', raysAlong(43, 180, 53, 182, 0, -1), [9]);
+    courses('south coast, east outcrop', raysAlong(69, 184, 92, 184, 0, -1), [7]);
+    courses('east outcrop crown', raysAlong(74, 184, 86, 184, 0, -1), [9]);
     for (const [x, z, yaw] of [[-53, 183, 0.6], [-26, 185, -0.4], [68, 190, 0.9]] as const)
       kit.place('terrain.shore-rock-m', [x, r2(H(x + ORIGIN.x, z) - 0.2), z], [yaw, 0, 0], 'waterline');
   },
