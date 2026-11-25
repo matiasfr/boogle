@@ -20,6 +20,7 @@ import { westExtras, westMassing } from './massing-west.ts';
 import { canopyExtras, canopyMassing, canopyNear } from './massing-canopy.ts';
 import { saltpanArea } from './massing-saltpan.ts';
 import { quayArea } from './massing-quay.ts';
+import { wallAreas } from './massing-wall.ts';
 import { AREA_CENTRES, FREE_MORE, MOUNT_NEAR } from './leg2-layout.ts';
 import { drawGreyBoxes } from './boxes.ts';
 import type { Placement } from '../../prefab/types.ts';
@@ -41,6 +42,7 @@ type Area = {
 const AREAS: readonly Area[] = [
   saltpanArea,
   quayArea,
+  ...wallAreas,
   { id: 'gorge', centre: AREA_CENTRES.gorge, build: () => gorgePlacements },
   { id: 'bell', centre: AREA_CENTRES.bell, build: bellMassing, extras: bellExtras },
   { id: 'west', centre: AREA_CENTRES.west, build: westMassing, extras: westExtras },
@@ -66,9 +68,10 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
     };
     async function mount() {
       building = true;
-      const owner = createOwnedView(),
-        { mesh, solids } = await drawGreyBoxes(owner, area.build()),
-        more = area.extras?.(owner) ?? 0;
+      const owner = createOwnedView();
+      const boxes = area.build();
+      const batch = boxes.length ? await drawGreyBoxes(owner, boxes) : null;
+      const more = area.extras?.(owner) ?? 0;
       // Its pipeline compiles off the frame before it first shows (src/render/precompile.ts).
       owner.root.visible = false;
       await precompile(owner.root);
@@ -78,8 +81,8 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
       mounted = {
         owner,
         entity: spawn({ kind: 'route-greybox-area', mesh: owner.root }),
-        boxes: mesh.count,
-        solids: solids + more,
+        boxes: batch?.mesh.count ?? 0,
+        solids: (batch?.solids ?? 0) + more,
       };
       residency.mounted = true;
       routeSceneryMounted();

@@ -64,7 +64,7 @@ let lifter: ReturnType<typeof createLiftOrWait> | undefined;
 export function liftOrWait<S extends Solid>(
   solids: readonly S[],
   body: Parameters<NonNullable<typeof lifter>>[1],
-  o: { lift: boolean },
+  o: Parameters<NonNullable<typeof lifter>>[2],
 ): Clearing<S> {
   lifter ??= createLiftOrWait(capsuleOverlaps); // on first use: loading the door builds nothing
   return lifter(solids, body, o);

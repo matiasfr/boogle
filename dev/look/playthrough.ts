@@ -30,8 +30,9 @@ import { writeRailSeed } from './rail-seed.ts';
 import { railCoopPlaythrough } from './rail-coop.ts';
 import { finishRun, runOpen, startRun } from './verdict.ts';
 
+import { RAILWAY_PLAY_NS } from '../../src/world/railway-namespace.ts';
+
 const SIZE = [1180, 820];
-const ROOM = 'playthrough';
 
 const args = process.argv.slice(2);
 const opt = (name: string, fallback: string) => {
@@ -276,6 +277,7 @@ async function main() {
   }
 
   let stack: Stack | undefined, browser: Browser | undefined;
+  let room = 'playthrough';
   try {
     const url = opt('--url', '');
     stack = await startStack({ root: checkout, url: url || null });
@@ -286,7 +288,16 @@ async function main() {
     }
     if (rail.from) {
       if (url) throw new Error('--from writes a server seed: it needs a local stack, not --url');
-      await writeRailSeed(stack.dataDir!, ROOM, rail.from);
+      if (rail.from === 'wall-deep') {
+        // The frame-six prompt proof starts on its catalog landing, as a player's jump does.
+        const reply = await fetch(new URL('/jump', stack.serverUrl), {
+          method: 'POST',
+          body: JSON.stringify({ stage: rail.from, ns: RAILWAY_PLAY_NS }),
+        });
+        const jump = await reply.json();
+        if (!reply.ok || typeof jump.room !== 'string') throw new Error(`Wall jump failed (${reply.status}): ${jump.error}`);
+        room = jump.room;
+      } else await writeRailSeed(stack.dataDir!, room, rail.from);
       console.log(`Seeded ${rail.from} (railFrom=${rail.seed!.railFrom}) through the host's save path`);
     }
     browser = await launch();
@@ -294,7 +305,7 @@ async function main() {
       out: dir,
       size: SIZE,
       hud: true,
-      room: ROOM,
+      room,
       query,
       warp: true,
       init: `(${installObserver.toString()})(${JSON.stringify(IGNORE_TEXT)})`,
@@ -381,7 +392,7 @@ async function main() {
         .toLowerCase()
         .slice(0, 50);
       const file = `${String(k).padStart(2, '0')}-${slug}.json`;
-      fs.writeFileSync(path.join(dir, 'saves', file), JSON.stringify({ ...st, room: ROOM, query, run: name }));
+      fs.writeFileSync(path.join(dir, 'saves', file), JSON.stringify({ ...st, room, query, run: name }));
     });
     fs.writeFileSync(path.join(dir, 'bot.txt'), botLog.join('\n') + '\n');
     const session = onGameClock(parseSession(name, fs.readFileSync(biggest, 'utf8')));

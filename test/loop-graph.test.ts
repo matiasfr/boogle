@@ -266,7 +266,8 @@ test('the hand-kept beat lists agree with the graph', () => {
   const stops = new Set(NODES.flatMap((n) => n.stops));
   for (const s of stops) assert.ok(s in RAIL_STOPS, `${s} is not a RAIL_STOPS key`);
   // Not loop beats: the audio check, and slice 5's freight home and first fare (economy beats no route step waits for).
-  const notLoop = new Set(['audio-loop', 'freight', 'fare']);
+  // The deep span has a seeded prompt proof before leg 5 step 6 adds its loop node.
+  const notLoop = new Set(['audio-loop', 'freight', 'fare', 'deep-span']);
   for (const s of Object.keys(RAIL_STOPS)) assert.ok(stops.has(s) || notLoop.has(s), `RAIL_STOPS ${s} has no node`);
 });
 

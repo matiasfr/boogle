@@ -737,7 +737,8 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set(), pick
     T2: (pl) => lineOne(g, pl, 'T2'),
     beam: (pl) => beam(g, pl),
     T3: (pl) => lineOne(g, pl, 'T3'),
-    jump: (pl) => (pick === 'jump' ? takeStand(pl, 'jump') : device(g, pl, LINE1_JUMP_DEVICE, 'rail.jump', ready('jump'))),
+    jump: (pl) =>
+      pick === 'jump' ? takeStand(pl, 'jump') : device(g, pl, LINE1_JUMP_DEVICE, 'rail.jump', ready('jump')),
     forge: (pl) => forge(g, pl, pick === 'jump'),
     axe: (pl) => device(g, pl, LINE2_AXE, 'rail.axe', ready('axe')),
     pack: (pl) =>
@@ -1149,6 +1150,11 @@ export function playOrder(
     }
   }
   result.ticks = h.tick();
+  if (!result.softlock && order.includes('cave-3')) {
+    const wall = RAIL_LEGS.findIndex((leg) => leg.id === 'wall');
+    if (!legOpen(g.w, wall) || legRow(g.w, wall).laid !== 0)
+      throw new Error('Port Quay must hand the ready room to the first White Wall frame');
+  }
   if (opts.probes) result.probes = probes;
   if (opts.verbose) console.error(log.slice(-40).join('\n'));
   return result;

@@ -14,6 +14,7 @@ import bellRaw from '../content/built/levels/bell.json' with { type: 'json' };
 import westRaw from '../content/built/levels/west.json' with { type: 'json' };
 import gorgeRaw from '../content/built/levels/gorge.json' with { type: 'json' };
 import * as validation from '../src/prefab/validate.ts';
+import { colliderFlood } from '../dev/level/route-leg4.ts';
 import { flood } from '../dev/level/flood.ts';
 import { Matrix4, Vector3 } from 'three';
 import * as placed from '../dev/level/prefab-colliders.ts';
@@ -41,6 +42,8 @@ import { resident } from '../src/render/lod-level.ts';
 import { CAVE_GROUP, HEAD_OFFSET, PLAYER_R } from '../src/constants.ts';
 import { createLiftOrWait, STEP, type Solid } from '../src/place/clearance.ts';
 import canopy from '../content/built/levels/canopy.json' with { type: 'json' };
+import south from '../content/built/levels/wall-south.json' with { type: 'json' };
+import north from '../content/built/levels/wall-north.json' with { type: 'json' };
 import quay from '../content/built/levels/quay.json' with { type: 'json' };
 
 validation.validateArtifact(artifact);
@@ -701,7 +704,7 @@ test('the West landing supports the cave frame and rack at their catalog heights
 });
 
 // Run the view's actual draw and solid transitions, recording the sign and physics boundaries.
-async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE.Vector3) {
+async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE.Vector3, wallLaid = 6) {
   const p = row.rowWorld(route.ROW_LINE.bay, s, lat, { x: 0, z: 0 });
   const floor = placed.heightAt(
     ground(bellRaw).flatMap((c) => c.volume.triangles),
@@ -710,8 +713,17 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
   assert.ok(floor !== null);
   const position = stackLayAt ?? new THREE.Vector3(p.x, floor + PLAYER_R, p.z);
   const signs = new Map<THREE.Group, string[]>();
+  const peerPosition = new THREE.Vector3(5000, 50, 5000);
   const overlaps: number[] = [];
   const drawnDeck: Shape[] = [];
+  const barrierPanels: { x: number; z: number }[] = [];
+  const pieces: { volume: placed.Volume }[] = [];
+  const addStatic = (b: { hx: number; hy: number; hz: number }, p: THREE.Vector3, q: THREE.Quaternion) => {
+    const m = new Matrix4().compose(new Vector3(p.x, p.y, p.z), q, new Vector3(1, 1, 1));
+    const piece = { volume: placed.boxVolume(m, [b.hx, b.hy, b.hz]) };
+    pieces.push(piece);
+    return piece;
+  };
   let slabsEnabled = 0;
   const slab = (ax: number, az: number, bx: number, bz: number, ya: number, yb: number, width: number) => {
     slabsEnabled++;
@@ -765,29 +777,34 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
       legYardFlight: { logs: 0, rails: 0 },
       bellPads: [],
       areaLabels: new Map(),
+      areaBoardVisibility: new Map(),
       ringIslandNear: { mounted: false },
       me: { body: bodyOf(position) },
       camera: { position },
       dependencies: [
-        { slab, addStatic: () => ({}) },
+        { slab, addStatic },
         { onIsland: () => false },
         { outOf: sourceFunction('src/place/sites.ts', 'outOf', {}) },
       ],
       liftOrWait,
+      frameOccupied: (frame: { holds(p: THREE.Vector3): boolean }) => frame.holds(position) || frame.holds(peerPosition),
       signBoard: () => ({ mesh: new THREE.Group() }),
       paintPlate: (s: { mesh: THREE.Group }, entries: { t: string }[]) =>
         signs.set(
           s.mesh,
           entries.map((l) => l.t),
         ),
-      createBoxBatch: (_owner: unknown, capacity: number) => ({
+      createBoxBatch: () => ({
         mesh: new THREE.Group(),
         begin() {
-          if (capacity === 6500) drawnDeck.length = 0;
+          if (this.mesh.name === 'route-greybox:deck') drawnDeck.length = 0;
+          if (this.mesh.name === 'route-greybox:things') barrierPanels.length = 0;
         },
         commit() {},
         box(x: number, y: number, z: number, w: number, h: number, d: number, colour: string, yaw: number, rx: number) {
-          if (capacity === 6500 && colour === '#9c9ea1' && h === 0.5)
+          if (this.mesh.name === 'route-greybox:things' && colour === '#c8402c' && h === 1.6)
+            barrierPanels.push({ x, z });
+          if (this.mesh.name === 'route-greybox:deck' && colour === '#9c9ea1' && h === 0.5)
             drawnDeck.push(boxShape({ x, y, z, w, h, d, yaw, pitch: -rx }));
         },
         between() {},
@@ -799,7 +816,8 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
   const seed = buildSeedWorld('awake');
   for (const [i, leg] of route.RAIL_LEGS.entries())
     if (lines.legBuilt(i))
-      seed.w.mut(Leg, progress.legId(seed.w, i))!.laid = leg.id === 'bell-canopy' ? canopyLaid : leg.sections.length;
+      seed.w.mut(Leg, progress.legId(seed.w, i))!.laid =
+        leg.id === 'bell-canopy' ? canopyLaid : leg.id === 'wall' ? wallLaid : leg.sections.length;
   const firstLay = canopyLaid === 1;
   const leg = seed.w.mut(
     Leg,
@@ -819,7 +837,12 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
   if (stackLayAt) stack.laid--;
   const view = await createLegView(
     { read: { whole: () => true, world: () => seed.w, tick: () => seed.t } },
-    { removeBody() {} },
+    {
+      removeBody(body: (typeof pieces)[number]) {
+        const index = pieces.indexOf(body);
+        if (index >= 0) pieces.splice(index, 1);
+      },
+    },
   );
   if (firstLay) {
     leg.laid = 1;
@@ -829,8 +852,80 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
     stack.laid++;
     view.update();
   }
-  return { signs, overlaps, floor, position, drawnDeck, slabsEnabled: () => slabsEnabled, update: () => view.update() };
+  return {
+    pieces,
+    barrierPanels,
+    peerPosition,
+    setWallLaid(laid: number) {
+      seed.w.mut(Leg, progress.legId(seed.w, 5))!.laid = laid;
+      view.update();
+    },
+    signs,
+    overlaps,
+    floor,
+    position,
+    drawnDeck,
+    slabsEnabled: () => slabsEnabled,
+    update: () => view.update(),
+  };
 }
+
+test('a swimmer can reach each temporary Wall head from open water', async () => {
+  const leg = route.RAIL_LEGS[5]!;
+  for (const laid of [1, 2, 4, 5]) {
+    const { pieces } = await reachedView(1300, 0, 3, undefined, laid);
+    const stop = leg.sections[laid - 1]!.toCm / 100 - 10;
+    const at = (lat: number) => row.rowWorld(leg.line, stop, lat, { x: 0, z: 0 });
+    const grid = colliderFlood(pieces, at(0), 91);
+    const wet = grid.reach(at(22), true);
+    for (const side of [-5.8, 5.8]) {
+      const platform = grid.node(at(side));
+      assert.ok(Math.abs(grid.h[platform]! - row.rowY(leg.line, stop) - 0.9) < 0.02, 'the destination is a platform');
+      assert.equal(wet[platform], 1, 'head ' + laid + ' platform ' + side);
+    }
+  }
+});
+
+test('closing Wall head one keeps the floor under a player still standing on its platform', async () => {
+  const leg = route.RAIL_LEGS[5]!;
+  const s = leg.sections[0]!.toCm / 100 - 10;
+  const at = row.rowWorld(leg.line, s, 5.8, { x: 0, z: 0 });
+  const top = row.rowY(leg.line, s) + 0.9;
+  const view = await reachedView(1300, 0, 3, undefined, 2);
+  view.position.set(at.x, top + PLAYER_R, at.z);
+  const floor = (pieces = view.pieces) =>
+    placed.heightAt(
+      pieces.flatMap((p) => p.volume.triangles),
+      at,
+    );
+  assert.ok(Math.abs(floor()! - top) < 0.01);
+  view.setWallLaid(3);
+  assert.ok(Math.abs(floor()! - top) < 0.01, 'head one removed the occupied platform over open water');
+  view.setWallLaid(4);
+  assert.ok(Math.abs(floor()! - top) < 0.01);
+  view.peerPosition.copy(view.position);
+  view.peerPosition.y += STEP - 0.01;
+  view.position.x += 50;
+  view.update();
+  assert.ok(Math.abs(floor()! - top) < 0.01, 'a peer within a step still needs the platform');
+  view.peerPosition.x += 50;
+  view.update();
+  assert.ok(floor() === null || Math.abs(floor()! - top) > 0.01, 'head one stayed after the player left');
+  const fresh = await reachedView(1300, 0, 3, undefined, 4);
+  assert.equal(floor(fresh.pieces), floor(), 'a fresh view rebuilt an already closed head');
+});
+
+test('the deep-span barrier first appears when the fifth Wall platform supports its frame', async () => {
+  const frame = route.legFrame(route.RAIL_LEGS[5]!, 5);
+  const view = await reachedView(1300, 0, 3, undefined, 2);
+  view.position.set(frame.x / 100, 0, frame.z / 100);
+  const panels = () => view.barrierPanels.filter((p) => Math.hypot(p.x - frame.x / 100, p.z - frame.z / 100) < 4);
+  view.update();
+  const before = panels().length;
+  view.setWallLaid(5);
+  assert.equal(panels().length, 1);
+  assert.equal(before, 0, 'a shut barrier floats over the sea before the head exists');
+});
 
 test('the Canopy lay leaves a player standing on Bell Rock clear of the new deck', async () => {
   const { overlaps, floor } = await reachedView();
@@ -865,7 +960,7 @@ async function mountAt(position: THREE.Vector3) {
   const pending: Promise<void>[] = [];
   const on = new Set<string>(),
     shapes = new Map<string, Shape[]>();
-  const colliders = ground(canopy);
+  const colliders = [canopy, south, north].flatMap(ground);
   const instantiate = (_key: string, placement: { id: string }) => {
     const mine = colliders.filter((c) => c.placement.id === placement.id);
     shapes.set(placement.id, mine.map(shapeOf));
@@ -893,6 +988,7 @@ async function mountAt(position: THREE.Vector3) {
       loadLevelArtifact: validation.loadLevelArtifact,
       LEG2_TEXT,
       areaLabels: new Map(),
+      areaBoardVisibility: new Map(),
       instantiate,
     },
   );
@@ -908,6 +1004,16 @@ async function mountAt(position: THREE.Vector3) {
   sourceModule(fs.readFileSync('src/entities/route-greybox/index.ts', 'utf8'), {
     productionRailway: true,
     saltpanArea: { id: 'saltpan', centre: AREA_CENTRES.saltpan, build: () => [] },
+    wallAreas: [south, north].map((input) => {
+      const centre = AREA_CENTRES[input.place as 'wall-south' | 'wall-north'];
+      return {
+        id: input.place,
+        centre,
+        near: coverNear(helpers.leg2Placements(input), artifact.prefabs, centre),
+        build: () => helpers.leg2Massing(input),
+        extras: (owner: Parameters<typeof helpers.leg2Extras>[0]) => helpers.leg2Extras(owner, input),
+      };
+    }),
     quayArea: { id: 'quay', centre: AREA_CENTRES.quay, build: () => [] },
     location: { search: '' },
     AREA_CENTRES,
@@ -947,8 +1053,17 @@ async function mountAt(position: THREE.Vector3) {
   await Promise.all(pending);
   assert.ok(describe);
   const tick = update;
-  return { ...state(), report: describe().canopy, state, update: () => tick() };
+  return { ...state(), reports: describe(), report: describe().canopy, state, update: () => tick() };
 }
+
+for (const area of ['wall-north', 'wall-south'] as const)
+  test(area + ' mounts two cliff colliders and no visible boxes', async () => {
+    const { x, z } = AREA_CENTRES[area];
+    const near = await mountAt(new THREE.Vector3(x, 2, z));
+    assert.deepEqual(near.reports[area], { resident: true, boxes: 0, solids: 2 });
+    const far = await mountAt(new THREE.Vector3(3000, 2, 3000));
+    assert.deepEqual(far.reports[area], { resident: false });
+  });
 
 test('a swimmer arriving at the western beach finds its collider at the shoreline', async () => {
   const beach = ground(canopy).find((c) => c.placement.id === 'canopy.beach-27')!;

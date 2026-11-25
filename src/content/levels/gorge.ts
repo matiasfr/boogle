@@ -160,6 +160,18 @@ function placements() {
         ),
       );
   }
-  return { place: 'gorge', placements: [], layout: layoutData({ kind: 'gorge', boxes: out, incline: inclineLayout }) };
+  const inclineAt = out.length;
+  for (const c of [-5.8, 5.8]) {
+    out.push(levelBox(-51, -11, c - 2, c + 2, GORGE_DECK - 0.5, GORGE_DECK, GREY_LIGHT));
+    for (const a of [-49, -40, -31, -22, -13])
+      out.push(levelBox(a - 0.25, a + 0.25, c - 0.25, c + 0.25, -8, GORGE_DECK - 0.5, GREY_DARK));
+    out.push(levelBox(-11, -4, c - 2, c + 2, GORGE_DECK - 0.5, GORGE_DECK));
+  }
+  out.push(span(gorgeAt(-72, 5.8, -1.4), gorgeAt(-51, 5.8, GORGE_DECK), 3, 0.3, GREY_LIGHT));
+  return {
+    place: 'gorge',
+    placements: [],
+    layout: layoutData({ kind: 'gorge', boxes: out, inclineAt, incline: inclineLayout }),
+  };
 }
 export const levels = [defineLevel(placements())];

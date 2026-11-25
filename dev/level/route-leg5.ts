@@ -4,10 +4,17 @@ import { layout, parseMapPage, type XZ } from '../../src/sickle/map-data.ts';
 import { CANOPY_TRUNKS } from '../../src/content/levels/leg3.ts';
 import { HEAD_BACK_CM, RAIL_LEGS, legFrame, legRack, rowPoint, sectionFromCm } from '../../src/sim/railway-route.ts';
 import { WORLD_LINES } from '../../src/sim/railway-world-lines.ts';
-import { shoreDistance } from './route-leg4.ts';
+import { colliderFlood, shoreDistance } from './route-leg4.ts';
 import { tracks, type Pt } from './rail-network.ts';
 import { circumradius, measure } from './track-continuity.ts';
 import { gorgeAt } from '../../src/entities/route-greybox/massing.ts';
+
+import defsInput from '../../content/built/prefabs.json' with { type: 'json' };
+import gorgeInput from '../../content/built/levels/gorge.json' with { type: 'json' };
+import southInput from '../../content/built/levels/wall-south.json' with { type: 'json' };
+import northInput from '../../content/built/levels/wall-north.json' with { type: 'json' };
+import { validateArtifact, loadLevelArtifact } from '../../src/prefab/validate.ts';
+import { heightAt, resolvePlacedColliders } from './prefab-colliders.ts';
 
 /** Vertical rail-to-rail clearance wherever these two finite spans cross in plan. */
 function crossingHeight(a: Pt, b: Pt, c: Pt, d: Pt) {
@@ -129,6 +136,41 @@ export function checkLeg5() {
       `Wall platform ${k + 1}: level at ${height / 100} m`,
       [-2000, -1000, 1000, 2000].every((offset) => rowPoint(leg.row, s + offset).y === height),
     );
+  }
+  const defs: unknown = defsInput;
+  validateArtifact(defs);
+  for (const input of [southInput, northInput]) {
+    const area = loadLevelArtifact(input, defs.prefabs);
+    for (const placement of area.placements) {
+      const outline = land.find((l) => l.id === placement.id)!.outline;
+      const collider = defs.prefabs[placement.prefab]!.colliders[0];
+      check(
+        placement.id + ' sheer collider follows its map outline',
+        collider?.shape === 'trimesh' &&
+          collider.vertices.length === 3 * (2 * outline.length + 1) &&
+          outline.every(
+            ([x, z], i) =>
+              Math.abs(collider.vertices[3 * i]! - x - ORIGIN.x) < 0.006 &&
+              collider.vertices[3 * i + 1] === 120 &&
+              Math.abs(collider.vertices[3 * i + 2]! - z - ORIGIN.z) < 0.006,
+          ),
+      );
+    }
+  }
+  const gorge = loadLevelArtifact(gorgeInput, defs.prefabs);
+  const { colliders } = resolvePlacedColliders(gorge, defs.prefabs);
+  const faces = colliders.flatMap((c) => c.volume.triangles);
+  const clear = [-26, -23, -20, -17, -14, -11].every((a) =>
+    Array.from({ length: 61 }, (_, k) => -13.9 + k / 10).every((c) => heightAt(faces, gorgeAt(a, c)) === null),
+  );
+  check('six clear metres between the town pad and the north platform', clear);
+  const { node, reach } = colliderFlood(colliders, gorgeAt(-35, 0), 115);
+  const concourseWalk = reach(gorgeAt(-2, 2));
+  const fromWater = reach(gorgeAt(-76, 6), true);
+  for (const c of [-5.8, 5.8]) {
+    const platform = node(gorgeAt(-31, c));
+    check('Gorge platform c ' + c + ' connects to line 2 on foot', !!concourseWalk[platform]);
+    check('Gorge platform c ' + c + ' reached from the water', !!fromWater[platform]);
   }
   return { level: 'route leg 5', entries, failures: entries.filter((e) => !e.passed).length };
 }

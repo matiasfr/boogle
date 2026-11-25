@@ -2144,6 +2144,244 @@
         "solid": false,
         "y0": 3.9,
         "y1": 4.8
+      },
+      {
+        "bounds": [
+          -51,
+          -11,
+          -7.8,
+          -3.8
+        ],
+        "colour": "#b4b6b8",
+        "compute": "slab",
+        "frame": {
+          "operand": 0
+        },
+        "y0": 3.4,
+        "y1": 3.9
+      },
+      {
+        "bounds": [
+          -49.25,
+          -48.75,
+          -6.05,
+          -5.55
+        ],
+        "colour": "#6f7275",
+        "compute": "slab",
+        "frame": {
+          "operand": 0
+        },
+        "y0": -8,
+        "y1": 3.4
+      },
+      {
+        "bounds": [
+          -40.25,
+          -39.75,
+          -6.05,
+          -5.55
+        ],
+        "colour": "#6f7275",
+        "compute": "slab",
+        "frame": {
+          "operand": 0
+        },
+        "y0": -8,
+        "y1": 3.4
+      },
+      {
+        "bounds": [
+          -31.25,
+          -30.75,
+          -6.05,
+          -5.55
+        ],
+        "colour": "#6f7275",
+        "compute": "slab",
+        "frame": {
+          "operand": 0
+        },
+        "y0": -8,
+        "y1": 3.4
+      },
+      {
+        "bounds": [
+          -22.25,
+          -21.75,
+          -6.05,
+          -5.55
+        ],
+        "colour": "#6f7275",
+        "compute": "slab",
+        "frame": {
+          "operand": 0
+        },
+        "y0": -8,
+        "y1": 3.4
+      },
+      {
+        "bounds": [
+          -13.25,
+          -12.75,
+          -6.05,
+          -5.55
+        ],
+        "colour": "#6f7275",
+        "compute": "slab",
+        "frame": {
+          "operand": 0
+        },
+        "y0": -8,
+        "y1": 3.4
+      },
+      {
+        "bounds": [
+          -11,
+          -4,
+          -7.8,
+          -3.8
+        ],
+        "colour": "#9c9ea1",
+        "compute": "slab",
+        "frame": {
+          "operand": 0
+        },
+        "y0": 3.4,
+        "y1": 3.9
+      },
+      {
+        "bounds": [
+          -51,
+          -11,
+          3.8,
+          7.8
+        ],
+        "colour": "#b4b6b8",
+        "compute": "slab",
+        "frame": {
+          "operand": 0
+        },
+        "y0": 3.4,
+        "y1": 3.9
+      },
+      {
+        "bounds": [
+          -49.25,
+          -48.75,
+          5.55,
+          6.05
+        ],
+        "colour": "#6f7275",
+        "compute": "slab",
+        "frame": {
+          "operand": 0
+        },
+        "y0": -8,
+        "y1": 3.4
+      },
+      {
+        "bounds": [
+          -40.25,
+          -39.75,
+          5.55,
+          6.05
+        ],
+        "colour": "#6f7275",
+        "compute": "slab",
+        "frame": {
+          "operand": 0
+        },
+        "y0": -8,
+        "y1": 3.4
+      },
+      {
+        "bounds": [
+          -31.25,
+          -30.75,
+          5.55,
+          6.05
+        ],
+        "colour": "#6f7275",
+        "compute": "slab",
+        "frame": {
+          "operand": 0
+        },
+        "y0": -8,
+        "y1": 3.4
+      },
+      {
+        "bounds": [
+          -22.25,
+          -21.75,
+          5.55,
+          6.05
+        ],
+        "colour": "#6f7275",
+        "compute": "slab",
+        "frame": {
+          "operand": 0
+        },
+        "y0": -8,
+        "y1": 3.4
+      },
+      {
+        "bounds": [
+          -13.25,
+          -12.75,
+          5.55,
+          6.05
+        ],
+        "colour": "#6f7275",
+        "compute": "slab",
+        "frame": {
+          "operand": 0
+        },
+        "y0": -8,
+        "y1": 3.4
+      },
+      {
+        "bounds": [
+          -11,
+          -4,
+          3.8,
+          7.8
+        ],
+        "colour": "#9c9ea1",
+        "compute": "slab",
+        "frame": {
+          "operand": 0
+        },
+        "y0": 3.4,
+        "y1": 3.9
+      },
+      {
+        "a": {
+          "at": [
+            -72,
+            5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "operand": 0
+          },
+          "y": -1.4
+        },
+        "b": {
+          "at": [
+            -51,
+            5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "operand": 0
+          },
+          "y": 3.9
+        },
+        "colour": "#b4b6b8",
+        "compute": "span",
+        "h": 0.3,
+        "w": 3
       }
     ],
     "incline": {
@@ -3533,6 +3771,7 @@
         }
       ]
     },
+    "inclineAt": 73,
     "kind": "gorge",
     "operands": [
       {

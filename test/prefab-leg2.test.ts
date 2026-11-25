@@ -165,6 +165,7 @@ for (const area of ['bell', 'west'] as const)
         ...validation,
         LEG2_TEXT,
         areaLabels: new Map(),
+        areaBoardVisibility: new Map(),
       },
     );
     type Massing = Record<string, (owner?: ReturnType<typeof createOwnedView>) => unknown>;

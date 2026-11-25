@@ -51,7 +51,7 @@ background(
     if (!(await railReady(300000)) || !(await bot.until(() => me.body && me.coyote > 0, 300000, 'Leg seed arrived')))
       throw new Error('Leg seed did not arrive');
     await legRoute({ bot, checkpoint: railCheckpoint(bot, 'Legs seeded', facts) });
-    bot.finish('Legs played to the West landing home from Port Quay; no recovery');
+    bot.finish('Legs played to the West landing home from Port Quay with the White Wall objective; no recovery');
   })().catch((error: unknown) => {
     bot.never(`Legs: ${error instanceof Error ? error.message : String(error)}`);
     shot.__placeDone = true; // End the warm-up; background reports the error, so capture health still fails.

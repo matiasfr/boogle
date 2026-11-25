@@ -664,6 +664,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
    * halt where none does. */
   function label(x: Spot) {
     if (x.dir < 0) return haltName(x.line, 0);
+    // A row grows in catalog order. Its held outward lever still names the open destination.
+    if (isRowLine(x.line)) return haltName(x.line, Math.max(0, stopsNow[x.line]!.length - 1));
     // A chained lever never names a greybox route halt (a leg's, or a shut row's): Ring Island's reads Ring Island.
     const n = stopsNow[x.line]!.length,
       count = LINE_HALTS.filter((r, id) => r.line === x.line && !RAIL_HALTS[id]!.leg && !RAIL_HALTS[id]!.shut).length;

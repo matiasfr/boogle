@@ -416,6 +416,29 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
     await hopTo(at.x / 100, at.z / 100, beat);
     await until(() => me.coyote > 0 && !me.swimming, `${beat}: standing`, 10000);
   };
+  // The deep-span seed places the player between the last rack and frame.
+  const wallSlot = legOf('wall');
+  const wall = RAIL_LEGS[wallSlot]!;
+  const barrier = wall.sections[5]!.gate!;
+  if (legRow(rw(), wallSlot).laid === 5 && !(routeRow(rw()).gates & (1 << barrier))) {
+    if (!near(legFrame(wall, 5), 40)) {
+      check(await bot.walk(westLanding.x / 100, westLanding.z / 100, 3), 'walked to the cave line');
+      await rowRide(wall.line, 0, wall.railheadHalt + 4, 'White Wall');
+      await stepOff(legFrame(wall, 5), 'stepped off at the deep span frame');
+    }
+    check(
+      await bot.until(
+        () => inspectRailway()?.worksView?.legView?.objective === "Open the deep span's barrier (placeholder)",
+        10000,
+        'Deep span objective',
+      ),
+      'head five points to the barrier',
+    );
+    await press('railway-leg-deep-span', RAIL_GATES[barrier]!.at, 'open the deep span');
+    check(routeRow(rw()).gates & (1 << barrier), 'deep span opened at frame six');
+    await checkpoint('deep span open');
+    return;
+  }
   /** From the Village (where a seed starts): walk to the West landing and ride a bay train out to stop `to`. */
   const rideOut = async (to: number, at: { x: number; z: number }, beat: string) => {
     check(await bot.walk(westLanding.x / 100, westLanding.z / 100, 3), 'walked from the Village to the West landing');
@@ -565,6 +588,16 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
     await checkpoint('plug opened');
   }
   await buildRowLeg(CAVE, 'cave');
+  check(
+    await bot.until(
+      () =>
+        inspectRailway()?.worksView?.legView?.objective ===
+        'Build the line along the White Wall to High Gorge (placeholder)',
+      10000,
+      'White Wall objective',
+    ),
+    'Port Quay points to the White Wall',
+  );
   await checkpoint('port reached');
   await rowRide(cave.line, caveEnd, caveStart, 'cave');
   const home = rowLever(cave.line, caveStart);

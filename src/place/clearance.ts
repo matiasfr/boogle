@@ -34,16 +34,20 @@ export type Clearing<S extends Solid> = {
 };
 type Lifted = Pick<Body, 'position' | 'velocity'> & { interpolatedPosition?: Body['position'] };
 
+/** The shared capsule query for activating solids and checking whether a support still holds a player. */
+function playerOverlaps(overlaps: Overlaps, shapes: readonly Shape[], at: V3, margin: number) {
+  return shapes.some((shape) => overlaps(at, PLAYER_R + margin, HEAD_OFFSET, shape));
+}
+
 /** Lift or wait for solids switching on, with `overlaps` as the physics query. `lift: false` only waits (an area's
  * mount-time clearance, where the view moves no one). */
 export function createLiftOrWait(overlaps: Overlaps) {
-  const r = PLAYER_R - CONTACT,
-    at = { x: 0, y: 0, z: 0 };
+  const at = { x: 0, y: 0, z: 0 };
   const holds = (s: Solid, p: V3, y = p.y) => {
     at.x = p.x;
     at.y = y;
     at.z = p.z;
-    return s.shapes.some((shape) => overlaps(at, r, HEAD_OFFSET, shape));
+    return playerOverlaps(overlaps, s.shapes, at, -CONTACT);
   };
   /** Lifts `body` onto `held` if its feet are within STEP of their top, that top is under its feet, and the whole body
    * fits standing there; true if it did. */
@@ -77,13 +81,18 @@ export function createLiftOrWait(overlaps: Overlaps) {
   return function liftOrWait<S extends Solid>(
     solids: readonly S[],
     body: Lifted | null | undefined,
-    o: { lift: boolean },
+    o: { lift: true; occupied?: never } | { lift: false; occupied?: (support: { holds(at: V3): boolean }) => boolean },
   ): Clearing<S> {
     /** Settles `set` for body `b`: what still waits. At the switch the solids that hold the body are the set; retried
      * (`whole`), the set stays whole while any of it holds. */
     const settle = (set: readonly S[], b: Lifted | null | undefined, whole: boolean) => {
-      const held = b ? set.filter((s) => holds(s, b.position)) : [];
-      const left = b && held.length && !(o.lift && lift(set, held, b)) ? (whole ? set : held) : [];
+      // A retiring support waits for every player within a step. Its callback releases the
+      // existing bodies once clear. This path only probes positions and never moves a player.
+      const occupied = o.occupied;
+      const held = occupied
+        ? set.filter((s) => occupied({ holds: (at) => playerOverlaps(overlaps, s.shapes, at, STEP) }))
+        : b ? set.filter((s) => holds(s, b.position)) : [];
+      const left = held.length && !(o.lift && b && lift(set, held, b)) ? (whole ? set : held) : [];
       for (const s of set) if (!left.includes(s)) s.on();
       return { held: held.length > 0, left };
     };

@@ -110,6 +110,31 @@ function bakedBlocks(write: boolean) {
 }
 if (import.meta.main && process.argv.includes('--bake')) bakedBlocks(true);
 
+export function colliderFlood(
+  colliders: readonly Pick<ReturnType<typeof resolvePlacedColliders>['colliders'][number], 'volume'>[],
+  centre: { x: number; z: number },
+  n: number,
+) {
+  const cell = 1,
+    h = new Float32Array(n * n).fill(-1.5);
+  const ix = (x: number) => Math.round((x - centre.x) / cell) + (n - 1) / 2;
+  const iz = (z: number) => Math.round((z - centre.z) / cell) + (n - 1) / 2;
+  for (const c of colliders) {
+    const tris = c.volume.triangles;
+    for (const tri of tris) {
+      const face = [tri];
+      for (let i = Math.max(0, ix(tri.x0) - 1); i <= Math.min(n - 1, ix(tri.x1) + 1); i++)
+        for (let j = Math.max(0, iz(tri.z0) - 1); j <= Math.min(n - 1, iz(tri.z1) + 1); j++) {
+          const y = heightAt(face, { x: centre.x + (i - (n - 1) / 2) * cell, z: centre.z + (j - (n - 1) / 2) * cell });
+          if (y !== null && y > h[i * n + j]!) h[i * n + j] = y;
+        }
+    }
+  }
+  const node = (p: { x: number; z: number }) => ix(p.x) * n + iz(p.z);
+  const reach = (p: { x: number; z: number }, swim = false) => flood({ n, cell, h }, MOVER, [node(p)], { swim });
+  return { node, reach, h };
+}
+
 function coastalReach(check: (message: string, passed: boolean) => void, id: 'saltpan' | 'quay') {
   const defs: unknown = prefabInput;
   validateArtifact(defs);
@@ -134,24 +159,7 @@ function coastalReach(check: (message: string, passed: boolean) => void, id: 'sa
   const outside = at(s, 580),
     home = at(s, -580);
   const centre = salt ? { x: 550, z: 700 } : { x: 70, z: 970 };
-  const n = 451,
-    cell = 1,
-    h = new Float32Array(n * n).fill(-1.5);
-  const ix = (x: number) => Math.round((x - centre.x) / cell) + (n - 1) / 2;
-  const iz = (z: number) => Math.round((z - centre.z) / cell) + (n - 1) / 2;
-  for (const c of colliders) {
-    const tris = c.volume.triangles;
-    for (const tri of tris) {
-      const face = [tri];
-      for (let i = Math.max(0, ix(tri.x0) - 1); i <= Math.min(n - 1, ix(tri.x1) + 1); i++)
-        for (let j = Math.max(0, iz(tri.z0) - 1); j <= Math.min(n - 1, iz(tri.z1) + 1); j++) {
-          const y = heightAt(face, { x: centre.x + (i - (n - 1) / 2) * cell, z: centre.z + (j - (n - 1) / 2) * cell });
-          if (y !== null && y > h[i * n + j]!) h[i * n + j] = y;
-        }
-    }
-  }
-  const node = (p: { x: number; z: number }) => ix(p.x) * n + iz(p.z);
-  const reach = (p: { x: number; z: number }, swim = false) => flood({ n, cell, h }, MOVER, [node(p)], { swim });
+  const { node, reach, h } = colliderFlood(colliders, centre, 451);
   const seen = reach(outside);
   for (const [name, p] of Object.entries(
     salt
