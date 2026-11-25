@@ -1,7 +1,9 @@
 // One merged material, no shadow pass: silhouettes from the same map as the walkable planning greybox.
 import * as THREE from 'three/webgpu';
+import { attribute, mix, normalGeometry, positionGeometry, vertexColor, vertexStage } from 'three/tsl';
 import html from '../../../docs/world/map-prototypes.html?raw';
-import { layout, parseMapPage, type XZ } from '../../sickle/map-data.ts';
+import { clipHalf, layout, parseMapPage, type XZ } from '../../sickle/map-data.ts';
+import { rockLayers } from '../../place/ground-material.ts';
 import { addPart, mergeParts } from '../../render/geometry-parts.ts';
 import { freezeInPlace } from '../../render/instances.ts';
 import { WORLD_LINES } from '../../sim/railway-world-lines.ts';
@@ -46,6 +48,7 @@ function boreHole(a: XZ, b: XZ): [number, number] | null {
 export function createBackdrop() {
   const map = layout(parseMapPage(html), 'sickle', 'A');
   const parts: THREE.BufferGeometry[] = [];
+  const sandstone = new Set<THREE.BufferGeometry>();
   const matrix = new THREE.Matrix4();
   const add = (geo: THREE.BufferGeometry, tint: string) => {
     addPart(parts, geo, matrix.identity(), tint);
@@ -62,7 +65,7 @@ export function createBackdrop() {
     const top = land.horizon ? 10 : (land.top ?? 10);
     const outline = land.outline;
     const vertices: number[] = [];
-    const tint = land.tint ?? (land.module === 'chalk' ? '#c9c5bb' : CLIFF);
+    const chalk = land.module === 'chalk';
     const triangle = (a: XZ, ay: number, b: XZ, by: number, c: XZ, cy: number) =>
       vertices.push(a[0] + ORIGIN_X, ay, a[1], b[0] + ORIGIN_X, by, b[1], c[0] + ORIGIN_X, cy, c[1]);
     const geometry = () => {
@@ -71,18 +74,45 @@ export function createBackdrop() {
       geo.computeVertexNormals();
       return geo;
     };
-    for (const [a, b, c] of THREE.ShapeUtils.triangulateShape(
-      outline.map(([x, z]) => new THREE.Vector2(x, z)),
-      [],
-    ))
-      triangle(outline[a!]!, top, outline[b!]!, top, outline[c!]!, top);
-    add(geometry(), land.horizon ? '#7d8a84' : WALK);
-    vertices.length = 0;
+    const cap = (ring: XZ[], y: number) => {
+      for (const [a, b, c] of THREE.ShapeUtils.triangulateShape(
+        ring.map(([x, z]) => new THREE.Vector2(x, z)),
+        [],
+      ))
+        triangle(ring[a!]!, y, ring[b!]!, y, ring[c!]!, y);
+    };
     const quad = (a: XZ, b: XZ, y0: number, y1: number) => {
       triangle(a, y1, a, y0, b, y1);
       triangle(b, y1, a, y0, b, y0);
     };
     const at = (a: XZ, b: XZ, u: number): XZ => [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u];
+    if (chalk) {
+      // Cut shoulders at opposite ends along the islet's long axis. Shared cut edges close each riser.
+      const angle = THREE.MathUtils.degToRad(land.rot ?? 0);
+      const along = ([x, z]: XZ) => (x - land.c![0]) * Math.cos(angle) + (z - land.c![1]) * Math.sin(angle);
+      let ring = outline;
+      let y = -10;
+      for (const [level, end] of [
+        [top * 0.76, -0.6],
+        [top * 0.9, 0.44],
+        [top, 0],
+      ] as const) {
+        for (let i = 0; i < ring.length; i++) quad(ring[i]!, ring[(i + 1) % ring.length]!, y, level);
+        if (end === 0) cap(ring, level);
+        else {
+          const side = (p: XZ) => Math.sign(end) * (along(p) - end * land.r![0]);
+          cap(clipHalf(ring, side), level);
+          ring = clipHalf(ring, (p) => -side(p));
+        }
+        y = level;
+      }
+      // The White Wall stays chalk: the kit's stepped courses, not its sandstone (his word, 25 November).
+      add(geometry(), '#c9c5bb');
+      continue;
+    }
+    cap(outline, top);
+    add(geometry(), land.horizon ? '#7d8a84' : WALK);
+    vertices.length = 0;
     for (let i = 0; i < outline.length; i++) {
       const a = outline[i]!,
         b = outline[(i + 1) % outline.length]!,
@@ -100,7 +130,8 @@ export function createBackdrop() {
       quad(p, q, BORE.y1, top);
       quad(p, q, -10, BORE.y0);
     }
-    add(geometry(), tint);
+    add(geometry(), land.tint ?? '#ffffff');
+    if (!land.tint || land.id === 'port-top') sandstone.add(parts.at(-1)!);
     if (land.horizon) {
       // A coarse inland ridge, behind the low coast and city's skyline.
       const coast = outline.slice(0, 9);
@@ -156,7 +187,6 @@ export function createBackdrop() {
     box(x, 10 + h / 2, z, 8, h, 8, '#eeeae2');
   }
   const material = new THREE.MeshStandardNodeMaterial({
-    vertexColors: true,
     roughness: 0.95,
     flatShading: true,
     side: THREE.DoubleSide,
@@ -196,6 +226,19 @@ export function createBackdrop() {
     for (const [x, z, w, d, h] of harbour.warehouses) box(x, 3 + h / 2, z, w, h, d);
   }
   const geometry = mergeParts(parts);
+  const rock = new Float32Array(geometry.attributes.position!.count);
+  let offset = 0;
+  for (const part of parts) {
+    const end = offset + part.attributes.position!.count;
+    if (sandstone.has(part)) rock.fill(1, offset, end);
+    offset = end;
+  }
+  geometry.setAttribute('sandstone', new THREE.BufferAttribute(rock, 1));
+  // Only the kit pigment survives this viewing distance. Sample at vertices to avoid subpixel bed seams.
+  const { layered } = rockLayers(positionGeometry);
+  material.colorNode = vertexStage(
+    mix(vertexColor().rgb, layered.mul(normalGeometry.y.abs().mul(0.18).add(1)), attribute('sandstone', 'float')),
+  );
   for (const part of parts) part.dispose();
   const horizon = new THREE.Mesh(geometry, material);
   horizon.name = 'Sickle Isles horizon';
