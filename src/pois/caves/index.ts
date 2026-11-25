@@ -23,6 +23,7 @@ import {
   mix,
   mod,
   positionGeometry,
+  positionWorld,
   select,
   step,
   vec2,
@@ -34,6 +35,7 @@ import {
   If,
   rand,
 } from 'three/tsl';
+import { beddedRock } from '../../place/ground-material.ts';
 import { camera } from '../../render/scene.ts';
 import { createOwnedView } from '../../render/owned-view.ts';
 import { defineKind, spawn } from '../../entity/entity.ts';
@@ -184,18 +186,10 @@ function makeCollars({ positions, indices }: { positions: Float32Array; indices:
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geo.setIndex(new THREE.BufferAttribute(indices, 1));
-  const colors = new Float32Array(positions.length);
-  const tmp = new THREE.Color();
-  for (let v = 0; v < positions.length / 3; v++) {
-    tmp.set('#968f83').multiplyScalar(0.88 + 0.24 * vertexNoise(positions, v));
-    colors.set([tmp.r, tmp.g, tmp.b], v * 3);
-  }
-  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   geo.computeVertexNormals();
-  const mesh = new THREE.Mesh(
-    geo,
-    new THREE.MeshStandardNodeMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 }),
-  );
+  const material = new THREE.MeshStandardNodeMaterial({ flatShading: true, roughness: 0.92 });
+  material.colorNode = beddedRock(positionWorld);
+  const mesh = new THREE.Mesh(geo, material);
   mesh.castShadow = mesh.receiveShadow = true;
   return mesh;
 }
