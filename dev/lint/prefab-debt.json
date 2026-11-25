@@ -254,13 +254,11 @@
       "count": 3,
       "exports": [
         "SEATED_HIPS",
-        "kitMaterial",
         "lowStoolAnchor",
         "lowStoolMesh",
         "registerSeat",
         "seatHeight",
         "seatHeld",
-        "seatMesh",
         "seatState",
         "seated",
         "sitDown",
@@ -635,11 +633,6 @@
       "exports": ["createRailwayView"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
-    "src/entities/town/workshop.ts": {
-      "count": 2,
-      "exports": ["WORKSHOP_DOOR", "makeWorkshop"],
-      "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
-    },
     "src/features/dino.ts": {
       "count": 1,
       "exports": [],
@@ -710,11 +703,6 @@
         "sweepSphere",
         "teleport"
       ],
-      "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
-    },
-    "src/prefab/builders/seat-chair.ts": {
-      "count": 2,
-      "exports": ["seatChair"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     }
   },

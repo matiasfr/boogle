@@ -152,7 +152,14 @@ Each is one sitting and leaves `node dev/ship-check.ts` green. No step changes `
 - [x] **11. Trees and scattered props (high-risk: tree ids are sim references).** `Blueprint` folds into `PrefabDef` (the `trunk` collider recipe carries over); `LAND_TREES` and `scatterProps()` become placement sources (the scatter stays a seeded generator named in the level). Order and ids unchanged, so no bump; re-keying a tree would need one. Proof: `hut-blueprint` and level tests, collider golden, railway goldens. Deletes `src/blueprints/blueprint.ts`'s types. As built: four shared records and two named seeded levels; 362 land ids / 391 tree sources, all poses and colliders remain byte-identical to a pre-change golden. Full check passes; checkpoints A/B remain separate. [Proof, counts, checkpoint feasibility and unverified work](../archive/plans/prefab-data-step-11.md).
 - [x] **12. GLB things.** Every built model gets a `registerAsset` id; records for the engine, passenger car, track machine and carts name `visual.asset`; their animation code stays. Proof: asset check, one still each. As built: 9 of 13 built models registered; place-kit and the three stage-only models are left (below).
 - [x] **13. The rest:** `src/pois/` (lighthouse, windmills, caves: the 4 files that hold the `use-an-entity` suppressions), Ring Island, the mushroom stall (deletes `dev/level/level.ts:16`'s copy), the lookout, secrets. One area a sitting. As built: nine sittings (below); the ninth completes it.
-- [ ] **14. Portability proof (if open question 3 is yes):** `dev/prefab/bake.ts` and `dev/prefab/export-godot.ts` write the chair and the Gorge level as `.glb` and `.tscn`. Proof: Godot's headless import lists the nodes and collision shapes with matching counts.
+- [x] **14. Portability proof (if open question 3 is yes):** `dev/prefab/bake.ts` and `dev/prefab/export-godot.ts` write the chair and the Gorge level as `.glb` and `.tscn`. Proof: Godot's headless import lists the nodes and collision shapes with matching counts.
+
+  Run locally with `node dev/prefab/export-godot.ts <Godot console executable>`. The generated project, scenes,
+  GLBs and `proof.txt` go in `.look/prefab-godot/`. Godot 4.7.2 on HOTBOX matched the compiled records for the
+  workshop chair (1 record, 1 mesh, 1 collision shape, 2 markers) and Gorge (164 records, 140 meshes, 128 collision
+  shapes, 0 markers). Removing the chair's shape from the generated scene made the verifier exit 1. Gorge's
+  `tsl:stone` material is a flat-colour placeholder. The proof covers the compiled level placements and
+  headless import counts.
 
 ## Level findings
 
