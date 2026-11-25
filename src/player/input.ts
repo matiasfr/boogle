@@ -248,17 +248,21 @@ export function initInput() {
   grabBtn.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
     if (devInputBlocked()) return;
+    grabBtn.setPointerCapture(e.pointerId);
     touchDown();
   });
   grabBtn.addEventListener('pointerup', (e) => {
     e.stopPropagation();
+    interactUp();
     if (devInputBlocked()) return;
     useUp();
   });
   grabBtn.addEventListener('pointercancel', () => {
+    interactUp();
     me.charging = false;
     me.suppressUp = false;
   });
+  grabBtn.addEventListener('lostpointercapture', interactUp);
 
   // Gamepad layout for the built-in controls (src/player/controls.ts; features register their own).
   describeControl('move', {

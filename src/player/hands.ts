@@ -58,6 +58,7 @@ export { NO_TARGETS };
 
 /** Something the interact button can act on: a verb shown in the prompt, and run (or why it is blocked). */
 export type Interactable = InteractTarget & {
+  release?: () => void;
   id: string;
   verb: string;
   /** A line over the chip that is not a refusal: a bill and its progress (the kiln). Shown blocked or not. */
@@ -146,11 +147,14 @@ export function interactTarget() {
 
 // Never mid-throw: the prompt hides while you wind up, and E must not act on something you cannot see.
 const pressed: ((t: Interactable | null, ran: boolean) => void)[] = [];
+let releaseTarget: (() => void) | undefined;
 export const onInteractPress = (fn: (t: Interactable | null, ran: boolean) => void) => void pressed.push(fn);
 function interact(t = interactTarget()) {
   if (me.charging) return false;
   for (const fn of pressed) fn(t, !!t?.run);
   if (!t?.run) return false;
+  if (releaseTarget !== t.release) releaseTarget?.();
+  releaseTarget = t.release;
   t.run();
   pickFrame = 0; // what is in reach may have changed
   return true;
@@ -209,6 +213,8 @@ function pressTarget() {
 export const interactDown = () => (me.entered && me.body ? interact(pressTarget()) : false);
 // E never throws. Its release only clears the guard grabTheBall set, so the next click release still throws.
 export const interactUp = () => {
+  releaseTarget?.();
+  releaseTarget = undefined;
   me.suppressUp = false;
 };
 export function touchDown() {

@@ -12,6 +12,7 @@ import { carry } from '../../../src/physics/platforms.ts';
 import { playMark } from '../../../src/proto/mark.ts';
 import {
   LINE1_STATIONS,
+  LINE1_PICK_STANDS,
   LINE1_GREAT_TREE,
   LINE1_INITIAL,
   LINE1_RAIL_PAIRS,
@@ -958,7 +959,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
   const second = coop && player === '2';
   // &botOrder=legacy keeps the later pack take and cart ride to Q4; both routes use the approved fly-first order.
   // The default plays in a player's order (Home flow finding 4):
-  // the pack at the forge, the glider on the first climb, and the sea switch at its gate after Q4.
+  // the pack at Station 1, the glider on the first climb, and the sea switch at its gate after Q4.
   const legacy = query.get('botOrder') === 'legacy';
   const botTo = query.get('botTo');
   if (botTo !== null && !(botTo in RAIL_STOPS)) throw new Error(`Unknown botTo ${botTo}`);
@@ -1394,10 +1395,35 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     if (second) await friendCard('multi-axe', 'multi-axe');
     else await dismiss('multi-axe reveal');
     mark('T1 multi-axe dismissed');
+    const firstFrame = LINE1_STATIONS[0]!;
+    await walk(firstFrame.x / 100 + (second ? 2 : -2), firstFrame.z / 100 + 5);
+    face(firstFrame.x / 100, firstFrame.z / 100);
+    await checkpoint('T1 pick board');
     if (second) await until(() => job(0).delivered === 16, 'friend supplied sixteen logs');
     await logs(0, coop ? (second ? 1 : 2) : 3);
     await until(() => job(0).start >= 0, 'funded T1 begins');
     mark('T1 funded');
+    if (!legacy) {
+      const firstPick = LINE1_PICK_STANDS.pack;
+      await walk(firstPick.x / 100 + (second ? -1 : 0), firstPick.z / 100 + 2, 0.6);
+      face(firstPick.x / 100, firstPick.z / 100);
+      if (!second) {
+        await until(() => interactTarget()?.id === 'railway-pick-pack', 'Station 1 offers the pack');
+        await checkpoint('T1 stands');
+        triggerAction('interact', 'down');
+        try {
+          await until(() => R.rail(R.rw()).pack, 'held Take gives the room its pack');
+        } finally {
+          triggerAction('interact', 'up');
+        }
+      }
+      await until(() => read().reward.arrival.cards.includes('pack'), 'Station 1 pack card');
+      await checkpoint('T1 pick card');
+      await dismiss('Station 1 pack');
+      require(R.capacityOf(R.rw(), R.LOGS) === 16, 'the Station 1 pack gives each player 16 log spaces');
+      await checkpoint('pack');
+      await checkpoint('T1 carry-off');
+    }
     await ride(0);
     await until(() => job(0).completion === 1, 'T1 laid once', LAYING_MS);
     panels(1);
@@ -1743,7 +1769,6 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         require(R.capacityOf(R.rw(), R.LOGS) === 16, "the friend's back holds 16 logs");
         await checkpoint('pack');
       };
-      if (!legacy) await friendPack();
       if (friendTakesYoke) await openYoke();
       else {
         await until(() => R.rail(R.rw()).yoke, 'leader takes the rail yoke', 1800000);
@@ -2098,7 +2123,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await until(() => !v2().gateSolid, 'gate slab collider removed');
     await checkpoint('quarry gate open');
     // botOrder=legacy: the pack only now, home on foot after the lever.
-    if (legacy) {
+    if (legacy && !R.rail(R.rw()).pack) {
       await walk(rack.x, rack.z, 3);
       await openPack();
     }

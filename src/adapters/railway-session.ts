@@ -305,16 +305,20 @@ export function createRailwayAdapter({
     const tick = Math.floor(p.tk / RULE_STEPS);
     // Read only accepted packets, before confirm removes the pending intents. Never use the predicted view here.
     const pending = new Map(predictor.pending().map((q) => [q.id[1], q.action.intent]));
+    const events: RailwayAccepted[] = [];
     for (const [e, r, n] of p.ok ?? []) {
       const intent = e === ep ? pending.get(r) : undefined;
       if (intent) for (const [name, data] of railwayActionMarks(intent, n, true)) playMark(name, data);
+      // The T1 pack competes with the jump. Its owner waits for this receipt. The host omits the
+      // owner's event because ordinary forge packs are predicted.
+      if (intent?.op === 'rail.pack' && intent.station === 'T1' && n === 1)
+        events.push({ ...intent, pid, request: r, accepted: n, status: 'accepted', tick });
     }
     for (const [e, r, reason] of p.rej ?? []) {
       const intent = e === ep ? pending.get(r) : undefined;
       if (intent) playMark('railway refused', { op: intent.op, reason, authority: 'server' });
     }
     if (consistent) for (const [name, data] of progressMarks(confirmed(), rebuilt)) playMark(name, data);
-    const events: RailwayAccepted[] = [];
     for (const raw of p.ev ?? []) {
       const full = implied(raw);
       const intent = intentOf(full);
@@ -517,7 +521,7 @@ export function createRailwayAdapter({
     )
       return false;
     const t = tick();
-    const predict = RAIL_PREDICTED.has(intent.op);
+    const predict = RAIL_PREDICTED.has(intent.op) && !(intent.op === 'rail.pack' && intent.station === 'T1');
     const sent: RailwayIntent = intent.op === 'rail.wake' ? { ...intent, tk: t } : intent;
     const ms = Math.max(0, Math.round(pressed));
     // The server's swing/unload cadence on this client's own clock, predicted exactly: too soon is "not yet".

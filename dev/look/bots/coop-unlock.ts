@@ -18,8 +18,8 @@
 //   --until "(import('/dev/look/bots/coop-unlock.ts').then((m) => m.start()), window.__coopShot || location.search.includes('player=2'))" --seconds 6 --video
 // (alone and together add &railStop=optional%20jump%20used, so the finder stops after its jump demonstration)
 import { background } from '../../../src/async.ts';
-import { inspectRailway, rail, railPhase, railRead, rw } from '../rail-read.ts';
-import { me } from '../../../src/player/player.ts';
+import { inspectRailway, rail, railPhase, railRead, railStation, rw } from '../rail-read.ts';
+import { cam, me } from '../../../src/player/player.ts';
 import { inputState } from '../../../src/player/input-state.ts';
 import { input } from '../../../src/player/input.ts';
 import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
@@ -27,7 +27,7 @@ import { fallArrival } from '../../../src/fall/arrival.ts';
 import { net, remotes } from '../../../src/netplay/net.ts';
 import { teleport } from '../../../src/physics/engine.ts';
 import { INTERP_MS, PLAYER_R } from '../../../src/constants.ts';
-import { LINE1_JUMP_DEVICE } from '../../../src/sim/railway-line-layout.ts';
+import { LINE1_JUMP_DEVICE, LINE1_STATIONS } from '../../../src/sim/railway-line-layout.ts';
 import { makeBot } from '../bot.ts';
 import { play } from './railway.ts';
 // The seat module, as far-head-seated.ts loads it: one shared copy of the page's own chairs.
@@ -144,7 +144,10 @@ async function friend() {
   const bot = makeBot({ doneFlag: '__coopFriendDone' });
   await until(landed, 'friend arrived and landed');
   background(
-    cardsWhenFree(() => w.__coopShot, shot === 'multi' ? 'multi-axe' : shot === 'axe' ? 'axe' : 'jump'),
+    cardsWhenFree(
+      () => w.__coopShot,
+      shot === 'multi' ? 'multi-axe' : shot === 'axe' ? 'axe' : shot === 'pick' ? 'pack' : 'jump',
+    ),
     'friend cards only when free',
   );
   // Out of the finder's way: both arrive at the same spot, and the route starts from it.
@@ -153,6 +156,16 @@ async function friend() {
   await bot.walk(p.x - ((DEVICE.x - p.x) / away) * 9, p.z - ((DEVICE.z - p.z) / away) * 9, 2, { limit: 15000 });
   console.log('COOP NOTE friend stepped aside');
   check(!found(), 'the jump is not found yet');
+  if (shot === 'pick') {
+    const frame = LINE1_STATIONS[0]!;
+    check(await bot.walk(frame.x / 100 + 2, frame.z / 100 + 5, 1), 'friend reaches the unpaid board');
+    check(railStation(0).start < 0, 'friend sees the board before payment');
+    const p = me.body!.position;
+    cam.yaw = me.yaw = Math.atan2(p.x - frame.x / 100, p.z - frame.z / 100);
+    await until(() => read().reward.arrival.cards.includes('pack'), 'friend sees the Station 1 pack card');
+    w.__coopShot = true;
+    return;
+  }
   if (shot === 'multi' || shot === 'axe') {
     // The friend walks about near where the finder works, hopping now and then: held input would show.
     const awake = () => {
