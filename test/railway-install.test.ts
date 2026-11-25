@@ -62,6 +62,7 @@ import { footCap } from '../src/sim/railway-queries-trade.ts';
 import { tableFree } from '../src/sim/railway-queries-works.ts';
 import { garageFacts, roomFacts } from '../src/entities/railway/garage-state.ts';
 import { partsOf } from '../src/entities/railway/garage-data.ts';
+import type { ReadWorld } from '../src/sim/railway-rows.ts';
 import { ROTA_TICKS, shiftAt, shiftChange } from '../src/entities/ring-folk/shape.ts';
 import { STEEL } from '../src/sim/railway-ring-layout.ts';
 import { fuzzTicks } from './helpers/fuzz.ts';
@@ -982,7 +983,7 @@ test('review: the garage offers no trade swap the server would refuse, during th
   brought(s, BAYL);
   assert.equal(fit(s, BAYL, 6), 1);
   settle(s);
-  const tile = (id: 'quick' | 'strong') => partsOf(roomFacts(s.w, s.t), BAYL).find((p) => p.id === id)!.standing;
+  const tile = (id: 'quick' | 'strong') => partsOf(roomFacts(s.w as unknown as ReadWorld, s.t), BAYL).find((p) => p.id === id)!.standing;
   const offered: string[] = [];
   assert.equal(fit(copy(s), BAYL, 5), 0, 'the server refuses Quick while the bay builds');
   offered.push(`during the hold, Quick reads ${tile('quick')}`);
