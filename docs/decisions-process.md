@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-25 · Godot 4 is installed on HOTBOX by the orchestrator with winget, for prefab data's step 14 ([entry](#d-2026-11-25-godot-on-hotbox))
 - 2026-11-25 · Next checkpoint: the route to the ending; wakes ship from their own worktree; no modal questions while delegates run; CI's autofix mends docs-only conflicts ([entry](#d-2026-11-25-workflow-changes-and-checkpoint))
 - 2026-11-24 · A server deploy skips its tests and image build when CI's `server` and `image` jobs passed on the same source tree ([entry](#d-2026-11-24-deploy-skips-green-rerun))
 - 2026-11-25 · Three looks at once on HOTBOX, at most two of them real-speed, timed or two-player; a frame-time reading runs alone ([entry](#d-2026-11-25-three-looks-on-hotbox)) (orchestrator's call on his question)
@@ -111,6 +112,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · Mini-games get their own design pass later. ([entry](#d-undated-mini-games-get-their-own-design))
 
 ## Decided
+
+- <a id="d-2026-11-25-godot-on-hotbox"></a>**2026-11-25, Godot on HOTBOX** (owner, 25 November 2026, in this thread, taking the orchestrator's recommendations on every open item it listed: "I'm not able to try anything right now, so I have to take your recommendations."). The recommendation he took: the orchestrator installs Godot 4 on HOTBOX with `winget`, so prefab data's step 14 (the portability proof, one Godot export, not kept in CI) can run.
 
 - <a id="d-2026-11-25-workflow-changes-and-checkpoint"></a>**2026-11-25, the next checkpoint and three workflow changes** (owner, 25 November 2026, in this thread, answering the orchestrator's questions with recommendations, which he asked for: "Ask me the opens along with your recommendations as suggestions.") (1) Asked which checkpoint to work toward next, he picked "Route to the ending (Recommended)": greybox legs 4 to 6 playable, the bot and the loop reach the classic island's post with no skips, with a minutes-per-area table against six hours ([backlog](backlog.md#the-checkpoint-we-work-toward)). Not picked: "Order picks live" and "Fresh-player first hour". (2) Asked which changes to how work runs to make (each a measured loss, 19 to 25 November), he picked three of four: **wakes ship from their own worktree** (`../boogle-wake`), and the hourly run moves `../boogle-heartbeat` only when no ship uses it; **no modal asks while delegates run**: a session with delegates running writes its questions in its reply and ends its turn, even while he is in the conversation; **autofix mends docs conflicts**: `ci-autofix.yml`'s conflict job gets the commands it was denied. Not picked: CI building the site and running the boot probe on every ship.
 
