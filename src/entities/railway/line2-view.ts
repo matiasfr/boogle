@@ -1228,7 +1228,9 @@ export async function createRailwayLine2(
       // The bill shows what it grants (forge-made rewards, step 2): the pack on the frame's bill, then the pack ready
       // and the axe on the walls'. Once lit it shows only what still waits, and goes when both are claimed.
       const marks: RewardMark[] = [];
-      if (fg.lit < 0 && fg.used < F1) marks.push({ kind: 'pack', ready: false });
+      if (fg.lit < 0 && fg.used < F1) {
+        if (!stock.pack) marks.push({ kind: 'pack', ready: false });
+      }
       else {
         if (!stock.pack) marks.push({ kind: 'pack', ready: true });
         if (!stock.axe) marks.push({ kind: 'axe', ready: fg.lit >= 0 });

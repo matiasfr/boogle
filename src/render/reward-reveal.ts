@@ -173,9 +173,11 @@ export function createRewardReveal({
     box.hidden = true;
     document.body.classList.remove('place-getting');
     setAloft(false);
-    inputState.held = false;
-    if (inputState.holder === 'reward') inputState.holder = null;
-    setPadGrab(null);
+    if (inputState.holder === 'reward') {
+      inputState.held = false;
+      inputState.holder = null;
+      setPadGrab(null);
+    }
     if (!reducedMotion && !g.tint) sparkles(holder.position, 24, 3.4);
     pop(7, 0.7);
     g.done?.();

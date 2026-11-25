@@ -13,6 +13,8 @@ import { retainedEndBlock } from '../../src/sim/railway-trains.ts';
 import { seedDoc } from './ring-mid-seed.ts';
 
 export const layStage = (stage: string) =>
+  stage === 't1-last-log' ||
+  stage === 't1-pack-taken' ||
   stage === 'forge-open' ||
   stage === 'q5-held' ||
   stage === 'q4-held' ||
@@ -21,6 +23,13 @@ export const layStage = (stage: string) =>
     ? stage
     : null;
 export function buildLayDoc(stage = 'q5-held') {
+  if (stage === 't1-last-log' || stage === 't1-pack-taken') {
+    const seed = buildSeedWorld('awake');
+    const last = stage === 't1-last-log';
+    logs(seed, 'a', 'T1', LINE1_STATIONS[0]!.bill[0] - Number(last));
+    if (!last) need(act(seed, 'a', 'rail.pack', { station: 'T1' }) === 1, 'T1 pack taken');
+    return seedDoc(seed);
+  }
   if (stage === 'forge-open') return buildForgeDoc();
   if (stage === 'q4-held') return buildQ4Doc();
   if (stage !== 'q5-held') return buildQ7Doc(stage === 'q7-signal');

@@ -2132,6 +2132,12 @@ verbatim to `src/render/cosmetic-parts.ts`; Place's `gifts.ts` reads the same on
 Sync: ownership is Personal Local; what you wear is Owner presence `wardrobe` (`{ hat?, accessory?, outfit? }`, catalog
 ids only, null when nothing is on). It replaced `railwayCosmetic` and `railwayScarf`. No `WORLD_NS` change.
 
+### Station 1's order pick (25 November 2026)
+
+The unpaid board shows a pack frame and a jump drum beside the log count. When the last of the 24 logs goes in, a little guy sets the parts on blocks beside the frame. Hold Take for one second at either block. The first accepted take grants the whole room that part. Each player online gets its card when free. After the card closes, the little guy carries the other part toward its later pickup.
+
+Taking the pack raises log capacity from 8 to 16 immediately. The forge's first bill has no pack to make in that room. Taking the drum unlocks the second jump. On the pillar its teal ring sits on the drum and its beacon goes dark. A player joining after the take gets the usual ability flourish on landing.
+
 ### Station boxes and the curio shelf in the live game (9 November 2026, place-retirement C1)
 
 - **Station boxes.** Every stretch whose catalog row hands a crate down leaves one personal box once it's laid: Q2, Q3,

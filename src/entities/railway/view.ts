@@ -11,7 +11,7 @@ import {
   job as jobRow,
   works as worksRow,
 } from '../../sim/railway-rows.ts';
-import { activeStation, railJobs, timingOf } from '../../sim/railway-queries.ts';
+import { activeStation, line1PickReady, railJobs, timingOf } from '../../sim/railway-queries.ts';
 import { railEngineStart, railPanelCount, railPanelStock, railPhase } from '../../sim/railway-queries-line1.ts';
 import { railCounts } from '../../sim/railway-queries-line2.ts';
 import { lineFeed, lineSchedule, lineLayDistance, type LineTiming } from '../../sim/railway-line-schedule.ts';
@@ -45,6 +45,9 @@ import { stepMoves } from './move-order.ts';
 import { worksPreview } from './works-flag.ts';
 import { onRouteSceneryMounted } from '../route-greybox/state.ts';
 import { onRingSceneryMounted } from '../ring-island/state.ts';
+
+const pickMarks = (ready: boolean) => (['pack', 'jump'] as const).map((kind) => ({ kind, ready }));
+const offeredParts = pickMarks(true), promisedParts = pickMarks(false);
 
 export async function createRailwayView(adapter: RailwayAdapter) {
   const owner = createOwnedView();
@@ -555,7 +558,12 @@ export async function createRailwayView(adapter: RailwayAdapter) {
           rails: 0,
           beam: Math.max(0, station.have.beam - launched.filter((f) => f.kind === 'beam').length - stockOf(2)),
         });
-        station.setTag(index === active && !job.completion && phase !== 'asleep' && phase !== 'waking');
+        const pickReady = index === 0 && line1PickReady(world());
+        station.setTag(
+          index === active && !job.completion && phase !== 'asleep' && phase !== 'waking',
+          undefined,
+          pickReady ? offeredParts : index === 0 && job.start < 0 ? promisedParts : undefined,
+        );
         // Its bill funded (a start the server alone sets; a predicted last piece shows full but not funded) or laid:
         // the intake shuts while the feeder works (decisions-rail 2026-11-17, finished-deposits-read).
         station.shut(job.start >= 0 || !!job.completion);

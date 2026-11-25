@@ -4949,6 +4949,45 @@
         "asset": "passenger-car"
       }
     },
+    "railway.pick-stand": {
+      "attach": {
+        "pickup": {
+          "at": [
+            0,
+            1.25,
+            0
+          ],
+          "kind": "point"
+        }
+      },
+      "colliders": [
+        {
+          "at": [
+            0,
+            0.35,
+            0
+          ],
+          "half": [
+            1,
+            0.35,
+            0.6
+          ],
+          "shape": "box"
+        }
+      ],
+      "interactions": [
+        {
+          "action": "railway.take-part",
+          "at": "pickup"
+        }
+      ],
+      "key": "railway.pick-stand",
+      "scope": "owner",
+      "visual": {
+        "builder": "railway.yoke-block",
+        "params": {}
+      }
+    },
     "railway.rack-tag": {
       "attach": {
         "sign": {
