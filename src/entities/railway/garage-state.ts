@@ -31,10 +31,13 @@ function linesOf(w: ReadWorld): LineFacts[] {
 }
 
 /** The garage's facts as a frame reads them. The table's hold is judged on the action tick (`read.tick()`), the clock
- * the garage's install and bring are sent on: whole, never going backwards, and at or behind the server's tick when
- * the op arrives. So the screen offers Install, or keeps a hold, no earlier than the server would take it, and a
- * stepped-back estimate never turns the offer off again. Not `tickNow()`: the movers' RTT-compensated time can run
- * ahead of the room and step back (garage step 4's Checkpoint, "the early Install"). */
+ * the garage's install and bring are sent on: whole, never going backwards between whole states (it is re-seated once
+ * when one lands, after a lost link), and capped at two ticks (LEAD_STEPS) past the newest server step heard. So the
+ * screen offers Install at most two ticks before the server's hold ends; the hold itself (600 to 1200 ms) is sent
+ * after it, so the install reaches a free table unless the page stalls. If the server refuses one anyway, `deny`
+ * lowers the part with the deny sound and the hold can be made again at once. A stepped-back estimate never turns
+ * the offer off. Not `tickNow()`: the movers' RTT-compensated time can run further ahead of the room and step back
+ * at any frame (garage step 4's Checkpoint, "the early Install"). */
 export const garageFacts = (read: { world(): ReadWorld; tick(): number }) => roomFacts(read.world(), read.tick());
 
 /** `tick` is the room's action tick (see `garageFacts`), for the table's hold after a bring or an install. */

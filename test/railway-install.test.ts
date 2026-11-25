@@ -613,16 +613,16 @@ for (const [fleet, seed, headPct] of [
     assert.ok(r.longest < 1200, 'no line 2 train stands two minutes');
   });
 
-for (const [seed, headPct] of [[0xb011e7, TRAIN_HEAD_PCT], [0x0fa575, 0]] as const)
-  test(
-    `longer fleet ${seed.toString(16)} at ${headPct}%: service health and mean wait`,
-    (t) => {
-      const r = fleetRun('longer', seed, headPct);
-      for (const n of r.notes) t.diagnostic(n);
-      assert.deepEqual(r.health.failures, []);
-      assert.ok(r.mean <= MEAN_BOUND, `mean wait ${r.mean} ticks (bound ${MEAN_BOUND})`);
-    },
-  );
+for (const [seed, headPct] of [
+  [0xb011e7, TRAIN_HEAD_PCT],
+  [0x0fa575, 0],
+] as const)
+  test(`longer fleet ${seed.toString(16)} at ${headPct}%: service health and mean wait`, (t) => {
+    const r = fleetRun('longer', seed, headPct);
+    for (const n of r.notes) t.diagnostic(n);
+    assert.deepEqual(r.health.failures, []);
+    assert.ok(r.mean <= MEAN_BOUND, `mean wait ${r.mean} ticks (bound ${MEAN_BOUND})`);
+  });
 
 // The hand-held mixed fleet, a safety test: spacing, end blocks and the load check hold with a faster train behind and
 // ahead of slower ones for the whole run. Its waits are printed only.
@@ -769,7 +769,10 @@ test('the garage judges a bring’s table hold on the action tick: never free be
     const held = garageFacts(c.adapter.read).held;
     if (!held && cleared < 0) cleared = server;
     assert.ok(held || server >= free, `the screen's hold cleared at server tick ${server}, before ${free}`);
-    assert.ok(!held || cleared < 0, `the screen's hold came back at server tick ${server} after clearing at ${cleared}`);
+    assert.ok(
+      !held || cleared < 0,
+      `the screen's hold came back at server tick ${server} after clearing at ${cleared}`,
+    );
   }
   assert.equal(tableFree(room.serverWorld() as never), free, 'the server holds the table to the same tick');
   assert.ok(cleared >= free && cleared <= free + 10, `the screen frees the table near the hold's end (${cleared})`);
@@ -820,7 +823,8 @@ test('trade installs: refusals, the first fit spends 1, swaps spend nothing, ten
   for (const bad of [4, 7, '6', 5.5, null]) assert.equal(fit(s, BAYL, bad), 0, `part ${String(bad)}`);
   // The roll-out reserves the table (a hand-made state, so applied without the load check).
   const busy = restore(s.w);
-  for (const k of LINE_SLOTS[LINE2]!) Object.assign(busy.mut(Train, busy.lookup(Train, k)!)!, { wagon: false, foot: 0 });
+  for (const k of LINE_SLOTS[LINE2]!)
+    Object.assign(busy.mut(Train, busy.lookup(Train, k)!)!, { wagon: false, foot: 0 });
   busy.mut(Shed, busy.single(Shed))!.ready = s.t + 10;
   assert.equal(raw(busy, 'rail.install', { line: BAYL, part: 6, revision: 0 }, s.t), 0, 'the table is busy');
   assert.equal(raw(busy, 'rail.bring', { line: NS, revision: 1 }, s.t), 0, 'no bring mid roll-out');
@@ -861,11 +865,17 @@ test('trade installs: refusals, the first fit spends 1, swaps spend nothing, ten
   assert.equal(fit(dry, BAYL, 5), 0, 'an empty pool');
   const loaded = restore(s.w);
   assert.equal(invariant(loaded), null);
-  assert.deepEqual([lineRow(loaded, BAYL).rev, lineRow(loaded, NS).rev, shed(loaded).tableLine, shed(loaded).bringRev], [11, 1, NS, 2]);
+  assert.deepEqual(
+    [lineRow(loaded, BAYL).rev, lineRow(loaded, NS).rev, shed(loaded).tableLine, shed(loaded).bringRev],
+    [11, 1, NS, 2],
+  );
 });
 
 test('line 2 refuses trade parts in the legacy adapter and the receipt decoder', () => {
-  const acts = railwayActs(() => true, () => HOME.w);
+  const acts = railwayActs(
+    () => true,
+    () => HOME.w,
+  );
   for (const part of [5, 6] as const) {
     const event = { op: 'rail.install', line: LINE2, part, revision: 1 };
     assert.deepEqual([acts.installBoiler(1, part), intentOf(event)], [false, null]);
@@ -979,7 +989,8 @@ test('a Strong train with two bills aboard, swapped to Quick, keeps Strong until
       const was = row().boiler;
       advance(s, 1);
       // The row changes only standing at halt 0, and only to a row whose kit bills hold the kit aboard.
-      if (row().boiler !== was) assert.ok(row().at === 0 && Math.max(row().logs, row().rails) <= bill * kitBills(row().boiler));
+      if (row().boiler !== was)
+        assert.ok(row().at === 0 && Math.max(row().logs, row().rails) <= bill * kitBills(row().boiler));
       assert.ok(Math.max(row().logs, row().rails) <= bill * kitBills(row().boiler), `the cargo bound at ${s.t}`);
       if (k % 100 === 0) assert.equal(invariant(s.w), null, `invariant at ${s.t}`);
     }
