@@ -38,17 +38,20 @@ if (!R.rail(R.rw()).jump || R.rail(R.rw()).pack || R.railStation(1).start >= 0)
 const pad = padById(id),
   x = ORIGIN.x + pad.x,
   z = pad.z;
-const dx = id === 'lookout' ? pad.hx + 1.4 : 0;
-const dz = id === 'apron' ? pad.hz + 1.4 : id === 'alcove' ? -pad.hz - 1.4 : 0;
+// The alcove sits above water. Approach from the dry plateau to its northeast.
+const dx = id === 'alcove' ? 7 : id === 'lookout' ? pad.hx + 1.4 : 0;
+const dz = id === 'apron' ? pad.hz + 1.4 : id === 'alcove' ? -7 : 0;
 const body = me.body!;
 teleport(body, x + dx, H(x + dx, z + dz) + PLAYER_R + 0.5, z + dz);
 body.velocity.set(0, 0, 0);
 me.yaw = cam.yaw = Math.atan2(dx, dz);
 await wait(800);
 const feet = () => body.position.y - PLAYER_R;
-if (me.swimming || me.coyote <= 0 || feet() >= pad.top) throw new Error(`${id}: approach is not lower dry ground`);
+if (me.swimming || me.coyote <= 0 || (id !== 'alcove' && feet() >= pad.top))
+  throw new Error(`${id}: expected a supported dry approach`);
 const used = R.inspectRailway()!.reward.tools.jumps;
 try {
+  if (id === 'alcove') input.keys.add('KeyW');
   pressJump();
   await until(() => me.coyote <= 0 && body.velocity.y > 0, 'first jump');
   await until(() => body.velocity.y < 1.5, 'first apex');
