@@ -103,7 +103,7 @@ Use Node 26: `export PATH="$HOME/AppData/Local/nvm/v26.13.0:/c/Program Files/Git
 
 Read `AGENTS.md` and `.claude/skills/tidy/SKILL.md` from that worktree with the Read tool, and follow the tidy skill. Don't load a repo skill (tidy, architecture-review) through the Skill tool, which would load the stale copy: read its SKILL.md from the worktree instead. Built-in skills the tidy names (simplify, consolidate-memory) run through the Skill tool as usual.
 
-Run every part that is due: simplify code merged since the last pass, run the architecture review, audit docs and agent instructions for drift (the orchestrator state file included), consolidate memory, and clear merged worktrees and branches. The tidy's delegates count toward the three jobs in flight: read the "Jobs in flight" table in `docs/agents/orchestrator-state.md` first, start none past three, and give each delegate a row there. Ship any changes through the usual review and ship-queue rules, then report what was done in a few lines.
+Run every part that is due: simplify code merged since the last pass, run the architecture review, audit docs and agent instructions for drift (the orchestrator state file included), consolidate memory, and clear merged worktrees and branches. The tidy's delegates count toward the jobs-in-flight limit: read the "Jobs in flight" table in `docs/agents/orchestrator-state.md` first (it names the limit), start none past it, and give each delegate a row there. Ship any changes through the usual review and ship-queue rules, then report what was done in a few lines.
 ```
 
 Since 17 November (owner: "Fix all the problems you highlighted") it has the heartbeat's preamble: it works from its
