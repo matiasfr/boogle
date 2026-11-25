@@ -330,10 +330,10 @@ After steps 1 to 6 are on main; named proofs, once, with the tools as Checkpoint
 - [x] `npm run loop -- run` for one to three players: `idle s` per node (`wall-1` to `wall-6`, `deep-gate`), area 8's
       minutes beside its 48, the whole route's; any wait over 60 s with nothing to do is a finding for the designer.
 - [x] The bot segment `--from port-reached --to wall --long`: a pass verdict, load 0.12 to 1.58.
-- [ ] `npm run test:net`, with `railwayLegRejoin` (`dev/peer-test/ws-railway.ts`) taking `wall` at `wall-mid`: the seed
+- [x] `npm run test:net`, with `railwayLegRejoin` (`dev/peer-test/ws-railway.ts`) taking `wall` at `wall-mid`: the seed
       doc written before any page opens; a second tab joins; head 2's rack holds section 3's bill; the carrier leaves,
       the server restarts, it rejoins; the leg row, the rack, the kit aboard and the carrier's back exact at every
-      checkpoint. Its deadline timed with the later seed.
+      checkpoint. All 338 checks passed. The Wall case took 39.1 s of its 480 s deadline.
 - [x] [Steps 4 and 5's stills on one sheet](greybox-leg5/checkpoint-e-sheet.jpg).
 - [ ] `npm run perf -- --view wall` (a `PLACES` row: seed `wall-closed`, the body on the Gorge's Wall platform, the
       camera down the split) and `-- --view wall --hardware --seconds 10`, its load noted.
