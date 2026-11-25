@@ -30,6 +30,7 @@ export type RouteLeg = {
   destRowHalt: number;
   /** The RAIL_LEGS index that must be complete first; -1: Ring Island joined. */
   after: number;
+  alsoAfter?: number;
   /** Where its trains load: the line's Home halt, or a junction yard (a RAIL_YARDS index). */
   kit: 'home' | number;
   kitAhead?: true;
@@ -155,6 +156,7 @@ type Spec = {
   /** [section, RAIL_GATES index]: a shut frame. */
   gated: readonly (readonly [number, number])[];
   after: number;
+  alsoAfter?: number;
   kit: 'home' | number;
   kitAhead?: true;
   /** Its rules are built: its sim line holds a halt for each head (railway-lines.ts), so simHalt counts them. */
@@ -225,7 +227,7 @@ const SPECS: readonly Spec[] = [
     cuts: [sectionsOf(span('cave', 0, 1), 2)[0]!, stopCm('cave', 1) + HEAD_BACK_CM, stopCm('cave', 2)],
     bill: BILL,
     gated: [[0, 2]],
-    after: 3,
+    after: 2,
     kit: 'home',
     built: true,
   },
@@ -239,6 +241,7 @@ const SPECS: readonly Spec[] = [
     bill: BILL,
     gated: [[5, 3]],
     after: 4,
+    alsoAfter: 3,
     kit: 'home',
     built: true,
   },
@@ -307,6 +310,7 @@ export const RAIL_LEGS: readonly RouteLeg[] = SPECS.map((s) => ({
   railheadHalt: simHalt(s.row, s.from) + 1,
   destRowHalt: s.dest,
   after: s.after,
+  alsoAfter: s.alsoAfter,
   kit: s.kit,
   ...(s.kitAhead ? { kitAhead: s.kitAhead } : {}),
 }));

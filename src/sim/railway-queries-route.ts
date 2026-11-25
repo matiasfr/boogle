@@ -49,8 +49,12 @@ export const LEG_KIT_MOST = Math.max(...RAIL_LEGS.flatMap((l) => l.sections.map(
  * rivet struck). */
 export function legReached(w: World, k: number) {
   const leg = RAIL_LEGS[k];
-  if (!leg || !legBuilt(k)) return false;
+  if (!leg || !legBuilt(k) || !alsoReached(w, k)) return false;
   return leg.after < 0 ? w.get(Aperture, w.single(Aperture))!.joined >= 0 : legDone(w, leg.after);
+}
+function alsoReached(w: World, k: number) {
+  const other = RAIL_LEGS[k]!.alsoAfter;
+  return other === undefined || legDone(w, other);
 }
 /** Leg k takes kit and feeding now: reached (legReached) and not complete. */
 export const legOpen = (w: World, k: number) => legReached(w, k) && !legDone(w, k);
@@ -215,7 +219,7 @@ export function legMintChain(w: World, line: number, skip = -1) {
     const on =
       legOpen(w, k) ||
       legYardAhead(w, k) ||
-      (i > 0 && legs[i - 1] === leg.after && loading[i - 1]! && legOpen(w, leg.after) && !prev!.logs && !prev!.rails);
+      (i > 0 && alsoReached(w, k) && legs[i - 1] === leg.after && loading[i - 1]! && legOpen(w, leg.after) && !prev!.logs && !prev!.rails);
     loading.push(on);
     if (!on) return owed.push(NONE);
     const lack = leg.kit === 'home' ? legLack(w, k) : yardLack(w, k);
@@ -285,7 +289,7 @@ export function legKitFits(w: World, line: number, k: number, r: Readonly<RailTr
 /** Leg k's kit may be loaded: the leg is reached, or the leg before it is (its kit rides ahead). The load check's bound
  * on legMintChain's loading test, which also needs the leg before open and owed nothing more. */
 export const legKitMayLoad = (w: World, k: number) =>
-  legReached(w, k) || (RAIL_LEGS[k]!.after >= 0 && legReached(w, RAIL_LEGS[k]!.after));
+  legReached(w, k) || (alsoReached(w, k) && RAIL_LEGS[k]!.after >= 0 && legReached(w, RAIL_LEGS[k]!.after));
 /** The trains of `line` that may carry a leg's kit at once (`kitTrains`, call 65): on line 2 those running less one, so
  * one kit car stays empty for build 2's steel, which only line 2 carries; on any other line every running train
  * (greybox-leg2.md, step 2). */

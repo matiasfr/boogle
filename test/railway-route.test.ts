@@ -1,5 +1,6 @@
 // The greybox route's catalog (src/sim/railway-route.ts): pure integers, derived from the generated line catalog.
 import test from 'node:test';
+import { legBuilt } from '../src/sim/railway-lines.ts';
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import {
@@ -26,6 +27,20 @@ import { layout, parseMapPage } from '../src/sickle/map-data.ts';
 import { standInRoute } from '../dev/loop/standins.ts';
 
 const row = (id: string) => WORLD_LINES.find((l) => l.id === id)!;
+
+test('every construction order has at most one open leg per line', () => {
+  const orders: number[][] = [];
+  function visit(path: number[]) {
+    const open = RAIL_LEGS.flatMap((g, k) => legBuilt(k) && !path.includes(k) &&
+      (g.after < 0 || path.includes(g.after)) && (g.alsoAfter === undefined || path.includes(g.alsoAfter)) ? [k] : []);
+    const lines = open.map(k => RAIL_LEGS[k]!.line);
+    assert.equal(new Set(lines).size, open.length);
+    if (!open.length) orders.push(path);
+    for (const k of open) visit([...path, k]);
+  }
+  visit([]);
+  assert.deepEqual(orders, [[0,1,2,3,4,5,6,7], [0,1,2,4,3,5,6,7]]);
+});
 
 test('sectionsOf cuts a leg into equal sections on whole centimetres', () => {
   assert.deepEqual(sectionsOf({ fromCm: 100, toCm: 500 }, 4), [200, 300, 400, 500]);

@@ -638,8 +638,8 @@ test('route host: the deep span takes seeds at frame six, outside the track cent
   }
 });
 
-test('route host: the plug opens at cave frame 1 after Canopy, away from the old West landing reach', async () => {
-  const seed = legStagesOn(unaudited(tradeFixture()), 'bay-mid', 'canopy-reached');
+test('route host: both racks admit only takes at their named leg after the bay cut', async () => {
+  const seed = legStagesOn(unaudited(tradeFixture()), 'bay-mid', 'canopy-open');
   const r = await host('cave-plug', seed);
   try {
     const id = RAIL_GATES.findIndex((g) => g.id === 'plug'),
@@ -651,6 +651,10 @@ test('route host: the plug opens at cave frame 1 after Canopy, away from the old
     assert.equal(routeRow(r.w).gates, before);
     assert.equal(await r.action(gate, frame), 'accepted');
     assert.equal(routeRow(r.w).gates, before | (1 << id));
+    const bell = spot(legRack(RAIL_LEGS[3]!, 0));
+    assert.equal(await r.action({ op: 'rail.depotTake', leg: 4 }, bell), 'rejected');
+    assert.equal(await r.action({ op: 'rail.depotTake', leg: 3 }, spot(legRack(cave, 0))), 'rejected');
+    assert.equal(await r.action({ op: 'rail.depotRailTake', leg: 3 }, bell), 'accepted');
     assert.equal(await r.action({ op: 'rail.depotTake', leg: 4 }, spot(legRack(cave, 0))), 'accepted');
     assert.equal(await r.action({ op: 'rail.legStock', leg: 4 }, frame), 'accepted');
   } finally {

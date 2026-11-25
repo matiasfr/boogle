@@ -80,7 +80,7 @@ export function routeRulesShard(shard: number) {
     // The opt-in schedule cases populate one shared distribution: keep its producers and consumer together.
     if (/^(notch-tunnel|causeway) service health/.test(name)) {
       if (shard !== 5) return;
-    } else if (name.startsWith('wall service health')) {
+    } else if (name.startsWith('two-line service health') || name.startsWith('wall service health')) {
       if (shard !== 4) return;
     } else if (name.startsWith('lost ask fuzz ')) {
       if (shard !== 0) return;
@@ -1832,6 +1832,34 @@ export function routeRulesShard(shard: number) {
     }
   });
 
+  test('two-line service health with Strong on the bay and both barriers open', {timeout:480000}, t => {
+    const base = legStagesOn(unaudited(buildSeedWorld('trade-fitted')), 'bay-mid','canopy-open');
+    assert.equal(act(base,'a','rail.gate',{id:2}),1);
+    assert.equal(line(base.w,3).boiler,5);
+    const lines = [RAIL_LEGS[3]!.line,RAIL_LEGS[4]!.line];
+    for(const seed of ROUTE_GATES ? SEEDS : SEEDS.slice(0,1)) {
+      const s=unaudited(base), health=new ServiceHealth(lines,s.w), rand=mulberry32(seed);
+      const step=()=>railTick(s.w,++s.t,75);
+      const accepted=[0,0];
+      for(let i=0;i<FUZZ;i++){
+        for(const [index,l] of lines.entries()){
+          const n=stopsOf(s.w,l).length;
+          if(n && rand()<0.05){
+            const id=haltId(l,Math.floor(rand()*n)),dir=rand()<0.5?-1:1;
+            if(ask(s,{id,dir})){health.ask(s.w,id,dir,s.t);accepted[index]++;}
+          }
+          if(i%10===0 && legOpen(s.w,3+index))stock(s,3+index);
+        }
+        step();
+        health.tick(s.w,s.t);
+      }
+      health.drain(s.w,s.t,step);
+      assert.ok(accepted.every(n=>n>0) && lines.every(l=>health.worst.has(l)));
+      assert.deepEqual(health.failures,[]);
+      assert.equal(invariant(s.w),null);
+      t.diagnostic(`seed ${seed}, accepted ${accepted}, worst waits ${lines.map(l=>health.worst.get(l))}`);
+    }
+  });
   for (const legId of ['cave', 'wall', 'notch-tunnel', 'causeway'] as const)
     test(`${legId} service health at 75% headway on growing and settled track`, { timeout: 480000 }, (t) => {
       const k = RAIL_LEGS.findIndex((l) => l.id === legId),

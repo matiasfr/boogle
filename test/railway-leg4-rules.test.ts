@@ -34,17 +34,17 @@ function ledger(s: Seed) {
   }
   assert.equal(invariant(s.w), null);
 }
-test('the plug needs the pick and Canopy laid, and the stocked first frame waits for the plug', () => {
+test('the plug needs the pick and the bay cut laid, and the stocked first frame waits for the plug', () => {
   assert.equal(RAIL_GRANTS[pick]!.id, 'pick');
   for (const [stage, held] of [
     ['gorge-reached', false],
-    ['canopy-mid', true],
+    ['bay-mid', true],
   ] as const) {
     const s = buildSeedWorld(stage);
     assert.equal(!!(routeRow(s.w).grants & (1 << pick)), held);
     assert.equal(act(s, 'a', 'rail.gate', { id: plug }), 0);
   }
-  const s = unaudited(buildSeedWorld('canopy-reached'));
+  const s = unaudited(buildSeedWorld('bay-reached'));
   advance(s, 350);
   assert.deepEqual(
     [legRow(s.w, k).rackLogs, legRow(s.w, k).rackRails, legRow(s.w, k).loadedLogs, legRow(s.w, k).loadedRails],
@@ -60,6 +60,24 @@ test('the plug needs the pick and Canopy laid, and the stocked first frame waits
   assert.equal(act(s, 'a', 'rail.gate', { id: plug }), 1);
   assert.equal(act(s, 'a', 'rail.legStock', { leg: k }), taken);
   ledger(s);
+});
+
+test('the room can feed across the fork, finish the cave first, then release the Wall', () => {
+  const s = unaudited(buildSeedWorld('canopy-open'));
+  assert.equal(act(s, 'b', 'rail.gate', { id: plug }), 1);
+  const rack = (leg: number) => legRow(s.w, leg).rackLogs;
+  assert.deepEqual([rack(3), rack(k)], [20, 20]);
+  const n = act(s, 'a', 'rail.depotTake', { leg: 3 });
+  assert.ok(n > 0);
+  assert.deepEqual([rack(3), rack(k), account(s.w,'a')!.liftLeg], [20-n,20,3]);
+  assert.equal(act(s, 'a', 'rail.legStock', {leg:k}), n);
+  assert.deepEqual([legRow(s.w,3).heldLogs, rack(k), legRow(s.w,k).logs], [0,20,n]);
+  while (legRow(s.w,k).laid < leg.sections.length) laySection(s,k);
+  assert.equal(legRow(s.w,5).loadedLogs, 0);
+  assert.equal(act(s,'b','rail.legStock',{leg:5}),0);
+  while (legRow(s.w,3).laid < RAIL_LEGS[3]!.sections.length) laySection(s,3);
+  laySection(s,5);
+  assert.equal(invariant(s.w),null);
 });
 
 test('the cave fleet carries each kit forward, keeps Saltpan open and closes the sea head at the quay', () => {

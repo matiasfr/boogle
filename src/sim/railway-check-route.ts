@@ -107,6 +107,7 @@ export function checkRoute(w: World) {
   });
   // Each line's kit carriers within its kitTrains (line 2: running less one; greybox-leg2.md, step 2).
   RAIL_LINES.forEach((_l, line) => {
+    if (RAIL_LEGS.filter((leg, k) => leg.line === line && legOpen(w, k)).length > 1) bad('two open legs on a line');
     if (legKitCarriers(w, line) > legKitTrains(w, line)) bad('leg kit carriers');
   });
   w.each([LegYard], (_id, y) => {
