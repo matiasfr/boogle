@@ -359,9 +359,8 @@ function west() {
       { id: 'hood-sign', ...cave.at(44.8, 7), y: 7, nx: 0, nz: -1, label: 'west.hood' },
       {
         id: 'board',
-        x: WEST_STAKED ? 810 : 805,
-        z: WEST_STAKED ? 5.5 : 20.5,
-        y: WEST_SHELF,
+        ...(WEST_STAKED ? { x: 810, z: 5.5 } : sl.at(7, 6.7)),
+        y: WEST_STAKED ? WEST_SHELF : top,
         nx: WEST_STAKED ? 0 : 1,
         nz: WEST_STAKED ? 1 : 0,
         label: 'west.board',

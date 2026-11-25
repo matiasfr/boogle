@@ -455,13 +455,19 @@
           "y": 7
         },
         {
+          "at": [
+            7,
+            6.7
+          ],
+          "compute": "point",
+          "frame": {
+            "operand": 0
+          },
           "id": "board",
           "label": "west.board",
           "nx": 1,
           "nz": 0,
-          "x": 805,
-          "y": 3,
-          "z": 20.5
+          "y": 4.9
         }
       ],
       "reserves": [
