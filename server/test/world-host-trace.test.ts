@@ -81,6 +81,8 @@
 // 5,679 snapBytes samples change. All 8,620 records retain their order, including 58 identical inputs, 2,220
 // identical messages and 458 identical replica packets. Every other saved column matches v68.
 // v70 adds two cave shed trains. Only 205 checkpoints and 5,679 status records change in the 8,620-record trace.
+// v71 adds three more cave shed trains for the Wall. The 205 checkpoints and 5,679 status records change.
+// All 58 inputs, 2,220 messages and 458 replica packets match v70.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';

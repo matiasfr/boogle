@@ -252,7 +252,7 @@ Each step leaves `node dev/ship-check.ts` green. **Steps 1 to 3 ship together as
 steps 1 to 3 (src/sim, src/world) is an independent one before merge, by the row `npm run models` gives at the time.
 The models table's rows are named per step; the orchestrator reads them when it dispatches.
 
-- [x] **1. The catalog (M to L; "High-risk implementation").** Implemented; the section 4 length gate remains open below. Files: `dev/level/world-blockout.ts` (`ROUTES['wall-s']`'s
+- [x] **1. The catalog (M to L; "High-risk implementation").** Implemented. The section 4 length and three Canopy measurements remain open below. Files: `dev/level/world-blockout.ts` (`ROUTES['wall-s']`'s
       first hermite; the Canopy and Gorge re-routes as new `ROUTES['wall-s']` tail and `ROUTES['wall-n']` points with the
       crossing's ruled height; the cave service's `curves`; Canopy's and the Gorge's `stopCm`), regenerated
       `src/sim/railway-world-lines.ts`, `docs/world/world-blockout.html`, `docs/world/rail-map.html`;
@@ -347,15 +347,26 @@ The formation clears High Port by 8.46 m. The Canopy halt is 25.42 m before the 
 The crossing is 7.97 m over the bay rail. The approach clears the south stack by 24.47 m and the buffers stop
 4.00 m from line 2's concourse. Port Quay's first carry is 10.00 m. All six platforms are level.
 
-**Stopped gate.** The section lengths in metres are **883.73, 436.24, 421.23, 950.69, 680.10 and 731.21**.
+**Section 4.** The section lengths in metres are **883.73, 436.24, 421.23, 950.69, 680.10 and 731.21**.
 Section 4 exceeds 900 m by 50.69 m at the measured closest pass to `wall-n2`. The level report keeps this a failure.
 Keeping the cut would need a 950.69 m exception. Cutting at 900 m would move the head 50.69 m back from the
 closest pass, breaking the 1 m cut gate. A different approach would require another catalog design.
 
+**Canopy clearances.** The generated line passes 23.45 m from trunk-1 against the sketch's 27 m,
+85.01 m from mother-1 against 88 m, and 123.29 m from the bay line's head 2 against 150 m.
+Trunk-0 clears 29.78 m against 29 m. The level check reports each shortfall. Keeping the planned
+alignment would require accepting the measured clearances. Recovering the sketch's figures would
+require revisiting the curve and crossing against the fixed trunks and bay head.
+
+**Gorge crossover.** The catalog and cave service both put the crossover 24.50 m before the stop,
+as specified for the Wall. The existing world-lines test requires 32 m at every catalog crossover
+to clear a 20 m half-platform and its 12 m approach. Both rules cannot hold at the same stop.
+Keeping the 12 m approach requires moving the crossover at least 7.50 m. Keeping the planned crossover requires an exception for the Wall's 4.50 m approach.
+
 The first kit rides from the West landing to Port Quay. Cave slots 14–16 enter from the shed as the Wall grows.
 World v71 includes the changed halt ids and gate reach, the host trace, seed and operation goldens, halt placements,
 seat fixtures and the economy page. The built-site probe initially caught a missing halt lever. Regenerating the halt
-kit brought the offline Chromium probe to interactive in 8.6 s on the NVIDIA adapter.
+kit brought the offline Chromium probe to interactive. The final catalog booted in 18.9 s on the NVIDIA adapter.
 
 **Long service trials.** 75% headway, 20,000 ticks per mode, save/restore in each trial.
 Each cell is accepted calls / worst wait in ticks. All calls drained within their applicable budgets.
@@ -371,7 +382,8 @@ Each cell is accepted calls / worst wait in ticks. All calls drained within thei
 | Cave 5eed | 118/1131 | 102/545 | 180/613 | 123/805 | | | |
 | Cave badd | 111/1165 | 99/556 | 187/612 | 123/847 | | | |
 
-The Wall long test took 241.42 s. The cave long test took 139.19 s in the same run.
+The Wall default service test took 19.00 s (limit 120 s, test budget 480 s).
+The Wall long test took 255.17 s and the cave long test took 128.80 s, 265.2 s together.
 The three jump rows are tooling-only. The two mid-build jumps target their head platforms, and the completed
 route uses the usual spawn until step 5 supplies its landing.
 

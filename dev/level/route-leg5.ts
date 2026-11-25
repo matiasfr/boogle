@@ -105,8 +105,15 @@ export function checkLeg5() {
   check(`Canopy stop ${shore.toFixed(2)} m inland`, shore > 0 && canopy.y === 1300);
   for (const [id, x, z] of CANOPY_TRUNKS) {
     const d = Math.min(...points.map(([a, b]) => Math.hypot(a + ORIGIN.x - x, b + ORIGIN.z - z)));
-    check(`${id}: ${d.toFixed(2)} m from track`, d >= 20);
+    const minimum = id.startsWith('mother-') ? 88 : id === 'trunk-0' ? 29 : id === 'trunk-1' ? 27 : 20;
+    check(`${id}: ${d.toFixed(2)} m from track (at least ${minimum} m)`, d >= minimum);
   }
+  const bayLeg = RAIL_LEGS[3]!,
+    bayHead = rowPoint(bayLeg.row, bayLeg.sections[1]!.toCm - HEAD_BACK_CM);
+  const bayHeadGap = Math.min(
+    ...points.map(([x, z]) => Math.hypot(x + ORIGIN.x - bayHead.x / 100, z + ORIGIN.z - bayHead.z / 100)),
+  );
+  check(`Bay head 2: ${bayHeadGap.toFixed(2)} m from track (at least 150 m)`, bayHeadGap >= 150);
   const frame = legFrame(leg, 0),
     rack = legRack(leg, 0);
   const carry = Math.hypot(frame.x - rack.x, frame.z - rack.z) / 100;
