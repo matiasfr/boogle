@@ -11,6 +11,7 @@
 // Local view over the read facade (`adapter.read`); the sim reads none of it. A restore shows what is built, nothing
 // dropping. Bents 1-6 and Q7's deck are crossing-view.ts's and ring-deck.ts's.
 import * as THREE from 'three/webgpu';
+import { addPingHint, nearPingDeck } from '../../player/ping-hints.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { RailwayAccepted, RailwayCorrection } from '../../adapters/railway-effects.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -979,6 +980,24 @@ export function createRailwayRailhead(
       if (k < inSea()) footingParts(live, footingFrame(m, s.x, s.y, s.z, yaw));
     }
   }
+  owner.cleanup(
+    addPingHint((aim) => {
+      const k = stood();
+      if (!opened || k >= BENTS) return;
+      const start = spanFrom(k),
+        end = spanTo(k),
+        mid = (start + end) / 2;
+      const { x, z } = world(mid, DECK.mid);
+      const at = nearPingDeck(
+        aim,
+        new THREE.Vector3(x, yAt(mid), z),
+        yawAt(mid),
+        (DECK.lat1 - DECK.lat0) / 2,
+        (end - start) / 2,
+      );
+      return at && { k: 'rails', at };
+    }),
+  );
   function drawLive() {
     live.begin();
     if (opened) {
@@ -1128,8 +1147,7 @@ export function createRailwayRailhead(
       placeTag();
       // Asleep, the batch stands as last drawn unless a bent rises, a footing goes down, the traveller runs or what
       // the draw reads changes; the windsock's flutter and the sockets' pulse hold still, under a pixel that far.
-      const moving =
-        lowering.length > 0 || rig.line || rig.flare > 0 || rise.some((t) => t >= 0 && t < RISE_S);
+      const moving = lowering.length > 0 || rig.line || rig.flare > 0 || rise.some((t) => t >= 0 && t < RISE_S);
       const drawKey = `${opened}|${stood()}|${shownU}|${joined}|${set}|${inSea()}|${rack - deps.toRing()}|${jibHead.x}|${jibHead.z}|${rig.fold}|${rig.lift}|${rig.line}|${rig.lamps}`;
       if (sleep.redraw(moving, drawKey)) drawLive();
     },

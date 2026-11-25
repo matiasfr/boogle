@@ -4,6 +4,7 @@
 // and is simply there when you load a world where it is open. Each bin offers Pick up or Leave it here (owner
 // question 2) and sends the real yard ops. Bins follow the shared stock, with Local flights over accepted effects.
 import * as THREE from 'three/webgpu';
+import { addPingHint } from '../../player/ping-hints.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { me } from '../../player/player.ts';
@@ -247,6 +248,22 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView,
     at: sources.villageBins.map((p) => p.clone().setY(railBase.y + 0.5)),
   };
   const promptBays = [villageBay, ...bays];
+  owner.cleanup(
+    addPingHint((aim) => {
+      if (!adapter.read.ready()) return;
+      const w = adapter.read.world();
+      const nearest = new THREE.Vector3();
+      for (const bay of promptBays) {
+        const at = bay.at[RAILS]!;
+        if (
+          bay.shown &&
+          haltYardStock(w, bay.k, RAILS) > 0 &&
+          aim.closestPointToPoint(at, true, nearest).distanceToSquared(at) <= 9
+        )
+          return { k: 'rails', at };
+      }
+    }),
+  );
   function targets(): Interactable[] {
     if (!adapter.read.ready() || !me.body) return NO_TARGETS;
     const p = me.body.interpolatedPosition;

@@ -1,5 +1,6 @@
 // Local train presentation. Server rows and the shared mover clock alone choose the decks' poses.
 import * as THREE from 'three/webgpu';
+import { addPingHint, nearPingDeck } from '../../player/ping-hints.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import type { RailwayAccepted } from '../../adapters/railway-effects.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -379,6 +380,25 @@ export async function createRailwayTrains(
   /** The trains whose kit car carries a leg's kit: line 2's and the greybox route's own lines'. */
   const kitTrains = trains.filter((tr) => tr.line === LINE2 || isRowLine(tr.line));
   const wagonCar = rail.makeCar(wagon.WAGON_CAR, wagonRock, () => {}, {}, owner);
+  owner.cleanup(
+    addPingHint((aim) => {
+      let nearest: THREE.Vector3 | undefined;
+      for (const tr of trains) {
+        if (!tr.out) continue;
+        for (const c of carsOf(tr)) {
+          const at = nearPingDeck(
+            aim,
+            new THREE.Vector3(c.x, c.y + c.hy, c.z),
+            c.yaw,
+            c.spec.hx * c.mesh.scale.x,
+            c.spec.hz * c.mesh.scale.z,
+          );
+          if (at && (!nearest || aim.start.distanceToSquared(at) < aim.start.distanceToSquared(nearest))) nearest = at;
+        }
+      }
+      return nearest && { k: 'train', at: nearest };
+    }),
+  );
   wagonCar.platform.id = 'railway:wagon';
   wagonCar.platform.shared = true;
   wagonCar.speedLimit = 30;

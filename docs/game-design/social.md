@@ -9,13 +9,17 @@
   as a held chord with 14 sparkles per player involved (cooldown 1.2 s). Your own honks are capped at one per
   300 ms; received honks at 3 per sender per second. Distance fades the volume.
 - **Ping.** G / middle click / pad D-pad ← / touch Ping: a marker where you aim, labelled "Ball!" (the aim passes
-  within 1.6 m of the ball), or "Look!" (anything else), in your colour with your name, for
+  within 1.6 m of the ball), "Train!" (within 3 m of a train deck), "Rails here" (within 3 m of a rail stack or the
+  next railhead section's bed), or "Look!" in that priority order, in your colour with your name, for
   4 s (0.5 s fade), pinned to the screen edge with an arrow when off screen. Range 90 m, own cooldown 1 s, received
   one per 800 ms per sender.
-- **Ping sound.** Two soft sine notes in your colour's pitch an octave up (a fifth for "Ball!", a third for "Look!"),
+- **Reply.** Ping within 6° of a friend's live marker or tap their card on touch. Everyone who can still see that ping
+  sees your name and “On my way” in your colour and hears your chime. Each reply extends the card by 2 s and shares
+  the ping cooldown. “Train!”, “Rails here” and “On my way” are placeholder words for the owner.
+- **Ping sound.** Two soft sine notes in your colour's pitch an octave up (a fifth for ball, sixth for train, fourth for rails and third for look),
   quiet, with a gentle onset and a short tail.
 - **Sync kind.** Neither is state: reliable room messages `{ t: 'honk', v }` (v: the shape, 0 to 3; missing reads as
-  0) and `{ t: 'ping', x, y, z, k }`, validated
+  0), `{ t: 'ping', x, y, z, k }` and `{ t: 'ping', k: 'omw', of }` (the pinger's tab ID), validated
   and rate limited on receipt ([src/sim/social.ts](../../src/sim/social.ts)).
 - **Files.** [src/features/honk.ts](../../src/features/honk.ts), [src/features/ping.ts](../../src/features/ping.ts),
   [src/sim/social.ts](../../src/sim/social.ts).

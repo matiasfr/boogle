@@ -25,6 +25,17 @@ test('validatePing accepts good pings and rejects junk', () => {
     assert.equal(validatePing(bad), null);
 });
 
+test('rail pings and replies carry only their validated fields', () => {
+  for (const k of ['rails', 'train']) {
+    const point = { x: 1, y: 2, z: 3, k };
+    assert.deepEqual(validatePing({ t: 'ping', ...point, of: 'ignored' }), point);
+  }
+  const of = 'a'.repeat(64);
+  assert.deepEqual(validatePing({ t: 'ping', k: 'omw', of, x: 4 }), { k: 'omw', of });
+  for (const invalid of [undefined, 3, of + 'a'])
+    assert.equal(validatePing({ t: 'ping', k: 'omw', of: invalid }), null);
+});
+
 test('limiter allows N per window per sender', () => {
   const l = createLimiter(3, 1000);
   assert.deepEqual(

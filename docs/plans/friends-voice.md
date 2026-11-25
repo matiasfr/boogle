@@ -75,7 +75,7 @@ Each step leaves `node dev/ship-check.ts` green and updates the owning section o
   the loudspeaker without headphones: the friend's voice is audible, fades with distance, causes no echo for the
   desktop player, and survives a lock and unlock; also record how loud it is next to Everyone mode (WebKit bug 218012).
   Until that session the step reports "not tested on a device". Only players who switch to nearby on iOS take the risk.
-- [ ] **3. Rail-aware ping labels.** `PING_KINDS` gains `rails` and `train` (placeholder labels below).
+- [x] **3. Rail-aware ping labels.** `PING_KINDS` gains `rails` and `train` (placeholder labels below).
   A new `src/player/ping-hints.ts` (`addPingHint(fn)`, `pingHint(from, to)`), a list like `pauseSections`, so ping.ts
   imports no railway code: the train view ([train-view.ts](../../src/entities/railway/train-view.ts)) registers
   `train` when the aim segment passes within 3 m of a train's deck; the halt yards
@@ -84,7 +84,7 @@ Each step leaves `node dev/ship-check.ts` green and updates the owning section o
   kind (rails a fourth, train a sixth). **Check:** `test/social.test.ts` cases: the new kinds pass `validatePing`, an
   unknown kind still fails. **Proof look:** stills of each label from the pinger's and a friend's view, on screen and
   pinned to the edge.
-- [ ] **4. Reply to a ping.** Press Ping while a friend's ping is live and your aim passes within 6° of its marker (or
+- [x] **4. Reply to a ping.** Press Ping while a friend's ping is live and your aim passes within 6° of its marker (or
   tap its card on touch) and you send `{ t: 'ping', k: 'omw', of: <their tab id> }` instead of a new ping. `validatePing`
   returns `Ping | PingReply`; `of` is a string of at most 64 characters; the relay's `{ t, ...cosmetic }` copy needs no
   change. Receivers with a live ping from `of` add the replier's name, in their colour, under that ping's card, extend
