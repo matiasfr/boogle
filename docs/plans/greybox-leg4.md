@@ -365,7 +365,7 @@ is an independent one before merge (src/sim, src/world): **gpt-6.2-astra medium*
       the rail through the hood. The prefab check passed and the offline built site became interactive in 8.5 seconds.
       Stills from [the commons](greybox-leg4/west-commons.png), [the bay platform](greybox-leg4/west-apron.png) and
       [the cave platform](greybox-leg4/west-hood.png). Not tested on a device.
-- [ ] **5. The Saltpan, Port Quay and leg 4's views (M to L; HOTBOX; "Player-visible implementation": Claude opus
+- [x] **5. The Saltpan, Port Quay and leg 4's views (M to L; HOTBOX; "Player-visible implementation": Claude opus
       medium).** Files: new `src/content/levels/leg4.ts` (levels `saltpan`
       and `quay`) and `src/content/prefabs/leg4-lands.ts` (the three map outlines, collision only, baked as leg 3's are);
       `content/built/levels/saltpan.json`, `quay.json`; new `src/entities/route-greybox/massing-saltpan.ts` and
@@ -387,6 +387,17 @@ is an independent one before merge (src/sim, src/world): **gpt-6.2-astra medium*
       Port's top behind; the board at the buffers; Bell Rock's Port Quay stall; the look harness's mesh and collider
       counts with each new area resident and not. **The boot probe on the built site (rule 61)**: the views index the
       new train rows and halts.
+      **As built.** The flood crosses both Saltpan platforms onto the flats, reaches High Port from the quay platforms,
+      and brings swimmers ashore from two approaches to each island. Both apron reserves are clear. The playable quay
+      hides the horizon's cranes, warehouses and breakwater while resident. The horizon keeps its single draw.
+      At the Saltpan the area owns 1 mesh with 86 box instances and 87 colliders. At the quay it owns 2 meshes,
+      63 box instances and 65 colliders. Both unload at Bell Rock. The cloth press pointed to the West landing;
+      opening the plug changed the objective to building the cave line. The prefab check, level check and local ship
+      check passed. The offline production build reached interactive in 7.1 seconds. Not tested on a device.
+      Stills from [under the hood](greybox-leg4/under-hood.png), [past the face](greybox-leg4/past-face.png)
+      and [approaching head 1](greybox-leg4/head-one.png). The [Saltpan stop](greybox-leg4/saltpan-stop.png),
+      [quay platforms](greybox-leg4/quay-platforms.png), [buffer board](greybox-leg4/quay-buffers.png)
+      and [connected Bell Rock stall](greybox-leg4/bell-quay-stall.png) show the completed line.
 - [ ] **6. The bot and the loop (M; HOTBOX; "Implementation from a brief or an approved plan": Claude opus medium).**
       On garage step 4's bot as merged. Files: `dev/loop/graph.ts` (`plug-gate`: `rail.gate`, the third "route
       barrier opened", requires `canopy-3` and `pick`; `cave-1` to `cave-3`: `legSection` on `cave`, bills, frames and
