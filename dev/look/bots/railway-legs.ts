@@ -34,6 +34,7 @@ import {
   legFrame,
   legRack,
   rowHalt,
+  rowSide,
   type RouteLeg,
 } from '../../../src/sim/railway-route.ts';
 import { HALT, line2Rides } from './railway-ride.ts';
@@ -466,7 +467,8 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   }
   const startWall = async () => {
     await rowRide(wall.line, 0, fromStop(wall), 'cave');
-    await stepOff(legFrame(wall, 0), 'stepped off at the first White Wall frame');
+    // Land beside the halt, clear of the rack between the train and the first frame.
+    await stepOff(rowSide(wall.row, wall.fromCm, (ROW_PLATFORM + 1) * 100, 0, 0), 'stepped off at Port Quay');
     await buildRowLeg(wallSlot, 'White Wall', async (k) => {
       if (wall.sections[k]!.gate === barrier && !(route().gates & (1 << barrier))) await openDeepSpan();
     });
