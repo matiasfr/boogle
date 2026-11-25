@@ -24,7 +24,6 @@ function shoreDistance(p: XZ, outline: XZ[]) {
   return Math.min(...distances) * (inside(p, outline) ? 1 : -1);
 }
 
-const bakeFile = new URL('../../src/content/levels/leg4-shores.json', import.meta.url);
 function bake() {
   const map = layout(
     parseMapPage(readFileSync(new URL('../../docs/world/map-prototypes.html', import.meta.url), 'utf8')),
@@ -69,8 +68,27 @@ function bake() {
   return { saltLand: land('salt-land'), portIsle: land('port-isle'), portTop: land('port-top'), salt };
 }
 
-if (import.meta.main && process.argv.includes('--bake'))
-  writeFileSync(bakeFile, JSON.stringify(bake(), null, 2) + '\n');
+function bakedBlocks(write: boolean) {
+  const { saltLand, portIsle, portTop, salt } = bake();
+  const shore = ({ centre, beach }: typeof saltLand) => ({ centre, beach });
+  const outline = ({ centre, ring }: typeof saltLand) => ({ centre, ring });
+  const files = [
+    ['levels/leg4.ts', { saltLand: shore(saltLand), portIsle: shore(portIsle), salt }],
+    ['prefabs/leg4-lands.ts', { saltLand: outline(saltLand), portIsle: outline(portIsle), portTop: outline(portTop) }],
+  ] as const;
+  return files
+    .map(([file, data]) => {
+      const path = new URL('../../src/content/' + file, import.meta.url);
+      const source = readFileSync(path, 'utf8');
+      const block =
+        '// <baked>\n// prettier-ignore\nconst shores = ' + JSON.stringify(data, null, 1) + ';\n// </baked>';
+      const result = source.replace(/\/\/ <baked>[\s\S]*?\/\/ <\/baked>/, block);
+      if (write) writeFileSync(path, result);
+      return source.replaceAll('\r\n', '\n') === result.replaceAll('\r\n', '\n');
+    })
+    .every(Boolean);
+}
+if (import.meta.main && process.argv.includes('--bake')) bakedBlocks(true);
 
 function coastalReach(check: (message: string, passed: boolean) => void, id: 'saltpan' | 'quay') {
   const defs: unknown = prefabInput;
@@ -145,10 +163,7 @@ export function checkLeg4() {
     row = WORLD_LINES.find((l) => l.id === leg.row)!;
   const entries: { message: string; passed: boolean }[] = [];
   const check = (message: string, passed: boolean) => entries.push({ message, passed });
-  check(
-    'Baked island outlines and Saltpan chords match the map and railway',
-    JSON.stringify(JSON.parse(readFileSync(bakeFile, 'utf8'))) === JSON.stringify(bake()),
-  );
+  check('Baked island outlines and Saltpan chords match the map and railway', bakedBlocks(false));
   coastalReach(check, 'saltpan');
   coastalReach(check, 'quay');
   const rack = legRack(leg, 0),
