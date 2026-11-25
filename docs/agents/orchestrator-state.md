@@ -10,7 +10,6 @@ The one record of who is running what, and what the eight-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Greybox leg 6 step 4: the massing (Canopy, Bell Rock, the Notch, the island halt) | The greybox route | codex/greybox-leg6-massing | the orchestrator thread, Codex Astra medium | 2026-11-25 21:04 | shipping: Astra review (one P2, cold jump-in landings, fixed) and Astra re-check: ship as is |
 | Greybox leg 6 step 5: the views (both legs, barriers at frame 1, the arrive act, levers and boards) | The greybox route | codex/greybox-leg6-views | the heartbeat, Codex Astra medium | 2026-11-25 22:03 | running: on step 4's reviewed tip (rule 74), rebases when it lands; view, adapter and bot files; an independent review before it ships |
 | Greybox leg 6 step 6: the ending card (built beside step 5; rule 53’s bot line after step 5 lands) | The greybox route | codex/greybox-leg6-card | the heartbeat, Codex Astra medium | 2026-11-25 22:10 | running: on step 4’s reviewed tip, `src/features/ending-card.ts` only, none of step 5’s files; its own two-player look |
 | Cold jump-ins wait for their landing’s area (the leftovers’ first 25 November item; leg 6 step 7’s `--from wall-closed` needs it) | The greybox route | codex/jump-landing-waits | the heartbeat, Codex Astra medium | 2026-11-25 22:10 | running: on step 4’s reviewed tip, `arrival.ts`, `railway-jump.ts`, `test/railway-jump.test.ts`; an independent review before it ships |
