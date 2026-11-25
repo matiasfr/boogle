@@ -18,8 +18,6 @@ export type FloodOptions = {
   swim?: boolean;
   blocked?: Uint8Array; // nodes you can't stand in
   reverse?: boolean; // the nodes that can get TO the starts, rather than the nodes the starts get to
-  climbs?: (from: number, to: number) => boolean; // vetoes a step up (rise over 0) from node `from` to node `to`
-  stand?: Uint8Array; // the nodes you can stand on, in place of `standable`'s
 };
 
 /** 1 for each node with a walkable quad beside it. */
@@ -53,19 +51,10 @@ const STEPS: [number, number][] = [
 
 /** 1 for each node reached from `starts` (node indices). */
 export function flood(grid: Grid, mover: Mover, starts: number[], options: FloodOptions = {}) {
-  const steps = hops(grid, mover, starts, options),
-    seen = new Uint8Array(steps.length);
-  for (let k = 0; k < steps.length; k++) if (steps[k]! >= 0) seen[k] = 1;
-  return seen;
-}
-
-/** For each node, the fewest steps from `starts` that reach it (-1: none do). Breadth first, so the same nodes as
- * `flood`, each with its shortest step count. */
-export function hops(grid: Grid, mover: Mover, starts: number[], options: FloodOptions = {}) {
   const { n, cell, h } = grid;
-  const { swim = false, blocked, reverse = false, climbs } = options;
+  const { swim = false, blocked, reverse = false } = options;
   const { walkSlope, jumpHeight, wade, swimHop } = mover;
-  const stand = options.stand ?? standable(grid, mover);
+  const stand = standable(grid, mover);
   const deep = (k: number) => h[k]! < -wade;
   const level = (k: number) => Math.max(h[k]!, -wade); // what you stand or float at
   const open = (k: number) => !blocked?.[k] && (swim || !deep(k));
@@ -74,19 +63,17 @@ export function hops(grid: Grid, mover: Mover, starts: number[], options: FloodO
   const can = (a: number, b: number, c: number) => {
     const rise = level(b) - level(a);
     if (rise <= 0) return true;
-    if (climbs && !climbs(a, b)) return false;
     if (deep(a)) return rise <= swimHop;
     return grips(a) && grips(b) && (rise <= jumpHeight || rise <= walkSlope * c);
   };
-  const steps = new Int32Array(n * n).fill(-1);
-  const queue: number[] = [];
+  const seen = new Uint8Array(n * n);
+  const stack: number[] = [];
   for (const k of starts) {
-    if (steps[k] === 0) continue;
-    steps[k] = 0;
-    queue.push(k);
+    seen[k] = 1;
+    stack.push(k);
   }
-  for (let head = 0; head < queue.length; head++) {
-    const k = queue[head]!;
+  while (stack.length) {
+    const k = stack.pop()!;
     const i = Math.floor(k / n),
       j = k - i * n;
     for (const [di, dj] of STEPS) {
@@ -94,13 +81,13 @@ export function hops(grid: Grid, mover: Mover, starts: number[], options: FloodO
         b = j + dj;
       if (a < 0 || b < 0 || a >= n || b >= n) continue;
       const q = a * n + b;
-      if (steps[q]! >= 0 || !open(q)) continue;
+      if (seen[q] || !open(q)) continue;
       const c = di && dj ? cell * Math.SQRT2 : cell;
       if (reverse ? can(q, k, c) : can(k, q, c)) {
-        steps[q] = steps[k]! + 1;
-        queue.push(q);
+        seen[q] = 1;
+        stack.push(q);
       }
     }
   }
-  return steps;
+  return seen;
 }

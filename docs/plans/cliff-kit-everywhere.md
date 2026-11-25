@@ -209,9 +209,20 @@ note in this plan, then ship on the owner's word. No step waits on a playtest.
      sign, which go in the area's own `keepClear`; the reach flood with the faces in, so no face top or low face is a
      step up from the beach or the climb). The landing's spawn and a returning player's saved spot are placed on ground
      by `src/place/pose.ts`, as now; the kit mounts through the lift-or-wait helper.
-   - **Nobody stranded.** The area's audit adds a lost-reach report (standable cells the bare flood reaches and the
-     kit's does not, beyond the pieces' own footprints) for every area; the shore reports none on its beach and climb,
-     so no face or shore rock walls a swimmer off from the beach (design review, revised, finding 1).
+   - **Nobody stranded.** The area's audit adds a **reverse** flood (`dev/level/flood.ts`, `{ reverse: true }`): every
+     cell that can get back *to* the treads, with the kit's solids in and without. A forward search cannot see a
+     walled-off swimmer, since water cells are its starts; the reverse one can. Every standable cell and every water
+     cell that gets back to a tread bare must still get back with the kit in, beyond the pieces' own footprints; the
+     shore reports none lost on its beach, its water and its climb (design review, revised, finding 1).
+   - **The face's walkable end, walked.** The face's end at z 34 to 38 (its broad 1.7 m top, off the bot's route) is
+     walked with the real controller on the graded ground that replaces it, both ways between the beach and the
+     landing, not only probed with downward rays in `auditCove`: a scripted walk in the browser (`npm run look` with
+     an action) that must arrive, with no snag or fall.
+   - **The idle stop moves with it.** `holdCoveStop` (`src/place/cove-stop.ts`, installed today only by
+     `src/place/cove-view.ts` as its `fixedPre`) holds an idle player still on static ground at the cove. When
+     `cove-view.ts` goes, the hold moves to what still stands there (the cove's ground or the kit's view), and an
+     idle-stance check (stand still for some seconds on the landing, on the graded end and on the shore climb; no
+     creep) proves it.
    - **How it is proven.** `npm run level-check -- --cove` (the cove's mesh and heightfield facade in Rapier, within
      0.03 m of `H`) is rewritten for the new facade: the heightfield where the face was, with the kit's boxes in the
      scene, every walk sample on the graded ground. `npm run level-check` runs the shore area's audit. The production
@@ -356,27 +367,37 @@ On `claude/cliff-kit-step0` (24 November 2026): dev tooling and the kit's view o
   loading gauge (live, drawn and Ring Island's planned tracks from `dev/level/rail-network.ts`): over the rail's top, a
   car's body from its 0.4 m floor up to 4.5 m (half its 2.2 m width) and its running gear under the floor (half the
   1 m track gauge), each with the 0.25 m static clearance level-check already holds furniture to beside trains.
-- **No new way up** (`dev/level/cliff-kit-reach.ts`, in `npm run level-check`). Over a 0.5 m grid 16 m round an area's
-  solids, the ground stands with every piece's solids on it and is flooded from every tread cell and deep water with
-  the controller's limits (`dev/level/flood.ts`, which gains a breadth-first `hops` and `climbs` and `stand` options):
-  once freely, once with the kit as no climbing aid (a player may fall onto a piece, walk along it within the clearance
-  helper's 0.3 m step, and hop onto one from ground they reached without climbing a piece, but never step up from a
-  piece). Over a piece, a cell is somewhere to stand only where its highest solid is a box's walkable top face, so a
-  slab's steep front binned onto the grid is no ledge. A standable cell the free flood reaches that the second does
-  not, or reaches only 10 m or more of steps farther round, fails the area.
+- **No new way up, for the most capable player** (`dev/level/cliff-kit-reach.ts`, in `npm run level-check`;
+  revised after the independent review). Over a 0.5 m grid 16 m round an area's solids, the ground stands with every
+  piece's solids on it. Somewhere to stand is bare ground with a walkable quad beside it, or a piece's top where that
+  is a box's walkable top face (so a slab's steep front binned onto the grid is no ledge). Starts: every tread cell,
+  every cell of deep water (not under a piece) and the highest car roof every 2 m along every drawn track in the
+  window. Moves: a step as the controller allows (`dev/level/flood.ts`'s rules), a double jump to any standable cell
+  within 8 m and 3.03 m up (falling, one jump: 4.7 m and 1.68 m), and a glide after them within the game's glide
+  budget; the numbers are the abilities check's own, moved from `dev/economy/place-level.ts` to `dev/level/mover.ts`
+  so both read them. Jumps and glides ignore what is in the way (strict). Two shortest-route searches: freely, and
+  with the kit as no climbing aid (standing on a piece counts as standing on the ground under it or where the player
+  came from, whichever is lower; falling onto one counts as falling past it, one jump left). A route costs its length
+  plus its start's height times 10 m, so a way up from lower ground shows even where a path above has its own start.
+  A standable cell the free search reaches that the second does not, or reaches only 10 m or more later, fails the
+  area.
 - **Per-area batches.** `src/entities/terrain-kit/view.ts` mounts every area in `src/entities/terrain-kit/areas.ts`
   (`KIT_AREAS`) as its own instance batches, all through the one `liftOrWait` call (`src/prefab/instantiate.ts`); the
   audit fails an area the list does not mount.
 
 **Results.** `npm run level-check`: `cliff kit, canyon: 26 pieces on census wall 0 (360 m of toe in faces' reach),
-reach flood over 26896 cells, 0 problems`. A seeded bad placement fails it: eight rim caps stacked as a staircase on
-the climb's uphill verge, each about 1.4 m above the last, report "94 cells reached only, or much sooner, by climbing
-the kit", the first 21 to 24 m of steps sooner (the canyon as built beside it: 0 problems). The first drafts of the
-check passed that staircase, because the flood lets a player fall anywhere (every node of a wall under a reachable rim
-is reached on the way down) and the plateau above has a tread of its own; the short-cut rule and the standable test are
-what catch it. Then, with the standable test too loose, the canyon itself failed on two cells where boulder
-`canyon.10` sits against face `canyon.3`: the leaning slab's front, binned onto the grid, read as a 1 m ledge. The
-walkable-top-face test removed that artefact, and the staircase was checked again after it.
+reach flood over 26896 cells, 0 problems`, under the most capable player's check (about 3 s). Seeded bad placements,
+each failing on the check as first reviewed and caught now (`test/level-flood.test.ts`, under the owner's exception
+for level-check's flood): a staircase up from the climb rising 2.2 m a step (two jumps), a ramp a player walks up 8 m
+off the village green, a perch on the gorge's lip that puts a ledge over the river within two jumps (the ledge alone
+passes), and steps taken off a train roof beside line 2. The independent review's own ramp and glide cases pass the
+check, and are right to: its ramp runs into the canyon's east wall, which rises past it after 3 m (and the most capable
+player double-jumps up that wall's walkable facets to 11.5 m bare), and its glide target lies 11.5 m off a 7 m perch,
+where the game's glide budget carries 1.8 m. What the first versions of the check missed, in order: a player falls
+anywhere, so a wall under a reachable rim was "reached" (the standable test and the short cut fixed it); the slab's
+binned front read as a ledge (the walkable-top-face test); a gentle kit ramp was climbed without aid, there was no
+double jump, glide or roof, and the plateau's own start hid a staircase up to it (the review; the most capable player,
+the lift rule and the start's height fixed them); and a swimmer under a piece counted as standing on it.
 
 **Close call in the canyon as built** (passing, for the owner and reviewers): rim cap `canyon.16`'s solid comes 1.360 m
 from line 1's up (offset homeward) track's centre, 0.17 to 0.9 m over its rail top: 0.26 m from a car's side. It passes
@@ -492,17 +513,19 @@ player sees. Not seen: the works rocks and caves up close.
 | The Sickle horizon: the kit's palette and a stepped silhouette, no solids | Default | a backdrop no one reaches |
 | Budget lines for steps 7 to 9 (Needle Bell up to +6,000 triangles, props at most +20,000 from the summit and +6 draws an area, the horizon up to +5,000) | Default | within the plan's ceilings |
 | The rails' gauge: a car's body (2.2 m wide, from 0.4 m up to 4.5 m) and running gear, with 0.25 m static clearance | Default | level-check's own furniture clearance; the canyon's `canyon.16` passes by 1 cm |
-| No new way up: a free flood against one where the kit is no climbing aid; a cell reached only by climbing the kit, or 10 m or more sooner by it, fails; only walkable box tops are somewhere to stand | Default | catches stairs and short cuts; a hop onto a boulder passes |
+| No new way up, for the most capable player (double jump, glide, starts from treads, deep water and every train roof): a free search against one where the kit is no climbing aid; a cell reached only by climbing the kit, or 10 m or more sooner by it (a start's height counting 10 m a metre), fails; only walkable box tops are somewhere to stand | Default | the orchestrator's call after the independent review; catches stairs, ramps, perches and roof steps; a hop onto a boulder passes |
 | Gated places measured across the ground, pads by their own size | Default | finding 4 asks step 3 to revisit floating pads |
 
 Fourteen calls: 3 Decided, 11 Default, 0 New.
 
 ### Findings
 
-1. **Nobody stranded at the shore** (flow rule 3). The reach flood fails what the kit *adds*; it does not see what the
+1. **Nobody stranded at the shore** (flow rule 3). The reach check fails what the kit *adds*; it does not see what the
    kit *takes away*. At the cove, faces and shore rocks at the waterline could wall a swimmer off from the beach.
-   Changed: step 1's audit adds a lost-reach report for every area (standable cells the bare flood reaches and the
-   kit's does not, beyond the pieces' own footprints), and the shore must report none on its beach and climb.
+   Changed: step 1's audit adds a reverse flood from the treads (what can get back to them, with the kit and without;
+   a forward search cannot see it, since water cells are its starts), and the shore must lose nothing on its beach,
+   its water and its climb. The independent review added the controller walk over the face's walkable end and the
+   idle stop's move (step 1).
 2. **First sight is still the shore** (flow rule 1). The bluff with the "Line to Bell Rock" sign at its foot is the
    first rock a new player sees from the landing. Replacing it changes that frame, so the before and after stills at
    player height from the landing are the owner's to judge before step 2, as the plan's Risks already say.

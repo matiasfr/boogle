@@ -140,7 +140,8 @@ function footprint(box: ReturnType<typeof solidBoxes>[number]) {
 }
 
 /** Every drawn track's segments (live, drawn and Ring Island's planned ones), Place-local with the rail top's height,
- * binned on a RAIL_BIN m grid, built on first use: those in the bins round (x, z), every segment within RAIL_BIN m. */
+ * binned on a RAIL_BIN m grid in every bin they cross (sampled every half bin, so a long segment's middle is binned too),
+ * built on first use: those in the bins round (x, z), every segment passing within RAIL_BIN m. */
 const RAIL_BIN = 8;
 let railBins: Map<string, [number, number, number, number, number, number][]> | undefined;
 function railsNear(x: number, z: number) {
@@ -159,19 +160,23 @@ function railsNear(x: number, z: number) {
           b.z - ORIGIN.z,
           b.y,
         ];
-        const keys = new Set(
-          [a, b].map((q) => `${Math.floor((q.x - ORIGIN.x) / RAIL_BIN)},${Math.floor((q.z - ORIGIN.z) / RAIL_BIN)}`),
-        );
+        const keys = new Set<string>();
+        const steps = Math.ceil(Math.hypot(seg[3] - seg[0], seg[4] - seg[1]) / (RAIL_BIN / 2));
+        for (let k = 0; k <= steps; k++) {
+          const x = seg[0] + ((seg[3] - seg[0]) * k) / steps,
+            z = seg[1] + ((seg[4] - seg[1]) * k) / steps;
+          keys.add(`${Math.floor(x / RAIL_BIN)},${Math.floor(z / RAIL_BIN)}`);
+        }
         for (const key of keys) (railBins.get(key) ?? railBins.set(key, []).get(key)!).push(seg);
       }
     }
   }
   const i = Math.floor(x / RAIL_BIN),
     j = Math.floor(z / RAIL_BIN);
-  const out: [number, number, number, number, number, number][] = [];
+  const out = new Set<[number, number, number, number, number, number]>();
   for (let di = -1; di <= 1; di++)
-    for (let dj = -1; dj <= 1; dj++) out.push(...(railBins.get(`${i + di},${j + dj}`) ?? []));
-  return out;
+    for (let dj = -1; dj <= 1; dj++) for (const seg of railBins.get(`${i + di},${j + dj}`) ?? []) out.add(seg);
+  return [...out];
 }
 /** The loading gauge over a rail's top, m: a car's floor (src/entities/railway/car.ts BOTTOM) and body half width
  * (dev/level/track-continuity.ts CAR_HX), the running gear's half width under the floor, and the static clearance. */
@@ -179,14 +184,15 @@ const STATIC = 0.25,
   FLOOR = 0.4,
   BODY_HALF = 1.1 + STATIC,
   GEAR_HALF = KIT.gauge / 2 + STATIC;
-/** Whether a point is inside a rail's loading gauge: over the rail's top there, from GAUGE.y0 up to the cars' floor
- * within GEAR_HALF of the track's centre line across the ground, and from the floor up to GAUGE.y1 within BODY_HALF. */
+/** Whether a point is inside a rail's loading gauge: over the railhead there (the track's points are the rail's top),
+ * up to the cars' floor within GEAR_HALF of the track's centre line across the ground, and from the floor up to
+ * GAUGE.y1 within BODY_HALF. (Ring Island bracket's GAUGE.y0 is the rail's height over its leaf, so it is not used.) */
 function inGauge(rails: ReturnType<typeof railsNear>, x: number, y: number, z: number) {
   for (const [ax, az, ay, bx, bz, by] of rails) {
     const { d: across, t } = segDist(x, z, ax, az, bx, bz);
     if (across >= BODY_HALF) continue;
     const up = y - (ay + (by - ay) * t);
-    if (up > GAUGE.y0 && up < GAUGE.y1 && (up >= FLOOR || across < GEAR_HALF)) return true;
+    if (up > 0 && up < GAUGE.y1 && (up >= FLOOR || across < GEAR_HALF)) return true;
   }
   return false;
 }
