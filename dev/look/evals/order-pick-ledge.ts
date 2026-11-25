@@ -7,7 +7,7 @@ const { teleport } = (await import(
 )) as typeof import('../../../src/physics/engine.ts');
 const { H } = (await import('/src/place/land.ts' as string)) as typeof import('../../../src/place/land.ts');
 const { ORIGIN } = (await import('/src/place/layout.ts' as string)) as typeof import('../../../src/place/layout.ts');
-const { padById } = (await import(
+const { padById, LEVER } = (await import(
   '/src/place/tech-layout.ts' as string
 )) as typeof import('../../../src/place/tech-layout.ts');
 const { PLAYER_R } = (await import('/src/constants.ts' as string)) as typeof import('../../../src/constants.ts');
@@ -66,6 +66,14 @@ try {
 }
 await until(() => me.coyote > 0 && !me.swimming && Math.abs(feet() - pad.top) < 0.35, 'landed on pad');
 if (id === 'apron') {
+  const leverX = ORIGIN.x + LEVER.x;
+  me.yaw = cam.yaw = Math.atan2(body.position.x - leverX, body.position.z - LEVER.z);
+  input.keys.add('KeyW');
+  try {
+    await until(() => Math.hypot(body.position.x - leverX, body.position.z - LEVER.z) < 1.8, 'walk to the lever');
+  } finally {
+    input.keys.delete('KeyW');
+  }
   await until(() => interactTarget()?.id === 'railway-quarry-lever', 'lever prompt');
   triggerAction('interact', 'down');
   triggerAction('interact', 'up');
