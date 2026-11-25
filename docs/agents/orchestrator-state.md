@@ -12,6 +12,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 | --- | --- | --- | --- | --- | --- |
 | Cliff kit step 9: the Sickle horizon | Terrain clean-up | codex/cliff-kit-horizon | live session, Codex Astra medium | 2026-11-25 | built; held for his word on the White Wall's colour |
 | Greybox leg 5 step 6: the bot and the loop | The greybox route | codex/greybox-leg5-bot-loop | heartbeat, Codex Sol medium | 2026-11-25 17:26 | running; built on step 5's reviewed tip |
+| Greybox leg 6's plan: the Notch and the causeway | The greybox route | claude/greybox-leg6-plan | heartbeat, Claude Opus high (planner) | 2026-11-25 18:09 | running; docs only |
 
 ## Where the work stands
 
