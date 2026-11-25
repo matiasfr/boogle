@@ -50,7 +50,7 @@ export const RAIL_STOPS = {
 } as const;
 export type RailStop = keyof typeof RAIL_STOPS;
 /** The greybox legs' stops (dev/look/bots/railway-legs.ts). */
-const LEG_STOPS: readonly RailStop[] = ['gorge', 'bell', 'bay', 'canopy', 'port'];
+const LEG_STOPS: readonly RailStop[] = ['gorge', 'bell', 'bay', 'canopy', 'port', 'deep-span'];
 /** `--from <stage>`: an accepted `--rail-seed` server save that its `bot` eval resumes from (its `railFrom`).
  * Seeds are written per run through the real host's save path; there are no client fixtures to keep. */
 export const RAIL_FROM = {
@@ -125,6 +125,7 @@ export function railSegmentOptions(args: string[]) {
     throw new Error(`--to must follow ${seed.after} when starting from ${from}`);
   // A seed's bot stops only at its own beats: the legs' stops are the legs bot's, the rest another bot's. A bot that
   // never reaches the stop would finish its own route and pass without it.
+  if (to === 'deep-span' && from !== 'wall-deep') throw new Error('--to deep-span requires --from wall-deep');
   if (seed && to) {
     const legStop = LEG_STOPS.includes(to);
     const playsTo = (s: { bot: string }) => (s.bot === RAIL_FROM['gorge-open'].bot) === legStop;

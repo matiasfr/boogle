@@ -132,7 +132,7 @@ export function colliderFlood(
   }
   const node = (p: { x: number; z: number }) => ix(p.x) * n + iz(p.z);
   const reach = (p: { x: number; z: number }, swim = false) => flood({ n, cell, h }, MOVER, [node(p)], { swim });
-  return { node, reach };
+  return { node, reach, h };
 }
 
 function coastalReach(check: (message: string, passed: boolean) => void, id: 'saltpan' | 'quay') {
@@ -159,7 +159,7 @@ function coastalReach(check: (message: string, passed: boolean) => void, id: 'sa
   const outside = at(s, 580),
     home = at(s, -580);
   const centre = salt ? { x: 550, z: 700 } : { x: 70, z: 970 };
-  const { node, reach } = colliderFlood(colliders, centre, 451);
+  const { node, reach, h } = colliderFlood(colliders, centre, 451);
   const seen = reach(outside);
   for (const [name, p] of Object.entries(
     salt

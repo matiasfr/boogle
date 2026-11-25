@@ -41,6 +41,8 @@ import { resident } from '../src/render/lod-level.ts';
 import { CAVE_GROUP, HEAD_OFFSET, PLAYER_R } from '../src/constants.ts';
 import { createLiftOrWait, STEP, type Solid } from '../src/place/clearance.ts';
 import canopy from '../content/built/levels/canopy.json' with { type: 'json' };
+import south from '../content/built/levels/wall-south.json' with { type: 'json' };
+import north from '../content/built/levels/wall-north.json' with { type: 'json' };
 import quay from '../content/built/levels/quay.json' with { type: 'json' };
 
 validation.validateArtifact(artifact);
@@ -781,14 +783,14 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
           s.mesh,
           entries.map((l) => l.t),
         ),
-      createBoxBatch: (_owner: unknown, capacity: number) => ({
+      createBoxBatch: (_owner: unknown) => ({
         mesh: new THREE.Group(),
         begin() {
-          if (capacity === 6500) drawnDeck.length = 0;
+          if (this.mesh.name === 'route-greybox:deck') drawnDeck.length = 0;
         },
         commit() {},
         box(x: number, y: number, z: number, w: number, h: number, d: number, colour: string, yaw: number, rx: number) {
-          if (capacity === 6500 && colour === '#9c9ea1' && h === 0.5)
+          if (this.mesh.name === 'route-greybox:deck' && colour === '#9c9ea1' && h === 0.5)
             drawnDeck.push(boxShape({ x, y, z, w, h, d, yaw, pitch: -rx }));
         },
         between() {},
@@ -866,7 +868,7 @@ async function mountAt(position: THREE.Vector3) {
   const pending: Promise<void>[] = [];
   const on = new Set<string>(),
     shapes = new Map<string, Shape[]>();
-  const colliders = ground(canopy);
+  const colliders = [canopy, south, north].flatMap(ground);
   const instantiate = (_key: string, placement: { id: string }) => {
     const mine = colliders.filter((c) => c.placement.id === placement.id);
     shapes.set(placement.id, mine.map(shapeOf));
@@ -910,7 +912,16 @@ async function mountAt(position: THREE.Vector3) {
   sourceModule(fs.readFileSync('src/entities/route-greybox/index.ts', 'utf8'), {
     productionRailway: true,
     saltpanArea: { id: 'saltpan', centre: AREA_CENTRES.saltpan, build: () => [] },
-    wallAreas: [],
+    wallAreas: [south, north].map((input) => {
+      const centre = AREA_CENTRES[input.place as 'wall-south' | 'wall-north'];
+      return {
+        id: input.place,
+        centre,
+        near: coverNear(helpers.leg2Placements(input), artifact.prefabs, centre),
+        build: () => helpers.leg2Massing(input),
+        extras: (owner: Parameters<typeof helpers.leg2Extras>[0]) => helpers.leg2Extras(owner, input),
+      };
+    }),
     quayArea: { id: 'quay', centre: AREA_CENTRES.quay, build: () => [] },
     location: { search: '' },
     AREA_CENTRES,
@@ -950,8 +961,17 @@ async function mountAt(position: THREE.Vector3) {
   await Promise.all(pending);
   assert.ok(describe);
   const tick = update;
-  return { ...state(), report: describe().canopy, state, update: () => tick() };
+  return { ...state(), reports: describe(), report: describe().canopy, state, update: () => tick() };
 }
+
+for (const area of ['wall-north', 'wall-south'] as const)
+  test(area + ' mounts two cliff colliders and no visible boxes', async () => {
+    const { x, z } = AREA_CENTRES[area];
+    const near = await mountAt(new THREE.Vector3(x, 2, z));
+    assert.deepEqual(near.reports[area], { resident: true, boxes: 0, solids: 2 });
+    const far = await mountAt(new THREE.Vector3(3000, 2, 3000));
+    assert.deepEqual(far.reports[area], { resident: false });
+  });
 
 test('a swimmer arriving at the western beach finds its collider at the shoreline', async () => {
   const beach = ground(canopy).find((c) => c.placement.id === 'canopy.beach-27')!;
