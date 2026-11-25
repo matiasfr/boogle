@@ -1455,13 +1455,12 @@ async function legRejoin(c: Ctx, seed: RejoinSeed) {
       .slice(0, n)
       .reduce((t, s) => ({ logs: t.logs + s.logs, rails: t.rails + s.rails }), { logs: 0, rails: 0 });
   const PICKUP = Math.min(bill(LAID).rails, RAILWAY_CAPACITY.railsYoke);
+  const FOLLOWING_KITS = seed === 'wall-mid' ? leg.sections.length - LAID - 1 : 1;
   type Stage = 'seed' | 'racked' | 'carried';
-  /** What the server must hold at each stage, from the catalog and the pickup alone; `kitSlot` is the train carrying
-   * the kit (found at the seed and after the first round trip, then fixed). Every bay train's row is expected whole:
-   * the kit's train with its bill, every other one empty. */
-  const expected = (stage: Stage, kitSlot: number) => {
+  /** Each marked train carries a whole bill, every other train is empty, and the slots stay fixed after delivery. */
+  const expected = (stage: Stage, kitSlots: readonly number[]) => {
     const kit = bill(stage === 'seed' ? LAID : LAID + 1),
-      loaded = billsTo(stage === 'seed' ? LAID + 1 : LAID + 2),
+      loaded = billsTo(stage === 'seed' ? LAID + 1 : LAID + 1 + FOLLOWING_KITS),
       carried = stage === 'carried' ? PICKUP : 0,
       racked = stage === 'seed' ? { logs: 0, rails: 0 } : bill(LAID);
     return {
@@ -1476,7 +1475,7 @@ async function legRejoin(c: Ctx, seed: RejoinSeed) {
         heldRails: carried,
       },
       trains: LINE_SLOTS[leg.line]!.map((slot) =>
-        slot === kitSlot ? { slot, legKit: true, ...kit } : { slot, legKit: false, logs: 0, rails: 0 },
+        kitSlots.includes(slot) ? { slot, legKit: true, ...kit } : { slot, legKit: false, logs: 0, rails: 0 },
       ),
       rack: { logs: racked.logs, rails: racked.rails - carried },
       back: { rails: carried, legRails: carried },
@@ -1557,26 +1556,20 @@ async function legRejoin(c: Ctx, seed: RejoinSeed) {
         );
       });
     }, 10000)) >= 0;
-  /** The one train the server shows carrying kit (its slot is then part of the expected state), or -1 when none or
-   * more than one is marked (never the first of several). */
-  const kitTrain = (s: State) => {
-    const marked = s.trains.filter((t) => t.legKit === true);
-    return marked.length === 1 ? marked[0]!.slot : -1;
-  };
-  /** One checkpoint: the server exactly as `stage` says, then every tab of `group` mirroring it. Without `kitSlot`
-   * (the seed, and the first round trip, when the kit changes trains) the kit's train is the one the server marks, and
-   * the checkpoint fails when there is no such one train: the kit is always aboard one at these stages. */
-  const at = async (name: string, stage: Stage, group: Page[], kitSlot?: number) => {
+  const kitTrains = (s: State) => s.trains.filter((t) => t.legKit === true).map((t) => t.slot);
+  /** Observe the carrier slots at the seed and after delivery. Check the exact count and all contents independently,
+   * then require those same train rows at every remaining checkpoint. */
+  const at = async (name: string, stage: Stage, group: Page[], kitSlots?: readonly number[]) => {
     let s = await state(),
-      slot = kitSlot ?? kitTrain(s),
-      want = expected(stage, slot);
+      slots = kitSlots ?? kitTrains(s),
+      want = expected(stage, slots);
     legCheck(
       `${name}: the server holds exactly what the catalog and the pickup say`,
       (await waitFor(async () => {
         s = await state();
-        slot = kitSlot ?? kitTrain(s);
-        want = expected(stage, slot);
-        return LINE_SLOTS[leg.line]!.includes(slot) && fits(s, want);
+        slots = kitSlots ?? kitTrains(s);
+        want = expected(stage, slots);
+        return slots.length === (stage === 'seed' ? 1 : FOLLOWING_KITS) && fits(s, want);
       }, 10000)) >= 0,
       JSON.stringify({ server: s, want }),
     );
@@ -1596,7 +1589,7 @@ async function legRejoin(c: Ctx, seed: RejoinSeed) {
   await at('the seed', 'seed', [A, B]);
   // A round trip brings the current kit to the rack. The following kit then waits aboard while the rack is full.
   await cycle();
-  const KIT = kitTrain(await at('a round trip later', 'racked', [A, B]));
+  const KIT = kitTrains(await at('a round trip later', 'racked', [A, B]));
   const rack = legRack(leg, LAID);
   legCheck('the first tab has a live session', (await ready(A)) >= 0);
   await ev(
