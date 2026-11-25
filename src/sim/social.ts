@@ -14,7 +14,7 @@ export function validatePing(msg: unknown): Ping | PingReply | null {
   if (typeof seq !== 'number' || !Number.isInteger(seq) || seq < 0 || seq > MAX_PING_SEQ) return null;
   if (k === 'omw') return typeof of === 'string' && of.length <= 64 ? { k, of, seq } : null;
   if (typeof x !== 'number' || typeof y !== 'number' || typeof z !== 'number') return null;
-  if (![x, y, z].every((n) => Number.isFinite(n))) return null;
+  if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) return null;
   if (Math.abs(x) > BOUND || Math.abs(z) > BOUND || y < -100 || y > 1024) return null;
   if (typeof k !== 'string' || !Object.hasOwn(PING_KINDS, k)) return null;
   return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, z: Math.round(z * 10) / 10, k: k as Ping['k'], seq };
