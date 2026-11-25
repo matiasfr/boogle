@@ -337,7 +337,8 @@ After steps 1 to 6 are on main; named proofs, once, with the tools as Checkpoint
 - [x] [Steps 4 and 5's stills on one sheet](greybox-leg5/checkpoint-e-sheet.jpg).
 - [ ] `npm run perf -- --view wall` (a `PLACES` row: seed `wall-closed`, the body on the Gorge's Wall platform, the
       camera down the split) and `-- --view wall --hardware --seconds 10`, its load noted.
-- [ ] The boot probe on main after step 6 (rule 61); the fuzz's long run if a rule changed after it.
+- [x] The boot probe on main after step 6 (rule 61): offline Chromium reached interactive in 7.8 s without page errors.
+      The Wall service rules were unchanged since the recorded long fuzz.
 - [ ] A device line on the Mac, reported, not a gate (taken when the Mac is next open).
 
 ### Steps 1 to 3 as built on HOTBOX
