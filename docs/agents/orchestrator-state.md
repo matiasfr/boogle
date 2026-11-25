@@ -43,6 +43,7 @@ Cleaned on 24 November: every item from 5 to 19 November is in [the log](orchest
 - The plan’s New call (26), the cave line runs standard trains only, holds for leg 4 itself; the garage step that follows offers the trade there (his answer 6, 25 November). A world bump (v68) rides with steps 1 to 3.
 
 **Changes to how work runs** (each recommended, none started because it changes a skill or workflow):
+- A session with delegates running asks him nothing modal, even while he is in the conversation: it writes the question in its reply and ends its turn, and his answer arrives as his next message (25 November: the live session asked a modal question at 08:02 UTC while he was there; he answered at 08:47, and the reports of cliff kit step 4 (08:04), order picks A3 (08:09) and leg 4 step 4 (08:17) waited behind it for 30 to 43 minutes each, the hour's biggest loss). Recommended: extend rule 48 to say so.
 - Wakes: a wake ends its turn after scheduling its follow-up, starts `ship-queue` so its exit wakes nobody, first sends every finished delegate its unblocking step, and every run starts with `ListAgents` (two heartbeat sessions ran at once on 19 November; rules 62, 65).
 - CI builds the site and runs the boot probe on every ship, so a branch that cannot boot never reaches main (the 24-minute deploy failure after greybox leg 2).
 - `ci-autofix.yml`'s conflict job gets the commands it was denied, so a docs-only conflict mends itself.
