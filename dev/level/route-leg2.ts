@@ -363,6 +363,12 @@ function west(entries: Entry[]) {
       ['from platform A to the commons', M.platformA, M.commons],
       ['from platform B to the commons', M.platformB, M.commons],
       ['from the commons down to platform A', M.commons, M.platformA],
+      ['from platform A to the cave apron', M.platformA, M.caveApron],
+      ['from platform B to the cave apron', M.platformB, M.caveApron],
+      ['from the apron to the cave homeward platform', M.caveApron, M.caveHome],
+      ['from the apron to the cave outward platform', M.caveApron, M.caveOut],
+      ['from the commons to the cave homeward platform', M.commons, M.caveHome],
+      ['from the commons to the cave outward platform', M.commons, M.caveOut],
     );
   for (const [name, from, to] of routes) {
     const seen = flood(grid, MOVER, [g.node(from)]);
@@ -379,6 +385,17 @@ function west(entries: Entry[]) {
       : '  build: West landing platforms stand',
   });
   // The `cave` row leaves the same root: its first 80 m, as wide as a bed.
+  for (const [name, start] of [
+    ['inside the V', M.seaInV],
+    ['off the hood', M.caveSea],
+  ] as const) {
+    const seen = flood(grid, MOVER, [g.node(start)], { swim: true });
+    entries.push({
+      kind: 'assertion',
+      passed: !!seen[g.node(M.caveOut)],
+      message: `a swimmer ${name} reaches the cave platform`,
+    });
+  }
   const cave = WORLD_LINES.find((l) => l.id === 'cave')!.pts.map(([x, z, yy]) => ({
     x: x / 100,
     z: z / 100,
@@ -462,10 +479,15 @@ function points(entries: Entry[]) {
   );
   // Ruling 1: frames stay out of the bore (s 67 to 232).
   const inBore = incline.sections.map((_s, k) => sectionFromCm(incline, k)).filter((s) => s > 6700 && s < 23200);
-  assertion(!inBore.length, `the incline's frames stand outside the bore (s 67 to 232): ${inBore.length ? 'NOT' : 'ok'}`);
+  assertion(
+    !inBore.length,
+    `the incline's frames stand outside the bore (s 67 to 232): ${inBore.length ? 'NOT' : 'ok'}`,
+  );
   for (const leg of [incline, bay])
     for (let k = 1; k < leg.sections.length; k++)
-      fact(`  ${leg.id} head ${k}: frame ${m(legFrame(leg, k))}, rack ${m(legRack(leg, k))} (over the sea; step 4 adds the head's ramp)`);
+      fact(
+        `  ${leg.id} head ${k}: frame ${m(legFrame(leg, k))}, rack ${m(legRack(leg, k))} (over the sea; step 4 adds the head's ramp)`,
+      );
 }
 
 export function checkLeg2() {

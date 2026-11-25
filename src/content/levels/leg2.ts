@@ -234,10 +234,22 @@ function bell() {
         c.track.frame.reserve('bay track ' + i, 0, c.track.lengthCm / 100, -BED, BED, BAY_RAIL, BAY_RAIL + LOADING),
       ),
       frame({ x: -73.92, z: -840.73 }, unit(-4.71, 1.67), perp(unit(-4.71, 1.67))).reserve(
-        'bay exit curve', 0, 5, -BED, BED, BAY_RAIL, BAY_RAIL + LOADING,
+        'bay exit curve',
+        0,
+        5,
+        -BED,
+        BED,
+        BAY_RAIL,
+        BAY_RAIL + LOADING,
       ),
       frame({ x: -78.63, z: -839.06 }, unit(-36.75, 14.07), perp(unit(-36.75, 14.07))).reserve(
-        'bay exit', 0, 39.35, -BED, BED, BAY_RAIL, BAY_RAIL + LOADING,
+        'bay exit',
+        0,
+        39.35,
+        -BED,
+        BED,
+        BAY_RAIL,
+        BAY_RAIL + LOADING,
       ),
       ne.reserve('seeds spot', -5.5, -2.5, -16.5, -13.5, LOWER, LOWER + CLEAR),
       { id: 'Canopy frame and barrier', x: -54.1, z: -848.23, yaw: 0, w: 2, d: 2, y0: UPPER, y1: UPPER + CLEAR },
@@ -295,6 +307,15 @@ const WEST_RAIL = 4,
 
 function west() {
   const top = WEST_RAIL + 0.9;
+  const shore = unit(-6, 65);
+  const cave = frame(WEST_ROOT, shore, perp(shore));
+  const strait = unit(-125, 225);
+  const exit = frame({ x: 795, z: 75 }, strait, perp(strait));
+  const hood = (row: typeof cave, id: string, start: number, end: number) => [
+    row.box(id + '-cliff', start, end, 6.5, 7.5, 11, 14, 'grey'),
+    row.box(id + '-sea', start, end, -7.5, -6.5, 11, 14, 'grey'),
+    row.box(id + '-roof', start, end, -7.5, 7.5, 12, 1, 'pale'),
+  ];
   return {
     /** The stop, s 20. */
     origin: sl.at(20, 0),
@@ -310,6 +331,13 @@ function west() {
           { ...sl.box('platform-b', 2, 40, -PLAT, -BED, top, 2, 'light'), posts: true },
           sl.ramp('end-ramp', 0, top, -4, WEST_SHELF, BED, PLAT, 'grey'),
           sl.box('apron', 4, 16, PLAT, 11.8, top, 2, 'grey'),
+          { ...cave.box('cave-bed', 0, 60, -BED, BED, 3.9, 1, 'dark'), posts: true },
+          { ...cave.box('cave-home', 0, 40, BED, PLAT, top, 1, 'light'), posts: true },
+          { ...cave.box('cave-out', 4, 40, -PLAT, -BED, top, 1, 'light'), posts: true },
+          cave.box('cave-apron', 4, 16, PLAT, 11.8, top, 2, 'grey'),
+          ...hood(cave, 'hood-in', 45, 65.3),
+          ...hood(exit, 'hood-out', 0, 14.7),
+          cave.ramp('cave-slip', 40, top, 60, -1.4, -6.1, -3.9, 'grey'),
           // Call 120 reversed (start-area S1): the shore path climbs to the commons and meets the end ramp's foot.
           // A second climb here crossed that path and read as the newcomer's way up.
         ],
@@ -328,6 +356,7 @@ function west() {
       : [],
     // On the shelf beside the shore path's foot, facing the path; keep the existing placeholder copy.
     posts: [
+      { id: 'hood-sign', ...cave.at(44.8, 7), y: 7, nx: 0, nz: -1, label: 'west.hood' },
       {
         id: 'board',
         x: WEST_STAKED ? 810 : 805,
@@ -344,6 +373,7 @@ function west() {
       sl.reserve('apron', 4, 16, PLAT, 11.8, top, top + CLEAR),
       sl.reserve('platform-a lever end', 0, 3, BED, PLAT, top, top + CLEAR),
       sl.reserve('platform-b lever end', 2, 5, -PLAT, -BED, top, top + CLEAR),
+      cave.reserve('cave apron', 4, 16, PLAT, 11.8, top, top + CLEAR),
     ],
     marks: {
       root: sl.at(0, 0),
@@ -351,6 +381,11 @@ function west() {
       seaEnd: sl.at(40, 0),
       platformA: sl.at(20, 5.8),
       platformB: sl.at(20, -5.8),
+      caveApron: cave.at(10, 9.8),
+      caveHome: cave.at(20, 5.8),
+      caveOut: cave.at(20, -5.8),
+      caveSea: cave.at(63, -5.8),
+      seaInV: cave.at(30, -18),
       rampFoot: sl.at(-5, 5.8),
       rampHead: sl.at(1, 5.8),
       // One straight line at the cliff, north of the shore path (the walk's control).
