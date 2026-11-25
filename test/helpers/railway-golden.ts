@@ -22,7 +22,16 @@ const FILE = new URL('../fixtures/railway-golden.json', import.meta.url);
 const TICKS = 1200;
 /** Every stage in exactly one shard (checked below); the trains and works stages share their cached bases. */
 export const SHARDS: readonly (readonly SeedStage[])[] = [
-  ['awake', 'forge-frame-last', 'forge-lit-last', 'q1-done', 'q2-stocked', 'q2-arriving'],
+  [
+    'awake',
+    't1-pack-first',
+    't1-jump-first',
+    'forge-frame-last',
+    'forge-lit-last',
+    'q1-done',
+    'q2-stocked',
+    'q2-arriving',
+  ],
   ['hook-taken', 'q3-stocked', 'q3-done'],
   ['q4-stocked', 'q4-arriving'],
   ['hook-earned', 'q4-done', 'q5-arriving'],

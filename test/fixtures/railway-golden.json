@@ -7,6 +7,16 @@
    "stage": 1239562783,
    "after": 1239562783
   },
+  "t1-pack-first": {
+   "tick": 340,
+   "stage": 1976474795,
+   "after": 1976474795
+  },
+  "t1-jump-first": {
+   "tick": 340,
+   "stage": 732003757,
+   "after": 732003757
+  },
   "forge-frame-last": {
    "tick": 1240,
    "stage": 3595139496,
