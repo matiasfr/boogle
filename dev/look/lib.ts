@@ -101,7 +101,7 @@ export default async (env: unknown) =>
 // Starts Vite on a free port and our server in-process, hosting every room (so rooms work offline), with its saves in
 // a temporary directory. With `url`, only uses that already-running game (the game's own server applies).
 // `root` serves another checkout (e.g. a git worktree of a prototype branch) with this harness.
-export type Stack = { base: string; close: () => Promise<void>; dataDir?: string; clockUrl?: string };
+export type Stack = { base: string; close: () => Promise<void>; dataDir?: string; serverUrl?: string; clockUrl?: string };
 export async function startStack({
   url = null,
   root: dir = root,
@@ -162,6 +162,7 @@ export async function startStack({
   return {
     base,
     dataDir,
+    serverUrl: `http://127.0.0.1:${sigPort}`,
     clockUrl: child?.clockUrl,
     async close() {
       if (!vite.killed) vite.kill('SIGTERM');
