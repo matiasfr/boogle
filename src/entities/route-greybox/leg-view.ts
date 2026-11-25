@@ -120,6 +120,8 @@ export const LEG_OBJECTIVES = {
   canopyGate: 'Open the barrier to Canopy',
   canopy: 'Build the line to Canopy Town',
   cloth: 'Take the glider cloth',
+  plug: 'Open the sea-cave plug at the West landing',
+  cave: 'Build the cave line to Port Quay',
   home: "Ride home: the next line isn't built yet",
 } as const;
 /** The steel loop's steps, from the rivet to the longer boiler (docs/plans/ring-island-build2.md, section 1). Draft
@@ -359,6 +361,9 @@ const SPECS: readonly LegSpec[] = [
     [[1150, 1341]],
     { name: 'LINE TO CANOPY TOWN', joins: 'bay-cut', ground: canopyGround },
   ),
+  rowSpec('cave', { frame: [12, 1], rack: [6, 1] }, 0.5, (ends) => ends.at(-1)! + 23, [[0, 60]], {
+    name: 'LINE TO PORT QUAY',
+  }),
 ].filter((sp) => legBuilt(sp.k));
 
 /** Bell Rock (greybox leg 2): the seeds post, the Canopy barrier (RAIL_GATES[1], shut until leg 3 is built: it stands
@@ -371,11 +376,14 @@ const SEEDS = RAIL_GRANTS.findIndex((g) => g.id === 'seeds'),
   canopyLeg = RAIL_LEGS[canopyIndex]!,
   canopyGeo = rowGeo(canopyLeg.line),
   CANOPY_SITE = siteAt(legFrame(canopyLeg, 0), canopyGeo, 1229, -1);
+const PLUG = RAIL_GATES.findIndex((g) => g.id === 'plug');
+const plugSite = SPECS.find((sp) => sp.leg.id === 'cave')?.frames[0];
 const STALLS: Readonly<Record<string, string>> = {
   'bell.pad-gorge': 'incline',
   'bell.pad-ring': 'incline',
   'bell.pad-home': 'bay-cut',
   'bell.pad-canopy': 'bell-canopy',
+  'bell.pad-quay': 'cave',
 };
 /** Canopy Town (greybox leg 3, step 6): the cloth post on the homeward deck round the buffers (RAIL_GRANTS `cloth`)
  * and the Notch barrier across the row at its kink (RAIL_GATES `notch`, shut until leg 6), 10 m apart (call 20); its
@@ -645,6 +653,8 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       // stays (the request stop: the stack's `Stack halt`, the incline's and the bay cut's one head).
       const { plat } = sp;
       for (let j = 1; j < n; j++) {
+        // Saltpan Halt has permanent platforms on the flats.
+        if (sp.leg.id === 'cave' && j === 2) continue;
         const closes = RAIL_LINES[sp.leg.line]!.halts[sp.leg.railheadHalt + j - 1]!.closesAt;
         if (laid < j || (closes !== undefined && laid >= j + 2)) continue;
         const r = R[j - 1]!;
@@ -954,6 +964,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     yard(r);
     gorge(r);
     bell(r);
+    if (plugSite && near(plugSite, 450)) barrier(plugSite, !!(r.gates & (1 << PLUG)));
     canopy(r);
     things.commit();
     note(r);
@@ -1141,7 +1152,9 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     if (!done(r, 'bay-cut')) return LEG_OBJECTIVES.bay;
     if (!(r.gates & (1 << CANOPY))) return LEG_OBJECTIVES.canopyGate;
     if (!done(r, 'bell-canopy')) return LEG_OBJECTIVES.canopy;
-    return r.grants & (1 << CLOTH) ? LEG_OBJECTIVES.home : LEG_OBJECTIVES.cloth;
+    if (!(r.grants & (1 << CLOTH))) return LEG_OBJECTIVES.cloth;
+    if (!(r.gates & (1 << PLUG))) return LEG_OBJECTIVES.plug;
+    return done(r, 'cave') ? LEG_OBJECTIVES.home : LEG_OBJECTIVES.cave;
   }
   /** The objective line's text, to the play record (no on-screen line on the route). */
   function note(r: NonNullable<ReturnType<typeof rows>>) {
@@ -1263,17 +1276,19 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       grant(CLOTH, 'railway-leg-cloth', TAKE_CLOTH, CLOTH_AT, 'bell-canopy', CLOTH_NOT_YET);
       // Leg 3's barriers: the Canopy barrier on its frame at Bell Rock, the Notch barrier at Canopy (leg 6's: it refuses
       // in view, the cloth held). Each opens once its leg is open with its key held.
-      const gate = (k: number, id: string, at: { x: number; y: number; z: number }) => {
+      const gate = (k: number, id: string, at: { x: number; y: number; z: number }, blocked = NO_LINE) => {
         if (r.gates & (1 << k) || !within(p, at, RAIL_GATES[k]!.at.reach)) return;
         const target = { id, verb: OPEN_GATE, at: v3(at, at.y + 1.6) },
           shuts = gateLeg(k);
         out.push(
           shuts && legOpen(wd, shuts.leg) && r.grants & (1 << RAIL_GATES[k]!.needs)
             ? { ...target, run: () => void adapter.openGate(k) }
-            : { ...target, blocked: NO_LINE },
+            : { ...target, blocked },
         );
       };
       gate(CANOPY, 'railway-leg-canopy', CANOPY_SITE);
+      if (plugSite)
+        gate(PLUG, 'railway-leg-plug', plugSite, r.pick ? 'After the line to Canopy (placeholder)' : NEEDS_PICK);
       gate(NOTCH, 'railway-leg-notch', NOTCH_AT);
       return out;
     },
