@@ -10,7 +10,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Cliff kit step 1: the shore (cove face replaced, kit faces and shore rocks, before/after sheet) | Terrain clean-up | claude/cliff-kit-shore | live session, Opus medium | 2026-11-25 | running: built on step 0's branch, rebases once step 0 is on main |
+| Cliff kit step 2: the gorge seen from the rim path | Terrain clean-up | codex/cliff-kit-gorge-rim | live session, Codex Astra medium | 2026-11-25 | running |
 
 ## Where the work stands
 
