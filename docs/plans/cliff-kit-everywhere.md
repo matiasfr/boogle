@@ -254,7 +254,7 @@ note in this plan, then ship on the owner's word. No step waits on a playtest.
    `npm run level-check` stay at 0 problems, and the bot's route breaks its rocks as before.
 9. **The Sickle horizon** (owner, 24 November): its palette and stepped silhouette (Colour work), last on Home so it is
    matched to the finished island; stills from the summit, the sea and Far Head's halt.
-10. **Ring Island**: colour first, then its stack cut's walls (3:1, along the ring line) and rim rocks as kit pieces,
+10. **Ring Island** ([built](#step-10-as-built)): colour first, then its stack cut's walls (3:1, along the ring line) and rim rocks as kit pieces,
     after a seeded still from the ring line.
 11. **The greybox legs** (Bell Rock, leg 2's gorge, leg 3): when each leaves greybox, its rock is authored as kit pieces
     from the start, not as prisms to dress later.
@@ -655,6 +655,25 @@ The census against main `18b88f299` measured 756 additional triangles at all sev
 | Gorge mouth | 441 | 1,193,040 | 1,193,796 |
 | Far Head | 297 | 1,139,065 | 1,139,821 |
 | Summit | 349 | 1,165,490 | 1,166,246 |
+
+## Step 10 as built
+
+From the ring line the orange summit footbridge frames a bend in bedded sandstone. The near approaches leave the bridge posts exposed, and the rock courses pick up again beyond the bridge. The nineteen markers still pick out the summit-side edge. [Matched view from the joined ring line](cliff-kit-everywhere/ring-island-before-after.jpg).
+
+The ground blends the kit's bedded pigment over the cut using the existing excavation depth. The generator seats 117 low-face sections into the 3:1 walls and scales the same crowned piece down for the 19 markers. All 136 pieces share one batch, with 23,936 triangles per submitted pass. They follow the near island's mount and wait as a set where they overlap Buddy. The rail gauge and rough standing checks found zero problems. The saved-pose regression rejected a return inside each of the nineteen markers.
+
+The census used `ring-joined` for every view. The before captures used `c963cef62` and the after captures include step 9, which added 756 backdrop triangles at each Home camera. Counts include colour and shadow passes. The cutting pose uses `--query cliffCensus=ring --action dev/look/evals/cliff-counts.ts`. No device timing was taken.
+
+| Census camera | Before draws | After draws | Before triangles | After triangles |
+| --- | ---: | ---: | ---: | ---: |
+| Ring cutting | 147 | 159 | 479,323 | 531,275 |
+| Shore | 201 | 201 | 950,093 | 950,849 |
+| Shore climb | 594 | 594 | 1,504,413 | 1,505,169 |
+| Canyon climb | 290 | 291 | 1,127,102 | 1,151,110 |
+| Gorge rim | 554 | 554 | 1,477,439 | 1,478,195 |
+| Gorge mouth | 769 | 770 | 1,577,477 | 1,601,485 |
+| Far Head | 515 | 516 | 1,480,361 | 1,504,369 |
+| Summit | 663 | 664 | 1,552,607 | 1,576,615 |
 
 ## Design review (2026-11-24)
 
