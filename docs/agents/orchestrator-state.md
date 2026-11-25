@@ -13,7 +13,6 @@ The one record of who is running what, and what the eight-job limit is counted f
 | Friends voice step 5 and the checkpoint: a honk answers a ping | Friends hear and signal each other | codex/friends-honk-reply | heartbeat, Codex Astra medium | 2026-11-25 13:39 | running |
 | Cliff kit step 9: the Sickle horizon | Terrain clean-up | codex/cliff-kit-horizon | live session, Codex Astra medium | 2026-11-25 | built; held for his word on the White Wall's colour |
 | Greybox leg 5 steps 1 to 3: the Wall's catalog, rules and bump (v71), seeds | The greybox route | codex/greybox-leg5-rules | heartbeat, Codex Astra high | 2026-11-25 13:42 | running |
-| World streaming Checkpoints A and B, the Windows half | Chunk, cull and stream the world | codex/streaming-checkpoints-windows | heartbeat, Codex Sol medium (runner) | 2026-11-25 13:09 | running |
 
 ## Where the work stands
 
