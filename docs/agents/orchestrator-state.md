@@ -10,7 +10,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Greybox leg 4 step 6: the bot and the loop | The greybox route | codex/greybox-leg4-bot | live session, Codex Sol medium | 2026-11-25 | running: step 5 shipped (#2423) |
+| Greybox leg 4 Checkpoint D: the named proofs, run once | The greybox route | codex/greybox-leg4-checkpoint-d | live session, Codex Sol medium | 2026-11-25 | running: browser-heavy |
 | Friends voice: the plan and its design review | Friends hear and signal each other | claude/friends-voice-plan | heartbeat, Claude Opus high (planner) | 2026-11-25 11:10 | running |
 | Cliff kit step 7: Needle Bell | Terrain clean-up | codex/cliff-kit-needle-bell | live session, Codex Astra medium | 2026-11-25 | running |
 
