@@ -775,6 +775,35 @@ test('the garage judges a bring’s table hold on the action tick: never free be
   assert.ok(cleared >= free && cleared <= free + 10, `the screen frees the table near the hold's end (${cleared})`);
 });
 
+test('the garage holds the table after a dropped link while the room stood paused', () => {
+  // A solo player's link drops and the room pauses (it stops simulating once empty, RAIL_AWAY.pauseMs). While the
+  // link is down the session's action tick runs on with the page clock, latched: it never goes backwards. Back in, the
+  // server's tick is where the room stopped, so the screen must still hold the table the server holds.
+  const s = tradeReady();
+  assert.equal(bring(s, NS), 1);
+  const free = tableFree(s.w);
+  const room = railRoom(s);
+  const c = room.join('installer', 'a', 4);
+  room.ready();
+  assert.ok(garageFacts(c.adapter.read).held, 'held before the drop');
+  c.disconnect();
+  // 40 s offline: the tab keeps drawing frames; the server does not step (paused).
+  for (let k = 0; k < 2400; k++) {
+    room.advance(17);
+    c.adapter.update(room.clock.now);
+    garageFacts(c.adapter.read);
+  }
+  c.reconnect();
+  room.ready();
+  for (let k = 0; k < 60; k++) room.run(1);
+  const server = room.sync.world.tick;
+  assert.ok(server < free, `the server still holds the table (tick ${server} < ${free})`);
+  assert.ok(
+    garageFacts(c.adapter.read).held,
+    `the screen freed the table at server tick ${server}, before ${free} (action tick ${c.adapter.read.tick()})`,
+  );
+});
+
 test('trade installs: refusals, the first fit spends 1, swaps spend nothing, ten swaps, two on one tick fit once', () => {
   const s = tradeReady();
   assert.deepEqual([tradeOpen(s.w, NS), tradeOpen(s.w, BAYL)], [true, true]);
