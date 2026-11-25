@@ -422,6 +422,8 @@ is an independent one before merge (src/sim, src/world): **gpt-6.2-astra medium*
 
 ### Checkpoint D (leg 4 playable)
 
+See the [Checkpoint D proof report](../reports/greybox-leg4-checkpoint-d.md) for results and remaining evidence.
+
 After steps 1 to 6 are on main. **Named proofs, run once on HOTBOX with the tools as Checkpoint C left them**
 ([leg 3's Checkpoint C as built](greybox-leg3.md#steps)):
 
