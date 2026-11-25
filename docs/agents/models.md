@@ -19,7 +19,8 @@ different models at the same time"). The owner's words for each change are in
   Opus high, Fable medium only for extremely complex work. Fable never runs above high
   (`fableTopEffort`, owner 10 November: "fable high should be the absolute top used") and not at low either (the
   Fable 5.2 system card: low saves about 15% of medium's cost for a clear drop in score).
-- **Opus builds, Astra reviews, Neon spreads the load** (owner, 24 November 2026: "Make sure we're leveraging codex
+- **Codex first while it has usage** (owner, 24–25 November 2026: "I have a lot of codex usage left, so I want to maximize usage of astra and sol as much as possible where we can get great results"). Sol 6.2 medium builds from briefs and plans and takes fixes, tooling, mechanical jobs and fresh runners; Astra 6.2 medium builds player-visible and high-risk work (high for tricky work) and stays the first reviewer, a fresh delegate with none of the builder's context; Opus orchestrates, plans and is the other fresh reviewer; Neon keeps story and NPC work and brainstorms. This replaces the next item's build rows.
+- **Opus builds, Astra reviews, Neon spreads the load** (superseded for building by the item above) (owner, 24 November 2026: "Make sure we're leveraging codex
   and antigravity neon as well as Claude. Opus medium implement or and Astra reviewer is a good combo, neon good for
   story and npc and also coding"). Opus medium takes the implementation rows, high-risk included; Astra 6.2 medium is
   the first reviewer of an Opus build; Neon medium takes story and NPC work, fixes and tooling, and builds from a plan
