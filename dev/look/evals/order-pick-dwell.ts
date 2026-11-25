@@ -1,4 +1,4 @@
-// node dev/look/look.ts --rail-seed t1-last-log --players 2 --real --hud --eval dev/look/evals/order-pick-dwell.ts --query "shot=play&pick=jump&beat=card"
+// npm run look -- --rail-seed t1-last-log --players 2 --warp-speed 2 --size 540x338 --hud --eval dev/look/evals/order-pick-dwell.ts --query "shot=play&pick=jump&beat=card" --frames 2 --seconds 0.2 --warm 0
 // Stand in the unchosen stand throughout construction, the card and the walk away.
 const params = new URLSearchParams(location.search);
 if (params.get('player') !== '2') {
