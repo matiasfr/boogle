@@ -399,6 +399,16 @@ mid-run, and later standing at a leg 3 railhead with kit on its flatbed. Then `d
 by accepted ops at `bay-mid` (the table's Strong row within a second of Checkpoint G's), `npm run test:net`, `npm run
 perf` (two more copies, one flatbed per Strong train: reported, not a gate), one frame-time reading at the Roundhouse
 on the Mac, and `npm run loop -- run` for one to three players.
+**As run (24 November, branch `claude/garage-step4-checkpoint`; [report](../reports/garage-step4-checkpoint.md)).**
+The two-peer look passed at real speed: the bring, both screens on the bay line, no Install during the swap ("The
+table's busy" on the chips), Strong fitted, and a 4-car Strong train left the West landing at its next stand, not
+mid-run, on both pages. The railhead part is a separate `trade-held` look on two peers (a held Strong train, 5 crates
+on its flatbed). `test:net` passed 292/292 and `loop -- run` passed. Perf at the Roundhouse is reported (568 draw calls,
+GPU 4.26 ms on HOTBOX). The Mac reading was not measured. **The trade table fails its own test:** fitted by
+accepted ops on `trade-ready` (`bay-mid` cannot pay for a fit), Strong averages 2726.0 ticks solo, 15.5 s off
+Checkpoint G's `bay-mid` row, because the stage moved. Strong saves 19.7 s solo over Quick, so not under 15 s. The
+early Install did not reproduce at real speed. Its cause is the screen's hold on `tickNow` against the server's tick
+(report).
 
 <a id="order"></a>**Order.** Step 1 any time. Step 2 now: of leg 3's step 6 files it touches only
 `railway-intents.ts`, where it adds lines and edits none of theirs. Step 3 after leg 3's step 6 is on main (it edits

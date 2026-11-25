@@ -41,6 +41,9 @@ const PLACES: Record<string, Place> = {
   // platform (src/content/levels/leg3.ts, cf.at(-10, -5.8)), the camera high over the strait beyond head 2, looking
   // along the row at the isle, its mother trunks and the chalk islets.
   canopy: { seed: 'canopy-reached', stand: [-1070, 15, -319], cam: [-700, 180, -620], look: [-1060, 20, -300] },
+  // Garage step 4's Checkpoint (docs/plans/garage-step4.md): `ns` Quick and `bay` Strong fitted, both copies in their
+  // bays, the body by the Roundhouse's garage post (garage-geo.ts), the camera over the post looking across the table.
+  roundhouse: { seed: 'trade-fitted', stand: [952.6, 19.2, 15.6], cam: [962, 28, 8], look: [944.5, 19, 19.2] },
 };
 const place = viewName ? PLACES[viewName] : undefined;
 const railSeed = railSeedArg ?? place?.seed;
