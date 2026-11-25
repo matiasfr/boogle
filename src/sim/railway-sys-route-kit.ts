@@ -78,9 +78,9 @@ export function legKitArrive(w: World, slot: number) {
     if (r.at !== legKitDrop(w, line, k)) continue;
     const { rack } = legKitRoom(w, line, k);
     move(w, slot, rack, (logs, rails) => {
-      const rail = w.mut(Rail, w.single(Rail))!;
-      rail.depot += logs;
-      rail.depotRails += rails;
+      const leg = w.mut(Leg, legId(w, k))!;
+      leg.rackLogs += logs;
+      leg.rackRails += rails;
     });
     // The yard's room, read after the rack's share is on the rack.
     const { yard } = legKitRoom(w, line, k);
@@ -137,6 +137,11 @@ function legKitHome(w: World, slot: number) {
 }
 /** A yard leg completed: whatever its yard still holds goes home (greybox-leg2.md, "Completion"). */
 export function legYardHome(w: World, k: number) {
+  const rack = w.mut(Leg, legId(w, k))!;
+  if (rack.rackLogs || rack.rackRails) {
+    kitHome(w, [k], rack.rackLogs, rack.rackRails);
+    rack.rackLogs = rack.rackRails = 0;
+  }
   if (RAIL_LEGS[k]!.kit === 'home') return;
   const y = legYard(w, k);
   if (!y.logs && !y.rails) return;
@@ -167,9 +172,9 @@ export function legKitStock(w: World) {
     if (!logs && !rails) continue;
     const rail = w.mut(Rail, w.single(Rail))!,
       m = w.mut(Leg, legId(w, k))!;
-    rail.depot += logs;
+    m.rackLogs += logs;
     rail.depotProduced += logs;
-    rail.depotRails += rails;
+    m.rackRails += rails;
     m.loadedLogs += logs;
     m.loadedRails += rails;
     if (rails) w.mut(Forge, w.single(Forge))!.rack -= rails;
@@ -280,24 +285,28 @@ export function legRailheadHold(w: World, slot: number, tick: number): 'hold' | 
 /** The open leg, whose rack is the depot shelf (Rail.depot, Rail.depotRails), or -1 (the catalog opens one leg at a
  * time, whichever line mints its kit). */
 const LIFT_MAX = 255;
-const rackLeg = (w: World) => RAIL_LEGS.findIndex((_l, k) => legOpen(w, k));
 /** Move account `aid`'s lifted counts and leg k's held counts together by `dl` logs and `dr` rails. */
 function moveHeld(w: World, aid: number, k: number, dl: number, dr: number) {
   if (!dl && !dr) return;
   const a = w.mut(Account, aid)!,
     m = w.mut(Leg, legId(w, k))!;
+  if (a.liftLeg >= 0 && a.liftLeg !== k) {
+    const previous = w.mut(Leg, legId(w, a.liftLeg))!;
+    previous.heldLogs -= a.legLogs;
+    previous.heldRails -= a.legRails;
+    a.legLogs = a.legRails = 0;
+  }
   a.legLogs += dl;
   a.legRails += dr;
+  a.liftLeg = a.legLogs || a.legRails ? k : -1;
   m.heldLogs += dl;
   m.heldRails += dr;
 }
 /** The leg whose held counts are nonzero (the open rack leg, or one that just completed), or -1. */
-const heldLeg = (w: World) => RAIL_LEGS.findIndex((_l, k) => legRow(w, k).heldLogs + legRow(w, k).heldRails > 0);
 /** `logs` and `rails` lifted off the leg rack onto account `aid`'s back (rail.depotTake, rail.depotRailTake): counted
  * on that account and its open leg, up to what the leg's remaining sections still lack (legHeldRoom), so a train does
  * not load them twice while they are carried to the frame. */
-export function legKitLifted(w: World, aid: number, logs: number, rails: number) {
-  const k = rackLeg(w);
+export function legKitLifted(w: World, aid: number, k: number, logs: number, rails: number) {
   if (k < 0 || logs + rails <= 0) return;
   const room = legHeldRoom(w, k),
     row = legRow(w, k),
@@ -317,7 +326,7 @@ export function legKitLifted(w: World, aid: number, logs: number, rails: number)
  * takes it), never one short. */
 export function legKitPut(w: World, aid: number, logs: number, rails: number) {
   const a = w.get(Account, aid)!,
-    k = heldLeg(w);
+    k = a.liftLeg;
   if (k >= 0) moveHeld(w, aid, k, -Math.min(a.legLogs, logs), -Math.min(a.legRails, rails));
   trimLegHeld(w);
 }
@@ -325,16 +334,17 @@ export function legKitPut(w: World, aid: number, logs: number, rails: number) {
  * leg is open): a feed of units from elsewhere, or the last lay, leaves less room, and the counts past it come off the
  * accounts in entity order (owed again; a surplus goes home). */
 export function trimLegHeld(w: World) {
-  const k = heldLeg(w);
-  if (k < 0) return;
-  const open = rackLeg(w),
-    room = open === k ? legHeldRoom(w, k) : { logs: 0, rails: 0 },
+  for (let k = 0; k < RAIL_LEGS.length; k++) trimHeld(w, k);
+}
+function trimHeld(w: World, k: number) {
+  const room = legHeldRoom(w, k),
     row = legRow(w, k);
   let logs = Math.max(0, row.heldLogs - room.logs),
     rails = Math.max(0, row.heldRails - room.rails);
   if (!logs && !rails) return;
   const cut: [number, number, number][] = [];
   w.each([Account], (id, a) => {
+    if (a.liftLeg !== k) return;
     const dl = Math.min(logs, a.legLogs),
       dr = Math.min(rails, a.legRails);
     if (dl || dr) cut.push([id, dl, dr]);
@@ -352,7 +362,7 @@ export const legKitRelease = defineSystem(
   (w, q: { pid: string; epoch: number }) => {
     const id = w.lookup(Account, q.pid);
     const a = id === undefined ? undefined : w.get(Account, id)!;
-    const k = heldLeg(w);
+    const k = a?.liftLeg ?? -1;
     if (!a || a.epoch !== q.epoch || k < 0 || a.legLogs + a.legRails <= 0) return 0;
     const n = a.legLogs + a.legRails,
       rails = a.legRails;
@@ -383,11 +393,10 @@ export function legKitRecovered(w: World, rails: number) {
  * before's leftovers). */
 export function legStandInLost(w: World, k: number): Kit {
   const row = legRow(w, k),
-    rail = w.get(Rail, w.single(Rail))!,
     held = heldKit(w, k);
   return {
-    logs: Math.max(0, row.loadedLogs - rail.depot - held.logs - row.logs),
-    rails: Math.max(0, row.loadedRails - rail.depotRails - held.rails - row.rails),
+    logs: Math.max(0, row.loadedLogs - row.rackLogs - held.logs - row.logs),
+    rails: Math.max(0, row.loadedRails - row.rackRails - held.rails - row.rails),
   };
 }
 /** Units taken off a pile by account `aid` while a stand-in stands: what it has lost of that kind counts held again
@@ -439,7 +448,7 @@ export function legStandInBackstop(w: World) {
     if (logs > 0 && !near(0)) {
       const r = w.mut(Rail, w.single(Rail))!,
         m = w.mut(Leg, legId(w, k))!;
-      r.depot += logs;
+      m.rackLogs += logs;
       r.depotProduced += logs;
       m.loadedLogs += logs;
     }

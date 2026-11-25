@@ -19,8 +19,9 @@ import { LINE_SLOTS, endMoved } from './railway-trains.ts';
 import { trainMoveIO } from './railway-sys-trains.ts';
 import { legKitLifted } from './railway-sys-route-kit.ts';
 import { WORKS } from './railway-works-layout.ts';
-import { RAILWAY_MAX_INT } from './railway.ts';
-import { railPos } from './railway-route.ts';
+import { RAILWAY_MAX_INT, railInt } from './railway.ts';
+import { RAIL_LEGS, railPos } from './railway-route.ts';
+import { legOpen, legId } from './railway-queries-route.ts';
 import { line2PackReady, line2YokeReady } from './railway-queries-line2.ts';
 import {
   Account,
@@ -271,33 +272,50 @@ export const forgeTake = defineSystem(
 );
 export const depotTake = defineSystem(
   'rail.depotTake',
-  { reads: [Boiler, Beam, Aperture, Pile], writes: [Rail, Account, Leg], phase: 'act', order: 22 },
-  (w, { a: aid }: Act) => {
+  { reads: [Boiler, Beam, Aperture, Pile, QJob], writes: [Rail, Account, Leg], phase: 'act', order: 22 },
+  (w, { a: aid, e }: Act) => {
     const a = w.mut(Account, aid)!;
     const room = roomOf(w, a, LOGS);
     if (room <= 0) return 0;
-    const rail = w.mut(Rail, railId(w))!;
-    const n = Math.min(rail.depot, room);
-    rail.depot -= n;
+    let n: number;
+    if (e.leg === undefined) {
+      if (w.get(QJob, qjobId(w, LINE2_STATIONS.length - 1))!.completion) return 0;
+      const rail = w.mut(Rail, railId(w))!;
+      n = Math.min(rail.depot, room);
+      rail.depot -= n;
+    } else {
+      if (!railInt(e.leg, RAIL_LEGS.length - 1) || !legOpen(w, e.leg)) return 0;
+      const leg = w.mut(Leg, legId(w, e.leg))!;
+      n = Math.min(leg.rackLogs, room);
+      leg.rackLogs -= n;
+      legKitLifted(w, aid, e.leg, n, 0);
+    }
     a.carry += n;
-    // Off an open leg's rack: held on this back until fed or put down (the step 3 review's P2-2).
-    legKitLifted(w, aid, n, 0);
     return n;
   },
 );
 /** Rails from the shelf by a `shelf` stretch's rack (moved there from the forge; railValid checks the stretch). */
 export const depotRailTake = defineSystem(
   'rail.depotRailTake',
-  { reads: [Boiler, Beam, Aperture, Pile], writes: [Rail, Account, Leg], phase: 'act', order: 25 },
-  (w, { a: aid }: Act) => {
+  { reads: [Boiler, Beam, Aperture, Pile, QJob], writes: [Rail, Account, Leg], phase: 'act', order: 25 },
+  (w, { a: aid, e }: Act) => {
     const a = w.mut(Account, aid)!;
     const room = roomOf(w, a, RAILS);
     if (room <= 0) return 0;
-    const rail = w.mut(Rail, railId(w))!;
-    const n = Math.min(rail.depotRails, room);
-    rail.depotRails -= n;
+    let n: number;
+    if (e.leg === undefined) {
+      if (w.get(QJob, qjobId(w, LINE2_STATIONS.length - 1))!.completion) return 0;
+      const rail = w.mut(Rail, railId(w))!;
+      n = Math.min(rail.depotRails, room);
+      rail.depotRails -= n;
+    } else {
+      if (!railInt(e.leg, RAIL_LEGS.length - 1) || !legOpen(w, e.leg)) return 0;
+      const leg = w.mut(Leg, legId(w, e.leg))!;
+      n = Math.min(leg.rackRails, room);
+      leg.rackRails -= n;
+      legKitLifted(w, aid, e.leg, 0, n);
+    }
     a.rails += n;
-    legKitLifted(w, aid, 0, n);
     return n;
   },
 );

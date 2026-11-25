@@ -27,8 +27,6 @@ export type RailwayIntent =
   | {
       op:
         | 'rail.forgeTake'
-        | 'rail.depotTake'
-        | 'rail.depotRailTake'
         | 'rail.lever'
         | 'rail.seaSwitch'
         | 'rail.hook'
@@ -47,6 +45,7 @@ export type RailwayIntent =
   | { op: 'rail.brace'; revision: 1 }
   | { op: 'rail.turn'; to: 0 | 1; revision: number }
   | { op: 'rail.steelTake'; kind: 0 | 1 }
+  | { op: 'rail.depotTake' | 'rail.depotRailTake'; leg?: number }
   | { op: 'rail.legStock'; leg: number }
   | { op: 'rail.haltPut' | 'rail.haltTake'; yard: number; kind: 0 | 1 | 2 }
   | { op: 'rail.grant' | 'rail.gate'; id: number }
@@ -105,6 +104,10 @@ export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
     (e.kind === undefined || railInt(e.kind, 2))
   )
     return { op: e.op, yard: e.yard, kind };
+  if (e.op === 'rail.depotTake' || e.op === 'rail.depotRailTake') {
+    if (e.leg === undefined) return { op: e.op };
+    if (railInt(e.leg, RAIL_LEGS.length - 1)) return { op: e.op, leg: e.leg };
+  }
   if (e.op === 'rail.grant' && railInt(e.id, RAIL_GRANTS.length - 1)) return { op: e.op, id: e.id };
   if (e.op === 'rail.gate' && railInt(e.id, RAIL_GATES.length - 1)) return { op: e.op, id: e.id };
   if (e.op === 'rail.strike' && railInt(e.id, 2)) return { op: e.op, id: e.id };
@@ -121,12 +124,10 @@ export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
     e.op === 'rail.axe' ||
     e.op === 'rail.beamChop' ||
     e.op === 'rail.forgeTake' ||
-    e.op === 'rail.depotTake' ||
     e.op === 'rail.lever' ||
     e.op === 'rail.seaSwitch' ||
     e.op === 'rail.hook' ||
     e.op === 'rail.glide' ||
-    e.op === 'rail.depotRailTake' ||
     e.op === 'rail.yoke'
   )
     return { op: e.op };
@@ -280,8 +281,8 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
       return railInt(n, CARRY_MAX, 1) && submit({ op: 'rail.deposit', station, n, kind });
     },
     forgeTake: () => submit({ op: 'rail.forgeTake' }),
-    depotTake: () => submit({ op: 'rail.depotTake' }),
-    depotRailTake: () => submit({ op: 'rail.depotRailTake' }),
+    depotTake: (leg?: number) => submit({ op: 'rail.depotTake', leg }),
+    depotRailTake: (leg?: number) => submit({ op: 'rail.depotRailTake', leg }),
     openPack: (station?: 'T1') => submit({ op: 'rail.pack', station }),
     takeYoke: () => submit({ op: 'rail.yoke' }),
     takeBoiler: (revision: number) => railInt(revision) && submit({ op: 'rail.boilerTake', revision }),

@@ -17,7 +17,7 @@
 import { act, advance, type Seed } from './railway-seed-route.ts';
 import { invariant, need, restore } from './railway-drive.ts';
 import { railwayAtRing } from './railway-seed-ring.ts';
-import { account, rail } from './railway-rows.ts';
+import { account } from './railway-rows.ts';
 import { LOGS, roomOf } from './railway-queries.ts';
 import { RAILS } from './railway-line2-layout.ts';
 import { legKitCarriers, legRow, routeRow } from './railway-queries-route.ts';
@@ -81,10 +81,11 @@ export function laySection(s: Seed, k = STACK) {
     for (const pid of ['a', 'b']) {
       // Travel loads stay comfortable; mixed overfill has its own deliberate regression workload.
       for (const [op, kind, stock] of [
-        ['rail.depotTake', LOGS, 'depot'],
-        ['rail.depotRailTake', RAILS, 'depotRails'],
+        ['rail.depotTake', LOGS, 'rackLogs'],
+        ['rail.depotRailTake', RAILS, 'rackRails'],
       ] as const)
-        if (rail(s.w)[stock] && roomOf(s.w, account(s.w, pid)!, kind) > 0) need(act(s, pid, op) > 0, op);
+        if (legRow(s.w, k)[stock] && roomOf(s.w, account(s.w, pid)!, kind) > 0)
+          need(act(s, pid, op, { leg: k }) > 0, op);
       const a = account(s.w, pid)!,
         row = legRow(s.w, k),
         bill = RAIL_LEGS[k]!.sections[at]!;
@@ -120,7 +121,8 @@ function until(s: Seed, ok: () => boolean, max: number, what: string) {
 /** The first kit of leg `k`'s current section is on its rack. */
 const racked = (s: Seed, k: number) => {
   const sec = RAIL_LEGS[k]!.sections[legRow(s.w, k).laid]!;
-  return rail(s.w).depot >= sec.logs && rail(s.w).depotRails >= sec.rails;
+  const row = legRow(s.w, k);
+  return row.rackLogs >= sec.logs && row.rackRails >= sec.rails;
 };
 /** A train of leg `k`'s line carries its kit. */
 const aboard = (s: Seed, k: number) => legKitCarriers(s.w, RAIL_LEGS[k]!.line) > 0;

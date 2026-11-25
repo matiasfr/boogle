@@ -33,12 +33,12 @@ test('cave trains relay six Wall kits through the prefix of open halts', () => {
     advance(port, 1);
   }
   assert.equal(aboard(), 20);
-  assert.deepEqual([rail(port.w).depot, rail(port.w).depotRails], [0, 0]);
-  for (let wait = 0; rail(port.w).depot === 0; wait++) {
+  assert.deepEqual([legRow(port.w, k).rackLogs, legRow(port.w, k).rackRails], [0, 0]);
+  for (let wait = 0; legRow(port.w, k).rackLogs === 0; wait++) {
     assert.ok(wait < 8000);
     advance(port, 1);
   }
-  assert.deepEqual([rail(port.w).depot, rail(port.w).depotRails], [20, 20]);
+  assert.deepEqual([legRow(port.w, k).rackLogs, legRow(port.w, k).rackRails], [20, 20]);
   for (let laid = 0; laid <= 6; laid++) {
     const { w } = port,
       r = legRow(w, k),
@@ -70,11 +70,11 @@ test('cave trains relay six Wall kits through the prefix of open halts', () => {
       // The earlier Canopy barrier used the same seeds. Keep the negative fixture's grant/gate bits consistent.
       room.gates &= ~(1 << RAIL_GATES.findIndex((g) => g.id === 'canopy'));
       assert.equal(act(withoutSeeds, 'a', 'rail.gate', op), 0);
-      for (let i = 0; rail(w).depot === 0; i++) {
+      for (let i = 0; legRow(w, k).rackLogs === 0; i++) {
         assert.ok(i < 8000);
         advance(port, 1);
       }
-      assert.ok(act(port, 'a', 'rail.depotTake') > 0);
+      assert.ok(act(port, 'a', 'rail.depotTake', { leg: k }) > 0);
       assert.equal(act(port, 'a', 'rail.legStock', { leg: k }), 0);
       assert.equal(act(port, 'a', 'rail.gate', op), 1);
       assert.ok(act(port, 'a', 'rail.legStock', { leg: k }) > 0);

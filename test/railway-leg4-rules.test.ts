@@ -5,7 +5,7 @@ import { RAIL_LINES, RAIL_TRAINS, trainPassesBy } from '../src/sim/railway-lines
 import { LOGS, roomOf, stopsOf } from '../src/sim/railway-queries.ts';
 import { legRow, routeRow } from '../src/sim/railway-queries-route.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, ROW_LINE } from '../src/sim/railway-route.ts';
-import { account, rail, train } from '../src/sim/railway-rows.ts';
+import { account, train } from '../src/sim/railway-rows.ts';
 import { laySection } from '../src/sim/railway-seed-legs.ts';
 import { LINE_SLOTS, servingSlots } from '../src/sim/railway-trains.ts';
 import { act, advance, buildSeedWorld, invariant, unaudited, type Seed } from './helpers/rail.ts';
@@ -22,15 +22,15 @@ const open = buildSeedWorld('cave-open'),
 
 function ledger(s: Seed) {
   const r = legRow(s.w, k),
-    rack = rail(s.w);
+    rack = legRow(s.w, 5);
   for (const [kind, held, depot, loaded] of [
-    ['logs', 'heldLogs', 'depot', 'loadedLogs'],
-    ['rails', 'heldRails', 'depotRails', 'loadedRails'],
+    ['logs', 'heldLogs', 'rackLogs', 'loadedLogs'],
+    ['rails', 'heldRails', 'rackRails', 'loadedRails'],
   ] as const) {
     const laid = leg.sections.slice(0, r.laid).reduce((n, sec) => n + sec[kind], 0);
     const aboard = LINE_SLOTS[cave]!.reduce((n, j) => n + train(s.w, j)[kind], 0);
     // At Port Quay the same trains and rack begin carrying the next leg's first kit.
-    assert.equal(r[loaded] + legRow(s.w, 5)[loaded], laid + r[kind] + aboard + rack[depot] + r[held], kind);
+    assert.equal(r[loaded] + legRow(s.w, 5)[loaded], laid + r[kind] + aboard + r[depot] + rack[depot] + r[held], kind);
   }
   assert.equal(invariant(s.w), null);
 }
@@ -47,11 +47,11 @@ test('the plug needs the pick and Canopy laid, and the stocked first frame waits
   const s = unaudited(buildSeedWorld('canopy-reached'));
   advance(s, 350);
   assert.deepEqual(
-    [rail(s.w).depot, rail(s.w).depotRails, legRow(s.w, k).loadedLogs, legRow(s.w, k).loadedRails],
+    [legRow(s.w, k).rackLogs, legRow(s.w, k).rackRails, legRow(s.w, k).loadedLogs, legRow(s.w, k).loadedRails],
     [20, 20, 20, 20],
   );
   const expected = Math.min(20, roomOf(s.w, account(s.w, 'a')!, LOGS));
-  const taken = act(s, 'a', 'rail.depotTake');
+  const taken = act(s, 'a', 'rail.depotTake', { leg: k });
   assert.equal(taken, expected);
   assert.equal(taken, account(s.w, 'a')!.legLogs);
   assert.ok(taken > 0);
@@ -83,7 +83,7 @@ test('the cave fleet carries each kit forward, keeps Saltpan open and closes the
   assert.equal(routeRow(open.w).grants & (1 << cloth), 1 << cloth);
   assert.equal(routeRow(open.w).gates & (1 << plug), 1 << plug);
   assert.deepEqual(
-    [rail(open.w).depot, rail(open.w).depotRails, legRow(open.w, k).logs, legRow(open.w, k).rails],
+    [legRow(open.w, k).rackLogs, legRow(open.w, k).rackRails, legRow(open.w, k).logs, legRow(open.w, k).rails],
     [20, 20, 0, 0],
   );
   const s = unaudited(mid);
@@ -97,7 +97,7 @@ test('the cave fleet carries each kit forward, keeps Saltpan open and closes the
       [0, 0],
     ],
   );
-  for (let i = 0; rail(s.w).depot !== 20 || rail(s.w).depotRails !== 20; i++) {
+  for (let i = 0; legRow(s.w, k).rackLogs !== 20 || legRow(s.w, k).rackRails !== 20; i++) {
     assert.ok(i < 4000, 'second kit delivered to the sea head');
     advance(s, 1);
   }

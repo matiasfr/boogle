@@ -37,7 +37,7 @@ test("rails put down 120 m off and never recovered are made up within a minute o
   const minute = () => railSupplyPulse(s.w, { marker: ++marker, grow: railGrowthMask([]), recover: [] });
   minute();
   // a lifts a back of rails off the West landing's rack and puts them down at the Village, where they stay.
-  const n = act(s, 'a', 'rail.depotRailTake');
+  const n = act(s, 'a', 'rail.depotRailTake', { leg: BAY });
   assert.ok(n > 0, 'a lifts rails');
   // A pile holds 8 and a back with the yoke 16: put down in piles of 8, every rail of them.
   for (let left = n; left > 0;) {
@@ -54,7 +54,7 @@ test("rails put down 120 m off and never recovered are made up within a minute o
       s.t - t0 <= 3 * 600,
       `section 1 short ${bill.rails - legRow(s.w, BAY).rails} rails three minutes on (forge rack ${forge(s.w).rack})`,
     );
-    act(s, 'b', 'rail.depotRailTake');
+    act(s, 'b', 'rail.depotRailTake', { leg: BAY });
     act(s, 'b', 'rail.legStock', { leg: BAY });
     advance(s, 10);
     if ((s.t - t0) % 600 < 10) minute();

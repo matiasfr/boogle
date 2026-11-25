@@ -13,7 +13,6 @@ import {
   Aperture,
   Leg,
   LegYard,
-  Rail,
   Town,
   Yard,
   RAIL_REPLICATED,
@@ -121,8 +120,8 @@ export function routeRulesShard(shard: number) {
     let stocked = 0;
     for (const pid of ['a', 'b'])
       for (const [o, f] of [
-        ['rail.depotTake', {}],
-        ['rail.depotRailTake', {}],
+        ['rail.depotTake', { leg: k }],
+        ['rail.depotRailTake', { leg: k }],
         ['rail.legStock', { leg: k }],
       ] as const) {
         const a = s.w.get(Account, s.w.lookup(Account, pid)!)!;
@@ -427,11 +426,19 @@ export function routeRulesShard(shard: number) {
     // The leg's rack (Q6's and Q7's depot racks, once the Q jobs are done) at its own spot, 7 m from the frame (step 4's
     // review, b: reach 4 m); none before the rivet.
     const rack = legRack(LEG, 0);
-    assert.equal(railValid(s.w, op('rail.depotTake'), actorAt(rack)), true);
-    assert.equal(railValid(s.w, op('rail.depotRailTake'), actorAt(rack)), true);
-    assert.equal(railValid(s.w, op('rail.depotTake'), actorAt(frame)), false, 'the frame is out of the rack reach');
-    assert.equal(railValid(s.w, op('rail.depotTake'), actorAt(legRack(LEG, 2))), false);
-    assert.equal(railValid(LEAF.w, op('rail.depotTake'), anywhere), false, 'no rack before the leg opens');
+    assert.equal(railValid(s.w, op('rail.depotTake', { leg: STACK }), actorAt(rack)), true);
+    assert.equal(railValid(s.w, op('rail.depotRailTake', { leg: STACK }), actorAt(rack)), true);
+    assert.equal(
+      railValid(s.w, op('rail.depotTake', { leg: STACK }), actorAt(frame)),
+      false,
+      'the frame is out of the rack reach',
+    );
+    assert.equal(railValid(s.w, op('rail.depotTake', { leg: STACK }), actorAt(legRack(LEG, 2))), false);
+    assert.equal(
+      railValid(LEAF.w, op('rail.depotTake', { leg: STACK }), anywhere),
+      false,
+      'no rack before the leg opens',
+    );
     RAIL_GRANTS.forEach((g, id) => {
       assert.equal(railValid(s.w, op('rail.grant', { id }), actorAt(g.at)), true, g.id);
       assert.equal(railValid(s.w, op('rail.grant', { id }), nowhere), false, g.id);
@@ -481,8 +488,8 @@ export function routeRulesShard(shard: number) {
     RAIL_LEGS.forEach((leg, k) => {
       const g = legRow(w, k);
       [logs, rails, loadedLogs, loadedRails] = [
-        logs + g.logs,
-        rails + g.rails,
+        logs + g.logs + g.rackLogs,
+        rails + g.rails + g.rackRails,
         loadedLogs + g.loadedLogs,
         loadedRails + g.loadedRails,
       ];
@@ -496,7 +503,7 @@ export function routeRulesShard(shard: number) {
   }
   test('the idle room (ruling B, gate 13): at rest by +1,500, kit 1 racked, two kit trains, one kit car empty, 60 and 60 loaded; then nothing moves', () => {
     const s = unaudited(copy(JOINED));
-    assert.deepEqual([rail(s.w).depot, rail(s.w).depotRails], [0, 0]);
+    assert.deepEqual([legRow(s.w, STACK).rackLogs, legRow(s.w, STACK).rackRails], [0, 0]);
     const backs = trains(s.w).length && kitEquality(s.w);
     for (let k = 0; k < 1500; k++) {
       advance(s, 1);
@@ -504,7 +511,7 @@ export function routeRulesShard(shard: number) {
     }
     const carriers = LINE_SLOTS[LINE2]!.filter((k) => legCarrier(s.w, k));
     const empty = servingSlots((j) => train(s.w, j), LINE2).filter((k) => !carriers.includes(k));
-    assert.deepEqual([rail(s.w).depot, rail(s.w).depotRails], [20, 20], 'kit 1 racked');
+    assert.deepEqual([legRow(s.w, STACK).rackLogs, legRow(s.w, STACK).rackRails], [20, 20], 'kit 1 racked');
     assert.equal(carriers.length, 2, 'two kit trains (the running three less one)');
     assert.ok(empty.length >= 1, 'a kit car empty');
     assert.ok(
@@ -518,8 +525,8 @@ export function routeRulesShard(shard: number) {
     );
     const rest = JSON.stringify([
       legRow(s.w, STACK),
-      rail(s.w).depot,
-      rail(s.w).depotRails,
+      legRow(s.w, STACK).rackLogs,
+      legRow(s.w, STACK).rackRails,
       trains(s.w).map((r) => [r.logs, r.rails]),
     ]);
     for (let k = 0; k < 3000; k++) {
@@ -528,8 +535,8 @@ export function routeRulesShard(shard: number) {
         assert.equal(
           JSON.stringify([
             legRow(s.w, STACK),
-            rail(s.w).depot,
-            rail(s.w).depotRails,
+            legRow(s.w, STACK).rackLogs,
+            legRow(s.w, STACK).rackRails,
             trains(s.w).map((r) => [r.logs, r.rails]),
           ]),
           rest,
@@ -568,7 +575,8 @@ export function routeRulesShard(shard: number) {
       const g = legRow(s.w, STACK),
         laid = g.laid;
       if (laid < N) {
-        if (complete < 0 && g.logs + rail(s.w).depot >= 20 && g.rails + rail(s.w).depotRails >= 20) complete = s.t;
+        if (complete < 0 && g.logs + legRow(s.w, STACK).rackLogs >= 20 && g.rails + legRow(s.w, STACK).rackRails >= 20)
+          complete = s.t;
         if (g.start < 0) stock(s);
       }
       const before = trains(s.w).map((r) => ({ ...r }));
@@ -961,7 +969,7 @@ export function routeRulesShard(shard: number) {
     assert.equal(legKitWaiting(s.w, LINE2, r), true);
     assert.equal(freightStop(s.w, carrier, r, stop, -1), true, 'a waiting kit is no errand');
     // Empty the rack: the same kit can unload now, so it is an errand again.
-    Object.assign(s.w.mut(Rail, s.w.single(Rail))!, { depot: 0, depotRails: 0 });
+    Object.assign(s.w.mut(Leg, s.w.lookup(Leg, STACK)!)!, { rackLogs: 0, rackRails: 0 });
     assert.equal(legKitWaiting(s.w, LINE2, r), false);
     assert.equal(freightStop(s.w, carrier, r, stop, -1), false, 'a kit that can unload');
     // An empty train owed a kit (below kitTrains) is on an errand too.
@@ -976,12 +984,12 @@ export function routeRulesShard(shard: number) {
     assert.ok(RAIL_PREDICTED.has('rail.legStock'));
     for (const op of ['rail.grant', 'rail.gate', 'rail.arrive']) assert.ok(!RAIL_PREDICTED.has(op), `${op} waits`);
     const s = copy(JOINED);
-    while (rail(s.w).depot < 20 || rail(s.w).depotRails < 20) advance(s, 1);
+    while (legRow(s.w, STACK).rackLogs < 20 || legRow(s.w, STACK).rackRails < 20) advance(s, 1);
     // Player a carries and feeds until what is on a's back fills the frame; that last press is predicted.
     for (let guard = 0; ; guard++) {
       assert.ok(guard < 20);
-      act(s, 'a', 'rail.depotTake');
-      act(s, 'a', 'rail.depotRailTake');
+      act(s, 'a', 'rail.depotTake', { leg: STACK });
+      act(s, 'a', 'rail.depotRailTake', { leg: STACK });
       const g = legRow(s.w, STACK),
         a = s.w.get(Account, s.w.lookup(Account, 'a')!)!;
       if (a.carry >= 20 - g.logs && a.rails >= 20 - g.rails) break;
@@ -1631,9 +1639,9 @@ export function routeRulesShard(shard: number) {
   // ---------------------------------------------------------------- the step 4 review's finding 2: a unit lost
   test('a unit lifted off the leg rack and lost is owed again; one carried to the frame is not loaded twice', () => {
     const s = copy(JOINED);
-    while (rail(s.w).depotRails < 20) advance(s, 1);
+    while (legRow(s.w, STACK).rackRails < 20) advance(s, 1);
     const need0 = legKitNeed(s.w, STACK).rails;
-    act(s, 'a', 'rail.depotRailTake');
+    act(s, 'a', 'rail.depotRailTake', { leg: STACK });
     const carried = acc(s, 'a').rails;
     assert.ok(carried > 0);
     assert.equal(legKitNeed(s.w, STACK).rails, need0, 'on a back it still counts');
@@ -1649,13 +1657,13 @@ export function routeRulesShard(shard: number) {
   // The step 3 review's P2-2: the leg counts the units lifted off its rack (Leg.heldLogs, Leg.heldRails), not every back's.
   test("rack units held count; fed to the steel works or a leaver's released they are owed again, never under 0", () => {
     const s = copy(JOINED);
-    while (rail(s.w).depotRails < 20) advance(s, 1);
+    while (legRow(s.w, STACK).rackRails < 20) advance(s, 1);
     // Units on a back that never came off the rack make no holder: chopped logs count for nothing here.
     chopTo(s, 'b', 4);
     assert.ok(acc(s, 'b').carry > 0);
     assert.deepEqual(railLegKitHolders(s.w), [], 'nobody has lifted off the rack');
     const need0 = legKitNeed(s.w, STACK).rails;
-    const lifted = act(s, 'a', 'rail.depotRailTake');
+    const lifted = act(s, 'a', 'rail.depotRailTake', { leg: STACK });
     assert.ok(lifted > 0);
     assert.equal(legRow(s.w, STACK).heldRails, lifted, 'held');
     assert.equal(legKitNeed(s.w, STACK).rails, need0, 'held, it still counts');
@@ -1665,7 +1673,7 @@ export function routeRulesShard(shard: number) {
     assert.equal(legRow(s.w, STACK).heldRails, lifted - fed);
     assert.equal(legKitNeed(s.w, STACK).rails, need0 + fed, 'fed to the works, owed again');
     // b lifts the rest and leaves: past the grace the host releases b's own lifted units, once; a's stay counted.
-    const more = act(s, 'b', 'rail.depotRailTake');
+    const more = act(s, 'b', 'rail.depotRailTake', { leg: STACK });
     assert.ok(more > 0);
     const held = legRow(s.w, STACK).heldRails,
       need1 = legKitNeed(s.w, STACK).rails,

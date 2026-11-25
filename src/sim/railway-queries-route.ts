@@ -29,7 +29,7 @@ import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, legBuilt } from './railway-
 import { LEG_TUNE, RAIL_LEGS, RAIL_YARDS, TRADE_LEG, TRADE_OPENS, isTradeLine, legStartS } from './railway-route.ts';
 import { LINE_SLOTS } from './railway-trains.ts';
 import { TRAIN_PHASE, type RailTrain } from './railway-train.ts';
-import { Account, Aperture, Leg, LegYard, Rail, Route, Train } from './railway-components.ts';
+import { Account, Aperture, Leg, LegYard, Route, Train } from './railway-components.ts';
 
 export const legId = (w: World, slot: number) => w.lookup(Leg, slot)!;
 export const routeId = (w: World) => w.single(Route);
@@ -110,6 +110,7 @@ export function heldKit(w: World, k: number): Kit {
   let logs = 0,
     rails = 0;
   w.each([Account], (_id, a) => {
+    if (a.liftLeg !== k) return;
     logs += Math.min(a.legLogs, a.carry);
     rails += Math.min(a.legRails, a.rails);
   });
@@ -185,13 +186,11 @@ export const legYard = (w: World, k: number) => w.get(LegYard, legYardId(w, k))!
 function legLack(w: World, k: number): Kit {
   const leg = RAIL_LEGS[k]!,
     row = legRow(w, k),
-    rail = w.get(Rail, w.single(Rail))!,
-    open = legOpen(w, k),
     out = billOf(k, row.laid, Math.min(leg.sections.length, row.laid + LEG_TUNE.kitLead)),
     held = heldKit(w, k);
   return less(out, {
-    logs: row.logs + (open ? rail.depot : 0) + held.logs,
-    rails: row.rails + (open ? rail.depotRails : 0) + held.rails,
+    logs: row.logs + row.rackLogs + held.logs,
+    rails: row.rails + row.rackRails + held.rails,
   });
 }
 /** What yard leg k's own line's trains may still take from the yard: its lack less what they carry (less `skip`'s). */
@@ -251,13 +250,12 @@ export function legKitSurplus(w: World, slot: number): Kit {
  * only this. Nothing for a leg that is not open (its rack is not the depot shelf yet) or laying. */
 export function legRackNeed(w: World, k: number) {
   const s = RAIL_LEGS[k]!.sections[legRow(w, k).laid],
-    row = legRow(w, k),
-    rail = w.get(Rail, w.single(Rail))!;
+    row = legRow(w, k);
   if (!s || row.start >= 0 || !legOpen(w, k)) return { logs: 0, rails: 0 };
   const held = heldKit(w, k);
   return less(s, {
-    logs: row.logs + rail.depot + held.logs,
-    rails: row.rails + rail.depotRails + held.rails,
+    logs: row.logs + row.rackLogs + held.logs,
+    rails: row.rails + row.rackRails + held.rails,
   });
 }
 /** The halt (on `line`) where its trains unload leg k's kit: the feeder's destination for a yard leg minted on another

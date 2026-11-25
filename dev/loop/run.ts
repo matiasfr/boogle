@@ -437,11 +437,12 @@ function* fromRack(
   stock: () => number,
   want: number,
   field: 'carry' | 'rails',
+  leg?: number,
 ): Policy {
   yield* walk(at);
   const have = () => (field === 'carry' ? g.acct(pl.pid).carry : (g.acct(pl.pid).rails ?? 0));
   for (let guard = 0; have() < want && guard < 3000; guard++) {
-    if (stock() > 0 && (yield* press(op)) > 0) continue;
+    if (stock() > 0 && (yield* press(op, { leg })) > 0) continue;
     if (have() > 0) return;
     yield { wait: 10 };
   }
@@ -614,7 +615,7 @@ function legSection(g: Game, pl: Player, k: number, s: number, byHand: boolean):
       { key: `${L.id}${s}:logs`, kind: 0, left: () => (row().laid === s ? sec.logs - row().logs : 0) },
       byHand
         ? (want) => chopTo(g, pl, want)
-        : (want) => fromRack(g, pl, rack, 'rail.depotTake', () => rail(g.w).depot, want, 'carry'),
+        : (want) => fromRack(g, pl, rack, 'rail.depotTake', () => row().rackLogs, want, 'carry', k),
       () => g.acct(pl.pid).carry,
       frame,
       feed,
@@ -624,7 +625,7 @@ function legSection(g: Game, pl: Player, k: number, s: number, byHand: boolean):
       pl,
       { key: `${L.id}${s}:rails`, kind: 2, left: () => (row().laid === s ? sec.rails - row().rails : 0) },
       // Always off the rack: the forge rack gives no rails once the cradle is fitted (railway-sys-line2.ts forgeTake).
-      (want) => fromRack(g, pl, rack, 'rail.depotRailTake', () => rail(g.w).depotRails, want, 'rails'),
+      (want) => fromRack(g, pl, rack, 'rail.depotRailTake', () => row().rackRails, want, 'rails', k),
       () => g.acct(pl.pid).rails ?? 0,
       frame,
       feed,
@@ -940,10 +941,10 @@ function probePolicy(r: Run, pl: Player, id: NodeId): Policy | null {
     return (function* () {
       yield* dropBig(g, pl);
       yield* clearBack(g, pl, 0);
-      const rack = RAIL_LEGS.findIndex((_l, k) => legOpen(g.w, k));
-      if (rack >= 0 && rail(g.w).depot > 0) {
+      const rack = sec.leg;
+      if (legOpen(g.w, rack) && legRow(g.w, rack).rackLogs > 0) {
         yield* walk(routePoint(legRack(RAIL_LEGS[rack]!, legRow(g.w, rack).laid)));
-        yield* press('rail.depotTake');
+        yield* press('rail.depotTake', { leg: rack });
       }
       if (!g.acct(pl.pid).carry) yield* chopTo(g, pl, capacityOf(g.w, LOGS));
       yield* walk(n.at);

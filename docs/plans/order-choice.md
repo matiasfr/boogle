@@ -144,7 +144,7 @@ leg 6's uncommitted build in its worktree (`src/world/namespace.ts` at v72). `np
 - **Per-leg racks.** `Leg` gains `rackLogs` and `rackRails`: the kit on that leg's current rack. `legLack` and
   `legRackNeed` count the leg's own rack; `legKitArrive` unloads onto it; `legKitStock` stocks it; `legKitHome` and
   `legYardHome` unchanged. A leg's rack moves with its sections as `legRack(leg, laid)` does today; what is on it at a lay
-  stays on it (the head's rack is the same shelf moved on, as `Rail.depot` was). At the leg's last lay whatever is left
+  stays on it even when a hand feed reduces the unpaid bill. At the leg's last lay whatever is left
   on its rack (units fed from elsewhere, so the rack's were not needed) goes home, logs unmade and rails to the forge
   rack, as a completed yard leg's yard does (`legYardHome`); today it would stay on `Rail.depot` and show on the next
   open leg's rack. `Rail.depot`/`depotRails` are line 2's Q
@@ -165,8 +165,9 @@ leg 6's uncommitted build in its worktree (`src/world/namespace.ts` at v72). `np
   rack can take while the room builds the cave keeps running with it aboard (the stone stop, ruling D, as for any kit
   riding ahead); a Strong train's railhead hold is capped and yields as today.
 - **Saves.** The new `Leg` and `Account` columns are saved shape: the bump.
-- **Invariants** (`railway-check-route.ts`): no two open legs on one line; each leg's rack within its remaining bill
-  less what is fed and held; conservation counts every leg's rack (the line 2 and steel checks that sum `r0.depot` for
+- **Invariants** (`railway-check-route.ts`): no two open legs on one line. Each open rack holds at most the largest
+  section bill of each material reached on that leg. Unreached and completed racks are empty (builder's correction
+  accepted by the orchestrator). Conservation counts every leg's rack (the line 2 and steel checks that sum `r0.depot` for
   minted logs and forge rails, `railway-check-line2.ts:104,127` and `railway-check-steel.ts:59,63`, add the legs'
   racks to the same sums).
 

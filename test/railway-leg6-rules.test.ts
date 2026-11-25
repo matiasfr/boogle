@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { Route } from '../src/sim/railway-components.ts';
-import { rail, shed, line, train } from '../src/sim/railway-rows.ts';
+import { leg as legRow, shed, line, train } from '../src/sim/railway-rows.ts';
 import { tableFree } from '../src/sim/railway-queries-works.ts';
 import { legYard, routeRow, STOCKED_LEGS, tradeSwapRefusal } from '../src/sim/railway-queries-route.ts';
 import { legStagesOn, laySection } from '../src/sim/railway-seed-legs.ts';
@@ -59,7 +59,7 @@ test('the two ending kits ride to their racks and a first stop unlocks the meeti
   assert.equal(act(s, 'a', 'rail.grant', { id: 3 }), 0);
   assert.equal(act(s, 'a', 'rail.gate', { id: 5 }), 0);
   assert.ok(!STOCKED_LEGS.includes(6));
-  const rack = () => [rail(w).depot, rail(w).depotRails];
+  const rack = (k = 6) => [legRow(w, k).rackLogs, legRow(w, k).rackRails];
   assert.deepEqual(rack(), [0, 0]);
   wait(() => LINE_SLOTS[3]!.some((slot) => train(w, slot).legKit && train(w, slot).logs === 6));
   wait(() => rack()[0] === 6 && rack()[1] === 6);
@@ -75,7 +75,7 @@ test('the two ending kits ride to their racks and a first stop unlocks the meeti
   assert.equal(act(s, 'a', 'rail.grant', { id: 3 }), 1);
   assert.equal(act(s, 'a', 'rail.gate', { id: 5 }), 1);
   wait(() => LINE_SLOTS[2]!.some((slot) => train(w, slot).legKit && train(w, slot).logs === 6));
-  wait(() => rack()[0] === 6 && rack()[1] === 6);
+  wait(() => rack(7)[0] === 6 && rack(7)[1] === 6);
   laySection(s, 7);
   assert.equal(act(s, 'a', 'rail.arrive'), 0);
   const islandStop = () =>

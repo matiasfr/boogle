@@ -23,14 +23,14 @@ test("the West landing's stand-in stock does not restock units lifted off its ra
   const s = copy('bay-open');
   const sec = RAIL_LEGS[BAY]!.sections[0]!;
   assert.ok(legOpen(s.w, BAY) && legRow(s.w, BAY).laid === 0, 'the bay cut is open with nothing laid');
-  assert.equal(rail(s.w).depot, sec.logs, 'section 1 stocked');
+  assert.equal(legRow(s.w, BAY).rackLogs, sec.logs, 'section 1 stocked');
   const loaded0 = legRow(s.w, BAY).loadedLogs,
     produced0 = rail(s.w).depotProduced,
     forgeRails0 = forge(s.w).rack;
   // Two players lift off the rack, carrying the units toward the frame (counted held), then a few ticks pass.
   for (const pid of ['a', 'b']) {
-    act(s, pid, 'rail.depotTake');
-    act(s, pid, 'rail.depotRailTake');
+    act(s, pid, 'rail.depotTake', { leg: BAY });
+    act(s, pid, 'rail.depotRailTake', { leg: BAY });
   }
   assert.ok(legRow(s.w, BAY).heldLogs > 0, 'units counted held on the bay cut');
   advance(s, 3);
@@ -38,8 +38,8 @@ test("the West landing's stand-in stock does not restock units lifted off its ra
   // The rack, the backs' held units and the frame together never pass section 1's bill while nothing is lost: a lift
   // is not owed again (the incline's leaver test says the same for a train-fed rack).
   const over = {
-    logs: rail(s.w).depot + legRow(s.w, BAY).heldLogs + legRow(s.w, BAY).logs - sec.logs,
-    rails: rail(s.w).depotRails + legRow(s.w, BAY).heldRails + legRow(s.w, BAY).rails - sec.rails,
+    logs: legRow(s.w, BAY).rackLogs + legRow(s.w, BAY).heldLogs + legRow(s.w, BAY).logs - sec.logs,
+    rails: legRow(s.w, BAY).rackRails + legRow(s.w, BAY).heldRails + legRow(s.w, BAY).rails - sec.rails,
   };
   assert.deepEqual(
     over,
@@ -55,7 +55,7 @@ test("a lift and a put-down at the West landing's rack does not mint logs withou
     bill = RAIL_LEGS[BAY]!.sections[0]!.logs;
   // Take what a back holds, put it down beside the rack, take again: the frame is never fed.
   for (let k = 0; k < 4; k++) {
-    const n = act(s, 'a', 'rail.depotTake');
+    const n = act(s, 'a', 'rail.depotTake', { leg: BAY });
     // Builder's fix (the stand-in mints the section's kit once): put-down units are not restocked, so the rack runs out
     // after the first cycles and a later take finds nothing; only the first must take (the review's claim is below).
     if (k === 0) assert.ok(n > 0, `cycle ${k}: a takes logs off the rack`);
@@ -79,12 +79,12 @@ test("a lift and a put-down at the West landing's rack does not mint logs withou
 test("line 2's unload at High Gorge sends section 2's kit to the yard while section 1's is held on backs", () => {
   const s = copy('incline-open');
   const sec = RAIL_LEGS[INCLINE]!.sections[0]!;
-  assert.equal(rail(s.w).depot, sec.logs, "section 1's kit on the Gorge rack");
+  assert.equal(legRow(s.w, INCLINE).rackLogs, sec.logs, "section 1's kit on the Gorge rack");
   const aboard = () => trains(s.w).filter((t) => t.legKit && RAIL_TRAINS[t.slot]!.line === LINE2);
   assert.ok(aboard().length > 0, "line 2 carries section 2's kit");
   for (const pid of ['a', 'b']) {
-    act(s, pid, 'rail.depotTake');
-    act(s, pid, 'rail.depotRailTake');
+    act(s, pid, 'rail.depotTake', { leg: INCLINE });
+    act(s, pid, 'rail.depotRailTake', { leg: INCLINE });
   }
   assert.ok(legRow(s.w, INCLINE).heldLogs > 0, 'held on backs');
   for (let guard = 0; aboard().length > 0; guard++) {
@@ -93,8 +93,8 @@ test("line 2's unload at High Gorge sends section 2's kit to the yard while sect
   }
   assert.equal(invariant(s.w), null);
   assert.ok(
-    rail(s.w).depot + legRow(s.w, INCLINE).heldLogs <= sec.logs,
-    `rack ${rail(s.w).depot} + held ${legRow(s.w, INCLINE).heldLogs} past section 1's ${sec.logs}; ` +
+    legRow(s.w, INCLINE).rackLogs + legRow(s.w, INCLINE).heldLogs <= sec.logs,
+    `rack ${legRow(s.w, INCLINE).rackLogs} + held ${legRow(s.w, INCLINE).heldLogs} past section 1's ${sec.logs}; ` +
       `yard ${legYard(s.w, INCLINE).logs}`,
   );
 });
@@ -104,7 +104,7 @@ test("line 2's unload at High Gorge sends section 2's kit to the yard while sect
 test('units put down at the West landing are taken up again and the first section lays; nothing more is minted', () => {
   const s = copy('bay-open');
   const produced0 = rail(s.w).depotProduced;
-  const n = act(s, 'a', 'rail.depotTake');
+  const n = act(s, 'a', 'rail.depotTake', { leg: BAY });
   assert.ok(n > 0);
   for (let left = n, j = 0; left > 0; j++)
     left -= act(s, 'a', 'rail.drop', { x: 80100 + 100 * j, y: 490, z: -100, n: left, kind: 0 });
@@ -114,8 +114,8 @@ test('units put down at the West landing are taken up again and the first sectio
   for (let guard = 0; legRow(s.w, BAY).start < 0; guard++) {
     assert.ok(guard < 200, 'the first section fed');
     for (const pid of ['a', 'b']) {
-      act(s, pid, 'rail.depotTake');
-      act(s, pid, 'rail.depotRailTake');
+      act(s, pid, 'rail.depotTake', { leg: BAY });
+      act(s, pid, 'rail.depotRailTake', { leg: BAY });
       act(s, pid, 'rail.legStock', { leg: BAY });
     }
     advance(s, 1);

@@ -147,7 +147,7 @@ export function line2KitOwed(w: World) {
 function legsSpent(w: World, key: 'logs' | 'rails') {
   let n = 0;
   w.each([Leg], (_id, l) => {
-    n += l[key];
+    n += l[key] + (key === 'logs' ? l.rackLogs : l.rackRails);
     for (const s of RAIL_LEGS[l.slot]!.sections.slice(0, l.laid)) n += s[key];
   });
   w.each([LegYard], (_id, y) => (n += y[key]));

@@ -335,12 +335,12 @@ test('steel host: the yard take at the yard, the feed at the works, each refused
 test("route host: a leaver's leg rack rails stay counted through the grace, then are owed again", async () => {
   const r = await host('leg-leaver', buildSeedWorld('ring-joined'), { s: 'a', t: 'b' });
   try {
-    for (let k = 0; rail(r.w).depotRails === 0; k++) {
+    for (let k = 0; legRow(r.w, 0).rackRails === 0; k++) {
       assert.ok(k < 4000, 'the first kit racked');
       await r.ticks(1);
     }
     const rack = legRack(RAIL_LEGS[0]!, legRow(r.w, 0).laid);
-    assert.equal(await r.action({ op: 'rail.depotRailTake' }, spot(rack), 't'), 'accepted');
+    assert.equal(await r.action({ op: 'rail.depotRailTake', leg: 0 }, spot(rack), 't'), 'accepted');
     const held = legRow(r.w, 0).heldRails;
     assert.ok(held > 0, 'held on b');
     r.depart('t');
@@ -364,13 +364,13 @@ test("route host (review): a leaver already released is not released again off a
   const r = await host('leg-leaver-twice', buildSeedWorld('ring-joined'), { s: 'a', t: 'b' });
   try {
     const racked = async () => {
-      for (let k = 0; rail(r.w).depotRails === 0; k++) {
+      for (let k = 0; legRow(r.w, 0).rackRails === 0; k++) {
         assert.ok(k < 6000, 'kit racked');
         await r.ticks(1);
       }
       return spot(legRack(RAIL_LEGS[0]!, legRow(r.w, 0).laid));
     };
-    assert.equal(await r.action({ op: 'rail.depotRailTake' }, await racked(), 't'), 'accepted');
+    assert.equal(await r.action({ op: 'rail.depotRailTake', leg: 0 }, await racked(), 't'), 'accepted');
     assert.ok(legRow(r.w, 0).heldRails > 0, 'held on b');
     r.depart('t');
     await r.ticks(2);
@@ -378,7 +378,7 @@ test("route host (review): a leaver already released is not released again off a
     await r.ticks(3);
     assert.equal(legRow(r.w, 0).heldRails, 0, 'b released past the grace (the fix, as built)');
     // a, here all along, lifts the next rails off the rack and walks them to the frame.
-    assert.equal(await r.action({ op: 'rail.depotRailTake' }, await racked(), 's'), 'accepted');
+    assert.equal(await r.action({ op: 'rail.depotRailTake', leg: 0 }, await racked(), 's'), 'accepted');
     const held = legRow(r.w, 0).heldRails;
     assert.ok(held > 0, 'held on a');
     await r.ticks(2);
@@ -534,7 +534,7 @@ const STACK = 0;
 const incline = RAIL_GATES.findIndex((g) => g.id === 'incline');
 /** Ring Island joined, its first kit racked: the leg's rack and frame are live. */
 async function racked(r: Awaited<ReturnType<typeof host>>) {
-  for (let k = 0; rail(r.w).depotRails === 0; k++) {
+  for (let k = 0; legRow(r.w, 0).rackRails === 0; k++) {
     assert.ok(k < 4000, 'the first kit racked');
     await r.ticks(1);
   }
@@ -547,7 +547,10 @@ test('route host: the frame feed keeps its leg; fed at the frame, refused away a
     const laid = legRow(r.w, STACK).laid;
     const p = legFrame(RAIL_LEGS[STACK]!, laid),
       frame = spot(p);
-    assert.equal(await r.action({ op: 'rail.depotRailTake' }, spot(legRack(RAIL_LEGS[STACK]!, laid))), 'accepted');
+    assert.equal(
+      await r.action({ op: 'rail.depotRailTake', leg: 0 }, spot(legRack(RAIL_LEGS[STACK]!, laid))),
+      'accepted',
+    );
     const before = legRow(r.w, STACK).rails;
     for (const leg of ['0', 0.5, -1, RAIL_LEGS.length, null, undefined])
       assert.equal(await r.action({ op: 'rail.legStock', leg }, frame), 'rejected', `leg ${String(leg)}`);
@@ -648,7 +651,7 @@ test('route host: the plug opens at cave frame 1 after Canopy, away from the old
     assert.equal(routeRow(r.w).gates, before);
     assert.equal(await r.action(gate, frame), 'accepted');
     assert.equal(routeRow(r.w).gates, before | (1 << id));
-    assert.equal(await r.action({ op: 'rail.depotTake' }, spot(legRack(cave, 0))), 'accepted');
+    assert.equal(await r.action({ op: 'rail.depotTake', leg: 4 }, spot(legRack(cave, 0))), 'accepted');
     assert.equal(await r.action({ op: 'rail.legStock', leg: 4 }, frame), 'accepted');
   } finally {
     await r.done();

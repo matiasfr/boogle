@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { RAIL_LEGS } from '../src/sim/railway-route.ts';
 import { RAILS } from '../src/sim/railway-line2-layout.ts';
 import { railGrowthMask } from '../src/sim/railway-supply.ts';
-import { forge, rail } from '../src/sim/railway-rows.ts';
+import { forge } from '../src/sim/railway-rows.ts';
 import { legOpen, legRow } from '../src/sim/railway-queries-route.ts';
 import { railLegKitRelease } from '../src/sim/railway-sys-route-kit.ts';
 import { Account, Steel } from '../src/sim/railway-components.ts';
@@ -52,10 +52,10 @@ function feedRails(s: Seed, pids: readonly string[]) {
   for (let guard = 0; guard < 200; guard++) {
     if (legRow(s.w, BAY).start >= 0 || legRow(s.w, BAY).laid > 0) return true;
     for (const pid of pids) {
-      act(s, pid, 'rail.depotRailTake');
+      act(s, pid, 'rail.depotRailTake', { leg: BAY });
       act(s, pid, 'rail.forgeTake');
       act(s, pid, 'rail.steelTake', { kind: 1 });
-      act(s, pid, 'rail.depotTake');
+      act(s, pid, 'rail.depotTake', { leg: BAY });
       act(s, pid, 'rail.legStock', { leg: BAY });
     }
     advance(s, 1);
@@ -72,7 +72,7 @@ function feedRails(s: Seed, pids: readonly string[]) {
 test("a leaver's rails lifted off the West landing's rack can still be made up: the bay cut's section 1 lays", () => {
   const s = bayOpenWorksLit();
   assert.ok(legOpen(s.w, BAY) && legRow(s.w, BAY).laid === 0);
-  const n = act(s, 'a', 'rail.depotRailTake');
+  const n = act(s, 'a', 'rail.depotRailTake', { leg: BAY });
   assert.ok(n > 0, 'a lifts rails off the rack');
   // a leaves for good; past the grace the host releases a's held units.
   assert.equal(railLegKitRelease(s.w, 'a', acc(s, 'a').epoch), n);
@@ -83,7 +83,7 @@ test("a leaver's rails lifted off the West landing's rack can still be made up: 
     ok,
     `section 1 short ${RAIL_LEGS[BAY]!.sections[0]!.rails - legRow(s.w, BAY).rails} rails for good: ` +
       `forge rack ${forge(s.w).rack} (rail.forgeTake gives ${act(s, 'b', 'rail.forgeTake')}), ` +
-      `West landing rack ${rail(s.w).depotRails}, works yard ${steel(s).yardRails}, loaded ${legRow(s.w, BAY).loadedRails}`,
+      `West landing rack ${legRow(s.w, BAY).rackRails}, works yard ${steel(s).yardRails}, loaded ${legRow(s.w, BAY).loadedRails}`,
   );
 });
 
@@ -91,7 +91,7 @@ test("a leaver's rails lifted off the West landing's rack can still be made up: 
 // recovered to the forge rack by the supply pulse, where no player can take them and the stand-in no longer looks.
 test('rails put down at the West landing and recovered to the forge rack still reach the bay cut', () => {
   const s = bayOpenWorksLit();
-  const n = act(s, 'a', 'rail.depotRailTake');
+  const n = act(s, 'a', 'rail.depotRailTake', { leg: BAY });
   assert.ok(n > 0);
   for (let left = n, j = 0; left > 0; j++) {
     const put = act(s, 'a', 'rail.drop', { x: 80100 + 100 * j, y: 490, z: -100, n: left, kind: RAILS });

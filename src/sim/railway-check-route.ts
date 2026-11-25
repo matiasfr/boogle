@@ -73,17 +73,30 @@ export function checkRoute(w: World) {
     // A gated section is fed only once its barrier is open.
     if (sec?.gate !== undefined && (r.logs || r.rails) && !(routeRow(w).gates & (1 << sec.gate))) bad('leg gate');
   });
-  // The legs' held counts are the accounts' lifted counts, summed (one leg holds any at a time).
-  let liftedLogs = 0,
-    liftedRails = 0;
+  const lifts = RAIL_LEGS.map(() => ({ logs: 0, rails: 0 }));
   w.each([Account], (_id, a) => {
-    if (!railInt(a.legLogs, 255) || !railInt(a.legRails, 255)) bad('account lifted bounds');
-    [liftedLogs, liftedRails] = [liftedLogs + a.legLogs, liftedRails + a.legRails];
+    if (
+      !railInt(a.legLogs, 255) ||
+      !railInt(a.legRails, 255) ||
+      !railInt(a.liftLeg, RAIL_LEGS.length - 1, -1) ||
+      (a.liftLeg === -1) !== (a.legLogs + a.legRails === 0)
+    )
+      bad('account lifted bounds');
+    if (a.liftLeg >= 0) {
+      lifts[a.liftLeg]!.logs += a.legLogs;
+      lifts[a.liftLeg]!.rails += a.legRails;
+    }
   });
-  const holding = RAIL_LEGS.filter((_l, k) => legRow(w, k).heldLogs + legRow(w, k).heldRails > 0);
-  const heldLogs = RAIL_LEGS.reduce((n, _l, k) => n + legRow(w, k).heldLogs, 0),
-    heldRails = RAIL_LEGS.reduce((n, _l, k) => n + legRow(w, k).heldRails, 0);
-  if (holding.length > 1 || heldLogs !== liftedLogs || heldRails !== liftedRails) bad('leg held');
+  RAIL_LEGS.forEach((leg, k) => {
+    const row = legRow(w, k);
+    if (row.heldLogs !== lifts[k]!.logs || row.heldRails !== lifts[k]!.rails) bad('leg held');
+    const reached = legOpen(w, k) ? leg.sections.slice(0, row.laid + 1) : [];
+    if (
+      !railInt(row.rackLogs, Math.max(0, ...reached.map((s) => s.logs))) ||
+      !railInt(row.rackRails, Math.max(0, ...reached.map((s) => s.rails)))
+    )
+      bad('leg rack');
+  });
   // A train's `legKit` mark stands exactly while it carries a leg's kit: on a line serving a leg reached, or one whose
   // kit rides ahead (its leg before reached), with cargo aboard (steel first, call 64: the mark is what keeps the
   // works' kit and a leg's apart).
