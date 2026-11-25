@@ -4,11 +4,13 @@
 // some cellular networks can't connect, and that peer shows "Can't connect" instead of hanging.
 //   Presence `vc`: 1 in voice, 2 muted; missing means not in voice. Signals: room messages to one tab (src/net/rtc-wire.ts).
 //   A tab that never presses the button opens no mic and no connection: nobody offers to a tab without `vc`.
-//   Each remote voice plays from its own <audio> element; peerVolume() is the one volume point per peer (for a later
-//   proximity fade). Remote talking dots read each link's inbound audio level from getStats, so remote voices never
+//   Each remote voice plays from its own <audio> element at the listener's chosen range.
+//   Remote talking dots read each link's inbound audio level from getStats, so remote voices never
 //   touch WebAudio (Safari can silence an element whose stream also feeds the context); only your own mic is metered
 //   on the game's context, and nothing of voice ever reaches its speakers.
 import './voice.css';
+import { voiceGain } from '../netplay/voice-gain.ts';
+import { me } from '../player/player.ts';
 import { playMark } from '../proto/mark.ts';
 import { net, remotes, addPresenceField, keepPresenceWhile, onRemotePresence, onPeerRemoved } from '../netplay/net.ts';
 import { onNetState, sendPresence } from '../netplay/net.ts';
@@ -27,6 +29,14 @@ const ICE_SERVERS: RTCIceServer[] = [
 ];
 const TALK_RMS = 0.02; // a meter above this reads as talking
 const MIC = { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
+type Hear = 'all' | 'near';
+const HEAR_KEY = 'boogle.voiceHear';
+let hear: Hear = 'all';
+try {
+  if (localStorage.getItem(HEAR_KEY) === 'near') hear = 'near';
+} catch {
+  // Storage can be unavailable.
+}
 
 type Voice = { pc: RTCPeerConnection; audio: HTMLAudioElement; level: number; stream: MediaStream | null };
 type Meter = { src: MediaStreamAudioSourceNode; an: AnalyserNode; buf: Float32Array<ArrayBuffer> };
@@ -72,9 +82,10 @@ const unmeter = (m: Meter | null) => {
   }
 };
 /** The one volume point for a peer's voice (0..1). iOS Safari ignores element volume; see the design doc. */
-function peerVolume(peer: string, v: number) {
-  const voice = voices.get(peer);
-  if (voice) voice.audio.volume = Math.max(0, Math.min(1, v));
+function peerVolume(peer: string, voice: Voice) {
+  const pos = me.body?.position;
+  const target = remotes.get(peer)?.target;
+  voice.audio.volume = hear === 'near' && pos && target ? voiceGain(Math.hypot(pos.x - target.x, pos.z - target.z)) : 1;
 }
 function play(audio: HTMLAudioElement) {
   audio.play().catch(() => {}); // refused without a gesture: replayAll() on the next press
@@ -93,7 +104,7 @@ function open(peer: string, onIce: (c: RtcIce | null) => void, onState: (s: 'con
   document.body.append(audio);
   const voice: Voice = { pc, audio, level: 0, stream: null };
   voices.set(peer, voice); // the mesh closed any older link to this peer first
-  peerVolume(peer, 1);
+  peerVolume(peer, voice);
   if (mic) for (const t of mic.getTracks()) pc.addTrack(t, mic);
   pc.onicecandidate = (e) =>
     onIce(
@@ -231,7 +242,8 @@ function leave() {
 function tick() {
   bindRoom();
   mesh?.tick();
-  for (const v of voices.values())
+  for (const [peer, v] of voices) {
+    peerVolume(peer, v);
     v.pc.getStats().then(
       (stats) =>
         stats.forEach((s: { type: string; kind?: string; audioLevel?: number }) => {
@@ -239,6 +251,7 @@ function tick() {
         }),
       () => {},
     );
+  }
   refresh();
 }
 
@@ -284,7 +297,24 @@ const who = document.createElement('div');
 who.className = 'voice-who';
 const hint = document.createElement('p'); // "V mutes" (D-pad ↓ on a pad): the key works during play; touch has the pill
 hint.className = 'voice-hint';
-row.append(head, who, hint);
+// Hear, Everyone, Nearby and the far suffix are placeholder copy for the owner.
+const range = document.createElement('div');
+range.className = 'voice-head';
+range.append('Hear');
+function chooseHear(value: Hear) {
+  hear = value;
+  try {
+    localStorage.setItem(HEAR_KEY, value);
+  } catch {
+    // The choice still works for this session.
+  }
+  for (const [peer, voice] of voices) peerVolume(peer, voice);
+  refresh();
+}
+const everyone = btn('Everyone', () => chooseHear('all'));
+const nearby = btn('Nearby', () => chooseHear('near'));
+range.append(everyone, nearby);
+row.append(head, range, who, hint);
 
 const pill = document.createElement('button');
 pill.type = 'button';
@@ -309,7 +339,7 @@ let recordedVoice = '';
 let key = '';
 function refresh() {
   const links = mesh?.links();
-  type Who = { name: string; state: string };
+  type Who = { name: string; state: string; far?: boolean };
   const list: Who[] = [];
   if (joined) list.push({ name: 'You', state: muted ? 'muted' : level(myMeter) > TALK_RMS ? 'talking' : 'on' });
   for (const peer of members()) {
@@ -327,7 +357,8 @@ function refresh() {
             : (voices.get(peer)?.level ?? 0) > TALK_RMS
               ? 'talking'
               : 'on';
-    list.push({ name: r?.name || 'Someone', state });
+    const far = link === 'connected' && (voices.get(peer)?.audio.volume ?? 1) < 0.05;
+    list.push({ name: r?.name || 'Someone', state, far });
   }
   // Record only local transitions and aggregate failures, never peers or audio levels.
   const failed = list.some((w) => w.state === 'failed');
@@ -337,9 +368,11 @@ function refresh() {
     playMark('voice', { on: joined, muted: joined && muted, problem, failed });
   }
   const kind = inputKind();
-  const next = JSON.stringify([joined, joining, muted, problem, list, kind]);
+  const next = JSON.stringify([joined, joining, muted, problem, list, kind, hear]);
   if (next === key) return;
   key = next;
+  everyone.setAttribute('aria-pressed', String(hear === 'all'));
+  nearby.setAttribute('aria-pressed', String(hear === 'near'));
   joinBtn.hidden = joined;
   joinBtn.disabled = joining;
   joinBtn.textContent = joining ? 'Connecting…' : 'Join voice';
@@ -353,8 +386,10 @@ function refresh() {
     ...list.map((w) => {
       const s = document.createElement('span');
       s.className = 'voice-name';
-      s.dataset.state = w.state;
+      s.dataset.state = w.far ? 'far' : w.state;
+      s.classList.toggle('voice-talking', w.state === 'talking');
       s.textContent = w.state === 'failed' ? `${w.name}: Can't connect` : w.name;
+      if (w.far) s.append(' · far');
       return s;
     }),
   );
@@ -406,7 +441,7 @@ export async function voiceProbe() {
     } catch {
       // closed meanwhile
     }
-    peers.push({ peer, state: mesh?.links().get(peer)?.state ?? 'gone', pc: v.pc.connectionState, audioLevel, bytes });
+    peers.push({ peer, state: mesh?.links().get(peer)?.state ?? 'gone', pc: v.pc.connectionState, audioLevel, bytes, volume: v.audio.volume });
   }
   const vc = Object.fromEntries(inVoice); // peer -> their presence vc (1 in voice, 2 muted)
   return { joined, muted, problem, self: net.room?.selfId ?? null, members: members(), vc, peers };
