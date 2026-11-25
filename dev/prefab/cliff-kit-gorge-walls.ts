@@ -20,7 +20,7 @@ function wall(kit: Kit, spine: Point[], uphill: 1 | -1) {
         const top = Math.min(upper ? Infinity : 14, crest - 0.55);
         const tall = !upper || top > 20;
         const prefab = tall ? (seaFace === 'terrain.sea-face-10' ? 'terrain.face-10' : 'terrain.face-6') : seaFace;
-        const out = tall ? 1.7 : 0.65;
+        const out = tall ? 2.25 : 1.3;
         const pos: [number, number, number] = [
           r2(c.x + c.nx * out),
           r2(top - (tall ? FACE_TOP : SEA_FACE)),
@@ -49,7 +49,10 @@ function wall(kit: Kit, spine: Point[], uphill: 1 | -1) {
       const crest = sample(8);
       const top = Math.min(upper ? Infinity : 14, crest - 0.55);
       let d = -9;
-      while (d < 8 && sample(d) < top) d += 0.2;
+      // The last few metres flatten onto the table. Anchor the upper course
+      // on the steep cut below it or its teeth disappear into the bank.
+      const anchor = upper ? top - 3.5 : top;
+      while (d < 8 && sample(d) < anchor) d += 0.2;
       const point: Point = [x - nx * d * uphill, z - nz * d * uphill];
       const last = contour.at(-1);
       const valid = d > -9 && d < 8 && top > (upper ? 15 : 3);
