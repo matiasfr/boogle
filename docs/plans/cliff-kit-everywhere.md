@@ -593,6 +593,19 @@ The kit adds 31,284 triangles per pass. Census measurements include colour and s
 | Far Head | 291 → 292 | 844,745 → 869,297 |
 | summit | 346 → 347 | 1,006,978 → 1,031,530 |
 
+## Step 6 as built
+
+The [Far Head sheet](cliff-kit-everywhere/far-head-before-after.jpg) pairs the sea census pose, the Line 2 approach and a standing-height view along the rim. Five runs of crowned faces follow the headland contours. The upper run ends below the grass. The halt and its gated approaches keep their clearance.
+
+The finished area uses 215 ten-metre faces and two six-metre faces, totaling 133,232 mesh triangles per pass. Reworking the headland in five tiers saved 52,360 triangles per pass against the first seven-tier placement. Earlier areas retain their original placements.
+
+Far Head has no painted tread in its flood square. The flood checks returns to the level ground beside the halt and found zero locations walled off across 124,609 grid points. The controller walked 8.3 m beside the Line 2 approach and held position for 1.8 s after settling. The live engine passed from station 465.73 to 506.84 m on track 0 and from 522.49 to 481.11 m on track 1.
+
+| Census camera | Draws on main | Draws with Far Head | Triangles on main | Triangles with Far Head |
+| --- | ---: | ---: | ---: | ---: |
+| Far Head from sea | 291 | 295 | 867,857 | 1,134,321 |
+| Summit | 347 | 348 | 1,031,530 | 1,163,970 |
+
 ## Design review (2026-11-24)
 
 Run by the plan's author in the same context (design-review skill). Read for it: DESIGN.md, owner calls (Look and art,
