@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 import { CAVE_GROUP, ROOM_GROUP } from '../../constants.ts';
 import { defineKind, spawn } from '../../entity/entity.ts';
 import { siteFrame } from '../../island/stamps.ts';
@@ -35,7 +35,16 @@ onStart(() => {
   }
   const meshes = Array.from(faces, ([face, parts]) => {
     const mesh = new THREE.Mesh(mergeParts(parts), material);
-    mesh.castShadow = mesh.receiveShadow = true;
+    mesh.receiveShadow = true;
+    mesh.castShadow = face !== 'roof';
+    if (face === 'roof') {
+      // The cutaway hides the visible roof indoors. Its shadow stays on both the room and the meadow.
+      const shadowOnly = new THREE.MeshBasicNodeMaterial({ colorWrite: false, depthWrite: false });
+      const proxy = new THREE.Mesh(mesh.geometry, shadowOnly);
+      proxy.castShadow = true;
+      owner.add(proxy);
+      owner.cleanup(() => shadowOnly.dispose());
+    }
     owner.add(mesh);
     return { face, mesh };
   });
