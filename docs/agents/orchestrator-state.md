@@ -11,6 +11,8 @@ The one record of who is running what, and what the eight-job limit is counted f
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
 | Greybox leg 6 steps 1 to 3: the catalog, the rules and the bump, the seeds | The greybox route | codex/greybox-leg6-rules | the orchestrator thread, Codex Astra high | 2026-11-25 19:15 | running: a delegate of the orchestrator thread; src/sim, src/world, one world bump; an independent Opus review before it ships |
+| Greybox leg 6 step 4: the massing (Canopy, Bell Rock, the Notch, the island halt) | The greybox route | codex/greybox-leg6-massing | the orchestrator thread, Codex Astra medium | 2026-11-25 21:40 | running: on steps 1 to 3's tip (rule 74), rebases when they land; view and level content |
+| Windows-only test noise: the accounts SIGKILL test, unit-budget's `--ci` case, bot-queue's 5 s timeout | none (tooling) | codex/windows-test-noise | the orchestrator thread, Codex Sol medium | 2026-11-25 21:40 | running: tests only |
 
 ## Where the work stands
 
