@@ -24,7 +24,7 @@ let shared: THREE.MeshStandardNodeMaterial | undefined;
 /** The ground's own cliff rock (ground-material.ts rockLayers: the same beds, pigments and tile at the same height), so
  * piece and cliff are one rock; each block's COLOR_0 grey shades it, and faces turned to the sky are sun-bleached, the
  * chunky Sunshine read of a lit top. */
-function kitMaterial() {
+export function kitMaterial() {
   if (shared) return shared;
   const m = new THREE.MeshStandardNodeMaterial({ roughness: 0.92, metalness: 0 });
   const { layered, paint } = rockLayers(positionWorld.sub(vec3(ORIGIN.x, 0, ORIGIN.z)));

@@ -1,9 +1,24 @@
 import * as THREE from 'three/webgpu';
-import { Fn, If, Loop, bool, clamp, dot, length, positionGeometry, uniformArray } from 'three/tsl';
+import {
+  Fn,
+  If,
+  Loop,
+  attribute,
+  bool,
+  vertexColor,
+  mix,
+  clamp,
+  dot,
+  length,
+  positionGeometry,
+  uniformArray,
+} from 'three/tsl';
 import type { vec4 } from 'three/tsl';
 import { GRID_RES, CELL, HALF, COURT } from '../constants.ts';
 import { smoothstep, valueNoise } from '../math.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
+import { beddedRock } from '../place/ground-material.ts';
+import { MOUTHS } from '../pois/caves/network.ts';
 import { island } from './index.ts';
 import { freezeStatic } from '../render/instances.ts';
 
@@ -82,11 +97,41 @@ function writeVertex(geo: THREE.BufferGeometry, o: number, i: number, j: number)
   paintVertex(col, o, k, pos[o * 3]!, h, pos[o * 3 + 2]!, il);
 }
 
+// Paint the steep trench walls with the collar's beds, fading back into the original rock and grass.
+function caveRockMask(geo: THREE.BufferGeometry) {
+  const position = geo.getAttribute('position');
+  const normals = geo.getAttribute('normal');
+  let mask: Float32Array | undefined;
+  for (const mouth of MOUTHS) {
+    const last = position.count - 1;
+    if (
+      mouth.x < position.getX(0) - 16 ||
+      mouth.x > position.getX(last) + 16 ||
+      mouth.z < position.getZ(last) - 16 ||
+      mouth.z > position.getZ(0) + 16
+    )
+      continue;
+    mask ??= new Float32Array(position.count);
+    for (let i = 0; i < mask.length; i++) {
+      const distance = Math.hypot(position.getX(i) - mouth.x, position.getZ(i) - mouth.z);
+      mask[i] = Math.max(mask[i]!, smoothstep(16, 8, distance) * smoothstep(0.88, 0.72, normals.getY(i)));
+    }
+  }
+  if (!mask?.some((value) => value > 0)) return false;
+  geo.setAttribute('caveRock', new THREE.BufferAttribute(mask, 1));
+  return true;
+}
+
 // The ground: an entity for its lifetime alone, with no methods.
 defineKind('terrain', {});
 export function createTerrainMesh() {
   const n = GRID_RES;
   const group = new THREE.Group();
+  const cliff = new THREE.MeshStandardNodeMaterial({ flatShading: true, roughness: 0.95 });
+  cliff.colorNode = mix(vertexColor().rgb, beddedRock(positionGeometry), attribute('caveRock', 'float'));
+  cliff.maskNode = terrainMat.maskNode;
+  cliff.maskShadowNode = terrainMat.maskShadowNode;
+  registerWaterReceiver(cliff);
   poiPaint = buildPoiPaint();
   for (let ti = 0; ti < n - 1; ti += TILE)
     for (let tj = 0; tj < n - 1; tj += TILE) {
@@ -111,7 +156,7 @@ export function createTerrainMesh() {
       geo.setIndex(idx);
       for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) writeVertex(geo, j * w + i, ti + i, tj + j);
       geo.computeBoundingSphere();
-      const mesh = new THREE.Mesh(geo, terrainMat);
+      const mesh = new THREE.Mesh(geo, caveRockMask(geo) ? cliff : terrainMat);
       mesh.receiveShadow = true;
       mesh.castShadow = true;
       group.add(mesh);

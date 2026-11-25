@@ -620,6 +620,24 @@ The [matched village, river and first-pad views](cliff-kit-everywhere/needle-bel
 | Far Head | 295 → 295 | 1,134,321 → 1,134,321 |
 | Summit | 349 → 349 | 1,164,006 → 1,165,490 |
 
+## Step 8 as built
+
+The [matched prop views](cliff-kit-everywhere/props-before-after.jpg) show the Works bowl, a boulder from the lighthouse path and the south cave mouth. The honey-coloured tops and darker courses read as the same sandstone as the gorge and Needle Bell. The orange band still picks out the work rock. The path rock meets the downhill grass, and the cave courses continue across the cut around the timber entrance.
+
+Three instance batches draw the loose boulders at the original seeded positions. Their bases extend down to the slope while their tops match the existing sphere tops. The five breakable rocks keep their original meshes and bands. Each cave mouth has a painted approach tread, so two low kit faces flank each collar. The existing solids and cave bore determine where Buddy can walk.
+
+The Works kiln action used the Chop prompt on the last stone in the seeded bowl rock and then filled the kiln. Earlier cliff-kit levels are byte-identical. The seven census poses include colour and shadow passes.
+
+| Census camera | Main draws | Step 8 draws | Main triangles | Step 8 triangles |
+| --- | ---: | ---: | ---: | ---: |
+| shore | 164 | 164 | 782,771 | 782,771 |
+| shore climb | 385 | 385 | 1,172,665 | 1,172,665 |
+| canyon climb | 208 | 208 | 854,251 | 854,251 |
+| gorge rim | 377 | 377 | 1,133,367 | 1,133,367 |
+| gorge mouth | 441 | 441 | 1,194,644 | 1,193,040 |
+| Far Head | 295 | 297 | 1,134,321 | 1,139,065 |
+| summit | 349 | 349 | 1,165,490 | 1,165,490 |
+
 ## Design review (2026-11-24)
 
 Run by the plan's author in the same context (design-review skill). Read for it: DESIGN.md, owner calls (Look and art,

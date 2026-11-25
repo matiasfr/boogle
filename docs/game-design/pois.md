@@ -6,7 +6,7 @@
 | Seed stand | [mushrooms.ts](../../src/adapters/mushrooms.ts) | (15.2, 13.4) | A bag of seeds |
 | Lighthouse | [pois/lighthouse/](../../src/pois/lighthouse/) | (6, −58) | Stair, deck, frisbee perch, night lamp |
 | Windmill farm | [pois/windmills/](../../src/pois/windmills/) | (82, −46) | Solid turning sails |
-| Caves | [pois/caves/](../../src/pois/caves/) | mouths at (−37, −80), (−26, −95), (−71, −83), (−44.5, −104.5) | Walk-through, pond for the ball |
+| Caves | [pois/caves/](../../src/pois/caves/) | mouths at (−37, −80), (−26, −95), (−71, −83), (−44.5, −104.5) | Sandstone courses and low cliff-kit faces flank the walk-through mouths. The pond holds the ball |
 
 ---
 
