@@ -213,6 +213,7 @@ export function createOrderPick(adapter: RailwayAdapter, owner: OwnedView, model
           if (walk(stand.x, stand.z - 0.85, dt)) stage = 'away';
         } else {
           const done = walk(carryEnd.x, carryEnd.z, dt);
+          stand.model.visible = true;
           stand.model.position.set(guy.x + 0.18, guy.fy! + 1, guy.z);
           if (done) {
             stand.model.visible = guy.on = false;
