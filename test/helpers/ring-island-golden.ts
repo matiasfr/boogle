@@ -5,6 +5,7 @@
 // scaled from a unit box read the same; full-precision matrices are compared before Float32 vertex quantization.
 import fs from 'node:fs';
 import * as THREE from 'three/webgpu';
+import { attribute, mix, positionWorld, vec3, vertexColor } from 'three/tsl';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { sourceFunction, sourceModule } from '../../dev/level/source.ts';
 import { FAR, ORIGIN } from '../../src/place/layout.ts';
@@ -210,6 +211,13 @@ export function ringBindings() {
   const PENNANT_POLE = sourceFunction('src/entities/ring-island-far/view.ts', 'PENNANT_POLE', {});
   const bindings = {
     THREE,
+    attribute,
+    mix,
+    positionWorld,
+    vec3,
+    vertexColor,
+    ORIGIN,
+    beddedRock: () => vec3(1), // the geometry golden does not render the ground's pigment
     mergeGeometries,
     BODY: { KINEMATIC: 'kinematic' },
     createBody: (spec: BodySpec) => {
@@ -230,8 +238,7 @@ export function ringBindings() {
     ...pick(layout, ['RING_BRACE', 'RING_BRACE_PLATFORM', 'RING_END', 'RING_FORMATION', 'RING_GAP', 'RING_HALT']),
     ...pick(layout, ['RING_RAMPS', 'RING_STEPS', 'ringAt', 'ringDeckY']),
     LANDING,
-    ...pick(path, ['SUMMIT_BRIDGE', 'summitBridge', 'summitPath', 'summitPathFoot', 'summitRimRockShape']),
-    ...pick(path, ['summitRimRocks']),
+    ...pick(path, ['SUMMIT_BRIDGE', 'summitBridge', 'summitPath', 'summitPathFoot']),
     RING_CROSSING,
     RING_MAP_TABLE,
     ringCrossingPlanks,

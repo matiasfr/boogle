@@ -59,7 +59,11 @@ async function build(owner: ReturnType<typeof createOwnedView>) {
   // as it does for any wall, and where a returning player is placed is the shared return check's job
   // (src/place/pose.ts).
   const enable = (records: typeof things) =>
-    liftOrWait(records.map((t) => ({ shapes: t.solids, on: () => t.setEnabled(true) })), me.body, { lift: false });
+    liftOrWait(
+      records.map((t) => ({ shapes: t.solids, on: () => t.setEnabled(true) })),
+      me.body,
+      { lift: false },
+    );
   const clearing = enable(areas.filter((a) => !a.island).flatMap((a) => a.things));
   const island = areas.filter((a) => a.island).flatMap((a) => a.things);
   let islandClearing: ReturnType<typeof enable> | undefined;
@@ -77,7 +81,11 @@ async function build(owner: ReturnType<typeof createOwnedView>) {
         islandClearing = undefined;
       }
     },
-    inspect: () => ({ pieces: things.length, batches, waiting: clearing.waiting.length + (islandClearing?.waiting.length ?? 0) }),
+    inspect: () => ({
+      pieces: things.length,
+      batches,
+      waiting: clearing.waiting.length + (islandClearing?.waiting.length ?? 0),
+    }),
     dispose: () => owner.dispose(),
   };
 }

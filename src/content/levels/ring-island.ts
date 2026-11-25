@@ -8,7 +8,7 @@
 //   definition), `flight` and `landing` (row `flight` or `landing` of RING_RAMPS[`ramp`], the sea ramps),
 //   `crossover` (metre `k` of RING_END.cross, the crossover on the Way), `path` (length `k` of leg `leg` of the summit
 //   path, src/entities/ring-island/path.ts's summitPath), `bridge` (its footbridge, summitBridge; with `bent`, that
-//   bent of SUMMIT_BRIDGE.bents) or `rim` (rock `k` of summitRimRocks, as its `stone` or its `box`).
+//   bent of SUMMIT_BRIDGE.bents).
 // - A value is a number (ring metres or metres up, as is), `{ deck: u }` (the Way's deck top at u) or `[from, ...add]`:
 //   `from` an anchor of the frame or a value, then each `add` summed in order. Anchors: halt `start` and `end` (u of
 //   the halt's south and north ends), `east` and `west` (lat of the east platform's east edge and the west platform's
@@ -382,13 +382,12 @@ const crossover: Placement[] = Array.from({ length: CROSSOVER.metres }, (_, k) =
   ];
 }).flat();
 
-/** The path up to the summit lookout, its footbridge over the stack line's cutting and the cutting's marker rocks
+/** The path up to the summit lookout and its footbridge over the stack line's cutting
  * (src/entities/ring-island/path.ts, which content may not import: the view resolves every number from it and refuses
  * a level whose counts no longer match). The path is drawn only, 6 m lengths a leg (`path` frame, `leg` and `k`; the
  * trail is the ground under it): `PATH_LEGS` is the count per leg of summitPath's way, none on the approach's last leg
  * or on the deck. The footbridge's pieces are solid (`bridge` frame; the approach's trail and the landing are the
- * ground, drawn by the view between the deck and the parapets). Each rim rock is its stone, drawn, then its box, solid
- * (`rim` frame, rock `k` of summitRimRocks). */
+ * ground, drawn by the view between the deck and the parapets). */
 const PATH_LEGS = [4, 5, 0, 0, 7, 10, 11, 9, 7];
 const BRIDGE_BENTS = 2;
 const SUMMIT_MASSING: Placement[] = [
@@ -802,7 +801,7 @@ export const levels = [
         pos: [0, 0, 0],
         params: { place: { frame: 'map-table', ...TOWARD } },
       },
-      // ------------------------------------------------ the path up to the summit, its footbridge, the rim rocks
+      // ------------------------------------------------ the path up to the summit and its footbridge
       ...SUMMIT_MASSING,
       // ------------------------------------------------ the summit lookout
       {

@@ -59,7 +59,17 @@ export type Area = {
   stranded?: { x: number; z: number; half: number; landing?: readonly [number, number] };
   dress(kit: Kit): void;
 };
-export const AREAS: readonly Area[] = [canyon, shore, gorgeRim, gorgeWalls, gorgeMouth, northRidge, eastCutting, farHead, ringIsland];
+export const AREAS: readonly Area[] = [
+  canyon,
+  shore,
+  gorgeRim,
+  gorgeWalls,
+  gorgeMouth,
+  northRidge,
+  eastCutting,
+  farHead,
+  ringIsland,
+];
 /** The level an area writes. */
 export const levelOf = (area: Area) => area.level ?? `cliff-kit-${area.id}`;
 

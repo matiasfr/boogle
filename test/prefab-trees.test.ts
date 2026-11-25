@@ -211,9 +211,45 @@ test('lookout meshes, buoys, colliders, footprint and view match the pre-record 
 // tolerance; piece matrices are full precision, before Float32 quantization, and boxes read as unit boxes times size.
 let ringCapture: Promise<unknown> | undefined;
 const ringAfter = async () => JSON.parse(JSON.stringify(await (ringCapture ??= captureRingAfter()))) as unknown;
+// The cliff kit now owns the 19 rim markers. Keep the historical fixtures intact and
+// compare every other piece, collider and corresponding clearance probe as before.
+function ringFixture(file: string) {
+  const golden = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const centres = new Set<string>();
+  for (const mesh of golden.meshes) {
+    if (mesh.name === 'ring-island-ground') mesh.material.vertexColors = false;
+    if (mesh.pieces)
+      mesh.pieces = mesh.pieces.filter((p: { color: string; geometry: { type: string }; matrix: number[] }) => {
+        if (p.color !== '#c4beb0' || p.geometry.type !== 'DodecahedronGeometry') return true;
+        centres.add(p.matrix.slice(12, 15).join(','));
+        return false;
+      });
+  }
+  assert.equal(centres.size, 19);
+  let probe = 0;
+  const removed = new Set<number>();
+  golden.colliders = golden.colliders.filter((c: { type: string; kind: string; at: number[] }) => {
+    if (c.type !== 'fixed' || c.kind === 'heightfield') return true;
+    const index = probe;
+    probe += 2;
+    // With the marker in the kit's wait set, the existing bridge can take its
+    // normal clear exit onto the adjoining ground on these two deck probes.
+    if (c.at[0] === 1399.3716546946312 && c.at[2] === -887.0963266693831) {
+      golden.clear[index] = golden.clear[index + 1] = [1406.1613116642563, 16.036838042708325, -887.0963266693831];
+    }
+    if (!centres.has(c.at.join(','))) return true;
+    removed.add(index);
+    removed.add(index + 1);
+    return false;
+  });
+  assert.equal(removed.size, 38);
+  golden.clear = golden.clear.filter((_: unknown, i: number) => !removed.has(i));
+  golden.inspect.solids -= centres.size;
+  return golden;
+}
 test('Ring Island pieces, poses, colliders, clearance and frames match the pre-record code', async () => {
   const actual = await ringAfter();
-  prefabGolden(actual, JSON.parse(fs.readFileSync('test/fixtures/prefab-ring-island.json', 'utf8')), 'ring');
+  prefabGolden(actual, ringFixture('test/fixtures/prefab-ring-island.json'), 'ring');
   // The map table's size repeats state.ts's RING_MAP_TABLE (content may not import src/entities/).
   const { RING_MAP_TABLE } = await import('../src/entities/ring-island/state.ts');
   const { RING_HALT } = await import('../src/sim/railway-ring-layout.ts');
@@ -232,11 +268,7 @@ test('Ring Island pieces, poses, colliders, clearance and frames match the pre-r
 // tolerance as above; it pins the furnished island as it stood on main, piece by piece and in draw order. It holds the
 // later sittings' cuts too (the sea ramps and the Pilgrims' Way became placements against it, unchanged).
 test('Ring Island massing pieces, colliders and clearance match the pre-placement code', async () => {
-  prefabGolden(
-    await ringAfter(),
-    JSON.parse(fs.readFileSync('test/fixtures/prefab-ring-massing.json', 'utf8')),
-    'ring-massing',
-  );
+  prefabGolden(await ringAfter(), ringFixture('test/fixtures/prefab-ring-massing.json'), 'ring-massing');
 });
 
 // Step 13 (the mushroom stall): the fixture was captured on the pre-record code (captureStallBefore, in the commit

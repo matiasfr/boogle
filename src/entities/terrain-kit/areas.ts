@@ -12,4 +12,14 @@ import eastCutting from '../../../content/built/levels/cliff-kit-east-cutting.js
 import ringIsland from '../../../content/built/levels/cliff-kit-ring-island.json' with { type: 'json' };
 
 /** Each area's built level, checked on load (src/prefab/validate.ts loadLevelArtifact). */
-export const KIT_AREAS: readonly { place: string }[] = [canyon, shore, gorgeRim, gorgeWalls, gorgeMouth, northRidge, eastCutting, farHead, ringIsland];
+export const KIT_AREAS: readonly { place: string }[] = [
+  canyon,
+  shore,
+  gorgeRim,
+  gorgeWalls,
+  gorgeMouth,
+  northRidge,
+  eastCutting,
+  farHead,
+  ringIsland,
+];
