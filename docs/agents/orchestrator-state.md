@@ -12,7 +12,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 | --- | --- | --- | --- | --- | --- |
 | Greybox leg 4 steps 1 to 3: the catalog, the rules and the seeds, one world bump (fixed order) | The greybox route | codex/greybox-leg4-rules | heartbeat 05:05, Codex gpt-6.2-astra high | 2026-11-25 05:12 | fix round since 06:16 UTC (review: fix first, the hood check and the 2° gate); its report wakes the heartbeat’s thread; a fresh Astra re-check, then the server ships before the client |
 | Order picks A2: the pick in the world (view) | Small choices and felt inflation | codex/order-pick-world | heartbeat 05:05, Codex gpt-6.2-astra medium | 2026-11-25 05:12 | running: its report wakes the heartbeat’s thread; independent review before merge |
-| Cliff kit: frame-time reading of the dressed areas before step 4 | Terrain clean-up | codex/cliff-kit-perf | live session, Codex Sol medium | 2026-11-25 | running: measuring only, no game code |
+| Cliff kit: frame-time reading of the dressed areas before step 4 | Terrain clean-up | codex/cliff-kit-perf | live session, Codex Sol medium | 2026-11-25 | paused: Codex returning 400s; waits for his word that Codex is fixed |
 
 ## Where the work stands
 
@@ -21,6 +21,10 @@ The one record of who is running what, and what the eight-job limit is counted f
 - **Models** (owner, 24 and 25 November): Opus medium builds, Astra medium reviews, both at high when the task is tricky going in; Neon medium takes story, NPC, brainstorms, and fixes, tooling and mechanical jobs outside the high-risk paths, and reviews player-visible or tooling builds when Astra cannot run; Sol keeps images (`npm run models`).
 - **Proof debts and leftovers:** [orchestrator-leftovers](orchestrator-leftovers.md). Nothing from 16 or 17 November was tested on a device.
 - Older status, the 23 November pause and the old question list: [the log](orchestrator-log.md#24-november-resumed-state-file-cleaned).
+
+## Codex paused (25 November)
+
+Codex returned "400 Bad Request" seven times on 24 and 25 November (at launch, mid-job and near the end of jobs). The owner, 25 November, offered moving Codex work to Opus or Neon or pausing: "Pause until I fix Codex". While this section stands, start nothing on a Codex row (Sol or Astra builds, Astra reviews of Codex rows, images), and do not move that work to Claude or Neon; reviews of a Claude build may still go to Opus. Delete this section when he says Codex is fixed.
 
 ## Open owner questions
 
