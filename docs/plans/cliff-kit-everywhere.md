@@ -562,15 +562,15 @@ The rail gauge is clear. The canyon, shore, gorge rim and long gorge wall levels
 The controller walked 17 m east along the south path and held its horizontal position through two seconds idle.
 The new area adds 24,320 kit triangles per pass. The mouth draws it twice, adding 48,640 triangles and six draws.
 
-| Census camera | Draws, main ? step 4 | Triangles, main ? step 4 |
+| Census camera | Draws, main → step 4 | Triangles, main → step 4 |
 | --- | ---: | ---: |
-| Shore | 158 ? 161 | 768,883 ? 793,203 |
-| Shore climb | 375 ? 378 | 1,017,289 ? 1,041,609 |
-| Canyon climb | 206 ? 206 | 829,299 ? 829,299 |
-| Gorge rim | 369 ? 372 | 955,441 ? 979,761 |
-| Gorge mouth | 426 ? 432 | 1,001,968 ? 1,050,608 |
-| Far head | 291 ? 291 | 844,745 ? 844,745 |
-| Summit | 346 ? 346 | 1,006,666 ? 1,006,666 |
+| Shore | 158 → 161 | 768,883 → 793,203 |
+| Shore climb | 375 → 378 | 1,017,289 → 1,041,609 |
+| Canyon climb | 206 → 206 | 829,299 → 829,299 |
+| Gorge rim | 369 → 372 | 955,441 → 979,761 |
+| Gorge mouth | 426 → 432 | 1,001,968 → 1,050,608 |
+| Far Head | 291 → 291 | 844,745 → 844,745 |
+| Summit | 346 → 346 | 1,006,666 → 1,006,666 |
 
 ## Design review (2026-11-24)
 
