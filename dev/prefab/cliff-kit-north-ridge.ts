@@ -17,7 +17,7 @@ export const northRidge: Area = {
 export const eastCutting: Area = {
   id: 'east-cutting',
   walls: [[190, -48]],
-  stranded: { x: 191, z: -41, half: 24 },
+  stranded: { x: 145, z: -3, half: 65 },
   dress(kit) {
     const { wallAt } = censusWalls();
     dressSlope(kit, 'line two cut', raysAlong(196, -52, 196, -30, -1, 0), [8, 14, 20], {
