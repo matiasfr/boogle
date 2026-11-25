@@ -1,7 +1,10 @@
 import * as THREE from 'three';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
 
-import { isHomePalm, tileKey } from '../blueprints/props.ts';
+import { terrainKitGeometry } from '../entities/terrain-kit/geometry.ts';
+import { spireStone } from '../place/spire-stone.ts';
+import { warmUp } from './precompile.ts';
+import { isHomePalm, tileKey, type PropSample } from '../blueprints/props.ts';
 import { placements } from '../entities/props/state.ts';
 import { clearedAt } from '../island/layout.ts';
 import { mulberry32 } from '../math.ts';
@@ -20,14 +23,18 @@ defineKind('props-view', {});
 export function createProps() {
   registerWaterReceiver(propsMat);
   const tiles = new Map<number, THREE.BufferGeometry[]>();
+  const rocks: Extract<PropSample, { blueprint: 'rock' }>[] = [];
   for (const p of placements) {
     if (clearedAt(p.x, p.z) && !isHomePalm(p)) continue;
+    if (p.blueprint === 'rock') {
+      rocks.push(p);
+      continue;
+    }
     const k = tileKey(p.x, p.z);
     if (!tiles.has(k)) tiles.set(k, []);
     const parts = tiles.get(k)!;
     if (p.blueprint === 'palm') addPalm(parts, p);
-    else if (p.blueprint === 'broadleaf') addBroadleaf(parts, p);
-    else addRock(parts, p);
+    else addBroadleaf(parts, p);
   }
   const group = new THREE.Group();
   for (const parts of tiles.values()) {
@@ -37,6 +44,38 @@ export function createProps() {
     mesh.receiveShadow = true;
     group.add(mesh);
   }
+  // The old shapes cover the solids immediately, including when the optional kit cannot load.
+  const fallbackParts: THREE.BufferGeometry[] = [];
+  for (const rock of rocks) addRock(fallbackParts, rock);
+  const fallback = new THREE.Mesh(mergeParts(fallbackParts), propsMat);
+  fallback.castShadow = fallback.receiveShadow = true;
+  group.add(fallback);
+  const dressed = terrainKitGeometry().then((pieces) => {
+    const sizeClass = (r: number) => (r < 1 ? 's' : r < 1.8 ? 'm' : 'l');
+    for (const size of ['s', 'm', 'l']) {
+      const samples = rocks.filter((p) => sizeClass(p.size) === size);
+      if (!samples.length) continue;
+      const geometry = pieces.get('boulder_' + size)!;
+      const bounds = geometry.boundingBox!;
+      const center = bounds.getCenter(new THREE.Vector3());
+      const extent = bounds.getSize(new THREE.Vector3());
+      const batch = new THREE.InstancedMesh(geometry, spireStone(), samples.length);
+      const pose = new THREE.Object3D();
+      for (const [i, p] of samples.entries()) {
+        pose.position.set(p.x, p.h - 0.15 * p.size, p.z);
+        pose.rotation.y = p.look.spin[1]!;
+        pose.scale.set(2.1 / extent.x, 1.07 / extent.y, 1.85 / extent.z).multiplyScalar(p.size);
+        pose.updateMatrix();
+        pose.matrix.multiply(new THREE.Matrix4().makeTranslation(-center.x, -bounds.min.y, -center.z));
+        batch.setMatrixAt(i, pose.matrix);
+      }
+      batch.castShadow = batch.receiveShadow = true;
+      group.add(batch);
+    }
+    fallback.removeFromParent();
+    fallback.geometry.dispose();
+  }, (error: unknown) => console.warn('[props] using fallback rocks:', error));
+  warmUp(() => dressed);
   spawn({ kind: 'props-view', mesh: group });
   freezeStatic(group); // never moves: no per-frame matrix work
 }

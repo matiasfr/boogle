@@ -5,11 +5,7 @@
 // walk colliders. A solid never appears around a player at mount: the pieces Buddy stands in then wait, neither drawn nor
 // solid, as one set, until Buddy is clear of them all (src/place/clearance.ts, waiting only: a view moves no bodies
 // outside the prefab door). After mount the pieces are ordinary static solids.
-import * as THREE from 'three/webgpu';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { registerAsset } from '../../render/asset-manifest.ts';
-import url from './kit-url.ts';
+import { terrainKitGeometry } from './geometry.ts';
 import { createOwnedView } from '../../render/owned-view.ts';
 import { me } from '../../player/player.ts';
 import { createPrefabBatch, instantiate, liftOrWait } from '../../prefab/instantiate.ts';
@@ -18,33 +14,6 @@ import { loadLevelArtifact } from '../../prefab/validate.ts';
 import { setTerrainKit } from '../../prefab/builders/terrain-kit.ts';
 import type { PrefabKey } from '../../prefab/types.ts';
 import { KIT_AREAS } from './areas.ts';
-
-registerAsset({ id: 'terrain-kit', url, kind: 'model', priority: 'soon' });
-
-/** A piece's geometry in metres, as floats: meshopt quantizes positions and puts the scale on the node. COLOR_0's red
- * is the block's shade. */
-function bake(mesh: THREE.Mesh) {
-  const src = mesh.geometry;
-  const g = new THREE.BufferGeometry();
-  const floats = (name: string) => {
-    const a = src.getAttribute(name);
-    const f = new Float32Array(a.count * 3);
-    for (let i = 0; i < a.count; i++) {
-      f[i * 3] = a.getX(i);
-      f[i * 3 + 1] = a.getY(i);
-      f[i * 3 + 2] = a.getZ(i);
-    }
-    return new THREE.BufferAttribute(f, 3);
-  };
-  g.setAttribute('position', floats('position'));
-  g.setAttribute('normal', floats('normal'));
-  g.setAttribute('color', floats('color'));
-  g.setIndex(src.index);
-  g.applyMatrix4(mesh.matrixWorld);
-  g.computeBoundingBox();
-  g.computeBoundingSphere();
-  return g;
-}
 
 export async function createTerrainKitView() {
   const owner = createOwnedView();
@@ -58,25 +27,8 @@ export async function createTerrainKitView() {
 }
 
 async function build(owner: ReturnType<typeof createOwnedView>) {
-  const [gltf, { ORIGIN }] = await Promise.all([
-    new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url),
-    import('../../place/layout.ts'),
-  ]);
-  gltf.scene.updateMatrixWorld(true);
-  const pieces = new Map<string, THREE.BufferGeometry>();
-  owner.cleanup(() => {
-    setTerrainKit(new Map()); // the builder keeps no disposed geometry reachable
-    for (const g of pieces.values()) g.dispose();
-  });
-  const meshes: THREE.Mesh[] = [];
-  gltf.scene.traverse((o) => {
-    if (o instanceof THREE.Mesh) meshes.push(o);
-  });
-  try {
-    for (const o of meshes) pieces.set(o.name || o.parent!.name, bake(o));
-  } finally {
-    for (const o of meshes) o.geometry.dispose(); // the file's quantized copies, baked or not: only baked ones are drawn
-  }
+  const [pieces, { ORIGIN }] = await Promise.all([terrainKitGeometry(), import('../../place/layout.ts')]);
+  owner.cleanup(() => setTerrainKit(new Map()));
   setTerrainKit(pieces);
 
   // Each area its own batches: an instanced mesh culls as one, so an area behind you submits nothing.
