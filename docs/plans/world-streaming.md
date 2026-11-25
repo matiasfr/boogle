@@ -280,6 +280,21 @@ with the cameras of `dev/look/evals/terrain-draws.ts:17-20` (green: cam 909,24.4
 - [ ] **Checkpoint A (after step 5).** `npm run check`; the full pose reading at spawn, far and head on the Mac and on
   Windows, each with its load; "not tested on a device" unless `npm run device -- pull` has a report of a build with
   these steps. Update the owning game-design section only if a still showed a change (none is intended).
+
+  **Windows half, 25 November 2026.** Quiet on HOTBOX (20 s per pose, `ring-joined`, `--no-load`, at
+  `b796518a69c8161cbd4764d4bd5d8df2d2b31e1b`, the step 5 merge). Windows process checks before, during and after
+  found no competing harness Chromium, bot, Vite or test process. Total CPU busy was 10.00% → 8.88% → 7.41%.
+  Four earlier attempts overlapped with checks or tests and were excluded from the quiet run. Main draws are
+  bench calls minus shadow calls, and load is busy logical CPUs out of 20.
+
+  | Pose | tris | Main draws | CPU avg ms | GPU avg ms (p95) | Load before → after |
+  | --- | ---: | ---: | ---: | ---: | ---: |
+  | spawn | 1,060,507 | 493 | 14.147 | 14.993 (18.904) | 2.66 → 0.42 |
+  | far | 1,134,025 | 152 | 11.053 | 12.022 (17.068) | 2.66 → 0.42 |
+  | head | 1,379,169 | 733 | 14.839 | 16.864 (19.677) | 2.66 → 0.42 |
+
+  Mac reading still owed, not tested on a device.
+
 - [x] **6. Far Head's draws.** Built 18 November as one row; the first took the bulk. The census now splits each
   group by parent and names its meshes' geometry, material and area, which traced the three unnamed groups at head:
   `Scene/Group/Mesh` (296) was the land root's 104 footbridge and shore-landing timbers (`land.ts`), the classic
@@ -326,6 +341,24 @@ with the cameras of `dev/look/evals/terrain-draws.ts:17-20` (green: cam 909,24.4
 - [ ] **Checkpoint B (after step 7).** As checkpoint A, plus the phone profile:
   `npm run bench -- --no-load --rail-seed ring-joined --poses spawn,far,head --seconds 20 --size 375x812 --query 'q=mobile&dev=1&graphics=msaa:false'`.
   Then the backlog row's next step is the owner's call on question 5.
+
+  **Windows half, 25 November 2026.** Quiet on HOTBOX (20 s per pose, `ring-joined`, `--no-load`, at
+  `162728a3529551372a4bde6483c7dac51994fd45`, the 25 November main checkout with later changes beyond step 7).
+  Windows process checks before, during and after each run found no competing harness Chromium, bot, Vite or
+  test process. Total CPU busy was 0.88% → 9.78% → 1.14% for desktop and 1.52% → 7.51% → 2.12% for phone.
+  The first desktop attempt was under load (bench 1.68 → 19.98 of 20, overlapping ship check). The table uses
+  the quiet retry. Main draws are bench calls minus shadow calls, and load is busy logical CPUs out of 20.
+
+  | Profile | Pose | tris | Main draws | CPU avg ms | GPU avg ms (p95) | Load before → after |
+  | --- | --- | ---: | ---: | ---: | ---: | ---: |
+  | Desktop | spawn | 1,586,317 | 376 | 15.337 | 15.369 (18.903) | 1.46 → 1.10 |
+  | Desktop | far | 1,484,927 | 197 | 12.708 | 12.942 (17.746) | 1.46 → 1.10 |
+  | Desktop | head | 1,965,775 | 413 | 15.875 | 16.782 (19.273) | 1.46 → 1.10 |
+  | Phone | spawn | 1,334,017 | 243 | 14.153 | 12.665 (14.839) | 2.15 → 0.63 |
+  | Phone | far | 1,180,923 | 203 | 12.128 | 11.550 (14.384) | 2.15 → 0.63 |
+  | Phone | head | 1,253,303 | 152 | 11.785 | 9.822 (12.062) | 2.15 → 0.63 |
+
+  Mac reading still owed. Windows phone profile only, not tested on a device.
 
 **Not planned** (reasons above): server-side chunk streaming of shared state; streaming the main island's colliders;
 chunking the trees; loading area views on demand (first load is 4.8 MB and inside its budget; frame cost is the
