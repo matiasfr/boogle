@@ -16,7 +16,7 @@ import { coveEdge } from '../../src/place/cove.ts';
 import { SHORE_HOP, SHORE_LANDING } from '../../src/place/shore-layout.ts';
 import { SEA_FACE, SHORE_ROCK } from '../../src/content/prefabs/terrain.ts';
 import { r2 as round } from '../../src/math.ts';
-import { kitPieceProblems, layAlong, runAlong, type Area, type Key, type Kit } from './cliff-kit.ts';
+import { kitPieceProblems, layAlong, layCourses, runAlong, type Area, type Key, type Kit } from './cliff-kit.ts';
 
 const ground = (x: number, z: number) => H(x + ORIGIN.x, z);
 /** How far back from its front a face's top reaches (its slab's depth and lean), m: where its top meets the ground. */
@@ -61,13 +61,10 @@ function dressSlope(
     for (const points of runs) {
       if (points.length < 2) continue;
       const run = runAlong(points.map((q) => [q.x, q.z] as const));
-      const pieces: [Key, number][] = [];
-      for (let left = run.length; left >= 6; left -= pieces[pieces.length - 1]![1] - 0.4)
-        pieces.push(left >= 10 ? ['terrain.sea-face-10', 10] : ['terrain.sea-face-6', 6]);
       // The run's left normal faces downhill when it points against the rays.
       const n = run.at(run.length / 2);
       const side = n.nx * points[0]!.ux + n.nz * points[0]!.uz < 0 ? 1 : -1;
-      layAlong(run, 0, pieces, -0.4, side, (prefab, c, yaw, s) => {
+      layCourses(run, side, (prefab, c, yaw, s) => {
         const placement: Placement = {
           id: 'trial',
           prefab,

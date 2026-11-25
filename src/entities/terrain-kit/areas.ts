@@ -2,6 +2,7 @@
 // this list does not mount). Each stands as its own instance batches, so an area behind you draws nothing.
 import canyon from '../../../content/built/levels/canyon-kit.json' with { type: 'json' };
 import shore from '../../../content/built/levels/cliff-kit-shore.json' with { type: 'json' };
+import gorgeRim from '../../../content/built/levels/cliff-kit-gorge-rim.json' with { type: 'json' };
 
 /** Each area's built level, checked on load (src/prefab/validate.ts loadLevelArtifact). */
-export const KIT_AREAS: readonly { place: string }[] = [canyon, shore];
+export const KIT_AREAS: readonly { place: string }[] = [canyon, shore, gorgeRim];

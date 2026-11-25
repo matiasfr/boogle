@@ -30,6 +30,7 @@ import { solidHulls, solidSamples, type V3 } from './cliff-kit-solids.ts';
 import { drawnTracks } from '../level/rail-network.ts';
 import { canyon } from './cliff-kit-canyon.ts';
 import { shore } from './cliff-kit-shore.ts';
+import { gorgeRim } from './cliff-kit-gorge-rim.ts';
 
 export type Key = (typeof prefabs)[number]['key'];
 /** Places one piece in an area, checked against the piece rules; `where` names it in a failure. */
@@ -50,7 +51,7 @@ export type Area = {
   stranded?: { x: number; z: number; half: number };
   dress(kit: Kit): void;
 };
-export const AREAS: readonly Area[] = [canyon, shore];
+export const AREAS: readonly Area[] = [canyon, shore, gorgeRim];
 /** The level an area writes. */
 export const levelOf = (area: Area) => area.level ?? `cliff-kit-${area.id}`;
 
@@ -101,6 +102,16 @@ export function layAlong(
   }
 }
 export const KEEP_AWAY = 6; // m
+/** Fill a contour with the two-course faces, overlapping each join by 0.4 m. */
+export function layCourses(run: ReturnType<typeof runAlong>, side: 1 | -1, put: Parameters<typeof layAlong>[5]) {
+  const pieces: [Key, number][] = [];
+  for (let left = run.length; left >= 6;) {
+    const width = left >= 10 ? 10 : 6;
+    pieces.push([width === 10 ? 'terrain.sea-face-10' : 'terrain.sea-face-6', width]);
+    left -= width - 0.4;
+  }
+  layAlong(run, 0, pieces, -0.4, side, put);
+}
 /** Every gated place in the layout, Place-local: a point and the radius it holds (a pad's or pillar's own size). */
 const GATED: readonly { what: string; x: number; z: number; r: number }[] = [
   ...PADS.map((p) => ({ what: `pad ${p.id}`, x: p.x, z: p.z, r: Math.hypot(p.hx, p.hz) })),
