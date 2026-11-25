@@ -187,8 +187,9 @@ test('the menu lists the rows it always did: the house and leg 1 stages are tool
     tooling,
   );
   for (const stage of tooling) {
-    // Leg 2's rows land at the usual spawn until step 4's stills check a landing (greybox-leg2.md).
-    if (
+    if (stage === 'notch-reached' || stage === 'island-reached') {
+      assert.equal(jumpOf(stage)?.land, undefined, stage);
+    } else if (
       ![
         't1-pack-first',
         't1-jump-first',
