@@ -883,15 +883,22 @@ test('re-check: across a long dropped link the ring crew whistles each shift cha
   room.ready();
   const whistles = new Map<number, number>();
   let last: number | null = null;
+  let top = -Infinity;
+  // Mirrors `topShift` in src/entities/ring-folk/view.ts (a shift at or below the highest shown never whistles); it
+  // models the view's rule and does not run the view.
   const frame = () => {
     const shift = shiftAt(c.adapter.read.tick());
-    if (shiftChange(last, shift) === 'whistle') whistles.set(shift, (whistles.get(shift) ?? 0) + 1);
+    if (shiftChange(last, shift) === 'whistle' && shift > top) whistles.set(shift, (whistles.get(shift) ?? 0) + 1);
+    top = Math.max(top, shift);
     last = shift;
   };
   frame();
   c.disconnect();
   // 30 s: the room runs on, emptied (1765 steps of 17 ms).
-  for (let k = 0; k < 1765; k++) (room.run(1), frame());
+  for (let k = 0; k < 1765; k++) {
+    room.run(1);
+    frame();
+  }
   // 60 s more: the room is paused; only the page's clock moves.
   for (let k = 0; k < 3530; k++) {
     room.advance(17);
@@ -899,9 +906,15 @@ test('re-check: across a long dropped link the ring crew whistles each shift cha
     frame();
   }
   c.reconnect();
-  for (let k = 0; k < 300 && !c.adapter.read.ready(); k++) (room.run(1), frame());
+  for (let k = 0; k < 300 && !c.adapter.read.ready(); k++) {
+    room.run(1);
+    frame();
+  }
   // 70 s back in: the room's clock passes the shifts the page already whistled offline.
-  for (let k = 0; k < 4120; k++) (room.run(1), frame());
+  for (let k = 0; k < 4120; k++) {
+    room.run(1);
+    frame();
+  }
   const twice = [...whistles].filter(([, n]) => n > 1).map(([s]) => s);
   assert.deepEqual(
     twice,
