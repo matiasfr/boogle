@@ -9,15 +9,19 @@ const ground = (x: number, z: number) => H(x + ORIGIN.x, z);
  * everywhere; a face's crowned solid offers no top, so faces may cover walkable rock slopes too). `rays` are lines
  * across the slope from its foot, each a start (Place-local x, z) and a unit direction uphill; on each, the first point
  * the ground reaches a tier's `level` is that tier's contour. Consecutive contour points less than 4 m apart make a run;
- * faces go end to end along it (10 m, then 6 m where 10 no longer fits), their foot 1.5 m into it and 0.5 m under the
- * contour, facing downhill. A face that would break a piece rule (the tread, a gated place, a rail) is left out, and
+ * faces go end to end along it (10 m, then 6 m where 10 no longer fits), their foot set into the
+ * contour, facing downhill. With a rock mask, runs stop at grass and both ends seat below the rock rim. A face that would break a piece rule (the tread, a gated place, a rail) is left out, and
  * so is one whose middle stands in `keepOff` (the walks: nothing of the kit on them). */
 export function dressSlope(
   kit: Kit,
   name: string,
   rays: readonly (readonly [number, number, number, number])[],
   levels: readonly number[],
-  options: { keepClear?: Area['keepClear']; keepOff?: (x: number, z: number) => boolean; rock?: (x: number, z: number) => boolean },
+  options: {
+    keepClear?: Area['keepClear'];
+    keepOff?: (x: number, z: number) => boolean;
+    rock?: (x: number, z: number) => boolean;
+  },
 ) {
   for (const level of levels) {
     const runs: { x: number; z: number; ux: number; uz: number }[][] = [[]];
