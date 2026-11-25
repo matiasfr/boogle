@@ -335,8 +335,10 @@ After steps 1 to 6 are on main; named proofs, once, with the tools as Checkpoint
       the server restarts, it rejoins; the leg row, the rack, the kit aboard and the carrier's back exact at every
       checkpoint. All 338 checks passed. The Wall case took 39.1 s of its 480 s deadline.
 - [x] [Steps 4 and 5's stills on one sheet](greybox-leg5/checkpoint-e-sheet.jpg).
-- [ ] `npm run perf -- --view wall` (a `PLACES` row: seed `wall-closed`, the body on the Gorge's Wall platform, the
-      camera down the split) and `-- --view wall --hardware --seconds 10`, its load noted.
+- [x] `npm run perf -- --view wall` (a `PLACES` row: seed `wall-closed`, the body on the Gorge's Wall platform, the
+      camera down the split) and `-- --view wall --hardware --seconds 10`. The exclusive hardware sample covered
+      551 frames at load 3.42 to 1.24. CPU averaged 12.33 ms (p95 15.01), full GPU span 7.86 ms (p95 9.44),
+      and GPU render time 2.15 ms (p95 2.17).
 - [x] The boot probe on main after step 6 (rule 61): offline Chromium reached interactive in 7.8 s without page errors.
       The Wall service rules were unchanged since the recorded long fuzz.
 - [ ] A device line on the Mac, reported, not a gate (taken when the Mac is next open).
