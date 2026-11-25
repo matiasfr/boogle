@@ -1614,7 +1614,9 @@ The board at the buffers marks the future Wall line. Finishing the cave line ope
 **White Wall catalog and rules (local v71 branch).** Once the line reaches Port Quay, cave trains bring the next
 six kits along the Wall. The line serves a second Canopy halt on the isle's east side and crosses above the bay line.
 At the fifth head the room's crystal seeds open the deep span. The last lay reaches High Gorge beside line 2.
-The quay, head platforms, crossing and Gorge arrival await the leg's massing steps. [Leg 5 plan](../plans/greybox-leg5.md)
+At Port Quay a plank crossing connects the outward platform to the High Port ramp. At Canopy the Wall has two
+40 m platforms at 13.90 m. Each has a ramp down to the 12 m isle for the walk to the bay line's homeward deck.
+The overbridge footprint is reserved for section 4. [Leg 5 plan](../plans/greybox-leg5.md)
 
 ### Production Split-rock Works and the Roundhouse (9 November 2026)
 

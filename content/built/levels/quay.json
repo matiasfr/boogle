@@ -766,7 +766,7 @@
         {
           "bounds": [
             -31,
-            64,
+            35,
             -70,
             -7.8
           ],
@@ -781,14 +781,339 @@
         },
         {
           "bounds": [
-            39,
-            51,
-            -7.8,
-            2
+            35,
+            48,
+            -70,
+            -12
           ],
           "compute": "rect",
           "frame": {
             "operand": 0
+          },
+          "h": 1,
+          "id": "apron-mid",
+          "tone": "grey",
+          "top": 3.02
+        },
+        {
+          "bounds": [
+            48,
+            64,
+            -70,
+            -24
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 1,
+          "id": "apron-end",
+          "tone": "grey",
+          "top": 3.02
+        },
+        {
+          "bounds": [
+            25,
+            52,
+            5,
+            12
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 1,
+          "id": "apron-ramp-side",
+          "tone": "grey",
+          "top": 3.02
+        },
+        {
+          "bounds": [
+            20,
+            23,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.3,
+          "id": "platform-crossing-step",
+          "rise": {
+            "a": 3.18,
+            "b": 3.9,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 3.9
+        },
+        {
+          "bounds": [
+            23,
+            25,
+            -7.8,
+            -6.82
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.24,
+          "id": "foot-plank-0",
+          "tone": "sandstone",
+          "top": 3.19
+        },
+        {
+          "bounds": [
+            23,
+            25,
+            -6.8,
+            -5.82
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.24,
+          "id": "foot-plank-1",
+          "tone": "sandstone",
+          "top": 3.19
+        },
+        {
+          "bounds": [
+            23,
+            25,
+            -5.8,
+            -4.82
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.24,
+          "id": "foot-plank-2",
+          "tone": "sandstone",
+          "top": 3.19
+        },
+        {
+          "bounds": [
+            23,
+            25,
+            -4.8,
+            -3.82
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.24,
+          "id": "foot-plank-3",
+          "tone": "sandstone",
+          "top": 3.19
+        },
+        {
+          "bounds": [
+            23,
+            25,
+            -3.8,
+            -2.82
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.24,
+          "id": "foot-plank-4",
+          "tone": "sandstone",
+          "top": 3.19
+        },
+        {
+          "bounds": [
+            23,
+            25,
+            -2.8,
+            -1.82
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.24,
+          "id": "foot-plank-5",
+          "tone": "sandstone",
+          "top": 3.19
+        },
+        {
+          "bounds": [
+            23,
+            25,
+            -1.8,
+            -0.82
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.24,
+          "id": "foot-plank-6",
+          "tone": "sandstone",
+          "top": 3.19
+        },
+        {
+          "bounds": [
+            23,
+            25,
+            -0.8,
+            0.18
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.24,
+          "id": "foot-plank-7",
+          "tone": "sandstone",
+          "top": 3.19
+        },
+        {
+          "bounds": [
+            23,
+            25,
+            0.2,
+            1.18
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.24,
+          "id": "foot-plank-8",
+          "tone": "sandstone",
+          "top": 3.19
+        },
+        {
+          "bounds": [
+            23,
+            25,
+            1.2,
+            2.18
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.24,
+          "id": "foot-plank-9",
+          "tone": "sandstone",
+          "top": 3.19
+        },
+        {
+          "bounds": [
+            23,
+            25,
+            2.2,
+            3.18
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.24,
+          "id": "foot-plank-10",
+          "tone": "sandstone",
+          "top": 3.19
+        },
+        {
+          "bounds": [
+            23,
+            25,
+            3.2,
+            4.18
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.24,
+          "id": "foot-plank-11",
+          "tone": "sandstone",
+          "top": 3.19
+        },
+        {
+          "bounds": [
+            23,
+            25,
+            4.2,
+            5.18
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.24,
+          "id": "foot-plank-12",
+          "tone": "sandstone",
+          "top": 3.19
+        },
+        {
+          "bounds": [
+            23,
+            25,
+            5.2,
+            6.18
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.24,
+          "id": "foot-plank-13",
+          "tone": "sandstone",
+          "top": 3.19
+        },
+        {
+          "bounds": [
+            23,
+            25,
+            6.2,
+            7.18
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.24,
+          "id": "foot-plank-14",
+          "tone": "sandstone",
+          "top": 3.19
+        },
+        {
+          "bounds": [
+            23,
+            25,
+            7.2,
+            8.18
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.24,
+          "id": "foot-plank-15",
+          "tone": "sandstone",
+          "top": 3.19
+        },
+        {
+          "bounds": [
+            -5,
+            0,
+            -3,
+            3
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
           },
           "h": 1,
           "id": "ramp-landing",
@@ -798,7 +1123,7 @@
         {
           "bounds": [
             0,
-            98,
+            100,
             -3,
             3
           ],
@@ -819,7 +1144,7 @@
         {
           "bounds": [
             0,
-            98,
+            100,
             3,
             3.3
           ],
@@ -880,8 +1205,8 @@
           "bounds": [
             33,
             63,
-            -55,
-            -25
+            -67,
+            -37
           ],
           "compute": "rect",
           "frame": {
@@ -921,20 +1246,20 @@
       },
       {
         "o": {
-          "x": 104,
-          "z": 973
+          "x": 109,
+          "z": 982
         },
         "u": {
           "axis": {
-            "x": -93,
-            "z": 23
+            "x": -99,
+            "z": 14
           },
           "compute": "unit"
         },
         "v": {
           "axis": {
-            "x": 23,
-            "z": 93
+            "x": 14,
+            "z": 99
           },
           "compute": "unit"
         }

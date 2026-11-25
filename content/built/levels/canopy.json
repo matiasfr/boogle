@@ -108,6 +108,26 @@
           "frame": {
             "operand": 0
           }
+        },
+        "wallHome": {
+          "at": [
+            0,
+            -5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "operand": 1
+          }
+        },
+        "wallOut": {
+          "at": [
+            0,
+            5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "operand": 1
+          }
         }
       },
       "origin": {
@@ -1119,6 +1139,80 @@
         },
         {
           "bounds": [
+            -20,
+            20,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 2.4,
+          "id": "platform-wall-home",
+          "tone": "light",
+          "top": 13.9
+        },
+        {
+          "bounds": [
+            -20,
+            -24,
+            -7.8,
+            -3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.4,
+          "id": "platform-wall-home-ramp",
+          "rise": {
+            "a": 13.9,
+            "b": 12,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 12
+        },
+        {
+          "bounds": [
+            -20,
+            20,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 2.4,
+          "id": "platform-wall-out",
+          "tone": "light",
+          "top": 13.9
+        },
+        {
+          "bounds": [
+            -20,
+            -24,
+            3.8,
+            7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.4,
+          "id": "platform-wall-out-ramp",
+          "rise": {
+            "a": 13.9,
+            "b": 12,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 12
+        },
+        {
+          "bounds": [
             -33,
             12,
             3.8,
@@ -1291,6 +1385,42 @@
       "reserves": [
         {
           "bounds": [
+            -15,
+            15,
+            -3.8,
+            3.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "o": {
+              "x": -689.91,
+              "z": -605.17
+            },
+            "u": {
+              "axis": {
+                "x": 18.41,
+                "z": -37
+              },
+              "compute": "unit"
+            },
+            "v": {
+              "axis": {
+                "axis": {
+                  "x": 18.41,
+                  "z": -37
+                },
+                "compute": "unit"
+              },
+              "compute": "perp",
+              "sign": 1
+            }
+          },
+          "id": "Wall overbridge",
+          "y0": 12,
+          "y1": 14
+        },
+        {
+          "bounds": [
             -280.93,
             12.07,
             -3.8,
@@ -1420,6 +1550,30 @@
             "axis": {
               "x": -19030,
               "z": 16944
+            },
+            "compute": "unit"
+          },
+          "compute": "perp",
+          "sign": -1
+        }
+      },
+      {
+        "o": {
+          "x": -889.06,
+          "z": -89.93
+        },
+        "u": {
+          "axis": {
+            "x": -5,
+            "z": -100
+          },
+          "compute": "unit"
+        },
+        "v": {
+          "axis": {
+            "axis": {
+              "x": -5,
+              "z": -100
             },
             "compute": "unit"
           },

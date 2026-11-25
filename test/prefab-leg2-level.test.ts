@@ -43,6 +43,15 @@ import { createLiftOrWait, STEP, type Solid } from '../src/place/clearance.ts';
 import canopy from '../content/built/levels/canopy.json' with { type: 'json' };
 
 validation.validateArtifact(artifact);
+test('both Wall decks seat the Canopy stop 90 cm over rail and extend into the isle', () => {
+  const level = validation.loadLevelArtifact(canopy, artifact.prefabs);
+  for (const name of ['out', 'home']) {
+    const deck = level.placements.find((p) => p.id === 'canopy.platform-wall-' + name)!;
+    assert.deepEqual(deck.scale, [4, 2.4, 40]);
+    assert.equal(Math.round(100 * (deck.pos[1] + deck.scale![1] / 2)), 1390);
+    assert.equal(Math.round(100 * (deck.pos[1] - deck.scale![1] / 2)), 1150);
+  }
+});
 const bell = validation.loadLevelArtifact(bellRaw, artifact.prefabs),
   west = validation.loadLevelArtifact(westRaw, artifact.prefabs),
   gorge = validation.loadLevelArtifact(gorgeRaw, artifact.prefabs);

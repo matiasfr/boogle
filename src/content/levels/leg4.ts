@@ -891,7 +891,7 @@ const saltBed = shores.saltBed.slice(1).map((b, i) => {
 });
 const saltFrame = frame(shores.saltLand.centre, unit(0, 1), unit(1, 0));
 // From the waterfront apron to the east rim of the 55 m top. The head overlaps the rim.
-const rampFrame = frame({ x: 104, z: 973 }, unit(-93, 23), unit(23, 93));
+const rampFrame = frame({ x: 109, z: 982 }, unit(-99, 14), unit(14, 99));
 const quayPieces = [
   ...shorePieces(shores.portIsle),
   quay.box('quay-slab', -26, 26, -10, 18, 2.96, 2, 'grey'),
@@ -899,10 +899,17 @@ const quayPieces = [
     quay.box('platform-' + (side + 1), -20, 20, side * 5.8 - 2, side * 5.8 + 2, 3.9, 1, 'light'),
     quay.ramp('platform-step-' + (side + 1), -20, 3.9, -23, 3, side * 5.8 - 2, side * 5.8 + 2, 'grey'),
   ]),
-  quay.box('apron', -31, 64, -70, -7.8, 3.02, 1, 'grey'),
-  quay.box('ramp-landing', 39, 51, -7.8, 2, 3.02, 1, 'grey'),
-  rampFrame.ramp('high-port-ramp', 0, 3, 98, 55, -3, 3, 'grey'),
-  { ...rampFrame.ramp('high-port-parapet', 0, 4, 98, 56, 3, 3.3, 'pale'), h: 1 },
+  quay.box('apron', -31, 35, -70, -7.8, 3.02, 1, 'grey'),
+  quay.box('apron-mid', 35, 48, -70, -12, 3.02, 1, 'grey'),
+  quay.box('apron-end', 48, 64, -70, -24, 3.02, 1, 'grey'),
+  quay.box('apron-ramp-side', 25, 52, 5, 12, 3.02, 1, 'grey'),
+  quay.ramp('platform-crossing-step', 20, 3.9, 23, 3.18, -7.8, -3.8, 'grey'),
+  ...Array.from({ length: 16 }, (_, i) =>
+    quay.box('foot-plank-' + i, 23, 25, (100 * i - 780) / 100, (100 * i - 682) / 100, 3.19, 0.24, 'sandstone'),
+  ),
+  rampFrame.box('ramp-landing', -5, 0, -3, 3, 3.02, 1, 'grey'),
+  rampFrame.ramp('high-port-ramp', 0, 3, 100, 55, -3, 3, 'grey'),
+  { ...rampFrame.ramp('high-port-parapet', 0, 4, 100, 56, 3, 3.3, 'pale'), h: 1 },
 ];
 const areas = [
   {
@@ -923,7 +930,7 @@ const areas = [
     posts: [{ id: 'end-board', ...quay.at(24, 5.8), y: 3, facing: unit(17.6, -17.75), label: 'quay.wall' }],
     reserves: [
       quay.reserve('Roundhouse', -30, 30, -69, -9, 3.02, 12),
-      quay.reserve('town', 33, 63, -55, -25, 3.02, 12),
+      quay.reserve('town', 33, 63, -67, -37, 3.02, 12),
     ],
   },
 ];
