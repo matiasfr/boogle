@@ -486,6 +486,32 @@ colour only. Not tested on a device.
 in (the flood's pockets); the bluff's end 0.6 m broader at its lip; the low face unused at the shore; wall 9's rim caps
 dropped (the top tier stands at the rim); the shore hop's colour left for step 7. No copy changed.
 
+## Step 2 as built
+
+The [three matched views](cliff-kit-everywhere/gorge-rim-before-after.jpg) show the census lookout, the descent at eye
+height and the lookout bank from across the water. [Individual stills](cliff-kit-everywhere/gorge-rim/) are 1200 px wide.
+
+The gorge adds 95 faces in its own area. Short faces fill the intermediate 3 m contours along the descending lookout
+bank (wall 6). Across the water, two-course faces follow 6 m contours below and above the camp path (wall 0).
+Six tall canyon faces cover the sheer cut north of the bend. The lower bank stops at the tread, and the upper courses
+join the six original canyon faces. The generator uses the shore's run spacing.
+
+The first pass drew a large pale slab across the water in the third view. A ray through that part of the image hit
+the nearly level top of a two-course face 0.3 m from the camera. The tall slabs span that seam and lean into the bank.
+
+The canyon and shore levels are byte-identical to main. Prefabs checked fresh. Level-check found zero problems in
+all three kit areas. The reverse flood lost zero of the gorge square's 72,361 nodes, including when the existing
+canyon solids were included. The mount uses the kit's shared clearance helper. No new meshes or copy.
+
+With the shore eval's held-W controller, the walk arrived both ways from the lookout bend, across the bridge,
+to the upper bend of the camp climb. Five seconds idle at the lookout gave 0 m horizontal creep. On the way back
+both builds crossed the eval's 7 m/s fall marker (7.26 m/s on main and 7.24 m/s here).
+
+At the census camera the first pass added 149,688 triangles. Using the tall slabs on the sheer cut and short infill
+on the lookout bank cuts that increase to 83,248 across both passes. Main counted 356 draws and 683,389 triangles,
+and the revised gorge counted 364 draws and 766,637 triangles. This is 13,248 triangles above the camera guide.
+Frame time on a device is unverified.
+
 ## Design review (2026-11-24)
 
 Run by the plan's author in the same context (design-review skill). Read for it: DESIGN.md, owner calls (Look and art,

@@ -193,7 +193,9 @@
   Records: `terrain.*` (src/content/prefabs/terrain.ts), placed by the cliff kit's generator
   [dev/prefab/cliff-kit.ts](../../dev/prefab/cliff-kit.ts), one level an area (the canyon is the first), from the
   ground; each area its own instance batches (the canyon's seven, 6,688 triangles a pass). The kit goes on every cliff
-  area by area ([cliff-kit-everywhere](../plans/cliff-kit-everywhere.md)).
+  area by area ([cliff-kit-everywhere](../plans/cliff-kit-everywhere.md)). At the rim lookout, sandstone courses follow
+  the height contours on both riverbanks and above the camp path. The climb's existing faces meet those upper courses.
+  The crowns are too steep to stand on, and the descent, bridge approach and climb keep their full tread width.
 - **Lighting model: three's plain Standard lighting** (10 November owner call: baseline shading, after trying toon
   style B live as the default). No stepped light, cool shade side or rim on characters or the world. The comparison
   is kept as research: [toon-shading](../research/toon-shading.md).
