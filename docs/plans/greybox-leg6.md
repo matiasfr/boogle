@@ -305,7 +305,7 @@ step's **brief lines** are the state file's "Rules learned" that apply; the orch
 Every brief starts with `git fetch origin` and `git checkout -B <branch> origin/main` (rule 66), uses Node 26 and
 `UNIT_ONLY=<files> node dev/test-unit.ts` (rule 6), and says no `git stash` (rule 11) and no `--no-verify` (rule 46).
 
-- [ ] **1. The catalog (M to L; "High-risk implementation").** Files: `dev/level/world-blockout.ts` (`TURNBACKS` ends for
+- [x] **1. The catalog (M to L; "High-risk implementation").** Files: `dev/level/world-blockout.ts` (`TURNBACKS` ends for
       `ns` and `bay`; the bay service's Canopy re-route as named points and arcs; the Notch's shortened end; the `ns`
       service's `curves`; heights), regenerated `src/sim/railway-world-lines.ts`, `docs/world/world-blockout.html`,
       `docs/world/rail-map.html`, the map page's rails; `src/sim/railway-route.ts` (`FIRST_SITE['notch-tunnel']` and
@@ -322,7 +322,7 @@ Every brief starts with `git fetch origin` and `git checkout -B <branch> origin/
       run only there); rule 40 (the built level JSON is in the file list); rule 42 (stop only at `server/`, `src/net`,
       or a WORLD_NS-pinned fixture outside this step's list); rule 8 (a new test file only where lockstep: none here,
       cases go in the existing route tests).
-- [ ] **2. The rules and the bump (L; "High-risk implementation", high for the fuzz).** Files: `src/sim/railway-lines.ts`
+- [x] **2. The rules and the bump (L; "High-risk implementation", high for the fuzz).** Files: `src/sim/railway-lines.ts`
       (both `appendLeg`s, fleets); `src/sim/railway-components.ts` (`Route.reached`); `src/sim/railway-sys-route.ts`
       (`reached` in the tick; `arrive`); `src/sim/railway-queries-route.ts` (`legMintChain`'s `kitAhead`,
       `legKitRoom`, `tradeBuildDone` by reached legs); `src/sim/railway-check-route.ts`, `railway-check-steel.ts`
@@ -347,7 +347,7 @@ Every brief starts with `git fetch origin` and `git checkout -B <branch> origin/
       owner); rule 52 (the whole server suite, `RAIL_AUDIT=1` for timings, rule 64); rule 55 (`npm run test:net`: the
       seeds and goldens move); rule 61 (the boot probe on the built site: halts gain leg tags and lines new fleets);
       rule 33 (assertions and fixtures change: `--reviewed` after review).
-- [ ] **3. Seeds and stages (S; "High-risk implementation").** Starts on leg 5 step 6's reviewed tip, or on main once it
+- [x] **3. Seeds and stages (S; "High-risk implementation").** Starts on leg 5 step 6's reviewed tip, or on main once it
       lands, whichever is first (rule 74); it rebases onto main before it reports. `src/sim/railway-seed-legs.ts` from
       `wall-closed`, accepted ops only, each wrapped in `need` (rule 53): `notch-open` (the Wall laid, the Notch's kit on
       Canopy's rack, the barrier shut), `notch-reached` (the Notch laid, the lantern not taken), `causeway-open` (the
@@ -483,6 +483,39 @@ v71, this); G2's reserve is not taken (no catalog row is added or reordered: bot
 ## Level findings
 
 The pinned cloth and the Notch barrier at frame 1 are 24.72 m apart, pending the owner's word on leg 3's call 20.
+
+**As built, steps 1–3, v72.** The catalog measures 911.27 m from Canopy to Lantern Notch and 725.03 m from Bell Rock to the island.
+The tightest rounded chords measure 40.21 m and 281.67 m, respectively. The existing Bell Rock shore is 9.76 m from the causeway centreline.
+Both racks use the planned 7 m setback. The current bay and north–south consists place the kit car 3.7 m behind the train mark.
+The v71 and v72 runs through `wall-closed` matched on all 33 observed line 2 wagon stops and footing deliveries.
+Six footings unloaded on each of ticks 5611, 6639, 8844, 10049 and 11314.
+
+At 75% headway, each of the following trials ran 20,000 ticks with a lever ask attempted on 5% of ticks and a save and restore halfway through.
+The Canopy standard and mixed trials and the Wall trials passed alongside them. The service budgets use the stage of each call.
+Another 24 seeds per line passed the same 20,000-tick trials. The longest waits on growing and settled track were
+1,986 and 2,142 ticks for the Notch and 1,679 and 1,376 for the causeway. In a separate default run on HOTBOX,
+the Notch took 6.32 s and the causeway 7.77 s against their 480 s budgets. Host CPU sampled 18% before and 23% after.
+
+```text
+✔ notch-tunnel service health at 75% headway on growing and settled track
+  c0ffee growing: 156 accepted, worst 1804 ticks; 3/240093/0,0,0 h866 b1882; 3/331220/0,0,0 h1170 b2540
+  c0ffee settled 1: 161 accepted, worst 1800 ticks; 3/331220/0,0,0 h1170 b2540
+  777 growing: 162 accepted, worst 1777 ticks; 3/240093/0,0,0 h866 b1882; 3/331220/0,0,0 h1170 b2540
+  777 settled 1: 163 accepted, worst 1729 ticks; 3/331220/0,0,0 h1170 b2540
+  5eed growing: 162 accepted, worst 1842 ticks; 3/240093/0,0,0 h866 b1882; 3/331220/0,0,0 h1170 b2540
+  5eed settled 1: 157 accepted, worst 1786 ticks; 3/331220/0,0,0 h1170 b2540
+  badd growing: 161 accepted, worst 1754 ticks; 3/240093/0,0,0 h866 b1882; 3/331220/0,0,0 h1170 b2540
+  badd settled 1: 162 accepted, worst 2039 ticks; 3/331220/0,0,0 h1170 b2540
+✔ causeway service health at 75% headway on growing and settled track
+  c0ffee growing: 124 accepted, worst 1581 ticks; 2/115600/0,0 h668 b1386; 2/188103/0,0 h1030 b2160
+  c0ffee settled 1: 135 accepted, worst 1258 ticks; 2/188103/0,0 h1030 b2160
+  777 growing: 117 accepted, worst 1584 ticks; 2/115600/0,0 h668 b1386; 2/188103/0,0 h1030 b2160
+  777 settled 1: 120 accepted, worst 1305 ticks; 2/188103/0,0 h1030 b2160
+  5eed growing: 126 accepted, worst 1552 ticks; 2/115600/0,0 h668 b1386; 2/188103/0,0 h1030 b2160
+  5eed settled 1: 123 accepted, worst 1412 ticks; 2/188103/0,0 h1030 b2160
+  badd growing: 121 accepted, worst 1697 ticks; 2/115600/0,0 h668 b1386; 2/188103/0,0 h1030 b2160
+  badd settled 1: 122 accepted, worst 1330 ticks; 2/188103/0,0 h1030 b2160
+```
 
 `npm run level-check` ran on 25 November (main `3db6cbf36`, world v71; the two commits since are docs): **25 reports, no
 failure, 74 s.** Every leg 2 to 5 line is "ok" (Bell Rock's two levels, Canopy's floods and reserves, the Wall). The

@@ -15,7 +15,7 @@ import {
 import { RING_HALT, RING_HEAD, RING_JOINT_UP, RING_STEEL_WORKS, ringAt } from '../sim/railway-ring-layout.ts';
 import { CROSSING_BENTS, PIER_STOP, SHED_TABLE, WORKS_KILN, WORKS_RACK } from '../sim/railway-works-layout.ts';
 import { RAIL_LINES } from '../sim/railway-lines.ts';
-import { RAIL_GRANTS, RAIL_LEGS, legFrame, legRack } from '../sim/railway-route.ts';
+import { RAIL_ARRIVAL, RAIL_GRANTS, RAIL_LEGS, legFrame, legRack, rowSide } from '../sim/railway-route.ts';
 
 /** Where a jump-in lands, in metres on world axes; y is the surface stood on (terrain, pad or deck). */
 export type JumpLand = { x: number; y: number; z: number; yaw?: number };
@@ -342,6 +342,34 @@ export const JUMPS: readonly Jump[] = [
     line: 'The cave line reaches High Gorge',
     land: { x: -132.55, z: -1999.03, y: 3.9, yaw: -2.11 },
   },
+  {
+    stage: 'notch-open',
+    menu: false,
+    label: 'Notch open',
+    line: 'Open the Notch barrier at Canopy Town (placeholder)',
+  },
+  {
+    stage: 'notch-reached',
+    menu: false,
+    label: 'Notch reached',
+    line: 'Take the lantern at Lantern Notch (placeholder)',
+    land: near(rowSide('bay', RAIL_LEGS[6]!.sections[0]!.toCm, 480, 90, 400), 0, 0, 7.9, RAIL_GRANTS[3]!.at),
+  },
+  {
+    stage: 'causeway-open',
+    menu: false,
+    label: 'Causeway open',
+    line: 'Build the causeway to the Original Island (placeholder)',
+    land: betweenRackAndFrame(7, 0),
+  },
+  {
+    stage: 'island-reached',
+    menu: false,
+    label: 'Island reached',
+    line: 'Arrive (placeholder)',
+    land: near(rowSide('ns', RAIL_LEGS[7]!.sections[0]!.toCm, 480, 90, 400), 0, 0, 4.9, RAIL_ARRIVAL),
+  },
+  { stage: 'arrived', menu: false, label: 'Arrived', line: 'Arrived (placeholder)' },
   // Garage step 4 (docs/plans/garage-step4.md, step 3): placeholder tooling copy for the owner, no landings (the usual
   // spawn at Home is the post's side of the island; trade-held's train stands at Bell Rock, which canopy-open's note
   // above keeps unlanded).

@@ -42,19 +42,13 @@ export const LEG_STAGES = [
   'wall-mid',
   'wall-deep',
   'wall-closed',
-] as const;
-export type LegStage = (typeof LEG_STAGES)[number];
-
-// The rules and host tests drive these ending steps before the jump catalog publishes them.
-const DRIVE_STAGES = [
-  ...LEG_STAGES,
   'notch-open',
   'notch-reached',
   'causeway-open',
   'island-reached',
   'arrived',
 ] as const;
-type DriveStage = (typeof DRIVE_STAGES)[number];
+export type LegStage = (typeof LEG_STAGES)[number];
 
 /** The legs' slots in RAIL_LEGS. */
 const STACK = RAIL_LEGS.findIndex((l) => l.id === 'stack'),
@@ -106,11 +100,11 @@ export function laySection(s: Seed, k = STACK) {
 }
 /** The leg stages after `from` up to `to` run on `s`, any seed in `from`'s state (garage step 4's tests start them
  * from worlds they already hold, such as High Gorge reached with steel home). Changes `s` in place and returns it. */
-export function legStagesOn(s: Seed, from: DriveStage, to: DriveStage): Seed {
-  const a = DRIVE_STAGES.indexOf(from),
-    b = DRIVE_STAGES.indexOf(to);
+export function legStagesOn(s: Seed, from: LegStage, to: LegStage): Seed {
+  const a = LEG_STAGES.indexOf(from),
+    b = LEG_STAGES.indexOf(to);
   need(a >= 0 && b > a, `${from} to ${to}`);
-  for (const stage of DRIVE_STAGES.slice(a + 1, b + 1)) build(s, stage);
+  for (const stage of LEG_STAGES.slice(a + 1, b + 1)) build(s, stage);
   const broken = invariant(s.w);
   need(broken === null, `${to}: ${broken}`);
   return s;
@@ -131,7 +125,7 @@ const racked = (s: Seed, k: number) => {
 /** A train of leg `k`'s line carries its kit. */
 const aboard = (s: Seed, k: number) => legKitCarriers(s.w, RAIL_LEGS[k]!.line) > 0;
 
-function build(s: Seed, stage: DriveStage): Seed {
+function build(s: Seed, stage: LegStage): Seed {
   const w = s.w;
   switch (stage) {
     case 'gorge-open':

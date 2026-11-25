@@ -372,6 +372,31 @@
    "stage": 4044049315,
    "after": 699527131
   },
+  "notch-open": {
+   "tick": 34673,
+   "stage": 3774969536,
+   "after": 860753391
+  },
+  "notch-reached": {
+   "tick": 34973,
+   "stage": 3165057437,
+   "after": 3709421662
+  },
+  "causeway-open": {
+   "tick": 36099,
+   "stage": 349856672,
+   "after": 2012771700
+  },
+  "island-reached": {
+   "tick": 37186,
+   "stage": 1198429918,
+   "after": 3102037738
+  },
+  "arrived": {
+   "tick": 37186,
+   "stage": 511822757,
+   "after": 731311153
+  },
   "trade-ready": {
    "tick": 23017,
    "stage": 4289918166,
