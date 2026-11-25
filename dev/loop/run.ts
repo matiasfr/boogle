@@ -367,7 +367,7 @@ function* forge(g: Game, pl: Player, takePack: boolean): Policy {
       (want) => chopTo(g, pl, want),
       () => g.acct(pl.pid).carry,
       LINE2_FORGE,
-      (n) => ({ op: 'rail.deposit', station: 'F', kind: 0, n: Math.min(n, target - used()) }),
+      (n) => ({ op: 'rail.deposit', station: 'F', kind: 0, n }),
     );
   if (takePack) {
     yield* bring(LINE2_FORGE.bills[0]);

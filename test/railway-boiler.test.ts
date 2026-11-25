@@ -228,7 +228,7 @@ const fit = (w: Seed) => {
 };
 test('station 6 takes nothing by hand and the forge gives no rails until trains run', () => {
   const w = doctored(railwayAtTrains('boiler'), 0, 0, 4);
-  chopTo(w, 'a', 4); // the proper axe's one stroke: 5 logs, beside the 4 rails (their own row)
+  chopTo(w, 'a', 4); // the tree's four remaining logs, beside the four rails in their own row
   const rack = forge(w.w).rack;
   assert.ok(rack > 0, 'the rack has rails');
   assert.equal(act(w, 'a', 'rail.deposit', { station: 'Q6', kind: 0, n: 4 }), 0, 'no logs by hand');
@@ -236,7 +236,7 @@ test('station 6 takes nothing by hand and the forge gives no rails until trains 
   assert.equal(act(w, 'b', 'rail.forgeTake'), 0, 'the rack keeps its rails for the kit');
   assert.equal(forge(w.w).rack, rack);
   assert.deepEqual([qjobs(w.w)[5]!.stock, qjobs(w.w)[5]!.railStock], [0, 0]);
-  assert.deepEqual([account(w.w, 'a')!.carry, account(w.w, 'a')!.rails], [5, 4], 'the back keeps its load');
+  assert.deepEqual([account(w.w, 'a')!.carry, account(w.w, 'a')!.rails], [4, 4], 'the back keeps its load');
   // The fit opens both: the frame takes a back's load and the rack gives rails again.
   fit(w);
   while (rail(w.w).trains < 0) advance(w, 1);
