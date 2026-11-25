@@ -781,6 +781,22 @@
         },
         {
           "bounds": [
+            39,
+            51,
+            -7.8,
+            2
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 1,
+          "id": "ramp-landing",
+          "tone": "grey",
+          "top": 3.02
+        },
+        {
+          "bounds": [
             0,
             98,
             -3,
@@ -905,19 +921,19 @@
       },
       {
         "o": {
-          "x": 97,
-          "z": 971
+          "x": 104,
+          "z": 973
         },
         "u": {
           "axis": {
             "x": -93,
-            "z": 26
+            "z": 23
           },
           "compute": "unit"
         },
         "v": {
           "axis": {
-            "x": 26,
+            "x": 23,
             "z": 93
           },
           "compute": "unit"

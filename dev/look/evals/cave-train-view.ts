@@ -1,3 +1,4 @@
+// npm run look -- --rail-seed cave-mid --query caveview=hood --action dev/look/evals/cave-train-view.ts --warm 3 --size 1200x750 --name cave-train-hood
 // --rail-seed cave-mid (hood, face, head) or port-reached (salt), --action this file.
 // The camera rides the rendered engine's frame for the pass. At the Saltpan, call a
 // real train with the platform lever and wait for the host to record its stop.

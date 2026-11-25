@@ -891,7 +891,7 @@ const saltBed = shores.saltBed.slice(1).map((b, i) => {
 });
 const saltFrame = frame(shores.saltLand.centre, unit(0, 1), unit(1, 0));
 // From the waterfront apron to the east rim of the 55 m top. The head overlaps the rim.
-const rampFrame = frame({ x: 97, z: 971 }, unit(-93, 26), unit(26, 93));
+const rampFrame = frame({ x: 104, z: 973 }, unit(-93, 23), unit(23, 93));
 const quayPieces = [
   ...shorePieces(shores.portIsle),
   quay.box('quay-slab', -26, 26, -10, 18, 2.96, 2, 'grey'),
@@ -900,6 +900,7 @@ const quayPieces = [
     quay.ramp('platform-step-' + (side + 1), -20, 3.9, -23, 3, side * 5.8 - 2, side * 5.8 + 2, 'grey'),
   ]),
   quay.box('apron', -31, 64, -70, -7.8, 3.02, 1, 'grey'),
+  quay.box('ramp-landing', 39, 51, -7.8, 2, 3.02, 1, 'grey'),
   rampFrame.ramp('high-port-ramp', 0, 3, 98, 55, -3, 3, 'grey'),
   { ...rampFrame.ramp('high-port-parapet', 0, 4, 98, 56, 3, 3.3, 'pale'), h: 1 },
 ];

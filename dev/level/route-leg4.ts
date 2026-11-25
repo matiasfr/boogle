@@ -149,8 +149,8 @@ function coastalReach(check: (message: string, passed: boolean) => void, id: 'sa
           home,
           slab: at(s - 2200, 0),
           apron: at(s, -1600),
-          foot: { x: 97, z: 971 },
-          head: { x: 4, z: 997 },
+          foot: { x: 104, z: 973 },
+          head: { x: 10, z: 996 },
           top: { x: 0, z: 1000 },
         },
   ))
