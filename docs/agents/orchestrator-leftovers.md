@@ -4,6 +4,9 @@ Proof debts, things jobs reported and did not fix, and older parked items. Split
 
 ## From 25 November
 
+- P3, copy, the owner's · From order picks B2's review (#2393): during the trade hold the garage readout says "Kit a trip: Nothing to build" beside "Held while the line builds" (`kitTrip` needs two sections left), so the two lines read as contradicting each other. The screen's new strings are placeholders for him: "Held while the line builds", "Held until the line is laid", "Re-pick used", "Swap (once)".
+- P3 · Same review: during the hold the garage's 3D view still shows the held boiler's faded preview, as swap and steel already do in `showSelection` (`src/entities/railway/garage-view.ts`, near line 1199).
+- P3 · Same review: `src/features/garage.css` raises the global `.notify`'s z-index while the garage is open (`body.garage-open .notify`), coupling the garage's styles to another feature; harmless today.
 - P3 · From the order picks A1 + C1 review (#2390): the pillar drum's `rail.jump` is refused for about 5.7 s after its lip opens while Station 3 lays, because `src/sim/railway-sys-line1.ts` (near line 363) waits for Station 3's completion. Fix: gate it on Station 3 funded (`start >= 0`) instead, and change the save check's "both parts before Station 3" (`src/sim/railway-check-line1.ts`, near line 76) the same way. The reviewer's failing test is on local `review/order-pick-rules` @ `208d6a903` (worktree `C:/Users/matia/.t3/worktrees/boogle/t3-91919a26-c25f7944776187d7`).
 - P3, docs · `docs/game-design/place.md`'s Station 1 bullet (near line 423 on main; the review cited line 66) describes the two stands beside the frame before A2 builds them; reword it to the present state, or let A2 make it true.
 
