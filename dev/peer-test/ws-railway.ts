@@ -1399,21 +1399,18 @@ export async function railwayCarrierLeaves(c: Ctx) {
 // server/src/host/host-maintenance.ts): a leaver's lifted leg units stay on their back and counted held for the leg
 // through `railBeamGraceS` (180 s); past it legKitRelease takes them off the held count only. The grace clock lives in
 // the host's memory, so a restart starts it again for anyone still away.
-export async function railwayLegRejoin(c: Ctx) {
-  await legRejoinWithDeadline(c, 'bell-canopy', 'canopy-mid');
-  await legRejoinWithDeadline(c, 'cave', 'cave-mid');
-}
+type RejoinSeed = 'canopy-mid' | 'cave-mid';
 
-async function legRejoinWithDeadline(c: Ctx, legId: 'bell-canopy' | 'cave', seed: 'canopy-mid' | 'cave-mid') {
+export async function railwayLegRejoin(c: Ctx, seed: RejoinSeed) {
   // The whole case, the seed build included (about two minutes on HOTBOX), within its own deadline.
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     await Promise.race([
-      legRejoin(c, legId, seed),
+      legRejoin(c, seed),
       new Promise<never>(
         (_, reject) =>
           (timer = setTimeout(
-            () => reject(new Error(`${seed} rejoin proof stopped: past its 8-minute deadline`)),
+            () => reject(new Error(`Leg rejoin proof stopped (${seed}): past its 8-minute deadline`)),
             480_000,
           )),
       ),
@@ -1422,7 +1419,7 @@ async function legRejoinWithDeadline(c: Ctx, legId: 'bell-canopy' | 'cave', seed
     clearTimeout(timer);
   }
 }
-async function legRejoin(c: Ctx, legId: 'bell-canopy' | 'cave', seed: 'canopy-mid' | 'cave-mid') {
+async function legRejoin(c: Ctx, seed: RejoinSeed) {
   const { RAIL_LEGS, legRack } = await import('../../src/sim/railway-route.ts');
   const { RAIL_LINES } = await import('../../src/sim/railway-lines.ts');
   const { RAILWAY_CAPACITY } = await import('../../src/sim/railway-layout.ts');
@@ -1431,8 +1428,9 @@ async function legRejoin(c: Ctx, legId: 'bell-canopy' | 'cave', seed: 'canopy-mi
   const { LINE_SLOTS, cycleTicks } = await import('../../src/sim/railway-trains.ts');
   const legCheck = (name: string, ok: boolean, detail = '') => {
     c.check(`leg rejoin (${seed}): ${name}`, ok, detail);
-    if (!ok) throw new Error(`${seed} rejoin proof stopped: ${name}${detail ? ` (${detail})` : ''}`);
+    if (!ok) throw new Error(`Leg rejoin proof stopped (${seed}): ${name}${detail ? ` (${detail})` : ''}`);
   };
+  const legId = seed === 'cave-mid' ? 'cave' : 'bell-canopy';
   const k = RAIL_LEGS.findIndex((l) => l.id === legId),
     leg = RAIL_LEGS[k]!;
   /** A bay train's round trip from the line's start to head 1, dwells included: the rack sees every train once. */

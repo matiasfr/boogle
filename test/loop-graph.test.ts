@@ -340,31 +340,40 @@ type RejoinFault =
   | 'no bay train carries kit at the seed'
   | 'no bay train carries kit after the first round trip';
 
-async function replayLegRejoin(fault?: RejoinFault) {
+async function replayLegRejoin(seed: 'canopy-mid' | 'cave-mid', fault?: RejoinFault) {
+  const legId = seed === 'cave-mid' ? 'cave' : 'bell-canopy';
+  const legSlot = RAIL_LEGS.findIndex((l) => l.id === legId);
+  const legSpec = RAIL_LEGS[legSlot]!;
+  const slots = LINE_SLOTS[legSpec.line]!;
+  const [rackedKitSlot, seedKitSlot, otherSlot = seedKitSlot] = slots;
+  const [, second, third] = legSpec.sections;
+  const firstTwo = legSpec.sections.slice(0, 2);
   const pages = new Set<string>();
   let tick = 0,
     picked = false,
     restoredAt = -1;
-  const kitUnits = fault === 'empty cargo' ? 0 : 20;
-  const pickup = fault === 'short pickup' ? 1 : 16;
+  const kit = () => (tick ? third! : second!);
+  const pickup = fault === 'short pickup' ? 1 : Math.min(second!.rails, 16);
+  const loaded = (kind: 'logs' | 'rails', missing: RejoinFault) =>
+    firstTwo.reduce((sum, section) => sum + section[kind], 0) + (tick && fault !== missing ? third![kind] : 0);
   const leg = () => ({
-    slot: 3,
+    slot: legSlot,
     laid: 1,
     logs: 0,
     rails: picked && fault === 'fed during pickup' ? 1 : 0,
     start: -1,
-    loadedLogs: tick && fault !== 'missing log load' ? 60 : 40,
-    loadedRails: tick && fault !== 'missing load' ? 60 : 40,
+    loadedLogs: loaded('logs', 'missing log load'),
+    loadedRails: loaded('rails', 'missing load'),
     heldLogs: picked && fault === 'logs held at pickup' ? 1 : 0,
     heldRails: picked && fault !== 'held' ? pickup : 0,
   });
   const rack = () => ({
-    depot: tick > 0 ? 20 : 0,
+    depot: tick > 0 ? second!.logs : 0,
     depotRails: rackRails(),
   });
   function rackRails() {
     if (tick === 0 || (fault === 'restore' && tick === restoredAt)) return 0;
-    return picked && fault !== 'rack' ? 20 - pickup : 20;
+    return second!.rails - (picked && fault !== 'rack' ? pickup : 0);
   }
   const train = (_world: unknown, slot: number) => {
     const switched = fault === 'kit switches trains on the final round trip' && restoredAt >= 0 && tick > restoredAt;
@@ -372,9 +381,14 @@ async function replayLegRejoin(fault?: RejoinFault) {
     const missing =
       (fault === 'no bay train carries kit at the seed' && tick === 0) ||
       (fault === 'no bay train carries kit after the first round trip' && tick > 0);
-    const legKit = !missing && slot === (tick === 0 || switched ? 10 : moved ? 11 : 9);
-    const phantom = fault === 'server has phantom rails on an unmarked train' && picked && !legKit && slot === 11;
-    return { legKit, logs: legKit ? kitUnits : 0, rails: legKit ? kitUnits : phantom ? 1 : 0 };
+    const legKit = !missing && slot === (tick === 0 || switched ? seedKitSlot : moved ? otherSlot : rackedKitSlot);
+    const phantom =
+      fault === 'server has phantom rails on an unmarked train' && picked && !legKit && slot === otherSlot;
+    return {
+      legKit,
+      logs: legKit && fault !== 'empty cargo' ? kit().logs : 0,
+      rails: legKit && fault !== 'empty cargo' ? kit().rails : phantom ? 1 : 0,
+    };
   };
   const back = () => ({ rails: picked ? pickup : 0, legRails: picked ? pickup : 0 });
   /** The server's account row: the fixture's back, or none (a fault). */
@@ -410,8 +424,7 @@ async function replayLegRejoin(fault?: RejoinFault) {
           const staleBack =
             (fault === 'mirror' && restoredAt < 0) || (fault === 'late mirror' && restoredAt >= 0 && tick > restoredAt);
           const observed = staleBack ? { rails: 0, legRails: 0 } : back();
-          const legSpec = RAIL_LEGS.find((l) => l.id === 'bell-canopy')!;
-          const trains = LINE_SLOTS[legSpec.line]!.map((slot) => ({
+          const trains = slots.map((slot) => ({
             slot,
             ...train(undefined, slot),
           }));
@@ -464,25 +477,28 @@ async function replayLegRejoin(fault?: RejoinFault) {
       return { name, selfId: name, page: { name, close: async () => pages.delete(name) } };
     },
   };
-  await (railwayLegRejoin as (ctx: unknown) => Promise<void>)({
-    room: 'wscheck',
-    port: () => 1234,
-    dataDir: '',
-    web,
-    hosted: () => hosted,
-    check() {},
-    restart: async () => {
-      restoredAt = tick;
-      hosted = { world: { ...world } };
+  await (railwayLegRejoin as (ctx: unknown, stage: typeof seed) => Promise<void>)(
+    {
+      room: 'wscheck',
+      port: () => 1234,
+      dataDir: '',
+      web,
+      hosted: () => hosted,
+      check() {},
+      restart: async () => {
+        restoredAt = tick;
+        hosted = { world: { ...world } };
+      },
     },
-  });
+    seed,
+  );
   assert.ok(restoredAt >= 0);
   return tick - restoredAt;
 }
 
 for (const fault of ['held', 'rack', 'empty cargo', 'restore', 'mirror'] as const) {
   test('the leg rejoin proof detects corrupted ' + fault, async () => {
-    await assert.rejects(replayLegRejoin(fault), /Leg rejoin proof stopped/);
+    await assert.rejects(replayLegRejoin('canopy-mid', fault), /Leg rejoin proof stopped/);
   });
 }
 
@@ -506,16 +522,21 @@ for (const fault of [
   'no bay train carries kit after the first round trip',
 ] as const) {
   test('the leg rejoin proof detects ' + fault, async () => {
-    await assert.rejects(replayLegRejoin(fault), /Leg rejoin proof stopped/);
+    await assert.rejects(replayLegRejoin('canopy-mid', fault), /Leg rejoin proof stopped/);
   });
 }
 
-test('the leg rejoin proof steps at least one bay train round trip after the restart', async () => {
-  const { cycleTicks } = await import('../src/sim/railway-trains.ts');
-  const { RAIL_LINES } = await import('../src/sim/railway-lines.ts');
-  const leg = RAIL_LEGS.find((l) => l.id === 'bell-canopy')!;
-  const stops = RAIL_LINES[leg.line]!.halts.slice(0, leg.railheadHalt + 1).map((h) => h.s);
-  const elapsed = await replayLegRejoin();
-  const cycle = cycleTicks(leg.line, stops);
-  assert.ok(elapsed >= cycle, `advanced ${elapsed} ticks, standard bay train needs at least ${cycle}`);
-});
+for (const [seed, legId] of [
+  ['canopy-mid', 'bell-canopy'],
+  ['cave-mid', 'cave'],
+] as const) {
+  test(`the ${seed} rejoin proof steps at least one train round trip after the restart`, async () => {
+    const { cycleTicks } = await import('../src/sim/railway-trains.ts');
+    const { RAIL_LINES } = await import('../src/sim/railway-lines.ts');
+    const leg = RAIL_LEGS.find((l) => l.id === legId)!;
+    const stops = RAIL_LINES[leg.line]!.halts.slice(0, leg.railheadHalt + 1).map((h) => h.s);
+    const elapsed = await replayLegRejoin(seed);
+    const cycle = cycleTicks(leg.line, stops);
+    assert.ok(elapsed >= cycle, `advanced ${elapsed} ticks, standard train needs at least ${cycle}`);
+  });
+}
