@@ -10,7 +10,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Greybox leg 4 step 5: the Saltpan, Port Quay and leg 4's views | The greybox route | codex/greybox-leg4-step5 | live session, Codex Astra medium | 2026-11-25 | running: step 4 shipped (#2414) |
+| Greybox leg 4 step 6: the bot and the loop | The greybox route | codex/greybox-leg4-bot | live session, Codex Sol medium | 2026-11-25 | running: step 5 shipped (#2423) |
 | Cliff kit step 6: Far Head | Terrain clean-up | codex/cliff-kit-far-head | live session, Codex Astra medium | 2026-11-25 | running |
 
 ## Where the work stands
