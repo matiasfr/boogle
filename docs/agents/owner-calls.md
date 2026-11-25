@@ -43,6 +43,7 @@ Dates are the original call dates; undated calls stay undated.
 
 **Tests and proofs**
 
+- [Review scope](#review-scope) · 24 Nov 2026
 - [Seed-only goldens](#seed-goldens) · 11 Nov 2026
 - [Checkpoint proofs](#checkpoints) · 11 Nov 2026
 - [Boot smoke](#boot-smoke) · 11 Nov 2026
@@ -60,7 +61,7 @@ Dates are the original call dates; undated calls stay undated.
 
 **Models and dispatch**
 
-- [Heartbeat on Fable, reviews the workflow](#heartbeat-workflow) · 17 Nov 2026
+- [Heartbeat](#heartbeat-workflow) · 17 Nov 2026
 - [Fold roles into the builder](#fold-roles) · 16 Nov 2026
 - [T3 dispatch](#in-t3-code-dispatch-t3s-way) · 14 Nov 2026
 - <a id="fable-where-taste-decides"></a>[Fable retired](#models) · 11 Nov 2026
@@ -202,6 +203,8 @@ Dates are the original call dates; undated calls stay undated.
 - <a id="research"></a>**Research is fair game.** Learning how existing games solve a problem isn't copying any one of them. No copyright caveats or avoidance guidance in research docs, briefs or repo files.
 
 ## Tests and proofs
+
+- <a id="review-scope"></a>**Reviews keep to what a player meets; checks are rough approximations that work** (owner, 24 November 2026, after the cliff kit's reach check went through three rounds of reviewers finding new movement combinations it missed, and the orchestrator replaced the movement model with a geometric rule: "I agree on your call to stop trying to simulate every move. We should just have rough approximations of stuff that works. Otherwise, it doesn't make sense to review for that. We should establish review guidelines that allow things to be streamlined, while generally gameplay coherent, without being too nitpicky about specific numbers that models generate."). Orchestrator's reading, as review guidelines: (1) A review looks for defects a player can meet in play (stuck, fallen through, pushed into the sea, a broken prompt, a softlock, a desync, a crash, lost progress) and for broken rules in AGENTS.md; it ranks each by how likely and how bad it is in real play. (2) Dev tooling, audits and level checks are judged as rough approximations that catch the common mistake; a reviewer does not construct contrived fixtures to defeat a check, and a hole in a check is a P3 note, not a block, unless the shipped content already falls through it. (3) Exact numbers a model chose (a threshold, a margin, a budget, a tolerance) are not findings unless a player would notice the difference; the reviewer names it once as a note. (4) Prefer a simple rule the content cannot get around over a simulation that must model every move. (5) A branch gets at most two review rounds; after the second, the orchestrator ships with the remaining P3s logged in the leftovers, or makes a design call that removes the class, rather than starting a third. P1s and P2s that a player can meet still block. Procedure: the [orchestrate skill](../../.claude/skills/orchestrate-boogle/SKILL.md), section 3, and every reviewer brief carries the gist.
 
 - <a id="seed-goldens"></a>**Pinned golden fixtures may be regenerated without a `WORLD_NS` bump when only dev seed data changes** (owner, 11 November: "yes"). The seed builders' own op sequences under `src/sim/railway-seed*.ts` may change and `test/fixtures/railway-golden.json` be regenerated (`GOLDEN=1 node --test --test-concurrency=1 'test/railway-golden-*.test.ts'`) with no bump; never for a rule, tick, wire or save-shape change, which still needs a bump. The regeneration changes only the stages whose seeds changed, and an independent reviewer confirms that by a keyed comparison. The rule also sits at the top of [`test/helpers/railway-golden.ts`](../../test/helpers/railway-golden.ts).
 
