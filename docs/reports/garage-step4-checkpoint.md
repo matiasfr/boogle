@@ -127,8 +127,8 @@ Not measured: no Mac in the loop. No HOTBOX figure stands in for it.
 
 ## The early Install (garage step 4's finding): did not reproduce at real speed
 
-At real speed, in each of two logged two-peer runs, Install lit exactly when the bring's hold ended (both clocks 23534 against a hold
-ending at 23534) and the first hold fitted. Its log is `gt-two` above. Two warped repeats (5x, then 3x) both failed on
+At real speed, in each of two logged two-peer runs, Install lit exactly when the bring's hold ended (23534 and 23756 by the action clock,
+`tickNow` at most one tick ahead) and the first hold fitted. Their logs are under `gt-two` above. Two warped repeats (5x, then 3x) both failed on
 harness clock capacity: the pages drifted 36 to 46 game s behind, and the 3x run ended under load. So no valid
 warped repeat exists. The finding stands only from step 4's warped bot runs. On the Quick run, Install lit and the hold
 began before tick 23252 by the action clock (`railAt`), while the bring's hold ends at 23255. Mid-crank the screen's
