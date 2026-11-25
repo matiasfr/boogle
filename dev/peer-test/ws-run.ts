@@ -327,10 +327,11 @@ try {
   await hostSection('leaf', () => railwayLeaf(ctx));
   // Ring Island build 2's Checkpoint A: a steel-yard carrier leaves mid-carry.
   await hostSection('carrier leaves', () => railwayCarrierLeaves(ctx));
-  // Greybox Checkpoints C and D: a carrier of leg kit leaves and rejoins after a server restart.
+  // Greybox Checkpoints C, D and E: a carrier of leg kit leaves and rejoins after a server restart.
   await hostSection('leg rejoin', async () => {
     await railwayLegRejoin(ctx, 'canopy-mid');
     await railwayLegRejoin(ctx, 'cave-mid');
+    await railwayLegRejoin(ctx, 'wall-mid');
   });
 
   // 11. WS_LOAD=1: R1a's and R1b's measurements (2, 4, 6 players at 0, 100, 200 ms added latency, normal and 5x
