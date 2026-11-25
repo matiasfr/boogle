@@ -10,7 +10,6 @@ The one record of who is running what, and what the eight-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Cliff kit step 10: Ring Island | Terrain clean-up | codex/cliff-kit-ring-island | live session, Codex Astra medium | 2026-11-25 18:44 | running; no performance pass first, on his word |
 | Greybox leg 5 Checkpoint E: the remaining proofs | The greybox route | codex/greybox-leg5-checkpoint-e | heartbeat, Codex Sol medium (step 6's builder thread) | 2026-11-25 18:40 | running; test:net rejoin, stills sheet, perf at the Wall, boot probe |
 | Greybox leg 6 steps 1 to 3: the catalog, the rules and the bump, the seeds | The greybox route | codex/greybox-leg6-rules | the orchestrator thread, Codex Astra high | 2026-11-25 19:15 | running: a delegate of the orchestrator thread; src/sim, src/world, one world bump; an independent Opus review before it ships |
 | A little hut for The Boogler on his island | A hut for The Boogler | codex/boogler-hut | the orchestrator thread, Codex Astra medium | 2026-11-25 19:15 | running: a delegate of the orchestrator thread; view and level content on the classic island; stills for him |
