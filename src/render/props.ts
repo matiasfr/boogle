@@ -6,6 +6,7 @@ import { kitMaterial } from '../prefab/builders/terrain-kit.ts';
 import { warmUp } from './precompile.ts';
 import { isHomePalm, tileKey, type PropSample } from '../blueprints/props.ts';
 import { placements } from '../entities/props/state.ts';
+import { groundHeight } from '../island/heights.ts';
 import { clearedAt } from '../island/layout.ts';
 import { mulberry32 } from '../math.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
@@ -66,9 +67,20 @@ export function createProps() {
         const recenter = new THREE.Matrix4().makeTranslation(-center.x, -bounds.min.y, -center.z);
         const pose = new THREE.Object3D();
         for (const [i, p] of samples.entries()) {
-          pose.position.set(p.x, p.h - 0.15 * p.size, p.z);
+          // Skirt the downhill edge while leaving the top on the existing sphere.
+          let foot = p.h;
+          for (let side = 0; side < 8; side++) {
+            const angle = (side * Math.PI) / 4;
+            foot = Math.min(foot, groundHeight(p.x + Math.cos(angle) * p.size, p.z + Math.sin(angle) * p.size));
+          }
+          foot -= 0.32 * p.size;
+          pose.position.set(p.x, foot, p.z);
           pose.rotation.y = p.look.spin[1]!;
-          pose.scale.set(2.1 / extent.x, 1.07 / extent.y, 1.85 / extent.z).multiplyScalar(p.size);
+          pose.scale.set(
+            (2.1 * p.size) / extent.x,
+            (p.h + 0.92 * p.size - foot) / extent.y,
+            (1.85 * p.size) / extent.z,
+          );
           pose.updateMatrix();
           pose.matrix.multiply(recenter);
           batch.setMatrixAt(i, pose.matrix);
