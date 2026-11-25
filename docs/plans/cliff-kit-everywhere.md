@@ -127,7 +127,7 @@ so each area mounts, culls and ships on its own:
    stays 0.4 m outside every tread (`pathAt`, which already includes the shore climb); 6 m from every gated place,
    built from `tech-layout.ts` `PADS`, `SECRETS`, `DEVICES` and `PILLARS` and the sites, not a hand list; outside every
    rail's loading gauge (the trial found 8 of 260 anchors within 6 m of a rail: walls 1, 3 and 10); and **no new way
-   up**, as a geometric rule, no new standing height ([Step 0 as built](#step-0-as-built)), checked in
+   up**, as a rough geometric rule ([Step 0 as built](#step-0-as-built)), checked in
    `npm run level-check`. Generation fails on the first piece that breaks a piece rule, as the canyon's does.
 5. **One mount wait.** Every area's view mounts its pieces through the shared lift-or-wait helper
    (`src/place/clearance.ts` `createLiftOrWait`, on main since #2365, bound in `src/prefab/instantiate.ts`): no area
@@ -205,7 +205,7 @@ note in this plan, then ship on the owner's word. No step waits on a playtest.
      nose; shore rocks sit at their foot in the water. Nothing of the kit stands on the walk.
    - **The collider, re-tuned.** The cove's trimesh goes; the faces' boxes are the new solids, checked by the area's
      audit (0.4 m off every tread, the shore climb's included; 6 m from the landing, the shore hop, the dock and its
-     sign, which go in the area's own `keepClear`; the no-new-standing-height gate, so no face top or low face is a
+     sign, which go in the area's own `keepClear`; the no-new-way-up gate, so no face top or low face is a
      step up from the beach or the climb). The landing's spawn and a returning player's saved spot are placed on ground
      by `src/place/pose.ts`, as now; the kit mounts through the lift-or-wait helper.
    - **Nobody stranded.** The area's audit adds a **reverse** flood (`dev/level/flood.ts`, `{ reverse: true }`): every
@@ -366,49 +366,39 @@ On `claude/cliff-kit-step0` (24 November 2026): dev tooling and the kit's view o
   loading gauge (live, drawn and Ring Island's planned tracks from `dev/level/rail-network.ts`): over the rail's top, a
   car's body from its 0.4 m floor up to 4.5 m (half its 2.2 m width) and its running gear under the floor (half the
   1 m track gauge), each with the 0.25 m static clearance level-check already holds furniture to beside trains.
-- **No new way up: no new standing height** (`dev/level/cliff-kit-standing.ts`, the gate in `npm run level-check`;
-  the orchestrator's call after two reviews, 24 November). A face of a piece's solid a player could stand on (its
-  outward normal at least the controller's walkable limit up, `WALKABLE_NY`) must lie, at every point, within one step
-  (0.3 m, the clearance helper's `STEP`) of a surface the bare world already offers within the player's radius
-  (0.45 m): walkable ground, or the sea's surface where the ground is under it. So a top may stand at most a step over
-  the ground under or beside it, or up to a step under the bare top it is flush against (a rim cap level with the lip);
-  every other face must be steeper than the controller can stand on. With no new standable surface above what the bare
-  world offers, no route of any kind (jumps, glides, train roofs, stepping stones) is gained, so the gate needs no
-  model of movement. Checked per collider, with full rotation and scale; a face point under the bare ground is buried
-  and not offered. It runs in level-check only, not at generation, so a piece that breaks it is reported, not built
-  round.
+- **No new way up, as a rough rule** (`dev/level/cliff-kit-standing.ts`, the gate in `npm run level-check`; the
+  orchestrator's call under the owner's [review-scope](../agents/owner-calls.md#review-scope): checks are rough
+  approximations that work). Every point of a piece's face a player could stand on (outward normal at least the
+  controller's walkable limit, `WALKABLE_NY`) is fine if any of:
+  - **flush**: within one step (0.3 m, the clearance helper's `STEP`) of a footing within the player's radius
+    (walkable bare ground, the sea's surface over drowned ground, or a train's highest top, 3.3 m over the rail,
+    anywhere along a drawn track), so a top a step over the ground beside it or a cap a step under its lip;
+  - **out of reach**: more than two jumps' rise (`TWO_JUMPS`, 3.03 m, now exported from `dev/level/mover.ts` for the
+    abilities check and this gate) above every lower footing and every lower reachable top of another piece within
+    8 m across the ground (a top is reachable when it is two jumps or less over a lower footing within 8 m, or a drop
+    from a train's roof within 8 m to two jumps under the rail). Ground above a top only drops a player onto it;
+  - **a low perch** (judged for the piece): its highest such point at most one jump's rise (`MOVER.jumpHeight`,
+    1.604 m) over the highest footing within 1 m of its tops.
+
+  Otherwise the piece offers a new way up and the area fails. Full rotation and scale; a face point under the bare
+  ground is buried. It runs in level-check only, not at generation. Known limits, by design: a staircase reached only
+  by a glide off a train's roof, and one whose first step is a glide or jump out of a roof beyond 8 m, pass (mid-air
+  chains are not followed).
 - **Per-area batches.** `src/entities/terrain-kit/view.ts` mounts every area in `src/entities/terrain-kit/areas.ts`
   (`KIT_AREAS`) as its own instance batches, all through the one `liftOrWait` call (`src/prefab/instantiate.ts`); the
   audit fails an area the list does not mount.
 
-**Results.** The gate fails on fixtures from both reviews, each placing a standable top it refuses
-(`test/level-flood.test.ts`, under the owner's exception for level-check's flood): a staircase up from the climb
-rising 2.2 m a step (8 of 8 steps), a ramp rising 8 m off the village green (30 or more of its 32 rocks), a perch on the
-gorge's lip and a ledge over the river (both), steps off a train roof beside line 2 (6 of 6), a staircase over the sea
-a cab's double jump and glide reach (5 of 5), one launched from a roof outside the old check's window (10 of 10),
-fifteen stepping stones falling past each other (15 of 15), and a top 2 m over the climb's path (1 of 1). A boulder
-sunk to within a step of flat ground and a cap flush with it pass. With the rule switched off, the refusing tests fail.
+**Results.** The canyon as built passes: 26 pieces, 0 problems (its faces out of reach, its boulders, bank rocks
+and rim caps low perches). The gate refuses, as sets (`test/level-flood.test.ts`, under the owner's exception for
+level-check's flood): a staircase up from the climb rising 2.2 m a step, a ramp rising 8 m off the village green, steps
+off a train roof beside line 2, fifteen stepping stones out over the sea from a cab's roof, and a top 2 m over the
+climb's path; it lets a sunk boulder, a flush cap and a lone low perch stand. With the gate switched off, the refusing
+tests fail. The second review's cab-glide staircase and roof-outside-the-window staircase pass: the known limits above.
 
-**The canyon as built breaks it on 25 of its 26 pieces** (only bank rock `canyon.15` keeps to it), reported for the
-owner's call per piece, the rule not loosened (`npm run level-check` fails on them until then):
-
-- The six faces (`canyon.0` to `canyon.3`, `canyon.20`, `canyon.21`): each slab's flat top, 14.4 m up the wall, has
-  no walkable ground or sea within the player's radius at its worst point: a standing height the bare wall does not
-  offer (`canyon.21`'s top lies near the plateau's lip, where a player can drop onto it).
-- Ten boulders (`canyon.4` to `canyon.11`, `canyon.22`, `canyon.23`): their tops stand 0.38 to 1.26 m over the
-  footing beside them (the four small ones 0.38 to 0.65 m, the four middle ones 0.88 to 1.26 m), and the two large
-  ones (`canyon.6`, `canyon.10`) have no walkable ground or sea within the player's radius of their tops.
-- Three bank rocks (`canyon.12` to `canyon.14`): tops 0.42 to 0.62 m over the bank or the water.
-- Six rim caps (`canyon.16` to `canyon.19`, `canyon.24`, `canyon.25`): tops 0.71 to 0.86 m over the plateau beside them.
-
-Each could be brought to the rule without moving it: a sloped or crowned top steeper than the controller can stand on
-(a collider change in `src/content/prefabs/terrain.ts`), a boulder sunk to within a step, or a cap set flush with the
-lip. Which, piece by piece, is the owner's.
-
-The movement-model check (`dev/level/cliff-kit-reach.ts`) that preceded the gate is removed rather than kept as an
-advisory report: two reviews found holes in it (no double jump, glide or roofs at first; then a glide's horizontal
-reach, roofs outside its window, air jumps refreshed on stepping stones, and a lower start elsewhere hiding an
-ascent), and with no new standable surface allowed it has nothing left to find.
+A stricter first version (no standable top more than a step off a bare footing) failed 25 of the canyon's 26 pieces:
+too strict for scenery a player is meant to hop onto. The movement-model check (`dev/level/cliff-kit-reach.ts`) before
+it is removed: two reviews found holes in every version (glide reach, roofs outside its window, air jumps refreshed on
+stepping stones, a lower start elsewhere hiding an ascent).
 
 **Close call in the canyon as built** (passing, for the owner and reviewers): rim cap `canyon.16`'s solid comes 1.360 m
 from line 1's up (offset homeward) track's centre, 0.17 to 0.9 m over its rail top: 0.26 m from a car's side. It passes
@@ -524,14 +514,14 @@ player sees. Not seen: the works rocks and caves up close.
 | The Sickle horizon: the kit's palette and a stepped silhouette, no solids | Default | a backdrop no one reaches |
 | Budget lines for steps 7 to 9 (Needle Bell up to +6,000 triangles, props at most +20,000 from the summit and +6 draws an area, the horizon up to +5,000) | Default | within the plan's ceilings |
 | The rails' gauge: a car's body (2.2 m wide, from 0.4 m up to 4.5 m) and running gear, with 0.25 m static clearance | Default | level-check's own furniture clearance; the canyon's `canyon.16` passes by 1 cm |
-| No new way up as a geometric rule: no standable top more than a step (0.3 m) off a bare walkable surface or the sea within the player's radius; every other face steeper than the controller stands on | Default | the orchestrator's call after two reviews of a movement model; the canyon breaks it on 25 of 26 pieces, each for the owner |
+| No new way up as a rough rule: every standable top flush (a step), out of reach (two jumps over reachable lower ground or tops within 8 m), or a low perch (one jump over ground within 1 m) | Default | the orchestrator's call under the owner's review-scope; the canyon passes; mid-air chains off a train's roof are known limits |
 | Gated places measured across the ground, pads by their own size | Default | finding 4 asks step 3 to revisit floating pads |
 
 Fourteen calls: 3 Decided, 11 Default, 0 New.
 
 ### Findings
 
-1. **Nobody stranded at the shore** (flow rule 3). The gate refuses what the kit *adds*; it does not see what the
+1. **Nobody stranded at the shore** (flow rule 3). The gate catches what the kit *adds*; it does not see what the
    kit *takes away*. At the cove, faces and shore rocks at the waterline could wall a swimmer off from the beach.
    Changed: step 1's audit adds a reverse flood from the treads (what can get back to them, with the kit and without;
    a forward search cannot see it, since water cells are its starts), and the shore must lose nothing on its beach,

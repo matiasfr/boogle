@@ -8,3 +8,5 @@ export const MOVER: Mover = {
   wade: SWIM_DEPTH + PLAYER_R,
   swimHop: (SWIM_JUMP_SPEED * SWIM_JUMP_SPEED) / (2 * GRAVITY),
 };
+/** Two jumps' rise, m: the abilities check's measured double jump with its margin (dev/economy/place-level.ts). */
+export const TWO_JUMPS = 3.03;

@@ -1,7 +1,7 @@
 // The cliff kit as built (content/built/levels/<area>.json, dev/prefab/cliff-kit.ts): every area's placed pieces against
 // the kit's piece rules (`kitPieceProblems`: 0.4 m off every tread, 6 m from every gated place in the layout, outside the
-// rails' gauge) and no new standing height (./cliff-kit-standing.ts: no standable top more than a step off the bare
-// world's own footing, so the pieces open no new way up), each area on the census wall it names
+// rails' gauge) and the gate against a new way up (./cliff-kit-standing.ts: every standable top flush, out of reach, or
+// a low perch), each area on the census wall it names
 // (dev/ground/cliff-walls.ts) and mounted by the view (src/entities/terrain-kit/areas.ts KIT_AREAS).
 import fs from 'node:fs';
 import { loadLevelArtifact } from '../../src/prefab/validate.ts';
@@ -18,7 +18,10 @@ export function checkCliffKitArea(
   placements: readonly Placement[],
   wallAt: ReturnType<typeof censusWalls>['wallAt'],
 ) {
-  const problems = placements.flatMap((p) => [...kitPieceProblems(p, area.keepClear), ...standingProblems(p)]);
+  const problems = [
+    ...placements.flatMap((p) => kitPieceProblems(p, area.keepClear)),
+    ...standingProblems(placements).map((p) => p.message),
+  ];
   const walls = area.walls.map(([x, z]) => {
     const wall = wallAt(x, z);
     if (!wall) problems.push(`${area.id}: no census wall at (${x}, ${z})`);

@@ -188,7 +188,7 @@
   shaded a little lighter or darker and its sky-facing faces sun-bleached. They are scenery with box solids: the tread
   keeps its full width (every solid 0.4 m outside its edge), the river side stays open, nothing within 6 m of any
   gated place in the layout (pads, secrets and where each is fetched from, devices, pillars, sites), no solid in a
-  rail's loading gauge, and no piece a new way up (no standable top more than a step off the bare world's own footing, the gate in
+  rail's loading gauge, and no piece a new way up (every standable top flush, out of reach or a low perch, the gate in
   `npm run level-check`).
   Records: `terrain.*` (src/content/prefabs/terrain.ts), placed by the cliff kit's generator
   [dev/prefab/cliff-kit.ts](../../dev/prefab/cliff-kit.ts), one level an area (the canyon is the first), from the
