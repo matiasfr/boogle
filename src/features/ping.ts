@@ -9,7 +9,7 @@ import { groundHeight } from '../island/terrain.ts';
 import { waterField } from '../physics/water-field.ts';
 import { raycastClosest, rayHit } from '../physics/engine.ts';
 import { GROUP } from '../physics/physics.ts';
-import { me, camForward } from '../player/player.ts';
+import { me } from '../player/player.ts';
 import { ball } from '../entities/ball/state.ts';
 import { pingHint } from '../player/ping-hints.ts';
 import { net, remotes, onRoomReady } from '../netplay/net.ts';
@@ -44,7 +44,7 @@ const contact = (x: number, y: number, z: number) =>
 
 // ---------------------------------------------------------------- aiming
 function aimPing(): Omit<Ping, 'seq'> {
-  camForward(fwd);
+  camera.getWorldDirection(fwd);
   const o = camera.position;
   // Authored places sit outside the original island grid; use their actual solid surfaces too.
   tmp.copy(o).addScaledVector(fwd, TUNE.maxRange);
