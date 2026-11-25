@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-25 · Garage step 4's Checkpoint table is accepted as run ([entry](#d-2026-11-25-garage-checkpoint-table-accepted))
 - 2026-11-24 · Garage step 4: the bay line's Quick or Strong trade opens at the bay cut's first lay (`bay-mid`); the third readout is "Kit a trip" ("Nothing to build" where no leg has two sections); Strong is offered on `ns` too ([entry](#d-2026-11-24-garage-step4-strong-window))
 - 2026-11-19 · Garage step 4's per-line trade waits for greybox leg 3's rules; Strong is built there as a hold (two sections' kit, waiting at the railhead), not as an empty car on `ns` and `bay` ([entry](#d-2026-11-19-garage-step4-waits-for-leg3)) (orchestrator's call)
 - 2026-11-18 · Decisions page (rewards): the Rail yoke (8 → 16 rails) is a pickup the forge's little guy makes after Q1's bill; one world-wide pool pays every upgrade while towns see only neighbours' goods; the Steam card shows on every page; step 4 leaves full loads to the freight brief; the Round's lesson review starts; the rooftop route and the 3.2 m reach stay ([entry](#d-2026-11-18-decisions-page-rewards))
@@ -53,6 +54,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · Kept from SETTLED:  _("every system is ignorable": replaced for the rail loop by the audit picks ("Skipping the rail"))_ ([entry](#d-undated-kept-from-settled))
 
 ## Decided
+
+- <a id="d-2026-11-25-garage-checkpoint-table-accepted"></a>**2026-11-25, garage step 4's Checkpoint table accepted as run** (owner, 25 November 2026, in this thread, answering the orchestrator's questions with recommendations, which he asked for: "Ask me the opens along with your recommendations as suggestions.") Asked whether to accept the table ([report](reports/garage-step4-checkpoint.md)): Strong saves 19.7 s solo over Quick while the bay cut is laid, and misses the plan's "within a second of Checkpoint G's row" by 15.5 s because the fit can only be paid at `trade-ready`, not `bay-mid`. He picked "Accept as run (Recommended)": G's Standard rows reproduce to the tick, and the gap is where the fit can be paid, not a defect.
 
 - <a id="d-2026-11-24-garage-step4-strong-window"></a>**2026-11-24, garage step 4: Strong's window opens at the first lay, "Kit a trip", Strong on `ns` too** (owner, 24 November 2026, three tap answers in chat, each the recommended one, after [Checkpoint G](reports/greybox-leg3-checkpoint-g.md) found Strong fitted at `bay-reached` saves 7.7 s solo and is 17.9 s slower than Quick). (1) "A: at the first lay": the bay line's trade is offered at the bay cut's first lay (`bay-mid`): one constant, no world bump; Strong beats Quick by 13.5 s and Standard by 55.7 s, so the play is "Strong while building, Quick after"; the ten-second rule is read over the line being built. (2) "Kit a trip": the garage screen's third readout for a trade line is "Kit a trip" (Quick 1 → 1, Strong 1 → 2 sections), not "resources a minute"; the wording is a placeholder for him. (3) "Yes, 'Nothing to build'": Strong stays on offer on `ns`, where its readout says "Nothing to build". Options B (hold leg 3's kit until the Canopy barrier) and C (no change) were not taken. Plan: [garage-step4](plans/garage-step4.md).
 
