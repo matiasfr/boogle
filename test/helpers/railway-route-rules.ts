@@ -715,7 +715,7 @@ export function routeRulesShard(shard: number) {
   });
 
   // ---------------------------------------------------------------- what is replicated
-  test('replicated rows change only at a kit load, a feed or a lay: never every tick (the lay clock reads start)', () => {
+  test('replicated rows change only at a kit load, delivery, feed or lay: never every tick (the lay clock reads start)', () => {
     const s = unaudited(copy(JOINED));
     const kinds = new Set(['leg', 'legYard', 'route']);
     const route = RAIL_REPLICATED.filter((c) => kinds.has(c.kind));
@@ -729,10 +729,11 @@ export function routeRulesShard(shard: number) {
       const laid = legRow(s.w, STACK).laid,
         start = legRow(s.w, STACK).start;
       if (k % 3 === 0) events += stock(s);
+      const rackBefore = legRow(s.w, STACK).rackLogs + legRow(s.w, STACK).rackRails;
       advance(s, 1);
       const r = legRow(s.w, STACK),
         l = r.loadedLogs + r.loadedRails;
-      if (l !== loads || r.laid !== laid || (r.start !== start && r.start < 0)) events++;
+      if (l !== loads || r.rackLogs + r.rackRails > rackBefore || r.laid !== laid || (r.start !== start && r.start < 0)) events++;
       loads = l;
       const now = snap();
       if (now !== prev) changed++;

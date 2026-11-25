@@ -1085,7 +1085,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     gorge(r);
     bell(r);
     if (done(r, 'cave') && !done(r, 'bell-canopy')) framePosts(wall.frames[0]!);
-    areaBoardVisibility.get('quay.wall')?.(legRow(r.wd, wall.k).laid === 0);
+    areaBoardVisibility.get('quay.wall')?.(!legReached(r.wd, wall.k));
     if (plugSite && near(plugSite, 450)) barrier(plugSite, !!(r.gates & (1 << PLUG)));
     if (deepFrameBuilt(r) && near(deepSite, 450)) barrier(deepSite, !!(r.gates & (1 << deepSpan)));
     canopy(r);

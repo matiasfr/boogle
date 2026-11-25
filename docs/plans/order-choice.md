@@ -297,6 +297,8 @@ With Strong fitted on the bay line, both barriers open and both frames receiving
 | 5eed | 174 | 129 | 1,523 | 1,101 |
 | badd | 172 | 117 | 1,553 | 1,084 |
 
+The v73 fixture comparison preserved all 82 earlier seed ticks, 464 scripted command results and 14,400 tick system sequences. All 82 mirror traces kept their frame and mark counts. The 1,244 marks now hash the v73 rows. Across 8,620 host trace records, 205 checkpoints and 5,679 serialized-size counters changed. Every input, result and replica packet matched.
+
 ### Checkpoint (both orders playable)
 
 After step 5, on HOTBOX, once:
