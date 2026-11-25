@@ -151,6 +151,8 @@ test('the menu lists the rows it always did: the house and leg 1 stages are tool
   assert.equal(MENU_JUMPS.at(-1)!.stage, 'boiler-long');
   // Greybox leg 2's four rows (docs/plans/greybox-leg2.md, step 3) are tooling too: the room fast-forward's list.
   const tooling = [
+    't1-pack-first',
+    't1-jump-first',
     'house-ready',
     'house-built',
     'sack-waiting',
@@ -180,6 +182,8 @@ test('the menu lists the rows it always did: the house and leg 1 stages are tool
     // Leg 2's rows land at the usual spawn until step 4's stills check a landing (greybox-leg2.md).
     if (
       ![
+        't1-pack-first',
+        't1-jump-first',
         'incline-open',
         'bell-reached',
         'bay-open',
