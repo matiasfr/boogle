@@ -441,7 +441,7 @@
       "posts": [
         {
           "at": [
-            38,
+            37,
             5.8
           ],
           "compute": "point",
@@ -450,8 +450,8 @@
           },
           "id": "hood-sign",
           "label": "west.hood",
-          "nx": 0,
-          "nz": -1,
+          "nx": -0.8,
+          "nz": -0.6,
           "y": 4.9
         },
         {

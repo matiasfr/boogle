@@ -366,7 +366,7 @@ function west() {
       : [],
     // On the shelf beside the shore path's foot, facing the path; keep the existing placeholder copy.
     posts: [
-      { id: 'hood-sign', ...cave.at(38, 5.8), y: top, nx: 0, nz: -1, label: 'west.hood' },
+      { id: 'hood-sign', ...cave.at(37, 5.8), y: top, nx: -0.8, nz: -0.6, label: 'west.hood' },
       {
         id: 'board',
         ...(WEST_STAKED ? { x: 810, z: 5.5 } : sl.at(20, 6.7)),
