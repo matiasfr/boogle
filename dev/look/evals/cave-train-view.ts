@@ -1,7 +1,9 @@
-// npm run look -- --rail-seed cave-mid --query caveview=hood --action dev/look/evals/cave-train-view.ts --warm 3 --size 1200x750 --name cave-train-hood
+// npm run look -- --rail-seed cave-mid --query caveview=hood --action dev/look/evals/cave-train-view.ts --filmstrip 2 --every 1 --warm 1 --size 1200x750 --name cave-train-hood
 // --rail-seed cave-mid (hood, face, head) or port-reached (salt), --action this file.
-// The camera rides the rendered engine's frame for the pass. At the Saltpan, call a
+// Sample the rendered engine and advance one filmstrip frame under the hood, past the face or at head 1. Call a
 // real train with the platform lever and wait for the host to record its stop.
+const warp = (window as Window & { __warp?: import('../warp.ts').WarpHandle }).__warp;
+warp?.go(1);
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
@@ -59,10 +61,14 @@ for (;;) {
     if (salt) window.__debugCam!.set([561, 8, 706], [engine.x, engine.y + 1, engine.z], 62);
     else
       window.__debugCam!.set(
-        [engine.x, engine.y + 2.4, engine.z],
-        [engine.x + p.ux * 30, engine.y + 1.4, engine.z + p.uz * 30],
+        [engine.x - p.ux * 1.2, engine.y + 4.6, engine.z - p.uz * 1.2],
+        [engine.x + p.ux * 30, engine.y + 0.5, engine.z + p.uz * 30],
         68,
       );
+    if (warp && !salt) {
+      warp.pause();
+      await warp.step(1);
+    }
     console.log('CAVE train camera', beat, train.along / 100, train.at, train.phase);
     break;
   }
