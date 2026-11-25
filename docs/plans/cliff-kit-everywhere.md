@@ -1,4 +1,4 @@
-﻿# Cliff kit everywhere: census and plan
+# Cliff kit everywhere: census and plan
 
 _Plan, 24 November 2026, on main `5677ad643`. Census and plan only: no game code changed. Stills were taken on a
 shared machine (other worktrees' captures in the same queue), so they are evidence of shape and colour only, not of

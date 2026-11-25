@@ -103,12 +103,13 @@ export const shore: Area = {
     }
     // The shore's rock slopes, in tiers: the shore climb's wall (census wall 9) seen head on from the landing, its
     // part beside the climb, the pocket's east wall behind the board, the hill behind the bluff and the slope beyond it.
+    const walks = { keepClear: shore.keepClear, keepOff };
     const tiers = (from: number, to: number) =>
       Array.from({ length: Math.floor((to - from) / 3) + 1 }, (_, k) => from + 3 * k);
-    dressSlope(kit, 'climb wall', raysAlong(-189, -16, -189, 2, 1, 0), tiers(4, 13), shore.keepClear, keepOff);
-    dressSlope(kit, 'climb side', raysAlong(-186, 2, -174, 17, 0.78, -0.63), tiers(7, 13), shore.keepClear, keepOff);
-    dressSlope(kit, 'pocket wall', raysAlong(-189, 25, -189, 44, 1, 0), tiers(-1, 8), shore.keepClear, keepOff);
-    dressSlope(kit, 'bluff hill', raysAlong(-184, 46, -184, 72, 1, 0, 2), tiers(6, 15), shore.keepClear, keepOff);
-    dressSlope(kit, 'south slope', raysAlong(-190, 74, -190, 86, 1, 0), tiers(1, 13), shore.keepClear, keepOff);
+    dressSlope(kit, 'climb wall', raysAlong(-189, -16, -189, 2, 1, 0), tiers(4, 13), walks);
+    dressSlope(kit, 'climb side', raysAlong(-186, 2, -174, 17, 0.78, -0.63), tiers(7, 13), walks);
+    dressSlope(kit, 'pocket wall', raysAlong(-189, 25, -189, 44, 1, 0), tiers(-1, 8), walks);
+    dressSlope(kit, 'bluff hill', raysAlong(-184, 46, -184, 72, 1, 0, 2), tiers(6, 15), walks);
+    dressSlope(kit, 'south slope', raysAlong(-190, 74, -190, 86, 1, 0), tiers(1, 13), walks);
   },
 };

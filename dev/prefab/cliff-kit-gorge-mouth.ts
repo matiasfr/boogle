@@ -10,7 +10,7 @@ export const gorgeMouth: Area = {
   stranded: { x: 20, z: 158, half: 87 },
   dress(kit) {
     const courses = (name: string, rays: ReturnType<typeof raysAlong>, levels: number[]) =>
-      dressSlope(kit, name, rays, levels, [], undefined, true);
+      dressSlope(kit, name, rays, levels, { seatEnds: true });
     courses('east bank', raysAlong(-22, 138, -26, 177, 1, 0), [2, 7, 12, 17]);
     courses('path cutting', raysAlong(-17, 155, 6, 162, 0, 1), [9, 14, 19]);
     courses('west bank', raysAlong(-40, 144, -53, 177, -1, 0), [6, 11]);
@@ -21,5 +21,3 @@ export const gorgeMouth: Area = {
       kit.place('terrain.shore-rock-m', [x, r2(H(x + ORIGIN.x, z) - 0.2), z], [yaw, 0, 0], 'waterline');
   },
 };
-
-

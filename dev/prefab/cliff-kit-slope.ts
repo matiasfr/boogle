@@ -17,9 +17,7 @@ export function dressSlope(
   name: string,
   rays: readonly (readonly [number, number, number, number])[],
   levels: readonly number[],
-  keepClear: Area['keepClear'] = [],
-  keepOff: (x: number, z: number) => boolean = () => false,
-  seatEnds = false,
+  options: { keepClear?: Area['keepClear']; keepOff?: (x: number, z: number) => boolean; seatEnds?: boolean },
 ) {
   for (const level of levels) {
     const runs: { x: number; z: number; ux: number; uz: number }[][] = [[]];
@@ -40,7 +38,7 @@ export function dressSlope(
       const side = n.nx * points[0]!.ux + n.nz * points[0]!.uz < 0 ? 1 : -1;
       layCourses(run, side, (prefab, c, yaw, s) => {
         let base = level - 0.5;
-        if (seatEnds) {
+        if (options.seatEnds) {
           const half = prefab === 'terrain.sea-face-10' ? 4.8 : 2.8;
           for (const across of [-half, 0, half]) {
             const x = c.x - c.nx * 1.5 + c.nz * across;
@@ -54,7 +52,7 @@ export function dressSlope(
           pos: [round(c.x - c.nx * 1.5), round(base), round(c.z - c.nz * 1.5)],
           rot: [round(yaw), 0, 0],
         };
-        if (keepOff(c.x, c.z) || kitPieceProblems(placement, keepClear).length) return;
+        if (options.keepOff?.(c.x, c.z) || kitPieceProblems(placement, options.keepClear).length) return;
         kit.place(prefab, placement.pos, placement.rot!, `${name} ${level} m s ${s.toFixed(1)}`);
       });
     }
