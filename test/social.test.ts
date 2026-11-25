@@ -36,6 +36,16 @@ test('rail pings and replies carry only their validated fields', () => {
     assert.equal(validatePing({ t: 'ping', k: 'omw', of: invalid }), null);
 });
 
+test('the relay preserves which of two successive markers a friend answered', () => {
+  // A friend answers the station while the pinger replaces it with a marker on a train.
+  // Use a sequence as a candidate marker identifier. Both replies must remain distinguishable.
+  const reply = { t: 'ping', k: 'omw', of: 'pinger' };
+  const station = validatePing({ ...reply, seq: 1 });
+  const train = validatePing({ ...reply, seq: 2 });
+  assert.ok(station && train);
+  assert.notDeepEqual(station, train);
+});
+
 test('limiter allows N per window per sender', () => {
   const l = createLimiter(3, 1000);
   assert.deepEqual(
