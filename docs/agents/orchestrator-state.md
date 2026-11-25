@@ -11,7 +11,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
 | Greybox leg 4 Checkpoint D: the named proofs, run once | The greybox route | codex/greybox-leg4-checkpoint-d | live session, Codex Sol medium | 2026-11-25 | running: browser-heavy |
-| Cliff kit step 7: Needle Bell | Terrain clean-up | codex/cliff-kit-needle-bell | live session, Codex Astra medium | 2026-11-25 | running |
+| Cliff kit step 8: props (loose boulders, works rocks, caves) | Terrain clean-up | codex/cliff-kit-props | live session, Codex Astra medium | 2026-11-25 | running |
 
 ## Where the work stands
 
