@@ -66,8 +66,9 @@ Orchestrator heartbeat: Boogle's one unattended orchestrator (owner, 16 November
 
 The project root checkout (C:\Users\matia\Claude work\boogle) is a stale launcher: do not read plans, skills or instructions from it, and do not edit it. First run `git fetch origin`. Then work from a worktree at origin/main, `../boogle-heartbeat`:
 - If it doesn't exist, create it with `git worktree add --detach ../boogle-heartbeat origin/main`.
-- If it exists and is clean, run `git -C ../boogle-heartbeat checkout --detach origin/main`.
+- If it exists and is clean, and no running `ship-queue` process names it (owner, 25 November), run `git -C ../boogle-heartbeat checkout --detach origin/main`. If a ship is using it, wait for that ship to finish first.
 - Run `npm ci` there if node_modules is missing or the lock changed.
+Follow-up sessions (wakes) ship from their own worktree, `../boogle-wake`, never from `../boogle-heartbeat` (owner, 25 November).
 Use Node 26: `export PATH="$HOME/AppData/Local/nvm/v26.13.0:/c/Program Files/GitHub CLI:$PATH"` (this also puts gh on PATH). Run every command from that worktree.
 
 Read `AGENTS.md` and `.claude/skills/orchestrate-boogle/SKILL.md` from that worktree with the Read tool. Don't use the Skill tool, which would load the stale copy. Follow the skill's section "9. The heartbeat keeps work moving" exactly: its order of work, what it may start, what it must leave for the owner, and its limits. Read `docs/agents/orchestrator-state.md` first: another orchestrator thread may be running jobs, so count running delegates as well as `npm run inflight`, and never start a row the state file says is running. In short:
@@ -81,6 +82,7 @@ Read `AGENTS.md` and `.claude/skills/orchestrate-boogle/SKILL.md` from that work
   - Idle browser or MCP processes left by finished jobs: kill them, but never one that belongs to a running delegate.
   - Bot-queue waits, slow CI: do whatever unblocks the most work.
 - Fill the free job slots as section 9 allows, up to its limit (owner, 18 November). Start nothing the owner hasn't approved, and nothing section 9 leaves for him.
+- Ask the owner nothing modal while delegates run (owner, 25 November): put questions, each with a recommendation, in the reply.
 
 If nothing needed action, reply with one line: "heartbeat: all clear", the bottleneck and the hour's biggest loss in a few words, and a count of running jobs and open PRs. Otherwise report what you found and did in a few lines, always including the bottleneck and the workflow review's one line, and end with three lines: shipped, started, waiting on the owner.
 ```
