@@ -640,7 +640,7 @@ The Works kiln action used the Chop prompt on the last stone in the seeded bowl 
 
 ## Step 9 as built
 
-The six White Wall islets rise in three broad courses. Their faces sample the kit's sandstone pigment at vertices and their horizontal shelves take its sun bleaching. The backdrop still draws as one shadowless mesh with no colliders. The [matched summit, landing and train views](cliff-kit-everywhere/horizon-before-after.jpg) show the same warm stone as the shore and Far Head sheets, softened by distance. All three skylines have clean edges and open water between the islands.
+The six White Wall islets rise in three broad courses and stay chalk (`#c9c5bb`) on his word (25 November: the White Wall keeps its name and Canopy's chalk; the first build had them sandstone). The other untinted island walls sample the kit's sandstone pigment at vertices and their horizontal shelves take its sun bleaching. The backdrop still draws as one shadowless mesh with no colliders. The [matched summit, landing and train views](cliff-kit-everywhere/horizon-before-after.jpg) show the chalk wall in the kit's stepped shape beside the warm stone of the other islands, softened by distance. All three skylines have clean edges and open water between the islands.
 
 The census against main `18b88f299` measured 756 additional triangles at all seven cameras, including colour and shadow passes. The gorge mouth varied by one draw between two main samples. The table uses the sample with the matching draw count.
 

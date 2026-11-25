@@ -6,7 +6,7 @@ clipped Gorge, High Port with its harbour and cranes, Lantern Notch's arch and t
 Ring Island and the Original Island retain their existing live meshes. It adds no colliders, railways,
 labels, flags, panels, shared state or per-frame work. The current line-2 production area is unchanged;
 Split-rock Works is a separate job. Existing outdoor fog (180–3600 m) fades the horizon.
-The White Wall's chalk islets rise in three broad steps. Their faces and the untinted island walls use the cliff kit's sandstone pigment sampled at vertices, with lighter horizontal ledges. All quality tiers share the same shadowless silhouette.
+The White Wall's chalk islets rise in three broad steps and stay chalk (`#c9c5bb`). The untinted island walls use the cliff kit's sandstone pigment sampled at vertices, with lighter horizontal ledges. All quality tiers share the same shadowless silhouette.
 The dev greybox and the walkable blockout replace this horizon while on, avoiding duplicate islands.
 
 `?greybox=sickle` loads the full planning blockout on the dev server. Its walkable geometry, review tools and rides

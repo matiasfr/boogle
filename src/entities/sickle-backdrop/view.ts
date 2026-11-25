@@ -106,8 +106,8 @@ export function createBackdrop() {
         }
         y = level;
       }
-      add(geometry(), '#ffffff');
-      sandstone.add(parts.at(-1)!);
+      // The White Wall stays chalk: the kit's stepped courses, not its sandstone (his word, 25 November).
+      add(geometry(), '#c9c5bb');
       continue;
     }
     cap(outline, top);
