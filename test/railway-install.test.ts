@@ -60,7 +60,8 @@ import { RAILS } from '../src/sim/railway-line2-layout.ts';
 import type { World } from '../src/ecs/index.ts';
 import { footCap } from '../src/sim/railway-queries-trade.ts';
 import { tableFree } from '../src/sim/railway-queries-works.ts';
-import { garageFacts } from '../src/entities/railway/garage-state.ts';
+import { garageFacts, roomFacts } from '../src/entities/railway/garage-state.ts';
+import { partsOf } from '../src/entities/railway/garage-data.ts';
 import { ROTA_TICKS, shiftAt, shiftChange } from '../src/entities/ring-folk/shape.ts';
 import { STEEL } from '../src/sim/railway-ring-layout.ts';
 import { fuzzTicks } from './helpers/fuzz.ts';
@@ -970,6 +971,33 @@ test('the bay fit holds across a rejoin until the last lay, then two peers race 
   assert.deepEqual(
     [lineRow(loaded.w, BAYL).boiler, lineRow(loaded.w, BAYL).rev, steelPool(shed(loaded.w))],
     [4, 2, pool - 1],
+  );
+});
+
+test('review: the garage offers no trade swap the server would refuse, during the hold or after the re-pick', () => {
+  // The other trade tile reads "Swap" (standing 'swap') whenever the line is paid; the server now refuses it while
+  // the line builds ('trade-building') and for good after the one re-pick ('trade-repicked'). A player who holds
+  // Install on that tile sees the part lift, then a deny sound, with nothing on the screen saying why.
+  const s = tradeReady();
+  brought(s, BAYL);
+  assert.equal(fit(s, BAYL, 6), 1);
+  settle(s);
+  const tile = (id: 'quick' | 'strong') => partsOf(roomFacts(s.w, s.t), BAYL).find((p) => p.id === id)!.standing;
+  const offered: string[] = [];
+  assert.equal(fit(copy(s), BAYL, 5), 0, 'the server refuses Quick while the bay builds');
+  offered.push(`during the hold, Quick reads ${tile('quick')}`);
+  legStagesOn(s, 'bay-mid', 'bay-reached');
+  legStagesOn(s, 'bay-reached', 'canopy-mid');
+  laySection(s, CUT + 1);
+  laySection(s, CUT + 1);
+  assert.equal(fit(s, BAYL, 5), 1, 'the one re-pick');
+  settle(s);
+  assert.equal(fit(copy(s), BAYL, 6), 0, 'the server refuses any further swap');
+  offered.push(`after the re-pick, Strong reads ${tile('strong')}`);
+  assert.deepEqual(
+    offered.filter((o) => o.endsWith(' swap')),
+    [],
+    'a tile the server refuses must not read as an offer',
   );
 });
 
