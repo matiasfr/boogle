@@ -1,4 +1,5 @@
 import type { Placement } from '../../src/prefab/types.ts';
+import { SEA_FACE } from '../../src/content/prefabs/terrain.ts';
 import { H } from '../../src/place/terrain.ts';
 import { ORIGIN } from '../../src/place/layout.ts';
 import { r2 as round } from '../../src/math.ts';
@@ -16,8 +17,9 @@ export function dressSlope(
   name: string,
   rays: readonly (readonly [number, number, number, number])[],
   levels: readonly number[],
-  keepClear: Area["keepClear"] = [],
+  keepClear: Area['keepClear'] = [],
   keepOff: (x: number, z: number) => boolean = () => false,
+  seatEnds = false,
 ) {
   for (const level of levels) {
     const runs: { x: number; z: number; ux: number; uz: number }[][] = [[]];
@@ -37,10 +39,19 @@ export function dressSlope(
       const n = run.at(run.length / 2);
       const side = n.nx * points[0]!.ux + n.nz * points[0]!.uz < 0 ? 1 : -1;
       layCourses(run, side, (prefab, c, yaw, s) => {
+        let base = level - 0.5;
+        if (seatEnds) {
+          const half = prefab === 'terrain.sea-face-10' ? 4.8 : 2.8;
+          for (const across of [-half, 0, half]) {
+            const x = c.x - c.nx * 1.5 + c.nz * across;
+            const z = c.z - c.nz * 1.5 - c.nx * across;
+            base = Math.min(base, ground(x, z) - 0.4, ground(x - 2.4 * c.nx, z - 2.4 * c.nz) - SEA_FACE);
+          }
+        }
         const placement: Placement = {
           id: 'trial',
           prefab,
-          pos: [round(c.x - c.nx * 1.5), round(level - 0.5), round(c.z - c.nz * 1.5)],
+          pos: [round(c.x - c.nx * 1.5), round(base), round(c.z - c.nz * 1.5)],
           rot: [round(yaw), 0, 0],
         };
         if (keepOff(c.x, c.z) || kitPieceProblems(placement, keepClear).length) return;

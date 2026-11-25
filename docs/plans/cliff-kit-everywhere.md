@@ -1,4 +1,4 @@
-# Cliff kit everywhere: census and plan
+﻿# Cliff kit everywhere: census and plan
 
 _Plan, 24 November 2026, on main `5677ad643`. Census and plan only: no game code changed. Stills were taken on a
 shared machine (other worktrees' captures in the same queue), so they are evidence of shape and colour only, not of
@@ -548,6 +548,14 @@ gave zero horizontal drift.
 
 The new area adds 90,420 kit triangles per pass. The gorge-mouth camera adds 180,444 triangles across both
 passes, above the step’s 58,000 guide, and seven draws. Device frame time is unverified.
+
+## Step 4 as built
+
+The gorge mouth and south sea cliff (walls 4, 7 and 8) carry 41 crowned sea faces and three shore rocks.
+Both banks follow the shore kit's height contours. A second tier on the south coast closed a pocket behind
+the lower course, so that coast keeps one course. With all five areas mounted, the reverse flood lost zero
+of the 121,801 cells checked around the mouth. The closest tread sample clears the edge by 1.01 m.
+The rail gauge is clear. The canyon, shore, gorge rim and long gorge wall levels match main byte for byte.
 
 ## Design review (2026-11-24)
 
