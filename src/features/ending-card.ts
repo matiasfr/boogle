@@ -7,9 +7,10 @@ import { railwayMirror } from '../world/game-world.ts';
 import { fallArrival } from '../fall/arrival.ts';
 import { onStart } from '../loop.ts';
 import { wrapAction } from '../player/controls.ts';
+import { closeModal, openModal } from '../player/modal.ts';
 import { inputState } from '../player/input-state.ts';
 import { me } from '../player/player.ts';
-import { holdCamera, momentBusy } from '../render/buddy-frame.ts';
+import { momentBusy } from '../render/buddy-frame.ts';
 import { routeRow } from '../sim/railway-queries-route.ts';
 
 let previous: number | undefined;
@@ -19,7 +20,7 @@ let card: HTMLElement | null = null;
 let dismissAt = 0;
 
 function close() {
-  if (card) holdCamera(card, false);
+  if (card && mine) closeModal();
   card?.remove();
   card = null;
   if (inputState.holder === 'ending-card') {
@@ -46,10 +47,14 @@ function show() {
   (document.querySelector('.hud') ?? document.body).append(card);
   dismissAt = performance.now() + (mine ? 1500 : 0);
   if (mine) {
-    holdCamera(card, true);
+    openModal({
+      passKeys: true,
+      onPad: (slot) => {
+        if (slot === 'x') dismiss();
+      },
+    });
     inputState.holder = 'ending-card';
     inputState.held = true;
-    if (document.pointerLockElement) document.exitPointerLock();
   }
 }
 
@@ -67,7 +72,8 @@ onStart(() => {
     if (!session) return;
     const reset = session.onReset(() => {
       previous = routeRow(session.read.world()).arrived;
-      mine = owed = false;
+      if (!card) mine = false;
+      owed = false;
     });
     unsubscribe = reset;
   });
