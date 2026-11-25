@@ -11,6 +11,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
 | The garage’s Install judged on the action clock: the screen never offers or keeps a hold before the server’s table hold is over | Garage choices | claude/garage-install-clock | the heartbeat, Opus medium | 2026-11-25 00:12 | running: a delegate of the heartbeat’s thread; view files and `src/adapters/railway-session.ts` only, one real-speed two-peer look; an independent review before it ships |
+| Plan: order picks, the trade held for a stage, the upgrade audit (docs/plans/order-picks.md, docs only) | Small choices and felt inflation | claude/order-picks-plan | the orchestrator thread, planner on Opus high | 2026-11-25 01:00 | running: a delegate of the orchestrator thread; its questions go to the owner, nothing is built from it before he rules |
 | Cliff kit: plan revised to his answers, then step 0 (the generator) | Terrain clean-up | claude/cliff-kit-step0 | live session, Opus medium | 2026-11-25 00:00 | running |
 
 ## Where the work stands
@@ -69,7 +70,7 @@ The lessons; the orchestrator keeps them.
 2. Never run `ship-queue` through `| tail`: it hides the exit code. Log to a file, grep narrowly (`ship-check|error|rejected`).
 3. A test that spawns git under the pre-push hook inherits `GIT_DIR` (fixed in #1601: `test/helpers/scratch-git.ts`). If every worktree says "this operation must be run in a work tree", check `git config core.bare`.
 4. A rebased branch is pushed under a new name, never force-pushed. A branch with merge commits can't be rebased by `ship-branch`: squash it onto origin/main on a new branch.
-5. About three full-suite agents is a machine's limit (the Mac's, measured; HOTBOX's is untested); briefs ask for typecheck, lint and touched tests only. HOTBOX: two looks at once at most.
+5. About three full-suite agents is a machine's limit (the Mac's, measured; HOTBOX's is untested); briefs ask for typecheck, lint and touched tests only. HOTBOX: three looks at once, at most two of them real-speed, timed or two-player; a frame-time reading runs alone ([25 November](../decisions-process.md#d-2026-11-25-three-looks-on-hotbox)).
 6. Default shell is Node 24: export Node 26 (`$HOME/.nvm/versions/node/v26.13.0/bin` on the Mac, `$HOME/AppData/Local/nvm/v26.13.0` on HOTBOX). Run focused tests with `UNIT_ONLY=<files> node dev/test-unit.ts` (a bare file argument is ignored and runs the whole suite, about 8 minutes on HOTBOX; found 18 November), not `npx vitest`.
 7. Keep independent reviewers: they found real defects in batch C, the CI diet and ring2 R1–R2.
 8. New test files need review and must fit the [test diet](tests.md#tests); briefs say "no new unit test files" unless the code is lockstep, even when the plan's step names one (garage step 2, 17 November: a review round to delete it).
