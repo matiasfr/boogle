@@ -1407,7 +1407,8 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     mark('T1 funded');
     if (!legacy) {
       const firstPick = LINE1_PICK_STANDS[pick];
-      await walk(firstPick.x / 100 + (second ? -1 : 0), firstPick.z / 100 + 2, 0.6);
+      // The friend watches the take from the frame, clear of the stand and the player's hold.
+      if (!second) await walk(firstPick.x / 100, firstPick.z / 100 + 2, 0.6);
       face(firstPick.x / 100, firstPick.z / 100);
       if (!second) {
         await until(() => interactTarget()?.id === `railway-pick-${pick}`, `Station 1 offers the ${pick}`);
