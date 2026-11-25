@@ -140,7 +140,7 @@ const SERVICES: Service[] = [
       ).map((near) => ({ near, radiusCm: 30000, segments: 20 })),
       { near: [-277, -1660], radiusCm: 12000, segments: 36 },
       { near: [-640.25, -705], radiusCm: 30000, segments: 20 },
-      { near: [-495, -2223.54], radiusCm: 11000, segments: 100, deck: 3 },
+      { near: [-495, -2223.54], radiusCm: 11007, segments: 78, deck: 3 },
     ],
     name: 'Cave line and the White Wall',
     legs: [{ id: 'seacave' }, { id: 'salt-quay' }, { id: 'wall-s' }, { id: 'wall-n' }],
@@ -149,7 +149,7 @@ const SERVICES: Service[] = [
       { name: 'Saltpan Halt', place: 'saltpan' },
       // 25 m before the turn onto the Wall, clear of a standing train's nose.
       { name: 'Port Quay', place: 'quay', stopCm: 122180 },
-      // The tangent point is at 2978.35 m. Leave the whole platform and its 5 m margin on the straight.
+      // The tangent point is at 2978.42 m. Leave the whole platform and its 5 m margin on the straight.
       { name: 'Canopy Town', place: 'canopy', stopCm: 295300 },
       { name: 'High Gorge', place: 'gorge', stopCm: 532500 },
     ],
@@ -201,7 +201,7 @@ const DECKS: Record<string, number> = {
 };
 
 /** A smooth route through keys [point, heading in degrees (0 east, 90 south), tangent length], a vertex every 15 m. */
-function hermite(keys: [XZ, number, number][], spacing = 15): XZ[] {
+function hermite(keys: [XZ, number, number][], spacing = 15, sampleOffset = 0): XZ[] {
   const out: XZ[] = [];
   for (let k = 0; k < keys.length - 1; k++) {
     const [p0, h0, m0] = keys[k]!,
@@ -210,7 +210,7 @@ function hermite(keys: [XZ, number, number][], spacing = 15): XZ[] {
     const t1 = [Math.cos((h1 * Math.PI) / 180) * m1, Math.sin((h1 * Math.PI) / 180) * m1];
     const n = Math.max(2, Math.ceil(Math.hypot(p1[0] - p0[0], p1[1] - p0[1]) / spacing));
     for (let i = k ? 1 : 0; i <= n; i++) {
-      const t = i / n,
+      const t = (i > 0 && i < n ? i + sampleOffset : i) / n,
         a = 2 * t ** 3 - 3 * t ** 2 + 1,
         b = t ** 3 - 2 * t ** 2 + t,
         c = -2 * t ** 3 + 3 * t ** 2,
@@ -266,7 +266,10 @@ const QUAY_TURN = hermite(
     [[-1240, 893], 182, 300],
     [[-1535, 840], 235.5, 300],
   ],
-  1.9,
+  // Offset the interior samples by 2% of one chord. On the cm grid this keeps the
+  // short rising chords below 4% grade and above 40 m radius without moving a key.
+  1.87,
+  0.02,
 );
 /** The links the rulings redraw; every other link runs as the map JSON draws it. `ruled`: its heights are the rulings' own
  * (the bow's 24.3 m is not a cliff). */
@@ -301,7 +304,7 @@ const ROUTES: Record<string, Route> = {
       [-1340, -1500],
       [-1277, -1660],
       [-1495, -2223.54],
-      [-1109.85, -1992.13],
+      [-1109.88, -1992.09],
     ],
     heights: [13, 13, 13, null, null, null, null, 3, 3],
     ruled: true,
@@ -566,7 +569,7 @@ function build(svc: Service): Built {
       // The catalog and flag-only world blockout's X share it; other termini keep their standard setback.
       const sCm =
         MAP.options.find((o) => o.id === 'sickle')!.turnbacks?.[svc.id]?.[side] ??
-        (side === 'start' ? stop + 3500 : stop - 3500);
+        (side === 'start' ? stop + 3500 : stop - (svc.id === 'cave' ? 2450 : 3500));
       const [x, z, y] = at(sCm);
       ends.push({ at: side, kind, sCm, x, z, y });
     } else {

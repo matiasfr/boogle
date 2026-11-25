@@ -343,7 +343,7 @@ After steps 1 to 6 are on main; named proofs, once, with the tools as Checkpoint
 ### Steps 1 to 3 as built on HOTBOX
 
 The Wall runs 4,103.2 m from Port Quay's stop to High Gorge's. Its largest joint turns 1.717° and its smallest radius is 46.54 m.
-The formation clears High Port by 8.46 m. The Canopy halt is 25.35 m before the curve's tangent point.
+The formation clears High Port by 8.46 m. The Canopy halt is 25.42 m before the curve's tangent point.
 The crossing is 7.97 m over the bay rail. The approach clears the south stack by 24.47 m and the buffers stop
 4.00 m from line 2's concourse. Port Quay's first carry is 10.00 m. All six platforms are level.
 
@@ -355,7 +355,7 @@ closest pass, breaking the 1 m cut gate. A different approach would require anot
 The first kit rides from the West landing to Port Quay. Cave slots 14–16 enter from the shed as the Wall grows.
 World v71 includes the changed halt ids and gate reach, the host trace, seed and operation goldens, halt placements,
 seat fixtures and the economy page. The built-site probe initially caught a missing halt lever. Regenerating the halt
-kit brought the offline Chromium probe to interactive in 9.1 s on the NVIDIA adapter.
+kit brought the offline Chromium probe to interactive in 8.6 s on the NVIDIA adapter.
 
 **Long service trials.** 75% headway, 20,000 ticks per mode, save/restore in each trial.
 Each cell is accepted calls / worst wait in ticks. All calls drained within their applicable budgets.

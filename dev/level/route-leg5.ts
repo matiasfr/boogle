@@ -6,7 +6,7 @@ import { HEAD_BACK_CM, RAIL_LEGS, legFrame, legRack, rowPoint, sectionFromCm } f
 import { WORLD_LINES } from '../../src/sim/railway-world-lines.ts';
 import { shoreDistance } from './route-leg4.ts';
 import { tracks, type Pt } from './rail-network.ts';
-import { measure } from './track-continuity.ts';
+import { circumradius, measure } from './track-continuity.ts';
 import { gorgeAt } from '../../src/entities/route-greybox/massing.ts';
 
 /** Vertical rail-to-rail clearance wherever these two finite spans cross in plan. */
@@ -41,6 +41,27 @@ export function checkLeg5() {
   check(
     `Wall largest kink ${curve.maxKink.toFixed(3)} degrees; minimum radius ${curve.minRadius.toFixed(2)} m`,
     curve.kinksOver === 0 && curve.under40 === 0,
+  );
+  // Also check the actual cm-rounded chords. The continuity report measures radius every 5 m.
+  let largestTurn = 0,
+    smallestRadius = Infinity,
+    gorgeRadius = Infinity;
+  for (let i = 1; i < wall.length - 1; i++) {
+    const a = wall[i - 1]!,
+      b = wall[i]!,
+      c = wall[i + 1]!;
+    const dx = b.x - a.x,
+      dz = b.z - a.z,
+      ex = c.x - b.x,
+      ez = c.z - b.z;
+    largestTurn = Math.max(largestTurn, (Math.abs(Math.atan2(dx * ez - dz * ex, dx * ex + dz * ez)) * 180) / Math.PI);
+    const radius = circumradius(a, b, c);
+    smallestRadius = Math.min(smallestRadius, radius);
+    if (b.z < -2000) gorgeRadius = Math.min(gorgeRadius, radius);
+  }
+  check(
+    `Wall chords: ${largestTurn.toFixed(3)} degrees, radius ${smallestRadius.toFixed(2)} m; Gorge turn ${gorgeRadius.toFixed(2)} m`,
+    largestTurn < 2 && smallestRadius >= 40 && gorgeRadius >= 100 && Number.isFinite(gorgeRadius),
   );
   const crossings: number[] = [];
   for (let i = 1; i < wall.length; i++)

@@ -337,8 +337,9 @@ export const RAIL_GRANTS: readonly { id: string; label: string; leg: number; at:
 ];
 const grant = (id: string) => RAIL_GRANTS.findIndex((g) => g.id === id);
 
-/** A barrier on a section's frame (`RouteSection.gate`): it opens for anyone once the room holds the `needs` grant. It
- * stands at the frame, the section's first centimetre. */
+/** A frame's and a rack's reach (the design review of step 4, b: 4 m, not a halt's 12.6). */
+export const LEG_SITE_REACH = 400;
+/** A barrier opens at its frame when the section is current and the room holds its grant. */
 export const RAIL_GATES: readonly { id: string; label: string; needs: number; at: RailPlatform }[] = [
   // At the incline's first frame on incline-s (greybox-leg2.md, step 1): t 24, 1 m in from its edge.
   { id: 'incline', label: "The incline's first frame", needs: grant('pick'), at: rowSide('ns', 2400, -480, 90, 400) },
@@ -354,7 +355,7 @@ export const RAIL_GATES: readonly { id: string; label: string; needs: number; at
     id: 'deep-span',
     label: 'The deep span to the stacks',
     needs: grant('seeds'),
-    at: rowSide('cave', WALL_N1 - 800, 480, 90, 400),
+    at: legFrame(RAIL_LEGS[5]!, 5),
   },
   {
     id: 'notch',
@@ -447,8 +448,6 @@ export function rowSide(id: RowId, cm: number, lat: number, up: number, reach: n
     len = Math.sqrt(dx * dx + dz * dz);
   return { x: Math.round(p.x - (dz * lat) / len), z: Math.round(p.z + (dx * lat) / len), y: p.y + up, reach };
 }
-/** A frame's and a rack's reach (the design review of step 4, b: 4 m, not a halt's 12.6). */
-export const LEG_SITE_REACH = 400;
 /** Line 2's kit car standing at High Gorge: 7.1 m behind the train's along (src/entities/railway/cars.ts, the coach
  * train's `kit` offset), so the incline's first rack stands abreast of it. */
 const GORGE_KIT_CAR_CM = 710;

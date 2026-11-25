@@ -182,7 +182,7 @@ function resample(pts: Pt[], step: number): Pt[] {
   return out;
 }
 /** Radius of the circle through three points (Infinity on a straight). */
-function circumradius(a: Pt, b: Pt, c: Pt) {
+export function circumradius(a: Pt, b: Pt, c: Pt) {
   const ab = Math.hypot(b.x - a.x, b.z - a.z),
     bc = Math.hypot(c.x - b.x, c.z - b.z),
     ca = Math.hypot(a.x - c.x, a.z - c.z);

@@ -577,7 +577,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
     ),
     'wall',
     'Wall head',
-    WORLD_LINES.find((l) => l.id === 'cave')!.stops[4]! - 2450,
+    WORLD_LINES.find((l) => l.id === 'cave')!.ends.find((e) => e.at === 'end')!.sCm,
     [2, 2, 3, 3, 4, 4, 5],
   ),
 ];
