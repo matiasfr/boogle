@@ -557,6 +557,21 @@ the lower course, so that coast keeps one course. With all five areas mounted, t
 of the 121,801 cells checked around the mouth. The closest tread sample clears the edge by 1.01 m.
 The rail gauge is clear. The canyon, shore, gorge rim and long gorge wall levels match main byte for byte.
 
+[Matched sea, path and eye-level stills](cliff-kit-everywhere/gorge-mouth-before-after.jpg).
+
+The controller walked 17 m east along the south path and held its horizontal position through two seconds idle.
+The new area adds 24,320 kit triangles per pass. The mouth draws it twice, adding 48,640 triangles and six draws.
+
+| Census camera | Draws, main ? step 4 | Triangles, main ? step 4 |
+| --- | ---: | ---: |
+| Shore | 158 ? 161 | 768,883 ? 793,203 |
+| Shore climb | 375 ? 378 | 1,017,289 ? 1,041,609 |
+| Canyon climb | 206 ? 206 | 829,299 ? 829,299 |
+| Gorge rim | 369 ? 372 | 955,441 ? 979,761 |
+| Gorge mouth | 426 ? 432 | 1,001,968 ? 1,050,608 |
+| Far head | 291 ? 291 | 844,745 ? 844,745 |
+| Summit | 346 ? 346 | 1,006,666 ? 1,006,666 |
+
 ## Design review (2026-11-24)
 
 Run by the plan's author in the same context (design-review skill). Read for it: DESIGN.md, owner calls (Look and art,
