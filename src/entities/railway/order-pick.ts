@@ -132,27 +132,19 @@ export function createOrderPick(adapter: RailwayAdapter, owner: OwnedView, model
     stage = 'waiting';
     cancel();
   });
-  function reset() {
-    for (const part of keys) stands[part].reset();
-    guy.on = false;
-    stage = 'idle';
-    funded = undefined;
-    cancel();
-  }
   const offReset = adapter.onReset((soft) => {
     shot.reset();
-    if (!soft || job(adapter.read.world(), 0).start < 0) reset();
-    else {
-      cancel();
-      stage = 'idle';
-      guy.on = false;
+    if (!soft || job(adapter.read.world(), 0).start < 0) {
+      for (const part of keys) stands[part].reset();
+      funded = undefined;
     }
+    cancel();
+    stage = 'idle';
+    guy.on = false;
   });
-  window.addEventListener('blur', cancel);
   owner.cleanup(() => {
     off();
     offReset();
-    window.removeEventListener('blur', cancel);
     const i = folk.guys.indexOf(guy);
     if (i >= 0) folk.guys.splice(i, 1);
   });

@@ -253,9 +253,8 @@ export function initInput() {
   });
   grabBtn.addEventListener('pointerup', (e) => {
     e.stopPropagation();
+    if (!devInputBlocked()) useUp();
     interactUp();
-    if (devInputBlocked()) return;
-    useUp();
   });
   grabBtn.addEventListener('pointercancel', () => {
     interactUp();
