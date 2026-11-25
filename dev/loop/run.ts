@@ -589,6 +589,7 @@ const ROUTE_PRESS: Partial<Record<NodeId, { op: 'rail.grant' | 'rail.gate'; id: 
   seeds: { op: 'rail.grant', id: RAIL_GRANTS.findIndex((x) => x.id === 'seeds') },
   'canopy-gate': { op: 'rail.gate', id: RAIL_GATES.findIndex((x) => x.id === 'canopy') },
   'plug-gate': { op: 'rail.gate', id: RAIL_GATES.findIndex((x) => x.id === 'plug') },
+  'deep-gate': { op: 'rail.gate', id: RAIL_GATES.findIndex((x) => x.id === 'deep-span') },
   cloth: { op: 'rail.grant', id: RAIL_GRANTS.findIndex((x) => x.id === 'cloth') },
 };
 /** A route point (cm, with its height: the server's reach check judges both). */
@@ -722,6 +723,7 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set(), pick
     seeds: pressed('seeds'),
     'canopy-gate': pressed('canopy-gate'),
     'plug-gate': pressed('plug-gate'),
+    'deep-gate': pressed('deep-gate'),
     cloth: pressed('cloth'),
   };
   const ready = (id: NodeId) => () => node(id).requires.every((e) => e.scope === 'finish' || done[e.on]());
@@ -864,6 +866,7 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set(), pick
     seeds: routePolicy('seeds'),
     'canopy-gate': routePolicy('canopy-gate'),
     'plug-gate': routePolicy('plug-gate'),
+    'deep-gate': routePolicy('deep-gate'),
     cloth: routePolicy('cloth'),
   };
   return { g, done, policy, flags, current: null, detour: () => 1 };
@@ -1114,6 +1117,11 @@ export function playOrder(
       if (t.accepted > before) lastProgress = h.tick();
       finishParked();
       if (done[id]()) {
+        if (id === 'cave-3') {
+          const wall = RAIL_LEGS.findIndex((leg) => leg.id === 'wall');
+          if (!legOpen(g.w, wall) || legRow(g.w, wall).laid !== 0)
+            throw new Error('Port Quay must hand the ready room to the first White Wall frame');
+        }
         t.tick = h.tick();
         lastProgress = h.tick();
         break;
@@ -1150,11 +1158,6 @@ export function playOrder(
     }
   }
   result.ticks = h.tick();
-  if (!result.softlock && order.includes('cave-3')) {
-    const wall = RAIL_LEGS.findIndex((leg) => leg.id === 'wall');
-    if (!legOpen(g.w, wall) || legRow(g.w, wall).laid !== 0)
-      throw new Error('Port Quay must hand the ready room to the first White Wall frame');
-  }
   if (opts.probes) result.probes = probes;
   if (opts.verbose) console.error(log.slice(-40).join('\n'));
   return result;

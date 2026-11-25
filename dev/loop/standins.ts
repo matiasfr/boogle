@@ -1,4 +1,4 @@
-// The route past the built graph, as STAND-INS (docs/plans/campaign-outline.md, section 5, step 1): areas 8 and 9 of
+// The route past the built graph, as STAND-INS (docs/plans/campaign-outline.md, section 5, step 1): area 9 of
 // the campaign outline, each a bill, its legs and a gate, and nothing else. No mechanic is invented and none of this is
 // played through the rules: `npm run loop -- run` plays the built graph (dev/loop/graph.ts NODES, which hold areas 4
 // and 5 since greybox leg 2's step 5 and area 6 since leg 3's step 7) and MODELS these on top of it, at the rate the
@@ -15,7 +15,7 @@ import { ROUTE as MODEL_ROUTE, type Material as ModelMaterial } from '../economy
 import { defaultSettings, rideS, simulate } from '../economy/ring-sim.ts';
 import { NODES, type NodeId } from './graph.ts';
 
-export type StandInId = 'wall' | 'ending';
+export type StandInId = 'ending';
 export type StandInMaterial = 'logs' | 'stone' | 'rails' | 'footings' | 'steel' | 'copper' | 'fibre' | 'crystal';
 export type Leg = { id: string; line: string; km: number };
 /** Every stand-in edge is the outline's default, not a ruling. `needs`: the grant of `on` that opens this area. */
@@ -56,12 +56,8 @@ const MATERIAL_OF: Record<ModelMaterial, StandInMaterial> = {
 const OUTLINE = 'docs/plans/campaign-outline.md section 3';
 /** The route's slots past the built graph, in the outline's order: `stage` is world-lines.ts's build stage (High Gorge
  * first), `steps` the model's. */
-const SLOTS = [
-  { id: 'wall', area: 8, stage: 7, allowanceMin: 48, steps: ['ring.close'] },
-  { id: 'ending', area: 9, stage: 8, allowanceMin: 18, steps: ['final'] },
-] as const;
+const SLOTS = [{ id: 'ending', area: 9, stage: 8, allowanceMin: 18, steps: ['final'] }] as const;
 const PLACE: Record<StandInId, { label: string; grants: string[] }> = {
-  wall: { label: 'The White Wall line', grants: ['crystal collars', 'the lap'] },
   ending: { label: 'Lantern Notch, the causeway, the Original Island', grants: ['the ending'] },
 };
 /** The grants of built nodes a stand-in's gate names (dev/loop/graph.ts; src/sim/railway-route.ts RAIL_GRANTS). */
@@ -70,9 +66,8 @@ const BUILT_GRANTS: Partial<Record<NodeId, string>> = {
   seeds: 'crystal seeds',
   cloth: 'glider cloth',
 };
-/** The gates the outline names: the one deep span and the glide to the Notch. */
+/** The glide to the Notch in the outline. */
 const GATES: Partial<Record<StandInId, StandInEdge[]>> = {
-  wall: [{ on: 'seeds', needs: 'crystal seeds', source: `${OUTLINE}: crystal collars for the one deep span` }],
   ending: [{ on: 'cloth', needs: 'glider cloth', source: `${OUTLINE}: the glide from Canopy's ledge to the Notch` }],
 };
 
@@ -172,6 +167,7 @@ const BUILT_AREAS: readonly { area: number; label: string; ends: NodeId; allowan
   { area: 5, label: 'Bell Rock and the bay shortcut', ends: 'bay-2', allowanceMin: 30 },
   { area: 6, label: 'Canopy Town', ends: 'cloth', allowanceMin: 42 },
   { area: 7, label: 'Sea cave, Saltpan, Port Quay', ends: 'cave-3', allowanceMin: 48 },
+  { area: 8, label: 'The White Wall line', ends: 'wall-6', allowanceMin: 48 },
 ];
 export type RouteRow = { area: number; label: string; standIn: boolean; allowanceMin: number; seconds: number[] };
 /** Seconds per area for each played run (one per player count): built areas as played, stand-ins modelled. */

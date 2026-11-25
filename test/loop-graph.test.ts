@@ -84,7 +84,7 @@ async function rideForCloth(firstContactMs: number, clothTaken = false) {
     new URL('../dev/look/bots/railway-legs.ts', import.meta.url),
     {
       '../../../src/sim/railway-queries-route.ts': {
-        legDone: () => true,
+        legDone: (_: unknown, k: number) => RAIL_LEGS[k]!.area <= canopy.area,
         legRow: (_: unknown, k: number) => ({ laid: RAIL_LEGS[k]!.sections.length }),
         routeRow: () => ({ grants: clothTaken ? 7 : 3, gates: 3 }),
       },
@@ -266,8 +266,8 @@ test('the hand-kept beat lists agree with the graph', () => {
   const stops = new Set(NODES.flatMap((n) => n.stops));
   for (const s of stops) assert.ok(s in RAIL_STOPS, `${s} is not a RAIL_STOPS key`);
   // Not loop beats: the audio check, and slice 5's freight home and first fare (economy beats no route step waits for).
-  // The deep span has a seeded prompt proof before leg 5 step 6 adds its loop node.
-  const notLoop = new Set(['audio-loop', 'freight', 'fare', 'deep-span']);
+  // The Wall bot finishes after riding home from the Gorge, where the loop counts the last lay.
+  const notLoop = new Set(['audio-loop', 'freight', 'fare', 'wall']);
   for (const s of Object.keys(RAIL_STOPS)) assert.ok(stops.has(s) || notLoop.has(s), `RAIL_STOPS ${s} has no node`);
 });
 
@@ -280,15 +280,15 @@ test('the solver proposes the canonical order and each soft edge flipped', () =>
 test('built nodes and stand-ins are told apart by the flag, and the stand-ins reach the ending', () => {
   for (const n of NODES) assert.ok(!isStandIn(n), `${n.id} is built: it carries no standIn flag`);
   const built = new Set<string>(NODES.map((n) => n.id));
-  // The White Wall and the ending are still stand-ins. The ending's key is the built cloth.
+  // The ending follows the White Wall and needs the built cloth.
   const { nodes } = standInRoute({ bills: 1 });
   assert.deepEqual(
     nodes.map((n) => n.id),
-    ['wall', 'ending'],
+    ['ending'],
   );
-  assert.equal(nodes[0]!.requires[0]!.on, 'cave-3', 'the stand-ins start where the built graph ends');
+  assert.equal(nodes[0]!.requires[0]!.on, 'wall-6', 'the stand-ins start where the built graph ends');
   assert.ok(
-    nodes[1]!.requires.some((e) => e.on === 'cloth' && e.needs === 'glider cloth'),
+    nodes[0]!.requires.some((e) => e.on === 'cloth' && e.needs === 'glider cloth'),
     'the ending needs the cloth',
   );
   for (const s of nodes) {

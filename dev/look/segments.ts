@@ -47,10 +47,11 @@ export const RAIL_STOPS = {
   canopy: 'canopy home',
   port: 'port home',
   'deep-span': 'deep span open',
+  wall: 'wall home',
 } as const;
 export type RailStop = keyof typeof RAIL_STOPS;
 /** The greybox legs' stops (dev/look/bots/railway-legs.ts). */
-const LEG_STOPS: readonly RailStop[] = ['gorge', 'bell', 'bay', 'canopy', 'port', 'deep-span'];
+const LEG_STOPS: readonly RailStop[] = ['gorge', 'bell', 'bay', 'canopy', 'port', 'deep-span', 'wall'];
 /** `--from <stage>`: an accepted `--rail-seed` server save that its `bot` eval resumes from (its `railFrom`).
  * Seeds are written per run through the real host's save path; there are no client fixtures to keep. */
 export const RAIL_FROM = {
@@ -82,6 +83,7 @@ export const RAIL_FROM = {
   'trade-ready': { railFrom: 'legs', after: 'bell', bot: 'railway-legs-bot.ts' },
   // Leg 4 starts with the Canopy line laid. The bot collects the cloth and rides home before opening the plug.
   'canopy-reached': { railFrom: 'legs', after: 'bay', bot: 'railway-legs-bot.ts' },
+  'port-reached': { railFrom: 'legs', after: 'port', bot: 'railway-legs-bot.ts' },
   // The Wall's final frame, reached through the jump room's landing.
   'wall-deep': { railFrom: 'legs', after: 'port', bot: 'railway-legs-bot.ts' },
 } as const satisfies Record<string, { railFrom: string; after: RailStop; bot: string }>;
@@ -127,6 +129,7 @@ export function railSegmentOptions(args: string[]) {
   // A seed's bot stops only at its own beats: the legs' stops are the legs bot's, the rest another bot's. A bot that
   // never reaches the stop would finish its own route and pass without it.
   if (to === 'deep-span' && from !== 'wall-deep') throw new Error('--to deep-span requires --from wall-deep');
+  if (from === 'wall-deep' && to && to !== 'deep-span') throw new Error('--from wall-deep plays to deep-span');
   if (seed && to) {
     const legStop = LEG_STOPS.includes(to);
     const playsTo = (s: { bot: string }) => (s.bot === RAIL_FROM['gorge-open'].bot) === legStop;
