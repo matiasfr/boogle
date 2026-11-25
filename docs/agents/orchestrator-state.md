@@ -10,9 +10,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Cliff kit step 9: the Sickle horizon | Terrain clean-up | codex/cliff-kit-horizon | live session, Codex Astra medium | 2026-11-25 | the White Wall back to chalk on his word (live session, 18:45 UTC); stills recapturing, then ship |
 | Cliff kit step 10: Ring Island | Terrain clean-up | codex/cliff-kit-ring-island | live session, Codex Astra medium | 2026-11-25 18:44 | running; no performance pass first, on his word |
-| Mineable rocks back to grey | Terrain clean-up | codex/mineable-rocks-grey | live session, Codex Sol medium | 2026-11-25 18:44 | running; view only |
 | Greybox leg 5 Checkpoint E: the remaining proofs | The greybox route | codex/greybox-leg5-checkpoint-e | heartbeat, Codex Sol medium (step 6's builder thread) | 2026-11-25 18:40 | running; test:net rejoin, stills sheet, perf at the Wall, boot probe |
 
 ## Where the work stands
