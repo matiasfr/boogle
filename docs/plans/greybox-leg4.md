@@ -362,7 +362,7 @@ is an independent one before merge (src/sim, src/world): **gpt-6.2-astra medium*
       The cave sign stands on the approach platform, and the outer wall and roof overlap at the bend.
       All eight new foot and swim floods passed the full level check. The resident West landing has 47 boxes in one
       instanced batch, 16 bodies and two signs. It unloads at Bell Rock. The 2, 4 and 8 m terrain grids all stayed below
-      the rail through the hood. The prefab check passed and the offline built site became interactive in 8.7 seconds.
+      the rail through the hood. The prefab check passed and the offline built site became interactive in 8.5 seconds.
       Stills from [the commons](greybox-leg4/west-commons.png), [the bay platform](greybox-leg4/west-apron.png) and
       [the cave platform](greybox-leg4/west-hood.png). Not tested on a device.
 - [ ] **5. The Saltpan, Port Quay and leg 4's views (M to L; HOTBOX; "Player-visible implementation": Claude opus
