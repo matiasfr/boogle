@@ -715,11 +715,13 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
   const signs = new Map<THREE.Group, string[]>();
   const overlaps: number[] = [];
   const drawnDeck: Shape[] = [];
+  const barrierPanels: { x: number; z: number }[] = [];
   const pieces: { volume: placed.Volume }[] = [];
   const addStatic = (b: { hx: number; hy: number; hz: number }, p: THREE.Vector3, q: THREE.Quaternion) => {
     const m = new Matrix4().compose(new Vector3(p.x, p.y, p.z), q, new Vector3(1, 1, 1));
-    pieces.push({ volume: placed.boxVolume(m, [b.hx, b.hy, b.hz]) });
-    return {};
+    const piece = { volume: placed.boxVolume(m, [b.hx, b.hy, b.hz]) };
+    pieces.push(piece);
+    return piece;
   };
   let slabsEnabled = 0;
   const slab = (ax: number, az: number, bx: number, bz: number, ya: number, yb: number, width: number) => {
@@ -794,9 +796,12 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
         mesh: new THREE.Group(),
         begin() {
           if (this.mesh.name === 'route-greybox:deck') drawnDeck.length = 0;
+          if (this.mesh.name === 'route-greybox:things') barrierPanels.length = 0;
         },
         commit() {},
         box(x: number, y: number, z: number, w: number, h: number, d: number, colour: string, yaw: number, rx: number) {
+          if (this.mesh.name === 'route-greybox:things' && colour === '#c8402c' && h === 1.6)
+            barrierPanels.push({ x, z });
           if (this.mesh.name === 'route-greybox:deck' && colour === '#9c9ea1' && h === 0.5)
             drawnDeck.push(boxShape({ x, y, z, w, h, d, yaw, pitch: -rx }));
         },
@@ -830,7 +835,12 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
   if (stackLayAt) stack.laid--;
   const view = await createLegView(
     { read: { whole: () => true, world: () => seed.w, tick: () => seed.t } },
-    { removeBody() {} },
+    {
+      removeBody(body: (typeof pieces)[number]) {
+        const index = pieces.indexOf(body);
+        if (index >= 0) pieces.splice(index, 1);
+      },
+    },
   );
   if (firstLay) {
     leg.laid = 1;
@@ -842,6 +852,11 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
   }
   return {
     pieces,
+    barrierPanels,
+    setWallLaid(laid: number) {
+      seed.w.mut(Leg, progress.legId(seed.w, 5))!.laid = laid;
+      view.update();
+    },
     signs,
     overlaps,
     floor,
@@ -866,6 +881,35 @@ test('a swimmer can reach each temporary Wall head from open water', async () =>
       assert.equal(wet[platform], 1, 'head ' + laid + ' platform ' + side);
     }
   }
+});
+
+test('closing Wall head one keeps the floor under a player still standing on its platform', async () => {
+  const leg = route.RAIL_LEGS[5]!;
+  const s = leg.sections[0]!.toCm / 100 - 10;
+  const at = row.rowWorld(leg.line, s, 5.8, { x: 0, z: 0 });
+  const top = row.rowY(leg.line, s) + 0.9;
+  const view = await reachedView(1300, 0, 3, undefined, 2);
+  view.position.set(at.x, top + PLAYER_R, at.z);
+  const floor = () =>
+    placed.heightAt(
+      view.pieces.flatMap((p) => p.volume.triangles),
+      at,
+    );
+  assert.ok(Math.abs(floor()! - top) < 0.01);
+  view.setWallLaid(3);
+  assert.ok(Math.abs(floor()! - top) < 0.01, 'head one removed the occupied platform over open water');
+});
+
+test('the deep-span barrier first appears when the fifth Wall platform supports its frame', async () => {
+  const frame = route.legFrame(route.RAIL_LEGS[5]!, 5);
+  const view = await reachedView(1300, 0, 3, undefined, 2);
+  view.position.set(frame.x / 100, 0, frame.z / 100);
+  const panels = () => view.barrierPanels.filter((p) => Math.hypot(p.x - frame.x / 100, p.z - frame.z / 100) < 4);
+  view.update();
+  const before = panels().length;
+  view.setWallLaid(5);
+  assert.equal(panels().length, 1);
+  assert.equal(before, 0, 'a shut barrier floats over the sea before the head exists');
 });
 
 test('the Canopy lay leaves a player standing on Bell Rock clear of the new deck', async () => {
