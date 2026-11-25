@@ -3,7 +3,7 @@ import './ending-card.css';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { onRailwayCommands, railwayCommands } from '../entities/railway/state.ts';
 import { railwayGlideOpen } from '../entities/railway/glide.ts';
-import { seated } from '../entities/railway/seat.ts';
+import { railwayMirror } from '../world/game-world.ts';
 import { fallArrival } from '../fall/arrival.ts';
 import { onStart } from '../loop.ts';
 import { wrapAction } from '../player/controls.ts';
@@ -54,6 +54,10 @@ function show() {
 }
 
 onStart(() => {
+  railwayMirror?.mirror.onPacket((packet) => {
+    const pid = railwayCommands()?.read.pid;
+    if (pid && packet.ev?.some((e) => e.op === 'rail.arrive' && e.pid === pid && e.accepted === 1)) mine = true;
+  });
   let unsubscribe = () => {};
   onRailwayCommands((session) => {
     unsubscribe();
@@ -65,13 +69,7 @@ onStart(() => {
       previous = routeRow(session.read.world()).arrived;
       mine = owed = false;
     });
-    const receipt = session.onAccepted((e) => {
-      if (e.op === 'rail.arrive') mine = true;
-    }, 'command');
-    unsubscribe = () => {
-      reset();
-      receipt();
-    };
+    unsubscribe = reset;
   });
   wrapAction('interact', {
     down(next) {
@@ -98,7 +96,7 @@ spawn({
       !fallArrival.active &&
       !inputState.seated &&
       !inputState.held &&
-      !seated() &&
+      !railwayMirror?.seats.seatOf(read.pid) &&
       !railwayGlideOpen() &&
       !momentBusy()
     )
