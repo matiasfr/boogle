@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PerspectiveCamera, Vector3 } from 'three';
+import { Line3, PerspectiveCamera, Vector3 } from 'three';
+import { nearPingDeck } from '../src/player/ping-hints.ts';
 import { sourceFunction } from '../dev/level/source.ts';
 import {
   validatePing,
@@ -130,4 +131,27 @@ test('honks take tones from one shared chord', () => {
   assert.notEqual(honkNotes(0, 0, 0)[0], honkNotes(0, 0, 1)[0]); // a honk isn't always the same note
   assert.equal(honkShape({ t: 'honk', v: 2 }), 2);
   for (const bad of [{ t: 'honk' }, { v: 9 }, { v: 1.5 }, { v: '1' }, null]) assert.equal(honkShape(bad), 0);
+});
+
+test('a train deck centred after terrain lifts the camera gets a train ping', () => {
+  const camera = new PerspectiveCamera();
+  camera.position.set(0, 8, 5);
+  camera.lookAt(0, 6, -8);
+  const deck = camera.getWorldDirection(new Vector3()).multiplyScalar(40).add(camera.position);
+  const aim = sourceFunction<() => { k: string }>('src/features/ping.ts', 'aimPing', {
+    camera,
+    camForward: (out: Vector3) => out.set(0, 0, -1),
+    fwd: new Vector3(),
+    tmp: new Vector3(),
+    ball: { pose: { p: new Vector3(80, 0, 0) } },
+    TUNE: { maxRange: 90, ballRadius: 1.6 },
+    contact: () => 0,
+    raycastClosest: () => false,
+    GROUP: { SCENERY: 1, CAVE: 2 },
+    hit: {},
+    hintOrLook: (end: Vector3) => ({
+      k: nearPingDeck(new Line3(camera.position, end), deck, 0, 1, 2) ? 'train' : 'look',
+    }),
+  });
+  assert.equal(aim().k, 'train');
 });
