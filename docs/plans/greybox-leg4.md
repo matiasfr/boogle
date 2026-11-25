@@ -345,7 +345,7 @@ is an independent one before merge (src/sim, src/world): **gpt-6.2-astra medium*
       view's, always up; `cave-open` and `port-reached` keep the spawn until step 5's stills, leg 3's reason).
       Verify: `test/railway-jump.test.ts`; each stage's invariant check; **the whole server suite and `npm run
       test:net`** (rule 55: both build rooms from the seeds).
-- [ ] **4. The West landing's cave side (S to M; HOTBOX; "Player-visible implementation": Claude opus medium).** Files:
+- [x] **4. The West landing's cave side (S to M; HOTBOX; "Player-visible implementation": Claude opus medium).** Files:
       `src/content/levels/leg2.ts` (`west()`: the cave bed, both platforms, the apron, the hood and its sign, the
       reserves moved to the pieces), the level artifact rebuilt, `dev/level/route-leg2.ts` (the West landing's
       floods: bay platforms to the apron, the apron to both cave platforms, the commons to both; a swimmer in the V and
@@ -357,6 +357,14 @@ is an independent one before merge (src/sim, src/world): **gpt-6.2-astra medium*
       `npm run level-check` (rule 49), the West landing's lines all "ok" (both rows' platforms, the apron, the reserves,
       the hood clear of the crossover's gauge); `.look/` stills: the West landing from the commons (the hood and the
       apron in view), the apron with frame 1 and rack 1 from the bay platforms, the hood from the cave platform's end.
+      **As built.** The swimmer slipway meets the outward platform at s 40. The apron supports frame 1 and rack 1 at
+      their catalog heights. Step 5 draws both. The Bell Rock board stands on the bay platform beyond its apron reserve.
+      The cave sign stands on the approach platform, and the outer wall and roof overlap at the bend.
+      All eight new foot and swim floods passed the full level check. The resident West landing has 47 boxes in one
+      instanced batch, 16 bodies and two signs. It unloads at Bell Rock. The 2, 4 and 8 m terrain grids all stayed below
+      the rail through the hood. The prefab check passed and the offline built site became interactive in 8.7 seconds.
+      Stills from [the commons](greybox-leg4/west-commons.png), [the bay platform](greybox-leg4/west-apron.png) and
+      [the cave platform](greybox-leg4/west-hood.png). Not tested on a device.
 - [ ] **5. The Saltpan, Port Quay and leg 4's views (M to L; HOTBOX; "Player-visible implementation": Claude opus
       medium).** Files: new `src/content/levels/leg4.ts` (levels `saltpan`
       and `quay`) and `src/content/prefabs/leg4-lands.ts` (the three map outlines, collision only, baked as leg 3's are);
