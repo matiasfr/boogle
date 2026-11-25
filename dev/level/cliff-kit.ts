@@ -86,14 +86,15 @@ export function checkCliffKitArea(
     problems,
   };
 }
-function load(area: Area) {
+/** An area's built level's placements. */
+export function placementsOf(area: Area) {
   const file = `content/built/levels/${levelOf(area)}.json`;
   return loadLevelArtifact(JSON.parse(fs.readFileSync(file, 'utf8')) as unknown, compiled.prefabs).placements;
 }
 
 export function checkCliffKit() {
   const { wallAt } = censusWalls();
-  const areas = AREAS.map((area) => checkCliffKitArea(area, load(area), wallAt));
+  const areas = AREAS.map((area) => checkCliffKitArea(area, placementsOf(area), wallAt));
   const failures = areas.reduce((n, a) => n + a.problems.length, 0);
   return { name: 'cliff kit', areas, failures };
 }

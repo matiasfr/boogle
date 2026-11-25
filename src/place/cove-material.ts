@@ -27,7 +27,7 @@ import { ORIGIN } from './layout.ts';
 import { beddedRock } from './ground-material.ts';
 // oxlint-disable-next-line typescript/no-explicit-any
 type N = any;
-const pigment = (family: 'rock' | 'strata' | 'sediment' | 'rust' | 'grass' | 'sand' | 'path') =>
+const pigment = (family: 'grass' | 'sand' | 'path') =>
   vec3(coveU(`${family}R`), coveU(`${family}G`), coveU(`${family}B`));
 export function applyCoveLayers(material: THREE.MeshStandardNodeMaterial, region: N, soilSlope: N) {
   const tiles = coveTextures();

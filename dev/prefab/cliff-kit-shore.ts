@@ -14,11 +14,12 @@ import { H } from '../../src/place/terrain.ts';
 import { ORIGIN } from '../../src/place/layout.ts';
 import { coveEdge } from '../../src/place/cove.ts';
 import { SHORE_HOP, SHORE_LANDING } from '../../src/place/shore-layout.ts';
-import { LOW_FACE, SEA_FACE, SHORE_ROCK } from '../../src/content/prefabs/terrain.ts';
+import { FACE_TOP, SEA_FACE, SHORE_ROCK } from '../../src/content/prefabs/terrain.ts';
 import { r2 as round } from '../../src/math.ts';
-import { WALKABLE_NY } from '../../src/constants.ts';
 import { TWO_JUMPS } from '../level/mover.ts';
-import { kitPieceProblems, layAlong, solidBoxes, runAlong, type Area, type Key, type Kit } from './cliff-kit.ts';
+import { CLEAR, layAlong, runAlong, treadClearance, type Area, type Key, type Kit } from './cliff-kit.ts';
+import { solidBoxes } from './cliff-kit-solids.ts';
+import { REACH, footing } from '../level/cliff-kit-standing.ts';
 
 const ground = (x: number, z: number) => H(x + ORIGIN.x, z);
 /** How far back from its front a face's top reaches (its slab's depth and lean), m: where its top meets the ground. */
@@ -27,10 +28,8 @@ const TOP_BACK = 2.4;
 const TOP: Partial<Record<Key, number>> = {
   'terrain.sea-face-6': SEA_FACE,
   'terrain.sea-face-10': SEA_FACE,
-  'terrain.sea-corner': SEA_FACE,
-  'terrain.low-face': LOW_FACE,
-  'terrain.face-6': 14.4,
-  'terrain.face-10': 14.4,
+  'terrain.face-6': FACE_TOP,
+  'terrain.face-10': FACE_TOP,
 };
 
 function put(kit: Kit, prefab: Key, x: number, y: number, z: number, yaw: number, where: string) {
@@ -51,8 +50,6 @@ const CLIMB_WALL = runAlong([
   [-175.5, 13.5],
   [-173, 17],
 ]);
-/** How far round a face its top must be no step up from walkable ground (dev/level/cliff-kit-standing.ts REACH). */
-const REACH = 8;
 /** A wall's toe up the normal (nx, nz) turned back into it from (x, z), d m in: where the ground first stands TOE m
  * over the ground 3 m out; and its rim, where the ground first comes within 0.6 m of the highest within 12 m. */
 const TOE = 0.8;
@@ -67,7 +64,8 @@ function profile(x: number, z: number, nx: number, nz: number) {
   while (at(rim) < top - 0.6) rim += 0.25;
   return { toe, toeY: at(toe), rim, rimY: top };
 }
-/** Walkable ground points 0.25 m apart within `r` m of any of `points` (Place-local x, z): where a player stands. */
+/** The gate's footings (dev/level/cliff-kit-standing.ts `footing`: walkable ground, or the sea's surface over drowned
+ * ground) 0.25 m apart within `r` m of any of `points` (Place-local x, z). */
 function footingsNear(points: readonly (readonly number[])[], r: number) {
   const xs = points.map((p) => p[0]!),
     zs = points.map((p) => p[2]!);
@@ -75,10 +73,8 @@ function footingsNear(points: readonly (readonly number[])[], r: number) {
   for (let x = Math.floor(Math.min(...xs) - r); x <= Math.max(...xs) + r; x += 0.25)
     for (let z = Math.floor(Math.min(...zs) - r); z <= Math.max(...zs) + r; z += 0.25) {
       if (!points.some((p) => Math.hypot(p[0]! - x, p[2]! - z) <= r)) continue;
-      const e = 0.25,
-        gx = (ground(x + e, z) - ground(x - e, z)) / (2 * e),
-        gz = (ground(x, z + e) - ground(x, z - e)) / (2 * e);
-      if (1 / Math.sqrt(1 + gx * gx + gz * gz) >= WALKABLE_NY) out.push(Math.max(ground(x, z), 0));
+      const y = footing(x, z);
+      if (y !== undefined) out.push(y);
     }
   return out;
 }
@@ -117,8 +113,8 @@ function dressWall(
       rot: [yaw, 0, 0],
     });
     const sea = tall === 'terrain.face-10' ? 'terrain.sea-face-10' : 'terrain.sea-face-6';
-    const prefab: Key = ceiling - 14.4 < wall.toeY - 0.5 ? tall : sea;
-    while (d < wall.toe + 4 && kitPieceProblems(trial(prefab, ceiling)).some((p) => p.includes('tread'))) d += 0.25;
+    const prefab: Key = ceiling - FACE_TOP < wall.toeY - 0.5 ? tall : sea;
+    while (d < wall.toe + 4 && treadClearance(trial(prefab, ceiling)) < CLEAR) d += 0.25;
     const top = d < wall.toe + 4 ? highestTop(trial(prefab, 0), ceiling) : undefined;
     if (top !== undefined && top > Math.max(wall.toeY, 0) + 5) {
       const p = trial(prefab, top);

@@ -28,7 +28,7 @@ export function coveGround(x: number, z: number) {
 }
 
 /** The bluff's top height along it: up from under the sand at z 34 to 1.7 m at z 38, then to 4.5 m by z 48. */
-export function coveCrest(z: number) {
+function coveCrest(z: number) {
   return z < 38
     ? -1.08 + 2.78 * smoothstep(34, 38, z)
     : 1.7 + 2.78 * smoothstep(38, 48, z) + 0.06 * Math.sin((z - 42) * 0.15) * smoothstep(38, 48, z);
@@ -61,16 +61,15 @@ export function coveBluff(x: number, z: number) {
   const broad = 1 - smoothstep(42, 51, z);
   // The broad end's top reaches 0.6 m further out than the sculpted face's did: a walker on its west lip keeps footing.
   const across = (f: number) => -2 + 2.5 * f + (-0.1 - 5.5 * Math.sqrt(1 - f) - (-2 + 2.5 * f)) * broad;
-  let lo = 0,
+  let h = 0,
     hi = 1;
-  if (d >= across(1)) lo = 1;
+  if (d >= across(1)) h = 1;
   else if (d > across(0))
     for (let k = 0; k < 24; k++) {
-      const mid = (lo + hi) / 2;
-      if (across(mid) < d) lo = mid;
+      const mid = (h + hi) / 2;
+      if (across(mid) < d) h = mid;
       else hi = mid;
     }
-  const h = lo;
   // Its far end tucks under the beach there by z 74, as the sculpted face's did.
   const end = 1 - smoothstep(69, 74, z);
   return -2.4 + (coveCrest(z) + 2.4) * h * end * smoothstep(rear + 1.5, rear - 0.5, x);

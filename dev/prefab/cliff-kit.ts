@@ -24,8 +24,9 @@ import { pathAt } from '../../src/place/path-field.ts';
 import { DEVICES, PADS, PILLARS, SECRETS } from '../../src/place/tech-layout.ts';
 import { GAUGE } from '../../src/entities/ring-island/bracket.ts';
 import { KIT } from '../../src/place/turnout.ts';
-import { prefabs } from '../../src/content/prefabs/terrain.ts';
+import type { prefabs } from '../../src/content/prefabs/terrain.ts';
 import { baseSites } from '../level/sites.ts';
+import { solidBoxes, solidSamples } from './cliff-kit-solids.ts';
 import { drawnTracks } from '../level/rail-network.ts';
 import { canyon } from './cliff-kit-canyon.ts';
 import { shore } from './cliff-kit-shore.ts';
@@ -53,6 +54,7 @@ export const AREAS: readonly Area[] = [canyon, shore];
 /** The level an area writes. */
 export const levelOf = (area: Area) => area.level ?? `cliff-kit-${area.id}`;
 
+export { solidBoxes, solidSamples };
 export const CLEAR = 0.4; // m, a collider's footprint outside the tread's edge
 
 /** A run along a wall (docs/plans/cliff-kit-everywhere.md, "runs, not stations"): a polyline of Place-local (x, z)
@@ -118,42 +120,6 @@ const GATED: readonly { what: string; x: number; z: number; r: number }[] = [
   ),
 ];
 
-/** Turns (x, y, z) by a record rotation [yaw, pitch, roll] in its order, YXZ: roll, then pitch, then yaw. */
-function turn([x, y, z]: readonly number[], [yaw = 0, pitch = 0, roll = 0]: readonly number[]) {
-  [x, y] = [x! * Math.cos(roll) - y! * Math.sin(roll), x! * Math.sin(roll) + y! * Math.cos(roll)];
-  [y, z] = [y * Math.cos(pitch) - z! * Math.sin(pitch), y * Math.sin(pitch) + z! * Math.cos(pitch)];
-  return [x * Math.cos(yaw) + z * Math.sin(yaw), y, -x * Math.sin(yaw) + z * Math.cos(yaw)] as const;
-}
-/** A placed piece's box solids, each as a function from box-local (-1..1 on each axis) to Place-local (x, y, z): the
- * box's own rotation and offset, then the placement's scale, whole rotation and position (three's TRS order), with the
- * box's half sizes. Plain arithmetic, so audits can run this source with only its data bound. */
-export function solidBoxes(p: Placement) {
-  return prefabs
-    .find((q) => q.key === p.prefab)!
-    .colliders.map((c) => {
-      if (c.shape !== 'box') throw new Error(`cliff kit: ${p.prefab} has a solid that is not a box`);
-      const box = (u: number, v: number, w: number) => {
-        const inBox = turn([c.half[0] * u, c.half[1] * v, c.half[2] * w], c.rot ?? []);
-        const [sx = 1, sy = 1, sz = 1] = p.scale ?? [];
-        const placed = turn(
-          [(inBox[0] + c.at[0]) * sx, (inBox[1] + c.at[1]) * sy, (inBox[2] + c.at[2]) * sz],
-          p.rot ?? [],
-        );
-        return [placed[0] + p.pos[0], placed[1] + p.pos[1], placed[2] + p.pos[2]] as const;
-      };
-      return Object.assign(box, { half: c.half });
-    });
-}
-/** Every point through a placed piece's boxes, no more than `spacing` m apart along each box axis. */
-export function* solidSamples(p: Placement, spacing: number) {
-  for (const box of solidBoxes(p)) {
-    const steps = box.half.map((h) => Math.max(1, Math.ceil((2 * h) / spacing)));
-    for (let i = 0; i <= steps[0]!; i++)
-      for (let j = 0; j <= steps[1]!; j++)
-        for (let k = 0; k <= steps[2]!; k++)
-          yield box((2 * i) / steps[0]! - 1, (2 * j) / steps[1]! - 1, (2 * k) / steps[2]! - 1);
-  }
-}
 /** How far a point (x, z) is, across the ground, from a box: the distance to its footprint, the outline of its eight
  * corners seen from above (0 inside it). */
 function footprint(box: ReturnType<typeof solidBoxes>[number]) {
@@ -236,14 +202,20 @@ function inGauge(rails: ReturnType<typeof railsNear>, x: number, y: number, z: n
   return false;
 }
 
+/** How far a placed piece's solids come outside the nearest tread's edge, m (negative: over it), sampled through each
+ * box no more than 0.5 m apart. */
+export function treadClearance(p: Placement) {
+  let tread = Infinity;
+  for (const q of solidSamples(p, 0.5)) tread = Math.min(tread, pathAt(q[0], q[2]).edge);
+  return tread;
+}
 /** What a placed piece breaks: its solids over or within CLEAR of a tread (sampled through each box no more than 0.5 m
  * apart) or inside a rail's gauge (0.25 m apart, against the tracks in the bins round the piece: every solid is within
  * RAIL_BIN m of its origin), or within KEEP_AWAY of a gated place (exactly, beyond the place's own radius). */
 export function kitPieceProblems(p: Placement, keepClear: Area['keepClear'] = []): string[] {
   const problems: string[] = [];
-  let tread = Infinity,
-    gauge: readonly number[] | undefined;
-  for (const q of solidSamples(p, 0.5)) tread = Math.min(tread, pathAt(q[0], q[2]).edge);
+  const tread = treadClearance(p);
+  let gauge: readonly number[] | undefined;
   const rails = railsNear(p.pos[0], p.pos[2]);
   if (rails.length)
     for (const q of solidSamples(p, 0.25))

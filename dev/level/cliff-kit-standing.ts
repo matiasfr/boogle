@@ -20,7 +20,7 @@ import { SEA } from '../../src/world/grid.ts';
 import { PLAYER_R, WALKABLE_NY } from '../../src/constants.ts';
 import { STEP } from '../../src/place/clearance.ts';
 import type { Placement } from '../../src/prefab/types.ts';
-import { solidBoxes } from '../prefab/cliff-kit.ts';
+import { solidBoxes } from '../prefab/cliff-kit-solids.ts';
 import { MOVER, TWO_JUMPS } from './mover.ts';
 import { TRAIN_TOP, drawnTracks } from './rail-network.ts';
 
@@ -29,19 +29,19 @@ const SAMPLE = 0.25,
   AROUND = 0.15,
   NEAR = 0.5;
 /** How far across the ground a top is out of reach of lower footings (b), and a perch's footing (c). */
-const REACH = 8,
+export const REACH = 8,
   PERCH = 1;
 
 const ground = (x: number, z: number) => H(x + ORIGIN.x, z);
 /** Whether the bare ground at Place-local (x, z) is walkable: its slope's normal at least WALKABLE_NY up. */
-function walkable(x: number, z: number) {
+export function walkable(x: number, z: number) {
   const e = SAMPLE;
   const gx = (ground(x + e, z) - ground(x - e, z)) / (2 * e),
     gz = (ground(x, z + e) - ground(x, z - e)) / (2 * e);
   return 1 / Math.sqrt(1 + gx * gx + gz * gz) >= WALKABLE_NY;
 }
 /** The height a player stands at in the bare world at (x, z), or undefined: walkable ground, or the sea's surface. */
-function footing(x: number, z: number) {
+export function footing(x: number, z: number) {
   const g = ground(x, z);
   return g < SEA ? SEA : walkable(x, z) ? g : undefined;
 }

@@ -24,15 +24,11 @@ export async function auditCove() {
   const T = await import('../../src/place/terrain.ts');
   const { coveEdge } = await import('../../src/place/cove.ts');
   const { ORIGIN } = await import('../../src/place/layout.ts');
-  const { WALKABLE_NY } = await import('../../src/constants.ts');
-  const { AREAS, levelOf, solidBoxes } = await import('../prefab/cliff-kit.ts');
-  const { loadLevelArtifact } = await import('../../src/prefab/validate.ts');
-  const { compiled } = await import('../../src/prefab/catalogue.ts');
-  const shore = AREAS.find((a) => a.id === 'shore')!;
-  const placements = loadLevelArtifact(
-    JSON.parse(fs.readFileSync(`content/built/levels/${levelOf(shore)}.json`, 'utf8')) as unknown,
-    compiled.prefabs,
-  ).placements;
+  const { AREAS } = await import('../prefab/cliff-kit.ts');
+  const { solidBoxes } = await import('../prefab/cliff-kit-solids.ts');
+  const { placementsOf } = await import('./cliff-kit.ts');
+  const { walkable } = await import('./cliff-kit-standing.ts');
+  const placements = placementsOf(AREAS.find((a) => a.id === 'shore')!);
   const tiles = T.terrainCollisionTiles();
   const kit: Solid[] = placements.flatMap((p) =>
     solidBoxes(p).map((box, n) => {
@@ -98,15 +94,13 @@ export async function auditCove() {
         if (residual > 0.03) errors.push({ x, z, expected, actual: hit?.y, residual });
       }
     const walk = walkSamples(coveEdge);
-    let lowestWalkNy = 1;
+    let unwalkable = 0;
     for (const { x, z } of walk) {
       const { expected, hit } = probe(x, z);
-      const e = 0.25,
-        g = (dx: number, dz: number) => T.H(x + dx + ORIGIN.x, z + dz + ORIGIN.z);
-      const ny = 1 / Math.hypot(1, (g(e, 0) - g(-e, 0)) / (2 * e), (g(0, e) - g(0, -e)) / (2 * e));
-      lowestWalkNy = Math.min(lowestWalkNy, ny);
-      if (!hit || hit.solid.id.startsWith('kit') || Math.abs(hit.y - expected) > 0.03 || ny < WALKABLE_NY)
-        errors.push({ walk: { x, z }, expected, actual: hit?.y, on: hit?.solid.id, ny });
+      const footing = walkable(x, z);
+      if (!footing) unwalkable++;
+      if (!hit || hit.solid.id.startsWith('kit') || Math.abs(hit.y - expected) > 0.03 || !footing)
+        errors.push({ walk: { x, z }, expected, actual: hit?.y, on: hit?.solid.id, walkable: footing });
     }
     const fine = T.COVE_FINE;
     for (let j = 0; j < fine.nz; j++)
@@ -142,7 +136,7 @@ export async function auditCove() {
       maximumResidual,
       boundaryRetries,
       walkSamples: walk.length,
-      lowestWalkNy,
+      unwalkable,
       protectedFineSamples,
       protectedMaximumResidual,
       kitPieces: placements.length,

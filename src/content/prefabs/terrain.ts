@@ -10,6 +10,8 @@ import { definePrefab, type ColliderDef, type Vec3 } from '../../prefab/types.ts
 /** A sandstone face `width` m wide: one slab leaning back 7.6 degrees into the wall, as the courses step back
  * (LEAN 0.32 m a 2.4 m course), its front 0.2 m out at the foot. Its top is the face's top, 14.4 m up. */
 const FACE_LEAN = -0.133;
+/** A face's top over its origin, m (six 2.4 m courses). */
+export const FACE_TOP = 14.4;
 const faceSlab = (width: number): ColliderDef => ({
   shape: 'box',
   at: [0, 7.2, -1.56],
@@ -20,10 +22,9 @@ const box = (at: Vec3, half: Vec3): ColliderDef => ({ shape: 'box', at, half });
 /** The shore's pieces (docs/plans/cliff-kit-everywhere.md, step 1). A sea-cliff face: two courses over a 1.2 m wave-cut
  * foot, SEA_FACE m tall, its solid one leaning slab like the canyon's, 0.1 m out at the foot (the foot's undercut is
  * drawn, not solid) and its top the face's near-level top: centre z 0.1 - depth / 2 - (height / 2) tan(lean), written
- * out. A low face: one course and a short broken top, LOW_FACE m. The corner (origin its outside corner's foot): two
+ * out. A low face: one course and a short broken top, 2.9 m. The corner (origin its outside corner's foot): two
  * such slabs 4.2 m long and 1.8 m deep, one along -x facing +z and one turned a quarter to run along -z facing +x. */
-export const SEA_FACE = 6,
-  LOW_FACE = 2.9;
+export const SEA_FACE = 6;
 const leaning = (at: Vec3, half: Vec3, yaw = 0): ColliderDef => ({ shape: 'box', at, rot: [yaw, FACE_LEAN, 0], half });
 /** Shore rocks across and tall, m (assets/src/terrain-kit.py shore_rock); each solid is the main slab, sunk:
  * centre (0, 0.3, 0) and half (0.42, 0.42, 0.3) of size, height and size, written out. */
