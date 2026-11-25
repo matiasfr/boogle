@@ -40,7 +40,7 @@ import { CANOPY_CENTRES, isleGround, landPoints } from '../src/content/levels/le
 import type { Body, Shape } from '../src/physics/engine.ts';
 import { resident } from '../src/render/lod-level.ts';
 import { CAVE_GROUP, HEAD_OFFSET, PLAYER_R } from '../src/constants.ts';
-import { createLiftOrWait, STEP, type Solid } from '../src/place/clearance.ts';
+import { createLiftOrWait, playerOverlaps, STEP, type Solid } from '../src/place/clearance.ts';
 import canopy from '../content/built/levels/canopy.json' with { type: 'json' };
 import south from '../content/built/levels/wall-south.json' with { type: 'json' };
 import north from '../content/built/levels/wall-north.json' with { type: 'json' };
@@ -713,6 +713,7 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
   assert.ok(floor !== null);
   const position = stackLayAt ?? new THREE.Vector3(p.x, floor + PLAYER_R, p.z);
   const signs = new Map<THREE.Group, string[]>();
+  const peerPosition = new THREE.Vector3(5000, 50, 5000);
   const overlaps: number[] = [];
   const drawnDeck: Shape[] = [];
   const barrierPanels: { x: number; z: number }[] = [];
@@ -786,6 +787,8 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
         { outOf: sourceFunction('src/place/sites.ts', 'outOf', {}) },
       ],
       liftOrWait,
+      frameOccupied: (frame: { holds(p: THREE.Vector3): boolean }) => frame.holds(position) || frame.holds(peerPosition),
+      supportOccupiedAt: (shapes: Shape[], p: THREE.Vector3) => playerOverlaps(physics.capsuleOverlaps, shapes, p, STEP),
       signBoard: () => ({ mesh: new THREE.Group() }),
       paintPlate: (s: { mesh: THREE.Group }, entries: { t: string }[]) =>
         signs.set(
@@ -853,6 +856,7 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
   return {
     pieces,
     barrierPanels,
+    peerPosition,
     setWallLaid(laid: number) {
       seed.w.mut(Leg, progress.legId(seed.w, 5))!.laid = laid;
       view.update();
@@ -898,6 +902,16 @@ test('closing Wall head one keeps the floor under a player still standing on its
   assert.ok(Math.abs(floor()! - top) < 0.01);
   view.setWallLaid(3);
   assert.ok(Math.abs(floor()! - top) < 0.01, 'head one removed the occupied platform over open water');
+  view.setWallLaid(4);
+  assert.ok(Math.abs(floor()! - top) < 0.01);
+  view.peerPosition.copy(view.position);
+  view.peerPosition.y += STEP - 0.01;
+  view.position.x += 50;
+  view.update();
+  assert.ok(Math.abs(floor()! - top) < 0.01, 'a peer within a step still needs the platform');
+  view.peerPosition.x += 50;
+  view.update();
+  assert.ok(floor() === null || Math.abs(floor()! - top) > 0.01, 'head one stayed after the player left');
 });
 
 test('the deep-span barrier first appears when the fifth Wall platform supports its frame', async () => {

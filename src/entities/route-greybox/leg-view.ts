@@ -30,6 +30,7 @@ import type { Body, Shape } from '../../physics/engine.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { LinePoint } from '../../place/layout.ts';
 import { me } from '../../player/player.ts';
+import { frameOccupied } from '../railway/frame-occupied.ts';
 import { camera } from '../../render/scene.ts';
 import { signBoard } from '../../render/sign-board.ts';
 import { playObjective } from '../../proto/mark.ts';
@@ -75,7 +76,7 @@ import { islandGround, ringIslandNear } from '../ring-island/state.ts';
 import { GATE_AT, GORGE_DECK, PICK_AT, TOWN_PAD, gorgeAt } from './massing.ts';
 import { bellPads } from './massing-bell.ts';
 import { canopyGround } from './massing-canopy.ts';
-import { liftOrWait } from '../../prefab/instantiate.ts';
+import { liftOrWait, supportOccupiedAt } from '../../prefab/instantiate.ts';
 import type { Clearing } from '../../place/clearance.ts';
 import { AREA_CENTRES, LEG2_TEXT } from './leg2-layout.ts';
 import { areaBoardVisibility, areaLabels } from './state.ts';
@@ -508,7 +509,9 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       deckLaid = -1,
       stood = -1;
     const deckBodies: Body[] = [];
-    const standing: { boxes: GreyBox[]; bodies: Body[] } = { boxes: [], bodies: [] };
+    const standing = { boxes: [] as GreyBox[], bodies: new Map<GreyBox, Body>() };
+    const temporaryHeads = new Map<number, GreyBox[]>();
+    const retiring = new Map<GreyBox[], { shapes: Shape[]; bodies: Body[] }>();
     /** A box along the line from (`s0`, `lat0`) to (`s1`, `lat1`), its top `up` over the rails. */
     function along(s0: number, s1: number, lat0: number, lat1: number, up: number, w: number, h: number, c: string) {
       geo.world(s0, lat0, q);
@@ -686,6 +689,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         if ((sp.leg.id === 'cave' && j === 2) || (sp.leg.id === 'wall' && j === 3)) continue;
         const closes = RAIL_LINES[sp.leg.line]!.halts[sp.leg.railheadHalt + j - 1]!.closesAt;
         if (laid < j || (closes !== undefined && laid >= j + 2)) continue;
+        const first = out.length;
         const r = R[j - 1]!;
         // A row line's head has a platform each side (right-hand running: the homeward lever's is the left one).
         for (const side of sp.row ? [1, -1] : [1]) {
@@ -715,6 +719,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
           box(r - plat.len, r - plat.len + 3, ramp, plat.up, plat.up, 2, 0.4, GREY);
           box(r - plat.len + 3, r - plat.len + 3 + drop / 0.54, ramp, plat.up, plat.up - drop, 2, 0.3, GREY);
         }
+        if (sp === wall && closes !== undefined) temporaryHeads.set(j, out.slice(first));
       }
       return out;
     }
@@ -723,16 +728,33 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     let standClear: Clearing<{ box: GreyBox; shapes: Shape[]; on(): void }> | null = null;
     function stand(laid: number, through: boolean) {
       const key = 2 * laid + Number(through);
-      if (key === stood) return void standClear?.retry(me.body);
+      if (key === stood) {
+        standClear?.retry(me.body);
+        releaseEmptyHeads();
+        return;
+      }
       stood = key;
-      for (const b of standing.bodies.splice(0)) owner.removeBody(b);
+      for (const [head, boxes] of temporaryHeads) {
+        if (laid < head + 2) continue;
+        // Keep the whole closed head under its occupant, including across later lays. Only geometry
+        // actually mounted on this client can retire, so a fresh view never creates an old head.
+        const active = boxes.filter((box) => standing.bodies.has(box));
+        const bodies = active.map((box) => standing.bodies.get(box)!);
+        for (const box of active) standing.bodies.delete(box);
+        retiring.set(active, { shapes: active.map(boxShape), bodies });
+      }
+      releaseEmptyHeads();
+      temporaryHeads.clear();
+      for (const body of standing.bodies.values()) owner.removeBody(body);
+      standing.bodies.clear();
       standing.boxes = pieces(laid, through);
       standClear = liftOrWait(
         standing.boxes.map((b) => ({
           box: b,
           shapes: [boxShape(b)],
           on: () =>
-            standing.bodies.push(
+            standing.bodies.set(
+              b,
               addStatic({ kind: 'box', hx: b.w / 2, hy: b.h / 2, hz: b.d / 2 }, b, boxQuat(b), undefined, owner),
             ),
         })),
@@ -740,10 +762,21 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         { lift: sp.leg.id === 'wall' },
       );
     }
+    function releaseEmptyHeads() {
+      for (const [boxes, head] of retiring) {
+        if (frameOccupied({ holds: (p) => supportOccupiedAt(head.shapes, p) })) continue;
+        for (const body of head.bodies) owner.removeBody(body);
+        retiring.delete(boxes);
+      }
+    }
     /** Takes the deck's slabs and the standing pieces' colliders away (and forgets what was drawn), until next shown. */
     function clear() {
       for (const b of deckBodies.splice(0)) owner.removeBody(b);
-      for (const b of standing.bodies.splice(0)) owner.removeBody(b);
+      for (const body of standing.bodies.values()) owner.removeBody(body);
+      standing.bodies.clear();
+      temporaryHeads.clear();
+      for (const head of retiring.values()) for (const body of head.bodies) owner.removeBody(body);
+      retiring.clear();
       lay = standClear = null;
       standing.boxes = [];
       deckLaid = stood = deckEnd = -1;
@@ -809,6 +842,8 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         for (const b of standing.boxes)
           if (!held.some((x) => x.box === b))
             things.box(b.x, b.y, b.z, b.w, b.h, b.d, b.colour ?? GREY, b.yaw, -(b.pitch ?? 0));
+        for (const boxes of retiring.keys())
+          for (const b of boxes) things.box(b.x, b.y, b.z, b.w, b.h, b.d, b.colour ?? GREY, b.yaw, -(b.pitch ?? 0));
         const laid = r.laid;
         // The end board, 1.5 m behind the buffers' faces, facing back down the line: the stack's blank until the
         // rivet, then the line's name; it travels with the head and is gone at the destination (answer i). A row's
@@ -996,7 +1031,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     bell(r);
     areaBoardVisibility.get('quay.wall')?.(legRow(r.wd, wall.k).laid === 0);
     if (plugSite && near(plugSite, 450)) barrier(plugSite, !!(r.gates & (1 << PLUG)));
-    if (near(deepSite, 450)) barrier(deepSite, !!(r.gates & (1 << deepSpan)));
+    if (r.per[legIndex.get('wall')!]!.laid >= 5 && near(deepSite, 450)) barrier(deepSite, !!(r.gates & (1 << deepSpan)));
     canopy(r);
     things.commit();
     note(r);

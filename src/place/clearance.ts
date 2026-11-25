@@ -34,16 +34,20 @@ export type Clearing<S extends Solid> = {
 };
 type Lifted = Pick<Body, 'position' | 'velocity'> & { interpolatedPosition?: Body['position'] };
 
+/** The shared capsule query for activating solids and checking whether a support still holds a player. */
+export function playerOverlaps(overlaps: Overlaps, shapes: readonly Shape[], at: V3, margin: number) {
+  return shapes.some((shape) => overlaps(at, PLAYER_R + margin, HEAD_OFFSET, shape));
+}
+
 /** Lift or wait for solids switching on, with `overlaps` as the physics query. `lift: false` only waits (an area's
  * mount-time clearance, where the view moves no one). */
 export function createLiftOrWait(overlaps: Overlaps) {
-  const r = PLAYER_R - CONTACT,
-    at = { x: 0, y: 0, z: 0 };
+  const at = { x: 0, y: 0, z: 0 };
   const holds = (s: Solid, p: V3, y = p.y) => {
     at.x = p.x;
     at.y = y;
     at.z = p.z;
-    return s.shapes.some((shape) => overlaps(at, r, HEAD_OFFSET, shape));
+    return playerOverlaps(overlaps, s.shapes, at, -CONTACT);
   };
   /** Lifts `body` onto `held` if its feet are within STEP of their top, that top is under its feet, and the whole body
    * fits standing there; true if it did. */
