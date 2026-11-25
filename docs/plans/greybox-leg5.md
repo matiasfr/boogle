@@ -287,7 +287,7 @@ The models table's rows are named per step; the orchestrator reads them when it 
       rows (`wall-mid` on head 2's platform between rack 3 and frame 3; `wall-deep` on head 5's; `wall-closed` keeps the
       spawn until step 5's stills, leg 3's reason). Verify: `test/railway-jump.test.ts`; each stage's invariant check;
       the whole server suite and `npm run test:net` (rule 55).
-- [ ] **4. Port Quay and Canopy re-laid (M; "Player-visible implementation").** Files: `src/content/levels/leg4.ts`
+- [x] **4. Port Quay and Canopy re-laid (M; "Player-visible implementation").** Files: `src/content/levels/leg4.ts`
       (the quay as [above](#the-massing-steps-4-and-5)), `src/content/levels/leg3.ts` (the Wall's Canopy platforms, the
       overbridge reserve), their built levels, `dev/level/route-leg4.ts` and `route-leg3.ts` (new floods: the outward
       platform over the foot crossing to the ramp's foot and on to the top; the Wall's Canopy platforms to the bay's

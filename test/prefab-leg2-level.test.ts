@@ -41,6 +41,7 @@ import { resident } from '../src/render/lod-level.ts';
 import { CAVE_GROUP, HEAD_OFFSET, PLAYER_R } from '../src/constants.ts';
 import { createLiftOrWait, STEP, type Solid } from '../src/place/clearance.ts';
 import canopy from '../content/built/levels/canopy.json' with { type: 'json' };
+import quay from '../content/built/levels/quay.json' with { type: 'json' };
 
 validation.validateArtifact(artifact);
 const canopyLevel = validation.loadLevelArtifact(canopy, artifact.prefabs);
@@ -678,6 +679,17 @@ const ground = (value: unknown) =>
     validation.loadLevelArtifact(value, artifact.prefabs as unknown as Readonly<Record<string, PrefabDef>>),
     artifact.prefabs as unknown as Readonly<Record<string, PrefabDef>>,
   ).colliders;
+
+test('the quay planks carry both tracks at rail height beyond the temporary buffers', () => {
+  const planks = ground(quay)
+    .filter((c) => c.placement.id.startsWith('quay.foot-plank-'))
+    .flatMap((c) => c.volume.triangles);
+  const wall = route.RAIL_LEGS.find((leg) => leg.id === 'wall')!;
+  for (const lateral of [-600, -200, 0, 200, 600]) {
+    const p = route.rowSide('cave', wall.fromCm + 2900, lateral, 0, 0);
+    assert.equal(placed.heightAt(planks, { x: p.x / 100, z: p.z / 100 }), p.y / 100);
+  }
+});
 
 test('the West landing supports the cave frame and rack at their catalog heights', () => {
   const cave = route.RAIL_LEGS.find((leg) => leg.id === 'cave')!;
