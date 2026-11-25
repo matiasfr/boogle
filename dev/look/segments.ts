@@ -81,8 +81,9 @@ export const RAIL_FROM = {
   'bay-mid': { railFrom: 'legs', after: 'bell', bot: 'railway-legs-bot.ts' },
   'trade-ready': { railFrom: 'legs', after: 'bell', bot: 'railway-legs-bot.ts' },
   // Leg 4 starts with the Canopy line laid. The bot collects the cloth and rides home before opening the plug.
-  'wall-deep': { railFrom: 'legs', after: 'port', bot: 'railway-legs-bot.ts' },
   'canopy-reached': { railFrom: 'legs', after: 'bay', bot: 'railway-legs-bot.ts' },
+  // The Wall's final frame, reached through the jump room's landing.
+  'wall-deep': { railFrom: 'legs', after: 'port', bot: 'railway-legs-bot.ts' },
 } as const satisfies Record<string, { railFrom: string; after: RailStop; bot: string }>;
 /** Beats both peers pass in a two-player run; the follower watches line two from the village. */
 export const RAIL_COOP_STOPS: readonly RailStop[] = [

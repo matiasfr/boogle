@@ -682,7 +682,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       // stays (the request stop: the stack's `Stack halt`, the incline's and the bay cut's one head).
       const { plat } = sp;
       for (let j = 1; j < n; j++) {
-        // Saltpan Halt has permanent platforms on the flats.
+        // Saltpan Halt and the Wall's Canopy stop use the area's permanent platforms.
         if ((sp.leg.id === 'cave' && j === 2) || (sp.leg.id === 'wall' && j === 3)) continue;
         const closes = RAIL_LINES[sp.leg.line]!.halts[sp.leg.railheadHalt + j - 1]!.closesAt;
         if (laid < j || (closes !== undefined && laid >= j + 2)) continue;
@@ -719,8 +719,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       return out;
     }
     /** The standing pieces whose colliders wait, undrawn, as one set, until you are out of them all (measured in each
-     * box's own frame, pitch and all: a sea ramp's slip is pitched about 28°). They wait only: nobody is lifted onto a
-     * buffer or a platform (src/place/clearance.ts). */
+     * box's own frame, pitch and all). The Wall can lift a player a small step onto a supporting top. */
     let standClear: Clearing<{ box: GreyBox; shapes: Shape[]; on(): void }> | null = null;
     function stand(laid: number, through: boolean) {
       const key = 2 * laid + Number(through);
