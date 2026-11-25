@@ -10,7 +10,9 @@ The one record of who is running what, and what the eight-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Cliff kit: frame-time reading of the dressed areas before step 4 | Terrain clean-up | codex/cliff-kit-perf | live session, Codex Sol medium | 2026-11-25 | running: restarted after the Codex login fix |
+| Cliff kit step 4: the gorge mouth and the south sea cliff | Terrain clean-up | codex/cliff-kit-gorge-mouth | live session, Codex Astra medium | 2026-11-25 | running |
+| Greybox leg 4 steps 4 and 5: the West landing's cave side, then the Saltpan, Port Quay and leg 4's views | The greybox route | codex/greybox-leg4-views | live session, Codex Astra medium | 2026-11-25 | running: offered by the heartbeat |
+| Order picks A3: proofs for both orders | Small choices and felt inflation | codex/order-picks-a3 | live session, Codex Astra medium | 2026-11-25 | running: offered by the heartbeat |
 
 ## Where the work stands
 
