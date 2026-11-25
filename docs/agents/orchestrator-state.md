@@ -16,7 +16,6 @@ The one record of who is running what, and what the eight-job limit is counted f
 | Order choice steps 1 to 4: per-leg racks, the cave leg at the bay cut, the Wall after both, seeds, views; with the cave line's Quick or Strong trade | The greybox route | codex/order-choice-rules | the orchestrator thread, Codex Astra high | 2026-11-25 22:10 | running: src/sim, src/world, one world bump; an independent Opus review before it ships |
 | The White Wall waits experiment: kit 6 earlier or held at the railhead, then a shorter approach to the sea-cave plug, each measured by a loop rerun | The greybox route | codex/wall-waits-experiment | the orchestrator thread, Codex Astra high | 2026-11-25 22:10 | running: an experiment; ships only with its measured gain |
 | Stack west platforms: step 1 re-planned for way 1 (narrow planks), then built | Small fixes found in the coach work | claude/stack-west-replan | the orchestrator thread, planner on Opus high | 2026-11-25 22:10 | running: docs first; the build follows on Astra |
-| Prefab data step 14: the Godot portability proof (Godot installed by winget first) | Prefab data | codex/prefab-godot-export | the orchestrator thread, Codex Sol medium | 2026-11-25 22:10 | waiting on the install, then running |
 
 ## Where the work stands
 
