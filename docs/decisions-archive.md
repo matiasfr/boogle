@@ -1194,6 +1194,12 @@ History for [decisions-rail.md](decisions-rail.md), verbatim.
 
 ### Agent calls the owner ruled on
 
+_Archived 25 November 2026; the owner answered greybox leg 6's question 3 yes: [entry](decisions-rail.md#d-2026-11-25-classic-island-arrival-boogler-hut). The proposal row is preserved verbatim, including its original status._
+
+| Date | Call | Where | By | Why this pick | Status |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-25 | New: the Original Island is the classic island as it stands: the causeway ends at its north beach, with no blockout massing, collider, POI or keep-out edit on it | [greybox-leg6](plans/greybox-leg6.md#design-review-2026-11-25), call 30 | Planner (design review) | Departs from confirmed route call 30 (blockout massing), which assumed the classic geometry was not loaded; it is live there, with The Boogler. Plan question 3 | open |
+
 _Archived 15 November 2026; the owner answered both start-area questions yes: [Q1](decisions-rail.md#d-2026-11-15-west-landing-staked-until-bell-rock) and [Q2](decisions-rail.md#d-2026-11-15-rail-owns-terrain-formation). The proposal row is preserved verbatim, including its original status._
 
 | Date | Call | Where | By | Why this pick | Status |
