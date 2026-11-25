@@ -303,11 +303,19 @@ test('the shared prefix preserves three-player idle time in the T3 before beam o
   const canonical = orders[0]!.order;
   const variant = orders.find((o) => o.name === 'T3 before beam')!.order;
   const split = variant.findIndex((id, i) => id !== canonical[i]);
-  const order = variant.slice(0, split + 1);
+  const order = variant.slice(0, variant.indexOf('jump') + 1);
   const checkpoints: import('../dev/loop/run.ts').Checkpoint[] = [];
   playOrder(canonical.slice(0, split + 1), 'canonical', 3, { checkpoints });
   const full = playOrder(order, 'full', 3);
   const resumed = playOrder(order, 'resumed', 3, { from: checkpoints[split]! });
+  for (const run of [full, resumed]) {
+    assert.equal(run.softlock, undefined);
+    const t3 = run.nodes.find((n) => n.id === 'T3')!;
+    const beam = run.nodes.find((n) => n.id === 'beam')!;
+    const jump = run.nodes.find((n) => n.id === 'jump')!;
+    assert.ok(t3.parked && beam.tick < t3.tick && t3.tick <= jump.tick);
+    assert.equal(jump.refused, 0);
+  }
   assert.equal(resumed.nodes[split]!.idle, full.nodes[split]!.idle);
 });
 

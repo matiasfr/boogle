@@ -737,7 +737,7 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set(), pick
     T2: (pl) => lineOne(g, pl, 'T2'),
     beam: (pl) => beam(g, pl),
     T3: (pl) => lineOne(g, pl, 'T3'),
-    jump: (pl) => (pick === 'jump' ? takeStand(pl, 'jump') : device(g, pl, LINE1_JUMP_DEVICE, 'rail.jump', () => true)),
+    jump: (pl) => (pick === 'jump' ? takeStand(pl, 'jump') : device(g, pl, LINE1_JUMP_DEVICE, 'rail.jump', ready('jump'))),
     forge: (pl) => forge(g, pl, pick === 'jump'),
     axe: (pl) => device(g, pl, LINE2_AXE, 'rail.axe', ready('axe')),
     pack: (pl) =>
