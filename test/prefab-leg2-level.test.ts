@@ -14,6 +14,7 @@ import bellRaw from '../content/built/levels/bell.json' with { type: 'json' };
 import westRaw from '../content/built/levels/west.json' with { type: 'json' };
 import gorgeRaw from '../content/built/levels/gorge.json' with { type: 'json' };
 import * as validation from '../src/prefab/validate.ts';
+import { colliderFlood } from '../dev/level/route-leg4.ts';
 import { flood } from '../dev/level/flood.ts';
 import { Matrix4, Vector3 } from 'three';
 import * as placed from '../dev/level/prefab-colliders.ts';
@@ -703,7 +704,7 @@ test('the West landing supports the cave frame and rack at their catalog heights
 });
 
 // Run the view's actual draw and solid transitions, recording the sign and physics boundaries.
-async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE.Vector3) {
+async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE.Vector3, wallLaid = 6) {
   const p = row.rowWorld(route.ROW_LINE.bay, s, lat, { x: 0, z: 0 });
   const floor = placed.heightAt(
     ground(bellRaw).flatMap((c) => c.volume.triangles),
@@ -714,6 +715,12 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
   const signs = new Map<THREE.Group, string[]>();
   const overlaps: number[] = [];
   const drawnDeck: Shape[] = [];
+  const pieces: { volume: placed.Volume }[] = [];
+  const addStatic = (b: { hx: number; hy: number; hz: number }, p: THREE.Vector3, q: THREE.Quaternion) => {
+    const m = new Matrix4().compose(new Vector3(p.x, p.y, p.z), q, new Vector3(1, 1, 1));
+    pieces.push({ volume: placed.boxVolume(m, [b.hx, b.hy, b.hz]) });
+    return {};
+  };
   let slabsEnabled = 0;
   const slab = (ax: number, az: number, bx: number, bz: number, ya: number, yb: number, width: number) => {
     slabsEnabled++;
@@ -772,7 +779,7 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
       me: { body: bodyOf(position) },
       camera: { position },
       dependencies: [
-        { slab, addStatic: () => ({}) },
+        { slab, addStatic },
         { onIsland: () => false },
         { outOf: sourceFunction('src/place/sites.ts', 'outOf', {}) },
       ],
@@ -802,7 +809,8 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
   const seed = buildSeedWorld('awake');
   for (const [i, leg] of route.RAIL_LEGS.entries())
     if (lines.legBuilt(i))
-      seed.w.mut(Leg, progress.legId(seed.w, i))!.laid = leg.id === 'bell-canopy' ? canopyLaid : leg.sections.length;
+      seed.w.mut(Leg, progress.legId(seed.w, i))!.laid =
+        leg.id === 'bell-canopy' ? canopyLaid : leg.id === 'wall' ? wallLaid : leg.sections.length;
   const firstLay = canopyLaid === 1;
   const leg = seed.w.mut(
     Leg,
@@ -832,8 +840,33 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
     stack.laid++;
     view.update();
   }
-  return { signs, overlaps, floor, position, drawnDeck, slabsEnabled: () => slabsEnabled, update: () => view.update() };
+  return {
+    pieces,
+    signs,
+    overlaps,
+    floor,
+    position,
+    drawnDeck,
+    slabsEnabled: () => slabsEnabled,
+    update: () => view.update(),
+  };
 }
+
+test('a swimmer can reach each temporary Wall head from open water', async () => {
+  const leg = route.RAIL_LEGS[5]!;
+  for (const laid of [1, 2, 4, 5]) {
+    const { pieces } = await reachedView(1300, 0, 3, undefined, laid);
+    const stop = leg.sections[laid - 1]!.toCm / 100 - 10;
+    const at = (lat: number) => row.rowWorld(leg.line, stop, lat, { x: 0, z: 0 });
+    const grid = colliderFlood(pieces, at(0), 91);
+    const wet = grid.reach(at(22), true);
+    for (const side of [-5.8, 5.8]) {
+      const platform = grid.node(at(side));
+      assert.ok(Math.abs(grid.h[platform]! - row.rowY(leg.line, stop) - 0.9) < 0.02, 'the destination is a platform');
+      assert.equal(wet[platform], 1, 'head ' + laid + ' platform ' + side);
+    }
+  }
+});
 
 test('the Canopy lay leaves a player standing on Bell Rock clear of the new deck', async () => {
   const { overlaps, floor } = await reachedView();

@@ -14,7 +14,7 @@ import gorgeInput from '../../content/built/levels/gorge.json' with { type: 'jso
 import southInput from '../../content/built/levels/wall-south.json' with { type: 'json' };
 import northInput from '../../content/built/levels/wall-north.json' with { type: 'json' };
 import { validateArtifact, loadLevelArtifact } from '../../src/prefab/validate.ts';
-import { resolvePlacedColliders } from './prefab-colliders.ts';
+import { heightAt, resolvePlacedColliders } from './prefab-colliders.ts';
 
 /** Vertical rail-to-rail clearance wherever these two finite spans cross in plan. */
 function crossingHeight(a: Pt, b: Pt, c: Pt, d: Pt) {
@@ -159,6 +159,11 @@ export function checkLeg5() {
   }
   const gorge = loadLevelArtifact(gorgeInput, defs.prefabs);
   const { colliders } = resolvePlacedColliders(gorge, defs.prefabs);
+  const faces = colliders.flatMap((c) => c.volume.triangles);
+  const clear = [-26, -23, -20, -17, -14, -11].every((a) =>
+    Array.from({ length: 61 }, (_, k) => -13.9 + k / 10).every((c) => heightAt(faces, gorgeAt(a, c)) === null),
+  );
+  check('six clear metres between the town pad and the north platform', clear);
   const { node, reach } = colliderFlood(colliders, gorgeAt(-35, 0), 115);
   const concourseWalk = reach(gorgeAt(-2, 2));
   const fromWater = reach(gorgeAt(-76, 6), true);

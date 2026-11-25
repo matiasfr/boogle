@@ -111,7 +111,7 @@ function bakedBlocks(write: boolean) {
 if (import.meta.main && process.argv.includes('--bake')) bakedBlocks(true);
 
 export function colliderFlood(
-  colliders: ReturnType<typeof resolvePlacedColliders>['colliders'],
+  colliders: readonly Pick<ReturnType<typeof resolvePlacedColliders>['colliders'][number], 'volume'>[],
   centre: { x: number; z: number },
   n: number,
 ) {
