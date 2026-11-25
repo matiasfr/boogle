@@ -22,7 +22,6 @@ const root = option('--root');
 useWorkerSource(root);
 const { fixtureToken, seedPrincipal } = await import('../../server/test/helpers/accounts.ts');
 const { startWeb, waitFor, ev, snap, seesAll, sleep } = await import('./harness.ts');
-const { freePort } = await import('../look/lib.ts');
 const { createService, loadConfig } = await import('../../server/src/server.ts');
 const {
   railwayChecks,
@@ -40,7 +39,7 @@ const { worldRoomId } = await import('../../src/world/namespace.ts');
 // Namespaced like the real game's rooms, so boot cleanup keeps it across the restart check.
 const room = worldRoomId('ws' + Math.random().toString(36).slice(2, 8));
 const dataDir = option('--data-dir') ?? (await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-ws-')));
-let port = await freePort();
+let port = 0;
 async function control(command: string) {
   const response = await fetch(new URL(command, controlUrl), { method: 'POST' });
   if (!response.ok) throw new Error(`Worker net server: ${await response.text()}`);
@@ -69,7 +68,8 @@ async function serve(env: Record<string, string> = {}) {
     ...env,
   };
   const svc = createService(loadConfig(env0, { log: () => {}, replaceCountdownMs: 100 }));
-  await svc.listen(port);
+  // Ask the OS for a port on the first start, then preserve the origin across restart checks.
+  port = await svc.listen(port);
   return svc;
 }
 let svc = await serve();

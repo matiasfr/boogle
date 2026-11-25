@@ -101,7 +101,13 @@ export default async (env: unknown) =>
 // Starts Vite on a free port and our server in-process, hosting every room (so rooms work offline), with its saves in
 // a temporary directory. With `url`, only uses that already-running game (the game's own server applies).
 // `root` serves another checkout (e.g. a git worktree of a prototype branch) with this harness.
-export type Stack = { base: string; close: () => Promise<void>; dataDir?: string; serverUrl?: string; clockUrl?: string };
+export type Stack = {
+  base: string;
+  close: () => Promise<void>;
+  dataDir?: string;
+  serverUrl?: string;
+  clockUrl?: string;
+};
 export async function startStack({
   url = null,
   root: dir = root,
@@ -124,10 +130,14 @@ export async function startStack({
   };
   const child = warp ? await startWarpServer(env) : null;
   // A local playthrough builds the same jump document as the deployed seed image.
-  const server = child ? null : createService(loadConfig(env, {
-    log: () => {},
-    jumpBuildDoc: async (stage) => (await import('../../server/src/seeds/build.ts')).buildSeedDoc(stage),
-  }));
+  const server = child
+    ? null
+    : createService(
+        loadConfig(env, {
+          log: () => {},
+          jumpBuildDoc: async (stage) => (await import('../../server/src/seeds/build.ts')).buildSeedDoc(stage),
+        }),
+      );
   const sigPort = child ? child.port : await server!.listen(0);
   const port = await freePort();
   const vite = spawn(
@@ -140,7 +150,11 @@ export async function startStack({
     {
       cwd: dir,
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env, VITE_BOOGLE_SERVER: `http://127.0.0.1:${sigPort}` },
+      env: {
+        ...process.env,
+        VITE_BOOGLE_SERVER: `http://127.0.0.1:${sigPort}`,
+        BOOGLE_VITE_CACHE_DIR: path.join(dataDir, 'vite'),
+      },
     },
   );
   let viteError = '';
@@ -211,7 +225,11 @@ export const launch = async ({
       ...['--enable-features=Vulkan', '--use-vulkan=swiftshader', '--use-webgpu-adapter=swiftshader'],
     );
   // Hardware timing is explicitly headed and never forces SwiftShader. The normal harness stays unchanged.
-  const lease = sharedLease ? { release() {} } : await acquireBotSlot();
+  const lease = sharedLease
+    ? { release() {} }
+    : await acquireBotSlot(undefined, undefined, undefined, {
+        kind: hardware ? 'exclusive' : undefined,
+      });
   try {
     const browser: Browser = await chromium.launch({ args, headless: !hardware, ...browserChannel() });
     browser.once('disconnected', lease.release);

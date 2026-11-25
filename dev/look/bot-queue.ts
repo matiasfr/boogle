@@ -4,8 +4,8 @@
 // until a long one has waited BOOGLE_BOT_YIELD_MS (20 minutes). A running job is never interrupted. Tickets from
 // older checkouts carry an older `v` (or none); while one is queued everything stays first come, first served, which is
 // what those checkouts do too, so both sides agree.
-// Light runs (a plain `look` still: markLight) may share the machine, BOOGLE_BOT_CONCURRENCY at a time (default 2);
-// every other run is exclusive: it starts only with nothing running and nobody ahead, and holds every slot.
+// BOOGLE_BOT_CONCURRENCY allows three runs by default, at most two timed. Still captures, net suites and
+// untimed bot segments can use any free slot. Frame-time and perf readings wait for an empty queue and run alone.
 // Among runs of the same length, a lower BOOGLE_BOT_RANK (1–3, default 2) goes first, then first come, first served;
 // a run that has waited BOOGLE_BOT_RANK_WAIT_MS (30 minutes) counts as rank 1, so a P3 is never starved.
 // The load gate: a slot is not granted while the machine's load (machine-load.ts: the 1-minute load average, busy CPUs on
@@ -16,6 +16,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { loadLimit, machineLoad } from './machine-load.ts';
+
+export type BotClass = 'shared' | 'timed' | 'exclusive';
+export const BOT_TICKET_VERSION = 4;
 
 type Ticket = {
   pid: number;
@@ -28,14 +31,28 @@ type Ticket = {
   since?: number;
   /** Written with `held`, so a harness that inherits the lease stamps the broker's wait. */
   slot?: Slot;
-  /** A plain still that may run beside another light run; absent means exclusive. */
-  light?: boolean;
+  /** Older launchers see every new ticket as exclusive because it has no `light` field. */
+  kind?: BotClass;
   /** 1–3 (P1 first); absent means 2. */
   rank?: number;
-  /** Another run held a slot while this one did. */
+  /** Earlier ticket versions recorded overlap here. */
   shared?: boolean;
 };
-const VERSION = 3;
+export function botClass(operation: string, args: readonly string[], long = args.includes('--long')): BotClass {
+  if (args.includes('--hardware') || ['perf', 'hitches', 'bench', 'cold-start'].includes(operation)) return 'exclusive';
+  const players = args.lastIndexOf('--players');
+  const twoPlayers = players >= 0 && Number(args[players + 1]) === 2;
+  if (
+    long ||
+    twoPlayers ||
+    args.includes('--real') ||
+    args.includes('--video') ||
+    args.includes('--curves') ||
+    ['boot-time', 'cold-launch', 'clip'].includes(operation)
+  )
+    return 'timed';
+  return 'shared';
+}
 /** How this process got its slot: what the verdict stamp reports. */
 export type Slot = { queueWaitMs: number; loadAtStart: number; loadTimedOut: boolean };
 const envNumber = (name: string, fallback: number) => {
@@ -54,21 +71,19 @@ export function loadGate(load: number, limit: number, waitedMs: number, maxWaitM
 const loadText = (n: number) => (n >= 10 ? n.toFixed(0) : String(+n.toFixed(2)));
 const span = (ms: number) => (ms < 60_000 ? `${Math.ceil(ms / 1000)} s` : `${Math.ceil(ms / 60_000)} min`);
 let acquired: Slot | undefined;
-let light = false;
 let sharedHere = false;
 let inheritedFile: string | undefined;
 /** The first slot this process acquired (or inherited), if any. */
 export const slotRecord = () => acquired;
-/** This process's runs are plain stills that may share the machine (call before launching). */
-export const markLight = () => void (light = true);
 /** Did another run hold a slot alongside this one? */
-export const wasShared = () => sharedHere || (!!inheritedFile && !!read(inheritedFile)?.shared);
+export const wasShared = () =>
+  sharedHere || (!!inheritedFile && (fs.existsSync(inheritedFile + '.shared') || !!read(inheritedFile)?.shared));
 type Filed = Ticket & { file: string };
 const yieldMs = Number(process.env.BOOGLE_BOT_YIELD_MS ?? 20 * 60_000);
 const rankWaitMs = () => envNumber('BOOGLE_BOT_RANK_WAIT_MS', 30 * 60_000);
 /** A waiting long job younger than the yield window; `margin` keeps the two sides from disagreeing at its edge. */
 const yielding = (t: Ticket, now: number, margin = 0) =>
-  t.v === VERSION && !!t.long && !t.held && now - (t.since ?? 0) < yieldMs - margin;
+  t.v === BOT_TICKET_VERSION && !!t.long && !t.held && now - (t.since ?? 0) < yieldMs - margin;
 /** A waiting ticket's rank, 1 once it has waited the rank limit; `margin` as for `yielding`. */
 const rankOf = (t: Ticket, now: number, margin = 0) =>
   now - (t.since ?? now) >= rankWaitMs() - margin ? 1 : (t.rank ?? 2);
@@ -87,9 +102,16 @@ export function ahead(t: Filed, me: Filed, allCurrent: boolean, now: number) {
 }
 /** May `me` take a slot, given every ticket that goes before it and the smallest capacity anyone asked for? */
 export function mayStart(me: Ticket, before: Ticket[], limit: number) {
-  if (before.some((t) => t.number === 0)) return false;
-  if (!me.light) return before.length === 0;
-  return before.length < limit && before.every((t) => t.light);
+  const kindOf = (t: Ticket) => (t.v === BOT_TICKET_VERSION ? t.kind : undefined) ?? 'exclusive';
+  const kind = kindOf(me);
+  if (kind === 'exclusive') return before.length === 0;
+  if (before.some((t) => t.number === 0 || kindOf(t) === 'exclusive')) return false;
+  const timed = before.filter((t) => kindOf(t) === 'timed');
+  if (kind === 'timed') return timed.length < 2 && before.length < limit;
+  // Reserve up to two places for earlier timed tickets. A surplus waiting timed ticket
+  // cannot use the third slot, but any held ticket still occupies its slot.
+  const surplus = Math.max(0, Math.min(timed.length - 2, timed.filter((t) => !t.held).length));
+  return before.length - surplus < limit;
 }
 const directory = process.env.BOOGLE_BOT_QUEUE_DIR ?? `/tmp/boogle-bots-${process.getuid?.() ?? 'user'}`;
 const pause = () => new Promise<void>((resolve) => setTimeout(resolve, 250));
@@ -110,11 +132,61 @@ function read(file: string): Ticket | undefined {
   }
 }
 
+// A concurrent reader can temporarily prevent atomic replace or removal on Windows.
+const retrySignal = new Int32Array(new SharedArrayBuffer(4));
+function ticketFileOp(action: () => void) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return action();
+    } catch (error) {
+      const { code } = error as NodeJS.ErrnoException;
+      if (process.platform !== 'win32' || attempt === 10 || !['EPERM', 'EACCES', 'EBUSY'].includes(code ?? ''))
+        throw error;
+      Atomics.wait(retrySignal, 0, 0, 10);
+    }
+  }
+}
+
+function scan(dir = directory) {
+  return fs
+    .readdirSync(dir)
+    .filter((name) => name.endsWith('.json'))
+    .flatMap((name) => {
+      const file = path.join(dir, name);
+      const ticket = read(file);
+      if (!ticket) return [];
+      if (!alive(ticket.pid)) {
+        ticketFileOp(() => fs.rmSync(file, { force: true }));
+        fs.rmSync(file + '.shared', { force: true });
+        return [];
+      }
+      return [{ file, ...ticket }];
+    });
+}
+
+function trackOverlap(file: string) {
+  const dir = path.dirname(file);
+  let shared = false;
+  const check = () => {
+    if (shared || !scan(dir).some((t) => path.basename(t.file) !== path.basename(file) && t.held)) return;
+    // Leave the ticket untouched so a broker watcher cannot undo the child's PID handoff.
+    fs.writeFileSync(file + '.shared', '');
+    shared = sharedHere = true;
+  };
+  check();
+  const watch = setInterval(check, 1000).unref();
+  return { shared: () => shared, stop: () => clearInterval(watch) };
+}
+
 export async function acquireBotSlot(
   job = `${path.basename(process.cwd())}: ${process.argv.slice(1).join(' ')}`,
   queued: (message: string) => void = () => {},
   long = process.argv.includes('--long') || !!process.env.BOOGLE_BOT_LONG,
-  { wait = pause, readLoad = machineLoad } = {},
+  {
+    wait = pause,
+    readLoad = machineLoad,
+    kind = botClass(path.basename(process.argv[1] ?? '', '.ts'), process.argv.slice(2), long),
+  } = {},
 ) {
   const inherited = process.env.BOOGLE_BOT_LEASE;
   if (inherited) {
@@ -122,13 +194,14 @@ export async function acquireBotSlot(
     if (!ticket?.held || !alive(ticket.pid)) throw new Error('Inherited bot lease has expired');
     // The harness owns the live browser. If its broker dies, this ticket must remain occupied until the harness dies.
     fs.writeFileSync(inherited + '.tmp', JSON.stringify({ ...ticket, pid: process.pid }));
-    fs.renameSync(inherited + '.tmp', inherited);
+    ticketFileOp(() => fs.renameSync(inherited + '.tmp', inherited));
     // A broker from before the load gate writes no slot: its wait is unknown, and the load is read now.
     acquired ??= ticket.slot ?? { queueWaitMs: 0, loadAtStart: readLoad(), loadTimedOut: false };
     inheritedFile = inherited;
-    return { file: inherited, waitedMs: 0, release() {} };
+    // A nightly runner can be blocked in spawnSync while the child holds the slot.
+    return { file: inherited, waitedMs: 0, release: trackOverlap(inherited).stop };
   }
-  const capacity = Number(process.env.BOOGLE_BOT_CONCURRENCY ?? 2);
+  const capacity = Number(process.env.BOOGLE_BOT_CONCURRENCY ?? 3);
   if (!Number.isInteger(capacity) || capacity < 1) throw new Error('BOOGLE_BOT_CONCURRENCY must be a positive integer');
   const rank = Number(process.env.BOOGLE_BOT_RANK ?? 2);
   if (![1, 2, 3].includes(rank)) throw new Error('BOOGLE_BOT_RANK must be 1, 2 or 3');
@@ -143,38 +216,25 @@ export async function acquireBotSlot(
     number: 0,
     capacity,
     held: false,
-    v: VERSION,
+    v: BOT_TICKET_VERSION,
     long,
     since: Date.now(),
     rank,
-    ...(light ? { light } : {}),
+    kind,
   };
   const publish = () => {
     fs.writeFileSync(file + '.tmp', JSON.stringify(ticket));
-    fs.renameSync(file + '.tmp', file);
+    ticketFileOp(() => fs.renameSync(file + '.tmp', file));
   };
-  const scan = () =>
-    fs
-      .readdirSync(directory)
-      .filter((name) => name.endsWith('.json'))
-      .flatMap((name) => {
-        const other = path.join(directory, name);
-        const t = read(other);
-        if (!t) return [];
-        if (!alive(t.pid)) {
-          fs.rmSync(other, { force: true });
-          return [];
-        }
-        return [{ file: other, ...t }];
-      });
   let released = false;
-  let watch: ReturnType<typeof setInterval> | undefined;
+  let overlap: ReturnType<typeof trackOverlap> | undefined;
   const release = () => {
     if (released) return;
     released = true;
-    clearInterval(watch);
-    fs.rmSync(file, { force: true });
+    overlap?.stop();
+    ticketFileOp(() => fs.rmSync(file, { force: true }));
     fs.rmSync(file + '.tmp', { force: true });
+    fs.rmSync(file + '.shared', { force: true });
     process.off('exit', onExit);
     console.log(`bot queue: released ${job}`);
   };
@@ -190,21 +250,22 @@ export async function acquireBotSlot(
     let last = '';
     let loadSince: number | undefined, loadSaid: number | undefined;
     let loadTimedOut = false;
+    let load: number;
     // A short job may pass a waiting long one, so it lets any long job that scanned before this ticket appeared
     // finish taking the slot (its scan and its `held` write are one synchronous step) before the first check.
     if (!long) for (let i = 0; i < 2; i++) await wait();
     for (;;) {
+      // Sampling can block on Windows. Do it before scanning so an eligible ticket can publish promptly.
+      load = readLoad();
       const all = scan();
-      // Any older ticket: first come, first served (its checkout knows no other order). Older tickets have no
-      // `light`, so nothing starts beside them; they never start beside anything, so their capacity is not a setting.
-      const allCurrent = all.every((t) => t.v === VERSION);
+      // FIFO with older tickets. We treat them as exclusive, and they see our missing `light` as exclusive too.
+      const allCurrent = all.every((t) => t.v === BOT_TICKET_VERSION);
       const me = { file, ...ticket };
       const now = Date.now();
       const lower = all.filter((t) => t.file !== file && ahead(t, me, allCurrent, now));
-      const limit = Math.min(capacity, ...all.filter((t) => t.v === VERSION).map((t) => t.capacity));
+      const limit = Math.min(capacity, ...all.filter((t) => t.v === BOT_TICKET_VERSION).map((t) => t.capacity));
       if (mayStart(me, lower, limit)) {
         // The slot is free; the machine may not be. The patience clock starts at the front of the queue.
-        const load = readLoad();
         loadSince ??= now;
         const gate = loadGate(load, loadLimit, now - loadSince, loadPatience);
         if (gate === 'timeout') {
@@ -237,21 +298,12 @@ export async function acquireBotSlot(
     }
     const waitedMs = Date.now() - start;
     ticket.held = true;
-    ticket.slot = { queueWaitMs: waitedMs, loadAtStart: readLoad(), loadTimedOut };
+    ticket.slot = { queueWaitMs: waitedMs, loadAtStart: load, loadTimedOut };
     acquired ??= ticket.slot;
     publish();
-    // Shared: another run held a slot at any moment while this one did. Checked now and every second until release.
-    const overlap = () => {
-      if (ticket.shared || !scan().some((t) => t.file !== file && t.held)) return;
-      ticket.shared = true;
-      sharedHere = true;
-      publish();
-    };
-    overlap();
-    watch = setInterval(overlap, 1000);
-    watch.unref();
+    overlap = trackOverlap(file);
     console.log(
-      `bot queue: acquired ${job}; waited ${(waitedMs / 1000).toFixed(2)}s${ticket.shared ? '; shared' : ''}`,
+      `bot queue: acquired ${job}; waited ${(waitedMs / 1000).toFixed(2)}s${overlap.shared() ? '; shared' : ''}`,
     );
     return { file, waitedMs, release };
   } catch (error) {

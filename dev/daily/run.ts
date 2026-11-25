@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync, spawnSync, type SpawnSyncReturns } from 'node:child_process';
-import { acquireBotSlot } from '../look/bot-queue.ts';
+import { acquireBotSlot, type BotClass } from '../look/bot-queue.ts';
 import { loadKind, loadLimit, machineLoad } from '../look/machine-load.ts';
 import { jobs, jobName, longArgs, prompt, reviewPrompt, stateDir, scenarios, liveScenarios as LIVE } from './jobs.ts';
 import { longReport } from './long.ts';
@@ -97,10 +97,14 @@ class UsageLimit extends Error {}
 let repo = '';
 const gh = (argv: string[]) => run('gh', [...argv, '--repo', repo]);
 
-/** Holds the machine bot slot (dev/look/bot-queue.ts) around `fn`, so no other harness browser shares the GPU and a
- * child's timeout starts once the slot is ours. The child inherits it through BOOGLE_BOT_LEASE; one child per slot. */
-async function holding<T>(job: string, long: boolean, fn: (leased: NodeJS.ProcessEnv) => T | Promise<T>) {
-  const lease = await acquireBotSlot(job, () => {}, long);
+/** The child's timeout starts after acquisition. It inherits the lease through BOOGLE_BOT_LEASE. */
+async function holding<T>(
+  job: string,
+  kind: BotClass,
+  long: boolean,
+  fn: (leased: NodeJS.ProcessEnv) => T | Promise<T>,
+) {
+  const lease = await acquireBotSlot(job, undefined, long, { kind });
   try {
     return await fn({ ...env, BOOGLE_BOT_LEASE: lease.file });
   } finally {
@@ -366,7 +370,7 @@ if (dry && job === 'perf') {
       }
       const benchFile = path.join(dir, 'bench.json');
       // The whole measurement holds the bot slot: no agent's browser shares the GPU while it waits or measures.
-      const measured = await holding(`daily perf ${id}`, false, async (leased) => {
+      const measured = await holding(`daily perf ${id}`, 'exclusive', false, async (leased) => {
         const busy = await waitForQuiet();
         if (busy) return { busy };
         const before = machineLoad();
@@ -461,7 +465,7 @@ if (dry && job === 'perf') {
         // Each scenario takes the bot slot first, so its 15 minutes measure the scenario, not the queue: on 9 November
         // reconnect-edit and shared-kinds spent their whole timeout queued behind an agent's long playthrough.
         const started = Date.now();
-        const { execution, waited } = await holding(`daily scenario ${name}`, false, (leased) => {
+        const { execution, waited } = await holding(`daily scenario ${name}`, 'shared', false, (leased) => {
           const waited = Date.now() - started;
           const execution = spawnSync(
             process.execPath,
@@ -512,7 +516,7 @@ if (dry && job === 'perf') {
       }
       const out = path.join(dir, 'playthrough');
       // A long ticket: shorter runs pass it while it waits (dev/look/bot-queue.ts); its hour starts once it has the slot.
-      const execution = await holding(`daily long ${id}`, true, (leased) =>
+      const execution = await holding(`daily long ${id}`, 'timed', true, (leased) =>
         spawnSync(process.execPath, ['dev/look/playthrough.ts', ...longArgs, '--out', out, '--name', 'long'], {
           cwd: work,
           env: leased,

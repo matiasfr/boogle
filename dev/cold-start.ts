@@ -9,6 +9,7 @@ import { summarize, spread, comparePairs, comparisonThreshold } from './cold-sta
 import { prepareIdentity, metalInventory, clearExclusiveMetal } from './cold-start/identity.ts';
 import { installSampleView } from './cold-start/page.ts';
 import { buildAt, sameBuild } from './codex/source.ts';
+import { acquireBotSlot } from './look/bot-queue.ts';
 
 const args = process.argv.slice(2);
 const valueFlags = ['--url', '--out', '--runs', '--seconds', '--mode', '--query'];
@@ -74,6 +75,7 @@ let stack: Awaited<ReturnType<(typeof import('./cold-start/production.ts'))['sta
 const results: { run: number; kind: string; summary: ReturnType<typeof summarize>; health: string[] }[] = [];
 const metalSamples: { run: number; kind: string; writes: ReturnType<typeof metalInventory> }[] = [];
 const clears: ReturnType<typeof clearExclusiveMetal>[] = [];
+const lease = await acquireBotSlot();
 try {
   let base = value('--url', '');
   if (!base) {
@@ -289,6 +291,8 @@ try {
   } catch (error) {
     write('cleanup-failure.json', { error: String(error) });
     process.exitCode = 1;
+  } finally {
+    lease.release();
   }
   const cold = results.filter((r) => r.kind === 'cold');
   const warm = results.filter((r) => r.kind === 'warm');

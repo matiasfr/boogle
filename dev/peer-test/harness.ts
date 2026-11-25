@@ -1,12 +1,14 @@
 // Shared setup for the headless room test (ws-run.ts): a test page bundled and served, and
 // headless Chromium pages that each run one room.
 import http from 'node:http';
+import { once } from 'node:events';
+import type { AddressInfo } from 'node:net';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import * as esbuild from 'esbuild';
 import type { BrowserContext, Page } from 'playwright';
-import { freePort, sleep } from '../look/lib.ts';
+import { sleep } from '../look/lib.ts';
 import { acquireBotSlot } from '../look/bot-queue.ts';
 
 export { sleep };
@@ -75,7 +77,6 @@ export async function seesAll(group: { page: Page; selfId: SelfId }[]): Promise<
 // page.js-style bundle `entry` served on a free port, plus headless Chromium. open(name, query) loads a page and runs
 // its T.start(); selfId is the page's id, or { error } when the room turned it away.
 export async function startWeb(entry: string, root?: string, accountServer?: string) {
-  const webPort = await freePort();
   const built = await esbuild.build({
     entryPoints: [path.join(here, entry)],
     bundle: true,
@@ -111,8 +112,11 @@ export async function startWeb(entry: string, root?: string, accountServer?: str
         res.end('<!doctype html><script src="/bundle.js"></script>');
       }
     })
-    .listen(webPort, '127.0.0.1');
-  const lease = await acquireBotSlot().catch((error: unknown) => {
+    .listen(0, '127.0.0.1');
+  await once(web, 'listening');
+  const webPort = (web.address() as AddressInfo).port;
+  const kind = process.env.WS_LOAD ? 'timed' : undefined;
+  const lease = await acquireBotSlot(undefined, undefined, undefined, { kind }).catch((error: unknown) => {
     web.close();
     throw error;
   });

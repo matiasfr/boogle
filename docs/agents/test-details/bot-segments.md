@@ -40,16 +40,16 @@ Read `report.txt`, `verdict.json` and the images even on failure. The full produ
 `npm run playthrough -- --long --stall 6000` (the same as `--query 'shot=play' --eval dev/look/evals/railway-job.ts`).
 
 All harness browser launches share the machine queue at `/tmp/boogle-bots-<uid>` (across worktrees). Short runs go ahead of waiting `--long` playthroughs until a long one has waited 20 minutes (`BOOGLE_BOT_YIELD_MS`); a running job is never interrupted.
-Light runs share the machine: a plain `npm run look` still (no `--video`, `--curves`, `--real`, `--players 2` or
-`--long`) may run beside one other light run (`BOOGLE_BOT_CONCURRENCY`, default 2; 1 restores one run at a time).
-Everything else is exclusive: every playthrough, scenario, net test, perf and bench, and any look that measures time or
-motion. An exclusive run starts only once the running light ones finish and nobody is ahead of it, and no light run
-starts beside it or past it, except past a waiting `--long` run inside its 20-minute yield. A verdict taken while
-another run held a slot says `shared: true`. Use the same setting everywhere; mixed settings take the smaller active
-limit, and a ticket from an older checkout turns the whole queue back to first come, first served (it runs alone).
+The queue has three slots by default (`BOOGLE_BOT_CONCURRENCY`; 1 restores one run at a time). Stills, scenarios,
+net suites and untimed bot segments can use any slot. Long playthroughs, real-speed runs, two-player looks and bot
+runs, videos and motion curves use one of two timed slots. Perf, hitches, bench, hardware and cold-start readings run
+alone. An exclusive run waits for all holders and earlier tickets, then blocks other admissions until it releases.
+A verdict taken while another run held a slot says `shared: true`. Use the same setting everywhere. Current tickets
+use the smallest requested capacity. Mixed queue versions use first come, first served and take separate turns.
 `BOOGLE_BOT_RANK=1|2|3` (default 2) is the work's P rank: among waiting runs of the same length, the lower rank goes
 first, then first come, first served. A run that has waited 30 minutes (`BOOGLE_BOT_RANK_WAIT_MS`) counts as P1, so a
-P3 is never stuck behind later arrivals. Tickets carry `rank`, `light` and `shared` for `npm run heartbeat`. `BOOGLE_BOT_QUEUE_DIR` may select a shared path, never a per-worktree path.
+P3 is never stuck behind later arrivals. Tickets record `rank` and `kind`. `BOOGLE_BOT_QUEUE_DIR` can select
+a common path for live runs or a temporary path for queue tests.
 The queue names the blocking job; a dead PID's unique ticket is reclaimed. Broker deadlines and co-op clock samples start
 after acquisition, and the slot lasts until browser/child cleanup. A timeout with a final observed expected beat can pass
 with a note; missing beats, health errors and co-op convergence/clock failures still fail. Timeouts are reported separately.
