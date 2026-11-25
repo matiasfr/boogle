@@ -670,6 +670,15 @@ const ground = (value: unknown) =>
     artifact.prefabs as unknown as Readonly<Record<string, PrefabDef>>,
   ).colliders;
 
+test('the West landing supports the cave frame and rack at their catalog heights', () => {
+  const cave = route.RAIL_LEGS.find((leg) => leg.id === 'cave')!;
+  const floors = ground(westRaw).flatMap((c) => c.volume.triangles);
+  for (const p of [route.legFrame(cave, 0), route.legRack(cave, 0)]) {
+    const height = placed.heightAt(floors, { x: p.x / 100, z: p.z / 100 });
+    assert.ok(height !== null && Math.abs(height - p.y / 100) < 0.01);
+  }
+});
+
 // Run the view's actual draw and solid transitions, recording the sign and physics boundaries.
 async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE.Vector3) {
   const p = row.rowWorld(route.ROW_LINE.bay, s, lat, { x: 0, z: 0 });
