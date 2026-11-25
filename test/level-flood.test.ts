@@ -1,12 +1,12 @@
 // An exception to AGENTS.md's test diet, by the owner's call: `npm run level-check` stands in for a designer, so a flood
-// fill that quietly passes everything would be worse than none (the cliff kit's reach check below too). It's no
+// fill that quietly passes everything would be worse than none (the cliff kit's gate below too). It's no
 // precedent for testing features.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { flood, type Grid, type Mover } from '../dev/level/flood.ts';
-import { kitReach } from '../dev/level/cliff-kit-reach.ts';
+import { standingProblems } from '../dev/level/cliff-kit-standing.ts';
 import { kitPieceProblems } from '../dev/prefab/cliff-kit.ts';
-import { tracks } from '../dev/level/rail-network.ts';
+import { beside, tracks } from '../dev/level/rail-network.ts';
 import { H } from '../src/place/terrain.ts';
 import { LINES, ORIGIN, PATHS, lineAt, railY } from '../src/place/layout.ts';
 import type { Placement } from '../src/prefab/types.ts';
@@ -55,8 +55,9 @@ test('sea stops a walk, not a swim', () => {
   assert.ok(!reaches(bank, { swim: true }));
 });
 
-// The cliff kit's reach and piece rules (dev/level/cliff-kit-reach.ts, dev/prefab/cliff-kit.ts), on Home's real ground
-// beside the canyon climb: bad placements a review seeded, each seen failing on the check before it was fixed.
+// The cliff kit's gate and piece rules (dev/level/cliff-kit-standing.ts, dev/prefab/cliff-kit.ts), on Home's real
+// ground: bad placements two reviews seeded against the earlier movement-model check, each placing a standable top the
+// geometric rule refuses, and two that keep to it.
 const ground = (x: number, z: number) => H(x + ORIGIN.x, z);
 const [CA, CB] = [PATHS[0]!.pts[9]!, PATHS[0]!.pts[10]!];
 const CLEN = Math.hypot(CB[0]! - CA[0]!, CB[1]! - CA[1]!);
@@ -74,36 +75,33 @@ const cap = (id: string, [x, z]: [number, number], y: number): Placement => ({
   pos: [x, y, z],
   rot: [FACING, 0, 0],
 });
+/** A small boulder `out` m beside line 2 at 400 m (the sea crossing), its top `fromRoof` m off the cab's roof. */
+const stone = (out: number, fromRoof: number, i: number): Placement => {
+  const q = beside(LINES.east, 400, out);
+  return {
+    id: `stone.${i}`,
+    prefab: 'terrain.boulder-s',
+    pos: [q.x - ORIGIN.x, q.y + 3.295 + fromRoof - 0.5, q.z - ORIGIN.z],
+  };
+};
+/** How many of `pieces` offer a new standing height. */
+const offending = (pieces: Placement[]) => pieces.filter((p) => standingProblems(p).length).length;
 
-test('cliff kit reach: a staircase up from the climb within two jumps a step fails', () => {
+test('cliff kit gate: staircases, a ramp, a perch and a ledge offer new standing heights', () => {
   const base = ground(...climbAt(15, 5.5));
   const stairs = Array.from({ length: 8 }, (_, i) => cap(`dj.${i}`, climbAt(15 - i * 1.4, 5.5), base + 1.1 + i * 2.2));
-  assert.notEqual(kitReach(stairs).fresh.length, 0);
-});
-
-test('cliff kit reach: a ramp a player walks up, rising 8 m off the village green, fails', () => {
-  // On flat ground beside the village's path, so nothing bare stands near its top.
+  assert.equal(offending(stairs), 8);
   const ramp = Array.from({ length: 32 }, (_, i): Placement => {
     const x = -108 - i * 0.5;
     return { id: `ramp.${i}`, prefab: 'terrain.bank-rock', pos: [x, ground(x, 0) + 0.2 + i * 0.25, 0] };
   });
-  assert.notEqual(kitReach(ramp).fresh.length, 0);
-});
-
-test('cliff kit reach: a perch on the gorge lip that launches a jump to a ledge over the river fails; the ledge alone passes', () => {
-  // The ledge's top is 10.5 m over the river's middle: more than two jumps over any bank within a jump's reach (the
-  // highest, 6.2 m), so only a glide from the rims above reaches it bare. A perch on the near lip puts it within two.
-  const lip = climbAt(15, -6),
-    ledge = cap('perch.ledge', climbAt(15, -13), 10.1);
-  assert.equal(kitReach([ledge]).fresh.length, 0);
-  assert.notEqual(kitReach([cap('perch.perch', lip, 7.5), ledge]).fresh.length, 0);
-});
-
-test('cliff kit reach: steps a player takes off a train roof beside line 2 fail', () => {
+  assert.ok(offending(ramp) >= 30, `${offending(ramp)} of the ramp's 32`);
+  const lip = climbAt(15, -6);
+  assert.equal(offending([cap('perch', lip, 7.5), cap('ledge', climbAt(15, -13), 10.1)]), 2);
   const p = { x: 0, z: 0, ux: 0, uz: 1 };
   lineAt(LINES.east, 310, p);
   const y = railY(LINES.east, 310);
-  const stairs = Array.from({ length: 6 }, (_, i): Placement => {
+  const roofSteps = Array.from({ length: 6 }, (_, i): Placement => {
     const out = 2.2 + i * 0.8;
     return {
       id: `roof.${i}`,
@@ -111,15 +109,30 @@ test('cliff kit reach: steps a player takes off a train roof beside line 2 fail'
       pos: [p.x - p.uz * out, y + 1.7 + i * 1.2, p.z + p.ux * out],
     };
   });
-  assert.deepEqual(
-    stairs.flatMap((s) => kitPieceProblems(s)),
-    [],
-  );
-  assert.notEqual(kitReach(stairs).fresh.length, 0);
+  assert.equal(offending(roofSteps), 6);
 });
 
-test('cliff kit reach: no pieces, nothing reached', () => {
-  assert.deepEqual(kitReach([]), { cells: 0, fresh: [] });
+test('cliff kit gate: stones over the sea off a train roof, and a step between a shelf and a plateau, are refused', () => {
+  // The second review's fixtures: a staircase a cab's double jump and glide reach, one launched from a roof outside
+  // the movement check's window, fifteen stepping stones falling past each other, and a top 2.5 m over a path.
+  assert.equal(offending(Array.from({ length: 5 }, (_, i) => stone(13 + 3 * i, -2.4 + 2.25 * i, i))), 5);
+  assert.equal(offending(Array.from({ length: 10 }, (_, i) => stone(32 + 3 * i, -13.5 + 2.25 * i, i))), 10);
+  const falling = Array.from({ length: 15 }, (_, i) => stone(4 + i * 3.8, -4 - i * 0.01 + (i === 14 ? 1 : 0), i));
+  assert.equal(offending(falling), 15);
+  const [sx, sz] = climbAt(15, 0);
+  assert.equal(offending([{ id: 'step', prefab: 'terrain.boulder-s', pos: [sx, ground(sx, sz) + 2, sz] }]), 1);
+});
+
+test('cliff kit gate: a boulder sunk to within a step of the ground, and a cap flush with flat ground, keep to it', () => {
+  // On the village green: the small boulder's top is 0.5 m over its origin, the cap's 1.1 m.
+  assert.deepEqual(
+    standingProblems({ id: 'low', prefab: 'terrain.boulder-s', pos: [-118, ground(-118, 0) - 0.3, 0] }),
+    [],
+  );
+  assert.deepEqual(
+    standingProblems({ id: 'flush', prefab: 'terrain.rim-cap', pos: [-118, ground(-118, 6) - 1.0, 6] }),
+    [],
+  );
 });
 
 test('cliff kit gauge: a rock 0.14 m over the railhead, across the rails, is in the gauge', () => {

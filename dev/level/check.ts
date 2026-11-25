@@ -253,7 +253,7 @@ async function runChecks() {
     if (!json)
       for (const a of cliffKit.areas) {
         console.log(
-          `cliff kit, ${a.area}: ${a.pieces} pieces on census wall ${a.walls.join(', ')} (${a.toeDressed} m of toe in faces' reach), reach flood over ${a.reachCells} cells, ${a.problems.length} problems`,
+          `cliff kit, ${a.area}: ${a.pieces} pieces on census wall ${a.walls.join(', ')} (${a.toeDressed} m of toe in faces' reach), ${a.problems.length} problems`,
         );
         for (const problem of a.problems) console.log(`  ${problem}`);
       }

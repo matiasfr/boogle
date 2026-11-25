@@ -3,8 +3,8 @@
 // src/content/prefabs/terrain.ts; src/entities/terrain-kit/view.ts stands every area's level in the world (Place-local
 // x + ORIGIN.x), one instance batch a piece an area. Placed from the ground the game builds, so a terrain change shows
 // up as a stale artifact (`npm run prefabs -- --check`), not floating rock. Every placement is checked here against the
-// kit's piece rules (`kitPieceProblems`, which `npm run level-check` runs again on the built levels, with the reach
-// flood of dev/level/cliff-kit-reach.ts) and generation fails on the first broken one:
+// kit's piece rules (`kitPieceProblems`, which `npm run level-check` runs again on the built levels) and generation
+// fails on the first broken one:
 // - The tread keeps its full width: every collider, as placed and tilted, stays CLEAR m outside the tread's edge.
 // - No piece's solid within KEEP_AWAY m of a gated place: the layout's pads, secrets (and where each is fetched from),
 //   devices and pillars, and the sites' reach points, plus any the area names.
@@ -12,7 +12,9 @@
 //   body from its floor up to 4.5 m over the rail (half its 2.2 m width) and its running gear under the floor (half the
 //   track's gauge), each with the 0.25 m static clearance level-check holds furniture to beside trains
 //   (dev/level/home-cart.ts, rider-coach R1b).
-// - Art only stands, never a new way up (the reach flood, in level-check).
+// - Art only stands, never a new way up: no standable top more than a step off the bare world's own footing (the gate
+//   in level-check, dev/level/cliff-kit-standing.ts; not run here, so a piece that breaks it is reported, not built
+//   round).
 // Areas: the canyon (dev/prefab/cliff-kit-canyon.ts). No other area is dressed yet.
 import type { LevelDef, Placement, Vec3 } from '../../src/prefab/types.ts';
 import { segDist } from '../../src/island/stamps.ts';

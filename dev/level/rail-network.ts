@@ -45,18 +45,9 @@ import {
   ringAt,
   ringDeckY,
 } from '../../src/sim/railway-ring-layout.ts';
-import { ENGINE, ENGINE_BOILER, ENGINE_CAB } from '../../src/entities/railway/engine.ts';
+import { ENGINE } from '../../src/entities/railway/engine.ts';
 import { BUFFERS, LEG, SPUR } from '../../src/place/home-station.ts';
-import {
-  LOCO,
-  RIDER_CAR,
-  STEEL_CAR,
-  TRAILER,
-  TRAIN_OFFSETS,
-  WAGON_CAR,
-  consistOf,
-  consistBounds,
-} from '../../src/entities/railway/cars.ts';
+import { TRAILER, TRAIN_OFFSETS, consistOf, consistBounds } from '../../src/entities/railway/cars.ts';
 import { line2World, line2Y } from '../../src/entities/railway/line2-path.ts';
 
 export type Pt = { x: number; z: number; y: number; s: number };
@@ -152,39 +143,8 @@ function futureLoop(cx: number, cz: number, tx: number, tz: number, y: number): 
 /** Map stage → status. Stage 2 is Ring Island (v27); 3-8 later. */
 const futureStatus = (id: string): Status => (id === 'ring' ? 'v27' : 'later');
 
-/** The highest top a player stands on aboard a train, over the rail: the engine's cab roof, chimney, boiler and running
- * board and every car's deck or roof (the parts ./ring.ts lists as standable). */
-export const TRAIN_TOP = Math.max(
-  ENGINE_CAB.roofTop,
-  ENGINE_BOILER.chimney.y,
-  ENGINE_BOILER.top,
-  ENGINE.top,
-  ...[LOCO, RIDER_CAR, TRAILER, WAGON_CAR, STEEL_CAR].map((c) => c.top),
-);
 /** The tracks a train is drawn on today, and Ring Island's planned ones (v27): what scenery keeps clear of. */
 export const drawnTracks = () => tracks().filter((t) => t.enforce || t.status === 'v27');
-/** A track's points every `step` m along its polyline, interpolated, so a long straight is sampled along, not only at
- * its ends. */
-export function alongTrack(t: Track, step: number): Pt[] {
-  const out: Pt[] = [];
-  for (let n = 0; n + 1 < t.pts.length; n++) {
-    const a = t.pts[n]!,
-      b = t.pts[n + 1]!;
-    const parts = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / step));
-    for (let k = 0; k < parts; k++) {
-      const f = k / parts;
-      out.push({
-        x: a.x + (b.x - a.x) * f,
-        z: a.z + (b.z - a.z) * f,
-        y: a.y + (b.y - a.y) * f,
-        s: a.s + (b.s - a.s) * f,
-      });
-    }
-  }
-  if (t.pts.length) out.push(t.pts[t.pts.length - 1]!);
-  return out;
-}
-
 export function tracks(): Track[] {
   const out: Track[] = [];
   for (const L of LIVE) {

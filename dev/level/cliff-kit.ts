@@ -1,7 +1,8 @@
 // The cliff kit as built (content/built/levels/<area>.json, dev/prefab/cliff-kit.ts): every area's placed pieces against
 // the kit's piece rules (`kitPieceProblems`: 0.4 m off every tread, 6 m from every gated place in the layout, outside the
-// rails' gauge) and the reach flood (./cliff-kit-reach.ts: the pieces open no new way up), each area on the census wall
-// it names (dev/ground/cliff-walls.ts) and mounted by the view (src/entities/terrain-kit/areas.ts KIT_AREAS).
+// rails' gauge) and no new standing height (./cliff-kit-standing.ts: no standable top more than a step off the bare
+// world's own footing, so the pieces open no new way up), each area on the census wall it names
+// (dev/ground/cliff-walls.ts) and mounted by the view (src/entities/terrain-kit/areas.ts KIT_AREAS).
 import fs from 'node:fs';
 import { loadLevelArtifact } from '../../src/prefab/validate.ts';
 import { compiled } from '../../src/prefab/catalogue.ts';
@@ -9,10 +10,7 @@ import type { Placement } from '../../src/prefab/types.ts';
 import { AREAS, kitPieceProblems, levelOf, type Area } from '../prefab/cliff-kit.ts';
 import { KIT_AREAS } from '../../src/entities/terrain-kit/areas.ts';
 import { censusWalls } from '../ground/cliff-walls.ts';
-import { kitReach } from './cliff-kit-reach.ts';
-
-/** Shown in a failure: the first few cells only the kit reaches. */
-const SHOWN = 5;
+import { standingProblems } from './cliff-kit-standing.ts';
 
 /** One area's audit, of `placements` (its built level's, or a seeded set's). */
 export function checkCliffKitArea(
@@ -20,23 +18,12 @@ export function checkCliffKitArea(
   placements: readonly Placement[],
   wallAt: ReturnType<typeof censusWalls>['wallAt'],
 ) {
-  const problems = placements.flatMap((p) => kitPieceProblems(p, area.keepClear));
+  const problems = placements.flatMap((p) => [...kitPieceProblems(p, area.keepClear), ...standingProblems(p)]);
   const walls = area.walls.map(([x, z]) => {
     const wall = wallAt(x, z);
     if (!wall) problems.push(`${area.id}: no census wall at (${x}, ${z})`);
     return wall;
   });
-  const reach = kitReach(placements);
-  if (reach.fresh.length)
-    problems.push(
-      `${area.id}: the pieces open a new way up: ${reach.fresh.length} cells reached only, or much sooner, by climbing the kit, first ${reach.fresh
-        .slice(0, SHOWN)
-        .map(
-          (c) =>
-            `(${c.x.toFixed(1)}, ${c.y.toFixed(1)}, ${c.z.toFixed(1)}) ${c.saved === null ? 'only by the kit' : `${c.saved} m sooner`}`,
-        )
-        .join(', ')}`,
-    );
   if (!KIT_AREAS.some((level) => level.place === levelOf(area)))
     problems.push(`${area.id}: src/entities/terrain-kit/areas.ts does not mount levels/${levelOf(area)}.json`);
   return {
@@ -44,7 +31,6 @@ export function checkCliffKitArea(
     pieces: placements.length,
     walls: walls.map((w) => w?.id ?? null),
     toeDressed: walls.reduce((m, w) => m + (w?.edge.toeDressed ?? 0), 0),
-    reachCells: reach.cells,
     problems,
   };
 }

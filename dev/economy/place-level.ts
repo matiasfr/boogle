@@ -9,7 +9,6 @@ import { act } from '../../src/sim/railway-seed-route.ts';
 import { account, qjob, rail, trees } from '../../src/sim/railway-rows.ts';
 import { line2Routes, LINE2_SEA } from '../../src/sim/railway-line2-layout.ts';
 import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
-import { GLIDE, JUMP_REACH, ONE_JUMP, TWO_JUMPS, TWO_REACH } from '../level/abilities.ts';
 import { WALKABLE_NY } from '../../src/constants.ts';
 import { CELL, H, NX, NZ, PATH_SAMPLES, at as cellAt, cellX, cellZ, heights } from '../../src/place/terrain.ts';
 import {
@@ -208,14 +207,19 @@ export function runPlaceLevelCheck() {
 
   // ---------------------------------------------------------------- abilities: what each state of the run can reach
   // The flood above is walking. Over it, the moves as numbers, from the real controller's constants: one jump's rise, two jumps',
-  // a hook's 24 m to a ring, and the glide's budget with the research's margins (the numbers: dev/level/abilities.ts). Each edge names what it needs, so a state's list is
+  // a hook's 24 m to a ring, and the glide's budget with the research's margins. Each edge names what it needs, so a state's list is
   // everything you can stand on with what you have then. Not physics: the bot (the railway bot, dev/look/bots/railway.ts) does those moves
   // for real. This one looks for what shouldn't be possible yet.
   type Have = { jump: boolean; hook: boolean; glide: boolean };
+  const ONE_JUMP = 1.68,
+    TWO_JUMPS = 3.03,
+    JUMP_REACH = 4.7, // walking pace, one jump
+    TWO_REACH = 8; // two
   // Course-only sprint envelopes; browser inputs supply the collision witness. Include coyote grace and body diameter.
   const COURSE_SINGLE = 9.5 * (0.842 + 0.1) + 0.9;
   const COURSE_DOUBLE = 9.5 * (0.511 + 0.466 + Math.sqrt((2 * 3.03) / 30.6));
   const courseIds = new Set(JUMP_COURSE.slice(1).map((p) => p.id));
+  const GLIDE = (drop: number) => Math.max(0, (drop - 2) * (MOVE.glideSpeed / MOVE.glideSink) * 0.8 - 2.8);
   const groundAt = (seen: Uint8Array, x: number, z: number, y: number, rise: number, reach: number) => {
     // Any walkable cell within reach, whose ground is at most `rise` under y.
     const [ci, cj] = ij(x, z);
