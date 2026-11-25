@@ -1,4 +1,4 @@
-// --rail-seed t1-jump-first --real --query "shot=play&ledge=lookout" (also apron or alcove).
+// npm run look -- --rail-seed t1-jump-first --real --query "shot=play&ledge=lookout" --eval dev/look/evals/order-pick-ledge.ts --hud --name a3-lookout
 // Position the player on the approach ground. Only movement inputs can take them onto the ledge.
 const R = (await import('/dev/look/rail-read.ts' as string)) as typeof import('../rail-read.ts');
 const { me, cam } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
