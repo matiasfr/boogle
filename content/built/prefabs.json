@@ -9565,6 +9565,17 @@
         "params": {}
       }
     },
+    "poi.hut-board": {
+      "colliders": [],
+      "key": "poi.hut-board",
+      "scope": "place",
+      "visual": {
+        "builder": "secrets.box",
+        "params": {
+          "color": "#bb925f"
+        }
+      }
+    },
     "poi.hut-felt": {
       "colliders": [
         {
@@ -9592,6 +9603,17 @@
         }
       }
     },
+    "poi.hut-glass": {
+      "colliders": [],
+      "key": "poi.hut-glass",
+      "scope": "place",
+      "visual": {
+        "builder": "secrets.box",
+        "params": {
+          "color": "#81b4bf"
+        }
+      }
+    },
     "poi.hut-plaster": {
       "colliders": [
         {
@@ -9614,7 +9636,42 @@
       "visual": {
         "builder": "secrets.box",
         "params": {
-          "color": "#e8dcc0"
+          "color": "#dfad78"
+        }
+      }
+    },
+    "poi.hut-roof-board": {
+      "colliders": [],
+      "key": "poi.hut-roof-board",
+      "scope": "place",
+      "visual": {
+        "builder": "secrets.box",
+        "params": {
+          "color": "#cba767"
+        }
+      }
+    },
+    "poi.hut-shutter": {
+      "colliders": [],
+      "key": "poi.hut-shutter",
+      "scope": "place",
+      "visual": {
+        "builder": "secrets.box",
+        "params": {
+          "color": "#63877a"
+        }
+      }
+    },
+    "poi.hut-spare": {
+      "colliders": [],
+      "key": "poi.hut-spare",
+      "scope": "place",
+      "visual": {
+        "builder": "secrets.column",
+        "params": {
+          "color": "#393545",
+          "rBottom": 0.96,
+          "rTop": 1
         }
       }
     },
@@ -9641,6 +9698,17 @@
         "builder": "secrets.box",
         "params": {
           "color": "#7f5630"
+        }
+      }
+    },
+    "poi.hut-trim": {
+      "colliders": [],
+      "key": "poi.hut-trim",
+      "scope": "place",
+      "visual": {
+        "builder": "secrets.box",
+        "params": {
+          "color": "#804e33"
         }
       }
     },

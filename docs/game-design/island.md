@@ -30,7 +30,7 @@ Trees, rocks and POI keep-out discs go into `obstacles`, which the Boogler walks
 
 ## Points of interest
 
-The Boogler's hut stands at the meadow-facing edge of the windmill fields. A seven-sided top-hat chimney sits over a low timber roof. Its south doorway opens onto an earth floor with a bench against the back wall.
+The Boogler's hut stands at the meadow-facing edge of the windmill fields. A seven-sided top-hat chimney sits on the ridge of its golden pitched roof. A crooked brow frames the south doorway between two glazed windows. Inside, floorboards lead to a bench with his spare hat on a peg above it.
 
 Coordinates are world metres (x, z). POI folders are in [src/pois/](../../src/pois/); the seed stand and court are
 built outside the POI system.

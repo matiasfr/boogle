@@ -2,11 +2,25 @@
 // src/prefab/builders/poi-*.ts; where a solid's size comes from a dimension, a recipe derives it on load.
 import { definePrefab } from '../../prefab/types.ts';
 
+const trim = (key: `poi.hut-${string}`, color: string) =>
+  definePrefab({ key, scope: 'place', visual: { builder: 'secrets.box', params: { color } }, colliders: [] });
+
 export const prefabs = [
+  trim('poi.hut-board', '#bb925f'),
+  trim('poi.hut-glass', '#81b4bf'),
+  trim('poi.hut-shutter', '#63877a'),
+  trim('poi.hut-roof-board', '#cba767'),
+  trim('poi.hut-trim', '#804e33'),
+  definePrefab({
+    key: 'poi.hut-spare',
+    scope: 'place',
+    visual: { builder: 'secrets.column', params: { color: '#393545', rTop: 1, rBottom: 0.96 } },
+    colliders: [],
+  }),
   definePrefab({
     key: 'poi.hut-plaster',
     scope: 'place',
-    visual: { builder: 'secrets.box', params: { color: '#e8dcc0' } },
+    visual: { builder: 'secrets.box', params: { color: '#dfad78' } },
     colliders: [{ group: 'room', shape: 'box', at: [0, 0, 0], half: [0.5, 0.5, 0.5] }],
   }),
   definePrefab({

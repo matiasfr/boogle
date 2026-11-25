@@ -27,7 +27,8 @@ onStart(() => {
     const at = { ...p, pos: [x + p.pos[0], floor + p.pos[1], z + p.pos[2]] as const };
     const record = instantiate(p.prefab, at, { owner, still: true });
     record.setEnabled(true);
-    const face = p.id.startsWith('hat') ? 'roof' : p.pos[2] >= 2 ? 'front' : p.id;
+    const face =
+      p.id.startsWith('front') || p.id.startsWith('jamb') || p.id === 'lintel' ? 'front' : p.id.split('/')[0]!;
     const parts = faces.get(face) ?? [];
     for (const piece of record.pieces) addPart(parts, piece.geometry, piece.matrix, piece.color);
     faces.set(face, parts);
