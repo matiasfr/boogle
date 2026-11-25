@@ -126,8 +126,6 @@ export function groundMaterial() {
   m.colorNode = mix(grass, paletteNode(rockCol, 'stone'), rock);
   return m;
 }
-/** The spire's rock, when the land's is warm too. */
-export const spireRock = (color: string) => (LOOK.ground ? (color === '#8c8478' ? '#c6a274' : '#d6b688') : color);
 
 // The frozen water sky owns light and the fog range (src/render/water/frozen-sky.ts).
 // Passive compatibility handle for the trusted capture/bot tools; it no longer drives a clock.

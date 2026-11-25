@@ -4,7 +4,8 @@ import * as THREE from 'three/webgpu';
 import { flat } from '../render/flat.ts';
 import { paletteMaterial } from '../render/material-palette.ts';
 import { mergeTimber, woodMaterial, type GrainAxis } from '../render/wood.ts';
-import { LOOK, groundMaterial, spireRock } from './look.ts';
+import { LOOK, groundMaterial } from './look.ts';
+import { spireDrum, spireStone } from './spire-stone.ts';
 import { readableGlow } from '../render/readable-unlit.ts';
 import { shoreApronHeight } from '../render/water/shore-providers.ts';
 import { SEA } from '../constants.ts';
@@ -439,19 +440,17 @@ function addMerged(owner: OwnedView, pieces: THREE.Mesh[]) {
 function buildSpire(owner: OwnedView) {
   const X = SPIRE.x + ORIGIN.x,
     Z = SPIRE.z + ORIGIN.z;
-  const ROCK = spireRock('#8c8478'),
-    ROCK2 = spireRock('#a2978a');
   // Stacked, leaning drums: lopsided on purpose, so it reads as rock and not a tower.
-  const drums: [r0: number, r1: number, h: number, dx: number, dz: number, color: string][] = [
-    [11, 7, 26, 0, 0, ROCK],
-    [7.4, 5, 26, 1.5, -1, ROCK2],
-    [5.4, 3.6, 24, 3.5, -2, ROCK],
-    [4, 2.4, 20, 6, -2, ROCK2],
-    [2.6, 1.3, 11, 8, -1, ROCK],
+  const drums: [r0: number, r1: number, h: number, dx: number, dz: number][] = [
+    [11, 7, 26, 0, 0],
+    [7.4, 5, 26, 1.5, -1],
+    [5.4, 3.6, 24, 3.5, -2],
+    [4, 2.4, 20, 6, -2],
+    [2.6, 1.3, 11, 8, -1],
   ];
   let y = 0;
-  for (const [r0, r1, h, dx, dz, color] of drums) {
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, h, 7, 1), paletteMaterial(FLAT(color), 'stone', owner));
+  for (const [r0, r1, h, dx, dz] of drums) {
+    const m = new THREE.Mesh(spireDrum(r0, r1, h), spireStone());
     m.position.set(X + dx, y + h / 2, Z + dz);
     m.rotation.y = y * 0.7;
     m.castShadow = true;
@@ -689,7 +688,7 @@ export function buildLand(owner: OwnedView) {
       y = H(x + ORIGIN.x, z);
     const rock = new THREE.Mesh(
       new THREE.CylinderGeometry(top, bottom, height, 7),
-      paletteMaterial(FLAT(spireRock('#8c8478')), 'stone', owner),
+      spireStone(),
     );
     rock.position.set(x + ORIGIN.x, y + height / 2, z + ORIGIN.z);
     rock.castShadow = rock.receiveShadow = true;
