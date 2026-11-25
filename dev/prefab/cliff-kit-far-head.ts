@@ -24,15 +24,15 @@ function contour(top: number) {
 export const farHead: Area = {
   id: 'far-head',
   walls: [[455, -170]],
-  stranded: { x: HEAD.x, z: HEAD.z, half: 88 },
+  stranded: { x: HEAD.x, z: HEAD.z, half: 88, landing: [366, -164] },
   dress(kit) {
-    for (const top of [1, 5, 9, 13, 17, 21, 24]) {
+    for (const top of [3, 8, 13, 18, 21]) {
       layCourses(contour(top), -1, (prefab, at, yaw) => {
         const ground = (offset: number) =>
           H(ORIGIN.x + at.x + at.nx * offset, at.z + at.nz * offset);
         // Leave gentle ground, rail landings and the grassy crown bare.
         if (ground(-2) - ground(2) < 3 || ground(-4) < top - 1) return;
-        const pos: [number, number, number] = [r2(at.x + at.nx), r2(top - SEA_FACE), r2(at.z + at.nz)];
+        const pos: [number, number, number] = [r2(at.x + at.nx * 2.0), r2(top - SEA_FACE), r2(at.z + at.nz * 2.0)];
         const rot: [number, number, number] = [r2(yaw), 0, 0];
         if (!kitPieceProblems({ id: 'head course', prefab, pos, rot }).length)
           kit.place(prefab, pos, rot, 'headland contour');
