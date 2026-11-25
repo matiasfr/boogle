@@ -115,9 +115,17 @@ jobs:
       FAILED_SHA: ${{ github.event.workflow_run.head_sha }}
       RUN_ID: ${{ github.event.workflow_run.id }}
     steps:
+      - name: Validate autofix branch
+        run: |
+          # The branch is also interpolated into a Claude Bash permission rule.
+          if [[ "${BRANCH,,}" = main || "$BRANCH" = *[!a-zA-Z0-9._/-]* ]] ||
+            ! git check-ref-format "refs/heads/$BRANCH"; then
+            echo "Invalid autofix branch."
+            exit 1
+          fi
       - uses: actions/checkout@v7
         with:
-          ref: ${{ env.BRANCH }}
+          ref: refs/heads/${{ env.BRANCH }}
           fetch-depth: 0
       - name: Decide whether to try
         id: gate
@@ -155,30 +163,62 @@ jobs:
             echo "Claude already tried twice on $BRANCH; handing it back."
             echo "giveup=true" >> "$GITHUB_OUTPUT"
           fi
+      - name: Prepare docs conflict
+        id: conflict
+        if: steps.gate.outputs.go == 'true' && env.REASON == 'conflict'
+        run: |
+          git fetch origin main
+          # Keep the shipped tip as a parent so the repair can be pushed without force.
+          if ! git -c user.name='claude[bot]' -c user.email='41898282+claude[bot]@users.noreply.github.com' \
+            -c merge.conflictStyle=diff3 merge --no-ff --no-commit origin/main; then
+            if ! git rev-parse --verify --quiet MERGE_HEAD >/dev/null; then
+              echo "Could not start the merge."
+              exit 1
+            fi
+            if ! git diff --quiet --diff-filter=U -- . ':(exclude)docs/**'; then
+              echo "Conflicts outside docs/ need a human."
+              git merge --abort
+              exit 0
+            fi
+          fi
+          if git rev-parse --verify --quiet MERGE_HEAD >/dev/null; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/setup-node@v7
-        if: steps.gate.outputs.go == 'true'
+        if: steps.gate.outputs.go == 'true' && (env.REASON != 'conflict' || steps.conflict.outputs.ready == 'true')
         with:
           node-version-file: .nvmrc
           cache: npm
-      - if: steps.gate.outputs.go == 'true'
+      - if: steps.gate.outputs.go == 'true' && (env.REASON != 'conflict' || steps.conflict.outputs.ready == 'true')
         run: npm ci
         continue-on-error: true
       - uses: anthropics/claude-code-action@v1
         id: claude
-        if: steps.gate.outputs.go == 'true'
+        if: steps.gate.outputs.go == 'true' && (env.REASON != 'conflict' || steps.conflict.outputs.ready == 'true')
         continue-on-error: true
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_bots: github-actions # automerge.yml's dispatches; the action refuses a bot actor otherwise
           additional_permissions: |
             actions: read
-          claude_args: '--allowed-tools "Read,Edit,Write,Glob,Grep,Bash(gh run view:*),Bash(gh run list:*),Bash(git log:*),Bash(git diff:*),Bash(git show:*),Bash(git status:*),Bash(git fetch:*),Bash(git merge:*),Bash(git add:*),Bash(git commit:*),Bash(git push origin HEAD:*),Bash(npm ci),Bash(npm run *),Bash(npx playwright install:*)"'
+          claude_args: >-
+            --allowed-tools "Read,Glob,Grep,Bash(git log:*),Bash(git diff:*),Bash(git show:*),Bash(git status:*),Bash(git push origin HEAD:refs/heads/${{ env.BRANCH }}),${{
+              env.REASON == 'conflict'
+              && 'Edit(./docs/**),Bash(git add -- docs/),Bash(git commit -m *),Bash(npm run registry)'
+              || 'Edit,Write,Bash(gh run view:*),Bash(gh run list:*),Bash(git fetch:*),Bash(git merge:*),Bash(git add:*),Bash(git commit:*),Bash(npm ci),Bash(npm run *),Bash(npx playwright install:*)'
+            }}"
           prompt: |
-            The initial npm ci may have failed; check and fix the install if needed.
             You are on branch ${{ env.BRANCH }} of a friends' game (Boogle); it merges itself into main once CI is green.
             ${{ env.REASON == 'conflict' && 'automerge.yml found it in conflict with main.' || format('CI run {0}/{1}/actions/runs/{2} failed on it.', github.server_url, github.repository, github.event.workflow_run.id) }}
             Get it mergeable and green, keeping the author's intent. Follow AGENTS.md and CLAUDE.md.
             Make exactly ONE commit, its message starting "Autofix: " (the two-try limit counts these commits).
+            For a conflict dispatch, the workflow has already started the merge and checked that every conflict is
+            inside docs/. Use `git diff --name-only --diff-filter=U` to find the conflicts. Edit only those files,
+            preserving both sides' changes and using the base to distinguish edits from unchanged lines.
+            Stage with `git add -- docs/`, run `git diff --cached --check` and `npm run registry`, then commit with
+            `git commit -m "Autofix: merge main and resolve docs conflicts"` if the checks pass. Go straight to step 4.
+
+            For a red CI run, check the initial npm ci and fix the install if needed, then:
             1. `git fetch origin main`, then `git merge --no-commit origin/main` unless the branch already contains
                main. On conflicts keep BOTH sides' changes (they are usually independent features; combine them,
                never drop either side).
@@ -187,7 +227,7 @@ jobs:
             3. Run `npm run check` (and `npm run check:full` if the branch touches src/net*, src/world/sync.ts,
                src/world/rules/, src/world/game-world.ts or server/), then commit: "Autofix: merge main and <what
                you fixed>", or "Autofix: <what you fixed>".
-            4. `git push origin HEAD:${{ env.BRANCH }}`. Never force-push.
+            4. `git push origin HEAD:refs/heads/${{ env.BRANCH }}`. Never force-push.
             If you can't fix it, push nothing and say why.
       - name: Check that a fix went up
         id: pushed
