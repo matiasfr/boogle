@@ -307,8 +307,9 @@ is an independent one before merge (src/sim, src/world): **gpt-6.2-astra medium*
       sections, each under 900 m; the cuts recomputed from the row; section 2 ends `HEAD_BACK_CM` past the Saltpan's
       stop; heads' platforms on grade 0; points within 1 m; `WALL_ISLETS` within 1 m of each islet's closest pass);
       `test/world-lines.test.ts` (the arc's tangents and 60 m radius; no future span over 4%); `npm run level-check`
-      (rule 49): the cave row's s 740 kink and its "no easing" line gone from "planned, would fail", no kink over 2°
-      and no radius under 40 m from the West landing to Port Quay's buffers, no new report.
+      (rule 49): the cave row's s 740 kink and its "no easing" line gone from "planned, would fail". From the West landing
+      to Port Quay's buffers, no kink over 2° except the three corners in level finding 1 (23.8° at s 65.3, 12.4° at
+      s 322.7 and 20.8° at s 1080.6, each within 0.5°). No radius under 40 m on that span, no new report.
 - [x] **2. The rules and the bump (L; HOTBOX; "High-risk implementation": Claude opus medium, high for the fuzz).**
       Files: `src/sim/railway-route.ts` (`simHalt` as [above](#the-catalog-step-1)); `src/sim/railway-lines.ts`
       (`appendLeg` and `legPlatforms` for `cave` and for a section ending at a catalog halt; `RAIL_LINES[4]`; the two
@@ -430,8 +431,9 @@ World v70 follows v69. The cave cuts measure 359.5, 369.5 and 472.8 m. Saltpan's
 at (545.29, 696.40). Port Quay stands at s 1221.80, 13.65 m inside its shore, with its crossover at s 1197.30.
 The plug is 6.02 m from rack 1. Keeping Saltpan's full 60 m-radius arc level at 3 m avoids a 4.22% approach span.
 32 chords keep the centimetre-rounded turns below 2°. The existing 23.8°, 12.4° and 20.8° corners at s 65.3,
-322.7 and 1080.6 remain as documented in level finding 1. The whole-span 2° criterion in step 1 would require
-three further route changes. The tightest measured three-point radius between West and the quay buffers is 46.0 m.
+322.7 and 1080.6 remain as documented in level finding 1. The tightest measured three-point radius between West
+and the quay buffers is 46.0 m.
+On 25 November after review, the orchestrator restated step 1's 2° criterion to allow exactly those three measured corners.
 
 Leg 4 opens after Canopy's last lay, independently of collecting cloth. Standard trains occupy slots 12 and 13.
 The existing mint, standing kit, fleet and save checks take the new line from the catalog. A real host rejects

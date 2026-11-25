@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { ORIGIN } from '../../src/place/layout.ts';
 import { inside, layout, parseMapPage, type XZ } from '../../src/sickle/map-data.ts';
 import { consistOf } from '../../src/entities/railway/cars.ts';
-import { ENGINE_BOILER } from '../../src/entities/railway/engine.ts';
+import { ENGINE_BOILER, ENGINE_CAB } from '../../src/entities/railway/engine.ts';
 import { HEAD_BACK_CM, RAIL_LEGS, legFrame, legRack, rowPoint } from '../../src/sim/railway-route.ts';
 import { WORLD_LINES } from '../../src/sim/railway-world-lines.ts';
 
@@ -52,9 +52,15 @@ export function checkLeg4() {
   const crossover = row.ends.find((e) => e.at === 'start')!.sCm / 100;
   const consist = consistOf({ line: leg.line, steel: false, wagon: false });
   const side = 6.5 - (2 + Math.max(...consist.map((c) => c.spec.hx)));
-  const overhead = 7 - Math.max(ENGINE_BOILER.chimney.y, ...consist.map((c) => c.spec.top));
+  const trainTop = Math.max(
+    ENGINE_CAB.roofTop,
+    ENGINE_BOILER.chimney.y,
+    ENGINE_BOILER.top,
+    ...consist.map((c) => c.spec.top),
+  );
+  const overhead = 7 - trainTop;
   check(
-    `Planned hood over crossover at ${crossover} m: ${side.toFixed(2)} m side, ${overhead.toFixed(2)} m overhead`,
+    `Planned hood over crossover at ${crossover} m: ${side.toFixed(2)} m side, ${overhead.toFixed(3)} m overhead`,
     crossover - 10 >= 45 && crossover + 10 <= 80 && side > 0 && overhead > 0,
   );
   return { level: 'route leg 4 (planned)', entries, failures: entries.filter((e) => !e.passed).length };
