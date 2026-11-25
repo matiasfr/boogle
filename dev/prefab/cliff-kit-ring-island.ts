@@ -30,18 +30,21 @@ export const ringIsland: Area = {
       if (Math.abs(cm - SUMMIT_BRIDGE.sCm) < 800) continue;
       const { middle, nx, nz, rail } = formation(cm);
       for (const side of [-1, 1]) {
-        const at = (d: number) => [middle.x + nx * side * d, middle.z + nz * side * d] as const;
+        const at = (d: number, along = 0) =>
+          [middle.x + nx * side * d - nz * along, middle.z + nz * side * d + nx * along] as const;
         for (const rise of [0, 6, 12, 18]) {
           const base = rail - 0.8 + rise;
           let d = 6;
-          while (d < 17 && ground.islandH(...at(d)) < base + 3) d += 0.25;
-          if (d >= 17 || ground.cone(...at(d)) < base + 6) break;
-          const [x, z] = at(d - 0.8);
+          const span = [-4.8, 0, 4.8];
+          while (d < 17 && span.some((s) => ground.islandH(...at(d, s)) < base + 4)) d += 0.25;
+          if (d >= 17 || span.some((s) => ground.cone(...at(d, s)) < base + 6)) break;
+          const [x, z] = at(d - 0.35);
           kit.place(
-            'terrain.sea-face-10',
+            'terrain.low-face',
             [r2(x - ORIGIN.x), r2(base), r2(z - ORIGIN.z)],
             [r2(Math.atan2(-side * nx, -side * nz)), 0, 0],
             'stack cut',
+            [2, 2, 2],
           );
         }
       }
