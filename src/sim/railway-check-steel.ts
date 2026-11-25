@@ -18,7 +18,7 @@ import { Leg } from './railway-components.ts';
 import { cart, lines, rail, shed, steel, steelClock, trains } from './railway-rows.ts';
 import { aboard, ringJoined } from './railway-queries.ts';
 import { INSTALL_STEEL } from './railway-works-layout.ts';
-import { legDone, tradeBuildDone, tradeOpen } from './railway-queries-route.ts';
+import { legDone, tradeRepickReached, tradeOpen } from './railway-queries-route.ts';
 
 const bad = (what: string): never => {
   throw new Error(`railway: ${what}`);
@@ -104,7 +104,7 @@ export function checkSteel(w: World) {
     if (line === LINE2) return l.rev === l.boiler;
     if (!isTradeLine(line)) return l.rev === 0;
     if (!l.boiler) return l.rev === 0;
-    return tradeOpen(w, line) && (l.rev === 1 || (l.rev === 2 && tradeBuildDone(w, line)));
+    return tradeOpen(w, line) && (l.rev === 1 || (l.rev === 2 && tradeRepickReached(w, line)));
   };
   if (ls.some((l, line) => !revOk(l, line))) bad('install revision');
   // The garage table holds line 2's copy until the first bring, then line 2's or an open trade line's (garage step 4).

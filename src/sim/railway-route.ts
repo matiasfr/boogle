@@ -32,6 +32,7 @@ export type RouteLeg = {
   after: number;
   /** Where its trains load: the line's Home halt, or a junction yard (a RAIL_YARDS index). */
   kit: 'home' | number;
+  kitAhead?: true;
 };
 
 /** The sim line of each catalog row. Line 2 is the existing one; step 3 appends `ns`, `bay` and `cave` after it in this
@@ -155,6 +156,7 @@ type Spec = {
   gated: readonly (readonly [number, number])[];
   after: number;
   kit: 'home' | number;
+  kitAhead?: true;
   /** Its rules are built: its sim line holds a halt for each head (railway-lines.ts), so simHalt counts them. */
   built?: true;
 };
@@ -251,6 +253,7 @@ const SPECS: readonly Spec[] = [
     gated: [[0, 4]],
     after: 5,
     kit: 'home',
+    built: true,
   },
   {
     id: 'causeway',
@@ -263,6 +266,8 @@ const SPECS: readonly Spec[] = [
     gated: [[0, 5]],
     after: 6,
     kit: 0,
+    built: true,
+    kitAhead: true,
   },
 ];
 
@@ -303,6 +308,7 @@ export const RAIL_LEGS: readonly RouteLeg[] = SPECS.map((s) => ({
   destRowHalt: s.dest,
   after: s.after,
   kit: s.kit,
+  ...(s.kitAhead ? { kitAhead: s.kitAhead } : {}),
 }));
 
 /** A section's first centimetre: the leg's start, or the section before's end. */
@@ -491,7 +497,12 @@ const FIRST_SITE: Readonly<Record<string, { frame: RailPlatform; rack: RailPlatf
   'notch-tunnel': { frame: RAIL_GATES[4]!.at, rack: rowSide('bay', stopCm('bay', 2) - 700, 480, 90, LEG_SITE_REACH) },
   causeway: { frame: RAIL_GATES[5]!.at, rack: rowSide('ns', stopCm('ns', 1) - 700, 480, 90, LEG_SITE_REACH) },
 };
-if (Object.keys(FIRST_SITE).join() !== SPECS.map((sp) => sp.id).join())
+if (
+  Object.keys(FIRST_SITE).join() !==
+  SPECS.filter((sp) => sp.built)
+    .map((sp) => sp.id)
+    .join()
+)
   throw new Error('railway-route: every built leg names its first frame and rack, in order');
 /** Section k's frame, where `rail.legStock` is judged: a built leg's first is its FIRST_SITE; the others stand 8 m short
  * of the railhead (the section's first centimetre), 4.8 m to the right going out, 90 cm over the deck (step 4's
@@ -506,7 +517,7 @@ export function legRack(leg: RouteLeg, k: number): RailPlatform {
   if (k === 0) return FIRST_SITE[leg.id]?.rack ?? legFrame(leg, 0);
   return rowSide(leg.row, sectionFromCm(leg, k) - 1800, 480, 90, LEG_SITE_REACH);
 }
-/** The meeting marker on the Original Island (placeholder: at the `ns` row's last halt, 25 m round it): `rail.arrive`. */
+/** The meeting marker on the north beach, 12 m beyond the platform ends. */
 export const RAIL_ARRIVAL: RailPlatform = { x: 370, z: -10460, y: 228, reach: 400 };
 /** The route's named tunables (design review of 12 November, rulings 1.3 and 1.4): `layTicks`, a section's lay time
  * whatever its length (30 s); `kitLead`, the sections whose kit is owed ahead of the frame, "all remaining" (the

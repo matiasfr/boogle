@@ -368,8 +368,8 @@ export const LegYard = defineComponent('legYard', { slot: 'int', logs: 'int', ra
  * tick the room arrived at the meeting marker (-1 never). */
 export const Route = defineComponent(
   'route',
-  { grants: 'int', gates: 'int', arrived: 'int' },
-  { defaults: { arrived: -1 } },
+  { grants: 'int', gates: 'int', reached: 'int', arrived: 'int' },
+  { defaults: { reached: -1, arrived: -1 } },
 );
 /** A halt yard by HALT_YARDS slot (docs/plans/halt-yard.md; rules in ./railway-sys-yard.ts): the logs, stone and rails
  * left in its bay, never capped. The Village's (slot 0) logs and stone are the recovery rack's (`Rail.rack`,

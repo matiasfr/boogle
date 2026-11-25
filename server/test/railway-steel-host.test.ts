@@ -22,6 +22,7 @@ import { account, shed } from '../../src/sim/railway-rows.ts';
 import { rail } from '../../src/sim/railway-rows.ts';
 import {
   RAIL_GATES,
+  RAIL_ARRIVAL,
   RAIL_GRANTS,
   RAIL_LEGS,
   RAIL_POSITION_MARGIN,
@@ -581,6 +582,39 @@ test('route host: a grant and a gate keep their id; judged at their spot, refuse
     assert.deepEqual([routeRow(r.w).grants, routeRow(r.w).gates], [0, 0]);
   } finally {
     await r.done();
+  }
+});
+
+test('ending host validates the relocated gates, pickup and meeting post', async () => {
+  const base = legStagesOn(unaudited(tradeFixture()), 'bay-mid', 'notch-open');
+  for (const [name, seed, op, old, at] of [
+    ['notch', base, { op: 'rail.gate', id: 4 }, [-110001, 1390, -30002], RAIL_GATES[4]!.at],
+    [
+      'lantern',
+      legStagesOn(unaudited(base), 'notch-open', 'notch-reached'),
+      { op: 'rail.grant', id: 3 },
+      [-160453, 700, -98732],
+      RAIL_GRANTS[3]!.at,
+    ],
+    [
+      'arrive',
+      legStagesOn(unaudited(base), 'notch-open', 'island-reached'),
+      { op: 'rail.arrive' },
+      [-620, 400, -13500],
+      RAIL_ARRIVAL,
+    ],
+  ] as const) {
+    const r = await host(name, seed);
+    try {
+      assert.equal(await r.action(op, [...old]), 'rejected');
+      assert.equal(await r.action(op, spot(at)), 'accepted');
+      if (name === 'lantern') {
+        assert.equal(await r.action({ op: 'rail.gate', id: 5 }, [-5001, 400, -84979]), 'rejected');
+        assert.equal(await r.action({ op: 'rail.gate', id: 5 }, spot(RAIL_GATES[5]!.at)), 'accepted');
+      }
+    } finally {
+      await r.done();
+    }
   }
 });
 

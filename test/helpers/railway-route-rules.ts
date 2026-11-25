@@ -78,7 +78,9 @@ export function routeRulesShard(shard: number) {
   let caseIndex = 0;
   function test(name: string, optionsOrFn: TestOptions | TestFn, fn?: TestFn) {
     // The opt-in schedule cases populate one shared distribution: keep its producers and consumer together.
-    if (name.startsWith('wall service health')) {
+    if (/^(notch-tunnel|causeway) service health/.test(name)) {
+      if (shard !== 5) return;
+    } else if (name.startsWith('wall service health')) {
       if (shard !== 4) return;
     } else if (name.startsWith('lost ask fuzz ')) {
       if (shard !== 0) return;
@@ -190,7 +192,7 @@ export function routeRulesShard(shard: number) {
       assert.equal(l.id, id);
       assert.equal(l.trains, 0, `${id}: no train at first`);
       const open = trainStopsOf(ROW_LINE[id], 7, { head: 7, joined: true }, [N, 2, 2, 3, 3, 6, 1, 1]);
-      assert.equal(open.length, { ns: 3, bay: 6, cave: 10 }[id], `${id}: open through its last built leg`);
+      assert.equal(open.length, { ns: 4, bay: 7, cave: 10 }[id], `${id}: open through its last built leg`);
       assert.ok(
         l.halts.slice(open.length).every((h) => h.shut),
         `${id}: its later halts shut`,
@@ -198,8 +200,8 @@ export function routeRulesShard(shard: number) {
     }
     assert.deepEqual(
       RAIL_LEGS.map((_l, k) => legBuilt(k)),
-      [true, true, true, true, true, true, false, false],
-      'built through the White Wall',
+      [true, true, true, true, true, true, true, true],
+      'built through the causeway',
     );
   });
 
@@ -260,7 +262,7 @@ export function routeRulesShard(shard: number) {
     // Spawned last, in catalog order, nothing laid.
     assert.equal(w.count(Leg), RAIL_LEGS.length);
     assert.equal(w.count(LegYard), 1);
-    assert.deepEqual(w.get(Route, w.single(Route)), { grants: 0, gates: 0, arrived: -1 });
+    assert.deepEqual(w.get(Route, w.single(Route)), { grants: 0, gates: 0, reached: -1, arrived: -1 });
     assert.ok(w.ids(Leg).every((id) => w.ids(Train).every((t) => t < id)));
     railwayCheck(w);
   });
@@ -292,7 +294,7 @@ export function routeRulesShard(shard: number) {
   // ---------------------------------------------------------------- the rules' refusals
   test('no closed bit: any room at the rivet has leg 0 open and accepts stock', () => {
     const s = copy(JOINED);
-    assert.deepEqual(Object.keys(s.w.get(Route, s.w.single(Route))!).sort(), ['arrived', 'gates', 'grants']);
+    assert.deepEqual(Object.keys(s.w.get(Route, s.w.single(Route))!).sort(), ['arrived', 'gates', 'grants', 'reached']);
     assert.ok(legOpen(s.w, 0));
     chopTo(s, 'a', 1);
     assert.ok(act(s, 'a', 'rail.legStock', { leg: 0 }) > 0, 'accepted stock moves carried material into the frame');
@@ -652,7 +654,7 @@ export function routeRulesShard(shard: number) {
       (w) => Object.assign(w.mut(Route, w.single(Route))!, { gates: 1 }),
       /gate before/,
     );
-    refuse('arrived', (w) => Object.assign(w.mut(Route, w.single(Route))!, { arrived: 1 }), /arrived before/);
+    refuse('arrived', (w) => Object.assign(w.mut(Route, w.single(Route))!, { arrived: 1 }), /arrival before/);
     refuse(
       'route bits out of range',
       (w) => Object.assign(w.mut(Route, w.single(Route))!, { gates: 64 }),
@@ -1804,17 +1806,25 @@ export function routeRulesShard(shard: number) {
     }
   });
 
-  for (const legId of ['cave', 'wall'] as const)
+  for (const legId of ['cave', 'wall', 'notch-tunnel', 'causeway'] as const)
     test(`${legId} service health at 75% headway on growing and settled track`, { timeout: 480000 }, (t) => {
       const k = RAIL_LEGS.findIndex((l) => l.id === legId),
-        line = ROW_LINE.cave;
+        line = RAIL_LEGS[k]!.line;
       const count = RAIL_LEGS[k]!.sections.length;
       const unlock = (s: Seed) => {
+        if (legId === 'notch-tunnel' && !(routeRow(s.w).gates & (1 << 4)))
+          assert.equal(act(s, 'a', 'rail.gate', { id: 4 }), 1);
         if (legId === 'wall' && legRow(s.w, k).laid === 5 && !(routeRow(s.w).gates & (1 << 3)))
           assert.equal(act(s, 'a', 'rail.gate', { id: 3 }), 1);
       };
       // Play forward from the shard's joined island. Each settled trial starts with its own stage's fleet.
-      const open = legStagesOn(unaudited(JOINED), 'gorge-open', legId === 'wall' ? 'port-reached' : 'cave-open');
+      const start = {
+        wall: 'port-reached',
+        cave: 'cave-open',
+        'notch-tunnel': 'notch-open',
+        causeway: 'causeway-open',
+      } as const;
+      const open = legStagesOn(unaudited(JOINED), 'gorge-open', start[legId]);
       const stages = [open];
       for (let laid = 1; laid <= count; laid++) {
         const s = unaudited(stages[laid - 1]!);

@@ -14,7 +14,7 @@
 //   arrive     rail.arrive {}          the meeting, once the route's last leg is laid and a train stands at its end; once
 import { defineSystem, type World } from '../ecs/index.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, LEG_TUNE } from './railway-route.ts';
-import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
+import { RAIL_LINES } from './railway-lines.ts';
 import { TRAIN_PHASE } from './railway-train.ts';
 import { LINE_SLOTS, endMoved } from './railway-trains.ts';
 import { reqAdd, reqDrop, reqOnly } from './railway-train.ts';
@@ -170,25 +170,13 @@ export const gate = defineSystem(
     return 1;
   },
 );
-/** The route's last leg (the causeway) and its destination halt on its line. */
-const LAST = RAIL_LEGS.length - 1;
-const LAST_HALT = RAIL_LINES[RAIL_LEGS[LAST]!.line]!.halts.findIndex(
-  (h) => h.leg?.slot === LAST && h.leg.section === RAIL_LEGS[LAST]!.sections.length - 1 && !h.heads,
-);
-/** The meeting (`rail.arrive`, no fields): refused until the route's last leg is laid and a train of its line stands at
- * its destination halt; sets `arrived` once. */
+/** A train's first stop unlocks the meeting for the room, including after it leaves. */
 export const arrive = defineSystem(
   'rail.arrive',
-  { reads: [Leg, Train], writes: [Route], phase: 'act', order: 63 },
+  { reads: [], writes: [Route], phase: 'act', order: 63 },
   (w, { tick }: Act) => {
-    if (routeRow(w).arrived >= 0 || LAST_HALT < 0 || !legDone(w, LAST)) return 0;
-    const line = RAIL_LEGS[LAST]!.line;
-    const standing = RAIL_TRAINS.some((t, slot) => {
-      if (t.line !== line) return false;
-      const r = w.get(Train, w.lookup(Train, slot)!)!;
-      return r.phase === TRAIN_PHASE.STAND && r.at === LAST_HALT;
-    });
-    if (!standing) return 0;
+    const route = routeRow(w);
+    if (route.arrived >= 0 || route.reached < 0) return 0;
     w.mut(Route, routeId(w))!.arrived = tick;
     return 1;
   },

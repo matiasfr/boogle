@@ -20,7 +20,7 @@ import { railwayAtRing } from './railway-seed-ring.ts';
 import { account, rail } from './railway-rows.ts';
 import { LOGS, roomOf } from './railway-queries.ts';
 import { RAILS } from './railway-line2-layout.ts';
-import { legKitCarriers, legRow } from './railway-queries-route.ts';
+import { legKitCarriers, legRow, routeRow } from './railway-queries-route.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS } from './railway-route.ts';
 
 export const LEG_STAGES = [
@@ -44,6 +44,17 @@ export const LEG_STAGES = [
   'wall-closed',
 ] as const;
 export type LegStage = (typeof LEG_STAGES)[number];
+
+// The rules and host tests drive these ending steps before the jump catalog publishes them.
+const DRIVE_STAGES = [
+  ...LEG_STAGES,
+  'notch-open',
+  'notch-reached',
+  'causeway-open',
+  'island-reached',
+  'arrived',
+] as const;
+type DriveStage = (typeof DRIVE_STAGES)[number];
 
 /** The legs' slots in RAIL_LEGS. */
 const STACK = RAIL_LEGS.findIndex((l) => l.id === 'stack'),
@@ -95,11 +106,11 @@ export function laySection(s: Seed, k = STACK) {
 }
 /** The leg stages after `from` up to `to` run on `s`, any seed in `from`'s state (garage step 4's tests start them
  * from worlds they already hold, such as High Gorge reached with steel home). Changes `s` in place and returns it. */
-export function legStagesOn(s: Seed, from: LegStage, to: LegStage): Seed {
-  const a = LEG_STAGES.indexOf(from),
-    b = LEG_STAGES.indexOf(to);
+export function legStagesOn(s: Seed, from: DriveStage, to: DriveStage): Seed {
+  const a = DRIVE_STAGES.indexOf(from),
+    b = DRIVE_STAGES.indexOf(to);
   need(a >= 0 && b > a, `${from} to ${to}`);
-  for (const stage of LEG_STAGES.slice(a + 1, b + 1)) build(s, stage);
+  for (const stage of DRIVE_STAGES.slice(a + 1, b + 1)) build(s, stage);
   const broken = invariant(s.w);
   need(broken === null, `${to}: ${broken}`);
   return s;
@@ -120,7 +131,7 @@ const racked = (s: Seed, k: number) => {
 /** A train of leg `k`'s line carries its kit. */
 const aboard = (s: Seed, k: number) => legKitCarriers(s.w, RAIL_LEGS[k]!.line) > 0;
 
-function build(s: Seed, stage: LegStage): Seed {
+function build(s: Seed, stage: DriveStage): Seed {
   const w = s.w;
   switch (stage) {
     case 'gorge-open':
@@ -197,6 +208,25 @@ function build(s: Seed, stage: LegStage): Seed {
       need(act(s, 'a', 'rail.gate', { id: RAIL_GATES.findIndex((g) => g.id === 'deep-span') }) === 1, 'deep span open');
       laySection(s, WALL);
       advance(s, 900);
+      break;
+    case 'notch-open':
+      until(s, () => racked(s, 6), 8000, 'Notch kit delivered at Canopy');
+      break;
+    case 'notch-reached':
+      need(act(s, 'a', 'rail.gate', { id: 4 }) === 1, 'cloth opens the Notch frame');
+      laySection(s, 6);
+      break;
+    case 'causeway-open':
+      need(act(s, 'a', 'rail.grant', { id: 3 }) === 1, 'lantern taken');
+      need(act(s, 'a', 'rail.gate', { id: 5 }) === 1, 'lantern opens the causeway');
+      until(s, () => racked(s, 7), 8000, 'causeway kit delivered at Bell Rock');
+      break;
+    case 'island-reached':
+      laySection(s, 7);
+      until(s, () => routeRow(w).reached >= 0, 8000, 'first train stood at the island');
+      break;
+    case 'arrived':
+      need(act(s, 'a', 'rail.arrive', {}) === 1, 'meeting accepted');
       break;
   }
   return s;

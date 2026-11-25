@@ -151,8 +151,12 @@ export const YARD_LEGS: readonly (readonly number[])[] = RAIL_LINES.map((_l, lin
 export const SERVED_LEGS: readonly (readonly number[])[] = RAIL_LINES.map((_l, line) =>
   [...MINT_LEGS[line]!, ...YARD_LEGS[line]!].sort((a, b) => a - b),
 );
-/** The last section of every built leg this line carries kit for has actually been laid. */
-export const tradeBuildDone = (w: World, line: number) => SERVED_LEGS[line]!.every((k) => legDone(w, k));
+/** A future leg starts holding trades when its prerequisite finishes. */
+export const tradeBuildDone = (w: World, line: number) =>
+  SERVED_LEGS[line]!.every((k) => !legReached(w, k) || legDone(w, k));
+/** A saved second fit may predate either ending leg. */
+export const tradeRepickReached = (w: World, line: number) =>
+  SERVED_LEGS[line]!.every((k) => RAIL_LEGS[k]!.area === 9 || legDone(w, k));
 /** Why a line cannot change its boiler. The garage reads the same saved lays and revision as an install. */
 export function tradeSwapRefusal(w: World, line: number, revision: number) {
   if (revision > 0 && !tradeBuildDone(w, line)) return 'trade-building';
@@ -195,6 +199,8 @@ export const legYardOwed = (w: World, k: number, skip = -1) =>
   less(legLack(w, k), aboardKit(w, RAIL_LEGS[k]!.line, skip));
 /** A yard leg's lack beyond its yard and every train of its own line: what is still to mint. */
 const yardLack = (w: World, k: number) => less(legYardOwed(w, k), legYard(w, k));
+/** Its feeder can fill this yard before the branch's own trains may load there. */
+export const legYardAhead = (w: World, k: number) => !!RAIL_LEGS[k]!.kitAhead && legOpen(w, RAIL_LEGS[k]!.after);
 /** A mint line's legs, each with whether it is loading and what it is still owed, over the line's aboard units (less
  * train `skip`'s), the first leg first; `spare` is the aboard units no loading leg lacks. A leg loads while it is
  * open, or while its kit rides ahead (greybox-leg2.md, "the kit ahead"): the leg before it on the same mint line is
@@ -209,6 +215,7 @@ export function legMintChain(w: World, line: number, skip = -1) {
       prev = owed[i - 1];
     const on =
       legOpen(w, k) ||
+      legYardAhead(w, k) ||
       (i > 0 && legs[i - 1] === leg.after && loading[i - 1]! && legOpen(w, leg.after) && !prev!.logs && !prev!.rails);
     loading.push(on);
     if (!on) return owed.push(NONE);
@@ -261,13 +268,17 @@ export const legKitDrop = (w: World, line: number, k: number) =>
  * leg minted here, while nothing is laid (its rack stands at the drop halt), that first, then the yard's room (what
  * its remaining sections lack past the rack, the yard and its own line's trains). Nothing for a leg not open. */
 export function legKitRoom(w: World, line: number, k: number) {
+  const leg = RAIL_LEGS[k]!;
+  if (leg.kitAhead && line === legMintLine(k) && (legOpen(w, k) || legYardAhead(w, k)))
+    return { rack: NONE, yard: yardLack(w, k) };
   if (!legOpen(w, k)) return { rack: NONE, yard: NONE };
   if (RAIL_LEGS[k]!.line === line) return { rack: legRackNeed(w, k), yard: NONE };
   const rack = legRow(w, k).laid === 0 ? legRackNeed(w, k) : NONE;
   return { rack, yard: less(yardLack(w, k), rack) };
 }
 /** The open legs whose kit `line`'s trains carry, in RAIL_LEGS order. */
-export const legsServed = (w: World, line: number) => SERVED_LEGS[line]!.filter((k) => legOpen(w, k));
+export const legsServed = (w: World, line: number) =>
+  SERVED_LEGS[line]!.filter((k) => legOpen(w, k) || (legYardAhead(w, k) && line === legMintLine(k)));
 /** Row `r` of `line` carries kit that open leg k may take at its drop now (legKitRoom). */
 export function legKitFits(w: World, line: number, k: number, r: Readonly<RailTrain>) {
   const { rack, yard } = legKitRoom(w, line, k);
