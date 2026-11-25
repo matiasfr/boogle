@@ -107,6 +107,7 @@ export type NodeId =
   | 'incline-gate'
   | 'seeds'
   | 'canopy-gate'
+  | 'plug-gate'
   | 'cloth';
 /** The greybox legs' sections (ROUTE_SECTIONS). */
 export type SectionId =
@@ -120,7 +121,10 @@ export type SectionId =
   | 'bay-2'
   | 'canopy-1'
   | 'canopy-2'
-  | 'canopy-3';
+  | 'canopy-3'
+  | 'cave-1'
+  | 'cave-2'
+  | 'cave-3';
 
 /** World centimetres, as the catalogs pin them. `y` only where the catalog gives a height. */
 export type Point = { x: number; z: number; y?: number };
@@ -390,7 +394,8 @@ const legOf = (id: string) => RAIL_LEGS.find((l) => l.id === id)!;
 const STACK = legOf('stack'),
   INCLINE = legOf('incline'),
   BAY = legOf('bay-cut'),
-  CANOPY = legOf('bell-canopy');
+  CANOPY = legOf('bell-canopy'),
+  CAVE = legOf('cave');
 const grantOf = (id: string) => RAIL_GRANTS.findIndex((g) => g.id === id);
 /** Who brings section k's kit to its rack (src/sim/railway-queries-route.ts: MINT_LEGS, YARD_LEGS, STOCKED_LEGS). */
 const KIT_BY: Record<string, (k: number) => string> = {
@@ -405,6 +410,8 @@ const KIT_BY: Record<string, (k: number) => string> = {
     k === 0
       ? "a bay train from the West landing to Bell Rock's rack (the kit ahead, aboard since the bay cut)"
       : 'a bay train from the West landing (a Strong train holds at the railhead with the next bill)',
+  cave: (k) =>
+    k === 0 ? "stocked on the West landing's cave rack (the stand-in: no train)" : 'a cave train from the West landing',
 };
 /** A leg's node prefix, where it is not the leg's id. */
 const NODE_PREFIX: Readonly<Record<string, string>> = { 'bay-cut': 'bay', 'bell-canopy': 'canopy' };
@@ -415,13 +422,14 @@ export const ROUTE_SECTIONS: readonly { id: SectionId; leg: number; section: num
   INCLINE,
   BAY,
   CANOPY,
+  CAVE,
 ].flatMap((leg) =>
   leg.sections.map((_s, section) => ({ id: legNodeId(leg, section), leg: RAIL_LEGS.indexOf(leg), section })),
 );
 function legSection(leg: RouteLeg, k: number, label: string, requires: Edge[], stops: string[] = []): LoopNode {
   const sec = leg.sections[k]!;
   const supply = (foot: HandSupply): Supply => ({
-    by: k === 0 && leg === BAY ? 'stocked' : 'train',
+    by: k === 0 && (leg === BAY || leg === CAVE) ? 'stocked' : 'train',
     rack: p(legRack(leg, k)),
     label: KIT_BY[leg.id]!(k),
     foot,
@@ -589,6 +597,31 @@ const ROUTE_NODES: readonly LoopNode[] = [
       ),
     ],
   },
+  {
+    id: 'plug-gate',
+    label: 'Open the sea-cave plug at the West landing',
+    area: 'route',
+    at: p(RAIL_GATES[CAVE.sections[0]!.gate!]!.at),
+    bill: {},
+    supply: {},
+    ops: ['rail.gate'],
+    reached: { mark: 'route barrier opened', nth: 3 },
+    stops: [],
+    requires: [
+      dec('canopy-3', 'rules', `${RULES_ROUTE} gate: the leg it shuts is open (the Canopy line laid)`),
+      dec('pick', 'rules', `${RULES_ROUTE} gate: the room holds its needs grant (the powered pick)`),
+    ],
+    cue: [onMain('world', "the plug beside the first frame on the West landing's cave apron", LEG_VIEW)],
+  },
+  ...CAVE.sections.map((_s, k) =>
+    legSection(
+      CAVE,
+      k,
+      `West landing to Port Quay, section ${k + 1} of ${CAVE.sections.length}`,
+      k === 0 ? [dec('plug-gate', 'rules', `${RULES_ROUTE} legStock: refused while the frame's barrier is shut`)] : [],
+      k === CAVE.sections.length - 1 ? ['port'] : [],
+    ),
+  ),
 ];
 
 export const NODES: readonly LoopNode[] = [

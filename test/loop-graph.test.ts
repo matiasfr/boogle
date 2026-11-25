@@ -277,20 +277,15 @@ test('the solver proposes the canonical order and each soft edge flipped', () =>
 test('built nodes and stand-ins are told apart by the flag, and the stand-ins reach the ending', () => {
   for (const n of NODES) assert.ok(!isStandIn(n), `${n.id} is built: it carries no standIn flag`);
   const built = new Set<string>(NODES.map((n) => n.id));
-  // High Gorge, Bell Rock and Canopy Town are built (greybox leg 2's step 5, leg 3's step 7): the stand-ins are areas 7
-  // to 9, and the ending's key is the built cloth.
+  // The White Wall and the ending are still stand-ins. The ending's key is the built cloth.
   const { nodes } = standInRoute({ bills: 1 });
   assert.deepEqual(
     nodes.map((n) => n.id),
-    ['port', 'wall', 'ending'],
+    ['wall', 'ending'],
   );
-  assert.equal(
-    nodes[0]!.requires[0]!.on,
-    NODES[NODES.length - 1]!.id,
-    'the stand-ins start where the built graph ends',
-  );
+  assert.equal(nodes[0]!.requires[0]!.on, 'cave-3', 'the stand-ins start where the built graph ends');
   assert.ok(
-    nodes[2]!.requires.some((e) => e.on === 'cloth' && e.needs === 'glider cloth'),
+    nodes[1]!.requires.some((e) => e.on === 'cloth' && e.needs === 'glider cloth'),
     'the ending needs the cloth',
   );
   for (const s of nodes) {
@@ -411,8 +406,7 @@ async function replayLegRejoin(fault?: RejoinFault) {
         ev: (page: { name: string }, fn: (arg: unknown) => unknown, arg: unknown) => {
           // Both tabs can still agree on the pre-pickup packet before leaving.
           const staleBack =
-            (fault === 'mirror' && restoredAt < 0) ||
-            (fault === 'late mirror' && restoredAt >= 0 && tick > restoredAt);
+            (fault === 'mirror' && restoredAt < 0) || (fault === 'late mirror' && restoredAt >= 0 && tick > restoredAt);
           const observed = staleBack ? { rails: 0, legRails: 0 } : back();
           const legSpec = RAIL_LEGS.find((l) => l.id === 'bell-canopy')!;
           const trains = LINE_SLOTS[legSpec.line]!.map((slot) => ({
