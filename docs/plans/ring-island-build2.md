@@ -504,7 +504,7 @@ leaves `node dev/ship-check.ts` green; the full check, the bots and `test:net` a
       Run on 18 November on main 2a875bf53 ([below](#checkpoint-run-18-november-2026)): all pass; perf reported
       (no "before" figure exists for the island; the Roundhouse matches the garage checkpoint's counts); not tested on
       a device.
-- [ ] **T. The train through the ring: a layout and a still, no rules (S, Mac; waits for question 1).** A planned
+- [x] **Dropped by the owner (RC-311, 16 November 2026, [entry](../decisions-rail.md#d-2026-11-16-batch2-shore-junction-without-build2-saddle)): not built.** ~~**T. The train through the ring: a layout and a still, no rules (S, Mac; waits for question 1).**~~ A planned
       spur in `dev/level/ring.ts`'s report (start, grade, length, the saddle's height) and one still of the lowered
       saddle from Home behind a flag. Nothing in `src/sim/`. It becomes its own plan if he asks for the ride now.
 
