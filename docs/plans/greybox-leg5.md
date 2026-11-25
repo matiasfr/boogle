@@ -252,7 +252,7 @@ Each step leaves `node dev/ship-check.ts` green. **Steps 1 to 3 ship together as
 steps 1 to 3 (src/sim, src/world) is an independent one before merge, by the row `npm run models` gives at the time.
 The models table's rows are named per step; the orchestrator reads them when it dispatches.
 
-- [ ] **1. The catalog (M to L; "High-risk implementation").** Files: `dev/level/world-blockout.ts` (`ROUTES['wall-s']`'s
+- [x] **1. The catalog (M to L; "High-risk implementation").** Implemented; the section 4 length gate remains open below. Files: `dev/level/world-blockout.ts` (`ROUTES['wall-s']`'s
       first hermite; the Canopy and Gorge re-routes as new `ROUTES['wall-s']` tail and `ROUTES['wall-n']` points with the
       crossing's ruled height; the cave service's `curves`; Canopy's and the Gorge's `stopCm`), regenerated
       `src/sim/railway-world-lines.ts`, `docs/world/world-blockout.html`, `docs/world/rail-map.html`;
@@ -265,7 +265,7 @@ The models table's rows are named per step; the orchestrator reads them when it 
       131.8° kinks, its 2.6 m radius and its other "planned, would fail" lines gone; **from Port Quay's buffers to the
       Gorge's, no kink over 2° and no radius under 40 m**; `route-leg5`'s clearances as [above](#the-catalog-step-1);
       no new report elsewhere.
-- [ ] **2. The rules and the bump (L; "High-risk implementation", high for the fuzz).** Files: `src/sim/railway-lines.ts`
+- [x] **2. The rules and the bump (L; "High-risk implementation", high for the fuzz).** Implemented in v71. Files: `src/sim/railway-lines.ts`
       (`appendLeg`: no `closesAt` on a catalog-halt head; `RAIL_LINES[4]` as [above](#the-rules-step-2); the three shed
       rows follow from the fleet); `src/sim/railway-check-route.ts`; `src/world/namespace.ts` (the bump,
       [below](#the-world-bump)); fixtures and golden shards in the same commit (rule 15). Verify: new
@@ -280,7 +280,7 @@ The models table's rows are named per step; the orchestrator reads them when it 
       `badd`, 20,000 ticks a mode) pasted into this plan before the bump ships, with leg 4's long suite re-run beside it.
       `npm run loop -- run`. Because shards and sim lists change: the whole server suite (rule 52), `npm run test:net`
       (rule 55) and the built-site boot probe (rule 61).
-- [ ] **3. Seeds and stages (S; "High-risk implementation").** `src/sim/railway-seed-legs.ts` from `port-reached`,
+- [x] **3. Seeds and stages (S; "High-risk implementation").** All three seeds build from accepted operations and pass the invariant. `src/sim/railway-seed-legs.ts` from `port-reached`,
       accepted ops only, each wrapped in `need` (rule 53): `wall-mid` (sections 1 and 2 laid, section 3's kit aboard a
       cave train: the rejoin proof's state), `wall-deep` (five laid, the barrier shut), `wall-closed` (the leg laid, a
       little running time; the route plan's jump link). `SEED_STAGES` and its golden shard; `src/world/railway-jump.ts`
@@ -339,6 +339,41 @@ After steps 1 to 6 are on main; named proofs, once, with the tools as Checkpoint
       camera down the split) and `-- --view wall --hardware --seconds 10`, its load noted.
 - [ ] The boot probe on main after step 6 (rule 61); the fuzz's long run if a rule changed after it.
 - [ ] A device line on the Mac, reported, not a gate (taken when the Mac is next open).
+
+### Steps 1 to 3 as built on HOTBOX
+
+The Wall runs 4,103.2 m from Port Quay's stop to High Gorge's. Its largest joint turns 1.717° and its smallest radius is 46.54 m.
+The formation clears High Port by 8.46 m. The Canopy halt is 25.35 m before the curve's tangent point.
+The crossing is 7.97 m over the bay rail. The approach clears the south stack by 24.47 m and the buffers stop
+4.00 m from line 2's concourse. Port Quay's first carry is 10.00 m. All six platforms are level.
+
+**Stopped gate.** The section lengths in metres are **883.73, 436.24, 421.23, 950.69, 680.10 and 731.21**.
+Section 4 exceeds 900 m by 50.69 m at the measured closest pass to `wall-n2`. The level report keeps this a failure.
+Keeping the cut would need a 950.69 m exception. Cutting at 900 m would move the head 50.69 m back from the
+closest pass, breaking the 1 m cut gate. A different approach would require another catalog design.
+
+The first kit rides from the West landing to Port Quay. Cave slots 14–16 enter from the shed as the Wall grows.
+World v71 includes the changed halt ids and gate reach, the host trace, seed and operation goldens, halt placements,
+seat fixtures and the economy page. The built-site probe initially caught a missing halt lever. Regenerating the halt
+kit brought the offline Chromium probe to interactive in 9.1 s on the NVIDIA adapter.
+
+**Long service trials.** 75% headway, 20,000 ticks per mode, save/restore in each trial.
+Each cell is accepted calls / worst wait in ticks. All calls drained within their applicable budgets.
+
+| Leg and seed | Growing | 1 laid | 2 laid | 3 laid | 4 laid | 5 laid | 6 laid |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Wall c0ffee | 162/2055 | 106/1356 | 164/1180 | 139/1269 | 163/1394 | 164/1890 | 185/2027 |
+| Wall 777 | 148/2177 | 105/1382 | 163/1329 | 150/1306 | 153/1290 | 156/2090 | 179/1659 |
+| Wall 5eed | 148/2123 | 107/1403 | 163/1293 | 149/1283 | 156/1225 | 164/2179 | 170/2045 |
+| Wall badd | 160/2014 | 111/1411 | 170/1503 | 146/1443 | 154/1421 | 161/2008 | 166/1545 |
+| Cave c0ffee | 122/1139 | 91/529 | 174/668 | 118/824 | | | |
+| Cave 777 | 125/1072 | 106/546 | 189/639 | 130/815 | | | |
+| Cave 5eed | 118/1131 | 102/545 | 180/613 | 123/805 | | | |
+| Cave badd | 111/1165 | 99/556 | 187/612 | 123/847 | | | |
+
+The Wall long test took 241.42 s. The cave long test took 139.19 s in the same run.
+The three jump rows are tooling-only. The two mid-build jumps target their head platforms, and the completed
+route uses the usual spawn until step 5 supplies its landing.
 
 ### Order, and what waits
 
