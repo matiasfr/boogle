@@ -79,13 +79,15 @@ it does nothing outside voice. It is kept off the controls guide, and while you 
   a new tab: the old link closes as soon as its presence no longer says `vc`, and the new one is offered to at once.
   Nobody stays linked while the roster doesn't show them in voice. A brief server reconnect doesn't drop calls: the
   room keeps every peer's presence through it.
-- **Sound.** Each voice plays from its own `<audio>` element. The game's WebAudio context only meters levels for the
-  talking dots. On Safari the audio session switches to play-and-record while the mic is open and back to playback
+- **Sound.** Everyone plays each voice from its own `<audio>` element. On Safari the audio session switches
+  to play-and-record while the mic is open and back to playback
   after. In Pause, **Hear** offers **Everyone** and **Nearby** even before joining (placeholder copy).
-  Nearby remembers each listener's choice locally. On desktop and Android, each peer's audio element plays at full
+  Nearby remembers each listener's choice locally. Each peer plays at full
   volume through 6 m of horizontal distance, fades along a smoothstep curve and reaches silence at 30 m. Below 5%
   volume their chip dims and adds “· far” (placeholder). The talking dot and HUD still identify distant speakers.
-  Element volume is read-only on iOS.
+  Nearby uses element volume where supported. On iOS, where element volume is read-only, switching to Nearby
+  routes each live voice through its own Web Audio gain directly to the speakers. Game mute and volume leave friends
+  audible. Switching back to Everyone restores element playback during the call.
 - **Files.** [src/features/voice.ts](../../src/features/voice.ts), [voice.css](../../src/features/voice.css),
   [src/netplay/voice-mesh.ts](../../src/netplay/voice-mesh.ts), [src/net/rtc-wire.ts](../../src/net/rtc-wire.ts), the
   relay in [server/src/host/hosted-room.ts](../../server/src/host/hosted-room.ts). Proof: `node dev/look/voice-proof.ts`.
