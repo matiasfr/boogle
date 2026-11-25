@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Ship one finished job branch from its worktree: rebase onto origin/main, keep both sides of docs-only conflicts,
-# then enqueue with `npm run ship`. Add --wait to wait for main explicitly.
+# Ship one finished job branch from its worktree: rebase onto origin/main, merge docs-only conflicts,
+# then enqueue with `npm run ship`. Add --wait to wait for main explicitly. Docs conflicts resolve from diff3 markers
+# (dev/codex/docs-union.ts): a row the commit only carried over is dropped when main removed it.
 # Cancelled CI runs are rerun automatically (twice at most). Exit codes: 2 code conflict (nothing shipped, rebase aborted), 3 a commit became empty on rebase (aborted, check it
-# isn't already on main), 4 conflict markers survived the docs union (aborted), otherwise ship's own status. Queued is not merged; --wait reports ancestry on main.
+# isn't already on main), 4 conflict markers survived the docs union or one table row was edited on both sides (aborted:
+# redo the edit on fresh main), otherwise ship's own status. Queued is not merged; --wait reports ancestry on main.
 set -uo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 cd "${1:?worktree path}" || exit 1
@@ -11,7 +13,7 @@ for arg in "${@:2}"; do
   case "$arg" in --wait) wait=1 ;; *) echo "Unknown argument: $arg"; exit 1 ;; esac
 done
 git fetch -q origin
-git rebase origin/main >/dev/null 2>&1
+git -c merge.conflictStyle=diff3 rebase origin/main >/dev/null 2>&1
 while [ -d "$(git rev-parse --git-path rebase-merge)" ]; do
   conflicted=$(git diff --name-only --diff-filter=U)
   if echo "$conflicted" | grep -qv '^docs/'; then
@@ -23,10 +25,14 @@ while [ -d "$(git rev-parse --git-path rebase-merge)" ]; do
   while IFS= read -r f; do
     [ -n "$f" ] || continue
     # Node, not python3: HOTBOX has no python3, and the silent failure committed the markers (18 November, #2054).
-    node -e '
-const fs = require("fs"), p = process.argv[1];
-fs.writeFileSync(p, fs.readFileSync(p, "utf8").replace(/<<<<<<< [^\n]*\n([\s\S]*?)=======\n([\s\S]*?)>>>>>>> [^\n]*\n/g, "$1$2"));' "$f"
-    if grep -qE '^(<<<<<<< |=======$|>>>>>>> )' "$f"; then
+    node "$here/docs-union.ts" "$f"
+    union=$?
+    if [ "$union" = 5 ]; then
+      echo "Nothing shipped, rebase aborted: redo this commit's edit to that row on fresh origin/main"
+      git rebase --abort
+      exit 4
+    fi
+    if [ "$union" != 0 ]; then
       echo "MARKERS LEFT in $f after the docs union: nothing shipped, rebase aborted"
       git rebase --abort
       exit 4
@@ -34,7 +40,7 @@ fs.writeFileSync(p, fs.readFileSync(p, "utf8").replace(/<<<<<<< [^\n]*\n([\s\S]*
     git add "$f"
     echo "union: $f"
   done <<<"$conflicted"
-  if ! GIT_EDITOR=true git rebase --continue >/dev/null 2>&1; then
+  if ! GIT_EDITOR=true git -c merge.conflictStyle=diff3 rebase --continue >/dev/null 2>&1; then
     if [ -z "$(git diff --name-only --diff-filter=U)" ] && git diff --cached --quiet; then
       echo "EMPTY COMMIT at rebase: $(git log -1 --format=%s REBASE_HEAD)"
       git rebase --abort
