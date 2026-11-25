@@ -327,17 +327,35 @@ The models table's rows are named per step; the orchestrator reads them when it 
 
 After steps 1 to 6 are on main; named proofs, once, with the tools as Checkpoint D left them:
 
-- [ ] `npm run loop -- run` for one to three players: `idle s` per node (`wall-1` to `wall-6`, `deep-gate`), area 8's
+- [x] `npm run loop -- run` for one to three players: `idle s` per node (`wall-1` to `wall-6`, `deep-gate`), area 8's
       minutes beside its 48, the whole route's; any wait over 60 s with nothing to do is a finding for the designer.
-- [ ] The bot segment `--from port-reached --to wall --long`: a pass verdict, the load noted.
-- [ ] `npm run test:net`, with `railwayLegRejoin` (`dev/peer-test/ws-railway.ts`) taking `wall` at `wall-mid`: the seed
+      Run on `29555dc57` (the builder's run; an independent reviewer's rerun gave the same figures). Idle seconds per
+      node, mean per player:
+
+      | Players | wall-1 | wall-2 | wall-3 | wall-4 | wall-5 | deep-gate | wall-6 |
+      | --- | --- | --- | --- | --- | --- | --- | --- |
+      | 1 | 34 | 34 | **95** | **76** | 34 | 0 | **308** |
+      | 2 | 32 | 32 | 33 | **84** | 32 | **61** | **268** |
+      | 3 | 35 | 35 | 36 | **87** | 35 | **81** | **252** |
+
+      Area 8: 22, 21 and 21 minutes against its 48. The whole route: 1:52, 1:54 and 1:54.
+      **Findings for the designer** (waits over 60 s): `wall-6`, about 4 to 5 minutes standing at the last section
+      for every room size; `wall-4`, about 1.3 minutes; `deep-gate`, 1 to 1.5 minutes in co-op; `wall-3`, 1.6 minutes
+      solo. The loop counts waiting for a kit train or a lay as idle, so part of each is a train in motion rather than
+      nothing to do; none is yet split into the two. Logged for the designer; nothing waits on them.
+- [x] The bot segment `--from port-reached --to wall --long`: a pass verdict, load 0.12 to 1.58. This is step 6's run
+      (#2469, 19 m 26 s), carried forward because the bot and the Wall's rules have not changed since.
+- [x] `npm run test:net`, with `railwayLegRejoin` (`dev/peer-test/ws-railway.ts`) taking `wall` at `wall-mid`: the seed
       doc written before any page opens; a second tab joins; head 2's rack holds section 3's bill; the carrier leaves,
       the server restarts, it rejoins; the leg row, the rack, the kit aboard and the carrier's back exact at every
-      checkpoint. Its deadline timed with the later seed.
-- [ ] Steps 4 and 5's stills on one sheet.
-- [ ] `npm run perf -- --view wall` (a `PLACES` row: seed `wall-closed`, the body on the Gorge's Wall platform, the
-      camera down the split) and `-- --view wall --hardware --seconds 10`, its load noted.
-- [ ] The boot probe on main after step 6 (rule 61); the fuzz's long run if a rule changed after it.
+      checkpoint. All 338 checks passed. The Wall case took 39.1 s of its 480 s deadline.
+- [x] [Steps 4 and 5's stills on one sheet](greybox-leg5/checkpoint-e-sheet.jpg).
+- [x] `npm run perf -- --view wall` (a `PLACES` row: seed `wall-closed`, the body on the Gorge's Wall platform, the
+      camera down the split) and `-- --view wall --hardware --seconds 10`. The exclusive hardware sample covered
+      551 frames at load 3.42 to 1.24. CPU averaged 12.33 ms (p95 15.01), full GPU span 7.86 ms (p95 9.44),
+      and GPU render time 2.15 ms (p95 2.17).
+- [x] The boot probe on main after step 6 (rule 61): offline Chromium reached interactive in 7.8 s without page errors.
+      The Wall service rules were unchanged since the recorded long fuzz.
 - [ ] A device line on the Mac, reported, not a gate (taken when the Mac is next open).
 
 ### Steps 1 to 3 as built on HOTBOX

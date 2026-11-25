@@ -1399,10 +1399,17 @@ export async function railwayCarrierLeaves(c: Ctx) {
 // server/src/host/host-maintenance.ts): a leaver's lifted leg units stay on their back and counted held for the leg
 // through `railBeamGraceS` (180 s); past it legKitRelease takes them off the held count only. The grace clock lives in
 // the host's memory, so a restart starts it again for anyone still away.
-type RejoinSeed = 'canopy-mid' | 'cave-mid';
+const REJOIN_CASES = {
+  'canopy-mid': { leg: 'bell-canopy', laid: 1 },
+  'cave-mid': { leg: 'cave', laid: 1 },
+  'wall-mid': { leg: 'wall', laid: 2 },
+} as const;
+type RejoinSeed = keyof typeof REJOIN_CASES;
 
 export async function railwayLegRejoin(c: Ctx, seed: RejoinSeed) {
-  // The whole case, the seed build included (about two minutes on HOTBOX), within its own deadline.
+  // The whole case includes the cold seed build and the line's round trips.
+  const deadlineSeconds = 480;
+  const started = performance.now();
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     await Promise.race([
@@ -1410,11 +1417,14 @@ export async function railwayLegRejoin(c: Ctx, seed: RejoinSeed) {
       new Promise<never>(
         (_, reject) =>
           (timer = setTimeout(
-            () => reject(new Error(`Leg rejoin proof stopped (${seed}): past its 8-minute deadline`)),
-            480_000,
+            () => reject(new Error(`Leg rejoin proof stopped (${seed}): past its ${deadlineSeconds}-second deadline`)),
+            deadlineSeconds * 1000,
           )),
       ),
     ]);
+    console.log(
+      `  leg rejoin (${seed}): ${((performance.now() - started) / 1000).toFixed(1)} s of ${deadlineSeconds} s deadline`,
+    );
   } finally {
     clearTimeout(timer);
   }
@@ -1430,30 +1440,27 @@ async function legRejoin(c: Ctx, seed: RejoinSeed) {
     c.check(`leg rejoin (${seed}): ${name}`, ok, detail);
     if (!ok) throw new Error(`Leg rejoin proof stopped (${seed}): ${name}${detail ? ` (${detail})` : ''}`);
   };
-  const legId = seed === 'cave-mid' ? 'cave' : 'bell-canopy';
+  const { leg: legId, laid: LAID } = REJOIN_CASES[seed];
   const k = RAIL_LEGS.findIndex((l) => l.id === legId),
     leg = RAIL_LEGS[k]!;
-  /** A bay train's round trip from the line's start to head 1, dwells included: the rack sees every train once. */
+  /** A round trip from the line's start to the current head, including dwells. */
   const roundTrip = cycleTicks(
     leg.line,
-    RAIL_LINES[leg.line]!.halts.slice(0, leg.railheadHalt + 1).map((h) => h.s),
+    RAIL_LINES[leg.line]!.halts.slice(0, leg.railheadHalt + LAID).map((h) => h.s),
   );
-  // canopy-mid: section 1 laid (railway-seed-legs.ts), section 2's kit aboard. The pickup is a yoked back's rails off
-  // a rack holding section 2's whole bill: the yoke is long taken by this stage.
-  const LAID = 1;
+  // One kit starts aboard. The pickup is a yoked back's rails from that kit after it reaches the rack.
   const bill = (i: number) => ({ logs: leg.sections[i]!.logs, rails: leg.sections[i]!.rails });
   const billsTo = (n: number) =>
     leg.sections
       .slice(0, n)
       .reduce((t, s) => ({ logs: t.logs + s.logs, rails: t.rails + s.rails }), { logs: 0, rails: 0 });
   const PICKUP = Math.min(bill(LAID).rails, RAILWAY_CAPACITY.railsYoke);
+  const FOLLOWING_KITS = seed === 'wall-mid' ? leg.sections.length - LAID - 1 : 1;
   type Stage = 'seed' | 'racked' | 'carried';
-  /** What the server must hold at each stage, from the catalog and the pickup alone; `kitSlot` is the train carrying
-   * the kit (found at the seed and after the first round trip, then fixed). Every bay train's row is expected whole:
-   * the kit's train with its bill, every other one empty. */
-  const expected = (stage: Stage, kitSlot: number) => {
+  /** Each marked train carries a whole bill, every other train is empty, and the slots stay fixed after delivery. */
+  const expected = (stage: Stage, kitSlots: readonly number[]) => {
     const kit = bill(stage === 'seed' ? LAID : LAID + 1),
-      loaded = billsTo(stage === 'seed' ? LAID + 1 : LAID + 2),
+      loaded = billsTo(stage === 'seed' ? LAID + 1 : LAID + 1 + FOLLOWING_KITS),
       carried = stage === 'carried' ? PICKUP : 0,
       racked = stage === 'seed' ? { logs: 0, rails: 0 } : bill(LAID);
     return {
@@ -1468,7 +1475,7 @@ async function legRejoin(c: Ctx, seed: RejoinSeed) {
         heldRails: carried,
       },
       trains: LINE_SLOTS[leg.line]!.map((slot) =>
-        slot === kitSlot ? { slot, legKit: true, ...kit } : { slot, legKit: false, logs: 0, rails: 0 },
+        kitSlots.includes(slot) ? { slot, legKit: true, ...kit } : { slot, legKit: false, logs: 0, rails: 0 },
       ),
       rack: { logs: racked.logs, rails: racked.rails - carried },
       back: { rails: carried, legRails: carried },
@@ -1478,7 +1485,7 @@ async function legRejoin(c: Ctx, seed: RejoinSeed) {
   // The seed doc a jump-in writes, written into the server's store before any page opens (as `look --rail-seed`):
   // POST /jump builds an unprebuilt stage in a worker with a 60 s limit (server/src/jump.ts), and canopy-mid, built
   // from ring-joined through every leg stage, takes longer than that on HOTBOX.
-  const room = `${c.room}-${legId === 'cave' ? 'cave' : 'leg'}`,
+  const room = `${c.room}-${seed}`,
     roomId = railwayRoomId(room);
   const { writeRailSeed } = await import('../look/rail-seed.ts');
   const wrote = await writeRailSeed(c.dataDir, room, seed, 1000).then(
@@ -1549,26 +1556,20 @@ async function legRejoin(c: Ctx, seed: RejoinSeed) {
         );
       });
     }, 10000)) >= 0;
-  /** The one train the server shows carrying kit (its slot is then part of the expected state), or -1 when none or
-   * more than one is marked (never the first of several). */
-  const kitTrain = (s: State) => {
-    const marked = s.trains.filter((t) => t.legKit === true);
-    return marked.length === 1 ? marked[0]!.slot : -1;
-  };
-  /** One checkpoint: the server exactly as `stage` says, then every tab of `group` mirroring it. Without `kitSlot`
-   * (the seed, and the first round trip, when the kit changes trains) the kit's train is the one the server marks, and
-   * the checkpoint fails when there is no such one train: the kit is always aboard one at these stages. */
-  const at = async (name: string, stage: Stage, group: Page[], kitSlot?: number) => {
+  const kitTrains = (s: State) => s.trains.filter((t) => t.legKit === true).map((t) => t.slot);
+  /** Observe the carrier slots at the seed and after delivery. Check the exact count and all contents independently,
+   * then require those same train rows at every remaining checkpoint. */
+  const at = async (name: string, stage: Stage, group: Page[], kitSlots?: readonly number[]) => {
     let s = await state(),
-      slot = kitSlot ?? kitTrain(s),
-      want = expected(stage, slot);
+      slots = kitSlots ?? kitTrains(s),
+      want = expected(stage, slots);
     legCheck(
       `${name}: the server holds exactly what the catalog and the pickup say`,
       (await waitFor(async () => {
         s = await state();
-        slot = kitSlot ?? kitTrain(s);
-        want = expected(stage, slot);
-        return LINE_SLOTS[leg.line]!.includes(slot) && fits(s, want);
+        slots = kitSlots ?? kitTrains(s);
+        want = expected(stage, slots);
+        return slots.length === (stage === 'seed' ? 1 : FOLLOWING_KITS) && fits(s, want);
       }, 10000)) >= 0,
       JSON.stringify({ server: s, want }),
     );
@@ -1586,10 +1587,9 @@ async function legRejoin(c: Ctx, seed: RejoinSeed) {
   );
   legCheck('the second tab joined: each sees the other', await meet(A, B));
   await at('the seed', 'seed', [A, B]);
-  // A round trip: the train brings section 2's kit to head 1's rack; section 3's is then aboard, held while the rack
-  // is full.
+  // A round trip brings the current kit to the rack. The following kit then waits aboard while the rack is full.
   await cycle();
-  const KIT = kitTrain(await at('a round trip later', 'racked', [A, B]));
+  const KIT = kitTrains(await at('a round trip later', 'racked', [A, B]));
   const rack = legRack(leg, LAID);
   legCheck('the first tab has a live session', (await ready(A)) >= 0);
   await ev(
