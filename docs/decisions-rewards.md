@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-25 · Shared pool's three questions as recommended: a route bill is not an upgrade; cast steel joins the pool when a train lands it at a hub; a hub town's plots are staked by its own deliveries ([entry](#d-2026-11-25-recommendations-taken-pool))
 - 2026-11-25 · Garage step 4's Checkpoint table is accepted as run ([entry](#d-2026-11-25-garage-checkpoint-table-accepted))
 - 2026-11-24 · Garage step 4: the bay line's Quick or Strong trade opens at the bay cut's first lay (`bay-mid`); the third readout is "Kit a trip" ("Nothing to build" where no leg has two sections); Strong is offered on `ns` too ([entry](#d-2026-11-24-garage-step4-strong-window))
 - 2026-11-19 · Garage step 4's per-line trade waits for greybox leg 3's rules; Strong is built there as a hold (two sections' kit, waiting at the railhead), not as an empty car on `ns` and `bay` ([entry](#d-2026-11-19-garage-step4-waits-for-leg3)) (orchestrator's call)
@@ -54,6 +55,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · Kept from SETTLED:  _("every system is ignorable": replaced for the rail loop by the audit picks ("Skipping the rail"))_ ([entry](#d-undated-kept-from-settled))
 
 ## Decided
+
+- <a id="d-2026-11-25-recommendations-taken-pool"></a>**2026-11-25, the shared pool's three questions, as recommended** (owner, 25 November 2026, in this thread, taking the orchestrator's recommendations on every open item it listed: "I'm not able to try anything right now, so I have to take your recommendations."). From [shared-pool](plans/shared-pool.md#9-open-questions-for-the-owner): (1) a bill that builds the route is not an upgrade; station frames, the forge, the kiln, the works and leg frames stay fed by hand at the frame; (2) steel cast at Ring Island joins the pool only when a train lands it in a hub's store, so step 4 is not built; (3) a hub town's plot is staked by its own deliveries, as built; only the buy, in Boogles, comes from the one strongbox.
 
 - <a id="d-2026-11-25-garage-checkpoint-table-accepted"></a>**2026-11-25, garage step 4's Checkpoint table accepted as run** (owner, 25 November 2026, in this thread, answering the orchestrator's questions with recommendations, which he asked for: "Ask me the opens along with your recommendations as suggestions.") Asked whether to accept the table ([report](reports/garage-step4-checkpoint.md)): Strong saves 19.7 s solo over Quick while the bay cut is laid, and misses the plan's "within a second of Checkpoint G's row" by 15.5 s because the fit can only be paid at `trade-ready`, not `bay-mid`. He picked "Accept as run (Recommended)": G's Standard rows reproduce to the tick, and the gap is where the fit can be paid, not a defect.
 
