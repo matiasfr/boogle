@@ -71,6 +71,7 @@ import { checkRoute } from '../../src/sim/railway-check-route.ts';
 import { railLegKitHolders, railLegKitRelease } from '../../src/sim/railway-sys-route-kit.ts';
 import { ROUTE_GATES, fuzzTicks, routeTicks } from './fuzz.ts';
 import { ringRivetSequence } from './railway-rivet-sequence.ts';
+import { legStagesOn } from '../../src/sim/railway-seed-legs.ts';
 
 // The case counter partitions registration only. Bodies, options, loop bounds and fixture setup below are unchanged.
 export function routeRulesShard(shard: number) {
@@ -181,14 +182,13 @@ export function routeRulesShard(shard: number) {
     assert.equal(line2.halts[RING]!.s, legStartS(LEG), 'R2b service mark; physical construction origin stays fixed');
     for (let k = 1; k < line2.halts.length; k++) assert.ok(line2.halts[k]!.s > line2.halts[k - 1]!.s);
     assert.equal(line2.path.length / 2 - 1, Math.floor(legS(LEG, 325140) / 1000), 'the path runs past the buffers');
-    // Leg 2 (docs/plans/greybox-leg2.md, step 2): ns and bay are built to Bell Rock, their later halts shut; cave stays
-    // shut. No train before their leg's first lay.
+    // Only the prefix through the last built leg can run.
     for (const id of ['ns', 'bay', 'cave'] as const) {
       const l = RAIL_LINES[ROW_LINE[id]]!;
       assert.equal(l.id, id);
       assert.equal(l.trains, 0, `${id}: no train at first`);
       const open = trainStopsOf(ROW_LINE[id], 7, { head: 7, joined: true }, [N, 2, 2, 3, 3, 6, 1, 1]);
-      assert.equal(open.length, { ns: 3, bay: 6, cave: 0 }[id], `${id}: open through its last built leg`);
+      assert.equal(open.length, { ns: 3, bay: 6, cave: 4 }[id], `${id}: open through its last built leg`);
       assert.ok(
         l.halts.slice(open.length).every((h) => h.shut),
         `${id}: its later halts shut`,
@@ -196,8 +196,8 @@ export function routeRulesShard(shard: number) {
     }
     assert.deepEqual(
       RAIL_LEGS.map((_l, k) => legBuilt(k)),
-      [true, true, true, true, false, false, false, false],
-      'built through Canopy',
+      [true, true, true, true, true, false, false, false],
+      'built through Port Quay',
     );
   });
 
@@ -243,12 +243,14 @@ export function routeRulesShard(shard: number) {
         [3, true],
         [3, true],
         [3, true],
+        [4, true],
+        [4, true],
       ],
     );
     const w = createRailwayWorld();
     assert.deepEqual(
       trains(w).map((r) => r.phase),
-      [0, 0, ...Array.from({ length: 10 }, () => TRAIN_PHASE.SHED)],
+      [0, 0, ...Array.from({ length: 12 }, () => TRAIN_PHASE.SHED)],
     );
     // Spawned last, in catalog order, nothing laid.
     assert.equal(w.count(Leg), RAIL_LEGS.length);
@@ -1774,6 +1776,64 @@ export function routeRulesShard(shard: number) {
       assert.equal(g.yard, BUILD2.yard, "the steel kit on build 2's own tick");
       assert.ok(g.home <= BUILD2.home + 1050, `first steel home +${g.home}`);
       assert.ok(g.installed <= BUILD2.home + 1050, `the install +${g.installed}`);
+    }
+  });
+
+  test('cave service health at 75% headway on growing and settled track', { timeout: 480000 }, (t) => {
+    const k = RAIL_LEGS.findIndex((l) => l.id === 'cave'),
+      line = ROW_LINE.cave;
+    // Play forward from the shard's joined island. Each settled trial starts with its own stage's fleet.
+    const open = legStagesOn(unaudited(JOINED), 'gorge-open', 'cave-open');
+    const stages = [open];
+    for (let laid = 1; laid <= 3; laid++) {
+      const s = unaudited(stages[laid - 1]!);
+      feedSection(s, k);
+      advance(s, cycleTicks(line, stopsOf(s.w, line), 0));
+      stages.push(s);
+    }
+    const ids = RAIL_HALTS.flatMap((h, id) => (h.line === line ? [id] : []));
+    const duration = routeTicks();
+    for (const seed of ROUTE_GATES ? SEEDS : SEEDS.slice(0, 1)) {
+      for (const [stage, base] of stages.entries()) {
+        let s = unaudited(base),
+          accepted = 0;
+        const health = new ServiceHealth([line], s.w),
+          rand = mulberry32(seed);
+        const step = () => {
+          railTick(s.w, ++s.t, 75);
+          assert.equal(
+            trainSpacing(
+              (j) => train(s.w, j),
+              (l) => stopsOf(s.w, l),
+              s.t,
+            ),
+            null,
+          );
+        };
+        for (let i = 0; i < duration; i++) {
+          const n = stopsOf(s.w, line).length;
+          if (n && rand() < 0.05) {
+            const id = ids[Math.floor(rand() * n)]!,
+              dir = rand() < 0.5 ? -1 : 1;
+            if (ask(s, { id, dir })) {
+              health.ask(s.w, id, dir, s.t);
+              accepted++;
+            }
+          }
+          if (stage === 0 && i % 10 === 0 && legOpen(s.w, k)) stock(s, k);
+          step();
+          health.tick(s.w, s.t);
+          if (i === Math.floor(duration / 2)) s = unaudited(s);
+        }
+        health.drain(s.w, s.t, step);
+        assert.equal(legRow(s.w, k).laid, stage || 3);
+        assert.ok(accepted > 0 && health.worst.has(line), 'accepted and served a cave call');
+        assert.deepEqual(health.failures, []);
+        assert.equal(invariant(s.w), null);
+        t.diagnostic(
+          `${seed.toString(16)} ${stage ? 'settled ' + stage : 'growing'}: ${accepted} accepted, worst ${health.worst.get(line)} ticks; ${[...health.stages].join('; ')}`,
+        );
+      }
     }
   });
 }

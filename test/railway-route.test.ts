@@ -10,6 +10,7 @@ import {
   RAIL_YARDS,
   ROW_LINE,
   WALL_ISLETS,
+  insertedHeadsBefore,
   legFrame,
   legRack,
   pathOf,
@@ -183,7 +184,7 @@ test('each gate shuts the section it names and stands at that frame', () => {
     const leg = RAIL_LEGS.find((l) => l.id === legId)!;
     leg.sections.forEach((s, j) => assert.equal(s.gate === gi, j === k, `${g.id} on ${legId} section ${j}`));
     // The built barriers share the frame's point. The Notch barrier stands at the kink past Canopy.
-    if (g.id === 'incline' || g.id === 'canopy')
+    if (g.id === 'incline' || g.id === 'canopy' || g.id === 'plug')
       return assert.deepEqual(g.at, { ...legFrame(leg, 0), reach: 400 }, g.id);
     if (g.id === 'notch') return assert.ok(Math.hypot(g.at.x + 110000, g.at.z + 30000) < 5);
     const p = rowPoint(row(leg.row), sectionFromCm(leg, k));
@@ -290,7 +291,7 @@ test("every leg's railhead halt is its from halt's sim index + 1 (simHalt counts
       ['bay-cut', 1],
       ['bell-canopy', 3],
       ['cave', 1],
-      ['wall', 3],
+      ['wall', 4],
       ['notch-tunnel', 6],
       ['causeway', 3],
     ],
@@ -298,6 +299,39 @@ test("every leg's railhead halt is its from halt's sim index + 1 (simHalt counts
   assert.equal(simHalt('ring', 1), 9, "line 2's High Gorge after its three stack heads");
   assert.equal(simHalt('ns', 1), 2, "the ns line's Bell Rock after incline head 1");
   assert.equal(simHalt('bay', 2), 5, 'Canopy Town after both Canopy heads');
+  assert.deepEqual(
+    row('cave').halts.map((_, i) => simHalt('cave', i)),
+    [0, 2, 3, 4, 5],
+  );
+  // Two intermediate named halts, with a new head before each. Neither named head adds a duplicate slot.
+  const stops = [0, 10000, 20000, 30000],
+    cuts = [6000, 11000, 16000, 21000, 30000];
+  assert.deepEqual(
+    stops.map((_, i) => i + insertedHeadsBefore(stops, cuts, i)),
+    [0, 2, 4, 5],
+  );
+});
+
+test('cave cuts put head 2 at Saltpan and the quay stop 25 m before the Wall turn', () => {
+  const cave = row('cave'),
+    leg = RAIL_LEGS[4]!;
+  const [west, salt, quay] = cave.stops;
+  assert.deepEqual(
+    leg.sections.map((s) => s.toCm),
+    [Math.floor((west! + salt!) / 2), salt! + 1000, quay],
+  );
+  assert.equal(quay, cave.legs[1]!.toCm - 2500);
+  for (const [i, section] of leg.sections.entries()) assert.ok(section.toCm - sectionFromCm(leg, i) < 90000);
+  for (const [i, [fx, fz, rx, rz]] of [
+    [809.7, 22.9, 810.2, 16.9],
+    [651.2, 345.9, 654.1, 336.3],
+    [540.5, 694.5, 546.2, 687.4],
+  ].entries()) {
+    const f = legFrame(leg, i),
+      r = legRack(leg, i);
+    assert.ok(Math.hypot(f.x / 100 - fx!, f.z / 100 - fz!) < 1);
+    assert.ok(Math.hypot(r.x / 100 - rx!, r.z / 100 - rz!) < 1);
+  }
 });
 /** A leg's from halt on its row: the halt whose stop is its fromCm. */
 function fromHalt(leg: (typeof RAIL_LEGS)[number]) {

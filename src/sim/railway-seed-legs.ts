@@ -36,6 +36,9 @@ export const LEG_STAGES = [
   'canopy-open',
   'canopy-mid',
   'canopy-reached',
+  'cave-open',
+  'cave-mid',
+  'port-reached',
 ] as const;
 export type LegStage = (typeof LEG_STAGES)[number];
 
@@ -43,7 +46,8 @@ export type LegStage = (typeof LEG_STAGES)[number];
 const STACK = RAIL_LEGS.findIndex((l) => l.id === 'stack'),
   INCLINE = RAIL_LEGS.findIndex((l) => l.id === 'incline'),
   BAY = RAIL_LEGS.findIndex((l) => l.id === 'bay-cut'),
-  CANOPY = RAIL_LEGS.findIndex((l) => l.id === 'bell-canopy');
+  CANOPY = RAIL_LEGS.findIndex((l) => l.id === 'bell-canopy'),
+  CAVE = RAIL_LEGS.findIndex((l) => l.id === 'cave');
 
 // Share only a serialized source fixture through restore, never a mutable world between callers.
 const cache = new Map<LegStage, Seed>();
@@ -67,12 +71,16 @@ export function laySection(s: Seed, k = STACK) {
     need(guard < 8000, `${RAIL_LEGS[k]!.id} section ${at + 1} fed`);
     for (const pid of ['a', 'b']) {
       // Travel loads stay comfortable; mixed overfill has its own deliberate regression workload.
-      for (const [op, kind] of [
-        ['rail.depotTake', LOGS],
-        ['rail.depotRailTake', RAILS],
+      for (const [op, kind, stock] of [
+        ['rail.depotTake', LOGS, 'depot'],
+        ['rail.depotRailTake', RAILS, 'depotRails'],
       ] as const)
-        if (roomOf(s.w, account(s.w, pid)!, kind) > 0) act(s, pid, op);
-      act(s, pid, 'rail.legStock', { leg: k });
+        if (rail(s.w)[stock] && roomOf(s.w, account(s.w, pid)!, kind) > 0) need(act(s, pid, op) > 0, op);
+      const a = account(s.w, pid)!,
+        row = legRow(s.w, k),
+        bill = RAIL_LEGS[k]!.sections[at]!;
+      if ((a.carry && row.logs < bill.logs) || (a.rails && row.rails < bill.rails))
+        need(act(s, pid, 'rail.legStock', { leg: k }) > 0, 'kit fed');
     }
     if (legRow(s.w, k).start < 0) advance(s, 1);
   }
@@ -160,6 +168,19 @@ function build(s: Seed, stage: LegStage): Seed {
       break;
     case 'canopy-reached':
       while (legRow(w, CANOPY).laid < RAIL_LEGS[CANOPY]!.sections.length) laySection(s, CANOPY);
+      break;
+    case 'cave-open':
+      need(act(s, 'a', 'rail.grant', { id: RAIL_GRANTS.findIndex((g) => g.id === 'cloth') }) === 1, 'cloth taken');
+      need(act(s, 'a', 'rail.gate', { id: RAIL_GATES.findIndex((g) => g.id === 'plug') }) === 1, 'plug open');
+      until(s, () => racked(s, CAVE), 6000, 'first cave kit on the West landing rack');
+      break;
+    case 'cave-mid':
+      laySection(s, CAVE);
+      until(s, () => aboard(s, CAVE), 3000, 'second cave kit aboard');
+      break;
+    case 'port-reached':
+      while (legRow(w, CAVE).laid < RAIL_LEGS[CAVE]!.sections.length) laySection(s, CAVE);
+      advance(s, 900);
       break;
   }
   return s;

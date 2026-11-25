@@ -44,7 +44,7 @@ function chop(s: Seed, pid: string) {
   while (account(s.w, pid)!.carry < RAILWAY_CAPACITY.logs) {
     const k = trees(s.w).findIndex((t) => t.left > 0);
     need(k >= 0, 'a standing source');
-    act(s, pid, 'rail.chop', { id: RAILWAY_SOURCES[k]![0], yaw: 0, collapsed: false });
+    need(act(s, pid, 'rail.chop', { id: RAILWAY_SOURCES[k]![0], yaw: 0, collapsed: false }) > 0, 'logs chopped');
   }
 }
 export function logs(s: Seed, pid: string, station: string, n: number) {

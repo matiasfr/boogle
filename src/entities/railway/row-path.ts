@@ -1,4 +1,4 @@
-// The greybox route's own lines (the `ns` and `bay` rows, docs/plans/greybox-leg2.md, step 4) as the views stand them:
+// The greybox route's own lines (the ns, bay and cave rows) as the views stand them:
 // the catalog row smoothed (the mean of three row points 7.5 m apart, from a table every 5 m, as ./line2-path.ts reads
 // the `ring` row), in world metres. One path for the trains' cars, the deck and the sites, so they agree with each
 // other and with the sim's platforms (rowSide on the unsmoothed row). Unlike line 2,
@@ -23,7 +23,7 @@ type RowPath = { line: number; table: Float64Array; len: number };
 export const BAY_CUT_END = WORLD_LINES.find((l) => l.id === 'bay')!.legs[0]!.toCm / 100;
 /** The bay row's kink at Canopy Town, metres (leg 3's buffers stand 2 m short of it; leg 6 eases it). */
 export const CANOPY_KINK = WORLD_LINES.find((l) => l.id === 'bay')!.legs[1]!.toCm / 100;
-function build(id: 'ns' | 'bay'): RowPath {
+function build(id: 'ns' | 'bay' | 'cave'): RowPath {
   const r = WORLD_LINES.find((l) => l.id === id)!,
     end = r.fromCm + r.lengthCm;
   const lens = r.pts.slice(1).map((b, i) => Math.hypot(b[0] - r.pts[i]![0], b[1] - r.pts[i]![1]));
@@ -62,7 +62,7 @@ function build(id: 'ns' | 'bay'): RowPath {
   }
   return { line: ROW_LINE[id], table, len };
 }
-const PATHS: readonly RowPath[] = [build('ns'), build('bay')];
+const PATHS: readonly RowPath[] = [build('ns'), build('bay'), build('cave')];
 const byLine = new Map(PATHS.map((p) => [p.line, p]));
 /** Whether a row line's halt has a second lever, on its homeward platform (railway/halts-view.ts rowSpot): a stub head,
  * and every later halt, which its line may grow past (Bell Rock on the bay line, once leg 3 lays: homeward trains

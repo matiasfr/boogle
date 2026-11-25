@@ -1,4 +1,5 @@
-> **Status, 24 November 2026: plan, not built.** Planner, against main `56138efa6` (world v67: leg 3 playable,
+> **25 November 2026.** Steps 1–3 implemented together on the v70 build branch. The views and playable route are steps 4–6.
+> Planner, against main `56138efa6` (world v67: leg 3 playable,
 > Checkpoint C passed, #2362; garage step 4's rules, v67), rebased onto `cbaaf2825` (the clearance helper and garage
 > step 4's bot on main). Leg 4 is next in [greybox-route](greybox-route.md)'s order (section 3, row 4; section 6).
 > Steps 1 to 3 ship together as the leg's bump; 4, 5 and 6 after it, in order ([order](#order-and-what-waits)). Design review [near the end](#design-review-2026-11-24); [open
@@ -293,7 +294,7 @@ did): the arc and Port Quay's stop are geometry the rules' cuts and the seeds' g
 it; step 6 after them (garage step 4’s bot, which it builds on, is on main, #2363). Model rows are `npm run models`' (24 November). Every review of steps 1 to 3
 is an independent one before merge (src/sim, src/world): **gpt-6.2-astra medium** first, per the table.
 
-- [ ] **1. The catalog (M; HOTBOX; "High-risk implementation": Claude opus medium).** Files:
+- [x] **1. The catalog (M; HOTBOX; "High-risk implementation": Claude opus medium).** Files:
       `dev/level/world-blockout.ts` (the cave service's `curves`; Port Quay's `stopCm` with its comment), regenerated
       `src/sim/railway-world-lines.ts`, `docs/world/world-blockout.html`, `docs/world/rail-map.html` (through
       `dev/level/rail-map.ts`, only if its prose names a moved cm); `src/sim/railway-route.ts` (the cave spec's cuts as
@@ -306,9 +307,10 @@ is an independent one before merge (src/sim, src/world): **gpt-6.2-astra medium*
       sections, each under 900 m; the cuts recomputed from the row; section 2 ends `HEAD_BACK_CM` past the Saltpan's
       stop; heads' platforms on grade 0; points within 1 m; `WALL_ISLETS` within 1 m of each islet's closest pass);
       `test/world-lines.test.ts` (the arc's tangents and 60 m radius; no future span over 4%); `npm run level-check`
-      (rule 49): the cave row's s 740 kink and its "no easing" line gone from "planned, would fail", no kink over 2°
-      and no radius under 40 m from the West landing to Port Quay's buffers, no new report.
-- [ ] **2. The rules and the bump (L; HOTBOX; "High-risk implementation": Claude opus medium, high for the fuzz).**
+      (rule 49): the cave row's s 740 kink and its "no easing" line gone from "planned, would fail". From the West landing
+      to Port Quay's buffers, no kink over 2° except the three corners in level finding 1 (23.8° at s 65.3, 12.4° at
+      s 322.7 and 20.8° at s 1080.6, each within 0.5°). No radius under 40 m on that span, no new report.
+- [x] **2. The rules and the bump (L; HOTBOX; "High-risk implementation": Claude opus medium, high for the fuzz).**
       Files: `src/sim/railway-route.ts` (`simHalt` as [above](#the-catalog-step-1)); `src/sim/railway-lines.ts`
       (`appendLeg` and `legPlatforms` for `cave` and for a section ending at a catalog halt; `RAIL_LINES[4]`; the two
       shed rows follow from the fleet); `src/sim/railway-check-route.ts` (the heads' prefix and fleet checks over the
@@ -335,7 +337,7 @@ is an independent one before merge (src/sim, src/world): **gpt-6.2-astra medium*
       --port 4173 --strictPort`, then `node dev/live-boot.ts --offline --url http://localhost:4173/`, which must print
       PASS with no "page errors" line (on HOTBOX the scratch copy under `.look/` that launches with
       `channel: 'chromium'`).
-- [ ] **3. Seeds and stages (S; HOTBOX; "High-risk implementation": Claude opus medium).** Files:
+- [x] **3. Seeds and stages (S; HOTBOX; "High-risk implementation": Claude opus medium).** Files:
       `src/sim/railway-seed-legs.ts` from `canopy-reached`, accepted ops only, each wrapped in `need` (rule 53):
       `cave-open` (the cloth taken, the plug open, rack 1 stocked, nothing fed), `cave-mid` (section 1 laid, section
       2's kit aboard a cave train), `port-reached` (the leg laid, a little running time). `SEED_STAGES` and its golden
@@ -422,6 +424,45 @@ After steps 1 to 6 are on main. **Named proofs, run once on HOTBOX with the tool
       when the owner next opens the Mac (as Checkpoint C).
 
 The independent review covers steps 1 to 3 as one batch, steps 4 and 5 as another.
+
+### Steps 1–3 as built, 25 November 2026
+
+World v70 follows v69. The cave cuts measure 359.5, 369.5 and 472.8 m. Saltpan's nearest metre sample is s 739.0,
+at (545.29, 696.40). Port Quay stands at s 1221.80, 13.65 m inside its shore, with its crossover at s 1197.30.
+The plug is 6.02 m from rack 1. Keeping Saltpan's full 60 m-radius arc level at 3 m avoids a 4.22% approach span.
+32 chords keep the centimetre-rounded turns below 2°. The existing 23.8°, 12.4° and 20.8° corners at s 65.3,
+322.7 and 1080.6 remain as documented in level finding 1. The tightest measured three-point radius between West
+and the quay buffers is 46.0 m.
+On 25 November after review, the orchestrator restated step 1's 2° criterion to allow exactly those three measured corners.
+
+Leg 4 opens after Canopy's last lay, independently of collecting cloth. Standard trains occupy slots 12 and 13.
+The existing mint, standing kit, fleet and save checks take the new line from the catalog. A real host rejects
+the plug edit at the former halt centre, accepts it at the frame and accepts kit from the new rack.
+The High Gorge rim host test restores the file's audited High Gorge fixture. Its pick and pile reach
+assertions run through the host without replaying the four stack sections a second time.
+All three seeds use accepted operations. Every older seed still reaches its original tick. The cave-mid jump
+targets the midpoint of the next rack and frame. Its surface check keeps the spawn until step 5 supplies the platform.
+
+The built-site probe exposed a startup dependency on the cave row's client path even with both trains in the shed.
+Registering the path also supplies the seven catalog-driven request levers. The halt prefab, seats, economy page
+and host trace were regenerated with the catalog. The trace has 8,620 records in order. All 58 inputs, 2,220 messages
+and 458 replica packets match v69. The 205 checkpoints and 5,679 status records change with the saved train rows.
+
+**Service at 75% headway.** Four long seeds, 20,000 ticks per mode, one restore per run. Each cell gives accepted calls
+and worst served wait in ticks. The settled bounds are 1,128, 984 and 1,468 ticks. Calls spanning a lay use the
+larger applicable stage budget, including the joining train's half-cycle. All calls drained within budget.
+
+| Seed | Growing | Settled at head 1 | Settled at Saltpan | Settled at Port Quay |
+| --- | ---: | ---: | ---: | ---: |
+| c0ffee | 122 / 1139 | 91 / 529 | 174 / 668 | 118 / 824 |
+| 777 | 125 / 1072 | 106 / 546 | 189 / 639 | 130 / 815 |
+| 5eed | 118 / 1131 | 102 / 545 | 180 / 613 | 123 / 805 |
+| badd | 111 / 1165 | 99 / 556 | 187 / 612 | 123 / 847 |
+
+The timed default cave test took 7.93 s of its 480 s budget (20.0 s with shard startup). The leg 2 and Canopy long
+suites also passed all four groups, 28 seed/mode combinations. The loop's canonical runs completed for one through
+four players. The alternate “T3 before beam” order stalled at jump for all four player counts at the same times on
+the v69 control. The cave bot and live loop nodes remain step 6.
 
 ### Order, and what waits
 

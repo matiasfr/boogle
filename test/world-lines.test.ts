@@ -140,38 +140,41 @@ test('no future span is steeper than the 4% ruling grade, and the Gorge halts st
     );
 });
 
-test("Bell Rock's fillet stays on a 60 m circle tangent to both approach spans", () => {
-  const bay = WORLD_LINES.find((l) => l.id === 'bay')!;
-  const points = bay.pts;
-  const arc = points.filter(([x, z]) => Math.hypot(x + 5000, z + 85000) < 3100);
-  assert.ok(arc.length > 2);
-  const start = arc[0]!,
-    end = arc.at(-1)!;
-  const approach = points[points.indexOf(start) - 1]!,
-    exit = points[points.indexOf(end) + 1]!;
-  const dx = start[0] - approach[0],
-    dz = start[1] - approach[1],
-    span = Math.hypot(dx, dz);
-  const cx = start[0] + (6000 * dz) / span,
-    cz = start[1] - (6000 * dx) / span;
-  for (const [i, p] of arc.entries()) {
-    assert.ok(Math.abs(Math.hypot(p[0] - cx, p[1] - cz) - 6000) < 2);
-    assert.equal(p[2], 1500);
-    if (i > 0) assert.ok(Math.hypot(p[0] - arc[i - 1]![0], p[1] - arc[i - 1]![1]) <= 200);
-    const a = arc[i - 1] ?? approach,
-      b = arc[i + 1] ?? exit;
-    const ux = p[0] - a[0],
-      uz = p[1] - a[1],
-      vx = b[0] - p[0],
-      vz = b[1] - p[1];
-    const turn = Math.abs(Math.atan2(ux * vz - uz * vx, ux * vx + uz * vz));
-    assert.ok(turn < (2 * Math.PI) / 180);
-    assert.ok(Math.hypot(b[0] - a[0], b[1] - a[1]) >= 8000 * Math.sin(turn));
-  }
-  const ex = exit[0] - end[0],
-    ez = exit[1] - end[1];
-  assert.ok(Math.abs((ex * (end[0] - cx) + ez * (end[1] - cz)) / Math.hypot(ex, ez)) < 2);
-});
+for (const [id, x0, z0, distance, sign, height] of [
+  ['bay', -5000, -85000, 3100, 1, 1500],
+  ['cave', 55000, 70000, 3000, -1, 300],
+] as const)
+  test(`${id} fillet stays on a level 60 m circle tangent to both approach spans`, () => {
+    const points = WORLD_LINES.find((l) => l.id === id)!.pts;
+    const arc = points.filter(([x, z]) => Math.hypot(x - x0, z - z0) < distance);
+    assert.ok(arc.length > 2);
+    const start = arc[0]!,
+      end = arc.at(-1)!;
+    const approach = points[points.indexOf(start) - 1]!,
+      exit = points[points.indexOf(end) + 1]!;
+    const dx = start[0] - approach[0],
+      dz = start[1] - approach[1],
+      span = Math.hypot(dx, dz);
+    const cx = start[0] + (sign * 6000 * dz) / span,
+      cz = start[1] - (sign * 6000 * dx) / span;
+    for (const [i, p] of arc.entries()) {
+      assert.ok(Math.abs(Math.hypot(p[0] - cx, p[1] - cz) - 6000) < 2);
+      assert.equal(p[2], height);
+      if (i > 0) assert.ok(Math.hypot(p[0] - arc[i - 1]![0], p[1] - arc[i - 1]![1]) <= 200);
+      const a = arc[i - 1] ?? approach,
+        b = arc[i + 1] ?? exit;
+      const ux = p[0] - a[0],
+        uz = p[1] - a[1],
+        vx = b[0] - p[0],
+        vz = b[1] - p[1];
+      const turn = Math.abs(Math.atan2(ux * vz - uz * vx, ux * vx + uz * vz));
+      assert.ok(turn < (2 * Math.PI) / 180);
+      assert.ok(Math.hypot(b[0] - a[0], b[1] - a[1]) >= 8000 * Math.sin(turn));
+    }
+    const ex = exit[0] - end[0],
+      ez = exit[1] - end[1];
+    assert.ok(Math.abs((ex * (end[0] - cx) + ez * (end[1] - cz)) / Math.hypot(ex, ez)) < 2);
+  });
 
 test("the map JSON's rails agree with the catalog's decks at every vertex and halt", () => {
   // The blockout draws platforms and crossovers from the catalog and rails from the map JSON: they must meet. The

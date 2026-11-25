@@ -51,7 +51,7 @@ type Service = {
   extends?: 1;
   legs: Leg[];
   halts: HaltSpec[];
-  curves?: { near: XZ; radiusCm: number }[];
+  curves?: { near: XZ; radiusCm: number; deck?: number; segments?: number }[];
   note: string;
 };
 type Turn = 'crossover' | 'loop' | null;
@@ -126,12 +126,15 @@ const SERVICES: Service[] = [
   },
   {
     id: 'cave',
+    // The whole platform arc is level. With 32 chords the cm-rounded vertices turn less than 2° apiece.
+    curves: [{ near: [550, 700], radiusCm: 6000, deck: 3, segments: 32 }],
     name: 'Cave line and the White Wall',
     legs: [{ id: 'seacave' }, { id: 'salt-quay' }, { id: 'wall-s' }, { id: 'wall-n' }],
     halts: [
       { name: 'West landing', place: 'home' },
       { name: 'Saltpan Halt', place: 'saltpan' },
-      { name: 'Port Quay', place: 'quay' },
+      // 25 m before the turn onto the Wall, clear of a standing train's nose.
+      { name: 'Port Quay', place: 'quay', stopCm: 122180 },
       { name: 'Canopy Town', place: 'canopy' },
       { name: 'High Gorge', place: 'gorge' },
     ],
@@ -313,7 +316,7 @@ function vertices(svc: Service): Vtx[] {
       out.push(v);
     });
   });
-  for (const { near, radiusCm } of svc.curves ?? []) {
+  for (const { near, radiusCm, deck, segments } of svc.curves ?? []) {
     const i = out.findIndex((v) => v.x === cm(near[0]) && v.z === cm(near[1]));
     const a = out[i - 1],
       corner = out[i],
@@ -333,13 +336,13 @@ function vertices(svc: Service): Vtx[] {
     const cx = corner.x - setback * Math.cos(before) - r * Math.sin(before);
     const cz = corner.z - setback * Math.sin(before) + r * Math.cos(before);
     // Keep the leg boundary at the midpoint. 1.5 m leaves room for cm rounding under the 2° turn limit.
-    const count = 2 * Math.ceil((Math.abs(turn) * radiusCm) / 300);
+    const count = segments ?? 2 * Math.ceil((Math.abs(turn) * radiusCm) / 300);
     const arc = Array.from({ length: count + 1 }, (_, k) => {
       const heading = before + (turn * k) / count;
       return {
         x: Math.round(cx + r * Math.sin(heading)),
         z: Math.round(cz - r * Math.cos(heading)),
-        h: corner.h,
+        h: deck ?? corner.h,
         leg: k <= count / 2 ? corner.leg : b.leg,
       };
     });
@@ -519,7 +522,7 @@ function build(svc: Service): Built {
     const a = pts[i - 1]!,
       b = pts[i]!;
     const g = (100 * Math.abs(b[2] - a[2])) / Math.max(1, Math.hypot(b[0] - a[0], b[1] - a[1]));
-    if (g > 4) throw new Error(`${svc.id}: span ${i} is ${g.toFixed(2)}% (the ruling grade is 4%)`);
+    if (g > 4) throw new Error(`${svc.id}: span ${i} (${a} to ${b}) is ${g.toFixed(2)}% (the ruling grade is 4%)`);
   }
   const { at, stops } = stopsOf({ pts, along, s, legAt });
   const halts = svc.halts.map((h, stop) => {
