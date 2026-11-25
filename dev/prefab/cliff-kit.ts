@@ -116,7 +116,8 @@ export function layCourses(run: ReturnType<typeof runAlong>, side: 1 | -1, put: 
   layAlong(run, 0, pieces, -0.4, side, put);
 }
 /** Every gated place in the layout, Place-local: a point and the radius it holds (a pad's or pillar's own size). */
-const highPad = (p: (typeof PADS)[number]) => p.top - H(ORIGIN.x + p.x, ORIGIN.z + p.z) > FACE_TOP && !!p.ring;
+const highPad = (p: (typeof PADS)[number]) =>
+  (p.look === 'float' || p.id === 'summit') && p.top - H(ORIGIN.x + p.x, ORIGIN.z + p.z) > FACE_TOP;
 type Gate = { what: string; x: number; z: number; r: number; clearance?: number };
 const GATED: readonly Gate[] = [
   ...PADS.map((p) => ({

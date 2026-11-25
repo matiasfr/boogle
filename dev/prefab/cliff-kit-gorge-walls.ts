@@ -72,7 +72,8 @@ export const gorgeWalls: Area = {
     [30, -32],
     [-20, 34],
   ],
-  stranded: { x: -4, z: -25, half: 184 },
+  // Cover both banks end to end. Keep the shore bluff outside the flood boundary.
+  stranded: { x: 30, z: -25, half: 184 },
   dress(kit) {
     wall(
       kit,
