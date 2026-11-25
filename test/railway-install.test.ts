@@ -60,6 +60,7 @@ import { RAILS } from '../src/sim/railway-line2-layout.ts';
 import type { World } from '../src/ecs/index.ts';
 import { footCap } from '../src/sim/railway-queries-trade.ts';
 import { tableFree } from '../src/sim/railway-queries-works.ts';
+import { garageFacts } from '../src/entities/railway/garage-state.ts';
 import { STEEL } from '../src/sim/railway-ring-layout.ts';
 import { fuzzTicks } from './helpers/fuzz.ts';
 import { railRoom } from './helpers/rail-room.ts';
@@ -747,6 +748,32 @@ function raw(w: World, op: string, fields: Record<string, unknown>, t: number, p
   const a = account(w, pid)!;
   return apply(w, pid, { op, epoch: a.epoch, request: a.request + 1, ...fields } as never, t).accepted;
 }
+
+test('the garage judges a bring’s table hold on the action tick: never free before the server, never back on', () => {
+  // Garage step 4's Checkpoint, "the early Install": the screen read the hold on `tickNow()`, the movers' estimate,
+  // which runs ahead of the room when the page's clock jumps (a busy frame) and can step back. The client's clock
+  // jumps ahead of the room's steps here; the screen's `held` must clear no earlier than the server's tick reaches the
+  // hold's end, and once clear must stay clear.
+  const s = tradeReady();
+  assert.equal(bring(s, NS), 1);
+  const free = tableFree(s.w);
+  assert.equal(free, s.t + BRING_TICKS);
+  const room = railRoom(s);
+  const c = room.join('installer', 'a', 4);
+  room.ready();
+  let cleared = -1;
+  for (let k = 0; k < 600 && room.sync.world.tick < free + 20; k++) {
+    if (k % 20 === 10) room.advance(300);
+    room.run(1);
+    const server = room.sync.world.tick;
+    const held = garageFacts(c.adapter.read).held;
+    if (!held && cleared < 0) cleared = server;
+    assert.ok(held || server >= free, `the screen's hold cleared at server tick ${server}, before ${free}`);
+    assert.ok(!held || cleared < 0, `the screen's hold came back at server tick ${server} after clearing at ${cleared}`);
+  }
+  assert.equal(tableFree(room.serverWorld() as never), free, 'the server holds the table to the same tick');
+  assert.ok(cleared >= free && cleared <= free + 10, `the screen frees the table near the hold's end (${cleared})`);
+});
 
 test('trade installs: refusals, the first fit spends 1, swaps spend nothing, ten swaps, two on one tick fit once', () => {
   const s = tradeReady();

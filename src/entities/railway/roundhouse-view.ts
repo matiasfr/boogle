@@ -39,7 +39,7 @@ import {
 import { drawWorksBoxes, createBoxBatch, createLater, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
 import { createGhostOutlines } from '../../render/ghost-outline.ts';
 import { createGarageView } from './garage-view.ts';
-import { roomFacts } from './garage-state.ts';
+import { garageFacts, roomFacts } from './garage-state.ts';
 import type { RoomFacts } from './garage-data.ts';
 import { wearsLong, wearsTail } from './cars.ts';
 import { playSharedMoment } from './shared-moment.ts';
@@ -198,7 +198,7 @@ export async function createRailwayRoundhouse(
   const later = createLater();
   // The rows, re-read at the head of each entry (update, accepted, snap, targets): a refill swaps the world.
   let wd: ReadWorld = adapter.read.world();
-  let facts: RoomFacts = roomFacts(wd);
+  let facts: RoomFacts = garageFacts(adapter.read);
   let slabBody: Body | null = null,
     wagonBody: Body | null = null,
     wagonBodyAt = NaN,
@@ -737,7 +737,7 @@ export async function createRailwayRoundhouse(
       later.update(dt);
       wd = adapter.read.world();
       // The room's garage facts, once a frame: the table's garage and the bays' copies read the same.
-      facts = roomFacts(wd, adapter.read.tickNow());
+      facts = garageFacts(adapter.read);
       garageView.update(dt, facts);
       const sh = shed(wd);
       const open = !!(worksRow(wd).seams & SEAM_STALL);

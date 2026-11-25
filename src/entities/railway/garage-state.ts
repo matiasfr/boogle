@@ -30,7 +30,14 @@ function linesOf(w: ReadWorld): LineFacts[] {
   }));
 }
 
-/** `tick` is the room's (`adapter.read.tickNow()`), for the table's hold after a bring or an install. */
+/** The garage's facts as a frame reads them. The table's hold is judged on the action tick (`read.tick()`), the clock
+ * the garage's install and bring are sent on: whole, never going backwards, and at or behind the server's tick when
+ * the op arrives. So the screen offers Install, or keeps a hold, no earlier than the server would take it, and a
+ * stepped-back estimate never turns the offer off again. Not `tickNow()`: the movers' RTT-compensated time can run
+ * ahead of the room and step back (garage step 4's Checkpoint, "the early Install"). */
+export const garageFacts = (read: { world(): ReadWorld; tick(): number }) => roomFacts(read.world(), read.tick());
+
+/** `tick` is the room's action tick (see `garageFacts`), for the table's hold after a bring or an install. */
 export function roomFacts(w: ReadWorld, tick = Infinity): RoomFacts {
   const wagonCoupled = trains(w).some((r) => r.wagon);
   const boiler = line(w, LINE2).boiler;
