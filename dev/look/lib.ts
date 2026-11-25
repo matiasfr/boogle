@@ -123,7 +123,11 @@ export async function startStack({
     ADVANCE_KEY: process.env.ADVANCE_KEY ?? '',
   };
   const child = warp ? await startWarpServer(env) : null;
-  const server = child ? null : createService(loadConfig(env, { log: () => {} }));
+  // A local playthrough builds the same jump document as the deployed seed image.
+  const server = child ? null : createService(loadConfig(env, {
+    log: () => {},
+    jumpBuildDoc: async (stage) => (await import('../../server/src/seeds/build.ts')).buildSeedDoc(stage),
+  }));
   const sigPort = child ? child.port : await server!.listen(0);
   const port = await freePort();
   const vite = spawn(

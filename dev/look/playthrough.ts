@@ -295,7 +295,7 @@ async function main() {
           body: JSON.stringify({ stage: rail.from, ns: RAILWAY_PLAY_NS }),
         });
         const jump = await reply.json();
-        if (!reply.ok || typeof jump.room !== 'string') throw new Error(`Wall jump failed (${reply.status})`);
+        if (!reply.ok || typeof jump.room !== 'string') throw new Error(`Wall jump failed (${reply.status}): ${jump.error}`);
         room = jump.room;
       } else await writeRailSeed(stack.dataDir!, room, rail.from);
       console.log(`Seeded ${rail.from} (railFrom=${rail.seed!.railFrom}) through the host's save path`);
