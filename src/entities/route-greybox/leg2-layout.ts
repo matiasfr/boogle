@@ -24,6 +24,8 @@ export const AREA_CENTRES = {
   canopy: { x: -1060, z: -300 },
   saltpan: { x: 550, z: 700 },
   quay: { x: -190, z: 1080 },
+  'wall-south': { x: -840, z: 560 },
+  'wall-north': { x: -610, z: -1260 },
 } as const;
 export { PAD_SIZE } from '../../prefab/greybox-constants.ts';
 /** The usual distance an area mounts within (route-greybox/index.ts; freed past it plus FREE_MORE). */
