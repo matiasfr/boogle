@@ -10,6 +10,12 @@ import { LINES, ORIGIN } from '../src/place/layout.ts';
 import { layout, parseMapPage } from '../src/sickle/map-data.ts';
 import { readFileSync } from 'node:fs';
 
+test('the Wall carries its 13 m deck through the Canopy crossing', () => {
+  assert.ok(
+    WORLD_LINES.find((l) => l.id === 'cave')!.pts.some(([x, z, y]) => x === -69000 && z === -60500 && y === 1300),
+  );
+});
+
 test('generated world pages emit numbers with at most three decimals', () => {
   for (const name of [
     'map-prototypes',
