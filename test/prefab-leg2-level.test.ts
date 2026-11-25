@@ -4,6 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { sourceModule } from '../dev/level/source.ts';
+import * as stackHalts from '../src/entities/route-greybox/stack-halts.ts';
 import { H } from '../src/place/terrain.ts';
 import { inside, layout, parseMapPage } from '../src/sickle/map-data.ts';
 import { ORIGIN } from '../src/place/layout.ts';
@@ -757,6 +758,7 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
       ...gorgeLayout,
       ...junctions,
       ...path,
+      ...stackHalts,
       ...row,
       KIT,
       TRAIN_PHASE,
@@ -859,6 +861,10 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
     pieces,
     barrierPanels,
     peerPosition,
+    setStackLaid(laid: number) {
+      stack.laid = laid;
+      view.update();
+    },
     setWallLaid(laid: number) {
       seed.w.mut(Leg, progress.legId(seed.w, 5))!.laid = laid;
       view.update();
@@ -872,6 +878,31 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
     update: () => view.update(),
   };
 }
+
+test('a closing Stack west deck supports its last occupant until both players leave', async () => {
+  const stop = lines.RAIL_LINES[lines.LINE2]!.halts[6]!.s / 100;
+  const point = path.line2World(stop, stackHalts.STACK_WEST.lat, { x: 0, z: 0 });
+  const deck = path.line2Y(stop) + stackHalts.STACK_WEST.up;
+  const view = await reachedView();
+  const floor = () =>
+    placed.heightAt(
+      view.pieces.flatMap((piece) => piece.volume.triangles),
+      point,
+    );
+  view.setStackLaid(1);
+  const absent = floor();
+  view.setStackLaid(2);
+  assert.ok(Math.abs(floor()! - deck) < 0.01);
+  view.position.set(point.x, deck + PLAYER_R, point.z);
+  view.peerPosition.copy(view.position);
+  view.setStackLaid(3);
+  view.position.x += 50;
+  view.update();
+  assert.ok(Math.abs(floor()! - deck) < 0.01);
+  view.peerPosition.x += 50;
+  view.update();
+  assert.equal(floor(), absent);
+});
 
 test('a swimmer can reach each temporary Wall head from open water', async () => {
   const leg = route.RAIL_LEGS[5]!;

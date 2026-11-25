@@ -9,6 +9,7 @@ import { railTick } from '../../src/sim/railway-systems.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
 import { line2Lat } from '../../src/entities/railway/line2-path.ts';
 import { RIDER_CAR } from '../../src/entities/railway/cars.ts';
+import { STACK_WEST } from '../../src/entities/route-greybox/stack-halts.ts';
 import { stopsOf } from '../../src/sim/railway-queries.ts';
 
 const state = buildSeedWorld('gorge-reached');
@@ -27,9 +28,10 @@ for (let n = 0; n < 4000; n++) {
   const stops = stopsOf(state.w, 1),
     stop = stops[8]! / 100;
   const lateral = line2Lat(row, stop, stops, undefined, true);
-  // Mirror leg-view.ts PLAT (lat 4.05, width 4.5); no west platform is emitted there.
   // This is lateral separation at the stop, not a 3D boarding trajectory or nearest-mesh distance.
-  const innerEdge = 4.05 - 4.5 / 2;
+  const innerEdge = STACK_WEST.lat + STACK_WEST.w / 2;
+  const lateralGap = lateral - innerEdge - RIDER_CAR.hx;
+  assert.ok(Math.abs(lateralGap - 1) < 0.01);
   console.log(
     JSON.stringify(
       {
@@ -42,8 +44,8 @@ for (let n = 0; n < 4000; n++) {
         trackLateral: lateral,
         platformInnerLateral: innerEdge,
         coachHalfWidth: RIDER_CAR.hx,
-        lateralGap: innerEdge - lateral - RIDER_CAR.hx,
-        finding: 'Homeward service accepted at Stack halt, but the only deck is across the outward track.',
+        lateralGap,
+        finding: 'Homeward service stands beside the west deck.',
       },
       null,
       2,

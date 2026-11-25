@@ -13,7 +13,7 @@
 //                 bay cut are lines of their own (railway/row-path.ts), with buffers at their start and their turnouts
 //   the site      the current section's frame, its bill sign, the rack and its plate (on Ring Island's west platform,
 //                 High Gorge's and the West landing's for section 1, then at each railhead), and High Gorge's yard
-//   the heads     a 25 m platform with a sea ramp at every head that is a stop (the levers are railway/halts-view.ts's)
+//   the heads     platforms with sea ramps; at a served stack head, two crossing ramps and planks join the decks
 //   the signals   a post, an arm and a plate at each section end the line has passed
 //   High Gorge    the pickup post on the north rim, the incline's barrier at its first frame, the stand-in town's
 //                 board (the massing is ./massing.ts's, resident by distance)
@@ -82,6 +82,7 @@ import type { Clearing } from '../../place/clearance.ts';
 import { AREA_CENTRES, LEG2_TEXT } from './leg2-layout.ts';
 import { areaBoardVisibility, areaLabels } from './state.ts';
 import type { GreyBox } from './boxes.ts';
+import { STACK_CROSSING, STACK_EAST, stackPieces, westStands } from './stack-halts.ts';
 
 // Placeholder labels (the step 4 design review's answers b, e, i, k and l; none is The Boogler's).
 const FEED = 'Feed the frame',
@@ -250,6 +251,7 @@ type LegSpec = {
   width: number;
   /** A head's platform: the 25 m before the section's end, its centre `lat` from the line, `w` wide, `up` over the rails. */
   plat: { len: number; lat: number; w: number; up: number };
+  crossing?: typeof STACK_CROSSING;
   /** The end board's first line. */
   name: string;
   frames: Site[];
@@ -290,7 +292,8 @@ function stackSpec(): LegSpec {
     mid: -2,
     width: 8.6,
     // RING_HEAD's: lat +1.8 to +6.3, 90 cm over the rails.
-    plat: { len: 25, lat: 4.05, w: 4.5, up: 0.9 },
+    plat: STACK_EAST,
+    crossing: STACK_CROSSING,
     name: 'LINE TO HIGH GORGE',
     // Section k's frame and rack: on Ring Island's west platform (the rails are east of it), then at its railhead.
     frames: leg.sections.map((_s, j) => site(legFrame(leg, j), j, 453, 8)),
@@ -462,7 +465,8 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     0,
   );
   const deck = createBoxBatch(owner, 10500 + endingCapacity, false),
-    things = createBoxBatch(owner, 700, false);
+    // A served Stack head adds 23 boxes; both earlier heads can also be held under their occupants (35 each).
+    things = createBoxBatch(owner, 800, false);
   // Named, so a look can count what the leg's views add to a frame (dev/look/evals/stack-draws.ts).
   deck.mesh.name = 'route-greybox:deck';
   things.mesh.name = 'route-greybox:things';
@@ -531,6 +535,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     const standing = { boxes: [] as GreyBox[], bodies: new Map<GreyBox, Body>() };
     const temporaryHeads = new Map<number, GreyBox[]>();
     let endBuffers: GreyBox[] = [];
+    const plankSpans = new WeakMap<GreyBox, GreyBox[]>();
     const retiring = new Map<GreyBox[], { clearance: Clearing<{ shapes: Shape[]; on(): void }>; bodies: Body[] }>();
     /** A box along the line from (`s0`, `lat0`) to (`s1`, `lat1`), its top `up` over the rails. */
     function along(s0: number, s1: number, lat0: number, lat1: number, up: number, w: number, h: number, c: string) {
@@ -716,6 +721,19 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         if (laid < j || (closes !== undefined && laid >= j + 2)) continue;
         const first = out.length;
         const r = R[j - 1]!;
+        if (sp.crossing) {
+          const head = stackPieces(r, westStands(j, laid), SEA_BED, {
+            deck: GREY_LIGHT,
+            ramp: GREY,
+            pile: GREY_DARK,
+            plank: LOG,
+            slab: BED,
+          });
+          out.push(...head.boxes);
+          if (head.slab) plankSpans.set(head.slab, head.planks);
+          if (closes !== undefined) temporaryHeads.set(j, head.boxes);
+          continue;
+        }
         // A row line's head has a platform each side (right-hand running: the homeward lever's is the left one).
         for (const side of sp.row ? [1, -1] : [1]) {
           const lat = side * plat.lat;
@@ -793,7 +811,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
             ),
         })),
         me.body,
-        { lift: sp.leg.id === 'wall' || sp.leg.id === 'notch-tunnel' || sp.leg.id === 'causeway' },
+        { lift: sp.leg.id === 'wall' || sp.leg.id === 'notch-tunnel' || sp.leg.id === 'causeway' || !!sp.crossing },
       );
     }
     /** Takes the deck's slabs and the standing pieces' colliders away (and forgets what was drawn), until next shown. */
@@ -868,11 +886,12 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
           show(d.board, q, geo.y(d.at) + sp.plat.up, P.uz, -P.ux, stopLines);
         }
         const held = standClear?.waiting ?? [];
-        for (const b of standing.boxes)
-          if (!held.some((x) => x.box === b))
+        const drawStanding = (box: GreyBox) => {
+          for (const b of plankSpans.get(box) ?? [box])
             things.box(b.x, b.y, b.z, b.w, b.h, b.d, b.colour ?? GREY, b.yaw, -(b.pitch ?? 0));
-        for (const boxes of retiring.keys())
-          for (const b of boxes) things.box(b.x, b.y, b.z, b.w, b.h, b.d, b.colour ?? GREY, b.yaw, -(b.pitch ?? 0));
+        };
+        for (const b of standing.boxes) if (!held.some((x) => x.box === b)) drawStanding(b);
+        for (const boxes of retiring.keys()) for (const b of boxes) drawStanding(b);
         const laid = r.laid;
         // The end board, 1.5 m behind the buffers' faces, facing back down the line: the stack's blank until the
         // rivet, then the line's name; it travels with the head and is gone at the destination (answer i). A row's

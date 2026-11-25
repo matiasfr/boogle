@@ -201,7 +201,9 @@ levers, which need the moved point to offer a prompt.
        within 0.05 m of its own track (`line2Lat`; it has merged at r − 30).
     4. _Planks:_ 1.60 m along; over no rail (0.08 m flangeway clear by each rail); planks and both landings at the rail
        tops (+0.29, pin 0).
-    5. _Ramps, both:_ r − 26.9 .. r − 23, ≤ 15° and walkable at `WALKABLE_NY` (pin 8.89°); the step at the foot
+    5. _Ramps, both:_ r − 26.9 .. r − 23, ≤ 15° and walkable at `WALKABLE_NY`. The nominal centreline pitch is 8.89°.
+       Builder correction accepted 25 November: pin the actual east/west collider pitches at heads 1–3 to
+       8.91554°/8.83944°, 8.87429°/8.92047° and 8.89387°/8.88121°. The step at the foot
        (landing to ramp) and at the top (ramp to flat deck) 0, pins 0.
     6. _Decks:_ both flat from r − 23 (pin 23.00); the rack's pallet and plate, the frame, the board stand and both
        east levers on the flat deck, at least 0.5 m past the ramp top (expected: plate about 3.4, pallet 3.7, homeward
