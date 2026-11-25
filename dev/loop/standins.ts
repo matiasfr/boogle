@@ -225,7 +225,7 @@ export function wholeRouteLines(
   const cols = (seconds: readonly number[], f = min) => seconds.map((x) => f(x).padStart(7)).join('');
   const out = [
     '',
-    `Whole route to the ending: areas 1-7 PLAYED above, areas 8-9 STAND-INS, modelled and not played (dev/loop/standins.ts).`,
+    `Whole route to the ending: areas 1-8 PLAYED above, area 9 modelled as a STAND-IN (dev/loop/standins.ts).`,
     `Variant: ${variantName(v)}. A stand-in is its bill at the built route's own rate plus rides over its real legs:`,
     `no puzzles, discovery, confusion or ending. Minutes; the target is ${TARGET_MIN}.`,
     `  #  area                                              kind      units  legs km ${players.map((n) => `${n}p`.padStart(7)).join('')}  allowance`,

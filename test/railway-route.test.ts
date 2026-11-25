@@ -121,8 +121,8 @@ test('each after and needs points backwards', () => {
 });
 
 test('the remaining stand-in gates match the route catalog', () => {
-  const areaOf: Record<string, number> = { seeds: 5, cloth: 6 };
-  const grantOf: Record<string, string> = { 'crystal seeds': 'seeds', 'glider cloth': 'cloth' };
+  const areaOf: Record<string, number> = { cloth: 6 };
+  const grantOf: Record<string, string> = { 'glider cloth': 'cloth' };
   const { nodes } = standInRoute();
   let found = 0;
   for (const n of nodes)
@@ -139,7 +139,7 @@ test('the remaining stand-in gates match the route catalog', () => {
         `${r.needs} comes from ${r.on}`,
       );
     }
-  assert.equal(found, 2);
+  assert.equal(found, 1);
 });
 
 test('each interchange fits its walking bound', () => {
