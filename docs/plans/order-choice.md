@@ -77,7 +77,7 @@ legs. No new object, sign or word is needed to show the choice; every new word i
 is The Boogler's.
 
 **Steps:** 1 per-leg racks, 2 the order, 3 seeds, 4 the views, then 5 the bot and the loop, and the checkpoint. Steps 1
-to 4 ship together with **one world bump** (v73 if leg 6 takes v72). **Three owner questions**, one word each,
+to 4 ship together with **one world bump** (v74, following the Stack west platforms in v73). **Three owner questions**, one word each,
 [at the end](#owner-questions).
 
 ## Sources read
@@ -299,7 +299,7 @@ The default 3,000-tick case took 5.32 seconds of its 480-second budget, with 27 
 | 5eed | 174 | 129 | 1,523 | 1,101 |
 | badd | 172 | 117 | 1,553 | 1,084 |
 
-The v73 fixture comparison preserved all 82 earlier seed ticks, 464 scripted command results and 14,400 tick system sequences. All 82 mirror traces kept their frame and mark counts. The 1,244 marks now hash the v73 rows. Across 8,620 host trace records, 205 checkpoints and 5,679 serialized-size counters changed. Every input, result and replica packet matched.
+The v74 fixture comparison preserved all 82 earlier seed ticks, 464 scripted command results and 14,400 tick system sequences. All 82 mirror traces kept their frame and mark counts. The 1,244 marks now hash the v74 rows. Across 8,620 host trace records, 205 checkpoints and 5,679 serialized-size counters changed. Every input, result and replica packet matched.
 
 ### Step 4 browser stills, 25 November
 
@@ -325,7 +325,7 @@ After step 5, on HOTBOX, once:
 
 ## The world bump
 
-**One, in step 2's commit, covering steps 1 to 4:** v73 if leg 6 has taken v72 (the next free number otherwise; two
+**One, in step 2's commit, covering steps 1 to 4:** v74 after the Stack west platforms took v73 (two
 share one only if both are review-clean in the same batch, and none waits for another: [no bump
 hold](../agents/owner-calls.md#no-bump-hold)). Ship outside the owner's sessions. Why it cannot be avoided: two saved
 columns on `Leg` and one on `Account`; the meaning of `Rail.depot` after the Q jobs; an optional field on two ops; the
