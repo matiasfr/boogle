@@ -532,6 +532,8 @@ function startWorld(room: Room) {
           return adapter.takeGrant(intent.id);
         case 'rail.gate':
           return adapter.openGate(intent.id);
+        case 'rail.arrive':
+          return adapter.arrive();
         case 'rail.steel':
           return adapter.feedSteel();
         case 'rail.install':

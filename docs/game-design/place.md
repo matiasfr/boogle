@@ -1598,13 +1598,19 @@ swimmer climbs out anywhere; the bay line's bed runs over it on a low dark bank.
 the forest's trunks (the five mothers and twelve more) are solid too. **Canopy Town** stands in the cleft: two
 platforms 0.9 m over the rails after the crossover, the homeward one running on into a deck round the buffers, across
 the row at its kink, with steps down to the isle from each platform's home end and the deck's side. On the deck the
-glider cloth's post ("Take the glider cloth", refused with "The line to Canopy isn't laid yet" until the last lay) and,
-10 m from it, the Notch barrier, a red panel on each track, shut ("No line beyond yet"), with a board "LINE TO LANTERN
-NOTCH / LATER". A 30 m square of ground on the homeward side, behind the mother trunk there, is kept clear for a
+glider cloth's post reads "Take the glider cloth", refused with "The line to Canopy isn't laid yet" until the last lay.
+The Notch barrier stands at the first frame on the outward platform. The homeward board reads "LINE TO LANTERN
+NOTCH / LATER" until the Wall opens the job, then "UNDER CONSTRUCTION" until the lay. A 30 m square of ground on the homeward side, behind the mother trunk there, is kept clear for a
 stand-in town. Bell Rock's Canopy stall rises at the last lay. Bell Rock's bay halt, which leg 3 turns into a through
 halt, gains a homeward lever on its homeward platform. Leg 3's objective texts ("Open the barrier to Canopy", "Build
 the line to Canopy Town", "Take the glider cloth", "Ride home: the next line isn't built yet") go to the play record
 only. All copy is placeholder. Not tested on a device.
+
+**Lantern Notch and the Original Island.** After the Wall, the glider cloth opens Canopy's barrier. The bay rails
+curve between the trunks, cross the sea and stop short of the arch. A lantern lights at the foot of the arch once
+the line is laid. Taking it opens the way to build the causeway from Bell Rock's lower platform. The island's two
+platforms lead down to the beach. Once a train reaches the halt, a player can use the meeting post there.
+It reads "Meeting (placeholder)" before the room arrives and "Arrived" afterwards.
 
 **The cave line to Port Quay (25 November 2026, v70 rules).** After the Canopy line is laid, the powered pick opens
 the plug at the first cave frame on the West landing. Its rack holds the first 20 logs and 20 rails. Standard cave

@@ -431,7 +431,8 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
           handle: () => gorgeLever(),
           before: async (handle) => check(await bot.walk(handle.x, handle.z, 0.6), "walked to High Gorge's lever"),
           calling: () => !!gorgeLever()?.over,
-          wait: cm(gorge),
+          // The halt's reach point is on the tracks. The kit rack stands on the south platform beside the homeward train.
+          wait: cm(legRack(incline, 0)),
         },
         view().halts[HALT.village2]!.stop,
       );
@@ -472,6 +473,14 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
     await buildRowLeg(wallSlot, 'White Wall', async (k) => {
       if (wall.sections[k]!.gate === barrier && !(route().gates & (1 << barrier))) await openDeepSpan();
     });
+    check(
+      await bot.until(
+        () => inspectRailway()?.worksView?.legView?.objective === 'Open the Notch barrier at Canopy Town (placeholder)',
+        10000,
+        'Notch barrier objective',
+      ),
+      'The completed Wall points to the Notch barrier at Canopy Town',
+    );
     await checkpoint('wall reached');
     await rideGorgeHome();
     await checkpoint('wall home');

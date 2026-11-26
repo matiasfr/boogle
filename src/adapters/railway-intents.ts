@@ -37,7 +37,8 @@ export type RailwayIntent =
         | 'rail.breaker'
         | 'rail.kiln'
         | 'rail.cradle'
-        | 'rail.steel';
+        | 'rail.steel'
+        | 'rail.arrive';
     }
   | { op: 'rail.call'; id: number; dir: -1 | 1; train?: number }
   | { op: 'rail.strike' | 'rail.buy'; id: number }
@@ -71,7 +72,13 @@ export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   if (e.op === 'rail.jump' || e.op === 'rail.pack')
     return e.station === 'T1' ? { op: e.op, station: 'T1' } : e.station === undefined ? { op: e.op } : null;
   const kind = e.kind === 1 ? 1 : e.kind === 2 ? 2 : 0;
-  if (e.op === 'rail.breaker' || e.op === 'rail.kiln' || e.op === 'rail.cradle' || e.op === 'rail.steel')
+  if (
+    e.op === 'rail.breaker' ||
+    e.op === 'rail.kiln' ||
+    e.op === 'rail.cradle' ||
+    e.op === 'rail.steel' ||
+    e.op === 'rail.arrive'
+  )
     return { op: e.op };
   // Ring Island's steel works and the install (v31): a kind of 0 is left out of the event.
   if (e.op === 'rail.steelTake' && (e.kind === undefined || railInt(e.kind, 1)))
@@ -222,6 +229,7 @@ export const NOT_MATERIAL: ReadonlySet<string> = new Set([
   'rail.grant',
   'rail.bring',
   'rail.gate',
+  'rail.arrive',
 ]);
 /** Refused only while you haul the boiler, as the sim refuses them (one thing on your back at a time). */
 export const NOT_WHILE_HAULING: ReadonlySet<string> = new Set(['rail.breaker', 'rail.strike']);
@@ -331,6 +339,7 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
     feedLeg: (leg: number) => railInt(leg, RAIL_LEGS.length - 1) && submit({ op: 'rail.legStock', leg }),
     takeGrant: (id: number) => railInt(id, RAIL_GRANTS.length - 1) && submit({ op: 'rail.grant', id }),
     openGate: (id: number) => railInt(id, RAIL_GATES.length - 1) && submit({ op: 'rail.gate', id }),
+    arrive: () => submit({ op: 'rail.arrive' }),
     pullLever: () => submit({ op: 'rail.lever' }),
     pullSeaSwitch: () => submit({ op: 'rail.seaSwitch' }),
     claimHook: () => submit({ op: 'rail.hook' }),
