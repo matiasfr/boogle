@@ -1,0 +1,28 @@
+.ending-card {
+  position: absolute;
+  top: max(12%, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  width: min(26rem, 88vw);
+  padding: 1rem;
+  border-radius: 1rem;
+  background: #172e33f2;
+  color: #fff8df;
+  text-align: center;
+  pointer-events: none;
+}
+.ending-card p {
+  margin: 0 0 0.75rem;
+  font-weight: bold;
+}
+.ending-card button {
+  pointer-events: auto;
+  cursor: pointer;
+  font: inherit;
+  padding: 0.5rem 1.25rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #fff8df;
+  color: #172e33;
+}
