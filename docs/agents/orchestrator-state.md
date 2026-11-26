@@ -10,7 +10,6 @@ The one record of who is running what, and what the eight-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Greybox leg 6 step 7: the bot and the loop | The greybox route | codex/greybox-leg6-bot | the heartbeat thread, Codex Sol medium | 2026-11-26 04:10 | built and rebased on main (05:05 UTC: the segment from `wall-closed` through Close passes, all six nodes in the loop for one to three players); Astra review started 05:09; its report wakes the heartbeat's thread |
 | Greybox leg 6 Checkpoint F: the proofs that do not wait on step 7 (the `ending` and `notch` perf rows and readings, the ending's rejoin in `test:net`, steps 4 to 6's sheet) | The greybox route | codex/greybox-leg6-checkpoint-f | the heartbeat thread, Codex Sol medium | 2026-11-26 05:10 | building; touches none of step 7's files; its report wakes the heartbeat's thread |
 
 ## Where the work stands
@@ -75,7 +74,7 @@ The lessons; the orchestrator keeps them.
 3. A test that spawns git under the pre-push hook inherits `GIT_DIR` (fixed in #1601: `test/helpers/scratch-git.ts`). If every worktree says "this operation must be run in a work tree", check `git config core.bare`.
 4. A rebased branch is pushed under a new name, never force-pushed. A branch with merge commits can't be rebased by `ship-branch`: squash it onto origin/main on a new branch.
 5. About three full-suite agents is a machine's limit (the Mac's, measured; HOTBOX's is untested); briefs ask for typecheck, lint and touched tests only. HOTBOX: three looks at once, at most two of them real-speed, timed or two-player; a frame-time reading runs alone ([25 November](../decisions-process.md#d-2026-11-25-three-looks-on-hotbox)).
-6. Default shell is Node 24: export Node 26 (`$HOME/.nvm/versions/node/v26.13.0/bin` on the Mac, `$HOME/AppData/Local/nvm/v26.13.0` on HOTBOX). Run focused tests with `UNIT_ONLY=<files> node dev/test-unit.ts` (a bare file argument is ignored and runs the whole suite, about 8 minutes on HOTBOX; found 18 November), not `npx vitest`.
+6. Default shell is Node 24: export Node 26 (`$HOME/.nvm/versions/node/v26.13.0/bin` on the Mac, `$HOME/AppData/Local/nvm/v26.13.0` on HOTBOX). Run focused tests with `UNIT_ONLY="<file> <file>" node dev/test-unit.ts` (space-separated; a comma list reads as one file name) (a bare file argument is ignored and runs the whole suite, about 8 minutes on HOTBOX; found 18 November), not `npx vitest`.
 7. Keep independent reviewers: they found real defects in batch C, the CI diet and ring2 R1–R2.
 8. New test files need review and must fit the [test diet](tests.md#tests); briefs say "no new unit test files" unless the code is lockstep, even when the plan's step names one (garage step 2, 17 November: a review round to delete it).
 9. The registry's 14,000-character must-read budget per route is nearly full: an edit to `tests.md` or `sync.md` must not grow them.
