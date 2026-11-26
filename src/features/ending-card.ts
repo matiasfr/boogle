@@ -7,6 +7,7 @@ import { railwayMirror } from '../world/game-world.ts';
 import { fallArrival } from '../fall/arrival.ts';
 import { onStart } from '../loop.ts';
 import { wrapAction } from '../player/controls.ts';
+import { lockedButtonPointer } from '../player/dismiss-pointer.ts';
 import { closeModal, openModal } from '../player/modal.ts';
 import { inputState } from '../player/input-state.ts';
 import { me } from '../player/player.ts';
@@ -18,8 +19,11 @@ let owed = false;
 let mine = false;
 let card: HTMLElement | null = null;
 let dismissAt = 0;
+let observerInput: AbortController | null = null;
 
 function close() {
+  observerInput?.abort();
+  observerInput = null;
   if (card && mine) closeModal();
   card?.remove();
   card = null;
@@ -55,6 +59,9 @@ function show() {
     });
     inputState.holder = 'ending-card';
     inputState.held = true;
+  } else {
+    observerInput = new AbortController();
+    lockedButtonPointer(button, 'ending-card-pointer', observerInput.signal);
   }
 }
 
@@ -80,6 +87,12 @@ onStart(() => {
   wrapAction('interact', {
     down(next) {
       if (card && inputState.holder === 'ending-card') dismiss();
+      else next();
+    },
+  });
+  wrapAction('back', {
+    down(next) {
+      if (observerInput && !inputState.held) dismiss();
       else next();
     },
   });
