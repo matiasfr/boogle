@@ -1197,7 +1197,7 @@ export const NODES: readonly LoopNode[] = [
     supply: {},
     ops: ['rail.install'],
     reached: { mark: 'upgrade installed' },
-    stops: [],
+    stops: ['wagon'],
     requires: [
       dec('table', 'rules', `${RULES_STEEL} install part 1: fitted cradle, table at line 2`),
       dec('trains', 'rules', `${RULES_TRAINS} wagonArrives: the wagon couples to line 2's train`, 'finish'),
