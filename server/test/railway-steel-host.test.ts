@@ -79,6 +79,8 @@ async function host(name: string, fixture: Seed, players: Record<string, string>
   let h = make();
   // Clients that read the replication (`connect`): each a mirror filled from the packets the host sends it.
   const mirrors = new Map<string, ReturnType<typeof createRailwayMirror>>();
+  // Every replication packet each mirror was sent, as sent (the effect events other players' views play).
+  const packets: { cid: string; p: Obj }[] = [];
   const ticks = async (n: number) => {
     for (let i = 0; i < n; i++) {
       now += 100;
@@ -86,6 +88,7 @@ async function host(name: string, fixture: Seed, players: Record<string, string>
       if (!mirrors.size) continue;
       h.replication.commit(h.sync.roomStep());
       h.replication.flush(h.sync.roomStep(), (cid, _p, json) => {
+        packets.push({ cid, p: JSON.parse(json) as Obj });
         assert.ok(mirrors.get(cid)?.mirror.apply(JSON.parse(json), 0), 'a well-formed packet');
       });
     }
@@ -108,6 +111,7 @@ async function host(name: string, fixture: Seed, players: Record<string, string>
       return h.rules.railway.world();
     },
     ticks,
+    packets,
     /** The room's rule tick now. */
     get tick() {
       return h.sync.world.tick;
@@ -927,6 +931,80 @@ test('trade host: a bring and Strong cross r:edit, race once, replicate and surv
     await r.ticks(3);
     assert.deepEqual([line(late()!, BAYL).boiler, shed(late()!).tableLine], [5, BAYL]);
     assert.equal(shed(late()!).spent, spent);
+  } finally {
+    await r.done();
+  }
+});
+
+test('route host (review): two racks lifted by two players survive a leave and a restart, each on its own leg', async () => {
+  const r = await host('fork-lifts', buildSeedWorld('cave-first-open'), { s: 'a', t: 'b' });
+  try {
+    const mirror = r.connect('viewer');
+    const canopy = 3,
+      cave = 4;
+    const bell = spot(legRack(RAIL_LEGS[canopy]!, legRow(r.w, canopy).laid)),
+      apron = spot(legRack(RAIL_LEGS[cave]!, legRow(r.w, cave).laid));
+    assert.equal(await r.action({ op: 'rail.depotRailTake', leg: canopy }, bell, 's'), 'accepted');
+    assert.equal(await r.action({ op: 'rail.depotTake', leg: cave }, apron, 't'), 'accepted');
+    // The other leg's rack, from the wrong place and naming the wrong leg, is refused on the host path too.
+    assert.equal(await r.action({ op: 'rail.depotTake', leg: canopy }, apron, 't'), 'rejected');
+    assert.equal(await r.action({ op: 'rail.depotRailTake', leg: cave }, bell, 's'), 'rejected');
+    const a = account(r.w, 'a')!,
+      b = account(r.w, 'b')!;
+    assert.deepEqual([a.liftLeg, a.legRails, b.liftLeg, b.legLogs], [canopy, a.rails, cave, b.carry]);
+    assert.deepEqual([legRow(r.w, canopy).heldRails, legRow(r.w, cave).heldLogs], [a.rails, b.carry]);
+    await r.ticks(3);
+    const rows = (w: typeof r.w) =>
+      [canopy, cave].map((k) => {
+        const g = legRow(w, k);
+        return [g.rackLogs, g.rackRails, g.heldLogs, g.heldRails, g.loadedLogs, g.loadedRails];
+      });
+    assert.deepEqual(rows(mirror()!), rows(r.w), 'the mirror carries both racks and both held counts');
+    r.depart('t');
+    r.later(r.grace());
+    await r.ticks(3);
+    assert.equal(legRow(r.w, cave).heldLogs, 0, "b's cave logs released past the grace");
+    assert.equal(legRow(r.w, canopy).heldRails, a.rails, "a's Canopy rails still counted");
+    assert.equal(account(r.w, 'b')!.liftLeg, -1);
+    const before = rows(r.w),
+      accounts = ['a', 'b'].map((p) => {
+        const x = account(r.w, p)!;
+        return [x.liftLeg, x.legLogs, x.legRails, x.carry, x.rails];
+      });
+    await r.restart();
+    assert.deepEqual(rows(r.w), before, 'both racks and held counts after the restart');
+    assert.deepEqual(
+      ['a', 'b'].map((p) => {
+        const x = account(r.w, p)!;
+        return [x.liftLeg, x.legLogs, x.legRails, x.carry, x.rails];
+      }),
+      accounts,
+      'both backs after the restart',
+    );
+    assert.equal(invariant(r.w), null);
+  } finally {
+    await r.done();
+  }
+});
+
+// Review of order-choice steps 1 to 4: the leg survives railwayRequestEdit, but the accepted effect event the host
+// replicates to everyone else (EVENT_FIELDS) drops it. Another player's views then play a friend's rack take as the Q
+// depot's (line2-view.ts and shelf-view.ts fall back to the Q depot without `leg`), and sameTarget can never match a
+// race at one rack (`a.leg === b.leg` against an event with no leg).
+test('route host (review): a rack take replicated to another player names its leg', async () => {
+  const r = await host('fork-events', buildSeedWorld('cave-first-open'), { s: 'a' });
+  try {
+    r.connect('viewer');
+    await r.ticks(2);
+    const canopy = 3,
+      bell = spot(legRack(RAIL_LEGS[canopy]!, legRow(r.w, canopy).laid));
+    assert.equal(await r.action({ op: 'rail.depotRailTake', leg: canopy }, bell, 's'), 'accepted');
+    await r.ticks(2);
+    const seen = r.packets
+      .filter((x) => x.cid === 'viewer')
+      .flatMap((x) => ((x.p.ev as Obj[] | undefined) ?? []).filter((e) => e.op === 'rail.depotRailTake'));
+    assert.equal(seen.length, 1, 'the viewer is told of the take');
+    assert.equal(seen[0]!.leg, canopy, 'and of the rack it was taken from');
   } finally {
     await r.done();
   }
