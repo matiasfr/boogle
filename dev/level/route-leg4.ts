@@ -7,7 +7,7 @@ import { ENGINE_BOILER, ENGINE_CAB } from '../../src/entities/railway/engine.ts'
 import { HEAD_BACK_CM, RAIL_LEGS, legFrame, legRack, rowPoint, rowSide } from '../../src/sim/railway-route.ts';
 import { WORLD_LINES } from '../../src/sim/railway-world-lines.ts';
 import prefabInput from '../../content/built/prefabs.json' with { type: 'json' };
-import { validateArtifact, loadLevelArtifact } from '../../src/prefab/validate.ts';
+import { loadPrefabArtifact, loadLevelArtifact } from '../../src/prefab/validate.ts';
 import { heightAt, resolvePlacedColliders, reserveVolume, volumesOverlap } from './prefab-colliders.ts';
 import { flood } from './flood.ts';
 import { MOVER } from './mover.ts';
@@ -136,8 +136,7 @@ export function colliderFlood(
 }
 
 function coastalReach(check: (message: string, passed: boolean) => void, id: 'saltpan' | 'quay') {
-  const defs: unknown = prefabInput;
-  validateArtifact(defs);
+  const defs = loadPrefabArtifact(prefabInput);
   const level = loadLevelArtifact(
     JSON.parse(
       readFileSync(
@@ -186,6 +185,26 @@ function coastalReach(check: (message: string, passed: boolean) => void, id: 'sa
     );
   }
   if (!salt) {
+    const front = level.placements.find((p) => p.id === 'quay.yard-front')!;
+    const ring = level.placements.find((p) => p.id === 'quay.yard-ring')!;
+    const yaw = front.rot![0];
+    // Quay's +a is along the track and +b points out to sea. The ring is at (0, -39).
+    const yardAt = (a: number, b: number) => ({
+      x: ring.pos[0] + a * Math.sin(yaw) + (b + 39) * Math.cos(yaw),
+      z: ring.pos[2] + a * Math.cos(yaw) - (b + 39) * Math.sin(yaw),
+    });
+    const post = node(yardAt(7.2, -33));
+    check('quay on foot from outward platform to the Roundhouse post', !!seen[post] && Math.abs(h[post]! - 3.9) < 0.1);
+    // A gentler slope and no jump here distinguish the ramp from stepping up the yard's vertical edge.
+    const ramp = colliderFlood(colliders, yardAt(23.5, -37), 13);
+    const foot = ramp.node(yardAt(26, -37));
+    const deck = ramp.node(yardAt(20, -37));
+    const apron = flood({ n: 13, cell: 1, h: ramp.h }, { ...MOVER, walkSlope: 0.5, jumpHeight: 0 }, [foot]);
+    check(
+      'quay on foot from the apron up the yard ramp',
+      Math.abs(ramp.h[foot]! - 3.02) < 0.1 && Math.abs(ramp.h[deck]! - 3.9) < 0.1 && !!apron[deck],
+    );
+
     // Sample the catalog every 10 cm. Subtract half a sample as well as the formation half-width.
     const gap = (r: Pick<Reserve, 'x' | 'z' | 'yaw' | 'w' | 'd'>) => {
       let nearest = Infinity;
@@ -205,14 +224,20 @@ function coastalReach(check: (message: string, passed: boolean) => void, id: 'sa
       const clearance = gap(r);
       check(`Port Quay ${r.id} reserve clears Wall formation by ${clearance.toFixed(2)} m`, clearance > 0);
     }
+    const boxGap = (p: typeof front) =>
+      gap({
+        x: p.pos[0],
+        z: p.pos[2],
+        yaw: p.rot![0],
+        w: p.scale![0],
+        d: p.scale![2],
+      });
+    const yardClearance = Math.min(
+      ...level.placements.filter((p) => p.id.startsWith('quay.yard-') && p !== ring).map(boxGap),
+    );
+    check(`Port Quay yard clears Wall formation by ${yardClearance.toFixed(2)} m`, yardClearance >= 3.9);
     const landing = level.placements.find((p) => p.id === 'quay.ramp-landing')!;
-    const clearance = gap({
-      x: landing.pos[0],
-      z: landing.pos[2],
-      yaw: landing.rot![0],
-      w: landing.scale![0],
-      d: landing.scale![2],
-    });
+    const clearance = boxGap(landing);
     check(`Port Quay ramp foot and landing clear Wall formation by ${clearance.toFixed(2)} m`, clearance >= 1);
   }
 }

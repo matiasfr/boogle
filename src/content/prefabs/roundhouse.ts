@@ -29,6 +29,13 @@ const BAY_SOLIDS = [
 
 export const prefabs = [
   definePrefab({
+    key: 'roundhouse.yard-ring',
+    visual: { builder: 'greybox.box', params: { colour: '#9c9ea1' }, batch: 'route-greybox:massing' },
+    layout: { kind: 'pit-ring', inner: 8.6, outer: 12.7, bottom: -0.88, top: 0, segments: 48 },
+    colliders: [],
+    scope: 'place',
+  }),
+  definePrefab({
     key: 'roundhouse.steel-pallet',
     visual: { builder: 'roundhouse.bay', params: { part: 'pallet' } },
     colliders: [box(0, 0.09, 0, 0.75, 0.09, 1.05)],

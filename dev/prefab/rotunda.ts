@@ -3,10 +3,11 @@
 // stands, in bays from the site's `mid` (`turn`); the owning view stands it from the same site row
 // (src/place/rotunda.ts `rotundaPose`) and shows it by stage (`rotundaShows`), so no derived number is stored.
 import { ROTUNDA_HOME } from '../../src/place/home-station.ts';
-import { COPY_BAYS, bayOccupants, rotundaPieces, type RotundaPart, type RotundaSite } from '../../src/place/rotunda.ts';
+import { ROTUNDA_PORT_QUAY } from '../../src/place/port-quay.ts';
+import { bayOccupants, copyBays, rotundaPieces, type RotundaPart, type RotundaSite } from '../../src/place/rotunda.ts';
 import type { LevelDef, Placement, PrefabKey } from '../../src/prefab/types.ts';
 
-const SITES: readonly RotundaSite[] = [ROTUNDA_HOME];
+const SITES: readonly RotundaSite[] = [ROTUNDA_HOME, ROTUNDA_PORT_QUAY];
 const RECORD: Record<RotundaPart, PrefabKey> = {
   table: 'roundhouse.table',
   shell: 'roundhouse.bay',
@@ -33,14 +34,13 @@ export function rotundaContent(): { levels: LevelDef[] } {
       let ruins = 0;
       const placements = rotundaPieces(site).map((piece): Placement => {
         const scale = site.tableR / TABLE_R;
-        const [left, right] = BROKEN[ruins % BROKEN.length]!;
-        if (piece.part === 'ruin') ruins++;
+        const broken = piece.part === 'ruin' ? BROKEN[ruins++ % BROKEN.length]! : undefined;
         return {
           id: `rotunda-${site.id}.${piece.id}`,
           prefab: piece.part === 'shell' && Math.abs(piece.turn) === 2 ? 'roundhouse.bay-steel' : RECORD[piece.part],
           pos: [0, 0, 0],
           ...(piece.part === 'table' && scale !== 1 ? { scale: [scale, 1, scale] as const } : {}),
-          params: { turn: piece.turn, ...(piece.part === 'ruin' ? { left, right } : {}) },
+          params: { turn: piece.turn, ...(broken ? { left: broken[0], right: broken[1] } : {}) },
         };
       });
       placements.push({
@@ -63,21 +63,20 @@ export function rotundaContent(): { levels: LevelDef[] } {
       }
       // Garage step 4: each line's works copy in its bay (the engine is the view's, wearing the line's row): the plate
       // in the line's colour and the engine's solid, and the Strong flatbed behind it.
-      if (site.id === 'home')
-        for (const { bay, colour } of COPY_BAYS) {
-          placements.push({
-            id: `rotunda-${site.id}.copy-${bay}`,
-            prefab: 'roundhouse.copy-plate',
-            pos: [0, 0, 0],
-            params: { turn: bay, colour },
-          });
-          placements.push({
-            id: `rotunda-${site.id}.flatbed-${bay}`,
-            prefab: 'roundhouse.copy-flatbed',
-            pos: [0, 0, 0],
-            params: { turn: bay },
-          });
-        }
+      for (const { bay, colour } of copyBays(site)) {
+        placements.push({
+          id: `rotunda-${site.id}.copy-${bay}`,
+          prefab: 'roundhouse.copy-plate',
+          pos: [0, 0, 0],
+          params: { turn: bay, colour },
+        });
+        placements.push({
+          id: `rotunda-${site.id}.flatbed-${bay}`,
+          prefab: 'roundhouse.copy-flatbed',
+          pos: [0, 0, 0],
+          params: { turn: bay },
+        });
+      }
       return { place: `rotunda-${site.id}`, placements };
     }),
   };

@@ -959,6 +959,11 @@ const quayPieces = [
     quay.ramp('platform-step-' + (side + 1), -20, 3.9, -23, 3, side * 5.8 - 2, side * 5.8 + 2, 'grey'),
   ]),
   quay.box('apron', -31, 35, -70, -7.8, 3.02, 1, 'grey'),
+  quay.box('yard-back', -22, 22, -66, -47.6, 3.9, 0.88, 'grey'),
+  quay.box('yard-front', -22, 22, -30.4, -7.8, 3.9, 0.88, 'grey'),
+  quay.box('yard-west', -22, -8.6, -47.6, -30.4, 3.9, 0.88, 'grey'),
+  quay.box('yard-east', 8.6, 22, -47.6, -30.4, 3.9, 0.88, 'grey'),
+  quay.ramp('yard-ramp', 22, 3.9, 25, 3.02, -40, -34, 'grey'),
   quay.box('apron-mid', 35, 48, -70, -12, 3.02, 1, 'grey'),
   quay.box('apron-end', 48, 64, -70, -24, 3.02, 1, 'grey'),
   quay.box('apron-ramp-side', 25, 52, 5, 12, 3.02, 1, 'grey'),
@@ -979,6 +984,7 @@ const areas = [
     pieces: [...shorePieces(shores.saltLand), ...saltPieces, ...bedPieces(shores.saltBed)],
     posts: [],
     reserves: [],
+    extras: [],
   },
   {
     place: 'quay',
@@ -987,20 +993,18 @@ const areas = [
     key: 'greybox.quay-lands',
     pieces: quayPieces,
     posts: [{ id: 'end-board', ...quay.at(24, 5.8), y: 3, facing: unit(17.6, -17.75), label: 'quay.wall' }],
-    reserves: [
-      quay.reserve('Roundhouse', -30, 30, -69, -9, 3.02, 12),
-      quay.reserve('town', 33, 63, -67, -37, 3.02, 12),
-    ],
+    reserves: [quay.reserve('town', 33, 63, -67, -37, 3.02, 12)],
+    extras: [{ id: 'yard-ring', prefab: 'roundhouse.yard-ring', pos: [109.91, 3.9, 914.79] }],
   },
 ];
-export const levels = areas.map(({ place, key, ...data }) =>
+export const levels = areas.map(({ place, key, extras, ...data }) =>
   defineLevel({
     place,
     placements: [],
     layout: layoutData({
       kind: 'leg2',
       area: place,
-      data: { ...data, pads: [], marks: {}, extras: [{ id: 'lands', prefab: key, pos: [0, 0, 0] }] },
+      data: { ...data, pads: [], marks: {}, extras: [{ id: 'lands', prefab: key, pos: [0, 0, 0] }, ...extras] },
     }),
   }),
 );

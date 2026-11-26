@@ -13617,6 +13617,26 @@
         }
       }
     },
+    "roundhouse.yard-ring": {
+      "colliders": [],
+      "key": "roundhouse.yard-ring",
+      "layout": {
+        "bottom": -0.88,
+        "inner": 8.6,
+        "kind": "pit-ring",
+        "outer": 12.7,
+        "segments": 48,
+        "top": 0
+      },
+      "scope": "place",
+      "visual": {
+        "batch": "route-greybox:massing",
+        "builder": "greybox.box",
+        "params": {
+          "colour": "#9c9ea1"
+        }
+      }
+    },
     "scenery.broadleaf": {
       "colliders": [
         {

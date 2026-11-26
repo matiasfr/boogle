@@ -174,6 +174,7 @@ export const ROTUNDA_HOME: RotundaSite = {
   mid: 190,
   order: [0, -1, 1, -2, 2, -3, 3],
   stages: [0, 3, 5, 7],
+  grows: true,
 };
 /** Legacy three-stall API retained for the yard and level tools; the kit owns its dimensions. */
 export const STALLS = {

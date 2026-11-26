@@ -1,0 +1,33 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "place": "rotunda-port-quay",
+  "placements": [
+    {"id":"rotunda-port-quay.table","params":{"turn":0},"pos":[0,0,0],"prefab":"roundhouse.table"},
+    {"id":"rotunda-port-quay.bay-275","params":{"turn":-2},"pos":[0,0,0],"prefab":"roundhouse.bay-steel"},
+    {"id":"rotunda-port-quay.door-275","params":{"turn":-2},"pos":[0,0,0],"prefab":"roundhouse.bay-doors"},
+    {"id":"rotunda-port-quay.bay-295","params":{"turn":-1},"pos":[0,0,0],"prefab":"roundhouse.bay"},
+    {"id":"rotunda-port-quay.door-295","params":{"turn":-1},"pos":[0,0,0],"prefab":"roundhouse.bay-doors"},
+    {"id":"rotunda-port-quay.bay-315","params":{"turn":0},"pos":[0,0,0],"prefab":"roundhouse.bay"},
+    {"id":"rotunda-port-quay.bay-335","params":{"turn":1},"pos":[0,0,0],"prefab":"roundhouse.bay"},
+    {"id":"rotunda-port-quay.door-335","params":{"turn":1},"pos":[0,0,0],"prefab":"roundhouse.bay-doors"},
+    {"id":"rotunda-port-quay.bay-355","params":{"turn":2},"pos":[0,0,0],"prefab":"roundhouse.bay-steel"},
+    {"id":"rotunda-port-quay.door-355","params":{"turn":2},"pos":[0,0,0],"prefab":"roundhouse.bay-doors"},
+    {"id":"rotunda-port-quay.wall-265","params":{"turn":-2.5},"pos":[0,0,0],"prefab":"roundhouse.end-wall"},
+    {"id":"rotunda-port-quay.wall-285","params":{"turn":-1.5},"pos":[0,0,0],"prefab":"roundhouse.end-wall"},
+    {"id":"rotunda-port-quay.wall-305","params":{"turn":-0.5},"pos":[0,0,0],"prefab":"roundhouse.end-wall"},
+    {"id":"rotunda-port-quay.wall-325","params":{"turn":0.5},"pos":[0,0,0],"prefab":"roundhouse.end-wall"},
+    {"id":"rotunda-port-quay.wall-345","params":{"turn":1.5},"pos":[0,0,0],"prefab":"roundhouse.end-wall"},
+    {"id":"rotunda-port-quay.wall-365","params":{"turn":2.5},"pos":[0,0,0],"prefab":"roundhouse.end-wall"},
+    {"id":"rotunda-port-quay.open-doors","params":{"turn":0},"pos":[0,0,0],"prefab":"roundhouse.bay-open-doors"},
+    {"id":"rotunda-port-quay.copy--1","params":{"colour":"#c79a3e","turn":-1},"pos":[0,0,0],"prefab":"roundhouse.copy-plate"},
+    {"id":"rotunda-port-quay.flatbed--1","params":{"turn":-1},"pos":[0,0,0],"prefab":"roundhouse.copy-flatbed"},
+    {"id":"rotunda-port-quay.copy-1","params":{"colour":"#3f7fbf","turn":1},"pos":[0,0,0],"prefab":"roundhouse.copy-plate"},
+    {"id":"rotunda-port-quay.flatbed-1","params":{"turn":1},"pos":[0,0,0],"prefab":"roundhouse.copy-flatbed"},
+    {"id":"rotunda-port-quay.copy-2","params":{"colour":"#2f9e8f","turn":2},"pos":[0,0,0],"prefab":"roundhouse.copy-plate"},
+    {"id":"rotunda-port-quay.flatbed-2","params":{"turn":2},"pos":[0,0,0],"prefab":"roundhouse.copy-flatbed"}
+  ],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}

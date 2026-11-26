@@ -16,6 +16,15 @@
             0
           ],
           "prefab": "greybox.quay-lands"
+        },
+        {
+          "id": "yard-ring",
+          "pos": [
+            109.91,
+            3.9,
+            914.79
+          ],
+          "prefab": "roundhouse.yard-ring"
         }
       ],
       "marks": {},
@@ -1211,6 +1220,91 @@
         },
         {
           "bounds": [
+            -22,
+            22,
+            -66,
+            -47.6
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.88,
+          "id": "yard-back",
+          "tone": "grey",
+          "top": 3.9
+        },
+        {
+          "bounds": [
+            -22,
+            22,
+            -30.4,
+            -7.8
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.88,
+          "id": "yard-front",
+          "tone": "grey",
+          "top": 3.9
+        },
+        {
+          "bounds": [
+            -22,
+            -8.6,
+            -47.6,
+            -30.4
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.88,
+          "id": "yard-west",
+          "tone": "grey",
+          "top": 3.9
+        },
+        {
+          "bounds": [
+            8.6,
+            22,
+            -47.6,
+            -30.4
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.88,
+          "id": "yard-east",
+          "tone": "grey",
+          "top": 3.9
+        },
+        {
+          "bounds": [
+            22,
+            25,
+            -40,
+            -34
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.3,
+          "id": "yard-ramp",
+          "rise": {
+            "a": 3.02,
+            "b": 3.9,
+            "compute": "sub"
+          },
+          "tone": "grey",
+          "top": 3.9
+        },
+        {
+          "bounds": [
             35,
             48,
             -70,
@@ -1616,21 +1710,6 @@
         }
       ],
       "reserves": [
-        {
-          "bounds": [
-            -30,
-            30,
-            -69,
-            -9
-          ],
-          "compute": "rect",
-          "frame": {
-            "operand": 0
-          },
-          "id": "Roundhouse",
-          "y0": 3.02,
-          "y1": 12
-        },
         {
           "bounds": [
             33,

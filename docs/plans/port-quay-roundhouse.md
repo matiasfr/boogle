@@ -1,4 +1,4 @@
-> **26 November 2026. Plan, not built.** Planner, against main `5997c5cd9` (world v74). Step 5 of the approved
+> **26 November 2026. Steps 1 and 2 built.** Planned against main `5997c5cd9` (world v74). Step 5 of the approved
 > [garage-choices](garage-choices.md#7-steps) (section 5, "Port Quay"; step 5's row), with
 > [shared-pool](shared-pool.md#6-steps)'s step 2 built inside it, as that plan says. Steps 1 to 3 stand the Roundhouse
 > with no sim change and no bump; step 4 is the sim and the bump; steps 5 and 6 are the garage at Port Quay. Design
@@ -152,7 +152,7 @@ under `src/sim`, `src/world`, `src/net`, `server/src`, or a test whose assertion
 (`test/rotunda.test.ts` reaches `src/sim` through `src/place/rotunda.ts`). Model rows from `npm run models` (26
 November). Steps 1 to 3 ship together or one by one, with no bump; step 4 after them; 5 and 6 after 4.
 
-- [ ] **1. The site row, the yard and the level check (S; review: the test reaches src/sim; "Implementation of an
+- [x] **1. The site row, the yard and the level check (S; review: the test reaches src/sim; "Implementation of an
       approved plan": Codex gpt-6.2-sol medium).** Files: new `src/place/port-quay.ts` (`ROTUNDA_PORT_QUAY` as
       [above](#what-it-is-measured)); `src/sim/railway-works-layout.ts` (`QUAY_TABLE`, a pure constant read by no
       rule yet); `src/place/rotunda.ts` (`RotundaSite.grows`; `rotundaPieces` emits ruins and outlines only when
@@ -177,10 +177,14 @@ November). Steps 1 to 3 ship together or one by one, with no bump; step 4 after 
       level-check`: `rotunda/port-quay: ok; 5 bays (100°)`, nearest running rail 30.39 m (Home's 3.5 m asked), ground
       within 0.10 m of 3.90 under every bay; `route-leg4` gains "on foot from outward platform to the Roundhouse
       post" (local `a` 7.2, `b` −33.0), "from the apron up the yard ramp", "out of the pit" (a plain jump from the
-      table's floor at r 7.2 clears the kerb, as Home's pit-escape sweep), and the yard's corner clears the Wall
+      flat apron at r 6.5 m clears the planned kerb), and the yard's corner clears the Wall
       formation by at least 3.9 m (measured 3.94 m at s 1231.6, the same line as platform 1's edge); every existing
       quay line still "ok".
-- [ ] **2. The generated level (S; none unless a hand-kept list's test reaches src/sim through its imports, then review; "Implementation of an approved plan": Codex gpt-6.2-sol medium).** Files:
+      [Yard still from the outward platform](port-quay-roundhouse-yard.png). The raised deck and the pit mark
+      the future Roundhouse site. The static yard mounts with the quay, and the Roundhouse itself mounts in step 3.
+      Regenerate `docs/world/economy-prototype.html` and `docs/world/trade-economy.html` because both pages
+      fingerprint `railway-works-layout.ts`. Their model data is unchanged.
+- [x] **2. The generated level (S; none unless a hand-kept list's test reaches src/sim through its imports, then review; "Implementation of an approved plan": Codex gpt-6.2-sol medium).** Files:
       `dev/prefab/rotunda.ts` (`SITES = [ROTUNDA_HOME, ROTUNDA_PORT_QUAY]`; copy plates and flatbeds from
       `copyBays(site)` for every site, not `site.id === 'home'`; waiting engines from `bayOccupants` as now, none at
       Port Quay; the ruins' `BROKEN` pairs unused there); new `content/built/levels/rotunda-port-quay.json` from
@@ -288,8 +292,10 @@ a scratch script over the kit (`rotundaFootprint`, `bayFrame`), the built quay l
    refuses until the cave leg is complete (rule 2 of the flow check: travel never supplies work, leg 4's finding 8).
    Nothing at Port Quay offers what Home does not, so even an open post would skip no work; the gate keeps leg 4's
    "every post there refuses" true.
-7. **The pit.** A player who falls into the pit (0.88 m) jumps out as from Home's (0.9 m, its pit-escape sweep);
-   step 1 adds the same sweep for Port Quay.
+7. **The pit.** The sweep covers 24 bearings from the flat apron against the built yard and the planned kerb.
+   The originally specified 7.2 m launch hit the kerb at all 24 bearings. Launching at 6.5 m clears it with the
+   same plain jump and unchanged geometry. The yard ring reuses the pit-ring recipe for both its solids and its
+   greybox instances.
 8. **Nothing gated by an ability, no secret.** No reach claim here rests on a stronger move.
 
 ## Risks

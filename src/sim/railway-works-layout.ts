@@ -57,6 +57,7 @@ export const WORKS_ROCKS = [
 ] as const;
 export const SHED_STALL = { x: 94160, z: 3592, y: 1800, reach: 500 } as const;
 export const SHED_TABLE = { x: 94455, z: 1918, y: 1830, reach: 1000 } as const;
+export const QUAY_TABLE = { x: 10991, z: 91479, y: 420, reach: 1000 } as const;
 export const SHED_ROAD = { stall: 0, line2: 1 } as const;
 export const WAGON_S = 1085; // the Village stop less the wagon offset (v57: 2165 - 1080); cargo stays put
 // Line 2 stands 3.5 m short of the Pier halt's middle (s 730), so its engine stops 2.7 m clear of the track layer
