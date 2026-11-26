@@ -60,6 +60,7 @@ import { footingMark } from './footing-cues.ts';
 import { ringIslandNear } from '../ring-island/state.ts';
 import { createHaltKit, createHaltAttachment } from './halt-kit.ts';
 import { createRiders } from './riders-view.ts';
+import { STACK_WEST_LEVER } from '../route-greybox/stack-halts.ts';
 
 type Box = import('../../render/boxes.ts').Box;
 type Line = import('../../place/layout.ts').Line;
@@ -365,6 +366,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     lever: ReturnType<typeof createRequestLever>;
     up: boolean;
     west: boolean;
+    key?: string;
     ring?: {
       lat: number;
       u: () => number;
@@ -425,10 +427,11 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     west = false,
     still?: () => boolean,
     floor?: (u: number) => number,
+    key = up ? 'up' : 'down',
   ): Spot => {
     // The plaque faces away from the rails, onto the platform: the rails lie toward the centre line from `lat` (a stack
     // head's outward lever stands on the east platform too, so the side is the platform's, not the way's).
-    const lever = createRequestLever(owner, `halt-ring-lever-${stop}-${up ? 'up' : 'down'}`, () => targetsFor(lever));
+    const lever = createRequestLever(owner, `halt-ring-lever-${stop}-${key}`, () => targetsFor(lever));
     lever.group.visible = false;
     return {
       id: ringHaltId(stop),
@@ -439,6 +442,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       lever,
       up,
       west,
+      key,
       ring: { lat, u, shown: u(), need, still, floor, lift: floor ? floor(u()) : 0.9 },
     };
   };
@@ -495,15 +499,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
       true,
     ),
   );
-  // The stack line's halts (docs/plans/greybox-route.md, leg 1 step 4; the design review's answer g): one homeward lever
-  // on each head's one platform (route-greybox/leg-view.ts draws it: lat +1.8 to +6.3, the 25 m before the section's
-  // end), at the stop (10 m short of its end), while the head is a stop (a head closed behind passes both ways and
-  // loses its lever); each old head gains a lever for the way on until it closes behind, 4 m further out (6 m short of
-  // the end), so the two stand in the order of their ways: the homeward one nearer home, the outward one nearer the
-  // railhead, more than twice the prompt's reach apart, both plaques facing the platform and twice the usual size (48
-  // by 18 cm: the pair is told apart by them from across the platform). High Gorge's one lever
-  // stands 4 m past its stop on its north platform. Both are inside the server's reach for rail.call (12.6 m from the
-  // stop on the track's centre line: the outward one's knob is 4.7 m from it). No chained up lever at a line's end.
+  // A stack head's homeward lever stands on the east for a terminal or retained departure, then on the west
+  // beside the homeward track. Its outward lever stays on the east. Closed heads lose both directions.
   const stackStops = RAIL_LINES[LINE2]!.halts.map((h, stop) => ({ h, stop })).filter((x) => x.h.leg);
   for (const { h, stop } of stackStops) {
     const stub = h.end?.kind === 'stub',
@@ -515,7 +512,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         false,
         2.45,
         () => u,
-        () => !shut(),
+        () => !shut() && (!stub || platformEnd(LINE2, stop)),
         HOME,
       ),
     );
@@ -528,6 +525,18 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
           () => u + 4,
           () => !shut() && stopsNow[LINE2]!.length > stop + 1,
           () => 1,
+        ),
+        ringSpot(
+          stop,
+          true,
+          STACK_WEST_LEVER.lat,
+          () => u + 10 - STACK_WEST_LEVER.back,
+          () => !shut() && !platformEnd(LINE2, stop) && stopsNow[LINE2]!.length > stop + 1,
+          HOME,
+          true,
+          undefined,
+          undefined,
+          'west',
         ),
       );
   }
@@ -611,7 +620,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     if (Math.hypot(p.x - at.x, p.z - at.z) > LEVER_REACH || Math.abs(p.y - at.y) > 1.6) return [];
     // No prompt from where the server would refuse the ask: it judges from the platform's middle, by reach and height.
     if (!leverAskTaken(leverPlatform(wd0(), x.id, x.dir, adapter.read.tickNow()), p.x, p.y, p.z)) return [];
-    const id = `railway-request-${x.id}-${x.up ? 'up' : 'down'}`;
+    const id = `railway-request-${x.id}-${x.key ?? (x.up ? 'up' : 'down')}`;
     // Every lever's prompt names where its train goes (running-side.md, step 2; draft wording, not The Boogler's).
     const verb = `Request stop: to ${label(x)}`;
     // With a footing on your back, where a footing is worked, the lever yields the pick (lever-place.ts).

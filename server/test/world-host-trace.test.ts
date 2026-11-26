@@ -83,6 +83,7 @@
 // v70 adds two cave shed trains. Only 205 checkpoints and 5,679 status records change in the 8,620-record trace.
 // v71 adds three more cave shed trains for the Wall. The 205 checkpoints and 5,679 status records change.
 // All 58 inputs, 2,220 messages and 458 replica packets match v70.
+// v73 moves the Stack homeward platform points. Across 8,620 records, 205 checkpoints and 1,937 status records change.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';

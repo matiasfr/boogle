@@ -69,7 +69,7 @@ function margin(d: Deck, f: Frame) {
   return { rear: Math.min(...a) + f.half, front: f.half - Math.max(...a) };
 }
 // The curved greybox decks are spans. Project against their actual first/last segment end faces.
-function curvedMargin(d: Deck, s0: number, s1: number, lat: number, segment: number) {
+function curvedMargin(d: Deck, s0: number, s1: number, lat: number, segment: number, first = segment) {
   const point = (s: number) => {
     const p = line2At(s, { x: 0, z: 0, ux: 0, uz: 1 });
     return { x: p.x - p.uz * lat, z: p.z + p.ux * lat };
@@ -82,8 +82,10 @@ function curvedMargin(d: Deck, s0: number, s1: number, lat: number, segment: num
       len = Math.hypot(dx, dz);
     return Math.min(...corners(d).map((c) => (sign * ((c.x - p.x) * dx + (c.z - p.z) * dz)) / len));
   };
-  return { rear: edge(s0, s0 + segment, 1), front: edge(s1, s1 - segment, 1) };
+  return { rear: edge(s0, s0 + first, 1), front: edge(s1, s1 - segment, 1) };
 }
+import { STACK_CROSSING, STACK_WEST } from '../../src/entities/route-greybox/stack-halts.ts';
+
 export function checkRiderCoach() {
   const rows: {
     halt: string;
@@ -93,11 +95,6 @@ export function checkRiderCoach() {
     lateral: { player: ReturnType<typeof lateral>; rider: ReturnType<typeof lateral> };
   }[] = [];
   const problems: string[] = [];
-  const knownGaps = [1, 2, 3].map((n) => ({
-    halt: `Stack head ${n} homeward (retained)`,
-    reason:
-      'Only east platform; stopping track -4 m, player/deck gap 4.7 m, coach/deck gap 5 m. No rider service here once retained. Orchestrator ruling, 16 November: reported separately, not built in R2b.',
-  }));
   function row(
     halt: string,
     decks: Deck[],
@@ -168,7 +165,7 @@ export function checkRiderCoach() {
     row(
       `${RAIL_LINES[LINE2]!.halts[i]!.name} terminal homeward`,
       coachTrain(s, true, stops.slice(0, i + 1)),
-      (d) => curvedMargin(d, s - 15, s + 10, 4.05, 5),
+      (d) => curvedMargin(d, s + 10 - STACK_CROSSING.rampTop, s + 10, 4.05, 5, 3),
       (k) => sideAt(s + consist[k]!.offset, 4.05, 2.25, 0),
     );
   }
@@ -204,12 +201,21 @@ export function checkRiderCoach() {
     for (let i = 6; i < stops.length; i++) {
       const s = stops[i]! / 100,
         gorge = i === stops.length - 1;
-      if (up && !gorge) continue; // named known gaps above; terminal service is on the original track.
+      const west = up && !gorge;
+      const lat = west ? STACK_WEST.lat : 4.05;
       row(
         `${RAIL_LINES[LINE2]!.halts[i]!.name} ${up ? 'homeward' : 'outward'}`,
         coachTrain(s, up),
-        (d) => curvedMargin(d, gorge ? LINE2_END_S - 40 : s - 15, gorge ? LINE2_END_S : s + 10, 4.05, gorge ? 8 : 5),
-        (k) => sideAt(s + consist[k]!.offset, 4.05, 2.25, 0),
+        (d) =>
+          curvedMargin(
+            d,
+            gorge ? LINE2_END_S - 40 : s + 10 - STACK_CROSSING.rampTop,
+            gorge ? LINE2_END_S : s + 10,
+            lat,
+            gorge ? 8 : 5,
+            gorge ? 8 : 3,
+          ),
+        (k) => sideAt(s + consist[k]!.offset, lat, 2.25, west ? -4 : 0),
       );
     }
   }
@@ -246,12 +252,11 @@ export function checkRiderCoach() {
     level: 'rider-coach',
     failures: problems.length,
     problems,
-    knownGaps,
     rows,
     queue: { gap, leadingS, minimum: 0.5 },
     gorgeCrossover,
     gorgeTurn,
     coverage:
-      'Production longest consist and chord/buffer placement. Whole-body longitudinal and lateral margins at actual platform end faces and stopping tracks. The 2 m lateral track corridor is half the 4 m track spacing, not a boarding-jump claim. Retained Stack homeward gaps are named separately by orchestrator ruling. Quarry player overhang allowed only to its existing 1.62 m. Sampled queue, not continuous collision or roof/door proof.',
+      'Production longest consist and chord/buffer placement. Whole-body longitudinal and lateral margins at actual platform end faces and stopping tracks, including all three served Stack heads. The 2 m lateral track corridor is half the 4 m track spacing, not a boarding-jump claim. Quarry player overhang allowed only to its existing 1.62 m. Sampled queue, not continuous collision or roof/door proof.',
   };
 }

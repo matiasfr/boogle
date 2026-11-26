@@ -1027,9 +1027,8 @@ and Ring Island's mark moves 3.40 m on. Their freight cars keep their old world 
 rear reservation is **16.10 m**; signals, end blocks and the Works' role-based kit, footing and steel decks follow.
 Home's actual coach train retains 0.05 m past the spur points and 0.4533 m before the players' deck end.
 High Gorge's crossover moves 3.40 m toward Home to s **3192.00–3214.00**, leaving the full train straight at its
-unchanged stop (0.30 m tail clearance); its platform and concourse stay put. The one-sided Stack heads remain a
-separate pre-existing level gap: retained homeward stops at heads 1 and 2 and Stack halt have only an east deck,
-across the outward track. Riders do not board or alight there. Proposed west platforms are not part of this build.
+unchanged stop (0.30 m tail clearance); its platform and concourse stay put. At served Stack heads the players' car
+stands 0.70 m from the west deck and the coach stands 1.00 m from it.
 
 **Trains keep to the right, and the lever you pull is on your train's platform (14 November 2026, view; [running-side](../plans/running-side.md), step 4, with step 3's catalog; local branch, ships with the v45 reset).**
 _Why (owner, 14 November: "the train then goes left-hand side instead of right-hand side towards the pier... the
@@ -1483,9 +1482,11 @@ stands on the fill 1.3 m off the west platform's edge (it stood on the platform)
 platform the footbridge shows clear to its right, under the ring and the shard. Its buffers stand at
 the line's end with a board, "LINE TO HIGH GORGE / UNDER CONSTRUCTION" once the rivet is struck. **A section laid**
 grows the deck out over its 30 s lay clock: a grey slab with two tracks on bents over the sea, 510 m a section. At
-each railhead stand a 25 m platform on the right going out with a lever home, a ramp down into the sea, the rack and
+each railhead stand a 23 m flat platform on the right going out with a lever home, a ramp down into the sea, the rack and
 plate, the frame and its bill (now "SECTION 2 OF 4" and "KIT 2"), and the buffers and board at the deck's end. A
-railhead passed keeps its platform for one more section, then only a signal post between the tracks ("SIGNAL / TRAIN
+railhead passed gains a west platform for homeward trains. At the home end of each platform a ramp meets the planks
+across both tracks, beside the crossover lever. The east ramp stands even while the head is the line's end. Each of
+the first two passed heads keeps its platforms for one more section, then only a signal post between the tracks ("SIGNAL / TRAIN
 AHEAD", its arm red while a train is held there); the third stays as a request stop both ways. **High Gorge:** two
 40 m platforms in the split, buffers, a concourse behind them, a gangway to the north wall and a stair of four long
 flights with pale parapets up to the rim, 81 m above; on the rim a post, "POWERED PICK / NOT YET" until the fourth

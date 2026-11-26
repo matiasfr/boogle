@@ -258,6 +258,13 @@ async function runChecks() {
         for (const problem of a.problems) console.log(`  ${problem}`);
       }
     const { checkRiderCoach } = await import('./rider-coach.ts');
+    const { checkStackHalts } = await import('./stack-halts.ts');
+    const stack = checkStackHalts();
+    failed += stack.failures;
+    report.push(stack);
+    if (!json)
+      for (const row of stack.rows)
+        console.log(`Stack head ${row.head} ${row.name}: ${row.value.toFixed(3)} ${row.ok ? 'ok' : 'FAIL'}`);
     const riderCoach = checkRiderCoach();
     failed += riderCoach.failures;
     report.push(riderCoach);

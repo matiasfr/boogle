@@ -21,6 +21,7 @@ import * as path from '../src/entities/railway/line2-path.ts';
 import * as rowPath from '../src/entities/railway/row-path.ts';
 import * as haltMap from '../src/entities/railway/halt-map.ts';
 import * as leverPlace from '../src/entities/railway/lever-place.ts';
+import { STACK_WEST_LEVER } from '../src/entities/route-greybox/stack-halts.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 import { buildSeedWorld } from '../src/sim/railway-seeds.ts';
 import { laySection } from '../src/sim/railway-seed-legs.ts';
@@ -201,6 +202,7 @@ test('halt kit placements, colliders, lever plaques and ordered prompts match th
       ...rowPath,
       ...haltMap,
       ...leverPlace,
+      STACK_WEST_LEVER,
       // The deck as drawn, at rest at the seed's head (railhead-state.ts; the haul is railhead-view.ts's).
       railheadDrawn: { u: 0, settled: true, live: true },
       railheadEnd: () => ring.RING_HEAD[queries.ringHead(seed.w)]!.u / 100,
@@ -327,7 +329,7 @@ test('halt kit placements, colliders, lever plaques and ordered prompts match th
   // Leg 4 adds the West landing's outward lever and both sides at its three later stops.
   // The Wall adds six stops beyond the quay, each served in both directions.
   // The two ending halts each gain an up and a down platform lever.
-  assert.equal(levers.length, 59);
+  assert.equal(levers.length, 62);
   for (const [k, leg] of RAIL_LEGS.entries())
     if (catalog.legBuilt(k)) seed.w.mut(Leg, legId(seed.w, k))!.laid = leg.sections.length;
   halt.restore();
