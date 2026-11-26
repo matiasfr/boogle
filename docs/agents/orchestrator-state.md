@@ -16,7 +16,6 @@ The one record of who is running what, and what the eight-job limit is counted f
 | Order choice steps 1 to 4: per-leg racks, the cave leg at the bay cut, the Wall after both, seeds, views; with the cave line's Quick or Strong trade | The greybox route | codex/order-choice-rules | the orchestrator thread, Codex Astra high | 2026-11-25 22:10 | running: src/sim, src/world, one world bump; an independent Opus review before it ships |
 | The White Wall waits experiment: kit 6 earlier or held at the railhead, then a shorter approach to the sea-cave plug, each measured by a loop rerun | The greybox route | codex/wall-waits-experiment | the orchestrator thread, Codex Astra high | 2026-11-25 22:10 | running: an experiment; ships only with its measured gain |
 | Stack west platforms steps 1 to 4: the planks clear of the crossover (way 1), the west decks, the homeward levers, the reset | Small fixes found in the coach work | codex/stack-west-platforms | the orchestrator thread, Codex Astra medium | 2026-11-25 23:10 | running: the re-plan is on main; one world bump; an independent Opus review before it ships |
-| The bot queue runs three at once (two timed), as decided on 25 November; it ran every non-still job alone, and at 23:50 UTC six jobs waited 34 to 51 minutes behind one playthrough | none (tooling) | codex/bot-queue-three | the orchestrator thread, Codex Sol medium | 2026-11-25 23:55 | running: `dev/look/bot-queue.ts` and the net suite's ports |
 
 ## Where the work stands
 
