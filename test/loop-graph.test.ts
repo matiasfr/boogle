@@ -27,6 +27,8 @@ const generic = new Set<string>(GENERIC_OPS);
 const owned = new Set(NODES.flatMap((n) => n.ops));
 
 test('the Ring Island bot cannot take a later leg stop', () => {
+  // With no seed the wake bot runs, which never plays the legs (two reviews found it, for wall and ending).
+  for (const to of ['wall', 'ending']) assert.throws(() => railSegmentOptions(['--to', to]), /wake bot never plays/);
   assert.throws(() => railSegmentOptions(['--from', 'deck-laid', '--to', 'canopy']));
   assert.throws(() => railSegmentOptions(['--from', 'deck-laid', '--to', 'port']));
   assert.equal(railSegmentOptions(['--from', 'canopy-reached', '--to', 'port']).seed?.railFrom, 'legs');

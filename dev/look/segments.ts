@@ -145,6 +145,16 @@ export function railSegmentOptions(args: string[]) {
   // never reaches the stop would finish its own route and pass without it.
   if (to === 'deep-span' && from !== 'wall-deep') throw new Error('--to deep-span requires --from wall-deep');
   if (from === 'wall-deep' && to && to !== 'deep-span') throw new Error('--from wall-deep plays to deep-span');
+  // With no seed the wake bot runs (railway-job.ts), and it never plays the greybox legs.
+  if (!seed && to && LEG_STOPS.includes(to))
+    throw new Error(
+      `--to ${to}: the wake bot never plays the legs; --from ${(Object.keys(RAIL_FROM) as (keyof typeof RAIL_FROM)[])
+        .filter(
+          (k) =>
+            RAIL_FROM[k].bot === RAIL_FROM['gorge-open'].bot && names.indexOf(to) > names.indexOf(RAIL_FROM[k].after),
+        )
+        .join(', ')}`,
+    );
   if (seed && to) {
     const legStop = LEG_STOPS.includes(to);
     const playsTo = (s: { bot: string }) => (s.bot === RAIL_FROM['gorge-open'].bot) === legStop;
