@@ -406,7 +406,7 @@ Every brief starts with `git fetch origin` and `git checkout -B <branch> origin/
       other keeps walking under it; a third tab opened after sees no card and the post reads "Arrived"); a reload after
       the card shows none. **Brief lines:** rules 51, 53 (the bot closes the card), 36, 24, 58, 10 (two-player warp looks
       need `--warp-speed 2`).
-- [ ] **7. The bot and the loop (M; "Implementation from a brief or an approved plan").** Follows leg 5 step 6 (it owns
+- [x] **7. The bot and the loop (M; "Implementation from a brief or an approved plan").** Follows leg 5 step 6 (it owns
       these files today; rule 63). Files: `dev/loop/graph.ts` (`notch-gate`: `rail.gate`, requires `wall-6` and `cloth`;
       `notch-1`: `legSection` on `notch-tunnel`, `KIT_BY` "a bay train from the West landing", `stops: ['notch']`;
       `lantern`: `rail.grant`; `causeway-gate`: requires `notch-1` and `lantern`; `causeway-1`: `legSection` on
