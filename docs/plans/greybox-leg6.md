@@ -380,7 +380,7 @@ Every brief starts with `git fetch origin` and `git checkout -B <branch> origin/
       sideways, never move a player to a spot with no ground, never switch a solid off on contact); rule 32 (at most
       about 16 stills, 1200 px); rule 58 (`/simplify` before reporting; its subagents are allowed). Rule 43 does not apply
       (no doorway).
-- [ ] **5. Leg 6's views (M to L; "Player-visible implementation").** Files: `src/entities/route-greybox/leg-view.ts`:
+- [x] **5. Leg 6's views (M to L; "Player-visible implementation").** On main in #2518. Files: `src/entities/route-greybox/leg-view.ts`:
       both legs as row legs (deck, rails and sea bents from `laid`, Canopy's curve and the trunks' gap, frames with bill
       and plate, racks, buffers and boards, the lantern post (lit once the leg is laid, gone once taken), the meeting post
       and its two readings), the two barriers at frame 1 (the old Notch barrier at the kink goes), `LEG_OBJECTIVES`' lines
@@ -395,7 +395,7 @@ Every brief starts with `git fetch origin` and `git checkout -B <branch> origin/
       shallows; arriving at the island; the post before and after; mesh and collider counts with each new area resident
       and not; every prompt pressed once on a real local server (rule 24); the boot probe (rule 61).
       **Brief lines:** rules 36, 40, 41, 42, 53, 61, 67, 32, 58, 24.
-- [ ] **6. The card (S to M; "Player-visible implementation").** Files: new `src/features/ending-card.ts` (and its CSS):
+- [x] **6. The card (S to M; "Player-visible implementation").** On main in #2511 and #2516. Files: new `src/features/ending-card.ts` (and its CSS):
       the plug-in contract ([plugins](../agents/plugins.md)); a Local DOM card on the live `arrived` edge (the accepted
       `rail.arrive` receipt through the railway adapter, or `Route.arrived` watched going from -1 on this page), never on
       a reload, a refill or a late join (`src/entities/railway/shared-moment.ts`'s contract); for every page in the room at once. For the
@@ -431,20 +431,50 @@ Every brief starts with `git fetch origin` and `git checkout -B <branch> origin/
 
 After steps 1 to 7 are on main; named proofs, once, with the tools as Checkpoint E left them:
 
-- [ ] `npm run loop -- run` for one to three players: `idle s` per node (`notch-gate`, `notch-1`, `lantern`,
+- [x] `npm run loop -- run` for one to three players: `idle s` per node (`notch-gate`, `notch-1`, `lantern`,
       `causeway-gate`, `causeway-1`, `arrive`), area 9's minutes beside its 18, the whole route's with no stand-in; any
       wait over 60 s with nothing to do is a finding for the designer (the Notch's first kit and the causeway's are the
-      ones to read).
-- [ ] The bot segment `--from wall-closed --to ending`: a pass verdict, the load noted.
-- [ ] `npm run test:net`, with `railwayLegRejoin` (`dev/peer-test/ws-railway.ts`) taking the ending at `island-reached`:
-      the seed doc written before any page opens; a second tab joins; one presses the post and both see the card; the
-      presser leaves, the server restarts, it rejoins; `Route.reached` and `Route.arrived` exact at every checkpoint, no
-      card replayed, the post reads "Arrived" (the route plan's rejoin proof for `arrived`).
-- [ ] Steps 4 to 6's stills on one sheet.
-- [ ] `npm run perf -- --view ending` (a `PLACES` row: seed `island-reached`, the body on the island's platform, the
-      camera along the causeway to Bell Rock) and `-- --view notch` (seed `notch-reached`, the camera into the arch), each
-      also `--hardware --seconds 10`, the load noted.
-- [ ] The boot probe on main after step 7 (rule 61); the fuzz's long run if a rule changed after it.
+      ones to read). Step 7's run (`0c3b63e4f`, all nine areas played, no stand-in):
+
+      | Host loop | 1 player | 2 players | 3 players |
+      | --- | ---: | ---: | ---: |
+      | `notch-gate` idle s | 0 | 133 | 177 |
+      | `notch-1` idle s | 30 | 161 | 118 |
+      | `lantern` idle s | 0 | 76 | 102 |
+      | `causeway-gate` idle s | 0 | 140 | 187 |
+      | `causeway-1` idle s | 30 | 133 | 100 |
+      | `arrive` idle s | 77 | 172 | 194 |
+      | Area 9 minutes (18 allowed) | 16 | 25 | 25 |
+      | Whole route minutes | 121 | 128 | 128 |
+
+      **Finding for the designer:** with two or three players every leg 6 node waits over 60 s, and area 9 runs 25
+      minutes against its 18; solo it fits (16). The loop also still flags the inherited cave-plug edge (the graph
+      requires Canopy laid; the rules accept the plug first), a P3 in the leftovers.
+- [x] The bot segment `--from wall-closed --to ending`: pass, no recovery, through the meeting post and Close; load
+      7.26 to 4.87 of 20 (step 7's run, `0c3b63e4f`). The final still shows "Arrived" with the card gone.
+- [x] `npm run test:net` passed all 350 checks (the observer's restart now waits for its epoch to advance). The `railwayLegRejoin` case wrote `island-reached` before either
+      tab opened and finished in 35.3 s of its 480 s deadline. Both mirrors and the server agreed on
+      `Route.reached = 37186` and `Route.arrived = -1` before the press, then `Route.arrived = 37189` through
+      the presser leaving, the restart and the rejoin. Neither tab replayed the accepted arrival. In a separate
+      rendered check, one press showed the card on both tabs, the post read "Arrived", and reloading the presser
+      kept the arrival without reopening the card.
+- [x] [Steps 4 to 6 on one contact sheet](greybox-leg6/checkpoint-f-sheet.png), 1200 px wide. The step 4
+      platforms are from the cold-jump landing report and the step 6 cards are from #2511. The original step 5
+      stills were in a removed worktree, so fresh views show the Notch tracks, causeway and both readings of the post.
+- [x] `npm run perf -- --view ending` from the island's platform with the camera along the causeway toward Bell
+      Rock, and `-- --view notch` into the arch. Both default and 10-second hardware runs held the queue
+      exclusively on HOTBOX. Times are average / p95 in ms and load is busy logical CPUs out of 20.
+
+      | View | Draws | Triangles | CPU | GPU span | GPU render | Default load | Hardware load |
+      | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+      | Ending | 467 | 756,219 | 18.42 / 22.64 | 14.65 / 17.74 | 2.53 / 4.78 | 2.53 to 2.65 | 2.21 to 2.34 |
+      | Notch | 140 | 513,549 | 15.81 / 19.71 | 9.74 / 11.72 | 2.67 / 3.23 | 5.04 to 2.58 | 2.81 to 2.65 |
+
+      The ending's diagnostic stills showed the deck just before counting, absent immediately after the shadow
+      toggle, and visible again after settling. Perf now takes the still before the toggle, when the draw totals
+      are sampled.
+- [x] The boot probe on main after step 7 (rule 61): the build-time boot check and the live boot check after deploy
+      both passed on `0bbd37004` (05:37 to 05:38 UTC, 26 November). Step 7 changed no rule, so no fuzz long run.
 - [ ] A device line on the Mac, reported, not a gate (taken when the Mac is next open).
 
 **After this plan:** greybox-route's exit evidence (section 7: the bot from wake to `arrived` with no skip, the
