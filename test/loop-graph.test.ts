@@ -6,8 +6,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { runInNewContext } from 'node:vm';
 import { transformSync } from 'esbuild';
-import { ACTIVITY_MARKS, GENERIC_OPS, NODES, PENDING_MARKS, PENDING_OPS, proposeOrders } from '../dev/loop/graph.ts';
-import { isStandIn, standInRoute } from '../dev/loop/standins.ts';
+import { ACTIVITY_MARKS, GENERIC_OPS, NODES, PENDING_MARKS, proposeOrders } from '../dev/loop/graph.ts';
 import { RAIL_ACTIONS } from '../src/world/railway-server.ts';
 import {
   createRailwayJourneyMarks,
@@ -25,8 +24,6 @@ import { RAIL_GRANTS, RAIL_LEGS, legFrame } from '../src/sim/railway-route.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 
 const generic = new Set<string>(GENERIC_OPS);
-// The route's ops whose nodes are not built yet (dev/loop/graph.ts, PENDING_OPS): named, never owned too.
-const pending = new Set<string>(PENDING_OPS);
 const owned = new Set(NODES.flatMap((n) => n.ops));
 
 test('the Ring Island bot cannot take a later leg stop', () => {
@@ -188,9 +185,8 @@ test('successive stack frames register distinct progress when numbers are ignore
 });
 
 test('every rail action has a node or is a generic route-independent op', () => {
-  for (const op of RAIL_ACTIONS) assert.ok(owned.has(op) || generic.has(op) || pending.has(op), `${op} has no node`);
-  for (const op of [...owned, ...generic, ...pending]) assert.ok(RAIL_ACTIONS.has(op), `${op} is not a rail action`);
-  for (const op of pending) assert.ok(!owned.has(op), `${op} has a node: take it out of PENDING_OPS`);
+  for (const op of RAIL_ACTIONS) assert.ok(owned.has(op) || generic.has(op), `${op} has no node`);
+  for (const op of [...owned, ...generic]) assert.ok(RAIL_ACTIONS.has(op), `${op} is not a rail action`);
 });
 
 /** Every mark name railway-marks.ts can emit: action marks per op, progress edges, journey marks. */
@@ -267,7 +263,7 @@ test('the hand-kept beat lists agree with the graph', () => {
   for (const s of stops) assert.ok(s in RAIL_STOPS, `${s} is not a RAIL_STOPS key`);
   // Not loop beats: the audio check, and slice 5's freight home and first fare (economy beats no route step waits for).
   // The Wall bot finishes after riding home from the Gorge, where the loop counts the last lay.
-  const notLoop = new Set(['audio-loop', 'freight', 'fare', 'wall']);
+  const notLoop = new Set(['audio-loop', 'freight', 'fare', 'wall', 'ending']);
   for (const s of Object.keys(RAIL_STOPS)) assert.ok(stops.has(s) || notLoop.has(s), `RAIL_STOPS ${s} has no node`);
 });
 
@@ -277,25 +273,13 @@ test('the solver proposes the canonical order and each soft edge flipped', () =>
   for (const o of orders) assert.equal(new Set(o.order).size, NODES.length, o.name);
 });
 
-test('built nodes and stand-ins are told apart by the flag, and the stand-ins reach the ending', () => {
-  for (const n of NODES) assert.ok(!isStandIn(n), `${n.id} is built: it carries no standIn flag`);
-  const built = new Set<string>(NODES.map((n) => n.id));
-  // The ending follows the White Wall and needs the built cloth.
-  const { nodes } = standInRoute({ bills: 1 });
+test('the built route reaches the ending through the Notch and causeway', () => {
+  for (const n of NODES) assert.equal(n.standIn, undefined, `${n.id} is built`);
   assert.deepEqual(
-    nodes.map((n) => n.id),
-    ['ending'],
+    NODES.find((n) => n.id === 'notch-gate')!.requires.map((e) => e.on),
+    ['wall-6', 'cloth'],
   );
-  assert.equal(nodes[0]!.requires[0]!.on, 'wall-6', 'the stand-ins start where the built graph ends');
-  assert.ok(
-    nodes[0]!.requires.some((e) => e.on === 'cloth' && e.needs === 'glider cloth'),
-    'the ending needs the cloth',
-  );
-  for (const s of nodes) {
-    assert.ok(isStandIn(s), `${s.id} is flagged a stand-in`);
-    assert.ok(!built.has(s.id), `${s.id} is not a built node's id`);
-    assert.ok(Object.values(s.bill).every((n) => n > 0) && s.legs.every((l) => l.km > 0), `${s.id}: a bill and a leg`);
-  }
+  assert.equal(proposeOrders()[0]!.order.at(-1), 'arrive');
 });
 
 test('the shared prefix preserves three-player idle time in the T3 before beam order', async () => {

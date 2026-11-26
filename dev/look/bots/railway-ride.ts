@@ -253,5 +253,5 @@ export function line2Rides(bot: Bot) {
     }
     check(there(), beat);
   };
-  return { ride, rideFrom, hopTo, view, until, check, face };
+  return { ride, rideFrom, hopTo, view, until, check, face, requestPrompt };
 }

@@ -24,7 +24,6 @@ import { WORLD_LINES, type WorldLine } from '../src/sim/railway-world-lines.ts';
 import { CANOPY_CLOTH_POST } from '../src/content/levels/leg3.ts';
 import { ORIGIN } from '../src/place/layout.ts';
 import { layout, parseMapPage } from '../src/sickle/map-data.ts';
-import { standInRoute } from '../dev/loop/standins.ts';
 
 const row = (id: string) => WORLD_LINES.find((l) => l.id === id)!;
 
@@ -144,28 +143,6 @@ test('each after and needs points backwards', () => {
   });
   for (const y of RAIL_YARDS) assert.ok(y.fedBy >= 0 && y.fedBy < RAIL_LEGS.length);
   RAIL_GRANTS.forEach((g) => assert.ok(RAIL_LEGS[g.leg], g.id));
-});
-
-test('the remaining stand-in gates match the route catalog', () => {
-  const areaOf: Record<string, number> = { cloth: 6 };
-  const grantOf: Record<string, string> = { 'glider cloth': 'cloth' };
-  const { nodes } = standInRoute();
-  let found = 0;
-  for (const n of nodes)
-    for (const r of n.requires) {
-      if (!r.needs) continue;
-      found++;
-      const legs = RAIL_LEGS.filter((l) => l.area === n.area);
-      const gates = legs.flatMap((l) => l.sections.map((s) => s.gate)).filter((g) => g !== undefined);
-      const hit = gates.find((g) => RAIL_GATES[g!]!.needs === RAIL_GRANTS.findIndex((x) => x.id === grantOf[r.needs!]));
-      assert.ok(hit !== undefined, `${n.id} gate needs ${r.needs}`);
-      assert.equal(
-        RAIL_LEGS[RAIL_GRANTS[RAIL_GATES[hit!]!.needs]!.leg]!.area,
-        areaOf[r.on]!,
-        `${r.needs} comes from ${r.on}`,
-      );
-    }
-  assert.equal(found, 1);
 });
 
 test('each interchange fits its walking bound', () => {

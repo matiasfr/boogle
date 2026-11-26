@@ -406,18 +406,24 @@ Every brief starts with `git fetch origin` and `git checkout -B <branch> origin/
       other keeps walking under it; a third tab opened after sees no card and the post reads "Arrived"); a reload after
       the card shows none. **Brief lines:** rules 51, 53 (the bot closes the card), 36, 24, 58, 10 (two-player warp looks
       need `--warp-speed 2`).
-- [ ] **7. The bot and the loop (M; "Implementation from a brief or an approved plan").** Follows leg 5 step 6 (it owns
+- [x] **7. The bot and the loop (M; "Implementation from a brief or an approved plan").** Follows leg 5 step 6 (it owns
       these files today; rule 63). Files: `dev/loop/graph.ts` (`notch-gate`: `rail.gate`, requires `wall-6` and `cloth`;
       `notch-1`: `legSection` on `notch-tunnel`, `KIT_BY` "a bay train from the West landing", `stops: ['notch']`;
       `lantern`: `rail.grant`; `causeway-gate`: requires `notch-1` and `lantern`; `causeway-1`: `legSection` on
       `causeway`, `KIT_BY` "an `ns` train from the Gorge yard"; `arrive`: `rail.arrive`, `stops: ['original']`;
       `GENERIC_OPS` and `ACTIVITY_MARKS` unchanged, the file listed); `dev/loop/standins.ts` drops `ending` (no stand-in
-      left); `dev/loop/run.ts` (`ROUTE_PRESS` for the two gates, the lantern and the arrival); `dev/look/bots/railway-legs.ts`
-      (after the Wall: the cave line to Canopy, the walk to the bay station, the barrier, the feed, a bay train to the
+      left, and `dev/loop/report.ts` drops the stand-in footer); `dev/loop/run.ts` (`ROUTE_PRESS` for the two gates,
+      the lantern and the arrival); `dev/look/bots/railway-legs.ts`
+      (after the Wall: ride the Wall line from High Gorge to its Canopy halt, walk to the bay station, open the barrier,
+      feed the frame and ride a bay train to the
       Notch, the lantern, the bay line to Bell Rock, the ramp, the barrier, the feed, an `ns` train to the island, the
-      post, Close; `--from wall-closed` a leg seed); `dev/look/segments.ts` (`RAIL_STOPS.ending`, `LEG_STOPS`). Verify:
+      post, Close; the row rides reuse the Sit-aware stop request from `dev/look/bots/railway-ride.ts`);
+      `dev/look/playthrough.ts` starts the `wall-closed` segment at its existing High Gorge jump landing;
+      `dev/look/segments.ts` (`RAIL_STOPS.notch`, `original` and `ending`,
+      and `LEG_STOPS`; `ending` stops after Close, which is a local action outside the host graph). Verify:
       `npm run loop -- node notch-1` and `-- node arrive`; `npm run loop -- run` (no stand-in reported);
-      `npm run playthrough -- --from wall-closed --to ending`; `test/loop-graph.test.ts`.
+      `npm run playthrough -- --from wall-closed --to ending`; `test/loop-graph.test.ts` and removal of the retired
+      stand-in catalog assertion in `test/railway-route.test.ts`.
       **Brief lines:** rules 63, 22 (no edits while a bot run is in flight; read `verdict.json` yourself), 53, 74, 10, 5
       (at most three looks at once on HOTBOX).
 

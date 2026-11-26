@@ -87,7 +87,7 @@ import {
   type SectionId,
 } from './graph.ts';
 import { createHost, type Host } from './host.ts';
-import { variantOf, wholeRouteLines } from './standins.ts';
+import { wholeRouteLines } from './standins.ts';
 
 type Cmd = { walk: Point } | { act: string; fields?: Partial<RailAction> } | { wait: number };
 type Policy = Generator<Cmd, void, number>;
@@ -583,8 +583,8 @@ function* cradle(g: Game, pl: Player): Policy {
 }
 
 // ---------------------------------------------------------------- the greybox route's legs
-/** The route's pickups and barriers: each node's op and its catalog index (RAIL_GRANTS or RAIL_GATES). */
-const ROUTE_PRESS: Partial<Record<NodeId, { op: 'rail.grant' | 'rail.gate'; id: number }>> = {
+/** Route devices, with catalog indices for pickups and barriers. */
+const ROUTE_PRESS: Partial<Record<NodeId, { op: 'rail.grant' | 'rail.gate'; id: number } | { op: 'rail.arrive' }>> = {
   pick: { op: 'rail.grant', id: RAIL_GRANTS.findIndex((x) => x.id === 'pick') },
   'incline-gate': { op: 'rail.gate', id: RAIL_GATES.findIndex((x) => x.id === 'incline') },
   seeds: { op: 'rail.grant', id: RAIL_GRANTS.findIndex((x) => x.id === 'seeds') },
@@ -592,7 +592,12 @@ const ROUTE_PRESS: Partial<Record<NodeId, { op: 'rail.grant' | 'rail.gate'; id: 
   'plug-gate': { op: 'rail.gate', id: RAIL_GATES.findIndex((x) => x.id === 'plug') },
   'deep-gate': { op: 'rail.gate', id: RAIL_GATES.findIndex((x) => x.id === 'deep-span') },
   cloth: { op: 'rail.grant', id: RAIL_GRANTS.findIndex((x) => x.id === 'cloth') },
+  'notch-gate': { op: 'rail.gate', id: RAIL_GATES.findIndex((x) => x.id === 'notch') },
+  lantern: { op: 'rail.grant', id: RAIL_GRANTS.findIndex((x) => x.id === 'lantern') },
+  'causeway-gate': { op: 'rail.gate', id: RAIL_GATES.findIndex((x) => x.id === 'causeway') },
+  arrive: { op: 'rail.arrive' },
 };
+const routeFields = (action: NonNullable<(typeof ROUTE_PRESS)[NodeId]>) => ('id' in action ? { id: action.id } : {});
 /** A route point (cm, with its height: the server's reach check judges both). */
 const routePoint = (q: { x: number; z: number; y: number }): Point => ({ x: q.x, z: q.z, y: q.y });
 /** Section `s` of leg `k`: every player takes what its rack holds (the kit a train brought, or the stand-in stocked)
@@ -662,14 +667,26 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set(), pick
   const sectionPolicies = Object.fromEntries(
     ROUTE_SECTIONS.map(({ id, leg, section }) => [id, (pl: Player) => legSection(g, pl, leg, section, byHand.has(id))]),
   ) as Record<SectionId, (pl: Player) => Policy>;
-  /** A pickup taken or the barrier open (ROUTE_PRESS). */
+  /** A pickup taken, a barrier open or the meeting post pressed. */
   const pressed = (id: NodeId) => () => {
-    const { op, id: k } = ROUTE_PRESS[id]!,
+    const action = ROUTE_PRESS[id]!,
       r = routeRow(w());
-    return !!((op === 'rail.grant' ? r.grants : r.gates) & (1 << k));
+    return action.op === 'rail.arrive'
+      ? r.arrived >= 0
+      : !!((action.op === 'rail.grant' ? r.grants : r.gates) & (1 << action.id));
   };
-  const routePolicy = (id: NodeId) => (pl: Player) =>
-    device(g, pl, node(id).at, ROUTE_PRESS[id]!.op, ready(id), { id: ROUTE_PRESS[id]!.id });
+  const routePolicy = (id: NodeId) => (pl: Player) => {
+    const action = ROUTE_PRESS[id]!;
+    const prerequisitesMet = ready(id);
+    return device(
+      g,
+      pl,
+      node(id).at,
+      action.op,
+      () => prerequisitesMet() && (action.op !== 'rail.arrive' || routeRow(w()).reached >= 0),
+      routeFields(action),
+    );
+  };
   const w = () => g.w;
   const q = (k: number) => !!qjob(w(), k).completion;
   const done: Record<NodeId, () => boolean> = {
@@ -726,6 +743,10 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set(), pick
     'plug-gate': pressed('plug-gate'),
     'deep-gate': pressed('deep-gate'),
     cloth: pressed('cloth'),
+    'notch-gate': pressed('notch-gate'),
+    lantern: pressed('lantern'),
+    'causeway-gate': pressed('causeway-gate'),
+    arrive: pressed('arrive'),
   };
   const ready = (id: NodeId) => () => node(id).requires.every((e) => e.scope === 'finish' || done[e.on]());
   function* takeStand(pl: Player, part: 'pack' | 'jump'): Policy {
@@ -869,6 +890,10 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set(), pick
     'plug-gate': routePolicy('plug-gate'),
     'deep-gate': routePolicy('deep-gate'),
     cloth: routePolicy('cloth'),
+    'notch-gate': routePolicy('notch-gate'),
+    lantern: routePolicy('lantern'),
+    'causeway-gate': routePolicy('causeway-gate'),
+    arrive: routePolicy('arrive'),
   };
   return { g, done, policy, flags, current: null, detour: () => 1 };
 }
@@ -954,7 +979,7 @@ function probePolicy(r: Run, pl: Player, id: NodeId): Policy | null {
   if (route)
     return (function* () {
       yield* walk(n.at);
-      yield* press(route.op, { id: route.id });
+      yield* press(route.op, routeFields(route));
     })();
   const seam = id === 'slab' ? 0 : id === 'throat' ? 1 : id === 'rivet' ? 2 : -1;
   // The pier is the world's (a walk), the crossing's footings ride the wagon: nothing to press early.
@@ -1179,7 +1204,8 @@ export function runLoop(args: string[]) {
     return i >= 0 ? args[i + 1] : undefined;
   };
   // The flags first, before any host plays: a retired variant flag is refused here, not after a run.
-  const variant = variantOf(args);
+  for (const flag of ['--bills', '--branch-first', '--one-branch'])
+    if (args.includes(flag)) throw new Error(`${flag}: every area is built and played`);
   const counts = value('--players') ? [Number(value('--players'))] : [1, 2, 3, 4];
   if (counts.some((n) => !Number.isInteger(n) || n < 1 || n > 4)) throw new Error('--players: 1 to 4');
   const only = value('--order');
@@ -1219,13 +1245,11 @@ export function runLoop(args: string[]) {
     for (const players of counts)
       calibrated.set(players, playOrder(shownOrder.order, `${shownOrder.name}, calibrated`, players, { detour: true }));
   const ms = Math.round(performance.now() - started);
-  // The route past the built graph, modelled from these runs (dev/loop/standins.ts): only when each one finished.
+  // Report the area totals only when every selected run finished.
   const shownRuns = counts.map((n) => results.find((r) => r.players === n && r.order === shownOrder.name)!);
   const calRuns = counts.flatMap((n) => calibrated.get(n) ?? []);
   const route =
-    broken || [...shownRuns, ...calRuns].some((r) => r.softlock)
-      ? null
-      : wholeRouteLines(counts, shownRuns, calRuns, variant);
+    broken || [...shownRuns, ...calRuns].some((r) => r.softlock) ? null : wholeRouteLines(counts, shownRuns, calRuns);
   if (args.includes('--json'))
     return console.log(
       JSON.stringify({ ms, results, calibrated: [...calibrated.values()], wholeRoute: route?.data ?? null }, null, 2),

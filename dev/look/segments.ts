@@ -48,10 +48,24 @@ export const RAIL_STOPS = {
   port: 'port home',
   'deep-span': 'deep span open',
   wall: 'wall home',
+  notch: 'Notch reached',
+  original: 'meeting post pressed',
+  ending: 'ending card closed',
 } as const;
 export type RailStop = keyof typeof RAIL_STOPS;
 /** The greybox legs' stops (dev/look/bots/railway-legs.ts). */
-const LEG_STOPS: readonly RailStop[] = ['gorge', 'bell', 'bay', 'canopy', 'port', 'deep-span', 'wall'];
+const LEG_STOPS: readonly RailStop[] = [
+  'gorge',
+  'bell',
+  'bay',
+  'canopy',
+  'port',
+  'deep-span',
+  'wall',
+  'notch',
+  'original',
+  'ending',
+];
 /** `--from <stage>`: an accepted `--rail-seed` server save that its `bot` eval resumes from (its `railFrom`).
  * Seeds are written per run through the real host's save path; there are no client fixtures to keep. */
 export const RAIL_FROM = {
@@ -86,6 +100,7 @@ export const RAIL_FROM = {
   'port-reached': { railFrom: 'legs', after: 'port', bot: 'railway-legs-bot.ts' },
   // The Wall's final frame, reached through the jump room's landing.
   'wall-deep': { railFrom: 'legs', after: 'port', bot: 'railway-legs-bot.ts' },
+  'wall-closed': { railFrom: 'legs', after: 'wall', bot: 'railway-legs-bot.ts' },
 } as const satisfies Record<string, { railFrom: string; after: RailStop; bot: string }>;
 /** Beats both peers pass in a two-player run; the follower watches line two from the village. */
 export const RAIL_COOP_STOPS: readonly RailStop[] = [

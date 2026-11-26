@@ -288,14 +288,15 @@ async function main() {
     }
     if (rail.from) {
       if (url) throw new Error('--from writes a server seed: it needs a local stack, not --url');
-      if (rail.from === 'wall-deep') {
-        // The frame-six prompt proof starts on its catalog landing, as a player's jump does.
+      if (rail.from === 'wall-deep' || rail.from === 'wall-closed') {
+        // Both Wall segments start on their catalog landings, as a player's jump does.
         const reply = await fetch(new URL('/jump', stack.serverUrl), {
           method: 'POST',
           body: JSON.stringify({ stage: rail.from, ns: RAILWAY_PLAY_NS }),
         });
         const jump = await reply.json();
-        if (!reply.ok || typeof jump.room !== 'string') throw new Error(`Wall jump failed (${reply.status}): ${jump.error}`);
+        if (!reply.ok || typeof jump.room !== 'string')
+          throw new Error(`${rail.from} jump failed (${reply.status}): ${jump.error}`);
         room = jump.room;
       } else await writeRailSeed(stack.dataDir!, room, rail.from);
       console.log(`Seeded ${rail.from} (railFrom=${rail.seed!.railFrom}) through the host's save path`);
