@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { RAIL_GATES, RAIL_LEGS } from '../src/sim/railway-route.ts';
 import { legsLaid, legRow, routeRow, STOCKED_LEGS } from '../src/sim/railway-queries-route.ts';
 import { stopsOf } from '../src/sim/railway-queries.ts';
-import { RAIL_LINES, trainPassesBy } from '../src/sim/railway-lines.ts';
-import { fleetOf } from '../src/sim/railway-train.ts';
+import { RAIL_HALTS, RAIL_LINES, trainPassesBy } from '../src/sim/railway-lines.ts';
+import { fleetOf, TRAIN_PHASE, reqHas, trainRequestable } from '../src/sim/railway-train.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 import { rail, train } from '../src/sim/railway-rows.ts';
 import { Route } from '../src/sim/railway-components.ts';
@@ -81,4 +81,43 @@ test('cave trains relay six Wall kits through the prefix of open halts', () => {
     laySection(port, k);
   }
   assert.ok(routeRow(port.w).gates & (1 << id));
+});
+
+test('a Kit 6 rider keeps their accepted homeward stop when Wall 5 finishes', () => {
+  const wall = 5,
+    line = RAIL_LEGS[wall]!.line,
+    s = unaudited(buildSeedWorld('wall-mid'));
+  while (legRow(s.w, wall).laid < 4) laySection(s, wall);
+  const stops = stopsOf(s.w, line);
+  for (let i = 0; rail(s.w).depot === 0; i++) {
+    assert.ok(i < 8000, 'Wall 5 kit reaches the rack');
+    advance(s, 1);
+  }
+  assert.ok(act(s, 'a', 'rail.depotTake') > 0);
+  assert.ok(act(s, 'a', 'rail.legStock', { leg: wall }) > 0);
+  for (let i = 0; i < 8000; i++) {
+    const slot = LINE_SLOTS[line]!.find((j) => {
+      const r = train(s.w, j);
+      return r.phase === TRAIN_PHASE.STAND && r.at === stops.length - 1 && r.legKit && r.track === 1;
+    });
+    if (slot !== undefined) {
+      const resumed = unaudited(s);
+      const row = () => train(resumed.w, slot);
+      const boarded = row().arrived;
+      const ask = trainRequestable(row(), line, stops, resumed.t);
+      assert.ok(ask && !ask.requested && ask.dir === -1);
+      const id = RAIL_HALTS.findIndex((h) => h.line === line && h.stop === ask.stop);
+      assert.equal(act(resumed, 'a', 'rail.call', { id, dir: ask.dir, train: slot }), 1);
+      laySection(resumed, wall);
+      if (row().arrived === boarded && row().at === stops.length - 1) {
+        assert.ok(
+          reqHas(row().req, ask.stop, ask.dir, stopsOf(resumed.w, line).length),
+          'the fifth lay erased the accepted request while the rider was still at the fourth head',
+        );
+      }
+      return;
+    }
+    advance(s, 1);
+  }
+  assert.fail('Kit 6 never stood at the fourth head');
 });
