@@ -5,7 +5,18 @@
 // for the leaf to land, strike the rivet (the Meet), then ride from the Railhead to the island halt and step off.
 // Inspection observes; it never seeds a world or moves a player. A fall into the sea is a finding (no recovery).
 import type { Bot } from '../bot.ts';
-import { aperture, inspectRailway, rail, railAt, railBack, ringHead, ringOpen, rw } from '../rail-read.ts';
+import {
+  aperture,
+  inspectRailway,
+  line2Station,
+  rail,
+  railAt,
+  railBack,
+  railRead,
+  ringHead,
+  ringOpen,
+  rw,
+} from '../rail-read.ts';
 import { me, cam } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
@@ -19,11 +30,50 @@ import {
 } from '../../../src/sim/railway-ring-layout.ts';
 import { glideAcross, hookTo } from './railway.ts';
 import { HALT, line2Rides } from './railway-ride.ts';
+import { LINE2_STATIONS, Q7 } from '../../../src/sim/railway-line2-layout.ts';
 
 export type RingRoute = { bot: Bot; checkpoint: (name: string) => Promise<void> };
 const cm = (p: { x: number; z: number }) => ({ x: p.x / 100, z: p.z / 100 });
 /** Ring Island is line 2's stop 5 and the Railhead its stop 4 (halts-view.ts). */
 const STOP = { railhead: 4, island: 5 } as const;
+
+/** Play the deck the Ring Island bot's usual seed starts after. */
+export async function ringDeckRoute({ bot, checkpoint }: RingRoute) {
+  const { ride, view, until, check } = line2Rides(bot);
+  const job = () => line2Station(Q7);
+  const stock = () => rail(rw());
+  const [logs, rails] = LINE2_STATIONS[Q7]!.bill;
+  check(job().completion === 0 && job().start < 0, 'Q7 starts unbuilt and unfunded');
+  await ride(HALT.village2, view().halts[HALT.pier]!.stop);
+  await until(() => stock().depot === logs && stock().depotRails === rails, 'Q7 kit delivered to the Pier');
+  await checkpoint('Q7 kit delivered');
+  const frame = view().frames[Q7]!;
+  const deliver = async () => {
+    check(await bot.walk(frame.x, frame.z, 2.4), 'walked to the Q7 frame carrying kit');
+    await until(
+      () => railBack().carry === 0 && railBack().rails === 0 && !railRead()!.pending(),
+      'Q7 unload settled',
+      30000,
+    );
+  };
+  for (let trip = 0; job().start < 0 && job().completion === 0; trip++) {
+    check(trip < 8, 'Q7 funds in bounded carries');
+    if (job().stock < logs) {
+      const [x, , z] = view().depot!;
+      check(await bot.use(x!, z!, 'take Q7 depot logs', /^Pick up$/), 'Q7 depot offered');
+      check(await bot.work(() => railBack().carry > 0, 30000, 380), 'Q7 logs accepted');
+      await deliver();
+    }
+    if (job().railStock < rails) {
+      const shelf = view().shelf!;
+      check(await bot.use(shelf.x, shelf.z, 'take Q7 shelf rails', /^Take rails$/), 'Q7 shelf offered');
+      check(await bot.work(() => railBack().rails > 0, 30000, 380), 'Q7 rails accepted');
+      await deliver();
+    }
+  }
+  await until(() => job().completion === 1, 'Q7 laid once');
+  await checkpoint('Q7 laid');
+}
 
 export async function ringIslandRoute({ bot, checkpoint }: RingRoute) {
   const { ride, hopTo, view, until, check } = line2Rides(bot);
@@ -199,6 +249,7 @@ export async function rideToIsland(bot: Bot, { rideFrom, hopTo, view, until }: R
     throw error;
   });
   bot.note(`OUTBOUND LEVER steady from ${since - t0} ticks after the ride was asked for`);
+  let waitAt = { x: me.body!.position.x, z: me.body!.position.z };
   const train = await rideFrom(
     {
       name: 'Railhead',
@@ -221,10 +272,10 @@ export async function rideToIsland(bot: Bot, { rideFrom, hopTo, view, until }: R
           15000,
           0.5,
         );
+        waitAt = { x: me.body!.position.x, z: me.body!.position.z };
       },
-      // Wait where the rivet left the rider: the lever's platform stands 0.9 m above the deck with no way up the
-      // planner knows, and `before` walks to the lever and hops up onto it.
-      wait: { x: me.body!.position.x, z: me.body!.position.z },
+      // Stay at the rivet if the train is already standing. After calling it, wait on the platform the bot hopped onto.
+      wait: () => waitAt,
     },
     STOP.island,
   ).catch((error: unknown) => {

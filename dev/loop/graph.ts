@@ -1248,7 +1248,6 @@ export const NODES: readonly LoopNode[] = [
     'Q7',
     [dec('crossing', 'rules', `${RULES_QUERIES} qActive(): Q7 opens on Works.crossing (opens: 'crossing')`)],
     {
-      stops: [],
       cue: [onMain('world', "Q7's frame and the double deck over bents 1-6", 'src/entities/railway/crossing-view.ts')],
     },
   ),
