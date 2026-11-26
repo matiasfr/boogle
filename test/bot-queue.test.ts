@@ -97,6 +97,12 @@ test('direct and broker operations use the same classification', () => {
   assert.equal(botClass('hitches', []), 'exclusive');
 });
 
+test('review: look flags that turn motion curves (per-frame frame time) on are timed', () => {
+  // dev/look/look.ts: --curves-vs and --target both set opt.curves; the broker accepts both (look-broker.ts VALUES).
+  assert.equal(botClass('look', ['--curves-vs', '.look/old.csv']), 'timed');
+  assert.equal(botClass('look', ['--target', 'glide']), 'timed');
+});
+
 test('a fresh queue grants three shared leases at its default capacity', async () => {
   const leases: Awaited<ReturnType<typeof acquireBotSlot>>[] = [];
   try {
