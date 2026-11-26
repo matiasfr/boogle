@@ -177,6 +177,7 @@ export async function createRailwayArrival(
   // room was seeded for, standing on its terrain, pad or deck. undefined until the room's seed is known. A jump room
   // skips the first visit's fall (src/features/fall.ts); a page that showed one anyway (`intro=1`) keeps where it fell.
   let landing: JumpLand | null | undefined;
+  let landingDeadline: number | null = null;
   let fell = fallArrival.active;
   // A room just replaced by a stage lands its players the same way (docs/plans/room-fast-forward.md): the reset took
   // their saved pose. A stage with no landing uses the usual spawn.
@@ -386,15 +387,28 @@ export async function createRailwayArrival(
       if (
         loaded &&
         restorePending &&
-        poseReady &&
+        (poseReady || landingDeadline !== null) &&
         body &&
         !fallArrival.active &&
         (savedPose || landing !== undefined)
       ) {
         if (!fell) {
+          let canLand = !hadRecord && !!landing;
+          if (canLand && landing && (!areasSettled(landing.x, landing.z) || !poseReady)) {
+            // Like a saved return, the held body requests the destination's distance-mounted scenery.
+            landingDeadline ??= performance.now() + 20_000;
+            if (performance.now() < landingDeadline) {
+              if (!coverLifted() || veiled(false)) placeReturn(landing);
+              return;
+            }
+            console.warn(`[jump-in] landing scenery was not ready at (${landing.x}, ${landing.z}); keeping the spawn`);
+            canLand = false;
+          }
           atSpawn();
-          if (!hadRecord && landing) land(landing);
+          if (canLand && landing) land(landing);
+          if (landingDeadline !== null) unveil();
         }
+        landingDeadline = null;
         landing = null; // once
         restorePending = false;
       }

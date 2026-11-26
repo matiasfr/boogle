@@ -187,9 +187,7 @@ test('the menu lists the rows it always did: the house and leg 1 stages are tool
     tooling,
   );
   for (const stage of tooling) {
-    if (stage === 'notch-reached' || stage === 'island-reached') {
-      assert.equal(jumpOf(stage)?.land, undefined, stage);
-    } else if (
+    if (
       ![
         't1-pack-first',
         't1-jump-first',
@@ -216,11 +214,11 @@ test('the menu lists the rows it always did: the house and leg 1 stages are tool
   }
 });
 
-test("Canopy's landings: canopy-mid on head 1's platform; canopy-open and canopy-reached keep the spawn", () => {
+test("Canopy's landings: head 1 and the homeward platform", () => {
   // canopy-open's spot is Bell Rock's upper platform over the cut, which return-spot.ts (x and z alone, within 30 m)
-  // would also give a rider of the lower level's line; canopy-reached's is Canopy's platform, which arrival.ts would
-  // probe from the spawn before Canopy's massing has mounted there (docs/plans/greybox-leg3.md, step 6).
-  for (const stage of ['canopy-open', 'canopy-reached']) assert.equal(jumpOf(stage)?.land, undefined, stage);
+  // would also give a rider of the lower level's line.
+  assert.equal(jumpOf('canopy-open')?.land, undefined);
+  assert.deepEqual(jumpOf('canopy-reached')?.land, { x: -1070.02, y: 13.9, z: -318.93, yaw: 2.419 });
   assert.deepEqual(jumpOf('canopy-mid')?.land, { x: -525.13, y: 4.9, z: -673.36, yaw: 1.935 });
 });
 
