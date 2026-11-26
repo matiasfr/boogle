@@ -10,8 +10,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Order choice steps 1 to 4: per-leg racks, the cave leg at the bay cut, the Wall after both, seeds, views; with the cave line's Quick or Strong trade | The greybox route | codex/order-choice-rules | the orchestrator thread, Codex Astra high | 2026-11-25 22:10 | built 02:15 UTC 26 November; its Opus review said fix then ship (P2: replicated rack takes lose `leg`; P3: cave-first cloth objective); fix round 1 in its builder thread, then v74 over #2520 |
-| Greybox leg 6 step 7: the bot and the loop | The greybox route | codex/greybox-leg6-bot | the heartbeat thread, Codex Sol medium | 2026-11-26 04:10 | building, started on order choice's reviewed tip (rule 74); rebases onto main once order choice lands |
+| Greybox leg 6 step 7: the bot and the loop | The greybox route | codex/greybox-leg6-bot | the heartbeat thread, Codex Sol medium | 2026-11-26 04:10 | building, started on order choice's reviewed tip (rule 74); order choice is on main (#2523, v74); it rebases onto main before it reports |
 | Owed proofs: the forge rewards' four unseen cases (the frame shutting, reduced motion, a rejoin, phone width) | The forge's rewards are its own products | codex/forge-rewards-looks | the heartbeat thread, Codex Sol medium | 2026-11-26 04:10 | running, report and stills only |
 
 ## Where the work stands
