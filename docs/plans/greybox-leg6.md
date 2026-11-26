@@ -474,7 +474,7 @@ After steps 1 to 7 are on main; named proofs, once, with the tools as Checkpoint
       toggle, and visible again after settling. Perf now takes the still before the toggle, when the draw totals
       are sampled.
 - [x] The boot probe on main after step 7 (rule 61): the build-time boot check and the live boot check after deploy
-      both passed on `0bbd37004` (05:37 to 05:38 UTC, 26 November). Step 7 changed no rule, so no fuzz long run.
+      both passed on `0bbd37004` (05:37 to 05:39 UTC, 26 November). Step 7 changed no rule, so no fuzz long run.
 - [ ] A device line on the Mac, reported, not a gate (taken when the Mac is next open).
 
 **After this plan:** greybox-route's exit evidence (section 7: the bot from wake to `arrived` with no skip, the
