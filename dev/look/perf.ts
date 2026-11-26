@@ -45,6 +45,9 @@ const PLACES: Record<string, Place> = {
   port: { seed: 'port-reached', stand: [140.5, 5.5, 931.1], cam: [300, 100, 780], look: [45, 28, 980] },
   // Leg 5's Checkpoint E: the Wall jump landing at High Gorge, looking down the split toward the sea.
   wall: { seed: 'wall-closed', stand: [-132.55, 5.5, -1999.03], cam: [-114, 14, -1993], look: [-172, 4, -2030] },
+  // Leg 6's Checkpoint F: from the island platform up the causeway, and from the Notch halt into the arch.
+  ending: { seed: 'island-reached', stand: [-11.7, 4.9, -133.3], cam: [-20, 27, -115], look: [-28, 4, -192], fov: 55 },
+  notch: { seed: 'notch-reached', stand: [-1569.9, 7.9, -966.5], cam: [-1558, 13, -945], look: [-1620, 17, -1000] },
   // Garage step 4's Checkpoint (docs/plans/garage-step4.md): `ns` Quick and `bay` Strong fitted, both copies in their
   // bays, the body by the Roundhouse's garage post (garage-geo.ts), the camera over the post looking across the table.
   roundhouse: { seed: 'trade-fitted', stand: [952.6, 19.2, 15.6], cam: [962, 28, 8], look: [944.5, 19, 19.2] },
@@ -203,8 +206,9 @@ try {
       await sleep(6000);
     }
     const measuredView = viewName ?? (jsonOut ? 'overview' : 'player camera');
-    const row = { ...(await g.eval(STATS)), measuredView, railSeed: railSeed ?? null };
+    // Capture the settled scene before the shadow toggle can temporarily drop meshes from the frame.
     if (place) console.log('still', await g.still(`perf-${viewName}`));
+    const row = { ...(await g.eval(STATS)), measuredView, railSeed: railSeed ?? null };
     if (hardware) {
       // The shadow-difference sample above perturbs a few frames; settle before the separate timing window.
       await sleep(1000);

@@ -28,6 +28,7 @@ import { trainAlong } from '../../src/sim/railway-train.ts';
 import { RAIL_TRAINS } from '../../src/sim/railway-lines.ts';
 import { cartAlong } from '../../src/sim/railway-cart.ts';
 import { railwaySession, type RailwaySession } from '../../src/entities/railway/state.ts';
+import { routeRow } from '../../src/sim/railway-queries-route.ts';
 
 export type RailwayProbe = {
   pid: string;
@@ -68,6 +69,7 @@ export type RailwayAdapterProbe = {
     trains: ReturnType<typeof trains>;
     lines: ReturnType<typeof lines>;
     ring: ReturnType<typeof aperture>;
+    route: Pick<ReturnType<typeof routeRow>, 'reached' | 'arrived'>;
   };
   effects: readonly RailwayAccepted[];
   corrections: readonly RailwayCorrection[];
@@ -398,6 +400,7 @@ function startWorld(room: Room) {
       const read = adapter.read,
         w = read.world(),
         at = read.tick();
+      const { reached, arrived } = routeRow(w);
       return {
         session: railwaySession(read),
         rows: {
@@ -410,6 +413,7 @@ function startWorld(room: Room) {
           trains: trains(w),
           lines: lines(w),
           ring: aperture(w),
+          route: { reached, arrived },
         },
         effects: effects.map((e) => ({ ...e })),
         corrections: corrections.map((c) => ({ ...c })),

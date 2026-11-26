@@ -1406,14 +1406,14 @@ const REJOIN_CASES = {
 } as const;
 type RejoinSeed = keyof typeof REJOIN_CASES;
 
-export async function railwayLegRejoin(c: Ctx, seed: RejoinSeed) {
+export async function railwayLegRejoin(c: Ctx, seed: RejoinSeed | 'island-reached') {
   // The whole case includes the cold seed build and the line's round trips.
   const deadlineSeconds = 480;
   const started = performance.now();
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     await Promise.race([
-      legRejoin(c, seed),
+      seed === 'island-reached' ? arrivalRejoin(c) : legRejoin(c, seed),
       new Promise<never>(
         (_, reject) =>
           (timer = setTimeout(
@@ -1429,6 +1429,89 @@ export async function railwayLegRejoin(c: Ctx, seed: RejoinSeed) {
     clearTimeout(timer);
   }
 }
+
+async function arrivalRejoin(c: Ctx) {
+  const { RAIL_ARRIVAL } = await import('../../src/sim/railway-route.ts');
+  const { routeRow } = await import('../../src/sim/railway-queries-route.ts');
+  const { writeRailSeed } = await import('../look/rail-seed.ts');
+  const room = `${c.room}-island-reached`;
+  const id = railwayRoomId(room);
+  const check = (name: string, ok: boolean, detail = '') => {
+    c.check(`leg rejoin (island-reached): ${name}`, ok, detail);
+    if (!ok) throw new Error(`Arrival rejoin stopped: ${name}`);
+  };
+  await writeRailSeed(c.dataDir, room, 'island-reached', 1000);
+  const open = (pid: string) => c.web.open(pid, `room=${id}&server=http://127.0.0.1:${c.port()}&pid=${pid}&adapter=1`);
+  const live = async () => routeRow((await hostedWorld(c, id)).rules.railway.world());
+  const arrivals = (probe: RailwayAdapterProbe) => probe.effects.filter((e) => e.op === 'rail.arrive');
+  const first = await open('leg0');
+  const { reached } = await live();
+  check('the saved seed contains the first island stop', reached >= 0, String(reached));
+  const at = async (name: string, arrived: number, peers: [Page, number][]) => {
+    const matches = (row: { reached: number; arrived: number }) => row.reached === reached && row.arrived === arrived;
+    check(
+      name,
+      (await waitFor(async () => {
+        const probes = await Promise.all(peers.map(([page]) => adapter(page)));
+        return (
+          matches(await live()) &&
+          probes.every(
+            (probe, i) =>
+              probe.session.ready &&
+              probe.session.pending === 0 &&
+              matches(probe.rows.route) &&
+              arrivals(probe).length === peers[i]![1],
+          )
+        );
+      }, 15000)) >= 0,
+      JSON.stringify({ reached, arrived }),
+    );
+  };
+  await at('presser loads the unplayed seed', -1, [[first, 0]]);
+  const observer = await open('leg1');
+  check('both tabs see each other before the press', (await waitFor(() => meet(first, observer), 10000)) >= 0);
+  await at('second tab joins before the press', -1, [
+    [first, 0],
+    [observer, 0],
+  ]);
+  check(
+    'the presser submits at the meeting post',
+    await ev(
+      first.page,
+      ({ x, y, z }) => {
+        window.T.railStand(x, y, z);
+        return window.T.railIntent({ op: 'rail.arrive' });
+      },
+      RAIL_ARRIVAL,
+    ),
+  );
+  let arrived = -1;
+  check(
+    'the observer receives the server acceptance',
+    (await waitFor(async () => {
+      const [event] = arrivals(await adapter(observer));
+      if (!event || event.predicted || event.pid !== 'leg0' || event.accepted !== 1) return false;
+      arrived = (await live()).arrived;
+      return arrived >= 0;
+    }, 15000)) >= 0,
+  );
+  await at('both tabs see the arrival once', arrived, [
+    [first, 1],
+    [observer, 1],
+  ]);
+  await first.page.close();
+  check('the observer sees the presser leave', (await waitFor(async () => !(await sees(observer, first)), 10000)) >= 0);
+  await at('the arrival persists with the presser away', arrived, [[observer, 1]]);
+  await c.restart();
+  await at('the arrival survives restart without a replay', arrived, [[observer, 1]]);
+  const rejoined = await open('leg0');
+  await at('the presser rejoins without a replay', arrived, [
+    [rejoined, 0],
+    [observer, 1],
+  ]);
+  await Promise.all([rejoined.page.close(), observer.page.close()]);
+}
+
 async function legRejoin(c: Ctx, seed: RejoinSeed) {
   const { RAIL_LEGS, legRack } = await import('../../src/sim/railway-route.ts');
   const { RAIL_LINES } = await import('../../src/sim/railway-lines.ts');
