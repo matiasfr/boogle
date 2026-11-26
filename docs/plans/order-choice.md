@@ -241,7 +241,7 @@ medium first). Sizes are estimates.
       one does not, find the changed input before re-pinning (lockstep rule); a host case in `server/test/` (beside
       `railway-steel-host.test.ts:617`'s cave take) that a take with `leg` is accepted at that leg's rack and refused at
       another open leg's; `npm test` in `server/` (rule 52).
-- [ ] **2. The order (M; "High-risk implementation": gpt-6.2-astra medium, high for the fuzz).** Files:
+- [x] **2. The order (M; "High-risk implementation": gpt-6.2-astra medium, high for the fuzz).** Files:
       `railway-route.ts` (`cave` `after: 2`; `alsoAfter` on `Spec` and `RouteLeg`, `wall` `alsoAfter: 3`),
       `railway-queries-route.ts` (`legReached`, `legMintChain`'s kit-ahead condition, `legKitMayLoad`),
       `railway-check-route.ts` (no two open legs on a line), `src/world/namespace.ts` (**the bump**, its dated line).
@@ -255,7 +255,7 @@ medium first). Sizes are estimates.
       accepted lever calls on both lines, Strong on the bay line), the default run timed and under a quarter of its
       budget (rule 60); the long run (`ROUTE_GATES=1`, four seeds, 20,000 ticks a mode) pasted here before the bump
       ships, with legs 2 to 5's long suites re-run beside it. The whole server suite, `npm run test:net` (rule 55).
-- [ ] **3. Seeds (S; "High-risk implementation": gpt-6.2-astra medium).** `src/sim/railway-seed-legs.ts` and
+- [x] **3. Seeds (S; "High-risk implementation": gpt-6.2-astra medium).** `src/sim/railway-seed-legs.ts` and
       `SEED_STAGES` (`railway-seeds.ts`) from `bay-reached`, accepted ops only, each wrapped in `need` (rule 53):
       **`cave-first-open`** (the plug open, both racks stocked, Canopy's barrier shut) and **`cave-first-reached`** (the
       cave laid, Canopy unopened, a little running time). The canonical seeds keep their meaning: `canopy-open` onward
