@@ -795,8 +795,8 @@ and approaches the fifth Wall rack from the middle of the platform.
 
 | Area | Coverage |
 | --- | --- |
-| 4 High Gorge | `railwayLegRejoin('gorge-mid')`. The carrier leaves with 16 leg rails. The stack leg, rack, Gorge yard and three kit loads aboard survive restart and rejoin. |
-| 5 Bell Rock | `railwayLegRejoin('incline-mid')`. The carrier leaves with 16 rails from the final incline kit. The leg, the rest of the kit on the rack, and the empty Gorge yard survive restart and rejoin. |
+| 4 High Gorge | `railwayLegRejoin('gorge-mid')`. The carrier leaves with 16 leg rails. The stack frame has 16 logs fed, with three kit loads aboard. The feed, rack, Gorge yard and train loads survive restart and rejoin. |
+| 5 Bell Rock | `railwayLegRejoin('incline-mid')`. The carrier leaves with 16 leg rails after the second player feeds 12 logs into the incline frame. Four replacement kit logs are aboard an incline train. The feed, rack, Gorge yard and train load survive restart and rejoin. |
 | 6 Canopy Town | `railwayLegRejoin('canopy-mid')` |
 | 7 The Port | `railwayLegRejoin('cave-mid')` |
 | 8 The White Wall | `railwayLegRejoin('wall-mid')` |
