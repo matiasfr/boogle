@@ -90,11 +90,11 @@ test('a Kit 6 rider keeps their accepted homeward stop when Wall 5 finishes', ()
     s = unaudited(buildSeedWorld('wall-mid'));
   while (legRow(s.w, wall).laid < 4) laySection(s, wall);
   const stops = stopsOf(s.w, line);
-  for (let i = 0; rail(s.w).depot === 0; i++) {
+  for (let i = 0; legRow(s.w, wall).rackLogs === 0; i++) {
     assert.ok(i < 8000, 'Wall 5 kit reaches the rack');
     advance(s, 1);
   }
-  assert.ok(act(s, 'a', 'rail.depotTake') > 0);
+  assert.ok(act(s, 'a', 'rail.depotTake', { leg: wall }) > 0);
   assert.ok(act(s, 'a', 'rail.legStock', { leg: wall }) > 0);
   for (let i = 0; i < 8000; i++) {
     const slot = LINE_SLOTS[line]!.find((j) => {
@@ -119,7 +119,7 @@ test('a Kit 6 rider keeps their accepted homeward stop when Wall 5 finishes', ()
       }
       // The normal dwell can outlast the freight hold. Ask again in a separate run, one tick before the stub moves.
       for (const take of ['rail.depotTake', 'rail.depotRailTake'] as const) {
-        while (act(s, 'a', take) > 0) assert.ok(act(s, 'a', 'rail.legStock', { leg: wall }) > 0);
+        while (act(s, 'a', take, { leg: wall }) > 0) assert.ok(act(s, 'a', 'rail.legStock', { leg: wall }) > 0);
       }
       const start = legRow(s.w, wall).start;
       assert.ok(start >= 0);
