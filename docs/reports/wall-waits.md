@@ -1,5 +1,75 @@
 # Where the White Wall waits come from
 
+## Bounded experiment on 25 November
+
+The retained rule lets a single-kit train wait with Kit 6 after builders deposit the first logs or rails
+at the fifth Wall frame. Both co-op sizes save 184.2 simulated seconds per player, with zero solo change.
+The seeds still open the deep span. An earlier hold delayed a Saltpan rider beyond the service budget.
+
+| Retained hold, before → after | 1 player | 2 players | 3 players |
+| --- | ---: | ---: | ---: |
+| Wall 6 idle seconds per player | 307.70 → 307.70 | 268.30 → 84.10 | 251.57 → 67.37 |
+| Wall 6 elapsed seconds | 324.8 → 324.8 | 335.6 → 151.4 | 335.6 → 151.4 |
+| Area 8 minutes | 22.2 → 22.2 | 20.6 → 17.6 | 20.6 → 17.6 |
+
+The rerun on `bc82d7164` matched baseline idle and elapsed ticks at every other canonical node,
+with both straight-line and calibrated walking. A second comparison ran all eight graph orders for
+each seat count. All 24 routes completed on both rules and each gave the same Wall 6 delta shown above.
+Every other node matched in every order. In the 75% headway service test the settled fourth
+head served 27 calls. The longest Saltpan wait was 139.4 s outbound against the 220.0 s limit
+(80.6 s of margin). The load and release checks still use the existing train and leg rows.
+The retained rule runs on world v72.
+
+The focused `UNIT_ONLY` kit and route run passed 84 tests across ten files.
+`npm run test:net` passed all 338 browser and server checks, including a Wall carrier
+rejoining and every tab mirroring the stock on the carrier and the trains.
+`npm run level-check` completed all 26 reports. On the merged code at `fe69aa2be`,
+`node dev/ship-check.ts origin/main HEAD` exited 0 with 1,833 passes, one skip and zero failures.
+
+The baseline was `bf315bacf`. For each of the baseline, the hold alone and the hold plus the experimental press,
+run `npm run loop -- run --players N --order canonical --no-probes --json` for N = 1, 2, 3.
+Compare node duration (end tick less start tick) and mean idle (idle player-ticks divided by ten and by player count).
+The canonical straight-line and calibrated runs agreed on every delta below.
+
+| Rejected hold before the first deposit, before → after | 1 player | 2 players | 3 players |
+| --- | ---: | ---: | ---: |
+| Wall 6 idle seconds per player | 307.70 → 33.70 | 268.30 → 84.10 | 251.57 → 67.37 |
+| Wall 6 elapsed seconds | 324.8 → 50.8 | 335.6 → 151.4 | 335.6 → 151.4 |
+| Area 8 minutes | 22.2 → 17.6 | 20.6 → 17.6 | 20.6 → 17.6 |
+
+The whole leg is already eligible for dispatch (`src/sim/railway-route.ts:527`,
+`src/sim/railway-queries-route.ts:190`). Trains load at home (`src/sim/railway-sys-route-kit.ts:182`)
+and unload the current rack's lack on arrival (line 72). The trial in `legRailheadHold` (line 257) let a single-kit train
+with surplus for Wall 6 wait at the current head while Wall 5 is being funded or laid. The existing
+timeout and rider/follower release apply. The train step honors the hold (`src/sim/railway-sys-trains.ts:242`)
+and the fifth lay sends a held train onward (`src/sim/railway-sys-route.ts:83`). The deep-span press still
+requires the crystal seeds and Wall 5 laid (lines 167–168). An entry trace before the first Wall 6
+policy action found all 20 logs and 20 rails on the rack at each player count. Every other measured node matched baseline.
+
+The Wall service-health test found a Saltpan request that waited 224.1 s on the settled fourth head, exceeding its
+220.0 s budget. Releasing the train whenever a platform was calling still produced that failure. Restricting the
+hold to a fifth frame that had received some stock passed the service test. Its Wall 6 idle was 307.70 / 84.10 /
+67.37 s per player and area 8 took 22.2 / 17.6 / 17.6 minutes. The follow-up retained this variant for the
+co-op saving. Counting stock already on a builder's back also saved zero solo.
+
+| Bell Rock press experiment, before → after | 1 player | 2 players | 3 players |
+| --- | ---: | ---: | ---: |
+| Plug idle seconds per player | 0 → 0 | 172.30 → 104.80 | 229.73 → 139.73 |
+| Plug elapsed seconds | 344.6 → 209.6 | 344.6 → 209.6 | 344.6 → 209.6 |
+| Cave 1 idle seconds per player | 33.70 → 33.70 | 184.60 → 76.55 | 133.90 → 61.87 |
+| Cave 1 elapsed seconds | 45.2 → 261.3 | 348.2 → 348.2 | 348.2 → 348.2 |
+
+The opener travels from Canopy to the press on West Landing's cave apron. The graph reads the press from
+the catalog (`dev/loop/graph.ts:614`). Only the first seat walks and presses (`dev/loop/run.ts:387`),
+using straight-line distance (`dev/loop/run.ts:889`). The trial moved the press from
+`rowSide('cave', 1200, -980, 90, 400)` to `rowSide('bay', 122900, -480, 90, 400)` at Bell Rock,
+and pinned Cave 1's frame to its original position (`src/sim/railway-route.ts:361` and line 490).
+The opener still had to reach the rack. Solo Cave 1 exceeded the 10-second regression limit by adding
+216.1 seconds. The shorter press walk recovered 135.0 seconds, giving a net solo cost of 81.1 seconds.
+The press stays at West Landing. A different co-op experiment for the designer is to give a second player
+a job during the approach. All other measured node durations and idle counts matched the hold-only run.
+Human walking routes, train rides and co-op assignments remain unmeasured. These experiments were not tested on a device.
+
 Measured on `94df3faa44a5c7214146c15b08cae5474c07a7a1e`, the fetched `origin/main`
 (tree at the start of this job), with Node 26.13.0. This is a proposal for the
 designer and owner, for [the route-to-the-ending checkpoint](../backlog.md#the-checkpoint-we-work-toward).

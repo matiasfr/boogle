@@ -256,11 +256,13 @@ function yardLoad(w: World, slot: number): 'on' {
 /** A second bill rides onward when the next head opens. Only the current end can hold a train. */
 export function legRailheadHold(w: World, slot: number, tick: number): 'hold' | 'yield' | 'on' {
   const r = w.get(Train, trainOf(w, slot))!;
-  if (r.phase !== TRAIN_PHASE.STAND || !r.legKit || kitBills(r.boiler) < 2) return 'on';
+  if (r.phase !== TRAIN_PHASE.STAND || !r.legKit) return 'on';
   const line = RAIL_TRAINS[slot]!.line;
   for (const k of legsServed(w, line)) {
     const leg = RAIL_LEGS[k]!,
       g = legRow(w, k);
+    // Wait with Kit 6 once Wall 5 is being fed. Holding before the first deposit delays Saltpan riders.
+    if (kitBills(r.boiler) < 2 && !(leg.id === 'wall' && g.laid === 4 && g.logs + g.rails > 0)) continue;
     if (leg.line !== line || g.laid + 1 >= leg.sections.length || r.at !== legKitDrop(w, line, k)) continue;
     if (legKitFits(w, line, k, r)) continue;
     if (g.start >= 0 || tick < r.depart + TRAIN.dwellTicks + TRAIN.railheadHoldTicks) {
