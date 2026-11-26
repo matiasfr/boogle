@@ -412,12 +412,18 @@ Every brief starts with `git fetch origin` and `git checkout -B <branch> origin/
       `lantern`: `rail.grant`; `causeway-gate`: requires `notch-1` and `lantern`; `causeway-1`: `legSection` on
       `causeway`, `KIT_BY` "an `ns` train from the Gorge yard"; `arrive`: `rail.arrive`, `stops: ['original']`;
       `GENERIC_OPS` and `ACTIVITY_MARKS` unchanged, the file listed); `dev/loop/standins.ts` drops `ending` (no stand-in
-      left); `dev/loop/run.ts` (`ROUTE_PRESS` for the two gates, the lantern and the arrival); `dev/look/bots/railway-legs.ts`
-      (after the Wall: the cave line to Canopy, the walk to the bay station, the barrier, the feed, a bay train to the
+      left, and `dev/loop/report.ts` drops the stand-in footer); `dev/loop/run.ts` (`ROUTE_PRESS` for the two gates,
+      the lantern and the arrival); `dev/look/bots/railway-legs.ts`
+      (after the Wall: ride the Wall line from High Gorge to its Canopy halt, walk to the bay station, open the barrier,
+      feed the frame and ride a bay train to the
       Notch, the lantern, the bay line to Bell Rock, the ramp, the barrier, the feed, an `ns` train to the island, the
-      post, Close; `--from wall-closed` a leg seed); `dev/look/segments.ts` (`RAIL_STOPS.ending`, `LEG_STOPS`). Verify:
+      post, Close; the row rides reuse the Sit-aware stop request from `dev/look/bots/railway-ride.ts`);
+      `dev/look/playthrough.ts` starts the `wall-closed` segment at its existing High Gorge jump landing;
+      `dev/look/segments.ts` (`RAIL_STOPS.notch`, `original` and `ending`,
+      and `LEG_STOPS`; `ending` stops after Close, which is a local action outside the host graph). Verify:
       `npm run loop -- node notch-1` and `-- node arrive`; `npm run loop -- run` (no stand-in reported);
-      `npm run playthrough -- --from wall-closed --to ending`; `test/loop-graph.test.ts`.
+      `npm run playthrough -- --from wall-closed --to ending`; `test/loop-graph.test.ts` and removal of the retired
+      stand-in catalog assertion in `test/railway-route.test.ts`.
       **Brief lines:** rules 63, 22 (no edits while a bot run is in flight; read `verdict.json` yourself), 53, 74, 10, 5
       (at most three looks at once on HOTBOX).
 

@@ -46,6 +46,7 @@ import {
   STEEL,
 } from '../../src/sim/railway-ring-layout.ts';
 import {
+  RAIL_ARRIVAL,
   RAIL_GATES,
   RAIL_GRANTS,
   RAIL_LEGS,
@@ -109,7 +110,11 @@ export type NodeId =
   | 'canopy-gate'
   | 'plug-gate'
   | 'deep-gate'
-  | 'cloth';
+  | 'cloth'
+  | 'notch-gate'
+  | 'lantern'
+  | 'causeway-gate'
+  | 'arrive';
 /** The greybox legs' sections (ROUTE_SECTIONS). */
 export type SectionId =
   | 'stack-1'
@@ -131,7 +136,9 @@ export type SectionId =
   | 'wall-3'
   | 'wall-4'
   | 'wall-5'
-  | 'wall-6';
+  | 'wall-6'
+  | 'notch-1'
+  | 'causeway-1';
 
 /** World centimetres, as the catalogs pin them. `y` only where the catalog gives a height. */
 export type Point = { x: number; z: number; y?: number };
@@ -214,9 +221,6 @@ export const GENERIC_OPS = [
   // Garage step 4's table chip: a line's copy brought for its Quick or Strong fit, a choice that never gates the route.
   'rail.bring',
 ] as const;
-/** Rail actions whose nodes are not built yet: the meeting on the Original Island (the route's last leg, area 9, a
- * stand-in in dev/loop/standins.ts). Named here, not owned by a node. */
-export const PENDING_OPS = ['rail.arrive'] as const;
 /** The greybox legs' reached marks that the play record does not carry yet (greybox-leg2.md, step 5, as built): no
  * progress mark names a laid section or the arrival at High Gorge (src/adapters/railway-marks.ts), and the pickup and
  * barrier marks have no beat (dev/playtest/beats.ts). Both files belong to later work; test/loop-graph.test.ts holds
@@ -226,6 +230,7 @@ export const PENDING_MARKS: readonly string[] = [
   'High Gorge reached',
   'route pickup taken',
   'route barrier opened',
+  'route arrived',
 ];
 /** Marks that are activity, attributed to the node current at the time (dev/loop/trace.ts). */
 export const ACTIVITY_MARKS: readonly RegExp[] = [
@@ -403,7 +408,9 @@ const STACK = legOf('stack'),
   BAY = legOf('bay-cut'),
   CANOPY = legOf('bell-canopy'),
   CAVE = legOf('cave'),
-  WALL = legOf('wall');
+  WALL = legOf('wall'),
+  NOTCH = legOf('notch-tunnel'),
+  CAUSEWAY = legOf('causeway');
 const grantOf = (id: string) => RAIL_GRANTS.findIndex((g) => g.id === id);
 /** Who brings section k's kit to its rack (src/sim/railway-queries-route.ts: MINT_LEGS, YARD_LEGS, STOCKED_LEGS). */
 const KIT_BY: Record<string, (k: number) => string> = {
@@ -421,9 +428,15 @@ const KIT_BY: Record<string, (k: number) => string> = {
   cave: (k) =>
     k === 0 ? "stocked on the West landing's cave rack (the stand-in: no train)" : 'a cave train from the West landing',
   wall: () => 'a cave train from the West landing',
+  'notch-tunnel': () => 'a bay train from the West landing',
+  causeway: () => 'an ns train from the Gorge yard',
 };
 /** A leg's node prefix, where it is not the leg's id. */
-const NODE_PREFIX: Readonly<Record<string, string>> = { 'bay-cut': 'bay', 'bell-canopy': 'canopy' };
+const NODE_PREFIX: Readonly<Record<string, string>> = {
+  'bay-cut': 'bay',
+  'bell-canopy': 'canopy',
+  'notch-tunnel': 'notch',
+};
 const legNodeId = (leg: RouteLeg, k: number) => `${NODE_PREFIX[leg.id] ?? leg.id}-${k + 1}` as SectionId;
 /** Each built leg's sections as nodes: the node, its RAIL_LEGS index and the section index. */
 export const ROUTE_SECTIONS: readonly { id: SectionId; leg: number; section: number }[] = [
@@ -433,6 +446,8 @@ export const ROUTE_SECTIONS: readonly { id: SectionId; leg: number; section: num
   CANOPY,
   CAVE,
   WALL,
+  NOTCH,
+  CAUSEWAY,
 ].flatMap((leg) =>
   leg.sections.map((_s, section) => ({ id: legNodeId(leg, section), leg: RAIL_LEGS.indexOf(leg), section })),
 );
@@ -657,6 +672,74 @@ const ROUTE_NODES: readonly LoopNode[] = [
       k === 5 ? ['gorge'] : [],
     ),
   ),
+  {
+    id: 'notch-gate',
+    label: 'Open the Notch barrier at Canopy Town',
+    area: 'route',
+    at: p(RAIL_GATES[NOTCH.sections[0]!.gate!]!.at),
+    bill: {},
+    supply: {},
+    ops: ['rail.gate'],
+    reached: { mark: 'route barrier opened', nth: 5 },
+    stops: [],
+    requires: [
+      dec('wall-6', 'rules', `${RULES_ROUTE} gate: the Notch leg is open`),
+      dec('cloth', 'rules', `${RULES_ROUTE} gate: the room holds the glider cloth`),
+    ],
+    cue: [onMain('world', "the barrier on Canopy's Notch frame", LEG_VIEW)],
+  },
+  legSection(
+    NOTCH,
+    0,
+    'Canopy Town to Lantern Notch',
+    [dec('notch-gate', 'rules', `${RULES_ROUTE} legStock: refused while the frame's barrier is shut`)],
+    ['notch'],
+  ),
+  {
+    id: 'lantern',
+    label: 'Take the lantern at Lantern Notch',
+    area: 'route',
+    at: p(RAIL_GRANTS[grantOf('lantern')]!.at),
+    bill: {},
+    supply: {},
+    ops: ['rail.grant'],
+    reached: { mark: 'route pickup taken', nth: 4 },
+    stops: [],
+    requires: [dec('notch-1', 'rules', `${RULES_ROUTE} grant: its leg laid (legDone)`)],
+    cue: [onMain('world', 'the lit lantern post in the arch', LEG_VIEW)],
+  },
+  {
+    id: 'causeway-gate',
+    label: 'Open the causeway barrier at Bell Rock',
+    area: 'route',
+    at: p(RAIL_GATES[CAUSEWAY.sections[0]!.gate!]!.at),
+    bill: {},
+    supply: {},
+    ops: ['rail.gate'],
+    reached: { mark: 'route barrier opened', nth: 6 },
+    stops: [],
+    requires: [
+      dec('notch-1', 'rules', `${RULES_ROUTE} gate: the causeway leg is open`),
+      dec('lantern', 'rules', `${RULES_ROUTE} gate: the room holds the lantern`),
+    ],
+    cue: [onMain('world', "the barrier on Bell Rock's lower causeway frame", LEG_VIEW)],
+  },
+  legSection(CAUSEWAY, 0, 'Bell Rock to the Original Island', [
+    dec('causeway-gate', 'rules', `${RULES_ROUTE} legStock: refused while the frame's barrier is shut`),
+  ]),
+  {
+    id: 'arrive',
+    label: 'Press the meeting post on the Original Island',
+    area: 'route',
+    at: p(RAIL_ARRIVAL),
+    bill: {},
+    supply: {},
+    ops: ['rail.arrive'],
+    reached: { mark: 'route arrived' },
+    stops: ['original'],
+    requires: [dec('causeway-1', 'rules', `${RULES_ROUTE} arrive: a train has stood at the causeway's end`)],
+    cue: [onMain('world', 'the meeting post on the beach below the platform ramp', LEG_VIEW)],
+  },
 ];
 
 export const NODES: readonly LoopNode[] = [

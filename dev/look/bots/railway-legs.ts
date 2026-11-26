@@ -8,7 +8,8 @@
 // riding `bay` trains over the strait to each head and on to Canopy Town, take the glider cloth round the buffers and
 // ride home on the same line to the West landing. Leg 4: walk round the root to the cave apron, open the plug,
 // build the three sections to Port Quay and ride back to the West landing. Leg 5: return to Port Quay, build the
-// White Wall to High Gorge, opening the deep span at frame six, then take line 2 home.
+// White Wall to High Gorge, opening the deep span at frame six. Leg 6 transfers at Canopy, builds to Lantern Notch
+// and then from Bell Rock to the Original Island, where the bot presses the meeting post and closes the card.
 // Prompts are pressed by id (`railway-leg-take-logs`, `-take-rails`,
 // `-feed`, `-pick`, `-gate`, `-seeds`, `-canopy`, `-cloth`). Each phase reads the rows first, so it resumes from
 // `ring-joined`, `gorge-open`, `gorge-mid`, `gorge-reached`, `bay-mid`, `trade-ready`, `bay-reached` and `canopy-reached` (a seed starts
@@ -27,7 +28,12 @@ import { RING_CROSSING } from '../../../src/entities/ring-island/state.ts';
 import { RAIL_HALTS } from '../../../src/sim/railway-lines.ts';
 import { LINE_SLOTS } from '../../../src/sim/railway-trains.ts';
 import { ROW_PLATFORM, rowWorld } from '../../../src/entities/railway/row-path.ts';
+import bellLevel from '../../../content/built/levels/bell.json' with { type: 'json' };
+import type { Leg2Analysis } from '../../../src/content/levels/leg2.ts';
+import { compiled } from '../../../src/prefab/catalogue.ts';
+import { loadLevelArtifact } from '../../../src/prefab/validate.ts';
 import {
+  RAIL_ARRIVAL,
   RAIL_GATES,
   RAIL_GRANTS,
   RAIL_LEGS,
@@ -70,7 +76,7 @@ function rowLever(line: number, stop: number) {
 export async function legRoute({ bot, checkpoint }: LegRoute) {
   const L = RAIL_LEGS[STACK]!;
   const n = L.sections.length;
-  const { ride, rideFrom, hopTo, view, until, check, face } = line2Rides(bot);
+  const { ride, rideFrom, hopTo, view, until, check, face, requestPrompt } = line2Rides(bot);
   const row = () => legRow(rw(), STACK);
   const laid = () => row().laid;
   const island = cm(RING_HALT.down);
@@ -328,8 +334,9 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   /** Ride a row line's train from stop `from` to stop `to`: wait at the departure's lever for a train standing that
    * way (the lay's ask brings one; pull the lever when none comes), board it by a real jump, ask each stop it offers
    * aboard, and ride until it stands at `to`. The caller steps off. */
-  const rowRide = async (line: number, from: number, to: number, name: string) => {
+  const rowRide = async (line: number, from: number, to: number, name: string, askEach = true) => {
     const dir = to > from ? 1 : -1;
+    const destination = RAIL_HALTS.find((h) => h.line === line && h.stop === to)!;
     const standing = () =>
       LINE_SLOTS[line]!.find((slot) => {
         const r = trains(rw())[slot]!;
@@ -395,8 +402,8 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
       let ran = false;
       await until(() => {
         check(aboard() && !me.swimming, `rider stays aboard the ${name} train`);
-        const t = interactTarget();
-        if (t?.id === 'railway-request-aboard' && t.run && !t.blocked && !asked.has(t.verb)) {
+        const t = requestPrompt();
+        if (t?.run && !t.blocked && !asked.has(t.verb) && (askEach || t.verb === `Request stop: ${destination.name}`)) {
           asked.add(t.verb);
           bot.press();
         }
@@ -442,6 +449,64 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   };
   const wallSlot = legOf('wall');
   const wall = RAIL_LEGS[wallSlot]!;
+  const finishRoute = async () => {
+    const wallEnd = wall.railheadHalt + wall.sections.length - 1;
+    check(near(gorge, 80), 'standing at High Gorge for the Wall line');
+    if (/[?&]railStop=wall(?:%20|\+)home(?:&|$)/.test(globalThis.location?.search ?? '')) {
+      await rideGorgeHome();
+      await checkpoint('wall home');
+      return;
+    }
+    const notchSlot = legOf('notch-tunnel');
+    const notch = RAIL_LEGS[notchSlot]!;
+    const canopyHalt = RAIL_HALTS.find((h) => h.line === wall.line && h.name === 'Canopy Town')!;
+    await rowRide(wall.line, wallEnd, canopyHalt.stop, 'White Wall', false);
+    const transfer = rowWorld(wall.line, canopyHalt.s / 100, -ROW_PLATFORM, { x: 0, z: 0 });
+    await stepOff({ x: transfer.x * 100, z: transfer.z * 100 }, 'stepped off at the Wall line’s Canopy halt');
+    await checkpoint('Canopy transfer');
+    const openGate = async (leg: RouteLeg, prompt: string, beat: string) => {
+      const gate = leg.sections[0]!.gate!;
+      if (!(route().gates & (1 << gate))) await press(prompt, RAIL_GATES[gate]!.at, beat);
+      check(route().gates & (1 << gate), beat);
+      await checkpoint(beat);
+    };
+    await openGate(notch, 'railway-leg-notch', 'Notch barrier open');
+    await buildRowLeg(notchSlot, 'Notch');
+    await checkpoint('Notch reached');
+    const lantern = RAIL_GRANTS.findIndex((g) => g.id === 'lantern');
+    await press('railway-leg-lantern', RAIL_GRANTS[lantern]!.at, 'take the lantern');
+    check(granted(lantern), 'the room holds the lantern');
+    await checkpoint('lantern taken');
+
+    const bayEnd = RAIL_LEGS[BAY]!.railheadHalt + RAIL_LEGS[BAY]!.sections.length - 1;
+    await rowRide(notch.line, notch.railheadHalt, bayEnd, 'bay line', false);
+    const bellStop = RAIL_HALTS.find((h) => h.line === notch.line && h.stop === bayEnd)!;
+    const bellUpper = rowWorld(notch.line, bellStop.s / 100, -ROW_PLATFORM, { x: 0, z: 0 });
+    await stepOff({ x: bellUpper.x * 100, z: bellUpper.z * 100 }, 'stepped off at Bell Rock’s upper platform');
+    const { marks } = loadLevelArtifact(bellLevel, compiled.prefabs).analysis as Leg2Analysis['bell'];
+    for (const point of [marks.rampHead, marks.rampFoot, marks.lowerWest, marks.lowerEast])
+      check(await bot.walk(point.x, point.z, 0.8), 'walked from the upper platform to Bell Rock’s lower east deck');
+    await checkpoint('Bell Rock lower deck reached');
+    const causewaySlot = legOf('causeway');
+    await openGate(RAIL_LEGS[causewaySlot]!, 'railway-leg-causeway', 'causeway barrier open');
+    await buildRowLeg(causewaySlot, 'causeway');
+    await untilTicks(() => route().reached >= 0, 'a train has stood at the Original Island', 1500);
+    await press('railway-leg-arrive', RAIL_ARRIVAL, 'press the meeting post');
+    check(route().arrived >= 0, 'the room is marked arrived');
+    const card = () => document.querySelector('.ending-card');
+    await until(card, 'ending card appeared', 10000);
+    await checkpoint('meeting post pressed');
+    const close = card()!.querySelector<HTMLButtonElement>('button');
+    check(close?.textContent === 'Close', 'the ending card offers Close');
+    await bot.wait(1600);
+    close!.click();
+    await until(() => !card(), 'ending card closed', 10000);
+    await checkpoint('ending card closed');
+  };
+  if (legDone(rw(), wallSlot)) {
+    await finishRoute();
+    return;
+  }
   const barrier = wall.sections[5]!.gate!;
   const openDeepSpan = async () => {
     check(
@@ -482,8 +547,7 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
       'The completed Wall points to the Notch barrier at Canopy Town',
     );
     await checkpoint('wall reached');
-    await rideGorgeHome();
-    await checkpoint('wall home');
+    await finishRoute();
   };
   // A port-reached save starts in the Village with the cave leg already laid.
   if (legDone(rw(), CAVE)) {

@@ -14,7 +14,6 @@ import {
   type LoopNode,
   type NodeId,
 } from './graph.ts';
-import { STAND_IN_IDS, standInLines, standInRoute } from './standins.ts';
 
 const fmt = (n: number) => String(Math.round(n));
 const billText = (bill: LoopNode['bill']) =>
@@ -91,16 +90,9 @@ function loopReport() {
 
 /** `npm run loop -- node <id>`: one node in a dozen lines, for an agent touching that beat. */
 export function printNode(id: string, json: boolean) {
-  if (STAND_IN_IDS.includes(id)) {
-    const s = standInRoute().nodes.find((x) => x.id === id)!;
-    return console.log(json ? JSON.stringify(s, null, 2) : standInLines(undefined, id).join('\n'));
-  }
   const r = loopReport();
   const n = r.nodes.find((x) => x.id === id);
-  if (!n)
-    throw new Error(
-      `no node "${id}". Nodes: ${r.nodes.map((x) => x.id).join(', ')}. Stand-ins: ${STAND_IN_IDS.join(', ')}`,
-    );
+  if (!n) throw new Error(`no node "${id}". Nodes: ${r.nodes.map((x) => x.id).join(', ')}`);
   const edges = [...r.defects, ...r.free, ...r.unruled, ...r.worldOnly].filter((e) => e.node === id || e.on === id);
   const built = NODES.find((x) => x.id === id)!;
   const requires = built.requires;
@@ -130,7 +122,7 @@ export function printNode(id: string, json: boolean) {
 
 export function printReport(json: boolean) {
   const r = loopReport();
-  if (json) return console.log(JSON.stringify({ ...r, standIns: standInRoute().nodes }, null, 2));
+  if (json) return console.log(JSON.stringify({ ...r, standIns: [] }, null, 2));
   const out: string[] = [`Loop graph: ${r.nodes.length} nodes, today's Home. ${r.note}`, ''];
   out.push(
     'node      bill                          carries x straight-line m       by hand if the vehicle is away       cue',
@@ -174,10 +166,5 @@ export function printReport(json: boolean) {
   out.push(`  Decided, held by the world only, not the sim (${r.worldOnly.length}):`);
   for (const e of r.worldOnly) out.push(`    ${e.node} after ${e.on}: ${e.source}`);
   out.push('', `Orders the solver proposes (${r.orders.length}): ${r.orders.join('; ')}`);
-  out.push(
-    '',
-    'Past the built graph, to the ending: STAND-INS (dev/loop/standins.ts; modelled by `npm run loop -- run`, never played).',
-    ...standInLines(),
-  );
   console.log(out.join('\n'));
 }
