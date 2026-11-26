@@ -31,6 +31,15 @@ function runTests(args: string[], env = testEnv().env) {
 // `npm run registry`, as CI's docs and registry jobs run it, on every diff: about 2s, and prose (must-read budgets, the
 // live agent-calls table) breaks it as easily as code.
 run(['dev/registry/check.ts', '--base', base]);
+// A tracked file the ignore rules match was force-added: twice in November, proof stills under `.look/`. Proofs go
+// beside their plan or report (docs/plans/<plan>/, docs/reports/), never under an ignored folder.
+const ignored = git('ls-files', '-ci', '--exclude-standard', '-z').split('\0').filter(Boolean);
+if (ignored.length) {
+  console.error(
+    `ship-check: tracked files under ignored paths; move them beside their plan or report:\n  ${ignored.join('\n  ')}`,
+  );
+  process.exit(1);
+}
 // Docs-only (dev/ci/change-class.ts): the same fast checks as CI's docs job, no lint, typecheck or unit tests.
 if (changeClass([...files]) === 'docs') {
   runTests(['--test-timeout=5000', 'test/models.test.ts', 'test/change-class.test.ts']);
