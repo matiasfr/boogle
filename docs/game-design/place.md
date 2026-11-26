@@ -1617,6 +1617,9 @@ The board at the buffers marks the future Wall line. Finishing the cave line ope
 
 **White Wall catalog and rules (local v71 branch).** Once the line reaches Port Quay, cave trains bring the next
 six kits along the Wall. The line serves a second Canopy halt on the isle's east side and crosses above the bay line.
+Once builders deposit stock at the fifth frame, a single-kit train carrying Kit 6 can wait at the fourth head
+and follow the lay forward. It uses the existing timeout and yields to riders and blocked followers.
+A rider who requests a homeward stop keeps that stop even if the fifth frame finishes before the train departs.
 At the fifth head the room's crystal seeds open the deep span. The last lay reaches High Gorge beside line 2.
 At Port Quay a plank crossing connects the outward platform to the High Port ramp. At Canopy the Wall has two
 40 m platforms at 13.90 m. Each has a ramp down to the 12 m isle for the walk to the bay line's homeward deck.
