@@ -106,7 +106,8 @@ jobs:
     needs: test
     if: needs.test.outputs.deploy == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # flyctl's remote build and rollout took 10 to 14 minutes on 25 and 26 November; 15 cancelled one at its last line.
+    timeout-minutes: 25
     env:
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
     steps:
