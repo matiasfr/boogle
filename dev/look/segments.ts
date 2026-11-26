@@ -25,7 +25,9 @@ export const RAIL_STOPS = {
   fare: 'fare landed',
   Q6: 'Q6 laid',
   pier: 'pier',
+  wagon: 'wagon coupled',
   crossing: 'crossing footed',
+  Q7: 'Q7 laid',
   // Ring Island's part (dev/look/bots/railway-ring.ts), from `--from deck-laid`, `gap-footed` or `leaf-raised`: these are its checkpoints.
   railhead: 'railhead reached',
   'gap-footed': 'gap footed',
@@ -71,6 +73,9 @@ const LEG_STOPS: readonly RailStop[] = [
 export const RAIL_FROM = {
   'q5-done': { railFrom: 'boiler', after: 'Q5', bot: 'railway-b5b8-bot.ts' },
   'trains-on': { railFrom: 'q6', after: 'trains', bot: 'railway-b5b8-bot.ts' },
+  'works-arrive': { railFrom: 'works', after: 'pier', bot: 'railway-works-bot.ts' },
+  'wagon-on': { railFrom: 'wagon', after: 'wagon', bot: 'railway-works-bot.ts' },
+  'crossing-done': { railFrom: 'ring-deck', after: 'crossing', bot: 'railway-ring-bot.ts' },
   // Ring Island build 1 (R5): the footed gap, the leaf raised on its pawl, the wagon's last four on the railhead rack.
   'deck-laid': { railFrom: 'ring', after: 'crossing', bot: 'railway-ring-bot.ts' },
   'gap-footed': { railFrom: 'ring', after: 'crossing', bot: 'railway-ring-bot.ts' },
@@ -145,6 +150,14 @@ export function railSegmentOptions(args: string[]) {
   // never reaches the stop would finish its own route and pass without it.
   if (to === 'deep-span' && from !== 'wall-deep') throw new Error('--to deep-span requires --from wall-deep');
   if (from === 'wall-deep' && to && to !== 'deep-span') throw new Error('--from wall-deep plays to deep-span');
+  if (from === 'crossing-done' && to !== 'Q7') throw new Error('--from crossing-done plays to Q7');
+  if (to === 'Q7' && from !== 'crossing-done') throw new Error('--to Q7 requires --from crossing-done');
+  if (from === 'works-arrive' && to !== 'wagon' && to !== 'crossing')
+    throw new Error('--from works-arrive plays to wagon or crossing');
+  if (from === 'wagon-on' && to !== 'crossing') throw new Error('--from wagon-on plays to crossing');
+  if (to === 'wagon' && from !== 'works-arrive') throw new Error('--to wagon requires --from works-arrive');
+  if (to === 'crossing' && from && from !== 'works-arrive' && from !== 'wagon-on')
+    throw new Error('--to crossing from a seed requires --from works-arrive or wagon-on');
   // With no seed the wake bot runs (railway-job.ts), and it never plays the greybox legs.
   if (!seed && to && LEG_STOPS.includes(to))
     throw new Error(

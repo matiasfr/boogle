@@ -79,7 +79,7 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
     const p = me.body!.position;
     cam.yaw = me.yaw = Math.atan2(-(x - p.x), -(z - p.z));
   };
-  const { ride: rideLine2, view } = line2Rides(bot);
+  const { ride: rideLine2, view, hopTo } = line2Rides(bot);
   const ride = async (haltId: number, destination: number) => void (await rideLine2(haltId, destination));
 
   /** Fill the back with logs from the nearest reachable ordinary trees (the route's own chop loop). */
@@ -256,7 +256,10 @@ export async function splitRockToCrossing({ bot, checkpoint }: WorksRoute, from:
     await use(pierRack, /^Shoulder a footing$/, `shoulder pier footing ${n + 1}`);
     await until(() => foot() === 1, `pier footing ${n + 1} on the back`, 30000);
     await step(731.5, 0, 'back onto the track');
-    await step(731.5, 3, 'onto the pier-head apron');
+    // The apron is a raised platform. A footing allows the plain jump onto it.
+    const apron = beside(731.5, 3);
+    await hopTo(apron.x, apron.z, 'onto the pier-head apron', 15000, 0.5);
+    await until(() => me.coyote > 0 && !me.swimming, 'standing on the pier-head apron', 5000);
     await step(741, 3.4, 'along the apron to the jib');
     const before = works().pierSet;
     await use(pierFrame, /^Set the footing$/, `set pier footing ${n + 1}`);

@@ -726,23 +726,129 @@ before its design review.
 
 ## 7. Exit evidence
 
-- `npm run loop -- run` reports no stand-in: areas 4 to 9 are played through the rules, for one to four players.
-- The bot rides wake to `arrived` with no skip, as a chain of segments (the long run is on command, once, here,
-  because this checkpoint changes the whole flow).
-- This table, filled from those runs, with idle seconds per area:
+- [x] `npm run loop -- run --players N`, for N = 1, 2, 3 and 4, completed the whole route through the host rules.
+  Every area was played with no stand-in. All listed orders finished. The inherited cave-plug probe still reports
+  that the rules accept `plug-gate` before `canopy-3`, an existing P3 in the leftovers.
+- [x] Measured area totals and idle from the canonical straight-line runs on `0bbd37004`. The hour-long pause and
+  wake-to-Q5 ran on that build too. Main added Checkpoint F's evidence and proof tooling before the remaining bot runs.
 
-| Area | Model's allowance | Outline's stand-in (1 / 2 / 3 players) | Measured 1 | Measured 2 | Measured 3 |
-| --- | --- | --- | --- | --- | --- |
-| 4 High Gorge | 72 | 25 / 23 / 23 | | | |
-| 5 Bell Rock | 30 | 27 / 25 / 25 | | | |
-| 6 Canopy Town | 42 | 21 / 19 / 19 | | | |
-| 7 The Port | 48 | 41 / 37 / 37 | | | |
-| 8 The White Wall | 48 | 35 / 32 / 32 | | | |
-| 9 The ending | 18 | 7 / 7 / 7 | | | |
+| Area | Model's allowance (min) | Outline stand-in (1 / 2 / 3p, min) | Measured (1 / 2 / 3 / 4p, min) | Idle (1 / 2 / 3 / 4p, s/player) |
+| --- | ---: | --- | --- | --- |
+| 4 High Gorge | 72 | 25 / 23 / 23 | 13 / 12 / 12 / 12 | 167 / 305 / 362 / 372 |
+| 5 Bell Rock | 30 | 27 / 25 / 25 | 12 / 14 / 14 / 14 | 136 / 259 / 262 / 250 |
+| 6 Canopy Town | 42 | 21 / 19 / 19 | 8 / 9 / 9 / 9 | 122 / 242 / 259 / 267 |
+| 7 The Port | 48 | 41 / 37 / 37 | 10 / 15 / 15 / 15 | 102 / 427 / 439 / 439 |
+| 8 The White Wall | 48 | 35 / 32 / 32 | 22 / 18 / 18 / 18 | 581 / 358 / 376 / 387 |
+| 9 The ending | 18 | 7 / 7 / 7 | 16 / 25 / 25 / 25 | 137 / 815 / 878 / 1049 |
 
-- A join, leave and rejoin proof per area, and one empty-room proof (the room left for an hour mid-leg: nothing moved).
-- The owner rides it once, from https://boogle.club/?from=ring-joined to the card, and rules on the outline's
-  decisions 1, 2 and 7 with the table in hand.
+The whole route took **121 / 128 / 128 / 126 minutes**. The first three totals and area 9's **16 / 25 / 25**
+match Leg 6 Step 7. Area idle sums the loop's rounded per-node mean seconds. Idle includes waits for a train, lay
+or friend, holds, and time after finishing one's share. The loop also prints carries and walked metres. It models
+straight-line walking, presses and carries through the host's rules. Trains run in the simulation and the loop
+players walk instead of riding them.
+
+- [ ] The four-way split in design-review change 7 (hands, watching the lay, rides and waits). The loop has one
+  combined idle counter and tracks no rider time. Warped bot traces show activity and stationary spans, with
+  no complete four-way attribution by area or player count.
+
+### Browser route
+
+- [x] The bot played wake to `arrived` through 12 real-input segments without recovery. Each handoff uses an
+  accepted server seed at the next segment boundary. The ending check observed the card, closed it and left
+  the post reading "Arrived".
+
+Every segment ran solo on HOTBOX, one at a time, with WebGPU. Load is busy logical CPUs out of 20 at acquisition
+and at the end. A build suffix `+N` counts uncommitted files. The crossing pass under load establishes route
+completion only. All browser durations use warp.
+
+| Segment | Verdict | Load | Build | Observed |
+| --- | --- | --- | --- | --- |
+| Wake → `Q5` | pass | 12.32 → 3.25 (shared) | 0bbd3700 | Opening through the glider and Q5. [Still](greybox-route/wake-q5.png) |
+| `q5-done` → `pier` | pass | 3.02 → 1.08 | f8fd33cf | Boiler, train rides, Q6 and the pier. [Still](greybox-route/q5-pier.png) |
+| `works-arrive` → `wagon` | pass | 12.67 → 2.40 | 2030c784 | Works, cradle, upgrade and wagon coupling. [Still](greybox-route/works-wagon.png) |
+| `wagon-on` → `crossing` | pass | 3.94 → 20.00 (under load) | 2030c784 | All 12 footings and the crossing finale. [Still](greybox-route/wagon-crossing.png) |
+| `crossing-done` → `Q7` | pass | 2.93 → 2.67 | 98969fa7 +4 | Q7 kit delivered, fed and laid. [Still](greybox-route/crossing-q7.png) |
+| `deck-laid` → `ring-ride` | pass | 1.49 → 1.81 | f8fd33cf | Bents, leaf, rivet and a dry step-off at Ring Island. [Still](greybox-route/deck-ring-retry.png) |
+| `ring-joined` → `boiler-long` | pass | 6.11 → 3.63 | 98969fa7 +6 | Island ride, steel home and longer boiler installed. [Still](greybox-route/ring-steel.png) |
+| `ring-joined` → `gorge` | pass | 3.05 → 9.48 | 98969fa7 +6 | Four stack sections and the Gorge arrival. [Still](greybox-route/ring-gorge.png) |
+| `gorge-reached` → `bay` | pass | 8.19 → 3.41 | 98969fa7 +6 | Incline, seeds, return ride and bay shortcut. [Still](greybox-route/gorge-bay.png) |
+| `bay-reached` → `port` | pass | 1.69 → 9.97 | 98969fa7 +6 | Canopy cloth, cave plug, three cave sections and both return rides. [Still](greybox-route/bay-port.png) |
+| `port-reached` → `wall` | pass | 0.03 → 1.63 | f8fd33cf | Six sections, deep-span barrier and the ride home. [Still](greybox-route/port-wall-retry.png) |
+| `wall-closed` → `ending` | pass | 1.44 → 1.43 | 98969fa7 +6 | Notch, lantern, causeway, meeting post and Close. [Still](greybox-route/wall-ending.png) |
+
+Earlier attempts isolated the runner issues. The final chain splits Works at the pier and wagon coupling,
+adds real-input Q7 coverage before `deck-laid`, hops up the pier apron, waits on the Railhead outbound platform,
+and approaches the fifth Wall rack from the middle of the platform.
+
+| Segment | Verdict | Load | Build | Observed |
+| --- | --- | --- | --- | --- |
+| `q5-done` → `crossing`, first attempt | health-failure | 6.47 → 3.01 | 98969fa7 +1 | A station-box reveal held the bot at the Quarry platform approach. [Still](greybox-route/q5-crossing.png) |
+| `q5-done` → `crossing`, second attempt | health-failure | 1.94 → 1.32 | 98969fa7 +6 | The walk to the Village line 2 lever timed out. [Still](greybox-route/q5-crossing-retry.png) |
+| `works-arrive` → `crossing`, first attempt | health-failure | 1.62 → 1.69 | f8fd33cf | Reached the pier with the wagon, then stopped at the raised apron. [Still](greybox-route/works-crossing.png) |
+| `works-arrive` → `crossing`, retry | health-failure | 2.61 → 2.47 | a4ff7923 | The bot stopped while stepping off at the Village. [Still](greybox-route/works-crossing-retry.png) |
+| `deck-laid` → `ring-ride`, first attempt | health-failure | 3.12 → 6.01 | 98969fa7 +6 | Joined the ring, then tried to return to the old waiting point after hopping onto the outbound platform. [Still](greybox-route/deck-ring.png) |
+| `port-reached` → `wall`, first attempt | health-failure | 7.28 → 2.43 | 98969fa7 +6 | Laid four sections, then fell into water on approach to the fifth section's rack. [Still](greybox-route/port-wall.png) |
+
+### Join, leave and rejoin
+
+- [ ] One complete rejoin proof per area. Checkpoint F's `npm run test:net` passed 350 checks on the tree that
+  landed in #2529. Its existing cases cover areas 6 through 9. Areas 4 and 5 still need their own cases.
+
+| Area | Coverage |
+| --- | --- |
+| 4 High Gorge | Open. Checkpoint A calls for `gorge-mid` with a leg-kit carrier. The empty-room probe below covers a join and the last player's departure. |
+| 5 Bell Rock | Open. Checkpoint B calls for an `incline-mid` carrier with a surviving leg, yard and kit. Current WebSocket cases have no incline or bay seed. |
+| 6 Canopy Town | `railwayLegRejoin('canopy-mid')` |
+| 7 The Port | `railwayLegRejoin('cave-mid')` |
+| 8 The White Wall | `railwayLegRejoin('wall-mid')` |
+| 9 The ending | `railwayLegRejoin('island-reached')`. The presser leaves, the room restarts and the presser rejoins. Accepted `Route.arrived = 37189` survives without replaying the ending. |
+
+The `q3-done` jump-in case covers an earlier two-player restart. The leaf case covers Ring Island late join,
+reload and restart. Both lie before areas 4 to 9. The current `reconnect-edit` scenario covers a roster edit
+during reconnect. Adding the missing carrier seeds to the existing suite would touch
+`dev/peer-test/ws-railway.ts` and `dev/peer-test/ws-run.ts`, the files owned by Checkpoint F for this pass.
+
+- [x] One-hour empty room mid-leg. The hosted WebSocket probe started at `gorge-mid` with two stack sections laid.
+  The fake clock first advanced an occupied room. After the socket closed, the player count reached zero and the
+  host paused. Over the next 3,600,000 simulated milliseconds, server tick **14675** and the complete railway
+  snapshot were identical. The probe held the room resident for this check and sampled before any rejoin credit.
+- [ ] Device runs.
+- [ ] The owner rides once from https://boogle.club/?from=ring-joined to the card and rules on decisions 1, 2 and 7.
+
+### Idle findings for the designer
+
+These nodes each accumulated over 60 mean idle seconds in the canonical loop run. A total can combine several waits
+and holds. The bot traces below provide individual stationary spans.
+
+| Players | Nodes above 60 s, with mean idle seconds |
+| --- | --- |
+| 1 | `stack-2` 65, `wall-3` 95, `wall-4` 76, `wall-6` 308, `arrive` 77 |
+| 2 | `stack-1` 111, `stack-2` 75, `incline-1` 71, `bay-1` 64, `canopy-1` 78, `plug-gate` 172, `cave-1` 185, `wall-4` 84, `deep-gate` 61, `wall-6` 84, `notch-gate` 133, `notch-1` 161, `lantern` 76, `causeway-gate` 140, `causeway-1` 133, `arrive` 172 |
+| 3 | `stack-1` 141, `stack-2` 78, `gorge` 61, `seeds` 67, `canopy-gate` 73, `canopy-1` 63, `plug-gate` 230, `cave-1` 134, `wall-4` 87, `deep-gate` 81, `wall-6` 67, `notch-gate` 177, `notch-1` 118, `lantern` 102, `causeway-gate` 187, `causeway-1` 100, `arrive` 194 |
+| 4 | `stack-1` 156, `stack-2` 74, `gorge` 69, `seeds` 76, `canopy-gate` 82, `plug-gate` 258, `cave-1` 109, `wall-4` 88, `deep-gate` 91, `notch-gate` 199, `notch-1` 163, `lantern` 115, `causeway-gate` 211, `causeway-1` 135, `arrive` 226 |
+
+Individual stationary spans over 60 game seconds, from telemetry. Times are relative to the start of each trace.
+They flag stretches to review for available work. The Ring bot also logged 120 server seconds at the rack across
+14 footings on its passing run.
+
+| Segment | Stationary spans |
+| --- | --- |
+| Wake → `Q5` | 137 s at t=746.4, 67 s at t=1052.4, 108 s at t=1251.3, 232 s at t=1434.1, 109 s at t=1680 |
+| `q5-done` → `pier` | 252 s at t=213.6, 101 s at t=647.9 |
+| `works-arrive` → `wagon` | 103 s at t=356.6, 103 s at t=660.1 |
+| `wagon-on` → `crossing` | 117 s at t=19.4 |
+| `crossing-done` → `Q7` | 74 s at t=20.6 |
+| `ring-joined` → `boiler-long` | 63 s at t=173.2 |
+| `ring-joined` → `gorge` | 65 s at t=321.4, 67 s at t=493 |
+| `gorge-reached` → `bay` | 72 s at t=512.7, 67 s at t=688.2, 93 s at t=755.1, 160 s at t=1628 |
+| `bay-reached` → `port` | 96 s at t=35.2, 63 s at t=319.3, 67 s at t=535.7, 115 s at t=602.7, 65 s at t=792.6, 159 s at t=857.5, 106 s at t=1085.2, 63 s at t=1595.4, 72 s at t=1715.6 |
+| `port-reached` → `wall` | 74 s at t=266.8, 71 s at t=343.6, 77 s at t=572.9, 176 s at t=649.7, 78 s at t=923, 184 s at t=1194.8, 74 s at t=1535.8, 183 s at t=1610.2, 150 s at t=1917.8, 70 s at t=2198.5 |
+| `wall-closed` → `ending` | 129 s at t=14.7, 61 s at t=527.7, 75 s at t=717.5, 68 s at t=1163.7 |
+| `q5-done` → `crossing`, first attempt | 180 s at t=241.8, 73 s at t=557.9, 109 s at t=684.2, 98 s at t=989.2, 111 s at t=1284.9 |
+| `works-arrive` → `crossing`, first attempt | 157 s at t=471, 67 s at t=729.7, 149 s at t=895, 168 s at t=1061.3 |
+| `port-reached` → `wall`, first attempt | 72 s at t=218.2, 100 s at t=495.2, 172 s at t=699.5, 98 s at t=942 |
+
+Not tested on a device.
 
 ## Level findings
 

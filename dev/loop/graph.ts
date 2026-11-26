@@ -1197,7 +1197,7 @@ export const NODES: readonly LoopNode[] = [
     supply: {},
     ops: ['rail.install'],
     reached: { mark: 'upgrade installed' },
-    stops: [],
+    stops: ['wagon'],
     requires: [
       dec('table', 'rules', `${RULES_STEEL} install part 1: fitted cradle, table at line 2`),
       dec('trains', 'rules', `${RULES_TRAINS} wagonArrives: the wagon couples to line 2's train`, 'finish'),
@@ -1248,7 +1248,6 @@ export const NODES: readonly LoopNode[] = [
     'Q7',
     [dec('crossing', 'rules', `${RULES_QUERIES} qActive(): Q7 opens on Works.crossing (opens: 'crossing')`)],
     {
-      stops: [],
       cue: [onMain('world', "Q7's frame and the double deck over bents 1-6", 'src/entities/railway/crossing-view.ts')],
     },
   ),

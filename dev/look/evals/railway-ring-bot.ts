@@ -4,7 +4,7 @@
 // with `--rail-seed gap-footed` or `leaf-raised`; `railStop` ends at a named checkpoint. No teleport, direct op or
 // recovery. Through the harness: npm run playthrough -- --from gap-footed --to ring-ride
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
-const { ringIslandRoute } = (await import(
+const { ringDeckRoute, ringIslandRoute } = (await import(
   '/dev/look/bots/railway-ring.ts' as string
 )) as typeof import('../bots/railway-ring.ts');
 const { railCheckpoint } = (await import(
@@ -27,7 +27,9 @@ background(
   (async () => {
     if (!(await railReady(300000)) || !(await bot.until(() => me.body && me.coyote > 0, 300000, 'Ring seed arrived')))
       throw new Error('Ring seed did not arrive');
-    await ringIslandRoute({
+    const route =
+      new URLSearchParams(location.search).get('railFrom') === 'ring-deck' ? ringDeckRoute : ringIslandRoute;
+    await route({
       bot,
       checkpoint: railCheckpoint(bot, 'Ring Island seeded', () => ({
         ring: { ...aperture(rw()), ...ringOpen(rw()) },

@@ -162,10 +162,11 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
     // Leg 3's frame and rack stand 4.8 m right of the track, where a standing car's deck reaches the line between
     // them: approach each 1.5 m further out (a rider was carried off from Canopy head 2 into the strait, 24 November).
     // The frame is the rack's outward neighbour, so right of rack-to-frame is away from the track.
+    // At Wall head four, also use the platform's centre to approach the fifth section's rack.
     const site = { frame: legFrame(leg, k), rack: legRack(leg, k) },
       dx = site.frame.x - site.rack.x,
       dz = site.frame.z - site.rack.z,
-      out = slot === CANOPY ? 150 / Math.hypot(dx, dz) : 0,
+      out = slot === CANOPY || (leg.id === 'wall' && k === 4) ? 150 / Math.hypot(dx, dz) : 0,
       away = <P extends { x: number; z: number }>(p: P) => ({ ...p, x: p.x - dz * out, z: p.z + dx * out }),
       frame = away(site.frame),
       rack = away(site.rack);
