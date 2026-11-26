@@ -1257,8 +1257,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     }
   }
   const nearCanopy = () => near(AREA_CENTRES.canopy, 450);
-  /** Canopy Town, while you are near it: the cloth post (until taken; lit once the leg is laid) and the Notch barrier,
-   * shut (its leg is leg 6's). */
+  /** Canopy's cloth post, construction board and barrier on the Notch frame. */
   function canopy(r: NonNullable<ReturnType<typeof rows>>) {
     if (!nearCanopy()) return;
     areaBoardVisibility.get('canopy.notch')?.(!done(r, 'notch-tunnel'));
@@ -1425,8 +1424,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       };
       grant(SEEDS, 'railway-leg-seeds', TAKE_SEEDS, SEEDS_AT, 'incline', SEEDS_NOT_YET);
       grant(CLOTH, 'railway-leg-cloth', TAKE_CLOTH, CLOTH_AT, 'bell-canopy', CLOTH_NOT_YET);
-      // Leg 3's barriers: the Canopy barrier on its frame at Bell Rock, the Notch barrier at Canopy (leg 6's: it refuses
-      // in view, the cloth held). Each opens once its leg is open with its key held.
+      // A barrier opens at its current frame when the room holds the key.
       const gate = (k: number, id: string, at: { x: number; y: number; z: number }, blocked = NO_LINE) => {
         if (r.gates & (1 << k) || !within(p, at, RAIL_GATES[k]!.at.reach)) return;
         const target = { id, verb: OPEN_GATE, at: v3(at, at.y + 1.6) },
