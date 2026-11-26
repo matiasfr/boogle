@@ -442,7 +442,7 @@ After steps 1 to 7 are on main; named proofs, once, with the tools as Checkpoint
       the presser leaving, the restart and the rejoin. Neither tab replayed the accepted arrival. In a separate
       rendered check, one press showed the card on both tabs, the post read "Arrived", and reloading the presser
       kept the arrival without reopening the card.
-- [x] [Steps 4 to 6 on one contact sheet](../../.look/checkpoint-f/contact-sheet.png), 1200 px wide. The step 4
+- [x] [Steps 4 to 6 on one contact sheet](greybox-leg6/checkpoint-f-sheet.png), 1200 px wide. The step 4
       platforms are from the cold-jump landing report and the step 6 cards are from #2511. The original step 5
       stills were in a removed worktree, so fresh views show the Notch tracks, causeway and both readings of the post.
 - [x] `npm run perf -- --view ending` from the island's platform with the camera along the causeway toward Bell
