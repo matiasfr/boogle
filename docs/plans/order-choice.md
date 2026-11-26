@@ -263,7 +263,7 @@ medium first). Sizes are estimates.
       rows (`cave-first-open` lands on the cave apron between rack 1 and frame 1; `cave-first-reached` keeps the
       spawn). Checks: `test/railway-jump.test.ts`; each stage's load check; the whole server suite and `npm run
       test:net`.
-- [ ] **4. The views (M; "Player-visible implementation": gpt-6.2-astra medium).** `src/entities/route-greybox/leg-view.ts`:
+- [x] **4. The views (M; "Player-visible implementation": gpt-6.2-astra medium).** `src/entities/route-greybox/leg-view.ts`:
       `rows()` keeps every open leg (not one index) and each leg's rack from its `Leg` row; feed and take prompts for
       every open leg in reach, the takes passing the leg; `leg2Objective` written as a function of the rows for both
       orders (the words [above](#what-a-player-sees-and-does-at-the-bay-cut)); the plug's refusal before the bay cut;
@@ -300,6 +300,15 @@ The default 3,000-tick case took 5.32 seconds of its 480-second budget, with 27 
 | badd | 172 | 117 | 1,553 | 1,084 |
 
 The v73 fixture comparison preserved all 82 earlier seed ticks, 464 scripted command results and 14,400 tick system sequences. All 82 mirror traces kept their frame and mark counts. The 1,244 marks now hash the v73 rows. Across 8,620 host trace records, 205 checkpoints and 5,679 serialized-size counters changed. Every input, result and replica packet matched.
+
+### Step 4 browser stills, 25 November
+
+| Site | Before picking up kit | After picking up kit |
+| --- | --- | --- |
+| Bell Rock | [20 rails](order-choice/bell-full.png) | [4 rails](order-choice/bell-take.png) |
+| West landing cave apron | [20 logs](order-choice/apron-full.png) | [4 logs](order-choice/apron-take.png) |
+
+Both pickups settled in the same room. The other rack kept all 20 units of the material picked up. After finishing the cave first, Port Quay still showed [LATER at the buffers](order-choice/quay-later.png).
 
 ### Checkpoint (both orders playable)
 
