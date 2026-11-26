@@ -13,10 +13,10 @@ The one record of who is running what, and what the eight-job limit is counted f
 
 ## Paused (26 November)
 
-Boogle is paused on the owner's word so his other project can use HOTBOX's compute ([decision](../decisions-process.md#d-2026-11-26-wind-down)). No job is running and the hourly heartbeat is disabled. **No session starts work until he says resume.**
+Boogle is paused on the owner's word so his other project can use HOTBOX's compute ([decision](../decisions-process.md#d-2026-11-26-wind-down)). No job is running, and the hourly heartbeat and the daily tidy are disabled (the tidy since its 26 November run, which started nothing). **No session starts work until he says resume.**
 
 **To resume** (when he says so):
-1. Re-enable the heartbeat: `schedule_task` with `scheduledTaskId: scheduled-task:ae9bad7f-91a5-4e85-bf10-3472d12db915` and `enabled: true` (interval, bound to the "Boogle orchestrator" thread, fresh session each run).
+1. Re-enable the heartbeat: `schedule_task` with `scheduledTaskId: scheduled-task:ae9bad7f-91a5-4e85-bf10-3472d12db915` and `enabled: true` (interval, bound to the "Boogle orchestrator" thread, fresh session each run), and the daily tidy: `schedule_task` with `scheduledTaskId: scheduled-task:command:mcp:ed5088fa-9bef-40fd-b263-6fa7487d6d6d:schedule-task:boogle-tidy-windows-2026-11-17` and `enabled: true`.
 2. `git fetch origin`; check `npm run heartbeat` for a red main or a stuck ship first.
 3. Work the resume list below in order, claiming each row in "Jobs in flight" as usual, up to the eight-job limit.
 
