@@ -791,22 +791,19 @@ and approaches the fifth Wall rack from the middle of the platform.
 
 ### Join, leave and rejoin
 
-- [ ] One complete rejoin proof per area. Checkpoint F's `npm run test:net` passed 350 checks on the tree that
-  landed in #2529. Its existing cases cover areas 6 through 9. Areas 4 and 5 still need their own cases.
+- [x] One complete rejoin proof per area in `npm run test:net`.
 
 | Area | Coverage |
 | --- | --- |
-| 4 High Gorge | Open. Checkpoint A calls for `gorge-mid` with a leg-kit carrier. The empty-room probe below covers a join and the last player's departure. |
-| 5 Bell Rock | Open. Checkpoint B calls for an `incline-mid` carrier with a surviving leg, yard and kit. Current WebSocket cases have no incline or bay seed. |
+| 4 High Gorge | `railwayLegRejoin('gorge-mid')`. The carrier leaves with 16 leg rails. The stack leg, rack, Gorge yard and three kit loads aboard survive restart and rejoin. |
+| 5 Bell Rock | `railwayLegRejoin('incline-mid')`. The carrier leaves with 16 rails from the final incline kit. The leg, the rest of the kit on the rack, and the empty Gorge yard survive restart and rejoin. |
 | 6 Canopy Town | `railwayLegRejoin('canopy-mid')` |
 | 7 The Port | `railwayLegRejoin('cave-mid')` |
 | 8 The White Wall | `railwayLegRejoin('wall-mid')` |
 | 9 The ending | `railwayLegRejoin('island-reached')`. The presser leaves, the room restarts and the presser rejoins. Accepted `Route.arrived = 37189` survives without replaying the ending. |
 
 The `q3-done` jump-in case covers an earlier two-player restart. The leaf case covers Ring Island late join,
-reload and restart. Both lie before areas 4 to 9. The current `reconnect-edit` scenario covers a roster edit
-during reconnect. Adding the missing carrier seeds to the existing suite would touch
-`dev/peer-test/ws-railway.ts` and `dev/peer-test/ws-run.ts`, the files owned by Checkpoint F for this pass.
+reload and restart. Both lie before areas 4 to 9. The `reconnect-edit` scenario covers a roster edit during reconnect.
 
 - [x] One-hour empty room mid-leg. The hosted WebSocket probe started at `gorge-mid` with two stack sections laid.
   The fake clock first advanced an occupied room. After the socket closed, the player count reached zero and the
