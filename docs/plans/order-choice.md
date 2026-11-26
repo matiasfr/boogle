@@ -142,8 +142,8 @@ leg 6's uncommitted build in its worktree (`src/world/namespace.ts` at v72). `np
   first kit is owed from Canopy's last lay (the Notch's case in leg 6: its first kit is owed from the Wall's last lay).
   `legKitMayLoad` takes the same condition.
 - **Per-leg racks.** `Leg` gains `rackLogs` and `rackRails`: the kit on that leg's current rack. `legLack` and
-  `legRackNeed` count the leg's own rack; `legKitArrive` unloads onto it; `legKitStock` stocks it; `legKitHome` and
-  `legYardHome` unchanged. A leg's rack moves with its sections as `legRack(leg, laid)` does today; what is on it at a lay
+  `legRackNeed` count the leg's own rack; `legKitArrive` unloads onto it; `legKitStock` stocks it. `legYardHome` also
+  empties the completed leg's rack. A leg's rack moves with its sections as `legRack(leg, laid)` does today; what is on it at a lay
   stays on it even when a hand feed reduces the unpaid bill. At the leg's last lay whatever is left
   on its rack (units fed from elsewhere, so the rack's were not needed) goes home, logs unmade and rails to the forge
   rack, as a completed yard leg's yard does (`legYardHome`); today it would stay on `Rail.depot` and show on the next
@@ -227,7 +227,7 @@ and the views that send it must ship with the rules). Step 5 after. Models are `
 every step that touches `src/sim`, `src/world` or the wire gets an independent review before merge (gpt-6.2-astra
 medium first). Sizes are estimates.
 
-- [ ] **1. Per-leg racks (L; "High-risk implementation": gpt-6.2-astra medium).** No order change yet. Files:
+- [x] **1. Per-leg racks (L; "High-risk implementation": gpt-6.2-astra medium).** No order change yet. Files:
       `src/sim/railway-components.ts` (`Leg.rackLogs`, `rackRails`; `Account.liftLeg`, default −1),
       `railway-queries-route.ts` (`legLack`, `legRackNeed`, `heldKit` per leg; comments that say "one leg is open at a
       time" corrected), `railway-sys-route-kit.ts` (`legKitArrive`, `legKitStock`, `legKitLifted`, `legKitPut`,
@@ -289,6 +289,8 @@ medium first). Sizes are estimates.
 ### Step 2 service checks, 25 November
 
 With Strong fitted on the bay line, both barriers open and both frames receiving kit, each seed ran 20,000 ticks at 75% headway. Every accepted call cleared within the service check's bound. Waits below are simulation ticks.
+
+The default 3,000-tick case took 5.32 seconds of its 480-second budget, with 27 bay calls and 15 cave calls accepted. Machine load during that run was 4.09 to 4.22 busy logical CPUs on a 20-CPU machine, below the repository's quiet threshold of 12.
 
 | Seed | Bay calls | Cave calls | Longest bay wait | Longest cave wait |
 | --- | ---: | ---: | ---: | ---: |
