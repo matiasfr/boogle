@@ -26,3 +26,14 @@
   background: #fff8df;
   color: #172e33;
 }
+.ending-card-pointer {
+  position: fixed;
+  z-index: 100;
+  width: 8px;
+  height: 8px;
+  transform: translate(-50%, -50%);
+  border: 1px solid #172e33;
+  border-radius: 50%;
+  background: #fff8df;
+  pointer-events: none;
+}

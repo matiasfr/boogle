@@ -1,6 +1,57 @@
 // Local pointer dismissal for the reward card, and the one skip of a celebration camera's shot (skipInput).
 // Each owner installs its listeners in place and keeps its own touch, timing gate and reset.
 import { onMenuKey, padGrab, setPadGrab, slotFor } from './controls.ts';
+import { inputState } from './input-state.ts';
+
+// Pointer lock sends all mouse events to the canvas. Track a local pointer for Close
+// while the same movement continues to drive mouse-look.
+export function lockedButtonPointer(button: HTMLButtonElement, pointerClass: string, signal: AbortSignal) {
+  const pointer = document.createElement('span');
+  pointer.className = pointerClass;
+  document.body.append(pointer);
+  signal.addEventListener('abort', () => pointer.remove());
+  let x = innerWidth / 2;
+  let y = innerHeight / 2;
+  let pressed = false;
+  function paint() {
+    pointer.hidden = !document.pointerLockElement || inputState.held;
+    pointer.style.left = x + 'px';
+    pointer.style.top = y + 'px';
+  }
+  paint();
+  document.addEventListener('pointerlockchange', paint, { signal });
+  window.addEventListener(
+    'mousemove',
+    (event) => {
+      if (!document.pointerLockElement) return;
+      x = Math.max(0, Math.min(innerWidth - 1, x + event.movementX));
+      y = Math.max(0, Math.min(innerHeight - 1, y + event.movementY));
+      paint();
+    },
+    { signal },
+  );
+  const overClose = () =>
+    !!document.pointerLockElement && !inputState.held && document.elementFromPoint(x, y) === button;
+  window.addEventListener(
+    'mousedown',
+    (event) => {
+      if (event.button !== 0) return;
+      pressed = overClose();
+      if (pressed) event.stopImmediatePropagation();
+    },
+    { capture: true, signal },
+  );
+  window.addEventListener(
+    'mouseup',
+    (event) => {
+      if (!pressed || event.button !== 0) return;
+      pressed = false;
+      event.stopImmediatePropagation();
+      if (overClose()) button.click();
+    },
+    { capture: true, signal },
+  );
+}
 
 export function dismissPointer(active: () => boolean, ready: () => boolean, press: () => void, signal?: AbortSignal) {
   let touch: { id: number; x: number; y: number; moved: boolean } | null = null;
