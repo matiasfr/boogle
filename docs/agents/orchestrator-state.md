@@ -10,13 +10,24 @@ The one record of who is running what, and what the eight-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Proofs: rejoin cases for High Gorge (`gorge-mid`) and Bell Rock (`incline-mid` or `bay-mid`) in `npm run test:net`, the greybox route section 7’s last two open areas | The greybox route | codex/route-rejoin-gorge-bell | the heartbeat thread, Codex Sol medium | 2026-11-26 09:15 | running; dev tests and the plan only, no game code; its report wakes the heartbeat’s thread |
-| Build: Port Quay’s Roundhouse steps 1 and 2 (the site row, the yard, the level check, the generated level; no sim rule, no bump) | Garage choices | codex/port-quay-site | the heartbeat thread, Codex Sol medium | 2026-11-26 09:33 | running; independent review before it merges (the stamp marks its test); its report wakes the heartbeat’s thread |
-| The bot queue's load gate holds only timed and perf runs (his answer 1) | none (tooling) | codex/queue-gate-timed | the orchestrator thread, Codex Sol medium | 2026-11-26 | running: `dev/look/bot-queue.ts` |
-| Ring Island's crossover J11 drawn, the island's golden updated (his answer 7) | Turnouts | codex/turnout-j11 | the orchestrator thread, Codex Astra medium | 2026-11-26 | running: view and golden; an independent review before it ships |
-| The Rail yoke's solid look and the halt yard's forge fingerpost (his answer 9) | none (polish) | codex/yoke-fingerpost | the orchestrator thread, Codex Astra medium | 2026-11-26 | running: view only |
-| Brainstorm: a job for the second player at the sea-cave plug (his answer 8) | The greybox route | neon/plug-second-player | the orchestrator thread, Antigravity Neon medium | 2026-11-26 | running: docs only, a proposal |
-| Drafts: three options each for his placeholder words (his answer 12) | none (words) | neon/placeholder-drafts | the orchestrator thread, Antigravity Neon medium | 2026-11-26 | running: docs only; nothing of The Boogler's |
+
+## Paused (26 November)
+
+Boogle is paused on the owner's word so his other project can use HOTBOX's compute ([decision](../decisions-process.md#d-2026-11-26-wind-down)). No job is running and the hourly heartbeat is disabled. **No session starts work until he says resume.**
+
+**To resume** (when he says so):
+1. Re-enable the heartbeat: `schedule_task` with `scheduledTaskId: scheduled-task:ae9bad7f-91a5-4e85-bf10-3472d12db915` and `enabled: true` (interval, bound to the "Boogle orchestrator" thread, fresh session each run).
+2. `git fetch origin`; check `npm run heartbeat` for a red main or a stuck ship first.
+3. Work the resume list below in order, claiming each row in "Jobs in flight" as usual, up to the eight-job limit.
+
+**Resume list**, in order:
+1. **Ship Port Quay's Roundhouse steps 1 and 2** (built and independently reviewed: ship as is). Worktree `C:\Users\matia\.t3\worktrees\boogle\t3-43482815-c3654445146a3a35`, branch `codex/port-quay-site`, tip `940cde412`. Its push failed twice on 26 November because the pre-push check timed out at full CPU (Unreal Editor open): the garage install test file cancelled at 711 s, a two-socket reload test and the Windows unit-budget case, none in its code. On a quieter machine: rebase, then `npm run ship-queue -- <worktree> --wait --reviewed "<stamp> a fresh reviewer: ship as is; Home unchanged, Port Quay's ring drawn and collided from one transform, no bump"` (stamp from `node dev/review-stamp.ts <worktree> --id`).
+2. **The bot queue's load gate holds only timed and perf runs** (his answer 1): Sol, `dev/look/bot-queue.ts` `loadGate`; stills, net suites and untimed segments take a free slot at any load. Do this first among the builds: it is what made this machine's checks slow.
+3. **Ring Island's crossover J11 drawn and the island's golden updated** (answer 7): Astra medium, from `docs/plans/turnouts.md`; independent review before it ships.
+4. **The Rail yoke's solid look and the halt yard's forge fingerpost** (answer 9): Astra medium, view only, stills for the orchestrator's look.
+5. **A job for the second player at the sea-cave plug** (answer 8): a Neon brainstorm, docs only; inputs `docs/reports/wall-waits.md` (172 to 230 s unassigned in co-op; moving the press cost solo 216 s).
+6. **Three drafts each for his placeholder words** (answer 12): Neon, docs only; Button's line for `SHOP.kept[0]`, the first house resident's name and lines, the voice and ping labels, leg 6's ending prompts, the garage's hold strings; nothing of The Boogler's.
+7. Then the backlog by rank: Port Quay's Roundhouse after steps 1 and 2 ([plan](../plans/port-quay-roundhouse.md)), the cave line's Quick or Strong with its works copy in Home's 130° bay (split from order choice on 25 November), and the checkpoint's next proof.
 
 ## Where the work stands
 
