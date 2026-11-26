@@ -1595,7 +1595,7 @@ async function legRejoin(c: Ctx, seed: RejoinSeed) {
     A.page,
     ({ at, leg }) => {
       window.T.railStand(at.x, at.y, at.z);
-      return window.T.railIntent({ op: 'rail.depotRailTake', leg } as never);
+      return window.T.railIntent({ op: 'rail.depotRailTake', leg });
     },
     { leg: k, at: { x: rack.x, y: rack.y, z: rack.z } },
   );

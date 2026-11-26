@@ -461,9 +461,9 @@ function startWorld(room: Room) {
         case 'rail.forgeTake':
           return adapter.forgeTake();
         case 'rail.depotTake':
-          return adapter.depotTake();
+          return adapter.depotTake(intent.leg);
         case 'rail.depotRailTake':
-          return adapter.depotRailTake();
+          return adapter.depotRailTake(intent.leg);
         case 'rail.pack':
           return adapter.openPack();
         case 'rail.yoke':
