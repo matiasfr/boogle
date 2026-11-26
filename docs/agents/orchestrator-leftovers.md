@@ -4,6 +4,7 @@ Proof debts, things jobs reported and did not fix, and older parked items. Split
 
 ## From 25 November
 
+- P3 · From the forge rewards’ proof looks (26 November, [report](../reports/forge-rewards-looks.md)): at 390 × 844 the “You got a pack frame!” card sits over the round Jump control, whose edge shows through it; the text stays legible. Likely on every narrow phone, low harm; touch dismissal and other sizes unseen. A small view fix: lift the card above the touch controls at phone width.
 - P3 · From the Stack west platforms (#2520, Opus review, 26 November): the backlog row it closes also left the outward step side and the terminal crowd at the Stack heads as their own small job (unbuilt, unranked until briefed).
 - P3 · Same review: `westStands` in `src/entities/route-greybox/stack-halts.ts` (line 11) hard-codes the stop as `5 + head` while `leg-view.ts` reads it from the leg (`railheadHalt + j − 1`); a halt added before the heads would let the deck and the service drift with no check failing. And `test/helpers/railway-route-rules.ts` (near line 513) says a departure still at the old end boards on the east but asserts no refusal of the west call meanwhile.
 - P3 · Same review: its passing real-host drive of the west lever (`review/stack-west-platforms`, `96cb4fd48`, `server/test/railway-ring-host.test.ts`, about 3 minutes cold) is not on main; keep only the head 1 case if it is wanted.
