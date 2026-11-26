@@ -10,8 +10,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Order choice steps 1 to 4: per-leg racks, the cave leg at the bay cut, the Wall after both, seeds, views; with the cave line's Quick or Strong trade | The greybox route | codex/order-choice-rules | the orchestrator thread, Codex Astra high | 2026-11-25 22:10 | built 02:15 UTC 26 November (v73); in its independent Opus review; ships first, then step 7 of leg 6 starts on it |
-| Stack west platforms steps 1 to 4: the planks clear of the crossover (way 1), the west decks, the homeward levers, the reset | Small fixes found in the coach work | codex/stack-west-platforms | the orchestrator thread, Codex Astra medium | 2026-11-25 23:10 | built 02:40 UTC 26 November (v73, shared with order choice: whichever ships second rebumps to v74 and regenerates the goldens); in its independent Opus review |
+| Order choice steps 1 to 4: per-leg racks, the cave leg at the bay cut, the Wall after both, seeds, views; with the cave line's Quick or Strong trade | The greybox route | codex/order-choice-rules | the orchestrator thread, Codex Astra high | 2026-11-25 22:10 | built 02:15 UTC 26 November; its Opus review said fix then ship (P2: replicated rack takes lose `leg`; P3: cave-first cloth objective); fix round 1 in its builder thread, then v74 over #2520 |
 
 ## Where the work stands
 
