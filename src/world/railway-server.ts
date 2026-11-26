@@ -274,15 +274,16 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
       );
     case 'rail.forgeTake':
       return near(LINE2_FORGE.rackX, LINE2_FORGE.rackZ, 340);
-    case 'rail.depotTake': {
-      const spec = LINE2_STATIONS[railLine2Active(w)];
-      if (!spec) return legRackNear(w, at);
-      return spec.depot && near(spec.x, spec.z, depotReach(spec));
-    }
+    case 'rail.depotTake':
     case 'rail.depotRailTake': {
+      if (e.leg !== undefined)
+        return (
+          railInt(e.leg, RAIL_LEGS.length - 1) &&
+          legOpen(w, e.leg) &&
+          at(legRack(RAIL_LEGS[e.leg]!, legRow(w, e.leg).laid))
+        );
       const spec = LINE2_STATIONS[railLine2Active(w)];
-      if (!spec) return legRackNear(w, at);
-      return spec.shelf && near(spec.x, spec.z, depotReach(spec));
+      return !!spec && (e.op === 'rail.depotTake' ? spec.depot : spec.shelf) && near(spec.x, spec.z, depotReach(spec));
     }
     case 'rail.pack':
       if (e.station === 'T1') return at(LINE1_PICK_STANDS.pack);
@@ -366,12 +367,6 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     }
   }
   return false;
-}
-/** After the last Q job, the depot's racks are the open leg's (the greybox route: its kit unloads onto Rail.depot and
- * Rail.depotRails), judged at its current rack (legRack); with no leg open there is no rack to take from. */
-function legRackNear(w: World, at: (p: { x: number; z: number; y: number; reach: number }) => boolean) {
-  const k = RAIL_LEGS.findIndex((_l, j) => legOpen(w, j));
-  return k >= 0 && at(legRack(RAIL_LEGS[k]!, legRow(w, k).laid));
 }
 
 export function install(

@@ -281,10 +281,11 @@ export const Account = defineComponent(
     epoch: 'int',
     request: 'int',
     // u8: a back holds a handful, and 256 accounts' widest rows must fit the recovery envelope (MAX_RECOVERY_BYTES).
+    liftLeg: 'int',
     legLogs: 'u8',
     legRails: 'u8',
   },
-  { key: 'pid' },
+  { key: 'pid', defaults: { liftLeg: -1 } },
 );
 /** The bounded request history (RAILWAY_OUTCOMES, oldest despawned): the server's idempotency record. */
 export const Outcome = defineComponent(
@@ -355,6 +356,8 @@ export const Leg = defineComponent(
     start: 'int',
     loadedLogs: 'int',
     loadedRails: 'int',
+    rackLogs: 'int',
+    rackRails: 'int',
     heldLogs: 'int',
     heldRails: 'int',
   },

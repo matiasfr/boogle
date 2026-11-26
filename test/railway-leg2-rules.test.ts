@@ -54,8 +54,8 @@ const op = (o: string, f: Record<string, unknown> = {}) => ({ op: o, epoch: 0, r
 function stock(s: Seed, k: number) {
   for (const pid of ['a', 'b'])
     for (const [o, f] of [
-      ['rail.depotTake', {}],
-      ['rail.depotRailTake', {}],
+      ['rail.depotTake', { leg: k }],
+      ['rail.depotRailTake', { leg: k }],
       ['rail.legStock', { leg: k }],
     ] as const) {
       const a = acc(s, pid);
@@ -83,8 +83,8 @@ function kitLedger(w: World) {
   RAIL_LEGS.forEach((leg, k) => {
     const g = legRow(w, k);
     [logs, rails, loadedLogs, loadedRails] = [
-      logs + g.logs,
-      rails + g.rails,
+      logs + g.logs + g.rackLogs,
+      rails + g.rails + g.rackRails,
       loadedLogs + g.loadedLogs,
       loadedRails + g.loadedRails,
     ];
@@ -117,7 +117,11 @@ test("leg 2's catalog lines: ns and bay open by their legs' sections, fleets 0, 
         l.halts.slice(0, stops.length).map((h) => h.s),
         `${l.id}: the stops a prefix`,
       );
-      assert.equal(trains, [0, 0, 1, 2, 2, 3, 3, 3][stops.length], `${l.id}: ${trains} trains over ${stops.length} stops`);
+      assert.equal(
+        trains,
+        [0, 0, 1, 2, 2, 3, 3, 3][stops.length],
+        `${l.id}: ${trains} trains over ${stops.length} stops`,
+      );
     }
     // Right-hand running (owner, 18 November): each halt's outward platform right of the row going out, its homeward
     // one left, 11.6 m apart.
@@ -134,8 +138,11 @@ test('the barrier: rail.legStock is refused while it is shut; it opens only with
   const s = copy('gorge-reached');
   const sec = RAIL_LEGS[INCLINE]!.sections[0]!;
   // Line 2 has already put the incline's first kit on the Gorge rack (it rode ahead of the stack's last lay).
-  assert.ok(rail(s.w).depot >= sec.logs && rail(s.w).depotRails >= sec.rails, 'the first kit on the Gorge rack');
-  assert.ok(act(s, 'a', 'rail.depotTake') > 0, 'a takes logs off the Gorge rack');
+  assert.ok(
+    legRow(s.w, INCLINE).rackLogs >= sec.logs && legRow(s.w, INCLINE).rackRails >= sec.rails,
+    'the first kit on the Gorge rack',
+  );
+  assert.ok(act(s, 'a', 'rail.depotTake', { leg: INCLINE }) > 0, 'a takes logs off the Gorge rack');
   assert.equal(act(s, 'a', 'rail.legStock', { leg: INCLINE }), 0, 'the frame refuses: the barrier is shut');
   assert.equal(act(s, 'a', 'rail.gate', { id: BARRIER }), 0, 'the barrier needs the pick');
   assert.equal(act(s, 'a', 'rail.grant', { id: PICK }), 1);
@@ -168,11 +175,11 @@ test('Canopy kit rides ahead, the barrier guards the frame, and the cloth unlock
   assert.equal(act(s, 'a', 'rail.gate', { id: CANOPY }), 0);
   feedSection(s, BAY);
   assert.equal(act(s, 'a', 'rail.grant', { id: cloth }), 0);
-  for (let i = 0; rail(s.w).depot === 0; i++) {
+  for (let i = 0; legRow(s.w, k).rackLogs === 0; i++) {
     assert.ok(i < 6000, 'kit at Bell Rock');
     advance(s, 1);
   }
-  assert.ok(act(s, 'a', 'rail.depotTake') > 0);
+  assert.ok(act(s, 'a', 'rail.depotTake', { leg: k }) > 0);
   assert.equal(act(s, 'a', 'rail.legStock', { leg: k }), 0);
   assert.equal(act(s, 'a', 'rail.gate', { id: CANOPY }), 1);
   for (let i = 0; i < 3; i++) {
@@ -206,7 +213,8 @@ test('the relay conserves every unit: line 2 to the Gorge rack and yard, the ns 
       const r = train(s.w, slot);
       if (r.legKit) nsCarried = Math.max(nsCarried, r.logs + r.rails);
     }
-    if (legRow(s.w, INCLINE).laid === 1) headRacked = Math.max(headRacked, rail(s.w).depot + rail(s.w).depotRails);
+    if (legRow(s.w, INCLINE).laid === 1)
+      headRacked = Math.max(headRacked, legRow(s.w, INCLINE).rackLogs + legRow(s.w, INCLINE).rackRails);
     if (legRow(s.w, INCLINE).start < 0) stock(s, INCLINE);
     advance(s, 1);
     if (k % 500 === 0) assert.equal(invariant(s.w), null, `invariant at ${s.t}`);
@@ -246,7 +254,7 @@ test("the bay cut opens on the incline's last lay, and the West landing's rack i
     if (legRow(s.w, INCLINE).laid < 2) continue;
     assert.equal(legOpen(s.w, BAY), true, 'open on the lay');
     // Stocked on the same tick: logs minted, rails off the forge rack (as many as it holds), counted loaded.
-    const stocked = { logs: rail(s.w).depot, rails: rail(s.w).depotRails };
+    const stocked = { logs: legRow(s.w, BAY).rackLogs, rails: legRow(s.w, BAY).rackRails };
     assert.equal(stocked.logs, RAIL_LEGS[BAY]!.sections[0]!.logs, 'logs minted');
     assert.equal(stocked.rails, Math.min(RAIL_LEGS[BAY]!.sections[0]!.rails, onForge), 'rails off the forge rack');
     assert.ok(rail(s.w).depotProduced >= produced + stocked.logs - 40, 'minted logs counted (less any surplus home)');
@@ -314,7 +322,7 @@ test('the yard goes home on completion: logs unmade, rails to the forge rack, th
 test("the leaver release on the incline: a leaver's units lifted off the Gorge rack are owed again", () => {
   const s = copy('incline-open');
   const need0 = legKitNeed(s.w, INCLINE);
-  assert.ok(act(s, 'a', 'rail.depotTake') > 0);
+  assert.ok(act(s, 'a', 'rail.depotTake', { leg: INCLINE }) > 0);
   assert.ok(legRow(s.w, INCLINE).heldLogs > 0, 'counted held on the incline');
   const held = legRow(s.w, INCLINE).heldLogs;
   assert.deepEqual(legKitNeed(s.w, INCLINE), need0, 'a lift is not owed again');
@@ -331,14 +339,14 @@ test("the server judges leg 2's ops at the new points; a malformed one is refuse
     rack = legRack(RAIL_LEGS[INCLINE]!, 0);
   assert.equal(railValid(s.w, op('rail.legStock', { leg: INCLINE }), actorAt(frame)), true, 'at frame 1');
   assert.equal(railValid(s.w, op('rail.legStock', { leg: INCLINE }), actorAt(rack)), false, 'not from the rack');
-  assert.equal(railValid(s.w, op('rail.depotTake'), actorAt(rack)), true, 'the Gorge rack');
-  assert.equal(railValid(s.w, op('rail.depotTake'), actorAt(frame)), false);
+  assert.equal(railValid(s.w, op('rail.depotTake', { leg: INCLINE }), actorAt(rack)), true, 'the Gorge rack');
+  assert.equal(railValid(s.w, op('rail.depotTake', { leg: INCLINE }), actorAt(frame)), false);
   assert.equal(railValid(s.w, op('rail.gate', { id: BARRIER }), actorAt(RAIL_GATES[BARRIER]!.at)), true);
   assert.equal(railValid(s.w, op('rail.grant', { id: SEEDS }), actorAt(RAIL_GRANTS[SEEDS]!.at)), true, 'the post');
   assert.equal(railValid(s.w, op('rail.grant', { id: SEEDS }), actorAt(frame)), false);
   const bay = copy('bay-open');
   assert.equal(
-    railValid(bay.w, op('rail.depotTake'), actorAt(legRack(RAIL_LEGS[BAY]!, 0))),
+    railValid(bay.w, op('rail.depotTake', { leg: BAY }), actorAt(legRack(RAIL_LEGS[BAY]!, 0))),
     true,
     "the West landing's rack",
   );
@@ -395,10 +403,21 @@ function fitStrong(s: Seed) {
  * fitted Strong by accepted ops as the measured run starts (tradeBase, then rail.install), so the fleet is mixed while
  * it adopts, and a bay ask made within one circuit of the fit is held to the 23 November mixed-fleet checks (safety
  * and the three-budget stall limit); the `ns` line keeps the ordinary budget. */
-function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: boolean, canopy = false, strong = false) {
+function waits(
+  stage: Parameters<typeof buildSeedWorld>[0],
+  seed: number,
+  feed: boolean,
+  canopy = false,
+  strong = false,
+) {
   let s = unaudited(copy(stage));
-  let mixedTicks = 0, heldTicks = 0, layingHoldTicks = 0, yieldedTicks = 0;
-  let thirdEligible = -1, thirdServing = -1, mixedUntil = -1;
+  let mixedTicks = 0,
+    heldTicks = 0,
+    layingHoldTicks = 0,
+    yieldedTicks = 0;
+  let thirdEligible = -1,
+    thirdServing = -1,
+    mixedUntil = -1;
   if (strong) {
     assert.ok(stage === 'bay-mid' || stage === 'bay-reached', 'the bay trade is open');
     s = tradeBase(stage);
@@ -479,13 +498,13 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
       if (thirdEligible < 0 && legRow(s.w, 3).laid > 0) thirdEligible = s.t - t0;
       if (thirdServing < 0 && fleet.length >= 3) thirdServing = s.t - t0;
       // Mixed: Strong and standard trains in service together, while the fleet adopts the fit.
-      const strongs = fleet.filter(j => train(s.w, j).boiler === 5).length;
+      const strongs = fleet.filter((j) => train(s.w, j).boiler === 5).length;
       if (strongs > 0 && strongs < fleet.length) mixedTicks++;
-      if (fleet.some(j => legRailheadHold(s.w, j, s.t) === 'hold')) {
+      if (fleet.some((j) => legRailheadHold(s.w, j, s.t) === 'hold')) {
         heldTicks++;
         if (legRow(s.w, 3).start >= 0) layingHoldTicks++;
       }
-      if (fleet.some(j => legRailheadHold(s.w, j, s.t) === 'yield')) yieldedTicks++;
+      if (fleet.some((j) => legRailheadHold(s.w, j, s.t) === 'yield')) yieldedTicks++;
     }
     health.tick(s.w, s.t);
     if (k % 10 === 0)
@@ -509,16 +528,25 @@ function waits(stage: Parameters<typeof buildSeedWorld>[0], seed: number, feed: 
     if (feed && canopy) assert.ok(heldTicks + yieldedTicks > 0, 'the growing fuzz exercised a Strong hold or release');
   }
   return {
-    ns: health.worst.get(NS) ?? 0, bay: health.worst.get(BAYL) ?? 0, health, mixedTicks, heldTicks, layingHoldTicks,
-    thirdEligible, thirdServing, laid: [legRow(s.w, INCLINE).laid, legRow(s.w, BAY).laid],
+    ns: health.worst.get(NS) ?? 0,
+    bay: health.worst.get(BAYL) ?? 0,
+    health,
+    mixedTicks,
+    heldTicks,
+    layingHoldTicks,
+    thirdEligible,
+    thirdServing,
+    laid: [legRow(s.w, INCLINE).laid, legRow(s.w, BAY).laid],
   };
 }
 const SEED_LIST = [0xc0ffee, 0x777, 0x5eed, 0xbadd] as const;
 for (const [label, canopy, strong] of [
-  ['leg 2 standard', false, false], ['leg 2 mixed', false, true],
-  ['Canopy standard', true, false], ['Canopy mixed', true, true],
+  ['leg 2 standard', false, false],
+  ['leg 2 mixed', false, true],
+  ['Canopy standard', true, false],
+  ['Canopy mixed', true, true],
 ] as const) {
-  test(`${label} service health at 75% headway`, { timeout: 1800000 }, t => {
+  test(`${label} service health at 75% headway`, { timeout: 1800000 }, (t) => {
     const failures: string[] = [];
     for (const seed of SEED_LIST) {
       for (const feed of [false, true]) {
@@ -528,7 +556,9 @@ for (const [label, canopy, strong] of [
         const stage = strong && canopy && feed ? 'bay-mid' : feed && !canopy ? 'incline-open' : 'bay-reached';
         const r = waits(stage, seed, feed, canopy, strong);
         const mode = feed ? 'growing' : 'settled';
-        t.diagnostic(`${seed.toString(16)} ${mode} ns ${r.ns} bay ${r.bay}; ${[...r.health.stages].join('; ')}; held ${r.heldTicks}; mixed ${r.mixedTicks}`);
+        t.diagnostic(
+          `${seed.toString(16)} ${mode} ns ${r.ns} bay ${r.bay}; ${[...r.health.stages].join('; ')}; held ${r.heldTicks}; mixed ${r.mixedTicks}`,
+        );
         if (r.health.failures.length) failures.push(`${seed.toString(16)} ${mode}: ${r.health.failures[0]}`);
       }
     }
@@ -538,10 +568,11 @@ for (const [label, canopy, strong] of [
 
 // Matched random demand on the same mixed-fleet save. The control keeps the original
 // Strong hold at Bell Rock for the departure tick only, restoring its dwell clock afterward.
-test('mixed bay riders: early departures and the delay to the second full rack', t => {
+test('mixed bay riders: early departures and the delay to the second full rack', (t) => {
   // The bay line fitted Strong by accepted ops at bay-mid (tradeBase, rail.install): the first bay train adopts it and
   // loads two bills ahead of the bay cut's last lay, then the cut is laid and the Canopy barrier opened.
-  const base = tradeBase('bay-mid'), slot = LINE_SLOTS[BAYL]![0]!;
+  const base = tradeBase('bay-mid'),
+    slot = LINE_SLOTS[BAYL]![0]!;
   fitStrong(base);
   for (let t = 0; train(base.w, slot).logs < 40 || train(base.w, slot).rails < 40; t++) {
     assert.ok(t < 8000, 'two bills ahead of the last bay-cut lay');
@@ -550,33 +581,45 @@ test('mixed bay riders: early departures and the delay to the second full rack',
   assert.equal(train(base.w, slot).boiler, 5);
   feedSection(base, BAY);
   assert.ok(act(base, 'a', 'rail.gate', { id: CANOPY }));
-  const halts = RAIL_HALTS.flatMap((h,id) => h.line === BAYL && h.stop <= 2 ? [id] : []);
+  const halts = RAIL_HALTS.flatMap((h, id) => (h.line === BAYL && h.stop <= 2 ? [id] : []));
   function trial(seed: number, retain: boolean) {
-    const s = unaudited({ w: restore(base.w), t: base.t }), rand = mulberry32(seed);
+    const s = unaudited({ w: restore(base.w), t: base.t }),
+      rand = mulberry32(seed);
     let departures = 0;
     for (let k = 0; k < 10000; k++) {
       if (rand() < 0.05) ask(s, { id: halts[Math.floor(rand() * halts.length)], dir: rand() < 0.5 ? -1 : 1 });
-      if (legRow(s.w,3).laid === 0) stock(s, 3);
-      else if (rail(s.w).depot >= 20 && rail(s.w).depotRails >= 20) return { departures, delivery: k };
-      const r = train(s.w,slot), depart = r.depart;
-      const yielding = legRailheadHold(s.w,slot,s.t + 1) === 'yield' && legRow(s.w,3).laid === 0;
+      if (legRow(s.w, 3).laid === 0) stock(s, 3);
+      else if (legRow(s.w, 3).rackLogs >= 20 && legRow(s.w, 3).rackRails >= 20) return { departures, delivery: k };
+      const r = train(s.w, slot),
+        depart = r.depart;
+      const yielding = legRailheadHold(s.w, slot, s.t + 1) === 'yield' && legRow(s.w, 3).laid === 0;
       const delay = retain && yielding && s.t + 1 >= depart + TRAIN.dwellTicks;
-      const id = s.w.lookup(Train,slot)!;
-      if (delay) s.w.mut(Train,id)!.depart = s.t + 2 - TRAIN.dwellTicks;
+      const id = s.w.lookup(Train, slot)!;
+      if (delay) s.w.mut(Train, id)!.depart = s.t + 2 - TRAIN.dwellTicks;
       railTick(s.w, ++s.t, 75);
-      const after = train(s.w,slot);
-      if (delay && after.phase === TRAIN_PHASE.STAND && after.at === 2) s.w.mut(Train,id)!.depart = depart;
+      const after = train(s.w, slot);
+      if (delay && after.phase === TRAIN_PHASE.STAND && after.at === 2) s.w.mut(Train, id)!.depart = depart;
       if (yielding && after.phase === TRAIN_PHASE.RUN && after.track === 1 && after.legKit) departures++;
-      assert.equal(trainSpacing(j => train(s.w,j), l => stopsOf(s.w,l), s.t), null);
+      assert.equal(
+        trainSpacing(
+          (j) => train(s.w, j),
+          (l) => stopsOf(s.w, l),
+          s.t,
+        ),
+        null,
+      );
     }
     assert.fail('second rack never filled');
   }
   let released = 0;
   for (const seed of SEED_LIST) {
-    const live = trial(seed,false), control = trial(seed,true);
+    const live = trial(seed, false),
+      control = trial(seed, true);
     released += live.departures;
     assert.equal(control.departures, 0);
-    t.diagnostic(`${seed.toString(16)} releases ${live.departures}, second bill ${live.delivery} vs ${control.delivery} ticks, extra ${live.delivery-control.delivery}`);
+    t.diagnostic(
+      `${seed.toString(16)} releases ${live.departures}, second bill ${live.delivery} vs ${control.delivery} ticks, extra ${live.delivery - control.delivery}`,
+    );
   }
   assert.ok(released > 0);
 });
@@ -596,24 +639,35 @@ test('replay: the same leg 2 ops from the same seed give the same hash, through 
 
 // Garage step 4, step 3 (src/sim/railway-seed-garage.ts): the trade's seeds, built on bay-mid by accepted ops only,
 // built lazily here (bay-mid is this file's own world already).
-test('the trade seeds: ready with the pool full, fitted and adopted, a Strong train held at Bell Rock', { timeout: 300000 }, () => {
-  const ready = copy('trade-ready');
-  assert.equal(steelPool(routeShed(ready.w)), STEEL.total, 'the pool of 12');
-  assert.deepEqual([tradeOpen(ready.w, NS), tradeOpen(ready.w, BAYL)], [true, true]);
-  assert.deepEqual([line(ready.w, NS).boiler, line(ready.w, BAYL).boiler, routeShed(ready.w).tableLine], [0, 0, LINE2]);
-  const fitted = copy('trade-fitted');
-  assert.deepEqual([line(fitted.w, NS).boiler, line(fitted.w, BAYL).boiler], [4, 5]);
-  assert.equal(routeShed(fitted.w).tableLine, BAYL, "the bay line's copy on the table");
-  assert.equal(steelPool(routeShed(fitted.w)), STEEL.total - 2, 'each first fit spent 1');
-  for (const [l, row] of [[NS, 4], [BAYL, 5]] as const)
-    for (const j of servingSlots((k) => train(fitted.w, k), l)) assert.equal(train(fitted.w, j).boiler, row, `${l}/${j}`);
-  const held = copy('trade-held');
-  const at = RAIL_TRAINS.findIndex((t, j) => t.line === BAYL && legRailheadHold(held.w, j, held.t) === 'hold');
-  assert.ok(at >= 0, 'a bay train holds');
-  const r = train(held.w, at);
-  assert.equal(r.boiler, 5, 'Strong');
-  assert.equal(r.at, legKitDrop(held.w, BAYL, CANOPY_LEG), "at leg 3's railhead");
-  assert.ok(r.legKit && r.logs > 0 && r.rails > 0, "the second section's kit aboard");
-  assert.equal(legRow(held.w, CANOPY_LEG).laid, 0);
-  assert.equal(invariant(held.w), null);
-});
+test(
+  'the trade seeds: ready with the pool full, fitted and adopted, a Strong train held at Bell Rock',
+  { timeout: 300000 },
+  () => {
+    const ready = copy('trade-ready');
+    assert.equal(steelPool(routeShed(ready.w)), STEEL.total, 'the pool of 12');
+    assert.deepEqual([tradeOpen(ready.w, NS), tradeOpen(ready.w, BAYL)], [true, true]);
+    assert.deepEqual(
+      [line(ready.w, NS).boiler, line(ready.w, BAYL).boiler, routeShed(ready.w).tableLine],
+      [0, 0, LINE2],
+    );
+    const fitted = copy('trade-fitted');
+    assert.deepEqual([line(fitted.w, NS).boiler, line(fitted.w, BAYL).boiler], [4, 5]);
+    assert.equal(routeShed(fitted.w).tableLine, BAYL, "the bay line's copy on the table");
+    assert.equal(steelPool(routeShed(fitted.w)), STEEL.total - 2, 'each first fit spent 1');
+    for (const [l, row] of [
+      [NS, 4],
+      [BAYL, 5],
+    ] as const)
+      for (const j of servingSlots((k) => train(fitted.w, k), l))
+        assert.equal(train(fitted.w, j).boiler, row, `${l}/${j}`);
+    const held = copy('trade-held');
+    const at = RAIL_TRAINS.findIndex((t, j) => t.line === BAYL && legRailheadHold(held.w, j, held.t) === 'hold');
+    assert.ok(at >= 0, 'a bay train holds');
+    const r = train(held.w, at);
+    assert.equal(r.boiler, 5, 'Strong');
+    assert.equal(r.at, legKitDrop(held.w, BAYL, CANOPY_LEG), "at leg 3's railhead");
+    assert.ok(r.legKit && r.logs > 0 && r.rails > 0, "the second section's kit aboard");
+    assert.equal(legRow(held.w, CANOPY_LEG).laid, 0);
+    assert.equal(invariant(held.w), null);
+  },
+);

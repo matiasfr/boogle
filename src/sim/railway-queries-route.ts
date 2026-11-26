@@ -29,7 +29,7 @@ import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, legBuilt } from './railway-
 import { LEG_TUNE, RAIL_LEGS, RAIL_YARDS, TRADE_LEG, TRADE_OPENS, isTradeLine, legStartS } from './railway-route.ts';
 import { LINE_SLOTS } from './railway-trains.ts';
 import { TRAIN_PHASE, type RailTrain } from './railway-train.ts';
-import { Account, Aperture, Leg, LegYard, Rail, Route, Train } from './railway-components.ts';
+import { Account, Aperture, Leg, LegYard, Route, Train } from './railway-components.ts';
 
 export const legId = (w: World, slot: number) => w.lookup(Leg, slot)!;
 export const routeId = (w: World) => w.single(Route);
@@ -49,13 +49,16 @@ export const LEG_KIT_MOST = Math.max(...RAIL_LEGS.flatMap((l) => l.sections.map(
  * rivet struck). */
 export function legReached(w: World, k: number) {
   const leg = RAIL_LEGS[k];
-  if (!leg || !legBuilt(k)) return false;
+  if (!leg || !legBuilt(k) || !alsoReached(w, k)) return false;
   return leg.after < 0 ? w.get(Aperture, w.single(Aperture))!.joined >= 0 : legDone(w, leg.after);
+}
+function alsoReached(w: World, k: number) {
+  const other = RAIL_LEGS[k]!.alsoAfter;
+  return other === undefined || legDone(w, other);
 }
 /** Leg k takes kit and feeding now: reached (legReached) and not complete. */
 export const legOpen = (w: World, k: number) => legReached(w, k) && !legDone(w, k);
-/** The open leg on `line` whose kit loads at the line's home halt, or -1 (the catalog opens one leg at a time: each
- * leg's `after` is the one before it). */
+/** The open leg on this line whose kit loads at its home halt, or -1. */
 export const openLeg = (w: World, line: number) =>
   RAIL_LEGS.findIndex((l, k) => l.line === line && l.kit === 'home' && legOpen(w, k));
 /** The section of leg k being fed or laid now, or -1 once it is complete. */
@@ -110,6 +113,7 @@ export function heldKit(w: World, k: number): Kit {
   let logs = 0,
     rails = 0;
   w.each([Account], (_id, a) => {
+    if (a.liftLeg !== k) return;
     logs += Math.min(a.legLogs, a.carry);
     rails += Math.min(a.legRails, a.rails);
   });
@@ -177,21 +181,19 @@ export function legYardDrop(k: number) {
 export const legYardId = (w: World, k: number) => w.lookup(LegYard, RAIL_LEGS[k]!.kit as number)!;
 export const legYard = (w: World, k: number) => w.get(LegYard, legYardId(w, k))!;
 /** What leg k still lacks for the sections owed ahead (ruling 1.4, "the kit runs ahead by the whole leg": the current
- * section and the next LEG_TUNE.kitLead - 1), less what is fed, on the rack (Rail.depot, Rail.depotRails, the open
- * leg's: one leg is open at a time) and lifted off the rack onto backs (heldKit; the step 3 review's P2-2: not every
+ * section and the next LEG_TUNE.kitLead - 1), less what is fed, on this leg's rack,
+ * and lifted off that rack onto backs (heldKit; the step 3 review's P2-2: not every
  * back's logs and rails, so the steel works' rails held, or a leaver's, never short it). A unit lifted off the rack
  * and then dropped, or fed to another bill, is owed again (the step 4 review's finding 2), so the leg can always
  * complete. */
 function legLack(w: World, k: number): Kit {
   const leg = RAIL_LEGS[k]!,
     row = legRow(w, k),
-    rail = w.get(Rail, w.single(Rail))!,
-    open = legOpen(w, k),
     out = billOf(k, row.laid, Math.min(leg.sections.length, row.laid + LEG_TUNE.kitLead)),
     held = heldKit(w, k);
   return less(out, {
-    logs: row.logs + (open ? rail.depot : 0) + held.logs,
-    rails: row.rails + (open ? rail.depotRails : 0) + held.rails,
+    logs: row.logs + row.rackLogs + held.logs,
+    rails: row.rails + row.rackRails + held.rails,
   });
 }
 /** What yard leg k's own line's trains may still take from the yard: its lack less what they carry (less `skip`'s). */
@@ -216,7 +218,7 @@ export function legMintChain(w: World, line: number, skip = -1) {
     const on =
       legOpen(w, k) ||
       legYardAhead(w, k) ||
-      (i > 0 && legs[i - 1] === leg.after && loading[i - 1]! && legOpen(w, leg.after) && !prev!.logs && !prev!.rails);
+      (i > 0 && alsoReached(w, k) && legs[i - 1] === leg.after && loading[i - 1]! && legOpen(w, leg.after) && !prev!.logs && !prev!.rails);
     loading.push(on);
     if (!on) return owed.push(NONE);
     const lack = leg.kit === 'home' ? legLack(w, k) : yardLack(w, k);
@@ -251,13 +253,12 @@ export function legKitSurplus(w: World, slot: number): Kit {
  * only this. Nothing for a leg that is not open (its rack is not the depot shelf yet) or laying. */
 export function legRackNeed(w: World, k: number) {
   const s = RAIL_LEGS[k]!.sections[legRow(w, k).laid],
-    row = legRow(w, k),
-    rail = w.get(Rail, w.single(Rail))!;
+    row = legRow(w, k);
   if (!s || row.start >= 0 || !legOpen(w, k)) return { logs: 0, rails: 0 };
   const held = heldKit(w, k);
   return less(s, {
-    logs: row.logs + rail.depot + held.logs,
-    rails: row.rails + rail.depotRails + held.rails,
+    logs: row.logs + row.rackLogs + held.logs,
+    rails: row.rails + row.rackRails + held.rails,
   });
 }
 /** The halt (on `line`) where its trains unload leg k's kit: the feeder's destination for a yard leg minted on another
@@ -287,7 +288,7 @@ export function legKitFits(w: World, line: number, k: number, r: Readonly<RailTr
 /** Leg k's kit may be loaded: the leg is reached, or the leg before it is (its kit rides ahead). The load check's bound
  * on legMintChain's loading test, which also needs the leg before open and owed nothing more. */
 export const legKitMayLoad = (w: World, k: number) =>
-  legReached(w, k) || (RAIL_LEGS[k]!.after >= 0 && legReached(w, RAIL_LEGS[k]!.after));
+  legReached(w, k) || (alsoReached(w, k) && RAIL_LEGS[k]!.after >= 0 && legReached(w, RAIL_LEGS[k]!.after));
 /** The trains of `line` that may carry a leg's kit at once (`kitTrains`, call 65): on line 2 those running less one, so
  * one kit car stays empty for build 2's steel, which only line 2 carries; on any other line every running train
  * (greybox-leg2.md, step 2). */

@@ -17,7 +17,7 @@
 import { act, advance, type Seed } from './railway-seed-route.ts';
 import { invariant, need, restore } from './railway-drive.ts';
 import { railwayAtRing } from './railway-seed-ring.ts';
-import { account, rail } from './railway-rows.ts';
+import { account } from './railway-rows.ts';
 import { LOGS, roomOf } from './railway-queries.ts';
 import { RAILS } from './railway-line2-layout.ts';
 import { legKitCarriers, legRow, routeRow } from './railway-queries-route.ts';
@@ -47,6 +47,8 @@ export const LEG_STAGES = [
   'causeway-open',
   'island-reached',
   'arrived',
+  'cave-first-open',
+  'cave-first-reached',
 ] as const;
 export type LegStage = (typeof LEG_STAGES)[number];
 
@@ -60,11 +62,13 @@ const STACK = RAIL_LEGS.findIndex((l) => l.id === 'stack'),
 
 // Share only a serialized source fixture through restore, never a mutable world between callers.
 const cache = new Map<LegStage, Seed>();
-/** The railway at a leg stage, built on the stage before it in LEG_STAGES (`ring-joined` for the first). */
+const previousStage = (stage: LegStage) =>
+  stage === 'cave-first-open' ? 'bay-reached' : LEG_STAGES[LEG_STAGES.indexOf(stage) - 1];
+/** The railway at a leg stage, built on its predecessor (`ring-joined` for the first). */
 export function railwayAtLegs(stage: LegStage): Seed {
   let base = cache.get(stage);
   if (!base) {
-    const before = LEG_STAGES[LEG_STAGES.indexOf(stage) - 1];
+    const before = previousStage(stage);
     base = build(before ? railwayAtLegs(before) : railwayAtRing('ring-joined'), stage);
     const broken = invariant(base.w);
     need(broken === null, `${stage}: ${broken}`);
@@ -81,10 +85,11 @@ export function laySection(s: Seed, k = STACK) {
     for (const pid of ['a', 'b']) {
       // Travel loads stay comfortable; mixed overfill has its own deliberate regression workload.
       for (const [op, kind, stock] of [
-        ['rail.depotTake', LOGS, 'depot'],
-        ['rail.depotRailTake', RAILS, 'depotRails'],
+        ['rail.depotTake', LOGS, 'rackLogs'],
+        ['rail.depotRailTake', RAILS, 'rackRails'],
       ] as const)
-        if (rail(s.w)[stock] && roomOf(s.w, account(s.w, pid)!, kind) > 0) need(act(s, pid, op) > 0, op);
+        if (legRow(s.w, k)[stock] && roomOf(s.w, account(s.w, pid)!, kind) > 0)
+          need(act(s, pid, op, { leg: k }) > 0, op);
       const a = account(s.w, pid)!,
         row = legRow(s.w, k),
         bill = RAIL_LEGS[k]!.sections[at]!;
@@ -101,10 +106,14 @@ export function laySection(s: Seed, k = STACK) {
 /** The leg stages after `from` up to `to` run on `s`, any seed in `from`'s state (garage step 4's tests start them
  * from worlds they already hold, such as High Gorge reached with steel home). Changes `s` in place and returns it. */
 export function legStagesOn(s: Seed, from: LegStage, to: LegStage): Seed {
-  const a = LEG_STAGES.indexOf(from),
-    b = LEG_STAGES.indexOf(to);
-  need(a >= 0 && b > a, `${from} to ${to}`);
-  for (const stage of LEG_STAGES.slice(a + 1, b + 1)) build(s, stage);
+  const stages: LegStage[] = [];
+  let at: LegStage | undefined = to;
+  while (at !== undefined && at !== from) {
+    stages.push(at);
+    at = previousStage(at);
+  }
+  need(at === from && stages.length > 0, `${from} to ${to}`);
+  for (const stage of stages.reverse()) build(s, stage);
   const broken = invariant(s.w);
   need(broken === null, `${to}: ${broken}`);
   return s;
@@ -120,7 +129,8 @@ function until(s: Seed, ok: () => boolean, max: number, what: string) {
 /** The first kit of leg `k`'s current section is on its rack. */
 const racked = (s: Seed, k: number) => {
   const sec = RAIL_LEGS[k]!.sections[legRow(s.w, k).laid]!;
-  return rail(s.w).depot >= sec.logs && rail(s.w).depotRails >= sec.rails;
+  const row = legRow(s.w, k);
+  return row.rackLogs >= sec.logs && row.rackRails >= sec.rails;
 };
 /** A train of leg `k`'s line carries its kit. */
 const aboard = (s: Seed, k: number) => legKitCarriers(s.w, RAIL_LEGS[k]!.line) > 0;
@@ -177,6 +187,14 @@ function build(s: Seed, stage: LegStage): Seed {
       break;
     case 'canopy-reached':
       while (legRow(w, CANOPY).laid < RAIL_LEGS[CANOPY]!.sections.length) laySection(s, CANOPY);
+      break;
+    case 'cave-first-open':
+      need(act(s, 'a', 'rail.gate', { id: RAIL_GATES.findIndex((g) => g.id === 'plug') }) === 1, 'plug opened first');
+      until(s, () => racked(s, CANOPY) && racked(s, CAVE), 6000, 'both first racks stocked');
+      break;
+    case 'cave-first-reached':
+      while (legRow(w, CAVE).laid < RAIL_LEGS[CAVE]!.sections.length) laySection(s, CAVE);
+      advance(s, 900);
       break;
     case 'cave-open':
       need(act(s, 'a', 'rail.grant', { id: RAIL_GRANTS.findIndex((g) => g.id === 'cloth') }) === 1, 'cloth taken');

@@ -77,7 +77,7 @@ legs. No new object, sign or word is needed to show the choice; every new word i
 is The Boogler's.
 
 **Steps:** 1 per-leg racks, 2 the order, 3 seeds, 4 the views, then 5 the bot and the loop, and the checkpoint. Steps 1
-to 4 ship together with **one world bump** (v73 if leg 6 takes v72). **Three owner questions**, one word each,
+to 4 ship together with **one world bump** (v74, following the Stack west platforms in v73). **Three owner questions**, one word each,
 [at the end](#owner-questions).
 
 ## Sources read
@@ -142,9 +142,9 @@ leg 6's uncommitted build in its worktree (`src/world/namespace.ts` at v72). `np
   first kit is owed from Canopy's last lay (the Notch's case in leg 6: its first kit is owed from the Wall's last lay).
   `legKitMayLoad` takes the same condition.
 - **Per-leg racks.** `Leg` gains `rackLogs` and `rackRails`: the kit on that leg's current rack. `legLack` and
-  `legRackNeed` count the leg's own rack; `legKitArrive` unloads onto it; `legKitStock` stocks it; `legKitHome` and
-  `legYardHome` unchanged. A leg's rack moves with its sections as `legRack(leg, laid)` does today; what is on it at a lay
-  stays on it (the head's rack is the same shelf moved on, as `Rail.depot` was). At the leg's last lay whatever is left
+  `legRackNeed` count the leg's own rack; `legKitArrive` unloads onto it; `legKitStock` stocks it. `legYardHome` also
+  empties the completed leg's rack. A leg's rack moves with its sections as `legRack(leg, laid)` does today; what is on it at a lay
+  stays on it even when a hand feed reduces the unpaid bill. At the leg's last lay whatever is left
   on its rack (units fed from elsewhere, so the rack's were not needed) goes home, logs unmade and rails to the forge
   rack, as a completed yard leg's yard does (`legYardHome`); today it would stay on `Rail.depot` and show on the next
   open leg's rack. `Rail.depot`/`depotRails` are line 2's Q
@@ -165,8 +165,9 @@ leg 6's uncommitted build in its worktree (`src/world/namespace.ts` at v72). `np
   rack can take while the room builds the cave keeps running with it aboard (the stone stop, ruling D, as for any kit
   riding ahead); a Strong train's railhead hold is capped and yields as today.
 - **Saves.** The new `Leg` and `Account` columns are saved shape: the bump.
-- **Invariants** (`railway-check-route.ts`): no two open legs on one line; each leg's rack within its remaining bill
-  less what is fed and held; conservation counts every leg's rack (the line 2 and steel checks that sum `r0.depot` for
+- **Invariants** (`railway-check-route.ts`): no two open legs on one line. Each open rack holds at most the largest
+  section bill of each material reached on that leg. Unreached and completed racks are empty (builder's correction
+  accepted by the orchestrator). Conservation counts every leg's rack (the line 2 and steel checks that sum `r0.depot` for
   minted logs and forge rails, `railway-check-line2.ts:104,127` and `railway-check-steel.ts:59,63`, add the legs'
   racks to the same sums).
 
@@ -226,7 +227,7 @@ and the views that send it must ship with the rules). Step 5 after. Models are `
 every step that touches `src/sim`, `src/world` or the wire gets an independent review before merge (gpt-6.2-astra
 medium first). Sizes are estimates.
 
-- [ ] **1. Per-leg racks (L; "High-risk implementation": gpt-6.2-astra medium).** No order change yet. Files:
+- [x] **1. Per-leg racks (L; "High-risk implementation": gpt-6.2-astra medium).** No order change yet. Files:
       `src/sim/railway-components.ts` (`Leg.rackLogs`, `rackRails`; `Account.liftLeg`, default −1),
       `railway-queries-route.ts` (`legLack`, `legRackNeed`, `heldKit` per leg; comments that say "one leg is open at a
       time" corrected), `railway-sys-route-kit.ts` (`legKitArrive`, `legKitStock`, `legKitLifted`, `legKitPut`,
@@ -240,7 +241,7 @@ medium first). Sizes are estimates.
       one does not, find the changed input before re-pinning (lockstep rule); a host case in `server/test/` (beside
       `railway-steel-host.test.ts:617`'s cave take) that a take with `leg` is accepted at that leg's rack and refused at
       another open leg's; `npm test` in `server/` (rule 52).
-- [ ] **2. The order (M; "High-risk implementation": gpt-6.2-astra medium, high for the fuzz).** Files:
+- [x] **2. The order (M; "High-risk implementation": gpt-6.2-astra medium, high for the fuzz).** Files:
       `railway-route.ts` (`cave` `after: 2`; `alsoAfter` on `Spec` and `RouteLeg`, `wall` `alsoAfter: 3`),
       `railway-queries-route.ts` (`legReached`, `legMintChain`'s kit-ahead condition, `legKitMayLoad`),
       `railway-check-route.ts` (no two open legs on a line), `src/world/namespace.ts` (**the bump**, its dated line).
@@ -254,7 +255,7 @@ medium first). Sizes are estimates.
       accepted lever calls on both lines, Strong on the bay line), the default run timed and under a quarter of its
       budget (rule 60); the long run (`ROUTE_GATES=1`, four seeds, 20,000 ticks a mode) pasted here before the bump
       ships, with legs 2 to 5's long suites re-run beside it. The whole server suite, `npm run test:net` (rule 55).
-- [ ] **3. Seeds (S; "High-risk implementation": gpt-6.2-astra medium).** `src/sim/railway-seed-legs.ts` and
+- [x] **3. Seeds (S; "High-risk implementation": gpt-6.2-astra medium).** `src/sim/railway-seed-legs.ts` and
       `SEED_STAGES` (`railway-seeds.ts`) from `bay-reached`, accepted ops only, each wrapped in `need` (rule 53):
       **`cave-first-open`** (the plug open, both racks stocked, Canopy's barrier shut) and **`cave-first-reached`** (the
       cave laid, Canopy unopened, a little running time). The canonical seeds keep their meaning: `canopy-open` onward
@@ -262,7 +263,7 @@ medium first). Sizes are estimates.
       rows (`cave-first-open` lands on the cave apron between rack 1 and frame 1; `cave-first-reached` keeps the
       spawn). Checks: `test/railway-jump.test.ts`; each stage's load check; the whole server suite and `npm run
       test:net`.
-- [ ] **4. The views (M; "Player-visible implementation": gpt-6.2-astra medium).** `src/entities/route-greybox/leg-view.ts`:
+- [x] **4. The views (M; "Player-visible implementation": gpt-6.2-astra medium).** `src/entities/route-greybox/leg-view.ts`:
       `rows()` keeps every open leg (not one index) and each leg's rack from its `Leg` row; feed and take prompts for
       every open leg in reach, the takes passing the leg; `leg2Objective` written as a function of the rows for both
       orders (the words [above](#what-a-player-sees-and-does-at-the-bay-cut)); the plug's refusal before the bay cut;
@@ -285,6 +286,30 @@ medium first). Sizes are estimates.
       three players); `npm run playthrough -- --from bay-reached --to port --order cave` and `-- --from
       cave-first-reached --to canopy` (pass verdicts; timings under load are not evidence); `test/loop-graph.test.ts`.
 
+### Step 2 service checks, 25 November
+
+With Strong fitted on the bay line, both barriers open and both frames receiving kit, each seed ran 20,000 ticks at 75% headway. Every accepted call cleared within the service check's bound. Waits below are simulation ticks.
+
+The default 3,000-tick case took 5.32 seconds of its 480-second budget, with 27 bay calls and 15 cave calls accepted. Machine load during that run was 4.09 to 4.22 busy logical CPUs on a 20-CPU machine, below the repository's quiet threshold of 12.
+
+| Seed | Bay calls | Cave calls | Longest bay wait | Longest cave wait |
+| --- | ---: | ---: | ---: | ---: |
+| c0ffee | 168 | 118 | 1,739 | 1,035 |
+| 777 | 173 | 124 | 1,647 | 1,173 |
+| 5eed | 174 | 129 | 1,523 | 1,101 |
+| badd | 172 | 117 | 1,553 | 1,084 |
+
+The v74 fixture comparison preserved all 82 earlier seed ticks, 464 scripted command results and 14,400 tick system sequences. All 82 mirror traces kept their frame and mark counts. The 1,244 marks now hash the v74 rows. Across 8,620 host trace records, 205 checkpoints and 5,679 serialized-size counters changed. Every input, result and replica packet matched.
+
+### Step 4 browser stills, 25 November
+
+| Site | Before picking up kit | After picking up kit |
+| --- | --- | --- |
+| Bell Rock | [20 rails](order-choice/bell-full.png) | [4 rails](order-choice/bell-take.png) |
+| West landing cave apron | [20 logs](order-choice/apron-full.png) | [4 logs](order-choice/apron-take.png) |
+
+Both pickups settled in the same room. The other rack kept all 20 units of the material picked up. After finishing the cave first, Port Quay still showed [LATER at the buffers](order-choice/quay-later.png).
+
 ### Checkpoint (both orders playable)
 
 After step 5, on HOTBOX, once:
@@ -300,7 +325,7 @@ After step 5, on HOTBOX, once:
 
 ## The world bump
 
-**One, in step 2's commit, covering steps 1 to 4:** v73 if leg 6 has taken v72 (the next free number otherwise; two
+**One, in step 2's commit, covering steps 1 to 4:** v74 after the Stack west platforms took v73 (two
 share one only if both are review-clean in the same batch, and none waits for another: [no bump
 hold](../agents/owner-calls.md#no-bump-hold)). Ship outside the owner's sessions. Why it cannot be avoided: two saved
 columns on `Leg` and one on `Account`; the meaning of `Rail.depot` after the Q jobs; an optional field on two ops; the

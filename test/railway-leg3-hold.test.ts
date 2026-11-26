@@ -3,7 +3,7 @@ import test from 'node:test';
 import { Train } from '../src/sim/railway-components.ts';
 import { legKitCap, legRow } from '../src/sim/railway-queries-route.ts';
 import { RAIL_GATES, ROW_LINE } from '../src/sim/railway-route.ts';
-import { line, rail, shed, train } from '../src/sim/railway-rows.ts';
+import { line, shed, train } from '../src/sim/railway-rows.ts';
 import { BRING_TICKS } from '../src/sim/railway-works-layout.ts';
 import { laySection } from '../src/sim/railway-seed-legs.ts';
 import { TRAIN, TRAIN_PHASE, boilerCars, kitBills } from '../src/sim/railway-train.ts';
@@ -55,7 +55,7 @@ test('Strong fitted by rail.bring and rail.install loads two bills, holds at Bel
     () => row().at === 2 && row().phase === TRAIN_PHASE.STAND && row().logs === 20,
     'section one unloaded at Bell Rock',
   );
-  assert.equal(rail(s.w).depot, 20);
+  assert.equal(legRow(s.w, CANOPY).rackLogs, 20);
   assert.equal(legRailheadHold(s.w, slot, s.t), 'hold');
   for (const boiler of [0, 4]) {
     const other = restore(s.w);
@@ -81,7 +81,7 @@ test('Strong fitted by rail.bring and rail.install loads two bills, holds at Bel
   const laid = s.t;
   assert.equal(legRow(s.w, CANOPY).laid, 1);
   assert.equal(legRailheadHold(s.w, slot, s.t), 'on', 'Bell Rock is now a middle halt');
-  until(s, () => row().at === 3 && rail(s.w).depot === 20 && row().logs === 0, 'same train unloads at head 1');
+  until(s, () => row().at === 3 && legRow(s.w, CANOPY).rackLogs === 20 && row().logs === 0, 'same train unloads at head 1');
   assert.equal(invariant(s.w), null);
   t.diagnostic(`head 1 racked ${s.t - laid} ticks after the lay; deadline ${deadline}`);
 });
@@ -93,7 +93,7 @@ test('a train carrying one Canopy bill tops up at West landing when it adopts St
   const row = () => train(s.w, slot);
   until(
     s,
-    () => rail(s.w).depot === 20 && row().legKit && row().logs === 20 && row().track === 0 && row().at === 0,
+    () => legRow(s.w, CUT).rackLogs === 20 && row().legKit && row().logs === 20 && row().track === 0 && row().at === 0,
     'a standard train carries its first Canopy bill while the last bay section waits',
   );
   fitStrong(s);

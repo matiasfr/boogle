@@ -9,7 +9,7 @@ import { LOGS, roomOf } from '../../src/sim/railway-queries.ts';
 import { RAILS } from '../../src/sim/railway-line2-layout.ts';
 import { legRow } from '../../src/sim/railway-queries-route.ts';
 import { RAIL_GATES, RAIL_LEGS, ROW_LINE } from '../../src/sim/railway-route.ts';
-import { account, line, rail, shed, train } from '../../src/sim/railway-rows.ts';
+import { account, line, shed, train } from '../../src/sim/railway-rows.ts';
 import { legRailheadHold } from '../../src/sim/railway-sys-route-kit.ts';
 import { LINE_SLOTS } from '../../src/sim/railway-trains.ts';
 import { TRAIN_PHASE } from '../../src/sim/railway-train.ts';
@@ -30,8 +30,8 @@ function section(s: Seed, k: number, players: readonly string[], releases: numbe
   let rackTicks = -1;
   while (legRow(s.w, k).laid === before) {
     need(s.t - start < 12000, `section stalled at ${k}/${before}`);
-    const rack = rail(s.w);
-    if (rackTicks < 0 && rack.depot >= bill.logs && rack.depotRails >= bill.rails) rackTicks = s.t - start;
+    const rack = legRow(s.w, k);
+    if (rackTicks < 0 && rack.rackLogs >= bill.logs && rack.rackRails >= bill.rails) rackTicks = s.t - start;
     if (rackTicks >= 0 && legRow(s.w, k).start < 0) {
       for (const pid of players) {
         const a = account(s.w, pid)!;
@@ -39,7 +39,7 @@ function section(s: Seed, k: number, players: readonly string[], releases: numbe
           ['rail.depotTake', LOGS],
           ['rail.depotRailTake', RAILS],
         ] as const)
-          if (roomOf(s.w, a, kind) > 0) apply(s.w, pid, { op, epoch: a.epoch, request: a.request + 1 }, s.t);
+          if (roomOf(s.w, a, kind) > 0) apply(s.w, pid, { op, leg: k, epoch: a.epoch, request: a.request + 1 }, s.t);
         apply(s.w, pid, { op: 'rail.legStock', leg: k, epoch: a.epoch, request: a.request + 1 }, s.t);
       }
     }

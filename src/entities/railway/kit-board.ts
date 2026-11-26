@@ -14,7 +14,7 @@ import { TRAIN_PHASE, trainAlong } from '../../sim/railway-train.ts';
 import { RAIL_LEGS } from '../../sim/railway-route.ts';
 import { trainStops } from '../../sim/railway-queries-trains.ts';
 import { legKitDrop, legRow, legsServed, legYard } from '../../sim/railway-queries-route.ts';
-import { aperture, rail, train, type ReadWorld } from '../../sim/railway-rows.ts';
+import { aperture, train, type ReadWorld } from '../../sim/railway-rows.ts';
 
 export const PLATE_LOOK = { ground: '#fff3d6', ink: '#2a1c10' };
 /** The steel works' kit's mark, on its car's board and its yard's plate. */
@@ -93,7 +93,6 @@ function lineMarks(w: ReadWorld, tick: number, line: number, out: Map<number, st
   if (k < 0 || !carriers.length) return;
   const leg = RAIL_LEGS[k]!,
     row = legRow(w, k),
-    stock = rail(w),
     lack = leg.sections.map((s, j) => (j < row.laid ? { logs: 0, rails: 0 } : { logs: s.logs, rails: s.rails }));
   /** Takes `n` units of `key` off the sections' lack from section `from` on. */
   const fill = (key: 'logs' | 'rails', n: number, from: number) => {
@@ -103,8 +102,8 @@ function lineMarks(w: ReadWorld, tick: number, line: number, out: Map<number, st
       n -= d;
     }
   };
-  fill('logs', row.logs + stock.depot + row.heldLogs, row.laid);
-  fill('rails', row.rails + stock.depotRails + row.heldRails, row.laid);
+  fill('logs', row.logs + row.rackLogs + row.heldLogs, row.laid);
+  fill('rails', row.rails + row.rackRails + row.heldRails, row.laid);
   // A yard leg's kit this line brings (line 2's to High Gorge) is behind its yard and its own line's trains.
   if (leg.line !== line) {
     const yard = legYard(w, k);
@@ -162,4 +161,4 @@ export function createKitBoard(owner: OwnedView, parent: THREE.Object3D, top: nu
 
 /** The leg kit in the air between a car and its rack (train-view.ts counts it up as a train unloads and down as
  * each crate lands; the rack's view draws its accepted count less this). Local presentation, cleared on a restore. */
-export const legKitFlight = { logs: 0, rails: 0 };
+export const legKitFlight = RAIL_LEGS.map(() => ({ logs: 0, rails: 0 }));

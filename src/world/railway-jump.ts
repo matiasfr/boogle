@@ -315,6 +315,19 @@ export const JUMPS: readonly Jump[] = [
     land: { x: -1070.02, y: 13.9, z: -318.93, yaw: 2.419 },
   },
   // Placeholder tooling rows. The head platform and quay arrive with leg 4's views (step 5).
+  {
+    stage: 'cave-first-open',
+    menu: false,
+    label: 'Cave first',
+    line: 'The plug is open and both racks are stocked',
+    land: betweenRackAndFrame(4, 0),
+  },
+  {
+    stage: 'cave-first-reached',
+    menu: false,
+    label: 'Port Quay first',
+    line: 'The cave line is laid and the Canopy barrier is shut',
+  },
   { stage: 'cave-open', menu: false, label: 'Cave line open', line: 'The plug is open at the West landing' },
   {
     stage: 'cave-mid',

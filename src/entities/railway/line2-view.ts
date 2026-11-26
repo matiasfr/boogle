@@ -14,6 +14,8 @@ import { cam, me } from '../../player/player.ts';
 import { frameHasRemote, frameOccupied } from './frame-occupied.ts';
 import { goldMote } from './breaker-view.ts';
 import { reducedMotion } from '../../constants.ts';
+import { RAIL_LEGS, legRack } from '../../sim/railway-route.ts';
+import { legRow } from '../../sim/railway-queries-route.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { emit } from '../../render/particles.ts';
@@ -894,8 +896,10 @@ export async function createRailwayLine2(
       const carried = event.carried ?? account(w, event.pid)?.carry ?? 0;
       const active = line2Active(w),
         depot = railRow(w).depot;
+      const rack = event.leg === undefined ? null : legRack(RAIL_LEGS[event.leg]!, legRow(w, event.leg).laid);
       for (let n = 0; n < taken; n++) {
-        depotSlot(Math.max(0, active), depot + taken - n - 1, from);
+        if (rack) from.set(rack.x / 100, rack.y / 100 + 0.3, rack.z / 100);
+        else depotSlot(Math.max(0, active), depot + taken - n - 1, from);
         pieces.send(
           'log',
           from,
@@ -984,8 +988,11 @@ export async function createRailwayLine2(
     const rails = e.op === 'rail.forgeTake' || ('kind' in e && e.kind === 2);
     const mine = account(w, pid);
     const held = (rails ? mine?.rails : mine?.carry) ?? 0;
-    const home =
-      e.op === 'rail.forgeTake'
+    const rack =
+      e.op === 'rail.depotTake' && e.leg !== undefined ? legRack(RAIL_LEGS[e.leg]!, legRow(w, e.leg).laid) : null;
+    const home = rack
+      ? new THREE.Vector3(rack.x / 100, rack.y / 100 + 0.3, rack.z / 100)
+      : e.op === 'rail.forgeTake'
         ? rackFrom
         : e.op === 'rail.depotTake'
           ? depotPlace(framed(line2Active(w)) ? line2Active(w) : 0, new THREE.Vector3()).add(UP_08)
@@ -1230,8 +1237,7 @@ export async function createRailwayLine2(
       const marks: RewardMark[] = [];
       if (fg.lit < 0 && fg.used < F1) {
         if (!stock.pack) marks.push({ kind: 'pack', ready: false });
-      }
-      else {
+      } else {
         if (!stock.pack) marks.push({ kind: 'pack', ready: true });
         if (!stock.axe) marks.push({ kind: 'axe', ready: fg.lit >= 0 });
       }

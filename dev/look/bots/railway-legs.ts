@@ -17,7 +17,7 @@
 // Inspection observes; it never seeds a world or moves a player. A fall into the sea is a finding (no recovery).
 import type { Bot } from '../bot.ts';
 import { legDone, legRow, routeRow } from '../../../src/sim/railway-queries-route.ts';
-import { account, aperture, inspectRailway, rail, railAt, railPid, railRead, rw, trains } from '../rail-read.ts';
+import { account, aperture, inspectRailway, railAt, railPid, railRead, rw, trains } from '../rail-read.ts';
 import { me } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { interactTarget } from '../../../src/player/hands.ts';
@@ -176,10 +176,10 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
           `feed ${what}'s frame (${at().logs}/${sec.logs} logs, ${at().rails}/${sec.rails} rails)`,
         );
       } else if (needL > 0) {
-        await untilTicks(() => rail(rw()).depot > 0, `logs on ${what}'s rack`, 6000);
+        await untilTicks(() => at().rackLogs > 0, `logs on ${what}'s rack`, 6000);
         await press('railway-leg-take-logs', rack, `take logs for ${what}`);
       } else {
-        await untilTicks(() => rail(rw()).depotRails > 0, `rails on ${what}'s rack`, 6000);
+        await untilTicks(() => at().rackRails > 0, `rails on ${what}'s rack`, 6000);
         await press('railway-leg-take-rails', rack, `take rails for ${what}`);
       }
     }

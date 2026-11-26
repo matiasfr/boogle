@@ -60,9 +60,9 @@ background(
         if (trip > 40) throw new Error(`leg3-clear: not fed after 40 trips ${JSON.stringify(legRow(R.rw(), k))}`);
         put(rack.x / 100, rack.y / 100 + 0.6, rack.z / 100);
         await wait(300);
-        if (R.rail(R.rw()).depot > 0) commands.depotTake();
+        if (legRow(R.rw(), k).rackLogs > 0) commands.depotTake(k);
         await settle();
-        if (R.rail(R.rw()).depotRails > 0) commands.depotRailTake();
+        if (legRow(R.rw(), k).rackRails > 0) commands.depotRailTake(k);
         await settle();
         put(frame.x / 100, frame.y / 100 + 0.6, frame.z / 100);
         await wait(300);

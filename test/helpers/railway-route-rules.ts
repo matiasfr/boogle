@@ -13,7 +13,6 @@ import {
   Aperture,
   Leg,
   LegYard,
-  Rail,
   Town,
   Yard,
   RAIL_REPLICATED,
@@ -81,7 +80,7 @@ export function routeRulesShard(shard: number) {
     // The opt-in schedule cases populate one shared distribution: keep its producers and consumer together.
     if (/^(notch-tunnel|causeway) service health/.test(name)) {
       if (shard !== 5) return;
-    } else if (name.startsWith('wall service health')) {
+    } else if (name.startsWith('two-line service health') || name.startsWith('wall service health')) {
       if (shard !== 4) return;
     } else if (name.startsWith('lost ask fuzz ')) {
       if (shard !== 0) return;
@@ -121,8 +120,8 @@ export function routeRulesShard(shard: number) {
     let stocked = 0;
     for (const pid of ['a', 'b'])
       for (const [o, f] of [
-        ['rail.depotTake', {}],
-        ['rail.depotRailTake', {}],
+        ['rail.depotTake', { leg: k }],
+        ['rail.depotRailTake', { leg: k }],
         ['rail.legStock', { leg: k }],
       ] as const) {
         const a = s.w.get(Account, s.w.lookup(Account, pid)!)!;
@@ -427,11 +426,19 @@ export function routeRulesShard(shard: number) {
     // The leg's rack (Q6's and Q7's depot racks, once the Q jobs are done) at its own spot, 7 m from the frame (step 4's
     // review, b: reach 4 m); none before the rivet.
     const rack = legRack(LEG, 0);
-    assert.equal(railValid(s.w, op('rail.depotTake'), actorAt(rack)), true);
-    assert.equal(railValid(s.w, op('rail.depotRailTake'), actorAt(rack)), true);
-    assert.equal(railValid(s.w, op('rail.depotTake'), actorAt(frame)), false, 'the frame is out of the rack reach');
-    assert.equal(railValid(s.w, op('rail.depotTake'), actorAt(legRack(LEG, 2))), false);
-    assert.equal(railValid(LEAF.w, op('rail.depotTake'), anywhere), false, 'no rack before the leg opens');
+    assert.equal(railValid(s.w, op('rail.depotTake', { leg: STACK }), actorAt(rack)), true);
+    assert.equal(railValid(s.w, op('rail.depotRailTake', { leg: STACK }), actorAt(rack)), true);
+    assert.equal(
+      railValid(s.w, op('rail.depotTake', { leg: STACK }), actorAt(frame)),
+      false,
+      'the frame is out of the rack reach',
+    );
+    assert.equal(railValid(s.w, op('rail.depotTake', { leg: STACK }), actorAt(legRack(LEG, 2))), false);
+    assert.equal(
+      railValid(LEAF.w, op('rail.depotTake', { leg: STACK }), anywhere),
+      false,
+      'no rack before the leg opens',
+    );
     RAIL_GRANTS.forEach((g, id) => {
       assert.equal(railValid(s.w, op('rail.grant', { id }), actorAt(g.at)), true, g.id);
       assert.equal(railValid(s.w, op('rail.grant', { id }), nowhere), false, g.id);
@@ -481,8 +488,8 @@ export function routeRulesShard(shard: number) {
     RAIL_LEGS.forEach((leg, k) => {
       const g = legRow(w, k);
       [logs, rails, loadedLogs, loadedRails] = [
-        logs + g.logs,
-        rails + g.rails,
+        logs + g.logs + g.rackLogs,
+        rails + g.rails + g.rackRails,
         loadedLogs + g.loadedLogs,
         loadedRails + g.loadedRails,
       ];
@@ -496,7 +503,7 @@ export function routeRulesShard(shard: number) {
   }
   test('the idle room (ruling B, gate 13): at rest by +1,500, kit 1 racked, two kit trains, one kit car empty, 60 and 60 loaded; then nothing moves', () => {
     const s = unaudited(copy(JOINED));
-    assert.deepEqual([rail(s.w).depot, rail(s.w).depotRails], [0, 0]);
+    assert.deepEqual([legRow(s.w, STACK).rackLogs, legRow(s.w, STACK).rackRails], [0, 0]);
     const backs = trains(s.w).length && kitEquality(s.w);
     for (let k = 0; k < 1500; k++) {
       advance(s, 1);
@@ -504,7 +511,7 @@ export function routeRulesShard(shard: number) {
     }
     const carriers = LINE_SLOTS[LINE2]!.filter((k) => legCarrier(s.w, k));
     const empty = servingSlots((j) => train(s.w, j), LINE2).filter((k) => !carriers.includes(k));
-    assert.deepEqual([rail(s.w).depot, rail(s.w).depotRails], [20, 20], 'kit 1 racked');
+    assert.deepEqual([legRow(s.w, STACK).rackLogs, legRow(s.w, STACK).rackRails], [20, 20], 'kit 1 racked');
     assert.equal(carriers.length, 2, 'two kit trains (the running three less one)');
     assert.ok(empty.length >= 1, 'a kit car empty');
     assert.ok(
@@ -518,8 +525,8 @@ export function routeRulesShard(shard: number) {
     );
     const rest = JSON.stringify([
       legRow(s.w, STACK),
-      rail(s.w).depot,
-      rail(s.w).depotRails,
+      legRow(s.w, STACK).rackLogs,
+      legRow(s.w, STACK).rackRails,
       trains(s.w).map((r) => [r.logs, r.rails]),
     ]);
     for (let k = 0; k < 3000; k++) {
@@ -528,8 +535,8 @@ export function routeRulesShard(shard: number) {
         assert.equal(
           JSON.stringify([
             legRow(s.w, STACK),
-            rail(s.w).depot,
-            rail(s.w).depotRails,
+            legRow(s.w, STACK).rackLogs,
+            legRow(s.w, STACK).rackRails,
             trains(s.w).map((r) => [r.logs, r.rails]),
           ]),
           rest,
@@ -568,7 +575,8 @@ export function routeRulesShard(shard: number) {
       const g = legRow(s.w, STACK),
         laid = g.laid;
       if (laid < N) {
-        if (complete < 0 && g.logs + rail(s.w).depot >= 20 && g.rails + rail(s.w).depotRails >= 20) complete = s.t;
+        if (complete < 0 && g.logs + legRow(s.w, STACK).rackLogs >= 20 && g.rails + legRow(s.w, STACK).rackRails >= 20)
+          complete = s.t;
         if (g.start < 0) stock(s);
       }
       const before = trains(s.w).map((r) => ({ ...r }));
@@ -707,7 +715,7 @@ export function routeRulesShard(shard: number) {
   });
 
   // ---------------------------------------------------------------- what is replicated
-  test('replicated rows change only at a kit load, a feed or a lay: never every tick (the lay clock reads start)', () => {
+  test('replicated rows change only at a kit load, delivery, feed or lay: never every tick (the lay clock reads start)', () => {
     const s = unaudited(copy(JOINED));
     const kinds = new Set(['leg', 'legYard', 'route']);
     const route = RAIL_REPLICATED.filter((c) => kinds.has(c.kind));
@@ -721,10 +729,11 @@ export function routeRulesShard(shard: number) {
       const laid = legRow(s.w, STACK).laid,
         start = legRow(s.w, STACK).start;
       if (k % 3 === 0) events += stock(s);
+      const rackBefore = legRow(s.w, STACK).rackLogs + legRow(s.w, STACK).rackRails;
       advance(s, 1);
       const r = legRow(s.w, STACK),
         l = r.loadedLogs + r.loadedRails;
-      if (l !== loads || r.laid !== laid || (r.start !== start && r.start < 0)) events++;
+      if (l !== loads || r.rackLogs + r.rackRails > rackBefore || r.laid !== laid || (r.start !== start && r.start < 0)) events++;
       loads = l;
       const now = snap();
       if (now !== prev) changed++;
@@ -961,7 +970,7 @@ export function routeRulesShard(shard: number) {
     assert.equal(legKitWaiting(s.w, LINE2, r), true);
     assert.equal(freightStop(s.w, carrier, r, stop, -1), true, 'a waiting kit is no errand');
     // Empty the rack: the same kit can unload now, so it is an errand again.
-    Object.assign(s.w.mut(Rail, s.w.single(Rail))!, { depot: 0, depotRails: 0 });
+    Object.assign(s.w.mut(Leg, s.w.lookup(Leg, STACK)!)!, { rackLogs: 0, rackRails: 0 });
     assert.equal(legKitWaiting(s.w, LINE2, r), false);
     assert.equal(freightStop(s.w, carrier, r, stop, -1), false, 'a kit that can unload');
     // An empty train owed a kit (below kitTrains) is on an errand too.
@@ -976,12 +985,12 @@ export function routeRulesShard(shard: number) {
     assert.ok(RAIL_PREDICTED.has('rail.legStock'));
     for (const op of ['rail.grant', 'rail.gate', 'rail.arrive']) assert.ok(!RAIL_PREDICTED.has(op), `${op} waits`);
     const s = copy(JOINED);
-    while (rail(s.w).depot < 20 || rail(s.w).depotRails < 20) advance(s, 1);
+    while (legRow(s.w, STACK).rackLogs < 20 || legRow(s.w, STACK).rackRails < 20) advance(s, 1);
     // Player a carries and feeds until what is on a's back fills the frame; that last press is predicted.
     for (let guard = 0; ; guard++) {
       assert.ok(guard < 20);
-      act(s, 'a', 'rail.depotTake');
-      act(s, 'a', 'rail.depotRailTake');
+      act(s, 'a', 'rail.depotTake', { leg: STACK });
+      act(s, 'a', 'rail.depotRailTake', { leg: STACK });
       const g = legRow(s.w, STACK),
         a = s.w.get(Account, s.w.lookup(Account, 'a')!)!;
       if (a.carry >= 20 - g.logs && a.rails >= 20 - g.rails) break;
@@ -1631,9 +1640,9 @@ export function routeRulesShard(shard: number) {
   // ---------------------------------------------------------------- the step 4 review's finding 2: a unit lost
   test('a unit lifted off the leg rack and lost is owed again; one carried to the frame is not loaded twice', () => {
     const s = copy(JOINED);
-    while (rail(s.w).depotRails < 20) advance(s, 1);
+    while (legRow(s.w, STACK).rackRails < 20) advance(s, 1);
     const need0 = legKitNeed(s.w, STACK).rails;
-    act(s, 'a', 'rail.depotRailTake');
+    act(s, 'a', 'rail.depotRailTake', { leg: STACK });
     const carried = acc(s, 'a').rails;
     assert.ok(carried > 0);
     assert.equal(legKitNeed(s.w, STACK).rails, need0, 'on a back it still counts');
@@ -1649,13 +1658,13 @@ export function routeRulesShard(shard: number) {
   // The step 3 review's P2-2: the leg counts the units lifted off its rack (Leg.heldLogs, Leg.heldRails), not every back's.
   test("rack units held count; fed to the steel works or a leaver's released they are owed again, never under 0", () => {
     const s = copy(JOINED);
-    while (rail(s.w).depotRails < 20) advance(s, 1);
+    while (legRow(s.w, STACK).rackRails < 20) advance(s, 1);
     // Units on a back that never came off the rack make no holder: chopped logs count for nothing here.
     chopTo(s, 'b', 4);
     assert.ok(acc(s, 'b').carry > 0);
     assert.deepEqual(railLegKitHolders(s.w), [], 'nobody has lifted off the rack');
     const need0 = legKitNeed(s.w, STACK).rails;
-    const lifted = act(s, 'a', 'rail.depotRailTake');
+    const lifted = act(s, 'a', 'rail.depotRailTake', { leg: STACK });
     assert.ok(lifted > 0);
     assert.equal(legRow(s.w, STACK).heldRails, lifted, 'held');
     assert.equal(legKitNeed(s.w, STACK).rails, need0, 'held, it still counts');
@@ -1665,7 +1674,7 @@ export function routeRulesShard(shard: number) {
     assert.equal(legRow(s.w, STACK).heldRails, lifted - fed);
     assert.equal(legKitNeed(s.w, STACK).rails, need0 + fed, 'fed to the works, owed again');
     // b lifts the rest and leaves: past the grace the host releases b's own lifted units, once; a's stay counted.
-    const more = act(s, 'b', 'rail.depotRailTake');
+    const more = act(s, 'b', 'rail.depotRailTake', { leg: STACK });
     assert.ok(more > 0);
     const held = legRow(s.w, STACK).heldRails,
       need1 = legKitNeed(s.w, STACK).rails,
@@ -1824,6 +1833,41 @@ export function routeRulesShard(shard: number) {
     }
   });
 
+  test('two-line service health with Strong on the bay and both barriers open', { timeout: 480000 }, (t) => {
+    const base = legStagesOn(unaudited(buildSeedWorld('trade-fitted')), 'bay-mid', 'canopy-open');
+    assert.equal(act(base, 'a', 'rail.gate', { id: 2 }), 1);
+    assert.equal(line(base.w, 3).boiler, 5);
+    const lines = [RAIL_LEGS[3]!.line, RAIL_LEGS[4]!.line];
+    for (const seed of ROUTE_GATES ? SEEDS : SEEDS.slice(0, 1)) {
+      const s = unaudited(base),
+        health = new ServiceHealth(lines, s.w),
+        rand = mulberry32(seed);
+      const step = () => railTick(s.w, ++s.t, 75);
+      const accepted = [0, 0];
+      for (let i = 0; i < FUZZ; i++) {
+        for (const [index, l] of lines.entries()) {
+          const n = stopsOf(s.w, l).length;
+          if (n && rand() < 0.05) {
+            const id = haltId(l, Math.floor(rand() * n)),
+              dir = rand() < 0.5 ? -1 : 1;
+            if (ask(s, { id, dir })) {
+              health.ask(s.w, id, dir, s.t);
+              accepted[index] = accepted[index]! + 1;
+            }
+          }
+          if (i % 10 === 0 && legOpen(s.w, 3 + index)) stock(s, 3 + index);
+        }
+        step();
+        health.tick(s.w, s.t);
+      }
+      health.drain(s.w, s.t, step);
+      assert.ok([3, 4].every((k) => legRow(s.w, k).laid > 0), 'both lines laid track');
+      assert.ok(accepted.every((n) => n > 0) && lines.every((l) => health.worst.has(l)));
+      assert.deepEqual(health.failures, []);
+      assert.equal(invariant(s.w), null);
+      t.diagnostic(`seed ${seed}, accepted ${accepted}, worst waits ${lines.map((l) => health.worst.get(l))}`);
+    }
+  });
   for (const legId of ['cave', 'wall', 'notch-tunnel', 'causeway'] as const)
     test(`${legId} service health at 75% headway on growing and settled track`, { timeout: 480000 }, (t) => {
       const k = RAIL_LEGS.findIndex((l) => l.id === legId),

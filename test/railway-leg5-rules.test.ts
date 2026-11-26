@@ -6,7 +6,7 @@ import { stopsOf } from '../src/sim/railway-queries.ts';
 import { RAIL_HALTS, RAIL_LINES, trainPassesBy } from '../src/sim/railway-lines.ts';
 import { fleetOf, TRAIN_PHASE, reqHas, trainRequestable } from '../src/sim/railway-train.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
-import { rail, train } from '../src/sim/railway-rows.ts';
+import { train } from '../src/sim/railway-rows.ts';
 import { Route } from '../src/sim/railway-components.ts';
 import { laySection } from '../src/sim/railway-seed-legs.ts';
 import { legRailheadHold } from '../src/sim/railway-sys-route-kit.ts';
@@ -33,12 +33,12 @@ test('cave trains relay six Wall kits through the prefix of open halts', () => {
     advance(port, 1);
   }
   assert.equal(aboard(), 20);
-  assert.deepEqual([rail(port.w).depot, rail(port.w).depotRails], [0, 0]);
-  for (let wait = 0; rail(port.w).depot === 0; wait++) {
+  assert.deepEqual([legRow(port.w, k).rackLogs, legRow(port.w, k).rackRails], [0, 0]);
+  for (let wait = 0; legRow(port.w, k).rackLogs === 0; wait++) {
     assert.ok(wait < 8000);
     advance(port, 1);
   }
-  assert.deepEqual([rail(port.w).depot, rail(port.w).depotRails], [20, 20]);
+  assert.deepEqual([legRow(port.w, k).rackLogs, legRow(port.w, k).rackRails], [20, 20]);
   for (let laid = 0; laid <= 6; laid++) {
     const { w } = port,
       r = legRow(w, k),
@@ -53,12 +53,12 @@ test('cave trains relay six Wall kits through the prefix of open halts', () => {
       for (const dir of [-1, 1])
         assert.equal(trainPassesBy(line, head + 3, dir, stops.length), [1, 2, 4].includes(head) && laid >= head + 2);
     for (const [kind, loaded, depot, held] of [
-      ['logs', 'loadedLogs', 'depot', 'heldLogs'],
-      ['rails', 'loadedRails', 'depotRails', 'heldRails'],
+      ['logs', 'loadedLogs', 'rackLogs', 'heldLogs'],
+      ['rails', 'loadedRails', 'rackRails', 'heldRails'],
     ] as const)
       assert.equal(
         r[loaded],
-        20 * laid + r[kind] + r[held] + rail(w)[depot] + slots.reduce((n, j) => n + train(w, j)[kind], 0),
+        20 * laid + r[kind] + r[held] + r[depot] + slots.reduce((n, j) => n + train(w, j)[kind], 0),
       );
     assert.equal(invariant(w), null);
     if (laid === 6) break;
@@ -70,11 +70,11 @@ test('cave trains relay six Wall kits through the prefix of open halts', () => {
       // The earlier Canopy barrier used the same seeds. Keep the negative fixture's grant/gate bits consistent.
       room.gates &= ~(1 << RAIL_GATES.findIndex((g) => g.id === 'canopy'));
       assert.equal(act(withoutSeeds, 'a', 'rail.gate', op), 0);
-      for (let i = 0; rail(w).depot === 0; i++) {
+      for (let i = 0; legRow(w, k).rackLogs === 0; i++) {
         assert.ok(i < 8000);
         advance(port, 1);
       }
-      assert.ok(act(port, 'a', 'rail.depotTake') > 0);
+      assert.ok(act(port, 'a', 'rail.depotTake', { leg: k }) > 0);
       assert.equal(act(port, 'a', 'rail.legStock', { leg: k }), 0);
       assert.equal(act(port, 'a', 'rail.gate', op), 1);
       assert.ok(act(port, 'a', 'rail.legStock', { leg: k }) > 0);
@@ -90,11 +90,11 @@ test('a Kit 6 rider keeps their accepted homeward stop when Wall 5 finishes', ()
     s = unaudited(buildSeedWorld('wall-mid'));
   while (legRow(s.w, wall).laid < 4) laySection(s, wall);
   const stops = stopsOf(s.w, line);
-  for (let i = 0; rail(s.w).depot === 0; i++) {
+  for (let i = 0; legRow(s.w, wall).rackLogs === 0; i++) {
     assert.ok(i < 8000, 'Wall 5 kit reaches the rack');
     advance(s, 1);
   }
-  assert.ok(act(s, 'a', 'rail.depotTake') > 0);
+  assert.ok(act(s, 'a', 'rail.depotTake', { leg: wall }) > 0);
   assert.ok(act(s, 'a', 'rail.legStock', { leg: wall }) > 0);
   for (let i = 0; i < 8000; i++) {
     const slot = LINE_SLOTS[line]!.find((j) => {
@@ -119,7 +119,7 @@ test('a Kit 6 rider keeps their accepted homeward stop when Wall 5 finishes', ()
       }
       // The normal dwell can outlast the freight hold. Ask again in a separate run, one tick before the stub moves.
       for (const take of ['rail.depotTake', 'rail.depotRailTake'] as const) {
-        while (act(s, 'a', take) > 0) assert.ok(act(s, 'a', 'rail.legStock', { leg: wall }) > 0);
+        while (act(s, 'a', take, { leg: wall }) > 0) assert.ok(act(s, 'a', 'rail.legStock', { leg: wall }) > 0);
       }
       const start = legRow(s.w, wall).start;
       assert.ok(start >= 0);

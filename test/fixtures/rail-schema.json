@@ -1,5 +1,5 @@
 {
- "worldNs": "v72",
+ "worldNs": "v74",
  "components": [
   {
    "kind": "rail",
@@ -595,7 +595,9 @@
    "replicate": true,
    "track": true,
    "requires": [],
-   "defaults": {},
+   "defaults": {
+    "liftLeg": -1
+   },
    "fields": [
     [
      "pid",
@@ -623,6 +625,10 @@
     ],
     [
      "request",
+     "int"
+    ],
+    [
+     "liftLeg",
      "int"
     ],
     [
@@ -1318,6 +1324,14 @@
     ],
     [
      "loadedRails",
+     "int"
+    ],
+    [
+     "rackLogs",
+     "int"
+    ],
+    [
+     "rackRails",
      "int"
     ],
     [

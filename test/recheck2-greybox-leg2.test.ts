@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { RAIL_LEGS } from '../src/sim/railway-route.ts';
 import { RAILS } from '../src/sim/railway-line2-layout.ts';
 import { railGrowthMask } from '../src/sim/railway-supply.ts';
-import { forge, rail } from '../src/sim/railway-rows.ts';
+import { forge } from '../src/sim/railway-rows.ts';
 import { legId, legOpen, legRow } from '../src/sim/railway-queries-route.ts';
 import { legStandInLost, railLegKitHolders, railLegKitRelease } from '../src/sim/railway-sys-route-kit.ts';
 import { Account, Leg, Steel } from '../src/sim/railway-components.ts';
@@ -51,10 +51,10 @@ function feedRails(s: Seed, pids: readonly string[]) {
   for (let guard = 0; guard < 200; guard++) {
     if (legRow(s.w, BAY).start >= 0 || legRow(s.w, BAY).laid > 0) return true;
     for (const pid of pids) {
-      act(s, pid, 'rail.depotRailTake');
+      act(s, pid, 'rail.depotRailTake', { leg: BAY });
       act(s, pid, 'rail.forgeTake');
       act(s, pid, 'rail.steelTake', { kind: 1 });
-      act(s, pid, 'rail.depotTake');
+      act(s, pid, 'rail.depotTake', { leg: BAY });
       act(s, pid, 'rail.legStock', { leg: BAY });
     }
     if (guard % 50 === 49) {
@@ -86,7 +86,7 @@ function putDownRails(s: Seed, pid: string, n: number) {
 // invisible. Section 1 stays short for good once the works are lit (rail.forgeTake gives none, the yard is empty).
 test('rails put down at the West landing, taken up again and carried off by a leaver can still be made up', () => {
   const s = bayOpenWorksLit();
-  const n = act(s, 'a', 'rail.depotRailTake');
+  const n = act(s, 'a', 'rail.depotRailTake', { leg: BAY });
   assert.ok(n > 0, 'a lifts rails off the rack');
   const ids = putDownRails(s, 'a', n);
   for (const id of ids) act(s, 'a', 'rail.take', { id, kind: RAILS });
@@ -107,14 +107,14 @@ test('rails put down at the West landing, taken up again and carried off by a le
     ok,
     `section 1 short ${RAIL_LEGS[BAY]!.sections[0]!.rails - legRow(s.w, BAY).rails} rails for good: ` +
       `lost ${legStandInLost(s.w, BAY)}, loaded ${legRow(s.w, BAY).loadedRails}, West landing rack ` +
-      `${rail(s.w).depotRails}, forge rack ${forge(s.w).rack}, works yard ${steel(s).yardRails}`,
+      `${legRow(s.w, BAY).rackRails}, forge rack ${forge(s.w).rack}, works yard ${steel(s).yardRails}`,
   );
 });
 
 // P1, the two-player form: a puts the rack's rails down, b picks them up off the pile and leaves for good.
 test('rails a friend picked up off a West landing pile and took away can still be made up', () => {
   const s = bayOpenWorksLit();
-  const n = act(s, 'a', 'rail.depotRailTake');
+  const n = act(s, 'a', 'rail.depotRailTake', { leg: BAY });
   assert.ok(n > 0);
   const ids = putDownRails(s, 'a', n);
   for (const id of ids) act(s, 'b', 'rail.take', { id, kind: RAILS });
@@ -143,12 +143,12 @@ test('rails a friend picked up off a West landing pile and took away can still b
 test("a leaver's release never drives the stand-in's loaded rails below zero", () => {
   const s = bayOpenWorksLit();
   const L = 5;
-  assert.equal(rail(s.w).depotRails, legRow(s.w, BAY).loadedRails, 'the shelf is the stand-in stock');
+  assert.equal(legRow(s.w, BAY).rackRails, legRow(s.w, BAY).loadedRails, 'the shelf is the stand-in stock');
   s.w.mut(Leg, legId(s.w, BAY))!.loadedRails -= L;
   s.w.mut(Leg, legId(s.w, INCLINE))!.loadedRails += L;
   assert.equal(invariant(s.w), null, 'a world the incline can leave');
   // Two friends lift a back each (8 rails), more than the stand-in's 15 between them, and both leave for good.
-  const n = act(s, 'a', 'rail.depotRailTake') + act(s, 'b', 'rail.depotRailTake');
+  const n = act(s, 'a', 'rail.depotRailTake', { leg: BAY }) + act(s, 'b', 'rail.depotRailTake', { leg: BAY });
   assert.ok(n > legRow(s.w, BAY).loadedRails, `${n} lifted, more than the stand-in's ${legRow(s.w, BAY).loadedRails}`);
   railLegKitRelease(s.w, 'a', acc(s, 'a').epoch);
   railLegKitRelease(s.w, 'b', acc(s, 'b').epoch);

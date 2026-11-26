@@ -106,7 +106,7 @@ function run(seed: number) {
     if (here.length && r < 0.6) {
       const p = pick(here).pid;
       const what = rand();
-      if (what < 0.25) act(s, p, rand() < 0.5 ? 'rail.depotTake' : 'rail.depotRailTake');
+      if (what < 0.25) act(s, p, rand() < 0.5 ? 'rail.depotTake' : 'rail.depotRailTake', { leg: BAY });
       else if (what < 0.5) drop(p, rand() < 0.5 ? 0 : RAILS, rand() < 0.5);
       else if (what < 0.7) {
         const piles = pilesWithIds(s.w).filter((q) => q.kind === 0 || q.kind === RAILS);
@@ -155,8 +155,8 @@ function run(seed: number) {
     );
     for (const p of players.filter((x) => x.here)) {
       // What a player at the West landing reaches: the rack, and piles near it.
-      act(s, p.pid, 'rail.depotTake');
-      act(s, p.pid, 'rail.depotRailTake');
+      act(s, p.pid, 'rail.depotTake', { leg: BAY });
+      act(s, p.pid, 'rail.depotRailTake', { leg: BAY });
       for (const q of pilesWithIds(s.w))
         if ((q.kind === 0 || q.kind === RAILS) && (q.x - RACK.x) ** 2 + (q.z - RACK.z) ** 2 <= 3000 ** 2)
           act(s, p.pid, 'rail.take', { id: q.id, kind: q.kind });
@@ -192,7 +192,7 @@ test('leg kit left at the Village yard and taken back counts held again, as at t
     const s = buildSeedWorld('bay-open');
     const marker = 5000;
     railSupplyPulse(s.w, { marker, grow: railGrowthMask([]), recover: [] });
-    const lifted = act(s, 'a', 'rail.depotTake');
+    const lifted = act(s, 'a', 'rail.depotTake', { leg: BAY });
     assert.ok(lifted > 0 && account(s.w, 'a')!.legLogs === lifted, 'the stand-in kit is counted held');
     assert.equal(act(s, 'a', 'rail.haltPut', { yard, kind: 0 }), lifted);
     // Taken back the way each yard gives logs: Pick up at the Camp, the recovery rack's take at the Village.

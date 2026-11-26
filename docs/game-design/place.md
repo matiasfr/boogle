@@ -1613,7 +1613,7 @@ the line is laid. Taking it opens the way to build the causeway from Bell Rock's
 platforms lead down to the beach. Once a train reaches the halt, a player can use the meeting post there.
 It reads "Meeting (placeholder)" before the room arrives and "Arrived" afterwards.
 
-**The cave line to Port Quay (25 November 2026, v70 rules).** After the Canopy line is laid, the powered pick opens
+**The cave line to Port Quay (25 November 2026).** The bay cut opens the Canopy and cave legs together. Both have their own racks. Friends can work on both at once or build them in either order. The White Wall opens once both are laid. The powered pick opens
 the plug at the first cave frame on the West landing. Its rack holds the first 20 logs and 20 rails. Standard cave
 trains bring the next two kits. The first lay opens the sea head and one train enters service. The second reaches
 Saltpan Halt and a second train joins. At Port Quay the sea head closes and Saltpan remains a request stop both ways.

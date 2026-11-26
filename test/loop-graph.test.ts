@@ -375,10 +375,8 @@ async function replayLegRejoin(seed: 'canopy-mid' | 'cave-mid', fault?: RejoinFa
     loadedRails: loaded('rails', 'missing load'),
     heldLogs: picked && fault === 'logs held at pickup' ? 1 : 0,
     heldRails: picked && fault !== 'held' ? pickup : 0,
-  });
-  const rack = () => ({
-    depot: tick > 0 ? second!.logs : 0,
-    depotRails: rackRails(),
+    rackLogs: tick > 0 ? second!.logs : 0,
+    rackRails: rackRails(),
   });
   function rackRails() {
     if (tick === 0 || (fault === 'restore' && tick === restoredAt)) return 0;
@@ -425,7 +423,7 @@ async function replayLegRejoin(seed: 'canopy-mid' | 'cave-mid', fault?: RejoinFa
     {
       '../look/rail-seed.ts': { writeRailSeed: async () => {} },
       '../../src/sim/railway-queries-route.ts': { legRow: leg },
-      '../../src/sim/railway-rows.ts': { train, account: serverBack, rail: rack },
+      '../../src/sim/railway-rows.ts': { train, account: serverBack },
       './harness.ts': {
         waitFor: async (fn: () => Promise<boolean>) => ((await fn()) ? 0 : -1),
         ev: (page: { name: string }, fn: (arg: unknown) => unknown, arg: unknown) => {

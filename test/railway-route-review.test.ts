@@ -2,10 +2,11 @@
 // that fail on the defects the review found. Each drives the real rules from the `ring-joined` seed by accepted ops.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Account, Steel } from '../src/sim/railway-components.ts';
+import { Account, Leg, Steel } from '../src/sim/railway-components.ts';
+import { checkRoute } from '../src/sim/railway-check-route.ts';
 import { LINE2, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import { RAIL_LEGS } from '../src/sim/railway-route.ts';
-import { rail, trains } from '../src/sim/railway-rows.ts';
+import { trains } from '../src/sim/railway-rows.ts';
 import { legHeldRoom, legKitNeed, legKitSurplus, legRow, legYard } from '../src/sim/railway-queries-route.ts';
 import { steelNeed } from '../src/sim/railway-queries.ts';
 import {
@@ -31,8 +32,8 @@ const press = (s: Seed, pid: string, o: string, f: Record<string, unknown> = {})
 };
 /** Player `pid` takes what the leg's rack holds and feeds the frame. */
 function stock(s: Seed, pid: string) {
-  press(s, pid, 'rail.depotTake');
-  press(s, pid, 'rail.depotRailTake');
+  press(s, pid, 'rail.depotTake', { leg: STACK });
+  press(s, pid, 'rail.depotRailTake', { leg: STACK });
   press(s, pid, 'rail.legStock', { leg: STACK });
 }
 /** Player a feeds the leg from its rack every tick until `laid` sections are laid. */
@@ -43,6 +44,22 @@ function playTo(s: Seed, laid: number, max = 9000) {
     advance(s, 1);
   }
 }
+
+test('a full last rack survives a hand feed and save, but cannot exceed its section bill', () => {
+  const s = fresh();
+  playTo(s, N - 1);
+  for (let wait = 0; legRow(s.w, STACK).rackLogs !== 20; wait++) {
+    assert.ok(wait < 9000);
+    advance(s, 1);
+  }
+  chopTo(s, 'b', 8);
+  assert.equal(press(s, 'b', 'rail.legStock', { leg: STACK }), 8);
+  assert.equal(legHeldRoom(s.w, STACK).logs, 12);
+  assert.equal(legRow(restore(s.w), STACK).rackLogs, 20);
+  s.w.mut(Leg, s.w.lookup(Leg, STACK)!)!.rackLogs++;
+  assert.throws(() => checkRoute(s.w), /leg rack/);
+  assert.ok(invariant(s.w));
+});
 
 // Finding 1. A leg's kit is loaded for the whole leg ahead (kitLead), so the last section's kit is aboard a train long
 // before its frame opens. Logs a player brings from elsewhere (chopped, or the steel yard's) and feeds to the last
@@ -64,7 +81,12 @@ test('review: logs brought to the last frame leave no leg kit riding the trains 
     advance(s, 1);
   }
   const marked = () => trains(s.w).reduce((n, r) => n + (r.legKit ? r.logs + r.rails : 0), 0);
-  const kit0 = marked() + rail(s.w).depot + rail(s.w).depotRails + legRow(s.w, STACK).logs + legRow(s.w, STACK).rails;
+  const kit0 =
+    marked() +
+    legRow(s.w, STACK).rackLogs +
+    legRow(s.w, STACK).rackRails +
+    legRow(s.w, STACK).logs +
+    legRow(s.w, STACK).rails;
   // A player brings four logs of their own to the last frame.
   chopTo(s, 'b', 4);
   const brought = acc(s, 'b').carry;
@@ -79,7 +101,7 @@ test('review: logs brought to the last frame leave no leg kit riding the trains 
   });
   const held = (key: 'logs' | 'rails') =>
     trains(s.w).reduce((n, r) => n + (r.legKit ? r[key] : 0), 0) +
-    (key === 'logs' ? rail(s.w).depot : rail(s.w).depotRails) +
+    (key === 'logs' ? legRow(s.w, 1).rackLogs : legRow(s.w, 1).rackRails) +
     legYard(s.w, 1)[key];
   const room = legHeldRoom(s.w, 1);
   assert.deepEqual(
@@ -114,7 +136,7 @@ test("review: the steel yard's rails on a back do not short a leg fed from its o
   assert.equal(
     row.laid,
     N,
-    `the leg stalls at ${row.laid} laid with ${row.logs} logs and ${row.rails} rails fed, ${rail(s.w).depotRails} racked, ` +
+    `the leg stalls at ${row.laid} laid with ${row.logs} logs and ${row.rails} rails fed, ${legRow(s.w, STACK).rackRails} racked, ` +
       `${trains(s.w).reduce((n, r, slot) => n + (RAIL_TRAINS[slot]!.line === LINE2 && r.legKit ? r.rails : 0), 0)} aboard ` +
       `and ${legRow(s.w, STACK).loadedRails} ever loaded, while b holds ${acc(s, 'b').rails} of the works' rails`,
   );

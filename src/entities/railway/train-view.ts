@@ -574,7 +574,10 @@ export async function createRailwayTrains(
     );
   const wake = makeWake(first, look.rustTrainU);
   const answer = makeWake(cargo[0]!, look.rustAnswerU);
-  const lastRack = { logs: railRow(adapter.read.world()).depot, rails: railRow(adapter.read.world()).depotRails };
+  const lastRack = RAIL_LEGS.map((_g, k) => {
+    const row = legRow(adapter.read.world(), k);
+    return { logs: row.rackLogs, rails: row.rackRails };
+  });
   let flyingLogs = 0,
     flyingRails = 0,
     unloading = false;
@@ -939,10 +942,12 @@ export async function createRailwayTrains(
     readStops(w);
     secondVisible = on;
     flyingLogs = flyingRails = 0;
-    legKitFlight.logs = legKitFlight.rails = 0;
+    for (const flight of legKitFlight) flight.logs = flight.rails = 0;
     legYardFlight.logs = legYardFlight.rails = 0;
-    lastRack.logs = railRow(w).depot;
-    lastRack.rails = railRow(w).depotRails;
+    lastRack.forEach((rack, k) => {
+      rack.logs = legRow(w, k).rackLogs;
+      rack.rails = legRow(w, k).rackRails;
+    });
     unloading = false;
     footFlights.length = 0;
     for (const tr of kitTrains) crates.clearCrates(tr.deck);
@@ -1221,13 +1226,13 @@ export async function createRailwayTrains(
       const stops = RAIL_LINES.map((_l, k) => trainStops(w, k));
       const marks = kitMarks(w, tick);
       // What the open leg's rack gained since the last frame: a yard leg's unload splits between it and the yard.
-      const stock = railRow(w),
-        rackGain = {
-          logs: Math.max(0, stock.depot - lastRack.logs),
-          rails: Math.max(0, stock.depotRails - lastRack.rails),
-        };
-      lastRack.logs = stock.depot;
-      lastRack.rails = stock.depotRails;
+      const gains = lastRack.map((last, k) => {
+        const row = legRow(w, k);
+        const gain = { logs: Math.max(0, row.rackLogs - last.logs), rails: Math.max(0, row.rackRails - last.rails) };
+        last.logs = row.rackLogs;
+        last.rails = row.rackRails;
+        return gain;
+      });
       trains.forEach((tr) => {
         const row = trainRow(w, tr.slot);
         if (tr.riderCar) {
@@ -1409,7 +1414,9 @@ export async function createRailwayTrains(
             // A yard leg's rack stands at this drop (its feeder's destination) only while nothing is laid; then line 2
             // sets on it what it gained this frame (the sim's legKitRoom: the rack's lack first, then the yard). Once a
             // section is laid the rack is at the leg's head, and line 2's whole unload goes into the yard.
-            const yardLeg = RAIL_LEGS[leg]!.line !== tr.line,
+            const rackGain = gains[leg]!,
+              rackFlight = legKitFlight[leg]!,
+              yardLeg = RAIL_LEGS[leg]!.line !== tr.line,
               rackHere = !yardLeg || legRow(w, leg).laid === 0,
               onRack = !rackHere
                 ? { logs: 0, rails: 0 }
@@ -1421,8 +1428,8 @@ export async function createRailwayTrains(
             const toYard = { logs: logs - onRack.logs, rails: rails - onRack.rails },
               rack = legRack(RAIL_LEGS[leg]!, legRow(w, leg).laid),
               yard = yardLeg ? legYardSpot(leg) : null;
-            legKitFlight.logs += onRack.logs;
-            legKitFlight.rails += onRack.rails;
+            rackFlight.logs += onRack.logs;
+            rackFlight.rails += onRack.rails;
             legYardFlight.logs += toYard.logs;
             legYardFlight.rails += toYard.rails;
             // A rack across a track (Ring Island's, 8.4 m over the up track; High Gorge's, over line 2's up track):
@@ -1442,7 +1449,7 @@ export async function createRailwayTrains(
                 there = first ? onRack : toYard,
                 n = first ? rackCrates : count - rackCrates,
                 j = first ? i : i - rackCrates,
-                flight = first ? legKitFlight : legYardFlight,
+                flight = first ? rackFlight : legYardFlight,
                 spot = first || !yard ? { x: rack.x / 100, y: rack.y / 100, z: rack.z / 100 } : yard;
               const to = new THREE.Vector3(spot.x, spot.y + 0.5, spot.z);
               const share = (u: number) => Math.floor((u * (j + 1)) / n) - Math.floor((u * j) / n);
@@ -1539,7 +1546,10 @@ export async function createRailwayTrains(
             }
           : {}),
       })),
-      legKitFlying: { ...legKitFlight },
+      legKitFlying: legKitFlight.reduce((sum, f) => ({ logs: sum.logs + f.logs, rails: sum.rails + f.rails }), {
+        logs: 0,
+        rails: 0,
+      }),
       oldTrain: { shown: !line2Trains(adapter.read.world()), rust: look.rustTrainU.value, stop: TRAIN_HOME[0] },
       bolting: folk.bolting(),
     }),
