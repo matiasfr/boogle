@@ -48,6 +48,8 @@ export function botClass(operation: string, args: readonly string[], long = args
     args.includes('--real') ||
     args.includes('--video') ||
     args.includes('--curves') ||
+    args.includes('--curves-vs') ||
+    args.includes('--target') ||
     ['boot-time', 'cold-launch', 'clip'].includes(operation)
   )
     return 'timed';
