@@ -144,6 +144,7 @@ const EVENT_FIELDS = [
   'to',
   'dir',
   'line',
+  'leg',
   'part',
   'yard',
 ] as const;
