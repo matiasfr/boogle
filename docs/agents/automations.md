@@ -89,6 +89,8 @@ If nothing needed action, reply with one line: "heartbeat: all clear", the bottl
 
 ## Boogle daily tidy
 
+Paused on 26 November 2026 with the wind-down ([decision](../decisions-process.md#d-2026-11-26-wind-down)): `enabled: false`, kept, prompt unchanged. Turn it back on with the heartbeat when the owner says resume (the state file's resume steps).
+
 - Schedule: `{type: "fixed_time", timeOfDay: "09:00"}`, every day, in the machine's local time (17:00 UTC in Pacific
   standard time, on both machines). Enabled. Bound to the thread "Set Up Scheduled Boogle Tasks"
   (`7462337a-3dd9-47e5-9d69-ea52fd33ffb9`), `freshSession: false`.
