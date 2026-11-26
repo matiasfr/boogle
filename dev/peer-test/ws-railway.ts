@@ -1502,7 +1502,13 @@ async function arrivalRejoin(c: Ctx) {
   await first.page.close();
   check('the observer sees the presser leave', (await waitFor(async () => !(await sees(observer, first)), 10000)) >= 0);
   await at('the arrival persists with the presser away', arrived, [[observer, 1]]);
+  const epoch = (await adapter(observer)).session.epoch;
   await c.restart();
+  check(
+    'the observer reconnects with a new epoch',
+    (await waitFor(async () => (await adapter(observer)).session.epoch === epoch + 1, 15000)) >= 0,
+    String(epoch),
+  );
   await at('the arrival survives restart without a replay', arrived, [[observer, 1]]);
   const rejoined = await open('leg0');
   await at('the presser rejoins without a replay', arrived, [

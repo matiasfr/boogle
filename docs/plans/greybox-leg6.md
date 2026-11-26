@@ -431,12 +431,28 @@ Every brief starts with `git fetch origin` and `git checkout -B <branch> origin/
 
 After steps 1 to 7 are on main; named proofs, once, with the tools as Checkpoint E left them:
 
-- [ ] `npm run loop -- run` for one to three players: `idle s` per node (`notch-gate`, `notch-1`, `lantern`,
+- [x] `npm run loop -- run` for one to three players: `idle s` per node (`notch-gate`, `notch-1`, `lantern`,
       `causeway-gate`, `causeway-1`, `arrive`), area 9's minutes beside its 18, the whole route's with no stand-in; any
       wait over 60 s with nothing to do is a finding for the designer (the Notch's first kit and the causeway's are the
-      ones to read).
-- [ ] The bot segment `--from wall-closed --to ending`: a pass verdict, the load noted.
-- [x] `npm run test:net` passed all 349 checks. The `railwayLegRejoin` case wrote `island-reached` before either
+      ones to read). Step 7's run (`0c3b63e4f`, all nine areas played, no stand-in):
+
+      | Host loop | 1 player | 2 players | 3 players |
+      | --- | ---: | ---: | ---: |
+      | `notch-gate` idle s | 0 | 133 | 177 |
+      | `notch-1` idle s | 30 | 161 | 118 |
+      | `lantern` idle s | 0 | 76 | 102 |
+      | `causeway-gate` idle s | 0 | 140 | 187 |
+      | `causeway-1` idle s | 30 | 133 | 100 |
+      | `arrive` idle s | 77 | 172 | 194 |
+      | Area 9 minutes (18 allowed) | 16 | 25 | 25 |
+      | Whole route minutes | 121 | 128 | 128 |
+
+      **Finding for the designer:** with two or three players every leg 6 node waits over 60 s, and area 9 runs 25
+      minutes against its 18; solo it fits (16). The loop also still flags the inherited cave-plug edge (the graph
+      requires Canopy laid; the rules accept the plug first), a P3 in the leftovers.
+- [x] The bot segment `--from wall-closed --to ending`: pass, no recovery, through the meeting post and Close; load
+      7.26 to 4.87 of 20 (step 7's run, `0c3b63e4f`). The final still shows "Arrived" with the card gone.
+- [x] `npm run test:net` passed all 350 checks (the observer's restart now waits for its epoch to advance). The `railwayLegRejoin` case wrote `island-reached` before either
       tab opened and finished in 35.3 s of its 480 s deadline. Both mirrors and the server agreed on
       `Route.reached = 37186` and `Route.arrived = -1` before the press, then `Route.arrived = 37189` through
       the presser leaving, the restart and the rejoin. Neither tab replayed the accepted arrival. In a separate
@@ -457,7 +473,8 @@ After steps 1 to 7 are on main; named proofs, once, with the tools as Checkpoint
       The ending's diagnostic stills showed the deck just before counting, absent immediately after the shadow
       toggle, and visible again after settling. Perf now takes the still before the toggle, when the draw totals
       are sampled.
-- [ ] The boot probe on main after step 7 (rule 61); the fuzz's long run if a rule changed after it.
+- [x] The boot probe on main after step 7 (rule 61): the build-time boot check and the live boot check after deploy
+      both passed on `0bbd37004` (05:37 to 05:38 UTC, 26 November). Step 7 changed no rule, so no fuzz long run.
 - [ ] A device line on the Mac, reported, not a gate (taken when the Mac is next open).
 
 **After this plan:** greybox-route's exit evidence (section 7: the bot from wake to `arrived` with no skip, the
