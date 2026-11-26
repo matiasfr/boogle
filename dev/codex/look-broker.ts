@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { artifacts, type Request, type Evidence, type Operation } from './evidence.ts';
 import { buildAt, sameBuild } from './source.ts';
-import { acquireBotSlot } from '../look/bot-queue.ts';
+import { acquireBotSlot, botClass } from '../look/bot-queue.ts';
 
 const worktree = fs.realpathSync(process.argv[2]!);
 const dir = path.join(worktree, '.look/see');
@@ -164,6 +164,7 @@ async function execute(id: string, request: Request) {
       publish(path.join(dir, `${id}.queued.json`), { message });
     },
     request.args.includes('--long'),
+    { kind: botClass(operation, request.args) },
   );
   publish(path.join(dir, `${id}.started.json`), { at: Date.now(), waitedMs: lease.waitedMs });
   const status = await new Promise<number>((resolve) => {

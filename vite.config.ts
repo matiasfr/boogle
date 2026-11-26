@@ -33,7 +33,7 @@ export default defineConfig({
   // Each checkout keeps its own dependency cache (.vite/, gitignored). Agent worktrees symlink one shared node_modules,
   // so the default node_modules/.vite let one worktree's re-optimise pull the deps out from under another's open pages
   // (the look harness's "lobby never offered Jump in" timeouts).
-  cacheDir: '.vite',
+  cacheDir: process.env.BOOGLE_VITE_CACHE_DIR || '.vite',
   define: {
     'import.meta.env.VITE_SW': JSON.stringify(swOff ? 'off' : 'on'),
   },

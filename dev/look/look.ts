@@ -7,7 +7,6 @@ import { stripTypeScriptTypes } from 'node:module';
 import type { Browser } from 'playwright';
 import { startStack, launch, Game, VIEWS, reportGfxErrors, root } from './lib.ts';
 import { finishRun, startRun } from './verdict.ts';
-import { markLight } from './bot-queue.ts';
 import type { Stack } from './lib.ts';
 import { findSave, listSaves, POSE_AT, SEED } from './saves.ts';
 import { plotCurves, readCsv, readings, START_CURVES, STOP_CURVES, writeCsv } from './curves.ts';
@@ -244,9 +243,6 @@ const save = opt.at ? findSave(opt.at, opt.saves) : null;
 if (save) console.log(`at: "${save.beat}", ${Math.round(save.t)} s into the run ${save.run}`);
 
 startRun(path.join(opt.out, `${label}-verdict.json`), { checkout: path.resolve(opt.root ?? root) });
-// A plain still may share the machine with another; real time (--video, --real), motion curves and two players keep
-// it to themselves.
-if (!opt.video && !opt.curves && opt.warp && opt.players === 1 && !process.argv.includes('--long')) markLight();
 let stack: Stack | undefined, browser: Browser | undefined;
 // The hard wall (./wall.ts): armed once the run holds the bot slot, so a hang in any phase or page cannot keep it.
 const wall = wallSeconds(opt.wall);
