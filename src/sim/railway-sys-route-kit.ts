@@ -262,7 +262,7 @@ export function legRailheadHold(w: World, slot: number, tick: number): 'hold' | 
     const leg = RAIL_LEGS[k]!,
       g = legRow(w, k);
     // Wait with Kit 6 once Wall 5 is being fed. Holding before the first deposit delays Saltpan riders.
-    if (kitBills(r.boiler) < 2 && !(leg.id === 'wall' && g.laid === 4 && g.logs + g.rails > 0)) continue;
+    if (kitBills(r.boiler) < 2 && !(leg.id === 'wall' && g.laid === 4 && g.logs + g.rails > 0 && r.req === 0)) continue;
     if (leg.line !== line || g.laid + 1 >= leg.sections.length || r.at !== legKitDrop(w, line, k)) continue;
     if (legKitFits(w, line, k, r)) continue;
     if (g.start >= 0 || tick < r.depart + TRAIN.dwellTicks + TRAIN.railheadHoldTicks) {

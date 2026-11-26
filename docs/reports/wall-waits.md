@@ -20,6 +20,19 @@ head served 27 calls. The longest Saltpan wait was 139.4 s outbound against the 
 (80.6 s of margin). The load and release checks still use the existing train and leg rows.
 The retained rule runs on world v72.
 
+**A rider aboard Kit 6.** The fourth head is a stub. A homeward stop accepted aboard the single-kit
+train releases the freight hold immediately (`legRailheadHold`). The hold's timeout before laying and
+its release for platform pressure also leave the train's request bits intact. The regular boarding dwell,
+headway and block checks can still keep the train at the old head when the lay finishes.
+
+At lay time, `endMoved` leaves standing trains alone. For a train already running outward it can add an
+old-head stop or mark the train to turn there. The separate stub/held-train redirect in `lay` ordinarily
+turns a standing train outward and uses `reqOnly` to retain outward and shared end bits. Kit 6 now keeps
+its homeward track and requests if that filter would drop a stop. This covers a call accepted one tick
+before the lay. The ordinary turn at a terminal still filters by the new direction, and leaving a served
+halt clears that halt's bit. A closing halt clears its own two directions. The rider's requested halt in
+this test stays open. The lay's platform call lives on the line separately from the onboard request.
+
 The focused `UNIT_ONLY` kit and route run passed 84 tests across ten files.
 `npm run test:net` passed all 338 browser and server checks, including a Wall carrier
 rejoining and every tab mirroring the stock on the carrier and the trains.

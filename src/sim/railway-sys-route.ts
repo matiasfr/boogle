@@ -15,7 +15,7 @@
 import { defineSystem, type World } from '../ecs/index.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, LEG_TUNE } from './railway-route.ts';
 import { RAIL_LINES } from './railway-lines.ts';
-import { TRAIN_PHASE } from './railway-train.ts';
+import { TRAIN_PHASE, kitBills } from './railway-train.ts';
 import { LINE_SLOTS, endMoved } from './railway-trains.ts';
 import { reqAdd, reqDrop, reqOnly } from './railway-train.ts';
 import { railInt } from './railway.ts';
@@ -101,9 +101,13 @@ function lay(w: World, k: number, tick: number) {
   if (end?.kind === 'stub' || held !== undefined)
     for (const slot of LINE_SLOTS[leg.line]!) {
       const r = io.row(slot);
-      if ((end?.kind === 'stub' || slot === held) && r.phase === TRAIN_PHASE.STAND && r.at === from && r.track === 1)
+      if ((end?.kind === 'stub' || slot === held) && r.phase === TRAIN_PHASE.STAND && r.at === from && r.track === 1) {
+        const req = reqOnly(r.req, stopsOf(w, leg.line).length, 1);
+        // A Kit 6 rider can ask just before the lay, while the train is still standing at the stub.
+        if (leg.id === 'wall' && m.laid === 5 && r.legKit && kitBills(r.boiler ?? 0) === 1 && req !== r.req) continue;
         // Give the builder a full boarding dwell; arrived still anchors the holds' caps.
-        io.set(slot, { track: 0, origin: 0, depart: tick, req: reqOnly(r.req, stopsOf(w, leg.line).length, 1) });
+        io.set(slot, { track: 0, origin: 0, depart: tick, req });
+      }
     }
   const lid = w.lookup(Line, leg.line)!,
     stops = stopsOf(w, leg.line).length;
