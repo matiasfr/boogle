@@ -11,7 +11,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
 | Proofs: rejoin cases for High Gorge (`gorge-mid`) and Bell Rock (`incline-mid` or `bay-mid`) in `npm run test:net`, the greybox route section 7’s last two open areas | The greybox route | codex/route-rejoin-gorge-bell | the heartbeat thread, Codex Sol medium | 2026-11-26 09:15 | running; dev tests and the plan only, no game code; its report wakes the heartbeat’s thread |
-| Plan: Port Quay’s Roundhouse (garage-choices step 5: `ROTUNDA_PORT_QUAY`, its bays, the per-site stage rule, the second install and bring reach point), with its design review | Garage choices | claude/port-quay-roundhouse-plan | the heartbeat thread, Claude Opus high (planner) | 2026-11-26 09:09 | running; docs only, a proposal; its report wakes the heartbeat’s thread |
+| Build: Port Quay’s Roundhouse steps 1 and 2 (the site row, the yard, the level check, the generated level; no sim rule, no bump) | Garage choices | codex/port-quay-site | the heartbeat thread, Codex Sol medium | 2026-11-26 09:33 | running; independent review before it merges (the stamp marks its test); its report wakes the heartbeat’s thread |
 
 ## Where the work stands
 
