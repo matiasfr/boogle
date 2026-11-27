@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import * as THREE from 'three/webgpu';
-import { sourceModule } from '../dev/level/source.ts';
+import { sourceFunction, sourceModule } from '../dev/level/source.ts';
 import { createGarageSelection, type Focus } from '../src/entities/railway/garage-selection.ts';
 import * as layout from '../src/entities/railway/garage-geo.ts';
 import * as cars from '../src/entities/railway/cars.ts';
@@ -51,15 +51,28 @@ const { mountQuayRoundhouse } = sourceModule<typeof import('../src/entities/rout
   },
 );
 
-test('unmounting the quay releases the visible post material exactly once', () => {
+test('unmount releases the post, flash and four crew materials exactly once', () => {
   const owner = createOwnedView();
   mountQuayRoundhouse(owner);
   const body = owner.root.getObjectByName('garage-post-body');
   assert.ok(body instanceof THREE.Mesh && body.visible);
-  let count = 0;
-  body.material.addEventListener('dispose', () => count++);
+  const makeMaterials = sourceFunction<
+    (owner: ReturnType<typeof createOwnedView>) => {
+      flash: THREE.Material;
+      crew: { body: THREE.Material; head: THREE.Material }[];
+    }
+  >('src/entities/railway/garage-view.ts', 'garageMaterials', { THREE });
+  const { flash, crew } = makeMaterials(owner);
+  const materials = [body.material as THREE.Material, flash, ...crew.flatMap((m) => [m.body, m.head])];
+  const counts = materials.map(() => 0);
+  materials.forEach((m, i) =>
+    m.addEventListener('dispose', () => {
+      counts[i] = counts[i]! + 1;
+    }),
+  );
   owner.dispose();
-  assert.equal(count, 1);
+  owner.dispose();
+  assert.deepEqual(counts, [1, 1, 1, 1, 1, 1]);
 });
 
 test('the quay mast crank and post foot turn 125 degrees from their Home orientation', () => {

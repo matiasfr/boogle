@@ -123,6 +123,22 @@ function camOf(cat: CatId): (typeof CAMS)[CatId] {
   };
 }
 
+function garageMaterials(owner: OwnedView) {
+  const flash = new THREE.MeshBasicNodeMaterial({ color: '#ffffff', transparent: true, opacity: 0.8 });
+  const crew = ['#e8a53a', '#4f8fd0'].map((color) => ({
+    body: new THREE.MeshStandardNodeMaterial({ color, roughness: 0.7 }),
+    head: new THREE.MeshStandardNodeMaterial({ color: '#f2d3b0', roughness: 0.8 }),
+  }));
+  owner.cleanup(() => {
+    flash.dispose();
+    for (const { body, head } of crew) {
+      body.dispose();
+      head.dispose();
+    }
+  });
+  return { flash, crew };
+}
+
 export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGeo, deps: Deps) {
   const [cars, { ENGINE, ENGINE_BOILER, ENGINE_LONG_AHEAD, ENGINE_WHEELS }, { addStatic }] = await Promise.all([
     import('./cars.ts'),
@@ -242,7 +258,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   liftedPipe.castShadow = true;
   partGroup.add(liftedPipe);
   root.add(partGroup);
-  const flashMat = new THREE.MeshBasicNodeMaterial({ color: '#ffffff', transparent: true, opacity: 0.8 });
+  const { flash: flashMat, crew } = garageMaterials(owner);
   const flash = new THREE.Group();
   const longFlash = lifted.map((m) => new THREE.Mesh(m.geometry, flashMat)),
     shortFlash = liftedShort.map((m) => new THREE.Mesh(m.geometry, flashMat));
@@ -252,17 +268,11 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   flash.visible = false;
   partGroup.add(flash);
 
-  const guys = [0, 1].map((i) => {
+  const guys = crew.map((materials) => {
     const g = new THREE.Group();
-    const bodyM = new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.17, 0.35, 4, 8),
-      new THREE.MeshStandardNodeMaterial({ color: i ? '#4f8fd0' : '#e8a53a', roughness: 0.7 }),
-    );
+    const bodyM = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.35, 4, 8), materials.body);
     bodyM.position.y = 0.45;
-    const head = new THREE.Mesh(
-      new THREE.SphereGeometry(0.17, 10, 8),
-      new THREE.MeshStandardNodeMaterial({ color: '#f2d3b0', roughness: 0.8 }),
-    );
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 8), materials.head);
     head.position.y = 0.92;
     bodyM.castShadow = head.castShadow = true;
     g.add(bodyM, head);
