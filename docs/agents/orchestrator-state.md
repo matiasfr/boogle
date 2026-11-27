@@ -12,7 +12,6 @@ The one record of who is running what, and what the eight-job limit is counted f
 | --- | --- | --- | --- | --- | --- |
 | Port Quay's Roundhouse step 4, the second table in the rules and the bump | Garage choices | codex/port-quay-table-rules | the orchestrator thread, Codex Astra medium | 2026-11-27 | running: `src/sim` works and steel, `src/world/railway-jump.ts` (`quay-garage`), `server/src/host/railway-requests.ts`, the senders' `site: 0` (in `dev/loop/graph.ts` only those lines), WORLD_NS |
 | Greybox look step 1, Stack line and High Gorge (measure #2559, trim or raise; rim and pick) | The world leaves greybox | codex/greybox-look-gorge | the orchestrator thread, Codex Astra medium | 2026-11-27 | running: view only, `src/content/levels/gorge.ts`, the Gorge's cliff-kit prefab and records; no track |
-| Order choice's step 4 stills sheet (owed) | Small choices and felt inflation | codex/order-choice-sheet | the orchestrator thread, Codex Sol medium | 2026-11-27 | running: `docs/plans/order-choice.md` and one PNG |
 | Pre-feed step 1, the rule: a shut frame takes kit, lays on opening | The greybox route | codex/prefeed-rule | the orchestrator thread, Codex Astra medium | 2026-11-27 | running: `src/sim` rules (`railway-queries-route.ts`, `railway-sys-route.ts`, `railway-check-route.ts`), six lines of `dev/loop/graph.ts`, leg rule tests; not `leg-view.ts` or `dev/loop/run.ts` |
 
 ## Where the work stands
