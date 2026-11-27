@@ -189,7 +189,7 @@ built before that, on their own branch. Step 1 ships alone or with step 2, since
       on a shut frame), so there is no still. The proof is the rule case and `npm run loop -- node cave-1`, which
       shows the plug edge as a finish edge.
 
-- [ ] **2. The view (S; "Player-visible implementation": gpt-6.2-astra medium).** Files:
+- [x] **2. The view (S; "Player-visible implementation": gpt-6.2-astra medium).** [Four-state proof](prefeed-gated-frames/view-proof.jpg). Files:
       - `src/entities/route-greybox/leg-view.ts`:
         - In `targets()`, a shut frame pushes Feed only when `fills`. The barrier helpers (the incline's at `:1435`, and
           `gate()`) skip a barrier whose frame pushed that Feed.
@@ -211,7 +211,8 @@ built before that, on their own branch. Step 1 ships alone or with step 2, since
         prompt reading "Open the barrier";
       - (c) after the press, the panel up and the bill reading `LAYING THE SECTION`. The eval asserts `Leg.start` equals the
         accepted gate's tick;
-      - (d) the Canopy frame in a room without the seeds, greyed "Needs the crystal seeds".
+      - (d) the Canopy frame in a separate `bell-reached` room without the seeds, greyed "Needs the crystal seeds".
+        The `bay-reached` room for (a)–(c) already holds them.
 
       Not tested on a device.
 

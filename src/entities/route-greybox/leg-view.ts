@@ -17,7 +17,7 @@
 //   the signals   a post, an arm and a plate at each section end the line has passed
 //   High Gorge    the pickup post on the north rim, the incline's barrier at its first frame, the stand-in town's
 //                 board (the massing is ./massing.ts's, resident by distance)
-//   the prompts   Feed the frame, Take logs, Take rails, the pickup and the barrier
+//   the prompts   Feed takes precedence over the barrier when carrying needed kit; rack takes and pickups
 //
 // Grey boxes and placeholder labels (none is The Boogler's), no effects and no sound (owner-calls, "mechanisms,
 // systems, greybox, details"). The objective line's texts go to the play record (src/proto/mark.ts): the route has no
@@ -53,7 +53,15 @@ import {
 import { account, aperture, line, shed, steel, train, type ReadWorld } from '../../sim/railway-rows.ts';
 import { heldBig, LOGS, roomOf } from '../../sim/railway-queries.ts';
 import { RAILS } from '../../sim/railway-line2-layout.ts';
-import { gateLeg, legDone, legOpen, legReached, legRow, legYard, routeRow } from '../../sim/railway-queries-route.ts';
+import {
+  gateMayOpen,
+  legDone,
+  legOpen,
+  legReached,
+  legRow,
+  legYard,
+  routeRow,
+} from '../../sim/railway-queries-route.ts';
 import { createBoxBatch } from '../railway/works-box-view.ts';
 import { legKitFlight, paintPlate } from '../railway/kit-board.ts';
 import { legYardFlight, legYardSpot } from '../railway/leg-yard.ts';
@@ -1079,7 +1087,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     // stands, as its deck does with nothing laid).
     for (const i of r.open) {
       const o = legs[i]!;
-      if (shown(o, r.per[i]!)) site(o, r.per[i]!);
+      if (shown(o, r.per[i]!)) site(o, r.per[i]!, r.gates);
     }
     yard(r);
     gorge(r);
@@ -1145,7 +1153,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     for (const a of [-1.25, 1.25]) for (const t of [-0.95, 0.95]) put(f, a, t, 0.85, 0.1, 1.7, 0.1, GREY);
     for (const t of [-0.95, 0.95]) put(f, 0, t, 1.65, 0.1, 0.1, 2.6, GREY);
   }
-  function site(l: (typeof legs)[number], lr: LegRows) {
+  function site(l: (typeof legs)[number], lr: LegRows, gates: number) {
     const { sp } = l,
       laid = lr.laid,
       n = sp.leg.sections.length,
@@ -1158,9 +1166,11 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     load(f, Math.min(lr.row.logs, sec.logs), Math.min(lr.row.rails, sec.rails));
     const where = laying
       ? 'LAYING THE SECTION'
-      : lr.row.rackLogs + lr.row.rackRails > 0
-        ? 'KIT: ON THE RACK'
-        : 'KIT: ON A TRAIN';
+      : sec.gate !== undefined && !(gates & (1 << sec.gate)) && lr.row.logs === sec.logs && lr.row.rails === sec.rails
+        ? 'FULL: WAITING ON THE BARRIER' // Placeholder for the owner.
+        : lr.row.rackLogs + lr.row.rackRails > 0
+          ? 'KIT: ON THE RACK'
+          : 'KIT: ON A TRAIN';
     show(
       sp.leg.id === 'cave' ? caveBill : bill,
       local(f, 1.5, 0),
@@ -1374,7 +1384,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     accepted() {},
     /** Feed the frame and the rack's two takes while a leg is open; the pickup and the barrier at High Gorge. An
      * empty or wrong back meets "Feed the frame" blocked with its reason, never silence; a shut barrier's frame
-     * meets the barrier's own prompt, on the same spot. */
+     * offers Feed with needed kit and the barrier's own prompt otherwise. */
     targets(): Interactable[] {
       const p = me.body?.position,
         r = rows();
@@ -1382,6 +1392,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       const { wd } = r,
         mine = account(wd, adapter.read.pid),
         out: Interactable[] = [];
+      const feeding = new Set<number>();
       for (const i of r.open) {
         const o = legs[i]!,
           lr = r.per[i]!;
@@ -1392,17 +1403,20 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
           k = sp.racks[laid]!,
           sec = sp.leg.sections[laid]!,
           shut = sec.gate !== undefined && !(r.gates & (1 << sec.gate));
-        if (lr.row.start < 0 && !shut && within(p, f, legFrame(sp.leg, laid).reach)) {
+        if (lr.row.start < 0 && within(p, f, legFrame(sp.leg, laid).reach)) {
           const needLogs = lr.row.logs < sec.logs,
             needRails = lr.row.rails < sec.rails;
           if (needLogs || needRails) {
             const fills = ((mine?.carry ?? 0) > 0 && needLogs) || ((mine?.rails ?? 0) > 0 && needRails);
             const target = { id: 'railway-leg-feed', verb: FEED, at: v3(f, f.y + 1.5) };
-            out.push(
-              fills
-                ? { ...target, run: () => void adapter.feedLeg(sp.k) }
-                : { ...target, blocked: needLogs && needRails ? BRING_BOTH : needLogs ? BRING_LOGS : BRING_RAILS },
-            );
+            if (fills) {
+              out.push({ ...target, run: () => void adapter.feedLeg(sp.k) });
+              if (shut) feeding.add(sec.gate!);
+            } else if (!shut)
+              out.push({
+                ...target,
+                blocked: needLogs && needRails ? BRING_BOTH : needLogs ? BRING_LOGS : BRING_RAILS,
+              });
           }
         }
         if (within(p, k, legRack(sp.leg, laid).reach)) {
@@ -1432,15 +1446,12 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         const target = { id: 'railway-leg-pick', verb: TAKE_PICK, at: v3(PICK_AT, PICK_AT.y + 1.6) };
         out.push(stackDone ? { ...target, run: () => void adapter.takeGrant(0) } : { ...target, blocked: NOT_YET });
       }
-      if (!r.gate && within(p, GATE_AT, 1260)) {
-        const target = { id: 'railway-leg-gate', verb: OPEN_GATE, at: v3(GATE_AT, GATE_AT.y + 1.6) },
-          shuts = gateLeg(0);
+      if (!r.gate && !feeding.has(0) && within(p, GATE_AT, 1260)) {
+        const target = { id: 'railway-leg-gate', verb: OPEN_GATE, at: v3(GATE_AT, GATE_AT.y + 1.6) };
         out.push(
-          !r.pick
-            ? { ...target, blocked: NEEDS_PICK }
-            : shuts && legOpen(wd, shuts.leg)
-              ? { ...target, run: () => void adapter.openGate(0) }
-              : { ...target, blocked: NO_LINE },
+          gateMayOpen(wd, 0)
+            ? { ...target, run: () => void adapter.openGate(0) }
+            : { ...target, blocked: r.pick ? NO_LINE : NEEDS_PICK },
         );
       }
       // A key's post (RAIL_GRANTS k at `at`) refuses until the leg `after` is laid: the seeds at Bell Rock after the
@@ -1461,19 +1472,12 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       grant(CLOTH, 'railway-leg-cloth', TAKE_CLOTH, CLOTH_AT, 'bell-canopy', CLOTH_NOT_YET);
       // A barrier opens at its current frame when the room holds the key.
       const gate = (k: number, id: string, at: { x: number; y: number; z: number }, blocked = NO_LINE) => {
-        if (r.gates & (1 << k) || !within(p, at, RAIL_GATES[k]!.at.reach)) return;
-        const target = { id, verb: OPEN_GATE, at: v3(at, at.y + 1.6) },
-          shuts = gateLeg(k);
-        out.push(
-          shuts &&
-            legOpen(wd, shuts.leg) &&
-            legRow(wd, shuts.leg).laid === shuts.section &&
-            r.grants & (1 << RAIL_GATES[k]!.needs)
-            ? { ...target, run: () => void adapter.openGate(k) }
-            : { ...target, blocked },
-        );
+        if (feeding.has(k) || r.gates & (1 << k) || !within(p, at, RAIL_GATES[k]!.at.reach)) return;
+        const target = { id, verb: OPEN_GATE, at: v3(at, at.y + 1.6) };
+        out.push(gateMayOpen(wd, k) ? { ...target, run: () => void adapter.openGate(k) } : { ...target, blocked });
       };
-      gate(CANOPY, 'railway-leg-canopy', CANOPY_SITE);
+      // Missing-seeds wording is a placeholder for the owner.
+      gate(CANOPY, 'railway-leg-canopy', CANOPY_SITE, r.grants & (1 << SEEDS) ? NO_LINE : 'Needs the crystal seeds');
       if (plugSite) gate(PLUG, 'railway-leg-plug', plugSite, r.pick ? 'After the bay line (placeholder)' : NEEDS_PICK);
       if (done(r, 'cave') && !done(r, 'bell-canopy') && within(p, wall.frames[0]!, legFrame(wall.leg, 0).reach))
         out.push({
