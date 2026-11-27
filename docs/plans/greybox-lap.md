@@ -436,7 +436,7 @@ From [What it is, measured](#what-it-is-measured); the level check ran on the pl
 
 ## Open questions
 
-None blocks the build; each proceeds on its recommendation. Questions 1 to 3 are for the owner.
+None blocks the build; each proceeds on its recommendation. Questions 1 and 2 are for the owner; question 3 is answered.
 
 1. **Threading Ring Island's ring.** The 12 November answer puts "the train goes through the ring" at the White Wall
    lap. This plan reads "the ring" there as Ring Island's, a later double-back that needs the closed ring this plan
@@ -447,8 +447,9 @@ None blocks the build; each proceeds on its recommendation. Questions 1 to 3 are
    the section already ends with 4 to 5 minutes' wait; a second short leg adds a kit wait and a frame at the Gorge for
    no new play). The alternative is a one-section leg at the Gorge (6 logs and 6 rails, the ending's bill), after the
    Wall, which keeps today's end-on stage between them.
-3. **The riders' far end.** **Recommended: it stays High Gorge** (fare 34). Following line 2's end round to the West
-   landing makes it 87 a ride and a ride from Home to Home.
+3. **The riders' far end.** **Answered 27 November: it stays High Gorge** (fare 34;
+   [entry](../decisions-rail.md#d-2026-11-27-riders-far-end-stays-high-gorge)). Following line 2's end round to the West landing would make it 87 a ride
+   and a ride from Home to Home.
 4. **Eleven trains or twelve?** **Recommended: eleven**, the six and five the room already runs; a twelfth would be a
    train nobody built (54 s against 50 s at the Big boiler). Revisit if the fuzz or the loop shows the Village's waits
    over the health gate.
@@ -475,7 +476,7 @@ evidence.
 | 3 | High Gorge is one station for both halves | Decided | Leg 5's call 19 and the confirmed 10 November call it cites ("one station ... for every line") |
 | 4 | A train meeting players at the Gorge's crossing pushes them aside by the one halt rule | Decided | [Push-aside, 16 November](../decisions-rail.md#d-2026-11-16-push-aside-at-halts) |
 | 5 | The ring closes when the Wall's last section lays: no bill, leg or barrier of its own | New | Recommended (question 2): the joint is section 6's bill ([interchange track is hauled](../decisions-rail.md#d-2026-11-16-interchange-track-is-hauled)); no new wait |
-| 6 | The riders' far end stays High Gorge after the lap (fare 34) | New | Recommended (question 3): otherwise 87 a ride, Home to Home. **Departs from a decided rule**: "the rider route's far end is line 2's current end" (12 November, [confirmed 16 November](../decisions-rewards.md#d-2026-11-16-ranked-calls-confirmed)), written for a line growing outward; finding 3 |
+| 6 | The riders' far end stays High Gorge after the lap (fare 34) | Decided | Owner, 27 November ([entry](../decisions-rail.md#d-2026-11-27-riders-far-end-stays-high-gorge)): otherwise 87 a ride, Home to Home. It narrows "the rider route's far end is line 2's current end" (12 November, [confirmed 16 November](../decisions-rewards.md#d-2026-11-16-ranked-calls-confirmed)), written for a line growing outward; finding 3 |
 | 7 | Every train the room runs keeps running: 11 on the joined line, none added or retired; the eleventh joins at the Village | New | Recommended (question 4): 80 / 65 / 54 s even headway at 20 / 25 / 30 m/s against line 2's 57 / 47 / 40 s today; rail-map call 31 ("about a dozen at 70 s") |
 | 8 | A cave train keeps its own cars and errands (riders, steel, the wagon and line 2's kit stay with line 2's six) and runs line 2's stops, asks and spacing | Default | The smallest change: no car swaps at the join |
 | 9 | A cave train at boiler 0 runs on at 20 m/s and takes line 2's fit at its next Village stand | Default | The 23 November mixed-fleet rule ("Treat it like the mixed fleet") |

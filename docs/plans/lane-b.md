@@ -19,7 +19,7 @@ Read before choosing the design (`src/sim/railway-sys-route-kit.ts`, `railway-qu
 
 ## The owner's question
 
-The brief's open question 3. **Do gifted logs arriving at the works pour into the frame's bill, or unload onto the works' rack?** Pouring narrows [d-2026-11-25-recommendations-taken-pool](../decisions-rewards.md#d-2026-11-25-recommendations-taken-pool) item 1: "station frames, the forge, the kiln, the works and leg frames stay fed by hand at the frame". This plan does not decide it. Steps 1, 2 and 4's shared parts are built either way. Step 3 is built in whichever variant he picks.
+The brief's open question 3. **Do gifted logs arriving at the works pour into the frame's bill, or unload onto the works' rack?** Pouring narrows [d-2026-11-25-recommendations-taken-pool](../decisions-rewards.md#d-2026-11-25-recommendations-taken-pool) item 1: "station frames, the forge, the kiln, the works and leg frames stay fed by hand at the frame". **Answered 27 November: (a), pour on arrival** ([entry](../decisions-rewards.md#d-2026-11-27-gifted-logs-pour-into-the-bill)). Steps 1, 2 and 4's shared parts are built, and step 3 is built as 3a.
 
 | | (a) Pour on arrival (the brief's recommendation) | (b) Unload to the works' rack, the frame still fed by hand |
 | --- | --- | --- |
@@ -76,7 +76,7 @@ Each step leaves `node dev/ship-check.ts` green. The full `npm run check`, `npm 
   - Tests: two accounts. A gives at Home and B feeds the frame, so `worksThanks` lists both in first-sight order whatever the amounts. After the section lays, the list is empty. A gift while nothing rides (seed `steel-home`) thanks nobody and changes nothing else.
   - Proof: unit tests.
 
-- [ ] **3a. Variant (a): pour on arrival (sim). Built only if the owner picks (a).**
+- [ ] **3a. Variant (a): pour on arrival (sim). The owner picked (a) on 27 November.**
   Files: `src/sim/railway-queries-gift.ts` (`giftPourRoom`), `src/sim/railway-sys-route-kit.ts` (`legKitLoad`, `legKitFits`, `legKitArrive`), `src/sim/railway-sys-route.ts` (extract `legFill`), `src/sim/railway-sys-trains.ts` (pass `tick` to `legKitArrive`), `test/railway-gift.test.ts`.
   - `giftPourRoom(w, k)`: the current section's `logs - Leg.logs`, while it is not laying (`start < 0`), less `giftAboard` on its line. Zero for a leg outside `giftLegs`.
   - Top-up load: after `legKitLoad`'s steel-first and carrier guards, and before its "nothing owed" return, a train at its kit halt may load more of Home's rack as gift: up to the pour room of the first leg in `giftLegs(w, line)`, the train's `legKitCap` room and `Rail.rack`. It sets `legKit` and counts in `loadedLogs` like any load, and stays within the `kitTrains` carrier limit. `giftRides` adds "some gift leg has pour room".
@@ -85,7 +85,7 @@ Each step leaves `node dev/ship-check.ts` green. The full `npm run check`, `npm 
   - Tests: from `gorge-open` with the stack's kit already minted onto the rack, give 8 at Home. The next line 2 train loads them, and on arrival `Leg.logs` goes up by 8 with no account near the works. Two trains carrying gifts never pour past the bill. A pour that fills the bill starts laying only with the barrier open (an incline-style gate case from `wall-deep` or `notch-open`). A train's minted surplus still goes home unmade.
   - Proof: unit tests. At the checkpoint, `npm run loop -- run` still reaches the ending (no bot gives, so its times are unchanged).
 
-- [ ] **3b. Variant (b): unload to the works' rack (sim test only). Built only if the owner picks (b).**
+- [ ] **3b. Variant (b): unload to the works' rack (sim test only). Not built: the owner picked (a) on 27 November.**
   Files: `test/railway-gift.test.ts`.
   - Step 1 already is variant (b): gifts load instead of minted logs while a leg's kit is owed, unload onto the rack as kit, and its leftovers come home. `giftRides` stays step 1's (kit owed).
   - Tests: give 8 at Home as a leg opens. They load instead of minted logs and reach the rack, and `Leg.logs` does not move until a back feeds it. At completion, the gift left on the rack returns to Home.
@@ -133,7 +133,7 @@ Nothing is placed or moved in the world: the gift rack is the Village yard that 
 ## Risks
 
 - **Room safety.** No effect in `apply`: flights follow accepted receipts and replicated `Train.gift` and `Leg.logs` changes. Transfers are atomic inside one tick's apply. No new randomness, clock or per-peer counter. The one new shared file, `src/sim/railway-queries-gift.ts`, is inside `src/sim`, which the server image copies whole (`server/Dockerfile`, `dev/server-build.ts`, deploy-server.yml's `src/sim/**`), so no listing changes.
-- **Mixed builds.** One clean break, v75 to v76, with no compatibility code. **Watch:** course-change's open question 2 (world bumps batched to one a week) waits on the owner. If he says yes, the sim branch waits for the week's batch. A `dev/world-bump-gate.ts` is in flight on `ship/matias-franco-5570127`.
+- **Mixed builds.** One clean break, v75 to v76, with no compatibility code. The bump ships any time nobody is on the production server ([entry](../decisions-process.md#d-2026-11-27-world-wipes-any-time-nobody-plays)): `npm run ship-queue` holds it with exit 9 while anyone is on, and it is run again in 30 to 60 minutes (`dev/world-bump-gate.ts`).
 - **Conservation.** The minted-log witness gains `giftOut`. A gifted log is never unmade: step 1 returns it from a train's surplus and from a completed leg's rack or yard. The audit build (`createRailwayWorld({ audit: true })`) and `railwayCheck` at every tick of step 1's tests are the guard.
 - **Hotspots.** `railway-sys-route-kit.ts` and `railway-sys-trains.ts` (a one-argument change). Gift logic lives in the new queries file and in small hooks.
 - **The branch-line precedent (call 5).** On branch lines the logs leave Home's rack with no train standing there, as their rails leave the forge rack. A guest sees the rack's stack shrink and the board's On-the-way count, but no train. Line 2 (the stack) shows the loading.
@@ -152,8 +152,8 @@ Each is a later backlog step for Lane B, in this order, and none is needed for c
 
 ## Open questions
 
-1. **Step 3: pour or rack?** (above). Waits on him. Recommended: (a).
-2. **Batch world bumps weekly?** (course-change question 2, already open). If yes, the sim branch waits for the batch.
+1. **Step 3: pour or rack?** (above). Answered 27 November: (a), pour ([entry](../decisions-rewards.md#d-2026-11-27-gifted-logs-pour-into-the-bill)).
+2. **Batch world bumps weekly?** Answered 27 November: no batch. A bump ships any time nobody is playing ([entry](../decisions-process.md#d-2026-11-27-world-wipes-any-time-nobody-plays)), so the sim branch waits only while someone is on the server.
 
 ## Placeholder copy
 
@@ -171,7 +171,7 @@ Run by the planner per [design-review](../../.claude/skills/design-review/SKILL.
 | 4 | Existing kit trains carry gifts; no cargo train | Default | Brief, question 2, as recommended |
 | 5 | A branch line's kit train takes Home's rack logs at its own kit halt (as its rails come off Home's forge rack), so the bundle is seen leaving only on line 2 | New | Recommended: without it, gifts reach only the stack, 4 of the 22 leg beats; with it, 17 (all but the incline, the causeway and the stocked first sections of the bay cut and the cave). Seen leaving everywhere would need gifts relayed by line 2 to every junction (Pass 2's yard work, and more) |
 | 6 | Gifted logs replace minted logs while a leg's kit is owed | Default | The train carries no more than one bill; a gift and a minted log are the same log at the frame |
-| 7 | (a) Gifted logs pour into the frame's bill on arrival, up to what it lacks; minted kit stays hand-fed | New, waits | Brief, question 3. Narrows the [25 November rule](../decisions-rewards.md#d-2026-11-25-recommendations-taken-pool), so it is his. Recommended: (a) |
+| 7 | (a) Gifted logs pour into the frame's bill on arrival, up to what it lacks; minted kit stays hand-fed | Decided | Owner, 27 November ([entry](../decisions-rewards.md#d-2026-11-27-gifted-logs-pour-into-the-bill)). Narrows the [25 November rule](../decisions-rewards.md#d-2026-11-25-recommendations-taken-pool) for these logs only |
 | 8 | First build: logs only, home-kit legs only; rails, stone, conversions, yard legs, pre-leg works and other halts are Pass 2 | New | Recommended: the smallest build that meets checkpoint item 2. A room before the stack, at the incline, at the causeway or at the bay cut's or the cave's first section sees Leave it here behave as today |
 | 9 | Thanks reset on any section's lay; the giver at Home and the feeder at the frame are listed together | Default | Brief, question 5 (per works step); `Σ Leg.laid` is the step |
 | 10 | Thanks only when the gift will ride (`giftRides`); a gift that would sit is not thanked | Default | The board says what is true (DESIGN 11) |
@@ -190,4 +190,4 @@ Run by the planner per [design-review](../../.claude/skills/design-review/SKILL.
 5. **Solo, co-op and late join.** Solo, a player passing Home drops spare logs and rides ahead, and the frame is further on when they arrive (3a). Together, a guest at Home and the host at the frontier fill the same bill and share the Thanks list. A late joiner reads replicated rows only.
 6. **Copy.** One placeholder string; no Boogler line touched.
 
-Owner question: [step 3, pour or rack](#the-owners-question), recommended (a).
+Owner question: [step 3, pour or rack](#the-owners-question), answered 27 November: (a).
