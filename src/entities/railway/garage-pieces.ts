@@ -61,7 +61,7 @@ export function createGaragePieces(owner: OwnedView, geo: Geo, row: GarageGeo) {
   const engine = new THREE.Group();
   engine.position.z = displayOffset('engine');
   train.add(engine);
-  const part = (name: Parameters<typeof kit.enginePart>[0], rust = true) => kit.enginePart(name, rust);
+  const part = kit.enginePart;
   const shortSet = [part('engine_body'), part('engine_boiler', false), part('engine_lashing', false)];
   const longSet = [part('engine_body_long'), part('engine_boiler_long', false), part('engine_lashing_long', false)];
   const rods = part('engine_rods');
@@ -187,14 +187,13 @@ export function createGaragePieces(owner: OwnedView, geo: Geo, row: GarageGeo) {
   crank.position.set(0.3, 1.2, 0);
   const trolley = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.16, 0.3), iron);
   const chain = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1, 0.04), iron);
-  jib.add(jibPost, arm, crank);
+  jib.add(jibPost, crank);
   jib.position.set(jibAt.x, geo.ground, jibAt.z);
   jib.rotation.y = post.rotation.y;
   const armPivot = new THREE.Group();
   armPivot.position.set(jibAt.x, geo.ground, jibAt.z);
   armPivot.add(arm);
   furniture.add(jib, armPivot, trolley, chain);
-  jib.remove(arm);
   arm.castShadow = jibPost.castShadow = true;
 
   const bolts = Array.from({ length: 4 }, (_, i) => {
