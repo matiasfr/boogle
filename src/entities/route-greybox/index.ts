@@ -72,24 +72,33 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
     async function mount() {
       building = true;
       const owner = createOwnedView();
-      const boxes = area.build();
-      const batch = boxes.length ? await drawGreyBoxes(owner, boxes) : null;
-      const more = (await area.extras?.(owner)) ?? 0;
-      // Its pipeline compiles off the frame before it first shows (src/render/precompile.ts).
-      owner.root.visible = false;
-      await precompile(owner.root);
-      owner.root.visible = true;
-      building = false;
-      if (gone) return owner.dispose();
-      mounted = {
-        owner,
-        entity: spawn({ kind: 'route-greybox-area', mesh: owner.root }),
-        boxes: batch?.mesh.count ?? 0,
-        solids: (batch?.solids ?? 0) + (typeof more === 'number' ? more : more.solids),
-        ...(typeof more === 'number' ? {} : { update: more.update }),
-      };
-      residency.mounted = true;
-      routeSceneryMounted();
+      try {
+        const boxes = area.build();
+        const batch = boxes.length ? await drawGreyBoxes(owner, boxes) : null;
+        const more = (await area.extras?.(owner)) ?? 0;
+        // Its pipeline compiles off the frame before it first shows (src/render/precompile.ts).
+        owner.root.visible = false;
+        await precompile(owner.root);
+        owner.root.visible = true;
+        if (gone) return owner.dispose();
+        mounted = {
+          owner,
+          entity: spawn({ kind: 'route-greybox-area', mesh: owner.root }),
+          boxes: batch?.mesh.count ?? 0,
+          solids: (batch?.solids ?? 0) + (typeof more === 'number' ? more : more.solids),
+          update() {
+            batch?.update();
+            if (typeof more !== 'number') more.update();
+          },
+        };
+        residency.mounted = true;
+        routeSceneryMounted();
+      } catch (error) {
+        owner.dispose();
+        throw error;
+      } finally {
+        building = false;
+      }
     }
     function unmount() {
       if (!mounted) return;

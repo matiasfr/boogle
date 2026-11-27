@@ -1,6 +1,6 @@
 // The generated rotunda pieces stand around their site's table and follow the local view's stage and copies.
 import type { OwnedView } from '../../render/owned-view.ts';
-import { createPrefabBatch, instantiate, liftOrWait } from '../../prefab/instantiate.ts';
+import { createPrefabBatch, instantiate } from '../../prefab/instantiate.ts';
 import { loadLevelArtifact } from '../../prefab/validate.ts';
 import { definitions } from '../../prefab/catalogue.ts';
 import type { RoomFacts } from './garage-data.ts';
@@ -22,6 +22,7 @@ import {
 import { HEAD_OFFSET, PLAYER_R } from '../../constants.ts';
 import { me } from '../../player/state.ts';
 import { remotes } from '../../netplay/net.ts';
+import { standWhenClear } from './frame-occupied.ts';
 import { ENGINE_WHEELS } from './engine.ts';
 
 type EngineKit = typeof import('./engine-kit.ts');
@@ -164,6 +165,9 @@ export function createRotundaView(
   const sets = [...new Set(pieces.filter((p) => guarded(p.piece)).map((p) => p.piece.turn))].map((turn) =>
     pieces.filter((p) => p.piece.turn === turn && guarded(p.piece)),
   );
+  if (!site.grows) {
+    for (const p of pieces) if (!guarded(p.piece)) sets.push([p]);
+  }
   /** m: a resting contact is not an overlap (src/place/site-clearance.ts's CONTACT). */
   const resting = 0.02;
   /** Some guarded piece stands with its solid still off: settle runs each frame until none does. */
@@ -223,22 +227,28 @@ export function createRotundaView(
     for (const set of sets) {
       const coming = set.filter((p) => !p.enabled && shows(shown, p.piece));
       if (!coming.length) continue;
-      const ok = site.grows
-        ? clear(coming)
-        : ![...remotes.values()].some(
-            (r) => r.entered && r.avatar && coming.some((e) => inside(e, r.avatar!.position)),
-          ) &&
-          liftOrWait([{ shapes: coming.flatMap((e) => e.instance.solids), on() {} }], me.body, { lift: true }).kind !==
-            'wait';
-      for (const p of coming) {
-        p.held = !ok;
-        if (!site.grows) {
-          p.instance.root.visible = ok;
-          if (p.piece.part === 'copy') engines.get(p.piece.turn)!.root.visible = ok;
-        }
-        if (ok) {
+      const enable = () => {
+        for (const p of coming) {
           p.instance.setEnabled(true);
           p.enabled = true;
+          if (p.piece.part === 'copy') {
+            const engine = engines.get(p.piece.turn);
+            if (engine) engine.root.visible = true;
+          }
+        }
+      };
+      const ok = site.grows
+        ? clear(coming)
+        : standWhenClear(
+            coming.flatMap((p) => p.instance.solids),
+            enable,
+          );
+      if (site.grows && ok) enable();
+      for (const p of coming) {
+        p.held = !ok;
+        if (!site.grows && !ok && p.piece.part === 'copy') {
+          const engine = engines.get(p.piece.turn);
+          if (engine) engine.root.visible = false;
         }
       }
       pending ||= !ok;
@@ -259,7 +269,7 @@ export function createRotundaView(
         instance.root.position.y = rest.elements[13]!;
         const on = shows(stage, piece);
         // A guarded solid switches on through settle, below; off at once (nothing stands on it any more).
-        if (!guarded(piece) || !on) {
+        if ((site.grows && !guarded(piece)) || !on) {
           instance.setEnabled(on);
           entry.enabled = on;
           // No longer wanted: no longer waiting.
@@ -268,7 +278,7 @@ export function createRotundaView(
           instance.setEnabled(false);
           pending = true;
         }
-        instance.root.visible = on && (site.grows || !guarded(piece) || entry.enabled);
+        instance.root.visible = on && (site.grows || entry.enabled);
         if (batch) {
           batch.mesh.setMatrixAt(index, instance.root.visible ? rest : matrix.makeScale(0, 0, 0));
           batch.mesh.instanceMatrix.needsUpdate = true;

@@ -12,7 +12,7 @@ export function mountQuayRoundhouse(owner: OwnedView, solids: number) {
   rotunda.show(0, 0);
   function update() {
     const read = railwayWorldRead();
-    if (read?.whole()) rotunda.copies(bayCopies(garageFacts(read), LINE2));
+    rotunda.copies(read?.whole() ? bayCopies(garageFacts(read), LINE2) : []);
   }
   update();
   return { solids, update };

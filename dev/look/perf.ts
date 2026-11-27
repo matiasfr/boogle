@@ -1,7 +1,7 @@
 // Render and sim cost in under a minute: `npm run perf` (or `-- --url http://localhost:5173/` for a running game;
 // `-- --render` or `-- --sim` for one half; `-- --json file` writes the first render row from a fixed pose, for
 // dev/look/counts.ts). `--hardware` opens a visible browser and samples real frames for 5 seconds;
-// `--seconds N` (1â€“30), `--view NAME`, `--size 1210x702` and `--query 'k=v'` select the sample (default: the production
+// `--seconds N` (1–30), `--view NAME`, `--size 1210x702` and `--query 'k=v'` select the sample (default: the production
 // entry). Counts stay timing-free. `--rail-seed <stage>` starts the room from an accepted railway server save, as look's
 // (dev/look/rail-seed.ts). A view in PLACES below also stands the body somewhere and starts from its seed, so what is
 // resident by distance is there: `npm run perf -- --view canopy` (add `--hardware` for frame time on this GPU).
@@ -181,7 +181,7 @@ let stack: Stack | undefined, browser: Browser | undefined;
 if (verdictFile) startRun(path.resolve(verdictFile), { checkout: root });
 try {
   if (hardware && !doRender) throw new Error('--hardware cannot be combined with --sim');
-  if (!Number.isFinite(seconds) || seconds < 1 || seconds > 30) throw new Error('--seconds must be 1â€“30');
+  if (!Number.isFinite(seconds) || seconds < 1 || seconds > 30) throw new Error('--seconds must be 1–30');
   if (argv.includes('--view') && (!viewName || !(VIEWS[viewName] ?? PLACES[viewName])))
     throw new Error('Unknown --view; use ' + [...Object.keys(VIEWS), ...Object.keys(PLACES)].join(', '));
   if (railSeed && url) throw new Error('--rail-seed needs a local stack, not --url');

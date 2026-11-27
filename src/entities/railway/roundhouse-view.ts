@@ -80,7 +80,7 @@ const FLOOR = 18.05,
 const TICKS_PER_S = 10;
 /** The longer boiler's banner for a player away from the table (placeholder lines, on main since build 2; none is The
  * Boogler's), and how far "away" is, in metres from the table's centre. */
-const BANNER = ['Longer boiler installed', 'Line 2â€™s trains take it at the Village'] as const,
+const BANNER = ['Longer boiler installed', 'Line 2’s trains take it at the Village'] as const,
   BANNER_BEYOND = 30;
 const BRASS = '#c79a3e',
   STEEL = '#7c7c74';
@@ -574,7 +574,7 @@ export async function createRailwayRoundhouse(
   /** The room clock as the shunt shows it. It runs at real time, leaning at most half a step toward the room clock
    * (`tickNow`), so a correction (an RTT probe settling) slows or hurries the wagon instead of sending it back and
    * forth; it never runs backwards. A `ready` that changes live starts it no later than the roll-out's first tick
-   * (`ready âˆ’ rollTicks`), preserving the upgrade hold and starting from the parked pose even if the receipt is
+   * (`ready − rollTicks`), preserving the upgrade hold and starting from the parked pose even if the receipt is
    * late. More than 10 s adrift, or on a restore, it snaps to the room clock. */
   function shuntClock(dt: number, snapTo: boolean) {
     const now = adapter.read.tickNow(),
@@ -876,9 +876,9 @@ export async function createRailwayRoundhouse(
         if (facts.boilerFitted && (facts.tableBusy || garageView.standing()))
           out.push({
             id: 'railway-garage',
-            verb: facts.tableBusy ? 'The tableâ€™s busy' : 'Look at the engine',
+            verb: facts.tableBusy ? 'The table’s busy' : 'Look at the engine',
             at: new THREE.Vector3(garagePost.x, garageGround + 1.7, garagePost.z),
-            ...(facts.tableBusy ? { blocked: 'The tableâ€™s busy' } : { run: () => garageView.open() }),
+            ...(facts.tableBusy ? { blocked: 'The table’s busy' } : { run: () => garageView.open() }),
           });
       }
       if (nearStall && mine?.foot && worksRow(wd).seams & SEAM_STALL) {

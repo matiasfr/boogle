@@ -1,5 +1,6 @@
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { standWhenClear } from '../railway/frame-occupied.ts';
 import { gorgeSurfaces } from './gorge-surfaces.ts';
 // Static massing uses compiled placements. GreyBox/span remain only for the dynamic leg's descriptor API.
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -63,6 +64,7 @@ export async function drawGreyBoxes(owner: OwnedView, placements: readonly Place
   batch.mesh.count = count;
   let solids = 0,
     index = 0;
+  let pendingBridge: ReturnType<typeof instantiate> | undefined;
   for (const p of placements) {
     const instance = instantiate(p.prefab, p, {
       owner,
@@ -70,8 +72,13 @@ export async function drawGreyBoxes(owner: OwnedView, placements: readonly Place
       ...(slots(p) ? { batch: { target: batch, index } } : {}),
     });
     index += slots(p);
-    instance.setEnabled(true);
-    solids += instance.bodies.length;
+    if (p.id.endsWith('roundhouse-bridge')) {
+      pendingBridge = instance;
+      solids += instance.solids.length;
+    } else {
+      instance.setEnabled(true);
+      solids += instance.bodies.length;
+    }
   }
   const trimmed = gorgeSurfaces(placements);
   if (trimmed.size) {
@@ -127,5 +134,10 @@ export async function drawGreyBoxes(owner: OwnedView, placements: readonly Place
   }
   batch.mesh.computeBoundingBox();
   batch.mesh.computeBoundingSphere();
-  return { mesh: batch.mesh, solids };
+  function update() {
+    const bridge = pendingBridge;
+    if (bridge && standWhenClear(bridge.solids, () => bridge.setEnabled(true))) pendingBridge = undefined;
+  }
+  update();
+  return { mesh: batch.mesh, solids, update };
 }
