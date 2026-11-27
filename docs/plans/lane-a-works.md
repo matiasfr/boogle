@@ -42,7 +42,7 @@ export type WorksGift =
 export type RoomWorks = {
   site: WorksSite;
   kind: WorksKind;
-  /** World cm, from the sim's layout catalogs: the frame, post, barrier, pedestal or seam. */
+  /** World cm: the frame, post, barrier, pedestal or seam. Terrain-snapped sites without a catalog height use y = 0. */
   at: { x: number; y: number; z: number };
   /** One row per material still owed, in the frame sign's own have/of; empty for a press, take or strike. */
   needs: readonly WorksNeed[];
@@ -55,17 +55,17 @@ export type RoomWorks = {
   done: boolean;
 };
 export const WORKS_STEPS: readonly WorksStep[]; // the route in order: { site, kind, at, ops, gives, done(w), needs(w) }
-export function roomWorks(w: ReadWorld): RoomWorks;
+export function roomWorks(w: World): RoomWorks;
 ```
 
-`ReadWorld` is `src/sim/railway-rows.ts`'s, the type the views hold; if `legRow` and its neighbours take `World`, the builder types it the same way they are typed so both the server's world and a mirror pass.
+`World` matches `legRow` and its neighbours and accepts the views' `ReadWorld` mirror too. The upgrade post is the one place the loop graph computes from view geometry. The query pins its rounded x/z (95,270 and 1,448 cm) and uses `SHED_TABLE.y`; the graph test checks all three coordinates.
 
-**The ladder.** `WORKS_STEPS` is the route in the loop graph's order; `roomWorks` names the first step whose `done(w)` is false, with four order rules. The `done` predicates and places are below; the `at` of every step is the loop graph node's own (the same catalog expression: `LINE1_STATIONS`, `LINE2_STATIONS`, `LINE2_FORGE`, `WORKS_SEAMS`, `legFrame`, `RAIL_GATES[…].at`, `RAIL_GRANTS[…].at`, `RAIL_ARRIVAL` and the rest).
+**The ladder.** `WORKS_STEPS` follows the loop graph's route with the order rules below. `roomWorks` names the first step whose `done(w)` is false. Each place matches the corresponding loop graph node, using its catalog wherever the graph names one (`LINE1_STATIONS`, `LINE2_STATIONS`, `LINE2_FORGE`, `WORKS_SEAMS`, `legFrame`, `RAIL_GATES[…].at`, `RAIL_GRANTS[…].at`, `RAIL_ARRIVAL` and the rest).
 
 | Steps, in order | done when | kind | needs (have of) |
 | --- | --- | --- | --- |
 | `wake` | `rail.awake >= 0` | wake | none |
-| `T1`, `T2`, `T3` | `job(k).completion` | bill; T3 beam | the station's logs (and T2's stone) as its frame's sign counts them (`delivered`, `stoneDelivered` of the bill); T3 also `beam` 0 or 1 (`beam.state` used at T3) |
+| `T1`, `T2`, `T3` | `job(k).completion` | bill; T3 beam | the station's logs (and T2's stone) as its frame's sign counts them (`delivered`, `stoneDelivered` of the bill); T3 also `beam` 0 or 1 (`allocated` during lay, `used` on completion) |
 | `forge` | `forge.lit >= 0` | bill | 56 logs as its frame's sign counts them |
 | `Q1` to `Q5` | `qjob(k).completion` | bill | logs and rails (`delivered`, `railDelivered` of the bill) |
 | `lever` (after Q3), `hook` then `sea` (after Q4) | `rail.lever`, `rail.hook`, `rail.sea` | gate; hook key | none (the sea switch: `key` 0 or 1, the hook) |
@@ -91,13 +91,13 @@ The four order rules (each a design call, reviewed below):
 1. **A part on the forge's pedestal is the works.** From the boiler fit, the breaker and the Works chain (`breaker` to `cradle`) come before `Q6`, which comes before the `table` that needs it. This is the order the forge call already whistles.
 2. **The hook is named just before the sea switch,** the first step that needs it, not after Q2.
 3. **The steel loop (`steelworks`, `install`) is named after the rivet only while the stack line is not done** (the leg view's own rule today). Once the stack is laid it is skipped whether or not it was finished: nothing on the route needs it.
-4. **At the fork after `bay-2`, a branch begun is finished first** (the canopy barrier open: the Canopy branch; the plug open: the cave branch); **with neither begun, the cave branch** (its first frame and stocked rack stand at the West landing, 15 m from the dock where a guest lands).
+4. **At the fork after `bay-2`, a branch begun is finished first** (the canopy barrier open: the Canopy branch; the plug open: the cave branch); **with neither begun, the cave branch** (its first frame and stocked rack stand at the West landing, 15 m from the dock where a guest lands). When both barriers are open, the cave branch keeps the default priority until complete. The gate bits carry no opening order.
 
 Folded into their next step, not sites of their own: the great beam (into `T3`), the pier show (none: `Q6`'s completion), High Gorge's step-off (into `pick`), the steel kit's ride and the steel's ride home (into `steelworks` and `install`), and the ride to the Original Island (into `arrive`). Never sites: the optional nodes (`jump`, `axe`, `pack`, `yoke`, `glider`), trade picks, town buys and the garage's Quick or Strong. After the arrival `roomWorks` returns the `arrive` step with `done: true`.
 
-**`gives`.** Static per step: a stretch or section gives the halt it opens (`RAIL_HALTS`' halt whose `leg` is that slot and section; for a Q stretch the line 2 halt it opens, if any, else `opens` the next stretch); a key gives `opens` its barrier; a gate gives `opens` the stretch behind it; `forge` gives the proper axe; `hook` the hook; `trains` trains; `kiln` footings; `cradle`, `table` and `upgrade` the wagon; `install` the longer boiler; `arrive` the ending.
+**`gives`.** Static per step: a section gives the halt reached by its new track (matching `leg` slot and section in `RAIL_HALTS`); a Q stretch gives the line 2 halt it opens, if any, else `opens` the next work step. A key gives `opens` its barrier, and a gate gives `opens` the stretch behind it. `forge` gives the proper axe, `hook` the hook, `trains` trains, `kiln` footings, `cradle`, `table` and `upgrade` the wagon, `install` the longer boiler, and `arrive` the ending.
 
-**`halt`.** The halt nearest `at` by squared world distance among every line's open stops (`trainStops(w, line)`, a prefix of `RAIL_LINES[line].halts`; each halt's `platforms[0]`), or null while `rail.trains < 0`.
+**`halt`.** The halt nearest `at` by squared world distance among every line's open stops (`trainStops(w, line)`, a prefix of `RAIL_LINES[line].halts`; each halt's `platforms[0]`), or null while `rail.trains < 0`. Passed heads closed in both directions remain in that prefix and are excluded with `trainPassesBy`.
 
 ### How each objective source maps onto it
 
@@ -144,8 +144,8 @@ Each step leaves `node dev/ship-check.ts` green. The checkpoint, its full check,
 
 ### A0 (one branch, `src/sim`: an independent review before merge)
 
-- [ ] **1. The query.** Create `src/sim/railway-queries-room.ts` as [Design, A0](#a0-the-rooms-works) says: the types, `WORKS_STEPS` (route order, places from the same catalog expressions `dev/loop/graph.ts` uses), `roomWorks(w)` with the four order rules, and the private `nearestHalt(w, at)`. Import nothing from `dev/`, `src/entities` or `src/world`. Verify: `node dev/ship-check.ts`.
-- [ ] **2. The test, in two existing files.** A0 is lockstep code by `LOCKSTEP_FILES`, so a test file of its own would be allowed; none is needed, because the golden shards already build every seed once.
+- [x] **1. The query.** Create `src/sim/railway-queries-room.ts` as [Design, A0](#a0-the-rooms-works) says: the types, `WORKS_STEPS` (route order, places checked against `dev/loop/graph.ts`), `roomWorks(w)` with the four order rules, and the private `nearestHalt(w, at)`. Import nothing from `dev/`, `src/entities` or `src/world`. Verify: `node dev/ship-check.ts`.
+- [x] **2. The test, in two existing files.** A0 is lockstep code by `LOCKSTEP_FILES`, so a test file of its own would be allowed; none is needed, because the golden shards already build every seed once.
   - `test/helpers/railway-golden.ts` (the shared body of `test/railway-golden-<n>.test.ts`): in `goldenShard`, beside `verdicts`, record `roomWorks(built)` per stage (on the built world, before the tick pass), and add per stage `seed stage <stage>: the room's works is <site>`, asserting `done` is false except at `arrived`, `site` equals the pinned table below, `at` equals the step's catalog place, every `needs` row has `0 <= have <= of` (a full frame still laying, as at `q5-finishing`, reads `have === of`), and `halt` is null exactly while `rail.trains < 0` and otherwise one of that line's open stops. In shard 0 also: a fresh `createRailway()` world names `wake`. The pinned table is a `const WORKS_AT: Record<SeedStage, WorksSite>` in the helper; the golden fixture JSON is not touched (owner call "Seed-only goldens").
   - `test/loop-graph.test.ts`: every `WORKS_STEPS` site is a `NODES` id and its `at` equals that node's `at` (x and z; y where the node has one), and every non-optional `NODES` id is either a `WORKS_STEPS` site or one of the folded ids (`beam`, `pier`, `gorge`, `steelkit`, `steelhome`). No order check: the order rules and the fork move steps against `NODES` on purpose, and the seed table pins the order.
   - Verify: `node --test test/railway-golden-*.test.ts test/loop-graph.test.ts`, and `node dev/ship-check.ts`.
