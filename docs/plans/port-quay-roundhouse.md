@@ -253,7 +253,7 @@ November). Steps 1 to 3 ship together or one by one, with no bump; step 4 after 
       206°, camera at 140°; `garageRow(site)`; `installHere(post, site)` against `SHED_TABLE` or `QUAY_TABLE`); the
       quay mount of step 3 gains the table copy (the line `Shed.quayLine` names, wearing its row, as Home's table copy
       does in `garage-view.ts`), the post, the jib and the stand; the bay copies now read `quayLine`. Port Quay's post
-      shows no prompt until the cave leg is complete (no new string). Verify: `test/garage-geo.test.ts`, one case:
+      shows no prompt in step 5. Step 6 adds its action and cave-leg gate. Verify: `test/garage-geo.test.ts`, one case:
       Port Quay's post is within `QUAY_TABLE.reach − 40` of `QUAY_TABLE`, and the turned row keeps Home's distances;
       `.look/` stills from `quay-garage`: the post, jib and stand beside the table at player height, and the copy
       on the table after a `rail.bring` at site 1 through the jump row's tab (the eval harness, not a bot).
@@ -262,7 +262,8 @@ November). Steps 1 to 3 ship together or one by one, with no bump; step 4 after 
       `bringRev` read `Shed.tableLine`/`bringRev` at Home, `quayLine`/`quayRev` at Port Quay); `garage-view.ts` (one
       instance per table, its row and site passed in; its sends name its site; the moment plays at every table whose
       copy's line was fitted, the hanging part only at the post that held); `roundhouse-view.ts` (Home's instance,
-      site 0) and the quay mount (site 1); `src/features/garage.ts` (opens for whichever post was held; the chips
+      site 0) and the quay mount (site 1, with Home's post prompt and action available after cave-leg completion);
+      `src/features/garage.ts` (opens for whichever post was held; the chips
       bring to that table); `garage-data.ts` (when the paying post's site holds none of the pool, the bill's need
       line adds the draft **"in Home's bay"**, shared-pool's draft, marked for the owner). Verify: two-tab look
       (shared-pool step 2's): tab A at Port Quay's post (`quay-garage`) holds Install for a part the pool can pay;

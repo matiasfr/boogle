@@ -1,8 +1,9 @@
 // Where the train garage's fixed pieces stand round a Roundhouse table (docs/plans/garage-install-moment.md, G2), as
 // data: one row per table. Pure: no scene, DOM or clock. Local view data only: nothing here is sent, saved or read by
 // the simulation. Bearings are degrees clockwise from north (north is -z), distances metres from the table's centre.
-import { SHED_TABLE } from '../../sim/railway-works-layout.ts';
-import { TABLE } from '../../place/home-station.ts';
+import { QUAY_TABLE, SHED_TABLE } from '../../sim/railway-works-layout.ts';
+import { ROTUNDA_HOME, TABLE } from '../../place/home-station.ts';
+import { ROTUNDA_PORT_QUAY } from '../../place/port-quay.ts';
 import { ORIGIN } from '../../place/layout.ts';
 
 export type XZ = { x: number; z: number };
@@ -54,9 +55,27 @@ export const GARAGE_GEO: GarageGeo = {
   camBearing: 15,
 };
 /** The garage's row, table centre (world metres) and ground beside the table. */
-export function garageRow(): { geo: GarageGeo; table: XZ; y: number } {
-  return { geo: GARAGE_GEO, table: { x: TABLE.x + ORIGIN.x, z: TABLE.z }, y: TABLE.y + 0.5 };
+export function turnGeo(row: GarageGeo, degrees: number): GarageGeo {
+  const turn = (p: Polar) => ({ ...p, bearing: p.bearing + degrees });
+  return {
+    ...row,
+    post: turn(row.post),
+    jib: turn(row.jib),
+    stand: turn(row.stand),
+    crew: [turn(row.crew[0]), turn(row.crew[1])],
+    park: row.park + degrees,
+    camBearing: row.camBearing + degrees,
+  };
 }
+export const GARAGE_ROWS = [
+  { geo: GARAGE_GEO, table: { x: TABLE.x + ORIGIN.x, z: TABLE.z }, y: TABLE.y + 0.5 },
+  {
+    geo: turnGeo(GARAGE_GEO, ROTUNDA_PORT_QUAY.mid - ROTUNDA_HOME.mid),
+    table: { x: QUAY_TABLE.x / 100, z: QUAY_TABLE.z / 100 },
+    y: QUAY_TABLE.y / 100,
+  },
+] as const;
+export const garageRow = (site: 0 | 1 = 0) => GARAGE_ROWS[site];
 
 const rad = (d: number) => (d * Math.PI) / 180;
 export const polarAt = (centre: XZ, p: Polar): XZ => ({
@@ -87,5 +106,7 @@ export function standEnds(centre: XZ, geo: GarageGeo): [XZ, XZ] {
 }
 /** A hold at this post reaches the server's install point (`rail.install` is judged within `SHED_TABLE.reach` of
  * `SHED_TABLE`; 0.4 m in hand, as the garage's prompt keeps). */
-export const installHere = (post: XZ) =>
-  Math.round(Math.hypot(post.x * 100 - SHED_TABLE.x, post.z * 100 - SHED_TABLE.z)) <= SHED_TABLE.reach - 40;
+export function installHere(post: XZ, site: 0 | 1 = 0) {
+  const table = site === 1 ? QUAY_TABLE : SHED_TABLE;
+  return Math.round(Math.hypot(post.x * 100 - table.x, post.z * 100 - table.z)) <= table.reach - 40;
+}
