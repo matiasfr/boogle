@@ -6,7 +6,7 @@ import { RAILWAY_CAPACITY as CAPACITY } from '../sim/railway-layout.ts';
 import { merged } from './part-geometry.ts';
 import { sideCarryOffset } from './head-clearance.ts';
 import { makeProp } from './prop-kit.ts';
-import { DEFAULT_FIT, bundleBack, bundleRest, shownOf, type BundleFit } from './haul-bundle.ts';
+import { DEFAULT_FIT, bundleBack, bundleRest, packSocket, shownOf, type BundleFit } from './haul-bundle.ts';
 import { YOKE_BANK, YOKE_PITCH } from './gear-models.ts';
 
 /** The most stone a back holds (with the breaker), and the most rails (with the Rail yoke): each kind has its own row
@@ -154,11 +154,12 @@ export function makeCarryModels() {
   boiler.name = 'wear_carried_boiler';
   // A low side carry keeps the face and hat readable through the carrying sway.
   boiler.position.set(sideCarryOffset(0.55), 0.45, 0.12);
-  root.add(rails, railSeat, stone, beam, boiler);
+  packSocket(root).add(rails, railSeat, stone);
+  root.add(beam, boiler);
   root.traverse((o) => {
     o.castShadow = true;
   });
-  for (const o of root.children) o.visible = false;
+  for (const o of [rails, railSeat, stone, beam, boiler]) o.visible = false;
   return {
     root,
     rails,

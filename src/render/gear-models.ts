@@ -140,7 +140,7 @@ export function placeCanopy(root: Named, c: Canopy, want: number, dt: number, no
 }
 
 /** Avatar load-socket coordinates: +Z behind Buddy, origin 0.45 m above the soles. */
-export function packParts(): Part[] {
+export function packParts(worn = false): Part[] {
   const parts: Part[] = [
     ['b', 0, 0.23, 0.25, 0.62, 0.06, 0.06, '#a98249'],
     ['b', 0, 0.6, 0.25, 0.62, 0.06, 0.06, '#a98249'],
@@ -149,17 +149,23 @@ export function packParts(): Part[] {
   ];
   for (const x of [-0.28, 0.28])
     parts.push(['b', x, 0.4, 0.25, 0.055, 0.46, 0.055, '#a98249'], ['b', x, 0.2, 0.5, 0.045, 0.1, 0.5, '#69472e']);
-  for (const x of [-0.205, 0.205])
+  // The cradle miniaturizes on the back; its straps still wrap a full-sized torso.
+  const strapX = worn ? 0.265 : 0.205;
+  const strapY = worn ? 0.59 : 0.49;
+  const strapZ = worn ? -0.08 : 0.015;
+  const rise = worn ? 1.32 : 1;
+  const reach = worn ? 1.45 : 1;
+  for (const x of [-strapX, strapX])
     parts.push(
-      ['packstrap', x, 0.49, 0.015, 1, 1, 1, '#c9a86a'],
-      ['s', x, 0.36, -0.145, 0.025, 0.025, 0.025, '#d9a23a'],
+      ['packstrap', x, strapY, strapZ, 1, rise, reach, '#c9a86a'],
+      ['s', x, strapY - 0.13 * rise, strapZ - 0.16 * reach, 0.025, 0.025, 0.025, '#d9a23a'],
     );
   return parts;
 }
 let frameGeometry: THREE.BufferGeometry | undefined;
 const frameMaterial = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.92 });
 export function packFrameMesh(owned = false) {
-  const geometry = (frameGeometry ??= merged(packParts()));
+  const geometry = (frameGeometry ??= merged(packParts(true)));
   const mesh = new THREE.Mesh(owned ? geometry.clone() : geometry, owned ? frameMaterial.clone() : frameMaterial);
   mesh.name = 'wear_frame';
   mesh.castShadow = mesh.receiveShadow = true;
