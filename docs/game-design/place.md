@@ -2921,6 +2921,8 @@ table. Serves DESIGN.md **7. Telegraph everything** and **11. Show, don't tell**
 
 Loose boulders on the classic island use three sizes of the cliff kit at their seeded positions. The five mineable quarry and Works rocks are grey. Their clustered lumps and orange bands mark the rocks that yield stone.
 
+At High Gorge, two 85 m sea stacks frame the Stack Line halt. The faces carry sandstone courses up from the water and broken caps along the rim. The south wall parts at each mouth of the incline bore.
+
 **Split-rock and the Roundhouse, live (9 November; J4).** The forge casts the breaker onto the boiler's old
 pedestal: a 1.4 m broad-faced hammer with gold motes, under a tall steam plume, and a whistle that carries about
 900 m on the frame it appears. The boiler uses the same call (`forge-call.ts`, Home flow findings 2 and 3). **Take

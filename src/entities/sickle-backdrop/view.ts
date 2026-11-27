@@ -8,6 +8,8 @@ import { addPart, mergeParts } from '../../render/geometry-parts.ts';
 import { freezeInPlace } from '../../render/instances.ts';
 import { WORLD_LINES } from '../../sim/railway-world-lines.ts';
 import { INCLINE_BORE } from '../route-greybox/massing.ts';
+import { terrainKitGeometry } from '../terrain-kit/geometry.ts';
+import { kitMaterial } from '../../prefab/builders/terrain-kit.ts';
 
 // The map's Place-local origin. Ring Island and the Original Island already render in the live world.
 const ORIGIN_X = 1000;
@@ -49,6 +51,7 @@ export function createBackdrop() {
   const map = layout(parseMapPage(html), 'sickle', 'A');
   const parts: THREE.BufferGeometry[] = [];
   const sandstone = new Set<THREE.BufferGeometry>();
+  const stackPieces = new Map<string, THREE.Matrix4[]>();
   const matrix = new THREE.Matrix4();
   const add = (geo: THREE.BufferGeometry, tint: string) => {
     addPart(parts, geo, matrix.identity(), tint);
@@ -66,6 +69,29 @@ export function createBackdrop() {
     const outline = land.outline;
     const vertices: number[] = [];
     const chalk = land.module === 'chalk';
+    const stack = land.id === 'stack-n' || land.id === 'stack-s';
+    // Place the kit inside the original shoreline. The straight edge of each
+    // cut still owns the stair clearance and the two ends of the rail bore.
+    const course = (a: XZ, b: XZ, piece: string, width: number, y: number, heightScale: number) => {
+      const dx = b[0] - a[0],
+        dz = b[1] - a[1];
+      const length = Math.hypot(dx, dz);
+      if (length < 1) return;
+      const count = Math.ceil(length / width);
+      const facing = (a[0] - land.c![0]) * -dz + (a[1] - land.c![1]) * dx >= 0 ? 1 : -1;
+      const yaw = Math.atan2(-dz * facing, dx * facing);
+      const batch = stackPieces.get(piece) ?? [];
+      stackPieces.set(piece, batch);
+      for (let k = 0; k < count; k++) {
+        const t = (k + 0.5) / count;
+        batch.push(
+          new THREE.Matrix4()
+            .makeRotationY(yaw)
+            .scale(new THREE.Vector3(length / ((piece === 'rim_cap' ? 4 : 10) * count), heightScale, 0.5))
+            .setPosition(a[0] + dx * t + ORIGIN_X, y, a[1] + dz * t),
+        );
+      }
+    };
     const triangle = (a: XZ, ay: number, b: XZ, by: number, c: XZ, cy: number) =>
       vertices.push(a[0] + ORIGIN_X, ay, a[1], b[0] + ORIGIN_X, by, b[1], c[0] + ORIGIN_X, cy, c[1]);
     const geometry = () => {
@@ -112,26 +138,40 @@ export function createBackdrop() {
     }
     cap(outline, top);
     add(geometry(), land.horizon ? '#7d8a84' : WALK);
+    if (stack) sandstone.add(parts.at(-1)!);
     vertices.length = 0;
     for (let i = 0; i < outline.length; i++) {
       const a = outline[i]!,
         b = outline[(i + 1) % outline.length]!,
         hole = land.id === BORE.land ? boreHole(a, b) : null;
-      if (!hole) {
-        quad(a, b, -10, top);
+      if (stack) {
+        const wall = (p: XZ, q: XZ, foot: number) => {
+          if (Math.hypot(q[0] - p[0], q[1] - p[1]) < 1e-6) return;
+          const inset = (v: XZ): XZ => [v[0] + (land.c![0] - v[0]) * 0.012, v[1] + (land.c![1] - v[1]) * 0.012];
+          const backP = inset(p),
+            backQ = inset(q);
+          quad(backP, backQ, -10, top);
+          if (hole) {
+            quad(p, backP, -10, top);
+            quad(backQ, q, -10, top);
+          }
+          course(p, q, 'face_10', 36, foot, (top - foot) / 14.4);
+        };
+        if (hole) {
+          const p = at(a, b, hole[0]),
+            q = at(a, b, hole[1]);
+          wall(a, p, -2);
+          wall(q, b, -2);
+          quad(p, q, BORE.y1, top);
+          quad(p, q, -10, BORE.y0);
+        } else wall(a, b, -2);
+        course(a, b, 'rim_cap', 28, top, 1);
         continue;
       }
-      // The wall round the bore's mouth: either side of it full height, over and under it across it.
-      const [u0, u1] = hole,
-        p = at(a, b, u0),
-        q = at(a, b, u1);
-      if (u0 > 0) quad(a, p, -10, top);
-      if (u1 < 1) quad(q, b, -10, top);
-      quad(p, q, BORE.y1, top);
-      quad(p, q, -10, BORE.y0);
+      quad(a, b, -10, top);
     }
     add(geometry(), land.tint ?? '#ffffff');
-    if (!land.tint || land.id === 'port-top') sandstone.add(parts.at(-1)!);
+    if (stack || !land.tint || land.id === 'port-top') sandstone.add(parts.at(-1)!);
     if (land.horizon) {
       // A coarse inland ridge, behind the low coast and city's skyline.
       const coast = outline.slice(0, 9);
@@ -243,5 +283,14 @@ export function createBackdrop() {
   const horizon = new THREE.Mesh(geometry, material);
   horizon.name = 'Sickle Isles horizon';
   freezeInPlace(horizon);
+  void terrainKitGeometry()
+    .then((pieces) => {
+      for (const [name, matrices] of stackPieces) {
+        const mesh = new THREE.InstancedMesh(pieces.get(name)!, kitMaterial(), matrices.length);
+        matrices.forEach((transform, i) => mesh.setMatrixAt(i, transform));
+        horizon.add(mesh);
+      }
+    })
+    .catch((error: unknown) => console.warn('[high-gorge] cliff kit load failed', error));
   return { horizon, playableVertices };
 }
