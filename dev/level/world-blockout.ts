@@ -231,6 +231,10 @@ function hermite(keys: [XZ, number, number][], spacing = 15, sampleOffset = 0): 
  * split end-on at 31° north of west (ruling 5). R 90 m at its tightest; 2.05 km to the Gorge. */
 const ISLAND_HALT: XZ = [414.46, -830.08];
 const GORGE_AT: XZ = [-1103, -1988];
+const splitPoint = (a: number, c: number): XZ => [
+  GORGE_AT[0] + 0.8565 * a - 0.5162 * c,
+  GORGE_AT[1] + 0.5162 * a + 0.8565 * c,
+];
 const SHORE_OUT = hermite([
   [ISLAND_HALT, 270, 150],
   [[314.46, -930.08], 180, 150],
@@ -245,6 +249,26 @@ const STACK_LEDGE = [
     [GORGE_AT, 211.2, 600],
   ]).slice(1),
 ];
+// Finish on the split axis, with short chords through the final bend.
+const bend = STACK_LEDGE.splice(-7);
+const [entry, next] = bend as [XZ, XZ, ...XZ[]];
+const heading = (Math.atan2(next[1] - entry[1], next[0] - entry[0]) * 180) / Math.PI;
+const run = Math.hypot(entry[0] - GORGE_AT[0], entry[1] - GORGE_AT[1]) - 6;
+STACK_LEDGE.push(
+  ...hermite(
+    [
+      [entry, heading, run],
+      [splitPoint(6, 0), 211.08, run],
+    ],
+    4,
+  ),
+  GORGE_AT,
+);
+
+const wallSlew = Array.from({ length: 10 }, (_, i) => {
+  const t = (i + 1) / 10;
+  return splitPoint(-136 + 80 * t, 2 * t * t * (3 - 2 * t));
+});
 
 type Route = { pts: XZ[]; heights?: (number | null)[]; ruled?: boolean; from?: string };
 /** A line's points and heights before the rulings. A sidecar, not part of the page: the live game imports the page raw. */
@@ -407,9 +431,12 @@ const ROUTES: Record<string, Route> = {
       [-1340, -1500],
       [-1277, -1660],
       [-1495, -2223.54],
-      [-1109.88, -1992.09],
+      // Inside the fillet: preserve the tangent that sets the Gorge turn.
+      [-1302.44, -2107.815],
+      ...wallSlew,
+      splitPoint(-8, 2),
     ],
-    heights: [13, 13, 13, null, null, null, null, 3, 3],
+    heights: [13, 13, 13, null, null, null, null, 3, 3, ...wallSlew.map(() => 3), 3],
     ruled: true,
   },
 };
