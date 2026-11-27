@@ -532,6 +532,10 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
     await openDeepSpan();
     return;
   }
+  const cave = RAIL_LEGS[CAVE]!;
+  const caveRoot = rowWorld(cave.line, 0, 0, { x: 0, z: 0 });
+  const walkCaveRoot = async () =>
+    check(await bot.walk(caveRoot.x, caveRoot.z, 1), 'walked round the West landing root to the cave apron');
   const startWall = async () => {
     await rowRide(wall.line, 0, fromStop(wall), 'cave');
     // Land beside the halt, clear of the rack between the train and the first frame.
@@ -552,8 +556,7 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   };
   // A port-reached save starts in the Village with the cave leg already laid.
   if (legDone(rw(), CAVE) && legDone(rw(), CANOPY) && granted(CLOTH)) {
-    const root = rowWorld(wall.line, 0, 0, { x: 0, z: 0 });
-    check(await bot.walk(root.x, root.z, 1), 'walked from the Village to the cave apron');
+    await walkCaveRoot();
     await startWall();
     return;
   }
@@ -621,13 +624,11 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   await checkpoint('bay reached');
 
   const caveFirst = /[?&]railOrder=cave(?:&|$)/.test(globalThis.location?.search ?? '');
-  const cave = RAIL_LEGS[CAVE]!;
   const caveGate = cave.sections[0]!.gate!;
   const caveStart = fromStop(cave);
   const caveEnd = cave.railheadHalt + cave.sections.length - 1;
   const buildCave = async () => {
-    const root = rowWorld(cave.line, 0, 0, { x: 0, z: 0 });
-    check(await bot.walk(root.x, root.z, 1), 'walked round the West landing root');
+    await walkCaveRoot();
     if (!(route().gates & (1 << caveGate))) {
       await press('railway-leg-plug', RAIL_GATES[caveGate]!.at, 'open the sea-cave plug');
       check(route().gates & (1 << caveGate), 'the sea-cave plug is open');
@@ -720,6 +721,7 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   await checkpoint('canopy home');
 
   // ---------------------------------------------------------------- leg 4: West landing to Port Quay, and home
-  if (!caveDone) await buildCave();
+  if (caveDone) await walkCaveRoot();
+  else await buildCave();
   await startWall();
 }

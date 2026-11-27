@@ -371,6 +371,30 @@ the host and every connected mirror agreed on 20 logs and 4 rails at each rack, 
 16 rails per back. The first attempt sampled presence immediately after the restart and failed there. The
 retry waited for both tabs to see each other before checking the mirrors. Log: `.look/rejoin-retry-run.log`.
 
+#### Browser checkpoint attempts, 26 November
+
+The first shared batch reached the browser's WebGPU startup for three segments. Chromium reported
+`page.evaluate: Target crashed` before any gameplay checkpoint in each. The canonical Port Quay run
+exhausted its outer timeout while queued. These runs leave the browser checkbox open.
+
+| Order | Segment | First attempt | Busy logical CPUs, start to end |
+| --- | --- | --- | --- |
+| Cave-first | `bay-reached` to `port` | Chromium target crashed | 19.99 to 20 |
+| Cave-first | `cave-first-reached` to `canopy` | Chromium target crashed | 20 to 20 |
+| Canonical | `bay-reached` to `canopy` | Chromium target crashed | 19.99 to 20 |
+| Canonical | `canopy-reached` to `port` | Outer timeout in queue | Slot never acquired |
+
+The cave-first Bay → Port Quay retry passed at 20 → 20 busy logical CPUs. The bot laid all three cave
+sections and rode back to the West landing without recovery or graphics errors. Evidence is in
+`.look/playthrough/order-choice-cave-port-retry/`. The screenshot shows both line signs beside the West landing.
+The canonical retries at 20 → 20 reached the cloth at Canopy and the first cave frame respectively.
+Both reached the 600-second wall limit with no graphics errors. Their traces are in
+`.look/playthrough/order-choice-canonical-{canopy,port}-retry/`.
+
+After rebasing on `ab6712df7`, `node dev/ship-check.ts` passed registry, lint, typecheck and 211 affected
+tests. The extra `npm run check` attempt passed 2,458 unit tests with one skip and reached the level checks
+before its outer timeout.
+
 ## The world bump
 
 **One, in step 2's commit, covering steps 1 to 4:** v74 after the Stack west platforms took v73 (two
