@@ -204,7 +204,7 @@ function trainIO(w: World, headPct: number, pct: TradePct, tick: number): TrainI
       freightArrives(w, slot);
       ridersArrive(w, slot, pct, tick);
       // The greybox route: a leg's kit off at its rack (none while a Q job's kit is owed: one open leg comes after Q7).
-      legKitArrive(w, slot);
+      legKitArrive(w, slot, tick);
       if (!line2(slot)) return;
       const r = w.mut(Train, trainId(w, slot))!;
       // A kit unloads at its job's halt (Q6's at Far Head, Q7's at the Pier: call 62).
@@ -290,8 +290,8 @@ function trainStep(w: World, tick: number, headPct: number, pct: TradePct) {
 export const trainTick = defineSystem(
   'rail.trainTick',
   {
-    reads: [QJob, Cart, Account, Plot],
-    writes: [Train, Line, Rail, Forge, Works, Aperture, Yard, Town, Till, Steel, Shed, Leg, LegYard, Route],
+    reads: [QJob, Cart, Plot],
+    writes: [Train, Line, Rail, Forge, Works, Aperture, Yard, Town, Till, Steel, Shed, Leg, LegYard, Route, Account],
     phase: 'tick',
     order: 3,
   },

@@ -53,7 +53,7 @@ export const Rail = defineComponent(
     rack: 'int',
     produced: 'int',
     depot: 'int',
-    // Logs loaded from Home's rack, less those returned as surplus.
+    // Logs loaded from Home's rack, less those returned as surplus or poured directly into a frame.
     giftOut: 'int',
     depotProduced: 'int',
     lever: 'bool',
