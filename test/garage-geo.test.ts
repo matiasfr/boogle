@@ -15,7 +15,8 @@ import {
   standEnds,
   type XZ,
 } from '../src/entities/railway/garage-geo.ts';
-import { SHED_TABLE } from '../src/sim/railway-works-layout.ts';
+import { QUAY_TABLE, SHED_TABLE } from '../src/sim/railway-works-layout.ts';
+
 import { ROTUNDA_KIT } from '../src/place/rotunda.ts';
 import { STEEL_CAR, steelCarOffset } from '../src/entities/railway/cars.ts';
 import { ENGINE, ENGINE_BOILER, ENGINE_LONG_AHEAD } from '../src/entities/railway/engine.ts';
@@ -28,6 +29,24 @@ import { jumpOf } from '../src/world/railway-jump.ts';
 
 const centre = { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100 };
 const geo = GARAGE_GEO;
+test('Port Quay turns the Home pieces together and keeps the post within install reach', () => {
+  const home = garageRow();
+  const quay = garageRow(1);
+  const post = polarAt(quay.table, quay.geo.post);
+  assert.ok(installHere(post, 1));
+  assert.equal(installHere(post, 0), false);
+  assert.equal(quay.geo.camBearing, 140);
+  assert.equal(quay.geo.park, home.geo.park + 125);
+  assert.ok(Math.hypot(post.x * 100 - QUAY_TABLE.x, post.z * 100 - QUAY_TABLE.z) <= QUAY_TABLE.reach - 40);
+  for (const key of ['post', 'jib', 'stand', 'crew'] as const) {
+    const old = [home.geo[key]].flat();
+    const turned = [quay.geo[key]].flat();
+    assert.deepEqual(
+      turned,
+      old.map((p) => ({ bearing: p.bearing + 125, r: p.r })),
+    );
+  }
+});
 const dist = (p: XZ, q: XZ) => Math.hypot(p.x - q.x, p.z - q.z);
 /** Half a sleeper (track.ts lays them 2.3 m wide). */
 const SLEEPER = 1.15;

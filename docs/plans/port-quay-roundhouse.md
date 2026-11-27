@@ -246,23 +246,28 @@ November). Steps 1 to 3 ship together or one by one, with no bump; step 4 after 
       r:edit; refused when short and from neither post", with the Big boiler (6) or a trade line's first fit (1) as
       the seed allows, a second session seeing the `Shed` row; then short: refused, nothing spent; then 30 m from
       both posts: refused. The invariant checks over every seed stage.
-- [ ] **5. Port Quay's table and garage pieces (M; review: `test/garage-geo.test.ts` imports `SHED_TABLE`; "Player-visible implementation": Codex gpt-6.2-astra
+- [x] **5. Port Quay's table and garage pieces (M; review: `test/garage-geo.test.ts` imports `SHED_TABLE`; "Player-visible implementation": Codex gpt-6.2-astra
       medium).** Files: `src/entities/railway/garage-geo.ts` (`GARAGE_ROWS` by site: Home's `GARAGE_GEO`, and Port
       Quay's from a pure `turnGeo(GARAGE_GEO, ROTUNDA_PORT_QUAY.mid - ROTUNDA_HOME.mid)`, 125°: post at 185° r 9.4
       (local `a` 7.2, `b` −33.0), jib and stand at 210° (`a` 11.8 `b` −35.9; `a` 10.0 `b` −36.4), crew at 213° and
       206°, camera at 140°; `garageRow(site)`; `installHere(post, site)` against `SHED_TABLE` or `QUAY_TABLE`); the
       quay mount of step 3 gains the table copy (the line `Shed.quayLine` names, wearing its row, as Home's table copy
       does in `garage-view.ts`), the post, the jib and the stand; the bay copies now read `quayLine`. Port Quay's post
-      shows no prompt until the cave leg is complete (no new string). Verify: `test/garage-geo.test.ts`, one case:
+      shows no prompt in step 5. Step 6 adds its action and cave-leg gate. Verify: `test/garage-geo.test.ts`, one case:
       Port Quay's post is within `QUAY_TABLE.reach − 40` of `QUAY_TABLE`, and the turned row keeps Home's distances;
       `.look/` stills from `quay-garage`: the post, jib and stand beside the table at player height, and the copy
       on the table after a `rail.bring` at site 1 through the jump row's tab (the eval harness, not a bot).
+      **Built.** Both mounts use the runtime meshes in `garage-pieces.ts`. The jump tab brought the bay line to
+      Port Quay at revision 1. [Quay post, jib and stand](port-quay-roundhouse/quay-pieces.png) ·
+      [Bay line on the table](port-quay-roundhouse/quay-brought-copy.png) ·
+      [Home before](port-quay-roundhouse/home-before.png) · [Home after](port-quay-roundhouse/home-after.png).
 - [ ] **6. The garage screen at Port Quay, paying from Home's bay (M; none; "Player-visible implementation": Codex
       gpt-6.2-astra medium).** Files: `src/entities/railway/garage-state.ts` (facts per site: `tableLine` and
       `bringRev` read `Shed.tableLine`/`bringRev` at Home, `quayLine`/`quayRev` at Port Quay); `garage-view.ts` (one
       instance per table, its row and site passed in; its sends name its site; the moment plays at every table whose
       copy's line was fitted, the hanging part only at the post that held); `roundhouse-view.ts` (Home's instance,
-      site 0) and the quay mount (site 1); `src/features/garage.ts` (opens for whichever post was held; the chips
+      site 0) and the quay mount (site 1, with Home's post prompt and action available after cave-leg completion);
+      `src/features/garage.ts` (opens for whichever post was held; the chips
       bring to that table); `garage-data.ts` (when the paying post's site holds none of the pool, the bill's need
       line adds the draft **"in Home's bay"**, shared-pool's draft, marked for the owner). Verify: two-tab look
       (shared-pool step 2's): tab A at Port Quay's post (`quay-garage`) holds Install for a part the pool can pay;

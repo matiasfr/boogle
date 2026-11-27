@@ -279,7 +279,7 @@ test('every wheel stands on the rail head drawn under it, and the slabs clear ra
 test("the jib's arm stays over a part held up for the server's answer, with the jib on the yard's ground", () => {
   const { table, geo } = garageRow();
   const HANG_CLEAR = sourceFunction<number>('src/entities/railway/garage-view.ts', 'HANG_CLEAR', {});
-  const LEG = sourceFunction<{ h: number }>('src/entities/railway/garage-view.ts', 'LEG', {});
+  const LEG = sourceFunction<{ h: number }>('src/entities/railway/garage-pieces.ts', 'LEG', {});
   const stand = polarAt(table, geo.stand),
     jib = polarAt(table, geo.jib);
   const yard = H(stand.x, stand.z);
