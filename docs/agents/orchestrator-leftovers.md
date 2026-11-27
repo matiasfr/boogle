@@ -2,6 +2,10 @@
 
 Proof debts, things jobs reported and did not fix, and older parked items. Split from the [orchestrator state](orchestrator-state.md) on 17 November 2026, word for word, so that file stays short. Read it before picking a small job; add a leftover here the day a job reports it, ranked, and delete it when it lands.
 
+## From 27 November
+
+- **P1, placeholder text that players read** (found by the 27 November tidy's docs audit): the station guides (#2601) show 31 lines reading "[placeholder — owner's line: …]" on the kiln hand's and the roundhouse hand's talk cards, all in `src/components/phase-guide/stages.ts`. Rule 6 of the [27 November flow decision](../decisions-core-loop.md#d-2026-11-27-course-change) says drafted words ship as words, never as a debug string. The fix is a story job (`npm run models`: Neon): draft each line in the speaker's character and mark it for his edit; nothing of The Boogler's.
+
 ## From 25 November
 
 - P3 · From the world wipe gate's review (Astra medium, 27 November): the gate counts players from `GET /admin/rooms`, which lists saved rooms, so a brand-new room in the seconds before its first checkpoint (2 s by default) is not counted, and the wipe itself lands with the server deploy minutes after the check. The clean fix is a server-wide live connection count on that route (`server/src/admin.ts`, a `server/` change with its own review), read by `dev/world-bump-gate.ts`.
