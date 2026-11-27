@@ -1,7 +1,7 @@
 // Render and sim cost in under a minute: `npm run perf` (or `-- --url http://localhost:5173/` for a running game;
 // `-- --render` or `-- --sim` for one half; `-- --json file` writes the first render row from a fixed pose, for
 // dev/look/counts.ts). `--hardware` opens a visible browser and samples real frames for 5 seconds;
-// `--seconds N` (1–30), `--view NAME`, `--size 1210x702` and `--query 'k=v'` select the sample (default: the production
+// `--seconds N` (1â€“30), `--view NAME`, `--size 1210x702` and `--query 'k=v'` select the sample (default: the production
 // entry). Counts stay timing-free. `--rail-seed <stage>` starts the room from an accepted railway server save, as look's
 // (dev/look/rail-seed.ts). A view in PLACES below also stands the body somewhere and starts from its seed, so what is
 // resident by distance is there: `npm run perf -- --view canopy` (add `--hardware` for frame time on this GPU).
@@ -40,15 +40,15 @@ const PLACES: Record<string, Place> = {
   // Greybox leg 3's Checkpoint C (docs/plans/greybox-leg3.md): leg 3 laid, the body on Canopy Town's homeward
   // platform (src/content/levels/leg3.ts, cf.at(-10, -5.8)), the camera high over the strait beyond head 2, looking
   // along the row at the isle, its mother trunks and the chalk islets.
+  canopy: { seed: 'canopy-reached', stand: [-1070, 15, -319], cam: [-700, 180, -620], look: [-1060, 20, -300] },
+  // Leg 4's Checkpoint D: stand at quay.at(-10, -5.8) on the homeward platform and look from over the breakwater.
+  port: { seed: 'port-reached', stand: [140.5, 5.5, 931.1], cam: [300, 100, 780], look: [45, 28, 980] },
   quayRoundhouse: {
     seed: 'port-reached',
     stand: [133.5, 5.5, 938.2],
     cam: [133.5, 5.6, 938.2],
     look: [109.91, 5, 914.79],
   },
-  canopy: { seed: 'canopy-reached', stand: [-1070, 15, -319], cam: [-700, 180, -620], look: [-1060, 20, -300] },
-  // Leg 4's Checkpoint D: stand at quay.at(-10, -5.8) on the homeward platform and look from over the breakwater.
-  port: { seed: 'port-reached', stand: [140.5, 5.5, 931.1], cam: [300, 100, 780], look: [45, 28, 980] },
   // Leg 5's Checkpoint E: the Wall jump landing at High Gorge, looking down the split toward the sea.
   wall: { seed: 'wall-closed', stand: [-132.55, 5.5, -1999.03], cam: [-114, 14, -1993], look: [-172, 4, -2030] },
   // Leg 6's Checkpoint F: from the island platform up the causeway, and from the Notch halt into the arch.
@@ -181,7 +181,7 @@ let stack: Stack | undefined, browser: Browser | undefined;
 if (verdictFile) startRun(path.resolve(verdictFile), { checkout: root });
 try {
   if (hardware && !doRender) throw new Error('--hardware cannot be combined with --sim');
-  if (!Number.isFinite(seconds) || seconds < 1 || seconds > 30) throw new Error('--seconds must be 1–30');
+  if (!Number.isFinite(seconds) || seconds < 1 || seconds > 30) throw new Error('--seconds must be 1â€“30');
   if (argv.includes('--view') && (!viewName || !(VIEWS[viewName] ?? PLACES[viewName])))
     throw new Error('Unknown --view; use ' + [...Object.keys(VIEWS), ...Object.keys(PLACES)].join(', '));
   if (railSeed && url) throw new Error('--rail-seed needs a local stack, not --url');
