@@ -96,6 +96,8 @@ for (const area of ['bell', 'west'] as const)
     builders.set('town.boogler-statue', () => new THREE.Group());
     builders.set('town.statue-scaffold', () => new THREE.Group());
     builders.set('town.green-kerb', () => new THREE.Group());
+    builders.set('town.ball-court', () => new THREE.Group());
+    builders.set('town.ball-lever', () => new THREE.Group());
     builders.set('railway.halt-parts', () => new THREE.Group());
     builders.set('railway.halt-ramp', () => new THREE.Group());
     builders.set('railway.halt-lever', () => new THREE.Group());
