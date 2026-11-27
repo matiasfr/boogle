@@ -16,6 +16,7 @@ Split by topic on 10 November 2026 (see [decisions.md](decisions.md#recording-a-
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 2026-11-27 | New: a full kit carrier swaps minted logs for gifts one for one at Home, up to the pour room, so a gift rides when both carriers are full | [Lane B](plans/lane-b.md#steps), step 3a | Orchestrator (heartbeat follow-up) | Keeps the cargo and carrier limits while allowing gifts to reach the frame | open |
 | 2026-11-27 | New: the room’s works names the breaker and the Works chain (breaker to cradle) before Q6, since a part on the forge’s pedestal is the works | [lane-a-works](plans/lane-a-works.md#design-review-2026-11-27), call 3 | Planner (design review) | The forge call already whistles for the breaker, so a signal at Q6 would contradict it; it keeps a guest’s next job on Home, 122 to 336 m from the dock | open |
 | 2026-11-27 | New: at the fork after the bay cut the works is the branch already begun; with neither begun, the cave line | [lane-a-works](plans/lane-a-works.md#design-review-2026-11-27), call 4 | Planner (design review) | Its first frame and stocked rack stand 15 m from the dock where a guest lands; the rules keep both branches open | open |
 | 2026-11-27 | Default: the hook is named as the works just before the sea switch, not after Q2 | [lane-a-works](plans/lane-a-works.md#design-review-2026-11-27), call 5 | Planner (design review) | The sea switch is the first step that needs it | open |

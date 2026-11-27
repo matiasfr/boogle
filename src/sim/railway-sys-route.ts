@@ -45,7 +45,7 @@ import {
   routeRow,
 } from './railway-queries-route.ts';
 import { trainMoveIO } from './railway-sys-trains.ts';
-import { legKitPut, legKitStock, legRailheadHold, legYardHome, trimLegHeld } from './railway-sys-route-kit.ts';
+import { legFill, legKitPut, legKitStock, legRailheadHold, legYardHome, trimLegHeld } from './railway-sys-route-kit.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 
 const bit = (k: number) => 1 << k;
@@ -67,14 +67,10 @@ export const legStock = defineSystem(
     const logs = Math.min(a.carry, sec.logs - row.logs),
       rails = Math.min(a.rails, sec.rails - row.rails);
     if (logs + rails <= 0) return 0;
-    const am = w.mut(Account, aid)!,
-      m = w.mut(Leg, legId(w, k))!;
+    const am = w.mut(Account, aid)!;
     am.carry -= logs;
     am.rails -= rails;
-    m.logs += logs;
-    m.rails += rails;
-    if (m.logs === sec.logs && m.rails === sec.rails && (sec.gate === undefined || routeRow(w).gates & bit(sec.gate)))
-      m.start = tick;
+    legFill(w, k, logs, rails, tick);
     // Fed: no longer held on a back (the step 3 review's P2-2).
     legKitPut(w, aid, logs, rails);
     thank(w, aid);
