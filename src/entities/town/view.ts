@@ -197,12 +197,13 @@ export async function createTownView(read: () => TownLook | null) {
     release: plots.release,
     firstHouseDone: () => rooms.rooms.plot3.site.state === 'done',
     /** The residents' Talk and the shop's stands and rail. Joined only when more than one has something in reach. */
-    targets(): Interactable[] {
+    targets(hangoutTargets?: Interactable[]): Interactable[] {
       targets.length = 0;
       appendTargets(residents.targets());
       if (shop) appendTargets(shop.targets());
       appendTargets(plots.targets());
       appendTargets(court.targets());
+      if (hangoutTargets) appendTargets(hangoutTargets);
       return targets;
     },
     /** The curio shelf, for K1's crystals (`shelfGroup`, `crystalPeg`). */

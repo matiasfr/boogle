@@ -25,8 +25,7 @@ onStart(() =>
     },
   }),
 );
-registerInteractable(() => active?.targets() ?? NO_TARGETS);
-registerInteractable(() => hangout?.targets() ?? NO_TARGETS);
+registerInteractable(() => active?.targets(hangout?.targets()) ?? NO_TARGETS);
 
 if (productionRailway && railwayMirror) {
   useHomeToyGround();

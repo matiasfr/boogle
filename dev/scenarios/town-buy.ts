@@ -15,8 +15,8 @@ const w = rw();
 return { plots: inspectTown()?.plots, kind: w.get(Plot,w.lookup(Plot,0)).kind, till: {...till(w)}, pos: {...window.boogle.me.body.position} };`;
 const stand = (kind: number) => `const { teleport } = await import('/src/physics/engine.ts');
 teleport(window.boogle.me.body,903.8,18.9,${kind === 1 ? 34 : 36.4});`;
-const hold = `const { triggerAction } = await import('/src/player/controls.ts');
-triggerAction('interact','down'); setTimeout(()=>triggerAction('interact','up'),1600);`;
+const use = (edge: 'down' | 'up') => `const { triggerAction } = await import('/src/player/controls.ts');
+triggerAction('interact','${edge}');`;
 export default {
   sourceImports: true,
   timeout: 420000,
@@ -36,16 +36,19 @@ export default {
       const kind = g === A ? 1 : 2;
       await g.eval(stand(kind));
       await g.view({ cam: [897, 21.5, 34], look: [905, 19.6, 35] });
-      await g.waitFor(
+      const targeted = await g.waitFor(
         `(async()=>{const {interactTarget}=await import('/src/player/hands.ts');return interactTarget()?.id==='town.plot.0.${kind}';})()`,
       );
+      if (targeted < 0) throw new Error(`board ${kind} was not targeted`);
       await g.still('board-' + kind);
     }
     const before = await A.eval<Snapshot>(read);
-    await Promise.all([A.eval(hold), B.eval(hold)]);
-    await A.waitFor(
+    await Promise.all([A.eval(use('down')), B.eval(use('down'))]);
+    const accepted = await A.waitFor(
       `(async()=>{const {inspectTown}=await import('/src/entities/town/state.ts');return inspectTown()?.plots[0]?.at>=0;})()`,
     );
+    await Promise.all([A.eval(use('up')), B.eval(use('up'))]);
+    if (accepted < 0) throw new Error('neither board hold bought plot 0');
     const bought = await A.eval<Snapshot>(read);
     const other = await B.eval<Snapshot>(read);
     t.check(
