@@ -4,7 +4,7 @@
 
 ## Build cards in recommended order
 
-Each numbered row is one builder's visual slice. The middle column describes existing massing. The last column specifies two matched before/after frames and the question to answer at normal game FOV. Files named under ownership are in `src/content/levels/` unless noted. Author each area's rock in its own `dev/prefab/cliff-kit-<area>.ts` and regenerate its own level data. A single integration owner handles shared generator registration. Keep the existing walk, collision, rail clearance and feature residency as the footprint.
+Each numbered row is one builder's visual slice. The middle column describes existing massing. The last column specifies two matched before/after frames and the question to answer at normal game FOV. Files named under ownership are in `src/content/levels/` unless noted. Card 4 mounts draw-only rock through the West and Saltpan route-area extras so the dressing leaves with each stop. For the other cards, author each area's rock in its own `dev/prefab/cliff-kit-<area>.ts` and regenerate its own level data. A single integration owner handles shared generator registration. Keep the existing walk, collision, rail clearance and feature residency as the footprint.
 
 | Step and ownership | What a rider meets today | Dress and check | Proof pair |
 |---|---|---|---|
@@ -18,6 +18,10 @@ Each numbered row is one builder's visual slice. The middle column describes exi
 | 8. Causeway and Original Island, leg6.ts after step 7 | The low crossing leads to an arrival platform and meeting marker. | Let water show between existing bents. Use Ring's weathered rock and shore band at the abutment, then pick up the island's existing ground colour. Keep the landing modest enough that the marker reads at walking distance. | Bell-side outward ride / arrival platform toward marker |
 
 - [x] **Card 1, Stack line and High Gorge.** Keep the clipped outlines, the rail bore and both sandstone cuts. On the approaching south stack retain the kit down to the eastern waterline. The rest of the perimeter uses the existing bedded backing face. The rim and pickup plinth share packed-earth pigment. Four small tufts flank the pickup without adding bodies. These twelve blade triangles share the backdrop draw. Their base is the same 85 m plane as the cap at all distances; the separate far-ground grid at steps 1, 2 and 4 does not own the cap.
+
+- [x] **Card 4 implementation.** West owns the two exterior shoulders and short return at the daylight mouth. Saltpan owns the low salt band, bank rocks and sparse edge grass. Its existing beach slopes supply the dark wet shore. The band follows the fixed 3 m land prism. Far-ground grid steps 1, 2 and 4 do not change that surface.
+
+- [ ] **Card 4 proof.** Hood eye (795,6,75) toward (779,6,105). Platform eye (549.61,5.5,700.27) toward (635,3,770). Matched desktop and portrait census and train approaches pending.
 
 **Trim decision.** Retain the 18 draws / 42,000 triangles desktop and 8 / 18,000 phone allowances. At the original halt, #2559 measured 188 → 194 draws and 433,150 → 533,254 triangles for its whole change. For this card, switch only the two instanced batches off and back on at a fixed camera. At both the halt and platform the two original batches contain 97,944 triangles. After trimming they submit 13,156, saving 84,788 triangles. The earth recolour adds zero triangles and the tufts add 12. At the historical halt this puts the full change at approximately +15,328 triangles over the pre-kit view (100,104 − 84,788 + 12), within the shared +70,000 allowance. That last figure is derived from the historical comparison. Current counts below are the contribution of the kit batches, including both faces and caps.
 
