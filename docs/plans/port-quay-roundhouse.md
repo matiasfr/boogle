@@ -279,13 +279,16 @@ November). Steps 1 to 3 ship together or one by one, with no bump; step 4 after 
       The bill locates available steel in Home's bay. The two copies use the same prefab collider at their rest pose.
       **Seen in two tabs.** At the quay, the north–south Quick boiler showed a 1/1 steel bill, then Installed at
       25 m/s. Home's stack went from 12 to 11. The near right block disappeared from its upper layer. A second bring
-      selected Bay line at the quay (revision 2) while Home kept Line 2. Both peers saw the same rows. The parked
-      quay bridge is visible across the copy during its showroom turn. The 2× clock-capacity check failed under
+      selected Bay line at the quay (revision 2) while Home kept Line 2. Both peers saw the same rows. In the first
+      captures the copy turned across the parked quay bridge. The 2× clock-capacity check failed under
       load, so these captures establish the receipt and visible state only.
       [Quay bill](port-quay-roundhouse/quay-bill-still.png) · [Installed](port-quay-roundhouse/quay-installed-still.png) ·
       [Bay line](port-quay-roundhouse/quay-brought-still.png) · [12 steel](port-quay-roundhouse/home-stack-bill-still.png) ·
       [11 steel](port-quay-roundhouse/home-stack-installed-still.png) · [Home from the post](port-quay-roundhouse/home-bill-still.png) ·
       [Home after the fit](port-quay-roundhouse/home-installed-still.png) · [Home after the bring](port-quay-roundhouse/home-brought-still.png).
+      **Fix round 1.** The quay copy holds the fixed bridge's 45° heading throughout the showroom turn. Home's
+      copy still turns with its bridge. The garage now registers the assembled train and furniture with their
+      owner so unmounting releases the displayed wheel geometry. [Quay during the Quick boiler install](port-quay-roundhouse/quay-mid-turn-still.png).
 - [ ] **Checkpoint (after step 6; with shared-pool's Checkpoint B).** `npm run check:full`, `npm --prefix server
       test`, `npm run test:net` (`server/src` changed), `npm run loop -- run` (1 to 4 players; no node added, a
       regression check of the `site` field in its sends), the level check. Proofs to read: the host test's real
