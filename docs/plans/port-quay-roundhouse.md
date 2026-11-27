@@ -274,6 +274,9 @@ November). Steps 1 to 3 ship together or one by one, with no bump; step 4 after 
       tab B at Home's bay 150° from the steel-home camera; stills before and after the receipt, opened: the stack
       falls by the price and tab A reads Installed; then tab A brings another line and tab B's Home table does not
       change. `npm run review-stamp` would mark this step `none` unless a test under its rule changes.
+      **Built.** Each post opens its own garage and sends its own site on a chip press or install. The quay uses the
+      cave leg's completion gate. Both tables observe the line fit, with the part on the hook at the paying post.
+      The bill locates available steel in Home's bay. The two copies use the same prefab collider at their rest pose.
 - [ ] **Checkpoint (after step 6; with shared-pool's Checkpoint B).** `npm run check:full`, `npm --prefix server
       test`, `npm run test:net` (`server/src` changed), `npm run loop -- run` (1 to 4 players; no node added, a
       regression check of the `site` field in its sends), the level check. Proofs to read: the host test's real

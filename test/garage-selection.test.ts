@@ -46,6 +46,8 @@ const { mountQuayRoundhouse } = sourceModule<typeof import('../src/entities/rout
     kit,
     level: {},
     createGaragePieces,
+    quayGarage: { view: null },
+    createGarageView: () => ({ dispose() {} }),
     railwayWorldRead: () => null,
     createRotundaView: () => ({ show() {}, copies() {} }),
   },

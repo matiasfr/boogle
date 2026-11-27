@@ -23,6 +23,7 @@ import {
   tradeRowsFor,
   lineFacts,
   GARAGE_LINE,
+  billLocation,
   TRADE_DENIAL,
   type CatId,
   type Group,
@@ -225,15 +226,15 @@ function rowHtml(row: Row, i: number, snap: GarageSnap) {
 
 function refresh() {
   const api = garage.api;
-  if (!api) return;
-  const snap = api.snap();
-  if (snap.open && !root) build();
+  const snap = api?.snap();
+  const open = !!snap?.open;
+  if (open && !root) build();
   if (!root || !els) return;
-  if (snap.open !== wasOpen) {
-    wasOpen = snap.open;
-    root.hidden = !snap.open;
-    document.body.classList.toggle('garage-open', snap.open);
-    if (snap.open) {
+  if (open !== wasOpen) {
+    wasOpen = open;
+    root.hidden = !open;
+    document.body.classList.toggle('garage-open', open);
+    if (open) {
       setPadGrab((slot) => (slot === 'b' ? leave() : NAV[slot]?.()), ['b', 'up', 'down', 'left', 'right'], {
         stick: true,
       });
@@ -241,7 +242,7 @@ function refresh() {
       onChips = false;
     } else setPadGrab(null);
   }
-  if (!snap.open) return;
+  if (!snap?.open || !api) return;
   const all = partsOf(snap.facts);
   const list = all.filter((p) => p.cat === snap.cat);
   // Keep the selection inside the category.
@@ -295,7 +296,7 @@ function refresh() {
     // What is missing, as a bill (what is needed, how many are in): shown where Install would be, with no button.
     els.need.hidden = !part.needs;
     els.need.innerHTML = part.needs
-      ? `<span>${h(part.needs.what)}</span><b>${part.needs.have}/${part.needs.need}</b>`
+      ? `<span>${h(part.needs.what + billLocation(snap.facts))}</span><b>${part.needs.have}/${part.needs.need}</b>`
       : '';
   }
   // Through a real install the rows count from the old numbers to the new, though the room's rows already say fitted.

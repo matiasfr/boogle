@@ -7,10 +7,11 @@
 import { leg, line, shed, trains, type ReadWorld } from '../../sim/railway-rows.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { LINE2, RAIL_LINES, legBuilt } from '../../sim/railway-lines.ts';
-import { tableFree, upgradePool } from '../../sim/railway-queries-works.ts';
+import { tableFree, tableOpen, upgradePool } from '../../sim/railway-queries-works.ts';
 import { RAIL_LEGS, TRADE_LINES } from '../../sim/railway-route.ts';
 import { SERVED_LEGS, tradeOpen, tradeSwapRefusal } from '../../sim/railway-queries-route.ts';
 import type { CatId, LineFacts, Phase, PartId, RoomFacts } from './garage-data.ts';
+import type { createGarageView } from './garage-view.ts';
 
 /** The garage step 4 readout's test (plan, "The garage screen"): a built leg whose kit `line`'s own trains carry has
  * two sections or more still to lay, so a Strong train there loads two sections' kit and holds at the railhead. */
@@ -40,28 +41,33 @@ function linesOf(w: ReadWorld): LineFacts[] {
  * turn the offer back off, once, when the room stood still meanwhile (intended: the server still holds the table).
  * Not `tickNow()`: the movers' RTT-compensated time can run further ahead of the room and step back at any frame
  * (garage step 4's Checkpoint, "the early Install"). */
-export const garageFacts = (read: { world(): ReadWorld; tick(): number }) => roomFacts(read.world(), read.tick());
+export const garageFacts = (read: { world(): ReadWorld; tick(): number }, site: 0 | 1 = 0) =>
+  roomFacts(read.world(), read.tick(), site);
 
 /** `tick` is the room's action tick (see `garageFacts`), for the table's hold after a bring or an install. */
-export function roomFacts(w: ReadWorld, tick = Infinity): RoomFacts {
+export function roomFacts(w: ReadWorld, tick = Infinity, site: 0 | 1 = 0): RoomFacts {
   const wagonCoupled = trains(w).some((r) => r.wagon);
   const boiler = line(w, LINE2).boiler;
+  const sh = shed(w);
+  const boilerFitted = line2Trains(w);
   return {
-    boilerFitted: line2Trains(w),
-    upgradeReady: shed(w).fitted >= 0 && shed(w).table === 1,
+    site,
+    postOpen: site === 0 ? boilerFitted : tableOpen(w, site),
+    boilerFitted,
+    upgradeReady: site === 0 && sh.fitted >= 0 && sh.table === 1,
     wagonCoupled,
     // The roll-out owns the table from the commission until the wagon has coupled.
-    tableBusy: shed(w).ready >= 0 && !wagonCoupled,
-    steelHome: shed(w).steel >= 1,
+    tableBusy: site === 0 && sh.ready >= 0 && !wagonCoupled,
+    steelHome: sh.steel >= 1,
     // A screen counts the pool (every store of steel); a store's stack shows only what lies there.
     steel: upgradePool(w),
     longFitted: boiler >= 2,
     boilerRev: boiler,
     installRev: line(w, LINE2).rev,
     gorgeReached: leg(w, 0).laid >= RAIL_LEGS[0]!.sections.length,
-    tableLine: shed(w).tableLine,
-    bringRev: shed(w).bringRev,
-    held: tick < tableFree(w, 0),
+    tableLine: site === 1 ? sh.quayLine : sh.tableLine,
+    bringRev: site === 1 ? sh.quayRev : sh.bringRev,
+    held: tick < tableFree(w, site),
     lines: linesOf(w),
   };
 }
@@ -115,3 +121,6 @@ export type GarageApi = {
 };
 
 export const garage: { api: GarageApi | null } = { api: null };
+export const quayGarage: {
+  view: ReturnType<typeof createGarageView> | null;
+} = { view: null };

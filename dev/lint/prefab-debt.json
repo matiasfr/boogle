@@ -160,11 +160,6 @@
       "exports": ["createForgeFinish", "forgePoles"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
-    "src/entities/railway/garage-view.ts": {
-      "count": 2,
-      "exports": ["createGarageView"],
-      "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
-    },
     "src/entities/railway/gate-rig.ts": {
       "count": 2,
       "exports": ["createGateRig", "gateEyeAt", "gateEyes"],
@@ -805,7 +800,6 @@
     "src/entities/railway/crates-view.ts#createStationBoxes": 1,
     "src/entities/railway/crossing-view.ts#createRailwayCrossing": 1,
     "src/entities/railway/forge-finish.ts#createForgeFinish": 1,
-    "src/entities/railway/garage-view.ts#createGarageView": 1,
     "src/entities/railway/greeter.ts#createTownGreeter": 1,
     "src/entities/railway/halts-view.ts#createRailwayHalts": 1,
     "src/entities/railway/home-station-view.ts#createHomeStation": 1,
