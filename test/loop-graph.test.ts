@@ -7,6 +7,7 @@ import { createRequire } from 'node:module';
 import { runInNewContext } from 'node:vm';
 import { transformSync } from 'esbuild';
 import { ACTIVITY_MARKS, GENERIC_OPS, NODES, PENDING_MARKS, proposeOrders } from '../dev/loop/graph.ts';
+import { printNode } from '../dev/loop/report.ts';
 import { RAIL_ACTIONS } from '../src/world/railway-server.ts';
 import {
   createRailwayJourneyMarks,
@@ -25,6 +26,12 @@ import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 
 const generic = new Set<string>(GENERIC_OPS);
 const owned = new Set(NODES.flatMap((n) => n.ops));
+
+test('the cave-1 text report identifies the plug as a finish dependency', (t) => {
+  const output = t.mock.method(console, 'log', () => {});
+  printNode('cave-1', false);
+  assert.match(String(output.mock.calls[0]!.arguments[0]), /plug-gate[^\n]*(?:finish|lay)/i);
+});
 
 test('the Ring Island bot cannot take a later leg stop', () => {
   // With no seed the wake bot runs, which never plays the legs (two reviews found it, for wall and ending).
