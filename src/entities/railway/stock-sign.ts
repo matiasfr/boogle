@@ -1,3 +1,4 @@
+import { stockGlyphs } from './stock-glyphs.ts';
 // Local stock board: the same small physical-source cue on timber and steel racks, a painted board on its own post at
 // the rack (src/render/sign-board.ts; owner, 9 November: signs in the world before hovering text). A train-fed
 // stretch's rack shows the
@@ -20,36 +21,7 @@ export function stockSign(owner: OwnedView, start: StockSignKind) {
   const sign = signBoard(owner, { w: 1.3, h: 0.65, px: 256, foot: 1.15, posts: 'one' });
   const { g } = sign;
   const board = sign.mesh;
-  const logs = (x: number, y: number, r: number) => {
-    for (const [dx, dy] of [
-      [-1, -0.83],
-      [1, -0.83],
-      [0, 0.83],
-    ]) {
-      g.fillStyle = '#eac28a';
-      g.beginPath();
-      g.arc(x + dx! * r, y + dy! * r, r, 0, Math.PI * 2);
-      g.fill();
-      g.strokeStyle = '#956636';
-      g.lineWidth = r / 6;
-      g.stroke();
-    }
-  };
-  const rails = (x: number, y: number, length: number, width: number, gap: number, across = false) => {
-    g.strokeStyle = '#a3cee2';
-    g.lineWidth = width;
-    for (const o of [-gap / 2, gap / 2]) {
-      g.beginPath();
-      if (across) {
-        g.moveTo(x - length / 2, y + o);
-        g.lineTo(x + length / 2, y + o);
-      } else {
-        g.moveTo(x + o, y - length / 2);
-        g.lineTo(x + o, y + length / 2);
-      }
-      g.stroke();
-    }
-  };
+  const { logs, rails } = stockGlyphs(g);
   /** The old train side-on, heading right: cab at the back, boiler and chimney in front, one wagon behind. */
   const train = (puff: number) => {
     g.lineCap = 'round';

@@ -157,6 +157,7 @@ export async function collectTrackGeometry() {
       ...shape,
       line2Completed: () => 1,
       line2Trains: () => true,
+      worksFace() {}, // Prefab sign faces are outside the station-box capture.
       createTill: () => ({ update() {} }), // Prefab-owned till is outside this legacy station-box capture.
       drawWorksBoxes(_owner: unknown, boxes: shape.WorksBox[]) {
         for (const [i, b] of boxes.entries()) {

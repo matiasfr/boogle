@@ -10757,6 +10757,41 @@
         "node": "cart"
       }
     },
+    "railway.dock-post-solid": {
+      "colliders": [
+        {
+          "at": [
+            0,
+            0.325,
+            0
+          ],
+          "half": [
+            0.06,
+            0.325,
+            0.06
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            0,
+            1.475,
+            0
+          ],
+          "half": [
+            1.66,
+            0.885,
+            0.04
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "railway.dock-post-solid",
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
     "railway.engine": {
       "colliders": [],
       "key": "railway.engine",
@@ -12714,6 +12749,58 @@
       },
       "colliders": [],
       "key": "railway.waiting-board",
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "railway.works-face": {
+      "attach": {
+        "sign": {
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "facing": [
+            0,
+            0,
+            1
+          ],
+          "h": 0.87,
+          "kind": "label",
+          "posts": "none",
+          "w": 2.1
+        }
+      },
+      "colliders": [],
+      "key": "railway.works-face",
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "railway.works-post": {
+      "attach": {
+        "sign": {
+          "at": [
+            0,
+            0.65,
+            0
+          ],
+          "facing": [
+            0,
+            0,
+            1
+          ],
+          "h": 1.65,
+          "kind": "label",
+          "posts": "one",
+          "w": 3.2
+        }
+      },
+      "colliders": [],
+      "key": "railway.works-post",
       "scope": "owner",
       "visual": {
         "none": true

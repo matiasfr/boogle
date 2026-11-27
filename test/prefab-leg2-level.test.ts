@@ -758,6 +758,7 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
       ...progress,
       ...(await import('../src/sim/railway-queries-room.ts')),
       ...(await import('../src/entities/railway/works-lines.ts')),
+      worksFace: () => new THREE.Group(),
       ...gorgeLayout,
       ...junctions,
       ...path,

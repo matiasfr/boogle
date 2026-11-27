@@ -10,6 +10,7 @@ import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts'
 import { drawWorksBoxes } from './works-box-view.ts';
 import { box, type WorksBox, type WorksPoint } from './works-shape.ts';
 import { createTill } from './till-view.ts';
+import { worksFace } from './works-board.ts';
 
 const STONE = '#c8c0b0',
   KERB = '#ddd6c6',
@@ -72,6 +73,9 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
   {
     const { a, c, w, d, height, endWall, floor, posts } = home.HALL;
     const mid = at(a, c);
+    const board = at(a + d / 2 - 1, c - w / 2 + 2);
+    worksFace(owner, { ...board, y: floor }, yaw, true);
+    add(box(board.x, floor + 1.15, board.z, 0.14, 2.3, 0.14, yaw), POST, true);
     add(box(mid.x, floor - 0.12, mid.z, w + 0.2, 0.24, d + 0.2, yaw), STONE, true);
     // The way in from the square: the slab's top is 0.12 m over the highest ground under the hall, so over the sand
     // at the north bays its front stands a third of a metre up, more than a walking step. Stone treads across the

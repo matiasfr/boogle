@@ -22,6 +22,9 @@ import { createStationGuides } from './station-guides.ts';
 import { roomWorks } from '../../sim/railway-queries-room.ts';
 import { boiler, works as worksRow } from '../../sim/railway-rows.ts';
 import { createWorksSignal } from './works-signal.ts';
+import { islandGround } from '../ring-island/state.ts';
+import { createWorksBoard } from './works-board-state.ts';
+import { createDockPost } from '../../place/dock-post.ts';
 
 export async function createRailwayWorksLive(
   adapter: RailwayAdapter,
@@ -51,11 +54,15 @@ export async function createRailwayWorksLive(
   const meet = createRingMeet(adapter, owner, { ...deps, landed: leaf.landed });
   const folk = createRingFolk(adapter, owner);
   const guides = createStationGuides(adapter, owner);
-  const signal = createWorksSignal(owner);
+  const signal = createWorksSignal(owner, await islandGround());
+  const updateBoard = createWorksBoard(owner);
+  const dock = createDockPost(owner);
   function updateSignal(dt: number, restore = false) {
     if (!adapter.read.whole()) return;
     const world = adapter.read.world();
     const work = roomWorks(world);
+    updateBoard(work);
+    dock.retry();
     const forgeCalling =
       (work.site === 'boiler' && boiler(world).state === 'pedestal') ||
       (work.site === 'breaker' && worksRow(world).breaker === 1);
@@ -124,6 +131,7 @@ export async function createRailwayWorksLive(
       ...leg.targets(),
     ],
     inspect: () => ({
+      dockBoard: dock.rows(),
       ...works.inspect(),
       ...railhead.inspect(),
       ...leaf.inspect(),

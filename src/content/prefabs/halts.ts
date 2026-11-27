@@ -66,6 +66,31 @@ export function haltYardBay(hand: BayHand): BayBox[] {
   return out;
 }
 export const prefabs: PrefabDef[] = [
+  ...([false, true] as const).map((post): PrefabDef => ({
+    key: post ? 'railway.works-post' : 'railway.works-face',
+    scope: 'owner',
+    visual: { none: true },
+    colliders: [],
+    attach: {
+      sign: {
+        kind: 'label',
+        at: [0, post ? 0.65 : 0, 0],
+        facing: [0, 0, 1],
+        w: post ? 3.2 : 2.1,
+        h: post ? 1.65 : 0.87,
+        posts: post ? 'one' : 'none',
+      },
+    },
+  })),
+  {
+    key: 'railway.dock-post-solid',
+    scope: 'owner',
+    visual: { none: true },
+    colliders: [
+      { shape: 'box', at: [0, 0.325, 0], half: [0.06, 0.325, 0.06] },
+      { shape: 'box', at: [0, 1.475, 0], half: [1.66, 0.885, 0.04] },
+    ],
+  },
   ...(['signal', 'road-plaque'] as const).map((kind): PrefabDef => ({
     key: `railway.halt-${kind}`,
     visual: { builder: 'railway.halt-attachment', params: { kind } },

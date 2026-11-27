@@ -4,9 +4,38 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { material } from '../../render/materials.ts';
 import { GOLD_ROPE } from '../../render/gold-rope.ts';
 import { H } from '../../place/terrain.ts';
+import type { IslandGround } from '../ring-island/ground.ts';
+import { RING_HALT } from '../../sim/railway-ring-layout.ts';
 import { reducedMotion } from '../../constants.ts';
 import type { RoomWorks } from '../../sim/railway-queries-room.ts';
 import { PLUME, STEAM } from './forge-call.ts';
+
+// Use the dock landing and the halt's step-down platform. Heights below are eye elevations.
+const eyes = [
+  { x: 801, y: 4.6, z: 10 },
+  {
+    x: RING_HALT.down.x / 100,
+    y: RING_HALT.down.y / 100 + 1.6,
+    z: RING_HALT.down.z / 100,
+  },
+];
+function columnHeight(at: THREE.Vector3, island: IslandGround) {
+  let height: number = PLUME.height;
+  for (const eye of eyes) {
+    const dx = at.x + PLUME.lean - eye.x,
+      dz = at.z - eye.z;
+    const count = Math.ceil(Math.hypot(dx, dz) / 2);
+    for (let i = 1; i < count; i++) {
+      const t = i / count,
+        x = eye.x + t * dx,
+        z = eye.z + t * dz;
+      const ground = Math.max(H(x, z), island.islandH(x, z));
+      height = Math.max(height, eye.y + (ground - eye.y) / t + 20 - at.y - 2);
+      if (height >= 200) return 200;
+    }
+  }
+  return Math.ceil(height);
+}
 
 export function createPennant(owner: OwnedView) {
   const flag = new THREE.Group();
@@ -20,8 +49,9 @@ export function createPennant(owner: OwnedView) {
   return flag;
 }
 
-export function createWorksSignal(owner: OwnedView) {
+export function createWorksSignal(owner: OwnedView, island: IslandGround) {
   const flag = createPennant(owner);
+  flag.name = 'railway:works-pennant';
   flag.visible = false;
   const steam = material('stone', { colour: `#${STEAM.getHexString()}` }).clone();
   steam.fog = false;
@@ -37,14 +67,16 @@ export function createWorksSignal(owner: OwnedView) {
     clock = 0,
     plume = false,
     fading = false;
-  function draw(at: THREE.Vector3, scale: number) {
+  let height = 0,
+    oldHeight = 0;
+  function draw(at: THREE.Vector3, scale: number, rise: number) {
     for (let i = 0; i < PLUME.thick; i++) {
       const u = (clock / PLUME.rise + i / PLUME.thick) % 1;
       const up = 1 - (1 - u) ** 2;
       const r = scale * (1.2 + u * 6) * Math.min(1, u * 8, (1 - u) * 3.5);
       puff.position.set(
         at.x + up * PLUME.lean + Math.sin(i * 2.1 + clock * 0.7) * u * 0.5,
-        at.y + 2 + up * PLUME.height,
+        at.y + 2 + up * rise,
         at.z + Math.cos(i * 1.7 + clock * 0.5) * u * 0.5,
       );
       puff.rotation.y = i * 1.3;
@@ -55,20 +87,29 @@ export function createWorksSignal(owner: OwnedView) {
   }
   return (work: RoomWorks, forgeCalling: boolean, dt: number, restore = false) => {
     const { x, y, z } = work.at;
-    if (site !== work.site || restore) {
+    const ground = y ? y / 100 : H(x / 100, z / 100);
+    if (
+      site !== work.site ||
+      restore ||
+      flag.position.x !== x / 100 ||
+      flag.position.z !== z / 100 ||
+      flag.position.y !== ground
+    ) {
       previous.copy(flag.position);
+      oldHeight = height;
+      flag.position.set(x / 100, ground, z / 100);
+      height = columnHeight(flag.position, island);
       fading = plume && !restore;
       elapsed = restore || site === null ? 2 : 0;
       site = work.site;
     }
-    flag.position.set(x / 100, y ? y / 100 : H(x / 100, z / 100), z / 100);
     flag.visible = !work.done;
     plume = flag.visible && !forgeCalling;
     elapsed = Math.min(2, elapsed + dt);
     clock += dt * (reducedMotion ? 0.3 : 1);
     mesh.count = 0;
-    if (fading && elapsed < 2 && flag.visible) draw(previous, 1 - elapsed / 2);
-    if (plume) draw(flag.position, elapsed / 2);
+    if (fading && elapsed < 2 && flag.visible) draw(previous, 1 - elapsed / 2, oldHeight);
+    if (plume) draw(flag.position, elapsed / 2, height * (elapsed / 2));
     mesh.instanceMatrix.needsUpdate = true;
   };
 }

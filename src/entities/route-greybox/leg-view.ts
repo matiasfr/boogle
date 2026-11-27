@@ -34,8 +34,9 @@ import { frameOccupied } from '../railway/frame-occupied.ts';
 import { camera } from '../../render/scene.ts';
 import { signBoard } from '../../render/sign-board.ts';
 import { playObjective } from '../../proto/mark.ts';
+import { worksFace } from '../railway/works-board.ts';
 import { roomWorks } from '../../sim/railway-queries-room.ts';
-import { WORKS_LINES, WORKS_COMPLETE } from '../railway/works-lines.ts';
+import { WORKS_LINES, WORKS_COMPLETE, WORKS_VARIANTS } from '../railway/works-lines.ts';
 import { RAIL_LINES, legBuilt, trainPassesBy } from '../../sim/railway-lines.ts';
 import { LINE_SLOTS } from '../../sim/railway-trains.ts';
 import { TRAIN_PHASE } from '../../sim/railway-train.ts';
@@ -52,7 +53,7 @@ import {
   legS,
   type RouteLeg,
 } from '../../sim/railway-route.ts';
-import { account, aperture, train, type ReadWorld } from '../../sim/railway-rows.ts';
+import { account, aperture, steel, train, type ReadWorld } from '../../sim/railway-rows.ts';
 import { heldBig, LOGS, roomOf } from '../../sim/railway-queries.ts';
 import { RAILS } from '../../sim/railway-line2-layout.ts';
 import {
@@ -500,7 +501,12 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         // Each leg stands its own halts' boards (the bay line's are the bay cut's and leg 3's).
         if (h.leg?.slot !== sp.k) return [];
         const at = h.s / 100 - (stop === 0 ? 14 : h.end?.kind === 'stub' ? 5 : 4);
-        return [{ stop, at, board: sign(2.6, 1.3, 1.4, 'two', 512) }];
+        const board = sign(2.6, 1.3, 1.4, 'two', 512);
+        const point = geo.world(at, sp.plat.lat + 1.5, { x: 0, z: 0 });
+        const face = worksFace(owner, { ...point, y: geo.y(at) + sp.plat.up }, 0, false, [{ line: sp.leg.line, stop }]);
+        board.mesh.add(face);
+        face.position.set(0, 0.38, 0);
+        return [{ stop, at, board }];
       });
     /** The departure boards' lines: the line's open stops, rebuilt when their count changes. */
     let listed = -1,
@@ -1003,6 +1009,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
   };
   const nearGorge = () => near(gorgeAt(0, 0), 700);
 
+  let objectiveSite: string | undefined;
   let objective = '',
     drawnDeck = '';
   function draw() {
@@ -1280,13 +1287,19 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       );
     barrier(notch.frames[0]!, !!(r.gates & (1 << NOTCH)));
   }
-  let recordedSite = '';
   function note(r: NonNullable<ReturnType<typeof rows>>) {
     const work = roomWorks(r.wd);
-    const key = work.done ? 'complete' : work.site;
-    if (key === recordedSite) return;
-    recordedSite = key;
-    objective = work.done ? WORKS_COMPLETE : WORKS_LINES[work.site].objective;
+    let text = work.done ? WORKS_COMPLETE : WORKS_LINES[work.site].objective;
+    if (work.site === 'steelworks') {
+      const s = steel(r.wd);
+      if (s.yardLogs + s.yardRails + s.logs + s.rails > 0) text = WORKS_VARIANTS.feeding;
+    }
+    if (work.site === 'install' && !work.needs[0]?.have) text = WORKS_VARIANTS.casting;
+    if (work.site === 'plug-gate' && !(r.gates & ((1 << PLUG) | (1 << CANOPY)))) text = WORKS_VARIANTS.fork;
+    if (work.site === 'canopy-gate' && done(r, 'cave')) text = WORKS_VARIANTS.caveFirst;
+    if (text === objective && objectiveSite === work.site) return;
+    objectiveSite = work.site;
+    objective = text;
     playObjective(objective);
   }
 

@@ -109,3 +109,48 @@ export const WORKS_LINES = {
 } satisfies Record<WorksSite, { name: string; objective: string }>;
 
 export const WORKS_COMPLETE = 'All lines connected! Ride wherever you like.'; // draft:
+export const WORKS_VARIANTS = {
+  feeding: "Light the steel works: carry the kit from Ring Island's yard into the shed.", // draft:
+  casting: 'The steel works is casting. Line 2 carries its steel Home to the Roundhouse.', // draft:
+  fork: 'Build the line to Canopy Town or the cave line to Port Quay (placeholder)', // draft:
+  caveFirst: 'Ride to Bell Rock and build the line to Canopy Town (placeholder)', // draft:
+};
+
+export const WORKS_LABELS = {
+  work: 'The works', // draft:
+  needs: 'Needs', // draft:
+  gives: 'Gives', // draft:
+  thanks: 'Thanks', // draft:
+  train: 'Train', // draft:
+  walk: 'Walk', // draft:
+  line: 'Line', // draft:
+  way: 'On the way', // draft:
+} as const; // draft:
+export const WORKS_GIFTS = {
+  axe: 'The axe', // draft:
+  hook: 'The hook shot', // draft:
+  trains: 'Trains on both lines', // draft:
+  footings: 'Footings', // draft:
+  wagon: 'The footing wagon', // draft:
+  'longer-boiler': 'The longer boiler', // draft:
+  ending: 'All lines connected', // draft:
+} as const; // draft:
+export const WORKS_ACTIONS = {
+  wake: 'Wake the track layer', // draft:
+  bill: 'Wait for the track layer', // draft:
+  beam: 'Bring the great beam', // draft:
+  part: 'Carry the breaker', // draft:
+  boiler: 'Carry the boiler', // draft:
+  strike: 'Strike with the breaker', // draft:
+  kiln: 'Feed the kiln', // draft:
+  footing: 'Set a footing', // draft:
+  cradle: 'Fit the cradle', // draft:
+  table: 'Turn the handle', // draft:
+  install: 'Install at the post', // draft:
+  gate: 'Open the way', // draft:
+  key: 'Take the part', // draft:
+  barrier: 'Open the barrier', // draft:
+  plug: 'Pull the plug', // draft:
+  brace: 'Knock the pawl', // draft:
+  arrive: 'Meet at the post', // draft:
+} as const; // draft:
