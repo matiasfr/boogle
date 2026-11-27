@@ -59,6 +59,7 @@ if (q.get('talk')) {
   if (t?.verb !== 'Talk' || !t.run) throw new Error(`STAND no Talk here: ${t?.verb ?? 'nothing'}`);
   t.run();
   await wait(2500);
+  if (!inspectRailway()?.guide?.speaking) throw new Error('Foreman Talk must stay open until dismissed');
 }
 const scene = inspectRailway()!;
 console.log(

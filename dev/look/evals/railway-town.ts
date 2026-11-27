@@ -239,6 +239,8 @@ async function actOnce(act: string) {
       interactUp();
       const typed = performance.now() + 8000;
       while (!(talk.talking() && optsUp()) && performance.now() < typed) await wait(50);
+      if (!talk.talking() || !optsUp() || !sayEl()?.textContent)
+        throw new Error('Resident dialogue must reveal its line and choices without a skip press');
       said.push(sayEl()?.textContent ?? '');
     }
     // Frame Buddy and the resident: from behind and above Buddy, looking between you.

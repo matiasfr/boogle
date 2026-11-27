@@ -42,6 +42,9 @@ window.__debugCam!.clear();
 const clear = setInterval(() => window.__debugCam!.clear(), 50);
 setTimeout(() => clearInterval(clear), 20000);
 await wait(Number(q.get('wait') ?? 1500));
+// With a stocked rack: stand=1085.9,47.2&face=1088,50&expectRack=1.
+if (q.has('expectRack') && interactTarget()?.id !== 'railway-foot-take-0')
+  throw new Error('Facing the stocked Quarry rack within reach must offer Shoulder a footing');
 if (q.get('talk')) {
   const t = interactTarget();
   if (t?.verb !== 'Talk' || !t.run) throw new Error(`GUIDE_STAND no Talk here: ${t?.verb ?? 'nothing'}`);
