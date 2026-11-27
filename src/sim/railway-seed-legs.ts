@@ -78,7 +78,7 @@ export function railwayAtLegs(stage: LegStage): Seed {
 }
 
 /** Feeds leg `k`'s open section's frame off its rack until it starts to lay, then runs its lay clock out. */
-export function laySection(s: Seed, k = STACK) {
+export function laySection(s: Seed, k = STACK, step = advance) {
   const at = legRow(s.w, k).laid;
   for (let guard = 0; legRow(s.w, k).start < 0; guard++) {
     need(guard < 8000, `${RAIL_LEGS[k]!.id} section ${at + 1} fed`);
@@ -96,11 +96,11 @@ export function laySection(s: Seed, k = STACK) {
       if ((a.carry && row.logs < bill.logs) || (a.rails && row.rails < bill.rails))
         need(act(s, pid, 'rail.legStock', { leg: k }) > 0, 'kit fed');
     }
-    if (legRow(s.w, k).start < 0) advance(s, 1);
+    if (legRow(s.w, k).start < 0) step(s, 1);
   }
   for (let guard = 0; legRow(s.w, k).laid === at; guard++) {
     need(guard < 1000, `${RAIL_LEGS[k]!.id} section ${at + 1} laid`);
-    advance(s, 1);
+    step(s, 1);
   }
 }
 /** The leg stages after `from` up to `to` run on `s`, any seed in `from`'s state (garage step 4's tests start them

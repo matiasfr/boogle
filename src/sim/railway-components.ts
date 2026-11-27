@@ -53,6 +53,8 @@ export const Rail = defineComponent(
     rack: 'int',
     produced: 'int',
     depot: 'int',
+    // Logs loaded from Home's rack, less those returned as surplus.
+    giftOut: 'int',
     depotProduced: 'int',
     lever: 'bool',
     sea: 'bool',
@@ -143,6 +145,8 @@ export const Train = defineComponent(
     boiler: 'u8',
     // The logs and rails aboard are a greybox leg's kit, not the steel works' or a Q job's (greybox-route, call 64:
     // steel first, and a train never carries both). Set by the leg's load, cleared when the last unit is off.
+    // The share of logs aboard that came from Home's rack.
+    gift: 'int',
     legKit: 'bool',
   },
   { key: 'slot' },
@@ -285,6 +289,8 @@ export const Account = defineComponent(
     request: 'int',
     // u8: a back holds a handful, and 256 accounts' widest rows must fit the recovery envelope (MAX_RECOVERY_BYTES).
     liftLeg: 'int',
+    // Last thanked lay count plus one. Zero until the account contributes.
+    thanks: 'u8',
     legLogs: 'u8',
     legRails: 'u8',
   },

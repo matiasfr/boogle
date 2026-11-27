@@ -15,7 +15,8 @@ import type { World } from '../ecs/index.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, RAIL_YARDS } from './railway-route.ts';
-import { Account, LegYard, Train } from './railway-components.ts';
+import { Account, LegYard, Rail, Train } from './railway-components.ts';
+import { giftAboard, thanksStep } from './railway-queries-gift.ts';
 import {
   SERVED_LEGS,
   STOCKED_LEGS,
@@ -71,9 +72,13 @@ export function checkRoute(w: World) {
     if (!legReached(w, k) && (r.laid || r.logs || r.rails || r.heldLogs || r.heldRails)) bad('leg before it opens');
     if ((r.loadedLogs || r.loadedRails) && !legKitMayLoad(w, k)) bad('leg kit before its leg');
   });
+  const giftOut = w.get(Rail, w.single(Rail))!.giftOut;
+  if (giftOut < giftAboard(w)) bad('gift output');
+  const thanksMax = thanksStep(w) + 1;
   const lifts = RAIL_LEGS.map(() => ({ logs: 0, rails: 0 }));
   w.each([Account], (_id, a) => {
     if (
+      !railInt(a.thanks, thanksMax) ||
       !railInt(a.legLogs, 255) ||
       !railInt(a.legRails, 255) ||
       !railInt(a.liftLeg, RAIL_LEGS.length - 1, -1) ||
@@ -99,6 +104,7 @@ export function checkRoute(w: World) {
   // kit rides ahead (its leg before reached), with cargo aboard (steel first, call 64: the mark is what keeps the
   // works' kit and a leg's apart).
   w.each([Train], (_id, t) => {
+    if (!railInt(t.gift, t.logs) || (t.gift && !t.legKit)) bad('train gift');
     if (!t.legKit) return;
     const served = SERVED_LEGS[RAIL_TRAINS[t.slot]!.line]!;
     if (t.logs + t.rails <= 0 || !served.some((k) => legKitMayLoad(w, k))) bad('leg kit mark');

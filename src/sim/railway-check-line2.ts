@@ -89,8 +89,7 @@ export function checkLine2(w: World) {
   });
   if ((r0.depot || r0.depotProduced) && !jobs[0]!.job.completion) bad('early depot');
   const depotOut = DEPOT_OUT.map((key) => r0[key]);
-  // The greybox route's kit: the logs a leg's kit halt minted (Leg.loadedLogs) are depot production too, and the rails
-  // it gave off the forge rack (Leg.loadedRails) may be on the shelf (its rack) or aboard beside the Q jobs'.
+  // Leg.loadedLogs includes both minted logs and gifts. Loaded rails come from the forge rack.
   let rackLogs = 0,
     rackRails = 0;
   let legLogs = 0,
@@ -102,13 +101,15 @@ export function checkLine2(w: World) {
     legRails += l.loadedRails;
   });
   if (
+    !railInt(r0.giftOut, legLogs) ||
     depotOut.some((n, k) => !railInt(n, LINE2_STATIONS[k]!.bill[0]) || (n > 0 && !LINE2_STATIONS[k]!.depot)) ||
-    depotOut.reduce((a, b) => a + b, 0) + legLogs !== r0.depotProduced
+    depotOut.reduce((a, b) => a + b, 0) + legLogs !== r0.depotProduced + r0.giftOut
   )
     bad('depot output');
   const c = cart(w);
   // Logs aboard are a stretch's kit or, after the rivet, the steel works' (made at the Village: outLogs).
-  if (r0.depot + rackLogs + c.logs + line2Aboard(w, 'logs') > r0.depotProduced + steel(w).outLogs) bad('depot stock');
+  if (r0.depot + rackLogs + c.logs + line2Aboard(w, 'logs') > r0.depotProduced + r0.giftOut + steel(w).outLogs)
+    bad('depot stock');
   // The cart's road ends at Q6's rack (the farthest it is ever sent; Q6 and Q7 are fed by train).
   const road = CART_ROAD.rackCm(Q6);
   if (

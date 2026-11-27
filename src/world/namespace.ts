@@ -153,7 +153,8 @@
 // v73 (2026-11-25): homeward platform points at the three Stack heads move to the west decks.
 // v74 (2026-11-25): saved racks and lifted kit per leg, named rack takes, cave and Canopy fork at the bay cut.
 // v75 (2026-11-26): Port Quay's Roundhouse table: install and bring name their table; Shed keeps Port Quay's copy.
-export const WORLD_NS = 'v75';
+// v76 (2026-11-27): saved kit gift counts and each account's last thanked section.
+export const WORLD_NS = 'v76';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

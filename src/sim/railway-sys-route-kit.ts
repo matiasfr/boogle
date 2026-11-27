@@ -19,6 +19,7 @@
 //   legKitLifted, legKitPut      the rack's units on backs: lifted off the rack (counted held), off a back (not)
 //   legKitRelease                a leaver's units no longer counted held (the host's leaver check)
 import { defineSystem, type World } from '../ecs/index.ts';
+import { giftAboard, giftLegs } from './railway-queries-gift.ts';
 import { deckHeld } from './railway-queries-trade.ts';
 import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
 import { RAIL_LEGS, legRack } from './railway-route.ts';
@@ -100,15 +101,18 @@ function move(w: World, slot: number, room: Kit, put: (logs: number, rails: numb
   put(logs, rails);
   const m = w.mut(Train, trainOf(w, slot))!;
   m.logs -= logs;
+  m.gift = Math.min(m.logs, m.gift);
   m.rails -= rails;
   if (m.logs + m.rails === 0) m.legKit = false;
 }
-/** `logs` and `rails` of leg kit gone home (a train's surplus at its kit halt, a completed yard leg's yard), as the
- * steel works' surplus goes home (steelArrives, build 2's P2-1): its logs off the books (minted, they are unmade:
- * Rail.depotProduced and the loaded counts, so the depot's output still balances), its rails back onto the forge rack;
- * out of the loaded counts of `legs`, the latest first. */
-function kitHome(w: World, legs: readonly number[], logs: number, rails: number) {
-  w.mut(Rail, w.single(Rail))!.depotProduced -= logs;
+/** Return surplus gifts to Home's rack and rails to the forge. Only minted logs are unmade. Take all returned units
+ * out of the legs' loaded counts, latest first. A completed rack or yard can return only gifts already off the trains. */
+function kitHome(w: World, legs: readonly number[], logs: number, rails: number, trainGift?: number) {
+  const rail = w.mut(Rail, w.single(Rail))!;
+  const gift = Math.min(logs, trainGift ?? rail.giftOut - giftAboard(w));
+  rail.rack += gift;
+  rail.giftOut -= gift;
+  rail.depotProduced -= logs - gift;
   if (rails) w.mut(Forge, w.single(Forge))!.rack += rails;
   for (const k of [...legs].reverse()) {
     if (logs + rails <= 0) break;
@@ -130,10 +134,12 @@ function legKitHome(w: World, slot: number) {
     out = legKitSurplus(w, slot);
   if (!out.logs && !out.rails) return;
   const m = w.mut(Train, trainOf(w, slot))!;
+  const gift = Math.min(out.logs, m.gift);
+  m.gift -= gift;
   m.logs -= out.logs;
   m.rails -= out.rails;
   if (m.logs + m.rails === 0) m.legKit = false;
-  kitHome(w, SERVED_LEGS[line]!, out.logs, out.rails);
+  kitHome(w, SERVED_LEGS[line]!, out.logs, out.rails, gift);
 }
 /** A yard leg completed: whatever its yard still holds goes home (greybox-leg2.md, "Completion"). */
 export function legYardHome(w: World, k: number) {
@@ -209,7 +215,12 @@ export function legKitLoad(w: World, slot: number, tick: number): 'hold' | 'on' 
     rails = Math.max(0, Math.min(cap.rails - r.rails, want.rails, forge.rack));
   if (logs || rails) {
     const m = w.mut(Train, trainOf(w, slot))!;
-    w.mut(Rail, w.single(Rail))!.depotProduced += logs;
+    const rail = w.mut(Rail, w.single(Rail))!;
+    const gift = giftLegs(w, line).includes(ch.legs[first]!) ? Math.min(logs, ch.owed[first]!.logs, rail.rack) : 0;
+    rail.rack -= gift;
+    rail.giftOut += gift;
+    m.gift += gift;
+    rail.depotProduced += logs - gift;
     m.logs += logs;
     m.rails += rails;
     m.legKit = true;
