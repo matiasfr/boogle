@@ -617,6 +617,19 @@ and his card's name is his role, "Foreman", until the owner names him. Local pre
 state, command, wire or save change; a reload, a late join or a `?from=` jump finds him in the current stage, and his
 once-a-stage bubble is once per page. No collider. Serves DESIGN.md 7 (Telegraph everything).
 
+#### Station phase guides (Wave 1)
+
+The shared phase-guide helper ([`src/components/phase-guide/view.ts`](../../src/components/phase-guide/view.ts), stage
+queries in [`stages.ts`](../../src/components/phase-guide/stages.ts)) now drives Sleeves, the forge foreman and three
+Wave 1 station guides ([brief](../brainstorms/phase-guides.md)): the **kiln hand** at Quarry halt (beside the roller
+road path, 5.15 m off the rack, approach bark on stall stages, pointing up the cut/kiln/rack), the **roundhouse hand**
+at Home's Roundhouse (NNE apron, 4.98 m off the garage post and clear of road 2 and the stall sockets, approach bark on
+stall/cradle/turn/steel stages), and **Hooter** upgraded on Ring Island (`…` + Talk over his existing whistle rota, no
+approach bark, keeping his existing `HOOTER` lines alongside placeholder stage lines for the Meet, steel works, steel
+home and High Gorge). Every new character is unnamed (role label only) with marked `[placeholder — owner's line: ...]`
+copy, uses `addLooker` with no collider, and settles into one relaxed idle remark with no `…` or wave once its phase
+is done. Local presentation over accepted `ReadWorld` rows; no sim, wire or save changes.
+
 **Walking-in composition, 4 November:** Station 3's existing bill sits on the source side of its pile so
 the unchanged `great beam 0/1` row stays visible. The receiver, feeder, machine and crossing fit are retained;
 the 14 November prow move replaces the old 53 m uphill haul with 35 m from beyond Station 3. The proper-axe

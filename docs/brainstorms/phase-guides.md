@@ -1,4 +1,4 @@
-> **Status: proposed (2026-11-27).** Light brainstorm (one pass, three lenses: play designer, systems architect,
+> **Status: building (2026-11-27, Wave 1).** Light brainstorm (one pass, three lenses: play designer, systems architect,
 > creative director). Characters, their names, story and every line they say belong to the owner
 > ([decision](../decisions-characters.md#d-2026-11-11-the-story-and-characters-are-the-owner-s)): every new guide is
 > described by role only and every sample line is a marked placeholder.
