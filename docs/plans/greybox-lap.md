@@ -372,6 +372,7 @@ The High Gorge coach-fit, tail-clearance and arrival audits use the pre-join sto
       rivet). Verify: `test/railway-jump.test.ts`; each stage's invariant check; the whole server suite.
 - [ ] **4. The remaining views (M to L; "Player-visible implementation": Codex gpt-6.2-astra medium).**
       - [x] Moved into step 2 after independent review: joined island map, five transferred platform levers, cave departure boards, Stack buffers and the rail-height crossing at the joint.
+      - [x] The [joined island map](greybox-lap/joined-halt-map.png) shows all 15 halt positions. The [Port Quay board](greybox-lap/joined-port-quay-board.png) lists the 13 served halts. All four Port Quay and Saltpan handles accepted their signed calls through the mounted interaction.
       - [ ] Remaining step 4 views and proofs listed below.
 
       Files:
@@ -422,9 +423,7 @@ the sixth lay. Ship these changes with steps 1 and 2. Independent review also br
 | 4 | Step 3 | Stills come from `lap-ride` |
 | 5 | Step 4 and order choice step 5 | The bot rides what step 4 draws; order choice edits the same bot and loop files |
 
-**Between the bump and step 4** rooms that lay the Wall's last section run trains through the Gorge over the undrawn
-joint and the old concourse (a train drawn through a slab), as legs 3 to 5 ran over undrawn track until their views.
-Worth knowing before a playtest.
+The crossing, through rails and terminal clearance are part of step 2. The remaining step 4 proofs use the lap-ride seed.
 
 ## Level findings
 
