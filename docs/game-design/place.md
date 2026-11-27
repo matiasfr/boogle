@@ -1578,11 +1578,12 @@ CONSTRUCTION" at each line's end until it reaches Bell Rock. **The incline** lea
 in the south stack, 8 m clear under a dark lining, with a pale frame round each mouth and an unlaid bed for its
 floor, as Bell Rock's and the West landing's are: riding home, the split opens out of the dark; riding out, the sea
 does. The bay line's bed runs on over Bell Rock's rock where the line climbs onto it. The barrier stands on the incline's first frame (a red panel on two posts,
-lifted once opened with the powered pick); the old pad behind the south platform is empty. Line 2's kit car sets the
+lifted once opened with the powered pick); the old pad behind the south platform is empty. Each gated frame takes
+kit while its barrier is shut. A full frame waits and starts laying when the barrier opens. Line 2's kit car sets the
 incline's kit on its first rack, on line 2's south platform, and the rest on an unlabelled pile beside it (High
 Gorge's yard), which the `ns` trains take on. **Bell Rock** gains the seeds post on the lower deck ("Take the crystal
-seeds", refused with "The incline isn't laid yet"), the Canopy barrier on the upper deck, shut ("No line beyond
-yet"), a stall counter on the High Gorge and Ring Island pads once the incline is laid and on Home's once the bay cut
+seeds", refused with "The incline isn't laid yet"), the Canopy barrier on the upper deck, shut ("Needs the crystal
+seeds" before pickup, "No line beyond yet" until its section is current), a stall counter on the High Gorge and Ring Island pads once the incline is laid and on Home's once the bay cut
 is, each pad then reading "Connected (placeholder)", and from the incline's last lay a board at the end of the upper
 in-half platform: "LINE TO HOME (WEST LANDING) / BUILT FROM HOME". **The West landing** is unstaked (step 2): its two
 platforms, bed, end ramp and apron, where the bay cut's first kit appears on the rack. Each built halt of the two

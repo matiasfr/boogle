@@ -211,7 +211,8 @@ built before that, on their own branch. Step 1 ships alone or with step 2, since
         prompt reading "Open the barrier";
       - (c) after the press, the panel up and the bill reading `LAYING THE SECTION`. The eval asserts `Leg.start` equals the
         accepted gate's tick;
-      - (d) the Canopy frame in a room without the seeds, greyed "Needs the crystal seeds".
+      - (d) the Canopy frame in a separate `bell-reached` room without the seeds, greyed "Needs the crystal seeds".
+        The `bay-reached` room for (a)–(c) already holds them.
 
       Not tested on a device.
 
