@@ -118,9 +118,60 @@ test('a gift tops up a train when the Stack owes no more kit', () => {
     railwayCheck(s.w);
   }
   assert.equal(legRow(s.w, 0).logs, 8);
-  assert.equal(legRow(s.w, 0).loadedLogs, loaded + 8);
+  assert.equal(legRow(s.w, 0).loadedLogs, loaded);
   assert.equal(legRow(s.w, 0).rackLogs, 20);
 });
+test('spent gifts are not refunded from the final minted rack', () => {
+  const s = unaudited(finalSection);
+  give(s);
+  for (let i = 0; !legRow(s.w, 0).logs; i++) {
+    assert.ok(i < 6000);
+    advance(s, 1);
+  }
+  while (legRow(s.w, 0).logs < 20) {
+    chopTo(s, 'b', 8);
+    assert.ok(act(s, 'b', 'rail.legStock', { leg: 0 }) > 0);
+  }
+  for (let i = 0; legRow(s.w, 0).start < 0; i++) {
+    assert.ok(i < 30);
+    act(s, 'b', 'rail.depotRailTake', { leg: 0 });
+    act(s, 'b', 'rail.legStock', { leg: 0 });
+  }
+  const laid = legRow(s.w, 0).laid;
+  for (let i = 0; legRow(s.w, 0).laid === laid; i++) {
+    assert.ok(i < 1000);
+    advance(s, 1);
+    railwayCheck(s.w);
+  }
+  assert.equal(rail(s.w).rack, 0);
+});
+test('mint loading respects the remaining single-log reservation', () => {
+  const s = unaudited(buildSeedWorld('ring-joined'));
+  const row = s.w.mut(Leg, legId(s.w, 0))!;
+  const bill = RAIL_LEGS[0]!.sections[row.laid]!.logs;
+  while (legRow(s.w, 0).logs < bill - 1) {
+    chopTo(s, 'b', 1);
+    const extra = account(s.w, 'b')!.carry - 1;
+    if (extra)
+      act(s, 'b', 'rail.drop', {
+        kind: 0,
+        n: extra,
+        x: 100000,
+        y: 2000,
+        z: 3000,
+      });
+    assert.ok(act(s, 'b', 'rail.legStock', { leg: 0 }) > 0);
+  }
+  give(s);
+  for (let i = 0; !giftAboard(s.w); i++) {
+    assert.ok(i < 6000);
+    advance(s, 1);
+  }
+  assert.equal(giftAboard(s.w), 1);
+  assert.equal(rail(s.w).rack, 7);
+  assert.equal(giftQueued(s.w), 0);
+});
+
 const saturated = unaudited(buildSeedWorld('gorge-open'));
 advance(saturated, 2000);
 test('a full Stack carrier exchanges eight minted logs and pours them at the frame', () => {
@@ -138,8 +189,8 @@ test('a full Stack carrier exchanges eight minted logs and pours them at the fra
     railwayCheck(s.w);
   }
   assert.ok(exchanged);
-  assert.deepEqual([rail(s.w).rack, giftAboard(s.w), rail(s.w).giftOut], [0, 0, 8]);
-  assert.deepEqual([legRow(s.w, 0).logs, legRow(s.w, 0).rackLogs, legRow(s.w, 0).loadedLogs], [8, 20, loaded]);
+  assert.deepEqual([rail(s.w).rack, giftAboard(s.w), rail(s.w).giftOut], [0, 0, 0]);
+  assert.deepEqual([legRow(s.w, 0).logs, legRow(s.w, 0).rackLogs, legRow(s.w, 0).loadedLogs], [8, 20, loaded - 8]);
   assert.equal(rail(s.w).depotProduced, minted - 8);
 });
 test('two carriers reserve one bill and respect a later hand-feed', () => {

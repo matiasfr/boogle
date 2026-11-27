@@ -19,7 +19,7 @@
 //   legKitLifted, legKitPut      the rack's units on backs: lifted off the rack (counted held), off a back (not)
 //   legKitRelease                a leaver's units no longer counted held (the host's leaver check)
 import { defineSystem, type World } from '../ecs/index.ts';
-import { giftAboard, giftLegs, giftPourRoom } from './railway-queries-gift.ts';
+import { GIFT_LEGS, giftAboard, giftLegs, giftPourRoom } from './railway-queries-gift.ts';
 import { deckHeld } from './railway-queries-trade.ts';
 import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
 import { RAIL_LEGS, legRack } from './railway-route.ts';
@@ -86,6 +86,13 @@ export function legKitArrive(w: World, slot: number, tick: number) {
       const m = w.mut(Train, trainOf(w, slot))!;
       m.gift -= pour;
       m.logs -= pour;
+      // These logs are spent in the frame. Retire both sides of the kit-output witness together.
+      w.mut(Rail, w.single(Rail))!.giftOut -= pour;
+      // A carrier can ride across a lay. Older completed legs on this line have no rack left to return.
+      const credits = GIFT_LEGS.filter(
+        (i) => RAIL_LEGS[i]!.line === line && (i === k || legRow(w, i).laid === RAIL_LEGS[i]!.sections.length),
+      );
+      retireLoaded(w, credits, pour, 0);
       if (!m.logs && !m.rails) m.legKit = false;
       trimLegHeld(w);
     }
@@ -126,7 +133,11 @@ function kitHome(w: World, legs: readonly number[], logs: number, rails: number,
   rail.giftOut -= gift;
   rail.depotProduced -= logs - gift;
   if (rails) w.mut(Forge, w.single(Forge))!.rack += rails;
-  for (const k of [...legs].reverse()) {
+  retireLoaded(w, [...legs].reverse(), logs, rails);
+}
+/** Remove kit that returned Home or left the kit ledger by pouring into a frame. */
+function retireLoaded(w: World, legs: readonly number[], logs: number, rails: number) {
+  for (const k of legs) {
     if (logs + rails <= 0) break;
     const row = w.get(Leg, legId(w, k))!,
       dl = Math.min(logs, row.loadedLogs),
@@ -255,11 +266,7 @@ export function legKitLoad(w: World, slot: number, tick: number): 'hold' | 'on' 
   if (logs || rails) {
     const m = w.mut(Train, trainOf(w, slot))!;
     const rail = w.mut(Rail, w.single(Rail))!;
-    const gift = giftLegs(w, line).includes(ch.legs[first]!) ? Math.min(logs, ch.owed[first]!.logs, rail.rack) : 0;
-    rail.rack -= gift;
-    rail.giftOut += gift;
-    m.gift += gift;
-    rail.depotProduced += logs - gift;
+    rail.depotProduced += logs;
     m.logs += logs;
     m.rails += rails;
     m.legKit = true;
