@@ -299,46 +299,46 @@ test('Wave 1 phase-guide stage queries cover every stage and placeholder lines a
 
   // Kiln hand stages
   assert.equal(kilnHandStage(rw), 'idle');
-  w.mut(Works, wkId).breaker = 2;
+  w.mut(Works, wkId)!.breaker = 2;
   assert.equal(kilnHandStage(rw), 'throat');
-  w.mut(Works, wkId).seams = SEAM_THROAT;
+  w.mut(Works, wkId)!.seams = SEAM_THROAT;
   assert.equal(kilnHandStage(rw), 'kiln');
-  w.mut(Works, wkId).lit = 100;
+  w.mut(Works, wkId)!.lit = 100;
   assert.equal(kilnHandStage(rw), 'footings');
-  w.mut(Shed, shId).stall = WORKS.stall;
+  w.mut(Shed, shId)!.stall = WORKS.stall;
   assert.equal(kilnHandStage(rw), 'pier');
-  w.mut(Works, wkId).pierSet = WORKS.pier;
+  w.mut(Works, wkId)!.pierSet = WORKS.pier;
   assert.equal(kilnHandStage(rw), 'idle');
 
   // Roundhouse hand stages
-  w.mut(Shed, shId).stall = 0;
+  w.mut(Shed, shId)!.stall = 0;
   assert.equal(roundhouseHandStage(rw), 'stall');
-  w.mut(Shed, shId).stall = WORKS.stall;
+  w.mut(Shed, shId)!.stall = WORKS.stall;
   assert.equal(roundhouseHandStage(rw), 'cradle');
-  w.mut(Shed, shId).cradleRails = WORKS.cradleRails;
-  w.mut(Shed, shId).fitted = 200;
+  w.mut(Shed, shId)!.cradleRails = WORKS.cradleRails;
+  w.mut(Shed, shId)!.fitted = 200;
   assert.equal(roundhouseHandStage(rw), 'turn');
-  w.mut(Shed, shId).ready = 300;
+  w.mut(Shed, shId)!.ready = 300;
   assert.equal(roundhouseHandStage(rw), 'idle');
-  w.mut(Shed, shId).steel = 6;
+  w.mut(Shed, shId)!.steel = 6;
   assert.equal(roundhouseHandStage(rw), 'steel');
-  w.mut(Line, l2Id).boiler = 2;
+  w.mut(Line, l2Id)!.boiler = 2;
   assert.equal(roundhouseHandStage(rw), 'idle');
   // Open a trade leg (bay-cut) so a trade line is eligible for Quick/Strong with unspent steel.
   const bayIdx = RAIL_LEGS.findIndex((l) => l.id === 'bay-cut');
-  w.mut(Leg, w.lookup(Leg, bayIdx)!).laid = RAIL_LEGS[bayIdx]!.sections.length;
+  w.mut(Leg, w.lookup(Leg, bayIdx)!)!.laid = RAIL_LEGS[bayIdx]!.sections.length;
   assert.equal(roundhouseHandStage(rw), 'trade');
 
   // Hooter stages
   assert.equal(hooterStage(rw), 'meet');
-  w.mut(Aperture, apId).joined = 400;
+  w.mut(Aperture, apId)!.joined = 400;
   assert.equal(hooterStage(rw), 'steel-feed');
-  w.mut(Steel, stId).lit = 500;
-  w.mut(Line, l2Id).boiler = 1;
+  w.mut(Steel, stId)!.lit = 500;
+  w.mut(Line, l2Id)!.boiler = 1;
   assert.equal(hooterStage(rw), 'steel-home');
-  w.mut(Line, l2Id).boiler = 2;
+  w.mut(Line, l2Id)!.boiler = 2;
   assert.equal(hooterStage(rw), 'high-gorge');
-  w.mut(Leg, stackId).laid = RAIL_LEGS[stackIdx]!.sections.length;
+  w.mut(Leg, stackId)!.laid = RAIL_LEGS[stackIdx]!.sections.length;
   assert.equal(hooterStage(rw), 'idle');
 
   // Every new guide line is a marked placeholder for the owner.
