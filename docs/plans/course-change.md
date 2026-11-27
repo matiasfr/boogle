@@ -78,7 +78,7 @@ Each is `parked by owner` in the backlog, on his "I agree with all of your feedb
 | Effort | Why |
 | --- | --- |
 | Garage choices past the Port Quay checkpoint; the Quick or Strong trade | The trade measured hollow on the lines as built; choice moves to the towns |
-| Order picks and felt inflation | Built; no new picks on the rail |
+| Order picks and felt inflation | Built; no new picks on the rail. Station 1's pick is removed on his word after playing it ([entry](../decisions-core-loop.md#d-2026-11-27-station-1-pick-removed)); the Quick or Strong trade stays |
 | Turnouts, the railhead traveller's owed sounds | Polish on a route guests do not yet read |
 | Cargo trains as their own effort | Lane B's brief decides whether they are its carrier |
 | The six-hour target | Length is what the ring takes to build. No bill grows to fill time |
