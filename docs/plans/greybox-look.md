@@ -1,4 +1,4 @@
-﻿# From Ring Island to the causeway
+# From Ring Island to the causeway
 
 **Start at the Stack line.** From Ring Island's west platform, keep the railhead against open water and let one broken crown on the nearest stack catch the light. Ride toward it before dressing the far stacks. This is the first transition from finished art to blockout, uses Ring's existing rock vocabulary and tests near-to-far continuity before the harder two-level station or the long White Wall.
 
@@ -36,9 +36,19 @@ Proposed **incremental** counts over the matching greybox camera, both colour an
 
 Across adjacent areas keep a single census camera within the cliff plan's +30 draws / +70,000 triangles. For **each row**, aim for CPU and GPU separately below 16.7 ms and no more than +1 ms in either p95 over a matched quiet baseline. These are planning allowances. At Port the historical quiet desktop mean was 11.63 ms CPU and 8.01 ms GPU, p95 14.09 and 9.66. Other route camera timings are unmeasured here. On HOTBOX ignore the roughly 18.2 ms callback interval. Alternate main and build three times on quiet hardware with identical settings. Record average and p95 for each clock independently. Report overlapping views at their actual combined cost.
 
-The Windows phone profile already reached 14.153 ms CPU and 12.665 ms GPU at spawn and 11.785 / 9.822 at the head. That is profile evidence on a desktop GPU. M4 iPad Pro is the target floor and phones are best effort. Keep the existing Detail ladder; compare the same arrival in portrait, then measure on hardware when available. **Not tested on a device.** [Port profile](../reports/port-quay-frame-profile.md) · [streaming checkpoint B](world-streaming.md) · [cliff kit budgets and step 11](cliff-kit-everywhere.md).
+The Windows phone profile already reached 14.153 ms CPU and 12.665 ms GPU at spawn and 11.785 / 9.822 at the head. That is profile evidence on a desktop GPU. M4 iPad Pro is the target floor and phones are best effort. The existing Detail ladder lowers resolution to 0.6?, simplifies the sea, drops sun shadows and finally disables MSAA on reload. Give the approach a readable silhouette on each rung. For verification, compare the same arrival in portrait, then measure on hardware when available. **Not tested on a device.** [Port profile](../reports/port-quay-frame-profile.md) · [streaming checkpoint B](world-streaming.md) · [cliff kit budgets and step 11](cliff-kit-everywhere.md).
 
-## Design review and open questions
+## Design review (2026-11-27)
+
+| Call | Kind | Basis |
+|---|---|---|
+| Dress the established playable footprint, including both branch orders. | Decided | [Greybox route, 11 November](greybox-route.md). Port needs the same local arrival cues when a player reaches it before Canopy. |
+| Use the cliff kit and cooler packed-earth pigment at the path edge. | Decided | [Terrain ruling, 14 November](../decisions-look.md). |
+| Give the existing arrival landmark first visual emphasis in each card, beginning at the Stack line. | Default | Each proof pair tests a distance read and a working-distance read. Pigment and foliage can change independently of collision. |
+
+**Finding affecting step 8.** The landing already frames the lighthouse and green island beyond two pale decks. Limit step 8 to the approach and abutment so the lighthouse keeps its place on the skyline.
+
+**Finding affecting step 2.** At lower Bell the stair, station board and bright markers compete in one view. Step 2 puts texture on the rock shoulders and keeps the working platform quiet.
 
 **Decided.** The 11 November greybox direction and the 14 November terrain ruling establish the playable footprint and the packed-earth/kit treatment. Preserve every existing stand-in, including Gorge vertical play, salt sliding, crystal collars, Canopy's town, glide and ending. Keep the owner's story, names, characters and The Boogler's lines. Use the built Home and Ring kit as reference. New art derives from the game's own assets. [Route](greybox-route.md) · [look decisions](../decisions-look.md) · [owner calls](../agents/owner-calls.md).
 
@@ -51,7 +61,7 @@ The Windows phone profile already reached 14.153 ms CPU and 12.665 ms GPU at spa
 
 ## Census stills
 
-These are inspected frames from the checked-in leg and cold-jump reports on main. They establish camera intent and existing shapes. A fresh run on this checkout has yet to verify the full sequence.
+The table uses inspected frames from the checked-in leg and cold-jump reports. The fresh platform probes below supplement those route views. For Canopy and Port the fresh camera intersected foreground geometry, so the cleft and quay frames in the table provide the usable sightlines.
 
 | Approach | What the frame shows |
 |---|---|
@@ -65,3 +75,7 @@ These are inspected frames from the checked-in leg and cold-jump reports on main
 | [Island landing](greybox-look/island-reached.jpg) and [leg 6 checkpoint](greybox-look/checkpoint-f-sheet.jpg) | The bare platforms lead toward an already colourful beach, palms and lighthouse. Dress only the approach and its abutment. The classic island already supplies the arrival view. |
 
 [Fresh Gorge platform, seaward](greybox-look/high-gorge-seaward.jpg). At player height the two dark slab ends almost touch the horizon. Keep the water gap when dressing their feet. On this pose the count probe reported 188 draws and 433,150 triangles with Gorge resident. This capture ran under load.
+
+[West landing](greybox-look/west-landing.jpg). The existing timber jetty, green Home bank and shallow turquoise water already surround the pale landing. Carry the jetty timber onto its working edge, with room for the rack and board to read from the approach.
+
+[Fresh lower Bell](greybox-look/bell-lower-live.jpg) and [fresh Saltpan flat](greybox-look/saltpan-flat.jpg). At Bell the bright interact markers, locomotive and ramp all occupy the lower station view. Concentrate detail above the work surface. At Saltpan the exposed flat fills the foreground while distant land nearly disappears into haze. A shallow colour change across the ground can identify this stop even at phone detail.
