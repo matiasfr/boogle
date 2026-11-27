@@ -126,7 +126,7 @@ test('buy host: malformed ids and a player with no railway session cannot spend'
     const before = { ...till(f.w) };
     assert.equal(f.send({ id: 2 }).result?.status, 'rejected', 'even a funded board cannot sell an unstaked plot');
     for (const id of [undefined, null, '0', {}, [], -1, 0.5, 3, 16, 999999])
-      assert.equal(f.send({ id }).result?.status, 'rejected', String(id));
+      assert.equal(f.send({ id, kind: 1 }).result?.status, 'rejected', String(id));
     f.connect('no-session');
     assert.equal(f.send({ id: 0, kind: 1 }, 'no-session').result?.status, 'snapshot-required');
     await f.step(1);
@@ -310,7 +310,7 @@ for (const kind of [1, 2])
       assert.ok(before.boogles >= 150, 'house-ready holds the first price');
       // Malformed ids over the wire.
       const bad = [{ id: '0' }, { id: -1 }, { id: 0.5 }, { id: 16 }, { id: {} }, {}, { id: 1e300 }].map((f) =>
-        a.edit(f),
+        a.edit({ ...f, kind }),
       );
       await a.ack(bad.at(-1)!.request);
       for (const e of bad) assert.equal(status(a.pid, e.epoch, e.request), 'rejected', JSON.stringify(e));

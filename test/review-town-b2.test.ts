@@ -16,6 +16,7 @@ import level from '../content/built/levels/town-plot-stakes.json' with { type: '
 import * as plan from '../src/place/town-plan.ts';
 import { HALL } from '../src/place/home-station.ts';
 import { advanceHold } from '../src/components/hold/view.ts';
+import { pickInteract } from '../src/sim/interact-pick.ts';
 import { railRoom } from './helpers/rail-room.ts';
 import type { Interactable } from '../src/player/hands.ts';
 import type { RailwayRefusal } from '../src/adapters/railway-effects.ts';
@@ -33,6 +34,7 @@ function plotsView(adapter: RailwayAdapter) {
   const me = { body: { position: { x: board.x + 1000, y: 18.5, z: board.z } } };
   let refusal: ((event: RailwayRefusal) => void) | undefined;
   const listeners = new Set<(s: RailwayAdapter | null) => void>();
+  const toyGhosts: { visible: boolean }[] = [];
   const create = sourceFunction<(owner: unknown) => Plots>('src/entities/town/plots.ts', 'createTownPlots', {
     loadLevelArtifact,
     level,
@@ -58,7 +60,11 @@ function plotsView(adapter: RailwayAdapter) {
     splash() {},
     knock() {},
     createPrefabBatch: () => ({ mesh: { setColorAt() {}, instanceColor: {} } }),
-    createGhostOutlines: () => ({ box() {}, outline() {}, commit() {}, mesh: { visible: false } }),
+    createGhostOutlines: (_owner: unknown, capacity: number) => {
+      const mesh = { visible: false };
+      if (capacity === 128) toyGhosts.push(mesh);
+      return { box() {}, outline() {}, commit() {}, mesh };
+    },
     instantiate(prefab: string, _p: unknown, o: { handlers?: Record<string, () => Interactable[]> }) {
       if (prefab === 'town.plot-house' || prefab === 'town.plot-yard')
         return { construction: [{ plan: { hulls: [{ hy: 1.85 }], pieces: [], WALLS: 0, ROOFED: 0 } }] };
@@ -95,9 +101,41 @@ function plotsView(adapter: RailwayAdapter) {
   return {
     view,
     read,
+    position: me.body.position,
+    toyGhosts,
     refuse: (id: number) => refusal?.({ intent: { op: 'rail.buy', id }, request: 99, reason: 'refused' }),
   };
 }
+
+test('a choice board offers no buy hold outside the server purchase radius', () => {
+  const room = railRoom(buildSeedWorld('house-ready'));
+  const c = room.join('alice', 'alice', 2);
+  room.ready();
+  const { view, read, position } = plotsView(c.adapter);
+  const board = plan.TOWN_CHOICE.boards[0];
+  position.x = 1000 + board.x;
+  position.z = board.z - 2.5;
+  assert.ok(Math.abs(position.z - plan.townPlotBoard(0).z) > plan.TOWN_BOARD.reach);
+  view.update(read(), 0);
+  assert.ok(!view.targets().some((target) => target.id === 'town.plot.0.1' && target.run));
+});
+
+test('the toy shown during a hold matches the selected board', () => {
+  const room = railRoom(buildSeedWorld('house-ready'));
+  const c = room.join('alice', 'alice', 2);
+  room.ready();
+  const { view, read, position, toyGhosts } = plotsView(c.adapter);
+  position.z -= 0.1; // just nearer the seeds, facing the horns
+  view.update(read(), 0);
+  const target = pickInteract(view.targets(), position.x, position.z, 0, 1);
+  assert.equal(target?.id, 'town.plot.0.2');
+  target!.run!();
+  view.update(read(), 0.5);
+  assert.deepEqual(
+    toyGhosts.map((g) => g.visible),
+    [false, true],
+  );
+});
 
 test('review B2: a buy lost with the socket leaves the board pressable again once the plot is still unbought', () => {
   const room = railRoom(buildSeedWorld('house-ready'));
