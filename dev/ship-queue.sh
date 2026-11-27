@@ -22,7 +22,8 @@
 # Exit: 0 shipped (with --wait: on main; with --dry-run: checks passed), 1 cannot ship (no trusted checkout), 4 needs
 # review, the stamp is stale or the orchestrator's read is missing, 5 not on main after the wait, 6 held by a red
 # nightly, 7 held by a red main, 8 with --wait: the ship's pull request conflicts with main (rerun to reship), 9 held
-# by the world wipe (players are on), otherwise ship-branch's status.
+# by the world wipe (players are on), 10 another ship-queue is already shipping this worktree, otherwise ship-branch's
+# status.
 set -uo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 wt=$(cd "${1:?worktree path}" && pwd) || exit 1
@@ -132,6 +133,21 @@ if ! [ -f "$trusted/dev/codex/ship-branch.sh" ] ||
 fi
 
 lock=${BOOGLE_SHIP_LOCK:-/tmp/boogle-ship-$(id -u).lock}
+# One ship-queue per worktree, held through --wait: two sessions of one thread shipped one ../boogle-wake commit twice
+# (27 November: #2634 and its empty twin #2635, whose --wait then polled a closed pull request for 30 minutes).
+wtlock="$lock.wt-$(printf '%s' "$wt" | cksum | cut -d' ' -f1)"
+wtunlock() { rm -f "${wtlock:?}/pid"; rmdir "$wtlock" 2>/dev/null; }
+until mkdir "$wtlock" 2>/dev/null; do
+  other=$(cat "$wtlock/pid" 2>/dev/null || true)
+  [ -n "$other" ] || { sleep 1; other=$(cat "$wtlock/pid" 2>/dev/null || true); } # just taken: its pid is being written
+  if [ -n "$other" ] && kill -0 "$other" 2>/dev/null; then
+    echo "ship-queue: another ship-queue (pid $other) is already shipping $wt; nothing done. Read its log or its pull request."
+    exit 10
+  fi
+  rm -f "${wtlock:?}/pid"; rmdir "$wtlock" 2>/dev/null # a dead ship's
+done
+echo $$ >"$wtlock/pid"
+trap wtunlock EXIT
 until mkdir "$lock" 2>/dev/null; do
   holder=$(cat "$lock/pid" 2>/dev/null || true)
   if [ -n "$holder" ] && ! kill -0 "$holder" 2>/dev/null; then
@@ -143,7 +159,7 @@ until mkdir "$lock" 2>/dev/null; do
 done
 echo $$ >"$lock/pid"
 unlock() { rm -f "${lock:?}/pid"; rmdir "$lock" 2>/dev/null; }
-trap unlock EXIT
+trap 'unlock; wtunlock' EXIT
 # A bump that waited for the lock looks again: someone may have joined meanwhile.
 if [ -n "$bump" ]; then bumpgate || exit 9; fi
 if ! { git -C "$trusted" fetch -q origin && git -C "$trusted" checkout -q --detach origin/main; }; then
@@ -154,7 +170,7 @@ out=$(bash "$trusted/dev/codex/ship-branch.sh" "$wt" 2>&1)
 status=$?
 printf '%s\n' "$out" | tail -6
 unlock
-trap - EXIT
+trap wtunlock EXIT
 [ "$status" = 0 ] || exit "$status"
 [ "$wait" = 1 ] || exit 0
 
