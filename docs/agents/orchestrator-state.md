@@ -10,10 +10,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| The bot queue's load gate holds only timed and perf runs (his answer 1) | none (tooling) | codex/queue-gate-timed | the orchestrator thread, Codex Sol medium | 2026-11-26 | shipping: built, read by the orchestrator |
-| Ring Island's crossover J11 drawn, the island's golden updated (his answer 7) | Turnouts | codex/turnout-j11 | the orchestrator thread, Codex Astra medium | 2026-11-26 | running: view and golden; an independent review before it ships |
 | The Rail yoke's solid look and the halt yard's forge fingerpost (his answer 9) | none (polish) | codex/yoke-fingerpost | the orchestrator thread, Codex Astra medium | 2026-11-26 | running: view only |
-| Brainstorm: a job for the second player at the sea-cave plug (his answer 8) | The greybox route | neon/plug-second-player | the orchestrator thread, Antigravity Neon medium | 2026-11-26 | shipping: docs only; recommends pre-feeding gated frames, planned next |
 | Order choice step 5, the bot and the loop, and its checkpoint (both orders) | The greybox route | codex/order-choice-bot | the orchestrator thread, Codex Sol medium | 2026-11-26 | running: `dev/loop/`, `dev/look/bots/railway-legs.ts` |
 | Plan: pre-feeding gated greybox frames (the plug brainstorm's recommendation) | The greybox route | claude/prefeed-gated-frames | the orchestrator thread, Claude Opus high (planner) | 2026-11-26 | running: docs only |
 | His placeholder words put in (the picks he took) | none (words) | codex/placeholder-words | the orchestrator thread, Codex Astra medium | 2026-11-26 | running: strings only |
