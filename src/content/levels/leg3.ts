@@ -280,15 +280,15 @@ function canopy() {
     extras: [{ id: 'lands', prefab: 'greybox.canopy-lands', pos: [0, 0, 0] }],
     pieces: [
       ...pieces,
-      // Warm rubbing strips sit below the walkable lip, outside the running gauge.
+      // Rubbing timbers wrap the vertical faces and cap the existing deck lip.
       ...(
         [
-          [-3.88, -3.78, 23],
-          [3.78, 3.88, 12],
-          [-13.84, -13.74, 30],
+          [-4.24, -3.78, 23],
+          [3.78, 4.24, 12],
+          [-13.84, -13.28, 30],
         ] as const
       ).map(([b0, b1, end], i) => ({
-        ...cf.box(`freight-edge-${i}`, -33, end, b0, b1, 13.82, 0.36, 'sandstone'),
+        ...cf.box(`freight-edge-${i}`, -33, end, b0, b1, 13.925, 0.65, 'sandstone'),
         solid: false,
       })),
     ],

@@ -207,8 +207,8 @@ export function createBackdrop() {
       const y = (t.h ?? 72) - 25 + Math.sin(i * 2.4) * 9;
       box(x, 28, z, 12, 32, 12);
       if (t.land === 'canopy-isle') {
-        crown(x, y + 5, z, 34, 19, 29);
-        crown(x + 12 * Math.cos(angle), y + 12, z + 12 * Math.sin(angle), 23, 14, 21, '#74816c');
+        crown(x, y + 5, z, 34, 19, 29, '#657663');
+        crown(x + 23, y + 4, z + 10 * Math.sin(angle), 23, 15, 21, '#a1ad83');
       } else crown(x, y, z, t.r[0] * 0.22, 28, t.r[1] * 0.22);
     }
     for (const [x, z] of t.mothers ?? []) {
@@ -216,7 +216,7 @@ export function createBackdrop() {
       box(x, (h - 30) / 2, z, 10, h - 30, 10);
       if (t.land === 'canopy-isle') {
         crown(x - 11, h - 28, z, 35, 21, 33);
-        crown(x + 13, h - 18, z + 6, 29, 19, 25, '#74816c');
+        crown(x + 24, h - 28, z + 10, 29, 19, 25, '#a1ad83');
       } else crown(x, h - 36, z, 45, 36, 45);
     }
   }

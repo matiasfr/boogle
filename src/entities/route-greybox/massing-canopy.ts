@@ -5,18 +5,24 @@ import level from '../../../content/built/levels/canopy.json' with { type: 'json
 import cleft from '../../../content/built/levels/canopy-cleft.json' with { type: 'json' };
 import * as THREE from 'three/webgpu';
 import { terrainKitGeometry } from '../terrain-kit/geometry.ts';
-import { kitMaterial } from '../../prefab/builders/terrain-kit.ts';
+import { material } from '../../render/materials.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { compiled as records } from '../../prefab/catalogue.ts';
 import { leg2Massing, leg2Extras, leg2Placements } from './leg2-draw.ts';
 import { AREA_CENTRES, coverNear } from './leg2-layout.ts';
-const placements = leg2Massing(level);
+const placements = leg2Massing(level).map((p) =>
+  p.id.startsWith('canopy.freight-edge-') ? { ...p, params: { ...p.params, colour: '#795238' } } : p,
+);
 export const canopyMassing = () => placements;
 export function canopyExtras(owner: OwnedView) {
   void terrainKitGeometry()
     .then((pieces) => {
       if (!owner.alive) return;
-      const mesh = new THREE.InstancedMesh(pieces.get('sea_face_10')!, kitMaterial(), cleft.placements.length);
+      const mesh = new THREE.InstancedMesh(
+        pieces.get('sea_face_10')!,
+        material('stone', { colour: '#c9c5bb' }),
+        cleft.placements.length,
+      );
       mesh.name = 'Canopy cleft ledges';
       cleft.placements.forEach((p, i) => {
         const matrix = new THREE.Matrix4().makeRotationY(p.rot[0]!);

@@ -1,30 +1,32 @@
-import { defineLevel } from '../../src/prefab/types.ts';
+import { defineLevel, type Placement } from '../../src/prefab/types.ts';
 
-// Narrow beds on the two inward-facing chalk walls. The route view uses only the kit
-// geometry. These are vertical face details, well above the halt and below either rim.
+// Runs follow the inward contours of the two chalk islets. The bottom of each face
+// enters the isle at 12 m, and its battered back disappears into the islet wall.
+const beds = [
+  // centre x, z, outward yaw, width in ten-metre units, vertical scale
+  [-1006.9, -406.1, 1.05, 2.65, 2.6],
+  [-1018.2, -386.3, 0.98, 2.35, 3.3],
+  [-1030.8, -370.6, 0.86, 2.05, 3.5],
+  [-1042.6, -358.7, 0.74, 1.75, 3],
+  [-1053.5, -350.1, 0.62, 1.5, 2.5],
+  [-1063.5, -344.3, 0.42, 1.2, 1.9],
+  [-1071.9, -341, 0.14, 1.1, 1.4],
+  [-1075.4, -252.2, -2.04, 1.9, 2.5],
+  [-1067.7, -264.2, -2.3, 1.35, 3],
+  [-1060, -269, -3.05, 1.25, 3.4],
+  [-1053.4, -263.9, 2.35, 1.1, 3.3],
+  [-1047, -258.3, 2.01, 1.65, 2.9],
+  [-1040.9, -246.4, 2.08, 1.55, 2.4],
+  [-1034.5, -239.7, 2.67, 1.15, 1.9],
+  [-1027, -236.6, 2.86, 1.05, 1.5],
+] as const;
 export const canopyCleft = defineLevel({
   place: 'canopy-cleft',
-  placements: [
-    {
-      id: 'north-low',
-      prefab: 'terrain.sea-face-10',
-      pos: [-1032.54, 23, -372.1],
-      rot: [0.87, 0, 0],
-      scale: [1.7, 1.4, 0.12],
-    },
-    {
-      id: 'north-high',
-      prefab: 'terrain.sea-face-10',
-      pos: [-1043.87, 33, -360.21],
-      rot: [0.74, 0, 0],
-      scale: [1.3, 1, 0.12],
-    },
-    {
-      id: 'south-low',
-      prefab: 'terrain.sea-face-10',
-      pos: [-1027.52, 28, -234.29],
-      rot: [2.86, 0, 0],
-      scale: [0.82, 1.3, 0.12],
-    },
-  ],
+  placements: beds.map(([x, z, yaw, width, height], i): Placement => ({
+    id: `cleft-bed-${i}`,
+    prefab: 'terrain.sea-face-10',
+    pos: [x, 11, z],
+    rot: [yaw, 0, 0],
+    scale: [width, height, 2.2],
+  })),
 });
