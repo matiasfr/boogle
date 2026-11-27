@@ -138,6 +138,18 @@ Across adjacent areas keep a single census camera within the cliff plan's +30 dr
 
 The Windows phone profile already reached 14.153 ms CPU and 12.665 ms GPU at spawn and 11.785 / 9.822 at the head. That is profile evidence on a desktop GPU. M4 iPad Pro is the target floor and phones are best effort. The existing Detail ladder lowers resolution to 0.6?, simplifies the sea, drops sun shadows and finally disables MSAA on reload. Give the approach a readable silhouette on each rung. For verification, compare the same arrival in portrait, then measure on hardware when available. **Not tested on a device.** [Port profile](../reports/port-quay-frame-profile.md) · [streaming checkpoint B](world-streaming.md) · [cliff kit budgets and step 11](cliff-kit-everywhere.md).
 
+- [x] **Card 8, causeway and Original Island.** Two weathered kit faces support the landward ends of the arrival decks. Their lowest courses darken at the wet line and the existing beach supplies the transition to grass. From the outward coach, blue water shows between the bents and the lighthouse stands above the cab. From the platform the meeting board clears both decks, including in portrait. The oblique shore pair shows the courses beneath the ramps.
+
+The `island-reached` pairs toggle one instance batch on consecutive renders of one game update at 62° FOV. Desktop uses 1200 × 750 at full detail. Portrait uses 390 × 844 touch at lowest detail and 0.6 resolution. Each pair adds one draw and 1,232 triangles, within the 12 / 22,000 desktop and 6 / 9,000 portrait allowances. Not tested on a device.
+
+| Camera | Desktop draws / triangles, before → after | Portrait draws / triangles, before → after | Stills |
+|---|---|---|---|
+| Bell-side outward player car, riding at 1,866.43 m desktop and 1,870.53 m portrait | 400 / 1,004,439 → 401 / 1,005,671 | 205 / 583,679 → 206 / 584,911 | [Desktop before](greybox-look/card8-coach-desktop-before.jpg) · [after](greybox-look/card8-coach-desktop-after.jpg) · [Portrait before](greybox-look/card8-coach-portrait-before.jpg) · [after](greybox-look/card8-coach-portrait-after.jpg) |
+| Platform (3, 6.5, −123) toward marker (3.7, 3.65, −104.6) | 346 / 973,355 → 347 / 974,587 | 161 / 556,567 → 162 / 557,799 | [Desktop before](greybox-look/card8-halt-desktop-before.jpg) · [after](greybox-look/card8-halt-desktop-after.jpg) · [Portrait before](greybox-look/card8-halt-portrait-before.jpg) · [after](greybox-look/card8-halt-portrait-after.jpg) |
+| Shore facing the landward bents | 307 / 937,213 → 308 / 938,445 | — | [Desktop before](greybox-look/card8-shore-desktop-before.jpg) · [after](greybox-look/card8-shore-desktop-after.jpg) |
+
+The moving camera followed the outward player car from Bell at 1,156.34 m to the island approach at 1,846.66 m. Water remains visible through the bend and the island resolves into a single shoreline. The 17 sampled frames show no visible abutment pop or doubled silhouette. A second sequence sampled the occupied car through the last 19 m. Real-time cadence was unmeasured. [Crossing sequence](greybox-look/card8-crossing.jpg)
+
 ## Design review (2026-11-27)
 
 | Call | Kind | Basis |
