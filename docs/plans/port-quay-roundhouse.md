@@ -289,11 +289,34 @@ November). Steps 1 to 3 ship together or one by one, with no bump; step 4 after 
       **Fix round 1.** The quay copy holds the fixed bridge's 45° heading throughout the showroom turn. Home's
       copy still turns with its bridge. The garage now registers the assembled train and furniture with their
       owner so unmounting releases the displayed wheel geometry. [Quay during the Quick boiler install](port-quay-roundhouse/quay-mid-turn-still.png).
-- [ ] **Checkpoint (after step 6; with shared-pool's Checkpoint B).** `npm run check:full`, `npm --prefix server
+- [x] **Checkpoint (after step 6; with shared-pool's Checkpoint B).** `npm run check:full`, `npm --prefix server
       test`, `npm run test:net` (`server/src` changed), `npm run loop -- run` (1 to 4 players; no node added, a
       regression check of the `site` field in its sends), the level check. Proofs to read: the host test's real
       `r:edit` from Port Quay, the two-tab stills, the arrival stills. Real-time feel, audio and device behaviour are
       not claimed by any of these.
+      **27 November 2026.** On `88f3ca036`, 2,481 unit tests passed. The local `check:full` reached its network
+      stage before the outer timeout, and the standalone network retry passed 410/410. The local audited server
+      run on the busy machine reported three failures and two timeouts. The audited main CI job on the same
+      commit passed 415/415. [CI server job](https://github.com/matiasfr/boogle/actions/runs/45964907260/job/140391350182).
+      Local logs are `.look/port-quay-check-full.log`, `.look/port-quay-server-audit.log` and
+      `.look/port-quay-net-retry.log`. All nine loop orders finished for each player count. Canonical straight-line
+      and calibrated simulation finishes were 2:00:30 and 2:06:51 (1 player), 1:49:56 and 1:56:36 (2),
+      1:49:30 and 1:53:08 (3), and 1:48:13 and 1:53:23 (4). No skips or failures were reported.
+      The audited host test “pool host: an install at Port Quay spends Home’s bay through r:edit” passed,
+      including the one-steel debit on both sessions and the off-post rejection.
+      The two-tab stills above were opened and show the fitted boiler at 25 m/s, Home’s stack dropping from 12 to
+      11, and the separate Bay line bring at Quay while Home keeps Line 2.
+      The buffer beam was deepened from 29.06–29.34 m to 29.02–29.38 m along the approach road, and the built Quay
+      level was regenerated. Both retakes show the dark beam clear of the tan post faces. The level check passed
+      all 29 reports, and the three targeted built-level test files passed 92/92 after the fix
+      (`.look/port-quay-level-fixed.log` and `.look/port-quay-unit-fixed.log`).
+      Arrival stills opened at 1200 × 750:
+      [Platform 1, open doors and copies](port-quay-roundhouse/arrival-platform-still.png) ·
+      [Buffers, approach and bridge](port-quay-roundhouse/arrival-buffers-still.png) ·
+      [Yard ramp foot, table edge and jib](port-quay-roundhouse/arrival-yard-ramp-still.png) ·
+      [High Port ramp head, whole yard](port-quay-roundhouse/arrival-high-port-still.png) ·
+      [Inbound cave train, yard across the apron](port-quay-roundhouse/arrival-cave-train-still.png).
+      Real-time feel, audio and device behaviour not claimed; not tested on a device.
 
 ## Level findings
 
