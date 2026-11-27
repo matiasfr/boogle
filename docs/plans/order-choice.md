@@ -316,6 +316,8 @@ After step 5, on HOTBOX, once:
 - [ ] `npm run loop -- run` for one to three players, `canonical` and `cave-first`, each to the classic island's post
       with no skips: no softlock, every order probe refused as the graph says, idle over 60 s listed, **minutes per
       area for both orders** (the [route to the ending](../backlog.md#the-checkpoint-we-work-toward) checkpoint's table).
+      Measure each area's duration from the previous completed area in that run, with Port Quay before Canopy in
+      `cave-first`. The headless loop uses straight-line walking and does not ride the trains.
 - [ ] The two bot segments above with `--order cave`, and the canonical segments re-run (a pass each, the load noted).
 - [ ] **The reconnect proof with two open legs**: `railwayLegRejoin` (`dev/peer-test/ws-railway.ts`) at
       `cave-first-open`: a second tab joins; one tab lifts from Bell Rock's rack, the other from the cave apron's; the

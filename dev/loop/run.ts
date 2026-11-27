@@ -1223,7 +1223,8 @@ export function runLoop(args: string[]) {
     const canonical = proposeOrders()[0]!.order;
     const checkpoints: Checkpoint[] = [];
     for (const o of orders) {
-      const probes = o.name === 'canonical' && players === counts[0] && !args.includes('--no-probes');
+      const probes =
+        (only !== undefined || o.name === 'canonical') && players === counts[0] && !args.includes('--no-probes');
       let k = 0;
       while (k < o.order.length && o.order[k] === canonical[k]) k++;
       const from = share && o.name !== 'canonical' ? checkpoints[k] : undefined;

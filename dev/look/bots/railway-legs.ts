@@ -551,7 +551,7 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
     await finishRoute();
   };
   // A port-reached save starts in the Village with the cave leg already laid.
-  if (legDone(rw(), CAVE)) {
+  if (legDone(rw(), CAVE) && legDone(rw(), CANOPY) && granted(CLOTH)) {
     const root = rowWorld(wall.line, 0, 0, { x: 0, z: 0 });
     check(await bot.walk(root.x, root.z, 1), 'walked from the Village to the cave apron');
     await startWall();
@@ -587,7 +587,8 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
           .map(([slot, t]) => [slot, t.phase, t.at, t.boiler]),
       })}`,
     );
-  if (!legDone(rw(), BAY) && legRow(rw(), BAY).laid > 0 && !near(bell, 80)) {
+  const bayWasLaid = legDone(rw(), BAY);
+  if (!bayWasLaid && legRow(rw(), BAY).laid > 0 && !near(bell, 80)) {
     // A seed mid bay cut (`bay-mid`, `trade-ready`) starts at the Village: the seeds are taken and the cut's first
     // section laid. Make the choice if one is asked, then ride a bay train out to the open section's head.
     await checkpoint('bell reached');
@@ -618,6 +619,41 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
     await buildRowLeg(BAY, 'bay cut');
   }
   await checkpoint('bay reached');
+
+  const caveFirst = /[?&]railOrder=cave(?:&|$)/.test(globalThis.location?.search ?? '');
+  const cave = RAIL_LEGS[CAVE]!;
+  const caveGate = cave.sections[0]!.gate!;
+  const caveStart = fromStop(cave);
+  const caveEnd = cave.railheadHalt + cave.sections.length - 1;
+  const buildCave = async () => {
+    const root = rowWorld(cave.line, 0, 0, { x: 0, z: 0 });
+    check(await bot.walk(root.x, root.z, 1), 'walked round the West landing root');
+    if (!(route().gates & (1 << caveGate))) {
+      await press('railway-leg-plug', RAIL_GATES[caveGate]!.at, 'open the sea-cave plug');
+      check(route().gates & (1 << caveGate), 'the sea-cave plug is open');
+      await checkpoint('plug opened');
+    }
+    await buildRowLeg(CAVE, 'cave');
+    const nextObjective = legDone(rw(), CANOPY)
+      ? 'Build the line along the White Wall to High Gorge (placeholder)'
+      : 'Ride to Bell Rock and build the line to Canopy Town (placeholder)';
+    check(
+      await bot.until(() => inspectRailway()?.worksView?.legView?.objective === nextObjective, 10000),
+      `Port Quay points to ${legDone(rw(), CANOPY) ? 'the White Wall' : 'Canopy Town'}`,
+    );
+    await checkpoint('port reached');
+    await rowRide(cave.line, caveEnd, caveStart, 'cave');
+    const home = rowLever(cave.line, caveStart);
+    await stepOff({ x: home.x * 100, z: home.z * 100 }, 'stepped off the cave train at the West landing');
+    await checkpoint('port home');
+  };
+  if (caveFirst && !legDone(rw(), CAVE)) {
+    if (!bayWasLaid) {
+      await rowRide(bayLeg.line, bayLeg.railheadHalt + bayLeg.sections.length - 1, 0, 'bay line');
+      await stepOff(westLanding, 'stepped off at the West landing');
+    }
+    await buildCave();
+  }
 
   // ---------------------------------------------------------------- leg 3: Bell Rock to Canopy Town, and home
   const canopy = RAIL_LEGS[CANOPY]!;
@@ -669,43 +705,18 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   check(await bot.until(() => !atOrBound(), 600000), "Canopy's platform cleared before the homeward walk");
   await rowRide(canopy.line, canopyEnd, 0, 'bay line');
   await stepOff(westLanding, 'stepped off at the West landing');
+  const caveDone = legDone(rw(), CAVE);
+  const nextObjective = caveDone
+    ? 'Build the line along the White Wall to High Gorge (placeholder)'
+    : 'Open the sea-cave plug at the West landing';
   check(
-    await bot.until(
-      () => inspectRailway()?.worksView?.legView?.objective === 'Open the sea-cave plug at the West landing',
-      10000,
-    ),
-    'the cloth points back to the sea-cave plug',
+    await bot.until(() => inspectRailway()?.worksView?.legView?.objective === nextObjective, 10000),
+    caveDone ? 'the cloth points to the White Wall' : 'the cloth points back to the sea-cave plug',
   );
   logFleet('home from Canopy Town');
   await checkpoint('canopy home');
 
   // ---------------------------------------------------------------- leg 4: West landing to Port Quay, and home
-  const cave = RAIL_LEGS[CAVE]!;
-  const caveGate = cave.sections[0]!.gate!;
-  const caveStart = fromStop(cave);
-  const caveEnd = cave.railheadHalt + cave.sections.length - 1;
-  const root = rowWorld(cave.line, 0, 0, { x: 0, z: 0 });
-  check(await bot.walk(root.x, root.z, 1), 'walked round the West landing root');
-  if (!(route().gates & (1 << caveGate))) {
-    await press('railway-leg-plug', RAIL_GATES[caveGate]!.at, 'open the sea-cave plug');
-    check(route().gates & (1 << caveGate), 'the sea-cave plug is open');
-    await checkpoint('plug opened');
-  }
-  await buildRowLeg(CAVE, 'cave');
-  check(
-    await bot.until(
-      () =>
-        inspectRailway()?.worksView?.legView?.objective ===
-        'Build the line along the White Wall to High Gorge (placeholder)',
-      10000,
-      'White Wall objective',
-    ),
-    'Port Quay points to the White Wall',
-  );
-  await checkpoint('port reached');
-  await rowRide(cave.line, caveEnd, caveStart, 'cave');
-  const home = rowLever(cave.line, caveStart);
-  await stepOff({ x: home.x * 100, z: home.z * 100 }, 'stepped off the cave train at the West landing');
-  await checkpoint('port home');
+  if (!caveDone) await buildCave();
   await startWall();
 }
