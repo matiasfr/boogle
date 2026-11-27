@@ -215,7 +215,7 @@ built before that, on their own branch. Step 1 ships alone or with step 2, since
 
       Not tested on a device.
 
-- [ ] **3. The loop and the bot (S; "Implementation from a brief or an approved plan": gpt-6.2-sol medium).** After
+- [x] **3. The loop and the bot (S; "Implementation from a brief or an approved plan": gpt-6.2-sol medium).** After
       order choice's step 5 is on main, rebased onto it.
       - `dev/loop/run.ts`: `legSection` stops waiting for `gateOpen()`. `routePolicy` gives every seat but the first the
         gated section's `legSection` (via `gateLeg`) in a barrier node. When the node ends, a partner's carried units are fed

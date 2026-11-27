@@ -487,7 +487,8 @@ function legSection(leg: RouteLeg, k: number, label: string, requires: Edge[], s
     cue: [
       onMain(
         'world',
-        `section ${k + 1}'s frame with its bill sign and the rack's plate (KIT ${k + 1}) beside it`,
+        `section ${k + 1}'s frame with its bill sign and the rack's plate (KIT ${k + 1}) beside it` +
+          (sec.gate === undefined ? '' : '; a full frame waiting reads FULL: WAITING ON THE BARRIER'),
         `${LEG_VIEW} site`,
       ),
     ],

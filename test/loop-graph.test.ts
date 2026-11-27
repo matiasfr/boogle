@@ -19,6 +19,7 @@ import { LINE1_STATIONS } from '../src/sim/railway-line-layout.ts';
 import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { Forge, Job, QJob, Rail, Shed, Steel, createRailwayWorld } from '../src/sim/railway-components.ts';
 import { jobId, qjobId } from '../src/sim/railway-queries.ts';
+import { legRow } from '../src/sim/railway-queries-route.ts';
 import { beatsOf } from '../dev/playtest/beats.ts';
 import { RAIL_STOPS, railSegmentOptions } from '../dev/look/segments.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, legFrame } from '../src/sim/railway-route.ts';
@@ -27,10 +28,39 @@ import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 const generic = new Set<string>(GENERIC_OPS);
 const owned = new Set(NODES.flatMap((n) => n.ops));
 
-test('the cave-1 text report identifies the plug as a finish dependency', (t) => {
+test('the cave-1 text report shows the plug finish dependency and the waiting cue', (t) => {
   const output = t.mock.method(console, 'log', () => {});
   printNode('cave-1', false);
   assert.match(String(output.mock.calls[0]!.arguments[0]), /plug-gate[^\n]*(?:finish|lay)/i);
+  assert.match(String(output.mock.calls[0]!.arguments[0]), /a full frame waiting reads FULL: WAITING ON THE BARRIER/);
+});
+
+test('a partner feeds cave-1 before seat 1 opens the plug', async () => {
+  const { playOrder } = await import('../dev/loop/run.ts');
+  const canonical = proposeOrders()[0]!.order;
+  const order = canonical.slice(0, canonical.indexOf('cave-1') + 1);
+  const plug = RAIL_GATES.findIndex((gate) => gate.id === 'plug');
+  const cave = RAIL_LEGS.findIndex((leg) => leg.id === 'cave');
+  const solo = playOrder(order, 'solo', 1);
+  const pair = playOrder(order, 'pair', 2, {
+    mutate(host) {
+      const act = host.act;
+      host.act = (pid, op, fields, at) => {
+        if (op === 'rail.gate' && fields.id === plug) {
+          const { logs, rails, start } = legRow(host.api.world(), cave);
+          assert.equal(pid, 'p1');
+          assert.deepEqual({ logs, rails, start }, { logs: 20, rails: 20, start: -1 });
+        }
+        return act(pid, op, fields, at);
+      };
+    },
+  });
+  for (const run of [solo, pair]) assert.equal(run.softlock, undefined);
+  const plugTicks = (run: typeof solo) => {
+    const gate = run.nodes.find((n) => n.id === 'plug-gate')!;
+    return gate.tick - gate.startTick;
+  };
+  assert.equal(plugTicks(pair), plugTicks(solo));
 });
 
 test('the Ring Island bot cannot take a later leg stop', () => {
@@ -576,3 +606,24 @@ for (const [seed, legId] of [
     assert.ok(elapsed >= cycle, `advanced ${elapsed} ticks, standard train needs at least ${cycle}`);
   });
 }
+
+test('by-hand cave-1 sources its logs from trees during the plug approach', async () => {
+  const { playOrder } = await import('../dev/loop/run.ts');
+  const canonical = proposeOrders()[0]!.order;
+  const order = canonical.slice(0, canonical.indexOf('cave-1') + 1);
+  const cave = RAIL_LEGS.findIndex((leg) => leg.id === 'cave');
+  let rackLogs = 0;
+  const run = playOrder(order, 'by hand', 2, {
+    byHand: new Set(['cave-1']),
+    mutate(host) {
+      const act = host.act;
+      host.act = (pid, op, fields, at) => {
+        const result = act(pid, op, fields, at);
+        if (op === 'rail.depotTake' && fields.leg === cave) rackLogs += result.accepted;
+        return result;
+      };
+    },
+  });
+  assert.equal(run.softlock, undefined);
+  assert.equal(rackLogs, 0);
+});
