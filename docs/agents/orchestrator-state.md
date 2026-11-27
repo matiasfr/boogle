@@ -11,7 +11,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
 | Port Quay step 6, the garage screen at Port Quay (with the Home garage leak, P2) | Garage choices | codex/port-quay-garage-screen | the heartbeat, Codex Astra medium | 2026-11-27 06:53 | running: `src/entities/railway/garage-state.ts`, `garage-view.ts`, `roundhouse-view.ts`, the quay mount, `src/features/garage.ts`, `garage-data.ts`, `test/garage-selection.test.ts`; the two-tab look (browser-heavy, two-player) |
-| Brainstorm: phase guides, a little guy at each phase who says what to do next, in character | Phase guides | claude/phase-guides-brainstorm | the heartbeat on the owner’s word, Antigravity Neon medium | 2026-11-27 07:31 | running: docs only, `docs/brainstorms/phase-guides.md`, its design review, rows in `docs/agent-calls.md` |
+| Phase guides Wave 1: the kiln hand, the roundhouse hand and Hooter, on one shared guide component | Phase guides | claude/phase-guides-wave1 | the heartbeat, Antigravity Neon medium | 2026-11-27 07:44 | running: view only, `src/components/phase-guide/`, `src/entities/railway/forge-guide.ts`, `greeter.ts`, `src/place/folk.ts`, `src/entities/ring-folk/`; not `garage-view.ts`, `garage-state.ts`, `roundhouse-view.ts` or `src/features/garage.ts`; placeholder lines only |
 | Measure: route minutes per area after pre-feed (checkpoint item 3) | The greybox route | codex/route-minutes | the heartbeat, Codex Sol medium | 2026-11-27 07:36 | running: docs and measurement only, `docs/reports/route-minutes.md`; the loop for 1 to 3 players, no browser bot |
 
 ## Where the work stands
