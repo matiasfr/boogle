@@ -309,7 +309,7 @@ to 3 (src/sim, src/world) is an independent one before merge, by the row `npm ru
       +40 no chord turn over 2° and no radius under 94 m; the platforms' edges at c −1.8 and +5.8 within 0.05 m; the
       existing floods at the moved platforms, c −3.8 and +7.8). Verify: `test/railway-route.test.ts`,
       `test/world-lines.test.ts` (no future span over 4%; the map rails); `npm run level-check`: route leg 5 all "ok",
-      the continuity report adds nothing. The Wall's sections keep their cuts (the slew lengthens section 6 by about 3 cm).
+      the continuity report adds nothing. The Wall's sections keep their cuts; the slew lengthens the catalog row by 1 cm.
 - [ ] **2. One line in the rules, and the bump (L; "High-risk implementation": Codex gpt-6.2-astra **high** (tricky);
       then the independent review row).** Files: new `src/sim/railway-lap.ts` (`WALL_LEG`, `lapJoined(legs)`,
       `runLine(slot, joined)`, `lapSlots(line, joined)`, `lapRow(row, tick)`, `lapAsks(req)`, `LAP_S0`);
