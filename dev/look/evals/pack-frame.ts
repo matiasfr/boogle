@@ -17,7 +17,7 @@ const { inspectRailway } = (await import(
 const { makeCarryModels } = (await import(
   '/src/render/carry-models.ts' as string
 )) as typeof import('../../../src/render/carry-models.ts');
-const { frameOf, fitOf } = (await import(
+const { fitOf } = (await import(
   '/src/render/haul-bundle.ts' as string
 )) as typeof import('../../../src/render/haul-bundle.ts');
 const q = new URLSearchParams(location.search);
@@ -37,7 +37,8 @@ const onceMounted = async () => {
   const cargo = makeCarryModels();
   cargo.root.visible = true;
   const avatar = me.avatar;
-  frameOf(avatar).add(cargo.root);
+  const back = avatar.userData.loadFit?.frame ?? avatar.userData.inner ?? avatar;
+  back.add(cargo.root);
   setInterval(() => {
     cargo.setRails(railLoad, packOn, yokeOn);
     cargo.stone.count = stoneLoad;
