@@ -54,7 +54,10 @@ that writes the plan carries it out, so it can change the plan when a step turns
    holds too: a solid that goes away on a schedule or a rule (a temporary head closing, a ramp retired, a deck moved on)
    stays solid and drawn while any player stands within a small step of it, and goes once they are clear. Search for
    every solid your change removes as well as every one it adds (greybox leg 5 step 5, 25 November: a closing Wall
-   head dropped a player into the sea, a fix round).
+   head dropped a player into the sea, a fix round). A visitor (another player's replicated body) holds a new solid off
+   like a player, but never takes the local player's footing: test a visitor alone in the new solid, and the local player
+   standing on it while a visitor overlaps it; `liftOrWait` covers both (Port Quay step 3, 27 November: three fix rounds,
+   about two hours from built to its final check).
 10. **Owed proofs are yours.** A rebase, bot run, still or tick mark your branch still owes comes back to this same
    thread; you have the context a fresh agent would lack.
 11. **A test must be able to fail.** See a regression or proof test fail once on the code without your change (or with
