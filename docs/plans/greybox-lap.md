@@ -83,7 +83,7 @@ buffer point, positive north-east; `c` across it).
 | --- | --- | --- |
 | Arrives | From the north-east on a curve (about 240 m radius), its last chord 1.6° off the axis | From the south-west on a 128 m straight on the axis (a −136 to −8), after a 100 m turn round the south stack's tip |
 | Buffers | a 0, c 0.00 | a −8.0, c 0.05 |
-| Stop | s 3,230.40 m, a ≈ +20 | cave s 5,325.00 m, a −31 |
+| Stop | s 3,231.40 m before and after the slew; world (−86.41, −1976.84) m, a ≈ +20 | cave s 5,325.00 m, a −31 |
 | Tracks | c 0 (outward, its sim path) and c +4 (homeward, lat −4 m) | c −2 and c +2 (a centred formation, ±2 m) |
 | Platforms | c −1.8 to −6.3 and c +5.8 to +10.3, a 0 to +40 | c −3.8 to −7.8 and c +3.8 to +7.8, a −51 to −4 |
 | Between | the concourse, a −4 to 0, c −9.3 to +13.3, at 3.9 m, joining all four platforms and the stair's gangway | |

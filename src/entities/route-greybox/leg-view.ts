@@ -605,7 +605,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       const swing = (w: RowSwing | null) => w && track(w.s0, w.s1, w.from, w.to),
         open = halts[sp.leg.railheadHalt + Math.min(laid, n) - 1]?.end;
       if (!sp.joins) swing(rowStartCrossing(sp.leg.line));
-      if (open) swing(rowEndSwing(open));
+      if (open && !(sp === wall && laid === n)) swing(rowEndSwing(open));
     }
     /** The deck's walkable top as far as the laid end (a section still laying is drawn, not yet solid). A row's
      * merges 10 m lengths that run straight and level into one slab. */
@@ -848,7 +848,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       solid(laid: number, through: boolean) {
         if (laid !== deckLaid) solidDeck((deckLaid = laid));
         else lay?.retry(me.body);
-        stand(laid, through);
+        stand(laid, through || (sp === wall && laid === n));
       },
       /** Into `things`: the standing pieces, the end board, the passed block signals and a row's departure boards. */
       draw(r: LegRows, wd: ReadWorld, joined: boolean) {
@@ -879,7 +879,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         // The end board, 1.5 m behind the buffers' faces, facing back down the line: the stack's blank until the
         // rivet, then the line's name; it travels with the head and is gone at the destination (answer i). A row's
         // stands from its first lay (the West landing's own board says the same before it).
-        if ((laid < n || sp === wall) && (!sp.row || laid > 0)) {
+        if (laid < n && (!sp.row || laid > 0)) {
           const s = !sp.row && laid === 0 ? END[0]! + 0.6 : END[laid]! - 0.3;
           geo.at(s, P);
           geo.world(s, mid, q);
@@ -889,14 +889,12 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
             geo.y(s),
             -P.ux,
             -P.uz,
-            sp === wall && laid === n
-              ? [{ t: 'WHITE WALL LINE (placeholder)', size: 0.34 }]
-              : joined
-                ? [
-                    { t: sp.name, size: 0.34 },
-                    { t: UNDER_WAY, size: 0.22 },
-                  ]
-                : [],
+            joined
+              ? [
+                  { t: sp.name, size: 0.34 },
+                  { t: UNDER_WAY, size: 0.22 },
+                ]
+              : [],
           );
         }
         // The block signals the line has passed (answer e): a post between the tracks 3 m beyond each section end,
