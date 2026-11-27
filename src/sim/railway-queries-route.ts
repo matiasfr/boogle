@@ -228,7 +228,13 @@ export function legMintChain(w: World, line: number, skip = -1) {
     const on =
       legOpen(w, k) ||
       legYardAhead(w, k) ||
-      (i > 0 && alsoReached(w, k) && legs[i - 1] === leg.after && loading[i - 1]! && legOpen(w, leg.after) && !prev!.logs && !prev!.rails);
+      (i > 0 &&
+        alsoReached(w, k) &&
+        legs[i - 1] === leg.after &&
+        loading[i - 1]! &&
+        legOpen(w, leg.after) &&
+        !prev!.logs &&
+        !prev!.rails);
     loading.push(on);
     if (!on) return owed.push(NONE);
     const lack = leg.kit === 'home' ? legLack(w, k) : yardLack(w, k);
@@ -262,8 +268,8 @@ export function legKitSurplus(w: World, slot: number): Kit {
  * the review of greybox leg 2, P2 and P3, as legKitNeed counts them): a train unloads only this, and the stand-in stocks
  * only this. Nothing for a leg that is not open (its rack is not the depot shelf yet) or laying. */
 export function legRackNeed(w: World, k: number) {
-  const s = RAIL_LEGS[k]!.sections[legRow(w, k).laid],
-    row = legRow(w, k);
+  const row = legRow(w, k),
+    s = RAIL_LEGS[k]!.sections[row.laid];
   if (!s || row.start >= 0 || !legOpen(w, k)) return { logs: 0, rails: 0 };
   const held = heldKit(w, k);
   return less(s, {
@@ -283,7 +289,7 @@ export function legKitRoom(w: World, line: number, k: number) {
   if (leg.kitAhead && line === legMintLine(k) && (legOpen(w, k) || legYardAhead(w, k)))
     return { rack: NONE, yard: yardLack(w, k) };
   if (!legOpen(w, k)) return { rack: NONE, yard: NONE };
-  if (RAIL_LEGS[k]!.line === line) return { rack: legRackNeed(w, k), yard: NONE };
+  if (leg.line === line) return { rack: legRackNeed(w, k), yard: NONE };
   const rack = legRow(w, k).laid === 0 ? legRackNeed(w, k) : NONE;
   return { rack, yard: less(yardLack(w, k), rack) };
 }
