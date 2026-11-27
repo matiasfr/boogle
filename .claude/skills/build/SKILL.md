@@ -33,6 +33,9 @@ that writes the plan carries it out, so it can change the plan when a step turns
    look at your own `/look` stills and motion sheets, gut-check them, and iterate before you finish. One proof look per
    change by default; phone-width, second-player, far-distance or before/after shots only when the change is about them
    or your brief or a reviewer asks.
+   The look harness starting and stopping its own Vite and local game server is allowed under every brief: a brief's ban
+   on background processes means ones you start or kill yourself (`Start-Process`, `taskkill`), not `node dev/look/shots.ts`
+   or the capture commands. Skip a still only when the harness itself prompts or refuses, and quote its message.
 6. **Edit, don't rewrite:** `Edit`, or `npm run patch` for many edits at once. No throwaway patch scripts and no
    whole-file `Write` of a file that exists, unless most of it really changes.
 7. **Simplify.** When your code changes (not docs) are over ~3 files or ~150 lines, run `/simplify` on the diff

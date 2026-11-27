@@ -14,7 +14,7 @@ A parking lot for things to flesh out later. Not a task list: nothing here is pl
 ## Island
 
 ## The Boogler
-- A post-game twist after meeting The Boogler at the ending, to scope later: "its cool when games do that" (owner, 2026-11-12; [campaign outline](plans/campaign-outline.md#7-owner-decisions) decision 3)
+- A post-game twist after meeting The Boogler at the ending, to scope later: "its cool when games do that" (owner, 2026-11-12; [campaign outline](plans/campaign-outline.md#7-owner-decisions) decision 3); on 26 November he called meeting The Boogler the beginning of the post-game, with different mechanics, the greybox ending a placeholder until then ([entry](decisions-core-loop.md#d-2026-11-26-ending-starts-the-post-game))
 
 ## Trains
 - Rail network depth: friends choose which connection next (a new source against a shortcut) and which visible bottleneck to fix, and the railway runs itself, with no signals, orders or dispatch. The owner is "curious about" it; the research asks for a ten-minute paper railway (a 2D page) before any code: [rail-network-depth](research/rail-network-depth.md#first-prototype-a-ten-minute-paper-railway) (owner, 2026-11-11)
