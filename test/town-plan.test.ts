@@ -36,6 +36,9 @@ import { SECRETS, padById } from '../src/place/tech-layout.ts';
 import { LAND_TREES } from '../src/place/tree-catalog.ts';
 import {
   TOWN_CENTRE,
+  TOWN_BOARD,
+  TOWN_CHOICE,
+  townPlotBoard,
   TOWN_COURT,
   TOWN_FRONT,
   TOWN_GROUND,
@@ -52,6 +55,25 @@ import {
 } from '../src/place/town-plan.ts';
 
 const FORGE = { x: -87, z: -3, yaw: 0, w: 10, d: 8 };
+test('the choice boards share buy reach and the toys clear the quarry road and buildings', () => {
+  const distance = (a: XZ, b: XZ) => Math.hypot(a.x - b.x, a.z - b.z);
+  const { boards, stall, pads } = TOWN_CHOICE;
+  for (const p of boards) assert.ok(distance(p, townPlotBoard(0)) <= TOWN_BOARD.reach - 1.2);
+  assert.ok(distance(...boards) >= 2);
+  const road = TOWN_STREETS.quarry.head;
+  for (const p of [...boards, stall, ...pads]) {
+    for (let i = 1; i < road.length; i++)
+      assert.ok(toSegment(p, road[i - 1]!, road[i]!) >= 2.8, `road clearance at ${p.x}, ${p.z}`);
+    for (const b of [townBuilding('plot3'), townBuilding('plot5'), TOWN_PROPS.shelf.foot]) {
+      const dx = p.x - b.x,
+        dz = p.z - b.z;
+      assert.ok(
+        Math.abs(dx * Math.cos(b.yaw) - dz * Math.sin(b.yaw)) > b.w / 2 ||
+          Math.abs(dx * Math.sin(b.yaw) + dz * Math.cos(b.yaw)) > b.d / 2,
+      );
+    }
+  }
+});
 const SUMMIT = { x: 18, z: -6 };
 const near = (a: number, b: number, tol: number, what: string) =>
   assert.ok(Math.abs(a - b) <= tol, `${what}: ${a.toFixed(3)} against ${b} (tolerance ${tol})`);
