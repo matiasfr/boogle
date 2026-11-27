@@ -42,10 +42,10 @@ export const groundProbe = {
 // (src/entities/player/state.ts: 0.33 m a step against a 0.45 m radius), and anything that still gets through is put back
 // on top.
 const NET_DEPTH = 0.1; // m of centre below the surface that counts as through (bilinear vs the heightfield's triangles)
-export function catchFallThrough(body: Body, r: number) {
+export function catchFallThrough(body: Body, r: number, under = groundProbe.under) {
   const p = body.position;
   if (!groundProbe.netted(p.x, p.z)) return;
-  const g = groundProbe.under(p.x, p.y, p.z);
+  const g = under(p.x, p.y, p.z);
   if (p.y > g - NET_DEPTH) return;
   teleport(body, p.x, g + r, p.z);
   if (body.velocity.y < 0) body.velocity.y = 0;

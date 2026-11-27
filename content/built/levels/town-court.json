@@ -1,0 +1,13 @@
+{
+  "axes": "x east, y up, z south, right-handed",
+  "format": "boogle-level",
+  "place": "town-court",
+  "placements": [
+    {"id":"town.goal-a","pos":[0,0,0],"prefab":"town.ball-court"},
+    {"id":"town.goal-b","pos":[0,0,0],"prefab":"town.ball-court"},
+    {"id":"town.ball-lever","pos":[0,0,0],"prefab":"town.ball-lever"}
+  ],
+  "rotation": "yaw, pitch, roll in radians, order YXZ",
+  "units": "metres",
+  "version": 1
+}

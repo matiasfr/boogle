@@ -1,20 +1,9 @@
 // The beach ball's body and rules: who may move it from this tab, claiming and throwing, the pose everything else reads,
 // surf. No scene, DOM or HUD here: game code imports this file, and test/entity-state-node.test.ts holds it to that.
 import * as THREE from 'three';
-import {
-  BALL_R,
-  BALL_MASS,
-  BALL_DAMPING,
-  BALL_SPAWN,
-  REACH,
-  GRAVITY,
-  HALF,
-  SEA,
-  PLAYER_R,
-  HEAD_OFFSET,
-} from '../../constants.ts';
+import { BALL_R, BALL_MASS, BALL_DAMPING, REACH, GRAVITY, SEA, PLAYER_R, HEAD_OFFSET } from '../../constants.ts';
 import { clamp } from '../../math.ts';
-import { groundHeight } from '../../island/heights.ts';
+import { bindToySpawn, toyGround } from '../../physics/toy-ground.ts';
 import { ballMat, catchFallThrough, groundProbe } from '../../physics/physics.ts';
 import { createBody, physicsTime, setMotion, teleport } from '../../physics/engine.ts';
 import { waterField } from '../../physics/water-field.ts';
@@ -39,13 +28,18 @@ export const ball = {
   // Where the ball is for gameplay and display. One writer a frame: the body when mine, the owner's snapshots when not.
   pose: { p: new THREE.Vector3(), q: new THREE.Quaternion(), v: new THREE.Vector3() },
 };
-ball.pose.p.set(BALL_SPAWN.x, groundHeight(BALL_SPAWN.x, BALL_SPAWN.z) + BALL_R + 0.4, BALL_SPAWN.z);
+function placeUnownedBall() {
+  if (ball.mine || ball.remoteOwned) return;
+  const { x, z } = toyGround.spawn;
+  ball.pose.p.set(x, toyGround.under(x, z) + BALL_R + 0.4, z);
+  teleport(ball.body, x, ball.pose.p.y, z);
+}
 
 // Every change of authority ends here. sim: dynamic and collides. ghost: kinematic, positioned by hand or by the
 // network, no collision response.
 export const setBallMode = (mode: 'sim' | 'ghost') => setMotion(ball.body, mode === 'sim' ? 'dynamic' : 'kinematic');
 setBallMode('ghost');
-teleport(ball.body, ball.pose.p.x, ball.pose.p.y, ball.pose.p.z);
+bindToySpawn(placeUnownedBall);
 
 /** The ball as its owner publishes it (presence `b`, ./sync.ts). */
 export type BallWire = { e: number; p: number[]; v: number[]; q: number[]; h: number };
@@ -121,7 +115,8 @@ export function respawnBall() {
   if (!ball.mine) claimBall(false);
   ball.held = false;
   setBallMode('sim');
-  teleport(ball.body, BALL_SPAWN.x, groundHeight(BALL_SPAWN.x, BALL_SPAWN.z) + 3, BALL_SPAWN.z);
+  const { x, z } = toyGround.spawn;
+  teleport(ball.body, x, toyGround.under(x, z) + 3, z);
   ball.body.velocity.set(0, 0, 0);
   ball.body.angularVelocity.set(0, 0, 0);
   sendPresence();
@@ -147,7 +142,8 @@ export function prepareBall() {
 export function surfBall(dt: number) {
   if (!ball.mine || ball.held) return;
   const bb = ball.body;
-  if (bb.position.y - groundProbe.under(bb.position.x, bb.position.y, bb.position.z) < BALL_R + 0.08) {
+  const under = toyGround.floorBelow ?? groundProbe.under;
+  if (bb.position.y - under(bb.position.x, bb.position.y, bb.position.z) < BALL_R + 0.08) {
     const k = 1 - (Math.hypot(bb.velocity.x, bb.velocity.z) < 0.5 ? 10 : 1.2) * dt;
     bb.velocity.x *= k;
     bb.velocity.z *= k;
@@ -176,7 +172,7 @@ export function surfBall(dt: number) {
       // pulled to a stop, more firmly the deeper the water
       grip = Math.max(
         sub,
-        Math.min(1, (surf - (waterField.moving ? water.bedHeight : groundHeight(px, pz))) / 0.2) * 0.6,
+        Math.min(1, (surf - (waterField.moving ? water.bedHeight : toyGround.under(px, pz))) / 0.2) * 0.6,
       );
     } else {
       const rr = Math.hypot(px, pz) || 1;
@@ -196,14 +192,14 @@ export function surfBall(dt: number) {
 
 // Each physics step, after it: anything that fell through the ground comes back up.
 export function netBall() {
-  if (ball.mine && !ball.held) catchFallThrough(ball.body, BALL_R);
+  if (ball.mine && !ball.held) catchFallThrough(ball.body, BALL_R, toyGround.floorBelow);
 }
 
 // Right after the physics step: an owned ball that left the island respawns, then the pose follows the body.
 export function settleBall() {
   if (!ball.mine) return;
   const bp = ball.body.position;
-  if (!ball.held && (Math.abs(bp.x) > HALF - 3 || Math.abs(bp.z) > HALF - 3 || bp.y < -15)) respawnBall();
+  if (!ball.held && (!toyGround.inside(bp.x, bp.z) || bp.y < -15)) respawnBall();
   const ip = ball.held ? bp : ball.body.interpolatedPosition;
   ball.pose.p.set(ip.x, ip.y, ip.z);
   const q = ball.body.quaternion;

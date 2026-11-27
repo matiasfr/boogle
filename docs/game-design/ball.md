@@ -6,16 +6,17 @@ the [upgrade assessment](../research/rapier-021-upgrade.md).
 The production sea on Place and crossing replaces the ball's old sine sea with bounded samples of the visible FFT/shore waves.
 Vertical drag is relative to surface velocity (bounded ±3 m/s); gentle wash-in follows the registered coast's normal
 and tangent. Ponds have explicit still-water identity, so a sea crest is never mistaken for a pond. Ownership, held
-changes and teleports invalidate delayed samples without changing presence data or claim rules. Home-island respawn bounds remain unchanged. Query limits and fallback: [island water](island.md).
+changes and teleports invalidate delayed samples without changing presence data or claim rules. On Home the ball returns to the Round when it leaves Place's grid or falls below -15 m. Query limits and fallback: [island water](island.md).
 
-- **What and how it plays.** One of the island's physics toys: one shared beach ball (radius 0.45 m, 0.6 kg). Grab it (E / pad X),
+- **Home court.** Carry the striped ball onto the Round's green, then drop it or run it through either low goal. When the loose ball crosses the goal mouth, the cowbell rings and the bunting swings. The sideline lever or R returns it to the pitch centre. The lever's words are a placeholder for the owner.
+- **Classic island.** One of the island's physics toys: one shared beach ball (radius 0.45 m, 0.6 kg). Grab it (E / pad X),
   carry it (it rides on your back while something else is in your hand), throw it with a charged throw,
   or steal it from whoever holds it. It floats in the sea and the cave pond, drifts along the shore and
   washes back in, bounces on
   mushrooms (restitution 0.95) and off the Boogler and windmill sails. Walking into a slow ball takes it over so the
   push resolves locally. It respawns at (12, 20) on R, or by itself when it leaves the map (3 m from the edge) or
   falls below −15 m.
-- **Controls.** E / pad X grab or steal. The main action (click / pad RT): ball in hand, hold to charge and release to throw (pad B puts the wind-up away); empty hands do nothing. On your back it can't be thrown: bring it to your hand first. Touch: the main button grabs, resting or in the air, then throws. R / View respawn.
+- **Classic controls.** E / pad X grab or steal. The main action (click / pad RT): ball in hand, hold to charge and release to throw (pad B puts the wind-up away); empty hands do nothing. On your back it can't be thrown: bring it to your hand first. Touch: the main button grabs, resting or in the air, then throws. R / View respawn.
 - **Sync kind.** Owner, and nothing saved: every visit starts it at its spawn. The tab that simulates it publishes presence `b: { e, p, v, q, h }` (epoch, position,
   velocity, quaternion, held); others smooth the owner's snapshots with `createSnaps` ([src/netplay/snaps.ts](../../src/netplay/snaps.ts))
   120 ms behind with up to 150 ms of extrapolation. Ownership: highest epoch wins, ties to the larger peer id. An

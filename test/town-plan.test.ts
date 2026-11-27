@@ -3,7 +3,9 @@
 // drawn here; the ground and streets consume the same plan rows.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { crossedGoal } from '../src/entities/town/court-crossing.ts';
 import fs from 'node:fs';
+
 import blockoutLevel from '../content/built/levels/town-blockout.json' with { type: 'json' };
 import { blockoutFeet, standBlockout, PLOT_BLOCKS } from '../src/place/town-blockout.ts';
 import { AXIS, HALL, SHELF_SIZE, STALLS, headPoints, stallFrame, type XZ } from '../src/place/home-station.ts';
@@ -34,6 +36,7 @@ import { SECRETS, padById } from '../src/place/tech-layout.ts';
 import { LAND_TREES } from '../src/place/tree-catalog.ts';
 import {
   TOWN_CENTRE,
+  TOWN_COURT,
   TOWN_FRONT,
   TOWN_GROUND,
   TOWN_PLOTS,
@@ -371,6 +374,26 @@ test("no footprint corner is within 2.4 m of a road's centre line", () => {
     PATHS[1]!.pts.slice(0, 4).map(([x, z]) => ({ x, z })),
     TOWN_STREETS.dock.line,
   ];
+  const axis = slotPoint(TOWN_STREETS.dock.bearing, 38);
+  const posts = TOWN_COURT.goals.flatMap((goal) =>
+    [-1, 1].flatMap((side) =>
+      corners({
+        x: goal.x + ((side * TOWN_COURT.width) / 2) * Math.cos(goal.yaw),
+        z: goal.z - ((side * TOWN_COURT.width) / 2) * Math.sin(goal.yaw),
+        yaw: goal.yaw,
+        w: 0.1,
+        d: 0.1,
+      }),
+    ),
+  );
+  for (const p of [TOWN_COURT.centre, ...corners({ ...TOWN_COURT.lever, w: 0.44, d: 0.44 }), ...posts]) {
+    const radius = Math.hypot(p.x - TOWN_CENTRE.x, p.z - TOWN_CENTRE.z);
+    assert.ok(radius >= 3.6 && radius <= TOWN_GROUND.green.flat);
+    assert.ok(toSegment(p, TOWN_CENTRE, axis) >= 1.2);
+    assert.ok((TOWN_RING.inner + TOWN_RING.outer) / 2 - radius >= 2.4);
+    for (const road of roads)
+      for (let i = 1; i < road.length; i++) assert.ok(toSegment(p, road[i - 1]!, road[i]!) >= 2.4);
+  }
   for (const s of TOWN_SLOTS)
     for (const p of corners(B(s.id)))
       for (const road of roads)
@@ -666,4 +689,24 @@ test('the statue is a perch and not a step: a second jump from its top lands on 
   }
   assert.ok(out <= Math.hypot(TOWN_FOOTING.w, TOWN_FOOTING.d) / 2, 'the works stand on the footing');
   assert.ok(nearest - reach - out > 2, `the works reach ${out.toFixed(2)} m out from G`);
+});
+
+test('a rolling ball crosses the mouth during a 210 ms hitch', () => {
+  assert.equal(crossedGoal({ x: 0, y: 0.45, z: -1.05 }, { x: 0, y: 0.45, z: 1.05 }, 10, 0.21), true);
+});
+
+test('a return blended from behind a goal stays silent on observers', () => {
+  for (const fps of [60, 120]) {
+    const start = { x: 0, y: 0.45, z: -0.6 },
+      end = { x: 0, y: 3, z: 2.9 };
+    let previous = start,
+      rings = 0;
+    for (let frame = 1; frame <= Math.ceil(fps * 0.05); frame++) {
+      const t = Math.min(1, frame / (fps * 0.05));
+      const current = { x: 0, y: start.y + (end.y - start.y) * t, z: start.z + (end.z - start.z) * t };
+      if (crossedGoal(previous, current, 0, 1 / fps)) rings++;
+      previous = current;
+    }
+    assert.equal(rings, 0, `${fps} fps`);
+  }
 });

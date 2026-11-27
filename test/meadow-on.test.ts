@@ -9,7 +9,8 @@ const flags = await import('../src/place/meadow-flags.ts');
 const { homeGroundMaterial } = await import('../src/place/ground-material.ts');
 const { KEEP_REACH, KEEP_W, keepBakeByFrame, meadowKeep } = await import('../src/place/meadow-field.ts');
 const { FORMATION, GRID, LINES, LINKS, lineAt, offsetLat } = await import('../src/place/layout.ts');
-const { TOWN_CENTRE, TOWN_RING, TOWN_SLOTS, slotPoint, townBuilding } = await import('../src/place/town-plan.ts');
+const { TOWN_CENTRE, TOWN_COURT, TOWN_RING, TOWN_SLOTS, slotPoint, townBuilding } =
+  await import('../src/place/town-plan.ts');
 const { DEVICES, LEVER, SECRETS } = await import('../src/place/tech-layout.ts');
 const { pathAt } = await import('../src/place/path-field.ts');
 
@@ -43,9 +44,10 @@ test('with no flag the lawn layer loads and joins the ground material with its t
   assert.ok(names?.includes('place-meadow-keep'));
 });
 
-test("flowers grow on the Round's green, thinly, and not on the statue's footing", () => {
+test("flowers grow thinly on the Round's green and clear the statue and court", () => {
   assert.equal(at(TOWN_CENTRE).clear, 0);
-  for (const bearing of [20, 110, 200, 290]) {
+  assert.equal(at(TOWN_COURT.centre).clear, 0);
+  for (const bearing of [20, 110, 160, 290]) {
     const green = at(slotPoint(bearing, 9));
     assert.ok(green.clear >= 2, `green at ${bearing}`);
     assert.ok(green.cap < 0.6, `green cap at ${bearing}`);

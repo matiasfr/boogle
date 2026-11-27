@@ -4,6 +4,7 @@ import manifest from '../../assets/built/manifest.json' with { type: 'json' };
 /* oxlint-disable typescript/no-empty-object-type -- declaration-merging registries intentionally start empty */
 export interface BuilderNames {}
 export interface InteractionNames {
+  'town.ball-return': true;
   'seat.sit': true;
   'railway.request-stop': true;
   'railway.sack': true;
@@ -44,6 +45,8 @@ export type NameRegistry = {
 };
 export const names: NameRegistry = {
   builders: [
+    'town.ball-lever',
+    'town.ball-court',
     'railway.coach-parts',
     'railway.loader-parts',
     'seat.chair',
@@ -97,6 +100,7 @@ export const names: NameRegistry = {
     'terrain.kit',
   ],
   interactions: [
+    'town.ball-return',
     'railway.request-stop',
     'railway.sack',
     'railway.take-yoke',
