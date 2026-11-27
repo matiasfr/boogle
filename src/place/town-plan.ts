@@ -143,3 +143,11 @@ export function townPlotBoard(k: number): XZ {
   const b = townBuilding(TOWN_PLOTS.order[k]!);
   return townLocal(b, TOWN_BOARD.side, b.d / 2 + TOWN_BOARD.front);
 }
+
+const firstHouse = townBuilding(TOWN_PLOTS.order[0]);
+const frontStrip = (side: number) => townLocal(firstHouse, side, firstHouse.d / 2 + TOWN_BOARD.front);
+export const TOWN_CHOICE = {
+  boards: [frontStrip(1), frontStrip(3.4)],
+  stall: townPlotBoard(0),
+  pads: [frontStrip(-1), frontStrip(1.2), frontStrip(3.4)],
+} as const;

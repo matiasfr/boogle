@@ -11,7 +11,7 @@ import { worldRoomId } from '../../src/world/namespace.ts';
 import { plot, till } from '../../src/sim/railway-rows.ts';
 import { townPlotBoard } from '../../src/place/town-plan.ts';
 import { RAILWAY_PLAY_NS, railwayRoomId } from '../../src/world/railway-namespace.ts';
-import { HALF } from '../../src/world/grid.ts';
+import { COSMETIC_BOUND } from '../../src/sim/social.ts';
 import type { RailwayWorldHost } from '../src/host/world-host.ts';
 import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
 import { findStart } from '../../src/world/boogler-brain.ts';
@@ -123,7 +123,7 @@ test('a buy 3.21 m from the board is refused and spends nothing; 3.19 m (any hei
       Math.round(bz + cm * Math.sin(angle)),
     ];
     const buy = (fields: Msg) => {
-      const e = { op: 'rail.buy', id: 0, ...fields, epoch, request: ++request, ms: 1000 * request };
+      const e = { op: 'rail.buy', id: 0, kind: 1, ...fields, epoch, request: ++request, ms: 1000 * request };
       client.send({ t: 'm', d: { t: 'r:edit', e } });
       return e.request;
     };
@@ -625,7 +625,7 @@ test('production railway relays a bag of mushrooms clean, on the island and boun
       Array.from({ length: 12 }, () => 1), // more than a bag's five spots
       [1, '2'],
       [1, null],
-      [HALF, 0], // off the island
+      [COSMETIC_BOUND, 0], // off the island
       'x'.repeat(100),
     ])
       a.send({ t: 'm', d: { t: 'mush', s } });
@@ -647,23 +647,23 @@ test('production railway relays a bag of mushrooms clean, on the island and boun
     ])
       a.ws.send(raw);
     a.ws.send('{"t":"m","d":{"t":"mush","s":[-0,3],"__proto__":{"evil":1},"constructor":{"x":1}}}');
-    a.send({ t: 'm', d: { t: 'mush', s: [1.23, -4.56, 7, 8], material: { n: 8 } } });
+    a.send({ t: 'm', d: { t: 'mush', s: [881.23, -4.56, 7, 8], material: { n: 8 } } });
     await settle([a], [a, b]);
     assert.deepEqual(
       JSON.parse(JSON.stringify(b.msgs.filter(isMush))),
       [
         { t: 'm', from: 'aaa', d: { t: 'mush', s: [0, 3] } },
-        { t: 'm', from: 'aaa', d: { t: 'mush', s: [1.2, -4.6, 7, 8] } },
+        { t: 'm', from: 'aaa', d: { t: 'mush', s: [881.2, -4.6, 7, 8] } },
       ],
       'only the clean copies of the well-formed bags are relayed',
     );
     assert.ok(!a.msgs.some(isMush), 'nothing echoes to the sender');
-    // A value just under HALF passes the bound but rounds onto it: receivers (|v| < HALF) would reject the relay.
-    a.send({ t: 'm', d: { t: 'mush', s: [HALF - 0.04, 0] } });
-    a.send({ t: 'm', d: { t: 'mush', s: [-(HALF - 0.04), 0] } });
+    // A value just under COSMETIC_BOUND passes the bound but rounds onto it: receivers (|v| < COSMETIC_BOUND) would reject the relay.
+    a.send({ t: 'm', d: { t: 'mush', s: [COSMETIC_BOUND - 0.04, 0] } });
+    a.send({ t: 'm', d: { t: 'mush', s: [-(COSMETIC_BOUND - 0.04), 0] } });
     await settle([a], [b]);
     for (const m of b.msgs.filter(isMush))
-      for (const v of m.d.s) assert.ok(Math.abs(v) < HALF, `relayed ${v} is off the island after rounding`);
+      for (const v of m.d.s) assert.ok(Math.abs(v) < COSMETIC_BOUND, `relayed ${v} is off the island after rounding`);
     // A flood from a fresh tab is cut at the room's message burst, like any other game message.
     const before = b.msgs.filter(isMush).length;
     for (let i = 0; i < 300; i++) c.send({ t: 'm', d: { t: 'mush', s: [i % 50, 0] } });

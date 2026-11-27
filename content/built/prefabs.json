@@ -15152,6 +15152,38 @@
         "params": {}
       }
     },
+    "town.choice-board": {
+      "attach": {
+        "label": {
+          "at": [
+            0,
+            1.05,
+            0
+          ],
+          "facing": [
+            0,
+            0,
+            1
+          ],
+          "h": 1.35,
+          "kind": "label",
+          "posts": "one",
+          "w": 1.9
+        }
+      },
+      "colliders": [],
+      "interactions": [
+        {
+          "action": "town.plot-buy"
+        }
+      ],
+      "key": "town.choice-board",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.choice-board",
+        "params": {}
+      }
+    },
     "town.curio-bay": {
       "colliders": [
         {
@@ -15581,6 +15613,15 @@
       "scope": "place",
       "visual": {
         "builder": "town.green-kerb",
+        "params": {}
+      }
+    },
+    "town.horn-pad": {
+      "colliders": [],
+      "key": "town.horn-pad",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.horn-pad",
         "params": {}
       }
     },

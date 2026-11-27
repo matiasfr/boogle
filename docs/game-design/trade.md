@@ -89,6 +89,8 @@ Sources: [till view and interaction](../../src/entities/railway/till-view.ts),
 
 ## Buying and building
 
+The first 150-Boogles offer has two boards. Holding one for a second buys the room's choice. The first accepted purchase spends the price once and saves the choice on the plot. Both houses bring the retired driver and one rider per minute. The Seed Shed and Horn Pavilion names and board words are placeholders.
+
 When the box can afford a staked plot, a gold outline shows its house. Approach the board and hold Interact for one
 second. Its board shows the benefit, price and box balance; an unaffordable offer gives the shortfall.
 Only an accepted server purchase spends the shared box and starts construction. At the current 50 percent room

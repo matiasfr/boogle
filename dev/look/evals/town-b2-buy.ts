@@ -12,7 +12,7 @@ const { inspectTown } = (await import(
 const { railwayWorldRead } = (await import(
   '/src/entities/railway/state.ts' as string
 )) as typeof import('../../../src/entities/railway/state.ts');
-if (interactTarget()?.id !== 'town.plot.0' || !interactTarget()?.run)
+if (interactTarget()?.id !== 'town.plot.0.1' || !interactTarget()?.run)
   throw new Error(`B2 wrong target: ${interactTarget()?.id}`);
 triggerAction('interact', 'down');
 setTimeout(() => triggerAction('interact', 'up'), 1600);

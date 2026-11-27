@@ -31,7 +31,18 @@ export type TradeYard = {
  * one integer). */
 export type TradeRoute = { town: number; line: number; a: number; b: number | 'end' };
 /** A plot's staking thresholds: the town's delivered timber and stone. */
-export type TradePlot = { wood: number; stone: number; base: number; riders: number; gives?: 'loader' };
+export const PLOT_KIND = { plain: 0, seeds: 1, horns: 2 } as const;
+export type TradePlot = {
+  wood: number;
+  stone: number;
+  base: number;
+  riders: number;
+  gives?: 'loader';
+  choices?: readonly number[];
+};
+export function validPlotKind(plot: TradePlot, kind: unknown): kind is number {
+  return plot.choices ? typeof kind === 'number' && plot.choices.includes(kind) : kind === PLOT_KIND.plain;
+}
 export const TRADE = {
   yards: [
     { line: 0, stop: 1, everyTicks: 150, cap: 8, town: 0, home: 0, goods: 'wood' },
@@ -43,7 +54,7 @@ export const TRADE = {
   // R2: cargo stakes plots (call 1). The Village's first three; plots 4 to 8 stay unstaked until priced.
   plots: [
     [
-      { wood: 8, stone: 0, base: 300, riders: 1 },
+      { wood: 8, stone: 0, base: 300, riders: 1, choices: [PLOT_KIND.seeds, PLOT_KIND.horns] },
       { wood: 24, stone: 0, base: 800, riders: 0, gives: 'loader' },
       { wood: 40, stone: 16, base: 800, riders: 1 },
     ],

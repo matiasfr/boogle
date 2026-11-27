@@ -72,7 +72,7 @@ try {
   await g.eval(`const {triggerAction}=await import('/src/player/controls.ts');
     const {interactTarget}=await import('/src/player/hands.ts');
     const {me}=await import('/src/player/player.ts');
-    if(interactTarget()?.id!=='town.plot.0'||!interactTarget()?.run)throw Error('board not offered: '+JSON.stringify({target:interactTarget()?.id,entered:me.entered,position:me.body?.position,read:window.__b2Read()}));
+    if(interactTarget()?.id!=='town.plot.0.1'||!interactTarget()?.run)throw Error('board not offered: '+JSON.stringify({target:interactTarget()?.id,entered:me.entered,position:me.body?.position,read:window.__b2Read()}));
     triggerAction('interact','down');setTimeout(()=>triggerAction('interact','up'),1200);`);
   await g.page.waitForFunction(
     `window.__b2Read().plot.at >= 0 && window.__b2Read().tick >= window.__b2Read().plot.at + 50`,

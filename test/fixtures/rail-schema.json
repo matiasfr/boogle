@@ -1,5 +1,5 @@
 {
- "worldNs": "v76",
+ "worldNs": "v77",
  "components": [
   {
    "kind": "rail",
@@ -1213,6 +1213,10 @@
     [
      "paid",
      "int"
+    ],
+    [
+     "kind",
+     "u8"
     ]
    ]
   },

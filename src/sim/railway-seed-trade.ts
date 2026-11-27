@@ -53,7 +53,7 @@ export function railwayAtTrade(stage: TradeStage): Seed {
       advance(s, 1);
     }
     if (stage !== 'house-ready') {
-      need(act(s, 'a', 'rail.buy', { id: 0 }) === 1, 'house-built: buy refused');
+      need(act(s, 'a', 'rail.buy', { id: 0, kind: 1 }) === 1, 'house-built: buy refused');
       advance(s, TRADE.buildTicks);
     }
   }

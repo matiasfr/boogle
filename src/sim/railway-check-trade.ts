@@ -7,7 +7,7 @@
 //                   strongbox's (boogles = landed + poured − spent) (throws on the first broken one)
 import type { World } from '../ecs/index.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
-import { RIDER_UNIT, TRADE, lineRoute } from './railway-trade-layout.ts';
+import { RIDER_UNIT, TRADE, validPlotKind, lineRoute } from './railway-trade-layout.ts';
 import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { plot, till, townClock, towns, trains, yardClock, yards } from './railway-rows.ts';
@@ -87,6 +87,7 @@ export function checkTrade(w: World, tick = RAILWAY_MAX_INT) {
         (p.at === -1 && p.paid !== 0)
       )
         bad('plot bounds');
+      if (p.at < 0 ? p.kind !== 0 : !validPlotKind(threshold, p.kind)) bad('plot kind');
       if (p.at >= 0 && (ts[town]!.wood < threshold.wood || ts[town]!.stone < threshold.stone)) bad('plot thresholds');
       paid += p.paid;
     }),

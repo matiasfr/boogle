@@ -20,8 +20,7 @@ import { createStepMeter } from './step-meter.ts';
 import { createRoomWorldHost } from './room-world-host.ts';
 import { isRailwayRoom } from '../../../src/world/railway-namespace.ts';
 import { RAILWAY_CLIENT_MESSAGES } from '../../../src/world/railway-wire.ts';
-import { validatePing, honkShape } from '../../../src/sim/social.ts';
-import { HALF } from '../../../src/world/grid.ts';
+import { validatePing, honkShape, COSMETIC_BOUND } from '../../../src/sim/social.ts';
 import { RTC_TYPE, validateRtc } from '../../../src/net/rtc-wire.ts';
 import { createReplicator } from '../../../src/world/replicate-server.ts';
 import { RAIL_AWAY } from '../../../src/sim/railway-away.ts';
@@ -82,7 +81,7 @@ function mushShape(msg: unknown): { s: number[] } | null {
   const s = (msg as { s?: unknown } | null)?.s;
   if (!Array.isArray(s) || !s.length || s.length > MUSH_SPOTS || s.length % 2) return null;
   const r = s.map((v: unknown) => (typeof v === 'number' ? Math.round(v * 10) / 10 : NaN));
-  return r.every((v) => Number.isFinite(v) && Math.abs(v) < HALF) ? { s: r } : null;
+  return r.every((v) => Number.isFinite(v) && Math.abs(v) < COSMETIC_BOUND) ? { s: r } : null;
 }
 const visible = (c: Client) => (c.d as { v?: unknown } | null)?.v === 1;
 // Voice chat's presence field (src/features/voice.ts): 1 in voice, 2 muted; missing means not in voice.

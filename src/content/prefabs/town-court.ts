@@ -6,6 +6,20 @@ const colliders: ColliderDef[] = [
 ];
 export const prefabs = [
   definePrefab({
+    key: 'town.choice-board',
+    scope: 'owner',
+    visual: { builder: 'town.choice-board', params: {} },
+    colliders: [],
+    attach: { label: { kind: 'label', at: [0, 1.05, 0], facing: [0, 0, 1], w: 1.9, h: 1.35, posts: 'one' } },
+    interactions: [{ action: 'town.plot-buy' }],
+  }),
+  definePrefab({
+    key: 'town.horn-pad',
+    scope: 'owner',
+    visual: { builder: 'town.horn-pad', params: {} },
+    colliders: [],
+  }),
+  definePrefab({
     key: 'town.ball-court',
     scope: 'owner',
     visual: { builder: 'town.ball-court', params: {} },

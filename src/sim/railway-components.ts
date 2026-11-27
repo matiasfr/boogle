@@ -333,7 +333,7 @@ export const Town = defineComponent(
 /** A priced plot, keyed by town * 16 + k. Completion is derived from at + TRADE.buildTicks. */
 export const Plot = defineComponent(
   'plot',
-  { slot: 'int', at: 'int', paid: 'int' },
+  { slot: 'int', at: 'int', paid: 'int', kind: 'u8' },
   { key: 'slot', defaults: { at: -1 } },
 );
 /** R3, the one shared strongbox (decided: one wallet, no personal money): the Boogles in it, the fares that landed and
