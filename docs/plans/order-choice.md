@@ -275,7 +275,7 @@ medium first). Sizes are estimates.
       beside the plug from the bay platforms; a take at each rack counting down only that rack; in a
       `cave-first-reached` room, Port Quay's buffers with the Wall's board still "LATER". Rule 53: the prompts and
       objective change here, so the same branch runs the bot from `bay-reached` (canonical) before it ships.
-- [ ] **5. The bot and the loop (M; "Implementation from a brief or an approved plan": gpt-6.2-sol medium).** After
+- [x] **5. The bot and the loop (M; "Implementation from a brief or an approved plan": gpt-6.2-sol medium).** After
       steps 1 to 4 are on main. `dev/loop/graph.ts`: `plug-gate` requires `bay-2` (the bay cut laid) and `pick`, not
       `canopy-3`; `wall-1` requires `canopy-3` as well as `cave-3` (decided: the rules'); every barrier node's
       `reached` matches `{ mark: 'route barrier opened', data: { gate } }`, not an `nth`; a named order `cave-first`
@@ -318,7 +318,7 @@ After step 5, on HOTBOX, once:
       area for both orders** (the [route to the ending](../backlog.md#the-checkpoint-we-work-toward) checkpoint's table).
       Measure each area's duration from the previous completed area in that run, with Port Quay before Canopy in
       `cave-first`. The headless loop uses straight-line walking and does not ride the trains.
-- [ ] The two bot segments above with `--order cave`, and the canonical segments re-run (a pass each, the load noted).
+- [x] The two bot segments above with `--order cave`, and the canonical segments re-run (a pass each, the load noted).
 - [x] **The reconnect proof with two open legs**: `railwayLegRejoin` (`dev/peer-test/ws-railway.ts`) at
       `cave-first-open`: a second tab joins; one tab lifts from Bell Rock's rack, the other from the cave apron's; the
       first leaves, the server restarts, it rejoins; both racks, both legs' held counts and both backs are exact, and
@@ -375,7 +375,7 @@ retry waited for both tabs to see each other before checking the mirrors. Log: `
 
 The first shared batch reached the browser's WebGPU startup for three segments. Chromium reported
 `page.evaluate: Target crashed` before any gameplay checkpoint in each. The canonical Port Quay run
-exhausted its outer timeout while queued. These runs leave the browser checkbox open.
+exhausted its outer timeout while queued. All four segments passed on subsequent runs.
 
 | Order | Segment | First attempt | Busy logical CPUs, start to end |
 | --- | --- | --- | --- |
@@ -390,6 +390,18 @@ sections and rode back to the West landing without recovery or graphics errors. 
 The canonical retries at 20 → 20 reached the cloth at Canopy and the first cave frame respectively.
 Both reached the 600-second wall limit with no graphics errors. Their traces are in
 `.look/playthrough/order-choice-canonical-{canopy,port}-retry/`.
+The cave-first Canopy retry reached the cloth and waited for the homeward train when its 600-second wall
+limit elapsed at 19.91 → 20 busy logical CPUs. Its trace is in `.look/playthrough/order-choice-cave-canopy-retry/`.
+The longer canonical Bay → Canopy run passed at 20 → 20 and returned to the West landing with the cloth
+and without recovery. Its verdict and still are in `.look/playthrough/order-choice-canonical-canopy-long/`.
+The longer canonical Canopy → Port Quay run also passed at 20 → 20. It took the cloth, opened the plug,
+laid the three cave sections and returned to the West landing without recovery. Its verdict and still
+are in `.look/playthrough/order-choice-canonical-port-long/`.
+The longer cave-first Port Quay → Canopy run passed at 20 → 20. It laid all three Canopy sections, took
+the cloth and rode home without recovery. The Wall was the next objective. Its verdict and still are
+in `.look/playthrough/order-choice-cave-canopy-long/`. Both Canopy stills show the bot standing safely
+on the West landing beside the bay line sign, and both Port Quay stills show the two line signs.
+The four passes establish progression. Shared-load timings and feel remain unverified.
 
 After rebasing on `ab6712df7`, `node dev/ship-check.ts` passed registry, lint, typecheck and 211 affected
 tests. The extra `npm run check` attempt passed 2,458 unit tests with one skip and reached the level checks
