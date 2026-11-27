@@ -171,3 +171,23 @@ test('unmounting the quay disposes its displayed train wheels', () => {
   owner.dispose();
   assert.ok(released.every((wasDisposed) => wasDisposed()), 'mounted wheel geometry survived teardown');
 });
+
+test('the quay showroom keeps the train parallel to its fixed bridge rails during the turn', () => {
+  const quay = JSON.parse(fs.readFileSync('content/built/levels/quay.json', 'utf8'));
+  const rail = quay.layout.data.pieces.find((piece: { id: string }) => piece.id === 'bridge-rail-1');
+  if (!rail) return; // A movable bridge replaces the fixed yard rails.
+  const axis = quay.layout.operands[rail.frame.operand].u.axis;
+  const restPose = Math.atan2(axis.x, axis.z);
+  const source = fs.readFileSync('src/entities/railway/garage-view.ts', 'utf8');
+  const step = source.slice(source.indexOf('    const target = (open && !parkedForWagon'), source.indexOf('    // Squash and settle'));
+  const turn = new Function('restPose', 'rig', `
+    const open = true, parkedForWagon = false, baseYaw = () => restPose;
+    const turnYaw = Math.PI / 4, DECK_RATE = Math.PI / 2, dt = 1 / 60;
+    const wrap = (n) => Math.atan2(Math.sin(n), Math.cos(n));
+    let settled = true, yaw = restPose;
+    ${step}
+  `);
+  const rig = new THREE.Group();
+  turn(restPose, rig);
+  assert.ok(Math.abs(Math.sin(rig.rotation.y - restPose)) < 0.001, 'wheels turned across the fixed rails');
+});
