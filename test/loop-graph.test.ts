@@ -20,6 +20,7 @@ import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { Forge, Job, QJob, Rail, Shed, Steel, createRailwayWorld } from '../src/sim/railway-components.ts';
 import { jobId, qjobId } from '../src/sim/railway-queries.ts';
 import { legRow } from '../src/sim/railway-queries-route.ts';
+import { WORKS_STEPS } from '../src/sim/railway-queries-room.ts';
 import { beatsOf } from '../dev/playtest/beats.ts';
 import { RAIL_STOPS, railSegmentOptions } from '../dev/look/segments.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, legFrame } from '../src/sim/railway-route.ts';
@@ -27,6 +28,22 @@ import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 
 const generic = new Set<string>(GENERIC_OPS);
 const owned = new Set(NODES.flatMap((n) => n.ops));
+
+test('each room works site and place matches a route node', () => {
+  const folded = new Set(['beam', 'pier', 'gorge', 'steelkit', 'steelhome']);
+  assert.deepEqual(
+    WORKS_STEPS.map((step) => step.site).sort(),
+    NODES.filter((node) => !node.optional && !folded.has(node.id))
+      .map((node) => node.id)
+      .sort(),
+  );
+  for (const { site, at } of WORKS_STEPS) {
+    const node = NODES.find((n) => n.id === site)!;
+    assert.equal(at.x, node.at.x, site);
+    assert.equal(at.z, node.at.z, site);
+    if (node.at.y !== undefined) assert.equal(at.y, node.at.y, site);
+  }
+});
 
 test('the cave-1 text report shows the plug finish dependency and the waiting cue', (t) => {
   const output = t.mock.method(console, 'log', () => {});

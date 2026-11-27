@@ -16,10 +16,104 @@ import { WORLD_NS } from '../../src/world/namespace.ts';
 import { SEED_STAGES, buildSeedWorld, type SeedStage } from '../../src/sim/railway-seeds.ts';
 import { railTick } from '../../src/sim/railway-systems.ts';
 import { createRailwayWorld } from '../../src/sim/railway-components.ts';
+import { createRailway } from '../../src/sim/railway-drive.ts';
+import { RAIL_LINES, trainPassesBy } from '../../src/sim/railway-lines.ts';
+import { roomWorks, WORKS_STEPS } from '../../src/sim/railway-queries-room.ts';
+import type { RoomWorks, WorksSite } from '../../src/sim/railway-queries-room.ts';
+import { trainStops } from '../../src/sim/railway-queries-trains.ts';
+import { rail } from '../../src/sim/railway-rows.ts';
 import { worldVerdict } from './railway-check.ts';
 
 const FILE = new URL('../fixtures/railway-golden.json', import.meta.url);
 const TICKS = 1200;
+// Lane A's pinned seed table. Keep this independent of the query's predicates.
+const WORKS_AT: Record<SeedStage, WorksSite> = {
+  awake: 'T1',
+  't1-pack-first': 'T2',
+  't1-jump-first': 'T2',
+  'forge-frame-last': 'forge',
+  'forge-lit-last': 'forge',
+  'q1-last': 'Q1',
+  'q1-done': 'Q2',
+  'q2-stocked': 'Q2',
+  'q2-arriving': 'Q2',
+  'hook-taken': 'Q3',
+  'q3-stocked': 'Q3',
+  'glide-earned': 'Q3',
+  'q3-done': 'lever',
+  'hook-earned': 'lever',
+  'q4-stocked': 'Q4',
+  'q4-arriving': 'Q4',
+  'q4-done': 'sea',
+  'q5-arriving': 'sea',
+  'q5-shelved': 'sea',
+  'sea-open': 'Q5',
+  'q5-stocked': 'Q5',
+  'q5-carry': 'Q5',
+  'q5-finishing': 'Q5',
+  'q5-done': 'boiler',
+  boiler: 'boiler',
+  'boiler-camp': 'boiler',
+  'trains-on': 'breaker',
+  'freight-running': 'breaker',
+  'fares-running': 'breaker',
+  'house-ready': 'breaker',
+  'house-built': 'breaker',
+  'sack-waiting': 'breaker',
+  'yard-ready': 'breaker',
+  'yard-built': 'breaker',
+  'q6-stocked': 'breaker',
+  'q6-finishing': 'breaker',
+  'q6-done': 'breaker',
+  'works-arrive': 'breaker',
+  'works-open': 'kiln',
+  'works-stocked': 'kiln',
+  'works-lit': 'stall',
+  'stall-done': 'cradle',
+  'cradle-fitted': 'table',
+  'wagon-on': 'crossing',
+  'yard-wagon': 'crossing',
+  'crossing-finishing': 'crossing',
+  'crossing-done': 'Q7',
+  'deck-laid': 'bents',
+  'yard-deck': 'bents',
+  'gap-footed': 'brace',
+  'leaf-raised': 'brace',
+  'ring-joined': 'steelworks',
+  'steel-kit': 'steelworks',
+  'gorge-open': 'steelworks',
+  'gorge-mid': 'steelworks',
+  'steel-lit': 'install',
+  'steel-home': 'install',
+  'boiler-long': 'stack-1',
+  'gorge-reached': 'pick',
+  'incline-open': 'incline-1',
+  'incline-mid': 'incline-2',
+  'bell-reached': 'seeds',
+  'bay-open': 'bay-1',
+  'bay-mid': 'bay-2',
+  'trade-ready': 'bay-2',
+  'trade-fitted': 'bay-2',
+  'bay-reached': 'plug-gate',
+  'canopy-open': 'canopy-1',
+  'trade-held': 'canopy-1',
+  'canopy-mid': 'canopy-2',
+  'canopy-reached': 'cloth',
+  'cave-first-open': 'cave-1',
+  'cave-open': 'cave-1',
+  'cave-mid': 'cave-2',
+  'cave-first-reached': 'canopy-gate',
+  'port-reached': 'wall-1',
+  'quay-garage': 'wall-1',
+  'wall-mid': 'wall-3',
+  'wall-deep': 'deep-gate',
+  'wall-closed': 'notch-gate',
+  'notch-open': 'notch-gate',
+  'notch-reached': 'lantern',
+  'causeway-open': 'causeway-1',
+  'island-reached': 'arrive',
+  arrived: 'arrive',
+};
 /** Every stage in exactly one shard (checked below); the trains and works stages share their cached bases. */
 export const SHARDS: readonly (readonly SeedStage[])[] = [
   [
@@ -119,9 +213,16 @@ export function goldenShard(shard: number) {
   // Built at module scope, outside the 5 s test timeout (as test/railway-trains.test.ts does).
   const got: Record<string, Row> = {};
   const verdicts: Record<string, string | null> = {};
+  const objectives = new Map<SeedStage, { works: RoomWorks; serving: boolean; stops: number }>();
   for (const stage of SHARDS[shard]!) {
     const seed = buildSeedWorld(stage);
     const built = seed.w;
+    const works = roomWorks(built);
+    objectives.set(stage, {
+      works,
+      serving: rail(built).trains >= 0,
+      stops: works.halt ? trainStops(built, works.halt.line).length : 0,
+    });
     const at = built.hash();
     // The same state on an unaudited world: the audit only checks writes, it never changes them.
     const w = createRailwayWorld();
@@ -145,6 +246,41 @@ export function goldenShard(shard: number) {
     writeFileSync(FILE, JSON.stringify(g, null, 1) + '\n');
   }
   const golden = JSON.parse(readFileSync(FILE, 'utf8')) as Golden;
+
+  if (shard === 0)
+    test('a fresh room names the wake site', () => {
+      const works = roomWorks(createRailway());
+      assert.equal(works.site, 'wake');
+      assert.equal(works.done, false);
+      assert.equal(works.halt, null);
+    });
+  for (const stage of SHARDS[shard]!)
+    test(`seed stage ${stage}: the room's works is ${WORKS_AT[stage]}`, () => {
+      const { works, serving, stops } = objectives.get(stage)!;
+      assert.equal(works.site, WORKS_AT[stage]);
+      assert.equal(works.done, stage === 'arrived');
+      const expectedAt =
+        stage === 'boiler-camp'
+          ? { x: 100700, y: 3030, z: -14400 }
+          : WORKS_STEPS.find((s) => s.site === WORKS_AT[stage])!.at;
+      assert.deepEqual(works.at, expectedAt);
+      for (const { what, have, of } of works.needs) {
+        assert.ok(have >= 0 && have <= of, `${what}: ${have} of ${of}`);
+      }
+      if (stage === 'q5-finishing') {
+        assert.deepEqual(works.needs, [
+          { what: 'logs', have: 24, of: 24 },
+          { what: 'rails', have: 24, of: 24 },
+        ]);
+        assert.deepEqual(works.ops, []);
+      }
+      assert.equal(works.halt !== null, serving);
+      if (works.halt) {
+        const { line, stop } = works.halt;
+        assert.ok(RAIL_LINES[line] && stop >= 0 && stop < stops);
+        assert.ok(!trainPassesBy(line, stop, 1, stops) || !trainPassesBy(line, stop, -1, stops));
+      }
+    });
 
   test(`shard ${shard}: the shards hold every seed stage once, and the golden lists them`, () => {
     assert.deepEqual([...SHARDS.flat()].sort(), [...SEED_STAGES].sort(), 'SHARDS must partition SEED_STAGES');
