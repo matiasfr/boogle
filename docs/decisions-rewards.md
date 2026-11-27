@@ -4,7 +4,8 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
-- 2026-11-25 · Shared pool's three questions as recommended: a route bill is not an upgrade; cast steel joins the pool when a train lands it at a hub; a hub town's plots are staked by its own deliveries ([entry](#d-2026-11-25-recommendations-taken-pool))
+- 2026-11-27 · Logs given at Home that reach the works by train pour into the leg frame's bill on arrival, up to what it lacks; minted kit and every other frame stay fed by hand ([entry](#d-2026-11-27-gifted-logs-pour-into-the-bill))
+- 2026-11-25 · Shared pool's three questions as recommended: a route bill is not an upgrade; cast steel joins the pool when a train lands it at a hub; a hub town's plots are staked by its own deliveries ([entry](#d-2026-11-25-recommendations-taken-pool)) _Narrowed 27 November: logs given at Home pour into a leg frame's bill when their train arrives ([entry](#d-2026-11-27-gifted-logs-pour-into-the-bill))._
 - 2026-11-25 · Garage step 4's Checkpoint table is accepted as run ([entry](#d-2026-11-25-garage-checkpoint-table-accepted))
 - 2026-11-24 · Garage step 4: the bay line's Quick or Strong trade opens at the bay cut's first lay (`bay-mid`); the third readout is "Kit a trip" ("Nothing to build" where no leg has two sections); Strong is offered on `ns` too ([entry](#d-2026-11-24-garage-step4-strong-window))
 - 2026-11-19 · Garage step 4's per-line trade waits for greybox leg 3's rules; Strong is built there as a hold (two sections' kit, waiting at the railhead), not as an empty car on `ns` and `bay` ([entry](#d-2026-11-19-garage-step4-waits-for-leg3)) (orchestrator's call)
@@ -15,7 +16,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 - 2026-11-17 · batch-3 calls confirmed as logged ([entry](#d-2026-11-17-batch3-confirmed))
 
-- 2026-11-16 · The ranked bulk calls and the listed confirm recommendations are confirmed as logged; their full words are in the archive ([entry](#d-2026-11-16-ranked-calls-confirmed))
+- 2026-11-16 · The ranked bulk calls and the listed confirm recommendations are confirmed as logged; their full words are in the archive ([entry](#d-2026-11-16-ranked-calls-confirmed)) _One narrowed 27 November: the riders' far end stays High Gorge once line 2 closes into the ring ([rail](decisions-rail.md#d-2026-11-27-riders-far-end-stays-high-gorge))._
 - 2026-11-16 · RW-007 is confirmed as a teaching beat ([entry](#d-2026-11-16-loader-house-teaching-beat)) _The [first-town lesson answer](#d-2026-11-16-first-town-lesson-answers) specifies plot 2 as a loader yard with no riders._
 - 2026-11-16 · RW-013 is confirmed; its price default is now 50%, as confirmed on 16 November ([entry](#d-2026-11-16-distance-fares-price-default))
 - 2026-11-16 · RW-045 is confirmed as model inputs only ([entry](#d-2026-11-16-end-game-goals-model-inputs))
@@ -55,6 +56,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · Kept from SETTLED:  _("every system is ignorable": replaced for the rail loop by the audit picks ("Skipping the rail"))_ ([entry](#d-undated-kept-from-settled))
 
 ## Decided
+
+- <a id="d-2026-11-27-gifted-logs-pour-into-the-bill"></a>**2026-11-27, gifted logs pour into the works' bill** (owner, 27 November 2026, in an orchestrator thread, to "keep riders' far end at High Gorge (holds the lap's step 2), and let gifted logs pour straight into the works' bill (holds Lane B's step 3). I recommend yes to both.": "Yes, to both."). Logs a player gives at Home that arrive at the works by train pour into the current section's bill on arrival, up to what the bill still lacks, so a gift advances the room with nobody at the works lifting it. This is [Lane B's plan](plans/lane-b.md#the-owners-question), variant (a): step 3a is built and step 3b is not. It narrows item 1 of the [25 November rule](#d-2026-11-25-recommendations-taken-pool) for these logs only: minted kit still goes onto the rack and is fed by hand, and station frames, the forge, the kiln and the works stay fed by hand at the frame. The plan's reading, his to change: a pour that fills a bill starts laying only once that leg's barrier is open.
 
 - <a id="d-2026-11-25-recommendations-taken-pool"></a>**2026-11-25, the shared pool's three questions, as recommended** (owner, 25 November 2026, in this thread, taking the orchestrator's recommendations on every open item it listed: "I'm not able to try anything right now, so I have to take your recommendations."). From [shared-pool](plans/shared-pool.md#9-open-questions-for-the-owner): (1) a bill that builds the route is not an upgrade; station frames, the forge, the kiln, the works and leg frames stay fed by hand at the frame; (2) steel cast at Ring Island joins the pool only when a train lands it in a hub's store, so step 4 is not built; (3) a hub town's plot is staked by its own deliveries, as built; only the buy, in Boogles, comes from the one strongbox.
 
