@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # npm run ship-queue -- <worktree> [--wait] [--dry-run] [--reviewed "<stamp> <who, what they found>"]
 #   [--orchestrator-read "<what changed in the tests>"] [--nightly-known "<why>"] [--main-known "<why>"]
+#   [--bump-known "<why>"]
 # The orchestrator's merge queue, for Claude or Codex: one ship at a time across every session on this machine.
 #   1. The review trigger is dev/review-stamp.ts (its REVIEW_PATHS and test rules; each file's rule is printed). Refuses
 #      a branch with a file that needs review unless --reviewed starts with the review stamp of exactly those files'
@@ -9,6 +10,9 @@
 #   1b. Holds a review-path branch (either kind) while the last scenarios verdict (the weekly job, or `npm run daily --
 #      scenarios` by hand) is not a pass, unless --nightly-known says why, and while a `red-main` issue is open, unless
 #      --main-known says why (it is the fix, or unrelated).
+#   1c. Holds a branch that changes WORLD_NS unless no world wipe has gone out today and nobody is on the production
+#      server (dev/world-bump-gate.ts; owner, 27 November 2026). A held branch is tried again in 30 to 60 minutes;
+#      --bump-known says why it ships anyway (the owner's word).
 #      --dry-run stops after these checks.
 #   2. Takes a machine-wide lock for the local part only (rebase, gate, push), so the next ship can start while CI runs.
 #   3. Runs dev/codex/ship-branch.sh from the trusted checkout (../boogle-trusted, detached at origin/main), never from
@@ -17,13 +21,13 @@
 #      reruns a cancelled CI run's failed jobs once (a job at its time limit on a slow runner).
 # Exit: 0 shipped (with --wait: on main; with --dry-run: checks passed), 1 cannot ship (no trusted checkout), 4 needs
 # review, the stamp is stale or the orchestrator's read is missing, 5 not on main after the wait, 6 held by a red
-# nightly, 7 held by a red main, 8 with --wait: the ship's pull request conflicts with main (rerun to reship), otherwise
-# ship-branch's status.
+# nightly, 7 held by a red main, 8 with --wait: the ship's pull request conflicts with main (rerun to reship), 9 held
+# by the daily world wipe, otherwise ship-branch's status.
 set -uo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 wt=$(cd "${1:?worktree path}" && pwd) || exit 1
 shift
-wait=0 dry=0 reviewed='' known='' read='' mainknown=''
+wait=0 dry=0 reviewed='' known='' read='' mainknown='' bumpknown=''
 while [ $# -gt 0 ]; do
   case "$1" in
     --wait) wait=1 ;;
@@ -32,6 +36,7 @@ while [ $# -gt 0 ]; do
     --orchestrator-read) read="${2:?--orchestrator-read needs a note}"; shift ;;
     --nightly-known) known="${2:?--nightly-known needs a reason}"; shift ;;
     --main-known) mainknown="${2:?--main-known needs a reason}"; shift ;;
+    --bump-known) bumpknown="${2:?--bump-known needs a reason}"; shift ;;
     *) echo "Unknown argument: $1"; exit 1 ;;
   esac
   shift
@@ -101,6 +106,18 @@ if [ -n "$verdicts" ]; then
     fi
     echo "ship-queue: main known: $mainknown"
   fi
+fi
+# The daily world wipe: the gate is silent for a branch with no bump, and anything but a clear yes holds.
+bump=$(node "$here/world-bump-gate.ts" "$wt" 2>&1)
+bumpstatus=$?
+[ -z "$bump" ] || echo "ship-queue: $bump"
+if [ "$bumpstatus" != 0 ]; then
+  if [ -z "$bumpknown" ]; then
+    echo 'ship-queue: held by the daily world wipe. Run it again in 30 to 60 minutes, or pass --bump-known "<why>" on the'
+    echo "owner's word."
+    exit 9
+  fi
+  echo "ship-queue: bump known: $bumpknown"
 fi
 if [ "$dry" = 1 ]; then echo "ship-queue: dry run, checks passed; nothing locked or shipped."; exit 0; fi
 # The trusted checkout must be a checkout of its own with the ship script, or nothing could ship: never report success.

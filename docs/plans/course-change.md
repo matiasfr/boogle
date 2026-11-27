@@ -1,4 +1,4 @@
-> **27 November 2026.** Written by an orchestrator session with the owner in the conversation, against main `5c4ab2023` (world v75). He asked for an outside critique of the game, agreed with all of it, and said: "I want you to make a plan and alter the course of the development of the game accordingly." This is that plan. The decisions it rests on are recorded ([game](../decisions-core-loop.md#d-2026-11-27-course-change), [flow](../decisions-process.md#d-2026-11-27-flow-one-pass-then-refine)); the review of why work has been slow is its [own report](../reports/why-slow-2026-11-27.md). Nothing here waits for the owner except the [three questions at the end](#open-questions).
+> **27 November 2026.** Written by an orchestrator session with the owner in the conversation, against main `5c4ab2023` (world v75). He asked for an outside critique of the game, agreed with all of it, and said: "I want you to make a plan and alter the course of the development of the game accordingly." This is that plan. The decisions it rests on are recorded ([game](../decisions-core-loop.md#d-2026-11-27-course-change), [flow](../decisions-process.md#d-2026-11-27-flow-one-pass-then-refine)); the review of why work has been slow is its [own report](../reports/why-slow-2026-11-27.md). Nothing here waits for the owner; the [questions at the end](#open-questions) are answered or proceed.
 
 # Course change: a railway a guest can join in two minutes
 
@@ -113,8 +113,8 @@ Calls 4 to 7 are logged in [agent-calls](../agent-calls.md) and proceed.
 
 Each proceeds on its recommendation unless it says it waits.
 
-1. **Does a docs-only merge stop reloading open pages?** Recommended yes. It changes the deploy workflow, so it waits on him.
-2. **World bumps batched to one a week?** Recommended yes while guests are being invited to play. It narrows "Reset at any point right now" (25 November), so it waits on him.
+1. ~~Does a docs-only merge stop reloading open pages?~~ Yes (owner, 27 November, [entry](../decisions-process.md#d-2026-11-27-docs-merges-reload-nobody-daily-wipe)): the build id names the newest code commit.
+2. ~~World bumps batched to one a week?~~ Daily, and only with nobody on the server, checked again in 30 to 60 minutes otherwise (owner, 27 November, same entry).
 3. **The words on the board** ("The works", "Needs", "Gives", "Thanks") are placeholders for his words. The build proceeds with them.
 
 ## Suspect or placeholder lines
