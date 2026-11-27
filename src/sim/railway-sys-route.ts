@@ -6,11 +6,11 @@
 // ./railway-queries-route.ts's.
 //
 //   legStock   rail.legStock { leg }   what you carry into the open leg's current frame, up to its bill; a full bill
-//                                      starts the section laying (its `start` tick)
+//                                      starts laying once the barrier is open or absent
 //   legTick    the rule tick           a section laid LEG_TUNE.layTicks after its start: the railhead moves on, the
 //                                      last section opens the leg's destination (endMoved, stopMoved)
 //   grant      rail.grant { id }       a pickup (RAIL_GRANTS[id]) for the room, once its leg is complete; once
-//   gate       rail.gate { id }        a barrier (RAIL_GATES[id]), once the room holds its grant and its leg is open; once
+//   gate       rail.gate { id }        a barrier (RAIL_GATES[id]), once the room holds its grant and its frame is current; starts a full frame
 //   arrive     rail.arrive {}          the meeting, once the route's last leg is laid and a train stands at its end; once
 import { defineSystem, type World } from '../ecs/index.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, LEG_TUNE } from './railway-route.ts';
@@ -33,7 +33,16 @@ import {
   Train,
 } from './railway-components.ts';
 import { boilerHeld, stopsOf } from './railway-queries.ts';
-import { gateLeg, legDone, legId, legKitStop, legOpen, legRow, routeId, routeRow } from './railway-queries-route.ts';
+import {
+  gateMayOpen,
+  legDone,
+  legId,
+  legKitStop,
+  legOpen,
+  legRow,
+  routeId,
+  routeRow,
+} from './railway-queries-route.ts';
 import { trainMoveIO } from './railway-sys-trains.ts';
 import { legKitPut, legKitStock, legRailheadHold, legYardHome, trimLegHeld } from './railway-sys-route-kit.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
@@ -41,8 +50,8 @@ import type { Act, Tick } from './railway-sys-core.ts';
 const bit = (k: number) => 1 << k;
 /** Put what you carry into the open leg's current frame (`leg`, a RAIL_LEGS index): logs and rails, each up to what the
  * section's bill still lacks. Refused when the leg is not open (not built, its `after` incomplete, or complete), the
- * section is already laying, its barrier is shut, the back holds nothing the bill lacks, or you haul the boiler. The
- * last unit starts the section laying. Returns the units taken. */
+ * section is already laying, the back holds nothing the bill lacks, or you haul the boiler. The
+ * last unit starts laying if the barrier is open or absent. Returns the units taken. */
 export const legStock = defineSystem(
   'rail.legStock',
   { reads: [Aperture, Route, Boiler], writes: [Leg, Account], phase: 'act', order: 60 },
@@ -51,7 +60,7 @@ export const legStock = defineSystem(
     const k = e.leg,
       row = legRow(w, k),
       sec = RAIL_LEGS[k]!.sections[row.laid]!;
-    if (row.start >= 0 || (sec.gate !== undefined && !(routeRow(w).gates & bit(sec.gate)))) return 0;
+    if (row.start >= 0) return 0;
     const a = w.get(Account, aid)!;
     if (boilerHeld(w, a.pid)) return 0;
     const logs = Math.min(a.carry, sec.logs - row.logs),
@@ -63,7 +72,8 @@ export const legStock = defineSystem(
     am.rails -= rails;
     m.logs += logs;
     m.rails += rails;
-    if (m.logs === sec.logs && m.rails === sec.rails) m.start = tick;
+    if (m.logs === sec.logs && m.rails === sec.rails && (sec.gate === undefined || routeRow(w).gates & bit(sec.gate)))
+      m.start = tick;
     // Fed: no longer held on a back (the step 3 review's P2-2).
     legKitPut(w, aid, logs, rails);
     return logs + rails;
@@ -158,19 +168,19 @@ export const grant = defineSystem(
     return 1;
   },
 );
-/** Open a barrier (`id`, a RAIL_GATES index): refused unless the room holds its `needs` grant and the leg whose frame
- * it shuts is open (built and its `after` complete: the Notch's waits for the Wall though the room holds the cloth),
- * and once open. */
+/** Open a shut barrier once the room holds its grant and its frame is current on an open leg.
+ * A full waiting frame starts laying on this tick. */
 export const gate = defineSystem(
   'rail.gate',
-  { reads: [Leg, Aperture], writes: [Route], phase: 'act', order: 62 },
-  (w, { e }: Act) => {
+  { reads: [Aperture], writes: [Route, Leg], phase: 'act', order: 62 },
+  (w, { e, tick }: Act) => {
     if (!railInt(e.id, RAIL_GATES.length - 1)) return 0;
-    const r = routeRow(w),
-      at = gateLeg(e.id);
-    if (r.gates & bit(e.id) || !(r.grants & bit(RAIL_GATES[e.id]!.needs)) || !at || !legOpen(w, at.leg)) return 0;
-    if (legRow(w, at.leg).laid !== at.section) return 0;
-    w.mut(Route, routeId(w))!.gates = r.gates | bit(e.id);
+    const at = gateMayOpen(w, e.id);
+    if (!at) return 0;
+    w.mut(Route, routeId(w))!.gates |= bit(e.id);
+    const row = legRow(w, at.leg);
+    const sec = RAIL_LEGS[at.leg]!.sections[at.section]!;
+    if (row.start < 0 && row.logs === sec.logs && row.rails === sec.rails) w.mut(Leg, legId(w, at.leg))!.start = tick;
     return 1;
   },
 );

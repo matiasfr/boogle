@@ -58,7 +58,15 @@ import { railTick } from '../../src/sim/railway-systems.ts';
 import { line, rail, train, trains } from '../../src/sim/railway-rows.ts';
 import { LOGS, roomOf, stopsOf } from '../../src/sim/railway-queries.ts';
 import { RAILS } from '../../src/sim/railway-line2-layout.ts';
-import { legKitNeed, legKitWaiting, legOpen, legRow, legsLaid, routeRow } from '../../src/sim/railway-queries-route.ts';
+import {
+  gateLeg,
+  legKitNeed,
+  legKitWaiting,
+  legOpen,
+  legRow,
+  legsLaid,
+  routeRow,
+} from '../../src/sim/railway-queries-route.ts';
 import { freightStop } from '../../src/sim/railway-queries-trade.ts';
 import { kitOwed, steelNeed } from '../../src/sim/railway-queries.ts';
 import { TRADE } from '../../src/sim/railway-trade-layout.ts';
@@ -1945,4 +1953,51 @@ export function routeRulesShard(shard: number) {
         }
       }
     });
+
+  test('every gated frame accepts kit while shut and starts on the later of opening and filling', () => {
+    const late = unaudited(buildSeedWorld('cave-mid'));
+    let deep = legStagesOn(late, 'cave-mid', 'wall-deep');
+    for (const [id, gate] of RAIL_GATES.entries()) {
+      const { leg, section } = gateLeg(id)!;
+      if (gate.id === 'notch') deep = legStagesOn(deep, 'wall-deep', 'notch-open');
+      if (gate.id === 'causeway') deep = legStagesOn(deep, 'notch-open', 'notch-reached');
+      const s = id < 3 ? unaudited(buildSeedWorld(id === 0 ? 'gorge-reached' : 'bay-reached')) : unaudited(deep);
+      if (!(routeRow(s.w).grants & (1 << gate.needs))) assert.equal(act(s, 'a', 'rail.grant', { id: gate.needs }), 1);
+      const sec = RAIL_LEGS[leg]!.sections[section]!;
+      const row = (seed: Seed) => legRow(seed.w, leg);
+      assert.equal(row(s).laid, section);
+      for (let i = 0; row(s).rackLogs < sec.logs || row(s).rackRails < sec.rails; i++) {
+        assert.ok(i < 16000, gate.id);
+        advance(s, 1);
+      }
+      const taken = act(s, 'a', 'rail.depotTake', { leg });
+      assert.ok(taken > 0);
+      assert.equal(act(s, 'a', 'rail.legStock', { leg }), taken);
+      for (const openEarly of [false, true]) {
+        const trial = unaudited(s);
+        if (openEarly) assert.equal(act(trial, 'a', 'rail.gate', { id }), 1);
+        advance(trial, 1);
+        while (row(trial).logs < sec.logs || row(trial).rails < sec.rails) {
+          assert.equal(row(trial).start, -1);
+          assert.equal(invariant(trial.w), null);
+          assert.ok(stock(trial, leg) > 0);
+        }
+        if (!openEarly) {
+          assert.equal(row(trial).start, -1);
+          assert.equal(invariant(trial.w), null);
+          const broken = copy(trial);
+          broken.w.mut(Leg, broken.w.lookup(Leg, leg)!)!.start = trial.t;
+          assert.throws(() => checkRoute(broken.w), /leg laying/);
+          advance(trial, 1);
+          assert.equal(act(trial, 'a', 'rail.gate', { id }), 1);
+        }
+        assert.equal(row(trial).start, trial.t);
+        advance(trial, LEG_TUNE.layTicks - 1);
+        assert.equal(row(trial).laid, section);
+        advance(trial, 1);
+        assert.equal(row(trial).laid, section + 1);
+        assert.equal(invariant(trial.w), null);
+      }
+    }
+  });
 }

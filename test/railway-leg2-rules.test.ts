@@ -134,7 +134,7 @@ test("leg 2's catalog lines: ns and bay open by their legs' sections, fleets 0, 
   }
 });
 
-test('the barrier: rail.legStock is refused while it is shut; it opens only with the pick held and the incline open', () => {
+test('the incline accepts kit while shut and starts laying when opened with the pick', () => {
   const s = copy('gorge-reached');
   const sec = RAIL_LEGS[INCLINE]!.sections[0]!;
   // Line 2 has already put the incline's first kit on the Gorge rack (it rode ahead of the stack's last lay).
@@ -143,11 +143,19 @@ test('the barrier: rail.legStock is refused while it is shut; it opens only with
     'the first kit on the Gorge rack',
   );
   assert.ok(act(s, 'a', 'rail.depotTake', { leg: INCLINE }) > 0, 'a takes logs off the Gorge rack');
-  assert.equal(act(s, 'a', 'rail.legStock', { leg: INCLINE }), 0, 'the frame refuses: the barrier is shut');
+  assert.ok(act(s, 'a', 'rail.legStock', { leg: INCLINE }) > 0);
+  const row = () => legRow(s.w, INCLINE);
+  for (let i = 0; row().logs < sec.logs || row().rails < sec.rails; i++) {
+    assert.ok(i < sec.logs + sec.rails);
+    stock(s, INCLINE);
+  }
+  assert.equal(row().start, -1);
+  advance(s, LEG_TUNE.layTicks);
+  assert.equal(row().laid, 0);
   assert.equal(act(s, 'a', 'rail.gate', { id: BARRIER }), 0, 'the barrier needs the pick');
   assert.equal(act(s, 'a', 'rail.grant', { id: PICK }), 1);
   assert.equal(act(s, 'a', 'rail.gate', { id: BARRIER }), 1, 'held, and the incline open');
-  assert.ok(act(s, 'a', 'rail.legStock', { leg: INCLINE }) > 0, 'the frame takes them');
+  assert.equal(row().start, s.t);
   // With the pick held but the incline not open (the stack not laid: a state the rules never reach, written here), the
   // barrier refuses.
   const mid = copy('gorge-mid');
@@ -180,7 +188,7 @@ test('Canopy kit rides ahead, the barrier guards the frame, and the cloth unlock
     advance(s, 1);
   }
   assert.ok(act(s, 'a', 'rail.depotTake', { leg: k }) > 0);
-  assert.equal(act(s, 'a', 'rail.legStock', { leg: k }), 0);
+  assert.ok(act(s, 'a', 'rail.legStock', { leg: k }) > 0);
   assert.equal(act(s, 'a', 'rail.gate', { id: CANOPY }), 1);
   for (let i = 0; i < 3; i++) {
     assert.deepEqual(kitLedger(s.w), [0, 0]);

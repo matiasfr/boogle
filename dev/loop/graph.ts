@@ -548,7 +548,7 @@ const ROUTE_NODES: readonly LoopNode[] = [
       k,
       `The incline to Bell Rock, section ${k + 1} of ${INCLINE.sections.length}`,
       k === 0
-        ? [dec('incline-gate', 'rules', `${RULES_ROUTE} legStock: refused while the frame's barrier is shut`)]
+        ? [dec('incline-gate', 'rules', `${RULES_ROUTE} legTick: a full frame lays once its barrier opens`, 'finish')]
         : [],
       k === INCLINE.sections.length - 1 ? ['bell'] : [],
     ),
@@ -599,7 +599,7 @@ const ROUTE_NODES: readonly LoopNode[] = [
       k,
       `Bell Rock to Canopy Town, section ${k + 1} of ${CANOPY.sections.length}`,
       k === 0
-        ? [dec('canopy-gate', 'rules', `${RULES_ROUTE} legStock: refused while the frame's barrier is shut`)]
+        ? [dec('canopy-gate', 'rules', `${RULES_ROUTE} legTick: a full frame lays once its barrier opens`, 'finish')]
         : [],
     ),
   ),
@@ -643,7 +643,9 @@ const ROUTE_NODES: readonly LoopNode[] = [
       CAVE,
       k,
       `West landing to Port Quay, section ${k + 1} of ${CAVE.sections.length}`,
-      k === 0 ? [dec('plug-gate', 'rules', `${RULES_ROUTE} legStock: refused while the frame's barrier is shut`)] : [],
+      k === 0
+        ? [dec('plug-gate', 'rules', `${RULES_ROUTE} legTick: a full frame lays once its barrier opens`, 'finish')]
+        : [],
       k === CAVE.sections.length - 1 ? ['port'] : [],
     ),
   ),
@@ -671,7 +673,7 @@ const ROUTE_NODES: readonly LoopNode[] = [
       k === 0
         ? [dec('canopy-3', 'rules', `${RULES_ROUTE} legStock: the Canopy line is also laid`)]
         : k === 5
-          ? [dec('deep-gate', 'rules', `${RULES_ROUTE} legStock: refused while the frame's barrier is shut`)]
+          ? [dec('deep-gate', 'rules', `${RULES_ROUTE} legTick: a full frame lays once its barrier opens`, 'finish')]
           : [],
       k === 5 ? ['gorge'] : [],
     ),
@@ -696,7 +698,7 @@ const ROUTE_NODES: readonly LoopNode[] = [
     NOTCH,
     0,
     'Canopy Town to Lantern Notch',
-    [dec('notch-gate', 'rules', `${RULES_ROUTE} legStock: refused while the frame's barrier is shut`)],
+    [dec('notch-gate', 'rules', `${RULES_ROUTE} legTick: a full frame lays once its barrier opens`, 'finish')],
     ['notch'],
   ),
   {
@@ -729,7 +731,7 @@ const ROUTE_NODES: readonly LoopNode[] = [
     cue: [onMain('world', "the barrier on Bell Rock's lower causeway frame", LEG_VIEW)],
   },
   legSection(CAUSEWAY, 0, 'Bell Rock to the Original Island', [
-    dec('causeway-gate', 'rules', `${RULES_ROUTE} legStock: refused while the frame's barrier is shut`),
+    dec('causeway-gate', 'rules', `${RULES_ROUTE} legTick: a full frame lays once its barrier opens`, 'finish'),
   ]),
   {
     id: 'arrive',

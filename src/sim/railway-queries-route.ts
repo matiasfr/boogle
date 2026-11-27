@@ -23,10 +23,20 @@
 //   legKitTrains, legKitCarriers  the trains that may carry kit (line 2: running less one; else all), and those that do
 //   legKitWaiting(w, line, r)    the kit aboard cannot unload at any halt open now (the stone stop's test)
 //   gateLeg(g)                   the leg and section a RAIL_GATES row shuts
+//   gateMayOpen(w, g)            its frame is current, its grant held and its barrier shut
 //   haltHead(w, halt)            the head a `heads` halt stands at now (the Railhead's ring head, a leg's sections)
 import type { World } from '../ecs/index.ts';
 import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, legBuilt } from './railway-lines.ts';
-import { LEG_TUNE, RAIL_LEGS, RAIL_YARDS, TRADE_LEG, TRADE_OPENS, isTradeLine, legStartS } from './railway-route.ts';
+import {
+  LEG_TUNE,
+  RAIL_GATES,
+  RAIL_LEGS,
+  RAIL_YARDS,
+  TRADE_LEG,
+  TRADE_OPENS,
+  isTradeLine,
+  legStartS,
+} from './railway-route.ts';
 import { LINE_SLOTS } from './railway-trains.ts';
 import { TRAIN_PHASE, type RailTrain } from './railway-train.ts';
 import { Account, Aperture, Leg, LegYard, Route, Train } from './railway-components.ts';
@@ -333,6 +343,13 @@ export function gateLeg(g: number) {
     if (section >= 0) return { leg, section };
   }
   return undefined;
+}
+/** Returns the current frame if the room may open its barrier. */
+export function gateMayOpen(w: World, g: number) {
+  const at = gateLeg(g);
+  if (!at || !legOpen(w, at.leg) || legRow(w, at.leg).laid !== at.section) return undefined;
+  const r = routeRow(w);
+  return !(r.gates & (1 << g)) && r.grants & (1 << RAIL_GATES[g]!.needs) ? at : undefined;
 }
 /** The head a `heads` halt (a RAIL_HALTS id) stands at now: a leg's railhead by its sections laid, Ring Island's
  * Railhead by its bent (`ring`, ./railway-queries.ts's ringHead). */

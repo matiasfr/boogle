@@ -5,8 +5,8 @@
 // dropped is accounted where it lies.
 //
 //   checkRoute(w)   each leg's bounds: 0 <= laid <= sections; fed never over the section's bill and nothing fed on a
-//                   complete leg; laying only with the bill full; nothing laid, fed or loaded before the leg opens;
-//                   loaded never over the leg's bill; a yard's units only while its leg is open, within its remaining
+//                   complete leg; laying only with the bill full and its barrier open or absent;
+//                   nothing fed or laid before the leg opens; loaded never over the leg's bill; a yard's units only while its leg is open, within its remaining
 //                   bills less fed; each line's kit carriers within its kitTrains; a grant bit only with
 //                   its leg complete, a gate bit only with its grant and its leg reached, `arrived` only with the
 //                   route's last leg complete; a train's `legKit` mark only with cargo aboard on a line with a leg
@@ -64,14 +64,12 @@ export function checkRoute(w: World) {
     // (railway-sys-route-kit.ts, legStandInBackstop).
     if (STOCKED_LEGS.includes(k) && r.laid === 0 && r.loadedRails > leg.sections[0]!.rails)
       bad('stand-in over its bill');
-    // Laying exactly while the current section's bill is full (the last unit starts it; laying spends it).
-    if (r.start >= 0 !== (!!sec && r.logs === sec.logs && r.rails === sec.rails)) bad('leg laying');
+    const clear = sec?.gate === undefined || !!(routeRow(w).gates & (1 << sec.gate));
+    if (r.start >= 0 !== (!!sec && clear && r.logs === sec.logs && r.rails === sec.rails)) bad('leg laying');
     // Nothing happens on a leg before it opens: not built, or the leg before it not complete (the rivet, for the first).
     // Its kit may load once the leg before it is reached (greybox-leg2.md, the kit ahead), never sooner.
     if (!legReached(w, k) && (r.laid || r.logs || r.rails || r.heldLogs || r.heldRails)) bad('leg before it opens');
     if ((r.loadedLogs || r.loadedRails) && !legKitMayLoad(w, k)) bad('leg kit before its leg');
-    // A gated section is fed only once its barrier is open.
-    if (sec?.gate !== undefined && (r.logs || r.rails) && !(routeRow(w).gates & (1 << sec.gate))) bad('leg gate');
   });
   const lifts = RAIL_LEGS.map(() => ({ logs: 0, rails: 0 }));
   w.each([Account], (_id, a) => {

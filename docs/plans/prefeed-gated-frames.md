@@ -160,7 +160,7 @@ Each step leaves `node dev/ship-check.ts` green. Models come from `npm run model
 step 3 edits `run.ts`, so both are rebased onto order choice's step 5 and ship after it is on main. Steps 1 and 2 may be
 built before that, on their own branch. Step 1 ships alone or with step 2, since step 1 changes nothing on screen.
 
-- [ ] **1. The rule (S; "High-risk implementation (server, sync, src/world, src/net)": gpt-6.2-astra medium).**
+- [x] **1. The rule (S; "High-risk implementation (server, sync, src/world, src/net)": gpt-6.2-astra medium).**
       Files:
       - `src/sim/railway-queries-route.ts`: `gateMayOpen(w, g)` (the existing condition, moved out of `gate`) and a
         line in the header list.
