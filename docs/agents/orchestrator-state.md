@@ -10,9 +10,8 @@ The one record of who is running what, and what the eight-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Pre-feed step 2, the view: Feed on a shut frame, the waiting bill, the seeds line | The greybox route | codex/prefeed-view | the heartbeat, Codex Astra medium | 2026-11-27 06:25 | running: view only, `src/entities/route-greybox/leg-view.ts`, `docs/game-design/place.md`, one eval in `dev/look/evals/`; the bot from `bay-reached` (browser-heavy) |
 | Port Quay step 6, the garage screen at Port Quay (with the Home garage leak, P2) | Garage choices | codex/port-quay-garage-screen | the heartbeat, Codex Astra medium | 2026-11-27 06:53 | running: `src/entities/railway/garage-state.ts`, `garage-view.ts`, `roundhouse-view.ts`, the quay mount, `src/features/garage.ts`, `garage-data.ts`, `test/garage-selection.test.ts`; the two-tab look (browser-heavy, two-player) |
-| Greybox look step 5, Port Quay | The world leaves greybox | codex/greybox-look-quay | the heartbeat, Codex Astra medium | 2026-11-27 06:54 | running: view only, a new draw-only file in `src/entities/route-greybox/` mounted by `massing-quay.ts`, `src/content/levels/leg4.ts` and records; not `quay-roundhouse.ts`, `index.ts`, `leg-view.ts` or `src/entities/railway/` |
+| Brainstorm: phase guides, a little guy at each phase who says what to do next, in character | Phase guides | claude/phase-guides-brainstorm | the heartbeat on the owner’s word, Antigravity Neon medium | 2026-11-27 07:31 | running: docs only, `docs/brainstorms/phase-guides.md`, its design review, rows in `docs/agent-calls.md` |
 
 ## Where the work stands
 
