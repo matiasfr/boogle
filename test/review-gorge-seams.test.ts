@@ -47,7 +47,7 @@ async function drawn(base: boolean) {
     compiled,
     definitions,
     workshop,
-    gorge,
+    gorge: base ? JSON.parse(read('content/built/levels/gorge.json', true)) : gorge,
     names,
     ...validation,
     builders,
@@ -87,7 +87,7 @@ test('clipped Gorge floor has no hole inside the former walkable top', { skip: n
     const x = -106.1078391364522;
     const z = -1983.10225309756;
     const ray = new THREE.Raycaster();
-    ray.far = 0.2;
+    ray.far = 0.8; // The joined walking surface drops from 3.90 m to the 3.35 m planks.
     const hits = (objects: THREE.Object3D[], dx = 0, dz = 0) => {
       ray.set(new THREE.Vector3(x + dx, 4, z + dz), new THREE.Vector3(0, -1, 0));
       return ray.intersectObjects(objects, false);

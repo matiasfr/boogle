@@ -28,7 +28,7 @@ import * as lines from '../src/sim/railway-lines.ts';
 import * as rows from '../src/sim/railway-rows.ts';
 import * as progress from '../src/sim/railway-queries-route.ts';
 import { RING_S_HEAD } from '../src/sim/railway-ring-layout.ts';
-import { lapSlots } from '../src/sim/railway-lap.ts';
+import { joinedCaveStop, lapSlots } from '../src/sim/railway-lap.ts';
 import { TRAIN_PHASE, trainStopsOf } from '../src/sim/railway-train.ts';
 import { Leg } from '../src/sim/railway-components.ts';
 import { buildSeedWorld } from '../src/sim/railway-seeds.ts';
@@ -767,6 +767,7 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
       KIT,
       TRAIN_PHASE,
       RING_S_HEAD,
+      joinedCaveStop,
       lapSlots,
       AREA_CENTRES,
       trainStops: (_world: unknown, line: number) =>
