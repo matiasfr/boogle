@@ -3,6 +3,13 @@
 // pile id remap, thresholds left to the server, disconnects and late join; against the real server rules and requests
 // behind hand-driven rooms with a per-client one-way delay in steps. State is read as rows and queries off the
 // client's `read.world()` and the server's `api.world()`, never through the adapter's wide read (docs/plans/ecs-m12-m13.md, X1).
+import fs from 'node:fs';
+import { sourceModule } from '../dev/level/source.ts';
+import { WORKS_STEPS, roomWorks, type RoomWorks } from '../src/sim/railway-queries-room.ts';
+import * as giftReads from '../src/sim/railway-queries-gift.ts';
+import { advance, unaudited } from './helpers/rail.ts';
+import { RAIL_LEGS } from '../src/sim/railway-route.ts';
+import { laySection } from '../src/sim/railway-seed-legs.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRailwayAdapter } from '../src/adapters/railway-session.ts';
@@ -1102,4 +1109,69 @@ test('a disposed adapter does not stay ready, inside the frame it was disposed i
   assert.equal(a.adapter.read.ready(), false, 'ready after dispose');
   w.run(30);
   assert.equal(a.adapter.read.ready(), false, 'ready 30 frames after dispose');
+});
+
+async function observeWorks(read: unknown, confirmed: Client['mirror']['confirmed']) {
+  const sites: string[] = [];
+  let thanks: string[] = [];
+  const shells = Object.fromEntries(
+    'createRailwayBreaker createRailwayWorks createRailwayRoundhouse createRailwayCrossing createRingSteel createLegView createRailwayFootings createRailwayRailhead createRailwayLeaf createRingMeet createRingFolk createStationGuides createBoilerInstall'
+      .split(' ')
+      .map((name) => [name, () => ({ points: [], update() {} })]),
+  );
+  const source = fs
+    .readFileSync('src/entities/railway/works-live.ts', 'utf8')
+    .replace("import('../../render/part-geometry.ts')", 'Promise.resolve({})');
+  const { createRailwayWorksLive } = sourceModule<{
+    createRailwayWorksLive(adapter: unknown, owner: unknown, deps: unknown): Promise<{ update(dt: number): void }>;
+  }>(source, {
+    ...shells,
+    ...giftReads,
+    roomWorks,
+    WORKS_STEPS,
+    railwayMirror: { confirmed },
+    rules: { roster: { indexOf: (pid: string) => ['a', 'b'].indexOf(pid), nameOf: (i: number) => ['a', 'b'][i] } },
+    islandGround: () => ({}),
+    createDockPost: () => ({ retry() {} }),
+    createWorksBoard: () => (work: RoomWorks, names: string[]) => {
+      sites.push(work.site);
+      thanks = names;
+    },
+    createWorksSignal: () => (work: RoomWorks) => sites.push(work.site),
+  });
+  const mounted = await createRailwayWorksLive({ read }, {}, {});
+  return { update: () => mounted.update(0), sites, thanks: () => thanks };
+}
+test('works board and plume keep the confirmed site after a predicted wake disconnects', async () => {
+  const w = world(),
+    a = w.join('a', 'alice', 6);
+  w.ready();
+  const works = await observeWorks(a.adapter.read, a.mirror.confirmed);
+  assert.ok(a.adapter.wake());
+  a.disconnect();
+  assert.equal(a.adapter.read.pending(), 0);
+  assert.equal(roomWorks(a.adapter.read.world()).site, 'T1');
+  works.update();
+  assert.deepEqual(works.sites, ['wake', 'wake']);
+});
+
+test('Canopy contributors remain on the board while their funded section lays', async () => {
+  const s = unaudited(buildSeedWorld('canopy-mid'));
+  const works = await observeWorks({ world: () => s.w, pending: () => 0, whole: () => true }, () => s.w);
+  let checked = false;
+  laySection(
+    s,
+    RAIL_LEGS.findIndex((l) => l.id === 'bell-canopy'),
+    (seed, ticks) => {
+      const work = roomWorks(seed.w);
+      if (!checked && work.site === 'canopy-2' && !work.ops.length) {
+        assert.deepEqual(giftReads.worksThanks(seed.w), ['a', 'b']);
+        works.update();
+        assert.deepEqual(works.thanks(), ['a', 'b']);
+        checked = true;
+      }
+      advance(seed, ticks);
+    },
+  );
+  assert.ok(checked);
 });

@@ -20,13 +20,18 @@ import { createRingSteel } from '../ring-steel/view.ts';
 import { createLegView } from '../route-greybox/leg-view.ts';
 import { createStationGuides } from './station-guides.ts';
 import { giftQueued, giftAboard, giftRides, worksThanks } from '../../sim/railway-queries-gift.ts';
-import { rules } from '../../world/game-world.ts';
-import { roomWorks } from '../../sim/railway-queries-room.ts';
+import { railwayMirror, rules } from '../../world/game-world.ts';
+import { roomWorks, WORKS_STEPS } from '../../sim/railway-queries-room.ts';
 import { boiler, works as worksRow } from '../../sim/railway-rows.ts';
 import { createWorksSignal } from './works-signal.ts';
 import { islandGround } from '../ring-island/state.ts';
 import { createWorksBoard } from './works-board-state.ts';
 import { createDockPost } from '../../place/dock-post.ts';
+
+// A funded section keeps its site while laying, even after the feed action disappears.
+const routeSections = new Set(
+  WORKS_STEPS.filter((step) => step.ops.includes('rail.legStock')).map((step) => step.site),
+);
 
 export async function createRailwayWorksLive(
   adapter: RailwayAdapter,
@@ -59,32 +64,29 @@ export async function createRailwayWorksLive(
   const signal = createWorksSignal(owner, await islandGround());
   const updateBoard = createWorksBoard(owner);
   const dock = createDockPost(owner);
-  let publication: ReturnType<typeof adapter.read.world> | undefined;
+  let publication: Parameters<typeof roomWorks>[0] | undefined;
   let current: ReturnType<typeof roomWorks> | undefined;
   function updateSignal(dt: number, restore = false) {
-    if (!adapter.read.whole()) return;
-    const world = adapter.read.world();
+    if (!adapter.read.whole() || !railwayMirror) return;
+    const world = railwayMirror.confirmed();
     if (world !== publication || !current) {
-      // A predicted frame may be refused. Keep the last published board until outstanding actions settle.
-      if (!adapter.read.pending()) {
-        current = roomWorks(world);
-        const routeSection = current.ops.includes('rail.legStock');
-        const names = routeSection
-          ? worksThanks(world)
-              .map((pid) => {
-                const ordinal = rules.roster.indexOf(pid);
-                return ordinal < 0 ? undefined : rules.roster.nameOf(ordinal);
-              })
-              .filter((name): name is string => !!name)
-              .slice(0, 6)
-          : [];
-        updateBoard(
-          current,
-          names,
-          routeSection && giftRides(world) ? [giftQueued(world), giftAboard(world)] : undefined,
-        );
-        publication = world;
-      }
+      current = roomWorks(world);
+      const routeSection = routeSections.has(current.site);
+      const names = routeSection
+        ? worksThanks(world)
+            .map((pid) => {
+              const ordinal = rules.roster.indexOf(pid);
+              return ordinal < 0 ? undefined : rules.roster.nameOf(ordinal);
+            })
+            .filter((name): name is string => !!name)
+            .slice(0, 6)
+        : [];
+      updateBoard(
+        current,
+        names,
+        routeSection && giftRides(world) ? [giftQueued(world), giftAboard(world)] : undefined,
+      );
+      publication = world;
     }
     if (!current) return;
     const work = current;

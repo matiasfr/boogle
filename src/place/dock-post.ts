@@ -30,5 +30,5 @@ export function createDockPost(owner: OwnedView) {
     me.body,
     { lift: true, visitor: frameHasRemote },
   );
-  return { retry: () => clearance.retry(me.body), rows: () => worksBoardRows(board.position) };
+  return { retry: () => clearance.retry(me.body), rows: () => (board.visible ? worksBoardRows(board.position) : []) };
 }
