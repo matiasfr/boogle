@@ -13,15 +13,15 @@ export async function hoodRock(owner: OwnedView) {
   mesh.name = 'West hood shoulders';
   // Work back from the exit chord's daylight end. The faces flank the 13 m opening.
   const yaw = Math.atan2(-125, 225);
-  const at = (along: number, across: number) =>
+  const at = (along: number, across: number, foot: number) =>
     new THREE.Vector3(
       795 + Math.sin(yaw) * along + Math.cos(yaw) * across,
-      3.1,
+      foot,
       75 + Math.cos(yaw) * along - Math.sin(yaw) * across,
     );
-  const shoulder = new THREE.Matrix4().makeRotationY(yaw).scale(new THREE.Vector3(5.6 / 6, 0.54, 0.18));
-  mesh.setMatrixAt(0, shoulder.setPosition(at(14.9, -9.5)));
-  mesh.setMatrixAt(1, shoulder.setPosition(at(14.9, 9.5)));
+  const shoulder = new THREE.Matrix4().makeRotationY(yaw).scale(new THREE.Vector3(5.6 / 6, 0.84, 0.78));
+  mesh.setMatrixAt(0, shoulder.setPosition(at(14.9, -9.5, -2)));
+  mesh.setMatrixAt(1, shoulder.setPosition(at(14.9, 9.5, -1.7)));
   owner.add(mesh);
   // Print the last course onto the existing inner wall plane. The depth bias
   // resolves coplanar pixels while the entire 13 m opening stays clear.
@@ -33,7 +33,7 @@ export async function hoodRock(owner: OwnedView) {
   inset.name = 'West hood return';
   inset.rotation.y = yaw - Math.PI / 2;
   inset.scale.set(0.9, 0.54, 0.00001);
-  inset.position.copy(at(12, 6.5));
+  inset.position.copy(at(12, 6.5, 3.1));
   owner.add(inset);
   return { update() {} };
 }
