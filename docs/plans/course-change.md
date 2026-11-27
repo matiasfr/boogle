@@ -114,7 +114,7 @@ Calls 4 to 7 are logged in [agent-calls](../agent-calls.md) and proceed.
 Each proceeds on its recommendation unless it says it waits.
 
 1. ~~Does a docs-only merge stop reloading open pages?~~ Yes (owner, 27 November, [entry](../decisions-process.md#d-2026-11-27-docs-merges-reload-nobody-daily-wipe)): the build id names the newest code commit.
-2. ~~World bumps batched to one a week?~~ Daily, and only with nobody on the server, checked again in 30 to 60 minutes otherwise (owner, 27 November, same entry).
+2. ~~World bumps batched to one a week?~~ Any time nobody is playing, as many a day as are ready; held and checked again in 30 to 60 minutes otherwise (owner, 27 November, [entry](../decisions-process.md#d-2026-11-27-world-wipes-any-time-nobody-plays)).
 3. **The words on the board** ("The works", "Needs", "Gives", "Thanks") are placeholders for his words. The build proceeds with them.
 
 ## Suspect or placeholder lines

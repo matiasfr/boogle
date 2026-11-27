@@ -10,9 +10,9 @@
 #   1b. Holds a review-path branch (either kind) while the last scenarios verdict (the weekly job, or `npm run daily --
 #      scenarios` by hand) is not a pass, unless --nightly-known says why, and while a `red-main` issue is open, unless
 #      --main-known says why (it is the fix, or unrelated).
-#   1c. Holds a branch that changes WORLD_NS unless no world wipe has gone out today and nobody is on the production
-#      server (dev/world-bump-gate.ts; owner, 27 November 2026). A held branch is tried again in 30 to 60 minutes;
-#      --bump-known says why it ships anyway (the owner's word).
+#   1c. Holds a branch that changes WORLD_NS while anyone is on the production server (dev/world-bump-gate.ts; owner,
+#      27 November 2026). A held branch is tried again in 30 to 60 minutes; --bump-known says why it ships anyway (the
+#      owner's word).
 #      --dry-run stops after these checks.
 #   2. Takes a machine-wide lock for the local part only (rebase, gate, push), so the next ship can start while CI runs.
 #   3. Runs dev/codex/ship-branch.sh from the trusted checkout (../boogle-trusted, detached at origin/main), never from
@@ -22,7 +22,7 @@
 # Exit: 0 shipped (with --wait: on main; with --dry-run: checks passed), 1 cannot ship (no trusted checkout), 4 needs
 # review, the stamp is stale or the orchestrator's read is missing, 5 not on main after the wait, 6 held by a red
 # nightly, 7 held by a red main, 8 with --wait: the ship's pull request conflicts with main (rerun to reship), 9 held
-# by the daily world wipe, otherwise ship-branch's status.
+# by the world wipe (players are on), otherwise ship-branch's status.
 set -uo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 wt=$(cd "${1:?worktree path}" && pwd) || exit 1
@@ -107,14 +107,14 @@ if [ -n "$verdicts" ]; then
     echo "ship-queue: main known: $mainknown"
   fi
 fi
-# The daily world wipe: the gate is silent for a branch with no bump, and anything but a clear yes holds.
+# The world wipe: the gate is silent for a branch with no bump, and anything but a clear yes holds.
 bumpgate() {
   bump=$(node "$here/world-bump-gate.ts" "$wt" 2>&1)
   bumpstatus=$?
   [ -z "$bump" ] || echo "ship-queue: $bump"
   [ "$bumpstatus" != 0 ] || return 0
   if [ -z "$bumpknown" ]; then
-    echo 'ship-queue: held by the daily world wipe. Run it again in 30 to 60 minutes, or pass --bump-known "<why>" on the'
+    echo 'ship-queue: the world wipe is held. Run it again in 30 to 60 minutes, or pass --bump-known "<why>" on the'
     echo "owner's word."
     return 9
   fi
@@ -144,7 +144,7 @@ done
 echo $$ >"$lock/pid"
 unlock() { rm -f "${lock:?}/pid"; rmdir "$lock" 2>/dev/null; }
 trap unlock EXIT
-# A bump that waited for the lock looks again: someone may have joined, or another wipe gone out, meanwhile.
+# A bump that waited for the lock looks again: someone may have joined meanwhile.
 if [ -n "$bump" ]; then bumpgate || exit 9; fi
 if ! { git -C "$trusted" fetch -q origin && git -C "$trusted" checkout -q --detach origin/main; }; then
   echo "ship-queue: could not move the trusted checkout $trusted to origin/main; nothing shipped."
