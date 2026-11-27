@@ -112,7 +112,7 @@ export function printNode(id: string, json: boolean) {
       : []),
     `  grind 1-4 players: ${n.perPlayer.join(' / ')}${n.vehicleFed ? `; by hand ${n.byHand.join(' / ')}` : ''}${g?.detour ? `; humans walk x${g.detour.median.toFixed(2)} the prediction (n ${g.detour.n})` : ''}`,
     `  cue: ${n.cueText}`,
-    `  requires: ${requires.map((e) => `${e.on} (${e.status}, held by ${e.by})`).join(', ') || 'nothing'}`,
+    `  requires: ${requires.map((e) => `${e.on}${e.scope === 'finish' ? ' to finish' : ''} (${e.status}, held by ${e.by})`).join(', ') || 'nothing'}`,
     ...edges
       .filter((e) => e.status !== 'decided' || e.by !== 'rules')
       .map((e) => `  order note: ${e.node} / ${e.on}: ${e.status}, ${e.source}`),
