@@ -20,7 +20,7 @@ import { createRingSteel } from '../ring-steel/view.ts';
 import { createLegView } from '../route-greybox/leg-view.ts';
 import { createStationGuides } from './station-guides.ts';
 import { giftQueued, giftAboard, giftRides, worksThanks } from '../../sim/railway-queries-gift.ts';
-import { localPresence, remotes } from '../../netplay/net.ts';
+import { rules } from '../../world/game-world.ts';
 import { roomWorks } from '../../sim/railway-queries-room.ts';
 import { boiler, works as worksRow } from '../../sim/railway-rows.ts';
 import { createWorksSignal } from './works-signal.ts';
@@ -71,11 +71,10 @@ export async function createRailwayWorksLive(
         const routeSection = current.ops.includes('rail.legStock');
         const names = routeSection
           ? worksThanks(world)
-              .map((pid) =>
-                pid === adapter.read.pid
-                  ? localPresence()?.name
-                  : [...remotes.values()].find((r) => r.pid === pid)?.name,
-              )
+              .map((pid) => {
+                const ordinal = rules.roster.indexOf(pid);
+                return ordinal < 0 ? undefined : rules.roster.nameOf(ordinal);
+              })
               .filter((name): name is string => !!name)
               .slice(0, 6)
           : [];

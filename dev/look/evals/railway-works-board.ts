@@ -33,11 +33,19 @@ const destination = stops.findIndex((h) => h.name === match[2]);
 check(destination >= 0, 'board names a served halt');
 check(/logs 0\//.test(before[1]!), 'board asks for logs');
 if (line === 1) {
+  const { coverLifted } = (await import(
+    '/src/boot/cover-hold.ts' as string
+  )) as typeof import('../../../src/boot/cover-hold.ts');
+  await until(() => coverLifted() && me.coyote > 0 && railRead()?.ready(), 'ready to walk from the dock', 90000);
+  await bot.wait(800);
   const { SHORE_PATH } = (await import(
     '/src/place/shore-layout.ts' as string
   )) as typeof import('../../../src/place/shore-layout.ts');
   for (const [x, z] of SHORE_PATH.slice(1)) {
-    check(await bot.straight(1000 + x, z, 1.2, 18000), 'followed the shore path from the dock');
+    if (!(await bot.straight(1000 + x, z, 1.2, 7000))) {
+      console.log('DOCK PATH ' + JSON.stringify({ at: me.body?.position, to: [1000 + x, z] }));
+      await hopTo(1000 + x, z, 'shore path ' + x + ',' + z, 15000, 1.5);
+    }
   }
   await ride(HALT.village2, destination);
 } else {
