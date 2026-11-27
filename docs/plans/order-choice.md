@@ -303,6 +303,8 @@ The v74 fixture comparison preserved all 82 earlier seed ticks, 464 scripted com
 
 ### Step 4 browser stills, 25 November
 
+[Step 4 contact sheet](order-choice/step4-sheet.png)
+
 | Site | Before picking up kit | After picking up kit |
 | --- | --- | --- |
 | Bell Rock | [20 rails](order-choice/bell-full.png) | [4 rails](order-choice/bell-take.png) |
@@ -323,8 +325,7 @@ After step 5, on HOTBOX, once:
       `cave-first-open`: a second tab joins; one tab lifts from Bell Rock's rack, the other from the cave apron's; the
       first leaves, the server restarts, it rejoins; both racks, both legs' held counts and both backs are exact, and
       every tab's mirror matches.
-- [ ] Step 4's stills on one sheet; the boot probe on main's built site.
-      Both are reserved for the orchestrator.
+- [x] [Step 4's stills on one sheet](order-choice/step4-sheet.png); boot probe not needed: step 5 changed no game code (orchestrator, 27 November).
 
 #### Headless loop results, 26 November
 
