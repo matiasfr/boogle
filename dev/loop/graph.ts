@@ -237,6 +237,7 @@ export const ACTIVITY_MARKS: readonly RegExp[] = [
   /^chop$/,
   /^mined$/,
   /^deposit$/,
+  /^first contribution$/,
   /^depot pick up$/,
   /^cart called$/,
   /^train called$/,

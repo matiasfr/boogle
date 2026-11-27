@@ -49,6 +49,7 @@ import { tuningVisit } from '../../dev-preferences.ts';
 import { background } from '../../async.ts';
 import { bootMarks } from '../../boot/timeline.ts';
 import { roomReplaced, roomSeed } from '../../netplay/room-seed.ts';
+import { fallArrival } from '../../fall/arrival.ts';
 import { stepWaterEpisode, waterEpisode } from './water-episode.ts';
 
 const SERVER = import.meta.env.VITE_BOOGLE_SERVER;
@@ -205,6 +206,7 @@ function resolution() {
   return { dpr: Math.round(dpr * 100) / 100, w: round(innerWidth * dpr), h: round(innerHeight * dpr) };
 }
 let lastSession = '';
+const startedWithFall = fallArrival.active;
 let seed = ''; // the stage a playtest jump room was seeded at (docs/plans/playtest-jump-in.md), from the room
 let replaced = ''; // the stage the room was last replaced with (docs/plans/room-fast-forward.md), from the room
 function sayWho() {
@@ -213,6 +215,7 @@ function sayWho() {
     seed,
     replaced,
     railway: productionRailway,
+    startedWithFall,
     room: getRoomId(),
     card,
     v: protoV(card),
@@ -279,7 +282,29 @@ const here = (): Record<string, number> => {
 let marksLeft = MARKS_PER_WINDOW;
 let lastObjective = '';
 let lastObjectiveAt = 0;
+let stoodAt: number | undefined;
+let contributed = false;
+const contributionMarks = new Set([
+  'deposit',
+  'yard left',
+  'kiln filled',
+  'cradle rails',
+  'footing set',
+  'works fed',
+  'leg frame fed',
+]);
 onPlayMark((name, data: PlayData | undefined, ms) => {
+  if (
+    !contributed &&
+    stoodAt !== undefined &&
+    ms >= stoodAt &&
+    data?.authority === 'server' &&
+    data.mine === true &&
+    contributionMarks.has(name)
+  ) {
+    contributed = true;
+    push('m', { n: 'first contribution', seconds: clock(ms - stoodAt), authority: 'server', ...here() }, ms);
+  }
   if (name === 'objective') {
     // A countdown ticking in the line isn't a new objective every second: the same words wait a few seconds.
     const text = String(data?.text ?? '');
@@ -467,6 +492,7 @@ function sample(ms: number) {
 onFrame(
   () => {
     const ms = performance.now();
+    if (startedWithFall && !fallArrival.active) stoodAt ??= ms;
     // The real interval: the frame's dt stops at 50 ms, which would hide the slowest devices.
     const frameS = lastFrame ? Math.min(1, (ms - lastFrame) / 1000) : 0;
     if (lastFrame && nIntervals < PERF_WINDOW) intervals[nIntervals++] = ms - lastFrame;
