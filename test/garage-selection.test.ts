@@ -156,3 +156,18 @@ test('stepping through the tabs draws a frame and a ghost car, and disposing the
   assert.equal(made.car.parent, null, 'the ghost car is off the train');
   assert.equal(owner.root.children.length, 0);
 });
+
+test('unmounting the quay disposes its displayed train wheels', () => {
+  const owner = createOwnedView();
+  mountQuayRoundhouse(owner);
+  const wheels: THREE.BufferGeometry[] = [];
+  owner.root.traverse((object) => {
+    if (object instanceof THREE.Mesh && object.geometry instanceof THREE.CylinderGeometry) {
+      wheels.push(object.geometry);
+    }
+  });
+  assert.ok(wheels.length >= 8);
+  const released = wheels.map(disposed);
+  owner.dispose();
+  assert.ok(released.every((wasDisposed) => wasDisposed()), 'mounted wheel geometry survived teardown');
+});
