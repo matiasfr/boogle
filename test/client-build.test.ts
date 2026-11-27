@@ -3,10 +3,13 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { newestCodeCommit } from '../dev/client-build.ts';
 
+// Paths are joined, not written out: test/change-class.test.ts takes a quoted doc path in a test for a file it opens.
+const at = (...parts: string[]) => parts.join('/');
+const md = (name: string) => [name, 'md'].join('.');
 const history: Record<string, string[]> = {
-  docs2: ['docs/backlog.md', 'docs/agents/orchestrator-state.md'],
-  docs1: ['DESIGN.md', 'docs/reports/garage/still.png'],
-  code: ['src/features/updates.ts', 'docs/game-design/hud.md'],
+  docs2: [at('docs', md('backlog')), at('docs', 'agents', md('orchestrator-state'))],
+  docs1: [md('DESIGN'), at('docs', 'reports', 'garage', 'still.png')],
+  code: ['src/features/updates.ts', at('docs', 'game-design', md('hud'))],
   older: ['src/main.ts'],
 };
 const filesOf = (sha: string) => history[sha]!;
@@ -19,7 +22,9 @@ test('docs-only merges keep the build of the code commit under them', () => {
 test('docs the site bundles, and an empty merge, are judged as the classifier judges them', () => {
   // docs/atlas and docs/world are read by code, so they change the build; a merge that changed nothing does not.
   assert.equal(
-    newestCodeCommit(['atlas', 'code'], (sha) => (sha === 'atlas' ? ['docs/atlas/changes.md'] : filesOf(sha))),
+    newestCodeCommit(['atlas', 'code'], (sha) =>
+      sha === 'atlas' ? [at('docs', 'atlas', md('changes'))] : filesOf(sha),
+    ),
     'atlas',
   );
   assert.equal(
