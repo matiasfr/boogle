@@ -61,6 +61,19 @@ export function slotPoint(bearing: number, radius: number): XZ {
 }
 const wrap = (a: number) => (a > Math.PI ? a - 2 * Math.PI : a <= -Math.PI ? a + 2 * Math.PI : a);
 
+export const TOWN_COURT = {
+  centre: slotPoint(220, 8),
+  lever: { ...slotPoint(220, 9.6), yaw: 0 },
+  goals: [
+    { ...slotPoint(200, 8.5), yaw: rad(-110) },
+    { ...slotPoint(240, 8.5), yaw: rad(30) },
+  ],
+  width: 2.2,
+  height: 1.1,
+} as const;
+const [goalA, goalB] = TOWN_COURT.goals;
+export const courtLength = Math.hypot(goalA.x - goalB.x, goalA.z - goalB.z);
+
 /** A building's centre, yaw and size. A ring building's centre is `front + d / 2` out from G; its face points back at G
  * (bearing + 180), so yaw = 180 - face = -bearing, wrapped to (-pi, pi]. */
 export function townBuilding(id: TownId): TownBuilding {

@@ -34,6 +34,7 @@ import { SECRETS, padById } from '../src/place/tech-layout.ts';
 import { LAND_TREES } from '../src/place/tree-catalog.ts';
 import {
   TOWN_CENTRE,
+  TOWN_COURT,
   TOWN_FRONT,
   TOWN_GROUND,
   TOWN_PLOTS,
@@ -371,6 +372,26 @@ test("no footprint corner is within 2.4 m of a road's centre line", () => {
     PATHS[1]!.pts.slice(0, 4).map(([x, z]) => ({ x, z })),
     TOWN_STREETS.dock.line,
   ];
+  const axis = slotPoint(TOWN_STREETS.dock.bearing, 38);
+  const posts = TOWN_COURT.goals.flatMap((goal) =>
+    [-1, 1].flatMap((side) =>
+      corners({
+        x: goal.x + ((side * TOWN_COURT.width) / 2) * Math.cos(goal.yaw),
+        z: goal.z - ((side * TOWN_COURT.width) / 2) * Math.sin(goal.yaw),
+        yaw: goal.yaw,
+        w: 0.1,
+        d: 0.1,
+      }),
+    ),
+  );
+  for (const p of [TOWN_COURT.centre, ...corners({ ...TOWN_COURT.lever, w: 0.44, d: 0.44 }), ...posts]) {
+    const radius = Math.hypot(p.x - TOWN_CENTRE.x, p.z - TOWN_CENTRE.z);
+    assert.ok(radius >= 3.6 && radius <= TOWN_GROUND.green.flat);
+    assert.ok(toSegment(p, TOWN_CENTRE, axis) >= 1.2);
+    assert.ok((TOWN_RING.inner + TOWN_RING.outer) / 2 - radius >= 2.4);
+    for (const road of roads)
+      for (let i = 1; i < road.length; i++) assert.ok(toSegment(p, road[i - 1]!, road[i]!) >= 2.4);
+  }
   for (const s of TOWN_SLOTS)
     for (const p of corners(B(s.id)))
       for (const road of roads)

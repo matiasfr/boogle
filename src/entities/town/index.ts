@@ -10,6 +10,7 @@ import { railwayWorldRead } from '../railway/state.ts';
 import { createTownReader } from './town-read.ts';
 import { createTownView, type TownView } from './view.ts';
 import { setTownView } from './state.ts';
+import { useHomeToyGround } from './court.ts';
 
 // Late, after the debug camera (1000): the rooms draw what's near the camera that's about to render.
 defineKind('town', { update: 11, lateUpdate: 1001 });
@@ -25,6 +26,7 @@ onStart(() =>
 registerInteractable(() => active?.targets() ?? NO_TARGETS);
 
 if (productionRailway && railwayMirror) {
+  useHomeToyGround();
   const loaded = createTownView(createTownReader(railwayWorldRead).look).then((view) => {
     active = view;
     setTownView(view);

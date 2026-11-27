@@ -8,7 +8,7 @@ import { emit } from '../render/particles.ts';
 import { boing, farGain } from '../render/boing.ts';
 import { BALL_R, PLAYER_R, HEAD_OFFSET, SEA } from '../constants.ts';
 import { waterField } from '../physics/water-field.ts';
-import { groundHeight } from '../island/terrain.ts';
+import { toyGround } from '../physics/toy-ground.ts';
 import { clamp } from '../math.ts';
 import { ball } from '../entities/ball/state.ts';
 import { ballMesh } from '../entities/ball/view.ts';
@@ -144,7 +144,7 @@ function detect(now: number) {
     dvz = v.z - prevV.z;
   const m = Math.hypot(dvx, dvy, dvz);
   if (m > TUNE.impactMin && now - lastImpact > 90) {
-    const gh = groundHeight(p.x, p.z);
+    const gh = toyGround.under(p.x, p.z);
     const onGround = p.y - gh < BALL_R + 0.3;
     const water = waterField.sampleAt('ball', p);
     const level = waterField.moving ? water.height : SEA;

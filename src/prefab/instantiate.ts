@@ -13,6 +13,7 @@ import './builders/scenery-prop.ts';
 import './builders/scenery-tree.ts';
 import { collidersOf, type Lean } from './scenery.ts';
 import './builders/greybox-box.ts';
+import './builders/town-court.ts';
 import './builders/workshop-parts.ts';
 import './builders/shop-parts.ts';
 import './builders/curio-parts.ts';

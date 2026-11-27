@@ -7,6 +7,7 @@ import { createPool } from '../render/instances.ts';
 import { skyNow } from '../render/sky.ts';
 import { BALL_R, PLAYER_R } from '../constants.ts';
 import { groundHeight } from '../island/terrain.ts';
+import { toyGround } from '../physics/toy-ground.ts';
 import { ballMesh } from '../entities/ball/view.ts';
 import { me } from '../player/player.ts';
 import { remotes } from '../netplay/net.ts';
@@ -31,14 +32,14 @@ spawn({
     blobs.visible = night;
     if (!night) return;
     pool.begin();
-    const put = (p: { x: number; y: number; z: number }, r: number) => {
-      const g = groundHeight(p.x, p.z);
+    const put = (p: { x: number; y: number; z: number }, r: number, under = groundHeight) => {
+      const g = under(p.x, p.z);
       const s = r * Math.max(0.3, 1 - (p.y - g) * 0.15);
       pool.push(p.x, g + 0.04, p.z, 0, 0, 0, 1, s, 1, s);
     };
     if (me.avatar) put(me.avatar.position, PLAYER_R * 1.4);
     for (const r of remotes.values()) if (r.avatar) put(r.avatar.position, PLAYER_R * 1.4);
-    put(ballMesh.position, BALL_R * 1.3);
+    put(ballMesh.position, BALL_R * 1.3, toyGround.under);
     pool.end();
   },
 });

@@ -14951,6 +14951,94 @@
         }
       }
     },
+    "town.ball-court": {
+      "colliders": [
+        {
+          "at": [
+            -1.1,
+            0.55,
+            0
+          ],
+          "half": [
+            0.05,
+            0.55,
+            0.05
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            1.1,
+            0.55,
+            0
+          ],
+          "half": [
+            0.05,
+            0.55,
+            0.05
+          ],
+          "shape": "box"
+        },
+        {
+          "at": [
+            0,
+            1.1,
+            0
+          ],
+          "half": [
+            1.15,
+            0.05,
+            0.05
+          ],
+          "shape": "box"
+        }
+      ],
+      "key": "town.ball-court",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.ball-court",
+        "params": {}
+      }
+    },
+    "town.ball-lever": {
+      "attach": {
+        "handle": {
+          "at": [
+            0,
+            0.65,
+            0
+          ],
+          "kind": "point"
+        }
+      },
+      "colliders": [
+        {
+          "at": [
+            0,
+            0.2,
+            0
+          ],
+          "half": [
+            0.22,
+            0.2,
+            0.22
+          ],
+          "shape": "box"
+        }
+      ],
+      "interactions": [
+        {
+          "action": "town.ball-return",
+          "at": "handle"
+        }
+      ],
+      "key": "town.ball-lever",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.ball-lever",
+        "params": {}
+      }
+    },
     "town.curio-bay": {
       "colliders": [
         {
