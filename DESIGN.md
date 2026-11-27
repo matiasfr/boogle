@@ -6,7 +6,7 @@ These principles decide arguments. If a feature idea conflicts with one of them,
 
 ## The core loop
 
-**The rail builds the world.** Connecting a resource camp by rail puts its goods on the line automatically, with no routing or quotas. Junctions unlock parts of the network, and you still haul for each track segment, with the network bringing materials closer. Towns grow from what arrives, and grown towns give upgrades that extend your reach, so each connection makes the next one easier. Friends can ride what others built; alone, you build to progress. This is the working direction, being proven in prototypes ([docs/plans/find-the-fun.md](docs/archive/plans/find-the-fun.md), steps 6 and 7); its details stay open until they're fun.
+**The rail builds the world.** Connecting a resource camp by rail puts its goods on the line automatically, with no routing or quotas. Junctions unlock parts of the network, and you still haul for each track segment, with the network bringing materials closer. Towns grow from what arrives, and grown towns give upgrades that extend your reach, so each connection makes the next one easier. Friends can ride what others built; alone, you build to progress. The rail is one guided line that closes into a ring: the room always knows where the work is, and anything a player gives at any station counts toward it. Choice and hanging out live in the towns, where every building adds something to do (owner, 27 November: [course change](docs/decisions-core-loop.md#d-2026-11-27-course-change)). This is the working direction, being proven in prototypes ([docs/plans/find-the-fun.md](docs/archive/plans/find-the-fun.md), steps 6 and 7); its details stay open until they're fun.
 
 The ball, the frisbee and the other physics toys are optional fun, not the heart of the game. Farming and water aren't part of the core loop: the shared water sim and sand shaping are gone, crops were never built, mushrooms are a one-press toy (no planting or watering), and the sea is scenery you can swim in.
 
@@ -29,7 +29,10 @@ The world, its network, its progression and its wallet belong to everyone: what 
 Make the next connection and its payoff visible in the world. Announce consequential changes before they happen, and choose the warning length for the event rather than imposing a universal countdown. Players should understand the shared goal through playing and reading the world.
 
 ### 8. Enjoyable alone and together
-Build for satisfying solo play and shared progression with friends. Tune for 1–3 people and tolerate 4. Drop-in, drop-out play remains supported, but is a secondary consideration: do not shape every mechanic around random arrivals or require a newcomer to understand everything immediately. Joining, leaving, reconnecting and saving must remain reliable. The owner revised this priority on 7 November because the game's vision has evolved; late-arrival onboarding is no longer a milestone requirement.
+Build for satisfying solo play and shared progression with friends. Tune for 1–3 people and tolerate 4. A friend who drops in, at any point in the room's story, can do something that advances the room within two minutes and can tell what the room is building, without being led. They need not understand everything at once. Joining, leaving, reconnecting and saving must remain reliable.
+- *Test:* could a guest who has read nothing help from where they landed?
+
+Changed on 27 November 2026 ([course change](docs/decisions-core-loop.md#d-2026-11-27-course-change)). From 7 November drop-in play was "a secondary consideration" and late-arrival onboarding was not a milestone. The playtests since show guests enjoy dropping in more than anything else in the game and cannot find the progression, so the guest comes first again.
 
 ### 9. Leave something for the next visitor
 Progress persists between sessions. An empty world is paused; returning players find producers' yards topped up for the time away, with a soft cap.
@@ -39,6 +42,8 @@ Loose physics, splashes and tumbling toys are features. Prefer mechanics that pr
 
 ### 11. Show, don't tell
 The world and how its things relate should explain what's happening. The train moving says the logs went in; no note needs to. Use helper text sparingly: reaching for it usually means the world is unclear, so fix the world first. What's on screen is true, including what you're holding.
+
+One thing is always shown, in the world and not as text over play: where the room's work is, what it needs and what it gives (a signal at the works and a board at every station). Changed on 27 November 2026 ([course change](docs/decisions-core-loop.md#d-2026-11-27-course-change)): a wordless world carried single steps, but not a forty-step route that a guest joins in the middle.
 
 ## Technical principles
 
