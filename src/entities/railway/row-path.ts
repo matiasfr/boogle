@@ -5,7 +5,8 @@
 // a row's line is its formation's centre: the outward track 2 m to its right going out, the homeward 2 m to its left
 // (right-hand running; the platforms' 5.8 m, railway-lines.ts legPlatforms). Pure numbers; no three.js.
 import type { LinePoint } from '../../place/layout.ts';
-import { RAIL_LINES } from '../../sim/railway-lines.ts';
+import { RAIL_LINES, TRAIN_EXTENT } from '../../sim/railway-lines.ts';
+import { TRAIN_PHASE, trainAlong, type RailTrain } from '../../sim/railway-train.ts';
 import { ROW_LINE, type RouteLeg } from '../../sim/railway-route.ts';
 import { WORLD_LINES } from '../../sim/railway-world-lines.ts';
 import { lerp, smoothstep } from '../../math-pure.ts';
@@ -121,6 +122,13 @@ export type RowLatRow = { readonly track: number; readonly origin: number };
 /** A turnout or crossover a train swings over: from `from` metres off the row at `s0` to `to` at `s1`. */
 export type RowSwing = { s0: number; s1: number; from: number; to: number };
 const swingAt = (w: RowSwing, s: number) => lerp(w.from, w.to, smoothstep(w.s0, w.s1, s));
+/** One-metre chords follow the wheels through both the eased swing and bends in the formation. */
+export function drawRowSwing(w: RowSwing, track: (a: number, b: number, from: number, to: number) => void) {
+  for (let a = w.s0; a < w.s1; a += 1) {
+    const b = Math.min(a + 1, w.s1);
+    track(a, b, swingAt(w, a), swingAt(w, b));
+  }
+}
 /** The start's crossover (homeward trains cross onto the outward track on their way in), centred on its merge. */
 export const rowStartCrossing = (line: number): RowSwing | null => {
   const start = RAIL_LINES[line]!.halts[0]?.end;
@@ -141,6 +149,34 @@ export function laidEndSwing(leg: RouteLeg, laid: number): RowSwing | null {
   if (laid < 1) return null;
   const open = RAIL_LINES[leg.line]!.halts[leg.railheadHalt + Math.min(laid, leg.sections.length) - 1]?.end;
   return open ? rowEndSwing(open) : null;
+}
+/** Sections whose end track is in use, including a departure committed before the line grew. */
+export function drawnSwingSections(
+  leg: RouteLeg,
+  laid: number,
+  openStop: number,
+  trains: readonly Readonly<RailTrain>[],
+  tick: number,
+) {
+  const sections: number[] = [];
+  const halts = RAIL_LINES[leg.line]!.halts;
+  for (let section = 1; section <= laid; section++) {
+    const stop = leg.railheadHalt + section - 1;
+    const halt = halts[stop];
+    if (!halt?.end) continue;
+    if (
+      stop === openStop ||
+      trains.some((row) => {
+        if (row.phase === TRAIN_PHASE.SHED) return false;
+        if (row.turn && row.dest === halt.s) return true;
+        if (row.track !== 1 || row.origin !== halt.s) return false;
+        // Homebound moves toward lower s. Keep the old rail until the entire consist is past its low toe.
+        return trainAlong(row, leg.line, tick) + TRAIN_EXTENT.aheadCm >= rowEndSwing(halt.end!).s0 * 100;
+      })
+    )
+      sections.push(section);
+  }
+  return sections;
 }
 /** The lateral of a train of row line `line` at `s` metres (right-hand running, the views' own: the sim reads only s).
  * Going out it runs on the outward track. Going home it is on the homeward track, after the turnout or crossover of

@@ -321,8 +321,8 @@ to 3 (src/sim, src/world) is an independent one before merge, by the row `npm ru
       `lineStagesOf` adds the joined stage); `src/sim/railway-trains.ts` (`TrainIO.slots`; `servingSlots`, `fleetJoin`,
       `trainGaps`, `protectedBlocks`, `lineSpacing`, `trainSpacing` through it); `src/sim/railway-sys-route.ts` (the join
       at the wall's last lay, as [above](#the-line-model-one-line-the-cave-lines-trains-join-it-in-place));
-      the Wall's Gorge crossover in `leg-view.ts` follows the accepted join: retire it when the joined route stops
-      using it, keeping it drawn for any departing train still crossing during the handover;
+      in `leg-view.ts`, retire superseded turnouts when the joined route stops using them. Keep whichever turnout
+      each in-flight departure occupies until its last car clears the low toe, including departures from earlier heads;
       `railway-sys-trains.ts`, `railway-queries-trains.ts`, `railway-queries-trade.ts` (`routeFar` pinned at the Gorge
       once joined), `railway-queries-route.ts`, `railway-sys-trade.ts`, `railway-check-*.ts`, `src/world/railway-predict.ts`
       and `src/world/railway-server.ts`: every read of a slot's line sorted into running or origin by the table above,

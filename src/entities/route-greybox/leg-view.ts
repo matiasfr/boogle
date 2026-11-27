@@ -77,12 +77,13 @@ import {
   CANOPY_KINK,
   ROW_PLATFORM,
   ROW_TRACK,
+  drawRowSwing,
+  drawnSwingSections,
   rowAt,
   laidEndSwing,
   rowStartCrossing,
   rowWorld,
   rowY,
-  type RowSwing,
 } from '../railway/row-path.ts';
 import { islandGround, ringIslandNear } from '../ring-island/state.ts';
 import { GATE_AT, GORGE_DECK, PICK_AT, TOWN_PAD, gorgeAt } from './massing.ts';
@@ -441,7 +442,12 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     (sum, sp) => sum + 10 * Math.ceil((sp.END.at(-1)! - sp.from) / SEG) + 8,
     0,
   );
-  const deck = createBoxBatch(owner, 10500 + endingCapacity, false),
+  // Twenty chords, each with a bed and two rails, for every row end that a departure can retain.
+  const swingCapacity = RAIL_LEGS.filter((l) => l.row !== 'ring').reduce(
+    (sum, l) => sum + 60 * (1 + l.sections.length),
+    0,
+  );
+  const deck = createBoxBatch(owner, 10500 + endingCapacity + swingCapacity, false),
     // A served Stack head adds 23 boxes; both earlier heads can also be held under their occupants (35 each).
     things = createBoxBatch(owner, 800, false);
   // Named, so a look can count what the leg's views add to a frame (dev/look/evals/stack-draws.ts).
@@ -567,7 +573,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     }
     const bentFree = (s: number) => !sp.noBents.some(([a, b]) => s >= a && s <= b);
     /** Into the shared deck batch: the deck to `end`, and (a row's) the turnouts the line uses at `laid`. */
-    function drawDeck(end: number, laid: number) {
+    function drawDeck(end: number, laid: number, swings: readonly number[]) {
       const down = crossings.filter((x) => end >= x.reach),
         cuts = down.flatMap((x) => x.plan.cuts);
       for (const x of down) crossover(x);
@@ -602,9 +608,9 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       // The turnouts (railway/row-path.ts rowLat): the start's crossover (homeward trains cross to the outward track on
       // their way in), the end's stub at a head, the crossover before the destination's platforms (outward trains
       // cross to the homeward track as they leave). Each a diagonal track between the two.
-      const swing = (w: RowSwing | null) => w && track(w.s0, w.s1, w.from, w.to);
-      if (!sp.joins) swing(rowStartCrossing(sp.leg.line));
-      swing(laidEndSwing(sp.leg, laid));
+      const start = !sp.joins && rowStartCrossing(sp.leg.line);
+      if (start) drawRowSwing(start, track);
+      for (const section of swings) drawRowSwing(laidEndSwing(sp.leg, section)!, track);
     }
     /** The deck's walkable top as far as the laid end (a section still laying is drawn, not yet solid). A row's
      * merges 10 m lengths that run straight and level into one slab. */
@@ -837,9 +843,9 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
           : 0;
         return END[r.laid]! + Math.floor(grown / 2) * 2;
       },
-      drawDeck(end: number, laid: number) {
+      drawDeck(end: number, laid: number, swings: readonly number[]) {
         deckEnd = end;
-        drawDeck(end, laid);
+        drawDeck(end, laid, swings);
       },
       /** The slabs that wait, as a key: the deck batch is redrawn when it changes. */
       held: () => (lay?.waiting ?? []).map((x) => x.s0).join('/'),
@@ -1031,13 +1037,23 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
             legs.some((o, j) => o.sp.joins === l.sp.leg.id && r.per[j]!.laid > 0),
           );
       });
-    // The deck batch is shared: rewritten when any leg's end moves or a slab starts or stops waiting.
-    const key = `${ends.join()}|${legs.map((l) => l.held()).join()}`;
+    // The deck batch is shared: rewritten when a laid end moves, a slab starts or stops waiting, or a turnout clears.
+    const swings = legs.map(({ sp }, i) => {
+      if (!r || !sp.row || r.per[i]!.laid < 1) return [];
+      return drawnSwingSections(
+        sp.leg,
+        r.per[i]!.laid,
+        trainStops(r.wd, sp.leg.line).length - 1,
+        LINE_SLOTS[sp.leg.line]!.map((slot) => train(r.wd, slot)),
+        adapter.read.tick(),
+      );
+    });
+    const key = `${ends.join()}|${legs.map((l) => l.held()).join()}|${swings.map((s) => s.join(',')).join('|')}`;
     if (key !== drawnDeck) {
       drawnDeck = key;
       deck.begin();
       legs.forEach((l, i) => {
-        if (ends[i]! >= 0) l.drawDeck(ends[i]!, r!.per[i]!.laid);
+        if (ends[i]! >= 0) l.drawDeck(ends[i]!, r!.per[i]!.laid, swings[i]!);
       });
       deck.commit();
     }

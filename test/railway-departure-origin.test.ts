@@ -1,9 +1,17 @@
 // Running-side review P1: accepted rows, including a late join/save, own the departure track.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { laidEndSwing, rowLat } from '../src/entities/railway/row-path.ts';
+import {
+  drawnSwingSections,
+  drawRowSwing,
+  laidEndSwing,
+  rowLat,
+  rowStartCrossing,
+  rowWorld,
+  rowY,
+} from '../src/entities/railway/row-path.ts';
 import { RAIL_LEGS } from '../src/sim/railway-route.ts';
-import { LINE2, RAIL_LINES } from '../src/sim/railway-lines.ts';
+import { LINE2, RAIL_LINES, TRAIN_EXTENT } from '../src/sim/railway-lines.ts';
 import { TRAIN_PHASE, trainArrives } from '../src/sim/railway-train.ts';
 import { endMoved, stopMoved, trainStepLine, trainRowBroken } from '../src/sim/railway-trains.ts';
 import { line2Lat } from '../src/entities/railway/line2-path.ts';
@@ -97,30 +105,60 @@ test('a homebound Wall train follows the drawn Gorge diagonal before its midpoin
   const wall = RAIL_LEGS.find((leg) => leg.id === 'wall')!;
   const halts = RAIL_LINES[wall.line]!.halts;
   const track = laidEndSwing(wall, wall.sections.length)!;
-  // leg-view draws each rail with a single straight box, 0.12 m wide.
-  const s = track.s0 + (track.s1 - track.s0) / 4;
-  const drawn = track.from + (track.to - track.from) / 4;
-  const lateral = rowLat(
-    wall.line,
-    { track: 1, origin: halts.at(-1)!.s },
-    s,
-    halts.map((h) => h.s),
-  );
-  assert.ok(Math.abs(lateral - drawn) <= 0.06, 'the wheel centre stays on the rail head');
+  const stops = halts.map((halt) => halt.s);
+  const homebound = { track: 1, origin: stops.at(-1)! };
+  let covered = track.s0;
+  drawRowSwing(track, (a, b, from, to) => {
+    assert.equal(a, covered);
+    for (let sample = 0; sample <= 10; sample++) {
+      const t = sample / 10;
+      const s = a + (b - a) * t;
+      const drawn = from + (to - from) * t;
+      assert.ok(Math.abs(rowLat(wall.line, homebound, s, stops) - drawn) <= 0.03, `rail at ${s} m`);
+    }
+    covered = b;
+  });
+  assert.equal(covered, track.s1);
 });
 
 test('laying the final Wall section keeps track beneath a train leaving head five', () => {
   const wall = RAIL_LEGS.find((leg) => leg.id === 'wall')!;
-  const halts = RAIL_LINES[wall.line]!.halts;
-  const old = laidEndSwing(wall, wall.sections.length - 1)!;
-  const current = laidEndSwing(wall, wall.sections.length)!;
-  const s = (old.s0 + old.s1) / 2;
-  const lateral = rowLat(
-    wall.line,
-    { track: 1, origin: halts.at(-2)!.s },
-    s,
-    halts.map((h) => h.s),
-  );
-  const onMain = Math.abs(Math.abs(lateral) - 2) <= 0.06;
-  assert.ok(onMain || (s >= current.s0 && s <= current.s1), 'the retained departure still has a diagonal');
+  const stops = RAIL_LINES[wall.line]!.halts.map((halt) => halt.s);
+  const laid = wall.sections.length;
+  const old = laidEndSwing(wall, laid - 1)!;
+  const departure = standingAt(stops.slice(0, -1), stops.length - 2, 1);
+  const drawnAt = (from: number) =>
+    drawnSwingSections(wall, laid, stops.length - 1, [{ ...departure, at: -1, from }], 0);
+  assert.deepEqual(drawnAt((old.s0 + old.s1) * 50), [laid - 1, laid]);
+  const clears = Math.round(old.s0 * 100) - TRAIN_EXTENT.aheadCm;
+  assert.deepEqual(drawnAt(clears), [laid - 1, laid]);
+  assert.deepEqual(drawnAt(clears - 1), [laid]);
+});
+
+test('both drawn rails follow the wheels through every row swing, including bends in the formation', () => {
+  for (const leg of RAIL_LEGS.filter((l) => l.row !== 'ring')) {
+    const stops = RAIL_LINES[leg.line]!.halts.map((halt) => halt.s);
+    for (let section = leg.railheadHalt === 1 ? 0 : 1; section <= leg.sections.length; section++) {
+      const swing = (section ? laidEndSwing(leg, section) : rowStartCrossing(leg.line))!;
+      const origin = stops[section ? leg.railheadHalt + section - 1 : 0]!;
+      drawRowSwing(swing, (a, b, from, to) => {
+        for (const rail of [-0.5, 0.5]) {
+          const start = rowWorld(leg.line, a, from + rail, { x: 0, z: 0 });
+          const end = rowWorld(leg.line, b, to + rail, { x: 0, z: 0 });
+          for (let sample = 0; sample <= 10; sample++) {
+            const t = sample / 10,
+              s = a + (b - a) * t;
+            const lat = rowLat(leg.line, { track: 1, origin }, s, stops);
+            const wheel = rowWorld(leg.line, s, lat + rail, { x: 0, z: 0 });
+            const error = Math.hypot(
+              wheel.x - start.x - t * (end.x - start.x),
+              wheel.z - start.z - t * (end.z - start.z),
+              rowY(leg.line, s) - rowY(leg.line, a) - t * (rowY(leg.line, b) - rowY(leg.line, a)),
+            );
+            assert.ok(error <= 0.03, `${leg.id} section ${section} at ${s} m: ${error} m`);
+          }
+        }
+      });
+    }
+  }
 });
