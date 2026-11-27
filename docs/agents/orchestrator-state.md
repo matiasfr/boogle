@@ -10,12 +10,14 @@ The one record of who is running what, and what the eight-job limit is counted f
 
 | Job | Backlog row | Branch | Started by | Started (UTC) | State |
 | --- | --- | --- | --- | --- | --- |
-| Ship: Port Quay's Roundhouse steps 1 and 2 | Port Quay's Roundhouse | codex/port-quay-site | the orchestrator thread (Codex Astra build, reviewed: ship as is) | 2026-11-26 | shipping: `ship-queue` from `../boogle-heartbeat` |
-| The bot queue's load gate holds only timed and perf runs (his answer 1) | none (tooling) | codex/queue-gate-timed | the orchestrator thread, Codex Sol medium | 2026-11-26 | running: `dev/look/bot-queue.ts` |
+| The bot queue's load gate holds only timed and perf runs (his answer 1) | none (tooling) | codex/queue-gate-timed | the orchestrator thread, Codex Sol medium | 2026-11-26 | shipping: built, read by the orchestrator |
 | Ring Island's crossover J11 drawn, the island's golden updated (his answer 7) | Turnouts | codex/turnout-j11 | the orchestrator thread, Codex Astra medium | 2026-11-26 | running: view and golden; an independent review before it ships |
 | The Rail yoke's solid look and the halt yard's forge fingerpost (his answer 9) | none (polish) | codex/yoke-fingerpost | the orchestrator thread, Codex Astra medium | 2026-11-26 | running: view only |
-| Brainstorm: a job for the second player at the sea-cave plug (his answer 8) | The greybox route | neon/plug-second-player | the orchestrator thread, Antigravity Neon medium | 2026-11-26 | running: docs only, a proposal |
-| Drafts: three options each for his placeholder words (his answer 12) | none (words) | neon/placeholder-drafts | the orchestrator thread, Antigravity Neon medium | 2026-11-26 | running: docs only; nothing of The Boogler's |
+| Brainstorm: a job for the second player at the sea-cave plug (his answer 8) | The greybox route | neon/plug-second-player | the orchestrator thread, Antigravity Neon medium | 2026-11-26 | shipping: docs only; recommends pre-feeding gated frames, planned next |
+| Order choice step 5, the bot and the loop, and its checkpoint (both orders) | The greybox route | codex/order-choice-bot | the orchestrator thread, Codex Sol medium | 2026-11-26 | running: `dev/loop/`, `dev/look/bots/railway-legs.ts` |
+| Plan: pre-feeding gated greybox frames (the plug brainstorm's recommendation) | The greybox route | claude/prefeed-gated-frames | the orchestrator thread, Claude Opus high (planner) | 2026-11-26 | running: docs only |
+| His placeholder words put in (the picks he took) | none (words) | codex/placeholder-words | the orchestrator thread, Codex Astra medium | 2026-11-26 | running: strings only |
+| Port Quay's Roundhouse step 3, the Roundhouse stands at Port Quay | Garage choices | codex/port-quay-roundhouse-view | the orchestrator thread, Codex Astra medium | 2026-11-26 | running: view only |
 
 ## Where the work stands
 
@@ -52,7 +54,7 @@ Cleaned on 24 November: every item from 5 to 19 November is in [the log](orchest
 - `ADVANCE_KEY` on production and replacing a room himself (the one-live-game row); the device-test taps (R2: the board link once in Chrome on the Mac, then on the iPad).
 - How many riders a passenger car holds and how cars are added (check [his answers](../decisions-rail.md#d-2026-11-16-rider-coach-a-and-rework) first).
 
-**His words** (The Boogler's copy): Button's line for `SHOP.kept[0]`; the first house resident's name and lines (placeholders are live); Neon drafts three options for each to pick from (26 November, answer 12). The Steam card keeps "You got steam!" (answer 13).
+**His words**: he took the recommended drafts on 26 November ([entry](../decisions-characters.md#d-2026-11-26-placeholder-words-taken)); they are going in (`codex/placeholder-words`), and he can refine any later. The Steam card keeps "You got steam!" (answer 13).
 
 **Codex delegates still stop for approval**: his to do (26 November, answer 4): he sets T3's Codex provider so full-access children never prompt; until then every Codex brief keeps rule 69's lines.
 
