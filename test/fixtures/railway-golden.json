@@ -1,31 +1,31 @@
 {
- "worldNs": "v76",
+ "worldNs": "v77",
  "ticks": 1200,
  "stages": {
   "awake": {
    "tick": 40,
-   "stage": 1665612413,
-   "after": 1665612413
+   "stage": 2006237437,
+   "after": 2006237437
   },
   "t1-pack-first": {
    "tick": 340,
-   "stage": 794867075,
-   "after": 794867075
+   "stage": 1042723467,
+   "after": 1042723467
   },
   "t1-jump-first": {
    "tick": 340,
-   "stage": 420487445,
-   "after": 420487445
+   "stage": 2007834045,
+   "after": 2007834045
   },
   "forge-frame-last": {
    "tick": 1240,
-   "stage": 2701467392,
-   "after": 2701467392
+   "stage": 1298558184,
+   "after": 1298558184
   },
   "forge-lit-last": {
    "tick": 1240,
-   "stage": 997259562,
-   "after": 997259562
+   "stage": 3504676298,
+   "after": 3504676298
   },
   "q1-last": {
    "tick": 1306,
@@ -34,33 +34,33 @@
   },
   "q1-done": {
    "tick": 1429,
-   "stage": 1188588507,
-   "after": 4084011483
+   "stage": 877061683,
+   "after": 1785654323
   },
   "q2-stocked": {
    "tick": 1782,
-   "stage": 1021822427,
-   "after": 2385172443
+   "stage": 2626867251,
+   "after": 2495959603
   },
   "q2-arriving": {
    "tick": 1719,
-   "stage": 4122893787,
-   "after": 2852081115
+   "stage": 1689651251,
+   "after": 3591305267
   },
   "hook-taken": {
    "tick": 1613,
-   "stage": 4284709232,
-   "after": 3073763184
+   "stage": 773249616,
+   "after": 3419107408
   },
   "q3-stocked": {
    "tick": 1871,
-   "stage": 2719908328,
-   "after": 1073932776
+   "stage": 874756000,
+   "after": 1560084384
   },
   "q3-done": {
    "tick": 1752,
-   "stage": 1167911494,
-   "after": 1737449670
+   "stage": 1982181198,
+   "after": 3191204302
   },
   "q4-stocked": {
    "tick": 2994,
@@ -224,8 +224,8 @@
   },
   "yard-wagon": {
    "tick": 20517,
-   "stage": 60887170,
-   "after": 947709890
+   "stage": 4288278114,
+   "after": 1486874786
   },
   "crossing-finishing": {
    "tick": 6639,
@@ -244,8 +244,8 @@
   },
   "yard-deck": {
    "tick": 22744,
-   "stage": 3623481418,
-   "after": 3141223466
+   "stage": 4062433130,
+   "after": 2916489610
   },
   "gap-footed": {
    "tick": 11441,
