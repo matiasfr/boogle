@@ -68,10 +68,10 @@ import { createCouplings } from './couplings.ts';
 import type { TrainAhead } from './path-refuge.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { createBoxBatch, footingParts, footingFrame } from './works-box-view.ts';
-import { createKitBoard, kitMarks, legKitFlight } from './kit-board.ts';
+import { createKitBoard, kitMarks, legKitFlight, pourFlights } from './kit-board.ts';
 import { legYardFlight, legYardSpot } from './leg-yard.ts';
-import { RAIL_LEGS, legRack } from '../../sim/railway-route.ts';
-import { LEG_KIT_MOST, legKitDrop, legRow, legsServed } from '../../sim/railway-queries-route.ts';
+import { RAIL_LEGS, legRack, legFrame } from '../../sim/railway-route.ts';
+import { LEG_KIT_MOST, legKitHalt, legKitDrop, legRow, legsServed } from '../../sim/railway-queries-route.ts';
 import { isTradeLine } from '../../sim/railway-route.ts';
 
 const BRASS = '#c79a3e';
@@ -118,6 +118,7 @@ export async function createRailwayTrains(
   adapter: RailwayAdapter,
   owner: OwnedView,
   depotPlace: (k: number, out: THREE.Vector3) => THREE.Vector3,
+  homeLogBin: THREE.Vector3,
 ) {
   const [layout, rail, look, kit, wagon, crates, load, pieces, sounds, engineKit, carKit, shape, folk, land, { flat }] =
     await Promise.all([
@@ -273,6 +274,23 @@ export async function createRailwayTrains(
     stopLamp.position.set(0, shape.ENGINE_CAB.roofTop + 0.08, shape.ENGINE_CAB.zFront);
     owner.add(stopLamp);
     meshByRole('engine').add(stopLamp);
+    const bundle = new THREE.Group();
+    const timber = pieces.logStackMesh(3, owner);
+    const logAt = new THREE.Vector3();
+    for (let i = 0; i < 3; i++) {
+      pieces.stackSlot(i, 2, new THREE.Vector3(), Math.PI / 2, logAt);
+      pieces.setStackLog(timber, i, logAt, Math.PI / 2);
+    }
+    bundle.add(timber);
+    for (const z of [-0.4, 0.4]) {
+      const band = new THREE.Mesh(new THREE.BoxGeometry(0.67, 0.66, 0.09), lashMaterial);
+      band.position.set(0, 0.33, z);
+      owner.add(band);
+      bundle.add(band);
+    }
+    bundle.position.set(0, carByRole('kit').hy, -carByRole('kit').spec.hz + 1);
+    meshByRole('kit').add(bundle);
+    bundle.visible = false;
     const pennant = createPennant(owner);
     pennant.position.y = 3.3;
     pennant.scale.setScalar(0.45);
@@ -350,6 +368,7 @@ export async function createRailwayTrains(
       long,
       wears: 0,
       pennant,
+      bundle,
       shudder: 0,
       /** The platform beat (docs/plans/garage-install-moment.md, G5): this view has drawn the train since the last
        * restore, and the seconds into its longer boiler going on, or -1. */
@@ -719,7 +738,8 @@ export async function createRailwayTrains(
    * the flatbed (the hold's cue). Crates are eighths of the units aboard, as the kit car's always were. */
   const BILL = 2 * LEG_KIT_MOST;
   const strongTail = (tr: typeof first) => !!tr.tailDeck && tr.carOn;
-  const unitsOf = (row: RailTrain) => (Number.isFinite(row.logs + row.rails) ? row.logs + row.rails : 0);
+  const unitsOf = (row: RailTrain) =>
+    Number.isFinite(row.logs + row.rails) ? row.logs - (row.gift ?? 0) + row.rails : 0;
   const kitShown = (tr: typeof first, row: RailTrain) =>
     Math.ceil((strongTail(tr) ? Math.max(0, unitsOf(row) - BILL) : unitsOf(row)) / 8);
   const tailShown = (tr: typeof first, row: RailTrain) =>
@@ -952,6 +972,7 @@ export async function createRailwayTrains(
     readStops(w);
     secondVisible = on;
     flyingLogs = flyingRails = 0;
+    for (const flights of pourFlights) flights.length = 0;
     for (const flight of legKitFlight) flight.logs = flight.rails = 0;
     legYardFlight.logs = legYardFlight.rails = 0;
     lastRack.forEach((rack, k) => {
@@ -968,6 +989,7 @@ export async function createRailwayTrains(
     trains.forEach((tr) => {
       const last = { ...trainRow(w, tr.slot) };
       tr.last = last;
+      tr.bundle.visible = last.gift > 0;
       tr.count = -1;
       tr.riderCount = -1;
       // A restore or a late join shows the rows only: no beat, and the next frame's fit is not an edge.
@@ -1234,6 +1256,9 @@ export async function createRailwayTrains(
       }
       // Each line's open stops, worked out once for the frame and shared by the lamps.
       const stops = RAIL_LINES.map((_l, k) => trainStops(w, k));
+      pourFlights.forEach((flights, k) => {
+        if (flights.length) pourFlights[k] = flights.filter((active) => active());
+      });
       const marks = kitMarks(w, tick);
       // What the open leg's rack gained since the last frame: a yard leg's unload splits between it and the yard.
       const gains = lastRack.map((last, k) => {
@@ -1403,6 +1428,30 @@ export async function createRailwayTrains(
             });
           }
         }
+        tr.bundle.visible = row.gift > 0;
+        const delta = tr.last ? row.gift - (tr.last.gift ?? 0) : 0;
+        if (delta && row.phase === TRAIN_PHASE.STAND && !reducedMotion) {
+          const deck = tr.bundle.getWorldPosition(new THREE.Vector3());
+          let from = homeLogBin,
+            to = deck;
+          const k =
+            delta < 0
+              ? legsServed(w, tr.line).find(
+                  (i) => RAIL_LEGS[i]!.line === tr.line && legKitDrop(w, tr.line, i) === row.at,
+                )
+              : undefined;
+          if (k !== undefined) {
+            const frame = legFrame(RAIL_LEGS[k]!, legRow(w, k).laid);
+            from = deck;
+            to = new THREE.Vector3(frame.x / 100, frame.y / 100 + 1, frame.z / 100);
+          }
+          if (k !== undefined || (delta > 0 && tr.line === LINE2 && row.at === legKitHalt(tr.line))) {
+            for (let i = 0; i < Math.abs(delta); i++) {
+              const active = pieces.send('log', from, to, { dur: 0.6, delay: i * 0.025, apex: 3 }, owner);
+              if (k !== undefined) pourFlights[k]!.push(active);
+            }
+          }
+        }
         // A leg's kit hops from the car to its rack (the greybox route's step 4 review, answer b: 8 m over the up
         // track at Ring Island, then onto each railhead's), drawn as the Q kits' unload is. The rows moved the units
         // on the tick the train stood; the rack's view draws each once its crate lands (legKitFlight). On any line
@@ -1413,7 +1462,7 @@ export async function createRailwayTrains(
             ? (legsServed(w, tr.line).find((k) => legKitDrop(w, tr.line, k) === row.at) ?? -1)
             : -1;
         if (leg >= 0 && tr.last) {
-          const logs = tr.last.logs - row.logs,
+          const logs = tr.last.logs - row.logs + delta,
             rails = tr.last.rails - row.rails,
             keep = kitShown(tr, row),
             tailKeep = tailShown(tr, row),

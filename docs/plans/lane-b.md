@@ -99,9 +99,9 @@ Each step leaves `node dev/ship-check.ts` green. The full `npm run check`, `npm 
   - 3a only: on arrival, the bundle's logs fly from the deck into the frame (the existing deposit flight, deck to frame), and the bill sign ticks.
   - Proof: **one look** for the pass, one sequence from `--rail-seed gorge-open`. Still 1: at Home, give 8 logs; the bin shows the prompt and pennant. Still 2 or `--video`: the line 2 train loads the bundle. Still 3 (3a): camera at Ring Island's west platform, the stack's frame bill goes up by 8 while the player stands at Home. With 3b: the rack's plate shows the kit, and the bill is unchanged. Phone-width check of the prompt.
 
-- [ ] **5. Reads for Lane A's board (dev and docs; no Lane A view).**
+- [x] **5. Reads for Lane A's board (dev and docs; no Lane A view).**
   Files: this plan's [Reads for Lane A's board](#reads-for-lane-as-board) section, the railway adapter's read surface if A2's builder needs a helper (`src/adapters/railway-*.ts`, read-only).
-  - The board's builder (Lane A2) reads `worksThanks`, `giftQueued` and `giftAboard` from the accepted mirror and maps pids to names with the roster mirror. Lane B adds no board view.
+  - The board's builder (Lane A2) reads `worksThanks`, `giftQueued` and `giftAboard` from the accepted mirror and maps pids to names with the roster mirror. A2 already reads all three in `works-live.ts` and resolves the names from the roster.
   - Proof: none beyond step 2's tests; A2's look shows them.
 
 ## Reads for Lane A's board
