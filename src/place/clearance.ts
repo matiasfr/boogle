@@ -88,8 +88,15 @@ export function createLiftOrWait(overlaps: Overlaps) {
     /** Settles `set` for body `b`: what still waits. At the switch the solids that hold the body are the set; retried
      * (`whole`), the set stays whole while any of it holds. */
     const settle = (set: readonly S[], b: Lifted | null | undefined, whole: boolean) => {
-      // A visitor can hold a new set off. Only the local body can be lifted onto it.
-      if (o.lift && o.visitor?.({ holds: (at) => set.some((s) => holds(s, at)) })) return { held: true, left: set };
+      if (o.lift && o.visitor?.({ holds: (at) => set.some((s) => holds(s, at)) })) {
+        // Preserve local footing within a step above or below the feet. The visitor's client clears its own body.
+        if (!b) return { held: true, left: set };
+        const feet = { x: b.position.x, y: b.position.y - PLAYER_R - STEP + FOOT, z: b.position.z };
+        const above = { ...feet, y: feet.y + 2 * STEP + SLACK };
+        const nearTop = (shape: Shape) =>
+          overlaps(feet, FOOT, 2 * (STEP - FOOT), shape) && !overlaps(above, FOOT, 0, shape);
+        if (!set.some((s) => s.shapes.some(nearTop))) return { held: true, left: set };
+      }
       // A retiring support waits for every player within a step. Its callback releases the
       // existing bodies once clear. This path only probes positions and never moves a player.
       const occupied = o.occupied;

@@ -958,3 +958,30 @@ test('two failed extras loads keep the base resident, back off and release an in
   await pending;
   assert.equal(areas.get('quay').mounted, false);
 });
+test('local footing on the Notch deck survives a visitor sixteen metres away', async () => {
+  const { default: level } = await import('../content/built/levels/notch.json', { with: { type: 'json' } });
+  const { definitions } = await import('../src/prefab/catalogue.ts');
+  const { loadLevelArtifact } = await import('../src/prefab/validate.ts');
+  const { Quaternion } = await import('three');
+  const deck = loadLevelArtifact(level, definitions).placements.find((p) => p.id === 'notch.platform--1')!;
+  const centre = new Vector3(...deck.pos);
+  const rotation = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), deck.rot![0]);
+  const [w, h, d] = deck.scale!;
+  const shape = { kind: 'box' as const, hx: w / 2, hy: h / 2, hz: d / 2, offset: centre, rotation };
+  const position = new Vector3(0, h / 2 + PLAYER_R, 0).add(centre);
+  const visitor = new Vector3(0, -0.1, 16).applyQuaternion(rotation).add(position);
+  const stand = await clearanceFor(new Map([['visitor', { entered: true, avatar: { position: visitor } }]]));
+  const owner = createOwnedView();
+  const previous = player.body;
+  const body = owner.addBody(makePlayerBody(false));
+  try {
+    player.body = body;
+    physics.teleport(body, position.x, position.y, position.z);
+    assert.ok(stand([shape], () => owner.addBody(physics.createBody({ type: 'static', shapes: [shape] }))));
+    for (let i = 0; i < 15; i++) physics.stepFixed();
+    assert.ok(Math.abs(body.position.y - position.y) < 0.03, 'the local body lost the deck');
+  } finally {
+    player.body = previous;
+    owner.dispose();
+  }
+});
