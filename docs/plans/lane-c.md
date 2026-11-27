@@ -66,7 +66,7 @@ Each step leaves `node dev/ship-check.ts` green. Proof follows the [flow decisio
 ### Part 1: the ball and court on the green (view and Owner only; ships alone)
 
 - [x] **1. One toy ground, and the ball on it.** *Kind: view (Owner physics, client only).* Files: new `src/physics/toy-ground.ts`; `src/entities/ball/state.ts`; `src/features/impact.ts`; `src/features/blob-shadows.ts`.
-  - `toy-ground.ts` exports `toyGround = { under(x, z), inside(x, z), spawn: { x, z }, sproutable(x, z) }` with classic defaults (`groundHeight`, `|x|, |z| ? HALF − 3`, `BALL_SPAWN`, always true) and `setToyGround(next)`. No three.js, no place imports, so `npm run sim` and `test/entity-state-node.test.ts` still load the ball alone.
+  - `toy-ground.ts` exports `toyGround = { under(x, z), inside(x, z), spawn: { x, z }, sproutable(x, z) }` with classic defaults (`groundHeight`, `|x|, |z| <= HALF − 3`, `BALL_SPAWN`, always true) and `setToyGround(next)`. No three.js, no place imports, so `npm run sim` and `test/entity-state-node.test.ts` still load the ball alone.
   - `ball/state.ts`: the pose's first height, `respawnBall`, `surfBall`'s still-water grip and `settleBall`'s out-of-bounds test read `toyGround` instead of `groundHeight`, `HALF` and `BALL_SPAWN`. `setToyGround` re-places an unowned ball at the new spawn (`if (!ball.mine && !ball.remoteOwned)`), so a tab that hears an owner keeps the owner's ball.
   - `impact.ts:147` and the ball's disc in `blob-shadows.ts` read `toyGround.under`. The players' discs keep `groundHeight` (a pre-existing Home bug, listed under risks, not fixed here).
   - Verify: the ship check; the look at the end of the pass.
@@ -83,9 +83,10 @@ Implementation corrections for Part 1:
 
 - The classic bounds include the point exactly three metres from the edge. Rolling drag and the fall-through net also need the active ground, with the classic cave probe preserved.
 - Home installs the provider synchronously before the town view loads, so the first ownership claim starts on the green. The town view owns the goal instances and the lever.
+- The dock view showed meadow tufts covering the chalk. The meadow keep map clears the pitch and lever.
 - The prefab compiler requires authored operands. Place both copies of the goal record at their town-plan rows at runtime. Each goal carries its half of the chalk lines. Its mouth spans its radial bearing and opens toward the other end of the court.
 - The shared lift-or-wait helper is exported by `src/prefab/instantiate.ts`. The site builder's separate exit routine moves players sideways. The goals and lever use lift-or-wait with the existing visitor check.
-- The existing positional metal bell in `render/machine-sfx.ts` supplies the clang. The lever label ?Bring the ball back? is a placeholder for the owner.
+- The existing positional metal bell in `render/machine-sfx.ts` supplies the clang. The lever label "Bring the ball back" is a placeholder for the owner.
 
 ### Part 2: the first bought house's two-way pick (sim, world, server and view; one bump; independent review)
 

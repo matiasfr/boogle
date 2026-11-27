@@ -64,7 +64,15 @@ import {
 import { FIELD_H, FIELD_W, pathAt } from './path-field.ts';
 import { DEVICES, GATES, GLIDE_RAMP, LEVER, PADS, PILLARS, POSTS, SEA_SWITCH, SECRETS } from './tech-layout.ts';
 import { CELL, NX, NZ, at, clearMask, heights } from './terrain.ts';
-import { TOWN_CENTRE, TOWN_GROUND, TOWN_PROPS, TOWN_SLOTS, townBuilding } from './town-plan.ts';
+import {
+  TOWN_CENTRE,
+  TOWN_COURT,
+  courtLength,
+  TOWN_GROUND,
+  TOWN_PROPS,
+  TOWN_SLOTS,
+  townBuilding,
+} from './town-plan.ts';
 
 /** The noise map's texel, metres, and its size over the land's grid. */
 export const NOISE_CELL = 4;
@@ -256,6 +264,9 @@ export function* bakeMeadowKeep(): Generator<void, Uint8Array> {
     else disc(p.x, p.z, 3.5);
   const footing = TOWN_PROPS.statue.footing;
   box({ ...TOWN_PROPS.statue, w: footing, d: footing }, 0.6);
+  const [a, b] = TOWN_COURT.goals;
+  box({ ...TOWN_COURT.centre, w: TOWN_COURT.width, d: courtLength, yaw: Math.atan2(b.x - a.x, b.z - a.z) }, 0.5);
+  disc(TOWN_COURT.lever.x, TOWN_COURT.lever.z, 0.65);
   box(TOWN_PROPS.bay.foot, 4); // the finders' bay and the boxes that wait in front of it
   box(TOWN_PROPS.shelf.foot, 2);
   box({ ...TOWN_PROPS.balcony, w: 6, d: 6 }, 1);

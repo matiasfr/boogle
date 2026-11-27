@@ -6,9 +6,9 @@ the [upgrade assessment](../research/rapier-021-upgrade.md).
 The production sea on Place and crossing replaces the ball's old sine sea with bounded samples of the visible FFT/shore waves.
 Vertical drag is relative to surface velocity (bounded ±3 m/s); gentle wash-in follows the registered coast's normal
 and tangent. Ponds have explicit still-water identity, so a sea crest is never mistaken for a pond. Ownership, held
-changes and teleports invalidate delayed samples without changing presence data or claim rules. On Home the ball returns to the Round when it leaves Place's grid or falls below ?15 m. Query limits and fallback: [island water](island.md).
+changes and teleports invalidate delayed samples without changing presence data or claim rules. On Home the ball returns to the Round when it leaves Place's grid or falls below -15 m. Query limits and fallback: [island water](island.md).
 
-- **Home court.** Carry, drop or run the striped ball through either low goal on the Round?s green. A cowbell rings and the bunting swings. The sideline lever or R returns it to the pitch centre. The lever?s words are a placeholder for the owner.
+- **Home court.** Carry, drop or run the striped ball through either low goal on the Round's green. A cowbell rings and the bunting swings. The sideline lever or R returns it to the pitch centre. The lever's words are a placeholder for the owner.
 - **Classic island.** One of the island's physics toys: one shared beach ball (radius 0.45 m, 0.6 kg). Grab it (E / pad X),
   carry it (it rides on your back while something else is in your hand), throw it with a charged throw,
   or steal it from whoever holds it. It floats in the sea and the cave pond, drifts along the shore and
