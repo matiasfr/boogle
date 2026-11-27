@@ -1171,7 +1171,7 @@ export function routeRulesShard(shard: number) {
     for (const mode of ['growing', 'settled'] as const) {
       const base = unaudited(copy(buildSeedWorld('steel-home')));
       if (mode === 'settled') while (legRow(base.w, STACK).laid < N) feedSection(base);
-      assert.equal(act(base, 'a', 'rail.install', { line: LINE2, part: 2, revision: 1 }), 1);
+      assert.equal(act(base, 'a', 'rail.install', { site: 0, line: LINE2, part: 2, revision: 1 }), 1);
       for (const seed of SEEDS) {
         const r = leverWaits(base, seed, 75, FUZZ, mode);
         assert.ok(r.mixedTicks > 0);
@@ -1816,7 +1816,8 @@ export function routeRulesShard(shard: number) {
       if (yard < 0 && st.yardLogs + st.yardRails === STEEL.logs + STEEL.rails) yard = s.t - t0;
       if (yard >= 0 && st.lit < 0) feedSteel(s);
       if (home < 0 && bay(s.w) >= 1) home = s.t - t0;
-      if (home >= 0 && act(s, 'a', 'rail.install', { line: LINE2, part: 2, revision: 1 })) installed = s.t - t0;
+      if (home >= 0 && act(s, 'a', 'rail.install', { site: 0, line: LINE2, part: 2, revision: 1 }))
+        installed = s.t - t0;
     }
     assert.equal(invariant(s.w), null);
     return { yard, home, installed };

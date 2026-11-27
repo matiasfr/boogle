@@ -13,7 +13,14 @@ import {
   LINE2_STATIONS,
 } from '../sim/railway-line2-layout.ts';
 import { RING_HALT, RING_HEAD, RING_JOINT_UP, RING_STEEL_WORKS, ringAt } from '../sim/railway-ring-layout.ts';
-import { CROSSING_BENTS, PIER_STOP, SHED_TABLE, WORKS_KILN, WORKS_RACK } from '../sim/railway-works-layout.ts';
+import {
+  CROSSING_BENTS,
+  PIER_STOP,
+  QUAY_TABLE,
+  SHED_TABLE,
+  WORKS_KILN,
+  WORKS_RACK,
+} from '../sim/railway-works-layout.ts';
 import { RAIL_LINES } from '../sim/railway-lines.ts';
 import { RAIL_ARRIVAL, RAIL_GRANTS, RAIL_LEGS, legFrame, legRack, rowSide } from '../sim/railway-route.ts';
 
@@ -402,6 +409,13 @@ export const JUMPS: readonly Jump[] = [
     menu: false,
     label: 'Strong train held',
     line: 'A Strong bay train waits at Bell Rock with kit',
+  },
+  {
+    stage: 'quay-garage',
+    menu: false,
+    label: 'Quay garage',
+    line: 'Beside the Roundhouse post',
+    land: near(QUAY_TABLE, 0.5, 9.3, 3.9, QUAY_TABLE),
   },
 ];
 /** The rows a menu lists: every row but the tooling-only ones. */

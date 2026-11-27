@@ -182,6 +182,7 @@ test('the menu lists the rows it always did: the house and leg 1 stages are tool
     'trade-ready',
     'trade-fitted',
     'trade-held',
+    'quay-garage',
   ];
   assert.equal(MENU_JUMPS.length, JUMPS.length - tooling.length);
   assert.deepEqual(

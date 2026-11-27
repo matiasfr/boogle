@@ -217,7 +217,7 @@ November). Steps 1 to 3 ship together or one by one, with no bump; step 4 after 
       the right bays as the yard comes into view. Platform WebGPU frame at 960 by 600: 477 draws, 899,725 triangles.
       At Home the engine and flatbed still stand on the timber bridge, with its handrails and the garage jib beside it.
       Level check: five bays over 100 degrees, nearest running rail 30.39 m, ground within 0.00 m.
-- [ ] **4. The second table in the rules, and the bump (M; review; "High-risk implementation": Codex gpt-6.2-astra
+- [x] **4. The second table in the rules, and the bump (M; review; "High-risk implementation": Codex gpt-6.2-astra
       medium; then the independent review row).** Files: `src/sim/railway-components.ts` (`Shed.quayLine`, `quayRev`,
       `quayBrought`); `src/sim/railway-queries-works.ts` (`tableFree(w, site)`, `tableBusy(w, tick, site)`, every
       caller passes its site); `src/sim/railway-sys-steel.ts` (`install`: `site`, the site's table line, Port Quay's
@@ -226,9 +226,13 @@ November). Steps 1 to 3 ship together or one by one, with no bump; step 4 after 
       doc comment names both uses); `src/world/railway-server.ts` (admission); `src/adapters/railway-intents.ts`,
       `server/src/host/railway-requests.ts` (`site` carried for both ops); every sender adds `site: 0` (Home's
       `garage-view.ts` sends through `roundhouse-view.ts`, `src/sim/railway-seed-garage.ts`, `railway-seed-works.ts`,
-      `railway-seed-steel.ts`, `dev/loop/graph.ts`, `dev/look/bots/railway-fit.ts`, `dev/look/evals/garage-*.ts`,
+      `railway-seed-steel.ts`, `dev/loop/run.ts`, `dev/look/evals/garage-*.ts`,
       `dev/peer-test/ws-page.ts`, `dev/sim/leg3-trade.ts`); `src/world/railway-jump.ts` (a tooling row `quay-garage`
       landing on the yard beside the post, placeholder label, not in the menu, as garage step 4's call 8);
+      `src/sim/railway-seeds.ts` and `railway-seed-garage.ts` register that tooling seed and build it on
+      `port-reached` with steel home. The quay uses arrival's existing distance-loaded scenery wait.
+      The loop graph names the ops; the loop runner sends them. The fit bot and chip-click evals use the garage view.
+      `railway-check.ts` passes the checkpoint tick to the steel checks, and Home's `garage-state.ts` reads site 0's hold;
       `src/world/namespace.ts` (the next free version and a dated line: "Port Quay's Roundhouse table: install and
       bring name their table; Shed keeps Port Quay's copy"); fixtures and goldens (seed hashes, schema, op streams,
       tick-order, M12, the host trace with `HOST_TRACE_RECORD=1`) regenerated in the same commit after comparing old

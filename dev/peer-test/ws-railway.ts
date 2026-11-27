@@ -426,7 +426,7 @@ export async function railwayChecks(c: Ctx) {
       return send.call(room, m);
     };
     try {
-      window.T.railIntent({ op: 'rail.install', line: 3, part: 6, revision: 0 });
+      window.T.railIntent({ op: 'rail.install', site: 0, line: 3, part: 6, revision: 0 });
       return fit;
     } finally {
       room.send = send;

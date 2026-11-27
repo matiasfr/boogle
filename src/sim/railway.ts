@@ -43,7 +43,7 @@ export type RailAction = RailRequest & {
   revision?: number;
   /** rail.footTake: 0 the Works rack, 1 the pier rack, 2 the railhead rack (v27). */
   rack?: number;
-  /** rail.footSet: 0 the stall, 1 the cradle, 2 the pier, 3 the railhead jib (v27). */
+  /** rail.footSet: 0 the stall, 1 the cradle, 2 the pier, 3 the railhead jib. rail.install and rail.bring: 0 Home, 1 Port Quay. */
   site?: number;
   /** rail.turn: the road the table turns to (0 the stall road, 1 line 2's). */
   to?: number;

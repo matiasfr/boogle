@@ -56,7 +56,7 @@ const snap = () => garage.api!.snap();
 const clocks = () => ({
   railAt: railAt(),
   tickNow: Math.round(railwayCommands()!.read.tickNow() * 10) / 10,
-  free: tableFree(rw()),
+  free: tableFree(rw(), 0),
   bringEnds: shed(rw()).brought + BRING_TICKS,
 });
 const screen = () => {

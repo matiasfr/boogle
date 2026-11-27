@@ -103,6 +103,7 @@ export const SHARDS: readonly (readonly SeedStage[])[] = [
     'trade-ready',
     'trade-fitted',
     'trade-held',
+    'quay-garage',
     // The Rail yoke (docs/plans/rail-yoke.md, step 2): look only, Q1 one rail short.
     'q1-last',
   ],

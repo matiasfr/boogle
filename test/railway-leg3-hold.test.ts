@@ -27,12 +27,12 @@ let baySteel: Seed | undefined;
 const bayMidSteel = () => unaudited((baySteel ??= steelHome(buildSeedWorld('bay-mid'))));
 /** Garage step 4: the bay line's copy brought to the table, then the copies' swap waited out. */
 function bringBay(s: Seed) {
-  assert.equal(act(s, 'a', 'rail.bring', { line: BAY, revision: shed(s.w).bringRev }), 1);
+  assert.equal(act(s, 'a', 'rail.bring', { site: 0, line: BAY, revision: shed(s.w).bringRev }), 1);
   advance(s, BRING_TICKS);
 }
 /** Strong (part 6) installed on the bay line, by accepted rail.install. */
 function fitStrong(s: Seed) {
-  assert.equal(act(s, 'a', 'rail.install', { line: BAY, part: 6, revision: line(s.w, BAY).rev }), 1);
+  assert.equal(act(s, 'a', 'rail.install', { site: 0, line: BAY, part: 6, revision: line(s.w, BAY).rev }), 1);
   assert.equal(line(s.w, BAY).boiler, 5);
 }
 

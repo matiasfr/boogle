@@ -85,6 +85,7 @@
 // All 58 inputs, 2,220 messages and 458 replica packets match v70.
 // v73 moves the Stack homeward platform points. Across 8,620 records, 205 checkpoints and 1,937 status records change.
 // v74 adds the leg racks and each account's lift leg. Of 8,620 records only 205 checkpoints and 5,679 statuses change.
+// v75 adds three Shed columns. The checkpoint namespace, hashes and sizes change; the sweep has no garage operands.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';

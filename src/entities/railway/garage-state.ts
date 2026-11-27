@@ -61,7 +61,7 @@ export function roomFacts(w: ReadWorld, tick = Infinity): RoomFacts {
     gorgeReached: leg(w, 0).laid >= RAIL_LEGS[0]!.sections.length,
     tableLine: shed(w).tableLine,
     bringRev: shed(w).bringRev,
-    held: tick < tableFree(w),
+    held: tick < tableFree(w, 0),
     lines: linesOf(w),
   };
 }

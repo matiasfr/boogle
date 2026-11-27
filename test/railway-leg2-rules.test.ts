@@ -387,7 +387,7 @@ const tradeBases = new Map<string, Seed>();
 function tradeBase(stage: 'bay-mid' | 'bay-reached') {
   if (!tradeBases.has(stage)) {
     const s = steelHomeOn(unaudited(copy(stage)));
-    assert.equal(act(s, 'a', 'rail.bring', { line: BAYL, revision: routeShed(s.w).bringRev }), 1);
+    assert.equal(act(s, 'a', 'rail.bring', { site: 0, line: BAYL, revision: routeShed(s.w).bringRev }), 1);
     advance(s, BRING_TICKS);
     tradeBases.set(stage, s);
   }
@@ -396,7 +396,7 @@ function tradeBase(stage: 'bay-mid' | 'bay-reached') {
 }
 /** The bay line's Strong boiler (rail.install, part 6), accepted. */
 function fitStrong(s: Seed) {
-  assert.equal(act(s, 'a', 'rail.install', { line: BAYL, part: 6, revision: line(s.w, BAYL).rev }), 1);
+  assert.equal(act(s, 'a', 'rail.install', { site: 0, line: BAYL, part: 6, revision: line(s.w, BAYL).rev }), 1);
 }
 /** Asks at 5% a tick from askPool, riders' asks and junk calls, restores; with `feed`, the open leg fed every tick and
  * the seeds taken once the incline is laid. The worst served wait on each new line. With `strong`, the bay line is

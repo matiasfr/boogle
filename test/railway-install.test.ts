@@ -1,5 +1,6 @@
 import { ServiceHealth } from './helpers/railway-service-health.ts';
 import { intentOf, railwayActs } from '../src/adapters/railway-intents.ts';
+import { railwayCheck } from '../src/sim/railway-check.ts';
 // The install and the longer boiler (docs/plans/ring-island-build2.md, R3): rail.install's refusals (no steel in the
 // bay, line 1, another part, a stale revision or a malformed hold, the table mid roll-out), two presses on one tick
 // installing once, each line 2 train taking the fit only standing at the Village, the fastest row's braking
@@ -55,7 +56,8 @@ import { apply } from '../src/sim/railway-drive.ts';
 import { BRING_TICKS, INSTALL_STEEL, WORKS, steelPool } from '../src/sim/railway-works-layout.ts';
 import { RAIL_GATES, RAIL_LEGS, ROW_LINE } from '../src/sim/railway-route.ts';
 import { legDone, legOpen, legRow, routeRow, tradeOpen } from '../src/sim/railway-queries-route.ts';
-import { laySection, legStagesOn } from '../src/sim/railway-seed-legs.ts';
+import { laySection, legStagesOn, railwayAtLegs } from '../src/sim/railway-seed-legs.ts';
+import { railwayAtGarage } from '../src/sim/railway-seed-garage.ts';
 import { RAILS } from '../src/sim/railway-line2-layout.ts';
 import type { World } from '../src/ecs/index.ts';
 import { footCap } from '../src/sim/railway-queries-trade.ts';
@@ -94,7 +96,7 @@ const [A, B, C] = LINE_SLOTS[LINE2] as [number, number, number];
 const ISLAND = 5;
 const copy = (s: Seed): Seed => unaudited({ w: restore(s.w), t: s.t });
 const install = (s: Seed, pid = 'a', fields: Record<string, unknown> = {}) =>
-  act(s, pid, 'rail.install', { line: LINE2, part: 2, revision: lineRow(s.w, LINE2).rev, ...fields });
+  act(s, pid, 'rail.install', { site: 0, line: LINE2, part: 2, revision: lineRow(s.w, LINE2).rev, ...fields });
 /** The garage table's hold after an accepted install (garage step 4): wait it out before the next install. */
 const settle = (s: Seed) => advance(s, WORKS.upgradeTicks);
 
@@ -198,7 +200,7 @@ for (const part of [1, 2] as const)
       c.adapter.onRefused((e) => refusals[i]!.push(e));
     });
     room.ready();
-    assert.equal(clients[0]!.adapter.installBoiler(part - 1, part), true);
+    assert.equal(clients[0]!.adapter.installBoiler(0, part - 1, part), true);
     room.run(120);
     assert.equal(lineRow(room.serverWorld(), LINE2).boiler, part, 'the server accepted the install');
     clients.forEach((c, i) => {
@@ -291,7 +293,7 @@ test('the free upgrade refuses early, stale, raced and repeated holds, and survi
     apply(
       busy.w,
       'a',
-      { op: 'rail.install', line: 1, part: 1, revision: 0, epoch: a.epoch, request: a.request + 1 },
+      { op: 'rail.install', site: 0, line: 1, part: 1, revision: 0, epoch: a.epoch, request: a.request + 1 },
       busy.t,
     ).accepted,
     0,
@@ -339,7 +341,7 @@ test('rail.install: refused with no steel home, for line 1, another part, a stal
   const r = apply(
     busy,
     'a',
-    { op: 'rail.install', epoch: a.epoch, request: a.request + 1, line: 1, part: 2, revision: 1 },
+    { op: 'rail.install', site: 0, epoch: a.epoch, request: a.request + 1, line: 1, part: 2, revision: 1 },
     s.t,
   );
   assert.equal(r.accepted, 0, 'the table is busy');
@@ -692,9 +694,45 @@ test('the trade seed: bay-mid on High Gorge with steel home, both trades open', 
   assert.equal(legRow(s.w, CUT).laid, 1);
 });
 const bring = (s: Seed, line: unknown, pid = 'a', fields: Record<string, unknown> = {}) =>
-  act(s, pid, 'rail.bring', { line, revision: shed(s.w).bringRev, ...fields } as never);
+  act(s, pid, 'rail.bring', { site: 0, line, revision: shed(s.w).bringRev, ...fields } as never);
 const fit = (s: Seed, line: number, part: unknown, pid = 'a', fields: Record<string, unknown> = {}) =>
-  act(s, pid, 'rail.install', { line, part, revision: lineRow(s.w, line).rev, ...fields } as never);
+  act(s, pid, 'rail.install', { site: 0, line, part, revision: lineRow(s.w, line).rev, ...fields } as never);
+test('the two Roundhouses select independently and share install holds and steel', { timeout: 120000 }, () => {
+  for (const site of [0, 1]) {
+    const s = railwayAtGarage('quay-garage');
+    const other = 1 - site;
+    const start = s.t;
+    const otherFree = tableFree(s.w, other);
+    const pool = steelPool(shed(s.w));
+    assert.equal(bring(s, NS, 'a', { site }), 1);
+    assert.equal(tableFree(s.w, site), start + BRING_TICKS);
+    assert.equal(tableFree(s.w, other), otherFree);
+    assert.ok(otherFree <= start);
+    assert.deepEqual([shed(s.w).tableLine, shed(s.w).quayLine], site ? [LINE2, NS] : [NS, LINE2]);
+    advance(s, BRING_TICKS);
+    assert.equal(bring(s, BAYL, 'b', { site, revision: 0 }), 0);
+    assert.equal(fit(s, NS, 5, 'a', { site: other }), 0);
+    assert.equal(fit(s, NS, 5, 'a', { site }), 1);
+    assert.deepEqual([tableFree(s.w, 0), tableFree(s.w, 1)], [s.t + WORKS.upgradeTicks, s.t + WORKS.upgradeTicks]);
+    assert.equal(steelPool(shed(s.w)), pool - 1);
+  }
+  for (const [stage, site] of [
+    ['cave-mid', 1],
+    ['port-reached', undefined],
+    ['port-reached', 2],
+    ['port-reached', -1],
+  ] as const) {
+    const s = railwayAtLegs(stage);
+    assert.equal(bring(s, NS, 'a', { site }), 0);
+    assert.equal(fit(s, LINE2, 2, 'a', { site }), 0);
+  }
+  const first = railwayAtLegs('port-reached');
+  const w = first.w;
+  const id = w.lookup(Line, LINE2)!;
+  Object.assign(w.mut(Line, id)!, { boiler: 0, rev: 0 });
+  assert.equal(raw(w, 'rail.install', { site: 1, line: LINE2, part: 1, revision: 0 }, first.t), 0);
+  assert.equal(raw(w, 'rail.install', { site: 0, line: LINE2, part: 1, revision: 0 }, first.t), 1);
+});
 /** Brought and the copies' swap waited out. */
 function brought(s: Seed, line: number) {
   assert.equal(bring(s, line), 1, `line ${line} brought`);
@@ -713,7 +751,7 @@ test('the garage judges a bring’s table hold on the action tick: never free be
   // hold's end, and once clear must stay clear.
   const s = tradeReady();
   assert.equal(bring(s, NS), 1);
-  const free = tableFree(s.w);
+  const free = tableFree(s.w, 0);
   assert.equal(free, s.t + BRING_TICKS);
   const room = railRoom(s);
   const c = room.join('installer', 'a', 4);
@@ -731,7 +769,7 @@ test('the garage judges a bring’s table hold on the action tick: never free be
       `the screen's hold came back at server tick ${server} after clearing at ${cleared}`,
     );
   }
-  assert.equal(tableFree(room.serverWorld() as never), free, 'the server holds the table to the same tick');
+  assert.equal(tableFree(room.serverWorld() as never, 0), free, 'the server holds the table to the same tick');
   assert.ok(cleared >= free && cleared <= free + 10, `the screen frees the table near the hold's end (${cleared})`);
 });
 
@@ -741,7 +779,7 @@ test('the garage holds the table after a dropped link while the room stood pause
   // server's tick is where the room stopped, so the screen must still hold the table the server holds.
   const s = tradeReady();
   assert.equal(bring(s, NS), 1);
-  const free = tableFree(s.w);
+  const free = tableFree(s.w, 0);
   const room = railRoom(s);
   const c = room.join('installer', 'a', 4);
   room.ready();
@@ -770,7 +808,7 @@ test('the garage holds the table after a dropped link while the room stood pause
 test('re-check: after a paused room’s reconnect, the first Install the screen offers reaches a free table', () => {
   const s = tradeReady();
   assert.equal(bring(s, NS), 1);
-  const free = tableFree(s.w);
+  const free = tableFree(s.w, 0);
   const fittedBefore = lineRow(s.w, NS).fitted;
   const room = railRoom(s);
   const c = room.join('installer', 'a', 4);
@@ -792,7 +830,7 @@ test('re-check: after a paused room’s reconnect, the first Install the screen 
     room.run(1);
     if (!c.adapter.read.ready() || garageFacts(c.adapter.read).held) continue;
     const rev = lineRow(c.adapter.read.world(), NS).rev;
-    assert.equal(c.adapter.installPart(NS, 5, rev), true, 'the screen offered Install and the session sent it');
+    assert.equal(c.adapter.installPart(0, NS, 5, rev), true, 'the screen offered Install and the session sent it');
     sentAt = room.sync.world.tick;
   }
   assert.ok(sentAt >= 0, 'the screen offered Install at some point');
@@ -887,7 +925,7 @@ test('trade installs: refusals, the first fit spends 1 per line and two on one t
   brought(s, BAYL);
   assert.equal(fit(s, BAYL, 2), 0, 'a line 2 part on a trade line');
   for (const part of [5, 6])
-    assert.equal(act(s, 'a', 'rail.install', { line: LINE2, part, revision: lineRow(s.w, LINE2).rev }), 0);
+    assert.equal(act(s, 'a', 'rail.install', { site: 0, line: LINE2, part, revision: lineRow(s.w, LINE2).rev }), 0);
   assert.equal(fit(s, NS, 5), 0, "another line's copy is on the table");
   assert.equal(fit(s, BAYL, 6, 'a', { revision: 1 }), 0, 'a revision not yet seen');
   for (const bad of [-1, 1.5, -0, Number.NaN, '0', null, undefined, 2 ** 60])
@@ -898,8 +936,8 @@ test('trade installs: refusals, the first fit spends 1 per line and two on one t
   for (const k of LINE_SLOTS[LINE2]!)
     Object.assign(busy.mut(Train, busy.lookup(Train, k)!)!, { wagon: false, foot: 0 });
   busy.mut(Shed, busy.single(Shed))!.ready = s.t + 10;
-  assert.equal(raw(busy, 'rail.install', { line: BAYL, part: 6, revision: 0 }, s.t), 0, 'the table is busy');
-  assert.equal(raw(busy, 'rail.bring', { line: NS, revision: 1 }, s.t), 0, 'no bring mid roll-out');
+  assert.equal(raw(busy, 'rail.install', { site: 0, line: BAYL, part: 6, revision: 0 }, s.t), 0, 'the table is busy');
+  assert.equal(raw(busy, 'rail.bring', { site: 0, line: NS, revision: 1 }, s.t), 0, 'no bring mid roll-out');
   // The first fit spends one steel; two presses on one tick fit once.
   const spent = shed(s.w).spent,
     pool = steelPool(shed(s.w));
@@ -951,7 +989,7 @@ test('the bay fit holds across a rejoin until the last lay, then two peers race 
   c.adapter.onRefused((r) => refused.push(r));
   room.ready();
   assert.equal(lineRow(c.adapter.read.world(), BAYL).boiler, 5);
-  assert.ok(c.adapter.installPart(BAYL, 5, 1));
+  assert.ok(c.adapter.installPart(0, BAYL, 5, 1));
   room.run(30);
   assert.equal(refused.at(-1)?.reason, 'trade-building');
   legStagesOn(s, 'bay-mid', 'bay-reached');
@@ -968,7 +1006,15 @@ test('the bay fit holds across a rejoin until the last lay, then two peers race 
   settle(s);
   const loaded = copy(s);
   const a = account(loaded.w, 'a')!;
-  const request = { op: 'rail.install', line: BAYL, part: 6, revision: 2, epoch: a.epoch, request: a.request + 1 };
+  const request = {
+    op: 'rail.install',
+    site: 0,
+    line: BAYL,
+    part: 6,
+    revision: 2,
+    epoch: a.epoch,
+    request: a.request + 1,
+  };
   const receipt = apply(loaded.w, 'a', request, loaded.t);
   assert.equal(receipt.reason, 'trade-repicked');
   assert.deepEqual(apply(restore(loaded.w), 'a', request, loaded.t), receipt);
@@ -1012,8 +1058,8 @@ test('line 2 refuses trade parts in the legacy adapter and the receipt decoder',
     () => HOME.w,
   );
   for (const part of [5, 6] as const) {
-    const event = { op: 'rail.install', line: LINE2, part, revision: 1 };
-    assert.deepEqual([acts.installBoiler(1, part), intentOf(event)], [false, null]);
+    const event = { op: 'rail.install', site: 0, line: LINE2, part, revision: 1 };
+    assert.deepEqual([acts.installBoiler(0, 1, part), intentOf(event)], [false, null]);
   }
 });
 
@@ -1030,7 +1076,11 @@ test('trade installs are refused before each trade opens, even with the copy on 
     // A hand-made table with the copy on it, and a pool: the rule still refuses until the trade opens.
     const w = restore(s.w);
     Object.assign(w.mut(Shed, w.single(Shed))!, { tableLine: line, steel: 1 });
-    assert.equal(raw(w, 'rail.install', { line, part: 5, revision: 0 }, s.t), open ? 1 : 0, `${stage} install`);
+    assert.equal(
+      raw(w, 'rail.install', { site: 0, line, part: 5, revision: 0 }, s.t),
+      open ? 1 : 0,
+      `${stage} install`,
+    );
   }
   // The cave line, line 1 and junk lines never come to the table.
   const s = tradeReady();
@@ -1056,6 +1106,48 @@ test('rail.bring: refusals (not open, already there, stale, the hold); two on on
   const loaded = restore(s.w);
   assert.deepEqual([shed(loaded).tableLine, shed(loaded).bringRev], [LINE2, 2]);
   assert.equal(invariant(loaded), null);
+});
+
+test('a quay save requires an open copy, a bring revision and a tick within the checkpoint', () => {
+  const s = railwayAtLegs('port-reached');
+  const h = s.w.mut(Shed, s.w.single(Shed))!;
+  for (const [quayLine, quayRev, quayBrought] of [
+    [NS, 0, -1],
+    [255, 1, s.t],
+    [NS, 1, -1],
+    [LINE2, 0, s.t],
+    [NS, 1, s.t + 1],
+  ]) {
+    Object.assign(h, { quayLine, quayRev, quayBrought });
+    assert.throws(() => railwayCheck(s.w, s.t), /garage table/);
+  }
+  Object.assign(h, { quayLine: NS, quayRev: 1, quayBrought: s.t });
+  railwayCheck(s.w, s.t);
+});
+
+test('the three garage adapter senders and receipt decoder carry the selected site', () => {
+  const sent: unknown[] = [];
+  const acts = railwayActs(
+    (event) => {
+      sent.push(event);
+      return true;
+    },
+    () => HOME.w,
+  );
+  for (const site of [0, 1, -1, 2]) {
+    sent.length = 0;
+    const expected = [
+      { op: 'rail.install', site, line: LINE2, part: 2, revision: 1 },
+      { op: 'rail.install', site, line: NS, part: 5, revision: 0 },
+      { op: 'rail.bring', site, line: NS, revision: 0 },
+    ];
+    acts.installBoiler(site, 1, 2);
+    acts.installPart(site, NS, 5, 0);
+    acts.bringLine(site, NS, 0);
+    const valid = site === 0 || site === 1;
+    assert.deepEqual(sent, valid ? expected : []);
+    assert.deepEqual(expected.map(intentOf), valid ? expected : [null, null, null]);
+  }
 });
 
 test('a save with no bring history must still have the original table copy', () => {
@@ -1091,7 +1183,7 @@ test('a trade fit and its re-pick adopt only standing at halt 0, never in flight
     [6, 5],
     [5, 4],
   ] as const) {
-    advance(s, Math.max(0, tableFree(s.w) - s.t));
+    advance(s, Math.max(0, tableFree(s.w, 0) - s.t));
     assert.equal(fit(s, NS, part), 1);
     const pending = new Set(servingSlots((k) => train(s.w, k), NS));
     for (let t = 0; pending.size; t++) {
@@ -1137,7 +1229,7 @@ test('a Strong train keeps both bills through a held swap and delivers the first
       row().at === 0 &&
       row().phase === TRAIN_PHASE.STAND &&
       row().boiler === 5 &&
-      s.t >= tableFree(s.w),
+      s.t >= tableFree(s.w, 0),
     'two bills aboard, standing at the West landing',
   );
   assert.equal(fit(s, BAYL, 5), 0, 'the build holds the fit with two bills aboard');
@@ -1200,8 +1292,8 @@ function swapFuzz(seed: number) {
     // The room at the table: bring a line's copy, or fit Quick or Strong on the one there.
     if (rand() < 0.004) {
       const line = rand() < 0.5 ? NS : BAYL;
-      if (shed(s.w).tableLine !== line) brings += op('rail.bring', { line, revision: shed(s.w).bringRev });
-      else if (op('rail.install', { line, part: rand() < 0.5 ? 5 : 6, revision: lineRow(s.w, line).rev })) {
+      if (shed(s.w).tableLine !== line) brings += op('rail.bring', { site: 0, line, revision: shed(s.w).bringRev });
+      else if (op('rail.install', { site: 0, line, part: rand() < 0.5 ? 5 : 6, revision: lineRow(s.w, line).rev })) {
         swaps++;
         const st = stopsOf(s.w, line);
         mixedUntil.set(line, s.t + Math.max(...[0, 4, 5].map((b) => cycleTicks(line, st, b))));

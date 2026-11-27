@@ -126,7 +126,7 @@ function build(s: Seed, stage: WorksStage): Seed {
     }
     case 'wagon-on':
       need(act(s, 'a', 'rail.turn', { to: 1, revision: shed(w).tableRev }) === 1, 'the turntable turned');
-      need(act(s, 'a', 'rail.install', { line: 1, part: 1, revision: 0 }) === 1, 'the upgrade installed');
+      need(act(s, 'a', 'rail.install', { site: 0, line: 1, part: 1, revision: 0 }) === 1, 'the upgrade installed');
       need(shed(w).ready >= 0, 'the wagon ready');
       for (let guard = 0; !trains(w).some((r) => r.wagon); guard++) {
         need(guard < 4000, 'the wagon couples');

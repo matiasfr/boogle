@@ -137,6 +137,7 @@ export const SEED_STAGES = [
   'trade-ready',
   'trade-fitted',
   'trade-held',
+  'quay-garage',
 ] as const;
 export type SeedStage = (typeof SEED_STAGES)[number];
 const Q5_STAGES: readonly string[] = ['q4-done', 'sea-open', 'q5-stocked', 'q5-finishing', 'q5-done'];

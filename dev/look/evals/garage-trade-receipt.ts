@@ -35,7 +35,7 @@ for (const kind of [0, 1]) {
 }
 await until(() => shed(world()).steel > 0, 'steel landed', 650000);
 stand(SHED_TABLE);
-adapter.bringLine(ROW_LINE.bay, shed(world()).bringRev);
+adapter.bringLine(0, ROW_LINE.bay, shed(world()).bringRev);
 await until(() => shed(world()).tableLine === ROW_LINE.bay, 'bay copy on the table');
 await until(() => adapter.read.tick() >= shed(world()).brought + BRING_TICKS + 1, 'bring hold elapsed');
 stand(SHED_TABLE);
@@ -50,7 +50,7 @@ const off = adapter.onAccepted((event: { op: string; part?: number }) => {
   if (event.op === 'rail.install' && event.part === 6) seen = true;
 });
 try {
-  adapter.installPart(ROW_LINE.bay, 6, line(world(), ROW_LINE.bay).rev);
+  adapter.installPart(0, ROW_LINE.bay, 6, line(world(), ROW_LINE.bay).rev);
   await until(() => {
     if (handlerError) throw handlerError;
     return seen && line(world(), ROW_LINE.bay).boiler === 5;
