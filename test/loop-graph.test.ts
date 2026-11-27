@@ -606,3 +606,24 @@ for (const [seed, legId] of [
     assert.ok(elapsed >= cycle, `advanced ${elapsed} ticks, standard train needs at least ${cycle}`);
   });
 }
+
+test('by-hand cave-1 sources its logs from trees during the plug approach', async () => {
+  const { playOrder } = await import('../dev/loop/run.ts');
+  const canonical = proposeOrders()[0]!.order;
+  const order = canonical.slice(0, canonical.indexOf('cave-1') + 1);
+  const cave = RAIL_LEGS.findIndex((leg) => leg.id === 'cave');
+  let rackLogs = 0;
+  const run = playOrder(order, 'by hand', 2, {
+    byHand: new Set(['cave-1']),
+    mutate(host) {
+      const act = host.act;
+      host.act = (pid, op, fields, at) => {
+        const result = act(pid, op, fields, at);
+        if (op === 'rail.depotTake' && fields.leg === cave) rackLogs += result.accepted;
+        return result;
+      };
+    },
+  });
+  assert.equal(run.softlock, undefined);
+  assert.equal(rackLogs, 0);
+});
