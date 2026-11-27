@@ -261,7 +261,7 @@ note in this plan, then ship on the owner's word. No step waits on a playtest.
 
     - [x] High Gorge, two split sea stacks: the backdrop instances the kit's ten-metre face and rim cap along the clipped outlines. Each outer toe meets the sea. The stacks share two visual batches and use the existing rail-bore cuts. The level's hidden colliders and platform records stay in place.
     - [x] Halt platform [before](cliff-kit-everywhere/high-gorge-platform-before.jpg) and [after](cliff-kit-everywhere/high-gorge-platform-after.jpg). The grey stair zigzag reads against six sandstone courses. At the same camera the renderer counted 188 → 194 draws and 433,150 → 533,254 triangles. Both runs counted 3,853 static colliders.
-    - [ ] High Gorge matched arrival and sea proofs.
+    - [x] Stack Line arrival [before](cliff-kit-everywhere/high-gorge-arrival-before.jpg) and [after](cliff-kit-everywhere/high-gorge-arrival-after.jpg). The red train and platform sit between the courses on both walls. From the sea [before](cliff-kit-everywhere/high-gorge-sea-before.jpg) and [after](cliff-kit-everywhere/high-gorge-sea-after.jpg), the stair, halt and distant arch remain visible through the split. The arrival frames match camera position and direction; the train is farther along in the after frame.
 
 ## Budget
 
