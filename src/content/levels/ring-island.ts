@@ -261,21 +261,25 @@ const track: Placement[] = Array.from({ length: TRACK.tracks }, (_, t) =>
         }),
         true,
       ),
-      ...[-0.5, 0.5].map((r, side) =>
-        box(
+      ...[-0.5, 0.5].map((r, side) => {
+        // The up toe straddles a rail joint. The down toe ends at the next joint.
+        const upInner = t === 1 && side === 1;
+        const start = upInner && k === 12 ? ['up-heel'] : u0;
+        const end = upInner && k === 11 ? ['up-toe'] : t === 0 && side === 0 && k === 13 ? ['down-heel'] : u1;
+        return box(
           `track/rail/${t + 1}-${k + 1}-${side + 1}`,
           RAIL,
           line({
             beam: {
-              a: { u: u0, lat: [lat, r], y: [{ deck: u0 }, 0.22] },
-              b: { u: u1, lat: [lat, r], y: [{ deck: u1 }, 0.22] },
+              a: { u: start, lat: [lat, r], y: [{ deck: start }, 0.22] },
+              b: { u: end, lat: [lat, r], y: [{ deck: end }, 0.22] },
               w: 0.12,
               h: 0.14,
             },
           }),
           true,
-        ),
-      ),
+        );
+      }),
     ];
   }).flat(),
 ).flat();
@@ -342,9 +346,7 @@ const haltMassing: Placement[] = [
     }),
   ),
 ];
-/** The crossover's rails on the Way (RING_END.cross): the homeward track eased onto the original's lateral, a bed and a
- * pair of rails a metre at a time (`k` of `metres`, the `crossover` frame's `u0`, `u1` and their laterals `lat0`,
- * `lat1`), on the Way's grade. Drawn only. */
+/** Metre-long beds under the crossover. The points records below share the sea junctions' rail and timber plan. */
 const CROSSOVER = { metres: 22 } as const;
 const crossover: Placement[] = Array.from({ length: CROSSOVER.metres }, (_, k) => {
   const at = { frame: 'crossover', k };
@@ -362,22 +364,6 @@ const crossover: Placement[] = Array.from({ length: CROSSOVER.metres }, (_, k) =
         },
       },
       true,
-    ),
-    ...[-0.5, 0.5].map((r, side) =>
-      box(
-        `crossover/rail/${k + 1}-${side + 1}`,
-        RAIL,
-        {
-          ...at,
-          beam: {
-            a: { u: ['u0'], lat: ['lat0', r], y: [{ deck: ['u0'] }, 0.22] },
-            b: { u: ['u1'], lat: ['lat1', r], y: [{ deck: ['u1'] }, 0.22] },
-            w: 0.12,
-            h: 0.14,
-          },
-        },
-        true,
-      ),
     ),
   ];
 }).flat();
@@ -631,6 +617,11 @@ export const levels = [
       ...track,
       ...haltMassing,
       ...crossover,
+      ...(['rails', 'timbers', 'wings'] as const).flatMap((part) =>
+        Array.from({ length: { rails: 42, timbers: 21, wings: 12 }[part] }, (_, k) =>
+          box(`crossover/${part}/${k + 1}`, part === 'timbers' ? '#5e574a' : RAIL, { frame: 'points', part, k }, true),
+        ),
+      ),
       // ------------------------------------------------ the island halt
       // The RINGWORKS board on the east platform, its face to the tracks: the frame behind the face and two legs.
       box(

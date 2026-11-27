@@ -39,12 +39,13 @@ import { createRailwayTrains } from './train-view.ts';
 import { createFreight } from './freight-view.ts';
 import { createRailwayHalts } from './halts-view.ts';
 import { createTurnoutBlades } from './turnout-blades.ts';
+import { ringPoints } from '../ring-island/points.ts';
 import { createRailwayHook } from './hook-shot.ts';
 import { createRailwayGlide } from './glide.ts';
 import { stepMoves } from './move-order.ts';
 import { worksPreview } from './works-flag.ts';
 import { onRouteSceneryMounted } from '../route-greybox/state.ts';
-import { onRingSceneryMounted } from '../ring-island/state.ts';
+import { onRingSceneryMounted, ringIslandNear } from '../ring-island/state.ts';
 
 const pickMarks = (ready: boolean) => (['pack', 'jump'] as const).map((kind) => ({ kind, ready }));
 const offeredParts = pickMarks(true), promisedParts = pickMarks(false);
@@ -154,7 +155,18 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     : null;
   if (works) trains.footPlaces(works.footPlaces);
   // Every junction's moving blades and levers, cut out of both lines' rails and the railhead's and the stack's.
-  const points = createTurnoutBlades(adapter, owner, [...track.points, ...line2.points, ...(works?.points ?? [])]);
+  const island = ringPoints.toes.map((p) => ({
+    ...p,
+    from: 0,
+    laid: () => ringIslandNear.mounted,
+    retired: () => false,
+  }));
+  const points = createTurnoutBlades(adapter, owner, [
+    ...track.points,
+    ...line2.points,
+    ...island,
+    ...(works?.points ?? []),
+  ]);
   if (look.LOOK.contact)
     kit.installContact(
       [machine.flatbed, machine.loco],

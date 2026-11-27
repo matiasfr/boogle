@@ -12,6 +12,7 @@ import { FAR, ORIGIN } from '../../src/place/layout.ts';
 import { RING_CONES } from '../../src/proto/greybox/ring-cones.ts';
 import { createIslandGround, LANDING } from '../../src/entities/ring-island/ground.ts';
 import * as path from '../../src/entities/ring-island/path.ts';
+import { ringPoints, ringStation } from '../../src/entities/ring-island/points.ts';
 import * as layout from '../../src/sim/railway-ring-layout.ts';
 import * as bracket from '../../src/entities/ring-island/bracket.ts';
 import { RING_CROSSING, RING_MAP_TABLE, ringCrossingPlanks } from '../../src/entities/ring-island/state.ts';
@@ -210,6 +211,8 @@ export function ringBindings() {
   let last = 0;
   const PENNANT_POLE = sourceFunction('src/entities/ring-island-far/view.ts', 'PENNANT_POLE', {});
   const bindings = {
+    ringPoints,
+    ringStation,
     THREE,
     attribute,
     mix,

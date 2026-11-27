@@ -66,7 +66,7 @@ stop overlapping. World metres (x, z). Radii of the line turnouts are `npm run l
 | J8 | Far Head crossover, down-track end, s 512 | (1351.8, −159.8) | right | 7.2 m, 13.5° | 12.1 m | 24.8 m | `track.ts` | trains |
 | J9 | Line 2 offset track, pier root, s 556 down to 536 | (1385.5, −187.4) | right | 6.5 m, 14.8° | 11.0 m | 15.4 m | `track.ts`; `retire()` removes it at Q7 | trains |
 | J10 | Railhead stub, moves with the head: merge s 832 to 972 in 20 m steps; two toes, J10a on the up track at s 812 and J10b on the down track at s 832 (head 0) | (1399.9, −442.1) and (1404.4, −462.0) at head 0 | right, both | 6.5 m, 14.8° (1:3.8) | 11.0 m | 20.6 m | `railhead-view.ts` (step 7) | trains |
-| J11 | Ring Island crossover, s 1137 to 1159; J11a and J11b | (1408.7, −767.0) and (1413.3, −788.9) | right, both | 7.2 m, 13.5° (1:4.2) | 12.1 m | 24.5 m | listed, not drawn (step 7) | trains |
+| J11 | Ring Island crossover, s 1137 to 1159; J11a and J11b | (1408.7, −767.0) and (1413.3, −788.9) | right, both | 7.2 m, 13.5° (1:4.2) | 12.1 m | 24.5 m | `ring-island/view.ts` (26 November follow-up) | trains |
 | J12 | Stack heads 1 to 3 (merge s 1670.1, 2180.2, 2690.3) and High Gorge's crossover (s 3192 to 3214); J12.1a/b to J12.4a/b | J12.1a (1021.3, −907.4) … J12.4b (−73.5, −1966.7) | right, all | 6.5 m, 14.7 to 14.8° (heads); 7.2 m, 13.5° (Gorge) | 11.0 m; 12.1 m | 20.4 to 24.9 m | `route-greybox/leg-view.ts` (step 7) | trains |
 | T1 | Table rim, the spur (bearing 310° from the centre) | table (942.1, 17.1), r 4.8 | — | a butt join | — | straight 1.5 m | `home-station-view`, `roundhouse-view` | the shunt |
 | T2 to T4 | Table rim, stall roads at 160°, 190° (open), 220° | rims (943.7, 21.6), (941.3, 21.8), (939.0, 20.8) | — | butt joins | — | straight 3.7 m | same | the shunt (190° only) |
@@ -585,7 +585,11 @@ review** row (a fresh subagent, fable medium) on its one proof look. Step 2 and 
   - **Levers between the tracks.** Designer call 3 puts a line's lever away from the other track; on these decks that
     side is the edge over the sea (and the Way's edge at 1.8 m), so every sea toe's lever and headblocks stand toward
     the other track, 2.0 m out: midway between the two (logged call). The arm, rod and box are step 6's.
-  - **J11 is listed, not drawn (a scope wall).** Ring Island's near view is held piece for piece against
+  - [x] **J11 follow-up, 26 November 2026.** Decision desk item 7 released the golden. The Way's records now draw
+    42 crossover rail spans, 21 timbers and 12 wing and check pieces. Three through rail spans stop at the blade cuts.
+    Both toes use the shared moving blades and levers while the near view is mounted. The massing fixture pins the
+    same pieces as the island fixture, so both carry the J11 capture.
+  - **Original step 7 scope, 19 November.** Ring Island's near view is held piece for piece against
     `test/fixtures/prefab-ring-island.json` (`test/prefab-trees.test.ts`, "never rewritten"), and its track and
     crossover are records (`src/content/levels/ring-island.ts`), which may not import `turnout()`. Cutting the Way's
     rails for blades and adding timbers, wing and check rails changes that golden, which this step may not edit. J11
