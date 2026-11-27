@@ -6,6 +6,7 @@ import * as THREE from 'three/webgpu';
 import { max, mix, normalWorldGeometry, positionWorld, vec3, vertexColor } from 'three/tsl';
 import { registerBuilder } from '../builders.ts';
 import { rockLayers } from '../../place/ground-material.ts';
+import { material } from '../../render/materials.ts';
 import { ORIGIN } from '../../place/layout.ts';
 
 declare module '../names.ts' {
@@ -39,7 +40,9 @@ export function kitMaterial() {
 registerBuilder('terrain.kit', (params) => {
   const geometry = pieces.get(String(params.piece));
   if (!geometry) throw new Error(`terrain kit: ${String(params.piece)} not loaded`);
-  const mesh = new THREE.InstancedMesh(geometry, kitMaterial(), Number(params.count ?? 1));
-  mesh.castShadow = mesh.receiveShadow = true;
+  const chalk = params.colour === '#c9c5bb';
+  const surface = chalk ? material('stone', { colour: '#c9c5bb' }) : kitMaterial();
+  const mesh = new THREE.InstancedMesh(geometry, surface, Number(params.count ?? 1));
+  mesh.castShadow = mesh.receiveShadow = !chalk;
   return mesh;
 });

@@ -3,11 +3,12 @@
 // (the horizon draws them). This view reads no progress.
 import level from '../../../content/built/levels/canopy.json' with { type: 'json' };
 import cleft from '../../../content/built/levels/canopy-cleft.json' with { type: 'json' };
-import * as THREE from 'three/webgpu';
+import { createPrefabBatch, instantiate } from '../../prefab/instantiate.ts';
+import { setTerrainKit } from '../../prefab/builders/terrain-kit.ts';
+import { loadLevelArtifact } from '../../prefab/validate.ts';
 import { terrainKitGeometry } from '../terrain-kit/geometry.ts';
-import { material } from '../../render/materials.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
-import { compiled as records } from '../../prefab/catalogue.ts';
+import { compiled as records, definitions } from '../../prefab/catalogue.ts';
 import { leg2Massing, leg2Extras, leg2Placements } from './leg2-draw.ts';
 import { AREA_CENTRES, coverNear } from './leg2-layout.ts';
 const placements = leg2Massing(level).map((p) =>
@@ -18,18 +19,12 @@ export function canopyExtras(owner: OwnedView) {
   void terrainKitGeometry()
     .then((pieces) => {
       if (!owner.alive) return;
-      const mesh = new THREE.InstancedMesh(
-        pieces.get('sea_face_10')!,
-        material('stone', { colour: '#c9c5bb' }),
-        cleft.placements.length,
+      setTerrainKit(pieces);
+      const beds = loadLevelArtifact(cleft, definitions).placements;
+      const target = createPrefabBatch('terrain.chalk-bed', beds.length, owner);
+      beds.forEach((p, index) =>
+        instantiate(p.prefab, p, { owner, batch: { target, index }, still: true }).setEnabled(true),
       );
-      mesh.name = 'Canopy cleft ledges';
-      cleft.placements.forEach((p, i) => {
-        const matrix = new THREE.Matrix4().makeRotationY(p.rot[0]!);
-        matrix.scale(new THREE.Vector3().fromArray(p.scale)).setPosition(new THREE.Vector3().fromArray(p.pos));
-        mesh.setMatrixAt(i, matrix);
-      });
-      owner.add(mesh);
     })
     .catch((error: unknown) => console.warn('[canopy] cliff kit load failed', error));
   return leg2Extras(owner, level);
