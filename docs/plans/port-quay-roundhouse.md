@@ -1,4 +1,4 @@
-> **26 November 2026. Steps 1 and 2 built.** Planned against main `5997c5cd9` (world v74). Step 5 of the approved
+> **Done, 27 November 2026: steps 1 to 6 and the Checkpoint are on main (#2563, #2570, #2578, #2595, #2598).** Planned against main `5997c5cd9` (world v74). Step 5 of the approved
 > [garage-choices](garage-choices.md#7-steps) (section 5, "Port Quay"; step 5's row), with
 > [shared-pool](shared-pool.md#6-steps)'s step 2 built inside it, as that plan says. Steps 1 to 3 stand the Roundhouse
 > with no sim change and no bump; step 4 is the sim and the bump; steps 5 and 6 are the garage at Port Quay. Design
