@@ -43,8 +43,19 @@ const AREAS: readonly Area[] = [
   quayArea,
   ...wallAreas,
   ...notchAreas,
-  { id: 'gorge', centre: AREA_CENTRES.gorge, build: () => gorgePlacements },
-  { id: 'bell', centre: AREA_CENTRES.bell, build: bellMassing, baseExtras: bellExtras },
+  {
+    id: 'gorge',
+    centre: AREA_CENTRES.gorge,
+    build: () => gorgePlacements,
+    extras: async (owner) => (await import('./massing-incline.ts')).inclineShoulders(owner),
+  },
+  {
+    id: 'bell',
+    centre: AREA_CENTRES.bell,
+    build: bellMassing,
+    baseExtras: bellExtras,
+    extras: async (owner) => (await import('./massing-incline.ts')).bellCut(owner, bellMassing()),
+  },
   {
     id: 'west',
     centre: AREA_CENTRES.west,
