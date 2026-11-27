@@ -45,7 +45,7 @@ const blend = (a: XZY, b: XZY, k: number): XZY => ({
 });
 
 /** `points`: every junction whose parts are drawn: both lines' (track.ts `points`, J1 to J9), the railhead's (J10,
- * moving with the head) and the greybox stack's (J12). */
+ * moving with the head), Ring Island's (J11) and the greybox stack's (J12). */
 export function createTurnoutBlades(adapter: RailwayAdapter, owner: OwnedView, points: readonly TrackPoint[]) {
   const read = adapter.read;
   const shuntPath = createShuntPath();

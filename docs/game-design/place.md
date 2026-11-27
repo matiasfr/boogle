@@ -1228,7 +1228,8 @@ take-off rail on the platform's last 5 m, and the **joint's west platform** (u 2
 both tracks at u 240. **The lookout's buoys lift** as the railhead reaches them: 1 and 2 from the start, 3 at bent 8,
 4 at bent 11, 5 to 7 on the rivet, each rising off its mooring with a splash; the crane's little guy does not bow
 (not built). Once Q7 is laid the island's near view stays mounted at any distance, so the Way is there under the trains;
-the leaf's own view now swings it (below). Not tested on a device.
+the leaf's own view now swings it (below). On the Way, the homeward track crosses to the original track through two
+sets of sprung points. Both levers stand between the tracks, and their blades follow the train. Not tested on a device.
 
 **The ring's line home, the take-off and the rack's tag (14 November 2026;
 [gap-readability](../plans/gap-readability.md) steps 1, 3 and 7; owner: the hook does not carry you forward across the

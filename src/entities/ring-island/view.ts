@@ -59,6 +59,7 @@ import { LANDING, type Cone, type IslandGround } from './ground.ts';
 import { SUMMIT_BRIDGE, summitBridge, summitPath, summitPathFoot } from './path.ts';
 import { RING_CROSSING, RING_MAP_TABLE, ringCrossingPlanks, ringIslandPose } from './state.ts';
 import { addFarGround } from '../../place/far-ground.ts';
+import { ringPoints, ringStation } from './points.ts';
 import { BRACKET_Z, CRADLE, HANGER, PLATE_BOTTOM, WEIGHT, WEIGHT_X } from './bracket.ts';
 import {
   LEAF_ORANGE,
@@ -396,7 +397,8 @@ function generatedCounts(): [string, number][] {
   rows.push(['platform/', 3 * [RING_HALT.offsetLat, RING_HALT.downLat].length]);
   rows.push(['crossing/plank/', ringCrossingPlanks().length], ['crossing/', ringCrossingPlanks().length + 2]);
   rows.push(['west-ramp', 1]);
-  rows.push(['crossover/', 3 * count(RING_END.cross.u0 / 100, RING_END.cross.u1 / 100, 1)]);
+  rows.push(['crossover/bed/', count(RING_END.cross.u0 / 100, RING_END.cross.u1 / 100, 1)]);
+  for (const part of ['rails', 'timbers', 'wings'] as const) rows.push([`crossover/${part}/`, ringPoints[part].length]);
   return rows;
 }
 /** The frames on the ground (path.ts): the summit path's legs (`path`: leg `leg`'s piece `k` of its 6 m lengths, from
@@ -535,6 +537,21 @@ function resolvePlacement(
       params,
     };
   };
+  if (frame === 'points') {
+    const k = finite(place.k, 'points piece');
+    const top = (s: number, lat: number, dy: number) => p3(ringStation(s), lat, deckY(ringStation(s)) + dy);
+    if (place.part === 'rails') {
+      const { a, b } = ringPoints.rails[k]!;
+      return beam(top(a.s, a.lat, 0.22), top(b.s, b.lat, 0.22), 0.12, 0.14);
+    }
+    if (place.part === 'timbers') {
+      const { s, lo, hi } = ringPoints.timbers[k]!;
+      const lat = (lo + hi) / 2;
+      return beam(top(s - 0.15, lat, 0.09), top(s + 0.15, lat, 0.09), hi - lo, 0.08);
+    }
+    const { a, b, w } = ringPoints.wings[k]!;
+    return beam({ ...a, y: a.y + 0.17 }, { ...b, y: b.y + 0.17 }, 0.12 * w, 0.14);
+  }
   if (frame === 'pennant') {
     // One of the pennant pole's footing blocks: the far view's one definition (pennantFooting), at the pole's deck.
     const f = PENNANT_FOOTING[finite(place.footing, 'footing')];
@@ -774,6 +791,9 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
       'strut-z': RING_BRACE.z / 100,
     },
     line: {
+      'up-toe': ringStation(ringPoints.cuts[0]!.s0),
+      'up-heel': ringStation(ringPoints.cuts[0]!.s1),
+      'down-heel': ringStation(ringPoints.cuts[1]!.s0),
       hinge: HINGE,
       left: FORM.left,
       right: FORM.right,
@@ -866,9 +886,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   // (here until the first section, then at each railhead). The cutting is ground.ts's.
 
   // ---------------------------------------------------------------- the crossover's rails on the Way (R2d)
-  // The offset track's lateral eased from its own (-4, TRACKS[1]: the homeward track since v45) to the original track's
-  // (0) over RING_END.cross, as place/layout.ts's crossLat does at Far Head: ballast and a pair of rails, a metre at a
-  // time, on the Way's grade. Rails only; records (content/levels/ring-island.ts, `crossover/`, crossoverFrame).
+  // The metre-long beds carry the turnout timbers, fixed rails and checkwork. The railway draws both moving toes.
   furnish((p) => p.id.startsWith('crossover/'));
 
   // ---------------------------------------------------------------- the path up to the summit lookout
