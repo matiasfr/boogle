@@ -1,7 +1,7 @@
 import { gorgeSurfaces } from '../src/entities/route-greybox/gorge-surfaces.ts';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { compiled, definitions } from '../src/prefab/catalogue.ts';
-import { prefabGolden, recordMatrices } from './helpers/prefab-golden.ts';
+import { emptyMassing, prefabGolden, recordMatrices } from './helpers/prefab-golden.ts';
 // Owner-requested migration proof: execute the real draw boundary with recording physics, without a renderer.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -92,7 +92,17 @@ test('Gorge collider and placement values match the old massing', async (t) => {
   );
   const boxes = sourceModule<typeof import('../src/entities/route-greybox/boxes.ts')>(
     fs.readFileSync('src/entities/route-greybox/boxes.ts', 'utf8'),
-    { ...runtime, artifact, compiled, definitions, ...validation, THREE, gorgeSurfaces, mergeGeometries },
+    {
+      ...runtime,
+      artifact,
+      compiled,
+      definitions,
+      ...validation,
+      ...emptyMassing,
+      THREE,
+      gorgeSurfaces,
+      mergeGeometries,
+    },
   );
   const owner = createOwnedView();
   const authored = runtime.gorgePlacements;

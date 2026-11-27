@@ -1,3 +1,4 @@
+import { massingClearance } from '../src/entities/route-greybox/massing-clearance.ts';
 // Review reproduction: missing/moved compiled placements must change the actual level-check verdict.
 import '../dev/sim/hooks.ts';
 import test from 'node:test';
@@ -1015,9 +1016,13 @@ async function mountAt(position: THREE.Vector3) {
       overlaps: enabled.filter((id) => shapes.get(id)!.some((x) => holds(x, position))),
     };
   };
+  const standWhenClear = (shapes: readonly Shape[], on: () => void) =>
+    liftOrWait([{ shapes, on }], bodyOf(position), { lift: true }).kind !== 'wait';
   const helpers = sourceModule<typeof import('../src/entities/route-greybox/leg2-draw.ts')>(
     fs.readFileSync('src/entities/route-greybox/leg2-draw.ts', 'utf8'),
     {
+      massingClearance,
+      standWhenClear,
       records: artifact,
       loadLevelArtifact: validation.loadLevelArtifact,
       LEG2_TEXT,
@@ -1028,6 +1033,8 @@ async function mountAt(position: THREE.Vector3) {
   );
   type Draw = typeof import('../src/entities/route-greybox/boxes.ts').drawGreyBoxes;
   const draw = sourceFunction<Draw>('src/entities/route-greybox/boxes.ts', 'drawGreyBoxes', {
+    massingClearance,
+    standWhenClear,
     compiled: artifact,
     gorgeSurfaces: () => new Map(),
     createPrefabBatch: () => ({
@@ -1042,7 +1049,7 @@ async function mountAt(position: THREE.Vector3) {
       centre,
       near: coverNear(helpers.leg2Placements(input), artifact.prefabs, centre),
       build: () => helpers.leg2Massing(input),
-      extras: (owner: Parameters<typeof helpers.leg2Extras>[0]) => helpers.leg2Extras(owner, input),
+      baseExtras: (owner: Parameters<typeof helpers.leg2Extras>[0]) => helpers.leg2Extras(owner, input),
     };
   };
   sourceModule(fs.readFileSync('src/entities/route-greybox/index.ts', 'utf8'), {
@@ -1129,6 +1136,12 @@ for (const id of ['wall-cn', 'wall-cs'] as const)
     const p = new THREE.Vector3(outer.x * 1.01 - cx * 0.01, 0, outer.z * 1.01 - cz * 0.01);
     assert.equal(placed.heightAt(triangles, p), null);
     assert.ok((await mountAt(p)).enabled.includes('canopy.lands'), `no wall at ${p.toArray()}`);
+    inside.y = 120 + PLAYER_R - 0.7;
+    const occupied = await mountAt(inside);
+    assert.ok(!occupied.enabled.includes('canopy.lands'), 'the cliff mounted through a player at its lip');
+    inside.y = 124;
+    occupied.update();
+    assert.ok(occupied.state().enabled.includes('canopy.lands'), 'the cliff stayed off after the player cleared it');
   });
 
 test('a waiting first-lay slab at the Bell Rock rim is hidden', async () => {

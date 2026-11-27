@@ -4,8 +4,7 @@
 // ./massing.ts; leg 2's places (docs/plans/greybox-leg2-massing.md) and leg 3's Canopy (greybox-leg3.md, step 6) join
 // the list as their steps land. The legs' own views (the deck, frames, racks, signs and prompts) are ./leg-view.ts's,
 // mounted by the railway's works seam. Local scenery: no state, no sync, no saves. ?blockout=world draws its own
-// Gorge, so it gets none of this. An area mounts far from anyone walking, swimming or riding there (Canopy at 580 m),
-// so its solids go on as ordinary statics; a player put into one (a jump, a return) is the shared return check's.
+// Gorge, so it gets none of this.
 import { productionRailway } from '../../proto/flags.ts';
 import { background } from '../../async.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../../entity/entity.ts';
@@ -30,14 +29,13 @@ import { routeAreas, routeSceneryMounted } from './state.ts';
 defineKind('route-greybox', { update: 13 });
 defineKind('route-greybox-area', {});
 
-/** One place's massing: its boxes, and what else stands under the same owner (painted boards, the rock's colliders;
- * `extras` returns how many solids it made). `near`: its mount distance when not the usual (freed past it plus
- * FREE_MORE). */
+/** Compiled boxes, boards and land share the base owner. Optional chunks own their additions separately. */
 type Area = {
   id: string;
   centre: { x: number; z: number };
   build: () => readonly Placement[];
-  extras?: (owner: OwnedView) => number;
+  baseExtras?: (owner: OwnedView) => { solids: number; update(): void };
+  extras?: (owner: OwnedView) => Promise<{ update(): void } | undefined>;
   near?: number;
 };
 const AREAS: readonly Area[] = [
@@ -46,9 +44,9 @@ const AREAS: readonly Area[] = [
   ...wallAreas,
   ...notchAreas,
   { id: 'gorge', centre: AREA_CENTRES.gorge, build: () => gorgePlacements },
-  { id: 'bell', centre: AREA_CENTRES.bell, build: bellMassing, extras: bellExtras },
-  { id: 'west', centre: AREA_CENTRES.west, build: westMassing, extras: westExtras },
-  { id: 'canopy', centre: AREA_CENTRES.canopy, build: canopyMassing, extras: canopyExtras, near: canopyNear },
+  { id: 'bell', centre: AREA_CENTRES.bell, build: bellMassing, baseExtras: bellExtras },
+  { id: 'west', centre: AREA_CENTRES.west, build: westMassing, baseExtras: westExtras },
+  { id: 'canopy', centre: AREA_CENTRES.canopy, build: canopyMassing, baseExtras: canopyExtras, near: canopyNear },
 ];
 
 if (productionRailway && new URLSearchParams(location.search).get('blockout') !== 'world') {
@@ -56,7 +54,8 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
   const residents = AREAS.map((area) => {
     const residency = { ...area.centre, mounted: false };
     routeAreas.set(area.id, residency);
-    let mounted: { owner: OwnedView; entity: GameEntity; boxes: number; solids: number } | null = null,
+    let mounted: { owner: OwnedView; entity: GameEntity; update?: () => void; boxes: number; solids: number } | null =
+        null,
       building = false;
     const wanted = () => {
       const body = me.body?.position,
@@ -71,23 +70,59 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
     async function mount() {
       building = true;
       const owner = createOwnedView();
-      const boxes = area.build();
-      const batch = boxes.length ? await drawGreyBoxes(owner, boxes) : null;
-      const more = area.extras?.(owner) ?? 0;
-      // Its pipeline compiles off the frame before it first shows (src/render/precompile.ts).
-      owner.root.visible = false;
-      await precompile(owner.root);
-      owner.root.visible = true;
-      building = false;
-      if (gone) return owner.dispose();
-      mounted = {
-        owner,
-        entity: spawn({ kind: 'route-greybox-area', mesh: owner.root }),
-        boxes: batch?.mesh.count ?? 0,
-        solids: (batch?.solids ?? 0) + more,
-      };
-      residency.mounted = true;
-      routeSceneryMounted();
+      try {
+        const boxes = area.build();
+        const batch = boxes.length ? await drawGreyBoxes(owner, boxes) : null;
+        const more = area.baseExtras?.(owner);
+        let child: OwnedView | undefined;
+        let extra: { update(): void } | undefined;
+        let retryAt = 0,
+          delay = 3000;
+        owner.cleanup(() => child?.dispose());
+        async function loadExtras(load: NonNullable<Area['extras']>) {
+          const attempt = createOwnedView();
+          child = attempt;
+          try {
+            const view = await load(attempt);
+            if (!attempt.alive || !view) return;
+            await precompile(attempt.root);
+            if (!attempt.alive) return;
+            owner.root.add(attempt.root);
+            extra = view;
+          } catch (error) {
+            attempt.dispose();
+            child = undefined;
+            retryAt = performance.now() + delay;
+            delay = Math.min(30000, delay * 2);
+            throw error;
+          }
+        }
+        // Its pipeline compiles off the frame before it first shows (src/render/precompile.ts).
+        owner.root.visible = false;
+        await precompile(owner.root);
+        owner.root.visible = true;
+        if (gone) return owner.dispose();
+        mounted = {
+          owner,
+          entity: spawn({ kind: 'route-greybox-area', mesh: owner.root }),
+          boxes: batch?.mesh.count ?? 0,
+          solids: (batch?.solids ?? 0) + (more?.solids ?? 0),
+          update() {
+            batch?.update();
+            more?.update();
+            if (extra) extra.update();
+            else if (area.extras && !child && performance.now() >= retryAt)
+              background(loadExtras(area.extras), `route greybox extras: ${area.id}`);
+          },
+        };
+        residency.mounted = true;
+        routeSceneryMounted();
+      } catch (error) {
+        owner.dispose();
+        throw error;
+      } finally {
+        building = false;
+      }
     }
     function unmount() {
       if (!mounted) return;
@@ -102,6 +137,7 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
         const want = wanted();
         if (want && !mounted && !building) background(mount(), `route greybox massing: ${area.id}`);
         else if (!want && mounted) unmount();
+        else mounted?.update?.();
       },
       describe: () =>
         mounted ? { resident: true, boxes: mounted.boxes, solids: mounted.solids } : { resident: false },

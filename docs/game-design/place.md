@@ -1623,6 +1623,8 @@ At the Saltpan, two low platforms follow the curve across the salt flats. Port Q
 From their apron a ramp climbs to High Port?s 55 m top. The Roundhouse yard meets the landward platform at 3.90 m.
 A short ramp connects the yard to the apron, which forms the floor of the circular pit. The town reserve remains
 beside the yard. The five-bay Roundhouse kit has a generated level and mounts in the next step.
+Platform 1 meets the Roundhouse yard at platform height. Five bays face the parked bridge. The working bay stands open, and each open trade line keeps its works copy behind an open doorway. The approach rails end at buffers two metres short of the platform. A ramp leads down from the yard to the apron.
+
 The board at the buffers marks the future Wall line. Finishing the cave line opens the Port Quay stall at Bell Rock. [Leg 4 plan](../plans/greybox-leg4.md)
 
 **White Wall catalog and rules (local v71 branch).** Once the line reaches Port Quay, cave trains bring the next

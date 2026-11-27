@@ -1,18 +1,18 @@
-// Home's finished rotunda (docs/plans/roundhouse-rotunda.md, steps 4–5): the generated level's pieces, each stood
-// round the table from the site's row and shown by stage. Local scenery: a piece reads no fact; the Roundhouse view
-// (./roundhouse-view.ts) says which stage to show and owns the working bay's slab, sockets and vehicles.
+// The generated rotunda pieces stand around their site's table and follow the local view's stage and copies.
 import type { OwnedView } from '../../render/owned-view.ts';
 import { createPrefabBatch, instantiate } from '../../prefab/instantiate.ts';
 import { loadLevelArtifact } from '../../prefab/validate.ts';
 import { definitions } from '../../prefab/catalogue.ts';
-import level from '../../../content/built/levels/rotunda-home.json' with { type: 'json' };
-import { ROTUNDA_HOME } from '../../place/home-station.ts';
+import type { RoomFacts } from './garage-data.ts';
+import { wearsLong, wearsTail } from './cars.ts';
+import { LINE2 } from '../../sim/railway-lines.ts';
 import { ORIGIN } from '../../place/layout.ts';
 import * as THREE from 'three/webgpu';
 import {
   bayOccupants,
   COPY_AT,
-  COPY_BAYS,
+  copyBays,
+  type RotundaSite,
   rotundaBays,
   rotundaPieces,
   rotundaPose,
@@ -22,6 +22,7 @@ import {
 import { HEAD_OFFSET, PLAYER_R } from '../../constants.ts';
 import { me } from '../../player/state.ts';
 import { remotes } from '../../netplay/net.ts';
+import { standWhenClear } from './frame-occupied.ts';
 import { ENGINE_WHEELS } from './engine.ts';
 
 type EngineKit = typeof import('./engine-kit.ts');
@@ -31,9 +32,23 @@ export type BayCopy = { line: number; long: boolean; flatbed: boolean };
  * anyone deeper in it keeps it off until they are clear. */
 const STEP_UP = 0.35;
 
+/** Garage step 4: each chip's line whose copy is off the table waits in its bay, wearing its row (line 2's longer or
+ * Big boiler and a trade line's Quick the longer barrel; Strong its kit flatbed). */
+export const bayCopies = (f: RoomFacts, tableLine = f.tableLine) =>
+  f.lines
+    .filter((l) => l.line !== tableLine)
+    .map((l) => ({
+      line: l.line,
+      long: wearsLong(l.line, l.row),
+      flatbed: l.line !== LINE2 && wearsTail(l.line, l.row),
+    }));
+
 /** `kit` draws the works copies' engines in their bays (garage step 4); without it the bays hold none. */
-export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
-  const site = ROTUNDA_HOME;
+export function createRotundaView(
+  owner: OwnedView,
+  kit: EngineKit | undefined,
+  { site, level }: { site: RotundaSite; level: unknown },
+) {
   const placements = new Map(loadLevelArtifact(level, definitions).placements.map((p) => [p.id, p]));
   const batches = new Map<string, { target: ReturnType<typeof createPrefabBatch>; next: number }>();
   for (const placement of placements.values()) {
@@ -49,7 +64,7 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
       { id: `waiting-${turn}`, part: 'waiting' as const, turn },
       { id: `open-${turn}`, part: 'open' as const, turn },
     ]),
-    ...COPY_BAYS.flatMap(({ bay: turn }) => [
+    ...copyBays(site).flatMap(({ bay: turn }) => [
       { id: `copy-${turn}`, part: 'copy' as const, turn },
       { id: `flatbed-${turn}`, part: 'flatbed' as const, turn },
     ]),
@@ -85,7 +100,7 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
     iron.dispose();
   });
   if (kit)
-    for (const { bay } of COPY_BAYS) {
+    for (const { bay } of copyBays(site)) {
       const pose = rotundaPose(site, bay);
       const root = new THREE.Group();
       root.position.set(pose.x + ORIGIN.x, pose.y + 0.24, pose.z);
@@ -127,8 +142,8 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
   const matrix = pieces[0]!.rest.clone();
   const point = owner.root.position.clone();
   const shows = (stage: number, piece: (typeof pieces)[number]['piece']) => {
-    if (stage >= 2 && piece.turn === -2 && piece.part === 'open') return true;
-    if (stage >= 2 && piece.turn === -2 && piece.part === 'door') return false;
+    if (site.grows && stage >= 2 && piece.turn === -2 && piece.part === 'open') return true;
+    if (site.grows && stage >= 2 && piece.turn === -2 && piece.part === 'door') return false;
     if (piece.part === 'waiting') return occupied.has(piece.turn);
     if (piece.part === 'copy') return copies.has(piece.turn);
     if (piece.part === 'flatbed') return !!copies.get(piece.turn)?.flatbed;
@@ -150,6 +165,9 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
   const sets = [...new Set(pieces.filter((p) => guarded(p.piece)).map((p) => p.piece.turn))].map((turn) =>
     pieces.filter((p) => p.piece.turn === turn && guarded(p.piece)),
   );
+  if (!site.grows) {
+    for (const p of pieces) if (!guarded(p.piece)) sets.push([p]);
+  }
   /** m: a resting contact is not an overlap (src/place/site-clearance.ts's CONTACT). */
   const resting = 0.02;
   /** Some guarded piece stands with its solid still off: settle runs each frame until none does. */
@@ -209,12 +227,28 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
     for (const set of sets) {
       const coming = set.filter((p) => !p.enabled && shows(shown, p.piece));
       if (!coming.length) continue;
-      const ok = clear(coming);
-      for (const p of coming) {
-        p.held = !ok;
-        if (ok) {
+      const enable = () => {
+        for (const p of coming) {
           p.instance.setEnabled(true);
           p.enabled = true;
+          if (p.piece.part === 'copy') {
+            const engine = engines.get(p.piece.turn);
+            if (engine) engine.root.visible = true;
+          }
+        }
+      };
+      const ok = site.grows
+        ? clear(coming)
+        : standWhenClear(
+            coming.flatMap((p) => p.instance.solids),
+            enable,
+          );
+      if (site.grows && ok) enable();
+      for (const p of coming) {
+        p.held = !ok;
+        if (!site.grows && !ok && p.piece.part === 'copy') {
+          const engine = engines.get(p.piece.turn);
+          if (engine) engine.root.visible = false;
         }
       }
       pending ||= !ok;
@@ -235,7 +269,7 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
         instance.root.position.y = rest.elements[13]!;
         const on = shows(stage, piece);
         // A guarded solid switches on through settle, below; off at once (nothing stands on it any more).
-        if (!guarded(piece) || !on) {
+        if ((site.grows && !guarded(piece)) || !on) {
           instance.setEnabled(on);
           entry.enabled = on;
           // No longer wanted: no longer waiting.
@@ -244,7 +278,7 @@ export function createRotundaView(owner: OwnedView, kit?: EngineKit) {
           instance.setEnabled(false);
           pending = true;
         }
-        instance.root.visible = on;
+        instance.root.visible = on && (site.grows || entry.enabled);
         if (batch) {
           batch.mesh.setMatrixAt(index, instance.root.visible ? rest : matrix.makeScale(0, 0, 0));
           batch.mesh.instanceMatrix.needsUpdate = true;

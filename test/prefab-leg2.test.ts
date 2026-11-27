@@ -1,6 +1,6 @@
 import { gorgeSurfaces } from '../src/entities/route-greybox/gorge-surfaces.ts';
 import { compiled, definitions } from '../src/prefab/catalogue.ts';
-import { prefabGolden, recordMatrices } from './helpers/prefab-golden.ts';
+import { emptyMassing, prefabGolden, recordMatrices } from './helpers/prefab-golden.ts';
 // Owner-requested migration proof. Record the old draw boundary before changing its authoring.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -152,12 +152,21 @@ for (const area of ['bell', 'west'] as const)
     );
     const boxes = sourceModule<typeof import('../src/entities/route-greybox/boxes.ts')>(
       fs.readFileSync('src/entities/route-greybox/boxes.ts', 'utf8'),
-      { ...runtime, artifact, compiled, definitions, ...validation, gorgeSurfaces },
+      {
+        ...runtime,
+        artifact,
+        compiled,
+        definitions,
+        ...validation,
+        ...emptyMassing,
+        gorgeSurfaces,
+      },
     );
     const draw = sourceModule<typeof import('../src/entities/route-greybox/leg2-draw.ts')>(
       fs.readFileSync('src/entities/route-greybox/leg2-draw.ts', 'utf8'),
       {
         ...runtime,
+        ...emptyMassing,
         artifact,
         compiled,
         definitions,

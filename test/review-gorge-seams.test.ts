@@ -1,6 +1,7 @@
 // Permanent regression ported from review/gorge-4372df4f4-scratch.
 // Run: node --import ./dev/sim/hooks.ts --test test/review-gorge-seams.test.ts
 // These are interior floor points, not shifted exterior silhouettes. Nearby rays must still hit.
+import { emptyMassing } from './helpers/prefab-golden.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs';
@@ -59,7 +60,14 @@ async function drawn(base: boolean) {
   );
   const boxes = sourceModule<typeof import('../src/entities/route-greybox/boxes.ts')>(
     read('src/entities/route-greybox/boxes.ts', base),
-    { ...runtime, THREE, compiled, gorgeSurfaces, mergeGeometries },
+    {
+      ...runtime,
+      ...emptyMassing,
+      THREE,
+      compiled,
+      gorgeSurfaces,
+      mergeGeometries,
+    },
   );
   const owner = createOwner();
   await boxes.drawGreyBoxes(owner, runtime.gorgePlacements);

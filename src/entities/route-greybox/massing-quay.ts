@@ -1,3 +1,12 @@
 import level from '../../../content/built/levels/quay.json' with { type: 'json' };
 import { coastalArea } from './massing-saltpan.ts';
-export const quayArea = coastalArea('quay', level);
+import type { OwnedView } from '../../render/owned-view.ts';
+
+const quay = coastalArea('quay', level);
+export const quayArea = {
+  ...quay,
+  async extras(owner: OwnedView) {
+    const { mountQuayRoundhouse } = await import('./quay-roundhouse.ts');
+    if (owner.alive) return mountQuayRoundhouse(owner);
+  },
+};

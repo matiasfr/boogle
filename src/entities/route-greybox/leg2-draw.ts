@@ -5,6 +5,9 @@ import { instantiate } from '../../prefab/instantiate.ts';
 import { loadLevelArtifact } from '../../prefab/validate.ts';
 import { LEG2_TEXT } from './leg2-layout.ts';
 import { areaBoardVisibility, areaLabels } from './state.ts';
+import { massingClearance } from './massing-clearance.ts';
+import { standWhenClear } from '../railway/frame-occupied.ts';
+
 function compiled(input: unknown) {
   const value = loadLevelArtifact(input, records.prefabs);
   for (const p of value.placements)
@@ -21,13 +24,14 @@ export const leg2Placements = (value: unknown) => compiled(value).placements;
 export function leg2Massing(value: unknown) {
   return compiled(value).placements.filter((p) => batched(p.prefab));
 }
-/** Stands a level's other placements (labels, the lands' prisms) under `owner`; returns how many solids they made. */
+/** Stands a level's other placements (labels, the lands' prisms) under `owner`, retrying occupied placements on update. */
 export function leg2Extras(owner: OwnedView, value: unknown) {
+  const clearance = massingClearance(standWhenClear);
   let solids = 0;
   for (const p of compiled(value).placements.filter((p) => !batched(p.prefab))) {
     const made = instantiate(p.prefab, p, { owner, texts: LEG2_TEXT, still: true });
-    made.setEnabled(true);
-    solids += made.bodies.length;
+    clearance.add(made);
+    solids += made.solids.length;
     // Each label can be repainted while this area stands (route-greybox/leg-view.ts: a stall pad that connects).
     for (const [name, key] of Object.entries(p.labels ?? {})) {
       const relabel = (lines: readonly string[]) => made.relabel(name, lines);
@@ -42,7 +46,7 @@ export function leg2Extras(owner: OwnedView, value: unknown) {
       });
     }
   }
-  return solids;
+  return { solids, update: clearance.update };
 }
 /** A leg 2 level's pads (`greybox.pad` placements): id, centre and yaw. */
 export function leg2Pads(value: unknown) {

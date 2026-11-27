@@ -43,6 +43,12 @@ const PLACES: Record<string, Place> = {
   canopy: { seed: 'canopy-reached', stand: [-1070, 15, -319], cam: [-700, 180, -620], look: [-1060, 20, -300] },
   // Leg 4's Checkpoint D: stand at quay.at(-10, -5.8) on the homeward platform and look from over the breakwater.
   port: { seed: 'port-reached', stand: [140.5, 5.5, 931.1], cam: [300, 100, 780], look: [45, 28, 980] },
+  quayRoundhouse: {
+    seed: 'port-reached',
+    stand: [133.5, 5.5, 938.2],
+    cam: [133.5, 5.6, 938.2],
+    look: [109.91, 5, 914.79],
+  },
   // Leg 5's Checkpoint E: the Wall jump landing at High Gorge, looking down the split toward the sea.
   wall: { seed: 'wall-closed', stand: [-132.55, 5.5, -1999.03], cam: [-114, 14, -1993], look: [-172, 4, -2030] },
   // Leg 6's Checkpoint F: from the island platform up the causeway, and from the Notch halt into the arch.

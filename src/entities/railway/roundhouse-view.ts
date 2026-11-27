@@ -42,14 +42,14 @@ import { createGhostOutlines } from '../../render/ghost-outline.ts';
 import { createGarageView } from './garage-view.ts';
 import { garageFacts, roomFacts } from './garage-state.ts';
 import type { RoomFacts } from './garage-data.ts';
-import { wearsLong, wearsTail } from './cars.ts';
+import level from '../../../content/built/levels/rotunda-home.json' with { type: 'json' };
 import { playSharedMoment } from './shared-moment.ts';
 import { showMomentBanner } from '../../ui/moment-banner.ts';
 import { garageRow, mastFrom, polarAt } from './garage-geo.ts';
 import { PARK, createShuntPath, shuntTargets } from './shunt-path.ts';
 import { account, shed, trains, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
 import { ROTUNDA_BLOCK, ROTUNDA_KIT } from '../../place/rotunda.ts';
-import { createRotundaView } from './rotunda-view.ts';
+import { bayCopies, createRotundaView } from './rotunda-view.ts';
 import { BRIDGE, bridgeHalf, bridgeHandle, clearOfBridge, tableYaws } from './table-bridge.ts';
 import { createTableRide } from './railhead-state.ts';
 import { siteExit } from '../../place/site-clearance.ts';
@@ -69,17 +69,6 @@ const refusedAtTable = (
   if (op === 'rail.install') view.denied(reason && isTradeRefusal(reason) ? reason : undefined);
   else if (op === 'rail.bring') view.bringDenied();
 };
-
-/** Garage step 4: each chip's line whose copy is off the table waits in its bay, wearing its row (line 2's longer or
- * Big boiler and a trade line's Quick the longer barrel; Strong its kit flatbed). */
-const bayCopies = (f: RoomFacts) =>
-  f.lines
-    .filter((l) => l.line !== f.tableLine)
-    .map((l) => ({
-      line: l.line,
-      long: wearsLong(l.line, l.row),
-      flatbed: l.line !== LINE2 && wearsTail(l.line, l.row),
-    }));
 
 /** Seconds: the door piers' build, the tarp's slide, the table's quarter turn. */
 const BUILD_S = 3,
@@ -132,7 +121,7 @@ export async function createRailwayRoundhouse(
   // ---------------------------------------------------------------- the turntable: the pit and its kerb are the
   // rotunda's fixed table record; the bridge across the shallow pit is drawn here, since it turns
   // Garage step 4: the works copies off the table stand in their bays, drawn with the engine's own parts.
-  const rotunda = createRotundaView(owner, await import('./engine-kit.ts'));
+  const rotunda = createRotundaView(owner, await import('./engine-kit.ts'), { site: home.ROTUNDA_HOME, level });
   const anchor = { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100 };
   const table = toWorld(home.TABLE);
   const tableY = TABLE_RAIL;

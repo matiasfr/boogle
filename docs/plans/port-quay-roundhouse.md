@@ -192,7 +192,7 @@ November). Steps 1 to 3 ship together or one by one, with no bump; step 4 after 
       siblings, rule 41) only where they list rotunda levels. Verify: `npm run prefabs` is clean on a second run; the
       prefab validation in `node dev/ship-check.ts`; the new level has the table, five shells, four doors, the open
       working doors, three copy plates and flatbeds, and no ruin or outline placement (read the JSON).
-- [ ] **3. The Roundhouse stands at Port Quay (M; none; "Player-visible implementation": Codex gpt-6.2-astra
+- [x] **3. The Roundhouse stands at Port Quay (M; none; "Player-visible implementation": Codex gpt-6.2-astra
       medium).** Files: `src/entities/railway/rotunda-view.ts` (`createRotundaView(owner, kit, { site, level })`:
       Home passes `ROTUNDA_HOME` and `rotunda-home.json`; nothing else in it names Home); new
       `src/entities/route-greybox/quay-roundhouse.ts`, mounted through the quay area's extras
@@ -209,6 +209,14 @@ November). Steps 1 to 3 ship together or one by one, with no bump; step 4 after 
       `port-reached` seed, opened and read: from platform 1's middle toward the table (the open doors and copies in
       view), from the approach road's buffers, from the yard ramp's foot, and from the High Port ramp's head down on
       the whole yard; one still from an arriving cave train.
+      **Built:** the bridge, rails and buffers are authored in the quay level and share its massing batch. The rotunda
+      adds six prefab batches (ordinary and steel bay shells, shut doors, open leaves, end walls and copy flatbeds).
+      Platform 1 and the buffers look straight into the empty working bay, with two engines to its right and two shut
+      bays to its left on `port-reached`. From the yard ramp the table rim is almost edge-on. From High Port the
+      bay arc, bridge, rail stub and two platforms fit in one view. On the inbound train the route board overlaps
+      the right bays as the yard comes into view. Platform WebGPU frame at 960 by 600: 477 draws, 899,725 triangles.
+      At Home the engine and flatbed still stand on the timber bridge, with its handrails and the garage jib beside it.
+      Level check: five bays over 100 degrees, nearest running rail 30.39 m, ground within 0.00 m.
 - [ ] **4. The second table in the rules, and the bump (M; review; "High-risk implementation": Codex gpt-6.2-astra
       medium; then the independent review row).** Files: `src/sim/railway-components.ts` (`Shed.quayLine`, `quayRev`,
       `quayBrought`); `src/sim/railway-queries-works.ts` (`tableFree(w, site)`, `tableBusy(w, tick, site)`, every

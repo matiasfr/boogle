@@ -1,5 +1,16 @@
 import assert from 'node:assert/strict';
 import * as THREE from 'three/webgpu';
+import { massingClearance } from '../../src/entities/route-greybox/massing-clearance.ts';
+
+/** The geometry fixtures draw the area with no players present. */
+export const emptyMassing = {
+  massingClearance,
+  standWhenClear(_: unknown, on: () => void) {
+    on();
+    return true;
+  },
+};
+
 /** Geometry uses native local-scene math. Keep topology, identity, order, strings and flags exact. */
 export function prefabGolden(actual: unknown, expected: unknown, path = '$'): void {
   if (typeof actual === 'number' && typeof expected === 'number') {

@@ -1,3 +1,4 @@
+import { massingClearance } from '../src/entities/route-greybox/massing-clearance.ts';
 // src/physics/platforms.ts carryStep's deck choice (a measured physics regression, not a feature test): riding a line-2
 // car home from Ring Island past the parked track layer's flatbed, which overlaps the passing car and was registered
 // first, handed the rider to the flatbed and the train drove off without them. The deck you are carried by is kept while
@@ -21,7 +22,21 @@ import { sourceFunction } from '../dev/level/source.ts';
 import { Vector3 } from 'three';
 import { lerp, angleLerp } from '../src/math.ts';
 
-async function rotundaFixture() {
+// Use the runtime clearance path with the fixture's visitors and the real Rapier overlap query.
+async function clearanceFor(remotes: Map<string, { entered: boolean; avatar: { position: Vector3 } }>) {
+  const { createLiftOrWait } = await import('../src/place/clearance.ts');
+  return sourceFunction<typeof import('../src/entities/railway/frame-occupied.ts').standWhenClear>(
+    'src/entities/railway/frame-occupied.ts',
+    'standWhenClear',
+    {
+      frameHasRemote: sourceFunction('src/entities/railway/frame-occupied.ts', 'frameHasRemote', { remotes }),
+      me: player,
+      liftOrWait: createLiftOrWait(physics.capsuleOverlaps),
+    },
+  );
+}
+
+async function rotundaFixture(quay = false) {
   const THREE = await import('three/webgpu');
   const { definitions } = await import('../src/prefab/catalogue.ts');
   const geometry = await import('../src/place/rotunda.ts');
@@ -31,8 +46,14 @@ async function rotundaFixture() {
   const { ROTUNDA_HOME } = await import('../src/place/home-station.ts');
   const { rotundaPose, COPY_BAYS } = await import('../src/place/rotunda.ts');
   const { ORIGIN } = await import('../src/place/layout.ts');
+  const site = quay ? (await import('../src/place/port-quay.ts')).ROTUNDA_PORT_QUAY : ROTUNDA_HOME;
+  const artifact = quay
+    ? (await import('../content/built/levels/rotunda-port-quay.json', { with: { type: 'json' } })).default
+    : level;
   const remotes = new Map();
   const enabled = new Map<string, boolean>();
+  const stand = await clearanceFor(remotes);
+  let switching = false;
   const createRotundaView = sourceFunction<typeof import('../src/entities/railway/rotunda-view.ts').createRotundaView>(
     'src/entities/railway/rotunda-view.ts',
     'createRotundaView',
@@ -47,18 +68,34 @@ async function rotundaFixture() {
       STEP_UP: 0.35,
       me: player,
       level,
-      loadLevelArtifact: () => level,
+      loadLevelArtifact: () => artifact,
+      standWhenClear: (shapes: Parameters<typeof stand>[0], on: () => void) =>
+        stand(shapes, () => {
+          switching = true;
+          try {
+            on();
+          } finally {
+            switching = false;
+          }
+        }),
       remotes,
       definitions: Object.fromEntries(
         Object.entries(definitions).map(([key, def]) => [key, { colliders: def.colliders, visual: {} }]),
       ),
-      instantiate: (_key: string, p: { id: string; pos: [number, number, number]; rot: number[] }) => {
+      instantiate: (key: string, p: { id: string; pos: [number, number, number]; rot: number[] }) => {
         const root = new THREE.Group();
         root.position.set(...p.pos);
         root.rotation.y = p.rot[0]!;
         return {
           root,
+          solids: definitions[key]!.colliders.flatMap((c) => {
+            if (c.shape !== 'box') return [];
+            const offset = root.localToWorld(new Vector3(...c.at));
+            const [hx, hy, hz] = c.half;
+            return [{ kind: 'box', offset, rotation: root.quaternion, hx, hy, hz }];
+          }),
           setEnabled(on: boolean) {
+            if (quay && on) assert.ok(switching, p.id + ' enabled outside clearance');
             enabled.set(p.id, on);
           },
         };
@@ -67,9 +104,9 @@ async function rotundaFixture() {
   );
   await physics.physicsReady;
   const owner = createOwnedView();
-  const view = createRotundaView(owner);
+  const view = createRotundaView(owner, undefined, { site, level: artifact });
   const copy = COPY_BAYS[1]!;
-  const pose = rotundaPose(ROTUNDA_HOME, copy.bay);
+  const pose = rotundaPose(site, copy.bay);
   const local = (x: number, y: number, z: number) =>
     new Vector3(x, y, z)
       .applyAxisAngle(new Vector3(0, 1, 0), pose.yaw)
@@ -671,6 +708,280 @@ test("a player dropping through the turning table deck's middle is not held up b
     player.body = null;
     carry.on = null;
     carry.x = carry.y = carry.z = 0;
+    owner.dispose();
+  }
+});
+
+test('a Quay bay wall waits when a visitor occupies its pier at mount', async () => {
+  const { owner, view, local, remotes, enabled, copy } = await rotundaFixture(true);
+  try {
+    remotes.set('visitor', { entered: true, avatar: { position: local(2.12, PLAYER_R, 14.2) } });
+    view.show(0, 0);
+    const { ROTUNDA_PORT_QUAY } = await import('../src/place/port-quay.ts');
+    const { rotundaPieces } = await import('../src/place/rotunda.ts');
+    const piece = rotundaPieces(ROTUNDA_PORT_QUAY).find((p) => p.turn === copy.bay && p.id.startsWith('bay-'))!;
+    assert.notEqual(enabled.get('rotunda-port-quay.' + piece.id), true);
+    remotes.clear();
+    view.copies([{ line: copy.line, long: true, flatbed: true }]);
+    for (const id of view.inspect().standing) assert.equal(enabled.get('rotunda-port-quay.' + id), true, id);
+    assert.equal(enabled.get('rotunda-port-quay.' + piece.id), true);
+    assert.equal(enabled.get('rotunda-port-quay.flatbed-' + copy.bay), true);
+  } finally {
+    owner.dispose();
+  }
+});
+
+test('Home displays its existing busy-table and upgrade copy', async () => {
+  const { readFileSync } = await import('node:fs');
+  const source = readFileSync('src/entities/railway/roundhouse-view.ts', 'utf8');
+  assert.ok(source.includes('The table\u2019s busy') && source.includes('Line 2\u2019s trains take it at the Village'));
+});
+
+test('a bridge mounted over a player in the pit waits or lifts them', async () => {
+  const { loadLevelArtifact } = await import('../src/prefab/validate.ts');
+  const { definitions } = await import('../src/prefab/catalogue.ts');
+  const { default: level } = await import('../content/built/levels/quay.json', { with: { type: 'json' } });
+  const bridge = loadLevelArtifact(level, definitions).placements.find((p) => p.id.endsWith('roundhouse-bridge'))!;
+  const THREE = await import('three/webgpu');
+  const owner = createOwnedView();
+  const previous = player.body;
+  const body = owner.addBody(makePlayerBody(false));
+  player.body = body;
+  let enabled = false;
+  try {
+    const [x, , z] = bridge.pos;
+    physics.teleport(body, x, 3 + PLAYER_R, z);
+    const draw = sourceFunction<typeof import('../src/entities/route-greybox/boxes.ts').drawGreyBoxes>(
+      'src/entities/route-greybox/boxes.ts',
+      'drawGreyBoxes',
+      {
+        compiled: { prefabs: definitions },
+        massingClearance,
+        standWhenClear: await clearanceFor(new Map()),
+        createPrefabBatch: () => ({
+          mesh: new THREE.InstancedMesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial(), 1),
+        }),
+        instantiate: () => ({
+          bodies: [{}],
+          solids: [
+            {
+              kind: 'box',
+              hx: bridge.scale![0] / 2,
+              hy: bridge.scale![1] / 2,
+              hz: bridge.scale![2] / 2,
+              offset: { x, y: bridge.pos[1], z },
+              rotation: new THREE.Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), bridge.rot![0]),
+            },
+          ],
+          setEnabled(on: boolean) {
+            enabled = on;
+          },
+        }),
+        gorgeSurfaces: () => new Map(),
+      },
+    );
+    const batch = await draw(owner, [bridge]);
+    assert.ok(!enabled || body.position.y >= 3.95 + PLAYER_R);
+    assert.equal(enabled, false);
+    physics.teleport(body, x, 3.85 + PLAYER_R, z);
+    batch.update();
+    assert.equal(enabled, true);
+    assert.ok(body.position.y >= 3.95 + PLAYER_R - 0.005);
+  } finally {
+    player.body = previous;
+    owner.dispose();
+  }
+});
+
+test('the Quay yard ring waits for a player on the apron, then stands once they leave', async () => {
+  const { loadLevelArtifact } = await import('../src/prefab/validate.ts');
+  const { definitions } = await import('../src/prefab/catalogue.ts');
+  const { default: level } = await import('../content/built/levels/quay.json', { with: { type: 'json' } });
+  const ring = loadLevelArtifact(level, definitions).placements.find((p) => p.id === 'quay.yard-ring')!;
+  const THREE = await import('three/webgpu');
+  const solids = definitions[ring.prefab]!.colliders.map((c) => {
+    assert.equal(c.shape, 'box');
+    if (c.shape !== 'box') throw Error('expected a ring segment');
+    return {
+      kind: 'box' as const,
+      hx: c.half[0],
+      hy: c.half[1],
+      hz: c.half[2],
+      offset: new Vector3(...ring.pos).add(new Vector3(...c.at)),
+      rotation: new THREE.Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), c.rot?.[0] ?? 0),
+    };
+  });
+  assert.equal(solids.length, 48);
+  const owner = createOwnedView();
+  const previous = player.body;
+  const body = owner.addBody(makePlayerBody(false));
+  player.body = body;
+  let enabled = false;
+  try {
+    const { x, z } = solids[0]!.offset;
+    physics.teleport(body, x, 3.02 + PLAYER_R, z);
+    const draw = sourceFunction<typeof import('../src/entities/route-greybox/boxes.ts').drawGreyBoxes>(
+      'src/entities/route-greybox/boxes.ts',
+      'drawGreyBoxes',
+      {
+        compiled: { prefabs: definitions },
+        massingClearance,
+        standWhenClear: await clearanceFor(new Map()),
+        createPrefabBatch: () => ({
+          mesh: new THREE.InstancedMesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial(), 1),
+        }),
+        instantiate: () => ({
+          solids,
+          bodies: [],
+          setEnabled(on: boolean) {
+            enabled = on;
+          },
+        }),
+        gorgeSurfaces: () => new Map(),
+      },
+    );
+    const batch = await draw(owner, [ring]);
+    assert.equal(enabled, false, 'yard ring switched on through the apron visitor');
+    physics.teleport(body, x + 50, 3.02 + PLAYER_R, z);
+    batch.update();
+    assert.equal(enabled, true);
+  } finally {
+    player.body = previous;
+    owner.dispose();
+  }
+});
+
+test('two failed extras loads keep the base resident, back off and release an in-flight attempt on unmount', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { sourceModule } = await import('../dev/level/source.ts');
+  const owners: ReturnType<typeof createOwnedView>[] = [];
+  let tick!: () => void;
+  let building!: Promise<void>;
+  let now = 0,
+    bases = 0,
+    attempts = 0;
+  let finish!: () => void;
+  const areas = new Map();
+  const camera = { position: { x: 0, z: 0 } };
+  const quay = {
+    id: 'quay',
+    centre: { x: 0, z: 0 },
+    build() {
+      bases++;
+      return [];
+    },
+    async extras() {
+      if (++attempts <= 2) throw Error('chunk failed');
+      await new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+      return { solids: 0, update() {} };
+    },
+  };
+  const far = { centre: { x: 9999, z: 9999 } };
+  sourceModule(
+    readFileSync('src/entities/route-greybox/index.ts', 'utf8'),
+    {
+      defineKind() {},
+      productionRailway: true,
+      location: { search: '' },
+      routeAreas: areas,
+      performance: { now: () => now },
+      precompile() {},
+      routeSceneryMounted() {},
+      despawn() {},
+      saltpanArea: far,
+      quayArea: quay,
+      notchAreas: [],
+      wallAreas: [],
+      canopyArea: far,
+      AREA_CENTRES: { canopy: far.centre, gorge: far.centre, bell: far.centre, west: far.centre },
+      gorgePlacements: [],
+      bellExtras() {},
+      bellMassing() {},
+      westExtras() {},
+      westMassing() {},
+      canopyExtras() {},
+      canopyMassing() {},
+      canopyNear: 1,
+      camera,
+      me: {},
+      MOUNT_NEAR: 1,
+      FREE_MORE: 1,
+      resident: (d: number) => d < 1,
+      createOwnedView() {
+        const owner = createOwnedView();
+        owners.push(owner);
+        return owner;
+      },
+      spawn(entity: { update(): void }) {
+        if (entity.update) tick = entity.update;
+        return entity;
+      },
+      background(job: Promise<void>) {
+        building = job.catch(() => {});
+      },
+    },
+    [],
+  );
+  async function frame(time: number) {
+    now = time;
+    tick();
+    await building;
+  }
+  await frame(0);
+  await frame(0);
+  assert.equal(areas.get('quay').mounted, true, 'extras failure tore down the base');
+  assert.equal(owners[0]!.alive, true);
+  assert.equal(attempts, 1);
+  assert.equal(owners[1]!.alive, false);
+  await frame(2999);
+  assert.equal(attempts, 1);
+  await frame(3000);
+  assert.equal(attempts, 2);
+  assert.equal(owners[2]!.alive, false);
+  await frame(8999);
+  assert.equal(attempts, 2);
+  assert.equal(bases, 1);
+  assert.equal(areas.get('quay').mounted, true);
+  now = 9000;
+  tick();
+  const pending = building;
+  now = 60000;
+  tick();
+  assert.equal(attempts, 3);
+  camera.position.x = 500;
+  tick();
+  assert.equal(areas.get('quay').mounted, false);
+  assert.ok(owners.every((o) => !o.alive));
+  finish();
+  await pending;
+  assert.equal(areas.get('quay').mounted, false);
+});
+test('local footing on the Notch deck survives a visitor sixteen metres away', async () => {
+  const { default: level } = await import('../content/built/levels/notch.json', { with: { type: 'json' } });
+  const { definitions } = await import('../src/prefab/catalogue.ts');
+  const { loadLevelArtifact } = await import('../src/prefab/validate.ts');
+  const { Quaternion } = await import('three');
+  const deck = loadLevelArtifact(level, definitions).placements.find((p) => p.id === 'notch.platform--1')!;
+  const centre = new Vector3(...deck.pos);
+  const rotation = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), deck.rot![0]);
+  const [w, h, d] = deck.scale!;
+  const shape = { kind: 'box' as const, hx: w / 2, hy: h / 2, hz: d / 2, offset: centre, rotation };
+  const position = new Vector3(0, h / 2 + PLAYER_R, 0).add(centre);
+  const visitor = new Vector3(0, -0.1, 16).applyQuaternion(rotation).add(position);
+  const stand = await clearanceFor(new Map([['visitor', { entered: true, avatar: { position: visitor } }]]));
+  const owner = createOwnedView();
+  const previous = player.body;
+  const body = owner.addBody(makePlayerBody(false));
+  try {
+    player.body = body;
+    physics.teleport(body, position.x, position.y, position.z);
+    assert.ok(stand([shape], () => owner.addBody(physics.createBody({ type: 'static', shapes: [shape] }))));
+    for (let i = 0; i < 15; i++) physics.stepFixed();
+    assert.ok(Math.abs(body.position.y - position.y) < 0.03, 'the local body lost the deck');
+  } finally {
+    player.body = previous;
     owner.dispose();
   }
 });
