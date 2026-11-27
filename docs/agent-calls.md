@@ -344,6 +344,7 @@ Split by topic on 10 November 2026 (see [decisions.md](decisions.md#recording-a-
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 2026-11-27 | Default: card 5 dresses the resident quay edges, not new freight buildings, until the town design. | [Port Quay card](plans/greybox-look.md) | Builder | The playable quay hides the distant harbour and keeps its town reserve empty. | open |
 | 2026-11-27 | Default: use the existing arrival landmark as the strongest local contrast in each route area, starting with the first Stack crown from Ring. | [Greybox look build cards](plans/greybox-look.md) | Design | Reversible pigment, foliage and kit placement keeps the freight edge and next stop readable. | open |
 | 2026-11-24 | Default: the landing's walk becomes graded ground (`coveGround`) carrying the cove face end's 1.7 m surface; nothing of the kit stands on it | [cliff-kit-everywhere](plans/cliff-kit-everywhere.md#design-review-revised-2026-11-24) | Cliff kit plan revision, design review | the 14 November walkable-ground rule; the landing keeps its footing once the sculpted face goes | open |
 | 2026-11-24 | Default: the shore area's own gated places: the landing, the shore hop, the dock and its sign | [cliff-kit-everywhere](plans/cliff-kit-everywhere.md#design-review-revised-2026-11-24) | Cliff kit plan revision, design review | what a new player meets first on the beach | open |
