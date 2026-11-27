@@ -5,6 +5,8 @@ import { reqAdd, reqHas, TRAIN_PHASE, type RailTrain } from './railway-train.ts'
 const cave = RAIL_LINES[ROW_LINE.cave]!;
 const halts = RAIL_LINES[LINE2]!.halts;
 const mapped = cave.halts.map((h) => halts.findIndex((other) => other.s === LAP_S0 - h.s));
+// Catalogue identity shared by physical cave platforms, their boards and remembered destinations.
+export const joinedCaveStop = (line: number, stop: number) => (line === ROW_LINE.cave ? (mapped[stop] ?? -1) : -1);
 export const gorgeStop = halts.findIndex((h) => h.name === 'High Gorge');
 /** A departure may still occupy an old cave turnout even when its halt has closed behind. */
 export const oldCaveEnd = (s: number) => cave.halts.find((h, k) => k > 0 && h.s === LAP_S0 - s)?.end;

@@ -17,7 +17,7 @@ import {
 import { carAlong, carPath, mirroredLat, poseOnPath, BOTTOM } from '../src/entities/railway/car-path.ts';
 import { TRAILER } from '../src/entities/railway/cars.ts';
 import { endMergeM } from '../src/entities/railway/line2-path.ts';
-import { rowLat } from '../src/entities/railway/row-path.ts';
+import { rowLat, rowWorld } from '../src/entities/railway/row-path.ts';
 import { Line, Train } from '../src/sim/railway-components.ts';
 import { legRow } from '../src/sim/railway-queries-route.ts';
 import { giftAboard } from '../src/sim/railway-queries-gift.ts';
@@ -37,6 +37,11 @@ import {
   unaudited,
   type Seed,
 } from './helpers/rail.ts';
+import { haltStands } from '../src/entities/railway/return-halts.ts';
+import { haltMap } from '../src/entities/railway/halt-map.ts';
+import * as layout from '../src/place/layout.ts';
+import { rowLeverCall } from '../src/entities/railway/lever-place.ts';
+import { returnCandidates, haltLandings } from '../src/place/return-spot.ts';
 import { lapServiceShard } from './helpers/railway-route-rules.ts';
 
 lapServiceShard();
@@ -318,4 +323,54 @@ test('a gift aboard a Wall kit survives the last lay and returns to its original
   assert.equal(rail(s.w).rack, gift);
   assert.equal(rail(s.w).giftOut, 0);
   assert.equal(invariant(s.w), null);
+});
+
+test('the physical Port Quay and Saltpan handles call their joined platforms in both directions', () => {
+  const s = unaudited(buildSeedWorld('wall-closed'));
+  for (const name of ['Port Quay', 'Saltpan Halt']) {
+    const id = RAIL_HALTS.findIndex((h) => h.line === cave && h.name === name);
+    for (const up of [false, true]) {
+      const call = rowLeverCall(id, up, true)!;
+      assert.equal(RAIL_HALTS[call.id]!.line, LINE2);
+      assert.equal(RAIL_HALTS[call.id]!.name, name);
+      assert.equal(call.dir, up ? 1 : -1);
+      assert.equal(act(s, 'a', 'rail.call', { id: call.id, dir: call.dir }), 1);
+      assert.ok(reqHas(line(s.w, LINE2).req, call.stop, call.dir, through.length));
+      assert.deepEqual(RAIL_HALTS[call.id]!.platforms[up ? 0 : 1], RAIL_HALTS[id]!.platforms[up ? 1 : 0]);
+    }
+  }
+});
+test('a saved Port Quay ride keeps its destination after the sixth lay', () => {
+  const s = aboutToJoin();
+  const ride = { ...rowWorld(cave, 150, 0, { x: 0, z: 0 }), y: 4, halt: 'cave:3' };
+  const saved = { ...ride, yaw: 0, at: 0, x: ride.x + 100, ride };
+  const candidates = haltLandings();
+  const first = () =>
+    returnCandidates(saved, candidates, (p) => haltStands(p.line!, p.stop!, stopsOf(s.w, p.line!).length))[0]!.halt;
+  assert.equal(first(), 'cave:3');
+  advance(s, 2);
+  assert.equal(first(), 'line2:12');
+});
+test('the arrived passenger coach passes the Gorge without a request', () => {
+  const s = unaudited(buildSeedWorld('arrived'));
+  let passed = false;
+  for (let i = 0; i < 6000; i++) {
+    const r = train(s.w, 6);
+    assert.ok(!(r.phase === TRAIN_PHASE.STAND && r.at === gorgeStop), 'unrequested Gorge arrival');
+    if (r.from < through[gorgeStop]! && r.dest > through[gorgeStop]!) {
+      passed = true;
+      break;
+    }
+    advance(s, 1);
+  }
+  assert.ok(passed, 'slot 6 runs through the Gorge');
+});
+
+test('the joined island map reaches West landing and keeps every halt in marker order', () => {
+  const mapped = haltMap(layout, { open: through.length, head: 6 }).lines[LINE2]!;
+  assert.deepEqual(mapped.stops.map((s) => s.s * 100).map(Math.round), through);
+  assert.equal(mapped.laid, mapped.stops.at(-1)!.s);
+  assert.ok(mapped.stops.every((s) => !s.hide));
+  const gorge = mapped.stops[gorgeStop]!;
+  assert.ok(mapped.stops.slice(gorgeStop + 1).every((s) => Math.hypot(s.x - gorge.x, s.z - gorge.z) > 1));
 });

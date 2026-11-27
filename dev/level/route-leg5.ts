@@ -208,6 +208,10 @@ export function checkLeg5() {
   );
   check('six clear metres between the town pad and the north platform', clear);
   const { node, reach } = colliderFlood(colliders, gorgeAt(-35, 0), 115);
+  for (const c of [-1.5, 0, 2, 4, 5.5]) {
+    const y = heightAt(faces, gorgeAt(-2, c));
+    check(`joined Gorge crossing c ${c} has a plank top at 3.35 m`, y !== null && Math.abs(y - 3.35) < 0.01);
+  }
   const concourseWalk = reach(gorgeAt(-2, 2));
   const fromWater = reach(gorgeAt(-76, 6), true);
   for (const [c, edge, sign] of [

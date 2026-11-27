@@ -14,6 +14,8 @@ export type MapStop = {
   z: number;
   /** Not drawn and not named: a halt trains no longer stop at, kept so a stop's index stays its line's. */
   hide?: true;
+  /** Former construction stop on the complete lap, marked in the map's dim ink. */
+  retired?: true;
   /** A small square before its name: the building frame stands here (the greybox route's railhead). */
   frame?: true;
 };
@@ -200,6 +202,7 @@ export function stopClear(h: number, scale = 1) {
 
 /** The most steps `mapLabels` searches before it settles for the best placement found. */
 const SEARCH_MAX = 300_000;
+const STOP_CLASH_COST = 1e4;
 // Where a name may sit around its stop: right, left, above, below, then the diagonals; the bias prefers the sides.
 const SIDES: readonly [number, number, number][] = [
   [1, 0, 0],
@@ -246,7 +249,7 @@ export function mapLabels(
       n.x += x;
       n.y += y;
       n.n++;
-      n.lit ||= st.s <= l.laid + 0.01;
+      n.lit ||= !st.retired && st.s <= l.laid + 0.01;
       n.here ||= here.some((hr) => hr.line === li && hr.stop === si);
       names.set(st.name, n);
     }),
@@ -312,7 +315,7 @@ export function mapLabels(
           Math.abs(slide) +
           3 * (1 - (cx * ox + cy * oy) / od) +
           (out > 0 ? 1e5 + out * 100 : 0);
-        for (const [x, y] of stops) if (hitsCircle(box, x, y, clear)) cost += 1e4;
+        for (const [x, y] of stops) if (hitsCircle(box, x, y, clear)) cost += STOP_CLASH_COST;
         // A name as near another stop as its own reads as that stop's: it costs, and it is tied to its own stop by a
         // leader (so is every name in a far slot).
         let own = Infinity,
@@ -347,6 +350,27 @@ export function mapLabels(
   // on the halts' upright faces; a whole one on Ring Island's table, read from above at a slant).
   const stacked = (a: MapLabel, b: MapLabel) =>
     a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h + S.label * stackGap && b.y < a.y + a.h + S.label * stackGap;
+  // With the whole lap on one face, place the most constrained labels first. Each candidate
+  // already clears the edges and stop circles. The first non-overlapping placement suffices.
+  if (lines.some((l) => l.stops.some((s) => s.retired))) {
+    const groups = options
+      .map((group) => group.filter((o) => o.cost < STOP_CLASH_COST))
+      .sort((a, b) => a.length - b.length);
+    const placed: MapLabel[] = [];
+    mapLabelSteps = 0;
+    const fit = (i: number): boolean => {
+      if (i === groups.length) return true;
+      for (const { box } of groups[i]!) {
+        if (++mapLabelSteps >= SEARCH_MAX) return false;
+        if (placed.some((other) => clash(box, other))) continue;
+        placed.push(box);
+        if (fit(i + 1)) return true;
+        placed.pop();
+      }
+      return false;
+    };
+    if (fit(0)) return placed;
+  }
   let best = Infinity,
     pick: MapLabel[] = [];
   const chosen: MapLabel[] = [];
@@ -428,7 +452,7 @@ export function drawMapBase(
     l.stops.forEach((st, si) => {
       if (st.hide) return;
       const [x, y] = mapPx(v, st.x, st.z);
-      const laid = st.s <= l.laid + 0.01,
+      const laid = !st.retired && st.s <= l.laid + 0.01,
         me = here.some((h) => h.line === li && h.stop === si);
       if (me) {
         g.fillStyle = MAP_FACE;

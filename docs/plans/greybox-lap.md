@@ -344,10 +344,10 @@ to 3 (src/sim, src/world) is an independent one before merge, by the row `npm ru
 
 | Seed | Joining calls served | Longest wait, ticks | Settled calls served | Longest wait, ticks |
 | --- | ---: | ---: | ---: | ---: |
-| c0ffee | 387 | 2012 | 398 | 1466 |
-| 777 | 400 | 2104 | 402 | 1515 |
-| 5eed | 382 | 2253 | 398 | 1919 |
-| badd | 399 | 1858 | 403 | 1294 |
+| c0ffee | 386 | 2012 | 392 | 1408 |
+| 777 | 388 | 2104 | 396 | 1389 |
+| 5eed | 381 | 2253 | 402 | 1907 |
+| badd | 387 | 1858 | 406 | 1277 |
 
 Leg 5's four-seed rerun passed at 75% headway. Settled calls are summed over the five pre-join stages, and the wait is the largest across those stages.
 
@@ -358,7 +358,7 @@ Leg 5's four-seed rerun passed at 75% headway. Settled calls are summed over the
 | 5eed | 144 | 2123 | 739 | 2179 |
 | badd | 155 | 2014 | 742 | 2008 |
 
-After Lane C took v77, step 2 moved to v78. The v78 default fuzz took 12.680 s against a 480 s budget. Six of 85 golden stages changed, from wall-closed onward, with every stage tick preserved. The reflected coordinate is exactly 860,641 cm. A cave car's facing swaps its 820 cm and 1,610 cm block extents on the joined coordinate. The retained and swept block tests check the exact centimetre of entry and release, and both facings can stop clear at the West signal.
+After Lane C took v77, step 2 moved to v78. After the rider-stop correction the v78 default fuzz took 13.986 s against a 480 s budget. All 79 unaffected stage records match main. At wall-closed the train rows and asks transfer. Thereafter the unified fleet and its shared end blocks advance differently through notch-open, notch-reached, causeway-open, island-reached and arrived. All 85 stage ticks are preserved. NPC boarding and alighting use existing stands only. The reflected coordinate is exactly 860,641 cm. A cave car's facing swaps its 820 cm and 1,610 cm block extents on the joined coordinate. The retained and swept block tests check the exact centimetre of entry and release, and both facings can stop clear at the West signal.
 At West landing the largest deck, seat and platform steps during the sixth lay were 2.14e-14, 1.07e-14 and 1.78e-14 m.
 At Port Quay all three were below 2.55e-13 m. These are standing car poses from the same axle calculation as the client.
 The canonical one-, two- and three-player loops recorded 308, 34 and 33 idle seconds at wall-6, with whole routes of 121, 110 and 110 minutes.
@@ -371,6 +371,9 @@ The High Gorge coach-fit, tail-clearance and arrival audits use the pre-join sto
       `src/world/railway-jump.ts` a "The lap" row on line 2's Gorge platform (not "Ring joined", which is Ring Island's
       rivet). Verify: `test/railway-jump.test.ts`; each stage's invariant check; the whole server suite.
 - [ ] **4. The remaining views (M to L; "Player-visible implementation": Codex gpt-6.2-astra medium).**
+      - [x] Moved into step 2 after independent review: joined island map, five transferred platform levers, cave departure boards, Stack buffers and the rail-height crossing at the joint.
+      - [ ] Remaining step 4 views and proofs listed below.
+
       Files:
       `src/content/levels/gorge.ts` and `leg-view.ts` (the concourse's middle becomes the plank crossing with its two
       ramps once joined, `liftOrWait` as every solid near a player; line 2's Gorge buffers, end board and crossover lifted
@@ -410,7 +413,7 @@ After steps 1 to 5 are on main; named proofs, once:
 Step 2 includes the running path, lateral and bell cord in the train view. A shared numeric car-pose calculation also drives the tick proof. Stop lookups, return destinations, route indicators and train markers follow the running line. The car order and orientation
 stay with the slot's original consist. The joined path samples the cave row in reverse, including the West landing
 start crossover. Prove the occupied deck, seat and platform poses at West landing and Port Quay tick by tick across
-the sixth lay. Ship these changes with steps 1 and 2. The crossing, station furniture and maps remain in step 4.
+the sixth lay. Ship these changes with steps 1 and 2. Independent review also brought the island map, cave boards, levers and joint crossing forward.
 
 | Step | Needs on main first | Why |
 | --- | --- | --- |

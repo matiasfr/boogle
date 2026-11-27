@@ -45,7 +45,12 @@ function placements() {
       });
     }
   // The concourse behind the buffers, joining both platforms; the gangway from it to the foot of the stair.
-  out.push(levelBox(-4, 0, -9.3, 13.3, GORGE_DECK - 0.5, GORGE_DECK, GREY));
+  // The removable terminal deck covers the crossing until the Wall joins (leg-view.ts).
+  out.push(levelBox(-4, 0, -9.3, -6.3, GORGE_DECK - 0.5, GORGE_DECK, GREY));
+  out.push(span(gorgeAt(-2, -6.3, GORGE_DECK), gorgeAt(-2, -1.8, 3.35), 4, 0.3, GREY_LIGHT));
+  out.push(levelBox(-4, 0, -1.8, 5.8, 3.05, 3.35, GREY_LIGHT));
+  out.push(span(gorgeAt(-2, 5.8, 3.35), gorgeAt(-2, 10.3, GORGE_DECK), 4, 0.3, GREY_LIGHT));
+  out.push(levelBox(-4, 0, 10.3, 13.3, GORGE_DECK - 0.5, GORGE_DECK, GREY));
   out.push(levelBox(-4, STAIR.a0, STAIR.inner, -9.3, GORGE_DECK - 0.5, GORGE_DECK, GREY));
   for (const c of [-9, 13, -25, -40])
     out.push(levelBox(-2.3, -1.7, c - 0.3, c + 0.3, -8, GORGE_DECK - 0.5, GREY_DARK, false));

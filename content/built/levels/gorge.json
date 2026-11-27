@@ -618,6 +618,92 @@
           -4,
           0,
           -9.3,
+          -6.3
+        ],
+        "colour": "#9c9ea1",
+        "compute": "slab",
+        "frame": {
+          "operand": 0
+        },
+        "y0": 3.4,
+        "y1": 3.9
+      },
+      {
+        "a": {
+          "at": [
+            -2,
+            -6.3
+          ],
+          "compute": "point",
+          "frame": {
+            "operand": 0
+          },
+          "y": 3.9
+        },
+        "b": {
+          "at": [
+            -2,
+            -1.8
+          ],
+          "compute": "point",
+          "frame": {
+            "operand": 0
+          },
+          "y": 3.35
+        },
+        "colour": "#b4b6b8",
+        "compute": "span",
+        "h": 0.3,
+        "w": 4
+      },
+      {
+        "bounds": [
+          -4,
+          0,
+          -1.8,
+          5.8
+        ],
+        "colour": "#b4b6b8",
+        "compute": "slab",
+        "frame": {
+          "operand": 0
+        },
+        "y0": 3.05,
+        "y1": 3.35
+      },
+      {
+        "a": {
+          "at": [
+            -2,
+            5.8
+          ],
+          "compute": "point",
+          "frame": {
+            "operand": 0
+          },
+          "y": 3.35
+        },
+        "b": {
+          "at": [
+            -2,
+            10.3
+          ],
+          "compute": "point",
+          "frame": {
+            "operand": 0
+          },
+          "y": 3.9
+        },
+        "colour": "#b4b6b8",
+        "compute": "span",
+        "h": 0.3,
+        "w": 4
+      },
+      {
+        "bounds": [
+          -4,
+          0,
+          10.3,
           13.3
         ],
         "colour": "#9c9ea1",
@@ -3771,7 +3857,7 @@
         }
       ]
     },
-    "inclineAt": 73,
+    "inclineAt": 77,
     "kind": "gorge",
     "operands": [
       {

@@ -1,5 +1,6 @@
 // Local browser memory only. No wall clock is read here: callers supply the observation time.
-import { RAIL_LINES } from '../sim/railway-lines.ts';
+import { joinedCaveStop } from '../sim/railway-lap.ts';
+import { LINE2, RAIL_LINES } from '../sim/railway-lines.ts';
 import { JUMPS } from '../world/railway-jump.ts';
 
 export type ReturnPosition = { x: number; y: number; z: number };
@@ -133,7 +134,13 @@ export function returnCandidates(
   const standing = halts.filter(stands).sort((a, b) => distance(a) - distance(b));
   // The halt the train was running to goes first, before duplicates are dropped: another line's halt on the same
   // landing (the Village's two lines) must not take its place and lose it.
-  const next = spot.ride?.halt === undefined ? undefined : standing.find((p) => p.halt === spot.ride!.halt);
+  const saved = spot.ride?.halt;
+  let next = saved && standing.find((p) => p.halt === saved);
+  if (saved && !next) {
+    const old = halts.find((p) => p.halt === saved);
+    const joined = joinedCaveStop(old?.line ?? -1, old?.stop ?? -1);
+    if (joined >= 0) next = standing.find((p) => p.line === LINE2 && p.stop === joined);
+  }
   const order = (next ? [next, ...standing.filter((p) => p !== next)] : standing).filter((p) => {
     const landing = `${p.x}:${p.y}:${p.z}`;
     if (seenLanding.has(landing) || (p.halt && seenHalt.has(p.halt))) return false;

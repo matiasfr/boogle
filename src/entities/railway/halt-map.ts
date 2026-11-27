@@ -3,7 +3,7 @@
 // from them and a unit test checks every display's names (test/island-map-labels.test.ts).
 import { LINE_HALTS, TRAIN_STOPS } from '../../sim/railway-train.ts';
 import { MAP_SEA_SCALE, simplify, type MapLine } from '../../render/island-map.ts';
-import { line2At, line2World, line2Y } from './line2-path.ts';
+import { lapAt, line2At, line2World, line2Y } from './line2-path.ts';
 import { LINE2, RAIL_LINES, type RailHalt } from '../../sim/railway-lines.ts';
 import { trainStops } from '../../sim/railway-queries-trains.ts';
 import { ringOpen } from '../../sim/railway-queries.ts';
@@ -69,7 +69,7 @@ export function haltMap(layout: Layout, stage: MapStage = { open: 3, head: 0 }):
       .map((h, i) => ({ h, i }))
       .filter(({ h }) => !h.shut)
       .filter(({ h, i }) => {
-        if (h.leg) return h.leg.slot === 0 && k === 1 && leg && (i < stage.open || i === last);
+        if (h.leg) return k === 1 && leg && (i < stage.open || i === last);
         return k === 0 ? !h.heads && !h.ring : h.ring ? sea : h.heads ? stage.open >= 5 : true;
       });
     const stops = picks.map(({ h, i }) => {
@@ -79,8 +79,11 @@ export function haltMap(layout: Layout, stage: MapStage = { open: 3, head: 0 }):
       const mark = leg && k === 1 && head ? { frame: true as const } : {};
       if (!h.leg)
         return { name: LINE_HALTS.find((x) => x.line === k && x.stop === i)!.name.split(',')[0]!, s, ...mark };
-      if (i === last) return { name: h.name, s };
-      if (closed(h, stage.open)) return { name: '', s, hide: true as const };
+      if (i >= last) return { name: h.name, s };
+      if (closed(h, stage.open))
+        return stage.open > last + 1
+          ? { name: h.name, s, retired: true as const }
+          : { name: '', s, hide: true as const };
       return {
         name: head ? STACK_MAP.head : stage.open > last && h.closesAt === undefined ? STACK_MAP.halt : '',
         s,
@@ -95,7 +98,7 @@ export function haltMap(layout: Layout, stage: MapStage = { open: 3, head: 0 }):
       ring.z = Q.z;
     }
     const at = (s: number) => {
-      if (k === 1) line2At(s, Q);
+      if (k === 1) (stage.open > last + 1 ? lapAt : line2At)(s, Q);
       else layout.lineAt(layout.LINKS[k]!.line, s, Q);
       if (k === 1 && s > ringS) {
         Q.x = ring.x + (Q.x - ring.x) * STACK_MAP.drawX;
@@ -114,12 +117,12 @@ export function haltMap(layout: Layout, stage: MapStage = { open: 3, head: 0 }):
       path.push(...simplify(dense, 1.5).slice(1));
     }
     const end = stops[stops.length - 1]!.s;
-    const laid = k === 0 ? end : stops[leg ? Math.min(last, stage.open - 1) : stage.open >= 5 ? 4 : sea ? 3 : 2]!.s;
+    const laid = k === 0 ? end : stops[leg ? stage.open - 1 : stage.open >= 5 ? 4 : sea ? 3 : 2]!.s;
     // Names are tied to their stops only once the stack line is drawn: before the rivet every face places as it did.
     const ties = leg && k === 1 ? { ties: true as const } : {};
     return { color: LINE_MARK[k]!, path, laid, stops: stops.map((x) => ({ ...x, ...at(x.s) })), ...ties };
   });
-  return { lines, scale: sea ? MAP_SEA_SCALE : 1 };
+  return { lines, scale: stage.open > last + 1 ? 0.46 : sea ? MAP_SEA_SCALE : 1 };
 }
 
 /** Place's halts, then line 2's Pier halt (s 719-741 m, 2.9 m east of the down track: ring-island-build1, call 53),

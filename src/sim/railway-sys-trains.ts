@@ -15,7 +15,7 @@ import {
   trainPassesBy,
   type ServiceStop,
 } from './railway-train.ts';
-import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, WALL_LEG, lapJoined } from './railway-lines.ts';
+import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, lapJoined } from './railway-lines.ts';
 import { runningLine } from './railway-queries-trains.ts';
 import { lineSlots, atEnd, trainStepLine, type TrainIO, type TrainMoveIO } from './railway-trains.ts';
 import { WORKS } from './railway-works-layout.ts';
@@ -68,9 +68,9 @@ import {
 } from './railway-queries.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 import { freightArrives, freightLoads, ridersArrive, ridersBoard } from './railway-sys-trade.ts';
-import { gorgeStop, lapSlots, runLine } from './railway-lap.ts';
-import { waitingFor, deckHeld, footCap, footCarrier, freightStop } from './railway-queries-trade.ts';
-import { lineRoute, type TradePct } from './railway-trade-layout.ts';
+import { lapSlots, runLine } from './railway-lap.ts';
+import { deckHeld, footCap, footCarrier, freightStop } from './railway-queries-trade.ts';
+import { type TradePct } from './railway-trade-layout.ts';
 import { boilerAdopt, steelArrives, steelLoads, steelService } from './railway-sys-steel.ts';
 import { legKitArrive, legKitLoad, legKitService, legRailheadHold } from './railway-sys-route-kit.ts';
 import { fleetOf } from './railway-train.ts';
@@ -176,9 +176,6 @@ function serviceOf(w: World, slot: number, r: Readonly<Row<typeof Train>>, tick:
   if (RAIL_TRAINS[slot]!.line !== LINE2) return freight;
   return (k, dir) =>
     freight(k, dir) ||
-    (k === gorgeStop &&
-      legDone(w, WALL_LEG) &&
-      (dir > 0 ? r.riders > 0 : waitingFor(w, lineRoute(LINE2), k, dir) > 0)) ||
     (k === 0 && dir < 0 && kitOwed(w, r)) ||
     (k === kitStop(w) && r.logs + r.rails > 0) ||
     (k === 1 && dir > 0 && footCarrier(w, r, tick) && r.foot < footCap(r) && footOwed(w, aboard(w, 'foot')) > 0) ||

@@ -32,6 +32,7 @@ import { RING_S_HEAD } from '../../sim/railway-ring-layout.ts';
 import {
   LEVER_PLACE,
   RING_LEVER_OFF,
+  rowLeverCall,
   leverAskTaken,
   leverPlatform,
   leverYield,
@@ -358,6 +359,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     stop: number;
     dir: -1 | 1;
     way: () => -1 | 1;
+    rowId?: number;
     lever: ReturnType<typeof createRequestLever>;
     up: boolean;
     west: boolean;
@@ -550,7 +552,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     lever.group.rotation.y = Math.atan2(ahead.x - p.x, ahead.z - p.z);
     lever.group.updateMatrixWorld(true);
     lever.group.visible = false;
-    return { id, line: h.line, stop: h.stop, dir: way(), way, lever, up, west: up, need };
+    return { id, rowId: id, line: h.line, stop: h.stop, dir: way(), way, lever, up, west: up, need };
   };
   for (const [id, h] of RAIL_HALTS.entries()) {
     if (!h.leg || !isRowLine(h.line)) continue;
@@ -641,11 +643,29 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   const PULL_HOLD_MS = 3000;
   const haltName = (line: number, stop: number) =>
     LINE_HALTS.find((r) => r.line === line && r.stop === stop)!.name.replace(/, line 2$/, '');
+  let wasJoined: boolean | undefined;
   const refreshStops = () => {
     const wd = adapter.read.world();
     stopsNow = RAIL_LINES.map((_l, line) => trainStops(wd, line));
     for (const h of halts) h.dir = mainWay(h.k, h.stop);
-    for (const x of spots) x.dir = x.way();
+    const joined = stopsNow[LINE2]!.length > gorgeStop + 1;
+    for (const x of spots) {
+      if (x.rowId === undefined || joined === wasJoined) {
+        if (x.rowId === undefined || x.id === x.rowId) x.dir = x.way();
+        continue;
+      }
+      const source = x.rowId;
+      const call = rowLeverCall(source, x.up, joined);
+      if (call) {
+        // Keep the physical handle and dispatch the reversed way on its running platform.
+        Object.assign(x, call);
+        x.west = call.stop !== stopsNow[LINE2]!.length - 1 && !x.up;
+      } else {
+        Object.assign(x, { id: source, line: RAIL_HALTS[source]!.line, stop: RAIL_HALTS[source]!.stop, west: x.up });
+        x.dir = x.way();
+      }
+    }
+    wasJoined = joined;
   };
   refreshStops();
   /** Whether any train of `line` has the property `fn` reads off its row (no list built). */
@@ -683,7 +703,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   const upWanted = (pair: number) => halts[pair]!.up && layout.upHaltReady(pair, line2Completed(adapter.read.world()));
   const standing = (x: Spot) =>
     x.ring || x.need
-      ? x.stop < stopsNow[x.line]!.length && (x.ring?.need ?? x.need)!()
+      ? x.stop < stopsNow[x.line]!.length &&
+        ((x.rowId !== undefined && x.rowId !== x.id) || (x.ring?.need ?? x.need)!())
       : halts[x.id]!.up && halts[x.id]!.lever.group.visible && (!x.up || upWanted(x.id));
   /** Whether a lever stands over: the line's ask that way stands and no train of the line stands here leaving that way. */
   function over(x: Spot) {
