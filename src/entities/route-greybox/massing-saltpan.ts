@@ -15,7 +15,7 @@ export function coastalArea(
     centre,
     near: coverNear(leg2Placements(value), compiled.prefabs, centre),
     build: () => boxes,
-    extras: (owner: OwnedView) => leg2Extras(owner, value),
+    baseExtras: (owner: OwnedView) => leg2Extras(owner, value),
   };
 }
 export const saltpanArea = coastalArea('saltpan', level);

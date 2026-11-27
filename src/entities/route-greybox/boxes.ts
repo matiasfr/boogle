@@ -1,6 +1,7 @@
 import * as THREE from 'three/webgpu';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { standWhenClear } from '../railway/frame-occupied.ts';
+import { massingClearance } from './massing-clearance.ts';
 import { gorgeSurfaces } from './gorge-surfaces.ts';
 // Static massing uses compiled placements. GreyBox/span remain only for the dynamic leg's descriptor API.
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -64,7 +65,7 @@ export async function drawGreyBoxes(owner: OwnedView, placements: readonly Place
   batch.mesh.count = count;
   let solids = 0,
     index = 0;
-  let pendingBridge: ReturnType<typeof instantiate> | undefined;
+  const clearance = massingClearance(standWhenClear);
   for (const p of placements) {
     const instance = instantiate(p.prefab, p, {
       owner,
@@ -72,16 +73,12 @@ export async function drawGreyBoxes(owner: OwnedView, placements: readonly Place
       ...(slots(p) ? { batch: { target: batch, index } } : {}),
     });
     index += slots(p);
-    if (p.id.endsWith('roundhouse-bridge')) {
-      pendingBridge = instance;
-      solids += instance.solids.length;
-    } else {
-      instance.setEnabled(true);
-      solids += instance.bodies.length;
-    }
+    clearance.add(instance);
+    solids += instance.solids.length;
   }
-  const trimmed = gorgeSurfaces(placements);
-  if (trimmed.size) {
+  function finishSurfaces() {
+    const trimmed = gorgeSurfaces(placements);
+    if (!trimmed.size) return;
     // Preserve the instance records and physics exactly. Only repaired slabs use the
     // common-space draw; unrelated boxes retain their original instanced geometry.
     const pieces: THREE.BufferGeometry[] = [];
@@ -134,10 +131,14 @@ export async function drawGreyBoxes(owner: OwnedView, placements: readonly Place
   }
   batch.mesh.computeBoundingBox();
   batch.mesh.computeBoundingSphere();
+  // The clipped Gorge mesh copies the final instance matrices once every placement stands.
+  let finished = clearance.clear;
+  if (finished) finishSurfaces();
   function update() {
-    const bridge = pendingBridge;
-    if (bridge && standWhenClear(bridge.solids, () => bridge.setEnabled(true))) pendingBridge = undefined;
+    if (!finished && clearance.update()) {
+      finishSurfaces();
+      finished = true;
+    }
   }
-  update();
   return { mesh: batch.mesh, solids, update };
 }

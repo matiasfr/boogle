@@ -1,3 +1,4 @@
+import { massingClearance } from '../src/entities/route-greybox/massing-clearance.ts';
 // src/physics/platforms.ts carryStep's deck choice (a measured physics regression, not a feature test): riding a line-2
 // car home from Ring Island past the parked track layer's flatbed, which overlaps the passing car and was registered
 // first, handed the rider to the flatbed and the train drove off without them. The deck you are carried by is kept while
@@ -755,6 +756,7 @@ test('a bridge mounted over a player in the pit waits or lifts them', async () =
       'drawGreyBoxes',
       {
         compiled: { prefabs: definitions },
+        massingClearance,
         standWhenClear: await clearanceFor(new Map()),
         createPrefabBatch: () => ({
           mesh: new THREE.InstancedMesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial(), 1),
@@ -791,18 +793,89 @@ test('a bridge mounted over a player in the pit waits or lifts them', async () =
   }
 });
 
-test('a failed Quay extras load releases its partial mount and can retry', async () => {
+test('the Quay yard ring waits for a player on the apron, then stands once they leave', async () => {
+  const { loadLevelArtifact } = await import('../src/prefab/validate.ts');
+  const { definitions } = await import('../src/prefab/catalogue.ts');
+  const { default: level } = await import('../content/built/levels/quay.json', { with: { type: 'json' } });
+  const ring = loadLevelArtifact(level, definitions).placements.find((p) => p.id === 'quay.yard-ring')!;
+  const THREE = await import('three/webgpu');
+  const solids = definitions[ring.prefab]!.colliders.map((c) => {
+    assert.equal(c.shape, 'box');
+    if (c.shape !== 'box') throw Error('expected a ring segment');
+    return {
+      kind: 'box' as const,
+      hx: c.half[0],
+      hy: c.half[1],
+      hz: c.half[2],
+      offset: new Vector3(...ring.pos).add(new Vector3(...c.at)),
+      rotation: new THREE.Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), c.rot?.[0] ?? 0),
+    };
+  });
+  assert.equal(solids.length, 48);
+  const owner = createOwnedView();
+  const previous = player.body;
+  const body = owner.addBody(makePlayerBody(false));
+  player.body = body;
+  let enabled = false;
+  try {
+    const { x, z } = solids[0]!.offset;
+    physics.teleport(body, x, 3.02 + PLAYER_R, z);
+    const draw = sourceFunction<typeof import('../src/entities/route-greybox/boxes.ts').drawGreyBoxes>(
+      'src/entities/route-greybox/boxes.ts',
+      'drawGreyBoxes',
+      {
+        compiled: { prefabs: definitions },
+        massingClearance,
+        standWhenClear: await clearanceFor(new Map()),
+        createPrefabBatch: () => ({
+          mesh: new THREE.InstancedMesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial(), 1),
+        }),
+        instantiate: () => ({
+          solids,
+          bodies: [],
+          setEnabled(on: boolean) {
+            enabled = on;
+          },
+        }),
+        gorgeSurfaces: () => new Map(),
+      },
+    );
+    const batch = await draw(owner, [ring]);
+    assert.equal(enabled, false, 'yard ring switched on through the apron visitor');
+    physics.teleport(body, x + 50, 3.02 + PLAYER_R, z);
+    batch.update();
+    assert.equal(enabled, true);
+  } finally {
+    player.body = previous;
+    owner.dispose();
+  }
+});
+
+test('two failed extras loads keep the base resident, back off and release an in-flight attempt on unmount', async () => {
   const { readFileSync } = await import('node:fs');
   const { sourceModule } = await import('../dev/level/source.ts');
   const owners: ReturnType<typeof createOwnedView>[] = [];
   let tick!: () => void;
   let building!: Promise<void>;
+  let now = 0,
+    bases = 0,
+    attempts = 0;
+  let finish!: () => void;
+  const areas = new Map();
+  const camera = { position: { x: 0, z: 0 } };
   const quay = {
     id: 'quay',
     centre: { x: 0, z: 0 },
-    build: () => [],
-    extras: async () => {
-      throw Error('chunk failed');
+    build() {
+      bases++;
+      return [];
+    },
+    async extras() {
+      if (++attempts <= 2) throw Error('chunk failed');
+      await new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+      return { solids: 0, update() {} };
     },
   };
   const far = { centre: { x: 9999, z: 9999 } };
@@ -812,7 +885,11 @@ test('a failed Quay extras load releases its partial mount and can retry', async
       defineKind() {},
       productionRailway: true,
       location: { search: '' },
-      routeAreas: new Map(),
+      routeAreas: areas,
+      performance: { now: () => now },
+      precompile() {},
+      routeSceneryMounted() {},
+      despawn() {},
       saltpanArea: far,
       quayArea: quay,
       notchAreas: [],
@@ -827,7 +904,7 @@ test('a failed Quay extras load releases its partial mount and can retry', async
       canopyExtras() {},
       canopyMassing() {},
       canopyNear: 1,
-      camera: { position: quay.centre },
+      camera,
       me: {},
       MOUNT_NEAR: 1,
       FREE_MORE: 1,
@@ -838,7 +915,8 @@ test('a failed Quay extras load releases its partial mount and can retry', async
         return owner;
       },
       spawn(entity: { update(): void }) {
-        tick = entity.update;
+        if (entity.update) tick = entity.update;
+        return entity;
       },
       background(job: Promise<void>) {
         building = job.catch(() => {});
@@ -846,10 +924,37 @@ test('a failed Quay extras load releases its partial mount and can retry', async
     },
     [],
   );
+  async function frame(time: number) {
+    now = time;
+    tick();
+    await building;
+  }
+  await frame(0);
+  await frame(0);
+  assert.equal(areas.get('quay').mounted, true, 'extras failure tore down the base');
+  assert.equal(owners[0]!.alive, true);
+  assert.equal(attempts, 1);
+  assert.equal(owners[1]!.alive, false);
+  await frame(2999);
+  assert.equal(attempts, 1);
+  await frame(3000);
+  assert.equal(attempts, 2);
+  assert.equal(owners[2]!.alive, false);
+  await frame(8999);
+  assert.equal(attempts, 2);
+  assert.equal(bases, 1);
+  assert.equal(areas.get('quay').mounted, true);
+  now = 9000;
   tick();
-  await building;
-  assert.equal(owners[0]?.alive, false, 'failed mount still owns its resources');
+  const pending = building;
+  now = 60000;
   tick();
-  await building;
-  assert.equal(owners.length, 2);
+  assert.equal(attempts, 3);
+  camera.position.x = 500;
+  tick();
+  assert.equal(areas.get('quay').mounted, false);
+  assert.ok(owners.every((o) => !o.alive));
+  finish();
+  await pending;
+  assert.equal(areas.get('quay').mounted, false);
 });

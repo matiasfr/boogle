@@ -7,7 +7,7 @@ import { bayCopies, createRotundaView } from '../railway/rotunda-view.ts';
 import { garageFacts } from '../railway/garage-state.ts';
 import * as kit from '../railway/engine-kit.ts';
 
-export function mountQuayRoundhouse(owner: OwnedView, solids: number) {
+export function mountQuayRoundhouse(owner: OwnedView) {
   const rotunda = createRotundaView(owner, kit, { site, level });
   rotunda.show(0, 0);
   function update() {
@@ -15,5 +15,5 @@ export function mountQuayRoundhouse(owner: OwnedView, solids: number) {
     rotunda.copies(read?.whole() ? bayCopies(garageFacts(read), LINE2) : []);
   }
   update();
-  return { solids, update };
+  return { update };
 }
