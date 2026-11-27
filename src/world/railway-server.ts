@@ -186,6 +186,8 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
   // The Works and the Roundhouse: judged at the catalog's spot, at its height.
   const at = (p: { x: number; z: number; y: number; reach: number }) =>
     actor.height(p.y, 300) && near(p.x, p.z, p.reach);
+  // rail.install and rail.bring: at Home's table post (site 0) or Port Quay's (1).
+  const atTable = () => railInt(e.site, 1) && at(e.site === 1 ? QUAY_TABLE : SHED_TABLE);
   switch (e.op) {
     case 'rail.wake':
       // Keep the existing ten-metre server allowance, centred on the machine like its six-metre prompt.
@@ -340,20 +342,10 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     case 'rail.install':
       // At the selected post: line 2's upgrade (1), longer boiler (2), big boiler (3); a trade
       // line's Quick (5) or Strong (6) boiler (garage step 4), on the line's install revision.
-      return (
-        installAdmits(e.line, e.part) &&
-        railInt(e.revision) &&
-        railInt(e.site, 1) &&
-        at(e.site === 1 ? QUAY_TABLE : SHED_TABLE)
-      );
+      return installAdmits(e.line, e.part) && railInt(e.revision) && atTable();
     case 'rail.bring':
       // The sim checks the cave leg, the line and the selected table's hold.
-      return (
-        railInt(e.line, RAIL_LINES.length - 1) &&
-        railInt(e.revision) &&
-        railInt(e.site, 1) &&
-        at(e.site === 1 ? QUAY_TABLE : SHED_TABLE)
-      );
+      return railInt(e.line, RAIL_LINES.length - 1) && railInt(e.revision) && atTable();
     // The greybox route (step 3): ids are catalog indexes; whether the leg is open, the pickup's leg laid or the grant
     // held is the rule's (./railway-sys-route.ts), never this.
     case 'rail.legStock': {
