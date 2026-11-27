@@ -1,4 +1,4 @@
-// The Round’s delivered freight and B2 house purchase. Local views follow accepted Plot rows; a hold only sends an intent.
+// The RoundÃ¢â‚¬â„¢s delivered freight and B2 house purchase. Local views follow accepted Plot rows; a hold only sends an intent.
 import { Color, Vector3, Matrix4, type BoxGeometry, type Mesh, type MeshStandardMaterial } from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { SignBoard } from '../../render/sign-board.ts';
@@ -23,7 +23,7 @@ import { knock } from '../../render/fanfare.ts';
 import { splash } from '../../render/splash.ts';
 import { TOWN_CHOICE, TOWN_BOARD, townPlotBoard } from '../../place/town-plan.ts';
 import { me } from '../../player/state.ts';
-import { type Interactable } from '../../player/hands.ts';
+import { interactTarget, type Interactable } from '../../player/hands.ts';
 
 const drawn = (n: number) => (Number.isFinite(n) ? Math.max(0, Math.min(Number.MAX_SAFE_INTEGER, Math.floor(n))) : 0);
 
@@ -162,7 +162,7 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
     const board = townPlotBoard(k);
     const at = new Vector3(toWorld(board.x), H(toWorld(building.x), building.z) + 1.1, board.z);
     const start = (kind: number) => {
-      if (holding < 0 && waiting !== k) {
+      if (holding < 0 && waiting !== k && near(at)) {
         heldKind = kind;
         holding = k;
         progress = 0;
@@ -284,7 +284,7 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
       'choices' in need
         ? need.choices.map((kind, i) => {
             const point = TOWN_CHOICE.boards[i]!;
-            const position = new Vector3(toWorld(point.x), at.y, point.z);
+            const position = new Vector3(toWorld(point.x), at.y - 0.85, point.z);
             const action: Interactable = { id: `town.plot.${k}.${kind}`, verb: 'Hold to build', at: position };
             const begin = () => start(kind);
             const topper = instantiate(
@@ -454,7 +454,7 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
         }
         const chosen = p.choices.find((c) => c.kind === heldKind);
         if (holding === p.k) {
-          if (!offered || money < price || !near(chosen?.action.at ?? p.at)) release();
+          if (!offered || money < price || !near(p.at) || (chosen && !near(chosen.action.at))) release();
           else {
             progress = advanceHold(progress, dt, true, 1);
             if (progress >= 1) {
@@ -477,19 +477,13 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
           p.target.verb = percent < 0 ? 'Hold to build' : `Hold ${percent}%`;
         }
         if (p.choices.length) {
-          const pos = me.body?.position;
-          const distance = (v: Vector3) => (pos ? Math.hypot(pos.x - v.x, pos.z - v.z) : Infinity);
-          const nearest = p.choices.reduce((a, b) => (distance(a.action.at) <= distance(b.action.at) ? a : b));
-          const preview = p.ghost.mesh.visible ? nearest.kind : 0;
-          if (p.preview && preview && p.preview !== preview && near(nearest.action.at)) knock(0.3, 0.5);
-          p.preview = preview;
           for (const c of p.choices) {
-            c.toy.mesh.visible = preview === c.kind;
             c.action.blocked = p.target.blocked;
             c.action.run = p.target.run ? c.begin : undefined;
             c.action.verb = holding === p.k && heldKind === c.kind ? p.target.verb : 'Hold to build';
             if (visible !== p.visible) c.topper.setEnabled(visible);
-            if (offered && near(c.action.at)) targets.push(...c.topper.targets());
+            if (offered && near(p.at) && near(c.action.at) && (holding !== p.k || chosen === c))
+              targets.push(...c.topper.targets());
             if (p.visible && bought >= 0 && p.bought < 0) splash(c.action.at.x, c.action.at.z, 0.2, c.action.at.y - 1);
             if (
               visible &&
@@ -558,6 +552,20 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
             crate++;
           } else part.instance.setEnabled(visible && offered);
         }
+      }
+      for (const p of plots) {
+        if (!p.choices.length) continue;
+        let preview = 0;
+        if (p.ghost.mesh.visible && near(p.at)) {
+          if (holding === p.k) preview = heldKind;
+          else {
+            const selected = interactTarget();
+            preview = p.choices.find((c) => c.action === selected)?.kind ?? 0;
+          }
+        }
+        if (p.preview && preview && p.preview !== preview) knock(0.3, 0.5);
+        p.preview = preview;
+        for (const c of p.choices) c.toy.mesh.visible = preview === c.kind;
       }
     },
   };

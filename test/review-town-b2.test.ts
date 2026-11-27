@@ -56,6 +56,7 @@ function plotsView(adapter: RailwayAdapter) {
     drawn: (n: number) => (Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0),
     TIMBER: {},
     STONE: {},
+    interactTarget: () => pickInteract(view.targets(), me.body.position.x, me.body.position.z, 0, 1),
     paintBoard() {},
     splash() {},
     knock() {},
@@ -114,9 +115,17 @@ test('a choice board offers no buy hold outside the server purchase radius', () 
   const { view, read, position } = plotsView(c.adapter);
   const board = plan.TOWN_CHOICE.boards[0];
   position.x = 1000 + board.x;
+  position.z = board.z;
+  view.update(read(), 0);
+  const hold = view.targets().find((target) => target.id === 'town.plot.0.1');
+  assert.ok(hold?.run);
+  hold.run();
+  view.update(read(), 0.5);
   position.z = board.z - 2.5;
   assert.ok(Math.abs(position.z - plan.townPlotBoard(0).z) > plan.TOWN_BOARD.reach);
-  view.update(read(), 0);
+  view.update(read(), 0.6);
+  room.run(3);
+  assert.equal(plot(room.serverWorld(), 0).at, -1);
   assert.ok(!view.targets().some((target) => target.id === 'town.plot.0.1' && target.run));
 });
 
@@ -129,6 +138,7 @@ test('the toy shown during a hold matches the selected board', () => {
   view.update(read(), 0);
   const target = pickInteract(view.targets(), position.x, position.z, 0, 1);
   assert.equal(target?.id, 'town.plot.0.2');
+  assert.deepEqual(toyGhosts.map((g) => g.visible), [false, true]);
   target!.run!();
   view.update(read(), 0.5);
   assert.deepEqual(
