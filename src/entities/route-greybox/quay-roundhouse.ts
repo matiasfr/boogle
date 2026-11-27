@@ -2,7 +2,6 @@ import level from '../../../content/built/levels/rotunda-port-quay.json' with { 
 import { ROTUNDA_PORT_QUAY as site } from '../../place/port-quay.ts';
 import { LINE2 } from '../../sim/railway-lines.ts';
 import { shed } from '../../sim/railway-rows.ts';
-import { bayFrame } from '../../place/rotunda.ts';
 import { garageRow, mastFrom, polarAt } from '../railway/garage-geo.ts';
 import { createGaragePieces } from '../railway/garage-pieces.ts';
 import { wearsLong } from '../railway/cars.ts';
@@ -23,17 +22,19 @@ export function mountQuayRoundhouse(owner: OwnedView) {
     { ...geo, mast: mastFrom(geo, y, site.y) },
   );
   owner.add(pieces.root);
-  pieces.rig.rotation.y = bayFrame(site, 0).yaw;
+  // The copy faces platform 1 along the bridge.
+  pieces.rig.rotation.y = Math.PI - (site.approach * Math.PI) / 180;
   pieces.armPivot.rotation.y = Math.PI - (geo.park * Math.PI) / 180;
   pieces.chain.visible = pieces.trolley.visible = pieces.pipeStand.visible = false;
   pieces.furniture.visible = true;
   function update() {
     const read = railwayWorldRead();
-    pieces.rig.visible = !!read?.whole();
     if (!read?.whole()) {
+      pieces.rig.visible = false;
       rotunda.copies([]);
       return;
     }
+    pieces.rig.visible = true;
     const facts = garageFacts(read);
     const line = shed(read.world()).quayLine;
     const row = lineFacts(facts, line)?.row ?? 0;

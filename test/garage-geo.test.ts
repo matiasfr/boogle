@@ -34,6 +34,9 @@ test('Port Quay turns the Home pieces together and keeps the post within install
   const quay = garageRow(1);
   const post = polarAt(quay.table, quay.geo.post);
   assert.ok(installHere(post, 1));
+  assert.equal(installHere(post, 0), false);
+  assert.equal(quay.geo.camBearing, 140);
+  assert.equal(quay.geo.park, home.geo.park + 125);
   assert.ok(Math.hypot(post.x * 100 - QUAY_TABLE.x, post.z * 100 - QUAY_TABLE.z) <= QUAY_TABLE.reach - 40);
   for (const key of ['post', 'jib', 'stand', 'crew'] as const) {
     const old = [home.geo[key]].flat();
