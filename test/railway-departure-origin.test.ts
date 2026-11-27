@@ -92,3 +92,35 @@ test('a homebound Wall train stays on laid track at the Gorge crossover midpoint
   assert.equal(midpoint, gorge.end!.mergeCm / 100);
   assert.equal(rowLat(line, { track: 1, origin: gorge.s }, midpoint, stops), (track.from + track.to) / 2);
 });
+
+test('a homebound Wall train follows the drawn Gorge diagonal before its midpoint', () => {
+  const wall = RAIL_LEGS.find((leg) => leg.id === 'wall')!;
+  const halts = RAIL_LINES[wall.line]!.halts;
+  const track = laidEndSwing(wall, wall.sections.length)!;
+  // leg-view draws each rail with a single straight box, 0.12 m wide.
+  const s = track.s0 + (track.s1 - track.s0) / 4;
+  const drawn = track.from + (track.to - track.from) / 4;
+  const lateral = rowLat(
+    wall.line,
+    { track: 1, origin: halts.at(-1)!.s },
+    s,
+    halts.map((h) => h.s),
+  );
+  assert.ok(Math.abs(lateral - drawn) <= 0.06, 'the wheel centre stays on the rail head');
+});
+
+test('laying the final Wall section keeps track beneath a train leaving head five', () => {
+  const wall = RAIL_LEGS.find((leg) => leg.id === 'wall')!;
+  const halts = RAIL_LINES[wall.line]!.halts;
+  const old = laidEndSwing(wall, wall.sections.length - 1)!;
+  const current = laidEndSwing(wall, wall.sections.length)!;
+  const s = (old.s0 + old.s1) / 2;
+  const lateral = rowLat(
+    wall.line,
+    { track: 1, origin: halts.at(-2)!.s },
+    s,
+    halts.map((h) => h.s),
+  );
+  const onMain = Math.abs(Math.abs(lateral) - 2) <= 0.06;
+  assert.ok(onMain || (s >= current.s0 && s <= current.s1), 'the retained departure still has a diagonal');
+});
