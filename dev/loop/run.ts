@@ -687,7 +687,8 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set(), pick
     const action = ROUTE_PRESS[id]!;
     if (action.op === 'rail.gate' && pl.i !== 0) {
       const { leg, section } = gateLeg(action.id)!;
-      return legSection(g, pl, leg, section, false);
+      const target = ROUTE_SECTIONS.find((entry) => entry.leg === leg && entry.section === section)!;
+      return sectionPolicies[target.id](pl);
     }
     const prerequisitesMet = ready(id);
     return device(
