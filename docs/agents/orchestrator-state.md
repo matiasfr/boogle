@@ -15,7 +15,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 | Port Quay's Roundhouse step 3, the Roundhouse stands at Port Quay | Garage choices | codex/port-quay-roundhouse-view | the orchestrator thread, Codex Astra medium | 2026-11-26 | running: view only |
 | Plan: the lap, the ring's two halves joined at Port Quay (his yes, 27 November) | The greybox route | claude/greybox-lap | the orchestrator thread, Claude Opus high (planner) | 2026-11-27 | running: docs only |
 | Plan: the route leaves greybox, a look plan area by area (his word: Astra fleshes out the world visually) | The world leaves greybox | codex/greybox-look-plan | the orchestrator thread, Codex Astra medium | 2026-11-27 | running: docs and stills only |
-| High Gorge's rock as cliff-kit pieces (cliff kit step 11) | The world leaves greybox | codex/gorge-kit-rock | the orchestrator thread, Codex Astra medium | 2026-11-27 | running: view only, `gorge.ts`, `gorge-surfaces.ts`, the gorge's massing; not `route-greybox/index.ts` (Port Quay's) |
+| High Gorge's rock as cliff-kit pieces (cliff kit step 11) | The world leaves greybox | codex/gorge-kit-rock | the orchestrator thread, Codex Astra medium | 2026-11-27 | running: view only, `gorge.ts`, `gorge-surfaces.ts`, the gorge's massing, `sickle-backdrop/view.ts` (the two High Gorge stacks); not `route-greybox/index.ts` (Port Quay's) |
 
 ## Where the work stands
 
