@@ -37,7 +37,7 @@ type Area = {
   id: string;
   centre: { x: number; z: number };
   build: () => readonly Placement[];
-  extras?: (owner: OwnedView) => number;
+  extras?: (owner: OwnedView) => number | Promise<{ solids: number; update(): void }>;
   near?: number;
 };
 const AREAS: readonly Area[] = [
@@ -56,7 +56,8 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
   const residents = AREAS.map((area) => {
     const residency = { ...area.centre, mounted: false };
     routeAreas.set(area.id, residency);
-    let mounted: { owner: OwnedView; entity: GameEntity; boxes: number; solids: number } | null = null,
+    let mounted: { owner: OwnedView; entity: GameEntity; update?: () => void; boxes: number; solids: number } | null =
+        null,
       building = false;
     const wanted = () => {
       const body = me.body?.position,
@@ -73,7 +74,7 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
       const owner = createOwnedView();
       const boxes = area.build();
       const batch = boxes.length ? await drawGreyBoxes(owner, boxes) : null;
-      const more = area.extras?.(owner) ?? 0;
+      const more = (await area.extras?.(owner)) ?? 0;
       // Its pipeline compiles off the frame before it first shows (src/render/precompile.ts).
       owner.root.visible = false;
       await precompile(owner.root);
@@ -84,7 +85,8 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
         owner,
         entity: spawn({ kind: 'route-greybox-area', mesh: owner.root }),
         boxes: batch?.mesh.count ?? 0,
-        solids: (batch?.solids ?? 0) + more,
+        solids: (batch?.solids ?? 0) + (typeof more === 'number' ? more : more.solids),
+        ...(typeof more === 'number' ? {} : { update: more.update }),
       };
       residency.mounted = true;
       routeSceneryMounted();
@@ -102,6 +104,7 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
         const want = wanted();
         if (want && !mounted && !building) background(mount(), `route greybox massing: ${area.id}`);
         else if (!want && mounted) unmount();
+        else mounted?.update?.();
       },
       describe: () =>
         mounted ? { resident: true, boxes: mounted.boxes, solids: mounted.solids } : { resident: false },

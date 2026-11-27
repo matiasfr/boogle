@@ -67,7 +67,7 @@ async function rotundaFixture() {
   );
   await physics.physicsReady;
   const owner = createOwnedView();
-  const view = createRotundaView(owner);
+  const view = createRotundaView(owner, undefined, { site: ROTUNDA_HOME, level });
   const copy = COPY_BAYS[1]!;
   const pose = rotundaPose(ROTUNDA_HOME, copy.bay);
   const local = (x: number, y: number, z: number) =>

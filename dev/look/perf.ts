@@ -40,6 +40,12 @@ const PLACES: Record<string, Place> = {
   // Greybox leg 3's Checkpoint C (docs/plans/greybox-leg3.md): leg 3 laid, the body on Canopy Town's homeward
   // platform (src/content/levels/leg3.ts, cf.at(-10, -5.8)), the camera high over the strait beyond head 2, looking
   // along the row at the isle, its mother trunks and the chalk islets.
+  quayRoundhouse: {
+    seed: 'port-reached',
+    stand: [133.5, 5.5, 938.2],
+    cam: [133.5, 5.6, 938.2],
+    look: [109.91, 5, 914.79],
+  },
   canopy: { seed: 'canopy-reached', stand: [-1070, 15, -319], cam: [-700, 180, -620], look: [-1060, 20, -300] },
   // Leg 4's Checkpoint D: stand at quay.at(-10, -5.8) on the homeward platform and look from over the breakwater.
   port: { seed: 'port-reached', stand: [140.5, 5.5, 931.1], cam: [300, 100, 780], look: [45, 28, 980] },

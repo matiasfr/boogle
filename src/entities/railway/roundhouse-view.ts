@@ -42,14 +42,14 @@ import { createGhostOutlines } from '../../render/ghost-outline.ts';
 import { createGarageView } from './garage-view.ts';
 import { garageFacts, roomFacts } from './garage-state.ts';
 import type { RoomFacts } from './garage-data.ts';
-import { wearsLong, wearsTail } from './cars.ts';
+import level from '../../../content/built/levels/rotunda-home.json' with { type: 'json' };
 import { playSharedMoment } from './shared-moment.ts';
 import { showMomentBanner } from '../../ui/moment-banner.ts';
 import { garageRow, mastFrom, polarAt } from './garage-geo.ts';
 import { PARK, createShuntPath, shuntTargets } from './shunt-path.ts';
 import { account, shed, trains, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
 import { ROTUNDA_BLOCK, ROTUNDA_KIT } from '../../place/rotunda.ts';
-import { createRotundaView } from './rotunda-view.ts';
+import { bayCopies, createRotundaView } from './rotunda-view.ts';
 import { BRIDGE, bridgeHalf, bridgeHandle, clearOfBridge, tableYaws } from './table-bridge.ts';
 import { createTableRide } from './railhead-state.ts';
 import { siteExit } from '../../place/site-clearance.ts';
@@ -70,17 +70,6 @@ const refusedAtTable = (
   else if (op === 'rail.bring') view.bringDenied();
 };
 
-/** Garage step 4: each chip's line whose copy is off the table waits in its bay, wearing its row (line 2's longer or
- * Big boiler and a trade line's Quick the longer barrel; Strong its kit flatbed). */
-const bayCopies = (f: RoomFacts) =>
-  f.lines
-    .filter((l) => l.line !== f.tableLine)
-    .map((l) => ({
-      line: l.line,
-      long: wearsLong(l.line, l.row),
-      flatbed: l.line !== LINE2 && wearsTail(l.line, l.row),
-    }));
-
 /** Seconds: the door piers' build, the tarp's slide, the table's quarter turn. */
 const BUILD_S = 3,
   TARP_S = 1.1,
@@ -91,7 +80,7 @@ const FLOOR = 18.05,
 const TICKS_PER_S = 10;
 /** The longer boiler's banner for a player away from the table (placeholder lines, on main since build 2; none is The
  * Boogler's), and how far "away" is, in metres from the table's centre. */
-const BANNER = ['Longer boiler installed', 'Line 2’s trains take it at the Village'] as const,
+const BANNER = ['Longer boiler installed', 'Line 2â€™s trains take it at the Village'] as const,
   BANNER_BEYOND = 30;
 const BRASS = '#c79a3e',
   STEEL = '#7c7c74';
@@ -132,7 +121,7 @@ export async function createRailwayRoundhouse(
   // ---------------------------------------------------------------- the turntable: the pit and its kerb are the
   // rotunda's fixed table record; the bridge across the shallow pit is drawn here, since it turns
   // Garage step 4: the works copies off the table stand in their bays, drawn with the engine's own parts.
-  const rotunda = createRotundaView(owner, await import('./engine-kit.ts'));
+  const rotunda = createRotundaView(owner, await import('./engine-kit.ts'), { site: home.ROTUNDA_HOME, level });
   const anchor = { x: SHED_TABLE.x / 100, z: SHED_TABLE.z / 100 };
   const table = toWorld(home.TABLE);
   const tableY = TABLE_RAIL;
@@ -585,7 +574,7 @@ export async function createRailwayRoundhouse(
   /** The room clock as the shunt shows it. It runs at real time, leaning at most half a step toward the room clock
    * (`tickNow`), so a correction (an RTT probe settling) slows or hurries the wagon instead of sending it back and
    * forth; it never runs backwards. A `ready` that changes live starts it no later than the roll-out's first tick
-   * (`ready − rollTicks`), preserving the upgrade hold and starting from the parked pose even if the receipt is
+   * (`ready âˆ’ rollTicks`), preserving the upgrade hold and starting from the parked pose even if the receipt is
    * late. More than 10 s adrift, or on a restore, it snaps to the room clock. */
   function shuntClock(dt: number, snapTo: boolean) {
     const now = adapter.read.tickNow(),
@@ -887,9 +876,9 @@ export async function createRailwayRoundhouse(
         if (facts.boilerFitted && (facts.tableBusy || garageView.standing()))
           out.push({
             id: 'railway-garage',
-            verb: facts.tableBusy ? 'The table’s busy' : 'Look at the engine',
+            verb: facts.tableBusy ? 'The tableâ€™s busy' : 'Look at the engine',
             at: new THREE.Vector3(garagePost.x, garageGround + 1.7, garagePost.z),
-            ...(facts.tableBusy ? { blocked: 'The table’s busy' } : { run: () => garageView.open() }),
+            ...(facts.tableBusy ? { blocked: 'The tableâ€™s busy' } : { run: () => garageView.open() }),
           });
       }
       if (nearStall && mine?.foot && worksRow(wd).seams & SEAM_STALL) {
