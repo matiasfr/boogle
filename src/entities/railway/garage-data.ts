@@ -29,6 +29,8 @@ export const GROUP_NAME: Record<Group, string> = { fn: 'Upgrades', cos: 'Looks a
 // ---------------------------------------------------------------- what the room has
 /** The room's facts the garage reads (Local view of accepted state; nothing here writes any). */
 export type RoomFacts = {
+  site?: 0 | 1;
+  postOpen?: boolean;
   /** The boiler is fitted: the trains run (`line2.trains`). */
   boilerFitted: boolean;
   /** The footing wagon is coupled to a line-2 train. */
@@ -102,6 +104,8 @@ export type Standing =
   | 'later';
 /** One line of a part's bill: the material, how many it needs and how many are home. */
 export type Bill = { what: string; need: number; have: number };
+// Placeholder for The Boogler. Home currently holds the entire shared pool.
+export const billLocation = (facts: RoomFacts) => (facts.site === 1 && facts.steel > 0 ? " in Home's bay" : '');
 /** The longer boiler needs steel home (`Shed.steel` of 1 or more: the server's rule for `rail.install`). */
 export const LONG_NEEDS_STEEL = 1;
 export const INSTALL_PART = { blast: 1, long: 2, big: 3, quick: 5, strong: 6 } as const;

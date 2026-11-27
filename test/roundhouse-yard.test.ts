@@ -19,7 +19,7 @@ import { readFileSync } from 'node:fs';
 
 function garageModal(inputState: { held: boolean }, openModal: () => boolean) {
   const source = readFileSync('src/entities/railway/garage-view.ts', 'utf8');
-  const methods = source.slice(source.indexOf('  function close()'), source.indexOf('  garage.api = api;'));
+  const methods = source.slice(source.indexOf('  function close()'), source.indexOf('  if (site === 0 && !garage.api)'));
   const release = source.slice(source.indexOf('  function releaseHold()'), source.indexOf('  function update(dt:'));
   const moment = source.slice(source.indexOf('    if (openT <= 0) lastOpen'), source.indexOf('    shake = Math.max'));
   const reveal = readFileSync('src/render/reward-reveal.ts', 'utf8');
@@ -38,7 +38,8 @@ function garageModal(inputState: { held: boolean }, openModal: () => boolean) {
     {
       open: false,
       shown: true,
-      facts: { boilerFitted: true, tableBusy: false },
+      facts: { postOpen: true, tableBusy: false },
+      garage: { api: null },
       inputState,
       openModal,
       closeModal() {},

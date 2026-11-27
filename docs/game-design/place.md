@@ -1627,6 +1627,8 @@ A short ramp connects the yard to the apron, which forms the floor of the circul
 beside the yard. The five-bay Roundhouse kit has a generated level and mounts in the next step.
 Platform 1 meets the Roundhouse yard at platform height. Five bays face the parked bridge. The working bay stands open, and each open trade line keeps its works copy behind an open doorway. The approach rails end at buffers two metres short of the platform. A ramp leads down from the yard to the apron.
 
+Finishing the cave line opens the garage post at Port Quay. Its line chips bring a works copy to the quay table. Home keeps its own table selection. A paid fit draws steel from Home’s bay and appears on every table displaying that line.
+
 The board at the buffers marks the future Wall line. Finishing the cave line opens the Port Quay stall at Bell Rock. [Leg 4 plan](../plans/greybox-leg4.md)
 
 **White Wall catalog and rules (local v71 branch).** Once the line reaches Port Quay, cave trains bring the next

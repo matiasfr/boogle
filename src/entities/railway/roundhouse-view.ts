@@ -40,7 +40,9 @@ import {
 import { drawWorksBoxes, createBoxBatch, createLater, footingFrame, footingParts, FOOTING } from './works-box-view.ts';
 import { createGhostOutlines } from '../../render/ghost-outline.ts';
 import { createGarageView } from './garage-view.ts';
-import { garageFacts, roomFacts } from './garage-state.ts';
+import { garageFacts, quayGarage, roomFacts } from './garage-state.ts';
+import { tableOpen } from '../../sim/railway-queries-works.ts';
+import { QUAY_TABLE } from '../../sim/railway-works-layout.ts';
 import type { RoomFacts } from './garage-data.ts';
 import level from '../../../content/built/levels/rotunda-home.json' with { type: 'json' };
 import { playSharedMoment } from './shared-moment.ts';
@@ -141,12 +143,13 @@ export async function createRailwayRoundhouse(
   // (at the deck's height the empty stand's legs and the mast hung in the air).
   const garageStand = polarAt(table, garageGeo.stand);
   const garageGround = H(garageStand.x, garageStand.z);
-  const garageView = await createGarageView(
+  const garageView = createGarageView(
     owner,
     { table, y: tableY, post: garagePost, ground: garageGround },
     // The mast is measured from the deck: it is taller by the deck's height over the yard, so the arm stays where it
     // reaches the engine's seat and clears a boiler held up under it.
     { ...garageGeo, mast: mastFrom(garageGeo, tableY, garageGround) },
+    0,
     {
       // The deck is at rest when no choreography turns it, it is not catching up, and the shunter is home in the stall.
       restYaw: () =>
@@ -164,7 +167,10 @@ export async function createRailwayRoundhouse(
   // The install is not predicted, so a refusal is no correction: the adapter says so directly and the part lowers.
   owner.cleanup(
     adapter.onRefused((r) => {
-      refusedAtTable(r.intent.op, garageView, r.reason);
+      if (r.intent.op === 'rail.install' || r.intent.op === 'rail.bring') {
+        const view = r.intent.site === 1 ? quayGarage.view : garageView;
+        if (view) refusedAtTable(r.intent.op, view, r.reason);
+      }
     }),
   );
 
@@ -713,6 +719,7 @@ export async function createRailwayRoundhouse(
     deckK = t.k;
     tableYaw = yaws[0]! + turnBy * (deckK ?? 0);
     garageView.restore();
+    quayGarage.view?.restore();
   }
   snap();
   const avatarBack = (pid: string, out: THREE.Vector3) => {
@@ -732,6 +739,7 @@ export async function createRailwayRoundhouse(
       // The room's garage facts, once a frame: the table's garage and the bays' copies read the same.
       facts = garageFacts(adapter.read);
       garageView.update(dt, facts);
+      quayGarage.view?.update(dt, garageFacts(adapter.read, 1));
       const sh = shed(wd);
       const open = !!(worksRow(wd).seams & SEAM_STALL);
       if (open && !slabOpen && pop < 0) solidSlab(false);
@@ -840,9 +848,17 @@ export async function createRailwayRoundhouse(
           adapter.read.pid,
           (mine) => {
             const pos = me.body?.position;
-            const away = !pos || Math.hypot(pos.x - table.x, pos.z - table.z) > BANNER_BEYOND;
-            if (e.part === 2 && away && !garageView.isOpen()) showMomentBanner(BANNER[0], BANNER[1], 4.5);
-            garageView.accepted(mine, e.part);
+            const state = shed(adapter.read.world());
+            const nearHome =
+              pos && state.tableLine === e.line && Math.hypot(pos.x - table.x, pos.z - table.z) <= BANNER_BEYOND;
+            const nearQuay =
+              pos &&
+              quayGarage.view &&
+              state.quayLine === e.line &&
+              Math.hypot(pos.x - QUAY_TABLE.x / 100, pos.z - QUAY_TABLE.z / 100) <= BANNER_BEYOND;
+            if (e.part === 2 && !nearHome && !nearQuay) showMomentBanner(BANNER[0], BANNER[1], 4.5);
+            if (state.tableLine === e.line) garageView.accepted(mine, e.part, e.site);
+            if (state.quayLine === e.line) quayGarage.view?.accepted(mine, e.part, e.site);
             return false;
           },
         );
@@ -851,7 +867,10 @@ export async function createRailwayRoundhouse(
       const e = c.event;
       if (e.op === 'rail.footSet') lowering.length = 0;
       if (e.op === 'rail.turn') asked = null;
-      refusedAtTable(e.op, garageView);
+      if (e.op === 'rail.install' || e.op === 'rail.bring') {
+        const view = e.site === 1 ? quayGarage.view : garageView;
+        if (view) refusedAtTable(e.op, view);
+      }
     },
     targets(): Interactable[] {
       const pos = me.body?.position;
@@ -863,6 +882,22 @@ export async function createRailwayRoundhouse(
       const nearStall =
         Math.hypot(pos.x - stallAt.x, pos.z - stallAt.z) <= SHED_STALL.reach / 100 - 0.4 &&
         Math.abs(pos.y - SHED_STALL.y / 100) <= 2.6;
+      const quay = quayGarage.view;
+      if (
+        quay?.standing() &&
+        !quay.isOpen() &&
+        tableOpen(wd, 1) &&
+        Math.hypot(pos.x - quay.post.x, pos.z - quay.post.z) <= 2.6 &&
+        Math.hypot(pos.x - QUAY_TABLE.x / 100, pos.z - QUAY_TABLE.z / 100) <= QUAY_TABLE.reach / 100 - 0.4 &&
+        Math.abs(pos.y - QUAY_TABLE.y / 100) <= 2.6
+      ) {
+        out.push({
+          id: 'railway-quay-garage',
+          verb: 'Look at the engine',
+          at: new THREE.Vector3(quay.post.x, garageRow(1).y + 1.7, quay.post.z),
+          run: quay.open,
+        });
+      }
       // The garage's post, offered in every state. It keeps the reach test (2.6 m of the post,
       // inside the server's 10 m of the table less 0.4 m), and the player is held while the garage is open, so every
       // Install hold is sent from inside the reach.

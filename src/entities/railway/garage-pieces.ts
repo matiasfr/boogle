@@ -46,7 +46,6 @@ export function createGaragePieces(owner: OwnedView, geo: Geo, row: GarageGeo) {
 
   // ---------------------------------------------------------------- the works copy of the engine
   const root = new THREE.Group();
-  owner.add(root);
   const rig = new THREE.Group(); // turns with the table
   rig.position.copy(centre);
   rig.visible = false;
@@ -211,6 +210,7 @@ export function createGaragePieces(owner: OwnedView, geo: Geo, row: GarageGeo) {
     shortSet.forEach((m) => (m.visible = !on));
     longSet.forEach((m) => (m.visible = on));
   };
+  owner.add(root);
   return {
     displayOffset,
     steelOffsets,

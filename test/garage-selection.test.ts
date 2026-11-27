@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import * as THREE from 'three/webgpu';
-import { sourceModule } from '../dev/level/source.ts';
+import { sourceFunction, sourceModule } from '../dev/level/source.ts';
 import { createGarageSelection, type Focus } from '../src/entities/railway/garage-selection.ts';
 import * as layout from '../src/entities/railway/garage-geo.ts';
 import * as cars from '../src/entities/railway/cars.ts';
@@ -46,20 +46,35 @@ const { mountQuayRoundhouse } = sourceModule<typeof import('../src/entities/rout
     kit,
     level: {},
     createGaragePieces,
+    quayGarage: { view: null },
+    createGarageView: () => ({ dispose() {} }),
     railwayWorldRead: () => null,
     createRotundaView: () => ({ show() {}, copies() {} }),
   },
 );
 
-test('unmounting the quay releases the visible post material exactly once', () => {
+test('unmount releases the post, flash and four crew materials exactly once', () => {
   const owner = createOwnedView();
   mountQuayRoundhouse(owner);
   const body = owner.root.getObjectByName('garage-post-body');
   assert.ok(body instanceof THREE.Mesh && body.visible);
-  let count = 0;
-  body.material.addEventListener('dispose', () => count++);
+  const makeMaterials = sourceFunction<
+    (owner: ReturnType<typeof createOwnedView>) => {
+      flash: THREE.Material;
+      crew: { body: THREE.Material; head: THREE.Material }[];
+    }
+  >('src/entities/railway/garage-view.ts', 'garageMaterials', { THREE });
+  const { flash, crew } = makeMaterials(owner);
+  const materials = [body.material as THREE.Material, flash, ...crew.flatMap((m) => [m.body, m.head])];
+  const counts = materials.map(() => 0);
+  materials.forEach((m, i) =>
+    m.addEventListener('dispose', () => {
+      counts[i] = counts[i]! + 1;
+    }),
+  );
   owner.dispose();
-  assert.equal(count, 1);
+  owner.dispose();
+  assert.deepEqual(counts, [1, 1, 1, 1, 1, 1]);
 });
 
 test('the quay mast crank and post foot turn 125 degrees from their Home orientation', () => {
@@ -140,4 +155,52 @@ test('stepping through the tabs draws a frame and a ghost car, and disposing the
   );
   assert.equal(made.car.parent, null, 'the ghost car is off the train');
   assert.equal(owner.root.children.length, 0);
+});
+
+test('unmounting the quay disposes its displayed train wheels', () => {
+  const owner = createOwnedView();
+  mountQuayRoundhouse(owner);
+  const wheels: THREE.BufferGeometry[] = [];
+  owner.root.traverse((object) => {
+    if (object instanceof THREE.Mesh && object.geometry instanceof THREE.CylinderGeometry) {
+      wheels.push(object.geometry);
+    }
+  });
+  assert.ok(wheels.length >= 8);
+  const released = wheels.map(disposed);
+  owner.dispose();
+  assert.ok(
+    released.every((wasDisposed) => wasDisposed()),
+    'mounted wheel geometry survived teardown',
+  );
+});
+
+test('the quay showroom keeps the train parallel to its fixed bridge rails during the turn', () => {
+  const quay = JSON.parse(fs.readFileSync('content/built/levels/quay.json', 'utf8'));
+  const rail = quay.layout.data.pieces.find((piece: { id: string }) => piece.id === 'bridge-rail-1');
+  if (!rail) return; // A movable bridge replaces the fixed yard rails.
+  const axis = quay.layout.operands[rail.frame.operand].u.axis;
+  const restPose = Math.atan2(axis.x, axis.z);
+  const source = fs.readFileSync('src/entities/railway/garage-view.ts', 'utf8');
+  const step = source.slice(
+    source.indexOf('    const target = ', source.indexOf('    const parkedForWagon')),
+    source.indexOf('    // Squash and settle'),
+  );
+  const turn = new Function(
+    'restPose',
+    'rig',
+    'site',
+    `
+    const open = true, parkedForWagon = false, baseYaw = () => restPose;
+    const turnYaw = Math.PI / 4, DECK_RATE = Math.PI / 2, dt = 1 / 60;
+    const wrap = (n) => Math.atan2(Math.sin(n), Math.cos(n));
+    let settled = true, yaw = restPose;
+    ${step}
+  `,
+  );
+  const rig = new THREE.Group();
+  turn(restPose, rig, 1);
+  assert.ok(Math.abs(Math.sin(rig.rotation.y - restPose)) < 0.001, 'wheels turned across the fixed rails');
+  turn(restPose, rig, 0);
+  assert.equal(rig.rotation.y, restPose + Math.PI / 4, 'Home turns with its moving bridge');
 });

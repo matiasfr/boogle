@@ -8,8 +8,11 @@ import { advanceHold } from '../../components/hold/view.ts';
 // Local to this tab: the one thing sent is `rail.install`, through `deps.install`. The screen half is src/features/garage.ts; railway
 // state comes in through garage-state.ts's `roomFacts` only, and where things stand through garage-geo.ts's row.
 import * as THREE from 'three/webgpu';
+import * as cars from './cars.ts';
+import { ENGINE, ENGINE_BOILER, ENGINE_LONG_AHEAD, ENGINE_WHEELS } from './engine.ts';
+import { instantiate, liftOrWait } from '../../prefab/instantiate.ts';
+import { frameOccupied, standWhenClear } from './frame-occupied.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
-import type { Body } from '../../physics/engine.ts';
 import { camConstraints, camForward, me } from '../../player/player.ts';
 import { inputState } from '../../player/input-state.ts';
 import { openModal, closeModal } from '../../player/modal.ts';
@@ -72,8 +75,6 @@ const DECK_RATE = Math.PI / 2;
 /** The jib's arm swings between its park and the part at this rate (about 2 s for the swing), and keeps up with a
  * part on the hook at the faster one. */
 const ARM_RATE = { swing: 1.5, follow: 9 } as const;
-/** Around the copy's boxes a player counts as in the way (their body's radius and a little). */
-const CLEAR = 0.55;
 /** A part hanging for the server's answer rises this far over the designed hang, clear of the boiler that is on. */
 const HANG_CLEAR = 0.9;
 /** The install's whistle carries across the room, quiet at distance (metres; machine sounds reach 45). */
@@ -123,12 +124,30 @@ function camOf(cat: CatId): (typeof CAMS)[CatId] {
   };
 }
 
-export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGeo, deps: Deps) {
-  const [cars, { ENGINE, ENGINE_BOILER, ENGINE_LONG_AHEAD, ENGINE_WHEELS }, { addStatic }] = await Promise.all([
-    import('./cars.ts'),
-    import('./engine.ts'),
-    import('../../place/land.ts'),
-  ]);
+function garageMaterials(owner: OwnedView) {
+  const flash = new THREE.MeshBasicNodeMaterial({ color: '#ffffff', transparent: true, opacity: 0.8 });
+  const crew = ['#e8a53a', '#4f8fd0'].map((color) => ({
+    body: new THREE.MeshStandardNodeMaterial({ color, roughness: 0.7 }),
+    head: new THREE.MeshStandardNodeMaterial({ color: '#f2d3b0', roughness: 0.8 }),
+  }));
+  owner.cleanup(() => {
+    flash.dispose();
+    for (const { body, head } of crew) {
+      body.dispose();
+      head.dispose();
+    }
+  });
+  return { flash, crew };
+}
+
+export function createGarageView(
+  owner: OwnedView,
+  geo: Geo,
+  row: GarageGeo,
+  site: 0 | 1,
+  deps: Deps,
+  pieces = createGaragePieces(owner, geo, row),
+) {
   const { TRAILER, WAGON_CAR, STEEL_CAR } = cars;
   const {
     displayOffset,
@@ -167,7 +186,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     stand,
     setLong,
     wearFit,
-  } = createGaragePieces(owner, geo, row);
+  } = pieces;
   let knobShown = '';
 
   // ---------------------------------------------------------------- what the chosen part shows
@@ -242,7 +261,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   liftedPipe.castShadow = true;
   partGroup.add(liftedPipe);
   root.add(partGroup);
-  const flashMat = new THREE.MeshBasicNodeMaterial({ color: '#ffffff', transparent: true, opacity: 0.8 });
+  const { flash: flashMat, crew } = garageMaterials(owner);
   const flash = new THREE.Group();
   const longFlash = lifted.map((m) => new THREE.Mesh(m.geometry, flashMat)),
     shortFlash = liftedShort.map((m) => new THREE.Mesh(m.geometry, flashMat));
@@ -252,17 +271,11 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   flash.visible = false;
   partGroup.add(flash);
 
-  const guys = [0, 1].map((i) => {
+  const guys = crew.map((materials) => {
     const g = new THREE.Group();
-    const bodyM = new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.17, 0.35, 4, 8),
-      new THREE.MeshStandardNodeMaterial({ color: i ? '#4f8fd0' : '#e8a53a', roughness: 0.7 }),
-    );
+    const bodyM = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.35, 4, 8), materials.body);
     bodyM.position.y = 0.45;
-    const head = new THREE.Mesh(
-      new THREE.SphereGeometry(0.17, 10, 8),
-      new THREE.MeshStandardNodeMaterial({ color: '#f2d3b0', roughness: 0.8 }),
-    );
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 8), materials.head);
     head.position.y = 0.92;
     bodyM.castShadow = head.castShadow = true;
     g.add(bodyM, head);
@@ -371,7 +384,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     !facts.tableBusy &&
     !facts.held &&
     !bringing &&
-    facts.boilerFitted;
+      !!facts.postOpen;
   const size = () => SIZES[activePart() === 'blast' ? 'medium' : 'large'];
   function showPart() {
     const blast = activePart() === 'blast';
@@ -411,50 +424,61 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
   }
   // One static box per vehicle, at the rest pose: it does not turn with the table (design review, call 23), and each
   // is added only once this tab's player is clear of it, so nobody is pushed or trapped.
-  const solids: { body: Body | null; key: string }[] = [
-    { body: null, key: '' },
-    { body: null, key: '' },
-  ];
-  const boxQ = new THREE.Quaternion(),
-    UP = new THREE.Vector3(0, 1, 0);
+  const copyRecords = new Map<string, ReturnType<typeof instantiate>[]>();
+  let standingKey = '';
   function solid() {
     const long = shown && wearsLong() ? ENGINE_LONG_AHEAD : 0;
-    const want = [
-      {
-        z: displayOffset('engine') - shift + long / 2,
-        hx: ENGINE.hx,
-        hz: ENGINE.hz + long / 2,
-        top: ENGINE_BOILER.top,
-      },
-      { z: -shift, hx: TRAILER.hx, hz: TRAILER.hz, top: TRAILER.top + 0.1 },
-    ];
-    const sin = Math.sin(restPose),
-      cos = Math.cos(restPose);
-    const pos = me.body?.position;
-    solids.forEach((s, i) => {
-      const w = want[i]!;
-      const key = shown ? `${restPose.toFixed(4)} ${w.hz}` : '';
-      if (s.body && s.key !== key) {
-        owner.removeBody(s.body);
-        s.body = null;
-      }
-      if (!key || s.body) return;
-      if (pos) {
-        const dx = pos.x - centre.x,
-          dz = pos.z - centre.z;
-        const lx = dx * cos - dz * sin,
-          lz = dx * sin + dz * cos - w.z;
-        if (Math.abs(lx) < w.hx + CLEAR && Math.abs(lz) < w.hz + CLEAR && pos.y < tableTop + w.top + 1.2) return;
-      }
-      s.body = addStatic(
-        { kind: 'box', hx: w.hx, hy: w.top / 2, hz: w.hz },
-        { x: centre.x + sin * w.z, y: tableTop + w.top / 2, z: centre.z + cos * w.z },
-        boxQ.setFromAxisAngle(UP, restPose).clone(),
-        undefined,
-        owner,
+    const key = shown ? `${restPose.toFixed(4)} ${long}` : '';
+    if (key === standingKey) return !!key;
+    const old = copyRecords.get(standingKey);
+    if (old) {
+      const retire = liftOrWait(
+        [{ shapes: old.flatMap((r) => r.solids), on: () => old.forEach((r) => r.setEnabled(false)) }],
+        me.body,
+        { lift: false, occupied: frameOccupied },
       );
-      s.key = key;
-    });
+      if (retire.kind === 'wait') return true;
+      standingKey = '';
+    }
+    if (!key) return false;
+    let records = copyRecords.get(key);
+    if (!records) {
+      const want = [
+        {
+          z: displayOffset('engine') - shift + long / 2,
+          hx: ENGINE.hx,
+          hz: ENGINE.hz + long / 2,
+          top: ENGINE_BOILER.top,
+        },
+        { z: -shift, hx: TRAILER.hx, hz: TRAILER.hz, top: TRAILER.top + 0.1 },
+      ];
+      const sin = Math.sin(restPose),
+        cos = Math.cos(restPose);
+      records = want.map((w, i) =>
+        instantiate(
+          'greybox.collider',
+          {
+            prefab: 'greybox.collider',
+            id: `garage-${site}-vehicle-${i}`,
+            rot: [restPose, 0, 0],
+            pos: [centre.x + sin * w.z, tableTop + w.top / 2, centre.z + cos * w.z],
+            scale: [2 * w.hx, w.top, 2 * w.hz],
+          },
+          { owner },
+        ),
+      );
+      copyRecords.set(key, records);
+    }
+    const next = records;
+    if (
+      !standWhenClear(
+        next.flatMap((r) => r.solids),
+        () => next.forEach((r) => r.setEnabled(true)),
+      )
+    )
+      return false;
+    standingKey = key;
+    return true;
   }
 
   const soundAt = (p: { x: number; z: number }, fn: (x: number, z: number) => void) => fn(p.x, p.z);
@@ -668,12 +692,12 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
    * dropped, the part lifts off its stand in `MOMENT.catchUp` and the same moment plays, in the garage or out in the
    * world, with nothing taken. A tab whose own install lost the race already has the part over the seat: it drops
    * from there. Only ever called from an accepted event. */
-  function watch(short: boolean, part: InstallPart) {
+  function watch(short: boolean, part: InstallPart, atPost: boolean) {
     if (!shown) return;
     momentPart = INSTALL_ID[part];
     sel = momentPart;
     cat = 'engine';
-    const hanging = phase === 'moment' && real && waiting;
+    const hanging = atPost && phase === 'moment' && real && waiting;
     holding = false;
     real = true;
     waiting = false;
@@ -691,7 +715,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     for (const b of bolts) b.visible = false;
     spinRate = fromRate();
     phase = 'moment';
-    partGroup.visible = true;
+    partGroup.visible = atPost;
     if (hanging) ms = Math.min(ms, MOMENT.quiet - 0.001);
     else {
       ms = -MOMENT.catchUp;
@@ -811,7 +835,8 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     const rest = deps.restYaw();
     const snapped = snapNext;
     const installingUpgrade = phase === 'moment' && real && momentPart === 'blast';
-    if (!room.wagonCoupled && !(room.upgradeReady && !room.tableBusy) && !installingUpgrade) shown = false;
+    if (site === 0 && !room.wagonCoupled && !(room.upgradeReady && !room.tableBusy) && !installingUpgrade)
+      shown = false;
     else if (!shown && rest !== null) {
       shown = true;
       pickPose(rest);
@@ -846,10 +871,11 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
         finish();
       }
     }
-    solid();
-    if (open && (!room.boilerFitted || (room.tableBusy && !installingUpgrade) || !shown)) close();
+    const copyVisible = solid();
+    if (open && (!room.postOpen || (room.tableBusy && !installingUpgrade) || !shown)) close();
     openT = clamp01(openT + ((open ? 1 : -1) * dt) / (open ? 0.6 : 0.4));
-    rig.visible = furniture.visible = shown;
+    rig.visible = copyVisible;
+    furniture.visible = shown;
     // Orange for a part someone could install on any chip's line, not only the copy's on the table (plan, call 16).
     const knob = readyAnywhere(room) ? '#e8742c' : room.boilerRev >= 1 ? '#58b368' : '#d9a23a';
     if (knob !== knobShown) knobMat.color.set((knobShown = knob));
@@ -910,7 +936,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     const poised = real || canInstall();
     // Before the wagon couples, its stall road owns the deck: even opening or browsing the upgrade must not
     // turn it away and force a swing back when the shunter arrives. The copy stays aligned with those rails.
-    const parkedForWagon = !facts.wagonCoupled;
+    const parkedForWagon = site === 0 && !facts.wagonCoupled;
     const turns =
       !parkedForWagon &&
       open &&
@@ -934,7 +960,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     if (parkedForWagon || (!open && showTurn < 0)) turnYaw = 0;
     // The deck carries the copy to the garage's pose and back at the table's own rate; once there it follows exactly.
     // With the garage shut the show-off turn of someone's install still turns it, about its rest.
-    const target = (open && !parkedForWagon ? baseYaw() : restPose) + turnYaw;
+    const target = site === 1 ? restPose : (open && !parkedForWagon ? baseYaw() : restPose) + turnYaw;
     const d = wrap(target - yaw),
       step = DECK_RATE * dt;
     if ((open && settled) || (!open && showTurn >= 0) || reducedMotion || Math.abs(d) <= step) {
@@ -1071,10 +1097,11 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     isOpen: () => open,
     open() {
       // Never while something else holds the input (a conversation, a card, the fall): it keeps control.
-      if (open || !shown || !facts.boilerFitted || facts.tableBusy || inputState.held) return;
+      if (open || !shown || !facts.postOpen || facts.tableBusy || inputState.held) return;
       // The garage is the one modal while it is open, marked before it drops the pointer lock (openModal does), so
       // Pause does not take the lost lock for an Esc. Its keys and pad stay its own (src/features/garage.ts).
       if (!openModal({ passKeys: true })) return;
+      garage.api = api;
       open = true;
       settled = false;
       spinRate = today();
@@ -1160,7 +1187,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       uiSound('pop');
     },
   };
-  garage.api = api;
+  if (site === 0 && !garage.api) garage.api = api;
   return {
     update,
     post: geo.post,
@@ -1174,11 +1201,11 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
     /** The server accepted `rail.install`. `mine`: this tab's own hold, so the hanging part drops and the moment
      * runs on. Anyone else's (and this tab's own, should it land after its hang gave up) just shows in the rows for
      * now: everyone else's moment is the plan's G4. Never called from a restore, a rejoin or a late join. */
-    accepted(own: boolean, part: InstallPart) {
+    accepted(own: boolean, part: InstallPart, payingSite: number) {
       // This tab's hold, still hanging: it drops. Anyone else's install, or this tab's own landing after its hang
       // gave up (the brief version): watched.
-      if (own && mine && real && waiting) waiting = false;
-      else watch(own, part);
+      if (site === payingSite && own && mine && real && waiting) waiting = false;
+      else watch(own, part, site === payingSite);
     },
     /** The server refused this tab's install. */
     denied: deny,
@@ -1199,7 +1226,7 @@ export async function createGarageView(owner: OwnedView, geo: Geo, row: GarageGe
       turnYaw,
       openT,
       chimney: chimney().toArray(),
-      copy: { shown, yaw, restPose, side, solid: solids.filter((s) => s.body).length, long: longOn() },
+      copy: { shown, yaw, restPose, side, solid: copyRecords.get(standingKey)?.length ?? 0, long: longOn() },
       partOnStand: partGroup.visible && phase === 'idle',
       /** What the chosen part shows: its frame (whole: the room has it; dashed: it goes here) and a ghost car. */
       selection: selection.inspect(),
