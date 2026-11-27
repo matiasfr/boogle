@@ -4,8 +4,8 @@ What the architecture reviewer ([skill](../../.claude/skills/architecture-review
 [source](../research/engine-architecture.md)) has found and what became of it, so a rejected finding doesn't come back.
 Entries are never deleted.
 
-**Last reviewed:** `328c3536c` (25 November 2026). [Daily review](../reports/tidy-2026-11-25.md).
-Scenario 1 walked. Next scenario is 2. AR-2 remains open.
+**Last reviewed:** `3b7d14bc5` (27 November 2026). [Daily review](../reports/tidy-2026-11-27.md).
+Scenario 2 walked. Next scenario is 3. AR-2 remains open.
 
 - **Fingerprint:** check, path and symbol, never a line number.
 - **Status:** `open`, `fixed`, `rejected`, `deferred` or `superseded`.

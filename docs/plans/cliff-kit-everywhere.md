@@ -740,7 +740,7 @@ None: the plan changes no copy.
 
 ### Owner questions
 
-The five under [Open questions](#open-questions-recommended-answer-first), each with its recommended answer first.
+The five under [Open questions](#open-questions-answered-by-the-owner-24-november-2026), each with its recommended answer first.
 
 ## Design review, revised (2026-11-24)
 

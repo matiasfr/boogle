@@ -1,4 +1,4 @@
-> **Status: proposed (2026-11-18), planner. Step 1 is on main (#2254, 19 November 2026); nothing else is built.** The planner read the code at `origin/main` `ead747afe`
+> **Status: proposed (2026-11-18), planner. Step 1 is on main (#2254, 19 November 2026); step 2 and Checkpoint B are on main with Port Quay's Roundhouse (#2570, #2595, #2598, 27 November 2026); steps 3 and 4 are not built.** The planner read the code at `origin/main` `ead747afe`
 > (world v61), ran `npm run loop` and `npm run loop -- node <id>` for `steelhome` and `install`, and `npm run
 > inflight`. No browser run; nothing placed, so no level check. Three owner questions, each proceeding on its
 > recommendation.
@@ -219,7 +219,7 @@ Each step leaves `node dev/ship-check.ts` green. The checkpoints carry the suite
     the Bigger cradle. One still of the bill reading as before.
 - [ ] **Checkpoint A** (after step 1): `npm run check:full`, `npm --prefix server test`. `npm run test:net` is not
   needed: `server/src` and the seeds are unchanged.
-- [ ] **2. Port Quay's post pays from the same pool** (server and view; built inside
+- [x] **2. Port Quay's post pays from the same pool** (on main: #2570, #2595, 27 November 2026) (server and view; built inside
   [garage step 5](garage-choices.md#7-steps), with Port Quay's station, which owns that bump).
   - `src/world/railway-server.ts:316`: `rail.install` is judged at `SHED_TABLE` or Port Quay's table point (the
     station plan's constant). The rule is unchanged: it already spends the pool.
