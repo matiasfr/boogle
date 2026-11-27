@@ -54,13 +54,13 @@ The queue names the blocking job; a dead PID's unique ticket is reclaimed. Broke
 after acquisition, and the slot lasts until browser/child cleanup. A timeout with a final observed expected beat can pass
 with a note; missing beats, health errors and co-op convergence/clock failures still fail. Timeouts are reported separately.
 
-The queue also waits for the machine: a free slot is not granted while the machine's load is above
+Timed and exclusive runs wait for the machine when they can take a slot and load is above
 `BOOGLE_BOT_MAX_LOAD` (default 30, the same on any macOS or Linux machine; `0` turns the gate off). The load is the 1-minute
 load average, or busy logical CPUs on Windows, which has none (`dev/look/machine-load.ts`: 18 of HOTBOX's 20), and queue progress says so ("waiting for load 41 → 30").
 After `BOOGLE_BOT_LOAD_WAIT_MS` (default 20 minutes) at the front of the queue the run goes ahead and is marked under
-load. The gate is on acquisition only: a running job's own load never stops it, and the load wait comes before the
-browser budget and co-op clock samples start. So don't poll `uptime` or wait for the load yourself: enqueue the run and
-end your turn, naming the queued run.
+load. Stills, scenarios, net suites and untimed bot segments take an eligible slot at any load and still record the
+load at acquisition. The gate applies at acquisition, before the browser budget and co-op clock samples start.
+Enqueue the run and end your turn, naming the queued run.
 
 Every playthrough, look and scenario writes a verdict (`.look/playthrough/<name>/verdict.json`,
 `<out>/<label>-verdict.json` for look, `.look/scenarios/verdict.json`) through `dev/look/verdict.ts`. It reads

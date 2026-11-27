@@ -9,6 +9,7 @@ import path from 'node:path';
 process.env.BOOGLE_BOT_QUEUE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-bot-queue-'));
 delete process.env.BOOGLE_BOT_LEASE;
 process.env.BOOGLE_BOT_MAX_LOAD = '0'; // ordering only; this machine's load must not hold these tests
+delete process.env.BOOGLE_BOT_LOAD_WAIT_MS;
 const { acquireBotSlot, ahead, BOT_TICKET_VERSION, botClass, loadGate, mayStart } =
   await import('../dev/look/bot-queue.ts');
 delete process.env.BOOGLE_BOT_CONCURRENCY;
@@ -103,8 +104,9 @@ test('review: look flags that turn motion curves (per-frame frame time) on are t
   assert.equal(botClass('look', ['--target', 'glide']), 'timed');
 });
 
-test('a fresh queue grants three shared leases at its default capacity', async () => {
+test('a fresh queue grants three shared leases above the load limit and records their start load', async () => {
   const leases: Awaited<ReturnType<typeof acquireBotSlot>>[] = [];
+  process.env.BOOGLE_BOT_MAX_LOAD = '30';
   try {
     for (const name of ['still', 'net', 'segment']) {
       let polls = 0;
@@ -112,12 +114,40 @@ test('a fresh queue grants three shared leases at its default capacity', async (
         assert.ok(++polls <= 2, `${name} should acquire after the initial two polls`);
         return Promise.resolve();
       };
-      leases.push(await acquireBotSlot(name, undefined, false, { wait, readLoad: () => 0 }));
+      leases.push(await acquireBotSlot(name, undefined, false, { wait, readLoad: () => 100, kind: 'shared' }));
     }
-    const held = leases.map(({ file }) => JSON.parse(fs.readFileSync(file, 'utf8')).held);
-    assert.deepEqual(held, [true, true, true]);
+    for (const { file, waitedMs } of leases) {
+      const { held, slot } = JSON.parse(fs.readFileSync(file, 'utf8'));
+      assert.equal(held, true);
+      assert.deepEqual(slot, { queueWaitMs: waitedMs, loadAtStart: 100, loadTimedOut: false });
+    }
   } finally {
+    process.env.BOOGLE_BOT_MAX_LOAD = '0';
     for (const lease of leases) lease.release();
+  }
+});
+
+test('timed and exclusive leases wait for load to fall before taking a free slot', async () => {
+  process.env.BOOGLE_BOT_MAX_LOAD = '30';
+  try {
+    for (const kind of ['timed', 'exclusive'] as const) {
+      let polls = 0;
+      const wait = () => {
+        assert.ok(++polls <= 3, `${kind} should acquire once load falls`);
+        return Promise.resolve();
+      };
+      const readLoad = () => (polls < 3 ? 100 : 0);
+      const lease = await acquireBotSlot(kind, undefined, false, { wait, readLoad, kind });
+      try {
+        assert.equal(polls, 3);
+        const { slot } = JSON.parse(fs.readFileSync(lease.file, 'utf8'));
+        assert.deepEqual(slot, { queueWaitMs: lease.waitedMs, loadAtStart: 0, loadTimedOut: false });
+      } finally {
+        lease.release();
+      }
+    }
+  } finally {
+    process.env.BOOGLE_BOT_MAX_LOAD = '0';
   }
 });
 
