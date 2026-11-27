@@ -14,6 +14,7 @@ import {
   LINE2_STATIONS,
 } from './railway-line2-layout.ts';
 import { LINE2, RAIL_HALTS, RAIL_LINES, trainPassesBy } from './railway-lines.ts';
+import { ringHead } from './railway-queries.ts';
 import { legDone, legRow, routeRow } from './railway-queries-route.ts';
 import { trainStops } from './railway-queries-trains.ts';
 import { RING_BRACE, RING_HEAD, RING_RIVET, RING_STEEL_WORKS, STEEL } from './railway-ring-layout.ts';
@@ -279,14 +280,10 @@ const beforeFork = [
     (w) => [need('key', Number(rail(w).hook), 1)],
   ),
   quarry('Q5', 'boiler'),
-  step(
-    'boiler',
-    'boiler',
-    LINE2_BOILER,
-    ['rail.boilerTake'],
-    'trains',
-    (w) => boiler(w).state !== 'none' && boiler(w).state !== 'pedestal',
-  ),
+  step('boiler', 'boiler', LINE2_BOILER, ['rail.boilerTake'], 'trains', (w) => {
+    const state = boiler(w).state;
+    return state === 'held' || state === 'fitted';
+  }),
   step(
     'trains',
     'boiler',
@@ -455,5 +452,21 @@ export function roomWorks(w: World): RoomWorks {
       (canopyFirst ? caveSteps : canopySteps).find(pending) ??
       afterFork.find(pending) ??
       arrival);
-  return { site, kind, at, gives, ops, needs: needs(w), halt: nearestHalt(w, at), done };
+  let target = at;
+  let actions = ops;
+  if (site === 'bents') target = RING_HEAD[ringHead(w)]!.jib;
+  if (site === 'boiler') {
+    const part = boiler(w);
+    if (part.state === 'ground') target = part;
+  }
+  if (site === 'T3') {
+    const timber = beam(w);
+    if (timber.state === 'ground' || timber.state === 'available') {
+      target = timber;
+      actions = ['rail.beamTake'];
+    }
+  }
+  const { x, y, z } = target;
+  const place = { x, y, z };
+  return { site, kind, at: place, gives, ops: actions, needs: needs(w), halt: nearestHalt(w, place), done };
 }

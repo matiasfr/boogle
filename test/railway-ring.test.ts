@@ -19,6 +19,7 @@ import { railwayCheck } from '../src/sim/railway-check.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 import { WORKS } from '../src/sim/railway-works-layout.ts';
 import { footingTotal } from '../src/sim/railway-queries-works.ts';
+import { roomWorks } from '../src/sim/railway-queries-room.ts';
 import { standingAt } from './helpers/rail-rows.ts';
 import { worldVerdict, stageWorld } from './helpers/railway-check.ts';
 import {
@@ -98,6 +99,20 @@ test('each ring op is refused before its gate and accepted after', () => {
   assert.equal(act(gap, 'a', 'rail.brace', { revision: 1 }), 1);
   assert.equal(aperture(gap.w).brace, 2, 'braced');
   assert.equal(act(gap, 'a', 'rail.strike', { id: 2 }), 0, 'the rivet with the leaf braced, not down');
+});
+
+test('room works follows the bents jib after a pair of footings moves the railhead', () => {
+  const deck = railwayAtRing('deck-laid');
+  until(deck, () => aperture(deck.w).rack >= 2);
+  assert.equal(carry(deck), 1);
+  assert.equal(carry(deck), 1);
+  until(deck, () => haulSettled(aperture(deck.w), deck.t));
+  assert.equal(ringHead(deck.w), 1);
+  const result = roomWorks(deck.w);
+  const { x, y, z } = RING_HEAD[1]!.jib;
+  assert.equal(result.site, 'bents');
+  assert.deepEqual(result.at, { x, y, z });
+  assert.deepEqual(result.needs, [{ what: 'footings', have: 2, of: WORKS.ring }]);
 });
 
 test('brace then four weights, and four weights then brace: the leaf is down on the last accepted op', () => {

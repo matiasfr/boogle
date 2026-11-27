@@ -53,7 +53,7 @@ const WORKS_AT: Record<SeedStage, WorksSite> = {
   'q5-finishing': 'Q5',
   'q5-done': 'boiler',
   boiler: 'boiler',
-  'boiler-camp': 'trains',
+  'boiler-camp': 'boiler',
   'trains-on': 'breaker',
   'freight-running': 'breaker',
   'fares-running': 'breaker',
@@ -259,7 +259,11 @@ export function goldenShard(shard: number) {
       const { works, serving, stops } = objectives.get(stage)!;
       assert.equal(works.site, WORKS_AT[stage]);
       assert.equal(works.done, stage === 'arrived');
-      assert.deepEqual(works.at, WORKS_STEPS.find((s) => s.site === WORKS_AT[stage])!.at);
+      const expectedAt =
+        stage === 'boiler-camp'
+          ? { x: 100700, y: 3030, z: -14400 }
+          : WORKS_STEPS.find((s) => s.site === WORKS_AT[stage])!.at;
+      assert.deepEqual(works.at, expectedAt);
       for (const { what, have, of } of works.needs) {
         assert.ok(have >= 0 && have <= of, `${what}: ${have} of ${of}`);
       }

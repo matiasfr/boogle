@@ -25,6 +25,8 @@ import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { RAILWAY_SOURCES } from '../src/sim/railway-layout.ts';
 import { LINE1_GREAT_TREE } from '../src/sim/railway-line-layout.ts';
+import { LINE2_OLD_TRAIN } from '../src/sim/railway-line2-layout.ts';
+import { roomWorks } from '../src/sim/railway-queries-room.ts';
 import { RAIL_HALTS, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import { railGrowthMask } from '../src/sim/railway-supply.ts';
 import { Pile } from '../src/sim/railway-components.ts';
@@ -80,6 +82,22 @@ function opening(): Seed {
   return w;
 }
 const w1 = opening();
+test('room works points to the dropped beam until it is picked up again', () => {
+  const s = opening();
+  for (let i = 0; i < 12; i++) assert.equal(act(s, 'a', 'rail.beamChop'), 1);
+  assert.equal(act(s, 'a', 'rail.beamTake', { revision: beam(s.w).revision }), 1);
+  const frame = roomWorks(s.w).at;
+  const at = { x: LINE1_GREAT_TREE.x, y: 3000, z: LINE1_GREAT_TREE.z + 100 };
+  assert.equal(act(s, 'a', 'rail.beamDrop', { revision: beam(s.w).revision, ...at }), 1);
+  assert.equal(beam(s.w).state, 'ground');
+  const dropped = roomWorks(s.w);
+  assert.equal(dropped.site, 'T3');
+  assert.deepEqual(dropped.at, at);
+  assert.deepEqual(dropped.ops, ['rail.beamTake']);
+  assert.equal(act(s, 'b', 'rail.beamTake', { revision: beam(s.w).revision }), 1);
+  assert.deepEqual(roomWorks(s.w).at, frame);
+  assert.ok(roomWorks(s.w).ops.includes('rail.beamDeposit'));
+});
 scenario('opening', w1, (step) => {
   const a =
     (op: string, f = {}) =>
@@ -153,6 +171,22 @@ scenario('axe', w2, (step) => {
 
 // ---- the boiler carried, stood, put down, dropped and recovered
 const w3 = from('boiler');
+test('room works points to the dropped boiler until it is picked up again', () => {
+  const s = from('boiler');
+  assert.equal(act(s, 'a', 'rail.boilerTake', { revision: boiler(s.w).revision }), 1);
+  const at = { x: 95000, y: 2000, z: 0 };
+  assert.equal(act(s, 'a', 'rail.boilerDrop', { revision: boiler(s.w).revision, ...at }), 1);
+  assert.equal(boiler(s.w).state, 'ground');
+  const dropped = roomWorks(s.w);
+  assert.equal(dropped.site, 'boiler');
+  assert.deepEqual(dropped.at, at);
+  assert.deepEqual(dropped.ops, ['rail.boilerTake']);
+  assert.equal(act(s, 'b', 'rail.boilerTake', { revision: boiler(s.w).revision }), 1);
+  const held = roomWorks(s.w);
+  assert.equal(held.site, 'trains');
+  assert.deepEqual(held.at, { x: LINE2_OLD_TRAIN.x, y: 0, z: LINE2_OLD_TRAIN.z });
+  assert.deepEqual(held.ops, ['rail.boilerFit']);
+});
 scenario('boiler', w3, (step) => {
   const rev = () => boiler(w3.w).revision;
   step('boilerTake', () => act(w3, 'a', 'rail.boilerTake', { revision: rev() }));

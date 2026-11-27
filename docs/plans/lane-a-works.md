@@ -42,7 +42,7 @@ export type WorksGift =
 export type RoomWorks = {
   site: WorksSite;
   kind: WorksKind;
-  /** World cm: the frame, post, barrier, pedestal or seam. Terrain-snapped sites without a catalog height use y = 0. */
+  /** World cm: the active work target. Terrain-snapped sites without a catalog height use y = 0. */
   at: { x: number; y: number; z: number };
   /** One row per material still owed, in the frame sign's own have/of; empty for a press, take or strike. */
   needs: readonly WorksNeed[];
@@ -62,6 +62,8 @@ export function roomWorks(w: World): RoomWorks;
 
 **The ladder.** `WORKS_STEPS` follows the loop graph's route with the order rules below. `roomWorks` names the first step whose `done(w)` is false. Each place matches the corresponding loop graph node, using its catalog wherever the graph names one (`LINE1_STATIONS`, `LINE2_STATIONS`, `LINE2_FORGE`, `WORKS_SEAMS`, `legFrame`, `RAIL_GATES[…].at`, `RAIL_GRANTS[…].at`, `RAIL_ARRIVAL` and the rest).
 
+The graph checks the catalog anchors. At runtime, `bents` follows the active jib as the railhead advances. A grounded boiler returns to the `boiler` pickup step at its accepted coordinates, with `rail.boilerTake`. Once held, the step returns to the fit at the old train. `T3` keeps its site and bill, but follows an available or grounded beam at its accepted coordinates with `rail.beamTake`. Once held, the target returns to the frame. Resolve these positions before choosing the nearest halt.
+
 | Steps, in order | done when | kind | needs (have of) |
 | --- | --- | --- | --- |
 | `wake` | `rail.awake >= 0` | wake | none |
@@ -69,7 +71,7 @@ export function roomWorks(w: World): RoomWorks;
 | `forge` | `forge.lit >= 0` | bill | 56 logs as its frame's sign counts them |
 | `Q1` to `Q5` | `qjob(k).completion` | bill | logs and rails (`delivered`, `railDelivered` of the bill) |
 | `lever` (after Q3), `hook` then `sea` (after Q4) | `rail.lever`, `rail.hook`, `rail.sea` | gate; hook key | none (the sea switch: `key` 0 or 1, the hook) |
-| `boiler`, `trains` | `boiler.state` not `none`/`pedestal`; `rail.trains >= 0` | boiler | `trains`: `boiler` 0 of 1 at the old train |
+| `boiler`, `trains` | `boiler.state` is `held` or `fitted`; `rail.trains >= 0` | boiler | `trains`: `boiler` 0 of 1 at the old train |
 | `breaker`, `slab`, `throat` | `works.breaker >= 2`; `seams & SEAM_STALL`; `seams & SEAM_THROAT` | part; strike | none |
 | `kiln` | `works.lit >= 0` | kiln | `WORKS.kilnLogs` logs, `WORKS.kilnStone` stone (`works.logs`, `works.stone`) |
 | `stall` | `shed.stall >= WORKS.stall` | footing | 2 footings |
@@ -165,8 +167,7 @@ The pinned table (each row run on main `3eaea2137` with a scratch copy of this l
 | `q4-stocked`, `q4-arriving` | `Q4` |
 | `q4-done`, `q5-arriving`, `q5-shelved` | `sea` |
 | `sea-open`, `q5-stocked`, `q5-carry`, `q5-finishing` | `Q5` |
-| `q5-done`, `boiler` | `boiler` |
-| `boiler-camp` | `trains` |
+| `q5-done`, `boiler`, `boiler-camp` | `boiler` |
 | `trains-on`, `freight-running`, `fares-running`, `house-ready`, `house-built`, `sack-waiting`, `yard-ready`, `yard-built`, `q6-stocked`, `q6-finishing`, `q6-done`, `works-arrive` | `breaker` |
 | `works-open`, `works-stocked` | `kiln` |
 | `works-lit` | `stall` |
@@ -201,7 +202,7 @@ The pinned table (each row run on main `3eaea2137` with a scratch copy of this l
 | `island-reached` | `arrive` |
 | `arrived` | `arrive`, `done` |
 
-Run, not derived, with one exception: the scratch copy kept the steel loop as four steps (`steelkit`, `steelworks`, `steelhome`, `install`) and named `steelkit` at `ring-joined` and `steelhome` at `steel-lit`. The table shows those two rows with the fold applied (`steelkit` into `steelworks`, `steelhome` into `install`); every other row is the run's output unchanged.
+The table applies the steel folds (`steelkit` into `steelworks` and `steelhome` into `install`) to the scratch run. The review fix moves `boiler-camp` from `trains` to `boiler` because that seed drops the part at camp.
 
 **A0's proofs:** the two test files above, and its independent review. **Model rows** (`npm run models`): the build is "Implementation from a brief or an approved plan", Codex `gpt-6.2-sol` medium; the review is "Independent review before merge of src/sim", a fresh `gpt-6.2-astra` medium delegate with none of the builder's context, one failing test per suspected defect. Ship with `npm run ship`.
 
