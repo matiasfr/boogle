@@ -111,6 +111,9 @@ Implementation corrections for Part 1:
   - Captured the [seed board](lane-c/seed-board.png), [horn board](lane-c/horn-board.png), [seed sequence](lane-c/seed-motion.png) and [horn sequence](lane-c/horn-motion.png). The carry capture sprouted at world (884.4, 17.61, 32.1). An earlier cluster started at (882.6, 17.20, 26.5). After both builds the driver stood at (912.2, 33.6). Two simultaneous holds bought kind 1 at tick 8000, spent 150 once and left 18 in the box. Reload showed the seed stall with the pads and boards hidden. After positioning the ball, the seed run grabbed it and walked and jumped onto a cap. The horn run walked into the stationary ball and pushed it onto a second pad. Both pads registered arrivals. Audio playback and the three-pad chord remain unverified.
 - [ ] **8. Close the pass.** *Kind: dev.* Files: this plan's checklist; the town rows in `docs/game-design/`. **Review:** one independent review for steps 5 and 6 together (the review paths fire on `src/sim`, `src/world` and `server/src`; `npm run ship-queue` needs the stamp), and the orchestrator's read plus `/code-review` for steps 4 and 7. The bump ships through `dev/world-bump-gate.ts`.
 
+  - [x] Builder reviewed and simplified the diff, refreshed generated data, and ran the full ship check, audited server suite and net suite.
+  - [ ] Independent review of the shared-state changes and orchestrator review of the view changes.
+
 The checkpoint's own proof (fresh players' seconds to first contribution, the owner watching a guest) belongs to the course change, not to this plan.
 
 ## Level findings
