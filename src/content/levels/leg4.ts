@@ -993,7 +993,11 @@ const areas = [
     basis: saltFrame.basis,
     origin: shores.saltLand.centre,
     key: 'greybox.salt-land',
-    pieces: [...shorePieces(shores.saltLand), ...saltPieces, ...bedPieces(shores.saltBed)],
+    pieces: [
+      ...shorePieces(shores.saltLand).map((edge) => ({ ...edge, tone: 'dark' })),
+      ...saltPieces,
+      ...bedPieces(shores.saltBed),
+    ],
     posts: [],
     reserves: [],
     extras: [],

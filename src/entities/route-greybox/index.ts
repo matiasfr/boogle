@@ -45,7 +45,13 @@ const AREAS: readonly Area[] = [
   ...notchAreas,
   { id: 'gorge', centre: AREA_CENTRES.gorge, build: () => gorgePlacements },
   { id: 'bell', centre: AREA_CENTRES.bell, build: bellMassing, baseExtras: bellExtras },
-  { id: 'west', centre: AREA_CENTRES.west, build: westMassing, baseExtras: westExtras },
+  {
+    id: 'west',
+    centre: AREA_CENTRES.west,
+    build: westMassing,
+    baseExtras: westExtras,
+    extras: async (owner) => (await import('./cave-shore.ts')).hoodRock(owner),
+  },
   { id: 'canopy', centre: AREA_CENTRES.canopy, build: canopyMassing, baseExtras: canopyExtras, near: canopyNear },
 ];
 

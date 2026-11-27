@@ -18,4 +18,7 @@ export function coastalArea(
     baseExtras: (owner: OwnedView) => leg2Extras(owner, value),
   };
 }
-export const saltpanArea = coastalArea('saltpan', level);
+export const saltpanArea = {
+  ...coastalArea('saltpan', level),
+  extras: async (owner: OwnedView) => (await import('./cave-shore.ts')).saltShore(owner),
+};
