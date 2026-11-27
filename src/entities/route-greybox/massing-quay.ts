@@ -6,7 +6,12 @@ const quay = coastalArea('quay', level);
 export const quayArea = {
   ...quay,
   async extras(owner: OwnedView) {
-    const { mountQuayRoundhouse } = await import('./quay-roundhouse.ts');
-    if (owner.alive) return mountQuayRoundhouse(owner);
+    const [{ mountQuayRoundhouse }, { mountQuayEdges }] = await Promise.all([
+      import('./quay-roundhouse.ts'),
+      import('./quay-edges.ts'),
+    ]);
+    if (!owner.alive) return;
+    mountQuayEdges(owner);
+    return mountQuayRoundhouse(owner);
   },
 };
