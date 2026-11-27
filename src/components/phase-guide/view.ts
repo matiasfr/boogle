@@ -151,7 +151,7 @@ export function createPhaseGuide<S extends string>(owner: OwnedView, opts: Phase
       }
       const g = opts.body();
       if (!g || !cur) {
-        if (speaking()) talk?.updateTalkCard();
+        if (speaking()) talk?.endTalk();
         return;
       }
       at.set(g.x, (g.fy ?? g.y) + 1.5, g.z);

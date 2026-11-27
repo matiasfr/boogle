@@ -1,3 +1,4 @@
+// npm run look -- --eval dev/look/evals/foreman-talk-stage-end.ts --until window.__placeDone --frames 2 --seconds 1 --size 1200x750 --name fix2-stage-end
 // Exercises the accepted stage change seen by a stationary listener when a teammate strikes the first seam.
 const { createForgeGuide } = (await import(
   '/src/entities/railway/forge-guide.ts' as string
