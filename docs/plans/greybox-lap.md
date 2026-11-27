@@ -301,7 +301,8 @@ to 3 (src/sim, src/world) is an independent one before merge, by the row `npm ru
       gpt-6.2-astra medium, because it regenerates `src/sim/railway-world-lines.ts`).** Files: `dev/level/world-blockout.ts`
       (`ROUTES['wall-n']`'s last straight: its end points 2.00 m to the split's south, c +2, from the end of the Gorge
       turn, a −136, eased in by a −56; line 2's last chord eased onto the axis; the Wall's Gorge end and crossover stay in the
-      catalog for the load checks but are never drawn, since the Wall never ends there), regenerated `src/sim/railway-world-lines.ts`, `docs/world/world-blockout.html`,
+      catalog for the load checks. The end buffers and board are hidden; the crossover stays drawn for homebound
+      Wall trains until the join in step 2), regenerated `src/sim/railway-world-lines.ts`, `docs/world/world-blockout.html`,
       `docs/world/rail-map.html`; `src/content/levels/gorge.ts` (the Wall's platforms at c −5.8 to −1.8 and +5.8 to +9.8
       on explicit bounds (the authored-number check refuses `c + 2` sums), their posts and connectors; the sea ramp to c
       +7.8) and `content/built/levels/gorge.json`; `dev/level/route-leg5.ts` (replace "Gorge buffers to concourse 4.00 m"
@@ -320,6 +321,8 @@ to 3 (src/sim, src/world) is an independent one before merge, by the row `npm ru
       `lineStagesOf` adds the joined stage); `src/sim/railway-trains.ts` (`TrainIO.slots`; `servingSlots`, `fleetJoin`,
       `trainGaps`, `protectedBlocks`, `lineSpacing`, `trainSpacing` through it); `src/sim/railway-sys-route.ts` (the join
       at the wall's last lay, as [above](#the-line-model-one-line-the-cave-lines-trains-join-it-in-place));
+      the Wall's Gorge crossover in `leg-view.ts` follows the accepted join: retire it when the joined route stops
+      using it, keeping it drawn for any departing train still crossing during the handover;
       `railway-sys-trains.ts`, `railway-queries-trains.ts`, `railway-queries-trade.ts` (`routeFar` pinned at the Gorge
       once joined), `railway-queries-route.ts`, `railway-sys-trade.ts`, `railway-check-*.ts`, `src/world/railway-predict.ts`
       and `src/world/railway-server.ts`: every read of a slot's line sorted into running or origin by the table above,

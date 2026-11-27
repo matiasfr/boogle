@@ -1,8 +1,8 @@
 // Running-side review P1: accepted rows, including a late join/save, own the departure track.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ROW_TRACK, rowLat } from '../src/entities/railway/row-path.ts';
-import { ROW_LINE } from '../src/sim/railway-route.ts';
+import { laidEndSwing, rowLat } from '../src/entities/railway/row-path.ts';
+import { RAIL_LEGS } from '../src/sim/railway-route.ts';
 import { LINE2, RAIL_LINES } from '../src/sim/railway-lines.ts';
 import { TRAIN_PHASE, trainArrives } from '../src/sim/railway-train.ts';
 import { endMoved, stopMoved, trainStepLine, trainRowBroken } from '../src/sim/railway-trains.ts';
@@ -80,11 +80,15 @@ test('the save check refuses malformed or wrong-way departure origins', () => {
   assert.equal(trainRowBroken({ ...good, track: 0 }, LINE2, stops, 32), 'railway: train');
 });
 
-test('a homebound Wall train stays on laid track past the removed Gorge crossover', () => {
-  const line = ROW_LINE.cave;
+test('a homebound Wall train stays on laid track at the Gorge crossover midpoint', () => {
+  const wall = RAIL_LEGS.find((leg) => leg.id === 'wall')!;
+  const line = wall.line;
   const halts = RAIL_LINES[line]!.halts;
   const gorge = halts.at(-1)!;
   const stops = halts.map((halt) => halt.s);
-  const lateral = rowLat(line, { track: 1, origin: gorge.s }, gorge.end!.mergeCm / 100, stops);
-  assert.equal(Math.abs(lateral), ROW_TRACK, 'both remaining tracks are 2 m from the formation centre');
+  const track = laidEndSwing(wall, wall.sections.length);
+  assert.ok(track, 'the completed Wall draws a diagonal track at the Gorge');
+  const midpoint = (track.s0 + track.s1) / 2;
+  assert.equal(midpoint, gorge.end!.mergeCm / 100);
+  assert.equal(rowLat(line, { track: 1, origin: gorge.s }, midpoint, stops), (track.from + track.to) / 2);
 });

@@ -78,7 +78,7 @@ import {
   ROW_PLATFORM,
   ROW_TRACK,
   rowAt,
-  rowEndSwing,
+  laidEndSwing,
   rowStartCrossing,
   rowWorld,
   rowY,
@@ -602,10 +602,9 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       // The turnouts (railway/row-path.ts rowLat): the start's crossover (homeward trains cross to the outward track on
       // their way in), the end's stub at a head, the crossover before the destination's platforms (outward trains
       // cross to the homeward track as they leave). Each a diagonal track between the two.
-      const swing = (w: RowSwing | null) => w && track(w.s0, w.s1, w.from, w.to),
-        open = halts[sp.leg.railheadHalt + Math.min(laid, n) - 1]?.end;
+      const swing = (w: RowSwing | null) => w && track(w.s0, w.s1, w.from, w.to);
       if (!sp.joins) swing(rowStartCrossing(sp.leg.line));
-      if (open && !(sp === wall && laid === n)) swing(rowEndSwing(open));
+      swing(laidEndSwing(sp.leg, laid));
     }
     /** The deck's walkable top as far as the laid end (a section still laying is drawn, not yet solid). A row's
      * merges 10 m lengths that run straight and level into one slab. */

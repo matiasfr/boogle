@@ -6,7 +6,7 @@
 // (right-hand running; the platforms' 5.8 m, railway-lines.ts legPlatforms). Pure numbers; no three.js.
 import type { LinePoint } from '../../place/layout.ts';
 import { RAIL_LINES } from '../../sim/railway-lines.ts';
-import { ROW_LINE } from '../../sim/railway-route.ts';
+import { ROW_LINE, type RouteLeg } from '../../sim/railway-route.ts';
 import { WORLD_LINES } from '../../sim/railway-world-lines.ts';
 import { lerp, smoothstep } from '../../math-pure.ts';
 
@@ -136,6 +136,12 @@ export const rowEndSwing = (end: { kind: string; mergeCm: number }): RowSwing =>
     ? { s0: m - TURN, s1: m, from: -ROW_TRACK, to: ROW_TRACK }
     : { s0: m - CROSS / 2, s1: m + CROSS / 2, from: -ROW_TRACK, to: ROW_TRACK };
 };
+/** The diagonal track drawn at the open end of the laid sections. */
+export function laidEndSwing(leg: RouteLeg, laid: number): RowSwing | null {
+  if (laid < 1) return null;
+  const open = RAIL_LINES[leg.line]!.halts[leg.railheadHalt + Math.min(laid, leg.sections.length) - 1]?.end;
+  return open ? rowEndSwing(open) : null;
+}
 /** The lateral of a train of row line `line` at `s` metres (right-hand running, the views' own: the sim reads only s).
  * Going out it runs on the outward track. Going home it is on the homeward track, after the turnout or crossover of
  * the end it left (a stub's merge at a head, whose terminal track is the outward one; the crossover before Bell Rock's
