@@ -1611,7 +1611,7 @@ only. All copy is placeholder. Not tested on a device.
 **Lantern Notch and the Original Island.** After the Wall, the glider cloth opens Canopy's barrier. The bay rails
 curve between the trunks, cross the sea and stop short of the arch. A lantern lights at the foot of the arch once
 the line is laid. Taking it opens the way to build the causeway from Bell Rock's lower platform. The island's two
-platforms lead down to the beach. Once a train reaches the halt, a player can use the meeting post there.
+platforms lead down to the beach. Two low rock faces sit beneath the landward deck ends, with open water between the causeway bents. Once a train reaches the halt, a player can use the meeting post there.
 It reads "Meeting (placeholder)" before the room arrives and "Arrived" afterwards.
 
 **The cave line to Port Quay (25 November 2026).** The bay cut opens the Canopy and cave legs together. Both have their own racks. Friends can work on both at once or build them in either order. The White Wall opens once both are laid. The powered pick opens
