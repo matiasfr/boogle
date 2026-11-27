@@ -8,9 +8,22 @@ export const BUNDLE_SCALE = 0.75;
 const R = PIECE.r * BUNDLE_SCALE;
 export type BundleFit = { back: number; floor: number; len: number; round: boolean; radius?: number };
 type Worn = { inner?: THREE.Object3D; loadFit?: BundleFit & { frame: THREE.Object3D } };
+const packSockets = new WeakMap<THREE.Object3D, THREE.Object3D>();
+/** Miniature worn gear shares one fit, with the front rail held against Buddy's back. */
+export function packSocket(back: THREE.Object3D): THREE.Object3D {
+  let socket = packSockets.get(back);
+  if (!socket) {
+    socket = new THREE.Object3D();
+    socket.scale.setScalar(0.75);
+    socket.position.set(0, -0.015, 0.08);
+    back.add(socket);
+    packSockets.set(back, socket);
+  }
+  return socket;
+}
 export const frameOf = (a: THREE.Object3D): THREE.Object3D => {
   const u = a.userData as Worn;
-  return u.loadFit?.frame ?? u.inner ?? a;
+  return packSocket(u.loadFit?.frame ?? u.inner ?? a);
 };
 /** A body with no fit of its own (the capsule). */
 export const DEFAULT_FIT: BundleFit = { back: 0.45, floor: 0.16, len: 1, round: false };

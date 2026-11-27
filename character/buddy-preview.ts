@@ -15,7 +15,7 @@ import {
 } from '../src/render/gear-models.ts';
 import { BUDDY_LOAD_FIT } from '../src/player/buddy/load-fit.ts';
 import { makeCarryModels, cargoCapacity, type CargoKind } from '../src/render/carry-models.ts';
-import { makeBundlePreview } from '../src/render/haul-bundle.ts';
+import { makeBundlePreview, packSocket } from '../src/render/haul-bundle.ts';
 import { makeAxes, type AxeTier } from '../src/render/axe-models.ts';
 import { applyChopPose, CHOP_DURATION, CHOP_TRUNK, chopPresentation } from '../src/entities/railway/chop-motion.ts';
 import { sparkleAxe } from '../src/render/axe-sparkle.ts';
@@ -191,7 +191,7 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
         }
         if (worn) {
           gear = makeGear();
-          wearGear(figure, sockets.back, gear, worn);
+          wearGear(figure, packSocket(sockets.back), gear, worn);
           const frame = packFrameMesh(true);
           frame.visible = worn.frame;
           const cargo = makeCarryModels();
@@ -201,7 +201,8 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
           logs.setCount(worn.cargo === 'logs' ? amount : 0);
           logs.root.name = 'wear_cargo_logs';
           cargo.root.name = 'wear_cargo';
-          sockets.back.add(frame, cargo.root, logs.root);
+          packSocket(sockets.back).add(frame, logs.root);
+          sockets.back.add(cargo.root);
           canopy = makeCanopy(true);
           canopy.w = worn.canopy ? 1 : 0;
           canopy.g.name = 'wear_canopy';
@@ -314,7 +315,7 @@ export function prepareBuddy(model: Asset, source: Asset, headwear?: Asset) {
           avatar.position.y = 0.45;
         }
         if (blink !== undefined) for (const name of ['eye_l', 'eye_r']) figure.getObjectByName(name)?.scale.setY(blink);
-        if (gear && worn) wearGear(figure, sockets.back, gear, worn);
+        if (gear && worn) wearGear(figure, packSocket(sockets.back), gear, worn);
         if (canopy && worn) placeCanopy(avatar ?? figure, canopy, worn.canopy ? 1 : 0, 0, time * 1000);
         applyAxe(dt);
         if (railwayHat) seatConductorHat(avatar ?? figure, railwayHat);
