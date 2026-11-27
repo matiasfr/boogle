@@ -283,6 +283,7 @@ let marksLeft = MARKS_PER_WINDOW;
 let lastObjective = '';
 let lastObjectiveAt = 0;
 let stoodAt: number | undefined;
+let fellFromTrolley = false;
 let contributed = false;
 const contributionMarks = new Set([
   'deposit',
@@ -492,7 +493,11 @@ function sample(ms: number) {
 onFrame(
   () => {
     const ms = performance.now();
-    if (startedWithFall && !fallArrival.active) stoodAt ??= ms;
+    if (startedWithFall && stoodAt === undefined) {
+      // The trolley sets coyote while rolling. Wait for the descent before counting ground contact.
+      if (me.entered && me.body && me.coyote <= 0 && me.body.velocity.y < 0) fellFromTrolley = true;
+      if (!fallArrival.active || (fellFromTrolley && me.coyote > 0 && !me.swimming)) stoodAt = ms;
+    }
     // The real interval: the frame's dt stops at 50 ms, which would hide the slowest devices.
     const frameS = lastFrame ? Math.min(1, (ms - lastFrame) / 1000) : 0;
     if (lastFrame && nIntervals < PERF_WINDOW) intervals[nIntervals++] = ms - lastFrame;
