@@ -137,14 +137,31 @@ export function createBackdrop() {
       continue;
     }
     cap(outline, top);
-    add(geometry(), land.horizon ? '#7d8a84' : WALK);
-    if (stack) sandstone.add(parts.at(-1)!);
+    add(geometry(), stack ? '#725940' : land.horizon ? '#7d8a84' : WALK);
     vertices.length = 0;
+    // A few blades rooted in the north cap, leaving the pickup plinth and the way off the stair clear.
+    if (land.id === 'stack-n') {
+      for (const [x, z] of [
+        [-1068, -2034],
+        [-1070, -2035],
+        [-1077, -2038],
+        [-1082, -2040],
+      ] as const) {
+        for (const lean of [-0.4, 0, 0.35])
+          triangle([x + lean - 0.15, z], top, [x + lean + 0.15, z], top, [x + 2 * lean, z - 0.2], top + 0.65);
+      }
+      add(geometry(), '#777c48');
+      vertices.length = 0;
+    }
     for (let i = 0; i < outline.length; i++) {
       const a = outline[i]!,
         b = outline[(i + 1) % outline.length]!,
         hole = land.id === BORE.land ? boreHole(a, b) : null;
       if (stack) {
+        // The clip makes one long straight cut per stack. Dress those train-facing cuts and the
+        // approaching south stack's eastern waterline. The other edges use the bedded backing face.
+        const cut = Math.hypot(b[0] - a[0], b[1] - a[1]) > 100;
+        const waterline = land.id === 'stack-s' && (a[0] + b[0]) / 2 > -1030;
         const wall = (p: XZ, q: XZ, foot: number) => {
           if (Math.hypot(q[0] - p[0], q[1] - p[1]) < 1e-6) return;
           const inset = (v: XZ): XZ => [v[0] + (land.c![0] - v[0]) * 0.012, v[1] + (land.c![1] - v[1]) * 0.012];
@@ -155,7 +172,7 @@ export function createBackdrop() {
             quad(p, backP, -10, top);
             quad(backQ, q, -10, top);
           }
-          course(p, q, 'face_10', 36, foot, (top - foot) / 14.4);
+          if (cut || waterline) course(p, q, 'face_10', 85, foot, (top - foot) / 14.4);
         };
         if (hole) {
           const p = at(a, b, hole[0]),
@@ -165,7 +182,7 @@ export function createBackdrop() {
           quad(p, q, BORE.y1, top);
           quad(p, q, -10, BORE.y0);
         } else wall(a, b, -2);
-        course(a, b, 'rim_cap', 28, top, 1);
+        if (cut || waterline) course(a, b, 'rim_cap', 85, top, 1);
         continue;
       }
       quad(a, b, -10, top);

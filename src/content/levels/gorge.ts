@@ -113,7 +113,7 @@ function placements() {
       GREY_DARK,
     ),
   );
-  out.push(levelBox(-3, 6, -WALL - 12, -WALL, GORGE_RIM, STAIR_TOP, GREY_LIGHT));
+  out.push(levelBox(-3, 6, -WALL - 12, -WALL, GORGE_RIM, STAIR_TOP, '#725940'));
   // The stacks, as colliders under the silhouette's mesh: the wall at c ±45 and the 85 m top, boxes inside the map's
   // outlines (a ±120, 200 m back from each wall). The south one stands over the incline's bore (greybox-leg2.md, step
   // 4): its slab from the bore's roof up; the rest of it, round the bore, is leg2.ts's (the Gorge's incline pieces).
