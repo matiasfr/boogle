@@ -756,6 +756,8 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
       ...lines,
       ...rows,
       ...progress,
+      ...(await import('../src/sim/railway-queries-room.ts')),
+      ...(await import('../src/entities/railway/works-lines.ts')),
       ...gorgeLayout,
       ...junctions,
       ...path,
