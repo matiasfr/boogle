@@ -144,7 +144,9 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView,
     const piece = accessory('railway.yard-pointer', id, yardPointer, x, H(x, z), z, yaw);
     if (yard === 0) {
       const towardForge = Math.atan2(LINE2_FORGE.x / 100 - x, LINE2_FORGE.z / 100 - z);
-      boxes.push(box(x, z, place(0, 1.28, 0.57, 0.16, 0.32, 1.4, towardForge), '#b98a52'));
+      const board = box(x, z, place(0, 1.28, 0.57, 0.16, 0.32, 1.4, towardForge), '#b98a52');
+      board.y = H(x, z);
+      boxes.push(board);
       piece.end = boxes.length;
     }
     piece.solid.setEnabled(false);
