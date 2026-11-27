@@ -101,6 +101,16 @@ export const prefabs = [
   piece('terrain.bank-rock', 'bank_rock', [box([0, 0.1, -0.2], [1.6, 0.3, 0.6])]),
   piece('terrain.sea-face-6', 'sea_face_6', [face(6, SEA_PROFILE)]),
   piece('terrain.sea-face-10', 'sea_face_10', [face(10, SEA_PROFILE)]),
+  definePrefab({
+    key: 'terrain.chalk-bed',
+    scope: 'place',
+    visual: {
+      builder: 'terrain.kit',
+      params: { piece: 'sea_face_10', colour: '#c9c5bb' },
+      batch: 'Canopy cleft ledges',
+    },
+    colliders: [],
+  }),
   piece('terrain.low-face', 'low_face', [face(5, LOW_PROFILE)]),
   piece('terrain.sea-corner', 'sea_corner', [crowned(SEA_PROFILE, -4.1, 0.25), crowned(SEA_PROFILE, 0, 4.1, true)]),
   piece('terrain.shore-rock-s', 'shore_rock_s', [box([0, 0.135, 0], [0.504, 0.189, 0.36])]),

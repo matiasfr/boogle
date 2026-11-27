@@ -278,7 +278,20 @@ function canopy() {
     origin: STOP,
     basis: cf.basis,
     extras: [{ id: 'lands', prefab: 'greybox.canopy-lands', pos: [0, 0, 0] }],
-    pieces,
+    pieces: [
+      ...pieces,
+      // Rubbing timbers wrap the vertical faces and cap the existing deck lip.
+      ...(
+        [
+          [-4.24, -3.78, 23],
+          [3.78, 4.24, 12],
+          [-13.84, -13.28, 30],
+        ] as const
+      ).map(([b0, b1, end], i) => ({
+        ...cf.box(`freight-edge-${i}`, -33, end, b0, b1, 13.925, 0.65, 'sandstone'),
+        solid: false,
+      })),
+    ],
     pads: [],
     posts: [
       // On the homeward deck beside the cloth post, facing back down the line.

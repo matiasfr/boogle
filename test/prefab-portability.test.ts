@@ -16,6 +16,7 @@ import { prefabs as museum } from '../src/content/prefabs/museum.ts';
 import { haltKitContent } from '../dev/prefab/halts.ts';
 import { rotundaContent } from '../dev/prefab/rotunda.ts';
 import { cliffKitContent } from '../dev/prefab/cliff-kit.ts';
+import { canopyCleft } from '../dev/prefab/cliff-kit-canopy.ts';
 import { prefabs as terrain } from '../src/content/prefabs/terrain.ts';
 import { prefabs as roundhouse } from '../src/content/prefabs/roundhouse.ts';
 import { levels as museumLevels } from '../src/content/levels/museum.ts';
@@ -219,6 +220,7 @@ test('artifact serialization is independent of runtime native transcendental res
           ...haltKitContent().levels,
           ...rotundaContent().levels,
           ...cliffKitContent(true).levels,
+          canopyCleft,
         ],
       ),
       'content/built',

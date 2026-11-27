@@ -2,13 +2,33 @@
 // the bay row's bank, Canopy Town's platforms and deck, the Notch board, and the isle's, islets' and trunks' colliders
 // (the horizon draws them). This view reads no progress.
 import level from '../../../content/built/levels/canopy.json' with { type: 'json' };
+import cleft from '../../../content/built/levels/canopy-cleft.json' with { type: 'json' };
+import { createPrefabBatch, instantiate } from '../../prefab/instantiate.ts';
+import { setTerrainKit } from '../../prefab/builders/terrain-kit.ts';
+import { loadLevelArtifact } from '../../prefab/validate.ts';
+import { terrainKitGeometry } from '../terrain-kit/geometry.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
-import { compiled as records } from '../../prefab/catalogue.ts';
+import { compiled as records, definitions } from '../../prefab/catalogue.ts';
 import { leg2Massing, leg2Extras, leg2Placements } from './leg2-draw.ts';
 import { AREA_CENTRES, coverNear } from './leg2-layout.ts';
-const placements = leg2Massing(level);
+const placements = leg2Massing(level).map((p) =>
+  p.id.startsWith('canopy.freight-edge-') ? { ...p, params: { ...p.params, colour: '#795238' } } : p,
+);
 export const canopyMassing = () => placements;
-export const canopyExtras = (owner: OwnedView) => leg2Extras(owner, level);
+export function canopyExtras(owner: OwnedView) {
+  void terrainKitGeometry()
+    .then((pieces) => {
+      if (!owner.alive) return;
+      setTerrainKit(pieces);
+      const beds = loadLevelArtifact(cleft, definitions).placements;
+      const target = createPrefabBatch('terrain.chalk-bed', beds.length, owner);
+      beds.forEach((p, index) =>
+        instantiate(p.prefab, p, { owner, batch: { target, index }, still: true }).setEnabled(true),
+      );
+    })
+    .catch((error: unknown) => console.warn('[canopy] cliff kit load failed', error));
+  return leg2Extras(owner, level);
+}
 /** Canopy mounts far enough out to cover every solid of it, the isle, its beach and both chalk islets to their far
  * tips, not the usual 400 m, so a swimmer meets no solid before it exists (dev/level/route-leg3.ts checks it). */
 export const canopyNear = coverNear(leg2Placements(level), records.prefabs, AREA_CENTRES.canopy);

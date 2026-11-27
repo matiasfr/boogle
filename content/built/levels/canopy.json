@@ -1330,6 +1330,57 @@
           },
           "tone": "grey",
           "top": 12
+        },
+        {
+          "bounds": [
+            -33,
+            23,
+            -4.24,
+            -3.78
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.65,
+          "id": "freight-edge-0",
+          "solid": false,
+          "tone": "sandstone",
+          "top": 13.925
+        },
+        {
+          "bounds": [
+            -33,
+            12,
+            3.78,
+            4.24
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.65,
+          "id": "freight-edge-1",
+          "solid": false,
+          "tone": "sandstone",
+          "top": 13.925
+        },
+        {
+          "bounds": [
+            -33,
+            30,
+            -13.84,
+            -13.28
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 0
+          },
+          "h": 0.65,
+          "id": "freight-edge-2",
+          "solid": false,
+          "tone": "sandstone",
+          "top": 13.925
         }
       ],
       "posts": [

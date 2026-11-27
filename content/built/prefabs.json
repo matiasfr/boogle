@@ -14126,6 +14126,19 @@
         }
       }
     },
+    "terrain.chalk-bed": {
+      "colliders": [],
+      "key": "terrain.chalk-bed",
+      "scope": "place",
+      "visual": {
+        "batch": "Canopy cleft ledges",
+        "builder": "terrain.kit",
+        "params": {
+          "colour": "#c9c5bb",
+          "piece": "sea_face_10"
+        }
+      }
+    },
     "terrain.face-10": {
       "colliders": [
         {
