@@ -267,11 +267,13 @@ export function goldenShard(shard: number) {
       for (const { what, have, of } of works.needs) {
         assert.ok(have >= 0 && have <= of, `${what}: ${have} of ${of}`);
       }
-      if (stage === 'q5-finishing')
+      if (stage === 'q5-finishing') {
         assert.deepEqual(works.needs, [
           { what: 'logs', have: 24, of: 24 },
           { what: 'rails', have: 24, of: 24 },
         ]);
+        assert.deepEqual(works.ops, []);
+      }
       assert.equal(works.halt !== null, serving);
       if (works.halt) {
         const { line, stop } = works.halt;

@@ -64,7 +64,7 @@ const pulse = (s: Seed, marker: number, extra: { recover?: number[]; beam?: numb
   railSupplyPulse(s.w, { marker, grow: GROW, recover: [], ...extra });
 
 // ---- line one's opening, to the moment the great beam is wanted (the first third of the route's railwayAtQ2)
-function opening(): Seed {
+function opening(stockT3 = true): Seed {
   const s = createRailway();
   for (const pid of ['a', 'b']) railSession(s, pid, 1);
   apply(s, 'a', { op: 'rail.wake', epoch: 1, request: 1 }, 0);
@@ -78,12 +78,12 @@ function opening(): Seed {
   }
   logs(w, 'a', 'T2', 32);
   advance(w, 300);
-  logs(w, 'a', 'T3', 32);
+  if (stockT3) logs(w, 'a', 'T3', 32);
   return w;
 }
 const w1 = opening();
 test('room works points to the dropped beam until it is picked up again', () => {
-  const s = opening();
+  const s = opening(false);
   for (let i = 0; i < 12; i++) assert.equal(act(s, 'a', 'rail.beamChop'), 1);
   assert.equal(act(s, 'a', 'rail.beamTake', { revision: beam(s.w).revision }), 1);
   const frame = roomWorks(s.w).at;
@@ -97,6 +97,17 @@ test('room works points to the dropped beam until it is picked up again', () => 
   assert.equal(act(s, 'b', 'rail.beamTake', { revision: beam(s.w).revision }), 1);
   assert.deepEqual(roomWorks(s.w).at, frame);
   assert.ok(roomWorks(s.w).ops.includes('rail.beamDeposit'));
+  assert.equal(act(s, 'b', 'rail.beamDeposit', { revision: beam(s.w).revision, station: 'T3' }), 1);
+  assert.equal(beam(s.w).state, 'allocated');
+  assert.deepEqual(roomWorks(s.w).ops, ['rail.deposit']);
+  logs(s, 'a', 'T3', 32);
+  const laying = roomWorks(s.w);
+  assert.equal(laying.site, 'T3');
+  assert.deepEqual(
+    laying.needs.find((n) => n.what === 'beam'),
+    { what: 'beam', have: 1, of: 1 },
+  );
+  assert.deepEqual(laying.ops, []);
 });
 scenario('opening', w1, (step) => {
   const a =
@@ -186,6 +197,23 @@ test('room works points to the dropped boiler until it is picked up again', () =
   assert.equal(held.site, 'trains');
   assert.deepEqual(held.at, { x: LINE2_OLD_TRAIN.x, y: 0, z: LINE2_OLD_TRAIN.z });
   assert.deepEqual(held.ops, ['rail.boilerFit']);
+});
+test('room works records the accepted boiler fit while the cart returns', () => {
+  const s = from('boiler-camp');
+  assert.equal(act(s, 'a', 'rail.boilerTake', { revision: boiler(s.w).revision }), 1);
+  const at = { x: 100600, y: 3000, z: -14500 };
+  assert.equal(act(s, 'a', 'rail.boilerDrop', { revision: boiler(s.w).revision, ...at }), 1);
+  assert.deepEqual(roomWorks(s.w).at, at);
+  assert.deepEqual(roomWorks(s.w).ops, ['rail.boilerTake']);
+  assert.equal(act(s, 'b', 'rail.boilerTake', { revision: boiler(s.w).revision }), 1);
+  assert.deepEqual(roomWorks(s.w).ops, ['rail.boilerFit']);
+  assert.equal(act(s, 'b', 'rail.boilerFit', { revision: boiler(s.w).revision }), 1);
+  assert.equal(boiler(s.w).state, 'fitted');
+  const pending = roomWorks(s.w);
+  assert.equal(act(s, 'b', 'rail.boilerFit', { revision: boiler(s.w).revision }), 0);
+  assert.equal(pending.site, 'trains');
+  assert.deepEqual(pending.needs, [{ what: 'boiler', have: 1, of: 1 }]);
+  assert.deepEqual(pending.ops, []);
 });
 scenario('boiler', w3, (step) => {
   const rev = () => boiler(w3.w).revision;

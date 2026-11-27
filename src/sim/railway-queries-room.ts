@@ -291,7 +291,7 @@ const beforeFork = [
     ['rail.boilerFit'],
     { what: 'trains' },
     (w) => rail(w).trains >= 0,
-    () => [need('boiler', 0, 1)],
+    (w) => [need('boiler', Number(boiler(w).state === 'fitted'), 1)],
   ),
   step('breaker', 'part', WORKS_BREAKER, ['rail.breaker'], 'slab', (w) => works(w).breaker >= 2),
   step('slab', 'strike', WORKS_SEAMS[0], ['rail.strike'], 'throat', (w) => !!(works(w).seams & SEAM_STALL)),
@@ -452,6 +452,7 @@ export function roomWorks(w: World): RoomWorks {
       (canopyFirst ? caveSteps : canopySteps).find(pending) ??
       afterFork.find(pending) ??
       arrival);
+  const bill = needs(w);
   let target = at;
   let actions = ops;
   if (site === 'bents') target = RING_HEAD[ringHead(w)]!.jib;
@@ -464,9 +465,15 @@ export function roomWorks(w: World): RoomWorks {
     if (timber.state === 'ground' || timber.state === 'available') {
       target = timber;
       actions = ['rail.beamTake'];
+    } else if (timber.state === 'allocated') {
+      actions = ['rail.deposit'];
     }
+  }
+  // The site can remain current while a funded frame lays or the cart returns after the fit.
+  if ((kind === 'bill' || kind === 'beam' || site === 'trains') && bill.every(({ have, of }) => have >= of)) {
+    actions = [];
   }
   const { x, y, z } = target;
   const place = { x, y, z };
-  return { site, kind, at: place, gives, ops: actions, needs: needs(w), halt: nearestHalt(w, place), done };
+  return { site, kind, at: place, gives, ops: actions, needs: bill, halt: nearestHalt(w, place), done };
 }

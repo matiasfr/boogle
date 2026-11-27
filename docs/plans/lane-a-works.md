@@ -64,6 +64,8 @@ export function roomWorks(w: World): RoomWorks;
 
 The graph checks the catalog anchors. At runtime, `bents` follows the active jib as the railhead advances. A grounded boiler returns to the `boiler` pickup step at its accepted coordinates, with `rail.boilerTake`. Once held, the step returns to the fit at the old train. `T3` keeps its site and bill, but follows an available or grounded beam at its accepted coordinates with `rail.beamTake`. Once held, the target returns to the frame. Resolve these positions before choosing the nearest halt.
 
+Accepted hand-ins fill their needs immediately. A fitted boiler waiting for the cart, or a full stretch or section waiting for its lay, stays current with no advancing ops. If T3 still needs logs after the beam is allocated, only `rail.deposit` advances it.
+
 | Steps, in order | done when | kind | needs (have of) |
 | --- | --- | --- | --- |
 | `wake` | `rail.awake >= 0` | wake | none |
@@ -71,7 +73,7 @@ The graph checks the catalog anchors. At runtime, `bents` follows the active jib
 | `forge` | `forge.lit >= 0` | bill | 56 logs as its frame's sign counts them |
 | `Q1` to `Q5` | `qjob(k).completion` | bill | logs and rails (`delivered`, `railDelivered` of the bill) |
 | `lever` (after Q3), `hook` then `sea` (after Q4) | `rail.lever`, `rail.hook`, `rail.sea` | gate; hook key | none (the sea switch: `key` 0 or 1, the hook) |
-| `boiler`, `trains` | `boiler.state` is `held` or `fitted`; `rail.trains >= 0` | boiler | `trains`: `boiler` 0 of 1 at the old train |
+| `boiler`, `trains` | `boiler.state` is `held` or `fitted`; `rail.trains >= 0` | boiler | `trains`: `boiler` 1 of 1 as soon as fitted, even while the cart returns |
 | `breaker`, `slab`, `throat` | `works.breaker >= 2`; `seams & SEAM_STALL`; `seams & SEAM_THROAT` | part; strike | none |
 | `kiln` | `works.lit >= 0` | kiln | `WORKS.kilnLogs` logs, `WORKS.kilnStone` stone (`works.logs`, `works.stone`) |
 | `stall` | `shed.stall >= WORKS.stall` | footing | 2 footings |
