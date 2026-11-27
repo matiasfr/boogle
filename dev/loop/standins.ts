@@ -17,12 +17,16 @@ const AREAS: readonly { area: number; label: string; ends: NodeId; allowanceMin:
 
 function wholeRoute(runs: readonly Played[]) {
   const reached = (run: Played, id: NodeId) => run.nodes.find((x) => x.id === id)!.tick / 10;
-  const rows = AREAS.map((a, k) => ({
+  const durations = runs.map((run) => {
+    const finishes = AREAS.map(({ area, ends }) => ({ area, at: reached(run, ends) })).sort((a, b) => a.at - b.at);
+    return new Map(finishes.map(({ area, at }, i) => [area, at - (finishes[i - 1]?.at ?? 0)]));
+  });
+  const rows = AREAS.map((a) => ({
     area: a.area,
     label: a.label,
     standIn: false,
     allowanceMin: a.allowanceMin,
-    seconds: runs.map((run) => reached(run, a.ends) - (k ? reached(run, AREAS[k - 1]!.ends) : 0)),
+    seconds: durations.map((duration) => duration.get(a.area)!),
   }));
   return { rows, total: runs.map((run) => reached(run, 'arrive')), nodes: [] };
 }

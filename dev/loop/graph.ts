@@ -537,7 +537,7 @@ const ROUTE_NODES: readonly LoopNode[] = [
     bill: {},
     supply: {},
     ops: ['rail.gate'],
-    reached: { mark: 'route barrier opened', nth: 1 },
+    reached: { mark: 'route barrier opened', data: { gate: INCLINE.sections[0]!.gate! } },
     stops: [],
     requires: [dec('pick', 'rules', `${RULES_ROUTE} gate: the room holds its needs grant (the pick)`)],
     cue: [onMain('world', "the red barrier on the incline's first frame, with its plate", `${LEG_VIEW} High Gorge`)],
@@ -583,7 +583,7 @@ const ROUTE_NODES: readonly LoopNode[] = [
     bill: {},
     supply: {},
     ops: ['rail.gate'],
-    reached: { mark: 'route barrier opened', nth: 2 },
+    reached: { mark: 'route barrier opened', data: { gate: CANOPY.sections[0]!.gate! } },
     stops: [],
     requires: [
       dec('bay-2', 'rules', `${RULES_ROUTE} gate: the leg it shuts is open (the bay cut laid)`),
@@ -630,10 +630,10 @@ const ROUTE_NODES: readonly LoopNode[] = [
     bill: {},
     supply: {},
     ops: ['rail.gate'],
-    reached: { mark: 'route barrier opened', nth: 3 },
+    reached: { mark: 'route barrier opened', data: { gate: CAVE.sections[0]!.gate! } },
     stops: [],
     requires: [
-      dec('canopy-3', 'rules', `${RULES_ROUTE} gate: the leg it shuts is open (the Canopy line laid)`),
+      dec('bay-2', 'rules', `${RULES_ROUTE} gate: the leg it shuts is open (the bay cut laid)`),
       dec('pick', 'rules', `${RULES_ROUTE} gate: the room holds its needs grant (the powered pick)`),
     ],
     cue: [onMain('world', "the plug beside the first frame on the West landing's cave apron", LEG_VIEW)],
@@ -655,7 +655,7 @@ const ROUTE_NODES: readonly LoopNode[] = [
     bill: {},
     supply: {},
     ops: ['rail.gate'],
-    reached: { mark: 'route barrier opened', nth: 4 },
+    reached: { mark: 'route barrier opened', data: { gate: WALL.sections[5]!.gate! } },
     stops: ['deep-span'],
     requires: [
       dec('wall-5', 'rules', `${RULES_ROUTE} gate: the first five White Wall sections are laid`),
@@ -668,7 +668,11 @@ const ROUTE_NODES: readonly LoopNode[] = [
       WALL,
       k,
       `Port Quay to High Gorge, section ${k + 1} of ${WALL.sections.length}`,
-      k === 5 ? [dec('deep-gate', 'rules', `${RULES_ROUTE} legStock: refused while the frame's barrier is shut`)] : [],
+      k === 0
+        ? [dec('canopy-3', 'rules', `${RULES_ROUTE} legStock: the Canopy line is also laid`)]
+        : k === 5
+          ? [dec('deep-gate', 'rules', `${RULES_ROUTE} legStock: refused while the frame's barrier is shut`)]
+          : [],
       k === 5 ? ['gorge'] : [],
     ),
   ),
@@ -680,7 +684,7 @@ const ROUTE_NODES: readonly LoopNode[] = [
     bill: {},
     supply: {},
     ops: ['rail.gate'],
-    reached: { mark: 'route barrier opened', nth: 5 },
+    reached: { mark: 'route barrier opened', data: { gate: NOTCH.sections[0]!.gate! } },
     stops: [],
     requires: [
       dec('wall-6', 'rules', `${RULES_ROUTE} gate: the Notch leg is open`),
@@ -716,7 +720,7 @@ const ROUTE_NODES: readonly LoopNode[] = [
     bill: {},
     supply: {},
     ops: ['rail.gate'],
-    reached: { mark: 'route barrier opened', nth: 6 },
+    reached: { mark: 'route barrier opened', data: { gate: CAUSEWAY.sections[0]!.gate! } },
     stops: [],
     requires: [
       dec('notch-1', 'rules', `${RULES_ROUTE} gate: the causeway leg is open`),
@@ -1513,6 +1517,10 @@ export function proposeOrders(): { name: string; order: NodeId[]; flipped?: { fr
     order.splice(order.indexOf('T1') + 1, 0, part);
     orders.push({ name: `${part}-first`, order });
   }
+  const caveFirst = [...orders[0]!.order];
+  const caveBranch = caveFirst.splice(caveFirst.indexOf('plug-gate'), CAVE.sections.length + 1);
+  caveFirst.splice(caveFirst.indexOf('bay-2') + 1, 0, ...caveBranch);
+  orders.push({ name: 'cave-first', order: caveFirst });
   for (const { n, e } of soft) {
     const order = topo({ from: n, on: e.on });
     if (order) orders.push({ name: `${n} before ${e.on}`, order, flipped: { from: n, on: e.on } });

@@ -95,6 +95,8 @@ export const RAIL_FROM = {
   // Leg 3 (greybox-leg3.md, step 7): the Canopy barrier at Bell Rock, the three sections to Canopy Town, the cloth and
   // the ride home, from the bay cut laid (the seed starts at the Village). The other leg seeds are not played from.
   'bay-reached': { railFrom: 'legs', after: 'bay', bot: 'railway-legs-bot.ts' },
+  'cave-first-open': { railFrom: 'legs', after: 'bay', bot: 'railway-legs-bot.ts' },
+  'cave-first-reached': { railFrom: 'legs', after: 'bay', bot: 'railway-legs-bot.ts' },
   // Garage step 4 (garage-step4.md, step 4): the bay cut's second section and leg 3 from its first lay. `trade-ready`
   // has the works' 12 steel home, so `--query railFit=strong` (or quick) fits the bay line at the post first;
   // `bay-mid`'s pool is empty and a fit asked there fails.
@@ -144,6 +146,15 @@ export function railSegmentOptions(args: string[]) {
       ? RAIL_FROM['gorge-open']
       : RAIL_FROM[from]
     : undefined;
+  const caveSeed = from === 'cave-first-open' || from === 'cave-first-reached';
+  const order = value('--order') ?? (caveSeed ? 'cave' : 'canopy');
+  if (order !== 'canopy' && order !== 'cave') throw new Error('--order: canopy or cave');
+  if (args.includes('--order') && seed?.bot !== 'railway-legs-bot.ts')
+    throw new Error('--order requires a seed for the legs bot');
+  if (order === 'cave' && from === 'canopy-reached') throw new Error('--from canopy-reached has already built Canopy');
+  if (caveSeed && order !== 'cave') throw new Error(`--from ${from} requires cave order`);
+  if (from === 'cave-first-reached' && to === 'port')
+    throw new Error('--from cave-first-reached has already reached Port Quay');
   if (seed && to && names.indexOf(to) <= names.indexOf(seed.after))
     throw new Error(`--to must follow ${seed.after} when starting from ${from}`);
   // A seed's bot stops only at its own beats: the legs' stops are the legs bot's, the rest another bot's. A bot that
@@ -180,5 +191,5 @@ export function railSegmentOptions(args: string[]) {
       throw new Error(`--to ${to}: the ${from} seed's bot (${seed.bot}) never reaches it; ${can}`);
     }
   }
-  return { from, to, seed };
+  return { from, to, seed, order };
 }

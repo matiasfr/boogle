@@ -4,6 +4,7 @@
 // npm run playthrough -- --compare a b    two runs side by side: time per beat, text gone and new
 //   --full                                print the whole report, not just what changed since the last run
 //   --to t1-done                          stop after that beat of the production railway route (segments.ts, RAIL_STOPS)
+//   --order canopy|cave                    which branch the legs bot builds first after the bay cut (default: canopy)
 //   --from q5-done                        start from an accepted --rail-seed server save (RAIL_FROM), with its seeded bot
 //   --players 2                           two peers in one room, on the shared warp clock (rail-coop.ts)
 //   --wall 2700                           the wall-clock limit in seconds (default 300, or 3000 with --long: a full run takes about 1700)
@@ -242,6 +243,7 @@ async function main() {
   if ((rail.from || rail.to) && has('--eval')) throw new Error('Segments use the railway bot; omit --eval');
   if (rail.seed) {
     params.set('railFrom', rail.seed.railFrom);
+    if (rail.seed.bot === 'railway-legs-bot.ts') params.set('railOrder', rail.order);
     if (rail.to && rail.to !== 'pier') params.set('railStop', RAIL_STOPS[rail.to]);
   } else if (rail.to) params.set('botTo', rail.to);
   const query = params.toString();

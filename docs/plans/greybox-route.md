@@ -727,8 +727,8 @@ before its design review.
 ## 7. Exit evidence
 
 - [x] `npm run loop -- run --players N`, for N = 1, 2, 3 and 4, completed the whole route through the host rules.
-  Every area was played with no stand-in. All listed orders finished. The inherited cave-plug probe still reports
-  that the rules accept `plug-gate` before `canopy-3`, an existing P3 in the leftovers.
+  Every area was played with no stand-in. All listed orders finished. The rules accepting `plug-gate` before
+  `canopy-3` is now the [decided order choice](../decisions-rail.md#d-2026-11-25-order-choice-cave-or-canopy).
 - [x] Measured area totals and idle from the canonical straight-line runs on `0bbd37004`. The hour-long pause and
   wake-to-Q5 ran on that build too. Main added Checkpoint F's evidence and proof tooling before the remaining bot runs.
 

@@ -1408,14 +1408,14 @@ const REJOIN_CASES = {
 } as const;
 type RejoinSeed = keyof typeof REJOIN_CASES;
 
-export async function railwayLegRejoin(c: Ctx, seed: RejoinSeed | 'island-reached') {
+export async function railwayLegRejoin(c: Ctx, seed: RejoinSeed | 'island-reached' | 'cave-first-open') {
   // The whole case includes the cold seed build and the line's round trips.
   const deadlineSeconds = 480;
   const started = performance.now();
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     await Promise.race([
-      seed === 'island-reached' ? arrivalRejoin(c) : legRejoin(c, seed),
+      seed === 'island-reached' ? arrivalRejoin(c) : seed === 'cave-first-open' ? forkRejoin(c) : legRejoin(c, seed),
       new Promise<never>(
         (_, reject) =>
           (timer = setTimeout(
@@ -1430,6 +1430,96 @@ export async function railwayLegRejoin(c: Ctx, seed: RejoinSeed | 'island-reache
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function forkRejoin(c: Ctx) {
+  const { RAIL_LEGS, legRack } = await import('../../src/sim/railway-route.ts');
+  const { legOpen, legRow } = await import('../../src/sim/railway-queries-route.ts');
+  const { account } = await import('../../src/sim/railway-rows.ts');
+  const { RAILWAY_CAPACITY } = await import('../../src/sim/railway-layout.ts');
+  const { writeRailSeed } = await import('../look/rail-seed.ts');
+  const room = `${c.room}-cave-first-open`;
+  const id = railwayRoomId(room);
+  const check = (name: string, ok: boolean, detail = '') => {
+    c.check(`leg rejoin (cave-first-open): ${name}`, ok, detail);
+    if (!ok) throw new Error(`Leg rejoin proof stopped (cave-first-open): ${name}`);
+  };
+  const branches = ['bell-canopy', 'cave'].map((name, i) => {
+    const k = RAIL_LEGS.findIndex((leg) => leg.id === name);
+    const leg = RAIL_LEGS[k]!;
+    const bill = leg.sections[0]!;
+    return { k, pid: `leg${i}`, at: legRack(leg, 0), bill, take: Math.min(bill.rails, RAILWAY_CAPACITY.railsYoke) };
+  });
+  const open = (pid: string) => c.web.open(pid, `room=${id}&server=http://127.0.0.1:${c.port()}&pid=${pid}&adapter=1`);
+  type Branch = (typeof branches)[number];
+  const holds = (back: { rails?: number; legRails?: number } | undefined, take: number) =>
+    back?.rails === take && back.legRails === take;
+  const rackMatches = (row: ReturnType<typeof legRow>, branch: Branch, take: number) =>
+    row.laid === 0 &&
+    row.rackLogs === branch.bill.logs &&
+    row.rackRails === branch.bill.rails - take &&
+    row.heldLogs === 0 &&
+    row.heldRails === take;
+  const at = async (name: string, pages: Page[], lifted: boolean) => {
+    const server = await hostedWorld(c, id);
+    let detail = '';
+    const tick = await waitFor(async () => {
+      const mirrors = await Promise.all(pages.map(rail));
+      const adapters = await Promise.all(pages.map(adapter));
+      const w = server.rules.railway.world();
+      const exact = branches.every((branch) => {
+        const take = lifted ? branch.take : 0;
+        return (
+          legOpen(w, branch.k) &&
+          rackMatches(legRow(w, branch.k), branch, take) &&
+          holds(account(w, branch.pid), take) &&
+          mirrors.every((m) => {
+            const back: { rails?: number; legRails?: number } | undefined = m.accounts.find(
+              (a) => a.pid === branch.pid,
+            );
+            return rackMatches(m.legs[branch.k]!, branch, take) && holds(back, take);
+          }) &&
+          adapters.every((view, i) => mirrors[i]!.pid !== branch.pid || holds(view.rows.account, take))
+        );
+      });
+      detail = JSON.stringify(
+        branches.map(({ k, pid, take }) => ({ k, pid, take, row: legRow(w, k), back: account(w, pid) })),
+      );
+      return (
+        exact &&
+        mirrors.every((m) => m.ready && m.hash === mirrors[0]!.hash) &&
+        adapters.every((view) => view.session.ready && view.session.pending === 0)
+      );
+    }, 15000);
+    check(name, tick >= 0, detail);
+  };
+  await writeRailSeed(c.dataDir, room, 'cave-first-open', 1000);
+  let first = await open(branches[0]!.pid);
+  const second = await open(branches[1]!.pid);
+  check('second tab joined', await meet(first, second));
+  await at('both racks hold their first bill and both backs are empty', [first, second], false);
+  const submitted = await Promise.all(
+    [first, second].map((page, i) =>
+      ev(
+        page.page,
+        ({ at, k }) => {
+          window.T.railStand(at.x, at.y, at.z);
+          return window.T.railIntent({ op: 'rail.depotRailTake', leg: k });
+        },
+        branches[i]!,
+      ),
+    ),
+  );
+  check('both tabs submit their own rack pickup', submitted.every(Boolean));
+  await at('exact rack and back counts after both pickups', [first, second], true);
+  await first.page.close();
+  check('the second tab sees the first leave', (await waitFor(async () => !(await sees(second, first)), 10000)) >= 0);
+  await at('the second tab mirrors both pickups while the first is away', [second], true);
+  await c.restart();
+  first = await open(branches[0]!.pid);
+  check('both tabs see each other after the restart', await meet(first, second));
+  await at('both racks, both held counts and both backs survived the restart', [first, second], true);
+  await Promise.all([first, second].map((p) => p.page.close()));
 }
 
 async function arrivalRejoin(c: Ctx) {
