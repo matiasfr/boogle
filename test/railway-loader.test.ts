@@ -98,7 +98,7 @@ test('L1: yard completion needs the wagon; yard first adds no neighbours, demand
   const b = s.w.mut(Till, s.w.single(Till))!;
   b.boogles += price;
   b.poured += price;
-  assert.equal(act(s, 'a', 'rail.buy', { id: 0 }), 1);
+  assert.equal(act(s, 'a', 'rail.buy', { id: 0, kind: 1 }), 1);
   assert.equal(townHas(townRead(s.w, at + TRADE.buildTicks), 'town'), true);
   const coupled = copy(YARD),
     p = coupled.w.mut(Plot, coupled.w.lookup(Plot, 1)!)!;

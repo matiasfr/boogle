@@ -67,7 +67,7 @@ test('accepted railway milestones expose their facts in order', () => {
 test('town flips only at the first house completion; stone needs the third priced plot built', () => {
   const s = buildSeedWorld('house-ready');
   assert.equal(townHas(townRead(s.w, s.t), 'town'), false);
-  assert.equal(act(s, 'a', 'rail.buy', { id: 0 }), 1);
+  assert.equal(act(s, 'a', 'rail.buy', { id: 0, kind: 1 }), 1);
   advance(s, TRADE.buildTicks - 1);
   assert.equal(townHas(townRead(s.w, s.t), 'town'), false);
   advance(s, 1);
@@ -76,7 +76,7 @@ test('town flips only at the first house completion; stone needs the third price
   const stone = buildSeedWorld('crossing-done');
   // Free an offer, then earn the third plot through freight and fares, not hand-set state.
   while (till(stone.w).boogles < plotPrice(stone.w, 0, 0, 50)) advance(stone, 1);
-  assert.equal(act(stone, 'a', 'rail.buy', { id: 0 }), 1);
+  assert.equal(act(stone, 'a', 'rail.buy', { id: 0, kind: 1 }), 1);
   let waited = 0;
   while (till(stone.w).boogles < plotPrice(stone.w, 0, 2, 50)) {
     assert.ok(waited++ < 100000, 'third plot becomes affordable');

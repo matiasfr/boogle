@@ -22,7 +22,14 @@ const READY = buildSeedWorld('house-ready');
 const BUILT = buildSeedWorld('house-built');
 const buy = (w: World, tick: number, id: number, pid = 'a', pct = 50) => {
   const a = account(w, pid)!;
-  return railApply(w, pid, { op: 'rail.buy', id, epoch: a.epoch, request: a.request + 1 }, tick, undefined, pct).status;
+  return railApply(
+    w,
+    pid,
+    { op: 'rail.buy', id, kind: id === 0 ? 1 : undefined, epoch: a.epoch, request: a.request + 1 },
+    tick,
+    undefined,
+    pct,
+  ).status;
 };
 /** Conserved supply: freight counted as made at its yard and delivered to the town; money as landed fares. */
 function supply(w: World, wood: number, stone: number, boogles: number) {

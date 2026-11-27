@@ -55,6 +55,8 @@ function plotsView(adapter: RailwayAdapter) {
     TIMBER: {},
     STONE: {},
     paintBoard() {},
+    splash() {},
+    knock() {},
     createPrefabBatch: () => ({ mesh: { setColorAt() {}, instanceColor: {} } }),
     createGhostOutlines: () => ({ box() {}, outline() {}, commit() {}, mesh: { visible: false } }),
     instantiate(prefab: string, _p: unknown, o: { handlers?: Record<string, () => Interactable[]> }) {
