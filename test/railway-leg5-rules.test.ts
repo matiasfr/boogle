@@ -75,9 +75,9 @@ test('cave trains relay six Wall kits through the prefix of open halts', () => {
         advance(port, 1);
       }
       assert.ok(act(port, 'a', 'rail.depotTake', { leg: k }) > 0);
-      assert.equal(act(port, 'a', 'rail.legStock', { leg: k }), 0);
-      assert.equal(act(port, 'a', 'rail.gate', op), 1);
       assert.ok(act(port, 'a', 'rail.legStock', { leg: k }) > 0);
+      assert.equal(act(port, 'a', 'rail.gate', op), 1);
+      assert.equal(legRow(w, k).start, -1);
     }
     laySection(port, k);
   }

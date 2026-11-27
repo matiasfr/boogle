@@ -56,10 +56,10 @@ test('the plug needs the pick and the bay cut laid, and the stocked first frame 
   assert.equal(taken, expected);
   assert.equal(taken, account(s.w, 'a')!.legLogs);
   assert.ok(taken > 0);
-  assert.equal(act(s, 'a', 'rail.legStock', { leg: k }), 0);
+  assert.equal(act(s, 'a', 'rail.legStock', { leg: k }), taken);
   ledger(s);
   assert.equal(act(s, 'a', 'rail.gate', { id: plug }), 1);
-  assert.equal(act(s, 'a', 'rail.legStock', { leg: k }), taken);
+  assert.equal(legRow(s.w, k).start, -1);
   ledger(s);
 });
 
