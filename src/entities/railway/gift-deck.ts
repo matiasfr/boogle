@@ -1,6 +1,7 @@
 // Presentation of the gifted part of a kit car's load.
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
+import { commitPieces } from '../../render/haul-pieces.ts';
 import { logStackMesh, setStackLog, stackSlot, send } from '../../place/pieces.ts';
 import { legKitHalt, legKitDrop, legRow, legsServed } from '../../sim/railway-queries-route.ts';
 import { RAIL_LEGS, legFrame } from '../../sim/railway-route.ts';
@@ -19,6 +20,7 @@ export function giftBundle(owner: OwnedView, lashMaterial: THREE.Material) {
     stackSlot(i, 2, new THREE.Vector3(), Math.PI / 2, logAt);
     setStackLog(timber, i, logAt, Math.PI / 2);
   }
+  commitPieces(timber, 3);
   bundle.add(timber);
   for (const z of [-0.4, 0.4]) {
     const band = new THREE.Mesh(new THREE.BoxGeometry(0.67, 0.66, 0.09), lashMaterial);
