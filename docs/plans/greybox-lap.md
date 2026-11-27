@@ -312,7 +312,8 @@ to 3 (src/sim, src/world) is an independent one before merge, by the row `npm ru
       `test/world-lines.test.ts` (no future span over 4%; the map rails); `npm run level-check`: route leg 5 all "ok",
       the continuity report adds nothing. The Wall's sections keep their cuts; the slew lengthens the catalog row by 1 cm.
       [Platform view toward the Wall](greybox-lap/step1-gorge-approach.png). The two track pairs line up across
-      the concourse. Line 2 still has its buffers at this stage.
+      the concourse. Line 2 still has its buffers at this stage. At [Bay head 1](greybox-lap/step1-bay-turnout.png),
+      both rails of the turnout ease into the running tracks.
 - [ ] **2. One line in the rules, and the bump (L; "High-risk implementation": Codex gpt-6.2-astra **high** (tricky);
       then the independent review row).** Files: new `src/sim/railway-lap.ts` (`WALL_LEG`, `lapJoined(legs)`,
       `runLine(slot, joined)`, `lapSlots(line, joined)`, `lapRow(row, tick)`, `lapAsks(req)`, `LAP_S0`);
