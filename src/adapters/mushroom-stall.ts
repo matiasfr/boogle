@@ -21,7 +21,7 @@ let stall: ReturnType<typeof instantiate> | null = null;
 // What interacting at the stand can do (see interactTarget in src/player/hands.ts): take a bag, unless you carry one.
 function takeSeeds(instance: ReturnType<typeof instantiate>): Interactable[] {
   const w = instance.attach('pickup').at;
-  if (!me.entered || !me.body || !w || heldId() === 'seeds') return NO_TARGETS;
+  if (!me.entered || !me.body || heldId() === 'seeds') return NO_TARGETS;
   const p = me.body.interpolatedPosition;
   const dx = w.x - p.x,
     dz = w.z - p.z;

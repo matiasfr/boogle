@@ -45,7 +45,7 @@ export function spawnHangout(firstHouseDone: () => boolean) {
       },
       { owner },
     );
-    return { record, x, y, z, last: -Infinity, occupants: new Set<string>() };
+    return { record, x, y, z, last: -Infinity, occupants: new Set<string>(), next: new Set<string>() };
   });
   let shown = 0;
   return spawn({
@@ -75,17 +75,21 @@ export function spawnHangout(firstHouseDone: () => boolean) {
       }
       if (shown !== PLOT_KIND.horns) return;
       for (const [i, pad] of pads.entries()) {
-        const arrived = new Set<string>();
+        let onset = false;
+        pad.next.clear();
         const visit = (key: string, p: { x: number; y: number; z: number }, radius: number) => {
-          if (Math.hypot(p.x - pad.x, p.z - pad.z) <= 0.55 && Math.abs(p.y - radius - pad.y - 0.12) <= 0.4)
-            arrived.add(key);
+          if (Math.hypot(p.x - pad.x, p.z - pad.z) <= 0.55 && Math.abs(p.y - radius - pad.y - 0.12) <= 0.4) {
+            pad.next.add(key);
+            if (!pad.occupants.has(key)) onset = true;
+          }
         };
         if (me.entered && me.body) visit('self', me.body.position, PLAYER_R);
         for (const [peer, remote] of remotes)
           if (remote.entered && remote.avatar) visit('peer.' + peer, remote.avatar.position, PLAYER_R);
         if (!ball.held) visit('ball', ball.pose.p, BALL_R);
-        const onset = [...arrived].some((key) => !pad.occupants.has(key));
-        pad.occupants = arrived;
+        const previous = pad.occupants;
+        pad.occupants = pad.next;
+        pad.next = previous;
         if (!onset || now - pad.last < 600) continue;
         pad.last = now;
         const seconds = sharedSeconds(),

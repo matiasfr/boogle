@@ -1,14 +1,18 @@
 // Two real tabs hold different boards for one plot; accepted server jump-in, no shared-state edits.
 import { writeRailSeed } from '../look/rail-seed.ts';
+import { enterGame } from '../look/lib.ts';
 import type { T } from './run.ts';
 type Snapshot = {
   plots: { at: number; state: string; visible: boolean }[];
   till: { spent: number };
+  kind: number;
   pos: { x: number; y: number; z: number };
 };
 const read = `const { inspectTown } = await import('/src/entities/town/state.ts');
 const { rw, till } = await import('/dev/look/rail-read.ts');
-return { plots: inspectTown()?.plots, till: {...till(rw())}, pos: {...window.boogle.me.body.position} };`;
+const { Plot } = await import('/src/sim/railway-components.ts');
+const w = rw();
+return { plots: inspectTown()?.plots, kind: w.get(Plot,w.lookup(Plot,0)).kind, till: {...till(w)}, pos: {...window.boogle.me.body.position} };`;
 const stand = (kind: number) => `const { teleport } = await import('/src/physics/engine.ts');
 teleport(window.boogle.me.body,903.8,18.9,${kind === 1 ? 34 : 36.4});`;
 const hold = `const { triggerAction } = await import('/src/player/controls.ts');
@@ -51,7 +55,11 @@ export default {
     );
     t.check(
       'both tabs see same build',
-      bought.plots[0]!.at === other.plots[0]!.at && other.plots[0]!.state === 'building',
+      bought.plots[0]!.at === other.plots[0]!.at &&
+        other.plots[0]!.state === 'building' &&
+        [1, 2].includes(bought.kind) &&
+        other.kind === bought.kind &&
+        other.till.spent === bought.till.spent,
       JSON.stringify(other),
     );
     await A.eval(
@@ -59,7 +67,9 @@ export default {
     );
     const inside = await A.eval<Snapshot>(read);
     await B.page.reload();
+    await enterGame(B.page, 180000, 'Partner');
     await B.waitFor(`window.boogle?.me?.body && window.boogle.sync.worldStatus().ready`);
+    await B.eval(stand(2));
     const late = await B.eval<Snapshot>(read);
     await B.motion('reload-build', { frames: 8, seconds: 2 });
     t.check('reload retains purchase tick', late.plots[0]!.at === bought.plots[0]!.at, JSON.stringify(late));
@@ -67,9 +77,12 @@ export default {
       `(async()=>{const {inspectTown}=await import('/src/entities/town/state.ts');return inspectTown()?.plots[0]?.state==='done';})()`,
     );
     const toy = `window.boogle.inspect().kinds.find(k=>k.kind==='town-hangout')?.entities[0]?.state`;
-    const built = await B.waitFor(`(() => { const h=${toy};return h?.stall || h?.pads.every(p=>p.visible); })()`, {
-      timeout: 60000,
-    });
+    const built = await B.waitFor(
+      `(() => { const h=${toy};return h?.kind===${bought.kind} && (h.kind===1 ? h.stall : h.pads.every(p=>p.visible)); })()`,
+      {
+        timeout: 60000,
+      },
+    );
     t.check(
       'reload draws the chosen toy and clears its boards',
       built >= 0 && !(await B.eval<Snapshot>(read)).plots[0]!.visible,

@@ -18,7 +18,12 @@ function piece(parent: THREE.Group, geometry: THREE.BufferGeometry, color: numbe
   return mesh;
 }
 function brassHorn(root: THREE.Group, y: number, z: number) {
-  piece(root, new THREE.CylinderGeometry(0.28, 0.07, 0.5, 14, 1, true), 0xe8ac4f, 0, y, z).rotation.x = 1.18;
+  const bell = new THREE.Group();
+  bell.position.set(0, y, z);
+  bell.rotation.set(1.05, 0, -0.45);
+  root.add(bell);
+  piece(bell, new THREE.CylinderGeometry(0.32, 0.07, 0.52, 16), 0xe8ac4f, 0, 0, 0);
+  piece(bell, new THREE.CylinderGeometry(0.26, 0.26, 0.012, 16), 0x79502b, 0, 0.264, 0);
   piece(root, new THREE.CylinderGeometry(0.065, 0.065, 0.35, 10), 0x996326, 0, y - 0.16, z - 0.2);
 }
 registerBuilder('town.choice-board', (params) => {

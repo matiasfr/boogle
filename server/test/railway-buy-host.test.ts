@@ -322,7 +322,8 @@ for (const kind of [1, 2])
       assert.equal(plot(w(), 0).at, -1);
       // Alice and Bob press plot 1 back to back; Alice's buy is re-sent.
       const first = a.edit({ id: 0, kind });
-      const rival = b.edit({ id: 0, kind });
+      const rivalKind = kind === 1 ? 2 : 1;
+      const rival = b.edit({ id: 0, kind: rivalKind });
       a.raw(first);
       await Promise.all([a.ack(first.request), b.ack(rival.request)]);
       assert.deepEqual([status(a.pid, first.epoch, first.request), status(b.pid, rival.epoch, rival.request)].sort(), [
@@ -332,7 +333,8 @@ for (const kind of [1, 2])
       assert.deepEqual([till(w()).spent, till(w()).boogles], [150, before.boogles - 150]);
       const bought = { ...plot(w(), 0) };
       assert.ok(bought.at >= 0 && bought.paid === 150);
-      assert.equal(bought.kind, kind);
+      assert.equal(bought.kind, status(a.pid, first.epoch, first.request) === 'accepted' ? kind : rivalKind);
+      t.diagnostic(`the accepted r:edit recorded kind ${bought.kind}`);
       // Everyone leaves while it builds; the room pauses, then the next join credits the time away.
       let notifyPaused!: () => void;
       const paused = new Promise<void>((resolve) => {
