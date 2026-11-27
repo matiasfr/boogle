@@ -161,6 +161,4 @@ export function createKitBoard(owner: OwnedView, parent: THREE.Object3D, top: nu
 
 /** The leg kit in the air between a car and its rack (train-view.ts counts it up as a train unloads and down as
  * each crate lands; the rack's view draws its accepted count less this). Local presentation, cleared on a restore. */
-// While a poured log is in flight, its bill still shows the previous count.
-export const pourFlights = RAIL_LEGS.map((): (() => boolean)[] => []);
 export const legKitFlight = RAIL_LEGS.map(() => ({ logs: 0, rails: 0 }));

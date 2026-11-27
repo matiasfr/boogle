@@ -66,7 +66,8 @@ import {
   routeRow,
 } from '../../sim/railway-queries-route.ts';
 import { createBoxBatch } from '../railway/works-box-view.ts';
-import { pourFlights, legKitFlight, paintPlate } from '../railway/kit-board.ts';
+import { pourFlights } from '../railway/gift-deck.ts';
+import { legKitFlight, paintPlate } from '../railway/kit-board.ts';
 import { legYardFlight, legYardSpot } from '../railway/leg-yard.ts';
 import { LINE2_END_S, line2At, line2World, line2Y } from '../railway/line2-path.ts';
 import type { TrackPoint } from '../railway/track.ts';

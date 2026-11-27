@@ -10,6 +10,7 @@ import { instantiate } from '../../prefab/instantiate.ts';
 import { FIXED, PLAYER_R, reducedMotion } from '../../constants.ts';
 import { camera } from '../../render/scene.ts';
 type CabFace = import('./engine-kit.ts').CabFace;
+import { giftBundle, giftTrip, pourFlights } from './gift-deck.ts';
 import { createPennant } from './works-signal.ts';
 import { roomWorks } from '../../sim/railway-queries-room.ts';
 type LinePoint = import('../../place/layout.ts').LinePoint;
@@ -68,10 +69,10 @@ import { createCouplings } from './couplings.ts';
 import type { TrainAhead } from './path-refuge.ts';
 import type { Interactable } from '../../player/hands.ts';
 import { createBoxBatch, footingParts, footingFrame } from './works-box-view.ts';
-import { createKitBoard, kitMarks, legKitFlight, pourFlights } from './kit-board.ts';
+import { createKitBoard, kitMarks, legKitFlight } from './kit-board.ts';
 import { legYardFlight, legYardSpot } from './leg-yard.ts';
-import { RAIL_LEGS, legRack, legFrame } from '../../sim/railway-route.ts';
-import { LEG_KIT_MOST, legKitHalt, legKitDrop, legRow, legsServed } from '../../sim/railway-queries-route.ts';
+import { RAIL_LEGS, legRack } from '../../sim/railway-route.ts';
+import { LEG_KIT_MOST, legKitDrop, legRow, legsServed } from '../../sim/railway-queries-route.ts';
 import { isTradeLine } from '../../sim/railway-route.ts';
 
 const BRASS = '#c79a3e';
@@ -274,23 +275,10 @@ export async function createRailwayTrains(
     stopLamp.position.set(0, shape.ENGINE_CAB.roofTop + 0.08, shape.ENGINE_CAB.zFront);
     owner.add(stopLamp);
     meshByRole('engine').add(stopLamp);
-    const bundle = new THREE.Group();
-    const timber = pieces.logStackMesh(3, owner);
-    const logAt = new THREE.Vector3();
-    for (let i = 0; i < 3; i++) {
-      pieces.stackSlot(i, 2, new THREE.Vector3(), Math.PI / 2, logAt);
-      pieces.setStackLog(timber, i, logAt, Math.PI / 2);
-    }
-    bundle.add(timber);
-    for (const z of [-0.4, 0.4]) {
-      const band = new THREE.Mesh(new THREE.BoxGeometry(0.67, 0.66, 0.09), lashMaterial);
-      band.position.set(0, 0.33, z);
-      owner.add(band);
-      bundle.add(band);
-    }
-    bundle.position.set(0, carByRole('kit').hy, -carByRole('kit').spec.hz + 1);
+    const bundle = giftBundle(owner, lashMaterial);
+    bundle.rotation.y = Math.PI / 2;
+    bundle.position.set(0, carByRole('kit').spec.top, carByRole('kit').spec.hz - 0.45);
     meshByRole('kit').add(bundle);
-    bundle.visible = false;
     const pennant = createPennant(owner);
     pennant.position.y = 3.3;
     pennant.scale.setScalar(0.45);
@@ -1430,28 +1418,7 @@ export async function createRailwayTrains(
         }
         tr.bundle.visible = row.gift > 0;
         const delta = tr.last ? row.gift - (tr.last.gift ?? 0) : 0;
-        if (delta && row.phase === TRAIN_PHASE.STAND && !reducedMotion) {
-          const deck = tr.bundle.getWorldPosition(new THREE.Vector3());
-          let from = homeLogBin,
-            to = deck;
-          const k =
-            delta < 0
-              ? legsServed(w, tr.line).find(
-                  (i) => RAIL_LEGS[i]!.line === tr.line && legKitDrop(w, tr.line, i) === row.at,
-                )
-              : undefined;
-          if (k !== undefined) {
-            const frame = legFrame(RAIL_LEGS[k]!, legRow(w, k).laid);
-            from = deck;
-            to = new THREE.Vector3(frame.x / 100, frame.y / 100 + 1, frame.z / 100);
-          }
-          if (k !== undefined || (delta > 0 && tr.line === LINE2 && row.at === legKitHalt(tr.line))) {
-            for (let i = 0; i < Math.abs(delta); i++) {
-              const active = pieces.send('log', from, to, { dur: 0.6, delay: i * 0.025, apex: 3 }, owner);
-              if (k !== undefined) pourFlights[k]!.push(active);
-            }
-          }
-        }
+        giftTrip(owner, w, tr.line, row, delta, tr.bundle, homeLogBin);
         // A leg's kit hops from the car to its rack (the greybox route's step 4 review, answer b: 8 m over the up
         // track at Ring Island, then onto each railhead's), drawn as the Q kits' unload is. The rows moved the units
         // on the tick the train stood; the rack's view draws each once its crate lands (legKitFlight). On any line
