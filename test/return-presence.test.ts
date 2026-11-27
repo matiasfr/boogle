@@ -179,7 +179,8 @@ test("the arrival's own record reader and writer run with storage blocked", () =
   assert.ok(!/\blocalStorage\b/.test(COVER.replace(/\/\/.*$/gm, '')), 'return-cover.ts never names the global');
 });
 
-test('reload returns in place over two real sockets: the watcher is never sent a Home pose', async () => {
+// Two real sockets and a server: about 2.4 s alone on HOTBOX, over the default 5 s under a full machine (three ship and review gates refused on it, 27 November).
+test('reload returns in place over two real sockets: the watcher is never sent a Home pose', { timeout: 30_000 }, async () => {
   const { createService, loadConfig, WebSocket } = await import('../server/test/helpers/accounts.ts');
   const { railwayRoomId } = await import('../src/world/railway-namespace.ts');
   const { sourceFunction } = await import('../dev/level/source.ts');
