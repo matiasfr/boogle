@@ -262,6 +262,8 @@ Each A4 row's next step, as one backlog line: *"A4: every step reads as needs an
 
 ## Risks
 
+**Dock sightline measured during the view build.** At `works-open`, the kiln plume tops out at world y 88.2 m including its 2 m foot offset. From the dock eye (801, 4.6, 10), the ray toward the plume's leaned tip crosses ground at (832.16, 16.97, 17.16). The tip needs to reach at least y 137.6 m to clear that ground, before allowing for scenery or a readable patch of steam. The WebGPU dock still shows the shore ridge and no visible plume. Level finding 2's angular size assumes a clear sightline. The approved 62 m column cannot meet this dock proof at its approved site.
+
 - **Room safety.** No "Don't" in docs/agents/room-safety.md applies: no command, apply, presence, transport or save change. A0 cannot refuse or allow anything.
 - **Mixed builds.** None: no wire, state or catalog change, no `WORLD_NS` bump. An older page just lacks the views.
 - **Hotspots.** `leg-view.ts` (1,566 lines) and `halts-view.ts` (958) are shared with the lap ([greybox-lap](greybox-lap.md), in flight by the course change; `npm run inflight` lists nothing unmerged on wip/, ship/ or claude/ today) and [port-quay-roundhouse](port-quay-roundhouse.md) steps 1 and 2 (building). The view branch rebases on whichever lands first. If the lap adds steps to the route, they join `WORKS_STEPS` and the pinned table in the same branch that adds them.
