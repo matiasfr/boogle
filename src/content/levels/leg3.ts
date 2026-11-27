@@ -278,7 +278,20 @@ function canopy() {
     origin: STOP,
     basis: cf.basis,
     extras: [{ id: 'lands', prefab: 'greybox.canopy-lands', pos: [0, 0, 0] }],
-    pieces,
+    pieces: [
+      ...pieces,
+      // Warm rubbing strips sit below the walkable lip, outside the running gauge.
+      ...(
+        [
+          [-3.88, -3.78, 23],
+          [3.78, 3.88, 12],
+          [-13.84, -13.74, 30],
+        ] as const
+      ).map(([b0, b1, end], i) => ({
+        ...cf.box(`freight-edge-${i}`, -33, end, b0, b1, 13.82, 0.36, 'sandstone'),
+        solid: false,
+      })),
+    ],
     pads: [],
     posts: [
       // On the homeward deck beside the cloth post, facing back down the line.

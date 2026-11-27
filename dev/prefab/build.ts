@@ -9,6 +9,7 @@ import type { LevelDef, PrefabDef } from '../../src/prefab/types.ts';
 import { haltKitContent } from './halts.ts';
 import { rotundaContent } from './rotunda.ts';
 import { cliffKitContent } from './cliff-kit.ts';
+import { canopyCleft } from './cliff-kit-canopy.ts';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const prefabs: PrefabDef[] = [],
@@ -32,6 +33,7 @@ const halts = haltKitContent();
 levels.push(...halts.levels);
 levels.push(...rotundaContent().levels);
 levels.push(...cliffKitContent().levels);
+levels.push(canopyCleft);
 assertAuthoredNumbers({ prefabs, levels }, 'authored content');
 const outputs = compile(prefabs, levels, names);
 const check = process.argv.includes('--check');
