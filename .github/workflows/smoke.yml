@@ -15,7 +15,7 @@ on:
         description: Game URL to test
         default: https://boogle.club/
       build:
-        description: Expected Pages commit (deploy passes its SHA; scheduled runs check live consistency)
+        description: Expected Pages build (deploy passes its client build, dev/client-build.ts; scheduled runs check live consistency)
         default: ''
 
 permissions:

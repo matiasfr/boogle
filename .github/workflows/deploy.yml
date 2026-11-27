@@ -22,6 +22,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      client: ${{ steps.client.outputs.build }}
     steps:
       # Full history, without the file contents: the atlas page shows the commit count (dev/atlas/extract.ts);
       # without history it hides.
@@ -37,11 +39,19 @@ jobs:
       - run: npm ci
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      # The build id is the newest commit that changed the site's code, not this merge (dev/client-build.ts): a
+      # docs-only merge still deploys, but version.json keeps its build and no open tab is asked to reload.
+      - id: client
+        shell: bash
+        run: |
+          build=$(node dev/client-build.ts)
+          [ "${#build}" = 40 ] || { echo "No client build commit: '$build'"; exit 1; }
+          echo "build=$build" >> "$GITHUB_OUTPUT"
       - run: npm run build
         env:
           BASE: /
           VITE_BOOGLE_SERVER: ${{ vars.VITE_BOOGLE_SERVER }}
-          VITE_BUILD: ${{ github.sha }}
+          VITE_BUILD: ${{ steps.client.outputs.build }}
       # Boot the built site before it goes out (11 November: a build whose startup threw reached players for 2 h 15 min).
       # A red boot fails this job, so deploy never runs and the old site stays live. dev/live-boot.ts says what it
       # catches; without WebGPU on the runner it warns loudly (an annotation) and still fails on an uncaught error.
@@ -147,11 +157,13 @@ jobs:
   # Check the live site with what just went out (smoke.yml says why this is a dispatch). Needs deploy, so a failed
   # deploy starts nothing. In a burst of merges GitHub keeps only the newest waiting run of the smoke group.
   smoke:
-    needs: deploy
+    needs: [build, deploy]
     runs-on: ubuntu-latest
     permissions:
       actions: write
     steps:
-      - run: gh workflow run smoke.yml --repo "$GITHUB_REPOSITORY" --ref main -f build="$GITHUB_SHA"
+      # The build the live site must report: the client build, which a docs-only merge leaves unchanged.
+      - run: gh workflow run smoke.yml --repo "$GITHUB_REPOSITORY" --ref main -f build="$CLIENT_BUILD"
         env:
           GH_TOKEN: ${{ github.token }}
+          CLIENT_BUILD: ${{ needs.build.outputs.client }}

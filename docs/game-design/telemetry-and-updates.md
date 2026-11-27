@@ -43,7 +43,8 @@
 - **Mixed builds.** Each tab checks `version.json` on start, every 5 min and when it comes back into view. A hidden tab
   reloads onto a newer build at once; a visible one shows "Boogle was updated – reload for the latest version"
   as a sticky notice in the notification lane ([hud.md](hud.md)) with a Reload button, and reloads the next time it is
-  hidden. Each player's build rides in presence `bv`.
+  hidden. Each player's build rides in presence `bv`. A build is named by the newest commit that changed the site's
+  code (`dev/client-build.ts`), so a docs-only merge deploys without changing it and asks nobody to reload (27 November).
   The notice wraps within phone safe areas and keeps a 44 px Reload button. Its borrowed D-pad glyph appears only while a gamepad is active; touch and keyboard show Reload alone, including after switching input modes.
   Files: [src/features/updates.ts](../../src/features/updates.ts), [src/netplay/builds.ts](../../src/netplay/builds.ts).
 - **Loading across a deploy.** During development, deploys publish only the current build and service-worker activation
