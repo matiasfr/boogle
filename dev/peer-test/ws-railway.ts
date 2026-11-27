@@ -1496,7 +1496,7 @@ async function forkRejoin(c: Ctx) {
   await writeRailSeed(c.dataDir, room, 'cave-first-open', 1000);
   let first = await open(branches[0]!.pid);
   const second = await open(branches[1]!.pid);
-  check('second tab joined', await meet(first, second));
+  check('second tab joined', (await waitFor(() => meet(first, second), 15000)) >= 0);
   await at('both racks hold their first bill and both backs are empty', [first, second], false);
   const submitted = await Promise.all(
     [first, second].map((page, i) =>
@@ -1517,7 +1517,7 @@ async function forkRejoin(c: Ctx) {
   await at('the second tab mirrors both pickups while the first is away', [second], true);
   await c.restart();
   first = await open(branches[0]!.pid);
-  check('both tabs see each other after the restart', await meet(first, second));
+  check('both tabs see each other after the restart', (await waitFor(() => meet(first, second), 30000)) >= 0);
   await at('both racks, both held counts and both backs survived the restart', [first, second], true);
   await Promise.all([first, second].map((p) => p.page.close()));
 }

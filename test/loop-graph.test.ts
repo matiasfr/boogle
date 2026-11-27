@@ -313,6 +313,10 @@ test('the cave-first segments infer their order from the seed', () => {
   assert.equal(railSegmentOptions(['--from', 'bay-reached', '--to', 'port', '--order', 'cave']).order, 'cave');
   for (const from of ['cave-first-open', 'cave-first-reached'])
     assert.equal(railSegmentOptions(['--from', from, '--to', 'canopy']).order, 'cave');
+  assert.equal(
+    railSegmentOptions(['--from', 'cave-first-open', '--to', 'canopy', '--order', 'canopy']).order,
+    'canopy',
+  );
   assert.throws(() => railSegmentOptions(['--from', 'cave-first-reached', '--to', 'port']), /already reached/);
 });
 
