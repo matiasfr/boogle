@@ -9,6 +9,8 @@ import { ORIGIN } from '../../place/layout.ts';
 export type XZ = { x: number; z: number };
 export type Polar = { bearing: number; r: number };
 export type GarageGeo = {
+  /** Clockwise rotation of the fixed pieces from Home, in degrees. */
+  turn: number;
   /** The lever post that opens the garage. */
   post: Polar;
   /** The jib's mast, its height, and the length of its arm (it must reach the engine's seat past the table's centre,
@@ -40,6 +42,7 @@ export const STAND_LEGS = { at: [9.9, 11.4], half: 0.5 } as const;
 /** The garage's radial arrangement at bearing 85° keeps the stand outside the deck's sweep and clear of the
  * jump-in landing, with the jib and crew behind it (docs/plans/home-flip.md, F1). */
 export const GARAGE_GEO: GarageGeo = {
+  turn: 0,
   post: { bearing: 60, r: 9.4 },
   jib: { bearing: 85, r: 12.2 },
   mast: 4.4,
@@ -59,6 +62,7 @@ export function turnGeo(row: GarageGeo, degrees: number): GarageGeo {
   const turn = (p: Polar) => ({ ...p, bearing: p.bearing + degrees });
   return {
     ...row,
+    turn: row.turn + degrees,
     post: turn(row.post),
     jib: turn(row.jib),
     stand: turn(row.stand),

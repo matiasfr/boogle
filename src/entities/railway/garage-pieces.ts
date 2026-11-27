@@ -29,15 +29,18 @@ export function createGaragePieces(owner: OwnedView, geo: Geo, row: GarageGeo) {
   const brass = new THREE.MeshStandardNodeMaterial({ color: '#d9a23a', roughness: 0.45, metalness: 0.5 });
   const post = new THREE.Group();
   const postBody = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.15, 0.2), iron);
+  postBody.name = 'garage-post-body';
   postBody.position.y = 0.575;
   // The knob says where the install stands: brass, orange while a part waits, green once fitted.
   const knobMat = brass.clone();
   const postKnob = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 8), knobMat);
   postKnob.position.y = 1.3;
   const postFoot = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.5), iron);
+  postFoot.name = 'garage-post-foot';
   postFoot.position.y = 0.06;
   post.add(postBody, postKnob, postFoot);
   post.position.set(geo.post.x, geo.ground, geo.post.z);
+  post.rotation.y = -rad(row.turn);
   for (const m of [postBody, postKnob, postFoot]) m.castShadow = true;
   owner.add(post);
 
@@ -107,6 +110,9 @@ export function createGaragePieces(owner: OwnedView, geo: Geo, row: GarageGeo) {
     polygonOffsetUnits: 8,
   });
   const ghost = new THREE.Group();
+  owner.cleanup(() => {
+    for (const material of [iron, brass, knobMat, wheelMat, spokeMat, ghostMat]) material.dispose();
+  });
   for (const m of longSet) {
     const g = new THREE.Mesh(m.geometry, ghostMat);
     g.renderOrder = 2;
@@ -178,11 +184,13 @@ export function createGaragePieces(owner: OwnedView, geo: Geo, row: GarageGeo) {
   const arm = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.2, row.arm), brass); // along +z, pivoting at the post
   arm.position.set(0, row.mast - 0.1, row.arm / 2 - 0.2);
   const crank = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.1), iron);
+  crank.name = 'jib-crank';
   crank.position.set(0.3, 1.2, 0);
   const trolley = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.16, 0.3), iron);
   const chain = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1, 0.04), iron);
   jib.add(jibPost, arm, crank);
   jib.position.set(jibAt.x, geo.ground, jibAt.z);
+  jib.rotation.y = post.rotation.y;
   const armPivot = new THREE.Group();
   armPivot.position.set(jibAt.x, geo.ground, jibAt.z);
   armPivot.add(arm);

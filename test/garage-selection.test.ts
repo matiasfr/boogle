@@ -7,6 +7,10 @@ import fs from 'node:fs';
 import * as THREE from 'three/webgpu';
 import { sourceModule } from '../dev/level/source.ts';
 import { createGarageSelection, type Focus } from '../src/entities/railway/garage-selection.ts';
+import * as layout from '../src/entities/railway/garage-geo.ts';
+import * as cars from '../src/entities/railway/cars.ts';
+import * as engine from '../src/entities/railway/engine.ts';
+import { ROTUNDA_PORT_QUAY } from '../src/place/port-quay.ts';
 
 // The real owner, as written (src/render/owned-view.ts), without the physics engine it imports: no body is made here.
 const { createOwnedView } = sourceModule<typeof import('../src/render/owned-view.ts')>(
@@ -19,6 +23,72 @@ const disposed = (thing: THREE.EventDispatcher<{ dispose: object }>) => {
   thing.addEventListener('dispose', () => (gone = true));
   return () => gone;
 };
+
+// Exercise the real mount and owner with the unrelated rotunda and GLB artwork left out.
+const kit = { enginePart: () => new THREE.Mesh(), engineDoor: () => new THREE.Mesh() };
+const { createGaragePieces } = sourceModule<typeof import('../src/entities/railway/garage-pieces.ts')>(
+  fs.readFileSync('src/entities/railway/garage-pieces.ts', 'utf8'),
+  {
+    THREE,
+    ...layout,
+    ...cars,
+    ...engine,
+    kit,
+    passengerCar: () => new THREE.Group(),
+    paint: () => new THREE.MeshBasicMaterial(),
+  },
+);
+const { mountQuayRoundhouse } = sourceModule<typeof import('../src/entities/route-greybox/quay-roundhouse.ts')>(
+  fs.readFileSync('src/entities/route-greybox/quay-roundhouse.ts', 'utf8'),
+  {
+    ...layout,
+    site: ROTUNDA_PORT_QUAY,
+    kit,
+    level: {},
+    createGaragePieces,
+    railwayWorldRead: () => null,
+    createRotundaView: () => ({ show() {}, copies() {} }),
+  },
+);
+
+test('unmounting the quay releases the visible post material exactly once', () => {
+  const owner = createOwnedView();
+  mountQuayRoundhouse(owner);
+  const body = owner.root.getObjectByName('garage-post-body');
+  assert.ok(body instanceof THREE.Mesh && body.visible);
+  let count = 0;
+  body.material.addEventListener('dispose', () => count++);
+  owner.dispose();
+  assert.equal(count, 1);
+});
+
+test('the quay mast crank and post foot turn 125 degrees from their Home orientation', () => {
+  function orientation(site: 0 | 1) {
+    const owner = createOwnedView();
+    const { geo, table, y } = layout.garageRow(site);
+    if (site === 1) mountQuayRoundhouse(owner);
+    else createGaragePieces(owner, { table, y, ground: y, post: layout.polarAt(table, geo.post) }, geo);
+    const axis = new THREE.Vector3(1, 0, 0);
+    const foot = owner.root.getObjectByName('garage-post-foot');
+    assert.ok(foot);
+    const footAxis = axis.clone().applyQuaternion(foot.getWorldQuaternion(new THREE.Quaternion()));
+    const crank = owner.root.getObjectByName('jib-crank');
+    assert.ok(crank);
+    const direction = crank
+      .getWorldPosition(new THREE.Vector3())
+      .sub(crank.parent!.getWorldPosition(new THREE.Vector3()));
+    direction.y = 0;
+    owner.dispose();
+    return [direction.normalize(), footAxis];
+  }
+  const home = orientation(0),
+    quay = orientation(1);
+  home.forEach((direction, i) => {
+    assert.ok(direction.distanceTo(new THREE.Vector3(1, 0, 0)) < 1e-9);
+    const expected = direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), (-125 * Math.PI) / 180);
+    assert.ok(expected.distanceTo(quay[i]!) < 1e-9);
+  });
+});
 
 test('stepping through the tabs draws a frame and a ghost car, and disposing the view retains nothing', () => {
   const owner = createOwnedView();
