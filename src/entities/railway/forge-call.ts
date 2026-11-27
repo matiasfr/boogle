@@ -21,7 +21,7 @@ import { reducedMotion } from '../../constants.ts';
 export const FORGE_CALL_HEAR = 900;
 /** Puffs in the column (and in the thicker one a repeat call leaves), the seconds one takes to rise, and the column's
  * height and lean (metres). */
-const PLUME = { puffs: 22, thick: 33, rise: 11, height: 62, lean: 8 } as const;
+export const PLUME = { puffs: 22, thick: 33, rise: 11, height: 62, lean: 8 } as const;
 /** The repeat call (docs/plans/forge-call-handoff.md, step 5, as the design review changed it): while the thing still
  * waits, the whistle sounds again this many seconds after the first, three times at most, and the first repeat
  * thickens the plume. Never while you stand within `quiet` m of the pedestal. Local: a reload replays none. */
@@ -30,7 +30,7 @@ export const FORGE_RECALL = { every: 90, most: 3, quiet: 30 } as const;
  * out from under the part and curl up round the pedestal, staying under the hung part so they never veil it. The column's first puffs are one white ball in a show's 2.5 s cut; the
  * wisps make it steam. Shared-pool particles are fine here: they live under 2 s, at the pedestal. */
 const HISS = { seconds: 3.2, rate: 28, ring: 1.1 } as const;
-const STEAM = new THREE.Color('#f6f4ee');
+export const STEAM = new THREE.Color('#f6f4ee');
 /** Seconds a live call waits for a show to claim it before it sounds on its own (the views update in no fixed order). */
 const CLAIM_S = 0.25;
 

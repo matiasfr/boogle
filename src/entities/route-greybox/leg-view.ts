@@ -34,7 +34,9 @@ import { frameOccupied } from '../railway/frame-occupied.ts';
 import { camera } from '../../render/scene.ts';
 import { signBoard } from '../../render/sign-board.ts';
 import { playObjective } from '../../proto/mark.ts';
-import { LINE2, RAIL_LINES, legBuilt, trainPassesBy } from '../../sim/railway-lines.ts';
+import { roomWorks } from '../../sim/railway-queries-room.ts';
+import { WORKS_LINES, WORKS_COMPLETE } from '../railway/works-lines.ts';
+import { RAIL_LINES, legBuilt, trainPassesBy } from '../../sim/railway-lines.ts';
 import { LINE_SLOTS } from '../../sim/railway-trains.ts';
 import { TRAIN_PHASE } from '../../sim/railway-train.ts';
 import { trainStops } from '../../sim/railway-queries-trains.ts';
@@ -50,7 +52,7 @@ import {
   legS,
   type RouteLeg,
 } from '../../sim/railway-route.ts';
-import { account, aperture, line, shed, steel, train, type ReadWorld } from '../../sim/railway-rows.ts';
+import { account, aperture, train, type ReadWorld } from '../../sim/railway-rows.ts';
 import { heldBig, LOGS, roomOf } from '../../sim/railway-queries.ts';
 import { RAILS } from '../../sim/railway-line2-layout.ts';
 import {
@@ -117,40 +119,6 @@ const FEED = 'Feed the frame',
   // Greybox leg 3's (docs/plans/greybox-leg3.md, "Controls and copy"; placeholders, none The Boogler's).
   TAKE_CLOTH = 'Take the glider cloth',
   CLOTH_NOT_YET = "The line to Canopy isn't laid yet";
-export const LEG_OBJECTIVES = {
-  first: "Build the line to High Gorge: section 1 of 4. The frame is on Ring Island's west platform.",
-  next: (n: number, of: number) => `Build the line to High Gorge: section ${n} of ${of}. Ride line 2 to the railhead.`,
-  open: 'High Gorge is open. Ride line 2 to its end and climb the stair.',
-  // Greybox leg 2's (docs/plans/greybox-leg2.md, "Controls and copy"; placeholders): the barrier moved onto the
-  // incline's first frame, so its line is the plan's now.
-  gate: "Open the incline's barrier",
-  incline: 'Build the incline to Bell Rock',
-  seeds: 'Take the crystal seeds',
-  bay: 'Build the bay line from the West landing',
-  // Greybox leg 3's (docs/plans/greybox-leg3.md, "Controls and copy"; placeholders).
-  canopyGate: 'Open the barrier to Canopy',
-  canopy: 'Build the line to Canopy Town',
-  cloth: 'Take the glider cloth',
-  plug: 'Open the sea-cave plug at the West landing',
-  cave: 'Build the cave line to Port Quay',
-  wall: 'Build the line along the White Wall to High Gorge (placeholder)',
-  deepSpan: "Open the deep span's barrier (placeholder)",
-  notchGate: 'Open the Notch barrier at Canopy Town (placeholder)',
-  notch: 'Build the line to Lantern Notch (placeholder)',
-  lantern: 'Take the lantern at Lantern Notch (placeholder)',
-  causewayGate: "Open the causeway's barrier at Bell Rock (placeholder)",
-  causeway: 'Build the causeway to the Original Island (placeholder)',
-  island: 'Ride to the Original Island (placeholder)',
-  arrived: 'All lines connected! Ride wherever you like.',
-} as const;
-/** The steel loop's steps, from the rivet to the longer boiler (docs/plans/ring-island-build2.md, section 1). Draft
- * copy for the owner to reword (docs/agent-calls.md; decision d-2026-11-18-decisions-page-rail). */
-const STEEL_OBJECTIVES = {
-  kit: "Light Ring Island's steel works. Ride line 2 to the island; the train brings its kit.",
-  feed: "Light the steel works: carry the kit from Ring Island's yard into the shed.",
-  cast: 'The steel works is casting. Line 2 carries its steel Home to the Roundhouse.',
-  install: 'Steel is in the Roundhouse bay. Hold Install at the table for the longer boiler.',
-} as const;
 
 const GREY = '#9c9ea1',
   GREY_DARK = '#6f7275',
@@ -1023,16 +991,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       arrived: route.arrived >= 0,
       pick: !!(route.grants & 1),
       gate: !!(route.gates & 1),
-      steelStep: steelStep(wd),
     };
-  }
-  /** The steel loop's step, or null before the rivet and once line 2 wears the longer boiler (BOILER_SPEED row 2). */
-  function steelStep(wd: ReadWorld): keyof typeof STEEL_OBJECTIVES | null {
-    if (aperture(wd).joined < 0 || line(wd, LINE2).boiler >= 2) return null;
-    const s = steel(wd);
-    if (shed(wd).steel > 0) return 'install';
-    if (s.lit >= 0) return 'cast';
-    return s.yardLogs + s.yardRails + s.logs + s.rails > 0 ? 'feed' : 'kit';
   }
   /** Whether the camera or your body is within `radius` metres of `c`. */
   const near = (c: { x: number; z: number }, radius: number) => {
@@ -1321,57 +1280,14 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       );
     barrier(notch.frames[0]!, !!(r.gates & (1 << NOTCH)));
   }
-  /** Leg 2's steps once the incline's barrier is open: build the incline, take the seeds, build the bay line (beats 3
-   * to 10; the seeds first, though the bay cut does not need them); then leg 3's (greybox-leg3.md, "Controls and
-   * copy"): open the Canopy barrier, build the line, take the cloth, ride home. */
-  function leg2Objective(r: NonNullable<ReturnType<typeof rows>>) {
-    if (!incline) return '';
-    if (!done(r, 'incline')) return LEG_OBJECTIVES.incline;
-    if (!(r.grants & (1 << SEEDS))) return LEG_OBJECTIVES.seeds;
-    if (!bay) return '';
-    if (!done(r, 'bay-cut')) return LEG_OBJECTIVES.bay;
-    if (!(r.gates & ((1 << CANOPY) | (1 << PLUG))))
-      return 'Build the line to Canopy Town or the cave line to Port Quay (placeholder)';
-    if (done(r, 'cave') && !done(r, 'bell-canopy'))
-      return 'Ride to Bell Rock and build the line to Canopy Town (placeholder)';
-    if (!(r.gates & (1 << CANOPY))) return LEG_OBJECTIVES.cave;
-    if (!done(r, 'bell-canopy')) return LEG_OBJECTIVES.canopy;
-    if (!(r.grants & (1 << CLOTH))) return LEG_OBJECTIVES.cloth;
-    if (!(r.gates & (1 << PLUG))) return LEG_OBJECTIVES.plug;
-    if (!done(r, 'cave')) return LEG_OBJECTIVES.cave;
-    if (done(r, 'wall')) {
-      if (!(r.gates & (1 << NOTCH))) return LEG_OBJECTIVES.notchGate;
-      if (!done(r, 'notch-tunnel')) return LEG_OBJECTIVES.notch;
-      if (!(r.grants & (1 << LANTERN))) return LEG_OBJECTIVES.lantern;
-      if (!(r.gates & (1 << CAUSEWAY))) return LEG_OBJECTIVES.causewayGate;
-      if (!done(r, 'causeway')) return LEG_OBJECTIVES.causeway;
-      return r.arrived ? LEG_OBJECTIVES.arrived : LEG_OBJECTIVES.island;
-    }
-    if (legRow(r.wd, wall.k).laid === 5 && !(r.gates & (1 << deepSpan))) return LEG_OBJECTIVES.deepSpan;
-    return LEG_OBJECTIVES.wall;
-  }
-  /** The objective line's text, to the play record (no on-screen line on the route). */
+  let recordedSite = '';
   function note(r: NonNullable<ReturnType<typeof rows>>) {
-    const s = r.per[legIndex.get('stack')!]!,
-      laid = s.laid,
-      of = RAIL_LEGS[0]!.sections.length;
-    const text = !s.reached
-      ? ''
-      : !s.done
-        ? r.steelStep
-          ? STEEL_OBJECTIVES[r.steelStep]
-          : laid === 0
-            ? LEG_OBJECTIVES.first
-            : LEG_OBJECTIVES.next(laid + 1, of)
-        : !r.pick
-          ? LEG_OBJECTIVES.open
-          : !r.gate
-            ? LEG_OBJECTIVES.gate
-            : leg2Objective(r);
-    if (text !== objective) {
-      objective = text;
-      if (text) playObjective(text);
-    }
+    const work = roomWorks(r.wd);
+    const key = work.done ? 'complete' : work.site;
+    if (key === recordedSite) return;
+    recordedSite = key;
+    objective = work.done ? WORKS_COMPLETE : WORKS_LINES[work.site].objective;
+    playObjective(objective);
   }
 
   const v3 = (p: { x: number; z: number }, y: number) => new THREE.Vector3(p.x, y, p.z);

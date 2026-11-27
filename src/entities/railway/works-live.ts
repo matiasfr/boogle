@@ -19,6 +19,9 @@ import { createRingFolk } from '../ring-folk/view.ts';
 import { createRingSteel } from '../ring-steel/view.ts';
 import { createLegView } from '../route-greybox/leg-view.ts';
 import { createStationGuides } from './station-guides.ts';
+import { roomWorks } from '../../sim/railway-queries-room.ts';
+import { boiler, works as worksRow } from '../../sim/railway-rows.ts';
+import { createWorksSignal } from './works-signal.ts';
 
 export async function createRailwayWorksLive(
   adapter: RailwayAdapter,
@@ -48,8 +51,32 @@ export async function createRailwayWorksLive(
   const meet = createRingMeet(adapter, owner, { ...deps, landed: leaf.landed });
   const folk = createRingFolk(adapter, owner);
   const guides = createStationGuides(adapter, owner);
+  const signal = createWorksSignal(owner);
+  function updateSignal(dt: number, restore = false) {
+    if (!adapter.read.whole()) return;
+    const world = adapter.read.world();
+    const work = roomWorks(world);
+    const forgeCalling =
+      (work.site === 'boiler' && boiler(world).state === 'pedestal') ||
+      (work.site === 'breaker' && worksRow(world).breaker === 1);
+    signal(work, forgeCalling, dt, restore);
+  }
   const install = createBoilerInstall(adapter, owner);
-  const views = [breaker, works, roundhouse, footings, crossing, railhead, leaf, meet, folk, guides, steel, install, leg];
+  const views = [
+    breaker,
+    works,
+    roundhouse,
+    footings,
+    crossing,
+    railhead,
+    leaf,
+    meet,
+    folk,
+    guides,
+    steel,
+    install,
+    leg,
+  ];
   return {
     /** Where the footing wagon's loads hop from and to: the Works rack and the pier rack. */
     footPlaces: { works: works.rackSlot, pier: crossing.rackSlot, ring: railhead.rackSlot },
@@ -57,9 +84,11 @@ export async function createRailwayWorksLive(
     points: [...railhead.points, ...leg.points],
     crossingInspect: () => crossing.inspect().crossingView,
     restore() {
+      updateSignal(0, true);
       for (const view of views) view.restore();
     },
     update(dt: number) {
+      updateSignal(dt);
       for (const view of views) view.update(dt);
     },
     lateUpdate() {

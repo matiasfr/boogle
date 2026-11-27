@@ -343,7 +343,7 @@
     },
     "src/entities/route-greybox/leg-view.ts": {
       "count": 5,
-      "exports": ["LEG_OBJECTIVES", "createLegView"],
+      "exports": ["createLegView"],
       "reason": "2026-11-13: Owner-approved structural module boundary baseline; existing imports/calls and public names."
     },
     "src/entities/town/curio-shelf.ts": {

@@ -3,7 +3,7 @@
     "src/entities/route-greybox/leg-view.ts": {
       "count": 2,
       "reason": "2026-11-13: Owner-requested step 9 baseline of existing sign and interaction construction; shrink only.",
-      "exports": ["LEG_OBJECTIVES", "createLegView"],
+      "exports": ["createLegView"],
       "consumers": ["src/entities/railway/works-live.ts"]
     },
     "src/entities/ring-steel/view.ts": {
