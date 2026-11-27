@@ -29,14 +29,16 @@ registerBuilder('town.ball-court', (_params, _batch, placement) => {
   const angle = (side * -Math.PI) / 9;
   for (const x of [-width / 2, width / 2]) {
     const length = (courtLength * (1 + (side * x) / 8.5)) / 2;
-    piece(
+    const chalk = piece(
       root,
-      new THREE.BoxGeometry(0.065, 0.02, length),
+      new THREE.BoxGeometry(0.065, 0.02, length, 1, 1, 12),
       0xfff0c7,
       x + (Math.sin(angle) * length) / 2,
       0.018,
       (Math.cos(angle) * length) / 2,
-    ).rotation.y = angle;
+    );
+    chalk.rotation.y = angle;
+    chalk.name = 'chalk';
   }
   const z = 0;
   for (const x of [-width / 2, width / 2])
@@ -50,6 +52,6 @@ registerBuilder('town.ball-court', (_params, _batch, placement) => {
   for (const [i, x] of [-0.84, -0.52, 0.52, 0.84].entries())
     piece(string, new THREE.ConeGeometry(0.14, 0.23, 3), i % 2 ? 0x55a99b : 0xe15b53, x, -0.115, 0).rotation.z =
       Math.PI;
-  piece(root, new THREE.BoxGeometry(width, 0.02, 0.065), 0xfff0c7, 0, 0.018, z);
+  piece(root, new THREE.BoxGeometry(width, 0.02, 0.065, 8), 0xfff0c7, 0, 0.018, z).name = 'chalk';
   return root;
 });

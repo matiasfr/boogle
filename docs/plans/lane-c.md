@@ -83,7 +83,7 @@ Implementation corrections for Part 1:
 
 - The classic bounds include the point exactly three metres from the edge. Rolling drag and the fall-through net also need the active ground, with the classic cave probe preserved.
 - Home installs the provider synchronously before the town view loads, so the first ownership claim starts on the green. The town view owns the goal instances and the lever.
-- The dock view showed meadow tufts covering the chalk. The meadow keep map clears the pitch and lever.
+- The dock view showed meadow tufts covering the chalk. The meadow keep map clears the pitch and lever. At the outer sideline the coarse land triangles rise into a level stripe, so the chalk follows the drawn triangle heights.
 - The prefab compiler requires authored operands. Place both copies of the goal record at their town-plan rows at runtime. Each goal carries its half of the chalk lines. Its mouth spans its radial bearing and opens toward the other end of the court.
 - The shared lift-or-wait helper is exported by `src/prefab/instantiate.ts`. The site builder's separate exit routine moves players sideways. The goals and lever use lift-or-wait with the existing visitor check.
 - The existing positional metal bell in `render/machine-sfx.ts` supplies the clang. The lever label "Bring the ball back" is a placeholder for the owner.

@@ -44,6 +44,19 @@ export function createCourt(owner: OwnedView) {
     );
   });
   const lever = records[2]!;
+  // The coarse land triangles start climbing the bowl beneath the outer chalk line.
+  const vertex = new THREE.Vector3();
+  for (const record of records)
+    record.root.traverse((part) => {
+      if (!(part instanceof THREE.Mesh) || part.name !== 'chalk') return;
+      const positions = part.geometry.getAttribute('position');
+      for (let i = 0; i < positions.count; i++) {
+        part.localToWorld(vertex.fromBufferAttribute(positions, i));
+        positions.setY(i, positions.getY(i) + H(vertex.x, vertex.z, true) - record.root.position.y);
+      }
+      positions.needsUpdate = true;
+      part.geometry.computeBoundingSphere();
+    });
   const at: THREE.Vector3 = lever.attach('handle').at;
   const clearance = liftOrWait(
     records.map((record) => ({ shapes: record.solids, on: () => record.setEnabled(true) })),
