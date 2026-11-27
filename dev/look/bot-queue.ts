@@ -45,11 +45,7 @@ export function botClass(operation: string, args: readonly string[], long = args
   if (
     long ||
     twoPlayers ||
-    args.includes('--real') ||
-    args.includes('--video') ||
-    args.includes('--curves') ||
-    args.includes('--curves-vs') ||
-    args.includes('--target') ||
+    ['--real', '--video', '--curves', '--curves-vs', '--target'].some((flag) => args.includes(flag)) ||
     ['boot-time', 'cold-launch', 'clip'].includes(operation)
   )
     return 'timed';
