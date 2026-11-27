@@ -950,7 +950,19 @@ const bedPieces = (points: typeof shores.saltBed) =>
 const saltFrame = frame(shores.saltLand.centre, unit(0, 1), unit(1, 0));
 // From the waterfront apron to the east rim of the 55 m top. The head overlaps the rim.
 const rampFrame = frame({ x: 109, z: 982 }, unit(-99, 14), unit(14, 99));
+// Road 0 crosses the table on the yard's diagonal and stops 2 m before platform 1.
+const road = frame({ x: 109.91, z: 914.79 }, unit(1, 1), unit(1, -1));
 const quayPieces = [
+  road.box('roundhouse-bridge', -7.85, 7.85, -1.6, 1.6, 3.95, 0.4, 'sandstone'),
+  ...[-1, 1].flatMap((side) => {
+    const across = side * 0.5;
+    return [
+      road.box('bridge-rail-' + side, -7.85, 7.85, across - 0.05, across + 0.05, 4.135, 0.135, 'dark'),
+      road.box('approach-rail-' + side, 8.6, 29.2, across - 0.05, across + 0.05, 4.135, 0.135, 'dark'),
+      road.box('buffer-post-' + side, 29.06, 29.34, across - 0.12, across + 0.12, 4.8, 0.9, 'sandstone'),
+    ].map((piece) => ({ ...piece, solid: false }));
+  }),
+  { ...road.box('buffer-beam', 29.06, 29.34, -1.15, 1.15, 4.9, 0.3, 'dark'), solid: false },
   ...bedPieces(shores.quayBed),
   ...shorePieces(shores.portIsle),
   quay.box('quay-slab', -26, 26, -10, 18, 2.96, 2, 'grey'),

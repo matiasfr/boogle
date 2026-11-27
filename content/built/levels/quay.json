@@ -36,6 +36,141 @@
       "pieces": [
         {
           "bounds": [
+            -7.85,
+            7.85,
+            -1.6,
+            1.6
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.4,
+          "id": "roundhouse-bridge",
+          "tone": "sandstone",
+          "top": 3.95
+        },
+        {
+          "bounds": [
+            -7.85,
+            7.85,
+            -0.55,
+            -0.45
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.135,
+          "id": "bridge-rail--1",
+          "solid": false,
+          "tone": "dark",
+          "top": 4.135
+        },
+        {
+          "bounds": [
+            8.6,
+            29.2,
+            -0.55,
+            -0.45
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.135,
+          "id": "approach-rail--1",
+          "solid": false,
+          "tone": "dark",
+          "top": 4.135
+        },
+        {
+          "bounds": [
+            29.06,
+            29.34,
+            -0.62,
+            -0.38
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.9,
+          "id": "buffer-post--1",
+          "solid": false,
+          "tone": "sandstone",
+          "top": 4.8
+        },
+        {
+          "bounds": [
+            -7.85,
+            7.85,
+            0.45,
+            0.55
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.135,
+          "id": "bridge-rail-1",
+          "solid": false,
+          "tone": "dark",
+          "top": 4.135
+        },
+        {
+          "bounds": [
+            8.6,
+            29.2,
+            0.45,
+            0.55
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.135,
+          "id": "approach-rail-1",
+          "solid": false,
+          "tone": "dark",
+          "top": 4.135
+        },
+        {
+          "bounds": [
+            29.06,
+            29.34,
+            0.38,
+            0.62
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.9,
+          "id": "buffer-post-1",
+          "solid": false,
+          "tone": "sandstone",
+          "top": 4.8
+        },
+        {
+          "bounds": [
+            29.06,
+            29.34,
+            -1.15,
+            1.15
+          ],
+          "compute": "rect",
+          "frame": {
+            "operand": 1
+          },
+          "h": 0.3,
+          "id": "buffer-beam",
+          "solid": false,
+          "tone": "dark",
+          "top": 4.9
+        },
+        {
+          "bounds": [
             0,
             4.99,
             -3.8,
@@ -1637,7 +1772,7 @@
           ],
           "compute": "rect",
           "frame": {
-            "operand": 1
+            "operand": 2
           },
           "h": 1,
           "id": "ramp-landing",
@@ -1653,7 +1788,7 @@
           ],
           "compute": "rect",
           "frame": {
-            "operand": 1
+            "operand": 2
           },
           "h": 0.3,
           "id": "high-port-ramp",
@@ -1674,7 +1809,7 @@
           ],
           "compute": "rect",
           "frame": {
-            "operand": 1
+            "operand": 2
           },
           "h": 1,
           "id": "high-port-parapet",
@@ -1751,6 +1886,26 @@
           },
           "compute": "perp",
           "sign": 1
+        }
+      },
+      {
+        "o": {
+          "x": 109.91,
+          "z": 914.79
+        },
+        "u": {
+          "axis": {
+            "x": 1,
+            "z": 1
+          },
+          "compute": "unit"
+        },
+        "v": {
+          "axis": {
+            "x": 1,
+            "z": -1
+          },
+          "compute": "unit"
         }
       },
       {
