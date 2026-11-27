@@ -1119,26 +1119,28 @@ async function observeWorks(read: unknown, confirmed: Client['mirror']['confirme
       .split(' ')
       .map((name) => [name, () => ({ points: [], update() {} })]),
   );
-  const source = fs
-    .readFileSync('src/entities/railway/works-live.ts', 'utf8')
-    .replace("import('../../render/part-geometry.ts')", 'Promise.resolve({})');
   const { createRailwayWorksLive } = sourceModule<{
     createRailwayWorksLive(adapter: unknown, owner: unknown, deps: unknown): Promise<{ update(dt: number): void }>;
-  }>(source, {
-    ...shells,
-    ...giftReads,
-    roomWorks,
-    WORKS_STEPS,
-    railwayMirror: { confirmed },
-    rules: { roster: { indexOf: (pid: string) => ['a', 'b'].indexOf(pid), nameOf: (i: number) => ['a', 'b'][i] } },
-    islandGround: () => ({}),
-    createDockPost: () => ({ retry() {} }),
-    createWorksBoard: () => (work: RoomWorks, names: string[]) => {
-      sites.push(work.site);
-      thanks = names;
+  }>(
+    fs
+      .readFileSync('src/entities/railway/works-live.ts', 'utf8')
+      .replace("import('../../render/part-geometry.ts')", 'Promise.resolve({})'),
+    {
+      ...shells,
+      ...giftReads,
+      roomWorks,
+      WORKS_STEPS,
+      railwayMirror: { confirmed },
+      rules: { roster: { indexOf: (pid: string) => ['a', 'b'].indexOf(pid), nameOf: (i: number) => ['a', 'b'][i] } },
+      islandGround: () => ({}),
+      createDockPost: () => ({ retry() {} }),
+      createWorksBoard: () => (work: RoomWorks, names: string[]) => {
+        sites.push(work.site);
+        thanks = names;
+      },
+      createWorksSignal: () => (work: RoomWorks) => sites.push(work.site),
     },
-    createWorksSignal: () => (work: RoomWorks) => sites.push(work.site),
-  });
+  );
   const mounted = await createRailwayWorksLive({ read }, {}, {});
   return { update: () => mounted.update(0), sites, thanks: () => thanks };
 }
