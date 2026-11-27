@@ -108,17 +108,19 @@ if [ -n "$verdicts" ]; then
   fi
 fi
 # The daily world wipe: the gate is silent for a branch with no bump, and anything but a clear yes holds.
-bump=$(node "$here/world-bump-gate.ts" "$wt" 2>&1)
-bumpstatus=$?
-[ -z "$bump" ] || echo "ship-queue: $bump"
-if [ "$bumpstatus" != 0 ]; then
+bumpgate() {
+  bump=$(node "$here/world-bump-gate.ts" "$wt" 2>&1)
+  bumpstatus=$?
+  [ -z "$bump" ] || echo "ship-queue: $bump"
+  [ "$bumpstatus" != 0 ] || return 0
   if [ -z "$bumpknown" ]; then
     echo 'ship-queue: held by the daily world wipe. Run it again in 30 to 60 minutes, or pass --bump-known "<why>" on the'
     echo "owner's word."
-    exit 9
+    return 9
   fi
   echo "ship-queue: bump known: $bumpknown"
-fi
+}
+bumpgate || exit 9
 if [ "$dry" = 1 ]; then echo "ship-queue: dry run, checks passed; nothing locked or shipped."; exit 0; fi
 # The trusted checkout must be a checkout of its own with the ship script, or nothing could ship: never report success.
 if ! [ -f "$trusted/dev/codex/ship-branch.sh" ] ||
@@ -142,6 +144,8 @@ done
 echo $$ >"$lock/pid"
 unlock() { rm -f "${lock:?}/pid"; rmdir "$lock" 2>/dev/null; }
 trap unlock EXIT
+# A bump that waited for the lock looks again: someone may have joined, or another wipe gone out, meanwhile.
+if [ -n "$bump" ]; then bumpgate || exit 9; fi
 if ! { git -C "$trusted" fetch -q origin && git -C "$trusted" checkout -q --detach origin/main; }; then
   echo "ship-queue: could not move the trusted checkout $trusted to origin/main; nothing shipped."
   exit 1

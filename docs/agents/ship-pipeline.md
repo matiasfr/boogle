@@ -48,7 +48,8 @@ or pushing. This is not proof of a merge or deployment.
 
 ### Live smoke
 
-After Pages deploys, it dispatches Smoke with its exact SHA. Node fetches HTML, `version.json` and entry JS/CSS,
+After Pages deploys, it dispatches Smoke with its client build (the page's build id, below; the merge's own SHA only
+when the merge changed code). Node fetches HTML, `version.json` and entry JS/CSS,
 checks status/content types and matching Pages identities, then checks the server's read-only `/version` and
 relays a cosmetic honk and acknowledgment between two sockets in `smoke-node-0..6`. It never joins `boogle` or
 edits a world. The script waits up to 24 minutes, polling every 15 seconds, for the server's `/version` to reach
