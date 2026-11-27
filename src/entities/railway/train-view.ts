@@ -10,7 +10,7 @@ import { instantiate } from '../../prefab/instantiate.ts';
 import { FIXED, PLAYER_R, reducedMotion } from '../../constants.ts';
 import { camera } from '../../render/scene.ts';
 type CabFace = import('./engine-kit.ts').CabFace;
-import { giftBundle, giftTrip, pourFlights } from './gift-deck.ts';
+import { giftBundle, giftTrip } from './gift-deck.ts';
 import { createPennant } from './works-signal.ts';
 import { roomWorks } from '../../sim/railway-queries-room.ts';
 type LinePoint = import('../../place/layout.ts').LinePoint;
@@ -960,7 +960,7 @@ export async function createRailwayTrains(
     readStops(w);
     secondVisible = on;
     flyingLogs = flyingRails = 0;
-    for (const flights of pourFlights) flights.length = 0;
+    for (const flight of legKitFlight) flight.poured.length = 0;
     for (const flight of legKitFlight) flight.logs = flight.rails = 0;
     legYardFlight.logs = legYardFlight.rails = 0;
     lastRack.forEach((rack, k) => {
@@ -1244,8 +1244,8 @@ export async function createRailwayTrains(
       }
       // Each line's open stops, worked out once for the frame and shared by the lamps.
       const stops = RAIL_LINES.map((_l, k) => trainStops(w, k));
-      pourFlights.forEach((flights, k) => {
-        if (flights.length) pourFlights[k] = flights.filter((active) => active());
+      legKitFlight.forEach((flight) => {
+        if (flight.poured.length) flight.poured = flight.poured.filter((active) => active());
       });
       const marks = kitMarks(w, tick);
       // What the open leg's rack gained since the last frame: a yard leg's unload splits between it and the yard.
@@ -1418,7 +1418,7 @@ export async function createRailwayTrains(
         }
         tr.bundle.visible = row.gift > 0;
         const delta = tr.last ? row.gift - (tr.last.gift ?? 0) : 0;
-        giftTrip(owner, w, tr.line, row, delta, tr.bundle, homeLogBin);
+        giftTrip(owner, w, tr.line, row, delta, tr.bundle, homeLogBin, legKitFlight);
         // A leg's kit hops from the car to its rack (the greybox route's step 4 review, answer b: 8 m over the up
         // track at Ring Island, then onto each railhead's), drawn as the Q kits' unload is. The rows moved the units
         // on the tick the train stood; the rack's view draws each once its crate lands (legKitFlight). On any line

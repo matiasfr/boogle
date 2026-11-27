@@ -10,8 +10,7 @@ import type { ReadWorld } from '../../sim/railway-rows.ts';
 import { TRAIN_PHASE, type RailTrain } from '../../sim/railway-train.ts';
 import { reducedMotion } from '../../constants.ts';
 
-// While a poured log is in flight, its bill still shows the previous count.
-export const pourFlights = RAIL_LEGS.map((): (() => boolean)[] => []);
+
 export function giftBundle(owner: OwnedView, lashMaterial: THREE.Material) {
   const bundle = new THREE.Group();
   const timber = logStackMesh(3, owner);
@@ -39,6 +38,7 @@ export function giftTrip(
   delta: number,
   bundle: THREE.Group,
   homeLogBin: THREE.Vector3,
+  flights: readonly { poured: (() => boolean)[] }[],
 ) {
   if (delta && row.phase === TRAIN_PHASE.STAND && !reducedMotion) {
     const deck = bundle.getWorldPosition(new THREE.Vector3());
@@ -56,7 +56,7 @@ export function giftTrip(
     if (k !== undefined || (delta > 0 && line === LINE2 && row.at === legKitHalt(line))) {
       for (let i = 0; i < Math.abs(delta); i++) {
         const active = send('log', from, to, { dur: 0.6, delay: i * 0.025, apex: 3 }, owner);
-        if (k !== undefined) pourFlights[k]!.push(active);
+        if (k !== undefined) flights[k]!.poured.push(active);
       }
     }
   }

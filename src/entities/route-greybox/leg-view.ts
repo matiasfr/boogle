@@ -66,7 +66,6 @@ import {
   routeRow,
 } from '../../sim/railway-queries-route.ts';
 import { createBoxBatch } from '../railway/works-box-view.ts';
-import { pourFlights } from '../railway/gift-deck.ts';
 import { legKitFlight, paintPlate } from '../railway/kit-board.ts';
 import { legYardFlight, legYardSpot } from '../railway/leg-yard.ts';
 import { LINE2_END_S, line2At, line2World, line2Y } from '../railway/line2-path.ts';
@@ -1148,7 +1147,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         { t: sp.name, size: 0.2 },
         { t: `SECTION ${num} OF ${n}`, size: 0.15 },
         {
-          t: `LOGS ${Math.max(0, lr.row.logs - pourFlights[sp.k]!.length)}/${sec.logs}   RAILS ${lr.row.rails}/${sec.rails}`,
+          t: `LOGS ${Math.max(0, lr.row.logs - (legKitFlight[sp.k]!.poured?.length ?? 0))}/${sec.logs}   RAILS ${lr.row.rails}/${sec.rails}`,
           size: 0.15,
         },
         { t: where, size: 0.13 },
