@@ -1,4 +1,4 @@
-> **Status: draft for owner pick (2026-11-26).** Prepared per [decisions-process.md](../decisions-process.md#d-2026-11-26-decision-desk-answers), item 12: three short options each for the placeholder words that belong to the owner, with one option marked as a pick. Docs only; no code edited and no line of The Boogler drafted or changed.
+> **Status: taken 26 November 2026 (owner: "For now, let's take your recommendations on the dialogue.  We can always refine later."); items 1 to 4 apply to kept[0] only and item 17 took A**
 
 # Placeholder copy drafts
 

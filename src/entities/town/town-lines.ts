@@ -160,29 +160,29 @@ export const RESIDENTS: Record<ResidentId, ResidentLines> = {
   // d-2026-11-19-first-house-resident). His name, look, quirks and every line are the owner's: each field here is a
   // marked placeholder saying what the line must do, until he writes them (docs/brainstorms/first-house-resident.md).
   driver: {
-    name: "[owner's line: his name]",
+    name: 'Bram',
     intro: [
-      "[owner's line: who he is, a retired engine driver who has just moved in]",
-      "[owner's line: points at the table where his train set will go]",
+      'Moved in for the quiet. Then I heard a train and felt right at home.',
+      'See the table? Every track you lay outside, I lay in here. Much warmer.',
     ],
-    hello: "[owner's line: says hello as you come in and points at the table]",
+    hello: 'Come in! Mind the table, the express is due.',
     ordinary: [
-      "[owner's line: an ordinary line about the railway or the house]",
-      "[owner's line: a second ordinary line, said in turn]",
+      'I gave up driving the big ones so I could stare at the small ones.',
+      'Listen to that whistle outside. Still gives me goosebumps.',
     ],
     notice: {
-      town: "[owner's line: notices the new neighbours, the riders from his house]",
-      stone: "[owner's line: notices the town building in stone]",
-      pier: "[owner's line: notices the pier is laid and is on his table]",
-      breaker: "[owner's line: notices the breaker taken off its pedestal]",
+      town: 'Neighbours are piling onto the trains now. Proper rush hour—three of them!',
+      stone: "Stone walls now! Good—won't rattle when the heavy freight rolls past.",
+      pier: 'Put your new pier on the board this morning. Nearly ran out of table.',
+      breaker: 'You lifted the breaker? Mind your toes—and my little bridge.',
     },
     asks: [
       {
-        ask: "[owner's line: a question about his railway days]",
-        say: "[owner's line: his answer]",
+        ask: 'Miss driving trains?',
+        say: 'Every morning. Then I remember the wind in my teeth and stay inside.',
       },
     ],
-    rumour: ["[owner's line: his impression of The Boogler, like the other residents' rumours]"],
+    rumour: ["Never saw him buy a ticket, yet he's always at the next station first."],
   },
 };
 
@@ -248,7 +248,7 @@ export const SHOP = {
   offVerb: 'Take it off',
   /** Button, when you take something. In turn. */
   kept: [
-    'Yours. The receipt would cost more paper than the hat.',
+    "Yours. Please don't tell the price tag.",
     "That's a fortune you've saved. Spend it wisely.",
     'Very official. Nobody will know.',
     "Suits you. That's extra. It isn't.",
