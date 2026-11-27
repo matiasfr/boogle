@@ -61,18 +61,18 @@ The Windows phone profile already reached 14.153 ms CPU and 12.665 ms GPU at spa
 
 ## Census stills
 
-The table uses inspected frames from the checked-in leg and cold-jump reports. The fresh platform probes below supplement those route views. For Canopy and Port the fresh camera intersected foreground geometry, so the cleft and quay frames in the table provide the usable sightlines.
+The table combines fresh captures marked below with inspected leg and cold-jump reports from main. The fresh platform probes below supplement those route views. The first Canopy and Port platform cameras intersected foreground geometry. Offset the camera behind the landing spot when repeating these views.
 
 | Approach | What the frame shows |
 |---|---|
-| [Gorge halt](greybox-look/gorge-reached.jpg) and [Wall-side return](greybox-look/step5-gorge-arrival.jpg) | A white diagonal crosses a largely unbroken dark face. On the return the parallel platform edges converge between two tall slabs. Preserve that difference between the side and end views. |
+| [Gorge halt](greybox-look/gorge-reached.jpg) and [fresh Wall-side return](greybox-look/wall-return.jpg) | A white diagonal crosses a largely unbroken dark face. On the return the parallel platform edges converge between two tall slabs. Preserve that difference between the side and end views. |
 | [Bore exit](greybox-look/step4-bore-out.jpg) and [Bell lower stop](greybox-look/step4-bell-lower.jpg) | The bright opening outlines the red cab. Below, the station board overlaps the white stair and the upper deck nearly disappears against sky. |
-| [Canopy from the car](greybox-look/step6-canopy-train-in-cleft.jpg) | Pale cleft sides frame dark straight trunks. Daylight already separates the upper crown from the rail corridor. |
+| [Canopy from the car](greybox-look/step6-canopy-train-in-cleft.jpg) and [fresh Canopy platform](greybox-look/canopy-platform.jpg) | Pale cleft sides frame dark straight trunks. Daylight already separates the upper crown from the rail corridor. |
 | [Cave hood](greybox-look/under-hood.jpg) and [Saltpan stop](greybox-look/saltpan-stop.jpg) | A flat brown soffit fills the top of the cave frame. At the stop, the train stands out against a broad green plane where the salt apron could read. |
-| [Quay platforms](greybox-look/quay-platforms.jpg) | A long pale ramp crosses a single ochre mass. Keep the rail and ramp legible while breaking up the mass at freight-building scale. |
+| [Fresh quay platforms](greybox-look/quay-platforms.jpg) | A long pale ramp crosses a single ochre mass. Keep the rail and ramp legible while breaking up the mass at freight-building scale. |
 | [Beneath the White Wall](greybox-look/step5-under-wall.jpg) | A straight dark lip hangs above blue water. Repeated narrow supports make the wall look thinner at close range than it does on the horizon. |
-| [Notch landing](greybox-look/notch-reached.jpg) | Two pale uprights crop the sky to a vertical slot. The near post and Buddy establish the scale of the proposed rock courses. |
-| [Island landing](greybox-look/island-reached.jpg) and [leg 6 checkpoint](greybox-look/checkpoint-f-sheet.jpg) | The bare platforms lead toward an already colourful beach, palms and lighthouse. Dress only the approach and its abutment. The classic island already supplies the arrival view. |
+| [Fresh Notch approach](greybox-look/notch-reached.jpg) | Two pale uprights crop the sky to a vertical slot. The near post and Buddy establish the scale of the proposed rock courses. |
+| [Fresh island landing](greybox-look/island-platform.jpg) | The bare platforms lead toward an already colourful beach, palms and lighthouse. Dress only the approach and its abutment. The classic island already supplies the arrival view. |
 
 [Fresh Gorge platform, seaward](greybox-look/high-gorge-seaward.jpg). At player height the two dark slab ends almost touch the horizon. Keep the water gap when dressing their feet. On this pose the count probe reported 188 draws and 433,150 triangles with Gorge resident. This capture ran under load.
 
