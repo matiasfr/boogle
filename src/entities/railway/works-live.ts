@@ -19,6 +19,8 @@ import { createRingFolk } from '../ring-folk/view.ts';
 import { createRingSteel } from '../ring-steel/view.ts';
 import { createLegView } from '../route-greybox/leg-view.ts';
 import { createStationGuides } from './station-guides.ts';
+import { giftQueued, giftAboard, giftRides, worksThanks } from '../../sim/railway-queries-gift.ts';
+import { localPresence, remotes } from '../../netplay/net.ts';
 import { roomWorks } from '../../sim/railway-queries-room.ts';
 import { boiler, works as worksRow } from '../../sim/railway-rows.ts';
 import { createWorksSignal } from './works-signal.ts';
@@ -57,11 +59,36 @@ export async function createRailwayWorksLive(
   const signal = createWorksSignal(owner, await islandGround());
   const updateBoard = createWorksBoard(owner);
   const dock = createDockPost(owner);
+  let publication: ReturnType<typeof adapter.read.world> | undefined;
+  let current: ReturnType<typeof roomWorks> | undefined;
   function updateSignal(dt: number, restore = false) {
     if (!adapter.read.whole()) return;
     const world = adapter.read.world();
-    const work = roomWorks(world);
-    updateBoard(work);
+    if (world !== publication || !current) {
+      // A predicted frame may be refused. Keep the last published board until outstanding actions settle.
+      if (!adapter.read.pending()) {
+        current = roomWorks(world);
+        const routeSection = current.ops.includes('rail.legStock');
+        const names = routeSection
+          ? worksThanks(world)
+              .map((pid) =>
+                pid === adapter.read.pid
+                  ? localPresence()?.name
+                  : [...remotes.values()].find((r) => r.pid === pid)?.name,
+              )
+              .filter((name): name is string => !!name)
+              .slice(0, 6)
+          : [];
+        updateBoard(
+          current,
+          names,
+          routeSection && giftRides(world) ? [giftQueued(world), giftAboard(world)] : undefined,
+        );
+        publication = world;
+      }
+    }
+    if (!current) return;
+    const work = current;
     dock.retry();
     const forgeCalling =
       (work.site === 'boiler' && boiler(world).state === 'pedestal') ||

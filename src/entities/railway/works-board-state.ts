@@ -8,6 +8,7 @@ type Place = { x: number; z: number };
 type Halt = { line: number; stop: number };
 const haltName = (h: Halt) => RAIL_LINES[h.line]!.halts[h.stop]!.name;
 let work: RoomWorks | null = null;
+let giftRows: string[] = [];
 const faces = new Set<() => void>();
 const posts = new Map<string, Set<Place>>();
 
@@ -36,6 +37,7 @@ export function worksBoardRows(at: Place): string[] {
       ' · ' +
       (needs.map((n) => n.what + ' ' + n.have + '/' + n.of).join('   ') || WORKS_ACTIONS[work.kind]),
     label.gives + ' · ' + gift,
+    ...giftRows,
     label.train + ' · ' + train,
   ];
 }
@@ -44,12 +46,18 @@ export function createWorksBoard(owner: OwnedView) {
   let last = '';
   owner.cleanup(() => {
     work = null;
+    giftRows = [];
   });
-  return (next: RoomWorks) => {
-    const key = JSON.stringify(next);
+  return (next: RoomWorks, thanks: string[], cargo?: [number, number]) => {
+    const rows: string[] = [];
+    if (thanks.length) rows.push(label.thanks + ' \u00b7 ' + thanks.join(', '));
+    if (cargo)
+      rows.push(label.way + ' \u00b7 ' + cargo[0] + ' ' + label.queued + '   ' + cargo[1] + ' ' + label.aboard);
+    const key = JSON.stringify([next, rows]);
     if (key === last) return;
     last = key;
     work = next;
+    giftRows = rows;
     for (const paint of faces) paint();
   };
 }

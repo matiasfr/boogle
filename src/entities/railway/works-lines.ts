@@ -124,6 +124,8 @@ export const WORKS_LABELS = {
   train: 'Train', // draft:
   walk: 'Walk', // draft:
   line: 'Line', // draft:
+  queued: 'queued', // draft:
+  aboard: 'aboard', // draft:
   way: 'On the way', // draft:
 } as const; // draft:
 export const WORKS_GIFTS = {

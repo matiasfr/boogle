@@ -1,3 +1,4 @@
+// npm run look -- --query proto=place --rail-seed works-open --eval dev/look/evals/railway-works-board.ts --warp-speed 5
 // Real inputs from the fresh landing. The dock board chooses the destination and bill.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const { line2Rides, HALT } = (await import(
@@ -31,8 +32,15 @@ const stops = RAIL_LINES[line]!.halts;
 const destination = stops.findIndex((h) => h.name === match[2]);
 check(destination >= 0, 'board names a served halt');
 check(/logs 0\//.test(before[1]!), 'board asks for logs');
-if (line === 1) await ride(HALT.village2, destination);
-else {
+if (line === 1) {
+  const { SHORE_PATH } = (await import(
+    '/src/place/shore-layout.ts' as string
+  )) as typeof import('../../../src/place/shore-layout.ts');
+  for (const [x, z] of SHORE_PATH.slice(1)) {
+    check(await bot.straight(1000 + x, z, 1.2, 18000), 'followed the shore path from the dock');
+  }
+  await ride(HALT.village2, destination);
+} else {
   const lever = rowLever(line, 0);
   const west = stops[0]!.platforms[0];
   await hopTo(west.x / 100, west.z / 100, 'hopped onto the West landing platform', 30000);
