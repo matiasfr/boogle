@@ -89,6 +89,21 @@ The bore and bay coach-height pairs use `stack-laid-4`. The lower station pairs 
 
 Both train pairs use `bay-reached` and two fresh render submissions in the same game update, holding the train still between them. At lower west the deck occludes most of the bay locomotive; its kit board clears the lip. Only the rock batch enters that camera, adding one draw / 352 triangles. On the separate live approach the outbound player car reported its rider at s = 191.37 m. The camera eye was (−52.1503,6.7396,−1809.6259), quaternion (0.003637,0.989050,0.024731,−0.145447). The red cab sits against the bright opening. [On the incline train](greybox-look/card2-bore-ride.jpg)
 
+- [x] **Card 7, Lantern Notch.** Two broad kit faces rise from the feet of the limestone piers. Grass grows at the outer shoulders. A tapered patch of packed earth leads from the steps to the yellow lamp. The route area's extras own all three draws. The reef has a flat 6 m cap at every distance, independent of far-ground steps 1, 2 and 4. The walk, arch colliders, light rig and ending retain their existing records.
+
+Use `notch-reached`, the first seed with the Notch line laid and the lantern available. Each pair submits two renders of the same game update with only the Notch extras toggled. FOV is 62°. Desktop is 1200 × 750 at full detail. Portrait is 390 × 844 at lowest detail and 0.6 resolution. The outbound train views use the player car while the railway reports a rider. All four views add 3 draws and 1,242 triangles on both presets, within the 12 / 24,000 desktop and 6 / 10,000 phone allowances.
+
+| Camera | Desktop draws / triangles, before → after | Portrait draws / triangles, before → after | Stills |
+|---|---|---|---|
+| Platform approach | 187 / 531,551 → 190 / 532,793 | 73 / 367,359 → 76 / 368,601 | [Desktop before](greybox-look/card7-before-approach.jpg) · [Desktop after](greybox-look/card7-after-approach.jpg) · [Portrait before](greybox-look/card7-before-approach-portrait.jpg) · [Portrait after](greybox-look/card7-after-approach-portrait.jpg) |
+| Halt toward the lantern | 155 / 515,287 → 158 / 516,529 | 77 / 367,395 → 80 / 368,637 | [Desktop before](greybox-look/card7-before-halt.jpg) · [Desktop after](greybox-look/card7-after-halt.jpg) · [Portrait before](greybox-look/card7-before-halt-portrait.jpg) · [Portrait after](greybox-look/card7-after-halt-portrait.jpg) |
+| Halt toward the opening | 155 / 515,287 → 158 / 516,529 | 77 / 367,395 → 80 / 368,637 | [Desktop before](greybox-look/card7-before-opening.jpg) · [Desktop after](greybox-look/card7-after-opening.jpg) · [Portrait before](greybox-look/card7-before-opening-portrait.jpg) · [Portrait after](greybox-look/card7-after-opening-portrait.jpg) |
+| Outward player car | 171 / 529,217 → 174 / 530,459 | 94 / 381,985 → 97 / 383,227 | [Desktop before](greybox-look/card7-before-coach.jpg) · [Desktop after](greybox-look/card7-after-coach.jpg) · [Portrait before](greybox-look/card7-before-coach-portrait.jpg) · [Portrait after](greybox-look/card7-after-coach-portrait.jpg) |
+
+Platform approach eye (−1563.36, 9.5, −946.07) looks at (−1620, 30, −1000). Both halt views use (−1584.2, 9.5, −979.35). The lamp target is (−1620, 11, −986) and the opening target is (−1620, 30, −1000). The outbound car eyes are (−1513.0731678372906, 9.779424969842488, −913.4204638705554) on desktop and (−1502.8263659120275, 9.426578307343188, −905.0200521416722) in portrait. Both look at (−1620, 24, −1000).
+
+From the car the near pier's courses rise beside the red cab and blue sky shows through the arch. From the halt the yellow lamp clears the limestone edge above the dark ground. The portrait approach includes the underside of the lintel and the rails below it. The closer portrait opening crops the outer faces. Phone preset rendered on desktop WebGPU, not tested on a device.
+
 ## Cost envelope
 
 Proposed **incremental** counts over the matching greybox camera, both colour and shadow passes, for all visible dressing combined. The tighter phone target preserves the dominant silhouette and shore value break, then sheds small vegetation, loose props and distant shadows first. Use existing sea, sky, fog, palettes and shared materials throughout. Mount near detail with its area and retain one coarse far outline. Avoid area-specific water or sky passes.
