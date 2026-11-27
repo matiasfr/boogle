@@ -195,6 +195,9 @@ const STACK_HALTS: readonly RailHalt[] = [
     end: railEnd('crossover', legS(STACK, ringRow.ends.find((e) => e.at === 'end')!.sCm), 1),
   },
 ];
+/** A catalog row's far end, in cm along it. */
+const rowEndCm = (id: 'ns' | 'bay' | 'cave') =>
+  WORLD_LINES.find((l) => l.id === id)!.ends.find((e) => e.at === 'end')!.sCm;
 /** A catalog row as a sim line of its own: its path every 10 m (pathOf), its halts at the row's stops, every one shut
  * (a later leg's rules open them, with their ends and trains). No train runs on it yet. */
 function rowLine(id: 'ns' | 'bay' | 'cave'): RailLineDef {
@@ -565,7 +568,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
     appendLeg(rowLine('ns'), 'incline', 'Incline head', 110600, [0, 1, 2]),
     'causeway',
     'Causeway head',
-    WORLD_LINES.find((l) => l.id === 'ns')!.ends.find((e) => e.at === 'end')!.sCm,
+    rowEndCm('ns'),
     [2, 2],
   ),
   appendLeg(
@@ -578,7 +581,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
     ),
     'notch-tunnel',
     'Notch head',
-    WORLD_LINES.find((l) => l.id === 'bay')!.ends.find((e) => e.at === 'end')!.sCm,
+    rowEndCm('bay'),
     [3, 3],
   ),
   appendLeg(
@@ -591,7 +594,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
     ),
     'wall',
     'Wall head',
-    WORLD_LINES.find((l) => l.id === 'cave')!.ends.find((e) => e.at === 'end')!.sCm,
+    rowEndCm('cave'),
     [2, 2, 3, 3, 4, 4, 5],
   ),
 ];
