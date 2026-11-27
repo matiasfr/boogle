@@ -65,16 +65,17 @@ export function haltYardBay(hand: BayHand): BayBox[] {
   part(0, 30, stone + hand * 62, 160, 36, 8, BOARD);
   return out;
 }
+const dockBoardFoot = 2.68;
 export const prefabs: PrefabDef[] = [
-  ...([false, true] as const).map((post): PrefabDef => ({
-    key: post ? 'railway.works-post' : 'railway.works-face',
+  ...([false, true, 'dock'] as const).map((post): PrefabDef => ({
+    key: post === 'dock' ? 'railway.dock-works-post' : post ? 'railway.works-post' : 'railway.works-face',
     scope: 'owner',
     visual: { none: true },
     colliders: [],
     attach: {
       sign: {
         kind: 'label',
-        at: [0, post ? 0.65 : 0, 0],
+        at: [0, post === 'dock' ? dockBoardFoot : post ? 0.65 : 0, 0],
         facing: [0, 0, 1],
         w: post ? 3.2 : 2.1,
         h: post ? 1.65 : 0.87,
@@ -87,8 +88,8 @@ export const prefabs: PrefabDef[] = [
     scope: 'owner',
     visual: { none: true },
     colliders: [
-      { shape: 'box', at: [0, 0.325, 0], half: [0.06, 0.325, 0.06] },
-      { shape: 'box', at: [0, 1.475, 0], half: [1.66, 0.885, 0.04] },
+      { shape: 'box', at: [0, dockBoardFoot / 2, 0], half: [0.06, dockBoardFoot / 2, 0.06] },
+      { shape: 'box', at: [0, dockBoardFoot + 0.825, 0], half: [1.66, 0.885, 0.04] },
     ],
   },
   ...(['signal', 'road-plaque'] as const).map((kind): PrefabDef => ({

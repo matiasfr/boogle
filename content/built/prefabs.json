@@ -10762,12 +10762,12 @@
         {
           "at": [
             0,
-            0.325,
+            1.34,
             0
           ],
           "half": [
             0.06,
-            0.325,
+            1.34,
             0.06
           ],
           "shape": "box"
@@ -10775,7 +10775,7 @@
         {
           "at": [
             0,
-            1.475,
+            3.505,
             0
           ],
           "half": [
@@ -10787,6 +10787,32 @@
         }
       ],
       "key": "railway.dock-post-solid",
+      "scope": "owner",
+      "visual": {
+        "none": true
+      }
+    },
+    "railway.dock-works-post": {
+      "attach": {
+        "sign": {
+          "at": [
+            0,
+            2.68,
+            0
+          ],
+          "facing": [
+            0,
+            0,
+            1
+          ],
+          "h": 1.65,
+          "kind": "label",
+          "posts": "one",
+          "w": 3.2
+        }
+      },
+      "colliders": [],
+      "key": "railway.dock-works-post",
       "scope": "owner",
       "visual": {
         "none": true

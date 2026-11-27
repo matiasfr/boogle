@@ -1,4 +1,4 @@
-// West landing's station board, eight metres ahead along the landing's facing.
+// West landing's station board, beside the path in the landing's opening view.
 import { worksBoardRows } from '../entities/railway/works-board-state.ts';
 import { worksFace } from '../entities/railway/works-board.ts';
 import { frameHasRemote } from '../entities/railway/frame-occupied.ts';
@@ -12,7 +12,7 @@ import { DOCK_BOARD } from './shore-layout.ts';
 export function createDockPost(owner: OwnedView) {
   const { x, z, yaw } = DOCK_BOARD;
   const y = H(x, z);
-  const board = worksFace(owner, { x, y, z }, yaw, true);
+  const board = worksFace(owner, { x, y, z }, yaw, 'dock');
   board.visible = false;
   const key = 'railway.dock-post-solid';
   const solid = instantiate(key, { id: 'dock:works-post', prefab: key, pos: [x, y, z], rot: [yaw, 0, 0] }, { owner });
