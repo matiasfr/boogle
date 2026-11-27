@@ -34,7 +34,9 @@ check(/logs 0\//.test(before[1]!), 'board asks for logs');
 if (line === 1) await ride(HALT.village2, destination);
 else {
   const lever = rowLever(line, 0);
-  check(await bot.walk(lever.x, lever.z, 1), 'walked to the West landing departure lever');
+  const west = stops[0]!.platforms[0];
+  await hopTo(west.x / 100, west.z / 100, 'hopped onto the West landing platform', 30000);
+  await hopTo(lever.x, lever.z, 'walked to the West landing departure lever', 30000);
   const requested = () => interactTarget()?.verb === 'Stop requested';
   await rideFrom(
     {

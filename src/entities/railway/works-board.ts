@@ -27,7 +27,7 @@ export function worksFace(
         g.fillText(row, 12, y, cw - 24);
         return;
       }
-      const title = row.slice(0, row.indexOf('?') + 1);
+      const title = row.slice(0, row.indexOf('\u00b7') + 1);
       g.fillText(title, 12, y);
       const start = 18 + g.measureText(title).width;
       const width = (cw - start - 6) / needs.length;

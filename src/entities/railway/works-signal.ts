@@ -19,8 +19,9 @@ const eyes = [
     z: RING_HALT.down.z / 100,
   },
 ];
-function columnHeight(at: THREE.Vector3, island: IslandGround) {
-  let height: number = PLUME.height;
+function columnHeight(site: RoomWorks['site'], at: THREE.Vector3, island: IslandGround) {
+  // Dock-eye stills include a spruce above Q5's ridge and the West landing structure toward Canopy.
+  let height: number = site === 'Q5' || site === 'canopy-2' ? 200 : PLUME.height;
   for (const eye of eyes) {
     const dx = at.x + PLUME.lean - eye.x,
       dz = at.z - eye.z;
@@ -98,7 +99,7 @@ export function createWorksSignal(owner: OwnedView, island: IslandGround) {
       previous.copy(flag.position);
       oldHeight = height;
       flag.position.set(x / 100, ground, z / 100);
-      height = columnHeight(flag.position, island);
+      height = columnHeight(work.site, flag.position, island);
       fading = plume && !restore;
       elapsed = restore || site === null ? 2 : 0;
       site = work.site;
