@@ -175,7 +175,7 @@ export const YOKE_PITCH = 0.065;
 /** The Rail yoke: an iron bar over the shoulders (over the pack frame's, when it is worn), rising at each end into an
  * arm that runs back over a bank of rails, with a stirrup hung from it that the rails stand in. Darker than the worn
  * rails, so it reads apart from the steel it holds. Load-socket coordinates, like `packParts`. */
-export function yokeAssembly() {
+export function yokeAssembly(gauge = 1) {
   const hooks: Part[] = [];
   const IRON = '#56616b',
     PAD = '#69472e';
@@ -184,17 +184,17 @@ export function yokeAssembly() {
     low = YOKE_BANK[1] - 0.36,
     fore = YOKE_BANK[2] - 0.04,
     aft = back - 0.03;
-  const parts: Part[] = [['c', 0, shoulder, bar, 0.035, 2 * ax, 0.035, IRON, 0, Math.PI / 2]];
+  const parts: Part[] = [['c', 0, shoulder, bar, 0.035 * gauge, 2 * ax, 0.035 * gauge, IRON, 0, Math.PI / 2]];
   for (const x of [-ax, ax]) {
     parts.push(
-      ['b', x, (shoulder + arm) / 2, front, 0.05, arm - shoulder + 0.05, 0.05, IRON],
-      ['b', x, arm, front + len / 2, 0.05, 0.05, len, IRON],
-      ['b', x * 0.5, shoulder - 0.035, bar, 0.16, 0.03, 0.1, PAD],
+      ['b', x, (shoulder + arm) / 2, front, 0.05 * gauge, arm - shoulder + 0.05, 0.05 * gauge, IRON],
+      ['b', x, arm, front + len / 2, 0.05 * gauge, 0.05 * gauge, len, IRON],
+      ['b', x * 0.5, shoulder - 0.035 * gauge, bar, 0.16, 0.03 * gauge, 0.1 * gauge, PAD],
     );
     hooks.push(
-      ['b', x, (arm + low) / 2, fore, 0.025, arm - low, 0.025, IRON],
-      ['b', x, (arm + low) / 2, aft, 0.025, arm - low, 0.025, IRON],
-      ['b', x, low, (fore + aft) / 2, 0.06, 0.035, aft - fore + 0.025, IRON],
+      ['b', x, (arm + low) / 2, fore, 0.025 * gauge, arm - low, 0.025 * gauge, IRON],
+      ['b', x, (arm + low) / 2, aft, 0.025 * gauge, arm - low, 0.025 * gauge, IRON],
+      ['b', x, low, (fore + aft) / 2, 0.06 * gauge, 0.035 * gauge, aft - fore + 0.025, IRON],
     );
   }
   return { bar: parts, hooks };

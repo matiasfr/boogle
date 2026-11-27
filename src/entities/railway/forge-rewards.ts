@@ -199,7 +199,7 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
     },
   );
   const target: THREE.Vector3 = yoke.attach('pickup').at;
-  const assembly = yokeAssembly();
+  const assembly = yokeAssembly(1.8);
   const iron = new THREE.Group();
   const bar = new THREE.Mesh(keep(merged(assembly.bar)), material);
   const hooks = new THREE.Mesh(keep(merged(assembly.hooks)), material);
@@ -211,9 +211,7 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
   const bareBottom = new THREE.Box3().setFromObject(bar).min.y;
   iron.scale.setScalar(2);
   iron.position.set(0, 0.7 - 2 * bounds.min.y, -(bounds.min.z + bounds.max.z));
-  const halo = glimmerMesh.clone();
-  halo.position.set(0, 0, -mid);
-  yoke.root.add(iron, halo);
+  yoke.root.add(iron);
   /** Where the card flies from and the prompt points: the pack's head. */
   const head = at.clone().add(new THREE.Vector3(0, PACK_HEAD_Y, 0));
 
@@ -519,7 +517,7 @@ export async function createForgeRewards(adapter: RailwayAdapter, owner: OwnedVi
       pack.visible = ready && !claimed;
       const yokeReady = line2YokeReady(w);
       yoke.setEnabled(yokeReady && !rail(w).yoke);
-      if (pack.visible || yoke.root.visible) glimmer.strength.value = 0.4 + 0.06 * Math.sin(performance.now() * 0.0025);
+      if (pack.visible) glimmer.strength.value = 0.4 + 0.06 * Math.sin(performance.now() * 0.0025);
       packErrand.update(dt, ready, claimed, pack.visible);
       yokeErrand.update(dt, yokeReady, rail(w).yoke, yoke.root.visible);
       iron.position.y = 0.7 - 2 * (hooks.visible ? bounds.min.y : bareBottom);

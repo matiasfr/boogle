@@ -140,15 +140,15 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView,
   // The workshop wall hides the rack at the old forge frame. Place the arm at the outside corner.
   const finger = (id: string, yard: number, x: number, z: number) => {
     const dest = HALT_YARDS[yard]!;
-    const piece = accessory(
-      'railway.yard-pointer',
-      id,
-      yardPointer,
-      x,
-      H(x, z),
-      z,
-      Math.atan2(dest.x / 100 - x, dest.z / 100 - z),
-    );
+    const yaw = Math.atan2(dest.x / 100 - x, dest.z / 100 - z);
+    const piece = accessory('railway.yard-pointer', id, yardPointer, x, H(x, z), z, yaw);
+    if (yard === 0) {
+      const towardForge = Math.atan2(LINE2_FORGE.x / 100 - x, LINE2_FORGE.z / 100 - z);
+      const board = box(x, z, place(0, 1.28, 0.57, 0.16, 0.32, 1.4, towardForge), '#b98a52');
+      board.y = H(x, z);
+      boxes.push(board);
+      piece.end = boxes.length;
+    }
     piece.solid.setEnabled(false);
     return { ...piece, yard, shown: false };
   };
