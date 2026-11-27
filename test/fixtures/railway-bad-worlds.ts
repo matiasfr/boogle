@@ -23,6 +23,7 @@ import {
   Line,
   Outcome,
   Pile,
+  Plot,
   QJob,
   QJobRun,
   Rail,
@@ -46,6 +47,8 @@ import { stopsOf } from '../../src/sim/railway-queries.ts';
 /** The stages the entries are built on: line one only, a line-two stretch on its way, line two done, and the rivet
  * struck (the steel works'). */
 export const BAD_WORLD_STAGES = [
+  'house-built',
+  'yard-built',
   'boiler',
   'trains-on',
   'awake',
@@ -75,6 +78,27 @@ const A = 'awake',
   Q = 'q2-arriving',
   X = 'crossing-done',
   J = 'ring-joined';
+export const BAD_PLOT_KINDS: readonly BadWorld[] = [
+  { site: 'unbought with choice', message: 'railway: plot kind', stage: A, break: (w) => set(w, Plot, { kind: 2 }, 0) },
+  {
+    site: 'bought without choice',
+    message: 'railway: plot kind',
+    stage: 'house-built',
+    break: (w) => set(w, Plot, { kind: 0 }, 0),
+  },
+  {
+    site: 'unknown choice',
+    message: 'railway: plot kind',
+    stage: 'house-built',
+    break: (w) => set(w, Plot, { kind: 255 }, 0),
+  },
+  {
+    site: 'plain plot with choice',
+    message: 'railway: plot kind',
+    stage: 'yard-built',
+    break: (w) => set(w, Plot, { kind: 1 }, 1),
+  },
+];
 export const BAD_WORLDS: readonly BadWorld[] = [
   // ------------------------------------------------ railwayCheck's own (src/sim/railway-check.ts)
   { site: 'check catalog', message: 'railway: catalog', stage: A, break: (w) => set(w, Tree, { left: 16 }, 0) },
@@ -570,7 +594,7 @@ export const BAD_WORLDS: readonly BadWorld[] = [
     message: 'railway: boiler aboard',
     stage: J,
     break: (w) => set(w, Train, { boiler: 2 }, LINE_SLOTS[LINE2]![0]),
-  },  // Garage step 4 (v67): line 2's install revision is its two fits' sum; the garage table holds an open line's copy.
+  }, // Garage step 4 (v67): line 2's install revision is its two fits' sum; the garage table holds an open line's copy.
   {
     site: 'install revision',
     message: 'railway: install revision',

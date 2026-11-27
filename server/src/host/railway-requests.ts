@@ -89,6 +89,7 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
       'rail.drop',
       'rail.take',
       'rail.rackTake',
+      'rail.buy',
       'rail.steelTake',
       'rail.haltPut',
       'rail.haltTake',

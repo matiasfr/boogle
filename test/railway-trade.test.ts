@@ -1134,9 +1134,16 @@ test('R3: income at the first route settles within one fare a minute of min(the 
 // B1: spending and building use the same authoritative rules as the host.
 const READY = buildSeedWorld('house-ready');
 const PIER = buildSeedWorld('q6-done');
-const sendBuy = (w: World, tick: number, id: number, pid = 'a', pct = 50) => {
+const sendBuy = (
+  w: World,
+  tick: number,
+  id: number,
+  pid = 'a',
+  pct = 50,
+  kind: number | undefined = id === 0 ? 1 : undefined,
+) => {
   const a = account(w, pid)!;
-  return railApply(w, pid, { op: 'rail.buy', id, epoch: a.epoch, request: a.request + 1 }, tick, undefined, pct);
+  return railApply(w, pid, { op: 'rail.buy', id, kind, epoch: a.epoch, request: a.request + 1 }, tick, undefined, pct);
 };
 /** Controlled money for rule isolation, with its conservation ledger intact. Seeds never do this. */
 function credit(w: World, n: number) {
@@ -1155,17 +1162,34 @@ test('B1: unstaked, short and bought plots reject; duplicates and two players in
     before = { ...tillRow(w) },
     price = plotPrice(w, 0, 0, 50);
   const a = account(w, 'a')!;
-  const request = { op: 'rail.buy', id: 0, epoch: a.epoch, request: a.request + 1 };
+  const request = { op: 'rail.buy', id: 0, kind: 1, epoch: a.epoch, request: a.request + 1 };
   const first = railApply(w, 'a', request, READY.t);
   assert.equal(first.status, 'accepted');
   assert.deepEqual(railApply(w, 'a', request, READY.t), first, 'replayed request');
   assert.equal(sendBuy(w, READY.t, 0, 'b').status, 'rejected', 'same tick, other player');
   assert.equal(sendBuy(w, READY.t + 1, 0).status, 'rejected', 'already bought');
-  assert.deepEqual(plot(w, 0), { slot: 0, at: READY.t, paid: price });
+  assert.deepEqual(plot(w, 0), { slot: 0, at: READY.t, paid: price, kind: 1 });
   assert.equal(tillRow(w).boogles, before.boogles - price);
   assert.equal(tillRow(w).spent, price);
   checkTrade(w, READY.t);
   assert.equal(plotSlot(3, 2), 50, 'keys are per town');
+});
+
+test('only valid choices spend the first house price', () => {
+  for (const kind of [undefined, 3, 1, 2]) {
+    const w = copy(READY.w);
+    const a = account(w, 'a')!;
+    const result = railApply(w, 'a', { op: 'rail.buy', id: 0, kind, epoch: a.epoch, request: a.request + 1 }, READY.t);
+    const accepted = kind === 1 || kind === 2;
+    assert.equal(result.status, accepted ? 'accepted' : 'rejected');
+    assert.equal(plot(w, 0).kind, accepted ? kind : 0);
+    if (accepted) assert.equal(sendBuy(w, READY.t, 0, 'b', 50, 3 - kind).status, 'rejected');
+    assert.equal(tillRow(w).spent, accepted ? 150 : 0);
+  }
+  const w = copy(READY.w);
+  credit(w, 400);
+  assert.equal(sendBuy(w, READY.t, 1, 'a', 50, 1).status, 'rejected');
+  assert.equal(sendBuy(w, READY.t, 1).status, 'accepted');
 });
 
 test('B1: buying the second plot first doubles the first immediately; only staked unbought offers set the cap', () => {
@@ -1217,7 +1241,7 @@ test('B1: plot load checks reject future buys, missing thresholds, unbought paym
   wrong.mut(Plot, wrong.lookup(Plot, 0)!)!.paid++;
   assert.throws(() => checkTrade(wrong, READY.t), /plot spending/);
   const early = copy(ASLEEP.w);
-  Object.assign(early.mut(Plot, early.lookup(Plot, 0)!)!, { at: ASLEEP.t, paid: 150 });
+  Object.assign(early.mut(Plot, early.lookup(Plot, 0)!)!, { at: ASLEEP.t, paid: 150, kind: 1 });
   assert.throws(() => checkTrade(early, ASLEEP.t), /plot thresholds/);
 });
 
@@ -1276,7 +1300,7 @@ test('S1: an above-cap saved box and a plot bought at its old price keep their b
       w.mut(Town, w.lookup(Town, 0)!)![goods] += n;
       w.mut(Yard, w.lookup(Yard, slot)!)!.made += n;
     }
-    Object.assign(w.mut(Plot, w.lookup(Plot, k)!)!, { at: PIER.t - TRADE.buildTicks, paid });
+    Object.assign(w.mut(Plot, w.lookup(Plot, k)!)!, { at: PIER.t - TRADE.buildTicks, kind: k === 0 ? 1 : 0, paid });
     const b = w.mut(Till, w.single(Till))!;
     b.spent += paid;
     b.landed += paid;

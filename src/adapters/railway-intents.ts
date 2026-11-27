@@ -39,7 +39,8 @@ export type RailwayIntent =
         | 'rail.arrive';
     }
   | { op: 'rail.call'; id: number; dir: -1 | 1; train?: number }
-  | { op: 'rail.strike' | 'rail.buy'; id: number }
+  | { op: 'rail.strike'; id: number }
+  | { op: 'rail.buy'; id: number; kind?: number }
   | { op: 'rail.footTake'; rack: 0 | 1 | 2 }
   | { op: 'rail.footSet'; site: 0 | 1 | 2 | 3 }
   | { op: 'rail.brace'; revision: 1 }
@@ -65,7 +66,10 @@ export type RailwayIntent =
  * count; the rule clips to today's back. */
 export const CARRY_MAX = MAX_KIND_CAPACITY;
 export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
-  if (e.op === 'rail.buy' && pricedPlot(e.id)) return { op: e.op, id: e.id };
+  if (e.op === 'rail.buy' && pricedPlot(e.id)) {
+    if (e.kind === undefined) return { op: e.op, id: e.id };
+    return railInt(e.kind, 15) ? { op: e.op, id: e.id, kind: e.kind } : null;
+  }
   if (e.op === 'rail.wake') return { op: e.op };
   if (e.op === 'rail.sack') return { op: e.op };
   if (e.op === 'rail.jump' || e.op === 'rail.pack')
@@ -250,7 +254,10 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
     railInt(yard, HALT_YARDS.length - 1) && railInt(kind, 2) && submit({ op, yard, kind });
   return {
     wake: () => submit({ op: 'rail.wake' }),
-    buy: (slot: number) => pricedPlot(slot) && submit({ op: 'rail.buy', id: slot }),
+    buy: (slot: number, kind?: number) =>
+      pricedPlot(slot) &&
+      (kind === undefined || railInt(kind, 15)) &&
+      submit({ op: 'rail.buy', id: slot, ...(kind === undefined ? {} : { kind }) }),
     sack: () => submit({ op: 'rail.sack' }),
     openAxe: () => submit({ op: 'rail.axe' }),
     claimJump: (station?: 'T1') => submit({ op: 'rail.jump', station }),

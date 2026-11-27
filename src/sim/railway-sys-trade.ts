@@ -11,7 +11,7 @@
 import { defineSystem, type World } from '../ecs/index.ts';
 import { RAIL_TRAINS } from './railway-lines.ts';
 import { TRAIN_PHASE, trainDir } from './railway-train.ts';
-import { RIDER_UNIT, TRADE, lineRoute, type TradePct } from './railway-trade-layout.ts';
+import { RIDER_UNIT, TRADE, validPlotKind, lineRoute, type TradePct } from './railway-trade-layout.ts';
 import { Plot, Rail, Till, Town, TownClock, Train, Yard, YardClock } from './railway-components.ts';
 import { railId, trainId } from './railway-queries.ts';
 import {
@@ -194,14 +194,16 @@ export const buy = defineSystem(
     if (typeof e.id !== 'number' || !Number.isInteger(e.id) || e.id < 0) return 0;
     const town = Math.floor(e.id / 16),
       k = e.id % 16;
-    if (!TRADE.plots[town]?.[k] || plotBought(w, e.id) || !plotsStaked(w, town).includes(k)) return 0;
+    const offer = TRADE.plots[town]?.[k];
+    const kind = e.kind === undefined ? 0 : e.kind;
+    if (!offer || !validPlotKind(offer, kind) || plotBought(w, e.id) || !plotsStaked(w, town).includes(k)) return 0;
     const price = plotPrice(w, town, k, pricePct),
       tid = w.single(Till);
     if (w.get(Till, tid)!.boogles < price) return 0;
     const till = w.mut(Till, tid)!;
     till.boogles -= price;
     till.spent += price;
-    Object.assign(w.mut(Plot, w.lookup(Plot, e.id)!)!, { at: tick, paid: price });
+    Object.assign(w.mut(Plot, w.lookup(Plot, e.id)!)!, { at: tick, paid: price, kind });
     return 1;
   },
 );

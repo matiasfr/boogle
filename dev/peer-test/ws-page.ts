@@ -453,7 +453,7 @@ function startWorld(room: Room) {
     T.railIntent = (intent) => {
       switch (intent.op) {
         case 'rail.buy':
-          return adapter.buy(intent.id);
+          return adapter.buy(intent.id, intent.kind);
         case 'rail.sack':
           return adapter.sack();
         case 'rail.wake':

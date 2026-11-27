@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import type { World } from '../src/ecs/index.ts';
 import { check } from '../src/sim/railway-drive.ts';
-import { BAD_WORLDS, BAD_WORLD_STAGES, DOMINATED, UNREACHABLE } from './fixtures/railway-bad-worlds.ts';
+import { BAD_WORLDS, BAD_PLOT_KINDS, BAD_WORLD_STAGES, DOMINATED, UNREACHABLE } from './fixtures/railway-bad-worlds.ts';
 import { stageWorld, worldVerdict } from './helpers/railway-check.ts';
 
 // Built at module scope, outside the 5 s test timeout (as the golden shards do).
@@ -19,7 +19,7 @@ const broken = (entry: (typeof BAD_WORLDS)[number]) => {
 };
 
 // Each base stage's own acceptance is the golden shards' ("seed stage X: the world check accepts it").
-for (const entry of BAD_WORLDS)
+for (const entry of [...BAD_WORLDS, ...BAD_PLOT_KINDS])
   test(`bad world ${entry.site}: refused with "${entry.message}" by the world check`, () => {
     assert.equal(worldVerdict(broken(entry)), entry.message);
   });
