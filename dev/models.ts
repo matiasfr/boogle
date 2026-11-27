@@ -39,12 +39,12 @@ export const routes: Route[] = [
     "the author's model",
     "at the author's effort",
   ),
-  claude(
-    'Planning high-risk work (src/sim, src/net, src/world, server/, the wire format) or a plan the owner asks for (docs/plans/<topic>.md), with its design review',
-    'planner agent (fable medium only for extremely complex work)',
-    'opus',
-    'high',
-  ),
+  {
+    work: 'Planning high-risk work (src/sim, src/net, src/world, server/, the wire format) or a plan the owner asks for (docs/plans/<topic>.md), with its design review',
+    who: 'one Codex job (T3 delegate_task) that writes the plan, commits it, then builds it; it stops after the plan only for an open question that must wait for the owner (the planner agent on opus high when Codex cannot run)',
+    model: 'gpt-6.2-astra',
+    effort: 'high',
+  },
   codex(
     'Implementation from a brief or an approved plan; the builder writes its own short plan first and revises it as it builds (the build skill)',
     'gpt-6.2-sol',
@@ -67,7 +67,11 @@ export const routes: Route[] = [
     'medium; high for tricky work',
   ),
   codex('Fixes, tooling and captures-driven tasks with no plan to follow', 'gpt-6.2-sol', 'medium'),
-  codex('High-risk implementation (server, sync, src/world, src/net)', 'gpt-6.2-astra', 'medium; high for tricky work'),
+  codex(
+    'High-risk implementation (server, sync, src/world, src/net), in the same job as its plan',
+    'gpt-6.2-astra',
+    'high',
+  ),
   {
     work: 'Independent review before merge of src/sim, src/net, src/world, server/ or the wire format (a failing test per suspected defect)',
     who: "a fresh reviewer with none of the author's context: a fresh Codex review delegate or a Claude delegate (T3 delegate_task)",
