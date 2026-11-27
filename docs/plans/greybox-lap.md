@@ -297,7 +297,7 @@ Each step leaves `node dev/ship-check.ts` green. **Steps 1 and 2 ship together a
 to 3 (src/sim, src/world) is an independent one before merge, by the row `npm run models` gives at the time. Rows as of
 26 November are named on each step.
 
-- [ ] **1. The Gorge approach slewed, and the Wall's Gorge platforms moved (M; "High-risk implementation": Codex
+- [x] **1. The Gorge approach slewed, and the Wall's Gorge platforms moved (M; "High-risk implementation": Codex
       gpt-6.2-astra medium, because it regenerates `src/sim/railway-world-lines.ts`).** Files: `dev/level/world-blockout.ts`
       (`ROUTES['wall-n']`'s last straight: its end points 2.00 m to the split's south, c +2, from the end of the Gorge
       turn, a −136, eased in by a −56; line 2's last chord eased onto the axis; the Wall's Gorge end and crossover stay in the
@@ -310,6 +310,8 @@ to 3 (src/sim, src/world) is an independent one before merge, by the row `npm ru
       existing floods at the moved platforms, c −3.8 and +7.8). Verify: `test/railway-route.test.ts`,
       `test/world-lines.test.ts` (no future span over 4%; the map rails); `npm run level-check`: route leg 5 all "ok",
       the continuity report adds nothing. The Wall's sections keep their cuts; the slew lengthens the catalog row by 1 cm.
+      [Platform view toward the Wall](greybox-lap/step1-gorge-approach.png). The two track pairs line up across
+      the concourse. Line 2 still has its buffers at this stage.
 - [ ] **2. One line in the rules, and the bump (L; "High-risk implementation": Codex gpt-6.2-astra **high** (tricky);
       then the independent review row).** Files: new `src/sim/railway-lap.ts` (`WALL_LEG`, `lapJoined(legs)`,
       `runLine(slot, joined)`, `lapSlots(line, joined)`, `lapRow(row, tick)`, `lapAsks(req)`, `LAP_S0`);
