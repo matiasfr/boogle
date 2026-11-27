@@ -89,6 +89,15 @@ The bore and bay coach-height pairs use `stack-laid-4`. The lower station pairs 
 
 Both train pairs use `bay-reached` and two fresh render submissions in the same game update, holding the train still between them. At lower west the deck occludes most of the bay locomotive; its kit board clears the lip. Only the rock batch enters that camera, adding one draw / 352 triangles. On the separate live approach the outbound player car reported its rider at s = 191.37 m. The camera eye was (−52.1503,6.7396,−1809.6259), quaternion (0.003637,0.989050,0.024731,−0.145447). The red cab sits against the bright opening. [On the incline train](greybox-look/card2-bore-ride.jpg)
 
+- [x] **Card 5, Port Quay.** Timber faces the straight dock and wraps the platform ends. Two low crate stacks stand at the apron and platform edges. Two courses of rock meet the outer end of the resident slab. The town reserve stays empty.
+
+The pair toggles the quay dressing in consecutive scene renders from the same game update on the `port-reached` save at 62° FOV. Desktop uses 1200 × 750 at full detail. Portrait uses a 390 × 844 touch viewport at lowest detail and 0.6 resolution. The approach camera follows the live player car. The buffers camera looks back along both platforms. Each view adds one draw and 480 triangles. The moving approach showed a single quay edge throughout the sampled arrival. Not tested on a device.
+
+| Camera | Desktop draws / triangles, before → after | Portrait draws / triangles, before → after | Stills |
+| --- | --- | --- | --- |
+| Arriving car across apron | 262 / 532,745 → 263 / 533,225 | 129 / 352,257 → 130 / 352,737 | [Desktop before](greybox-look/card5-coach-before.jpg) · [Desktop after](greybox-look/card5-coach-after.jpg) · [Portrait before](greybox-look/card5-coach-portrait-before.jpg) · [Portrait after](greybox-look/card5-coach-portrait-after.jpg) |
+| Buffers toward platforms | 1,114 / 1,687,469 → 1,115 / 1,687,949 | 847 / 1,268,179 → 848 / 1,268,659 | [Desktop before](greybox-look/card5-buffers-before.jpg) · [Desktop after](greybox-look/card5-buffers-after.jpg) · [Portrait before](greybox-look/card5-buffers-portrait-before.jpg) · [Portrait after](greybox-look/card5-buffers-portrait-after.jpg) |
+
 - [x] **Card 7, Lantern Notch.** Two broad kit faces rise from the feet of the limestone piers. Grass grows at the outer shoulders. A tapered patch of packed earth leads from the steps to the yellow lamp. The route area's extras own all three draws. The reef has a flat 6 m cap at every distance, independent of far-ground steps 1, 2 and 4. The walk, arch colliders, light rig and ending retain their existing records.
 
 Use `notch-reached`, the first seed with the Notch line laid and the lantern available. Each pair submits two renders of the same game update with only the Notch extras toggled. FOV is 62°. Desktop is 1200 × 750 at full detail. Portrait is 390 × 844 at lowest detail and 0.6 resolution. The outbound train views use the player car while the railway reports a rider. All four views add 3 draws and 1,242 triangles on both presets, within the 12 / 24,000 desktop and 6 / 10,000 phone allowances.
