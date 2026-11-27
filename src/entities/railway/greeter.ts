@@ -161,7 +161,7 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
         camp.yaw = angleLerp(camp.yaw, Math.atan2(p.x - camp.x, p.z - camp.z), Math.min(1, dt * 5));
         camp.mood = handing > 0 ? 'give' : campSpeaking ? 'chat' : needsAxe ? 'wave' : 'idle';
       } else camp.mood = 'idle';
-      if (campSpeaking) talk.updateTalkCard();
+      talk.updateTalkCard();
     },
     lateUpdate() {
       sleeves.lateUpdate();

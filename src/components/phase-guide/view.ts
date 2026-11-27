@@ -150,9 +150,6 @@ export function createPhaseGuide<S extends string>(owner: OwnedView, opts: Phase
         stopBark();
       }
       const g = opts.body();
-      if (!active || !g?.on) {
-        if (speaking()) talk?.endTalk();
-      }
       if (!g || !cur) {
         if (speaking()) talk?.updateTalkCard();
         return;

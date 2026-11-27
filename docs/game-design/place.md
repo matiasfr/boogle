@@ -622,7 +622,7 @@ once-a-stage bubble is once per page. No collider. Serves DESIGN.md 7 (Telegraph
 The shared phase-guide helper ([`src/components/phase-guide/view.ts`](../../src/components/phase-guide/view.ts), stage
 queries in [`stages.ts`](../../src/components/phase-guide/stages.ts)) now drives Sleeves, the forge foreman and three
 Wave 1 station guides ([brief](../brainstorms/phase-guides.md)): the **kiln hand** at Quarry halt (beside the roller
-road path, 5.15 m off the rack, approach bark on stall stages, pointing up the cut/kiln/rack), the **roundhouse hand**
+road path, 7.96 m off the rack, approach bark on stall stages, pointing up the cut/kiln/rack), the **roundhouse hand**
 at Home's Roundhouse (NNE apron, 4.98 m off the garage post and clear of road 2 and the stall sockets, approach bark on
 stall/cradle/turn/steel stages), and **Hooter** upgraded on Ring Island (`…` + Talk over his existing whistle rota, no
 approach bark, keeping his existing `HOOTER` lines alongside placeholder stage lines for the Meet, steel works, steel

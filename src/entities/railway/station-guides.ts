@@ -22,8 +22,8 @@ import { ORIGIN } from '../../place/layout.ts';
 import { H } from '../../place/terrain.ts';
 import type { Guy } from '../../place/folk.ts';
 
-/** Quarry halt: just off the trodden path to the "Kiln" post, 5.05 m off WORKS_RACK (reach 4 m) and 6.2 m off haltAt. */
-const KILN_HAND_AT = { x: 1085.0, z: 46.2 } as const;
+/** Quarry halt: beside the trodden path's start off the platform, 7.96 m off WORKS_RACK (reach 3.6 m + Talk 3.3 m = 6.9 m, zero overlap). */
+const KILN_HAND_AT = { x: 1084.2, z: 43.0 } as const;
 const KILN_HAND_COAT = '#c96b2c';
 const KILN_HAND_VOICE = folkVoice(230, 28, 1.0, 3200);
 
