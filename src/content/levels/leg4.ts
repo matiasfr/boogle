@@ -962,7 +962,8 @@ const quayPieces = [
       road.box('buffer-post-' + side, 29.06, 29.34, across - 0.12, across + 0.12, 4.8, 0.9, 'sandstone'),
     ].map((piece) => ({ ...piece, solid: false }));
   }),
-  { ...road.box('buffer-beam', 29.06, 29.34, -1.15, 1.15, 4.9, 0.3, 'dark'), solid: false },
+  // The beam is a little deeper than the posts so their faces never share its plane (z-fighting).
+  { ...road.box('buffer-beam', 29.02, 29.38, -1.15, 1.15, 4.9, 0.3, 'dark'), solid: false },
   ...bedPieces(shores.quayBed),
   ...shorePieces(shores.portIsle),
   quay.box('quay-slab', -26, 26, -10, 18, 2.96, 2, 'grey'),
