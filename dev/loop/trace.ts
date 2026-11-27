@@ -68,6 +68,22 @@ function current(e: Ev): Ev {
   return e;
 }
 const marks = (s: Session) => s.events.filter((e) => e.k === 'm').map(current);
+
+function firstContribution(s: Session) {
+  const event = s.events.find(
+    (e) => e.k === 'm' && e.n === 'first contribution' && typeof e.seconds === 'number' && e.seconds >= 0,
+  );
+  return { session: s.id, seconds: typeof event?.seconds === 'number' ? event.seconds : null };
+}
+
+function contributionTable(rows: ReturnType<typeof firstContribution>[]) {
+  if (!rows.length) return [];
+  return [
+    'session                          first contribution (s after standing up)',
+    ...rows.map(({ session, seconds }) => `${session.padEnd(32)} ${seconds?.toFixed(1) ?? 'no contribution recorded'}`),
+    '',
+  ];
+}
 const matches = (e: Ev, r: Reached, name = r.mark) =>
   str(e.n) === name && Object.entries(r.data ?? {}).every(([k, v]) => String(e[k]) === String(v));
 /** Seconds into the session each node was reached (its `reached` mark: the nth, or the last), or undefined. */
@@ -348,8 +364,12 @@ function aggregate(files: string[], json: boolean) {
     ]),
   );
   const used: string[] = [];
+  const contributions: ReturnType<typeof firstContribution>[] = [];
+  let unknownFallStarts = 0;
   for (const f of files) {
     const s = read(f);
+    if (s.meta.startedWithFall === true) contributions.push(firstContribution(s));
+    if (typeof s.meta.startedWithFall !== 'boolean') unknownFallStarts++;
     const why = notTheLoop(s);
     if (why) {
       excluded[why] = (excluded[why] ?? 0) + 1;
@@ -379,13 +399,18 @@ function aggregate(files: string[], json: boolean) {
     const s = [...v].sort((a, b) => a - b);
     return s.length % 2 ? s[s.length >> 1]! : (s[s.length / 2 - 1]! + s[s.length / 2]!) / 2;
   };
-  if (json) return console.log(JSON.stringify({ sessions: used, excluded, nodes: [...agg.values()] }, null, 2));
+  if (json)
+    return console.log(
+      JSON.stringify({ sessions: used, excluded, contributions, unknownFallStarts, nodes: [...agg.values()] }, null, 2),
+    );
   const skipped =
     Object.entries(excluded)
       .map(([why, k]) => `${k} ${why}`)
       .join(', ') || 'none';
   const out = [
     `Loop trace of ${used.length} production loop session(s) of ${files.length}; left out: ${skipped}. Untrusted: session data.`,
+    ...contributionTable(contributions),
+    ...(unknownFallStarts ? [`Fall start unrecorded in ${unknownFallStarts} session(s).`] : []),
     'n: sessions with activity at the node (its window, or its marks); confusion is summed over them, ranked; walked/pred',
     'is the median wayfinding ratio over the sessions whose window is a canonical segment (count in brackets).',
     '',
@@ -419,6 +444,7 @@ function aggregate(files: string[], json: boolean) {
 
 function single(file: string, args: string[], value: (flag: string) => string | undefined) {
   const human = read(file);
+  const contribution = human.meta.startedWithFall === true ? firstContribution(human) : null;
   const botFile = findBot(value('--bot'));
   const bot = botFile ? read(botFile) : null;
   const players = Number(value('--players') ?? playersIn(human));
@@ -445,11 +471,26 @@ function single(file: string, args: string[], value: (flag: string) => string | 
     };
   });
   if (args.includes('--json'))
-    return console.log(JSON.stringify({ human: file, bot: botFile, players, table }, null, 2));
+    return console.log(
+      JSON.stringify(
+        {
+          human: file,
+          bot: botFile,
+          players,
+          startedWithFall: human.meta.startedWithFall ?? null,
+          contribution,
+          table,
+        },
+        null,
+        2,
+      ),
+    );
   const t = (v: number | undefined) => (v === undefined ? '-' : clock(v));
   const d = (v: number | undefined) => (v === undefined ? '-' : `${v < 0 ? '-' : '+'}${clock(Math.abs(v))}`);
   const out = [
     `Loop trace. Human: ${file} (${players} player${players > 1 ? 's' : ''}). Bot: ${botFile ?? 'no bot run found (.look/playthrough/<name>/session.jsonl)'}.`,
+    ...contributionTable(contribution ? [contribution] : []),
+    ...(typeof human.meta.startedWithFall !== 'boolean' ? ['Fall start unrecorded in this session.'] : []),
     "Times are since each run's own wake. Predicted is `npm run loop -- run` (a lower bound). Human columns count the",
     'time from the node before it to this one; the tail goes to the first node never reached. Untrusted: session data.',
     'Walked/pred (wayfinding, apart from confusion): metres walked over the straight-line prediction per player for the',

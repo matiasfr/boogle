@@ -4,6 +4,15 @@ One short entry per session: date, who (first names), what was new, what was fun
 
 Sessions whose summary says "Started: jump-in" began in a seeded private room (docs/game-design/dev-menu.md, "Jump in"), so read their beats as a segment, not a first run.
 
+## First-visit playtest kit
+
+Watch the guest play without leading them.
+
+At five minutes, ask the guest:
+
+- “What is the room building?”
+- “What could you do to help?”
+
 ## 2026-10-28
 - Who: Matias + friends
 - New: PeerJS multiplayer on the live site.
