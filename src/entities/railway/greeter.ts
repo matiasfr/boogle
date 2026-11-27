@@ -6,6 +6,8 @@ import { me } from '../../player/player.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { ReadWorld } from '../../sim/railway-rows.ts';
+import { createPhaseGuide } from '../../components/phase-guide/view.ts';
+import type { GuideLines } from '../../components/phase-guide/stages.ts';
 import { createSpeechCue } from '../../components/speech-cue/view.ts';
 import { RAILWAY_T1 as T1 } from '../../sim/railway-layout.ts';
 import { railEngineStart } from '../../sim/railway-queries-line1.ts';
@@ -68,26 +70,42 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
   const g = folk.addGreeter(layout.toWorld(layout.GREETER.x), layout.VILLAGE.y, layout.GREETER.z);
   // Ground the original shore worker beside the path, without adding a blocking body.
   g.fy = land.H(g.x, g.z);
-  const at = new THREE.Vector3(g.x, g.fy + 1.5, g.z);
-  const who = {
-    name: 'Sleeves',
-    x: g.x,
-    z: g.z,
-    color: '#f0c030',
-    voice: {
-      baseHz: 330,
-      rangeSemis: 3,
-      formantScale: 1.25,
-      brightnessHz: 4200,
-      cps: 34,
-      grainMs: [55, 85] as [number, number],
-      vowels: [0.3, 0.15, 0.2, 0.25, 0.1] as const,
-    },
+  const voice = {
+    baseHz: 330,
+    rangeSemis: 3,
+    formantScale: 1.25,
+    brightnessHz: 4200,
+    cps: 34,
+    grainMs: [55, 85] as [number, number],
+    vowels: [0.3, 0.15, 0.2, 0.25, 0.1] as const,
   };
-  let speaking = false;
-  let lastStage = '';
-  let cursor = 0;
-  const cue = createSpeechCue(owner, at);
+  const stage = (): keyof typeof GREETER_LINES => {
+    const phase = read.phase();
+    if (phase === 'asleep' || phase === 'waking') return 'asleep';
+    const w = read.world();
+    if (line2SeaOpen(w)) return 'onward';
+    if (line2Completed(w) >= 2) return 'needle';
+    if (forge(w).lit >= 0) return 'cart';
+    return railEngineStart(w) < 0 ? 'logs' : 'forge';
+  };
+  const sleevesLines: Record<keyof typeof GREETER_LINES, GuideLines> = {
+    asleep: { talk: GREETER_LINES.asleep },
+    logs: { talk: GREETER_LINES.logs },
+    forge: { talk: GREETER_LINES.forge },
+    cart: { talk: GREETER_LINES.cart },
+    needle: { talk: GREETER_LINES.needle },
+    onward: { talk: GREETER_LINES.onward },
+  };
+  const sleeves = createPhaseGuide(owner, {
+    id: 'railway-talk-greeter',
+    name: 'Sleeves',
+    color: '#f0c030',
+    voice,
+    body: () => g,
+    stage,
+    lines: sleevesLines,
+    ready: read.ready,
+  });
   // Beside the existing wake reach, on the camp side of the parked machine; no collider or new shared state.
   const camp = folk.addGreeter(T1.wake.x / 100 - 3, 0, T1.wake.z / 100 + 4.2);
   camp.fy = land.H(camp.x, camp.z);
@@ -98,7 +116,7 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
   const openCamp = () => {
     if (!read.ready() || rail(read.world()).awake >= 0) return;
     campSpeaking = talk.startTalk(
-      { ...who, name: 'Camp resident', x: camp.x, z: camp.z },
+      { name: 'Camp resident', x: camp.x, z: camp.z, color: '#f0c030', voice },
       {
         say: 'Take this axe. Fill the first frame with logs and we can get the engine going.',
         answers: [
@@ -117,38 +135,8 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
       },
     );
   };
-  const stage = () => {
-    const phase = read.phase();
-    if (phase === 'asleep' || phase === 'waking') return 'asleep';
-    const w = read.world();
-    if (line2SeaOpen(w)) return 'onward';
-    if (line2Completed(w) >= 2) return 'needle';
-    if (forge(w).lit >= 0) return 'cart';
-    return railEngineStart(w) < 0 ? 'logs' : 'forge';
-  };
-  const open = () => {
-    const current = stage();
-    if (lastStage !== current) cursor = 0;
-    const lines = GREETER_LINES[current];
-    if (
-      talk.startTalk(
-        who,
-        {
-          say: lines[cursor % lines.length]!,
-          answers: [{ label: 'Bye', then: () => null }],
-        },
-        () => {
-          speaking = false;
-        },
-      )
-    ) {
-      speaking = true;
-      lastStage = current;
-      cursor++;
-    }
-  };
   owner.cleanup(() => {
-    if (speaking || campSpeaking) talk.endTalk();
+    if (campSpeaking) talk.endTalk();
     for (const person of [g, camp]) {
       const k = folk.folk.guys.indexOf(person);
       if (k >= 0) folk.folk.guys.splice(k, 1);
@@ -166,11 +154,8 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
     },
     update(dt: number) {
       handing = Math.max(0, handing - dt);
+      sleeves.update(dt);
       const p = me.body?.position;
-      if (p && Math.hypot(p.x - g.x, p.z - g.z) < 8) {
-        g.yaw = angleLerp(g.yaw, Math.atan2(p.x - g.x, p.z - g.z), Math.min(1, dt * 5));
-        g.mood = speaking ? 'chat' : 'wave';
-      } else g.mood = 'idle';
       const needsAxe = read.ready() && rail(read.world()).awake < 0;
       if (p && Math.hypot(p.x - camp.x, p.z - camp.z) < 8) {
         camp.yaw = angleLerp(camp.yaw, Math.atan2(p.x - camp.x, p.z - camp.z), Math.min(1, dt * 5));
@@ -179,17 +164,13 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
       talk.updateTalkCard();
     },
     lateUpdate() {
-      cue.update(
-        g.on && read.ready() && !conversation.open && (lastStage !== stage() || cursor < GREETER_LINES[stage()].length),
-      );
+      sleeves.lateUpdate();
       campCue.update(camp.on && read.ready() && rail(read.world()).awake < 0 && !conversation.open);
     },
     targets(): Interactable[] {
       const p = me.body?.position;
       if (!p || !read.ready() || conversation.open) return [];
-      const targets: Interactable[] = [];
-      if (Math.hypot(p.x - g.x, p.z - g.z) < 3.3 && Math.abs(p.y - g.fy!) < 3)
-        targets.push({ id: 'railway-talk-greeter', verb: 'Talk', at, run: open, show: cue.show });
+      const targets: Interactable[] = [...sleeves.targets()];
       if (
         rail(read.world()).awake < 0 &&
         Math.hypot(p.x - camp.x, p.z - camp.z) < 3.3 &&

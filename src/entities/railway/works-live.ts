@@ -18,6 +18,7 @@ import { createRingMeet } from '../ring-meet/view.ts';
 import { createRingFolk } from '../ring-folk/view.ts';
 import { createRingSteel } from '../ring-steel/view.ts';
 import { createLegView } from '../route-greybox/leg-view.ts';
+import { createStationGuides } from './station-guides.ts';
 
 export async function createRailwayWorksLive(
   adapter: RailwayAdapter,
@@ -46,8 +47,9 @@ export async function createRailwayWorksLive(
   const leaf = createRailwayLeaf(adapter);
   const meet = createRingMeet(adapter, owner, { ...deps, landed: leaf.landed });
   const folk = createRingFolk(adapter, owner);
+  const guides = createStationGuides(adapter, owner);
   const install = createBoilerInstall(adapter, owner);
-  const views = [breaker, works, roundhouse, footings, crossing, railhead, leaf, meet, folk, steel, install, leg];
+  const views = [breaker, works, roundhouse, footings, crossing, railhead, leaf, meet, folk, guides, steel, install, leg];
   return {
     /** Where the footing wagon's loads hop from and to: the Works rack and the pier rack. */
     footPlaces: { works: works.rackSlot, pier: crossing.rackSlot, ring: railhead.rackSlot },
@@ -60,7 +62,11 @@ export async function createRailwayWorksLive(
     update(dt: number) {
       for (const view of views) view.update(dt);
     },
-    lateUpdate: footings.lateUpdate,
+    lateUpdate() {
+      footings.lateUpdate();
+      folk.lateUpdate();
+      guides.lateUpdate();
+    },
     prePhysics: footings.prePhysics,
     accepted(e: RailwayAccepted) {
       for (const view of views) view.accepted(e);
@@ -83,6 +89,7 @@ export async function createRailwayWorksLive(
       ...leaf.targets(),
       ...meet.targets(),
       ...folk.targets(),
+      ...guides.targets(),
       ...steel.targets(),
       ...install.targets(),
       ...leg.targets(),
@@ -93,6 +100,7 @@ export async function createRailwayWorksLive(
       ...leaf.inspect(),
       ...meet.inspect(),
       ...folk.inspect(),
+      ...guides.inspect(),
       ...steel.inspect(),
       ...install.inspect(),
       ...leg.inspect(),

@@ -42,7 +42,8 @@ const VILLAGE_MAX = 28, // the most of the village's people you'll see at once
   COMMUTERS = 5,
   PUSHERS = 2,
   RESIDENTS = 6,
-  ISLAND_FOLK = 8; // Ring Island's square (src/entities/ring-folk): six crew and Hooter, one spare
+  ISLAND_FOLK = 8, // Ring Island's square (src/entities/ring-folk): six crew and Hooter, one spare
+  STATION_GUIDES = 7; // Phase guides at stations (docs/brainstorms/phase-guides.md): Wave 1 + Wave 2
 // A driver a train: the little guy at the engine's controls, on his tall stool (docs/plans/engine-previz.md).
 const DRIVERS = RAIL_TRAINS.length;
 const COUNT =
@@ -55,7 +56,8 @@ const COUNT =
   COMMUTERS +
   PUSHERS +
   RESIDENTS +
-  ISLAND_FOLK;
+  ISLAND_FOLK +
+  STATION_GUIDES;
 const SKIN = '#f4cfa4',
   EYE = '#1d1a20';
 // Facing +z, standing on y = 0, about 0.95 m tall. Two thirds of it head and hat.
