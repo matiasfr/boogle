@@ -706,12 +706,15 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   await rowRide(canopy.line, canopyEnd, 0, 'bay line');
   await stepOff(westLanding, 'stepped off at the West landing');
   const caveDone = legDone(rw(), CAVE);
+  const plugOpen = !!(route().gates & (1 << caveGate));
   const nextObjective = caveDone
     ? 'Build the line along the White Wall to High Gorge (placeholder)'
-    : 'Open the sea-cave plug at the West landing';
+    : plugOpen
+      ? 'Build the cave line to Port Quay'
+      : 'Open the sea-cave plug at the West landing';
   check(
     await bot.until(() => inspectRailway()?.worksView?.legView?.objective === nextObjective, 10000),
-    caveDone ? 'the cloth points to the White Wall' : 'the cloth points back to the sea-cave plug',
+    `the cloth points to the next objective: ${nextObjective}`,
   );
   logFleet('home from Canopy Town');
   await checkpoint('canopy home');

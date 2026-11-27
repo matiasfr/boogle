@@ -313,7 +313,7 @@ Both pickups settled in the same room. The other rack kept all 20 units of the m
 ### Checkpoint (both orders playable)
 
 After step 5, on HOTBOX, once:
-- [ ] `npm run loop -- run` for one to three players, `canonical` and `cave-first`, each to the classic island's post
+- [x] `npm run loop -- run` for one to three players, `canonical` and `cave-first`, each to the classic island's post
       with no skips: no softlock, every order probe refused as the graph says, idle over 60 s listed, **minutes per
       area for both orders** (the [route to the ending](../backlog.md#the-checkpoint-we-work-toward) checkpoint's table).
       Measure each area's duration from the previous completed area in that run, with Port Quay before Canopy in
@@ -324,6 +324,43 @@ After step 5, on HOTBOX, once:
       first leaves, the server restarts, it rejoins; both racks, both legs' held counts and both backs are exact, and
       every tab's mirror matches.
 - [ ] Step 4's stills on one sheet; the boot probe on main's built site.
+      Both are reserved for the orchestrator.
+
+#### Headless loop results, 26 November
+
+All six runs reached `arrive` on HOTBOX with every area played. The host refused all 357 recorded order probes,
+including `wall-1` before `cave-3` in canonical and before `canopy-3` in cave-first. The loop logs are in
+`.look/loop-{canonical,cave-first}-{1,2,3}.log`. The runs used base `e3861d195` with step 5 applied.
+
+| Area | Canonical 1p | Canonical 2p | Canonical 3p | Cave-first 1p | Cave-first 2p | Cave-first 3p |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Home | 18 | 15 | 14 | 18 | 15 | 14 |
+| Split-rock Works | 9 | 9 | 9 | 9 | 9 | 9 |
+| Ring Island | 12 | 12 | 12 | 12 | 12 | 12 |
+| High Gorge | 13 | 12 | 12 | 13 | 12 | 12 |
+| Bell Rock and the bay cut | 12 | 14 | 14 | 12 | 14 | 14 |
+| Canopy Town | 8 | 9 | 9 | 11 | 16 | 16 |
+| Sea cave, Saltpan, Port Quay | 10 | 15 | 15 | 6 | 8 | 8 |
+| White Wall | 22 | 18 | 18 | 24 | 21 | 21 |
+| Lantern Notch to the Original Island | 16 | 25 | 25 | 16 | 24 | 24 |
+| Total minutes, rounded separately | 121 | 128 | 128 | 122 | 130 | 130 |
+
+Idle over 60 seconds per player on average, using the loop's straight-line model:
+
+- Canonical, 1p: Q5 106, Q7 73, bents 244, stack-2 65, wall-3 95, wall-4 76, wall-6 308, arrive 77.
+- Canonical, 2p: Q4 79, Q5 98, Q7 89, bents 286, steelkit 73, stack-1 111, stack-2 75, incline-1 71,
+  bay-1 64, canopy-1 78, plug-gate 172, cave-1 185, wall-4 84, deep-gate 61, wall-6 84, notch-gate 133,
+  notch-1 161, lantern 76, causeway-gate 140, causeway-1 133, arrive 172.
+- Canonical, 3p: Q4 110, Q5 102, breaker 71, Q7 98, bents 279, steelkit 82, stack-1 141, stack-2 78,
+  gorge 61, seeds 67, canopy-gate 73, canopy-1 63, plug-gate 230, cave-1 134, wall-4 87, deep-gate 81,
+  wall-6 67, notch-gate 177, notch-1 118, lantern 102, causeway-gate 187, causeway-1 100, arrive 194.
+- Cave-first, 1p: Q5 106, Q7 73, bents 244, stack-2 65, wall-6 301, arrive 71.
+- Cave-first, 2p: Q4 79, Q5 98, Q7 89, bents 286, steelkit 73, stack-1 111, stack-2 75, incline-1 71,
+  bay-1 64, cave-1 82, canopy-gate 148, canopy-1 171, deep-gate 61, wall-6 84, notch-gate 133, notch-1 161,
+  lantern 76, causeway-gate 140, causeway-1 133, arrive 164.
+- Cave-first, 3p: Q4 110, Q5 102, breaker 71, Q7 98, bents 279, steelkit 82, stack-1 141, stack-2 78,
+  gorge 61, seeds 67, plug-gate 75, cave-1 65, canopy-gate 197, canopy-1 126, deep-gate 81, wall-6 67,
+  notch-gate 177, notch-1 118, lantern 102, causeway-gate 187, causeway-1 100, arrive 186.
 
 ## The world bump
 

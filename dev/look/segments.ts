@@ -93,7 +93,7 @@ export const RAIL_FROM = {
   // cut, from High Gorge reached (the seed starts at the Village).
   'gorge-reached': { railFrom: 'legs', after: 'gorge', bot: 'railway-legs-bot.ts' },
   // Leg 3 (greybox-leg3.md, step 7): the Canopy barrier at Bell Rock, the three sections to Canopy Town, the cloth and
-  // the ride home, from the bay cut laid (the seed starts at the Village). The other leg seeds are not played from.
+  // the ride home, from the bay cut laid (the seed starts at the Village).
   'bay-reached': { railFrom: 'legs', after: 'bay', bot: 'railway-legs-bot.ts' },
   'cave-first-open': { railFrom: 'legs', after: 'bay', bot: 'railway-legs-bot.ts' },
   'cave-first-reached': { railFrom: 'legs', after: 'bay', bot: 'railway-legs-bot.ts' },
@@ -152,7 +152,7 @@ export function railSegmentOptions(args: string[]) {
   if (args.includes('--order') && seed?.bot !== 'railway-legs-bot.ts')
     throw new Error('--order requires a seed for the legs bot');
   if (order === 'cave' && from === 'canopy-reached') throw new Error('--from canopy-reached has already built Canopy');
-  if (caveSeed && order !== 'cave') throw new Error(`--from ${from} requires cave order`);
+  if (from === 'cave-first-reached' && order !== 'cave') throw new Error(`--from ${from} has already built the cave`);
   if (from === 'cave-first-reached' && to === 'port')
     throw new Error('--from cave-first-reached has already reached Port Quay');
   if (seed && to && names.indexOf(to) <= names.indexOf(seed.after))
