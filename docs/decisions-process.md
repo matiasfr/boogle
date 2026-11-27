@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-26 · Boogle resumes after the wind-down; the orchestrator tells him when a checkpoint is good for a multiplayer playtest, and work keeps going meanwhile ([entry](#d-2026-11-26-resume-and-playtest-call))
 - 2026-11-26 · Boogle is paused to free HOTBOX for his other project: the heartbeat is off and nothing new starts until he says resume ([entry](#d-2026-11-26-wind-down))
 - 2026-11-26 · Decision desk answers: the load gate holds only timed and perf runs; Unreal stays open; the root moved to main; he sets T3's Codex provider; every run checks for another busy orchestrator first; the heartbeat prepares checkpoint tools in parallel; J11 drawn; a second-player job at the plug; the yoke and fingerpost dressed; leg 4's turns kept; cargo trains' five; Neon drafts the placeholders; the Steam card kept ([entry](#d-2026-11-26-decision-desk-answers))
 - 2026-11-25 · Godot 4 is installed on HOTBOX by the orchestrator with winget, for prefab data's step 14 ([entry](#d-2026-11-25-godot-on-hotbox))
@@ -114,6 +115,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · Mini-games get their own design pass later. ([entry](#d-undated-mini-games-get-their-own-design))
 
 ## Decided
+
+- <a id="d-2026-11-26-resume-and-playtest-call"></a>**2026-11-26, resume, and a call for when to playtest** (owner, 26 November 2026, in the orchestrator thread: "Resume work and let me know when a good checkpoint is for a play test.  Keep working, but just let me know when I should start checking things out in a multiplayer setting."). Ends the [wind-down](#d-2026-11-26-wind-down): the hourly heartbeat and the daily tidy were re-enabled the same turn and the resume list started. The orchestrator tells him when a checkpoint is good for a multiplayer playtest; nothing waits for his play (owner call "Nothing waits for a playtest").
 
 - <a id="d-2026-11-26-wind-down"></a>**2026-11-26, a temporary wind-down** (owner, 26 November 2026, in the orchestrator thread: "Once you reach a good checkpoint, I want you to temporarily wind down so that the other project I'm working on on this machine can use more compute.  And then leave things so that we can easily resume right up and coop more work when needed."). The orchestrator finished what was in flight (the route rejoin proofs shipped, #2539), disabled the hourly heartbeat (`scheduled-task:ae9bad7f-91a5-4e85-bf10-3472d12db915`, `enabled: false`), started none of the five jobs his decision-desk answers unlocked, and wrote the resume list into the state file. Nothing new starts, from any session, until he says resume; then the heartbeat is re-enabled and the resume list is worked in order.
 
