@@ -28,7 +28,8 @@ import { trainAlong } from '../../src/sim/railway-train.ts';
 import { RAIL_TRAINS } from '../../src/sim/railway-lines.ts';
 import { cartAlong } from '../../src/sim/railway-cart.ts';
 import { railwaySession, type RailwaySession } from '../../src/entities/railway/state.ts';
-import { routeRow } from '../../src/sim/railway-queries-route.ts';
+import { legRow, routeRow } from '../../src/sim/railway-queries-route.ts';
+import { RAIL_LEGS } from '../../src/sim/railway-route.ts';
 
 export type RailwayProbe = {
   pid: string;
@@ -45,6 +46,7 @@ export type RailwayProbe = {
   activeStation: number;
   counts: ReturnType<typeof railCounts>;
   accounts: RailAccount[];
+  legs: ReturnType<typeof legRow>[];
   messages: Record<string, unknown>[];
   registry: { states: string[] };
   sources: { id: number; remaining: number; work: number }[];
@@ -590,6 +592,7 @@ function startWorld(room: Room) {
         activeStation: railActiveStation(mw),
         counts: railCounts(mw, tick),
         accounts: accounts(mw).map((a) => ({ ...a })),
+        legs: RAIL_LEGS.map((_, k) => ({ ...legRow(mw, k) })),
         messages: [...T.railMessages.map((m) => ({ ...m })), ...acks, ...ok, ...rej],
         registry: w.registry(),
         sources: RAILWAY_SOURCES.map(([id], k) => ({ id, remaining: tree(mw, k).left, work: tree(mw, k).work })),

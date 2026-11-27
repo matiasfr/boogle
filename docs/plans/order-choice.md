@@ -275,7 +275,7 @@ medium first). Sizes are estimates.
       beside the plug from the bay platforms; a take at each rack counting down only that rack; in a
       `cave-first-reached` room, Port Quay's buffers with the Wall's board still "LATER". Rule 53: the prompts and
       objective change here, so the same branch runs the bot from `bay-reached` (canonical) before it ships.
-- [ ] **5. The bot and the loop (M; "Implementation from a brief or an approved plan": gpt-6.2-sol medium).** After
+- [x] **5. The bot and the loop (M; "Implementation from a brief or an approved plan": gpt-6.2-sol medium).** After
       steps 1 to 4 are on main. `dev/loop/graph.ts`: `plug-gate` requires `bay-2` (the bay cut laid) and `pick`, not
       `canopy-3`; `wall-1` requires `canopy-3` as well as `cave-3` (decided: the rules'); every barrier node's
       `reached` matches `{ mark: 'route barrier opened', data: { gate } }`, not an `nth`; a named order `cave-first`
@@ -313,15 +313,99 @@ Both pickups settled in the same room. The other rack kept all 20 units of the m
 ### Checkpoint (both orders playable)
 
 After step 5, on HOTBOX, once:
-- [ ] `npm run loop -- run` for one to three players, `canonical` and `cave-first`, each to the classic island's post
+- [x] `npm run loop -- run` for one to three players, `canonical` and `cave-first`, each to the classic island's post
       with no skips: no softlock, every order probe refused as the graph says, idle over 60 s listed, **minutes per
       area for both orders** (the [route to the ending](../backlog.md#the-checkpoint-we-work-toward) checkpoint's table).
-- [ ] The two bot segments above with `--order cave`, and the canonical segments re-run (a pass each, the load noted).
-- [ ] **The reconnect proof with two open legs**: `railwayLegRejoin` (`dev/peer-test/ws-railway.ts`) at
+      Measure each area's duration from the previous completed area in that run, with Port Quay before Canopy in
+      `cave-first`. The headless loop uses straight-line walking and does not ride the trains.
+- [x] The two bot segments above with `--order cave`, and the canonical segments re-run (a pass each, the load noted).
+- [x] **The reconnect proof with two open legs**: `railwayLegRejoin` (`dev/peer-test/ws-railway.ts`) at
       `cave-first-open`: a second tab joins; one tab lifts from Bell Rock's rack, the other from the cave apron's; the
       first leaves, the server restarts, it rejoins; both racks, both legs' held counts and both backs are exact, and
       every tab's mirror matches.
 - [ ] Step 4's stills on one sheet; the boot probe on main's built site.
+      Both are reserved for the orchestrator.
+
+#### Headless loop results, 26 November
+
+All six runs reached `arrive` on HOTBOX with every area played. The host refused all 357 recorded order probes,
+including `wall-1` before `cave-3` in canonical and before `canopy-3` in cave-first. The loop logs are in
+`.look/loop-{canonical,cave-first}-{1,2,3}.log`. The runs used base `e3861d195` with step 5 applied.
+
+| Area | Canonical 1p | Canonical 2p | Canonical 3p | Cave-first 1p | Cave-first 2p | Cave-first 3p |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Home | 18 | 15 | 14 | 18 | 15 | 14 |
+| Split-rock Works | 9 | 9 | 9 | 9 | 9 | 9 |
+| Ring Island | 12 | 12 | 12 | 12 | 12 | 12 |
+| High Gorge | 13 | 12 | 12 | 13 | 12 | 12 |
+| Bell Rock and the bay cut | 12 | 14 | 14 | 12 | 14 | 14 |
+| Canopy Town | 8 | 9 | 9 | 11 | 16 | 16 |
+| Sea cave, Saltpan, Port Quay | 10 | 15 | 15 | 6 | 8 | 8 |
+| White Wall | 22 | 18 | 18 | 24 | 21 | 21 |
+| Lantern Notch to the Original Island | 16 | 25 | 25 | 16 | 24 | 24 |
+| Total minutes, rounded separately | 121 | 128 | 128 | 122 | 130 | 130 |
+
+Idle over 60 seconds per player on average, using the loop's straight-line model:
+
+- Canonical, 1p: Q5 106, Q7 73, bents 244, stack-2 65, wall-3 95, wall-4 76, wall-6 308, arrive 77.
+- Canonical, 2p: Q4 79, Q5 98, Q7 89, bents 286, steelkit 73, stack-1 111, stack-2 75, incline-1 71,
+  bay-1 64, canopy-1 78, plug-gate 172, cave-1 185, wall-4 84, deep-gate 61, wall-6 84, notch-gate 133,
+  notch-1 161, lantern 76, causeway-gate 140, causeway-1 133, arrive 172.
+- Canonical, 3p: Q4 110, Q5 102, breaker 71, Q7 98, bents 279, steelkit 82, stack-1 141, stack-2 78,
+  gorge 61, seeds 67, canopy-gate 73, canopy-1 63, plug-gate 230, cave-1 134, wall-4 87, deep-gate 81,
+  wall-6 67, notch-gate 177, notch-1 118, lantern 102, causeway-gate 187, causeway-1 100, arrive 194.
+- Cave-first, 1p: Q5 106, Q7 73, bents 244, stack-2 65, wall-6 301, arrive 71.
+- Cave-first, 2p: Q4 79, Q5 98, Q7 89, bents 286, steelkit 73, stack-1 111, stack-2 75, incline-1 71,
+  bay-1 64, cave-1 82, canopy-gate 148, canopy-1 171, deep-gate 61, wall-6 84, notch-gate 133, notch-1 161,
+  lantern 76, causeway-gate 140, causeway-1 133, arrive 164.
+- Cave-first, 3p: Q4 110, Q5 102, breaker 71, Q7 98, bents 279, steelkit 82, stack-1 141, stack-2 78,
+  gorge 61, seeds 67, plug-gate 75, cave-1 65, canopy-gate 197, canopy-1 126, deep-gate 81, wall-6 67,
+  notch-gate 177, notch-1 118, lantern 102, causeway-gate 187, causeway-1 100, arrive 186.
+
+#### Two-tab reconnect result, 26 November
+
+`npm run test:net -- --cave-first-rejoin` passed 8/8 checks at a queue admission load of 20 busy logical CPUs
+against the threshold of 18. Each rack started with 20 logs and 20 rails. The two players each lifted 16 rails
+from their own rack. Before the leave, while the first player was away, and after server restart and rejoin,
+the host and every connected mirror agreed on 20 logs and 4 rails at each rack, 16 held rails per leg and
+16 rails per back. The first attempt sampled presence immediately after the restart and failed there. The
+retry waited for both tabs to see each other before checking the mirrors. Log: `.look/rejoin-retry-run.log`.
+
+#### Browser checkpoint attempts, 26 November
+
+The first shared batch reached the browser's WebGPU startup for three segments. Chromium reported
+`page.evaluate: Target crashed` before any gameplay checkpoint in each. The canonical Port Quay run
+exhausted its outer timeout while queued. All four segments passed on subsequent runs.
+
+| Order | Segment | First attempt | Busy logical CPUs, start to end |
+| --- | --- | --- | --- |
+| Cave-first | `bay-reached` to `port` | Chromium target crashed | 19.99 to 20 |
+| Cave-first | `cave-first-reached` to `canopy` | Chromium target crashed | 20 to 20 |
+| Canonical | `bay-reached` to `canopy` | Chromium target crashed | 19.99 to 20 |
+| Canonical | `canopy-reached` to `port` | Outer timeout in queue | Slot never acquired |
+
+The cave-first Bay → Port Quay retry passed at 20 → 20 busy logical CPUs. The bot laid all three cave
+sections and rode back to the West landing without recovery or graphics errors. Evidence is in
+`.look/playthrough/order-choice-cave-port-retry/`. The screenshot shows both line signs beside the West landing.
+The canonical retries at 20 → 20 reached the cloth at Canopy and the first cave frame respectively.
+Both reached the 600-second wall limit with no graphics errors. Their traces are in
+`.look/playthrough/order-choice-canonical-{canopy,port}-retry/`.
+The cave-first Canopy retry reached the cloth and waited for the homeward train when its 600-second wall
+limit elapsed at 19.91 → 20 busy logical CPUs. Its trace is in `.look/playthrough/order-choice-cave-canopy-retry/`.
+The longer canonical Bay → Canopy run passed at 20 → 20 and returned to the West landing with the cloth
+and without recovery. Its verdict and still are in `.look/playthrough/order-choice-canonical-canopy-long/`.
+The longer canonical Canopy → Port Quay run also passed at 20 → 20. It took the cloth, opened the plug,
+laid the three cave sections and returned to the West landing without recovery. Its verdict and still
+are in `.look/playthrough/order-choice-canonical-port-long/`.
+The longer cave-first Port Quay → Canopy run passed at 20 → 20. It laid all three Canopy sections, took
+the cloth and rode home without recovery. The Wall was the next objective. Its verdict and still are
+in `.look/playthrough/order-choice-cave-canopy-long/`. Both Canopy stills show the bot standing safely
+on the West landing beside the bay line sign, and both Port Quay stills show the two line signs.
+The four passes establish progression. Shared-load timings and feel remain unverified.
+
+After rebasing on `ab6712df7`, `node dev/ship-check.ts` passed registry, lint, typecheck and 211 affected
+tests. The extra `npm run check` attempt passed 2,458 unit tests with one skip and reached the level checks
+before its outer timeout.
 
 ## The world bump
 

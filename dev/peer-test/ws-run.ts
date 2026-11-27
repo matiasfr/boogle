@@ -18,6 +18,8 @@ const args = process.argv.slice(2);
 const option = (flag: string) => (args.includes(flag) ? args[args.indexOf(flag) + 1] : undefined);
 const controlUrl = option('--url');
 const root = option('--root');
+const forkOnly = args.includes('--cave-first-rejoin');
+if (forkOnly && controlUrl) throw new Error('--cave-first-rejoin needs the in-process room host');
 // Install before loading any harness dependencies: they can import src transitively, too.
 useWorkerSource(root);
 const { fixtureToken, seedPrincipal } = await import('../../server/test/helpers/accounts.ts');
@@ -82,7 +84,7 @@ const HOST_ONLY: Record<HostSection, number> = {
   'request stop': 11,
   leaf: 9,
   'carrier leaves': 31,
-  'leg rejoin': 133,
+  'leg rejoin': 141,
 };
 const skipped: HostSection[] = [];
 const hostMarks = new Map<HostSection, number>();
@@ -110,8 +112,36 @@ async function hostSection(section: HostSection, run: () => Promise<unknown>) {
 }
 let closeWeb = async () => {};
 
-let exitCode = 1;
-try {
+async function startFixtureWeb() {
+  const web = await startWeb('ws-page.ts', root);
+  closeWeb = web.close;
+  const openFixture = web.open;
+  web.open = (name, query) => {
+    const pid = new URLSearchParams(query).get('pid');
+    if (!pid) throw new Error('room fixture requires a named principal');
+    seedPrincipal(dataDir, pid, fixtureToken(pid));
+    return openFixture(name, query + '&fixture=1');
+  };
+  return web;
+}
+
+function railwayContext(web: Awaited<ReturnType<typeof startWeb>>) {
+  return {
+    web,
+    port: () => port,
+    room,
+    check,
+    async restart() {
+      await svc.close({ save: true });
+      svc = await serve();
+    },
+    hosted: (id: string) => svc.roomHost()?.room(id),
+    hostOnly,
+    dataDir,
+  };
+}
+
+async function runSuite() {
   const { accountAdmissionChecks } = await import('./ws-accounts.ts');
   await accountAdmissionChecks({
     base: () => `http://127.0.0.1:${port}`,
@@ -132,22 +162,13 @@ try {
       svc = await serve();
     },
   });
-  const web = await startWeb('ws-page.ts', root);
-  const openFixture = web.open;
-  web.open = (name, query) => {
-    const params = new URLSearchParams(query);
-    const pid = params.get('pid');
-    if (!pid) throw new Error('room fixture requires a named principal');
-    seedPrincipal(dataDir, pid, fixtureToken(pid));
-    return openFixture(name, query + '&fixture=1');
-  };
+  const web = await startFixtureWeb();
   // Each page is its own player (pid from its name) unless `pid` says otherwise.
   const open = (name: string, pid = 'pl' + name.toLowerCase()): Promise<Page> =>
     web.open(name, `room=${room}&server=http://127.0.0.1:${port}&pid=${pid}`);
   const world = (p: Page) => ev(p.page, () => window.T.world());
   const clocksReady = async (group: Page[]) =>
     (await Promise.all(group.map(world))).every((w) => w.status.ready && w.status.mode === 'client');
-  closeWeb = web.close;
   // 1. join: every tab follows the server; no tab is special.
   const A = await open('A'),
     B = await open('B'),
@@ -304,19 +325,7 @@ try {
   }
 
   // 10. Railway rooms: the railway is Server kind, mirrored by every page (ws-railway.ts).
-  const ctx = {
-    web,
-    port: () => port,
-    room,
-    check,
-    async restart() {
-      await svc.close({ save: true });
-      svc = await serve();
-    },
-    hosted: (id: string) => svc.roomHost()?.room(id),
-    hostOnly,
-    dataDir,
-  };
+  const ctx = railwayContext(web);
   await railwayChecks(ctx);
   await railwaySeats(ctx); // Server-kind chairs survive hidden/closed peers and a sitter's reconnect.
   await railwayJumpIn(ctx); // a seeded playtest room, two players, through a restart
@@ -335,6 +344,7 @@ try {
     await railwayLegRejoin(ctx, 'cave-mid');
     await railwayLegRejoin(ctx, 'wall-mid');
     await railwayLegRejoin(ctx, 'island-reached');
+    await railwayLegRejoin(ctx, 'cave-first-open');
   });
 
   // 11. WS_LOAD=1: R1a's and R1b's measurements (2, 4, 6 players at 0, 100, 200 ms added latency, normal and 5x
@@ -354,6 +364,14 @@ try {
       ...(process.env.WS_LOAD_CHURN ? { churns: process.env.WS_LOAD_CHURN.split(',') } : {}),
     });
   }
+}
+
+let exitCode = 1;
+try {
+  if (forkOnly) {
+    const web = await startFixtureWeb();
+    await railwayLegRejoin(railwayContext(web), 'cave-first-open');
+  } else await runSuite();
 
   const failed = results.filter((r) => !r.ok);
   // Skipped checks are never in `results`, so they cannot count as passed; the summary names them.

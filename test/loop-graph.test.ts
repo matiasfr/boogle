@@ -20,7 +20,7 @@ import { Forge, Job, QJob, Rail, Shed, Steel, createRailwayWorld } from '../src/
 import { jobId, qjobId } from '../src/sim/railway-queries.ts';
 import { beatsOf } from '../dev/playtest/beats.ts';
 import { RAIL_STOPS, railSegmentOptions } from '../dev/look/segments.ts';
-import { RAIL_GRANTS, RAIL_LEGS, legFrame } from '../src/sim/railway-route.ts';
+import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, legFrame } from '../src/sim/railway-route.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 
 const generic = new Set<string>(GENERIC_OPS);
@@ -282,6 +282,42 @@ test('the built route reaches the ending through the Notch and causeway', () => 
     ['wall-6', 'cloth'],
   );
   assert.equal(proposeOrders()[0]!.order.at(-1), 'arrive');
+});
+
+test('the bay opens both branches and the Wall waits for both', () => {
+  const prerequisites = (id: string) => NODES.find((n) => n.id === id)!.requires.map((edge) => edge.on);
+  assert.deepEqual(prerequisites('plug-gate'), ['bay-2', 'pick']);
+  assert.deepEqual(prerequisites('wall-1'), ['cave-3', 'canopy-3']);
+  const order = proposeOrders().find((o) => o.name === 'cave-first')!.order;
+  assert.deepEqual(order.slice(order.indexOf('bay-2') + 1, order.indexOf('wall-1')), [
+    'plug-gate',
+    'cave-1',
+    'cave-2',
+    'cave-3',
+    'canopy-gate',
+    'canopy-1',
+    'canopy-2',
+    'canopy-3',
+    'cloth',
+  ]);
+  assert.deepEqual(
+    NODES.filter((n) => n.reached.mark === 'route barrier opened').map((n) => n.reached.data),
+    ['incline', 'canopy', 'plug', 'deep-span', 'notch', 'causeway'].map((id) => ({
+      gate: RAIL_GATES.findIndex((gate) => gate.id === id),
+    })),
+  );
+});
+
+test('the cave-first segments infer their order from the seed', () => {
+  assert.equal(railSegmentOptions(['--from', 'bay-reached', '--to', 'port']).order, 'canopy');
+  assert.equal(railSegmentOptions(['--from', 'bay-reached', '--to', 'port', '--order', 'cave']).order, 'cave');
+  for (const from of ['cave-first-open', 'cave-first-reached'])
+    assert.equal(railSegmentOptions(['--from', from, '--to', 'canopy']).order, 'cave');
+  assert.equal(
+    railSegmentOptions(['--from', 'cave-first-open', '--to', 'canopy', '--order', 'canopy']).order,
+    'canopy',
+  );
+  assert.throws(() => railSegmentOptions(['--from', 'cave-first-reached', '--to', 'port']), /already reached/);
 });
 
 test('the shared prefix preserves three-player idle time in the T3 before beam order', async () => {
