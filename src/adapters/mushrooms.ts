@@ -6,8 +6,8 @@
 // message: no shared state, nothing saved, and someone joining a moment later misses that cluster.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { HALF, SEA, PLAYER_R, HEAD_OFFSET, reducedMotion } from '../constants.ts';
-import { groundHeight } from '../island/terrain.ts';
+import { SEA, PLAYER_R, HEAD_OFFSET, reducedMotion } from '../constants.ts';
+import { toyGround } from '../physics/toy-ground.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
 import { GROUP } from '../physics/physics.ts';
 import { material, createBody, forEachContact } from '../physics/engine.ts';
@@ -16,7 +16,7 @@ import { net, onRoomReady } from '../netplay/net.ts';
 import { waterField } from '../physics/water-field.ts';
 import { dropPoint } from '../physics/flight.ts';
 import { splash } from '../render/splash.ts';
-import { createLimiter } from '../sim/social.ts';
+import { COSMETIC_BOUND, createLimiter } from '../sim/social.ts';
 import type { Body } from '../physics/engine.ts';
 
 /** One mushroom: its entity, and its collider's while it is solid. */
@@ -184,7 +184,7 @@ function addShroom(x: number, z: number) {
     setSolid(oldest, false);
     despawn(oldest.entity);
   }
-  const y = groundHeight(x, z);
+  const y = toyGround.under(x, z);
   const mesh = makeMushroomMesh();
   mesh.position.set(x, y, z);
   mesh.scale.setScalar(0.001);
@@ -210,7 +210,8 @@ let lastOwn = -1e9;
 
 // Dry land with nothing (rock, tree, wall, another cap) over it.
 function openGround(x: number, z: number) {
-  const g = groundHeight(x, z);
+  if (!toyGround.sproutable(x, z)) return false;
+  const g = toyGround.under(x, z);
   if (g < SEA + 0.1 || waterField.surfaceAt(x, z) > g + 0.02) return false;
   return dropPoint(new THREE.Vector3(x, g + 3, z)).y < g + 0.2;
 }
@@ -254,9 +255,11 @@ export function listenForSprouts() {
       if (d?.t !== 'mush') return;
       const s = d.s;
       if (!Array.isArray(s) || s.length > SPOTS_MAX || s.length % 2) return;
-      if (!s.every((v) => Number.isFinite(v) && Math.abs(v) < HALF)) return;
+      if (!s.every((v) => Number.isFinite(v) && Math.abs(v) < COSMETIC_BOUND)) return;
       if (!incoming.allow(from, performance.now())) return;
-      for (let k = 0; k < s.length; k += 2) addShroom(s[k], s[k + 1]);
+      for (let k = 0; k < s.length; k += 2) {
+        if (toyGround.sproutable(s[k], s[k + 1])) addShroom(s[k], s[k + 1]);
+      }
     });
   });
 }

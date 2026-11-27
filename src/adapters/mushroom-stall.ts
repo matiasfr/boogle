@@ -9,8 +9,9 @@ import { me } from '../player/state.ts';
 import { take, heldId } from '../player/inventory.ts';
 import type { Interactable } from '../player/hands.ts';
 import { NO_TARGETS } from '../sim/interact-pick.ts';
-import { createOwnedView } from '../render/owned-view.ts';
+import { createOwnedView, type OwnedView } from '../render/owned-view.ts';
 import { instantiate } from '../prefab/instantiate.ts';
+import type { Placement } from '../prefab/types.ts';
 import { definitions } from '../prefab/catalogue.ts';
 import { loadLevelArtifact } from '../prefab/validate.ts';
 import level from '../../content/built/levels/mushrooms.json' with { type: 'json' };
@@ -18,8 +19,8 @@ import level from '../../content/built/levels/mushrooms.json' with { type: 'json
 let stall: ReturnType<typeof instantiate> | null = null;
 
 // What interacting at the stand can do (see interactTarget in src/player/hands.ts): take a bag, unless you carry one.
-function takeSeeds(): Interactable[] {
-  const w = stall?.attach('pickup').at;
+function takeSeeds(instance: ReturnType<typeof instantiate>): Interactable[] {
+  const w = instance.attach('pickup').at;
   if (!me.entered || !me.body || !w || heldId() === 'seeds') return NO_TARGETS;
   const p = me.body.interpolatedPosition;
   const dx = w.x - p.x,
@@ -28,17 +29,21 @@ function takeSeeds(): Interactable[] {
   return [{ id: 'stall-seeds', verb: 'Take', at: w.clone().setY(w.y + 0.35), run: () => take('seeds') }];
 }
 
+export function placeSeedStall(owner: OwnedView, placed: Placement) {
+  const instance = instantiate('mushrooms.stall', placed, {
+    owner,
+    handlers: { 'mushrooms.take-seeds': (): Interactable[] => takeSeeds(instance) },
+  });
+  return instance;
+}
+
 defineKind('mushroom-stall', {}); // no methods: it just stands there
 export function createStall() {
   const placed = loadLevelArtifact(level, definitions).placements.find((p) => p.prefab === 'mushrooms.stall');
   if (!placed) throw new Error('mushrooms: no stall placed');
   const [x, lift, z] = placed.pos;
   const owner = createOwnedView();
-  stall = instantiate(
-    placed.prefab,
-    { ...placed, pos: [x, groundHeight(x, z) + lift, z] },
-    { owner, handlers: { 'mushrooms.take-seeds': takeSeeds } },
-  );
+  stall = placeSeedStall(owner, { ...placed, pos: [x, groundHeight(x, z) + lift, z] });
   stall.setEnabled(true);
   spawn({ kind: 'mushroom-stall', mesh: owner.root, dispose: owner.dispose });
   obstacles.push({ x, z, r: definitions[placed.prefab]!.footprint! });

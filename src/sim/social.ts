@@ -3,7 +3,7 @@
 
 // Rails here and Train! are placeholder copy for the owner.
 export const PING_KINDS = { ball: 'Ball!', look: 'Look!', rails: 'Rails here!', train: 'Train!' };
-const BOUND = 4096; // finite cosmetic message envelope, including authored places outside the classic island
+export const COSMETIC_BOUND = 4096; // finite cosmetic message envelope, including authored places outside the classic island
 
 export const MAX_PING_SEQ = 65535;
 export type Ping = { x: number; y: number; z: number; k: keyof typeof PING_KINDS; seq: number };
@@ -15,7 +15,7 @@ export function validatePing(msg: unknown): Ping | PingReply | null {
   if (k === 'omw') return typeof of === 'string' && of.length <= 64 ? { k, of, seq } : null;
   if (typeof x !== 'number' || typeof y !== 'number' || typeof z !== 'number') return null;
   if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) return null;
-  if (Math.abs(x) > BOUND || Math.abs(z) > BOUND || y < -100 || y > 1024) return null;
+  if (Math.abs(x) > COSMETIC_BOUND || Math.abs(z) > COSMETIC_BOUND || y < -100 || y > 1024) return null;
   if (typeof k !== 'string' || !Object.hasOwn(PING_KINDS, k)) return null;
   return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, z: Math.round(z * 10) / 10, k: k as Ping['k'], seq };
 }
