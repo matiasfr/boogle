@@ -14,6 +14,8 @@ import { conversation } from '../../player/conversation.ts';
 import { me } from '../../player/player.ts';
 import { whistle } from '../../render/machine-sfx.ts';
 import { folkVoice, type VoiceSpec } from '../../render/npc-voice.ts';
+import { createPhaseGuide } from '../../components/phase-guide/view.ts';
+import { HOOTER_STAGE_LINES, hooterStage } from '../../components/phase-guide/stages.ts';
 import { accounts, aperture } from '../../sim/railway-rows.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
 import { createSeen } from '../railway/ability-arrival.ts';
@@ -79,8 +81,23 @@ export function createRingFolk(adapter: RailwayAdapter, owner: OwnedView) {
     whistled = 0,
     lastSwim = -1e9,
     speaking: Who | null = null;
-  const cursor: Record<Who, number> = { rivet: 0, squint: 0, hooter: 0 };
+  const cursor: Record<'rivet' | 'squint', number> = { rivet: 0, squint: 0 };
   const stats = { whistles: 0, snaps: 0 };
+  const hooterWorld = worldOf(HOOTER_UV);
+  const hooterRestYaw = Math.atan2(FACE_AT.x - hooterWorld.x, FACE_AT.z - hooterWorld.z);
+  const hooterGuide = createPhaseGuide(owner, {
+    id: 'ring-talk-hooter',
+    name: NAMES.hooter,
+    color: LOOK_COLOR.hooter,
+    voice: VOICES.hooter,
+    body: () => hooter?.guy ?? null,
+    stage: () => hooterStage(adapter.read.world()),
+    lines: HOOTER_STAGE_LINES,
+    ready: () => adapter.read.ready(),
+    active: () => ringIslandNear.mounted && firstReady(),
+    bark: false,
+    restYaw: hooterRestYaw,
+  });
 
   void Promise.all([import('../../place/folk.ts'), import('../../place/talk.ts')]).then(([k, t]) => {
     if (!owner.alive) return;
@@ -198,6 +215,7 @@ export function createRingFolk(adapter: RailwayAdapter, owner: OwnedView) {
       for (const f of [...crew, hooter]) f.guy.on = mounted;
       if (!mounted) {
         wasMounted = false;
+        hooterGuide.update(dt);
         return;
       }
       const shift = shiftAt(adapter.read.tick());
@@ -228,13 +246,15 @@ export function createRingFolk(adapter: RailwayAdapter, owner: OwnedView) {
           else faceShard(f, dt);
         }
       }
-      // Hooter: by the board, a wave with the whistle; turns to a player nearby.
+      // Hooter: by the board, phase guide with `…` + Talk, keeping his whistle wave on shift changes.
       whistled = Math.max(0, whistled - dt);
-      hooter.guy.mood = whistled > 0 ? 'wave' : 'idle';
       place(hooter);
-      if (near(hooter, 6) || speaking === 'hooter') facePlayer(hooter, dt);
-      else faceShard(hooter, dt);
-      talk?.updateTalkCard();
+      hooterGuide.update(dt);
+      if (whistled > 0 && !hooterGuide.speaking()) hooter.guy.mood = 'wave';
+      if (speaking) talk?.updateTalkCard();
+    },
+    lateUpdate() {
+      hooterGuide.lateUpdate();
     },
     /** Nothing here plays from an accepted edge: the rota is the clock's. */
     accepted() {},
@@ -259,6 +279,7 @@ export function createRingFolk(adapter: RailwayAdapter, owner: OwnedView) {
       }
       if (!best) return [];
       const [who, f] = best;
+      if (who === 'hooter') return hooterGuide.targets();
       return [
         {
           id: `ring-talk-${who}`,
@@ -278,11 +299,12 @@ export function createRingFolk(adapter: RailwayAdapter, owner: OwnedView) {
           at: f.station ? `${f.station.kind}${f.station.slot}` : null,
           walking: f.route.length > 0,
         })),
+        hooter: hooterGuide.inspect(),
       },
     }),
   };
 
-  function open(who: Who, f: Figure) {
+  function open(who: 'rivet' | 'squint', f: Figure) {
     if (!talk) return;
     const lines = linesFor(who, facts());
     const n = cursor[who]++;

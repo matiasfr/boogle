@@ -25,6 +25,19 @@ import { STALLS, TABLE, stallFrame } from '../src/place/home-station.ts';
 import { distToLine, parseMapPage, type XZ } from '../src/proto/greybox/map-data.ts';
 import { LINE2_BOILER, LINE2_LEVER, LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { LINE1_ROCKS } from '../src/sim/railway-line-layout.ts';
+import { Aperture, Leg, Line, Shed, Steel, Works, createRailwayWorld } from '../src/sim/railway-components.ts';
+import type { ReadWorld } from '../src/sim/railway-rows.ts';
+import { SEAM_THROAT } from '../src/sim/railway-works.ts';
+import { LINE2 } from '../src/sim/railway-lines.ts';
+import { RAIL_LEGS } from '../src/sim/railway-route.ts';
+import {
+  HOOTER_STAGE_LINES,
+  KILN_HAND_LINES,
+  ROUNDHOUSE_HAND_LINES,
+  hooterStage,
+  kilnHandStage,
+  roundhouseHandStage,
+} from '../src/components/phase-guide/stages.ts';
 import { TRAIN_STOPS, trainStopsOf } from '../src/sim/railway-train.ts';
 import { LOCO, TRAILER, TRAIN_CARS, TRAIN_OFFSETS, consistOf } from '../src/entities/railway/cars.ts';
 import { ENGINE, ENGINE_LONG_AHEAD } from '../src/entities/railway/engine.ts';
@@ -271,4 +284,70 @@ test('one footing for every use', () => {
   assert.equal(WORKS_BREAKER.x, LINE2_BOILER.x);
   assert.equal(WORKS_BREAKER.z, LINE2_BOILER.z);
   assert.equal(WORKS_BREAKER.y, Math.round(H(WORKS_BREAKER.x / 100, WORKS_BREAKER.z / 100) * 100));
+});
+
+test('Wave 1 phase-guide stage queries cover every stage and placeholder lines are marked', () => {
+  const w = createRailwayWorld();
+  const rw = w as unknown as ReadWorld;
+  const wkId = w.single(Works);
+  const shId = w.single(Shed);
+  const apId = w.single(Aperture);
+  const stId = w.single(Steel);
+  const l2Id = w.lookup(Line, LINE2)!;
+  const stackIdx = RAIL_LEGS.findIndex((l) => l.id === 'stack');
+  const stackId = w.lookup(Leg, stackIdx)!;
+
+  // Kiln hand stages
+  assert.equal(kilnHandStage(rw), 'idle');
+  w.mut(Works, wkId).breaker = 2;
+  assert.equal(kilnHandStage(rw), 'throat');
+  w.mut(Works, wkId).seams = SEAM_THROAT;
+  assert.equal(kilnHandStage(rw), 'kiln');
+  w.mut(Works, wkId).lit = 100;
+  assert.equal(kilnHandStage(rw), 'footings');
+  w.mut(Shed, shId).stall = WORKS.stall;
+  assert.equal(kilnHandStage(rw), 'pier');
+  w.mut(Works, wkId).pierSet = WORKS.pier;
+  assert.equal(kilnHandStage(rw), 'idle');
+
+  // Roundhouse hand stages
+  w.mut(Shed, shId).stall = 0;
+  assert.equal(roundhouseHandStage(rw), 'stall');
+  w.mut(Shed, shId).stall = WORKS.stall;
+  assert.equal(roundhouseHandStage(rw), 'cradle');
+  w.mut(Shed, shId).cradleRails = WORKS.cradleRails;
+  w.mut(Shed, shId).fitted = 200;
+  assert.equal(roundhouseHandStage(rw), 'turn');
+  w.mut(Shed, shId).ready = 300;
+  assert.equal(roundhouseHandStage(rw), 'idle');
+  w.mut(Shed, shId).steel = 6;
+  assert.equal(roundhouseHandStage(rw), 'steel');
+  w.mut(Line, l2Id).boiler = 2;
+  assert.equal(roundhouseHandStage(rw), 'idle');
+  // Open a trade leg (bay-cut) so a trade line is eligible for Quick/Strong with unspent steel.
+  const bayIdx = RAIL_LEGS.findIndex((l) => l.id === 'bay-cut');
+  w.mut(Leg, w.lookup(Leg, bayIdx)!).laid = RAIL_LEGS[bayIdx]!.sections.length;
+  assert.equal(roundhouseHandStage(rw), 'trade');
+
+  // Hooter stages
+  assert.equal(hooterStage(rw), 'meet');
+  w.mut(Aperture, apId).joined = 400;
+  assert.equal(hooterStage(rw), 'steel-feed');
+  w.mut(Steel, stId).lit = 500;
+  w.mut(Line, l2Id).boiler = 1;
+  assert.equal(hooterStage(rw), 'steel-home');
+  w.mut(Line, l2Id).boiler = 2;
+  assert.equal(hooterStage(rw), 'high-gorge');
+  w.mut(Leg, stackId).laid = RAIL_LEGS[stackIdx]!.sections.length;
+  assert.equal(hooterStage(rw), 'idle');
+
+  // Every new guide line is a marked placeholder for the owner.
+  for (const table of [KILN_HAND_LINES, ROUNDHOUSE_HAND_LINES]) {
+    for (const spec of Object.values(table)) {
+      for (const line of spec.talk) assert.match(line, /^\[placeholder — owner's line: .+\]$/);
+      if (spec.bark) assert.match(spec.bark, /^\[placeholder — owner's line: .+\]$/);
+    }
+  }
+  assert.equal(HOOTER_STAGE_LINES.idle.idle, true);
+  assert.ok(HOOTER_STAGE_LINES.idle.talk.length === 3, 'Hooter keeps his three existing lines in idle');
 });
