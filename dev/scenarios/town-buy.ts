@@ -1,30 +1,41 @@
-// Two real tabs hold one board; accepted server jump-in, no shared-state edits.
+// Two real tabs hold different boards for one plot; accepted server jump-in, no shared-state edits.
+import { writeRailSeed } from '../look/rail-seed.ts';
 import type { T } from './run.ts';
 type Snapshot = {
-  plots: { at: number; state: string }[];
+  plots: { at: number; state: string; visible: boolean }[];
   till: { spent: number };
   pos: { x: number; y: number; z: number };
 };
 const read = `const { inspectTown } = await import('/src/entities/town/state.ts');
 const { rw, till } = await import('/dev/look/rail-read.ts');
 return { plots: inspectTown()?.plots, till: {...till(rw())}, pos: {...window.boogle.me.body.position} };`;
-const stand = `const { teleport } = await import('/src/physics/engine.ts');
-teleport(window.boogle.me.body,904.6,18.9,33.4);`;
+const stand = (kind: number) => `const { teleport } = await import('/src/physics/engine.ts');
+teleport(window.boogle.me.body,903.8,18.9,${kind === 1 ? 34 : 36.4});`;
 const hold = `const { triggerAction } = await import('/src/player/controls.ts');
 triggerAction('interact','down'); setTimeout(()=>triggerAction('interact','up'),1600);`;
 export default {
   sourceImports: true,
-  timeout: 180000,
+  timeout: 420000,
   about: 'one shared plot purchase, late join construction and occupied footprint',
   async run(t: T) {
-    const A = await t.open({ name: 'Buyer', query: 'from=house-ready', hud: true });
-    const room = new URL(A.page.url()).searchParams.get('room')!;
-    const B = await t.open({ name: 'Partner', room, hud: true });
+    const label = 'town-choice-race';
+    if (t.dataDir) await writeRailSeed(t.dataDir, label, 'house-ready');
+    const A = await t.open({
+      name: 'Buyer',
+      ...(t.dataDir ? { room: label } : { query: 'from=house-ready' }),
+      hud: true,
+      size: [1200, 750],
+    });
+    const room = new URL(A.page.url()).searchParams.get('room') ?? label;
+    const B = await t.open({ name: 'Partner', room, hud: true, size: [1200, 750] });
     for (const g of [A, B]) {
-      await g.eval(stand);
+      const kind = g === A ? 1 : 2;
+      await g.eval(stand(kind));
+      await g.view({ cam: [897, 21.5, 34], look: [905, 19.6, 35] });
       await g.waitFor(
-        `(async()=>{const {interactTarget}=await import('/src/player/hands.ts');return interactTarget()?.id==='town.plot.0';})()`,
+        `(async()=>{const {interactTarget}=await import('/src/player/hands.ts');return interactTarget()?.id==='town.plot.0.${kind}';})()`,
       );
+      await g.still('board-' + kind);
     }
     const before = await A.eval<Snapshot>(read);
     await Promise.all([A.eval(hold), B.eval(hold)]);
@@ -54,6 +65,15 @@ export default {
     t.check('reload retains purchase tick', late.plots[0]!.at === bought.plots[0]!.at, JSON.stringify(late));
     await A.waitFor(
       `(async()=>{const {inspectTown}=await import('/src/entities/town/state.ts');return inspectTown()?.plots[0]?.state==='done';})()`,
+    );
+    const toy = `window.boogle.inspect().kinds.find(k=>k.kind==='town-hangout')?.entities[0]?.state`;
+    const built = await B.waitFor(`(() => { const h=${toy};return h?.stall || h?.pads.every(p=>p.visible); })()`, {
+      timeout: 60000,
+    });
+    t.check(
+      'reload draws the chosen toy and clears its boards',
+      built >= 0 && !(await B.eval<Snapshot>(read)).plots[0]!.visible,
+      JSON.stringify(await B.eval('return ' + toy)),
     );
     const after = await A.eval<Snapshot>(read);
     t.check(

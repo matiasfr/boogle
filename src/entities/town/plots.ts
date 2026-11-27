@@ -19,7 +19,9 @@ import { railwayCommands, railwayWorldRead, onRailwayCommands } from '../railway
 import { Plot, Till } from '../../sim/railway-components.ts';
 import { loaderBuilt, plotPrice } from '../../sim/railway-queries-trade.ts';
 import { JIB_SOLIDS, LOADER_PAINT, YARD, footingHulls, shedEnvelope, type YardBox } from '../../place/yard-shape.ts';
-import { TOWN_BOARD, townPlotBoard } from '../../place/town-plan.ts';
+import { knock } from '../../render/fanfare.ts';
+import { splash } from '../../render/splash.ts';
+import { TOWN_CHOICE, TOWN_BOARD, townPlotBoard } from '../../place/town-plan.ts';
 import { me } from '../../player/state.ts';
 import { type Interactable } from '../../player/hands.ts';
 
@@ -113,6 +115,7 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
   let index = 0;
   const targets: Interactable[] = [];
   let holding = -1,
+    heldKind = 0,
     progress = 0,
     waiting = -1;
   let quotedTick = -1,
@@ -158,12 +161,14 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
     const approach = TOWN_SLOTS.find((s) => s.id === TOWN_PLOTS.order[k])!.ring ? TOWN_CENTRE : HALL;
     const board = townPlotBoard(k);
     const at = new Vector3(toWorld(board.x), H(toWorld(building.x), building.z) + 1.1, board.z);
-    const run = () => {
+    const start = (kind: number) => {
       if (holding < 0 && waiting !== k) {
+        heldKind = kind;
         holding = k;
         progress = 0;
       }
     };
+    const run = () => start(0);
     const target: Interactable = { id: `town.plot.${k}`, verb: 'Hold to build', at, run };
     const one = [target];
     const params = { x: toWorld(building.x), y: H(toWorld(building.x), building.z), z: building.z, yaw: building.yaw };
@@ -275,33 +280,76 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
     const previous = prices[k - 1];
     const woodNeed = need.wood - (previous?.wood ?? 0),
       stoneNeed = need.stone - (previous?.stone ?? 0);
-    const parts = kit.map((p) => {
-      const framePiece = p.id === 'stakes' || p.id === 'bands' || p.id === 'string';
-      const at = p.id === 'board' ? board : townLocal(building, p.pos[0], p.pos[2] + (framePiece ? 0 : building.d / 2));
-      const visual = definitions[p.prefab]!.visual;
-      const batched = 'builder' in visual;
-      const instance = instantiate(
-        p.prefab,
-        {
-          ...p,
-          id: `${TOWN_PLOTS.order[k]}.${p.id}`,
-          pos: [toWorld(at.x), H(toWorld(building.x), building.z) + p.pos[1], at.z],
-          rot: [p.id === 'board' ? Math.atan2(approach.x - at.x, approach.z - at.z) : building.yaw, 0, 0],
-          ...(framePiece ? { scale: [(building.w + 0.6) / 8, 1, (building.d + 0.6) / 8] } : {}),
-        },
-        {
-          owner,
-          ...(batched ? { batch: { target: batch, index } } : {}),
-          texts: {
-            plot: [`Plot ${k + 1}`, `Timber 0 / ${woodNeed}`, ...(stoneNeed ? [`Stone 0 / ${stoneNeed}`] : [])],
+    const choices =
+      'choices' in need
+        ? need.choices.map((kind, i) => {
+            const point = TOWN_CHOICE.boards[i]!;
+            const position = new Vector3(toWorld(point.x), at.y, point.z);
+            const action: Interactable = { id: `town.plot.${k}.${kind}`, verb: 'Hold to build', at: position };
+            const begin = () => start(kind);
+            const topper = instantiate(
+              'town.choice-board',
+              {
+                id: action.id,
+                prefab: 'town.choice-board',
+                params: { kind },
+                labels: { label: 'plot' },
+                pos: [position.x, params.y, position.z],
+                rot: [building.yaw, 0, 0],
+              },
+              {
+                owner,
+                texts: { plot: ['Plot 1'] },
+                paintLabel: paintBoard,
+                handlers: { 'town.plot-buy': () => [action] },
+              },
+            );
+            const toy = createGhostOutlines(owner, 128, 0.32, 0.14, 0.09);
+            if (kind === 1) {
+              const x = toWorld(TOWN_CHOICE.stall.x),
+                z = TOWN_CHOICE.stall.z;
+              toy.box(x, params.y + 0.5, z, 2.8, 1, 0.9, building.yaw);
+              toy.box(x, params.y + 2.35, z, 3.2, 0.1, 1.4, building.yaw);
+            } else
+              for (const pad of TOWN_CHOICE.pads) {
+                toy.box(toWorld(pad.x), params.y + 0.06, pad.z, 1.1, 0.12, 1.1, building.yaw);
+                toy.box(toWorld(pad.x) + 1, params.y + 2.2, pad.z, 0.55, 0.5, 0.5, building.yaw);
+              }
+            toy.commit();
+            toy.mesh.visible = false;
+            return { kind, action, begin, topper, toy };
+          })
+        : [];
+    const parts = kit
+      .filter((p) => p.id !== 'board' || !choices.length)
+      .map((p) => {
+        const framePiece = p.id === 'stakes' || p.id === 'bands' || p.id === 'string';
+        const at =
+          p.id === 'board' ? board : townLocal(building, p.pos[0], p.pos[2] + (framePiece ? 0 : building.d / 2));
+        const visual = definitions[p.prefab]!.visual;
+        const batched = 'builder' in visual;
+        const instance = instantiate(
+          p.prefab,
+          {
+            ...p,
+            id: `${TOWN_PLOTS.order[k]}.${p.id}`,
+            pos: [toWorld(at.x), H(toWorld(building.x), building.z) + p.pos[1], at.z],
+            rot: [p.id === 'board' ? Math.atan2(approach.x - at.x, approach.z - at.z) : building.yaw, 0, 0],
+            ...(framePiece ? { scale: [(building.w + 0.6) / 8, 1, (building.d + 0.6) / 8] } : {}),
           },
-          paintLabel: paintBoard,
-          handlers: { 'town.plot-buy': () => one },
-        },
-      );
-      if (batched) index += visual.instances?.length ?? 1;
-      return { id: p.id, instance, index: index - 1 };
-    });
+          {
+            owner,
+            ...(batched ? { batch: { target: batch, index } } : {}),
+            texts: {
+              plot: [`Plot ${k + 1}`, `Timber 0 / ${woodNeed}`, ...(stoneNeed ? [`Stone 0 / ${stoneNeed}`] : [])],
+            },
+            paintLabel: paintBoard,
+            handlers: { 'town.plot-buy': () => one },
+          },
+        );
+        if (batched) index += visual.instances?.length ?? 1;
+        return { id: p.id, instance, index: index - 1 };
+      });
     return {
       k,
       /** An opened plot's seconds since its accepted buy, for its room; undefined while unbought or unread. */
@@ -314,6 +362,8 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
       woodNeed,
       stoneNeed,
       parts,
+      choices,
+      preview: 0,
       offeredTargets: [] as Interactable[],
       site,
       ghost,
@@ -402,14 +452,15 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
           p.painted = yardBuilt;
           p.jibPaint.color.set(yardBuilt ? LOADER_PAINT.built : LOADER_PAINT.bare);
         }
+        const chosen = p.choices.find((c) => c.kind === heldKind);
         if (holding === p.k) {
-          if (!offered || money < price || !near(p.at)) release();
+          if (!offered || money < price || !near(chosen?.action.at ?? p.at)) release();
           else {
             progress = advanceHold(progress, dt, true, 1);
             if (progress >= 1) {
               waiting = p.k;
               release();
-              if (!railwayCommands()?.buy(p.k)) waiting = -1;
+              if (!railwayCommands()?.buy(p.k, heldKind || undefined)) waiting = -1;
             }
           }
         }
@@ -424,6 +475,39 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
         if (percent !== p.percent) {
           p.percent = percent;
           p.target.verb = percent < 0 ? 'Hold to build' : `Hold ${percent}%`;
+        }
+        if (p.choices.length) {
+          const pos = me.body?.position;
+          const distance = (v: Vector3) => (pos ? Math.hypot(pos.x - v.x, pos.z - v.z) : Infinity);
+          const nearest = p.choices.reduce((a, b) => (distance(a.action.at) <= distance(b.action.at) ? a : b));
+          const preview = p.ghost.mesh.visible ? nearest.kind : 0;
+          if (p.preview && preview && p.preview !== preview && near(nearest.action.at)) knock(0.3, 0.5);
+          p.preview = preview;
+          for (const c of p.choices) {
+            c.toy.mesh.visible = preview === c.kind;
+            c.action.blocked = p.target.blocked;
+            c.action.run = p.target.run ? c.begin : undefined;
+            c.action.verb = holding === p.k && heldKind === c.kind ? p.target.verb : 'Hold to build';
+            if (visible !== p.visible) c.topper.setEnabled(visible);
+            if (offered && near(c.action.at)) targets.push(...c.topper.targets());
+            if (p.visible && bought >= 0 && p.bought < 0) splash(c.action.at.x, c.action.at.z, 0.2, c.action.at.y - 1);
+            if (
+              visible &&
+              (visible !== p.visible ||
+                offered !== p.offered ||
+                money !== p.money ||
+                price !== p.price ||
+                (!offered && Math.min(p.woodNeed, read?.wood ?? 0) !== p.wood))
+            ) {
+              const title = c.kind === 1 ? 'Seed Shed' : 'Horn Pavilion'; // Placeholder names and board copy.
+              c.topper.relabel(
+                'label',
+                offered
+                  ? [title, '+1 rider / minute', `Price ${price}`, `Box ${money}`]
+                  : [title, `Timber ${Math.min(p.woodNeed, read?.wood ?? 0)} / ${p.woodNeed}`],
+              );
+            }
+          }
         }
         if (offered) {
           if (near(p.at)) for (const target of p.offeredTargets) targets.push(target);

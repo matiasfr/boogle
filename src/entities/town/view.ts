@@ -195,6 +195,7 @@ export async function createTownView(read: () => TownLook | null) {
   return {
     root: owner.root,
     release: plots.release,
+    firstHouseDone: () => rooms.rooms.plot3.site.state === 'done',
     /** The residents' Talk and the shop's stands and rail. Joined only when more than one has something in reach. */
     targets(): Interactable[] {
       targets.length = 0;

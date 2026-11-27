@@ -7,6 +7,8 @@ declare module '../names.ts' {
   interface BuilderNames {
     'town.ball-court': true;
     'town.ball-lever': true;
+    'town.choice-board': true;
+    'town.horn-pad': true;
   }
 }
 function piece(parent: THREE.Group, geometry: THREE.BufferGeometry, color: number, x: number, y: number, z: number) {
@@ -15,6 +17,26 @@ function piece(parent: THREE.Group, geometry: THREE.BufferGeometry, color: numbe
   parent.add(mesh);
   return mesh;
 }
+function brassHorn(root: THREE.Group, y: number, z: number) {
+  piece(root, new THREE.CylinderGeometry(0.28, 0.07, 0.5, 14, 1, true), 0xe8ac4f, 0, y, z).rotation.x = 1.18;
+  piece(root, new THREE.CylinderGeometry(0.065, 0.065, 0.35, 10), 0x996326, 0, y - 0.16, z - 0.2);
+}
+registerBuilder('town.choice-board', (params) => {
+  const root = new THREE.Group();
+  if (params.kind === 1) {
+    piece(root, new THREE.CylinderGeometry(0.12, 0.15, 0.34, 10), 0xffedcd, 0, 2.61, 0);
+    piece(root, new THREE.SphereGeometry(0.36, 16, 8, 0, 2 * Math.PI, 0, Math.PI / 2), 0xdb4537, 0, 2.74, 0);
+    for (const x of [-0.14, 0.14]) piece(root, new THREE.SphereGeometry(0.07, 8, 6), 0xffedcd, x, 2.93, 0.22);
+  } else brassHorn(root, 2.79, 0);
+  return root;
+});
+registerBuilder('town.horn-pad', () => {
+  const root = new THREE.Group();
+  piece(root, new THREE.CylinderGeometry(0.55, 0.55, 0.12, 24), 0xc08a40, 0, 0.06, 0);
+  piece(root, new THREE.CylinderGeometry(0.41, 0.42, 0.02, 24), 0xe8bb62, 0, 0.12, 0);
+  brassHorn(root, 2.2, -1.0);
+  return root;
+});
 registerBuilder('town.ball-lever', () => {
   const root = new THREE.Group();
   piece(root, new THREE.BoxGeometry(0.44, 0.4, 0.44), 0x71553b, 0, 0.2, 0);

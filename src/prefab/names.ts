@@ -46,6 +46,8 @@ export type NameRegistry = {
 export const names: NameRegistry = {
   builders: [
     'town.ball-lever',
+    'town.choice-board',
+    'town.horn-pad',
     'town.ball-court',
     'railway.coach-parts',
     'railway.loader-parts',
