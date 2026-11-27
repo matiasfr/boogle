@@ -16,6 +16,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 | Plan: the lap, the ring's two halves joined at Port Quay (his yes, 27 November) | The greybox route | claude/greybox-lap | the orchestrator thread, Claude Opus high (planner) | 2026-11-27 | running: docs only |
 | Plan: the route leaves greybox, a look plan area by area (his word: Astra fleshes out the world visually) | The world leaves greybox | codex/greybox-look-plan | the orchestrator thread, Codex Astra medium | 2026-11-27 | running: docs and stills only |
 | High Gorge's rock as cliff-kit pieces (cliff kit step 11) | The world leaves greybox | codex/gorge-kit-rock | the orchestrator thread, Codex Astra medium | 2026-11-27 | running: view only, `gorge.ts`, `gorge-surfaces.ts`, the gorge's massing, `sickle-backdrop/view.ts` (the two High Gorge stacks); not `route-greybox/index.ts` (Port Quay's) |
+| The worn pack smaller and clear of the neck (his word, 27 November: "intersecting with the character's neck ... really big in scale") | none (polish) | codex/pack-worn-size | the orchestrator thread, Codex Astra medium | 2026-11-27 | running: view only, `src/render/gear-models.ts` (after the yoke), `tools.ts`, `forge-rewards.ts` |
 
 ## Where the work stands
 
