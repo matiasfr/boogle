@@ -259,6 +259,9 @@ note in this plan, then ship on the owner's word. No step waits on a playtest.
 11. **The greybox legs** (Bell Rock, leg 2's gorge, leg 3): when each leaves greybox, its rock is authored as kit pieces
     from the start, not as prisms to dress later.
 
+    - [x] High Gorge, two split sea stacks: the backdrop instances the kit's ten-metre face and rim cap along the clipped outlines. Each outer toe meets the sea. The stacks share two visual batches and use the existing rail-bore cuts. The level's hidden colliders and platform records stay in place.
+    - [ ] High Gorge matched arrival, platform and sea proofs and halt renderer census.
+
 ## Budget
 
 Kit density on the canyon: 26 pieces, 6,688 triangles a pass, along about 58 m of seen toe, so about 115 triangles and
