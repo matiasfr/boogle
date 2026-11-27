@@ -26,6 +26,8 @@ Reconciled on 16 November 2026 at `3720b4c3b` (#1905, world v52), on the owner's
 3. A table of minutes per area against six hours (the campaign outline's allowance).
 4. He plays it; nothing waits for that.
 
+Status (27 November): item 1’s legs are on main with pre-feeding (#2574, #2581, #2587) and every look card; item 3 is met ([route-minutes](reports/route-minutes.md): 120.5, 109.9 and 109.5 minutes for one to three players against 360); item 2 is proven by the loop, and the bot through seeded segments only (state file, open owner questions).
+
 Free job slots go to this checkpoint's next step first; other rows fill what is left, by rank.
 
 ## Committed work
