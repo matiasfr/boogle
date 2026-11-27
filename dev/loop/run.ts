@@ -72,7 +72,7 @@ import {
 import { LINE2 } from '../../src/sim/railway-lines.ts';
 import type { RailAction } from '../../src/sim/railway.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, legRack } from '../../src/sim/railway-route.ts';
-import { legDone, legOpen, legRow, routeRow } from '../../src/sim/railway-queries-route.ts';
+import { gateLeg, legDone, legOpen, legRow, routeRow } from '../../src/sim/railway-queries-route.ts';
 import {
   DETOUR,
   NODES,
@@ -263,7 +263,7 @@ function* forgeRails(g: Game, pl: Player, want: number) {
     yield { wait: 10 };
   }
 }
-type Need = { key: string; left: () => number; kind: 0 | 1 | 2 };
+type Need = { key: string; left: () => number; kind: 0 | 1 | 2; feedHeldFirst?: boolean };
 /** Bring `need` to `to` and unload with `unload`, sharing it with friends through `bringing`. */
 function* carry(
   g: Game,
@@ -278,8 +278,11 @@ function* carry(
   try {
     for (let guard = 0; guard < 200; guard++) {
       const left = need.left() - g.others(need.key, pl.pid);
-      if (left <= 0 && have() === 0) return;
-      if (have() < Math.min(left, capacityOf(g.w, need.kind))) {
+      const held = have();
+      if (left <= 0 && held === 0) return;
+      if (need.feedHeldFirst && held > 0) {
+        g.bringing.set(mark, held);
+      } else if (held < Math.min(left, capacityOf(g.w, need.kind))) {
         if (left <= 0) return;
         // Each kind has its own row, so other cargo on the back stays where it is.
         const want = Math.min(left, capacityOf(g.w, need.kind));
@@ -609,15 +612,15 @@ function legSection(g: Game, pl: Player, k: number, s: number, byHand: boolean):
   const rack = routePoint(legRack(L, s)),
     frame = node(ROUTE_SECTIONS.find((x) => x.leg === k && x.section === s)!.id).at;
   const row = () => legRow(g.w, k);
-  const gateOpen = () => sec.gate === undefined || !!(routeRow(g.w).gates & (1 << sec.gate));
+  const feedHeldFirst = sec.gate !== undefined && pl.i !== 0;
   return (function* () {
-    yield* waitFor(g, () => legOpen(g.w, k) && row().laid === s && gateOpen());
+    yield* waitFor(g, () => legOpen(g.w, k) && row().laid === s);
     yield* dropBig(g, pl);
     const feed = () => ({ op: 'rail.legStock', leg: k });
     const logs = carry(
       g,
       pl,
-      { key: `${L.id}${s}:logs`, kind: 0, left: () => (row().laid === s ? sec.logs - row().logs : 0) },
+      { key: `${L.id}${s}:logs`, kind: 0, left: () => (row().laid === s ? sec.logs - row().logs : 0), feedHeldFirst },
       byHand
         ? (want) => chopTo(g, pl, want)
         : (want) => fromRack(g, pl, rack, 'rail.depotTake', () => row().rackLogs, want, 'carry', k),
@@ -628,7 +631,12 @@ function legSection(g: Game, pl: Player, k: number, s: number, byHand: boolean):
     const rails = carry(
       g,
       pl,
-      { key: `${L.id}${s}:rails`, kind: 2, left: () => (row().laid === s ? sec.rails - row().rails : 0) },
+      {
+        key: `${L.id}${s}:rails`,
+        kind: 2,
+        left: () => (row().laid === s ? sec.rails - row().rails : 0),
+        feedHeldFirst,
+      },
       // Always off the rack: the forge rack gives no rails once the cradle is fitted (railway-sys-line2.ts forgeTake).
       (want) => fromRack(g, pl, rack, 'rail.depotRailTake', () => row().rackRails, want, 'rails', k),
       () => g.acct(pl.pid).rails ?? 0,
@@ -677,6 +685,10 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set(), pick
   };
   const routePolicy = (id: NodeId) => (pl: Player) => {
     const action = ROUTE_PRESS[id]!;
+    if (action.op === 'rail.gate' && pl.i !== 0) {
+      const { leg, section } = gateLeg(action.id)!;
+      return legSection(g, pl, leg, section, false);
+    }
     const prerequisitesMet = ready(id);
     return device(
       g,
