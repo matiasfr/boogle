@@ -8,25 +8,33 @@ import { terrainKitGeometry } from '../terrain-kit/geometry.ts';
 export async function hoodRock(owner: OwnedView) {
   const pieces = await terrainKitGeometry();
   if (!owner.alive) return;
-  const mesh = new THREE.InstancedMesh(pieces.get('face_6')!, kitMaterial(), 3);
-  mesh.name = 'West hood shoulders and return';
+  const face = pieces.get('face_6')!;
+  const mesh = new THREE.InstancedMesh(face, kitMaterial(), 2);
+  mesh.name = 'West hood shoulders';
   // Work back from the exit chord's daylight end. The faces flank the 13 m opening.
   const yaw = Math.atan2(-125, 225);
-  const wall = (index: number, along: number, across: number, turn: number, width: number) => {
-    const x = 795 + Math.sin(yaw) * along + Math.cos(yaw) * across;
-    const z = 75 + Math.cos(yaw) * along - Math.sin(yaw) * across;
-    mesh.setMatrixAt(
-      index,
-      new THREE.Matrix4()
-        .makeRotationY(yaw + turn)
-        .scale(new THREE.Vector3(width / 6, 0.54, 0.18))
-        .setPosition(x, 3.1, z),
+  const at = (along: number, across: number) =>
+    new THREE.Vector3(
+      795 + Math.sin(yaw) * along + Math.cos(yaw) * across,
+      3.1,
+      75 + Math.cos(yaw) * along - Math.sin(yaw) * across,
     );
-  };
-  wall(0, 14.9, -9.5, 0, 5.6);
-  wall(1, 14.9, 9.5, 0, 5.6);
-  wall(2, 12.1, 6.52, -Math.PI / 2, 5.4);
+  const shoulder = new THREE.Matrix4().makeRotationY(yaw).scale(new THREE.Vector3(5.6 / 6, 0.54, 0.18));
+  mesh.setMatrixAt(0, shoulder.setPosition(at(14.9, -9.5)));
+  mesh.setMatrixAt(1, shoulder.setPosition(at(14.9, 9.5)));
   owner.add(mesh);
+  // Print the last course onto the existing inner wall plane. The depth bias
+  // resolves coplanar pixels while the entire 13 m opening stays clear.
+  const lining = kitMaterial().clone();
+  lining.polygonOffset = true;
+  lining.polygonOffsetFactor = lining.polygonOffsetUnits = -2;
+  owner.cleanup(() => lining.dispose());
+  const inset = new THREE.Mesh(face, lining);
+  inset.name = 'West hood return';
+  inset.rotation.y = yaw - Math.PI / 2;
+  inset.scale.set(0.9, 0.54, 0.00001);
+  inset.position.copy(at(12, 6.5));
+  owner.add(inset);
   return { update() {} };
 }
 
@@ -47,7 +55,7 @@ export async function saltShore(owner: OwnedView) {
   for (let i = 0; i < count; i++) {
     const a = rim(i),
       b = rim(i + 1);
-    const inner = (v: THREE.Vector3) => v.clone().lerp(centre, 0.085).setY(a.y);
+    const inner = (v: THREE.Vector3) => v.clone().lerp(centre, 0.34).setY(a.y);
     for (const point of [a, b, inner(b), a, inner(b), inner(a)]) positions.push(point.x, point.y, point.z);
     if (i % 8 !== 0) continue;
     const p = a.clone().lerp(b, 0.5);
