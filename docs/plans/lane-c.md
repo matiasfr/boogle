@@ -1,0 +1,181 @@
+> **Status: plan, 27 November 2026.** Written by the planner against `origin/main` `f536288a3` (world v75), from the [Lane C brief](../brainstorms/lane-c-towns-hangout.md) and on its recommendations, for the [course change](course-change.md#lane-c-towns-are-the-hangout) ([decision](../decisions-core-loop.md#d-2026-11-27-course-change)). Docs only: nothing here is built. Every building name, board word and line is a placeholder for the owner's words; none of The Boogler's copy is touched. One question waits on him ([open questions](#open-questions)); everything else proceeds.
+
+# Lane C: the ball in town, and the first plot the room picks
+
+## Goal
+
+Checkpoint item 3 ([course change](course-change.md#the-checkpoint-a-guest-helps-in-two-minutes)): one town building that adds something to do, with the ball in town. The smallest build that meets it is two parts that **ship apart**:
+
+- **Part 1, the ball and its court on the Round's green.** View and Owner state only: no rule, no wire, no save, no world bump, nothing under the review paths. It ships on its own the moment it is built.
+- **Part 2, the first bought house's two-way pick.** Offer 1 (`plot3`, 150 Boogles) offers `[Placeholder: Seed Shed]` or `[Placeholder: Horn Pavilion]`; the retired engine driver moves in either way. A `Plot.kind` field, a `rail.buy { id, kind }` change, one server relay bound and one world bump. Independent review.
+
+Part 1 alone does not meet item 3 (a court is not a building); part 2 does. Part 2 does not need part 1 to be on main, but it is planned after it so the court's toy-ground seam (step 1) is there for the mushrooms.
+
+**Serves** the core loop ("choice and hanging out live in the towns, where every building adds something to do"), **2. Physics toys are optional fun**, **3. Side activities are never required**, **8. Enjoyable alone and together** (its test: a drop-in guest finds something to do where they land) and **11. Show, don't tell** (goals, boards and pads read without words). Bends none.
+
+**Research:** [level-design](../research/level-design.md) (walk-seconds and sightlines, used in the level findings), [route-contract](../research/route-contract.md) (rule 2 drives the sprouting limit in step 5), [minigames-and-physics-minigames](../research/minigames-and-physics-minigames.md) recs 1, 2, 4 and 8 (a toy first, one glance, a place with a prop and not a mode: no score, no timer), [goofy-physics-coop](../research/goofy-physics-coop.md) (no winners). Nothing departed from.
+
+## What the brief claimed, checked in the code
+
+| Claim | Verdict | Evidence | What the plan does |
+| --- | --- | --- | --- |
+| The ball is Owner state and needs no server rule | **True** | `src/entities/ball/state.ts` uses `createOwnerSync` on presence key `b` (`./sync.ts`); `server/src/host/hosted-room.ts` relays any presence object unchanged (it only stamps `pid`) | Part 1 has no server edit |
+| `canThrow()` for the ball on production is a code fix | **False: it changes a recorded decision** | `THROWS = !productionRailway` (`src/player/hands.ts:77`) implements the [9 November answer](../decisions-controls.md#d-2026-11-09-four-more-answers), item 3: "Until replication R3 makes island throwing work, the live game offers no Throw". R3 never made island throwing work: classic gift flights were retired on 13 November instead (`hands.ts` header) | Throwing waits on the owner ([open question 1](#open-questions)). The court is built for carry, drop and walking into the ball, which work on production today (`walkIntoBall`, `onLetGo` → `throwBall` with the 2.2/3.2 m/s drop) |
+| `Plot` is `{ slot, at, paid }` and `rail.buy` is `{ id }` | **True** | `src/sim/railway-components.ts:328`; the rule `buy` in `src/sim/railway-sys-trade.ts:189`; the reach check in `src/world/railway-server.ts:303` (3.2 m from `townPlotBoard(k)`); the intent's clean copy in `src/adapters/railway-intents.ts:68` keeps only `op` and `id` | Step 6 adds `kind` in all four places |
+| The Seed Shed reuses `mushrooms.stall` and the `{ t: 'mush' }` message with zero server rules | **Half true.** No rule, but the server refuses Home's coordinates | The stall prefab, the `mushrooms.take-seeds` handler and the message exist (`src/adapters/mushroom-stall.ts`, `mushrooms.ts`), and the railway room relays `mush` as a cosmetic one-off. But the relay's own check, `mushShape` in `server/src/host/hosted-room.ts:81`, drops any spot with `|v| >= HALF` (255 m), and Home's green is at world x ≈ 885 (`ORIGIN.x` 1000 + `TOWN_CENTRE.x` −115). The client's receipt check (`listenForSprouts`) and `openGround`'s classic `groundHeight` refuse it too. The course change's "the seed stand needs the railway's server to accept its edits" was right about the server, wrong about the kind of edit | Step 5 moves both bounds to the existing cosmetic envelope (`BOUND`, 4096 m, `src/sim/social.ts:6`, which pings already use "including authored places outside the classic island"): a server edit, so it rides part 2's review |
+| The Horn Pavilion's pads send `{ t: 'horn', pad }` and reuse `honk.ts` | **False for the message, true for the sound** | The railway relay passes only `ping`, `honk` and `mush` (`hosted-room.ts:279`); anything else is dropped as a forged packet. `honkSound` and `chordSound` are exported from `src/features/honk.ts` | No message: each tab sees every pad from poses it already has (its own body, `remotes`' avatars, `ball.pose`) and plays the pad itself (step 7). No server edit |
+| Bram's room, residents, lamp and model railway need no change | **True** | `src/entities/town/rooms.ts`, `residents.ts` (`driver`), `first-house.ts`, `model-railway.ts` key on the plot, not on what it gives | Part 2 adds pieces outside the house; those files are untouched |
+| Walk-seconds: dock top → court ~20 m (3.5 s) | **False** | Dock top `(−150.7, 33.1)` → pitch centre `(−120.1, 26.2)` is 32 m (5.7 s at 5.6 m/s); hall door `(−90.2, 11.0)` → 33 m (5.8 s); plot 3's board `(−95.4, 35.2)` → 26 m (4.7 s) | [Level findings](#level-findings) use the measured numbers |
+| A "wing" mounts on `plot3` | **No room for one** | `plot3` spans x −94.2 to −86.8, z 29.3 to 36.7, door facing −x; the quarry road's centreline passes 3.5 m off its front board (half width 2.4 m), `plot5` is 2.8 m north and the curio shelf 1.02 m south (`npm run level-check`, "Town houses" gaps) | The toys are compact pieces in the strip in front of the house where the boards stood (step 4) |
+
+## Design
+
+### Sync kinds
+
+| State | Kind | Authority | Saved |
+| --- | --- | --- | --- |
+| The ball (position, holder, epoch) | **Owner that changes hands**, `createOwnerSync`, presence `b`, unchanged wire | whichever tab simulates it | no |
+| Where toys stand on the ground (`toyGround`: height, inside, spawn) | **Local** (a seam set once at boot) | each tab | no |
+| The court, goals, the clang and bunting | **Local**: static prefab; each tab watches `ball.pose.p` cross a goal mouth | each tab | no |
+| The return lever | **Local** press → `respawnBall()`, which claims the ball (Owner) | the presser's tab | no |
+| What `plot3` became | **Server**: `Plot.kind` (`u8`), written only by `rail.buy`, replicated with `Plot`, in the checkpoint | the server | yes |
+| Twin boards, the swapping ghosts, the built toy's pieces | **Local** over the accepted `Plot` row | each tab | no |
+| Mushrooms | **One-off event** `{ t: 'mush', s }` (existing), then Local per tab | the sender; receivers validate and rate-limit | no |
+| Horn pads | **Local**, derived from Owner poses already on every tab; no message | each tab | no |
+
+### Part 2's server state, in full
+
+- **Pure logic and rule.** `TradePlot` (`src/sim/railway-trade-layout.ts`) gains `choices?: readonly number[]`; `TRADE.plots[0][0]` gets `choices: [1, 2]`. `PLOT_KIND = { plain: 0, seeds: 1, horns: 2 }` lives beside it (data, no imports). The `buy` system (`src/sim/railway-sys-trade.ts`) reads `e.kind`: a plot with `choices` refuses a `kind` not in them (missing counts as refused); a plot without refuses any `kind` other than missing or 0. Accepted: `Object.assign(plot, { at: tick, paid: price, kind })`. Integer only, no new reads, same order (70).
+- **Component.** `Plot` gains `kind: 'u8'` (default 0). It is already in `RAIL_REPLICATED` and the checkpoint, so nothing else registers.
+- **Command adapter.** `RailwayIntent`'s `rail.buy` becomes `{ op; id; kind?: number }`; `intentOf` keeps `kind` when it is an integer 0 to 15 (`railInt`), else drops the intent. `railwayCommands().buy(slot, kind)` (`src/adapters/railway-intents.ts:253`) sends it.
+- **Actor facts.** Unchanged: the 3.2 m reach from `townPlotBoard(0)` (`railway-server.ts:303`). Both boards stand within it (step 4), so no per-kind anchor enters the server.
+- **Receipts.** Unchanged: `rail.buy` stays unpredicted; `plots.ts`'s `waiting` clears on the accepted row or on `onRefused`. A lost race (two tabs buy at once, either kind) is a refusal for the second; it spends nothing and its hold resets.
+- **Prediction and correction.** None declared; nothing to correct.
+- **Ticks and saves.** The server's, unchanged. The seeds `house-built` (`src/sim/railway-seed-trade.ts:56`) buy `kind: 1`.
+- **Replay and invariants.** A rule test per refusal and one accept per kind (step 6); the trade replay goldens re-pin only for the new field, with the change named in the commit ([lockstep](../agents/lockstep.md)).
+- **World bump.** One, in step 6's commit, with a dated history line in `src/world/namespace.ts` (the next free version when it ships; v76 today). It ships whenever nobody is on the server: the owner's [newest flow answer](../decisions-process.md#d-2026-11-27-docs-merges-reload-nobody-daily-wipe), being replaced as this is written by "any time nobody is playing, as many a day as are ready" (in flight on a ship branch), enforced by `dev/world-bump-gate.ts`. Nothing batches it to a week. If Lane B's rules branch ([lane-b](lane-b.md)) is ready in the same hour, the orchestrator may ship both behind one wipe; neither waits for the other.
+
+### Controls
+
+No new action, key, pad slot or guide row. The lever, the boards and the stall are interactables through prefab records (`src/prefab/instantiate.ts` handlers, as `mushrooms.take-seeds` does); "Bring the ball back" (`R`, pad `view`) already exists and moves with the ball. Throwing stays off ([open question 1](#open-questions)).
+
+## Steps
+
+Each step leaves `node dev/ship-check.ts` green. Proof follows the [flow decision](../decisions-process.md#d-2026-11-27-flow-one-pass-then-refine), rule 3: **one look and one review per pass**, at the end of the pass, not per step. Part 1 is one pass (steps 1 to 3), part 2 is one pass (steps 4 to 8).
+
+### Part 1: the ball and court on the green (view and Owner only; ships alone)
+
+- [ ] **1. One toy ground, and the ball on it.** *Kind: view (Owner physics, client only).* Files: new `src/physics/toy-ground.ts`; `src/entities/ball/state.ts`; `src/features/impact.ts`; `src/features/blob-shadows.ts`.
+  - `toy-ground.ts` exports `toyGround = { under(x, z), inside(x, z), spawn: { x, z }, sproutable(x, z) }` with classic defaults (`groundHeight`, `|x|, |z| < HALF − 3`, `BALL_SPAWN`, always true) and `setToyGround(next)`. No three.js, no place imports, so `npm run sim` and `test/entity-state-node.test.ts` still load the ball alone.
+  - `ball/state.ts`: the pose's first height, `respawnBall`, `surfBall`'s still-water grip and `settleBall`'s out-of-bounds test read `toyGround` instead of `groundHeight`, `HALF` and `BALL_SPAWN`. `setToyGround` re-places an unowned ball at the new spawn (`if (!ball.mine && !ball.remoteOwned)`), so a tab that hears an owner keeps the owner's ball.
+  - `impact.ts:147` and the ball's disc in `blob-shadows.ts` read `toyGround.under`. The players' discs keep `groundHeight` (a pre-existing Home bug, listed under risks, not fixed here).
+  - Verify: the ship check; the look at the end of the pass.
+- [ ] **2. The court as data.** *Kind: dev (layout data and its test).* Files: `src/place/town-plan.ts`; `test/town-plan.test.ts`.
+  - `TOWN_COURT`, derived from `slotPoint` like every Round row: goal mouths at bearings 200° and 240°, radius 8.5 m from G, each 2.2 m wide (radial) and 1.1 m tall, facing each other along the chord (5.8 m apart); the pitch centre and ball spawn on the bisector at 8.0 m, bearing 220° (Place-local ≈ (−120.1, 26.2)); the lever on the outer sideline at bearing 220°, 9.6 m.
+  - The flow rule's 2D layout is this data plus its test, because the Round has no 2D page and `npm run level-check` excludes place props (its own "Excluded" line). Add to `town-plan.test.ts`: every court piece inside the green's flat floor (`TOWN_GROUND.green.flat`, 10 m), 3.6 m or more from G (the statue footing's corner is 3.54 m), 1.2 m or more either side of the dock→G axis (bearing 250°), and 2.4 m or more from every road centreline.
+  - Verify: that test.
+- [ ] **3. The court and its lever in the world.** *Kind: view.* Files: new prefab records `town.ball-court` (chalk lines, two low timber goal frames with a hanging brass cowbell and a bunting string each) and `town.ball-lever` in `src/content/prefabs/town.ts` (or a new `town-court.ts` beside it), their builders in `src/prefab/builders/`, the placement in a new `src/content/levels/town-court.ts`, the compiled JSON (`npm run prefabs`); new entity file `src/entities/town/court.ts`, spawned from `src/entities/town/index.ts`; `docs/game-design/ball.md` and the Round's section of `docs/game-design/place.md`.
+  - `court.ts` instantiates both records under the town's `OwnedView`, calls `setToyGround({ under: H, inside: insidePlace, spawn: toWorld(TOWN_COURT.centre), sproutable: inTown })` on production (`inTown`: within `TOWN_GROUND.r`, 38 m, of G; it is step 5's), and each frame checks the ball's segment from last frame's `ball.pose.p` to this one against each goal mouth. A crossing plays a cowbell clang (`knock` from `src/render/fanfare.ts`, or a new `clang` beside it) and kicks that goal's bunting; a 700 ms per-goal rest stops a ball resting in the mouth ringing twice. No score, no text, no message.
+  - The lever's handler is `town.ball-return`: its target reads "Bring the ball back" (the action's own label) and runs `respawnBall()`, which now lands on the pitch centre.
+  - Verify, once for the pass: `npm run look -- --rail-seed awake` from the dock street's top `(849.3, 33.1)` toward 70°, one overhead 30 m above the pitch centre, one at 390 px wide; then one `--eval` that walks into the ball through a goal mouth and pulls the lever (motion sheet). **Review:** the orchestrator's read and `/code-review` per [shipping](../agents/shipping.md); no path is under `REVIEW_PATHS`.
+
+### Part 2: the first bought house's two-way pick (sim, world, server and view; one bump; independent review)
+
+- [ ] **4. Boards and toys as data.** *Kind: dev (layout data and its test).* Files: `src/place/town-plan.ts`; `test/town-plan.test.ts`.
+  - `TOWN_CHOICE` for plot 0 (`plot3`), in the house's own frame (`townLocal`): board A (`seeds`) at local x 1.0, board B (`horns`) at 3.4, both at `d / 2 + TOWN_BOARD.front` (the brief's ±1.2 m around today's `TOWN_BOARD.side` 2.2), so Place-local ≈ (−95.4, 34.0) and (−95.4, 36.4). After the buy the boards go and the chosen toy stands in the same strip: the seed stall (`mushrooms.stall`, 1.5 m footprint disc) at local x 2.2; or three brass pads (1.1 m discs, 0.12 m tall, flush enough to walk over) at local x 0.0, 2.2 and 4.4 with the horns mounted on the house's front wall above them (no footprint).
+  - Add to `town-plan.test.ts`: each board within `TOWN_BOARD.reach − 1.2` m (2.0 m) of `townPlotBoard(0)`, so a player standing a metre in front of either still passes the server's 3.2 m check; boards 2.0 m or more apart; no board, stall or pad within 0.4 m of the quarry road's half width or inside the house, `plot5` or the curio shelf's footprint. If a pad cannot meet the road rule, the pads move to local x −0.6, 1.6 and 3.8 and the test says so.
+  - Verify: that test.
+- [ ] **5. Mushrooms grow in town.** *Kind: view plus one server relay bound (review path).* Files: `src/sim/social.ts` (export `BOUND` as `COSMETIC_BOUND`); `server/src/host/hosted-room.ts` (`mushShape` checks `COSMETIC_BOUND`, not `HALF`); `src/adapters/mushrooms.ts`; `src/adapters/mushroom-stall.ts`; `docs/game-design/mushrooms.md`.
+  - `mushrooms.ts`: `openGround` reads `toyGround.under` and refuses where `!toyGround.sproutable(x, z)`; `listenForSprouts` checks `COSMETIC_BOUND` and `sproutable` on receipt (a forged spot outside town grows nothing). Sprouting anywhere else on production says the existing "Can't grow here".
+  - `mushroom-stall.ts`: the take handler finds its own instance's `pickup` attach, so a second stall (step 7's) works beside the classic one; the classic stall stays where it stands.
+  - `server/src` already imports `src/sim/social.ts`, so no image list changes ([room safety](../agents/room-safety.md), last rule).
+  - Verify: the ship check; the pass's look.
+- [ ] **6. `Plot.kind` and `rail.buy { id, kind }`.** *Kind: sim (review path).* Files: `src/sim/railway-trade-layout.ts`; `src/sim/railway-components.ts`; `src/sim/railway-sys-trade.ts`; `src/sim/railway-seed-trade.ts`; `src/adapters/railway-intents.ts`; `src/world/namespace.ts` (the bump and its history line); the trade test that already covers `rail.buy` (`test/railway-trade.test.ts`); the replay goldens that move.
+  - As [Part 2's server state](#part-2s-server-state-in-full) says. Test cases, in the existing file: plot 0 without `kind` is refused; plot 0 with `kind: 3` is refused; plot 0 with `kind: 1` and with `kind: 2` each accept and record it; plot 1 (the Loader Yard) with `kind: 1` is refused and without `kind` accepts; a second buy of plot 0 after either kind is refused and spends nothing.
+  - Verify: those tests; the ship check (it runs the server suite and `test:net` for a branch that touches a seed, owner-calls "Build more, test less").
+- [ ] **7. The twin boards, the ghosts and the built toy.** *Kind: view.* Files: `src/entities/town/plots.ts`; new `src/entities/town/hangout.ts` (the two toys, spawned from `src/entities/town/index.ts`); new prefab records `town.choice-board` (a board with a 3D topper: a spotted toadstool or a brass horn) and `town.horn-pad`, with builders and compiled JSON; `docs/game-design/trade.md` (the plot) and the Round's section of `docs/game-design/place.md`.
+  - `plots.ts`, for a plot with `choices`: two targets instead of one (`town.plot.0.1`, `town.plot.0.2`), each with its own `at` and `near`, sharing today's 1 s hold; the hold sends `railwayCommands()?.buy(k, kind)`. Two ghosts per plot (the house's outline plus each toy's), the nearer board's shown; switching plays a soft wooden clack (`knock`). Once the row is bought, the boards go in a dust puff (`splash`), the unchosen ghost goes, and the house raises itself on today's `startSite` clock.
+  - `hangout.ts` reads `Plot.kind` from the accepted row (`railwayWorldRead`) and builds the chosen toy when the plot's site is done, so a late joiner and a reload see it from the row.
+    - **Seeds:** a `mushrooms.stall` instance at step 4's spot.
+    - **Horns:** the three pads and the wall horns. Each frame, each pad looks for a body newly over it: this tab's player (`me.body`), each remote avatar (`remotes`, `avatar.position`) and the ball (`ball.pose.p`), each within the pad's radius and 0.4 m of its top. A new arrival plays `honkSound` on that pad's tone of the current shared chord (`honkNotes`, so pads and honks agree), puffs steam from its horn and rests that pad 600 ms. All three sounding within 1 s plays `chordSound` and a bigger puff. Every tab hears it from the same poses; nothing is sent.
+  - Verify, once for the pass: `npm run look -- --rail-seed house-ready` facing plot 3's boards, standing at board A then at board B (two stills: both toppers readable, the ghost swapped); `--eval` buys `kind 1`, takes a seed bag, sprouts on the green and walks the ball onto a cap (motion sheet); a second `--eval` from `house-ready` buys `kind 2`, steps on a pad and pushes the ball onto another (motion sheet). Measured: the driver stands in his front room with his railway after either buy; mushrooms stand at world x ≈ 880 on Place ground. Then one reload (the chosen toy is there and the boards are not) and one two-tab race (both hold at once, on different boards: exactly one accepts, the other spends nothing).
+- [ ] **8. Close the pass.** *Kind: dev.* Files: this plan's checklist; the town rows in `docs/game-design/`. **Review:** one independent review for steps 5 and 6 together (the review paths fire on `src/sim`, `src/world` and `server/src`; `npm run ship-queue` needs the stamp), and the orchestrator's read plus `/code-review` for steps 4 and 7. The bump ships through `dev/world-bump-gate.ts`.
+
+The checkpoint's own proof (fresh players' seconds to first contribution, the owner watching a guest) belongs to the course change, not to this plan.
+
+## Level findings
+
+The Round has no `level-check` coverage for props ("Excluded place props, room/station collision"), so these are measured from `src/place/town-plan.ts` and `home-station.ts`, and steps 2 and 4 turn them into `test/town-plan.test.ts` assertions. Its "Town houses" scope reports the gaps used here: shelf → first house 1.02 m, first → second house 9.94 m.
+
+1. **Flow.** Dock top `(−150.7, 33.1)` → pitch centre `(−120.1, 26.2)`: 32 m, 5.7 s. Hall door `(−90.2, 11.0)` → pitch centre: 33 m, 5.8 s. Plot 3's board `(−95.4, 35.2)` → pitch centre: 26 m, 4.7 s. Something to do inside 6 s of every arrival point, within Home's "every 10–20 s" guide.
+2. **Sightlines.** The near goal (240°, 8.5 m) stands 1.5 m off the dock→G axis and 1.1 m tall; the dock→statue→hall view passes over and beside it. The pitch (bearings 200° to 240°) is clear of the northern paths to the gate cottage (280°), museum (340°) and Pip's (10°). Unseen until the pass's look: how the 0.8 m bowl frames the pitch from the dock (it stays inside the flat 10 m floor, so the pitch itself is level).
+3. **The bowl as a catcher.** The green's bank rises from 10 m to 14 m; a ball pushed off the pitch rolls back down onto the flat floor rather than into the ring road. Where it does leave the Round, `settleBall` respawns it only outside the Place's grid (`insidePlace`), never at Home.
+4. **Route contract (rule 2: movement may skip a walk, never the work).** A cap bounces a player at 15 m/s: 15² / (2 × 18) = 6.25 m above the cap, before a double jump. On the classic island that was a toy; on production a bag carried anywhere would be a 7 m lift onto any ledge the route gates by height, before the second jump or the hook. Step 5 lets mushrooms grow only within 38 m of G (`TOWN_GROUND.r`). Inside that circle the lift reaches the house eaves and the shop's balcony, the rooftop chain already accepted as an optional shortcut ([rewards decision, 18 November](../decisions-rewards.md#d-2026-11-18-decisions-page-rewards)); nothing on the railway route is gated by a Home roof.
+5. **Nobody stranded (rule 3).** Nothing here is one-way. Mushrooms wilt in 20 s; the pads are flush; the boards and the stall stand in the open strip by the road.
+6. **Plot 3's front strip.** 1.1 to 2 m between the house front and the quarry road's edge. The board at local x 3.4 comes within about 0.5 m of the road's edge; step 4's test decides, and moves the pads if they cannot fit.
+
+## Risks
+
+- **Room safety.** No effect plays in `apply`; the buy's effects follow the accepted row (`plots.ts` already). Presence is unchanged. The mushroom relay keeps validating and rate-limiting on both ends; malformed `kind` is dropped by `intentOf` and refused by the rule, never thrown.
+- **Hotspots.** `src/entities/town/plots.ts` (480 lines) grows by the second target and ghost; keep the toys in `hangout.ts`. `src/main.ts` is not touched.
+- **Mixed builds.** Dev phase: no fences. Step 6's commit carries the bump. Steps 5 and 6 ship in one branch, so a server that relays Home's mushrooms and a client that sends them land together.
+- **In flight.** `npm run inflight` shows the bump-gate change (`dev/world-bump-gate.ts`, the owner-calls and decisions-process rows on wipes) shipping now; it touches none of these files. [Lane B's plan](lane-b.md) (now on main) also edits `src/sim/railway-components.ts` (`Train.gift`, `Rail.giftOut`, `Account.thanks`, not `Plot`) and also takes v76: whichever sim branch ships second rebases onto the first and takes the next version, or the two ship behind one wipe. Lane A's station board stands at the hall, not on the green or the quarry road.
+- **Interact priority.** Today's pick (nearest wins, a nudge toward the view) is enough: the ball's "Grab" and the boards are 26 m apart. A ball pushed against the boards could take the press; the pass's look checks it.
+- **Pre-existing, not fixed here.** Players' blob shadows at Home read the classic `groundHeight` (`blob-shadows.ts:35`).
+- **Performance.** About a dozen static meshes (lines, two frames, two cowbells, bunting, a lever, two boards, a stall or three pads and horns) and two O(players) checks a frame. Greybox tier: no frame-time reading (flow rule 3).
+
+## Open questions
+
+Only the first waits on the owner. The rest proceed on their recommendation and are logged.
+
+1. **May the beach ball be thrown in the live game?** It changes the [9 November answer](../decisions-controls.md#d-2026-11-09-four-more-answers), item 3 ("no Throw in the live game until replication R3"); R3 never brought island throwing, and the ball's own physics is Owner state that already throws on every other entry. **Recommended: yes, the ball only** (`canThrow` becomes `heldId() === 'ball'` on production; seeds keep Sprout; the two dropped nightly throw checks come back with it). **Waits on him.** Until then the court is for carrying, dropping and running the ball in, which part 1 is built for.
+2. **The brief's Offer 1 pick, Seed Shed or Horn Pavilion, with the driver moving in either way.** Proceeds as recommended (the brief's question 1).
+3. **Mushrooms grow only within the Round on production.** Proceeds (level finding 4).
+4. **The unchosen toy on a later plot.** Not in this build: plot 1 (Offer 3) stays a plain house until a later plan gives it a `choices` row. Proceeds.
+
+## Design review (2026-11-27)
+
+Run by the plan's author after rereading it from the top, against [DESIGN.md](../../DESIGN.md), [owner-calls](../agents/owner-calls.md), the Current rules of [core loop](../decisions-core-loop.md#current-rules), [rewards](../decisions-rewards.md#current-rules), [characters](../decisions-characters.md#current-rules), [controls](../decisions-controls.md#current-rules) and [process](../decisions-process.md#current-rules), [course-change](course-change.md), the brief's own review, the research above and the code cited in the claims table.
+
+### Calls
+
+| # | Call | Kind | Source or recommendation |
+| --- | --- | --- | --- |
+| 1 | Towns hold choice and hanging out; every building adds something to do; the room picks what goes on a plot; the toys move to town | Decided | [d-2026-11-27-course-change](../decisions-core-loop.md#d-2026-11-27-course-change), rule 5 |
+| 2 | Every building can be walked into (the driver's house stays a walk-in room) | Decided | [d-2026-11-10-every-building-can-be-walked-into](../decisions-core-loop.md#d-2026-11-10-every-building-can-be-walked-into) |
+| 3 | The first bought house's resident is the retired engine driver, with placeholder lines | Decided | [d-2026-11-19-first-house-resident](../decisions-characters.md#d-2026-11-19-first-house-resident) |
+| 4 | Offer 2 stays the Loader Yard | Decided | [d-2026-11-16-first-town-lesson-answers](../decisions-rewards.md#d-2026-11-16-first-town-lesson-answers) |
+| 5 | The toys are optional, gate nothing and earn nothing | Decided | DESIGN.md 2 and 3; [rewards rules](../decisions-rewards.md#current-rules) ("the beach ball never produces income") |
+| 6 | Names, board words and lines are placeholders for the owner | Decided | [d-2026-11-11-the-story-and-characters-are-the-owner-s](../decisions-characters.md#d-2026-11-11-the-story-and-characters-are-the-owner-s) |
+| 7 | No Throw in the live game; the court works without it | Decided | [d-2026-11-09-four-more-answers](../decisions-controls.md#d-2026-11-09-four-more-answers), item 3; changing it is open question 1 |
+| 8 | Offer 1 (`plot3`, 150 Boogles) is a two-way pick, Seed Shed or Horn Pavilion, both +1 rider a minute | New | Brief's call 6; recommend yes |
+| 9 | The ball and a court stand free on the green from arrival | New | Brief's call 7, without its throw; recommend yes |
+| 10 | Mushrooms grow only within 38 m of G on production | Default | Level finding 4; keeps seeds a town toy |
+| 11 | The pitch: goals at 200° and 240°, 8.5 m out, 2.2 m wide and 1.1 m tall, 5.8 m apart; ball spawn and `R` at the pitch centre (8.0 m, 220°); the lever at 9.6 m | Default | Inside the flat floor, clear of the statue and the arrival axis (level findings 1 to 3) |
+| 12 | A goal is a cowbell clang and a bunting kick, a 700 ms rest per goal, no score, no text | Default | Brief's call 12; research recs 1 and 4 |
+| 13 | The lever is "Bring the ball back", the existing action's label | Default | One name for one thing |
+| 14 | Twin boards at local x 1.0 and 3.4 in front of `plot3`, the nearer board's ghost shown, a clack on the swap, the existing 1 s hold | Default | Brief's call 13, with its ±1.2 m kept inside the server's reach |
+| 15 | After the buy the boards go in a dust puff and the toy stands in their strip: the stall, or three flush 1.1 m pads with horns on the house's wall | Default | Replaces the brief's "wing": there is no room for one (claims table) |
+| 16 | Pads sound from poses on every tab (player, friends, the ball), 600 ms per pad, on the shared honk chord's tones; all three within 1 s play a chord | Default | Replaces the brief's `horn` message (call 14), which the relay would drop |
+| 17 | `Plot.kind` and `rail.buy { id, kind }`, unpredicted, first accepted wins; one bump | Default | Brief's call 15 |
+| 18 | The unchosen toy goes nowhere in this build; plot 1 stays a plain house | Default | Smallest build; the brief's call 8 is kept for a later plan |
+| 19 | Price, riders and staking of Offer 1 unchanged | Default | As built (`TRADE.plots[0][0]`) |
+
+Counts: **7 Decided, 2 New, 10 Default.** Calls 10, 11, 13, 15, 16, 18 and 19 are this plan's and are logged in [agent-calls](../agent-calls.md) (status `open`); calls 8, 9, 12, 14 and 17 are the brief's rows.
+
+### Findings
+
+1. **The brief's ball throw is not a code fix** (claims table, row 2). It would change the 9 November answer. The plan builds the court for carry, drop and running the ball in, and puts the throw to the owner (open question 1). Changed: step 3's proof walks the ball in instead of throwing it.
+2. **The Seed Shed needs a server edit** (claims table, row 4). Changed: step 5 moves `mushShape`'s bound to the shared cosmetic envelope, and the step sits in part 2's independent review.
+3. **The Horn Pavilion's message would be dropped by the server** (claims table, row 5). Changed: step 7 sounds the pads from poses every tab already has; no message, no server edit.
+4. **There is no room for a wing on `plot3`** (claims table, row 8; level finding 6). Changed: step 4 sets the toys into the board strip, with a test.
+5. **A seed bag on production is a movement ability** (level finding 4). Changed: step 5 limits sprouting to the Round.
+6. **The brief's walk-seconds were short** (level finding 1). The pitch is still under 6 s from every arrival point; no step changed.
+7. **First meeting, solo, co-op, late arrival.** A guest off the dock sees the striped ball on the pitch 32 m ahead and gets "Grab" by walking up; nothing tells them about goals, and nothing needs to. Solo: run the ball in, ring the pads alone, bounce off caps. Together: a goal for each, three friends on three pads for the chord, one sprouting while another runs the ball over the caps. A friend arriving late sees the built toy from the accepted row and the ball wherever its owner left it; mushrooms sprouted before they came are missed, as today.
+8. **The 16 November "first island teaches" entry** ([d-2026-11-16-first-island-teaches](../decisions-core-loop.md#d-2026-11-16-first-island-teaches)) is not changed by a pick at Home: it judges first-island purchases by whether they teach, and the course change's rule 5 and its plan (which name "the first bought house offering a pick between two buildings") are later. Both kinds still teach the plot purchase. No step changed.
+9. **Port-from-Place fit** (owner call "Port from Place only what still fits"): the ball earns its place (the best co-op slapstick toy, no server cost); the mushrooms earn theirs inside the Round only (finding 5); the classic court's tall net and keepy-uppy count are not ported.
+
+### Suspect or placeholder lines
+
+- None of The Boogler's copy is touched.
+- Placeholders for the owner: `[Placeholder: Seed Shed]`, `[Placeholder: Horn Pavilion]`, the two board titles and their "+1 rider / minute" line. "Bring the ball back" is the existing action's label, reused.
