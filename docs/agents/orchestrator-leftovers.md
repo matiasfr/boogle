@@ -4,6 +4,7 @@ Proof debts, things jobs reported and did not fix, and older parked items. Split
 
 ## From 25 November
 
+- P3 · From look card 5 (#2586, 27 November, read by the heartbeat): the two strapped crate stacks on Port Quay’s apron and platform end are draw-only (`src/entities/route-greybox/quay-edges.ts`), so a player walks through them. Give them the shared clearance or move them off the walk.
 - P2 · From Port Quay step 5's re-check (Astra medium, #2578, 27 November), pre-existing: Home's garage allocates a flash material and a body and head material for each of its two crew (`src/entities/railway/garage-view.ts`, near line 245) that neither Home's teardown nor `OwnedView.dispose()` frees, so each unmount of Home's Roundhouse leaks five materials. Test: a `dispose` listener on each, dispose the owner twice, expect one event each.
 - P3 · Same re-check: `test/garage-selection.test.ts` (near line 54) watches only the quay's iron material, so dropping another private material from cleanup stays green; count all six per mount, and zero for the shared cached paint.
 - P3 · From Port Quay step 4's review (Astra medium, #2570, 27 November): in `test/railway-replicate.test.ts` (near line 748) the Home upgrade prediction sends a payload without `site` while the authority assertion sends `site: 0`, so the test passes although the authority refuses the predicted request; send one payload through both paths (the reviewer's failing assertion is on `review/port-quay-table-rules`, `b05f25c9c`).
