@@ -133,7 +133,7 @@ export const LEG_OBJECTIVES = {
   causewayGate: "Open the causeway's barrier at Bell Rock (placeholder)",
   causeway: 'Build the causeway to the Original Island (placeholder)',
   island: 'Ride to the Original Island (placeholder)',
-  arrived: 'Arrived (placeholder)',
+  arrived: 'All lines connected! Ride wherever you like.',
 } as const;
 /** The steel loop's steps, from the rivet to the longer boiler (docs/plans/ring-island-build2.md, section 1). Draft
  * copy for the owner to reword (docs/agent-calls.md; decision d-2026-11-18-decisions-page-rail). */
@@ -1117,7 +1117,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     }
     if (near(MEETING_AT, 450)) {
       show(meetingBoard, MEETING_AT, MEETING_AT.y, 0, -1, [
-        { t: r.arrived ? 'Arrived' : 'Meeting (placeholder)', size: 0.28 },
+        { t: r.arrived ? 'Arrived!' : 'End of the line', size: 0.28 },
       ]);
     }
     things.commit();
@@ -1505,10 +1505,14 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       if (!r.arrived && within(p, MEETING_AT, RAIL_ARRIVAL.reach)) {
         const target = {
           id: 'railway-leg-arrive',
-          verb: 'Arrive (placeholder)',
+          verb: 'Ring in',
           at: v3(MEETING_AT, MEETING_AT.y + 1.6),
         };
-        out.push(r.reached ? { ...target, run: () => void adapter.arrive() } : { ...target, blocked: NOT_YET });
+        out.push(
+          r.reached
+            ? { ...target, run: () => void adapter.arrive() }
+            : { ...target, blocked: 'Wait for a train first' },
+        );
       }
       if (deepFrameBuilt(r))
         gate(

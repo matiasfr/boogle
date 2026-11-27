@@ -2,7 +2,7 @@
 // pitch table and the "three honks within a second make a chord" detector. No DOM, no randomness, runs in Node tests.
 
 // Rails here and Train! are placeholder copy for the owner.
-export const PING_KINDS = { ball: 'Ball!', look: 'Look!', rails: 'Rails here', train: 'Train!' };
+export const PING_KINDS = { ball: 'Ball!', look: 'Look!', rails: 'Rails here!', train: 'Train!' };
 const BOUND = 4096; // finite cosmetic message envelope, including authored places outside the classic island
 
 export const MAX_PING_SEQ = 65535;

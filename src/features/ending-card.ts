@@ -42,7 +42,7 @@ function show() {
   card = document.createElement('section');
   card.className = 'ending-card';
   const line = document.createElement('p');
-  line.textContent = 'Thanks for playing (placeholder)';
+  line.textContent = 'You made it all the way back. Thanks for playing!';
   const button = document.createElement('button');
   button.type = 'button';
   button.textContent = 'Close';

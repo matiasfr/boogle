@@ -167,14 +167,14 @@ export const TRADE_ROW = {
 } as const;
 /** Owner placeholders for the held Install and a refusal that arrives while it is in flight. */
 export const TRADE_DENIAL = {
-  'trade-building': 'Held until the line is laid',
-  'trade-repicked': 'Re-pick used',
+  'trade-building': "Locked in until this line's laid.",
+  'trade-repicked': 'Swap used',
 } as const satisfies Record<TradeRefusal, string>;
 const TRADE_PILL = {
   installed: 'Installed',
-  'trade-building': 'Held while the line builds',
+  'trade-building': 'Locked while building',
   'trade-repicked': TRADE_DENIAL['trade-repicked'],
-  swap: 'Swap (once)',
+  swap: 'Free swap (once)',
   ready: 'Ready',
 };
 /** A trade line's first fit costs one steel. Its only free swap opens on the final lay. */
