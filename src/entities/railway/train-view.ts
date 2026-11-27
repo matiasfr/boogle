@@ -10,6 +10,8 @@ import { instantiate } from '../../prefab/instantiate.ts';
 import { FIXED, PLAYER_R, reducedMotion } from '../../constants.ts';
 import { camera } from '../../render/scene.ts';
 type CabFace = import('./engine-kit.ts').CabFace;
+import { createPennant } from './works-signal.ts';
+import { roomWorks } from '../../sim/railway-queries-room.ts';
 type LinePoint = import('../../place/layout.ts').LinePoint;
 import { setShapes, stepAlpha, teleport, type Shape } from '../../physics/engine.ts';
 import { me } from '../../player/player.ts';
@@ -271,6 +273,11 @@ export async function createRailwayTrains(
     stopLamp.position.set(0, shape.ENGINE_CAB.roofTop + 0.08, shape.ENGINE_CAB.zFront);
     owner.add(stopLamp);
     meshByRole('engine').add(stopLamp);
+    const pennant = createPennant(owner);
+    pennant.position.y = 3.3;
+    pennant.scale.setScalar(0.45);
+    pennant.visible = false;
+    meshByRole('engine').add(pennant);
     const holdMaterial = new THREE.MeshBasicNodeMaterial({ color: HOLD.off });
     const holdLamp = new THREE.Mesh(stopLamp.geometry, holdMaterial);
     holdLamp.position.set(0.32, shape.ENGINE_CAB.roofTop + 0.08, shape.ENGINE_CAB.zFront);
@@ -342,6 +349,7 @@ export async function createRailwayTrains(
       boiler,
       long,
       wears: 0,
+      pennant,
       shudder: 0,
       /** The platform beat (docs/plans/garage-install-moment.md, G5): this view has drawn the train since the last
        * restore, and the seconds into its longer boiler going on, or -1. */
@@ -593,7 +601,9 @@ export async function createRailwayTrains(
     if (clock < 0 || Math.abs(target - clock) > 3) clock = target;
     else clock += FIXED * 10 + Math.max(-0.02, Math.min(0.02, (target - clock) * 0.05));
     const coupled = wagonTrain();
+    const works = shown && on ? roomWorks(w) : null;
     trains.forEach((tr) => {
+      tr.pennant.visible = !!works && !works.done && works.halt?.line === tr.line;
       const row = trainRow(w, tr.slot),
         path = pathOf(tr.line),
         // The layout's line, for a train on no path of its own (line 1).

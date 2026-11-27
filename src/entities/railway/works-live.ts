@@ -19,6 +19,19 @@ import { createRingFolk } from '../ring-folk/view.ts';
 import { createRingSteel } from '../ring-steel/view.ts';
 import { createLegView } from '../route-greybox/leg-view.ts';
 import { createStationGuides } from './station-guides.ts';
+import { giftQueued, giftAboard, giftRides, worksThanks } from '../../sim/railway-queries-gift.ts';
+import { railwayMirror, rules } from '../../world/game-world.ts';
+import { roomWorks, WORKS_STEPS } from '../../sim/railway-queries-room.ts';
+import { boiler, works as worksRow } from '../../sim/railway-rows.ts';
+import { createWorksSignal } from './works-signal.ts';
+import { islandGround } from '../ring-island/state.ts';
+import { createWorksBoard } from './works-board-state.ts';
+import { createDockPost } from '../../place/dock-post.ts';
+
+// A funded section keeps its site while laying, even after the feed action disappears.
+const routeSections = new Set(
+  WORKS_STEPS.filter((step) => step.ops.includes('rail.legStock')).map((step) => step.site),
+);
 
 export async function createRailwayWorksLive(
   adapter: RailwayAdapter,
@@ -48,8 +61,57 @@ export async function createRailwayWorksLive(
   const meet = createRingMeet(adapter, owner, { ...deps, landed: leaf.landed });
   const folk = createRingFolk(adapter, owner);
   const guides = createStationGuides(adapter, owner);
+  const signal = createWorksSignal(owner, await islandGround());
+  const updateBoard = createWorksBoard(owner);
+  const dock = createDockPost(owner);
+  let publication: Parameters<typeof roomWorks>[0] | undefined;
+  let current: ReturnType<typeof roomWorks> | undefined;
+  function updateSignal(dt: number, restore = false) {
+    if (!adapter.read.whole() || !railwayMirror) return;
+    const world = railwayMirror.confirmed();
+    if (world !== publication || !current) {
+      current = roomWorks(world);
+      const routeSection = routeSections.has(current.site);
+      const names = routeSection
+        ? worksThanks(world)
+            .map((pid) => {
+              const ordinal = rules.roster.indexOf(pid);
+              return ordinal < 0 ? undefined : rules.roster.nameOf(ordinal);
+            })
+            .filter((name): name is string => !!name)
+            .slice(0, 6)
+        : [];
+      updateBoard(
+        current,
+        names,
+        routeSection && giftRides(world) ? [giftQueued(world), giftAboard(world)] : undefined,
+      );
+      publication = world;
+    }
+    if (!current) return;
+    const work = current;
+    dock.retry();
+    const forgeCalling =
+      (work.site === 'boiler' && boiler(world).state === 'pedestal') ||
+      (work.site === 'breaker' && worksRow(world).breaker === 1);
+    signal(work, forgeCalling, dt, restore);
+  }
   const install = createBoilerInstall(adapter, owner);
-  const views = [breaker, works, roundhouse, footings, crossing, railhead, leaf, meet, folk, guides, steel, install, leg];
+  const views = [
+    breaker,
+    works,
+    roundhouse,
+    footings,
+    crossing,
+    railhead,
+    leaf,
+    meet,
+    folk,
+    guides,
+    steel,
+    install,
+    leg,
+  ];
   return {
     /** Where the footing wagon's loads hop from and to: the Works rack and the pier rack. */
     footPlaces: { works: works.rackSlot, pier: crossing.rackSlot, ring: railhead.rackSlot },
@@ -57,9 +119,11 @@ export async function createRailwayWorksLive(
     points: [...railhead.points, ...leg.points],
     crossingInspect: () => crossing.inspect().crossingView,
     restore() {
+      updateSignal(0, true);
       for (const view of views) view.restore();
     },
     update(dt: number) {
+      updateSignal(dt);
       for (const view of views) view.update(dt);
     },
     lateUpdate() {
@@ -95,6 +159,7 @@ export async function createRailwayWorksLive(
       ...leg.targets(),
     ],
     inspect: () => ({
+      dockBoard: dock.rows(),
       ...works.inspect(),
       ...railhead.inspect(),
       ...leaf.inspect(),

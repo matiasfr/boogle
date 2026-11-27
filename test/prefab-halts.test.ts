@@ -360,3 +360,42 @@ test('halt kit placements, colliders, lever plaques and ordered prompts match th
   assert.equal(active.size, 0);
   assert.deepEqual(unservedCalls, [], 'closed head must offer neither request');
 });
+
+test('hall works sign has no legacy station post at the prefab position', async () => {
+  const { collectTrackGeometry } = await import('../dev/level/track-geometry.ts');
+  const faces = await collectTrackGeometry();
+  const posts = faces.filter(
+    (f) =>
+      f.piece.startsWith('Home/station/') && f.points.every(([x, , z]) => Math.hypot(x - 910.179, z - 6.121) < 0.15),
+  );
+  assert.ok(faces.some((f) => f.piece.startsWith('Home/station/')));
+  assert.equal(posts.length, 0);
+});
+
+test('dock inspection offers rows only after clearance shows the sign', () => {
+  let enable = () => {};
+  const board = { position: { x: 0, z: 0 }, visible: true };
+  const { createDockPost } = sourceModule<{ createDockPost(o: unknown): { rows(): string[] } }>(
+    fs.readFileSync('src/place/dock-post.ts', 'utf8'),
+    {
+      DOCK_BOARD: { x: 0, z: 0, yaw: 0 },
+      H: () => 0,
+      worksFace: () => board,
+      worksBoardRows: () => ['bill'],
+      instantiate: () => ({ solids: [], setEnabled() {} }),
+      addFoot() {},
+      me: {},
+      frameHasRemote() {},
+      liftOrWait(parts: { on(): void }[]) {
+        enable = parts[0]!.on;
+        return { retry() {} };
+      },
+    },
+  );
+  const dock = createDockPost({});
+  assert.equal(board.visible, false);
+  assert.deepEqual(dock.rows(), []);
+  enable();
+  assert.equal(board.visible, true);
+  assert.deepEqual(dock.rows(), ['bill']);
+});

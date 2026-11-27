@@ -5,7 +5,7 @@ import { JUMPS } from '../world/railway-jump.ts';
 export type ReturnPosition = { x: number; y: number; z: number };
 type Position = ReturnPosition;
 /** A halt's landing carries its catalogue place (`line` index, `stop` index: the room's state says whether it stands)
- * and the track's centre beside it (`track`, metres), which a fallback arrival faces: the boarding edge. */
+ * and the track's centre beside it (`track`, metres), which a fallback arrival faces when the station has no mounted works board. */
 export type ReturnCandidate = Position & {
   halt?: string;
   checked?: boolean;

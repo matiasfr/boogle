@@ -66,7 +66,7 @@ const fromStop = (L: RouteLeg) => L.railheadHalt - 1;
 const GORGE_STOP = RAIL_LEGS[STACK]!.railheadHalt + RAIL_LEGS[STACK]!.sections.length - 1;
 /** Where a row line's request lever stands for a way out of `stop` (route-greybox's halts-view.ts rowSpot): at a head
  * on its outward platform at the stop, else 10 m short of the stop at the line's start and 8.5 m short at its end. */
-function rowLever(line: number, stop: number) {
+export function rowLever(line: number, stop: number) {
   const h = RAIL_HALTS.find((x) => x.line === line && x.stop === stop)!;
   const at = h.s / 100;
   const s = h.end?.kind === 'stub' ? at : stop === 0 ? at - 10 : at - 8.5;

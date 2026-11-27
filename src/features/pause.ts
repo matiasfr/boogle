@@ -32,6 +32,7 @@ import { freshButton } from '../player/fresh-button.ts';
 import { backToSpawn } from '../entities/player/state.ts';
 import { roomInviteQuery, productionRailway } from '../proto/flags.ts';
 import { getRailwayUnstuck } from '../entities/railway/state.ts';
+import { worksBoardRows } from '../entities/railway/works-board-state.ts';
 import { carry } from '../physics/platforms.ts';
 import { forgetInRoom, leaveIsland, SPOT_KEY } from '../player/arrival.ts';
 import { getVolume, isMuted, setMuted, setVolume } from '../render/audio.ts';
@@ -90,7 +91,9 @@ const backButton = (to: () => Page) => {
 const identityRow = () => {
   const r = el('div', 'pause-identity');
   r.append(dom.rosterEl, dom.netEl);
-  return r;
+  const group = el('div');
+  group.append(el('div', 'pause-works'), r);
+  return group;
 };
 
 function inviteLink() {
@@ -705,6 +708,13 @@ onStart(() => {
         menuBtn.querySelector('.menu-glyph')!.innerHTML = glyph('pause')!;
       }
       if (open && page === 'room' && JSON.stringify(people()) !== peopleKey) fillPeople();
+      if (open && me.body) {
+        const board = card.querySelector<HTMLElement>('.pause-works');
+        if (board) {
+          const rows = worksBoardRows(me.body.position).join('\n');
+          if (board.textContent !== rows) board.textContent = rows;
+        }
+      }
     },
   });
 });

@@ -10,6 +10,7 @@ import { account, qjob, rail, trees } from '../../src/sim/railway-rows.ts';
 import { line2Routes, LINE2_SEA } from '../../src/sim/railway-line2-layout.ts';
 import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
 import { WALKABLE_NY } from '../../src/constants.ts';
+import { DOCK_BOARD, SHORE_LANDING, SHORE_PATH } from '../../src/place/shore-layout.ts';
 import { TWO_JUMPS } from '../level/mover.ts';
 import { CELL, H, NX, NZ, PATH_SAMPLES, at as cellAt, cellX, cellZ, heights } from '../../src/place/terrain.ts';
 import {
@@ -71,6 +72,16 @@ export function runPlaceLevelCheck() {
     entries.push({ kind: 'assertion', state: requiredState, passed, message });
   };
   const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
+  const landingX = ORIGIN.x + SHORE_LANDING.x;
+  const boardRadius = Math.hypot(1.66, 0.04);
+  const distance = Math.hypot(DOCK_BOARD.x - landingX, DOCK_BOARD.z - SHORE_LANDING.z);
+  assertion(
+    distance > boardRadius + 1 &&
+      distance <= 9 &&
+      Math.abs(H(DOCK_BOARD.x, DOCK_BOARD.z) - H(landingX, SHORE_LANDING.z)) < 0.1 &&
+      Math.abs(DOCK_BOARD.z - SHORE_PATH[0]![1]) > 1.5 + boardRadius,
+    'dock board: on the pad, clear of the shore path and the landing',
+  );
   // The player's slope limit, as a rise over one 2 m cell.
   const maxRise = CELL * Math.tan(Math.acos(WALKABLE_NY));
   const WATER = 0.2;

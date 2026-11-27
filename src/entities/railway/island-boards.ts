@@ -24,6 +24,7 @@ import {
 } from '../../render/island-map.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { GOLD_ROPE } from '../../render/gold-rope.ts';
+import { worksFace } from './works-board.ts';
 
 const CW = MAP_CELL.w,
   CH = MAP_CELL.h,
@@ -314,6 +315,10 @@ export function createIslandBoards(
       mesh.receiveShadow = true;
       mesh.visible = false;
       owner.add(mesh);
+      const works = worksFace(owner, { x: c.x, y: c.y - h / 2 - 0.94, z: c.z }, yaw, false, here);
+      mesh.add(works);
+      works.position.set(0, -h / 2 - 0.94, off);
+      works.rotation.y = 0;
       owner.cleanup(() => geometry.dispose());
       boards.push({ mesh, face, here: here.slice(0, HERES), on: false });
       return b;

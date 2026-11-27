@@ -94,13 +94,14 @@ export function line2Rides(bot: Bot) {
   };
   /** `askEach`: the destination is not a Place halt (the stack line's), so
    * ask for each next stop the train offers aboard ("Request stop: ...") until it stands at the destination. */
-  const rideFrom = async (halt: Departure, destination: number, opts: { askEach?: boolean } = {}) => {
+  const rideFrom = async (halt: Departure, destination: number, opts: { askEach?: boolean; line?: number } = {}) => {
+    const line = opts.line ?? 1;
     await until(halt.stands, `${halt.name} halt stands`);
     const dir: 1 | -1 = destination > halt.stop ? 1 : -1;
     const waitAt = () => (typeof halt.wait === 'function' ? halt.wait() : halt.wait);
     const standing = () =>
       view()
-        .trains.filter((t) => t.line === 1)
+        .trains.filter((t) => t.line === line)
         .find((t) => {
           const r = trains()[t.slot]!;
           return r.phase === 0 && r.at === halt.stop && (r.track ? -1 : 1) === dir;
@@ -148,13 +149,13 @@ export function line2Rides(bot: Bot) {
       releaseJump();
     }
     check(aboard(), `boarded line 2 at ${halt.name} by a real jump`);
-    const to = view().halts.find((h) => h.line === 1 && h.stop === destination);
-    const stops = trainStops(rw(), 1);
+    const to = view().halts.find((h) => h.line === line && h.stop === destination);
+    const stops = trainStops(rw(), line);
     const middle = destination > 0 && destination < stops.length - 1;
     let destinationPrompt = false;
     let ran = false;
     const asked = new Set<string>();
-    if (to && middle && destination === halt.stop + dir && !trainPassesBy(1, destination, dir, stops.length)) {
+    if (to && middle && destination === halt.stop + dir && !trainPassesBy(line, destination, dir, stops.length)) {
       // Adjacent requestable stops must offer the cord promptly, even when the train's arrival takes much longer.
       // Keep PR 1816's Sit-aware selection and the original 20-second assertion separate from the arrival budget.
       await until(
@@ -214,7 +215,7 @@ export function line2Rides(bot: Bot) {
     if (!to) return { slot, row, train, aboard };
     // Homeward at a middle halt: leave onto the offset platform and use its plank crossing. A retained old-end
     // departure still stands on the original side; the live lever's platform follows that accepted origin.
-    const arrivalId = view().halts.findIndex((h) => h.line === 1 && h.stop === destination);
+    const arrivalId = view().halts.findIndex((h) => h.line === line && h.stop === destination);
     const arrival = view().halts[arrivalId]!;
     const up = view().upPlatforms.find((u) => u.pair === arrivalId);
     // A homeward-only destination (Pier after Q7) may be served after the outward train has turned back.
