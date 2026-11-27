@@ -960,7 +960,7 @@ export function createGarageView(
     if (parkedForWagon || (!open && showTurn < 0)) turnYaw = 0;
     // The deck carries the copy to the garage's pose and back at the table's own rate; once there it follows exactly.
     // With the garage shut the show-off turn of someone's install still turns it, about its rest.
-    const target = (open && !parkedForWagon ? baseYaw() : restPose) + turnYaw;
+    const target = site === 1 ? restPose : (open && !parkedForWagon ? baseYaw() : restPose) + turnYaw;
     const d = wrap(target - yaw),
       step = DECK_RATE * dt;
     if ((open && settled) || (!open && showTurn >= 0) || reducedMotion || Math.abs(d) <= step) {
