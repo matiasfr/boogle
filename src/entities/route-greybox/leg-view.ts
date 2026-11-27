@@ -1146,7 +1146,10 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       [
         { t: sp.name, size: 0.2 },
         { t: `SECTION ${num} OF ${n}`, size: 0.15 },
-        { t: `LOGS ${lr.row.logs}/${sec.logs}   RAILS ${lr.row.rails}/${sec.rails}`, size: 0.15 },
+        {
+          t: `LOGS ${Math.max(0, lr.row.logs - (legKitFlight[sp.k]!.poured?.length ?? 0))}/${sec.logs}   RAILS ${lr.row.rails}/${sec.rails}`,
+          size: 0.15,
+        },
         { t: where, size: 0.13 },
       ],
       num,

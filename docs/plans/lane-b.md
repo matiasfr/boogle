@@ -93,15 +93,17 @@ Each step leaves `node dev/ship-check.ts` green. The full `npm run check`, `npm 
   - Tests: give 8 at Home as a leg opens. They load instead of minted logs and reach the rack, and `Leg.logs` does not move until a back feeds it. At completion, the gift left on the rack returns to Home.
   - Proof: unit tests.
 
-- [ ] **4. The views (view).**
+- [x] **4. The views (view).**
   Files: `src/entities/railway/halt-yard-recovery.ts` or `halt-yard-view.ts` (whichever draws the Village bins' prompt), `src/entities/railway/halt-yard-flights.ts`, `src/entities/railway/train-view.ts` / `kit-board.ts` (the kit car's deck), `src/entities/route-greybox/leg-view.ts` (3a's pour), the owning game-design section (the halt yards' and the route's).
   - Shared (both variants): while `giftRides`, Home's log bin offers `[placeholder: Give to works]` in place of Leave it here (same op), and wears a pennant. Use Lane A1's pennant mesh if it is on main, otherwise a plain greybox flag. When a line 2 train standing at the Village gains `gift`, the bin's logs fly to the kit car's deck (the existing bin flight, from rack to deck), and the deck shows a strapped bundle while `gift > 0`.
   - 3a only: on arrival, the bundle's logs fly from the deck into the frame (the existing deposit flight, deck to frame), and the bill sign ticks.
   - Proof: **one look** for the pass, one sequence from `--rail-seed gorge-open`. Still 1: at Home, give 8 logs; the bin shows the prompt and pennant. Still 2 or `--video`: the line 2 train loads the bundle. Still 3 (3a): camera at Ring Island's west platform, the stack's frame bill goes up by 8 while the player stands at Home. With 3b: the rack's plate shows the kit, and the bill is unchanged. Phone-width check of the prompt.
 
-- [ ] **5. Reads for Lane A's board (dev and docs; no Lane A view).**
+  - Inspected from `gorge-open`: [Home](lane-b/bin.png), [phone width](lane-b/phone.png), [kit car](lane-b/carrier.png), [pour](lane-b/pour.png), [bill after landing](lane-b/frame.png). The player stayed at Home after giving eight logs.
+
+- [x] **5. Reads for Lane A's board (dev and docs; no Lane A view).**
   Files: this plan's [Reads for Lane A's board](#reads-for-lane-as-board) section, the railway adapter's read surface if A2's builder needs a helper (`src/adapters/railway-*.ts`, read-only).
-  - The board's builder (Lane A2) reads `worksThanks`, `giftQueued` and `giftAboard` from the accepted mirror and maps pids to names with the roster mirror. Lane B adds no board view.
+  - The board's builder (Lane A2) reads `worksThanks`, `giftQueued` and `giftAboard` from the accepted mirror and maps pids to names with the roster mirror. A2 already reads all three in `works-live.ts` and resolves the names from the roster.
   - Proof: none beyond step 2's tests; A2's look shows them.
 
 ## Reads for Lane A's board
