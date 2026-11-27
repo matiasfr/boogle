@@ -24,16 +24,12 @@ import { lerp, angleLerp } from '../src/math.ts';
 // Use the runtime clearance path with the fixture's visitors and the real Rapier overlap query.
 async function clearanceFor(remotes: Map<string, { entered: boolean; avatar: { position: Vector3 } }>) {
   const { createLiftOrWait } = await import('../src/place/clearance.ts');
-  const { HEAD_OFFSET } = await import('../src/constants.ts');
   const file = 'src/entities/railway/frame-occupied.ts';
   return sourceFunction<typeof import('../src/entities/railway/frame-occupied.ts').standWhenClear>(
     file,
     'standWhenClear',
     {
       frameHasRemote: sourceFunction(file, 'frameHasRemote', { remotes }),
-      capsuleOverlaps: physics.capsuleOverlaps,
-      PLAYER_R,
-      HEAD_OFFSET,
       me: player,
       liftOrWait: createLiftOrWait(physics.capsuleOverlaps),
     },

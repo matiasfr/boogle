@@ -81,17 +81,23 @@ export function createLiftOrWait(overlaps: Overlaps) {
   return function liftOrWait<S extends Solid>(
     solids: readonly S[],
     body: Lifted | null | undefined,
-    o: { lift: true; occupied?: never } | { lift: false; occupied?: (support: { holds(at: V3): boolean }) => boolean },
+    o:
+      | { lift: true; occupied?: never; visitor?: (solid: { holds(at: V3): boolean }) => boolean }
+      | { lift: false; occupied?: (support: { holds(at: V3): boolean }) => boolean },
   ): Clearing<S> {
     /** Settles `set` for body `b`: what still waits. At the switch the solids that hold the body are the set; retried
      * (`whole`), the set stays whole while any of it holds. */
     const settle = (set: readonly S[], b: Lifted | null | undefined, whole: boolean) => {
+      // A visitor can hold a new set off. Only the local body can be lifted onto it.
+      if (o.lift && o.visitor?.({ holds: (at) => set.some((s) => holds(s, at)) })) return { held: true, left: set };
       // A retiring support waits for every player within a step. Its callback releases the
       // existing bodies once clear. This path only probes positions and never moves a player.
       const occupied = o.occupied;
       const held = occupied
         ? set.filter((s) => occupied({ holds: (at) => playerOverlaps(overlaps, s.shapes, at, STEP) }))
-        : b ? set.filter((s) => holds(s, b.position)) : [];
+        : b
+          ? set.filter((s) => holds(s, b.position))
+          : [];
       const left = held.length && !(o.lift && b && lift(set, held, b)) ? (whole ? set : held) : [];
       for (const s of set) if (!left.includes(s)) s.on();
       return { held: held.length > 0, left };
