@@ -698,14 +698,14 @@ export function surfaceHeight(wx: number, wz: number) {
 }
 
 /** The land's height at a world point. */
-export function H(wx: number, wz: number, triangles = false) {
+export function H(wx: number, wz: number) {
   const lx = wx - ORIGIN.x,
     lz = wz - ORIGIN.z;
   // The cove's 4 m apron uses its unchanged coarse triangles too. Bilinear lookup here
   // otherwise disagrees with the actual rendered/collision surface immediately outside the patch.
   const nearFine =
     lx >= fineBounds.x0 - 4 && lx <= fineBounds.x1 + 4 && lz >= fineBounds.z0 - 4 && lz <= fineBounds.z1 + 4;
-  const h = coarseHeight(wx, wz, triangles || coveWeight(lx, lz) > 0 || nearFine);
+  const h = coarseHeight(wx, wz, coveWeight(lx, lz) > 0 || nearFine);
   return fineHeightAt(lx, lz, h);
 }
 export const insidePlace = (wx: number, wz: number) =>

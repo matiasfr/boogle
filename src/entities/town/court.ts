@@ -1,7 +1,8 @@
 import * as THREE from 'three/webgpu';
 import { TOWN_CENTRE, TOWN_COURT, TOWN_GROUND } from '../../place/town-plan.ts';
 import { ORIGIN } from '../../place/layout.ts';
-import { H, insidePlace } from '../../place/terrain.ts';
+import { H, insidePlace, surfaceHeight } from '../../place/terrain.ts';
+import { crossedGoal } from './court-crossing.ts';
 import { definitions } from '../../prefab/catalogue.ts';
 import { instantiate, liftOrWait } from '../../prefab/instantiate.ts';
 import { loadLevelArtifact } from '../../prefab/validate.ts';
@@ -15,8 +16,8 @@ import level from '../../../content/built/levels/town-court.json' with { type: '
 
 export function useHomeToyGround() {
   setToyGround({
-    under: H,
-    floorBelow: (x, _y, z) => H(x, z),
+    under: surfaceHeight,
+    floorBelow: (x, _y, z) => surfaceHeight(x, z),
     inside: insidePlace,
     spawn: { x: ORIGIN.x + TOWN_COURT.centre.x, z: ORIGIN.z + TOWN_COURT.centre.z },
     sproutable: (x, z) => Math.hypot(x - ORIGIN.x - TOWN_CENTRE.x, z - ORIGIN.z - TOWN_CENTRE.z) <= TOWN_GROUND.r,
@@ -52,7 +53,7 @@ export function createCourt(owner: OwnedView) {
       const positions = part.geometry.getAttribute('position');
       for (let i = 0; i < positions.count; i++) {
         part.localToWorld(vertex.fromBufferAttribute(positions, i));
-        positions.setY(i, positions.getY(i) + H(vertex.x, vertex.z, true) - record.root.position.y);
+        positions.setY(i, positions.getY(i) + surfaceHeight(vertex.x, vertex.z) - record.root.position.y);
       }
       positions.needsUpdate = true;
       part.geometry.computeBoundingSphere();
@@ -72,7 +73,13 @@ export function createCourt(owner: OwnedView) {
       last: -Infinity,
     }));
   const current = new THREE.Vector3();
-  let tracking = false;
+  let previousTime = NaN,
+    previousEpoch = ball.e;
+  const forget = () => {
+    previousTime = NaN;
+  };
+  document.addEventListener('visibilitychange', forget);
+  owner.cleanup(() => document.removeEventListener('visibilitychange', forget));
   return {
     targets: lever.targets,
     update(now: number) {
@@ -80,28 +87,22 @@ export function createCourt(owner: OwnedView) {
       for (const goal of goals) {
         goal.root.worldToLocal(current.copy(ball.pose.p));
         const previous = goal.previous;
-        const t = previous.z / (previous.z - current.z);
         if (
-          tracking &&
+          previousEpoch === ball.e &&
           goal.root.visible &&
           !ball.held &&
           now - goal.last >= 700 &&
-          t > 0 &&
-          t <= 1 &&
-          current.distanceToSquared(previous) < 4
+          crossedGoal(previous, current, Math.hypot(ball.pose.v.x, ball.pose.v.z), (now - previousTime) / 1000)
         ) {
-          const x = previous.x + t * (current.x - previous.x),
-            y = previous.y + t * (current.y - previous.y);
-          if (Math.abs(x) <= TOWN_COURT.width / 2 && y >= 0 && y <= TOWN_COURT.height) {
-            goal.last = now;
-            bell(goal.root.position.x, goal.root.position.z);
-          }
+          goal.last = now;
+          bell(goal.root.position.x, goal.root.position.z);
         }
         const age = (now - goal.last) / 1000;
         goal.string.rotation.x = age < 0.7 ? Math.sin(age * 24) * Math.exp(-age * 6) : 0;
         previous.copy(current);
       }
-      tracking = !ball.held;
+      previousTime = ball.held || document.hidden ? NaN : now;
+      previousEpoch = ball.e;
     },
   };
 }
