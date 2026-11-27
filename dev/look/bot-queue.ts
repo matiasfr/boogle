@@ -8,10 +8,10 @@
 // untimed bot segments can use any free slot. Frame-time and perf readings wait for an empty queue and run alone.
 // Among runs of the same length, a lower BOOGLE_BOT_RANK (1–3, default 2) goes first, then first come, first served;
 // a run that has waited BOOGLE_BOT_RANK_WAIT_MS (30 minutes) counts as rank 1, so a P3 is never starved.
-// The load gate: a slot is not granted while the machine's load (machine-load.ts: the 1-minute load average, busy CPUs on
-// Windows) is above BOOGLE_BOT_MAX_LOAD (30; on Windows loadLimit makes it busy CPUs, 18 of HOTBOX's 20; 0 disables),
-// for up to BOOGLE_BOT_LOAD_WAIT_MS (20 minutes), after which the run goes ahead and its verdict says "under load".
-// It gates acquisition only: a running job's own load never stops it.
+// Only timed and exclusive runs wait when the machine's load (machine-load.ts: 1-minute average, busy CPUs on Windows)
+// exceeds BOOGLE_BOT_MAX_LOAD (30; 18 of HOTBOX's 20 busy CPUs; 0 disables the gate). The wait lasts up to
+// BOOGLE_BOT_LOAD_WAIT_MS (20 minutes), then the run goes ahead. Every slot records its start load for the verdict.
+// The gate applies at acquisition only. Shared runs take an eligible slot at any load.
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -267,6 +267,7 @@ export async function acquireBotSlot(
       const lower = all.filter((t) => t.file !== file && ahead(t, me, allCurrent, now));
       const limit = Math.min(capacity, ...all.filter((t) => t.v === BOT_TICKET_VERSION).map((t) => t.capacity));
       if (mayStart(me, lower, limit)) {
+        if (kind !== 'timed' && kind !== 'exclusive') break;
         // The slot is free; the machine may not be. The patience clock starts at the front of the queue.
         loadSince ??= now;
         const gate = loadGate(load, loadLimit, now - loadSince, loadPatience);
