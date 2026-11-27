@@ -349,7 +349,16 @@ to 3 (src/sim, src/world) is an independent one before merge, by the row `npm ru
 | 5eed | 382 | 2253 | 398 | 1919 |
 | badd | 399 | 1858 | 403 | 1294 |
 
-The default fuzz took 12.578 s against a 480 s budget. The reflected coordinate is exactly 860,641 cm. A cave car's facing swaps its 820 cm and 1,610 cm block extents on the joined coordinate. The retained and swept block tests check the exact centimetre of entry and release, and both facings can stop clear at the West signal.
+Leg 5's four-seed rerun passed at 75% headway. Settled calls are summed over the five pre-join stages, and the wait is the largest across those stages.
+
+| Seed | Growing calls served | Longest wait, ticks | Settled calls served | Longest wait, ticks |
+| --- | ---: | ---: | ---: | ---: |
+| c0ffee | 147 | 2143 | 736 | 1890 |
+| 777 | 141 | 2177 | 727 | 2090 |
+| 5eed | 144 | 2123 | 739 | 2179 |
+| badd | 155 | 2014 | 742 | 2008 |
+
+After Lane C took v77, step 2 moved to v78. The v78 default fuzz took 12.680 s against a 480 s budget. Six of 85 golden stages changed, from wall-closed onward, with every stage tick preserved. The reflected coordinate is exactly 860,641 cm. A cave car's facing swaps its 820 cm and 1,610 cm block extents on the joined coordinate. The retained and swept block tests check the exact centimetre of entry and release, and both facings can stop clear at the West signal.
 At West landing the largest deck, seat and platform steps during the sixth lay were 2.14e-14, 1.07e-14 and 1.78e-14 m.
 At Port Quay all three were below 2.55e-13 m. These are standing car poses from the same axle calculation as the client.
 The canonical one-, two- and three-player loops recorded 308, 34 and 33 idle seconds at wall-6, with whole routes of 121, 110 and 110 minutes.
@@ -391,7 +400,7 @@ After steps 1 to 5 are on main; named proofs, once:
       platform for a homeward train, #2518): both pass.
 - [ ] `npm run test:net` with `railwayLegRejoin` taking `wall` at `wall-deep`, the carrier leaving and rejoining across
       the sixth lay: the rows exact at every checkpoint.
-- [ ] The service fuzz's long run at the joined stage (pasted in step 2) and leg 5's re-run beside it.
+- [x] The service fuzz's long run at the joined stage (pasted in step 2) and leg 5's re-run beside it.
 - [ ] Stills and the motion sheet from step 4 on one sheet.
 - [x] The boot probe. `npm run perf` is not needed (no new train, a few boxes); report the Gorge's counts from step 4.
 - [ ] A device line on the Mac, reported, not a gate.
