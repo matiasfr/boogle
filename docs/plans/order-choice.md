@@ -319,7 +319,7 @@ After step 5, on HOTBOX, once:
       Measure each area's duration from the previous completed area in that run, with Port Quay before Canopy in
       `cave-first`. The headless loop uses straight-line walking and does not ride the trains.
 - [ ] The two bot segments above with `--order cave`, and the canonical segments re-run (a pass each, the load noted).
-- [ ] **The reconnect proof with two open legs**: `railwayLegRejoin` (`dev/peer-test/ws-railway.ts`) at
+- [x] **The reconnect proof with two open legs**: `railwayLegRejoin` (`dev/peer-test/ws-railway.ts`) at
       `cave-first-open`: a second tab joins; one tab lifts from Bell Rock's rack, the other from the cave apron's; the
       first leaves, the server restarts, it rejoins; both racks, both legs' held counts and both backs are exact, and
       every tab's mirror matches.
@@ -361,6 +361,15 @@ Idle over 60 seconds per player on average, using the loop's straight-line model
 - Cave-first, 3p: Q4 110, Q5 102, breaker 71, Q7 98, bents 279, steelkit 82, stack-1 141, stack-2 78,
   gorge 61, seeds 67, plug-gate 75, cave-1 65, canopy-gate 197, canopy-1 126, deep-gate 81, wall-6 67,
   notch-gate 177, notch-1 118, lantern 102, causeway-gate 187, causeway-1 100, arrive 186.
+
+#### Two-tab reconnect result, 26 November
+
+`npm run test:net -- --cave-first-rejoin` passed 8/8 checks at a queue admission load of 20 busy logical CPUs
+against the threshold of 18. Each rack started with 20 logs and 20 rails. The two players each lifted 16 rails
+from their own rack. Before the leave, while the first player was away, and after server restart and rejoin,
+the host and every connected mirror agreed on 20 logs and 4 rails at each rack, 16 held rails per leg and
+16 rails per back. The first attempt sampled presence immediately after the restart and failed there. The
+retry waited for both tabs to see each other before checking the mirrors. Log: `.look/rejoin-retry-run.log`.
 
 ## The world bump
 
