@@ -16,6 +16,7 @@ import { ALLOW, type Allow } from './allow.ts';
 import { sourceBuild } from './build.ts';
 import type { Level } from './level.ts';
 import type { Issue } from './rules.ts';
+import { ROTUNDA_PORT_QUAY } from '../../src/place/port-quay.ts';
 
 const argv = process.argv.slice(2);
 const t0 = performance.now();
@@ -276,10 +277,11 @@ async function runChecks() {
     if (!json) console.log('Rider coach tail/nose:', JSON.stringify(coachAudit));
     // Home's rotunda: its keep-clear outline against the tracks, the town, the yard props and its own ground.
     const { checkRotunda, printRotunda, checkPitEscape } = await import('./rotunda.ts');
-    const rotunda = checkRotunda();
-    failed += rotunda.failures;
-    report.push(rotunda);
-    if (!json) printRotunda(rotunda);
+    for (const rotunda of [checkRotunda(), checkRotunda(ROTUNDA_PORT_QUAY)]) {
+      failed += rotunda.failures;
+      report.push(rotunda);
+      if (!json) printRotunda(rotunda);
+    }
     const escape = await checkPitEscape();
     failed += escape.failures;
     report.push(escape);
@@ -287,6 +289,15 @@ async function runChecks() {
       console.log(`pit escape: ${escape.paths} plain-jump paths (empty and footing), ${escape.failures} problems`);
       for (const problem of escape.problems) console.log(`  ${problem}`);
       console.log(`  ${escape.coverage}`);
+    }
+    const quayEscape = await checkPitEscape(ROTUNDA_PORT_QUAY);
+    failed += quayEscape.failures;
+    report.push(quayEscape);
+    if (!json) {
+      console.log(
+        `  ${quayEscape.failures ? 'FAIL' : 'ok'}  quay out of the pit (${quayEscape.paths} plain jumps with the planned kerb)`,
+      );
+      for (const problem of quayEscape.problems) console.log(`  ${problem}`);
     }
     // Greybox leg 2 (planned boxes): Bell Rock's two levels and Home's West landing (docs/plans/greybox-leg2-massing.md).
     const { checkLeg2, printLeg2 } = await import('./route-leg2.ts');

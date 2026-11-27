@@ -33,6 +33,7 @@ export type RotundaSite = {
   mid: number;
   order: readonly number[];
   stages: readonly number[];
+  grows: boolean;
 };
 const rad = (deg: number) => (deg * Math.PI) / 180;
 const at = (site: RotundaSite, bearing: number, r: number): XZ => ({
@@ -75,6 +76,9 @@ export const COPY_BAYS: readonly { line: number; bay: number; colour: `#${string
   { line: ROW_LINE.ns, bay: 1, colour: '#3f7fbf' },
   { line: ROW_LINE.bay, bay: 2, colour: '#2f9e8f' },
 ];
+export function copyBays(site: RotundaSite) {
+  return COPY_BAYS.filter(({ bay }) => site.order.includes(bay));
+}
 /** The copy's engine centre and its Strong flatbed's, metres out from the table along the bay (the flatbed couples
  * 0.6 m behind, as a train's first car does; its end stays clear of the back wall's 24.3 m face). */
 export const COPY_AT = { engine: 17.9, flatbed: 22.1 } as const;
@@ -87,9 +91,10 @@ export function bayOccupants(
   site: RotundaSite,
   facts: { serving: number; copies?: readonly number[] },
 ): { waiting: number[]; copies: (typeof COPY_BAYS)[number][] } {
-  if (site.id !== 'home') return { waiting: [], copies: [] };
-  const waiting = [3, -2, -1, 1, 2].slice(Math.max(0, facts.serving - 1)).filter((bay) => site.order.includes(bay));
-  const copies = COPY_BAYS.filter((c) => facts.copies?.includes(c.line) && !waiting.includes(c.bay));
+  const waiting = site.grows
+    ? [3, -2, -1, 1, 2].slice(Math.max(0, facts.serving - 1)).filter((bay) => site.order.includes(bay))
+    : [];
+  const copies = copyBays(site).filter((c) => facts.copies?.includes(c.line) && !waiting.includes(c.bay));
   return { waiting, copies };
 }
 
@@ -150,12 +155,13 @@ export function rotundaPieces(site: RotundaSite): RotundaPiece[] {
   for (const bay of bays) {
     out.push({ id: `bay-${name(bay)}`, part: 'shell', turn: bay });
     if (bay === site.order[0]) continue;
-    out.push({ id: `ruin-${name(bay)}`, part: 'ruin', turn: bay });
+    if (site.grows) out.push({ id: `ruin-${name(bay)}`, part: 'ruin', turn: bay });
     out.push({ id: `door-${name(bay)}`, part: 'door', turn: bay });
   }
   for (let edge = lo - 0.5; edge <= hi + 0.5; edge++) out.push({ id: `wall-${name(edge)}`, part: 'wall', turn: edge });
-  for (let k = 1; k <= ROTUNDA_PREVIEW; k++)
-    for (const bay of [lo - k, hi + k]) out.push({ id: `outline-${name(bay)}`, part: 'outline', turn: bay });
+  if (site.grows)
+    for (let k = 1; k <= ROTUNDA_PREVIEW; k++)
+      for (const bay of [lo - k, hi + k]) out.push({ id: `outline-${name(bay)}`, part: 'outline', turn: bay });
   return out;
 }
 /** Whether a piece stands at a stage. Built bays are the stage's; a built bay other than the working one keeps its
@@ -173,7 +179,7 @@ export function rotundaShows(site: RotundaSite, stage: number, piece: RotundaPie
     case 'door':
       return built.has(piece.turn);
     case 'ruin':
-      return !built.has(piece.turn) && promised.has(piece.turn);
+      return site.grows && !built.has(piece.turn) && promised.has(piece.turn);
     case 'wall':
       return built.has(piece.turn - 0.5) !== built.has(piece.turn + 0.5);
   }

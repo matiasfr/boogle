@@ -11,7 +11,13 @@ import { GRAVITY, JUMP_SPEED, PLAYER_R } from '../../src/constants.ts';
 import { TUNABLES } from '../../src/sim/tune.ts';
 import { terrainCollisionTiles, surfaceHeight } from '../../src/place/terrain.ts';
 import { definitions } from '../../src/prefab/catalogue.ts';
+import { loadLevelArtifact } from '../../src/prefab/validate.ts';
+import quay from '../../content/built/levels/quay.json' with { type: 'json' };
+import { WORLD_LINES } from '../../src/sim/railway-world-lines.ts';
+import { heightAt, resolvePlacedColliders } from './prefab-colliders.ts';
 import { openScene, type Solid } from './scene.ts';
+
+const quayColliders = () => resolvePlacedColliders(loadLevelArtifact(quay, definitions), definitions).colliders;
 
 /** Metres: a running rail's centre, a town footprint, a prop from any rail, and how level the blocks' ground must be. */
 const LIMITS = { rail: 3.5, town: 4, prop: 3.5, level: 0.1 };
@@ -52,9 +58,7 @@ function clearance(outline: readonly XZ[], line: readonly XZ[], closed = false) 
 const bearingOf = (site: RotundaSite, p: XZ) =>
   ((Math.atan2(p.x - site.centre.x, -(p.z - site.centre.z)) * 180) / Math.PI + 360) % 360;
 
-export function checkRotunda(site: RotundaSite = ROTUNDA_HOME) {
-  const problems: string[] = [];
-  const footprint = rotundaFootprint(site, site.order.length);
+function homeTracks() {
   const running: { id: string; pts: XZ[] }[] = LINKS.map(({ id, line }) => ({
     id: `line ${id}`,
     pts: Array.from(line.xs, (x, i) => ({ x, z: line.zs[i]! })),
@@ -62,13 +66,16 @@ export function checkRotunda(site: RotundaSite = ROTUNDA_HOME) {
   running.push({ id: 'leg', pts: legPoints() });
   for (const road of [0, 1] as const)
     running.push({ id: `stub ${road + 1}`, pts: [roadAt(road, BUFFERS[road]), roadAt(road, 0)] });
-  let rail = Infinity,
-    town = Infinity;
-  for (const { id, pts } of running) {
-    const gap = clearance(footprint, pts);
-    rail = Math.min(rail, gap);
-    if (gap < LIMITS.rail) problems.push(`${id} runs ${gap.toFixed(2)} m from the rotunda (${LIMITS.rail} m asked)`);
-  }
+  return running;
+}
+
+function checkHomeNeighbours(
+  site: RotundaSite,
+  footprint: XZ[],
+  running: ReturnType<typeof homeTracks>,
+  problems: string[],
+) {
+  let town = Infinity;
   for (const { id } of TOWN_SLOTS) {
     const b = townBuilding(id);
     const corners = [
@@ -98,9 +105,34 @@ export function checkRotunda(site: RotundaSite = ROTUNDA_HOME) {
   if (prop < LIMITS.prop) problems.push(`the yard stands ${prop.toFixed(2)} m from a rail (${LIMITS.prop} m asked)`);
   if (yardOut < CORRIDOR.r && yardBearing >= CORRIDOR.from && yardBearing <= CORRIDOR.to)
     problems.push(`the yard stands in the carry lane (${yardBearing.toFixed(0)}°, ${yardOut.toFixed(1)} m out)`);
+  return { town, prop };
+}
+
+function quayTracks() {
+  const cave = WORLD_LINES.find((row) => row.id === 'cave')!;
+  return [{ id: cave.id, pts: cave.pts.map(([x, z]) => ({ x: x / 100 - ORIGIN.x, z: z / 100 })) }];
+}
+
+export function checkRotunda(site: RotundaSite = ROTUNDA_HOME) {
+  const problems: string[] = [];
+  const footprint = rotundaFootprint(site, site.order.length);
+  const home = site.id === ROTUNDA_HOME.id;
+  const running = home ? homeTracks() : quayTracks();
+  let rail = Infinity;
+  for (const { id, pts } of running) {
+    const gap = clearance(footprint, pts);
+    rail = Math.min(rail, gap);
+    if (gap < LIMITS.rail) problems.push(`${id} runs ${gap.toFixed(2)} m from the rotunda (${LIMITS.rail} m asked)`);
+  }
+  const neighbours = home ? checkHomeNeighbours(site, footprint, running, problems) : null;
+  const quayFaces = home ? [] : quayColliders().flatMap((c) => c.volume.triangles);
   // The blocks stand at the site's height: the ground under every bay must be level with it.
   let off = 0;
-  const groundOff = (p: XZ) => Math.abs(H(p.x + ORIGIN.x, p.z) - site.y);
+  const groundOff = (p: XZ) => {
+    const x = p.x + ORIGIN.x;
+    const ground = home ? H(x, p.z) : heightAt(quayFaces, { x, z: p.z });
+    return ground === null ? Infinity : Math.abs(ground - site.y);
+  };
   for (const bay of site.order) {
     const f = bayFrame(site, bay),
       worst = Math.max(...[...f.corners, f.centre, f.door, f.back].map(groundOff));
@@ -113,7 +145,7 @@ export function checkRotunda(site: RotundaSite = ROTUNDA_HOME) {
   // What a wider arc would take: the painted bays past each end, measured, never failed.
   const lo = Math.min(...site.order),
     hi = Math.max(...site.order);
-  const wider = [lo - ROTUNDA_PREVIEW, hi + ROTUNDA_PREVIEW].map((bay) => {
+  const wider = (site.grows ? [lo - ROTUNDA_PREVIEW, hi + ROTUNDA_PREVIEW] : []).map((bay) => {
     const f = bayFrame(site, bay),
       outline = [...f.corners, f.corners[0]];
     return {
@@ -129,16 +161,19 @@ export function checkRotunda(site: RotundaSite = ROTUNDA_HOME) {
     bays: site.order.length,
     arcDeg: site.order.length * ROTUNDA_KIT.bayDeg,
     rail,
-    town,
-    prop,
+    ...neighbours,
     groundOff: off,
     wider,
   };
 }
 
 export function printRotunda(r: ReturnType<typeof checkRotunda>) {
+  const neighbours =
+    r.town !== undefined && r.prop !== undefined
+      ? `, town footprint ${r.town.toFixed(2)} m, the yard to a rail ${r.prop.toFixed(2)} m`
+      : '';
   console.log(
-    `${r.level}: ${r.failures ? `${r.failures} PROBLEMS` : 'ok'}; ${r.bays} bays (${r.arcDeg}°), nearest running rail ${r.rail.toFixed(2)} m, town footprint ${r.town.toFixed(2)} m, the yard to a rail ${r.prop.toFixed(2)} m, ground within ${r.groundOff.toFixed(2)} m`,
+    `${r.level}: ${r.failures ? `${r.failures} PROBLEMS` : 'ok'}; ${r.bays} bays (${r.arcDeg}°), nearest running rail ${r.rail.toFixed(2)} m${neighbours}, ground within ${r.groundOff.toFixed(2)} m`,
   );
   for (const w of r.wider)
     console.log(
@@ -150,18 +185,37 @@ export function printRotunda(r: ReturnType<typeof checkRotunda>) {
 /** A bounded physical clearance proof, not a controller/timing simulation. Sweep the actual player spheres along
  * a conservative plain held-jump arc over the actual terrain and record-authored rim. A footing occupies the
  * back visually; it keeps the player's body and jump impulse, but slows walking to the solo carry tune. No air jump or sprint. */
-export async function checkPitEscape() {
-  const site = ROTUNDA_HOME,
+export async function checkPitEscape(site: RotundaSite = ROTUNDA_HOME) {
+  const home = site.id === ROTUNDA_HOME.id,
     cx = site.centre.x + ORIGIN.x,
     cz = site.centre.z,
     yaw = bayFrame(site, 0).yaw;
-  const solids: Solid[] = terrainCollisionTiles().map((tile, i) => ({
-    id: `pit-terrain-${i}`,
-    source: { file: 'src/place/terrain.ts', symbol: 'terrainCollisionTiles' },
-    shape: { kind: 'heightfield', heights: tile.heights, cell: tile.cell },
-    position: tile.position,
-    support: 'embedded',
-  }));
+  const solids: Solid[] = home
+    ? terrainCollisionTiles().map((tile, i) => ({
+        id: `pit-terrain-${i}`,
+        source: { file: 'src/place/terrain.ts', symbol: 'terrainCollisionTiles' },
+        shape: { kind: 'heightfield', heights: tile.heights, cell: tile.cell },
+        position: tile.position,
+        support: 'embedded',
+      }))
+    : quayColliders()
+        .filter(
+          ({ placement: { id } }) => id === 'quay.apron' || (id.startsWith('quay.yard-') && id !== 'quay.yard-ramp'),
+        )
+        .map(({ placement, volume }, i) => {
+          // The apron and yard are yaw-only boxes, including the tangent boxes of the ring.
+          const [x, y, z] = volume.edges;
+          if (!x || !y || !z || x.y || z.y || y.x || y.z) throw new Error(`Expected a flat yard box: ${placement.id}`);
+          const halfYaw = Math.atan2(z.x, z.z) / 2;
+          return {
+            id: `${placement.id}-${i}`,
+            source: { file: 'src/content/levels/leg4.ts', symbol: 'quayPieces' },
+            shape: { kind: 'box', hx: x.length(), hy: y.length(), hz: z.length() },
+            position: volume.centre,
+            rotation: { x: 0, y: Math.sin(halfYaw), z: 0, w: Math.cos(halfYaw) },
+            support: 'embedded',
+          };
+        });
   for (const [i, collider] of definitions['roundhouse.table']!.colliders.entries()) {
     if (collider.shape !== 'box' && collider.shape !== 'trunk') throw new Error('Unexpected pit collider');
     const a = (collider.rot?.[0] ?? 0) + yaw;
@@ -185,17 +239,19 @@ export async function checkPitEscape() {
     problems: string[] = [];
   let paths = 0;
   try {
-    for (const load of ['empty', 'footing'])
+    for (const load of home ? ['empty', 'footing'] : ['empty'])
       for (let bearing = 0; bearing < 360; bearing += 15) {
         const speed = load === 'footing' ? TUNABLES.find((t) => t.key === 'railFootSoloSpeed')!.def / 100 : 5.6;
         const a = (bearing * Math.PI) / 180,
           ux = Math.sin(a),
           uz = Math.cos(a);
-        // Walk to the bank before jumping; the live input proof also exercises an earlier launch at r6.5.
-        const startR = 7.2;
+        // Home's bank raises the launch. From the flat quay apron, jump earlier to clear the same kerb.
+        const startR = home ? 7.2 : 6.5;
         const x = cx + ux * startR,
           z = cz + uz * startR,
-          ground = surfaceHeight(x, z);
+          ground = home ? surfaceHeight(x, z) : scene.below({ x, y: site.y, z })?.y;
+        if (ground === undefined || (!home && Math.abs(ground - 3.02) > 0.01))
+          throw new Error('Pit jump has no floor at the expected height');
         // Rest the actual spheres against the bank; the centre-height ray alone embeds a sphere on a slope.
         const support = scene.sweep({ x, y: ground + 0.6, z }, { x, y: ground - 0.1, z });
         if (!support) throw new Error('Pit jump has no starting support');
@@ -219,7 +275,9 @@ export async function checkPitEscape() {
           }
           // The whole body is beyond the kerb and above the apron; its subsequent ground contact is landing.
           if (r > site.tableR + ROTUNDA_KIT.rim + PLAYER_R + 0.02 && next.y >= site.y) {
-            cleared = true;
+            const deck = home ? site.y : scene.below({ ...next, y: site.y + 0.01 })?.y;
+            cleared = deck !== undefined && Math.abs(deck - site.y) < 0.01;
+            if (!cleared) problems.push(`${load} ${bearing}°: no level yard beyond the kerb`);
             break;
           }
           previous = next;
@@ -232,11 +290,12 @@ export async function checkPitEscape() {
     scene.world.free();
   }
   return {
-    level: 'rotunda/pit-escape',
+    level: home ? 'rotunda/pit-escape' : `rotunda/${site.id}/pit-escape`,
     failures: problems.length,
     paths,
     problems,
-    coverage:
-      'Swept player spheres, terrain and pit record; plain held-jump envelope, empty and footing. Live input timing is separate.',
+    coverage: home
+      ? 'Swept player spheres, terrain and pit record; plain held-jump envelope, empty and footing. Live input timing is separate.'
+      : 'Swept player spheres against the compiled yard and planned kerb from r 6.5 m, empty. Live input timing is separate.',
   };
 }

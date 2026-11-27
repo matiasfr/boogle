@@ -42,16 +42,22 @@ export function resolvePrefab(record: PrefabDef, records: Readonly<Record<string
     )
       throw new Error('prefabs: invalid pit ring dimensions');
     const radius = (inner + outer) / 2;
-    const ring = Array.from({ length: segments }, (_, k): ColliderDef => {
+    const ring = Array.from({ length: segments }, (_, k) => {
       const yaw = (k * Math.PI * 2) / segments;
       return {
         shape: 'box',
         at: [Math.sin(yaw) * radius, (bottom + top) / 2, Math.cos(yaw) * radius],
         half: [outer * Math.tan(Math.PI / segments), (top - bottom) / 2, (outer - inner) / 2],
         rot: [yaw, 0, 0],
-      };
+      } satisfies ColliderDef;
     });
     const resolved = { ...record, colliders: [...record.colliders, ...ring] };
+    // Greybox yard rings draw the same tangent boxes they stand on.
+    if ('builder' in record.visual && record.visual.builder === 'greybox.box')
+      resolved.visual = {
+        ...record.visual,
+        instances: ring.map(({ at, rot, half }) => ({ pos: at, rot, scale: [2 * half[0], 2 * half[1], 2 * half[2]] })),
+      };
     delete resolved.layout;
     return resolved;
   }

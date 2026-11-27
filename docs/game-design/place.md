@@ -1619,7 +1619,9 @@ trains bring the next two kits. The first lay opens the sea head and one train e
 Saltpan Halt and a second train joins. At Port Quay the sea head closes and Saltpan remains a request stop both ways.
 At the West landing the plug stands beside frame 1. The first sea head has a ramp down to the water.
 At the Saltpan, two low platforms follow the curve across the salt flats. Port Quay?s platforms stand on made ground.
-From their apron a ramp climbs to High Port?s 55 m top. The apron reserves room for the Roundhouse and a town.
+From their apron a ramp climbs to High Port?s 55 m top. The Roundhouse yard meets the landward platform at 3.90 m.
+A short ramp connects the yard to the apron, which forms the floor of the circular pit. The town reserve remains
+beside the yard. The five-bay Roundhouse kit has a generated level and mounts in the next step.
 The board at the buffers marks the future Wall line. Finishing the cave line opens the Port Quay stall at Bell Rock. [Leg 4 plan](../plans/greybox-leg4.md)
 
 **White Wall catalog and rules (local v71 branch).** Once the line reaches Port Quay, cave trains bring the next

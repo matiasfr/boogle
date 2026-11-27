@@ -2,7 +2,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceFunction } from '../dev/level/source.ts';
-import { ROTUNDA_KIT, bayFrame, rotundaBays, rotundaFootprint, rotundaSteelPallet } from '../src/place/rotunda.ts';
+import { rotundaContent } from '../dev/prefab/rotunda.ts';
+import { ROTUNDA_PORT_QUAY } from '../src/place/port-quay.ts';
+import { LINE2 } from '../src/sim/railway-lines.ts';
+import {
+  ROTUNDA_KIT,
+  bayFrame,
+  bayOccupants,
+  rotundaBays,
+  rotundaFootprint,
+  rotundaPieces,
+  rotundaShows,
+  rotundaSteelPallet,
+} from '../src/place/rotunda.ts';
 import { BUFFERS, ROTUNDA_HOME, legPoints, roadAt, spurPoints, type XZ } from '../src/place/home-station.ts';
 import { LINKS, ORIGIN } from '../src/place/layout.ts';
 import { H } from '../src/place/terrain.ts';
@@ -81,6 +93,36 @@ test('the site owns the 0/3/5/7 ladder; the kit also serves a translated, turned
   const pit = rotundaFootprint(other, 0);
   assert.deepEqual(pit[0], pit.at(-1));
   assert.ok(pit.every((p) => dist(p, other.centre) >= other.tableR + ROTUNDA_KIT.rim));
+});
+
+test("Port Quay's five bays stand complete, with its working doors open and no waiting fleet", () => {
+  const site = ROTUNDA_PORT_QUAY;
+  const bays = rotundaBays(site, 0);
+  assert.deepEqual(
+    bays.map((bay) => bayFrame(site, bay).bearing),
+    [315, 295, 335, 275, 355],
+  );
+  const pieces = rotundaPieces(site);
+  assert.deepEqual(
+    pieces.filter((p) => p.part === 'shell').map((p) => p.turn),
+    [-2, -1, 0, 1, 2],
+  );
+  assert.deepEqual(
+    pieces.filter((p) => p.part === 'door').map((p) => p.turn),
+    [-2, -1, 1, 2],
+  );
+  assert.ok(pieces.every((p) => p.part !== 'ruin' && p.part !== 'outline'));
+  assert.ok(pieces.filter((p) => p.part !== 'wall').every((p) => rotundaShows(site, 0, p)));
+  assert.equal(rotundaShows(site, 1, { id: 'ruin-275', part: 'ruin', turn: -2 }), false);
+  assert.deepEqual(bayOccupants(site, { serving: 1, copies: [LINE2] }), {
+    waiting: [],
+    copies: [{ line: LINE2, bay: -1, colour: '#c79a3e' }],
+  });
+  const level = rotundaContent().levels.find((l) => l.place === 'rotunda-port-quay');
+  assert.deepEqual(
+    level?.placements.filter((p) => p.prefab === 'roundhouse.bay-open-doors').map((p) => p.params),
+    [{ turn: 0 }],
+  );
 });
 
 function pointSegment(p: XZ, a: XZ, b: XZ) {
