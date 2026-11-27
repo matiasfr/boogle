@@ -14,8 +14,7 @@ import { cam, me } from '../../player/player.ts';
 import { frameHasRemote, frameOccupied } from './frame-occupied.ts';
 import { goldMote } from './breaker-view.ts';
 import { reducedMotion } from '../../constants.ts';
-import { RAIL_LEGS, legRack } from '../../sim/railway-route.ts';
-import { legRow } from '../../sim/railway-queries-route.ts';
+import { legRackLift } from './leg-yard.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
 import { emit } from '../../render/particles.ts';
@@ -896,9 +895,9 @@ export async function createRailwayLine2(
       const carried = event.carried ?? account(w, event.pid)?.carry ?? 0;
       const active = line2Active(w),
         depot = railRow(w).depot;
-      const rack = event.leg === undefined ? null : legRack(RAIL_LEGS[event.leg]!, legRow(w, event.leg).laid);
+      const rack = legRackLift(w, event.leg);
       for (let n = 0; n < taken; n++) {
-        if (rack) from.set(rack.x / 100, rack.y / 100 + 0.3, rack.z / 100);
+        if (rack) from.set(rack.x, rack.y, rack.z);
         else depotSlot(Math.max(0, active), depot + taken - n - 1, from);
         pieces.send(
           'log',
@@ -988,10 +987,9 @@ export async function createRailwayLine2(
     const rails = e.op === 'rail.forgeTake' || ('kind' in e && e.kind === 2);
     const mine = account(w, pid);
     const held = (rails ? mine?.rails : mine?.carry) ?? 0;
-    const rack =
-      e.op === 'rail.depotTake' && e.leg !== undefined ? legRack(RAIL_LEGS[e.leg]!, legRow(w, e.leg).laid) : null;
+    const rack = e.op === 'rail.depotTake' ? legRackLift(w, e.leg) : null;
     const home = rack
-      ? new THREE.Vector3(rack.x / 100, rack.y / 100 + 0.3, rack.z / 100)
+      ? new THREE.Vector3(rack.x, rack.y, rack.z)
       : e.op === 'rail.forgeTake'
         ? rackFrom
         : e.op === 'rail.depotTake'
