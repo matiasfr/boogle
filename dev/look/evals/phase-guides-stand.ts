@@ -1,3 +1,4 @@
+// npm run look -- --rail-seed works-open --eval dev/look/evals/phase-guides-stand.ts --query stand=1081.5,48.5 --until window.__placeDone --hud --size 1200x750 --name pg-quarry-overview
 // Standing beside a Wave 1 phase guide (docs/brainstorms/phase-guides.md), on foot with the follow camera.
 // Query params:
 //   stand=x,z    where the player stands (metres)
