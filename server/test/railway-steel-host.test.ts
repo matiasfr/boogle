@@ -13,6 +13,9 @@ import { createStore } from '../src/store.ts';
 import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
+import { worksThanks } from '../../src/sim/railway-queries-gift.ts';
+import { HALT_YARDS, VILLAGE_YARD } from '../../src/sim/railway-yard-layout.ts';
+import { chopTo } from '../../src/sim/railway-seed-works.ts';
 import { RING_STEEL_WORKS, RING_STEEL_YARD, STEEL } from '../../src/sim/railway-ring-layout.ts';
 import {
   BRING_TICKS,
@@ -587,8 +590,16 @@ async function racked(r: Awaited<ReturnType<typeof host>>) {
 }
 
 test('route host: the frame feed keeps its leg; fed at the frame, refused away and for a malformed leg', async () => {
-  const r = await host('leg-stock', buildSeedWorld('ring-joined'));
+  const seed = buildSeedWorld('ring-joined');
+  chopTo(seed, 'b', 8);
+  const r = await host('leg-stock', seed, { s: 'a', guest: 'b' });
   try {
+    const yard = HALT_YARDS[VILLAGE_YARD]!;
+    assert.equal(
+      await r.action({ op: 'rail.haltPut', yard: VILLAGE_YARD, kind: 0 }, [yard.x, 2400, yard.z], 'guest'),
+      'accepted',
+    );
+    assert.deepEqual(worksThanks(r.w), ['b']);
     await racked(r);
     const laid = legRow(r.w, STACK).laid;
     const p = legFrame(RAIL_LEGS[STACK]!, laid),
@@ -602,9 +613,11 @@ test('route host: the frame feed keeps its leg; fed at the frame, refused away a
       assert.equal(await r.action({ op: 'rail.legStock', leg }, frame), 'rejected', `leg ${String(leg)}`);
     assert.equal(await r.action({ op: 'rail.legStock', leg: STACK }, away(p)), 'rejected', 'not at the frame');
     assert.equal(legRow(r.w, STACK).rails, before, 'nothing fed yet');
+    assert.deepEqual(worksThanks(r.w), ['b']);
     // Fields the op does not take are dropped, not judged: the feed goes in as `{ leg }` alone.
     assert.equal(await r.action({ op: 'rail.legStock', leg: STACK, id: 3, kind: 2, junk: 'x' }, frame), 'accepted');
     assert.ok(legRow(r.w, STACK).rails > before, 'fed into the frame');
+    assert.deepEqual(worksThanks(r.w), ['a', 'b']);
   } finally {
     await r.done();
   }

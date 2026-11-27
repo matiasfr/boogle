@@ -1,5 +1,5 @@
 {
- "worldNs": "v75",
+ "worldNs": "v76",
  "components": [
   {
    "kind": "rail",
@@ -44,6 +44,10 @@
     ],
     [
      "depot",
+     "int"
+    ],
+    [
+     "giftOut",
      "int"
     ],
     [
@@ -632,6 +636,10 @@
      "int"
     ],
     [
+     "thanks",
+     "u8"
+    ],
+    [
      "legLogs",
      "u8"
     ],
@@ -847,6 +855,10 @@
     [
      "boiler",
      "u8"
+    ],
+    [
+     "gift",
+     "int"
     ],
     [
      "legKit",

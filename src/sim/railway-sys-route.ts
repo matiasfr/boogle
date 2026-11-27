@@ -13,6 +13,7 @@
 //   gate       rail.gate { id }        a barrier (RAIL_GATES[id]), once the room holds its grant and its frame is current; starts a full frame
 //   arrive     rail.arrive {}          the meeting, once the route's last leg is laid and a train stands at its end; once
 import { defineSystem, type World } from '../ecs/index.ts';
+import { thank } from './railway-queries-gift.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, LEG_TUNE } from './railway-route.ts';
 import { RAIL_LINES } from './railway-lines.ts';
 import { TRAIN_PHASE, kitBills } from './railway-train.ts';
@@ -76,6 +77,7 @@ export const legStock = defineSystem(
       m.start = tick;
     // Fed: no longer held on a back (the step 3 review's P2-2).
     legKitPut(w, aid, logs, rails);
+    thank(w, aid);
     return logs + rails;
   },
 );

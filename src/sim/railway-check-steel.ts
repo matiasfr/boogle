@@ -65,7 +65,7 @@ export function checkSteel(w: World, tick: number) {
     rackRails += l.rackRails;
     legRails += l.loadedRails;
   });
-  if (r0.depot + rackLogs + c.logs + aboard(w, 'logs') + s.yardLogs > r0.depotProduced + s.outLogs)
+  if (r0.depot + rackLogs + c.logs + aboard(w, 'logs') + s.yardLogs > r0.depotProduced + r0.giftOut + s.outLogs)
     bad('steel sent logs');
   if (r0.depotRails + rackRails + c.rails + aboard(w, 'rails') + s.yardRails > r0.shelfOut + s.outRails + legRails)
     bad('steel sent rails');
