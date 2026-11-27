@@ -63,3 +63,5 @@ These are inspected frames from the checked-in leg and cold-jump reports on main
 | [Beneath the White Wall](greybox-look/step5-under-wall.jpg) | A straight dark lip hangs above blue water. Repeated narrow supports make the wall look thinner at close range than it does on the horizon. |
 | [Notch landing](greybox-look/notch-reached.jpg) | Two pale uprights crop the sky to a vertical slot. The near post and Buddy establish the scale of the proposed rock courses. |
 | [Island landing](greybox-look/island-reached.jpg) and [leg 6 checkpoint](greybox-look/checkpoint-f-sheet.jpg) | The bare platforms lead toward an already colourful beach, palms and lighthouse. Dress only the approach and its abutment. The classic island already supplies the arrival view. |
+
+[Fresh Gorge platform, seaward](greybox-look/high-gorge-seaward.jpg). At player height the two dark slab ends almost touch the horizon. Keep the water gap when dressing their feet. On this pose the count probe reported 188 draws and 433,150 triangles with Gorge resident. This capture ran under load.
