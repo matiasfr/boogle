@@ -232,8 +232,14 @@ Each step leaves `node dev/ship-check.ts` green. The checkpoints carry the suite
   - Bots: none (Port Quay is past every bot's route today). Seeds: the station plan's.
   - Look: two tabs. Tab A holds Install for the cradle at Port Quay's post. Tab B is at Home's bay 150°, with stills
     before and after the receipt: 4 fewer blocks.
-- [ ] **Checkpoint B** (with garage step 5's): `npm run check:full`, `npm --prefix server test`, `npm run test:net`
+- [x] **Checkpoint B** (with garage step 5's): `npm run check:full`, `npm --prefix server test`, `npm run test:net`
   (`server/src` changed). Read the two-tab stills.
+  **27 November 2026.** The shared [Port Quay checkpoint](port-quay-roundhouse.md#steps) records 2,481 unit
+  passes, 415/415 in audited server CI, 410/410 on the standalone network retry, 29 passing level reports,
+  the four loop runs, and the arrival stills. The real Port Quay `r:edit` host test passed. The opened two-tab
+  stills show the Quick boiler installed at Quay, the steel at Home dropping from 12 to 11, and Home staying on
+  Line 2 when Quay brings Bay line. The widened buffer beam is clean in both retakes, with 92/92 targeted tests
+  passing after the fix. Real-time feel, audio and device behaviour not claimed; not tested on a device.
 - [ ] **3. A hub town's plots: staked by its own deliveries, bought from the one box** (built inside the first hub
   town's build, greybox-route's stand-in towns or slice 5's R4 generalised, which owns `TRADE_TOWNS > 1` and its
   bump).
