@@ -49,8 +49,8 @@ export type RailwayIntent =
   | { op: 'rail.legStock'; leg: number }
   | { op: 'rail.haltPut' | 'rail.haltTake'; yard: number; kind: 0 | 1 | 2 }
   | { op: 'rail.grant' | 'rail.gate'; id: number }
-  | { op: 'rail.install'; line: number; part: InstallPart; revision: number }
-  | { op: 'rail.bring'; line: number; revision: number }
+  | { op: 'rail.install'; site: number; line: number; part: InstallPart; revision: number }
+  | { op: 'rail.bring'; site: number; line: number; revision: number }
   | { op: 'rail.boilerTake' | 'rail.boilerFit'; revision: number }
   | { op: 'rail.boilerDrop'; revision: number; x: number; y: number; z: number }
   | { op: 'rail.beamTake'; revision: number }
@@ -84,17 +84,24 @@ export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
     return { op: e.op, kind: e.kind === 1 ? 1 : 0 };
   if (
     e.op === 'rail.install' &&
+    railInt(e.site, 1) &&
     e.line === LINE2 &&
     installAdmits(LINE2, e.part) &&
     railInt(e.revision, BOILER_MAX + 1)
   )
-    return { op: e.op, line: LINE2, part: e.part, revision: e.revision };
+    return { op: e.op, site: e.site, line: LINE2, part: e.part, revision: e.revision };
   // Garage step 4: a trade line's Quick (5) or Strong (6) boiler on the line's install revision, and a line's copy
   // brought to the garage table on the table's bring revision.
-  if (e.op === 'rail.install' && isTradeLine(e.line) && installAdmits(e.line, e.part) && railInt(e.revision))
-    return { op: e.op, line: e.line, part: e.part, revision: e.revision };
-  if (e.op === 'rail.bring' && railInt(e.line, RAIL_LINES.length - 1) && railInt(e.revision))
-    return { op: e.op, line: e.line, revision: e.revision };
+  if (
+    e.op === 'rail.install' &&
+    railInt(e.site, 1) &&
+    isTradeLine(e.line) &&
+    installAdmits(e.line, e.part) &&
+    railInt(e.revision)
+  )
+    return { op: e.op, site: e.site, line: e.line, part: e.part, revision: e.revision };
+  if (e.op === 'rail.bring' && railInt(e.site, 1) && railInt(e.line, RAIL_LINES.length - 1) && railInt(e.revision))
+    return { op: e.op, site: e.site, line: e.line, revision: e.revision };
   // The greybox route (docs/plans/greybox-route.md, leg 1 step 4): catalog indexes.
   if (e.op === 'rail.legStock' && railInt(e.leg, RAIL_LEGS.length - 1)) return { op: e.op, leg: e.leg };
   // The halt yards: a HALT_YARDS index and a kind (0 logs, left out of the event; 1 stone; 2 rails).
@@ -325,16 +332,23 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
     haltPut: halt('rail.haltPut'),
     haltTake: halt('rail.haltTake'),
     /** Install at Home on the revision of line 2's boiler fit. */
-    installBoiler: (revision: number, part: InstallPart = 2) =>
+    installBoiler: (site: number, revision: number, part: InstallPart = 2) =>
+      railInt(site, 1) &&
       installAdmits(LINE2, part) &&
       railInt(revision, BOILER_MAX + 1) &&
-      submit({ op: 'rail.install', line: LINE2, part, revision }),
+      submit({ op: 'rail.install', site, line: LINE2, part, revision }),
     /** Garage step 4: bring `line`'s copy to the garage table on the bring revision this tab saw (`Shed.bringRev`). */
-    bringLine: (line: number, revision: number) =>
-      railInt(line, RAIL_LINES.length - 1) && railInt(revision) && submit({ op: 'rail.bring', line, revision }),
+    bringLine: (site: number, line: number, revision: number) =>
+      railInt(site, 1) &&
+      railInt(line, RAIL_LINES.length - 1) &&
+      railInt(revision) &&
+      submit({ op: 'rail.bring', site, line, revision }),
     /** Install `part` on `line` (line 2's 1 to 3, a trade line's 5 Quick and 6 Strong) on its `Line.rev`. */
-    installPart: (line: number, part: InstallPart, revision: number) =>
-      installAdmits(line, part) && railInt(revision) && submit({ op: 'rail.install', line, part, revision }),
+    installPart: (site: number, line: number, part: InstallPart, revision: number) =>
+      railInt(site, 1) &&
+      installAdmits(line, part) &&
+      railInt(revision) &&
+      submit({ op: 'rail.install', site, line, part, revision }),
     /** The greybox route: feed your back's logs and rails into leg `leg`'s current frame (a RAIL_LEGS index); take a
      * pickup for the room (a RAIL_GRANTS index); open a barrier (a RAIL_GATES index). */
     feedLeg: (leg: number) => railInt(leg, RAIL_LEGS.length - 1) && submit({ op: 'rail.legStock', leg }),

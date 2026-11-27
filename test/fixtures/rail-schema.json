@@ -1,5 +1,5 @@
 {
- "worldNs": "v74",
+ "worldNs": "v75",
  "components": [
   {
    "kind": "rail",
@@ -933,7 +933,9 @@
     "fitted": -1,
     "ready": -1,
     "tableLine": 1,
-    "brought": -1
+    "brought": -1,
+    "quayLine": 1,
+    "quayBrought": -1
    },
    "fields": [
     [
@@ -982,6 +984,18 @@
     ],
     [
      "brought",
+     "int"
+    ],
+    [
+     "quayLine",
+     "u8"
+    ],
+    [
+     "quayRev",
+     "int"
+    ],
+    [
+     "quayBrought",
      "int"
     ]
    ]

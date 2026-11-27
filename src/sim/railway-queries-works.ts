@@ -9,6 +9,9 @@
 //   tableFree(w)       the first tick the garage table takes an install or a bring (garage step 4's hold)
 //   tableBusy(w, tick) the table refuses an install or a bring now: the roll-out, or that hold
 import type { World } from '../ecs/index.ts';
+import { RAIL_LEGS } from './railway-route.ts';
+import { legDone } from './railway-queries-route.ts';
+import { railInt } from './railway.ts';
 import { BRING_TICKS, WORKS, steelPool } from './railway-works-layout.ts';
 import { SEAM_THROAT, type WorksStage } from './railway-works.ts';
 import { Account, Aperture, Line, Pile, Shed, Train, Works } from './railway-components.ts';
@@ -62,8 +65,9 @@ export function worksStage(w: World): WorksStage {
 export const upgradePool = (w: World) => steelPool(w.get(Shed, shedId(w))!);
 /** The garage table's hold (garage step 4): the first tick a rail.install or rail.bring is accepted, BRING_TICKS after
  * the last bring and WORKS.upgradeTicks after any line's last install (`Line.fitted`, which every part sets). */
-export function tableFree(w: World) {
-  const brought = w.get(Shed, shedId(w))!.brought;
+export function tableFree(w: World, site: number) {
+  const h = w.get(Shed, shedId(w))!;
+  const brought = site === 1 ? h.quayBrought : h.brought;
   let free = brought >= 0 ? brought + BRING_TICKS : 0;
   w.each([Line], (_id, l) => {
     if (l.fitted >= 0) free = Math.max(free, l.fitted + WORKS.upgradeTicks);
@@ -72,7 +76,11 @@ export function tableFree(w: World) {
 }
 /** The garage table refuses an install or a bring now (garage step 4): the wagon's roll-out holds it, or tableFree's
  * hold has not run out. */
-export function tableBusy(w: World, tick: number) {
+export function tableBusy(w: World, tick: number, site: number) {
   const h = w.get(Shed, shedId(w))!;
-  return (h.ready >= 0 && wagonSlot(w) < 0) || tick < tableFree(w);
+  return (site === 0 && h.ready >= 0 && wagonSlot(w) < 0) || tick < tableFree(w, site);
+}
+const QUAY_LEG = RAIL_LEGS.findIndex((leg) => leg.id === 'cave');
+export function tableOpen(w: World, site: unknown): site is number {
+  return railInt(site, 1) && (site === 0 || legDone(w, QUAY_LEG));
 }

@@ -23,7 +23,7 @@ import { TRADE_ROW, type InstallPart } from './railway-works-layout.ts';
 import { RAIL_TRAINS } from './railway-lines.ts';
 import { TRAIN_PHASE } from './railway-train.ts';
 
-export const GARAGE_STAGES = ['trade-ready', 'trade-fitted', 'trade-held'] as const;
+export const GARAGE_STAGES = ['trade-ready', 'trade-fitted', 'trade-held', 'quay-garage'] as const;
 export type GarageStage = (typeof GARAGE_STAGES)[number];
 
 const NS = ROW_LINE.ns,
@@ -41,7 +41,13 @@ export function railwayAtGarage(stage: GarageStage): Seed {
   need(k >= 0, stage);
   let base = cache.get(stage);
   if (!base) {
-    base = build(k ? railwayAtGarage(GARAGE_STAGES[k - 1]!) : railwayAtLegs('bay-mid'), stage);
+    const before =
+      stage === 'quay-garage'
+        ? railwayAtLegs('port-reached')
+        : k === 0
+          ? railwayAtLegs('bay-mid')
+          : railwayAtGarage(GARAGE_STAGES[k - 1]!);
+    base = build(before, stage);
     const broken = invariant(base.w);
     need(broken === null, `${stage}: ${broken}`);
     cache.set(stage, base);
@@ -57,10 +63,13 @@ function until(s: Seed, ok: () => boolean, max: number, what: string) {
 }
 /** `line`'s copy brought to the table and fitted with `part`, by accepted ops, each after the table's hold. */
 function fit(s: Seed, l: number, part: number) {
-  until(s, () => s.t >= tableFree(s.w), 200, 'the table free for a bring');
-  need(act(s, 'a', 'rail.bring', { line: l, revision: shed(s.w).bringRev }) === 1, `line ${l} brought`);
-  until(s, () => s.t >= tableFree(s.w), 200, 'the table free for an install');
-  need(act(s, 'a', 'rail.install', { line: l, part, revision: line(s.w, l).rev }) === 1, `line ${l} part ${part}`);
+  until(s, () => s.t >= tableFree(s.w, 0), 200, 'the table free for a bring');
+  need(act(s, 'a', 'rail.bring', { site: 0, line: l, revision: shed(s.w).bringRev }) === 1, `line ${l} brought`);
+  until(s, () => s.t >= tableFree(s.w, 0), 200, 'the table free for an install');
+  need(
+    act(s, 'a', 'rail.install', { site: 0, line: l, part, revision: line(s.w, l).rev }) === 1,
+    `line ${l} part ${part}`,
+  );
 }
 const wearing = (s: Seed, l: number, row: number) =>
   servingSlots((j) => train(s.w, j), l).every((j) => train(s.w, j).boiler === row);
@@ -68,6 +77,7 @@ const wearing = (s: Seed, l: number, row: number) =>
 function build(s: Seed, stage: GarageStage): Seed {
   const w = s.w;
   switch (stage) {
+    case 'quay-garage':
     case 'trade-ready':
       steelHomeOn(s);
       until(s, () => upgradePool(w) >= STEEL.total, 8000, 'all the steel home');

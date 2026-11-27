@@ -8,7 +8,7 @@ import { SEAM_STALL, SEAM_THROAT } from './railway-works.ts';
 import { railInt, RAILWAY_MAX_INT } from './railway.ts';
 import { LINE2, RAIL_LINES } from './railway-lines.ts';
 import { tradeOpen } from './railway-queries-route.ts';
-import { tableBusy } from './railway-queries-works.ts';
+import { tableBusy, tableOpen } from './railway-queries-works.ts';
 import {
   Account,
   Aperture,
@@ -166,22 +166,23 @@ export const turn = defineSystem(
     return 1;
   },
 );
-/** Bring a line's copy to the garage table (garage step 4, rail.bring { line, revision }): line 2's, or an open trade
- * line's, on the bring revision the actor saw, not the copy already there, with the table free (no roll-out, the
- * table's hold over). Judged at SHED_TABLE's reach by the server. */
+/** Bring line 2's copy or an open trade line's copy to the selected table on its own bring revision. */
 export const bring = defineSystem(
   'rail.bring',
   { reads: [Leg, Line, Train], writes: [Shed], phase: 'act', order: 57 },
   (w, { e, tick }: Act) => {
     if (!railInt(e.line, RAIL_LINES.length - 1) || !railInt(e.revision)) return 0;
+    if (!tableOpen(w, e.site)) return 0;
     const h = w.get(Shed, shedId(w))!;
-    if (e.revision !== h.bringRev || h.bringRev >= RAILWAY_MAX_INT || e.line === h.tableLine) return 0;
+    const rev = e.site === 1 ? 'quayRev' : 'bringRev';
+    const line = e.site === 1 ? 'quayLine' : 'tableLine';
+    if (e.revision !== h[rev] || h[rev] >= RAILWAY_MAX_INT || e.line === h[line]) return 0;
     if (e.line !== LINE2 && !tradeOpen(w, e.line)) return 0;
-    if (tableBusy(w, tick)) return 0;
+    if (tableBusy(w, tick, e.site)) return 0;
     const hm = w.mut(Shed, shedId(w))!;
-    hm.tableLine = e.line;
-    hm.bringRev++;
-    hm.brought = tick;
+    hm[line] = e.line;
+    hm[rev]++;
+    hm[e.site === 1 ? 'quayBrought' : 'brought'] = tick;
     return 1;
   },
 );

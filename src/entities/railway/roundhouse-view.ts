@@ -154,8 +154,8 @@ export async function createRailwayRoundhouse(
           ? tableYaw
           : null,
       install: (line, rev, part) =>
-        line === LINE2 ? adapter.installBoiler(rev, part) : adapter.installPart(line, part, rev),
-      bring: (line, rev) => adapter.bringLine(line, rev),
+        line === LINE2 ? adapter.installBoiler(0, rev, part) : adapter.installPart(0, line, part, rev),
+      bring: (line, rev) => adapter.bringLine(0, line, rev),
       installHere: true,
       online: () => adapter.read.ready(),
     },

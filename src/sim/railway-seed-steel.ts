@@ -81,7 +81,10 @@ function build(s: Seed, stage: SteelStage): Seed {
       need(line(w, LINE2).boiler === 1, 'table upgrade, longer boiler not yet installed');
       break;
     case 'boiler-long':
-      need(act(s, 'a', 'rail.install', { line: LINE2, part: 2, revision: line(w, LINE2).boiler }) === 1, 'installed');
+      need(
+        act(s, 'a', 'rail.install', { site: 0, line: LINE2, part: 2, revision: line(w, LINE2).boiler }) === 1,
+        'installed',
+      );
       until(
         s,
         // The trains in service: a fleet row still in the shed (the greybox route) takes the fit when it joins and

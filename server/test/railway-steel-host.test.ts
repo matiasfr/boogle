@@ -14,8 +14,16 @@ import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
 import { RING_STEEL_WORKS, RING_STEEL_YARD, STEEL } from '../../src/sim/railway-ring-layout.ts';
-import { BRING_TICKS, SHED_TABLE, WORKS, INSTALL_STEEL, steelPool } from '../../src/sim/railway-works-layout.ts';
-import { laySection, legStagesOn } from '../../src/sim/railway-seed-legs.ts';
+import {
+  BRING_TICKS,
+  SHED_TABLE,
+  QUAY_TABLE,
+  WORKS,
+  INSTALL_STEEL,
+  steelPool,
+} from '../../src/sim/railway-works-layout.ts';
+import { railwayAtGarage } from '../../src/sim/railway-seed-garage.ts';
+import { laySection, legStagesOn, railwayAtLegs } from '../../src/sim/railway-seed-legs.ts';
 import { railwayAtSteel, type SteelStage } from '../../src/sim/railway-seed-steel.ts';
 import { buildSeedWorld, invariant, line, steel, unaudited, type Seed } from '../../test/helpers/rail.ts';
 import { account, shed } from '../../src/sim/railway-rows.ts';
@@ -174,7 +182,41 @@ async function host(name: string, fixture: Seed, players: Record<string, string>
 const spot = (p: { x: number; y: number; z: number }): At => [p.x, p.y, p.z];
 const away = (p: { x: number; y: number; z: number }): At => [p.x + 2000, p.y, p.z];
 const fixture = (stage: SteelStage) => railwayAtSteel(stage);
-const install = (revision: unknown = 1, line = 1, part = 2) => ({ op: 'rail.install', line, part, revision });
+test('pool host: an install at Port Quay spends Home’s bay through r:edit', { timeout: 300000 }, async () => {
+  const r = await host('quay-pool', railwayAtGarage('quay-garage'), { s: 'a', peer: 'b' });
+  try {
+    const viewer = r.connect('viewer');
+    const post = spot(QUAY_TABLE);
+    const event = { ...install(0, BAYL, 5), site: 1 };
+    assert.equal(await r.action({ ...bring(BAYL, 0), site: 1 }, post), 'accepted');
+    await r.ticks(BRING_TICKS);
+    assert.equal(await r.action(event, [QUAY_TABLE.x + 3000, QUAY_TABLE.y, QUAY_TABLE.z]), 'rejected');
+    const pool = steelPool(shed(r.w));
+    assert.equal(await r.action(event, post), 'accepted');
+    await r.ticks(3);
+    for (const w of [r.w, viewer()!]) {
+      assert.equal(shed(w).quayLine, BAYL);
+      assert.equal(shed(w).tableLine, LINE2);
+      assert.equal(steelPool(shed(w)), pool - 1);
+    }
+  } finally {
+    await r.done();
+  }
+});
+const install = (revision: unknown = 1, line = 1, part = 2) => ({ op: 'rail.install', site: 0, line, part, revision });
+test('pool host: an unfunded fit at the quay leaves the bay and line untouched', async () => {
+  const r = await host('quay-short', railwayAtLegs('port-reached'));
+  try {
+    const post = spot(QUAY_TABLE);
+    assert.equal(await r.action({ ...bring(BAYL, 0), site: 1 }, post), 'accepted');
+    await r.ticks(BRING_TICKS);
+    assert.equal(steelPool(shed(r.w)), 0);
+    assert.equal(await r.action({ ...install(0, BAYL, 5), site: 1 }, post), 'noop');
+    assert.deepEqual([shed(r.w).spent, line(r.w, BAYL).rev], [0, 0]);
+  } finally {
+    await r.done();
+  }
+});
 
 // Accepted route only: stock arrives on trains and the existing four sections open High Gorge.
 const PAID = fixture('boiler-long');
@@ -406,7 +448,7 @@ test('steel host: malformed kinds, lines, parts and revisions refused without a 
     // Since v67 an install's revision is the line's `Line.rev`, bounded by RAILWAY_MAX_INT (a stale one is a noop).
     for (const revision of [RAILWAY_MAX_INT + 1, -1, 0.5, '0', null, undefined])
       assert.equal(
-        await r.action({ op: 'rail.install', line: 1, part: 2, revision }, spot(SHED_TABLE)),
+        await r.action({ op: 'rail.install', site: 0, line: 1, part: 2, revision }, spot(SHED_TABLE)),
         'rejected',
         `revision ${revision}`,
       );
@@ -867,7 +909,7 @@ test("steel host (review): a leaver holding the kit's 8 logs and 12 rails foreve
 // with nothing applied twice (the revision and the spend as they were).
 const BAYL = ROW_LINE.bay,
   NSL = ROW_LINE.ns;
-const bring = (line: unknown, revision: unknown) => ({ op: 'rail.bring', line, revision });
+const bring = (line: unknown, revision: unknown) => ({ op: 'rail.bring', site: 0, line, revision });
 /** Both trades open: the file's PAID_GORGE (High Gorge reached by accepted ops, all twelve steel home) played on
  * through the leg seed's own steps to bay-mid, on an unaudited copy. Built lazily, inside the test that uses it. */
 let tradeSeed: Seed | undefined;

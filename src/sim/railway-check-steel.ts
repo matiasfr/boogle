@@ -24,7 +24,7 @@ const bad = (what: string): never => {
   throw new Error(`railway: ${what}`);
 };
 /** The steel works' whole-world invariants; throws on the first broken one. */
-export function checkSteel(w: World) {
+export function checkSteel(w: World, tick: number) {
   const s = steel(w),
     lastCast = steelClock(w).lastCast,
     ts = trains(w),
@@ -117,6 +117,10 @@ export function checkSteel(w: World) {
   // The garage table holds line 2's copy until the first bring, then line 2's or an open trade line's (garage step 4).
   const h = shed(w);
   if (
+    !railInt(h.quayRev) ||
+    !railInt(h.quayBrought, tick, -1) ||
+    (h.quayBrought === -1) !== (h.quayRev === 0) ||
+    (h.quayLine !== LINE2 && (!h.quayRev || !tradeOpen(w, h.quayLine))) ||
     !railInt(h.bringRev) ||
     !railInt(h.brought, RAILWAY_MAX_INT, -1) ||
     h.brought >= 0 !== h.bringRev > 0 ||

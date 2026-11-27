@@ -386,7 +386,7 @@ test('ready only after fitted and turned; the table holds while the wagon rolls 
   // The one turn rolls the wagon out; every line 2 train comes back to its village end anyway (v26: end to end).
   assert.equal(act(s, 'a', 'rail.turn', { to: 1, revision: 0 }), 1);
   assert.equal(shed(w).ready, -1);
-  assert.equal(act(s, 'a', 'rail.install', { line: 1, part: 1, revision: 0 }), 1);
+  assert.equal(act(s, 'a', 'rail.install', { site: 0, line: 1, part: 1, revision: 0 }), 1);
   assert.equal(shed(w).ready, s.t + WORKS.upgradeTicks + WORKS.rollTicks);
   const due = shed(w).ready;
   assert.equal(act(s, 'b', 'rail.turn', { to: 0, revision: 1 }), 0, 'no turning back while it rolls out');
@@ -420,7 +420,7 @@ test('the cart rests at the camp, serving nothing, from the cradle fitted until 
   };
   atCamp();
   assert.equal(act(s, 'a', 'rail.turn', { to: 1, revision: shed(w).tableRev }), 1);
-  assert.equal(act(s, 'a', 'rail.install', { line: 1, part: 1, revision: 0 }), 1);
+  assert.equal(act(s, 'a', 'rail.install', { site: 0, line: 1, part: 1, revision: 0 }), 1);
   for (let guard = 0; !trains(w).some((r) => r.wagon); guard++) {
     assert.ok(guard < 4000, 'the wagon couples');
     atCamp();

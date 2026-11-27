@@ -274,7 +274,7 @@ function checkRailway(w: World, tick: number) {
   checkWorks(w);
   checkRing(w);
   checkTrade(w, tick);
-  checkSteel(w);
+  checkSteel(w, tick);
   checkRoute(w);
   checkHaltYards(w);
   const counts = worldCounts(w);

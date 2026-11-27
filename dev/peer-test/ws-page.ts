@@ -543,9 +543,9 @@ function startWorld(room: Room) {
         case 'rail.steel':
           return adapter.feedSteel();
         case 'rail.install':
-          return adapter.installPart(intent.line, intent.part, intent.revision);
+          return adapter.installPart(intent.site, intent.line, intent.part, intent.revision);
         case 'rail.bring':
-          return adapter.bringLine(intent.line, intent.revision);
+          return adapter.bringLine(intent.site, intent.line, intent.revision);
       }
     };
   }

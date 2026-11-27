@@ -230,8 +230,11 @@ export const Shed = defineComponent(
     tableLine: 'u8',
     bringRev: 'int',
     brought: 'int',
+    quayLine: 'u8',
+    quayRev: 'int',
+    quayBrought: 'int',
   },
-  { defaults: { fitted: -1, ready: -1, tableLine: LINE2, brought: -1 } },
+  { defaults: { fitted: -1, ready: -1, tableLine: LINE2, brought: -1, quayLine: LINE2, quayBrought: -1 } },
 );
 export const ForgeClock = defineComponent('forgeClock', { lastPour: 'int' }, { replicate: false });
 export const Forge = defineComponent(

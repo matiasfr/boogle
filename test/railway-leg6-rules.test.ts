@@ -17,12 +17,12 @@ test('a free re-pick before the ending survives a reload at every ending stage',
     [3, 5],
     [2, 6],
   ] as const) {
-    advance(s, Math.max(0, tableFree(s.w) - s.t));
+    advance(s, Math.max(0, tableFree(s.w, 0) - s.t));
     if (shed(s.w).tableLine !== l) {
-      assert.equal(act(s, 'a', 'rail.bring', { line: l, revision: shed(s.w).bringRev }), 1);
-      advance(s, tableFree(s.w) - s.t);
+      assert.equal(act(s, 'a', 'rail.bring', { site: 0, line: l, revision: shed(s.w).bringRev }), 1);
+      advance(s, tableFree(s.w, 0) - s.t);
     }
-    assert.equal(act(s, 'a', 'rail.install', { line: l, part, revision: 1 }), 1);
+    assert.equal(act(s, 'a', 'rail.install', { site: 0, line: l, part, revision: 1 }), 1);
   }
   const stages = [
     'wall-deep',

@@ -58,14 +58,14 @@ function section(s: Seed, k: number, players: readonly string[], releases: numbe
 /** The bay line fitted with row `boiler` (4 Quick, part 5; 5 Strong, part 6) by accepted ops, each after the table's hold. */
 function fitByOps(s: Seed, boiler: number) {
   const free = () => {
-    while (s.t < tableFree(s.w)) advance(s, 1);
+    while (s.t < tableFree(s.w, 0)) advance(s, 1);
   };
   free();
-  need(act(s, 'a', 'rail.bring', { line: ROW_LINE.bay, revision: shed(s.w).bringRev }), 'bay brought');
+  need(act(s, 'a', 'rail.bring', { site: 0, line: ROW_LINE.bay, revision: shed(s.w).bringRev }), 'bay brought');
   free();
   const part = Number(Object.keys(TRADE_ROW).find((k) => TRADE_ROW[Number(k) as keyof typeof TRADE_ROW] === boiler));
   need(
-    act(s, 'a', 'rail.install', { line: ROW_LINE.bay, part, revision: line(s.w, ROW_LINE.bay).rev }),
+    act(s, 'a', 'rail.install', { site: 0, line: ROW_LINE.bay, part, revision: line(s.w, ROW_LINE.bay).rev }),
     `part ${part}`,
   );
   need(line(s.w, ROW_LINE.bay).boiler === boiler, `bay line on row ${boiler}`);

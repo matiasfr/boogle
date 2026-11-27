@@ -44,6 +44,7 @@ import {
   PIER_RACK,
   RAIL_ROCKS,
   SHED_STALL,
+  QUAY_TABLE,
   SHED_TABLE,
   WORKS_BREAKER,
   WORKS_KILN,
@@ -337,12 +338,22 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     case 'rail.steel':
       return at(RING_STEEL_WORKS);
     case 'rail.install':
-      // At Home's table post: line 2's upgrade (1), longer boiler (2), big boiler (3); a trade
+      // At the selected post: line 2's upgrade (1), longer boiler (2), big boiler (3); a trade
       // line's Quick (5) or Strong (6) boiler (garage step 4), on the line's install revision.
-      return installAdmits(e.line, e.part) && railInt(e.revision) && at(SHED_TABLE);
+      return (
+        installAdmits(e.line, e.part) &&
+        railInt(e.revision) &&
+        railInt(e.site, 1) &&
+        at(e.site === 1 ? QUAY_TABLE : SHED_TABLE)
+      );
     case 'rail.bring':
-      // At Home's table post: whether the line is open and the table free is the rule's (railway-sys-works.ts).
-      return railInt(e.line, RAIL_LINES.length - 1) && railInt(e.revision) && at(SHED_TABLE);
+      // The sim checks the cave leg, the line and the selected table's hold.
+      return (
+        railInt(e.line, RAIL_LINES.length - 1) &&
+        railInt(e.revision) &&
+        railInt(e.site, 1) &&
+        at(e.site === 1 ? QUAY_TABLE : SHED_TABLE)
+      );
     // The greybox route (step 3): ids are catalog indexes; whether the leg is open, the pickup's leg laid or the grant
     // held is the rule's (./railway-sys-route.ts), never this.
     case 'rail.legStock': {

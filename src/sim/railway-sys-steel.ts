@@ -23,7 +23,7 @@ import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { LINE2 } from './railway-lines.ts';
 import { kitBills } from './railway-train.ts';
 import { INSTALL_STEEL, TRADE_ROW, installAdmits } from './railway-works-layout.ts';
-import { tableBusy, upgradePool } from './railway-queries-works.ts';
+import { tableBusy, tableOpen, upgradePool } from './railway-queries-works.ts';
 import { LEG_KIT_MOST, legDone, tradeSwapRefusal, tradeOpen } from './railway-queries-route.ts';
 import {
   Account,
@@ -198,7 +198,7 @@ export function steelService(w: World, r: Readonly<Row<typeof Train>>, k: number
 function spendUpgrade(w: World, n: number) {
   w.mut(Shed, shedId(w))!.spent += n;
 }
-/** One hold at Home, on the line's install revision (`Line.rev`), with the line's copy on the table (`Shed.tableLine`)
+/** One hold at the selected post, on the line's install revision (`Line.rev`), with its copy on that table
  * and the table's hold over (tableFree). Line 2's parts 1/2 are free and part 3 spends steel. A trade line's first fit
  * costs 1 steel. Its only re-pick is free once every section it serves is laid. */
 export const install = defineSystem(
@@ -206,12 +206,14 @@ export const install = defineSystem(
   { reads: [Train, Leg], writes: [Line, Shed], phase: 'act', order: 56 },
   (w, { e, tick }: Act) => {
     if (!railInt(e.line) || !installAdmits(e.line, e.part) || !railInt(e.revision)) return 0;
+    if (!tableOpen(w, e.site) || (e.site === 1 && e.part === 1)) return 0;
     const id = lineId(w, e.line),
       l = w.get(Line, id)!,
       h = w.get(Shed, shedId(w))!;
-    if (e.revision !== l.rev || l.rev >= RAILWAY_MAX_INT || h.tableLine !== e.line) return 0;
-    if (e.part >= 5) return fitTrade(w, id, e.part as keyof typeof TRADE_ROW, tick);
-    if (tableBusy(w, tick) || l.boiler !== e.part - 1) return 0;
+    if (e.revision !== l.rev || l.rev >= RAILWAY_MAX_INT || (e.site === 1 ? h.quayLine : h.tableLine) !== e.line)
+      return 0;
+    if (e.part >= 5) return fitTrade(w, id, e.part as keyof typeof TRADE_ROW, tick, e.site);
+    if (tableBusy(w, tick, e.site) || l.boiler !== e.part - 1) return 0;
     if (upgradePool(w) < INSTALL_STEEL[e.part]) return 0;
     if (e.part === 1 ? h.fitted < 0 || h.table !== 1 : h.steel < 1) return 0;
     // High Gorge is reached when the stack leg is complete, not when a later pickup is taken.
@@ -229,14 +231,14 @@ export const install = defineSystem(
 );
 /** A trade line's Quick or Strong fit (garage step 4): the trade open and the row not the line's now; the line's first
  * fit spends INSTALL_STEEL's 1, a swap nothing. */
-function fitTrade(w: World, id: number, part: keyof typeof TRADE_ROW, tick: number) {
+function fitTrade(w: World, id: number, part: keyof typeof TRADE_ROW, tick: number, site: number) {
   const l = w.get(Line, id)!,
     row = TRADE_ROW[part],
     price = l.boiler === 0 ? INSTALL_STEEL[part] : 0;
   if (l.boiler === row || !tradeOpen(w, l.slot) || upgradePool(w) < price) return 0;
   const refusal = tradeSwapRefusal(w, l.slot, l.rev);
   if (refusal) return refusal;
-  if (tableBusy(w, tick)) return 0;
+  if (tableBusy(w, tick, site)) return 0;
   const m = w.mut(Line, id)!;
   m.boiler = row;
   m.fitted = tick;

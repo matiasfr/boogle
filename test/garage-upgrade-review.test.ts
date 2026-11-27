@@ -24,7 +24,7 @@ import {
 
 const [A] = LINE_SLOTS[LINE2] as [number];
 const copy = (s: Seed): Seed => unaudited({ w: restore(s.w), t: s.t });
-const upgrade = (s: Seed, pid = 'a') => act(s, pid, 'rail.install', { line: LINE2, part: 1, revision: 0 });
+const upgrade = (s: Seed, pid = 'a') => act(s, pid, 'rail.install', { site: 0, line: LINE2, part: 1, revision: 0 });
 const standingHome = (s: Seed) => train(s.w, A).phase === TRAIN_PHASE.STAND && train(s.w, A).at === 0;
 
 // Installing on arrival overlaps the train's dwell with the upgrade hold. Installing on the last dwell tick

@@ -70,7 +70,7 @@ export function railwayRequestEdit(e: Obj, epoch: number, request: number): Rail
   // A halt yard's put and take name the yard (a HALT_YARDS index) and the kind; the rules validate both.
   if (e.op === 'rail.haltPut' || e.op === 'rail.haltTake') clean.yard = e.yard;
   if (e.op === 'rail.footTake') clean.rack = e.rack;
-  if (e.op === 'rail.footSet') clean.site = e.site;
+  if (e.op === 'rail.footSet' || e.op === 'rail.install' || e.op === 'rail.bring') clean.site = e.site;
   if (e.op === 'rail.turn') clean.to = e.to;
   if (e.op === 'rail.call') clean.dir = e.dir;
   // A rider's ask names their train (docs/plans/generic-lines.md, 7); the rules validate it.

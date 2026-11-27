@@ -196,7 +196,7 @@ function markNames() {
   const names = new Set<string>();
   for (const op of RAIL_ACTIONS)
     for (const [name] of railwayActionMarks({ op } as unknown as RailwayIntent, 1, true)) names.add(name);
-  for (const [name] of railwayActionMarks({ op: 'rail.install', line: 1, part: 1, revision: 0 }, 1, true))
+  for (const [name] of railwayActionMarks({ op: 'rail.install', site: 0, line: 1, part: 1, revision: 0 }, 1, true))
     names.add(name);
   // A world with every line-one and line-two job funded and laid, the forge lit and the trains unlocked, or none of it
   // (ECS M11), and Ring Island's steel works lit with steel home (build 2). The Works and the gap stay at their defaults.
