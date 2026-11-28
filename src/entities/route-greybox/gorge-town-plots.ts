@@ -71,6 +71,15 @@ export function createGorgeTownPlots(owner: OwnedView) {
   gold.side = THREE.DoubleSide;
   horn.position.copy(hornAt);
   horn.rotation.z = -1.12;
+  const roofHorn = new THREE.Group();
+  roofHorn.position.copy(point(0, 0, 3.05));
+  roofHorn.rotation.y = yaw;
+  const riser = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.21, 1.2, 16), gold);
+  riser.position.y = 0.6;
+  const flare = new THREE.Mesh(new THREE.CylinderGeometry(1.04, 0.19, 2.2, 32, 1, true), gold);
+  flare.rotation.x = 1.24;
+  flare.position.set(0, 1.53, 1);
+  roofHorn.add(riser, flare);
   const crank = new THREE.Group();
   crank.position.copy(hornAt);
   crank.position.z += 0.48;
@@ -89,7 +98,7 @@ export function createGorgeTownPlots(owner: OwnedView) {
   raft.position.copy(vec(gorgeAt(19, -26, 0.32)));
   buoy.position.y = 0.56;
   raft.add(buoy);
-  owner.add(horn, crank, wave, raft);
+  owner.add(horn, roofHorn, crank, wave, raft);
   owner.cleanup(() => {
     gold.dispose();
     wave.material.dispose();
@@ -201,7 +210,7 @@ export function createGorgeTownPlots(owner: OwnedView) {
           );
         }
       });
-      horn.visible = crank.visible = active === 8;
+      horn.visible = roofHorn.visible = crank.visible = active === 8;
       crank.rotation.z = Math.min(1, (performance.now() - echoed) / 600) * Math.PI * 2;
       if (horn.visible && near(hornAt)) targets.push(pull);
       for (const r of rings)

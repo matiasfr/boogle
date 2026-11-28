@@ -102,7 +102,7 @@ test('Gorge arrival stakes slot 32 and each completed choice feeds only the far 
     const seed = buildSeedWorld('gorge-reached');
     const before = tillRow(seed.w).boogles;
     const actor: Actor = { reach: () => false, height: () => true, cadence: () => true };
-    assert.equal(railValid(seed.w, { op: 'rail.buy', id: 32, kind }, actor), false);
+    assert.equal(railValid(seed.w, { op: 'rail.buy', id: 32, kind, epoch: 1, request: 1 }, actor), false);
     assert.deepEqual(plotsStaked(seed.w, 2), [0]);
     for (const invalid of [0, 1, 2, 3, 4, 5, 6, 7, 10])
       assert.equal(act(seed, 'a', 'rail.buy', { id: 32, kind: invalid }), 0);

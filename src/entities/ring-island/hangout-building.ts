@@ -59,8 +59,11 @@ export function createHangoutBuilding(
     if (hides) cutaway.add(records.length - 1);
     ghost.box(p.x, p.y, p.z, width, height, length, site.yaw, pitch);
   }
-  box('floor', 0, 0, -0.7, 5.4, 4.4, 1.4, timber);
-  box('porch', 0, 3.1, -0.15, 5.4, 1.8, 0.3, timber);
+  // The Gorge pad already has a finished deck. Give its threshold a small
+  // step so the timber and the stone never share the same top face.
+  const threshold = site.flat ? 0.08 : 0;
+  box('floor', 0, 0, threshold - 0.7, 5.4, 4.4, 1.4, timber);
+  box('porch', 0, 3.1, threshold - 0.15, 5.4, 1.8, 0.3, timber);
   const toe = site.point(-8, 3.1, 0);
   const rise = site.floor - ground.islandH(toe.x, toe.z);
   const run = 5.3;
@@ -84,8 +87,11 @@ export function createHangoutBuilding(
   }
   box('lintel', 0, 2.12, 2.65, 2.14, 0.16, 0.5, timber, true);
   box('roof', 0, 0, 2.98, 5.6, 4.6, 0.16, teal, true);
-  for (const u of [-2.2, 2.2])
-    for (const l of [-1.7, 1.7]) box('post' + u + l, u, l, 4.45, 0.22, 0.22, 2.9, timber, true);
+  if (tower || !site.flat) {
+    const height = site.deck - 3.1;
+    for (const u of [-2.2, 2.2])
+      for (const l of [-1.7, 1.7]) box('post' + u + l, u, l, 3 + height / 2, 0.22, 0.22, height, timber, true);
+  }
   if (tower) {
     box('deck', 0, 0, site.deck - 0.1, 5.6, 4.6, 0.2, teal, true);
     // Four parallel flights with a shared landing between each pair.
@@ -117,7 +123,7 @@ export function createHangoutBuilding(
       );
     }
     box('foot', site.flat ? -2.95 : 2.95, 2.4, -0.1, 0.72, 1.7, 0.2, timber);
-  } else {
+  } else if (!site.flat) {
     box('belfry', 0, 0, 5.93, 5.0, 3.9, 0.25, teal, true);
     box('beam', 0, 0, 5.55, 0.24, 3.6, 0.26, timber, true);
   }
