@@ -3,7 +3,7 @@ import * as THREE from 'three/webgpu';
 import { reducedMotion } from '../constants.ts';
 import { emit, type Particle } from './particles.ts';
 import { readableIntensity } from './readable-unlit.ts';
-import { camera } from './scene.ts';
+import { camera, hemi, sun } from './scene.ts';
 
 /** Small typed authoring surface; visual-only, never saved or sent to another player. */
 const particleEffects = {
@@ -14,11 +14,13 @@ const particleEffects = {
 };
 const timber = [new THREE.Color('#e5b77c'), new THREE.Color('#bb793e'), new THREE.Color('#f2d2a0')];
 const stone = new THREE.Color('#9caaa9');
+const steamAlbedo = new THREE.Color('#eee8dc');
+const skyFill = new THREE.Color();
 const steam: Particle = {
   x: 0,
   y: 0,
   z: 0,
-  color: new THREE.Color('#eee8dc'),
+  color: new THREE.Color(),
   shape: 'puff',
   size: 0.6,
   life: 3,
@@ -39,7 +41,14 @@ export function stackPuff(x: number, y: number, z: number, size: number) {
   steam.x = x;
   steam.y = y;
   steam.z = z;
-  steam.size = size;
+  // The sprite pool blends scene-linear radiance. Light this scattering volume at birth,
+  // as for the water's diffuse surface, before the shared exposure and tone mapping.
+  skyFill.copy(hemi.color).multiplyScalar(hemi.intensity / Math.PI);
+  steam.color.copy(sun.color).multiplyScalar(sun.intensity / Math.PI).add(skyFill).multiply(steamAlbedo);
+  steam.size = size * (1.25 + Math.random() * 0.45);
+  steam.rotation = Math.random() * Math.PI * 2;
+  steam.vz = (Math.random() - 0.5) * 0.36;
+  steam.vy = 1.45 + Math.random() * 0.4;
   emit(steam);
 }
 const dust = new THREE.Color('#cdbb9a'),

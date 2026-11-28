@@ -262,13 +262,12 @@ export function createParticlePool(renderer: THREE.WebGPURenderer, now = () => p
       alpha.assign(dustA);
     });
     If(shape.equal(5), () => {
-      // Three overlapping round lobes soften into one breath as it expands.
-      const body = length(p.sub(vec2(-0.18, 0.08))).div(0.66);
-      const billow = length(p.sub(vec2(0.30, 0.14))).div(0.46);
-      const foot = length(p.sub(vec2(0.06, -0.26))).div(0.48);
-      const rim = min(body, min(billow, foot));
-      alpha.assign(smoothstep(0.46, 1, rim).oneMinus());
-      shade.assign(clamp(p.y.sub(p.x).mul(0.3).add(rim.oneMinus().mul(0.38)).add(0.82), 0.55, 1.3));
+      // Broad overlapping volumes share a soft rim even when the whole puff is only a few pixels.
+      const body = length(rotated.add(vec2(0.08, 0.04))).div(0.86);
+      const billow = length(rotated.sub(vec2(0.16, 0.09))).div(0.76);
+      const rim = min(body, billow);
+      alpha.assign(smoothstep(0.24, 1, rim).oneMinus());
+      shade.assign(clamp(p.y.sub(p.x).mul(0.12).add(rim.oneMinus().mul(0.25)).add(0.82), 0.7, 1.12));
     });
     return vec4(c.xyz.mul(shade), c.w.mul(alpha));
   })();
