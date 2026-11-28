@@ -48,7 +48,14 @@ export async function giveQuarryTimber(bot: Bot) {
   const at = bin()!.at;
   bot.press();
   hookCheck(bot, await bot.until(() => R.railBack().carry === 8, 10000, 'eight Quarry logs'), 'eight lifted');
-  hookCheck(bot, await bot.use(at.x, at.z, 'Quarry gift rack', /^Give to works$/), 'Quarry gift prompt');
+  await bot.straight(at.x, at.z, 0.8, 3000);
+  // The yard suppresses its prompts during the pickup flight.
+  hookCheck(
+    bot,
+    await bot.until(() => bin()?.verb === 'Give to works', 12000, 'Quarry pickup flight finished'),
+    'Quarry gift prompt',
+  );
+  bot.press();
   hookCheck(
     bot,
     await bot.until(() => R.railBack().carry === 0, 10000, 'Quarry deposit settles'),

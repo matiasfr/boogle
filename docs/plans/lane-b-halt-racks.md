@@ -37,4 +37,4 @@ The brief names two towns without catalogued yards. Step 1 limits the build to o
 
 The verified fixture replay preserves the 86 seed-stage ticks and the six streams of op labels and accepted results. The new saved account field changes hashes. The host still judges the existing yard reach and rail.haltPut shape.
 
-The [Pier board](lane-b-halt-racks/pier-works.png) shows Robin's eight Quarry logs aboard and zero of twenty delivered. This WebGPU capture starts from the accepted deposit and dispatch. The replay test follows the same route to the pour. The proof seed uses the existing Pier-seed builder with the Quarry as its source.
+In the [two-player Pier capture](lane-b-halt-racks/pier-works.png), the player named Second lifts eight ordinary logs from the Quarry bin and presses Give to works there after the pickup flight. Their friend sees Thanks · Second and 0 queued, 8 aboard at the Pier. Its bill still reads 0/20 logs. Both clients observed one named contributor and the dispatch. The replay and host tests follow the same route to the pour. The co-op seed places ordinary stock in the bin before Q7 opens.
