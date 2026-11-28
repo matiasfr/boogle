@@ -118,33 +118,26 @@ export default {
     await g.wait(0.2);
     t.check('Escape leaves the talk', await g.eval(`return document.querySelector('.bd').hidden;`));
 
-    await g.eval(`const { toyGround } = await import('/src/physics/toy-ground.ts');
-      const { respawnBall } = await import('/src/entities/ball/state.ts');
-      const { x, z } = toyGround.spawn; respawnBall(); ${TP('x', 'z + 0.9', 'toyGround.under(x,z) + 0.6')}`);
-    // Pin the loose ball within reach for the pick. A ball recalled above the court can bounce past the player.
-    const ballPrompt = await g.waitFor(
-      `(async()=>{ ${INV}
-      const { ball } = await import('/src/entities/ball/state.ts');
-      const { handPosition } = await import('/src/player/state.ts');
-      const { teleport } = await import('/src/physics/engine.ts');
-      const p = handPosition();
-      teleport(ball.body, p.x, p.y - 0.2, p.z);
-      ball.body.velocity.set(0, 0, 0);
-      ball.pose.p.copy(ball.body.position);
-      const target = H.interactTarget();
-      if (target?.id !== 'ball' || target.verb !== 'Grab') return false;
-      H.interactDown(); H.interactUp();
-      return I.heldId() === 'ball';
-    })()`,
-      { timeout: 20000 },
-    );
-    t.check('the shared ball offers Grab on the Round and the press picks it up', ballPrompt >= 0);
     const toss = await g.eval(`${INV}
-      const { ball } = await import('/src/entities/ball/state.ts');
+      const { toyGround } = await import('/src/physics/toy-ground.ts');
+      const { respawnBall, ball } = await import('/src/entities/ball/state.ts');
+      const { x, z } = toyGround.spawn; respawnBall();
+      // Stand clear of the return lever and place the loose ball at the player's feet on the green.
+      ${TP('x + 4', 'z', 'toyGround.under(x + 4,z) + 0.6')}
+      teleport(ball.body, x + 4, b.position.y + 0.35, z);
+      ball.body.velocity.set(0, 0, 0); ball.pose.p.copy(ball.body.position);
+      let grab = null;
+      H.onInteractPress((target, ran) => { if (ran) grab = [target.id, target.verb]; });
+      H.interactDown(); H.interactUp();
       const charging = H.useDown();
       const interacted = H.interactDown();
       H.interactUp(); H.useUp(); H.updateHands();
-      return { charging, interacted, held: I.heldId(), moving: Math.hypot(ball.body.velocity.x, ball.body.velocity.y, ball.body.velocity.z) > 0 };`);
+      return { grab, charging, interacted, held: I.heldId(), moving: Math.hypot(ball.body.velocity.x, ball.body.velocity.y, ball.body.velocity.z) > 0 };`);
+    t.check(
+      'the shared ball offers Grab on the Round and the press picks it up',
+      toss.grab?.[0] === 'ball' && toss.grab[1] === 'Grab',
+      JSON.stringify(toss),
+    );
     t.check(
       'Interact cannot take anything during a wind-up and release launches the ball',
       toss.charging && !toss.interacted && !toss.held && toss.moving,
