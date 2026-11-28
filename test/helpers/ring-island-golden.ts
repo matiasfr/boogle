@@ -448,6 +448,7 @@ export async function captureRingAfter() {
       mergeGeometries: merge,
       createOwnedView,
       instantiate: runtime.instantiate,
+      railwayWorldRead: () => null, // permanent island before Ring's room-picked plot opens
       definitions,
       loadLevelArtifact: validation.loadLevelArtifact,
       level: json('content/built/levels/ring-island.json'),

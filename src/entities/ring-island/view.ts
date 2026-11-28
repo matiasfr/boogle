@@ -61,6 +61,8 @@ import { RING_CROSSING, RING_MAP_TABLE, ringCrossingPlanks, ringIslandPose } fro
 import { addFarGround } from '../../place/far-ground.ts';
 import { ringPoints, ringStation } from './points.ts';
 import { createRingPlot } from './town-plots.ts';
+import { railwayWorldRead } from '../railway/state.ts';
+import { ringJoined } from '../../sim/railway-queries.ts';
 import { BRACKET_Z, CRADLE, HANGER, PLATE_BOTTOM, WEIGHT, WEIGHT_X } from './bracket.ts';
 import {
   LEAF_ORANGE,
@@ -735,7 +737,7 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   // ---------------------------------------------------------------- the furnishing's records
   // Instantiated off (no bodies) until the near view mounts: setMounted turns their solids on with the island's own.
   const owner = createOwnedView();
-  const hangout = createRingPlot(owner, g);
+  let hangout: ReturnType<typeof createRingPlot> | undefined;
   const records: ReturnType<typeof instantiate>[] = [];
   /** A world direction (x, z) from the halt's middle toward a world (x, z): where the branch read points. */
   const haltMid = at((HALT[0] + HALT[1]) / 2, FORM.mid);
@@ -1161,15 +1163,19 @@ export function createRingIslandView(g: IslandGround, cones: readonly Cone[], ce
   return {
     root,
     bodies: [...groundBodies, leafBody] as readonly Body[],
-    hearBell: hangout.incoming,
+    hearBell: () => hangout?.incoming(),
     clearPosition,
     /** The furnishing's solids come and go with the near view's own bodies (its meshes ride `root`). */
     setMounted(on: boolean) {
-      if (!on) hangout.hide();
+      if (!on) hangout?.hide();
       for (const record of records) record.setEnabled(on);
     },
     update(ctx: FrameCtx) {
-      hangout.update(ctx);
+      if (!hangout) {
+        const read = railwayWorldRead();
+        if (read?.ready() && ringJoined(read.world())) hangout = createRingPlot(owner, g);
+      }
+      hangout?.update(ctx);
       poseLeaf();
       const phase = ctx.elapsed % HAMMER.cycle;
       head.root.position.set(hammerBase.x, hammerBase.y + hammerLift(phase), hammerBase.z);

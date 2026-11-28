@@ -10,6 +10,7 @@ import { createService, loadConfig } from './helpers/accounts.ts';
 import { WORLD_NS, worldRoomId } from '../../src/world/namespace.ts';
 import { plot, till } from '../../src/sim/railway-rows.ts';
 import { townPlotBoard } from '../../src/place/town-plan.ts';
+import { RING_HANGOUT, ringAt } from '../../src/sim/railway-ring-layout.ts';
 import { RAILWAY_PLAY_NS, railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { COSMETIC_BOUND } from '../../src/sim/social.ts';
 import type { RailwayWorldHost } from '../src/host/world-host.ts';
@@ -593,6 +594,44 @@ test('relay: messages reach the others with from; oversize and host-only types d
     a.send({ t: 'hb', at: 7 });
     await a.next((m) => m.t === 'hb' && m.at === 7);
     assert.ok(!a.msgs.some(isWorld('w:rejected')), 'retired classic commands emit no receipt');
+    a.ws.close();
+    b.ws.close();
+  } finally {
+    await svc.close({ save: false });
+  }
+});
+
+test('Ring bell relays one nearby visible pull to the other client after construction', async (t) => {
+  const { svc, base } = await start({ SERVER_ROOMS: '*' });
+  const room = railwayRoomId('bell');
+  try {
+    const a = connect(base, room, 'ringer'),
+      b = connect(base, room, 'listener');
+    await Promise.all([a.next(is('list')), b.next(is('list'))]);
+    const world = svc.roomHost()!.room(room)!.world as RailwayWorldHost;
+    const rope = ringAt(RING_HANGOUT.u, RING_HANGOUT.lat);
+    const p = [rope.x / 100, RING_HANGOUT.floor / 100 + 1, rope.z / 100];
+    let seq = 0;
+    const pose = (v: number, at: number[]) => a.send({ t: 'p', s: ++seq, d: { v, p: at } });
+    const pull = (id = 16) => a.send({ t: 'm', d: { t: 'bell', id } });
+    pose(1, p);
+    pull();
+    await settle([a], [b]);
+    assert.equal(b.msgs.filter(isWorld('bell')).length, 0);
+    t.mock.method(world, 'hasBellhouse', () => true);
+    pose(0, p);
+    pull();
+    pose(1, [0, 0, 0]);
+    pull();
+    pose(1, p);
+    pull(0);
+    await settle([a], [b]);
+    assert.equal(b.msgs.filter(isWorld('bell')).length, 0);
+    pull();
+    pull();
+    await settle([a], [b]);
+    assert.deepEqual(b.msgs.filter(isWorld('bell')), [{ t: 'm', from: 'ringer', d: { t: 'bell', id: 16 } }]);
+    assert.equal(a.msgs.filter(isWorld('bell')).length, 0);
     a.ws.close();
     b.ws.close();
   } finally {

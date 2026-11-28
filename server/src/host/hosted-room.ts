@@ -333,6 +333,7 @@ export function createHostedRoom({
   function drop(c: Client, code: number) {
     clients.delete(c.id);
     poseAt.delete(c.id);
+    lastBell.delete(c.id);
     replication.removeClient(c.id);
     if (c.timer) clearTimeout(c.timer);
     for (const x of clients.values()) x.pending.delete(c.id);

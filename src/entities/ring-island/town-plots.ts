@@ -161,7 +161,8 @@ export function createRingPlot(owner: OwnedView, ground: IslandGround) {
     update(ctx: FrameCtx) {
       const read = railwayWorldRead();
       if (!read?.ready()) {
-        hide();
+        release();
+        targets.length = 0;
         return;
       }
       const w = read.world(),
