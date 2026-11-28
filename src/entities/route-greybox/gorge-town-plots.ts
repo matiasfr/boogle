@@ -120,16 +120,15 @@ export function createGorgeTownPlots(owner: OwnedView) {
   owner.cleanup(() => {
     for (const r of rings) gorgeHookRings.delete(r);
   });
+  const calls = new Set<{ from: string; start: number; beat: number }>();
   let echoed = -Infinity,
-    source = '',
-    beat = 0,
     sounded = false;
   function echo(from: string) {
     const now = performance.now();
-    canyonHorn(hornAt.x, hornAt.z, 0, now - echoed < 3000 && source !== from);
-    source = from;
+    const harmony = [...calls].some((call) => call.from !== from && now - call.start < 3000);
+    canyonHorn(hornAt.x, hornAt.z, 0, harmony);
+    calls.add({ from, start: now, beat: 0 });
     echoed = now;
-    beat = 0;
   }
   const limiter = createLimiter(1, 1500);
   onRoomReady((room) => {
@@ -221,17 +220,23 @@ export function createGorgeTownPlots(owner: OwnedView) {
       const touching = raft.visible && !!me.body && raft.position.distanceTo(me.body.position) < 2.3;
       if (touching && !sounded) bell(raft.position.x, raft.position.z);
       sounded = touching;
-      const age = (performance.now() - echoed) / 1000;
+      const now = performance.now();
+      const age = (now - echoed) / 1000;
       wave.visible = horn.visible && age < 3;
       if (wave.visible) {
         const side = Math.floor(age) % 2 === 0 ? 1 : -1;
         const p = gorgeAt(5, side * ((age % 1) * 90 - 45), 10);
         wave.position.copy(vec(p));
         wave.scale.setScalar(1 + age);
-        if (age >= (beat + 1) * 0.82 && beat < 3) {
-          beat++;
-          canyonHorn(p.x, p.z, beat, false);
+      }
+      for (const call of calls) {
+        const elapsed = now - call.start;
+        while (horn.visible && call.beat < 3 && elapsed >= (call.beat + 1) * 820) {
+          call.beat++;
+          const wall = gorgeAt(5, call.beat % 2 ? 45 : -45, 10);
+          canyonHorn(wall.x, wall.z, call.beat, false);
         }
+        if (!horn.visible || elapsed >= 3000) calls.delete(call);
       }
     },
   };
