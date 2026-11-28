@@ -9,10 +9,15 @@ export const ROUTE_LINES = {
   incline: line('bring kit from the rack to the incline railhead and lay the line to Bell Rock'),
   seeds: line('collect the crystal seeds on Bell Rock’s lower deck'),
   bay: line('build the bay cut to Bell Rock from the rack and frame at Home’s West landing'),
+  bayRailhead: line(
+    'take kit from the rack at the bay railhead and feed the frame there to extend the cut to Bell Rock',
+  ),
   canopyGate: line('open the Canopy barrier here with crystal seeds, or take the cave line from West landing first'),
   canopyOnly: line('the cave line is laid; use the seeds to open the Canopy barrier here'),
   canopy: line('carry kit to the bay line’s railhead and extend it to Canopy Town'),
-  plug: line('break the sea-cave plug here with the powered pick; the Canopy branch can be built independently'),
+  plug: line(
+    'break the sea-cave plug at West landing with the powered pick; the Canopy branch can be built independently',
+  ),
   cave: line('feed the sea-cave railhead from its rack and lay the line to Port Quay'),
   cloth: line('collect glider cloth beside the Canopy platform'),
   waitWall: line('the Notch frame opens once the White Wall line from Port Quay reaches High Gorge'),
@@ -45,7 +50,7 @@ export function routeGuideStage(area: RouteArea, w: ReadWorld, site: WorksSite):
     case 'bell':
       if (!done('incline-2')) return null;
       if (site === 'seeds') return 'seeds';
-      if (!done('bay-2')) return 'bay';
+      if (!done('bay-2')) return done('bay-1') ? 'bayRailhead' : 'bay';
       if (!done('canopy-gate')) return done('cave-3') ? 'canopyOnly' : 'canopyGate';
       if (!done('canopy-3')) return 'canopy';
       if (site === 'lantern') return 'lantern';
@@ -53,12 +58,14 @@ export function routeGuideStage(area: RouteArea, w: ReadWorld, site: WorksSite):
       return site === 'causeway-1' ? 'causeway' : 'idle';
     case 'west':
       if (!done('incline-2')) return null;
-      if (!done('bay-2')) return 'bay';
+      if (!done('bay-2')) return done('bay-1') ? 'bayRailhead' : 'bay';
       if (!done('plug-gate')) return 'plug';
       return done('cave-3') ? 'idle' : 'cave';
     case 'canopy':
       if (!done('canopy-3')) return null;
       if (!done('cloth')) return 'cloth';
+      if (!done('plug-gate')) return 'plug';
+      if (!done('cave-3')) return 'cave';
       if (!done('wall-6')) return 'waitWall';
       if (site === 'notch-gate') return 'notchGate';
       return site === 'notch-1' ? 'notch' : 'idle';

@@ -8,7 +8,7 @@ import { sourceModule } from '../dev/level/source.ts';
 import { WORKS_STEPS, roomWorks, type RoomWorks } from '../src/sim/railway-queries-room.ts';
 import * as giftReads from '../src/sim/railway-queries-gift.ts';
 import { advance, unaudited } from './helpers/rail.ts';
-import { RAIL_GATES, RAIL_LEGS } from '../src/sim/railway-route.ts';
+import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS } from '../src/sim/railway-route.ts';
 import { laySection, railwayAtLegs } from '../src/sim/railway-seed-legs.ts';
 import { act } from '../src/sim/railway-seed-route.ts';
 import { gorgeAt, GORGE_DECK } from '../src/entities/route-greybox/massing.ts';
@@ -1195,6 +1195,46 @@ test('West landing directs the cave crew to its plug while Bell Rock still holds
   const site = roomWorks(s.w).site;
   assert.equal(site, 'seeds');
   assert.equal(routeGuideStage('west', s.w as ReadWorld, site), 'plug');
+});
+
+function spokenDirection(area: Parameters<typeof routeGuideStage>[0], w: ReadWorld) {
+  const stage = routeGuideStage(area, w, roomWorks(w).site);
+  assert.ok(stage && stage !== 'idle');
+  return ROUTE_LINES[stage].talk[0]!;
+}
+
+test('West and Bell send crews to the bay railhead after the first section lays', () => {
+  const s = unaudited(railwayAtLegs('bay-open'));
+  const w = s.w as ReadWorld;
+  for (const area of ['west', 'bell'] as const) {
+    assert.match(spokenDirection(area, w), /West landing/);
+    checkGuideAim(w, area, 'bay-1', 'bay-1');
+  }
+  laySection(
+    s,
+    RAIL_LEGS.findIndex((leg) => leg.id === 'bay-cut'),
+  );
+  for (const area of ['west', 'bell'] as const) {
+    assert.match(spokenDirection(area, w), /bay railhead/);
+    assert.doesNotMatch(spokenDirection(area, w), /West landing/);
+    checkGuideAim(w, area, 'bay-2', 'bay-2');
+  }
+});
+
+test('Canopy sends a cloth-equipped crew to the plug and then the cave railhead until Port Quay opens', () => {
+  const s = unaudited(railwayAtLegs('canopy-reached'));
+  const w = s.w as ReadWorld;
+  assert.equal(act(s, 'a', 'rail.grant', { id: RAIL_GRANTS.findIndex((g) => g.id === 'cloth') }), 1);
+  assert.match(spokenDirection('canopy', w), /plug.*West landing/);
+  checkGuideAim(w, 'canopy', 'plug-gate', 'plug-gate');
+  assert.equal(act(s, 'a', 'rail.gate', { id: RAIL_GATES.findIndex((g) => g.id === 'plug') }), 1);
+  const cave = RAIL_LEGS.findIndex((leg) => leg.id === 'cave');
+  for (const site of ['cave-1', 'cave-2', 'cave-3'] as const) {
+    assert.match(spokenDirection('canopy', w), /cave railhead.*Port Quay/);
+    checkGuideAim(w, 'canopy', site, site);
+    laySection(s, cave);
+  }
+  assert.match(spokenDirection('canopy', w), /White Wall/);
 });
 
 test('Quay identifies the deep barrier while cloth is still waiting at Canopy', () => {

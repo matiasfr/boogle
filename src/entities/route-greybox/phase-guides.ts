@@ -37,6 +37,8 @@ const stations: readonly {
     at: { x: -68, y: 4.9, z: -844 },
     points: {
       seeds: 'seeds',
+      bay: 'bay-1',
+      bayRailhead: 'bay-1',
       canopyGate: 'canopy-gate',
       canopyOnly: 'canopy-gate',
       canopy: 'canopy-1',
@@ -50,7 +52,7 @@ const stations: readonly {
     color: '#467aab',
     pitch: 195,
     at: { x: 791, y: 4.9, z: -12 },
-    points: { bay: 'bay-1', plug: 'plug-gate', cave: 'cave-1' },
+    points: { bay: 'bay-1', bayRailhead: 'bay-1', plug: 'plug-gate', cave: 'cave-1' },
   },
   {
     area: 'canopy',
@@ -58,7 +60,14 @@ const stations: readonly {
     color: '#8a68b3',
     pitch: 245,
     at: { x: -1074, y: 13.9, z: -308.4 },
-    points: { cloth: 'cloth', waitWall: 'notch-gate', notchGate: 'notch-gate', notch: 'notch-1' },
+    points: {
+      cloth: 'cloth',
+      plug: 'plug-gate',
+      cave: 'cave-1',
+      waitWall: 'notch-gate',
+      notchGate: 'notch-gate',
+      notch: 'notch-1',
+    },
   },
   {
     area: 'quay',
