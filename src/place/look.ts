@@ -15,6 +15,7 @@ import {
   normalView,
   normalViewGeometry,
   positionGeometry,
+  positionLocal,
   positionWorld,
   reflectVector,
   sin,
@@ -30,6 +31,8 @@ import {
 import { flat } from '../render/flat.ts';
 import { dressBundleLogs } from '../render/haul-bundle.ts';
 import { patchNode } from '../render/material-patch.ts';
+import { crownPosition } from '../render/wind.ts';
+import { reducedMotion } from '../constants.ts';
 import { readableUnlit } from '../render/readable-unlit.ts';
 import { woodGrain } from '../render/wood.ts';
 import type { OwnedView } from '../render/owned-view.ts';
@@ -67,7 +70,12 @@ export function selectiveColour(base: N, family: 'grass' | 'green' | 'timber' | 
 
 /** A tree part owns its pigment patch; flat() materials are shared and stay untouched. */
 export function treeMaterial(color: string, family: 'green' | 'timber') {
-  return patchNode(flat(color).clone(), 'colorNode', (previous) => selectiveColour(previous ?? materialColor, family));
+  const mat = patchNode(flat(color).clone(), 'colorNode', (previous) =>
+    selectiveColour(previous ?? materialColor, family),
+  );
+  if (family === 'green' && !reducedMotion)
+    patchNode(mat, 'positionNode', (previous) => crownPosition(previous ?? positionLocal));
+  return mat;
 }
 
 // ---------------------------------------------------------------- ground: smooth grass, faceted rock

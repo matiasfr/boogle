@@ -1,5 +1,7 @@
 # 6.18 Graphics and devices
 
+- Home's tree crowns sway together as a slow breeze crosses the ridge. Trunks stay planted. Low Detail retains the sway and reduced motion keeps crowns still.
+
 - **Production frozen sky.** Place and crossing use the [graduated water](water.md) and its one-bake
   late-morning summer sky (owner, 6 November; original cumulus art, no flag) at `tod=0.24`, with metered Neutral. The cube supplies background, directional fog,
   environment and hemisphere fill, with the matching real sun and shadows. Live tuning and Looks remain.

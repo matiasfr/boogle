@@ -448,6 +448,9 @@ The owner confirmed start-flow calls 7 to 9 on 28 November: [archived calls](dec
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 2026-11-28 | Default: crown tips travel up to 0.24 m each way over a four-second cycle. | [Living world](plans/living-world.md) | Builder | Neighbouring trees share a slow gust while the trunks hold still. | open |
+| 2026-11-28 | Default: first grass on the Camp path verge. | [Living world](plans/living-world.md) | Builder | The walk puts blades and crowns in one view. | open |
+| 2026-11-28 | Default: low Detail keeps crown motion, skips grass and thins puffs. Reduced motion stills foliage and skips ambient puffs. | [Living world](plans/living-world.md) | Builder | Keep the cheap silhouette and reduce optional movement. | open |
 | 2026-11-27 | Default: card 5 dresses the resident quay edges, not new freight buildings, until the town design. | [Port Quay card](plans/greybox-look.md) | Builder | The playable quay hides the distant harbour and keeps its town reserve empty. | open |
 | 2026-11-27 | Default: use the existing arrival landmark as the strongest local contrast in each route area, starting with the first Stack crown from Ring. | [Greybox look build cards](plans/greybox-look.md) | Design | Reversible pigment, foliage and kit placement keeps the freight edge and next stop readable. | open |
 | 2026-11-24 | Default: the landing's walk becomes graded ground (`coveGround`) carrying the cove face end's 1.7 m surface; nothing of the kit stands on it | [cliff-kit-everywhere](plans/cliff-kit-everywhere.md#design-review-revised-2026-11-24) | Cliff kit plan revision, design review | the 14 November walkable-ground rule; the landing keeps its footing once the sculpted face goes | open |
