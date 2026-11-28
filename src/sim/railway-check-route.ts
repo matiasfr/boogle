@@ -16,7 +16,8 @@ import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { LINE2, RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, RAIL_YARDS } from './railway-route.ts';
 import { Account, LegYard, Rail, Train } from './railway-components.ts';
-import { CAST, giftInTransit, giverList, rideableLogs, thanksStep } from './railway-queries-gift.ts';
+import { CAST, giftInTransit, giverList, QUARRY_YARD, rideableLogs, thanksStep } from './railway-queries-gift.ts';
+import { haltYardStock } from './railway-queries-yard.ts';
 import {
   SERVED_LEGS,
   STOCKED_LEGS,
@@ -79,12 +80,15 @@ export function checkRoute(w: World) {
   let queued = 0,
     stone = 0;
   let accounts = 0;
+  let quarry = 0;
   w.each([Account], (_id, a) => {
     queued += a.queuedGift;
+    quarry += a.quarryGift;
     stone += a.queuedStone;
     accounts++;
     if (
       !railInt(a.queuedGift) ||
+      !railInt(a.quarryGift) ||
       !railInt(a.queuedStone) ||
       !railInt(a.thanks, thanksMax) ||
       (a.workThanks & ~62) !== 0 ||
@@ -100,6 +104,7 @@ export function checkRoute(w: World) {
     }
   });
   if (queued > rideableLogs(w) || stone > w.get(Rail, w.single(Rail))!.stoneRack) bad('queued gift attribution');
+  if (quarry > haltYardStock(w, QUARRY_YARD, 0)) bad('Quarry gift attribution');
   RAIL_LEGS.forEach((leg, k) => {
     const row = legRow(w, k);
     if (row.heldLogs !== lifts[k]!.logs || row.heldRails !== lifts[k]!.rails) bad('leg held');

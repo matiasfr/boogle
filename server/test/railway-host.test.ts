@@ -38,6 +38,36 @@ import { TRAIN_PHASE, trainArrives } from '../../src/sim/railway-train.ts';
 
 type Obj = Record<string, unknown>;
 
+test('only a guest at the Quarry bin can reserve its timber for the Pier', async () => {
+  const f = await fixture(railwayRoomId('quarry-pier-gift'), 600000);
+  try {
+    const seed = buildSeedWorld('crossing-done');
+    while (f.host.sync.world.tick < seed.t) f.host.step(0.1);
+    await f.host.sync.whenDurable();
+    f.world().load(seed.w.snapshot(), railwayCheck);
+    f.host.rules.railway.touchAll();
+    await f.open('a');
+    const epoch = await f.open('b');
+    await f.harvest('b', 8, epoch);
+    const qty = f.host.rules.railway.account('bob')!.carry;
+    const put = { op: 'rail.haltPut', yard: QUARRY_YARD, kind: 0 };
+    f.pose('b', HALT_YARDS[0]!.x, HALT_YARDS[0]!.z);
+    assert.equal((await f.edit('b', put, epoch)).status, 'rejected');
+    f.pose('b', HALT_YARDS[QUARRY_YARD]!.x, HALT_YARDS[QUARRY_YARD]!.z);
+    assert.equal((await f.edit('b', put, epoch)).accepted, qty);
+    railwayCheck(f.world());
+    assert.deepEqual(worksThanks(f.world(), 3), ['bob']);
+    for (let tick = 0; qjob(f.world(), 6).stock !== qty; tick++) {
+      assert.ok(tick < 8000);
+      await f.step(1);
+    }
+    railwayCheck(f.world());
+    assert.deepEqual(worksThanks(f.world(), 3), ['bob']);
+  } finally {
+    await f.close();
+  }
+});
+
 test('a guest gives to the open incline through the host from the Village yard', async () => {
   const f = await fixture(railwayRoomId('yard-leg-gift'));
   try {

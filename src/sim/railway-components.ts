@@ -305,6 +305,7 @@ export const Account = defineComponent(
     thanks: 'u8',
     workThanks: 'u8',
     queuedGift: 'int',
+    quarryGift: 'int',
     queuedStone: 'int',
     legLogs: 'u8',
     legRails: 'u8',

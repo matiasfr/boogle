@@ -48,4 +48,6 @@ At Canopy the homeward deck holds the cloth and the Notch board. Bell Rock's low
 
 Before the High Gorge legs, the same Village rack sends logs to Far Head for Q6, the Pier for Q7, the island steel yard or the Quarry bin for the kiln. The kiln has first claim while it needs timber. Gifted logs pour into Q6, Q7 and steel on arrival. Players carry unlit-kiln timber from its rack. Four donated logs or four donated stone at the lit kiln can cast one of its 32 footings early if the six-slot rack has room. A load the frame can no longer use returns to the Village.
 
+Once the crossing opens, the Quarry log bin flies the works pennant while Q7 needs timber. Leaving logs there reserves a pickup on the outward train. The Pier board shows the same giver, queued load and aboard load as the Quarry board. Anyone can retrieve the timber until the train loads it.
+
 Logs given at the Village ride line 2 to High Gorge. When the first incline frame is there, its train pours into the log bill on arrival. For the second incline section and the causeway at Bell Rock, the logs wait in the Gorge yard for a north–south kit car. A friend can feed the frame while the bundle travels. The train pours only what the bill still needs, and a full section waits for its barrier to open.

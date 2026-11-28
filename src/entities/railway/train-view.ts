@@ -1445,7 +1445,9 @@ export async function createRailwayTrains(
           !skipGiftFlights &&
           tr.last &&
           row.workLogs + row.workStone !== (tr.last.workLogs ?? 0) + (tr.last.workStone ?? 0) &&
-          (row.at === 0 || row.at === (tr.last.workStop === 4 ? 1 : tr.last.workStop))
+          (row.at === 0 ||
+            (row.at === 1 && row.workStop === 3) ||
+            row.at === (tr.last.workStop === 4 ? 1 : tr.last.workStop))
         ) {
           workGiftTrip(
             owner,

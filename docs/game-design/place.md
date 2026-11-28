@@ -221,6 +221,8 @@ All motion and sparkle are Local; accepted contacts still own harvest sounds, ch
 
 Village log gifts can also ride Line 2 to the open kiln, Q6, Q7 or the Ring Island steel works. The station board names contributors to the displayed bill and shows how much timber is queued or aboard. At Q6, Q7 and the Ring Island steel works, donated logs fill the log bill on arrival. Players feed ordinary kit and the unlit kiln by hand. At the lit kiln, four gifted logs or four gifted stone can make one early footing. Players carry, haul and set it as usual.
 
+A guest working at Quarry can also send logs from its existing yard to Q7 at the Pier. The shared station boards acknowledge the giver from deposit through delivery.
+
 Village rail gifts ride the kit train to an open leg frame. Once its log bill is full, the lit Home forge casts one rail per pair of gifted logs for the remaining rail seats. The train loads donated rails first. On arrival it feeds only the missing rails and takes spare gifts home to the Village rail bin.
 
 ## The place

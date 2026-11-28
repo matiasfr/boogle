@@ -252,7 +252,7 @@ export const rackTake = defineSystem(
         donated += row.queuedStone;
       });
       const picked = Math.max(0, n - (rail.stoneRack - donated));
-      if (picked) takeGivers(w, picked, () => {}, true);
+      if (picked) takeGivers(w, picked, () => {}, 'queuedStone');
       rail.stoneRack -= n;
       a.stone += n;
       return n;

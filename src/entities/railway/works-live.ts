@@ -22,6 +22,7 @@ import { createStationGuides } from './station-guides.ts';
 import { createRouteGuides } from '../route-greybox/phase-guides.ts';
 import {
   giftQueued,
+  quarryQueued,
   giftInTransit,
   giftRides,
   worksThanks,
@@ -94,7 +95,7 @@ export async function createRailwayWorksLive(
               .filter((name): name is string => !!name)
               .slice(0, 6)
           : [];
-      const queued = stop > 0 ? workQueued(world, stop) : 0;
+      const queued = stop > 0 ? workQueued(world, stop) + (stop === 3 ? quarryQueued(world) : 0) : 0;
       const aboard = stop > 0 ? workAboard(world, stop, false) : 0;
       const rails = giftInTransit(world, 'giftRails');
       updateBoard(

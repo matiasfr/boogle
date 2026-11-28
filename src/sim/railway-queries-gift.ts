@@ -94,6 +94,22 @@ export function workNeed(w: World, stop: number) {
   const room = workRoom(w, stop);
   return room ? Math.max(0, room - workAboard(w, stop, false)) : 0;
 }
+/** The Quarry's marked timber belongs to Q7 alone. Unmarked recovery and kiln timber stay in the bin. */
+export function quarryMarked(w: World) {
+  let qty = 0;
+  w.each([Account], (_id, a) => {
+    qty += a.quarryGift;
+  });
+  return qty;
+}
+export function quarryQueued(w: World) {
+  const need = workNeed(w, 3);
+  return need && Math.min(need, quarryMarked(w));
+}
+export function quarryRoom(w: World) {
+  const need = workNeed(w, 3);
+  return need && Math.max(0, need - quarryMarked(w));
+}
 export function workDestination(w: World) {
   // The kiln precedes Q6 on the board. Both can receive logs after the throat opens.
   if (workNeed(w, 1)) return 1;
@@ -113,7 +129,12 @@ export function rideableLogs(w: World) {
 export function workQueued(w: World, stop: number, stock = stop === 1 ? rideableLogs(w) : donated(w)) {
   if (stop === CAST) return castBatch(w).n;
   const available = stop === 1 ? stock : Math.max(0, stock - workNeed(w, 1));
-  return Math.min(available, workNeed(w, stop));
+  return Math.min(available, stop === 3 ? quarryRoom(w) : workNeed(w, stop));
+}
+/** A new Quarry offer can claim only the share not already announced at either yard. */
+export function quarryOffer(w: World) {
+  const room = quarryRoom(w);
+  return room && room - workQueued(w, 3);
 }
 export function railGiftRides(w: World) {
   return GIFT_LEGS.some((k) => giftPourRoom(w, k, 'giftRails') > 0);
@@ -127,7 +148,8 @@ export function giftRides(w: World, stone = false) {
   const rail = w.get(Rail, w.single(Rail))!;
   if (rail.trains >= 0) {
     const kit = kitJob(w);
-    const demand = workNeed(w, 1) + workNeed(w, kit < 0 ? 5 : LINE2_STATIONS[kit]!.kitStop!);
+    const stop = kit < 0 ? 5 : LINE2_STATIONS[kit]!.kitStop!;
+    const demand = workNeed(w, 1) + (stop === 3 ? quarryRoom(w) : workNeed(w, stop));
     if (castRoom(w) > workAboard(w, CAST, false)) return true;
     if (demand) return donated(w) < demand;
   }
@@ -174,10 +196,9 @@ export function takeGivers(
   w: World,
   count: number,
   take: (aid: number, index: number, n: number) => void,
-  stone = false,
+  key: 'queuedGift' | 'queuedStone' | 'quarryGift' = 'queuedGift',
   reserved = 0,
 ) {
-  const key = stone ? 'queuedStone' : 'queuedGift';
   let index = 0;
   w.each([Account], (aid, a) => {
     const keep = Math.min(reserved, a[key]);
@@ -211,14 +232,27 @@ export function worksThanks(w: World, stop = 0) {
       if (t.workStop === stop) for (const giver of giverList(t.workGivers)) aboard.add(giver);
     });
   const batch = stop === CAST ? castBatch(w) : { n: 0, stone: false };
-  const demand = stop === CAST ? batch.n : stop ? workNeed(w, stop) : workDestination(w) ? 0 : giftQueued(w);
+  const demand =
+    stop === CAST
+      ? batch.n
+      : stop === 3
+        ? quarryRoom(w)
+        : stop
+          ? workNeed(w, stop)
+          : workDestination(w)
+            ? 0
+            : giftQueued(w);
+  let local = stop === 3 ? quarryQueued(w) : 0;
   const first = stop && stop !== 1 ? workNeed(w, 1) : 0;
   let queued = 0;
   let index = 0;
   w.each([Account], (_id, a) => {
     const end = queued + (stop === CAST && batch.stone ? a.queuedStone : a.queuedGift);
     const waiting = demand > 0 && end > queued && end > first && queued < first + demand;
-    if (waiting || aboard.has(index) || (stop ? a.workThanks & (1 << stop) : a.thanks === step)) pids.push(a.pid);
+    const here = Math.min(local, a.quarryGift);
+    local -= here;
+    if (here || waiting || aboard.has(index) || (stop ? a.workThanks & (1 << stop) : a.thanks === step))
+      pids.push(a.pid);
     queued = end;
     index++;
   });

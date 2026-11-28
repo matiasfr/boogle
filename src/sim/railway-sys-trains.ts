@@ -78,6 +78,8 @@ import {
   donated,
   workHalt,
   QUARRY_YARD,
+  quarryQueued,
+  quarryRoom,
   giverList,
   rideableLogs,
   takeGivers,
@@ -198,6 +200,7 @@ function serviceOf(w: World, slot: number, r: Readonly<Row<typeof Train>>, tick:
   if (RAIL_TRAINS[slot]!.line !== LINE2) return freight;
   return (k, dir) =>
     freight(k, dir) ||
+    (k === 1 && dir > 0 && quarryCarrier(r) && quarryQueued(w) > 0) ||
     (r.workStop !== 0 && (k === workHalt(r.workStop) || k === 0)) ||
     (k === 0 && dir < 0 && (rideableLogs(w) > 0 || w.get(Rail, railId(w))!.stoneRack > 0) && workDestination(w) > 0) ||
     (k === 0 && dir < 0 && kitOwed(w, r)) ||
@@ -206,6 +209,9 @@ function serviceOf(w: World, slot: number, r: Readonly<Row<typeof Train>>, tick:
     (k === 3 && footCarrier(w, r, tick) && r.foot > 0 && !q7Laid(w)) ||
     (k === 4 && dir > 0 && footCarrier(w, r, tick) && r.foot > 0) ||
     steelService(w, r, k, dir);
+}
+function quarryCarrier(r: Readonly<Row<typeof Train>>) {
+  return !r.legKit && !r.workStop && !r.freight && !r.steel && !deckHeld(r) && r.logs < LINE2_KIT.logs;
 }
 /** The rows a moved end or stop rewrites (endMoved, stopMoved in ./railway-trains.ts), over the world's Train rows and
  * open stops (read after the change that moved them). */
@@ -348,30 +354,33 @@ function trainIO(
       }
       // The active train-fed job's kit (its bill, up to the kit car's LINE2_KIT) loads onto whichever line 2 train
       // stands at the village while it is owed.
+      const quarry = r.at === 1 && trainDir(r) > 0 && quarryCarrier(r) && quarryQueued(w) > 0;
       if (
-        r.at === 0 &&
+        (r.at === 0 || quarry) &&
         !r.legKit &&
         !r.workStop &&
         !r.freight &&
         !r.steel &&
         !deckHeld(r) &&
-        (w.get(Rail, railId(w))!.rack || w.get(Rail, railId(w))!.stoneRack)
+        (quarry || w.get(Rail, railId(w))!.rack || w.get(Rail, railId(w))!.stoneRack)
       ) {
-        const stop = workDestination(w);
+        const stop = quarry ? 3 : workDestination(w);
         const rail = w.mut(Rail, railId(w))!;
         const batch = stop === CAST ? castBatch(w) : { n: 0, stone: false };
-        const n =
-          stop === CAST
+        const n = quarry
+          ? Math.min(quarryQueued(w), LINE2_KIT.logs - r.logs)
+          : stop === CAST
             ? Math.min(batch.n, 4 * Math.floor((LINE2_KIT.logs - r.logs) / 4))
             : stop
               ? Math.min(
                   stop === 1 ? rideableLogs(w) : donated(w),
                   stop === 1 ? LINE2_KIT.logs - r.logs : LINE2_KIT.logs,
-                  workNeed(w, stop),
+                  stop === 3 ? quarryRoom(w) : workNeed(w, stop),
                 )
               : 0;
         if (n > 0) {
-          if (batch.stone) rail.stoneRack -= n;
+          if (quarry) w.mut(HaltYard, w.lookup(HaltYard, QUARRY_YARD)!)!.logs -= n;
+          else if (batch.stone) rail.stoneRack -= n;
           else rail.rack -= n;
           const car = w.mut(Train, trainId(w, slot))!;
           car.workStop = stop;
@@ -383,7 +392,7 @@ function trainIO(
             (_aid, index, count) => {
               car.workGivers += index.toString(16).padStart(2, '0').repeat(count);
             },
-            batch.stone,
+            quarry ? 'quarryGift' : batch.stone ? 'queuedStone' : 'queuedGift',
           );
           const displaced = Math.max(0, car.logs + n - LINE2_KIT.logs);
           // Cancel displaced kit at its mint before departure, as for a full leg carrier.
@@ -399,7 +408,8 @@ function trainIO(
       if (!deckHeld(r) && r.at === 0 && kit >= 0 && w.get(QJob, qjobId(w, kit))!.start < 0) {
         const need = depotNeed(w, kit, w.get(QJob, qjobId(w, kit))!);
         // Gifts for a different stop need another car. Mint only the Q kit that the queued timber cannot cover.
-        const queued = w.get(Rail, railId(w))!.rack ? workQueued(w, LINE2_STATIONS[kit]!.kitStop!) : 0;
+        const stop = LINE2_STATIONS[kit]!.kitStop!;
+        const queued = workQueued(w, stop) + (stop === 3 ? quarryQueued(w) : 0);
         const n = Math.min(LINE2_KIT.logs - r.logs - r.workStone, Math.max(0, need.logs - queued));
         const rails = Math.min(LINE2_KIT.rails - r.rails, need.rails, w.get(Forge, forgeId(w))!.rack);
         if (n || rails) {

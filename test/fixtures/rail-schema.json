@@ -660,6 +660,10 @@
      "int"
     ],
     [
+     "quarryGift",
+     "int"
+    ],
+    [
      "queuedStone",
      "int"
     ],

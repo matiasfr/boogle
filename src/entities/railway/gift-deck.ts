@@ -26,7 +26,12 @@ export function workGiftTrip(
   quarry: () => THREE.Vector3,
   depot: (k: number, out: THREE.Vector3) => THREE.Vector3,
 ) {
-  if (row.phase !== TRAIN_PHASE.STAND || reducedMotion || (delta > 0 && row.at !== 0)) return;
+  if (
+    row.phase !== TRAIN_PHASE.STAND ||
+    reducedMotion ||
+    (delta > 0 && row.at !== 0 && !(row.at === 1 && row.workStop === 3))
+  )
+    return;
   const deck = bundle.getWorldPosition(new THREE.Vector3());
   const rack =
     row.at === 0

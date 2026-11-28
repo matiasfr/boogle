@@ -29,7 +29,7 @@ import { balanceOf, railId, roomOf, STONE } from './railway-queries.ts';
 import { haltYardId, haltYardServes, nearestOpenYard, onRack, yardKey } from './railway-queries-yard.ts';
 import { credit, pickedUp, putDown } from './railway-sys-line1.ts';
 import type { Act } from './railway-sys-core.ts';
-import { railGiftRides, thank } from './railway-queries-gift.ts';
+import { QUARRY_YARD, quarryMarked, quarryOffer, railGiftRides, takeGivers, thank } from './railway-queries-gift.ts';
 import { RAILS } from './railway-line2-layout.ts';
 import { VILLAGE_YARD } from './railway-yard-layout.ts';
 
@@ -54,6 +54,10 @@ export const haltPut = defineSystem(
     if (!haltYardServes(w, 'put', e.yard, kind)) return 0;
     const n = balanceOf(w.get(Account, aid)!, kind!);
     if (n <= 0) return 0;
+    if (e.yard === QUARRY_YARD && kind === 0) {
+      const gift = Math.min(n, quarryOffer(w));
+      w.mut(Account, aid)!.quarryGift += gift;
+    }
     if (e.yard === VILLAGE_YARD && kind === 0) {
       w.mut(Account, aid)!.queuedGift += n;
     }
@@ -84,6 +88,10 @@ export const haltTake = defineSystem(
     const n = Math.min(w.get(HaltYard, id)![key], roomOf(w, w.get(Account, aid)!, kind!));
     if (n <= 0) return 0;
     w.mut(HaltYard, id)![key] -= n;
+    if (e.yard === QUARRY_YARD && kind === 0) {
+      const released = quarryMarked(w) - w.get(HaltYard, id)!.logs;
+      if (released > 0) takeGivers(w, released, () => {}, 'quarryGift');
+    }
     credit(w.mut(Account, aid)!, kind!, n);
     pickedUp(w, aid, kind!, n);
     return n;

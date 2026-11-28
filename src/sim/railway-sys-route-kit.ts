@@ -275,7 +275,7 @@ function loadPour(w: World, slot: number, line: number) {
         const rail = w.mut(Rail, w.single(Rail))!;
         rail.rack -= cast * 2;
         rail.convertedRails += cast;
-        takeGivers(w, cast * 2, (aid) => thank(w, aid), false, reserved);
+        takeGivers(w, cast * 2, (aid) => thank(w, aid), 'queuedGift', reserved);
       }
       w.mut(Forge, w.single(Forge))!.rack += marked - added;
       const m = w.mut(Train, id)!;
@@ -295,7 +295,7 @@ function loadPour(w: World, slot: number, line: number) {
   m.logs += added;
   m.gift += gift;
   m.legKit = true;
-  takeGivers(w, gift, (aid) => thank(w, aid), false, reserved);
+  takeGivers(w, gift, (aid) => thank(w, aid), 'queuedGift', reserved);
   rail.rack -= gift;
   rail.giftOut += gift;
   rail.depotProduced -= gift - added;

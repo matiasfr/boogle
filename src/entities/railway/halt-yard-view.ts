@@ -32,7 +32,7 @@ import { outOf } from '../../place/sites.ts';
 import { leaveLoad } from './back-down.ts';
 import { yardFlights, type YardSources, type Bin } from './halt-yard-flights.ts';
 import { createPennant } from './works-signal.ts';
-import { giftRides, railGiftRides } from '../../sim/railway-queries-gift.ts';
+import { giftRides, QUARRY_YARD, quarryOffer, railGiftRides } from '../../sim/railway-queries-gift.ts';
 import { yardRecoveries } from './halt-yard-recovery.ts';
 
 type Box = import('../../render/boxes.ts').Box;
@@ -122,6 +122,11 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView,
   pennant.position.copy(sources.villageBins[LOGS]!);
   pennant.position.x -= 0.65;
   pennant.visible = false;
+  const quarryPennant = createPennant(owner);
+  quarryPennant.scale.copy(pennant.scale);
+  quarryPennant.position.copy(bays.find((bay) => bay.k === QUARRY_YARD)!.at[LOGS]!);
+  quarryPennant.position.x -= 0.65;
+  quarryPennant.visible = false;
   const railBase = sources.villageBins[RAILS]!;
   // Use the same short bearers and legs as the out-halt shelf.
   const shelfStart = boxes.length;
@@ -213,6 +218,7 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView,
     const w = adapter.read.world(),
       p = me.body?.position;
     pennant.visible = giftRides(w) || railGiftRides(w);
+    quarryPennant.visible = quarryOffer(w) > 0;
     recover(w);
     for (const pointer of pointers) {
       const shown = pointer.yard === 0 ? forge(w).used >= LINE2_FORGE.logs : haltYardOpen(w, pointer.yard);
@@ -322,10 +328,11 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView,
             id,
             at,
             verb:
-              bay.k === 0 &&
-              mine![kind] > 0 &&
-              (((kind === LOGS || kind === STONE) && giftRides(w, kind === STONE)) ||
-                (kind === RAILS && railGiftRides(w)))
+              (bay.k === QUARRY_YARD && kind === LOGS && mine![kind] > 0 && quarryOffer(w) > 0) ||
+              (bay.k === 0 &&
+                mine![kind] > 0 &&
+                (((kind === LOGS || kind === STONE) && giftRides(w, kind === STONE)) ||
+                  (kind === RAILS && railGiftRides(w))))
                 ? 'Give to works'
                 : 'Leave it here', // draft, for the owner (docs/plans/halt-yard.md, question 3)
             run: () => {

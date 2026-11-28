@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { act, advance, buildSeedWorld, chopTo, unaudited } from './helpers/rail.ts';
+import { act, advance, buildSeedWorld, chopTo, railSession, unaudited } from './helpers/rail.ts';
 import { account, boiler, cart, qjob, rail, rocks, steel, trains, works, worksClock } from '../src/sim/railway-rows.ts';
 import { CART_PHASE } from '../src/sim/railway-cart.ts';
 import { castBatch, workAboard, workNeed } from '../src/sim/railway-queries-gift.ts';
@@ -11,7 +11,7 @@ import { RAIL_LEGS } from '../src/sim/railway-route.ts';
 import type { Seed } from '../src/sim/railway-seed-route.ts';
 import { haltYardStock } from '../src/sim/railway-queries-yard.ts';
 
-import { Account, Leg, LegYard, Rail, Route, Train } from '../src/sim/railway-components.ts';
+import { Account, HaltYard, Leg, LegYard, Rail, Route, Train } from '../src/sim/railway-components.ts';
 import {
   giftBillId,
   legId,
@@ -75,6 +75,115 @@ function beforeFirstKit() {
   assert.equal(workNeed(s.w, 2), 32);
   return s;
 }
+
+test('Quarry withdrawal releases its Q7 reservation without spending Home timber', () => {
+  const s = unaudited(buildSeedWorld('crossing-done'));
+  chopTo(s, 'b', 8);
+  const n = act(s, 'b', 'rail.haltPut', { yard: 2, kind: 0 });
+  railwayCheck(s.w);
+  assert.ok(n >= 8);
+  assert.deepEqual(worksThanks(s.w, 3), ['b']);
+  assert.equal(act(s, 'b', 'rail.haltTake', { yard: 2, kind: 0 }), n);
+  railwayCheck(s.w);
+  assert.deepEqual(worksThanks(s.w, 3), []);
+});
+
+test('both yards compete for the last Q7 logs and preserve the other gifts for Home', () => {
+  const s = unaudited(buildSeedWorld('crossing-done'));
+  railSession(s.w, 'c', 1);
+  chopTo(s, 'c', 8);
+  assert.equal(act(s, 'c', 'rail.deposit', { station: 'Q7', kind: 0, n: 8 }), 8);
+  railwayCheck(s.w);
+  const homeFirst = unaudited(s);
+  give(homeFirst);
+  railwayCheck(homeFirst.w);
+  chopTo(homeFirst, 'b', 8);
+  const offered = act(homeFirst, 'b', 'rail.haltPut', { yard: 2, kind: 0 });
+  railwayCheck(homeFirst.w);
+  assert.equal(account(homeFirst.w, 'b')!.quarryGift, 4);
+  assert.equal(account(homeFirst.w, 'a')!.queuedGift, 8);
+  assert.deepEqual(worksThanks(homeFirst.w, 3).sort(), ['a', 'b', 'c']);
+  // This back has room for exactly the ordinary excess. The four marked units must survive pickup.
+  const excess = offered - 4;
+  chopTo(homeFirst, 'c', 16);
+  assert.equal(act(homeFirst, 'c', 'rail.drop', { kind: 0, n: excess, x: 100000, y: 2000, z: 3000 }), excess);
+  railwayCheck(homeFirst.w);
+  assert.equal(act(homeFirst, 'c', 'rail.haltTake', { yard: 2, kind: 0 }), excess);
+  railwayCheck(homeFirst.w);
+  assert.equal(account(homeFirst.w, 'b')!.quarryGift, 4);
+  assert.equal(account(homeFirst.w, 'a')!.queuedGift, 8);
+  chopTo(s, 'b', 8);
+  const quarry = act(s, 'b', 'rail.haltPut', { yard: 2, kind: 0 });
+  railwayCheck(s.w);
+  give(s);
+  railwayCheck(s.w);
+  for (let i = 0; qjob(s.w, 6).stock !== 20; i++) {
+    assert.ok(i < 12000);
+    advance(s, 1);
+    railwayCheck(s.w);
+  }
+  assert.ok(quarry >= 8);
+  assert.deepEqual(worksThanks(s.w, 3).sort(), quarry >= 12 ? ['b', 'c'] : ['a', 'b', 'c']);
+});
+
+test('Quarry timber reaches the Pier after restore with Home and cast stock kept separate', () => {
+  const s = unaudited(buildSeedWorld('crossing-done'));
+  chopTo(s, 'b', 8);
+  const n = act(s, 'b', 'rail.haltPut', { yard: 2, kind: 0 });
+  railwayCheck(s.w);
+  const home = rail(s.w).rack;
+  for (let ticks = 0; !workAboard(s.w, 3); ticks++) {
+    assert.ok(ticks < 8000);
+    advance(s, 1);
+    railwayCheck(s.w);
+  }
+  assert.equal(workAboard(s.w, 3), n);
+  const race = unaudited(s);
+  while (qjob(race.w, 6).stock < 20) {
+    chopTo(race, 'a', 8);
+    assert.ok(act(race, 'a', 'rail.deposit', { station: 'Q7', kind: 0, n: 8 }) > 0);
+    railwayCheck(race.w);
+  }
+  for (let i = 0; workAboard(race.w, 3); i++) {
+    assert.ok(i < 8000);
+    advance(race, 1);
+    railwayCheck(race.w);
+  }
+  assert.deepEqual(worksThanks(race.w, 3), ['a']);
+  assert.equal(rail(race.w).rack, home + n);
+  // The same outward stand, with the gift still waiting and its car already full of ordinary kit.
+  const full = unaudited(s);
+  const slot = trains(full.w).find((r) => r.workStop === 3)!.slot;
+  const car = full.w.mut(Train, full.w.lookup(Train, slot)!)!;
+  const minted = 32 - (car.logs - n);
+  const output = full.w.mut(Rail, full.w.single(Rail))!;
+  output.out6 -= n;
+  output.out5 += minted;
+  output.depotProduced += minted;
+  car.logs = 32;
+  car.workLogs = car.workStop = 0;
+  car.workGivers = '';
+  full.w.mut(HaltYard, full.w.lookup(HaltYard, 2)!)!.logs += n;
+  full.w.mut(Account, full.w.lookup(Account, 'b')!)!.quarryGift = n;
+  railwayCheck(full.w);
+  advance(full, 1);
+  railwayCheck(full.w);
+  assert.equal(account(full.w, 'b')!.quarryGift, n);
+  assert.equal(workAboard(full.w, 3), 0);
+  assert.deepEqual(worksThanks(full.w, 3), ['b']);
+  const restored = unaudited(s);
+  for (let ticks = 0; workAboard(s.w, 3); ticks++) {
+    assert.ok(ticks < 8000);
+    advance(s, 1);
+    advance(restored, 1);
+    railwayCheck(s.w);
+    railwayCheck(restored.w);
+  }
+  assert.equal(s.w.hash(), restored.w.hash());
+  assert.equal(qjob(s.w, 6).stock, n);
+  assert.equal(rail(s.w).rack, home);
+  assert.deepEqual(worksThanks(s.w, 3), ['b']);
+});
 
 test('the kiln car leaves queued Q6 timber for a second dispatch', () => {
   const s = beforeFirstKit();
