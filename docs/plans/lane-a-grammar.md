@@ -38,3 +38,5 @@ The steel delivery, pier show, step-offs and final ride stay folded into the nex
 All 17 kinds fit. The review changes the board line for gates, the plug, installation and arrival. Solo players and joining helpers see the same accepted counts. No cut or owner question.
 
 The first phone-width still showed the hall upright covering the end of the kiln bill. The adjusted Default keeps the rightmost 11% of the face clear for the post.
+
+[Six phone-width boards](lane-a-grammar/board-sheet.png) from 390 × 600 seeded jump-ins at the hall. The sheet crops the sky and ground at native pixel size. The full kiln count and the sea switch action clear the upright.
