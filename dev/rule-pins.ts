@@ -56,6 +56,19 @@ const hashSlots: Record<string, RegExp> = {
 type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
 const obj = (v: Json | undefined): v is Record<string, Json> => v !== null && typeof v === 'object';
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+const uint32 = (v: Json | undefined) => typeof v === 'number' && v >>> 0 === v;
+const explained = (base: unknown, main: unknown, branch: unknown, got: unknown) =>
+  same(base, main) ? same(got, branch) : (same(base, branch) || same(main, branch)) && same(got, main);
+
+function refuse(name: string, path: string, base: unknown, main: unknown, branch: unknown, got: unknown): never {
+  const show = (v: unknown) => JSON.stringify(v) ?? '<absent>';
+  throw new Error(
+    name +
+      ' has an unexplained change at ' +
+      (path || '/') +
+      ` (base ${show(base)}, target ${show(main)}, branch ${show(branch)}, recorded ${show(got)})`,
+  );
+}
 
 /** Compare ordered keys separately, so even JSON object iteration order remains part of the oracle. */
 export function checkPin(
@@ -66,44 +79,30 @@ export function checkPin(
   got: Json | undefined,
   path = '',
 ): void {
-  if (same(base, main) ? same(got, branch) : (same(base, branch) || same(main, branch)) && same(got, main)) return;
+  if (explained(base, main, branch, got)) return;
+  const sides = [base, main, branch];
   if (
-    obj(base) &&
-    obj(main) &&
-    obj(branch) &&
-    obj(got) &&
-    [main, branch, got].every((v) => Array.isArray(v) === Array.isArray(base))
-  ) {
-    const keys = Object.keys(got);
-    const before = Object.keys(base),
-      incoming = Object.keys(main),
-      reviewed = Object.keys(branch);
-    if (
-      same(keys, same(before, incoming) ? reviewed : incoming) &&
-      (same(before, incoming) || same(before, reviewed) || same(incoming, reviewed))
-    ) {
-      for (const key of keys) checkPin(name, base[key], main[key], branch[key], got[key], path + '/' + key);
-      // A deletion opposite a modification must also refuse.
-      for (const key of Object.keys(base))
-        if (!Object.hasOwn(got, key)) checkPin(name, base[key], main[key], branch[key], undefined, path + '/' + key);
-      return;
+    hashSlots[name]?.test(path) &&
+    uint32(got) &&
+    explained(base !== undefined, main !== undefined, branch !== undefined, true) &&
+    sides.every((v) => v === undefined || uint32(v))
+  )
+    return;
+  if (obj(got) && sides.every((v) => v === undefined || (obj(v) && Array.isArray(v) === Array.isArray(got)))) {
+    const keys = (v: Json | undefined) => (obj(v) ? Object.keys(v) : undefined);
+    const field = (v: Json | undefined, k: string) => (obj(v) && Object.hasOwn(v, k) ? v[k] : undefined);
+    const [before, incoming, reviewed] = sides.map(keys);
+    const recorded = Object.keys(got);
+    // Visit absent keys too, so a missing stage names the missing witness. Compare order separately.
+    for (const k of new Set([...(before ?? []), ...(incoming ?? []), ...(reviewed ?? []), ...recorded])) {
+      const values = [field(base, k), field(main, k), field(branch, k), field(got, k)] as const;
+      const child = path + '/' + k.replaceAll('~', '~0').replaceAll('/', '~1');
+      checkPin(name, ...values, child);
     }
-  } else {
-    if (
-      hashSlots[name]?.test(path) &&
-      [base, main, branch, got].every((v) => typeof v === 'number' && v >>> 0 === v) &&
-      base !== main &&
-      base !== branch &&
-      main !== branch
-    )
-      return;
+    if (explained(before, incoming, reviewed, recorded)) return;
+    refuse(name, path, before, incoming, reviewed, recorded);
   }
-  let detail = '';
-  if (name === 'railway-golden.json' && /^\/stages\/[^/]+(?:\/(tick|stage|after))?$/.test(path)) {
-    const show = (v: Json | undefined) => JSON.stringify(v) ?? '<absent>';
-    detail = ` (base ${show(base)}, target ${show(main)}, branch ${show(branch)}, recorded ${show(got)})`;
-  }
-  throw new Error(name + ' has an unexplained change at ' + (path || '/') + detail);
+  refuse(name, path, base, main, branch, got);
 }
 
 export function verifyPin(file: string, buffers: Buffer[], versions: number[]) {

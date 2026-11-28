@@ -151,18 +151,26 @@ test('host envelopes, ordered records, frame counts and component order remain a
   }
 });
 
-test('a target-only stack-rails stage reports its disputed witnesses', () => {
-  const target = { tick: 13164, stage: 1619678958, after: 3898472269 };
-  const recorded = { tick: 13164, stage: 174967943, after: 3458877112 };
-  const stages = (row?: typeof target): { stages: Record<string, typeof target> } => ({
-    stages: row ? { 'stack-rails': row } : {},
+for (const mode of ['hashes', 'tick', 'missing'])
+  test('target-only stack-rails ' + mode, () => {
+    const target = { tick: 13164, stage: 1619678958, after: 3898472269 };
+    const recorded = { tick: 13164, stage: 174967943, after: 3458877112 };
+    const stages = (row?: typeof target): { stages: Record<string, typeof target> } => ({
+      stages: row ? { 'stack-rails': row } : {},
+    });
+    const verify = () =>
+      checkPin(
+        'railway-golden.json',
+        stages(),
+        stages(target),
+        stages(),
+        mode === 'missing' ? stages() : stages({ ...recorded, tick: mode === 'tick' ? 13165 : 13164 }),
+      );
+    if (mode === 'hashes') verify();
+    else if (mode === 'tick')
+      assert.throws(verify, /\/stack-rails\/tick \(base <absent>, target 13164, branch <absent>, recorded 13165\)/);
+    else assert.throws(verify, /stack-rails.*base <absent>.*target .*13164.*branch <absent>.*recorded <absent>/);
   });
-  assert.throws(() => checkPin('railway-golden.json', stages(), stages(target), stages(), stages(recorded)), {
-    message:
-      'railway-golden.json has an unexplained change at /stages/stack-rails' +
-      ` (base <absent>, target ${JSON.stringify(target)}, branch <absent>, recorded ${JSON.stringify(recorded)})`,
-  });
-});
 
 test('allocate one reviewed increment after incoming history, preserving both entries', () => {
   const base = "const x = 1;\nexport const WORLD_NS = 'v8';\n";
@@ -177,7 +185,7 @@ test('allocate one reviewed increment after incoming history, preserving both en
   assert.throws(() => allocate(base, main, branch.replace("'v9'", "'v12'")), /increment/);
 });
 
-test('guard the names, order, ticks, op results and one-sided hashes', () => {
+test('guard names, order, ticks and op results while regenerating hash slots', () => {
   const name = 'railway-ops-golden.json';
   const base = {
     run: [
@@ -204,10 +212,11 @@ test('guard the names, order, ticks, op results and one-sided hashes', () => {
     ],
   };
   checkPin(name, base, main, job, merged);
+  checkPin(name, base, main, job, { run: [merged.run[0]!, ['kit', 1, 22]] });
   for (const row of [
     ['wrong', 1, 21],
     ['kit', 0, 21],
-    ['kit', 1, 22],
+    ['kit', 1, -1],
   ])
     assert.throws(() => checkPin(name, base, main, job, { run: [merged.run[0]!, row] }), /unexplained/);
   assert.throws(() => checkPin(name, base, main, job, { run: merged.run.toReversed() }), /unexplained/);
