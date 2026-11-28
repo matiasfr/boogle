@@ -3,6 +3,20 @@
 > **Status:** adopted (reconciled 17 November 2026). **Verdict:** Process-tree supervisor and shard-drift follow-up shipped in #1984 after the original #1723/#1724 work.
 > **Recommendation:** Use the follow-up rather than the superseded thread-only watchdog or original timing estimates.
 
+## 28 November follow-up for PR #2669
+
+Shard 6 exhausted the ten-minute job twice. Its last file, `review-town-b2`, had 197 seconds on the first attempt and 124 on the retry. The retry had already recorded 1,536 worker-seconds across 34 completed files. The 480-second timer in `unit-budget.ts` starts when **each file** starts. Each completed file was inside that limit, and cancellation preceded the final file's deadline. The same PR run passed all three Linux watchdog probes, including killing a blocked process tree and starting the next file. The pre-PR merge-base run already took 521.6 seconds on this shard. [PR attempt 1](https://github.com/matiasfr/boogle/actions/runs/46114277114/attempts/1), [attempt 2](https://github.com/matiasfr/boogle/actions/runs/46114277114/attempts/2), [merge-base run](https://github.com/matiasfr/boogle/actions/runs/46111390726).
+
+| Whole file (seconds) | Old weight | Merge base | PR attempt 1 | PR attempt 2 |
+| --- | ---: | ---: | ---: | ---: |
+| railway-lap | 28 | 232.6 | 191.8 | 262.0 |
+| platforms-carry | 1 | 70.7 | 72.5 | 90.5 |
+| review-town-b2 | 98 | 108.3 | cancelled | cancelled |
+
+The PR adds a two-choice board test. Its original setup replayed the 19,315-tick yard seed once per choice. The file now uses the shared audited seed helper, which returns a checked independent copy on each call. Both choices start at the built house, fund and buy the yard, finish construction, then buy through the real hold. This leaves two distinct seed replays for the file instead of eight. Local `UNIT_ONLY` uses the fast settings by default. Use CI's audit settings when investigating this path.
+
+The refreshed table takes the maximum completed CI observation for each of 277 files across those three sets of logs. Node 26 sorts file arguments before dispatch. The scheduler now models that alphabetical queue on three workers when placing each file and breaks ties by total work. Replaying the refreshed weights on the old assignments projects 597 seconds of tests on shard 6. On the new assignments all eight shards project 427?428 seconds. A separate [green main run](https://github.com/matiasfr/boogle/actions/runs/46115654172), excluded from the refresh, projects a slowest shard of 448 seconds before and 426 after. These are estimates from recorded durations, excluding setup. The regression exercises a late expensive file that would sit behind three shorter files even when two shards have equal total weight.
+
 ## Review follow-up: process trees, route partitions and drift
 
 Rebased the implementation onto `origin/main` at `945c695546c626db2b6e926cefc788eb963e5afe` before applying the

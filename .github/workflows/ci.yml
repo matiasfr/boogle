@@ -180,8 +180,8 @@ jobs:
       fail-fast: false
       matrix:
         shard: ${{ fromJSON(needs.changes.outputs.unit_shards) }}
-    # Re-measured/rebalanced 16 November: golden and route-rule partitions, three file workers per shard,
-    # an 8 min process-group deadline, and visible weight drift. The runner warns after 7 min per shard.
+    # Three file workers per shard. Each file gets its own 8 min process-group deadline from its start.
+    # The 10 min limit below covers setup and all waves of files. The runner warns after 7 min per shard.
     # Re-measure/rebalance before raising this; see docs/research/ci-unit-shard-time.md. Audit/sweeps stay full.
     timeout-minutes: 10
     steps:

@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Vector3, Matrix4, Line3, Object3D } from 'three/webgpu';
 import { sourceFunction } from '../dev/level/source.ts';
-import { buildSeedWorld } from '../src/sim/railway-seeds.ts';
+import { act, advance, buildSeedWorld } from './helpers/rail.ts';
 import { plot } from '../src/sim/railway-rows.ts';
 import { Plot, Till, Town, Yard } from '../src/sim/railway-components.ts';
 import { loaderBuilt, plotPrice, plotsStaked } from '../src/sim/railway-queries-trade.ts';
@@ -185,7 +185,7 @@ test('the toy shown during a hold matches the selected board', () => {
 
 test('each fourth-plot board buys its pictured activity through a full hold', () => {
   for (const [side, kind] of [4, 5].entries()) {
-    const seed = buildSeedWorld('yard-built');
+    const seed = buildSeedWorld('house-built');
     const town = seed.w.mut(Town, seed.w.lookup(Town, 0)!)!;
     for (const [index, good, minimum] of [
       [0, 'wood', 56],
@@ -198,6 +198,9 @@ test('each fourth-plot board buys its pictured activity through a full hold', ()
     const balance = seed.w.mut(Till, seed.w.single(Till))!;
     balance.landed += 5000;
     balance.boogles += 5000;
+    // Buy the yard with this fixture's funded till, then finish construction on the normal clock.
+    assert.equal(act(seed, 'a', 'rail.buy', { id: 1 }), 1);
+    advance(seed, TRADE.buildTicks);
     const room = railRoom(seed);
     const player = room.join('alice', 'alice', 2);
     room.ready();
