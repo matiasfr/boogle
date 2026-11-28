@@ -5,7 +5,7 @@ import { act, advance, leaveTimber } from '../../src/sim/railway-seed-route.ts';
 import { buildWorksStage, chopTo } from '../../src/sim/railway-seed-works.ts';
 import { legRow } from '../../src/sim/railway-queries-route.ts';
 import { giftAboard, workAboard } from '../../src/sim/railway-queries-gift.ts';
-import { account, trees } from '../../src/sim/railway-rows.ts';
+import { account, rocks, trees } from '../../src/sim/railway-rows.ts';
 import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
 import { railSupplyPulse } from '../../src/sim/railway-sys-away.ts';
 import { railGrowthMask, RECOVERY_MINUTES } from '../../src/sim/railway-supply.ts';
@@ -76,11 +76,16 @@ export function pierGiftSeed(yard = 0) {
 }
 
 /** Ordinary bin stock placed before Q7 opens, ready for a live guest to lift and give. */
-export function quarryGuestSeed() {
+export function quarryGuestSeed(withStone = false) {
   const s = buildSeedWorld('crossing-finishing');
   chopTo(s, 'a', 8);
   leaveTimber(s, 'a', 2, 8);
   buildWorksStage(s, 'crossing-done');
+  if (withStone) {
+    const id = rocks(s.w).findIndex((r) => r.left > 0);
+    const n = act(s, 'a', 'rail.mine', { id });
+    need(n > 0 && act(s, 'a', 'rail.haltPut', { yard: 2, kind: 1 }) === n, 'stone for the mixed-back bin proof');
+  }
   return seedDoc(s);
 }
 

@@ -36,8 +36,8 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
           ? inclineGiftSeed
           : stage === 'pier-gift' || stage === 'quarry-pier-gift'
             ? () => pierGiftSeed(stage === 'quarry-pier-gift' ? 2 : 0)
-            : stage === 'quarry-guest'
-              ? quarryGuestSeed
+            : stage === 'quarry-guest' || stage === 'quarry-stone'
+              ? () => quarryGuestSeed(stage === 'quarry-stone')
               : null;
   if (kind === null && !recovery && mid === null && stack === null && lay === null && !isSeedStage(stage))
     throw new Error(`Unknown railway seed: ${stage}`);

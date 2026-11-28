@@ -371,7 +371,7 @@ async function find() {
 export function start() {
   if (started) return;
   started = true;
-  if (shot === 'quarry-gift') {
+  if (shot === 'quarry-gift' || shot === 'quarry-stone') {
     background(quarryGift(), 'Quarry gift co-op proof');
     return;
   }
@@ -381,12 +381,16 @@ export function start() {
 /** With --rail-seed quarry-guest, player two offers the logs and both peers see the same dispatch. */
 async function quarryGift() {
   await until(landed, 'guest entered the railway');
-  if (finder) {
+  if (finder || shot === 'quarry-stone') {
     const yard = HALT_YARDS[QUARRY_YARD]!;
     const x = yard.x / 100,
       z = yard.z / 100;
     teleport(me.body!, x, H(x, z) + PLAYER_R + 1.5, z);
-    await giveQuarryTimber(makeBot());
+    await giveQuarryTimber(makeBot(), shot === 'quarry-stone');
+    if (shot === 'quarry-stone') {
+      w.__coopShot = true;
+      return;
+    }
   } else {
     // The receiver watches the same station face used by the solo Pier proof.
     await import('/dev/look/evals/halt-board.ts' as string);

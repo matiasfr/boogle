@@ -29,7 +29,7 @@ import {
 import { inReach } from './tools.ts';
 import { yardStock, stockKit } from './halt-yard-stock.ts';
 import { outOf } from '../../place/sites.ts';
-import { leaveLoad } from './back-down.ts';
+import { binPut } from './halt-yard-prompt.ts';
 import { yardFlights, type YardSources, type Bin } from './halt-yard-flights.ts';
 import { createPennant } from './works-signal.ts';
 import { giftRides, QUARRY_YARD, quarryOffer, railGiftRides } from '../../sim/railway-queries-gift.ts';
@@ -212,13 +212,17 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView,
   }
   // The first state seen is the world as you came to it: what is open there stands built, with no show.
   let seen = false;
+  let publication: ReturnType<typeof adapter.read.world> | undefined;
   owner.animate(({ dt }) => {
     set.update(dt);
     if (!adapter.read.ready()) return;
     const w = adapter.read.world(),
       p = me.body?.position;
-    pennant.visible = giftRides(w) || railGiftRides(w);
-    quarryPennant.visible = quarryOffer(w) > 0;
+    if (publication !== w) {
+      publication = w;
+      pennant.visible = giftRides(w) || railGiftRides(w);
+      quarryPennant.visible = quarryOffer(w) > 0;
+    }
     recover(w);
     for (const pointer of pointers) {
       const shown = pointer.yard === 0 ? forge(w).used >= LINE2_FORGE.logs : haltYardOpen(w, pointer.yard);
@@ -252,7 +256,7 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView,
   }, 0);
 
   /** One target a bin (owner question 2): Pick up when it has stock, you carry none of its kind and have room for it;
-   * otherwise Leave it here when you carry anything the yard takes, which puts all of it down in one press. A closed
+   * otherwise offer only the material carried for this bin. A closed
    * yard has no bay, so it offers nothing. */
   const villageBay = {
     k: 0,
@@ -286,7 +290,6 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView,
     let w: ReturnType<typeof adapter.read.world> | null = null;
     let account: ReturnType<typeof railAccount> = undefined;
     let mine: [number, number, number] | null = null;
-    let carried: Kind[] | null = null;
     for (const bay of promptBays) {
       if (!bay.shown || Math.hypot(p.x - bay.x, p.z - bay.z) > reach) continue;
       if (bins[bay.k]!.some((bin) => bin.flights.some((f) => f.active()))) continue;
@@ -298,7 +301,6 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView,
           account ? balanceOf(account, STONE) : 0,
           account ? balanceOf(account, RAILS) : 0,
         ];
-        carried = KINDS.filter((kind) => mine![kind] > 0);
       }
       for (const kind of KINDS) {
         const at = bay.at[kind]!;
@@ -311,7 +313,7 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView,
             ? 'railway-recovery-rack'
             : 'railway-recovery-stone'
           : `halt-yard-${bay.k}-${kind}`;
-        // A Pick up names what the bin holds, as a pile's does; Leave it here needs no count.
+        // A pickup names the stock in the bin; a deposit names the material coming off the back.
         const note = `${stock} ${NOUN[kind]}`;
         let target: Interactable;
         if (stock > 0 && mine![kind] === 0 && account && roomOf(w, account, kind) > 0)
@@ -322,23 +324,11 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView,
             verb: 'Pick up',
             run: () => void (rack ? adapter.rackTake(kind) : adapter.haltTake(bay.k, kind)),
           };
-        else if (carried!.length) {
-          const kinds = carried!;
-          target = {
-            id,
-            at,
-            verb:
-              (bay.k === QUARRY_YARD && kind === LOGS && mine![kind] > 0 && quarryOffer(w) > 0) ||
-              (bay.k === 0 &&
-                mine![kind] > 0 &&
-                (((kind === LOGS || kind === STONE) && giftRides(w, kind === STONE)) ||
-                  (kind === RAILS && railGiftRides(w))))
-                ? 'Give to works'
-                : 'Leave it here', // draft, for the owner (docs/plans/halt-yard.md, question 3)
-            run: () => {
-              leaveLoad(adapter, bay.k, kinds);
-            },
-          };
+        else if (mine![kind] > 0) {
+          const gift =
+            (bay.k === QUARRY_YARD && kind === LOGS && quarryOffer(w) > 0) ||
+            (bay.k === 0 && (kind === RAILS ? railGiftRides(w) : giftRides(w, kind === STONE)));
+          target = { id, at, ...binPut(adapter, bay.k, kind, mine!, gift) };
         } else if (stock > 0) target = { id, at, note, verb: 'Pick up', blocked: KIND_FULL[kind]! };
         else continue;
         (out ??= []).push(target);

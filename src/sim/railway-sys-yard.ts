@@ -90,7 +90,8 @@ export const haltTake = defineSystem(
     w.mut(HaltYard, id)![key] -= n;
     if (e.yard === QUARRY_YARD && kind === 0) {
       const released = quarryMarked(w) - w.get(HaltYard, id)!.logs;
-      if (released > 0) takeGivers(w, released, () => {}, 'quarryGift');
+      // Keep the same account-order prefix the board promises and the car will load.
+      if (released > 0) takeGivers(w, released, () => {}, 'quarryGift', w.get(HaltYard, id)!.logs);
     }
     credit(w.mut(Account, aid)!, kind!, n);
     pickedUp(w, aid, kind!, n);

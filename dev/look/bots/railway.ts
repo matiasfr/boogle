@@ -8,6 +8,9 @@ import { me, cam } from '../../../src/player/player.ts';
 import { input } from '../../../src/player/input.ts';
 import { interactTarget } from '../../../src/player/hands.ts';
 import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
+import { teleport } from '../../../src/physics/engine.ts';
+import { H } from '../../../src/place/terrain.ts';
+import { HALT_YARDS } from '../../../src/sim/railway-yard-layout.ts';
 import { carry } from '../../../src/physics/platforms.ts';
 import { playMark } from '../../../src/proto/mark.ts';
 import {
@@ -42,12 +45,37 @@ const HOME_APRON = (() => {
 class RouteStop extends Error {}
 
 /** A guest staged at the Quarry rack lifts ordinary bin timber, then gives it at the same prompt. */
-export async function giveQuarryTimber(bot: Bot) {
+export async function giveQuarryTimber(bot: Bot, stoneBin = false) {
   const bin = () => (interactTarget()?.id === 'halt-yard-2-0' ? interactTarget() : null);
   hookCheck(bot, await bot.until(() => bin()?.verb === 'Pick up', 12000, 'Quarry logs offered'), 'Quarry log pickup');
   const at = bin()!.at;
   bot.press();
   hookCheck(bot, await bot.until(() => R.railBack().carry === 8, 10000, 'eight Quarry logs'), 'eight lifted');
+  if (stoneBin) {
+    const yard = HALT_YARDS[2]!;
+    const x = (2 * yard.x) / 100 - at.x,
+      z = (2 * yard.z) / 100 - at.z;
+    teleport(me.body!, x, H(x, z) + PLAYER_R + 1, z);
+    const stone = () => (interactTarget()?.id === 'halt-yard-2-1' ? interactTarget() : null);
+    hookCheck(bot, await bot.until(() => stone()?.verb === 'Pick up', 12000, 'stone pickup'), 'stone bin reached');
+    bot.press();
+    const leave = () => stone()?.verb === 'Leave it here' && stone()?.note === '2 stone';
+    hookCheck(bot, await bot.until(leave, 12000, 'stone deposit offered'), 'empty bin names the two carried stone');
+    bot.press();
+    hookCheck(
+      bot,
+      await bot.until(() => R.railBack().stone === 0 && R.railBack().carry === 8, 12000, 'only stone left the back'),
+      'eight logs kept',
+    );
+    hookCheck(
+      bot,
+      await bot.until(() => stone()?.verb === 'Pick up', 12000, 'stone returned'),
+      'stone available again',
+    );
+    bot.press();
+    hookCheck(bot, await bot.until(leave, 12000, 'stone deposit shown again'), 'stone prompt for capture');
+    return;
+  }
   await bot.straight(at.x, at.z, 0.8, 3000);
   // The yard suppresses its prompts during the pickup flight.
   hookCheck(
