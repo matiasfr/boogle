@@ -317,9 +317,12 @@ export function createIslandBoards(
       mesh.receiveShadow = true;
       mesh.visible = false;
       owner.add(mesh);
-      const works = worksFace(owner, { x: c.x, y: c.y - h / 2 - 0.94, z: c.z }, yaw, false, here);
+      // At Quarry and Pier the platform furniture masks the lower panel. Mount it above the map.
+      const high = here.some(({ line, stop }) => line === 1 && (stop === 1 || stop === 3));
+      const worksY = high ? h / 2 + 0.1 : -h / 2 - 0.94;
+      const works = worksFace(owner, { x: c.x, y: c.y + worksY, z: c.z }, yaw, false, here);
       mesh.add(works);
-      works.position.set(0, -h / 2 - 0.94, off);
+      works.position.set(0, worksY, high ? off + 0.3 : off);
       works.rotation.y = 0;
       owner.cleanup(() => geometry.dispose());
       boards.push({ mesh, face, here: here.slice(0, HERES), on: false });

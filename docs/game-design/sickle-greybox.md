@@ -50,4 +50,6 @@ Before the High Gorge legs, the same Village rack sends logs to Far Head for Q6,
 
 Once the crossing opens, the Quarry log bin flies the works pennant while Q7 needs timber. Leaving logs there reserves a pickup on the outward train. The Pier board shows the same giver, queued load and aboard load as the Quarry board. Anyone can retrieve the timber until the train loads it.
 
+At Quarry and the Pier, the works panel sits above the map on the reader's side of the shelter post.
+
 Logs given at the Village ride line 2 to High Gorge. When the first incline frame is there, its train pours into the log bill on arrival. For the second incline section and the causeway at Bell Rock, the logs wait in the Gorge yard for a north–south kit car. A friend can feed the frame while the bundle travels. The train pours only what the bill still needs, and a full section waits for its barrier to open.

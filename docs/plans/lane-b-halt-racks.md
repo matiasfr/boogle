@@ -22,6 +22,7 @@ Run ship-check after each build step, then the server suite, network suite and r
 | Pour delivered logs up to the Q7 shortage and leave the crossing gate intact | Decided | 28 November pre-leg pours |
 | Extend the source of Q7 timber to Quarry and call an outward train for the accepted load | New | Widens the Village source in the pre-leg ruling. The existing middle halt can otherwise be passed indefinitely after the crossing. |
 | Reserve the accepted Quarry share before the next Home dispatch, with ordinary yard pickup available until loading | Default | An already announced pickup can finish, and the same bay still lets a player retrieve a load. |
+| Mount the works panels above the Quarry and Pier maps, in front of the platform posts | Default | The first Pier captures showed a post cutting through Thanks. From standing height the raised, forward panel keeps the map and all six rows readable. |
 
 The brief names two towns without catalogued yards. Step 1 limits the build to one actual middle halt. Shared-construction and wordless-onboarding research favor the visible bin-to-deck transfer in step 3. No route geometry, prices or character lines change. No owner question.
 
@@ -35,3 +36,5 @@ The brief names two towns without catalogued yards. Step 1 limits the build to o
 | Village stone and rails | rackTake and single-material cast batches compete for stone. haltTake and direct rail gifts compete for the Village rail shelf. giftPourRoom reserves by frame, including the relay. | These materials are outside Quarry dispatch. The existing Village rail withdrawal/Thanks case is a named TODO in the suite. |
 
 The verified fixture replay preserves the 86 seed-stage ticks and the six streams of op labels and accepted results. The new saved account field changes hashes. The host still judges the existing yard reach and rail.haltPut shape.
+
+The [Pier board](lane-b-halt-racks/pier-works.png) shows Robin's eight Quarry logs aboard and zero of twenty delivered. This WebGPU capture starts from the accepted deposit and dispatch. The replay test follows the same route to the pour. The proof seed uses the existing Pier-seed builder with the Quarry as its source.

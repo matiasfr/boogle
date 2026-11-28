@@ -34,10 +34,11 @@ while (!me.body || !me.entered || !railRead()?.whole() || !faces()?.[index]) {
 const face = faces()![index]!;
 const [x, mapY, z] = face.c,
   [ox, oz] = face.out;
-// The works face is mounted below the 0.8 m halt map.
-const y = mapY - (query.has('worksFace') ? 0.4 + 0.94 : 0);
+// Read the works panel from standing eye height at the two Quarry-to-Pier stops.
+const y = mapY + (query.has('worksFace') ? (index === 2 || index === 4 ? 0.5 : -1.34) + 0.435 : 0);
+const eye = query.has('worksFace') ? mapY + 0.25 : y;
 const frame = () => {
-  window.__debugCam!.set([x + ox * dist, y, z + oz * dist], [x, y, z], 50);
+  window.__debugCam!.set([x + ox * dist, eye, z + oz * dist], [x, y, z], 50);
   teleport(me.body!, x + ox * (dist + 1.4), y - 0.3, z + oz * (dist + 1.4));
   me.body!.velocity.set(0, 0, 0);
 };

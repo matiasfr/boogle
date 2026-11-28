@@ -303,6 +303,7 @@ The owner confirmed start-flow calls 7 to 9 on 28 November: [archived calls](dec
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 2026-11-28 | Default, raise the Quarry and Pier works panels above the maps and forward of the shelter posts | [Pier proof](plans/lane-b-halt-racks/pier-works.png) | Design review | The Pier post covered the giver row from standing height. | open |
 | 2026-11-28 | New, widens the Village source for Q7 to Quarry with an outward pickup | [Halt racks](plans/lane-b-halt-racks.md) | Design review | The yard can serve the Pier even when nobody calls a train. | open |
 | 2026-11-28 | Default, reserve accepted Quarry timber ahead of Home dispatch until picked up or withdrawn | [Halt racks](plans/lane-b-halt-racks.md) | Design review | The quantity announced at acceptance can travel. | open |
 | 2026-11-28 | New: Carry Village logs to the Q6, Q7, steel and Quarry racks | [Pre-leg works](plans/lane-b-preleg.md#design-review-2026-11-28) | Design review | Uses the existing train and leaves each recipient its hand feed. | open |
