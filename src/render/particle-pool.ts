@@ -28,6 +28,7 @@ import {
   texture,
 } from 'three/tsl';
 import { guardDrawCount } from './draw-count.ts';
+import { windAt } from './wind.ts';
 
 /** Multipliers at birth, half-life and death; smooth interpolation, no per-emitter shader. */
 export type ParticleCurve = readonly [number, number, number];
@@ -49,7 +50,7 @@ export type Particle = {
   grow?: readonly [number, number];
   shrink?: number;
   fade?: number;
-  shape?: 'round' | 'glint' | 'star' | 'quad' | 'chip' | 'dust';
+  shape?: 'round' | 'glint' | 'star' | 'quad' | 'chip' | 'dust' | 'puff';
   rotation?: number; // birth radians
   spin?: number; // radians/second
   /** Floor restitution, then a 180 ms retirement. Unset retains floor death (water spray). */
@@ -83,6 +84,19 @@ function dustTexture() {
   map.minFilter = map.magFilter = THREE.LinearFilter;
   map.needsUpdate = true;
   return map;
+}
+
+/** Each resident emitter has its own clock. A disabled interval sleeps; a hitch never queues a backlog. */
+export function particleBeat(seconds: number, intervalScale: () => number) {
+  let remaining = 0;
+  return (dt: number) => {
+    const scale = intervalScale();
+    if (!scale || dt <= 0) return false;
+    remaining -= dt;
+    if (remaining > 0) return false;
+    remaining = seconds * scale;
+    return true;
+  };
 }
 
 /** No game lifecycle on import. Clocks are injected for the asset stage. */
@@ -129,6 +143,10 @@ export function createParticlePool(renderer: THREE.WebGPURenderer, now = () => p
     vl.xyz.mulAssign(exp(dt.negate().mul(mo.z)));
     vl.y.subAssign(mo.y.mul(dt));
     pl.xyz.addAssign(vl.xyz.mul(dt));
+    If(ap.x.equal(5), () => {
+      // Positive eastward drift between gusts, using the same local clock and field as the verge.
+      pl.x.addAssign(windAt(pl.xyz).mul(0.85).add(1.05).mul(dt));
+    });
     If(vl.y.lessThan(0).and(pl.y.lessThan(mo.w)), () => {
       If(end.w.lessThan(0), () => {
         // Settled: lies where it landed and stops turning, its long side within about 20° of level so it reads as
@@ -243,6 +261,14 @@ export function createParticlePool(renderer: THREE.WebGPURenderer, now = () => p
     If(shape.equal(4), () => {
       alpha.assign(dustA);
     });
+    If(shape.equal(5), () => {
+      // Broad overlapping volumes share a soft rim even when the whole puff is only a few pixels.
+      const body = length(rotated.add(vec2(0.08, 0.04))).div(0.86);
+      const billow = length(rotated.sub(vec2(0.16, 0.09))).div(0.76);
+      const rim = min(body, billow);
+      alpha.assign(smoothstep(0.24, 1, rim).oneMinus());
+      shade.assign(clamp(p.y.sub(p.x).mul(0.12).add(rim.oneMinus().mul(0.25)).add(0.82), 0.7, 1.12));
+    });
     return vec4(c.xyz.mul(shade), c.w.mul(alpha));
   })();
   drawPos.value.name = 'particles positions';
@@ -300,7 +326,9 @@ export function createParticlePool(renderer: THREE.WebGPURenderer, now = () => p
             ? 3
             : p.shape === 'dust'
               ? 4
-              : 0;
+              : p.shape === 'puff'
+                ? 5
+                : 0;
     four(o + 20, shape, p.rotation ?? 0, p.spin ?? 0, 0);
     four(o + 24, p.sizeCurve?.[0] ?? 1, p.sizeCurve?.[1] ?? 1, p.sizeCurve?.[2] ?? 1, 0);
     four(o + 28, p.alphaCurve?.[0] ?? 1, p.alphaCurve?.[1] ?? 1, p.alphaCurve?.[2] ?? 1, 0);

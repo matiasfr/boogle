@@ -15,3 +15,7 @@ Defaults (3): one gentle wave about every four seconds, up to 0.24 m at a crown 
 Step 1 adds zero draws, vertices, textures or custom uniforms. Each crown vertex samples one sine using the existing renderer time uniform and its horizontal position, weighted toward the top. No per-object updates or per-frame allocations.
 
 Step 2 reuses the spare keep-map channel for the Camp ridge bend and the tread mask for its verge. The near tuft batch before and after is one draw and 23,000 triangles on desktop, one draw and 9,200 triangles on phone. No new texture, render pass, per-frame allocation or CPU update.
+
+Step 3 uses the existing particle pool and sprite draw. Only live puff slots sample the wind during compute. Each resident stack uses its existing view update, with births within 90 m of the camera. Ambient intervals are 0.65 s for the awake layer, 0.8 s for the lit forge and 0.85 s for the lit kiln. Lower Detail doubles those intervals. The operator's chuff still follows the machine's movement. Puffs expand and fade over three seconds.
+
+The sun and sky fill light the cream pigment at birth so the puffs share the scene exposure. Two overlapping soft volumes give each puff one round outline. Births vary in diameter, orientation, rise and lateral velocity. [Working layer](living-world/working-stack-motion.jpg), [lit kiln](living-world/lit-kiln.jpg), [lit forge](living-world/lit-forge.jpg).

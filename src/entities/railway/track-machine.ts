@@ -3,7 +3,8 @@ import { BOTTOM, drawCar, makeCar, poseCarOnLine, snapCar } from './car.ts';
 import type { Track } from './track.ts';
 import * as THREE from 'three/webgpu';
 import { readableGlow, readableUnlit } from '../../render/readable-unlit.ts';
-import { emit } from '../../render/particles.ts';
+import { ambientParticleBeat } from '../../render/particles.ts';
+import { stackPuff } from '../../render/particle-effects.ts';
 import { chuff, clank, thump } from '../../render/machine-sfx.ts';
 import { FIXED, reducedMotion } from '../../constants.ts';
 import { background } from '../../async.ts';
@@ -328,29 +329,15 @@ export function buildMachine(owner: OwnedView, mode: 'panels' | 'continuous' = '
     }
   };
 
-  const st = { awake: false, moved: 0, bump: 0, idle: 0, shudder: 0, was: false };
-  const smoke = new THREE.Color('#ece8e0'),
-    v = new THREE.Vector3();
+  const st = { awake: false, moved: 0, bump: 0, shudder: 0, was: false };
+  const stackBeat = ambientParticleBeat(0.65);
+  const v = new THREE.Vector3();
   const flatY = flatRock.position.y,
     locoY = locoRock.position.y;
   function puff(heavy: number) {
     look.chimneyTop.getWorldPosition(v);
     chuff(v.x, v.z, heavy);
-    for (let n = 0; n < 2 + heavy * 3; n++)
-      emit({
-        x: v.x,
-        y: v.y,
-        z: v.z,
-        vx: (Math.random() - 0.5) * 0.6,
-        vy: 2.2 + heavy,
-        vz: (Math.random() - 0.5) * 0.6,
-        life: 2.2,
-        size: 0.5,
-        color: smoke,
-        alpha: 0.6,
-        grow: [1, 3],
-        fade: 0.5,
-      });
+    stackPuff(v.x, v.y, v.z, 0.6 + heavy * 0.2);
   }
   // ?layer=wing -------------------------------------------------------------
   const wingStats = { side: 0, gap: 0, lift: 0, reachDown: 0, reachUp: 0, panels: 0 };
@@ -580,26 +567,9 @@ export function buildMachine(owner: OwnedView, mode: 'panels' | 'continuous' = '
       flatRock.position.y -= st.bump * 0.04;
       flatbed.mesh.scale.set(1 + st.bump * 0.02, 1 - st.bump * 0.04, 1 + st.bump * 0.02);
     }
-    if (st.awake && flatbed.y > -30) {
-      st.idle += dt;
-      if (st.idle > 1.4) {
-        st.idle = 0;
-        look.chimneyTop.getWorldPosition(v);
-        emit({
-          x: v.x,
-          y: v.y,
-          z: v.z,
-          vx: 0.2,
-          vy: 1.6,
-          vz: 0,
-          life: 2,
-          size: 0.35,
-          color: smoke,
-          alpha: 0.4,
-          grow: [1, 3],
-          fade: 0.6,
-        });
-      }
+    if (st.awake && flatbed.y > -30 && stackBeat(dt)) {
+      look.chimneyTop.getWorldPosition(v);
+      stackPuff(v.x, v.y, v.z, 0.65);
     }
     if (model && rig) {
       // Cancel shell squash outside the rigid bogie frame.
