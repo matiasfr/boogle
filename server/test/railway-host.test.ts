@@ -50,11 +50,13 @@ test('only a guest at the Quarry bin can reserve its timber for the Pier', async
     const epoch = await f.open('b');
     await f.harvest('b', 8, epoch);
     const qty = f.host.rules.railway.account('bob')!.carry;
+    assert.ok(qty >= 8);
     const put = { op: 'rail.haltPut', yard: QUARRY_YARD, kind: 0 };
     f.pose('b', HALT_YARDS[0]!.x, HALT_YARDS[0]!.z);
     assert.equal((await f.edit('b', put, epoch)).status, 'rejected');
     f.pose('b', HALT_YARDS[QUARRY_YARD]!.x, HALT_YARDS[QUARRY_YARD]!.z);
     assert.equal((await f.edit('b', put, epoch)).accepted, qty);
+    f.send('b', put, epoch, f.requests.get('b'));
     railwayCheck(f.world());
     assert.deepEqual(worksThanks(f.world(), 3), ['bob']);
     for (let tick = 0; qjob(f.world(), 6).stock !== qty; tick++) {
@@ -63,6 +65,12 @@ test('only a guest at the Quarry bin can reserve its timber for the Pier', async
     }
     railwayCheck(f.world());
     assert.deepEqual(worksThanks(f.world(), 3), ['bob']);
+    for (const sid of ['a', 'b']) {
+      const mirror = createRailwayMirror();
+      for (const { cid, p } of f.packets) if (cid === sid) mirror.mirror.apply(p, 0);
+      assert.equal(qjob(mirror.confirmed(), 6).stock, qty);
+      assert.deepEqual(worksThanks(mirror.confirmed(), 3), ['bob']);
+    }
   } finally {
     await f.close();
   }
