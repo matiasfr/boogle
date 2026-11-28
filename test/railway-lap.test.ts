@@ -70,6 +70,19 @@ test('the wall-closed playthrough can board its requested Gorge to Canopy servic
   assert.ok(service[departure] !== undefined && service[destination.stop] !== undefined);
 });
 
+test('the lap shows the crossing after a three-second arrival', () => {
+  const s = buildSeedWorld('lap-ride');
+  const gorge = through[gorgeStop]!;
+  const crossing = RAIL_TRAINS.findIndex((_, k) => {
+    const r = train(s.w, k);
+    return runningLine(s.w, k) === LINE2 && r.from > gorge && r.dest < gorge && trainAlong(r, LINE2, s.t) <= gorge;
+  });
+  assert.ok(crossing >= 0);
+  advance(s, 30);
+  const distance = Math.abs(trainAlong(train(s.w, crossing), LINE2, s.t) - gorge) / 100;
+  assert.ok(distance <= 40, `engine is ${distance} m from the halt after three seconds`);
+});
+
 test('the sixth lay extends the open prefix and transfers the fleet', () => {
   assert.equal(old.length, 9);
   assert.equal(gorgeStop, 9);
