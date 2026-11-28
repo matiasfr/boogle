@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-28 · A cargo train runs at its line's speed like every train; "slow" is its look and sound, not its pace ([entry](#d-2026-11-28-cargo-trains-line-speed))
 - 2026-11-27 · Once line 2 closes into the ring, the riders' far end stays High Gorge (fare 34); it does not follow the line's end round to the West landing ([entry](#d-2026-11-27-riders-far-end-stays-high-gorge))
 - 2026-11-27 · The whole map stays and the line closes into a ring; geography is judged by ride minutes from Home and changed only in a batched layout pass, on the 2D page first ([entry](#d-2026-11-27-the-map-is-a-ring))
 - 2026-11-25 · Recommendations taken: the order-choice plan's three yeses, the cloth stays 24.72 m from the Notch barrier, the White Wall waits experiment, the Stack's west platforms by narrow planks (way 1), the cave line's trade folded into the order-choice build ([entry](#d-2026-11-25-recommendations-taken-rail))
@@ -170,6 +171,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · The rail spike comes first, and its job is to prove that riding feels good. ([entry](#d-undated-the-rail-spike-comes-first))
 
 ## Decided
+
+- <a id="d-2026-11-28-cargo-trains-line-speed"></a>**2026-11-28, cargo trains run at the line's speed** (owner, 28 November 2026 UTC, in an orchestrator thread, to "Answer the two open questions: cargo trains at line speed (recommended yes), and counting the loop plus seeded bot segments as the checkpoint's bot proof (recommended yes).": "3 yes and yes"). A cargo train runs at its line's fit like every other train, and "slow" is how it looks and sounds: the work engine, the heavier chuff and the deeper horn. A slower one would hold every passenger train behind it to the next end, because nothing overtakes it except at one siding. This is the [cargo-trains plan](plans/cargo-trains.md#open-questions)'s one owner question and its call 13, and it narrows the brief's wording he took on 26 November ("a steady, slow patrol") to the look and the sound. The row stays parked by the [course change](decisions-core-loop.md#d-2026-11-27-course-change): this answer starts no job, and no cargo step waits on him when the row comes back.
 
 - <a id="d-2026-11-27-riders-far-end-stays-high-gorge"></a>**2026-11-27, the riders' far end stays High Gorge once the ring closes** (owner, 27 November 2026, in an orchestrator thread, to "keep riders' far end at High Gorge (holds the lap's step 2), and let gifted logs pour straight into the works' bill (holds Lane B's step 3). I recommend yes to both.": "Yes, to both."). When the lap joins line 2 round the White Wall to the West landing, the Village's riders still ride to High Gorge at fare 34. They do not ride round to the West landing, which would be 87 a ride and a ride from Home to Home. This narrows "the rider route's far end is line 2's current end" (12 November, [confirmed 16 November](decisions-rewards.md#d-2026-11-16-ranked-calls-confirmed)): that rule was written for a line growing outward and still holds up to the Gorge; from the join the far end is pinned there. It is the [lap plan](plans/greybox-lap.md#open-questions)'s question 3 and its call 6, so the lap's step 2 no longer waits.
 
