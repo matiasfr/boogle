@@ -131,6 +131,8 @@ The purchase tests cover each first choice paired with each legal third choice, 
 
 The catcher observed ownership epoch 4 with the free disc moving at 9.1 m/s and reloaded. On rejoin it received the same epoch at the later position, 4.4 m farther along z. The pitcher recalled the disc at the rack, picked it up and threw again. The catcher observed the moving throw before the pitcher's tab closed, then took ownership at epoch 7 with 9.2 m/s of velocity. These are pose samples from the clients. The reload still caught the terrain loading. The disconnect still shows the pink disc at the road edge and the empty rack. [Reload](lane-c/disc-reloaded.png), [disconnect](lane-c/disc-orphan.png).
 
+A visitor walked through the Boathouse door with ordinary forward input. A controlled disc flight across the can row made the can pivot swing. From the dock the road passes the side wall. On the green side, the rack and all three cans sit beside the open door. Two restored room fixtures show the other choices in the same strip, the seed stall with Take, or three flush horn pads. [Porch](lane-c/disc-porch.png), [dock approach](lane-c/disc-dock.png), [seeds](lane-c/spare-seeds.png), [horns](lane-c/spare-horns.png).
+
 #### Design review (2026-11-27) for Part 3
 
 | Call | Kind | Basis |
