@@ -376,7 +376,7 @@ function yardLoad(w: World, slot: number): 'on' {
             0,
             Math.min(
               y.giftRails,
-              giftBill(w, line, k, 'rails') - giftAboard(w, line, 'giftRails'),
+              giftBill(w, line, k, 'rails') - giftAboard(w, line, 'giftRails', giftBillId(w, k)),
               cap.rails - r.giftRails,
             ),
           ),
