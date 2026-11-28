@@ -169,7 +169,7 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
       }
     };
     const run = () => start(0);
-    const target: Interactable = { id: `town.plot.${k}`, verb: 'Hold to build', at, run };
+    const target: Interactable = { id: `town.plot.${k}`, verb: 'Hold to build', at, run, release };
     const one = [target];
     const params = { x: toWorld(building.x), y: H(toWorld(building.x), building.z), z: building.z, yaw: building.yaw };
     const loader = 'gives' in need && need.gives === 'loader';
@@ -286,7 +286,7 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
         ? need.choices.map((kind, i) => {
             const point = layout.boards[k === 2 ? Number(kind === 3) : i]!;
             const position = new Vector3(toWorld(point.x), at.y - 0.85, point.z);
-            const action: Interactable = { id: `town.plot.${k}.${kind}`, verb: 'Hold to build', at: position };
+            const action: Interactable = { id: `town.plot.${k}.${kind}`, verb: 'Hold to build', at: position, release };
             const begin = () => start(kind);
             const topper = instantiate(
               'town.choice-board',

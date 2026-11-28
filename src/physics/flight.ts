@@ -8,7 +8,7 @@
 //
 // A glide (the frisbee) gets lift that grows with airspeed, heavy drag and a fade to the left as it slows.
 import * as THREE from 'three';
-import { GRAVITY, BALL_DAMPING } from '../constants.ts';
+import { GRAVITY, BALL_DAMPING, ROOM_GROUP } from '../constants.ts';
 import { GROUP } from './physics.ts';
 import { raycastClosest, rayHit, type V3 } from './engine.ts';
 import { toyGround } from './toy-ground.ts';
@@ -63,7 +63,7 @@ export function stepBall(p: THREE.Vector3, v: THREE.Vector3, dt = STEP) {
 }
 
 const hit = rayHit(),
-  RAY = { mask: GROUP.SCENERY, skipBackfaces: true };
+  RAY = { mask: GROUP.SCENERY | ROOM_GROUP, skipBackfaces: true };
 const cast = (a: V3, b: V3) => (raycastClosest(a, b, RAY, hit) ? hit : null);
 
 // A whole hypothetical flight is synchronous: nearby accepted heights or mean/pond fallback, never live query IDs.

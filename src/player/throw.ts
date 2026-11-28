@@ -4,7 +4,8 @@
 // throw feels the same). The charge state stays in me.charging / me.chargeStart (the HUD, impact and the input
 // code read or reset it), but only startCharge here starts one.
 import * as THREE from 'three/webgpu';
-import { SEA } from '../constants.ts';
+import { clearToyRelease } from '../physics/toy-clearance.ts';
+import { BALL_R, SEA } from '../constants.ts';
 import { waterField } from '../physics/water-field.ts';
 import { toyGround } from '../physics/toy-ground.ts';
 import { dynAttr, instancedSprite } from '../render/sprites.ts';
@@ -30,7 +31,12 @@ export const aimPoint = (out = new THREE.Vector3()) => out.copy(followEye).addSc
 
 const aim = new THREE.Vector3();
 // What throwing `id` at charge c would do right now: { p: where it leaves your hand, v: its velocity, profile }.
-export const releasePoint = (id: string | null) => (id === 'ball' ? handPosition() : throwFrom());
+export function releasePoint(id: string | null) {
+  const p = id === 'ball' ? handPosition() : throwFrom();
+  if (!me.body || (id !== 'ball' && id !== 'frisbee')) return p;
+  const radius = id === 'ball' ? BALL_R : 0.275; // outer rim of the disc model
+  return clearToyRelease(me.body.position, p, radius);
+}
 
 export function launch(id: string | null, c: number) {
   const profile = profileFor(id);

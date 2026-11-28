@@ -44,6 +44,7 @@
 //                                  interpolatedPosition does not cover (a platform's yaw)
 //   forEachStatic(mask, fn)        fn(body, shapes) for each static body in a group of `mask`, with the shapes it was
 //                                  built from (src/guest/collision.ts triangulates them; heightfields included)
+import { bindToySweep } from './toy-clearance.ts';
 import * as rapier from './backend-rapier.ts';
 
 export type V3 = { x: number; y: number; z: number };
@@ -118,6 +119,7 @@ export const forEachContact: (
 ) => void = backend.forEachContact;
 export const sweepSphere: (from: V3, to: V3, r: number, o: { mask: number; thin: 'skip' | 'only' }) => number =
   backend.sweepSphere;
+bindToySweep(sweepSphere);
 export const capsuleOverlaps: (at: V3, r: number, up: number, against: Shape | { of: object }) => boolean =
   backend.capsuleOverlaps;
 export const rayHit: () => RayHit = backend.rayHit;

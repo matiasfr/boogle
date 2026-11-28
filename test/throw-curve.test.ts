@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { bindToySweep, clearToyRelease } from '../src/physics/toy-clearance.ts';
 import { chargeOf } from '../src/player/throw-curve.ts';
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
@@ -29,13 +30,23 @@ test('the ball releases on the player side of the Boathouse back wall', () => {
       force: new THREE.Vector3(),
       quaternion: new THREE.Quaternion(),
     };
+    bindToySweep((from, to, radius, options) => {
+      if (!(options.mask & ROOM_GROUP) || options.thin !== 'skip' || to.z - radius >= face) return -1;
+      const length = Math.hypot(to.x - from.x, to.y - from.y, to.z - from.z);
+      return (length * (from.z - radius - face)) / (from.z - to.z);
+    });
     const release = sourceFunction<typeof import('../src/player/throw.ts').releasePoint>(
       'src/player/throw.ts',
       'releasePoint',
-      { handPosition, throwFrom },
+      { handPosition, throwFrom, me, BALL_R, clearToyRelease },
     );
     assert.ok(release('ball').z - BALL_R >= face, 'the released sphere crosses the solid wall');
+    assert.ok(release('frisbee').z - 0.275 >= face, 'the released disc crosses the solid wall');
+    position.z += 3;
+    assert.deepEqual(release('ball'), handPosition());
+    assert.deepEqual(release('frisbee'), throwFrom());
   } finally {
+    bindToySweep(() => -1);
     Object.assign(me, previous);
   }
 });
