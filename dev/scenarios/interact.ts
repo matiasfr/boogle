@@ -1,7 +1,7 @@
 // Interaction prompts: one button (E, pad X, the touch action button) acts on the one thing in front of you, marked
 // with a glyph and a verb. Walking up to The Boogler with something in hand still says Talk; the gift is an answer in
 // the talk, with its icon; you stand still while you talk and Esc leaves, and a chapter
-// left halfway picks up where you stopped. Riding him puts the ball first, and a failed planting says why. A held ball winds up on Use and flies on release.
+// left halfway picks up where you stopped. Riding clears Talk. On the Round, the ball offers Grab, winds up on Use and flies on release.
 
 import { TP, INV, lowResOnCi } from './lib/world.ts';
 import type { T } from './run.ts';
@@ -21,19 +21,13 @@ const beside = (check: string) => `(async () => {
   return ${check};
 })()`;
 // On his back: climb on (again only once you've slid off or landed beside him: a headless tab steps slowly, so the drop
-// onto him takes several polls) until he counts it as a ride, then put the ball in reach beside you.
+// onto him takes several polls) until he counts it as a ride.
 const onBack = (check: string) => `(async () => {
   const { boogler, ACT } = await import('/src/boogler/boogler.ts');
-  const { ball } = await import('/src/entities/ball/state.ts');
   const { teleport } = await import('/src/physics/engine.ts');
   const b = window.boogle.me.body, c = boogler.center, p = b.position;
   const dropping = Math.hypot(p.x - c.x, p.z - c.z) < 1 && p.y > c.y + 0.3;
   if (boogler.me.act !== ACT.RIDE && !dropping) teleport(b, c.x, c.y + 1.6, c.z), b.velocity.set(0, 0, 0);
-  else if (!ball.held) {
-    teleport(ball.body, p.x + 0.9, p.y + 0.3, p.z);
-    ball.body.velocity.set(0, 0, 0);
-    ball.pose.p.copy(ball.body.position);
-  }
   await new Promise((r) => setTimeout(r, 150));
   return boogler.me.act === ACT.RIDE && ${check};
 })()`;
@@ -41,7 +35,7 @@ const TAG_TALK = `${shown('.boogler-tag-prompt')} && ${text('.boogler-tag-prompt
 
 export default {
   island: true, // the classic island by the court (run.ts)
-  about: 'one Talk prompt by The Boogler, gifts in the talk, the ball first on his back, a reason when planting fails',
+  about: 'one Talk prompt by The Boogler, gifts in the talk, Talk clears on his back, a reason when planting fails',
   timeout: 600000, // two software-rendered players in a row: the nightly runner was still going at 300 s
   async run(t: T) {
     const g = await t.open({ name: 'talker', hud: 'play' });
@@ -124,9 +118,18 @@ export default {
     await g.wait(0.2);
     t.check('Escape leaves the talk', await g.eval(`return document.querySelector('.bd').hidden;`));
 
+    await g.eval(`const { toyGround } = await import('/src/physics/toy-ground.ts');
+      const { respawnBall } = await import('/src/entities/ball/state.ts');
+      const { x, z } = toyGround.spawn; respawnBall(); ${TP('x', 'z + 0.9', 'toyGround.under(x,z) + 0.6')}`);
+    const ballPrompt = await g.waitFor(
+      `(async()=>{const H=await import('/src/player/hands.ts');
+      return H.interactTarget()?.id === 'ball' && ${shown('.prompt')} && ${text('.prompt')}.includes('Grab');})()`,
+      { timeout: 20000 },
+    );
+    t.check('the shared ball offers Grab on the Round', ballPrompt >= 0);
     const toss = await g.eval(`${INV}
-      const { grabBall, ball } = await import('/src/entities/ball/state.ts');
-      grabBall(); I.take('ball');
+      const { ball } = await import('/src/entities/ball/state.ts');
+      H.interactDown(); H.interactUp();
       const charging = H.useDown();
       const interacted = H.interactDown();
       H.interactUp(); H.useUp(); H.updateHands();
@@ -204,14 +207,11 @@ export default {
     const padShot = await g.still('pad');
     t.check('on a gamepad his tag says X Talk', padMs >= 0, `${padMs} ms; ${padShot}`);
 
-    // Riding him, he is not something to talk to: the ball beside you gets the prompt, and his tag has none.
-    const rideMs = await g.waitFor(
-      onBack(`${shown('.prompt')} && ${text('.prompt')}.includes('Grab') && !${shown('.boogler-tag-prompt')}`),
-      { timeout: 20000 },
-    );
+    // Riding clears Talk. The ball now lives on the Round, where its prompt was checked above.
+    const rideMs = await g.waitFor(onBack(`!${shown('.boogler-tag-prompt')}`), { timeout: 20000 });
     const rideShot = await g.still('riding');
     await g.eval(`${TP('window.boogle.boogler.disp.x + 4', 'window.boogle.boogler.disp.z')}`);
-    t.check('riding him, the ball gets the prompt, not Talk', rideMs >= 0, `${rideMs} ms; ${rideShot}`);
+    t.check('riding him clears his Talk prompt', rideMs >= 0, `${rideMs} ms; ${rideShot}`);
 
     // Touch: the action button says Talk, and the prompt has no glyph.
     const thumb = await t.open({ name: 'thumb', hud: true, touch: true, size: [844, 390] });
