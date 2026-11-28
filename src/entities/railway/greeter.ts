@@ -147,6 +147,7 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
       sleeves.update(dt);
       const p = me.body?.position;
       const needsAxe = read.ready() && rail(read.world()).awake < 0;
+      camp.mood = needsAxe || handing > 0 ? 'give' : 'idle';
       if (p && Math.hypot(p.x - T1.wake.x / 100, p.z - T1.wake.z / 100) < 9) {
         if (needsAxe) {
           const dx = p.x - camp.x,
@@ -156,6 +157,7 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
           const x = camp.x + (dx * step) / (distance || 1),
             z = camp.z + (dz * step) / (distance || 1);
           if (Math.hypot(x - T1.wake.x / 100, z - T1.wake.z / 100) <= T1.wake.reach / 100) {
+            if (step > 0.001) camp.mood = 'offer';
             camp.x = x;
             camp.z = z;
             camp.fy = land.H(x, z);
@@ -164,7 +166,6 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
         }
         camp.yaw = angleLerp(camp.yaw, Math.atan2(p.x - camp.x, p.z - camp.z), Math.min(1, dt * 5));
       }
-      camp.mood = needsAxe || handing > 0 ? 'give' : 'idle';
       axe.visible = camp.on && needsAxe;
       if (axe.visible) {
         hand(axe.position);
