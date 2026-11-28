@@ -1313,6 +1313,7 @@ function canopyNetStep(porchOffset: number, mode: 'walking' | 'seated' | 'held' 
     ): { update(kind: number, preview: number, age: number): void };
   }>(fs.readFileSync('src/entities/route-greybox/canopy-town-toys.ts', 'utf8'), {
     THREE,
+    PLAYER_R,
     me,
     inputState: { seated: mode === 'seated', held: mode === 'held' },
     railwayGlideOpen: () => mode === 'gliding',

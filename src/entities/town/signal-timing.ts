@@ -22,13 +22,13 @@ export function townAnswer() {
     due = Infinity;
   return {
     call(now: number) {
-      if (now < next || due !== Infinity) return;
+      if (now + 800 < next || due !== Infinity) return;
       due = now + 800;
-      next = now + 4000;
     },
     update(now: number) {
       if (now < due) return false;
       due = Infinity;
+      next = now + 4000;
       return true;
     },
   };
