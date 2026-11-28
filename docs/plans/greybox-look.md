@@ -201,6 +201,12 @@ Halfway under the hood, the entrance stones gave way to a smooth wall with a sma
 
 `src/entities/route-greybox/cave-shore.ts` fits the faces flush to the existing walls. Both 1200 × 750 stills look from (796, 6.8, 66) toward (789, 8, 87). [Before](greybox-look/card15-bend-before.png) · [After](greybox-look/card15-bend-after.png)
 
+### Card 16, the West sea cave from the strait
+
+On the return from Saltpan, two pale uprights and a straight roof edge framed the tracks. Narrow sandstone piers now carry the shoulder courses up to a broken cap over the opening. The bend and the daylight beyond it are visible between the piers.
+
+`src/entities/route-greybox/cave-shore.ts` fits the cliff-kit faces and rim stones to the seaward end of the hood. Both 1200 × 750 stills look from (778, 7, 106) toward (789, 8, 84). [Before](greybox-look/card16-strait-before.png) · [After](greybox-look/card16-strait-after.png). [Train rounding the bend](greybox-look/card16-strait-train.png)
+
 ## Design review (2026-11-27)
 
 | Call | Kind | Basis |
