@@ -512,17 +512,17 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
         () => !shut() && (!stub || platformEnd(LINE2, stop)),
         HOME,
       ),
+      ringSpot(
+        stop,
+        true,
+        2.45,
+        () => u + 4,
+        () => !shut() && stopsNow[LINE2]!.length > stop + 1,
+        () => 1,
+      ),
     );
     if (stub)
       spots.push(
-        ringSpot(
-          stop,
-          true,
-          2.45,
-          () => u + 4,
-          () => !shut() && stopsNow[LINE2]!.length > stop + 1,
-          () => 1,
-        ),
         ringSpot(
           stop,
           true,

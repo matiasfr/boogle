@@ -79,7 +79,7 @@ export function haltKitContent() {
   for (const [id, h] of RAIL_HALTS.entries()) {
     if (h.line !== 1 || h.stop < 4 || (h.stop > 5 && h.leg?.slot !== 0)) continue;
     const stub = h.end?.kind === 'stub';
-    for (const up of h.stop <= 5 || stub ? [false, true] : [false])
+    for (const up of [false, true])
       entries.push({
         id: `halt-ring-lever-${h.stop}-${up ? 'up' : 'down'}`,
         prefab: 'railway.halt-lever',

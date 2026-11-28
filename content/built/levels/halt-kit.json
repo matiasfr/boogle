@@ -1570,6 +1570,19 @@
       },
       {
         "colliders": [],
+        "id": "halt-ring-lever-9-up",
+        "params": {
+          "piece": "lever",
+          "plaque": 1,
+          "ring": true,
+          "row": 11,
+          "side": 1,
+          "up": true
+        },
+        "prefab": "railway.halt-lever"
+      },
+      {
+        "colliders": [],
         "id": "halt-ring-lever-6-west",
         "params": {
           "piece": "lever",
