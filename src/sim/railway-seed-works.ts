@@ -61,21 +61,21 @@ export function railwayAtWorks(stage: WorksStage, source?: Seed): Seed {
   if (source) {
     const s = { w: restore(source.w), t: source.t };
     finishQ6(s);
-    for (const step of WORKS_STAGES.slice(0, k + 1)) build(s, step);
+    for (const step of WORKS_STAGES.slice(0, k + 1)) buildWorksStage(s, step);
     need(invariant(s.w) === null, stage);
     return s;
   }
   let base = cache.get(stage);
   if (!base) {
     const before = k ? railwayAtWorks(WORKS_STAGES[k - 1]!) : railwayAtTrains('q6-done');
-    base = build(before, stage);
+    base = buildWorksStage(before, stage);
     need(invariant(base.w) === null, stage);
     cache.set(stage, base);
   }
   return { w: restore(base.w), t: base.t };
 }
 
-function build(s: Seed, stage: WorksStage): Seed {
+export function buildWorksStage(s: Seed, stage: WorksStage): Seed {
   const w = s.w;
   switch (stage) {
     case 'works-arrive':

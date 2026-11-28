@@ -153,6 +153,9 @@ function build(s: Seed, stage: LegStage): Seed {
       need(legRow(w, STACK).laid === 0 && legRow(w, STACK).logs + legRow(w, STACK).rails === 0, 'nothing fed');
       break;
     case 'stack-rails':
+      // Only the Stack rail bill should call for Village timber in this jump-in.
+      need(act(s, 'b', 'rail.steelTake', { kind: 0 }) > 0, 'lift the steel timber');
+      need(act(s, 'b', 'rail.steel') > 0, 'feed the steel timber');
       while (legRow(w, STACK).logs < RAIL_LEGS[STACK]!.sections[0]!.logs) {
         need(act(s, 'b', 'rail.depotTake', { leg: STACK }) > 0, 'lift Stack timber');
         need(act(s, 'b', 'rail.legStock', { leg: STACK }) > 0, 'feed Stack timber');

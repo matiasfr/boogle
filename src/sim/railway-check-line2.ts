@@ -109,7 +109,11 @@ export function checkLine2(w: World) {
     pier > r0.out6 ||
     !railInt(r0.giftOut, legLogs) ||
     !railInt(r0.depotGiftDelivered, r0.out5 + r0.out6 - far - pier) ||
-    depotOut.some((n, k) => !railInt(n, LINE2_STATIONS[k]!.bill[0] * (LINE2_STATIONS[k]!.kitStop ? 2 : 1)) || (n > 0 && !LINE2_STATIONS[k]!.depot)) ||
+    depotOut.some(
+      (n, k) =>
+        !railInt(n, LINE2_STATIONS[k]!.bill[0] * (LINE2_STATIONS[k]!.kitStop ? 2 : 1)) ||
+        (n > 0 && !LINE2_STATIONS[k]!.depot),
+    ) ||
     depotOut.reduce((a, b) => a + b, 0) + legLogs !== r0.depotProduced + r0.giftOut + depotGift
   )
     bad('depot output');
@@ -117,7 +121,13 @@ export function checkLine2(w: World) {
   // Logs aboard are a stretch's kit or, after the rivet, the steel works' (made at the Village: outLogs).
   if (
     r0.depot + rackLogs + c.logs + line2Aboard(w, 'logs') >
-    r0.depotProduced + r0.giftOut + depotGift + workAboard(w, 1) + steel(w).outLogs
+    r0.depotProduced +
+      r0.giftOut +
+      depotGift +
+      workAboard(w, 1) +
+      workAboard(w, 4) -
+      line2Aboard(w, 'workStone') +
+      steel(w).outLogs
   )
     bad('depot stock');
   // The cart's road ends at Q6's rack (the farthest it is ever sent; Q6 and Q7 are fed by train).

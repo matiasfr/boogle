@@ -58,6 +58,8 @@ export const haltPut = defineSystem(
       w.mut(Account, aid)!.queuedGift += n;
     }
     if (e.yard === VILLAGE_YARD && kind === RAILS && railGiftRides(w)) thank(w, aid);
+    if (e.yard === VILLAGE_YARD && kind === STONE && w.get(Works, w.single(Works))!.breaker === 2)
+      w.mut(Account, aid)!.queuedStone += n;
     stock(w, e.yard, kind!, n);
     credit(w.mut(Account, aid)!, kind!, -n);
     putDown(w, aid, kind!, n);

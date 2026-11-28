@@ -2,7 +2,7 @@
 // Leave both on the ground at age 21 so the host must choose their destinations when the proof room opens.
 import { buildSeedWorld } from '../../src/sim/railway-seeds.ts';
 import { act, advance } from '../../src/sim/railway-seed-route.ts';
-import { chopTo } from '../../src/sim/railway-seed-works.ts';
+import { buildWorksStage, chopTo } from '../../src/sim/railway-seed-works.ts';
 import { legRow } from '../../src/sim/railway-queries-route.ts';
 import { giftAboard, workAboard } from '../../src/sim/railway-queries-gift.ts';
 import { account, trees } from '../../src/sim/railway-rows.ts';
@@ -39,6 +39,29 @@ export function stackGiftSeed() {
   }
   need(giftAboard(s.w, undefined, 'giftRails') === 4 && invariant(s.w) === null, 'four rails aboard');
   return seedDoc(s);
+}
+
+export function q6GiftSeed(phase: string) {
+  const s = buildSeedWorld('trains-on');
+  need(act(s, 'a', 'rail.pack') === 1, 'pack for the kiln load');
+  for (const stage of ['works-open', 'works-lit', 'stall-done', 'cradle-fitted'] as const) buildWorksStage(s, stage);
+  chopTo(s, 'a', 8);
+  const extra = account(s.w, 'a')!.carry - 8;
+  if (extra) act(s, 'a', 'rail.drop', { kind: 0, n: extra, x: 100000, y: 2000, z: 3000 });
+  need(act(s, 'a', 'rail.haltPut', { yard: 0, kind: 0 }) === 8, 'eight logs given at Home');
+  if (phase !== 'queued') {
+    for (let i = 0; workAboard(s.w, 2) !== 8; i++) {
+      need(i < 6000, 'eight aboard for Q6');
+      advance(s, 1);
+    }
+    if (phase === 'landed') {
+      for (let i = 0; workAboard(s.w, 2); i++) {
+        need(i < 6000, 'Q6 accepts its logs');
+        advance(s, 1);
+      }
+    }
+  }
+  return seedDoc(s, 'Robin');
 }
 
 export function pierGiftSeed() {

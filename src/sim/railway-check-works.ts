@@ -33,6 +33,10 @@ export function checkWorks(w: World) {
     !railInt(k.lit, RAILWAY_MAX_INT, -1) ||
     !railInt(k.rack, WORKS.total) ||
     !railInt(k.poured, WORKS.total) ||
+    !railInt(k.castLogs, k.poured * 4) ||
+    !railInt(k.castStone, k.poured * 4 - k.castLogs) ||
+    k.castLogs % 4 !== 0 ||
+    k.castStone % 4 !== 0 ||
     !railInt(k.pierRack, WORKS.pier) ||
     !railInt(k.pierSet, WORKS.pier) ||
     !railInt(k.crossing, RAILWAY_MAX_INT, -1) ||

@@ -9,7 +9,7 @@ import { LINE1_STATIONS, lineBeamGround } from './railway-line-layout.ts';
 import { RAIL_STONE } from './railway-works-layout.ts';
 import { Pile } from './railway-components.ts';
 import { account, accounts, beam, forge, hardwoods, rail, rocks, trees, works } from './railway-rows.ts';
-import { carried, railJobs, scheduleOf } from './railway-queries.ts';
+import { aboard, carried, railJobs, scheduleOf } from './railway-queries.ts';
 import { haltYardTotals } from './railway-queries-yard.ts';
 
 const bad = (what: string): never => {
@@ -92,6 +92,8 @@ export function checkLine1(w: World) {
     r0.stoneRack +
     works(w).stone +
     haltYardTotals(w).stone +
+    works(w).castStone +
+    aboard(w, 'workStone') +
     jobs.reduce((n, { job: j, run }) => n + j.stoneStock + run.stoneAllocation + run.stoneUsed, 0);
   if (stone !== RAIL_STONE + r0.stoneProduced) bad('stone conservation');
   const b = beam(w);

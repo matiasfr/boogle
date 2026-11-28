@@ -117,7 +117,7 @@
 // v55 (2026-11-16): plot 2 is the loader yard (no riders); with it built and the wagon coupled every line 2 train
 // loads footings at the quarry going out; rooms that bought plot 2 as a house start fresh. No shape change or migration.
 // v56 (2026-11-16): line two and the breaker wake only after the fitted boiler and the cart at rest.
-// v57 — 2026-11-16: riders' coach, eight rider places (was four), 16.1 m rear reach;
+// v57 â€” 2026-11-16: riders' coach, eight rider places (was four), 16.1 m rear reach;
 // Home line 2 stop 21.65 m and Ring Island stop +3.4 m, keeping freight positions fixed;
 // High Gorge's crossover 3.4 m toward Home keeps the full coach train straight at the terminal turn.
 // v58 (2026-11-17): capped away-fare sack and rail.sack pour into the shared strongbox; no migration.
@@ -164,7 +164,8 @@
 // v86 (2026-11-28): save Village gift destinations, delivered credits and pre-leg contributors.
 // v87 (2026-11-28): High Gorge town, plot and far rider clock.
 // v88 (2026-11-28): Village forge conversions and marked rail kit in transit.
-export const WORLD_NS = 'v88';
+// v89 (2026-11-28): pre-leg bill pours and donated cast batches at Quarry.
+export const WORLD_NS = 'v89';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { act, advance, buildSeedWorld, chopTo, unaudited } from './helpers/rail.ts';
-import { account, boiler, cart, qjob, rail, steel, works } from '../src/sim/railway-rows.ts';
+import { account, boiler, cart, qjob, rail, rocks, steel, trains, works, worksClock } from '../src/sim/railway-rows.ts';
 import { CART_PHASE } from '../src/sim/railway-cart.ts';
-import { workAboard, workNeed } from '../src/sim/railway-queries-gift.ts';
+import { castBatch, workAboard, workNeed } from '../src/sim/railway-queries-gift.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
 import { giftAboard, giftPourRoom, giftQueued, giftRides, worksThanks } from '../src/sim/railway-queries-gift.ts';
 import { laySection } from '../src/sim/railway-seed-legs.ts';
@@ -25,7 +25,7 @@ import {
 import { legKitArrive, legKitLoad } from '../src/sim/railway-sys-route-kit.ts';
 import { LINE2 } from '../src/sim/railway-lines.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
-import { TRAIN_PHASE } from '../src/sim/railway-train.ts';
+import { TRAIN_PHASE, trainArrives } from '../src/sim/railway-train.ts';
 import { train } from '../src/sim/railway-rows.ts';
 
 for (const [stage, k, expected] of [
@@ -196,7 +196,10 @@ for (const [stage, stop] of [
 
 test('a last gifted log funds stocked Q6 when the rails are complete', () => {
   const s = unaudited(buildSeedWorld('q6-stocked'));
-  for (const [kind, bill] of [[0, 31], [2, 32]] as const) {
+  for (const [kind, bill] of [
+    [0, 31],
+    [2, 32],
+  ] as const) {
     for (let fed = 0; fed < bill;) {
       act(s, 'b', kind ? 'rail.depotRailTake' : 'rail.depotTake');
       const n = act(s, 'b', 'rail.deposit', { station: 'Q6', kind, n: Math.min(8, bill - fed) });
@@ -635,4 +638,116 @@ test('returning rails for the previous Stack frame leave the next frame availabl
   }
   assert.equal(giftAboard(s.w, LINE2, 'giftRails'), 4);
   assert.equal(giftPourRoom(s.w, 0, 'giftRails'), RAIL_LEGS[0]!.sections[1]!.rails);
+});
+
+// The ordinary kiln keeps ticking during the journey. Open rack space at dispatch and, on the
+// successful branch, just before arrival. The other branch lets the scheduled cast win the race.
+for (const [kind, amount] of [
+  [0, 8],
+  [1, 7],
+] as const) {
+  test('Quarry casts whole batches from a Village gift of ' + amount + (kind ? ' stone' : ' logs'), () => {
+    const s = unaudited(buildSeedWorld('works-lit'));
+    const rack = () => (kind ? rail(s.w).stoneRack : rail(s.w).rack);
+    if (kind) {
+      while (account(s.w, 'a')!.stone < amount) {
+        const k = rocks(s.w).findIndex((r) => r.left > 0);
+        assert.ok(k >= 0 && act(s, 'a', 'rail.mine', { id: k }) > 0);
+      }
+      const extra = account(s.w, 'a')!.stone - amount;
+      if (extra) assert.equal(act(s, 'a', 'rail.drop', { kind, n: extra, x: 0, y: 0, z: 0 }), extra);
+      assert.equal(act(s, 'a', 'rail.haltPut', { yard: 0, kind }), amount);
+    } else give(s);
+    const carrier = () =>
+      LINE_SLOTS[LINE2]!.some((slot) => {
+        const car = train(s.w, slot);
+        return car.at === 0 && car.phase === TRAIN_PHASE.STAND && !car.logs;
+      });
+    for (let ticks = 0; !carrier(); ticks++) {
+      assert.ok(ticks < 6000);
+      advance(s, 1);
+    }
+    assert.equal(workAboard(s.w, 4), 0, 'a full rack admits no raw cargo');
+    const batches = Math.floor(amount / 4);
+    function clearRack() {
+      for (let i = 0; i < batches; i++) {
+        assert.equal(act(s, 'b', 'rail.footTake', { rack: 0 }), 1);
+        assert.equal(act(s, 'b', 'rail.drop', { kind: 3, n: 1, x: 0, y: 0, z: 0 }), 1);
+      }
+    }
+    clearRack();
+    for (let ticks = 0; !workAboard(s.w, 4); ticks++) {
+      assert.ok(ticks < 100);
+      advance(s, 1);
+    }
+    assert.equal(workAboard(s.w, 4), batches * 4);
+    const returned = unaudited(s);
+    for (let ticks = 0; workAboard(returned.w, 4); ticks++) {
+      assert.ok(ticks < 6000);
+      advance(returned, 1);
+      railwayCheck(returned.w);
+    }
+    assert.equal(kind ? rail(returned.w).stoneRack : rail(returned.w).rack, amount);
+    assert.equal(works(returned.w).castLogs + works(returned.w).castStone, 0);
+    const due = () =>
+      trains(s.w).some(
+        (t) => t.workStop === 4 && t.to === 1 && t.phase === TRAIN_PHASE.RUN && trainArrives(t, LINE2) === s.t + 1,
+      );
+    for (let ticks = 0; !due(); ticks++) {
+      assert.ok(ticks < 6000);
+      advance(s, 1);
+    }
+    clearRack();
+    const saved = unaudited(s);
+    const before = works(s.w).poured,
+      clock = worksClock(s.w).lastCast;
+    advance(s, 1);
+    advance(saved, 1);
+    railwayCheck(s.w);
+    assert.equal(s.w.hash(), saved.w.hash());
+    assert.equal(works(s.w).poured, before + batches);
+    assert.equal(works(s.w).rack, 6);
+    assert.equal(worksClock(s.w).lastCast, clock);
+    assert.equal(kind ? works(s.w).castStone : works(s.w).castLogs, batches * 4);
+    assert.equal(rack(), amount % 4);
+    assert.deepEqual(worksThanks(s.w, 4), ['a']);
+  });
+}
+
+test('the last Quarry cast has one reservation across carriers and returns raw timber if the clock wins', () => {
+  const s = unaudited(buildSeedWorld('works-lit'));
+  for (let i = 0; works(s.w).poured < 31; i++) {
+    assert.ok(i < 3000);
+    if (works(s.w).rack === 6) {
+      assert.equal(act(s, 'b', 'rail.footTake', { rack: 0 }), 1);
+      assert.equal(act(s, 'b', 'rail.drop', { kind: 3, n: 1, x: 0, y: 0, z: 0 }), 1);
+    }
+    advance(s, 1);
+  }
+  for (
+    let ticks = 0;
+    !LINE_SLOTS[LINE2]!.some((slot) => {
+      const car = train(s.w, slot);
+      return car.at === 0 && car.phase === TRAIN_PHASE.STAND && !car.logs;
+    });
+    ticks++
+  ) {
+    assert.ok(ticks < 6000);
+    advance(s, 1);
+  }
+  give(s);
+  assert.equal(act(s, 'b', 'rail.footTake', { rack: 0 }), 1);
+  advance(s, 1);
+  assert.equal(workAboard(s.w, 4), 4);
+  assert.equal(rail(s.w).rack, 4);
+  assert.equal(castBatch(s.w).n, 0, 'the next carrier cannot reserve the same final cast');
+  for (let i = 0; workAboard(s.w, 4); i++) {
+    assert.ok(i < 6000);
+    advance(s, 1);
+    railwayCheck(s.w);
+  }
+  assert.equal(works(s.w).poured, 32);
+  assert.equal(works(s.w).castLogs, 0);
+  assert.equal(rail(s.w).rack, 8);
+  assert.equal(rail(s.w).returnedLogs, 4);
 });

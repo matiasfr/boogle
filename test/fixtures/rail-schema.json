@@ -1,5 +1,5 @@
 {
- "worldNs": "v88",
+ "worldNs": "v89",
  "components": [
   {
    "kind": "rail",
@@ -660,6 +660,10 @@
      "int"
     ],
     [
+     "queuedStone",
+     "int"
+    ],
+    [
      "legLogs",
      "u8"
     ],
@@ -897,6 +901,10 @@
      "int"
     ],
     [
+     "workStone",
+     "int"
+    ],
+    [
      "workGivers",
      "str"
     ],
@@ -926,6 +934,14 @@
     [
      "seams",
      "u8"
+    ],
+    [
+     "castLogs",
+     "int"
+    ],
+    [
+     "castStone",
+     "int"
     ],
     [
      "logs",

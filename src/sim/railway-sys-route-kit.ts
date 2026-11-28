@@ -22,7 +22,7 @@ import { defineSystem, type World } from '../ecs/index.ts';
 import {
   GIFT_LEGS,
   giftAboard,
-  donatedLogs,
+  donated,
   giftLegs,
   giftPourRoom,
   rideableLogs,
@@ -262,7 +262,7 @@ function loadPour(w: World, slot: number, line: number) {
   if (room > 0 && (!r.giftRails || r.giftBill === giftBillId(w, k))) {
     const direct = Math.min(directStock, room);
     const forge = w.get(Forge, w.single(Forge))!;
-    const cast = !giftBill(w, line, k) && forge.lit >= 0 ? Math.min(room - direct, Math.floor(donatedLogs(w) / 2)) : 0;
+    const cast = !giftBill(w, line, k) && forge.lit >= 0 ? Math.min(room - direct, Math.floor(donated(w) / 2)) : 0;
     const marked = direct + cast;
     if (marked) {
       const added = Math.min(marked, Math.max(0, cap.rails - r.rails));
