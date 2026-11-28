@@ -48,6 +48,12 @@ export function createBallTargets(owner: OwnedView, porch: XZ, yaw: number) {
   let previousTime = NaN,
     epoch = -1,
     shown = 0;
+  // A hidden tab may receive no frames until it becomes visible again.
+  const resetPath = () => {
+    previousTime = NaN;
+  };
+  document.addEventListener('visibilitychange', resetPath);
+  owner.cleanup(() => document.removeEventListener('visibilitychange', resetPath));
   return {
     describe: () => ({ kind: shown, hits: targets.map((t) => t.last) }),
     update(kind: number, now: number) {
@@ -71,7 +77,6 @@ export function createBallTargets(owner: OwnedView, porch: XZ, yaw: number) {
         !ball.held &&
         epoch === ball.e &&
         dt > 0 &&
-        dt <= 0.25 &&
         speed > 0.05 &&
         path.distance() <= speed * dt + 0.5;
       for (const t of targets) {
@@ -87,7 +92,7 @@ export function createBallTargets(owner: OwnedView, porch: XZ, yaw: number) {
           else {
             const p = bakery.root.position;
             clank(t.centre.x, t.centre.z);
-            splash(p.x, p.z, 0.85, p.y + 2.4);
+            splash(p.x, p.z, 0.85, p.y, p.y + 2.4);
           }
         }
         t.inside = inside;

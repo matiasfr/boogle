@@ -23,20 +23,21 @@ function addRipple(x: number, z: number, strength: number) {
 }
 
 // strength 0..1, level: the water surface there
-export function splash(x: number, z: number, strength: number, level: number) {
+export function splash(x: number, z: number, strength: number, level: number, launchY = level) {
   strength = Math.min(Math.max(strength, 0), 1);
   const body = waterField.nearby({ x, y: level, z }).body;
   if (body === 'sea') addRipple(x, z, 0.35 + strength * 0.65);
   const n = Math.round((10 + strength * 55) * (reducedMotion ? 0.3 : 1));
-  const up = 2.5 + strength * 5.5;
-  const spread = 0.8 + strength * 2.2;
+  const falling = launchY > level;
+  const up = falling ? -1.5 : 2.5 + strength * 5.5;
+  const spread = falling ? 0.65 : 0.8 + strength * 2.2;
   for (let k = 0; k < n; k++) {
     const a = Math.random() * Math.PI * 2;
     const r = Math.random() * (0.15 + strength * 0.35);
     const sp = spread * (0.3 + Math.random() * 0.7);
     emit({
       x: x + Math.cos(a) * r,
-      y: level + 0.05,
+      y: launchY + 0.05,
       z: z + Math.sin(a) * r,
       vx: Math.cos(a) * sp,
       vy: up * (0.45 + Math.random() * 0.75),
