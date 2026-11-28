@@ -1,11 +1,20 @@
 // What a recent return asks of the room's accepted state (./arrival.ts; docs/game-design/first-run.md, "Returning
 // visit"): whether a catalogue halt stands now, and the halt the train you are on is running to. Local reads only.
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
-import { RAIL_LINES, RAIL_TRAINS } from '../../sim/railway-lines.ts';
+import { RAIL_LINES, RAIL_TRAINS, RAIL_HALTS, haltPlatform } from '../../sim/railway-lines.ts';
 import { runningLine, trainStops } from '../../sim/railway-queries-trains.ts';
-import { train as trainRow } from '../../sim/railway-rows.ts';
+import { rail, train as trainRow } from '../../sim/railway-rows.ts';
+import { TRAIN_PHASE } from '../../sim/railway-train.ts';
+import { roomWorks } from '../../sim/railway-queries-room.ts';
+import { ringOpen } from '../../sim/railway-queries.ts';
+import { haltHead } from '../../sim/railway-queries-route.ts';
+import { haltLandings } from '../../place/return-spot.ts';
+import { consistOf, roleIndex } from './cars.ts';
 
 export type ReturnHalts = {
+  running(): boolean;
+  friends(): { standing: ReturnType<typeof haltLandings>; works: { x: number; z: number } };
+  passengerDecks(line: number, stop: number): string[];
   /** Halt `stop` of catalogue line `line` is open in this room (a line's open stops are a prefix of its halts). */
   stands(line: number, stop: number): boolean;
   /** `<line id>:<stop>` of the halt the train whose deck is `platform` is running to (standing: where it stands);
@@ -23,6 +32,29 @@ export function haltStands(line: number, stop: number, open: number) {
 
 export function createReturnHalts(world: RailwayAdapter['read']['world']): ReturnHalts {
   return {
+    running: () => rail(world()).trains >= 0,
+    friends() {
+      const w = world();
+      const works = roomWorks(w).at;
+      const open = RAIL_LINES.map((_, line) => trainStops(w, line).length);
+      const standing = haltLandings((h, line, stop) => {
+        if (!haltStands(line, stop, open[line]!)) return [];
+        if (!h.heads) return h.platforms;
+        const index = RAIL_HALTS.findIndex((at) => at.line === line && at.stop === stop);
+        const head = haltHead(w, index, ringOpen(w).head);
+        return [haltPlatform(h, 1, head), haltPlatform(h, -1, head, stop === open[line]! - 1)];
+      });
+      return { standing, works: { x: works.x / 100, z: works.z / 100 } };
+    },
+    passengerDecks(line, stop) {
+      const w = world();
+      return RAIL_TRAINS.flatMap((train, slot) => {
+        const row = trainRow(w, slot);
+        if (row.phase !== TRAIN_PHASE.STAND || row.at !== stop || runningLine(w, slot) !== line) return [];
+        const car = roleIndex(consistOf({ line: train.line, wagon: false, steel: false }), 'player');
+        return [`railway:train${slot}-${car}`];
+      });
+    },
     stands(line, stop) {
       try {
         return haltStands(line, stop, trainStops(world(), line).length);

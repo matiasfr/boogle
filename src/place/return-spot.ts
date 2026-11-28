@@ -1,6 +1,6 @@
 // Local browser memory only. No wall clock is read here: callers supply the observation time.
 import { joinedCaveStop } from '../sim/railway-lap.ts';
-import { LINE2, RAIL_LINES } from '../sim/railway-lines.ts';
+import { LINE2, RAIL_LINES, type RailHalt, type RailPlatform } from '../sim/railway-lines.ts';
 import { JUMPS } from '../world/railway-jump.ts';
 
 export type ReturnPosition = { x: number; y: number; z: number };
@@ -13,6 +13,7 @@ export type ReturnCandidate = Position & {
   line?: number;
   stop?: number;
   track?: { x: number; z: number };
+  platform?: Position;
 };
 /** `ride.halt`: the halt (`<line id>:<stop>`) the train you were on was running to, when the record knew. */
 export type ReturnSpot = Position & { yaw: number; at: number; ride?: Position & { halt?: string } };
@@ -82,11 +83,13 @@ function trackNear(path: readonly number[], p: { x: number; z: number }) {
 export const yawToward = (from: { x: number; z: number }, toward: { x: number; z: number }) =>
   Math.atan2(from.x - toward.x, from.z - toward.z);
 /** One candidate per catalogue platform; coincident up/down platforms share a candidate. */
-export function haltLandings(): ReturnCandidate[] {
+export function haltLandings(
+  platforms?: (halt: RailHalt, line: number, stop: number) => readonly RailPlatform[],
+): ReturnCandidate[] {
   const jumps = JUMPS.flatMap((j) => (j.land ? [j.land] : []));
   const points = RAIL_LINES.flatMap((line, index) =>
     line.halts.flatMap((halt, k) =>
-      halt.platforms.map((point) => ({
+      (platforms ? platforms(halt, index, k) : halt.platforms).map((point) => ({
         point,
         halt: `${line.id}:${k}`,
         line: index,
@@ -99,7 +102,10 @@ export function haltLandings(): ReturnCandidate[] {
   for (const { point, halt, line, stop, path } of points) {
     const platform = { x: point.x / 100, y: point.y / 100, z: point.z / 100 };
     const jump = jumps
-      .filter((p) => Math.hypot(p.x - platform.x, p.z - platform.z) <= 30)
+      .filter(
+        (p) =>
+          Math.hypot(p.x - platform.x, p.z - platform.z) <= 30 && (!platforms || Math.abs(p.y - platform.y) <= 1.5),
+      )
       .sort(
         (a, b) => Math.hypot(a.x - platform.x, a.z - platform.z) - Math.hypot(b.x - platform.x, b.z - platform.z),
       )[0];
@@ -113,6 +119,7 @@ export function haltLandings(): ReturnCandidate[] {
       line,
       stop,
       track: trackNear(path, platform),
+      ...(platforms ? { platform } : {}),
     });
   }
   return [...unique.values()];
@@ -159,21 +166,31 @@ export function createReturnSearch(
   halts: readonly ReturnCandidate[],
   stands?: (halt: ReturnCandidate) => boolean,
 ) {
-  const list = spot ? returnCandidates(spot, halts, stands) : [];
+  return searchLandings(spot ? returnCandidates(spot, halts, stands) : []);
+}
+
+export function searchLandings(list: readonly ReturnCandidate[]) {
   let k = 0,
     since: number | null = null,
     began: number | null = null,
     done = false;
   return {
     current: () => (done ? null : (list[k] ?? null)),
+    /** Another friend is at a different halt. Warm its scenery within the original search budget. */
+    retarget(platforms: readonly ReturnCandidate[]) {
+      list = platforms;
+      k = 0;
+      since = null;
+    },
     step(
       now: number,
       probes: {
         settled: (p: Position) => boolean;
+        deck?: (p: ReturnCandidate) => Position | null;
         standable: (p: Position) => boolean;
         near: (p: Position, radii: readonly number[]) => Position | null;
       },
-    ): { kind: 'hold' } | { kind: 'home' } | { kind: 'land'; at: Position; from: ReturnCandidate } {
+    ): { kind: 'hold' } | { kind: 'home' } | { kind: 'land'; at: Position; from: ReturnCandidate; deck?: true } {
       const p = list[k];
       began ??= now;
       if (done || !p || now - began > RETURN_BUDGET_S) {
@@ -186,6 +203,11 @@ export function createReturnSearch(
       }
       if (now - since < 2.5 && !probes.settled(p)) return { kind: 'hold' };
       if (now - since < 2.5) {
+        const deck = probes.deck?.(p);
+        if (deck) {
+          done = true;
+          return { kind: 'land', at: deck, from: p, deck: true };
+        }
         const exact = (!p.halt || p.checked) && probes.standable(p);
         const at = exact ? p : probes.near(p, p.halt && !p.checked ? [3, 4.5, 6, 8] : [1.4, 3, 6]);
         if (at) {

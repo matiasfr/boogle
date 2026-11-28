@@ -37,6 +37,7 @@ export function writeReturn(key: string, spot: ReturnSpot, storage: Pick<Storage
 const LIMIT_MS = 20000; // nobody stays unpublished for ever: a room that never answers stops pending
 let pending: boolean | null = null;
 let asked = 0;
+let placing = false;
 let check = () => false;
 export const returnSettle = {
   /** The boot-time reader of the record: asked once, the first time anything wants to know. */
@@ -52,10 +53,16 @@ export const returnSettle = {
       }
       asked = now;
     }
-    if (pending && now - asked > LIMIT_MS) pending = false;
+    if (pending && !placing && now - asked > LIMIT_MS) pending = false;
     return pending;
   },
+  /** The room has answered. Arrival now owns release after either the friend's or the ordinary landing. */
+  claimPlacement() {
+    placing = this.pending();
+    return placing;
+  },
   done() {
+    placing = false;
     pending = false;
   },
 };
