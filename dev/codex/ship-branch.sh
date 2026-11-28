@@ -6,48 +6,16 @@
 # isn't already on main), 4 conflict markers survived the docs union or one table row was edited on both sides (aborted:
 # redo the edit on fresh main), otherwise ship's own status. Queued is not merged; --wait reports ancestry on main.
 set -uo pipefail
+# The queue captures this whole command at its call site. A standalone ship keeps its own log.
+ship_branch() (
 here=$(cd "$(dirname "$0")" && pwd)
 cd "${1:?worktree path}" || exit 1
 wait=0
 for arg in "${@:2}"; do
   case "$arg" in --wait) wait=1 ;; *) echo "Unknown argument: $arg"; exit 1 ;; esac
 done
-git fetch -q origin
-git -c merge.conflictStyle=diff3 rebase origin/main >/dev/null 2>&1
-while [ -d "$(git rev-parse --git-path rebase-merge)" ]; do
-  conflicted=$(git diff --name-only --diff-filter=U)
-  if echo "$conflicted" | grep -qv '^docs/'; then
-    echo "CODE CONFLICT in $1:"
-    echo "$conflicted"
-    git rebase --abort
-    exit 2
-  fi
-  while IFS= read -r f; do
-    [ -n "$f" ] || continue
-    # Node, not python3: HOTBOX has no python3, and the silent failure committed the markers (18 November, #2054).
-    node "$here/docs-union.ts" "$f"
-    union=$?
-    if [ "$union" = 5 ]; then
-      echo "Nothing shipped, rebase aborted: redo this commit's edit to that row on fresh origin/main"
-      git rebase --abort
-      exit 4
-    fi
-    if [ "$union" != 0 ]; then
-      echo "MARKERS LEFT in $f after the docs union: nothing shipped, rebase aborted"
-      git rebase --abort
-      exit 4
-    fi
-    git add "$f"
-    echo "union: $f"
-  done <<<"$conflicted"
-  if ! GIT_EDITOR=true git -c merge.conflictStyle=diff3 rebase --continue >/dev/null 2>&1; then
-    if [ -z "$(git diff --name-only --diff-filter=U)" ] && git diff --cached --quiet; then
-      echo "EMPTY COMMIT at rebase: $(git log -1 --format=%s REBASE_HEAD)"
-      git rebase --abort
-      exit 3
-    fi
-  fi
-done
+git fetch -q origin || exit 1
+node "$here/../rule-rebase.ts" . || exit $?
 # A worktree whose node_modules is a symlink shares another checkout's install: `npm ci` would empty that checkout
 # through the link (the main checkout lost its modules three times on 9 November this way). Drop the link first.
 for link in node_modules server/node_modules; do
@@ -58,8 +26,8 @@ done
 node "$here/../look/install-check.ts" . >/dev/null 2>&1 || npm ci --silent >/dev/null 2>&1
 ship_args=(--silent ship --)
 if [ "$wait" = 1 ]; then ship_args+=(--wait); fi
-SHIP_NO_AI=1 npm run "${ship_args[@]}" 2>&1 | tail -8
-status=${PIPESTATUS[0]}
+SHIP_NO_AI=1 npm run "${ship_args[@]}"
+status=$?
 [ "$status" = 0 ] || exit "$status"
 if [ "$wait" = 0 ]; then
   echo 'ship-branch: queued; CI and merge still pending. Next branch can start now.'
@@ -84,4 +52,17 @@ for attempt in 1 2; do
 done
 echo "unshipped commits: $left"
 [ "$left" = 0 ] || exit "${status:-1}"
+exit "$status"
+)
+
+if [ "${BOOGLE_QUEUE_CAPTURES_SHIP:-0}" = 1 ]; then
+  ship_branch "$@"
+  exit $?
+fi
+gitdir=$(git -C "${1:?worktree path}" rev-parse --absolute-git-dir) || exit 1
+log=$(mktemp "$gitdir/ship-branch.log.XXXXXXXX") || exit 1
+ship_branch "$@" >"$log" 2>&1
+status=$?
+tail -8 "$log"
+if [ "$status" != 0 ]; then echo "full output: $log"; fi
 exit "$status"

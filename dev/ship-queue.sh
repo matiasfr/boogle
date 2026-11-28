@@ -13,6 +13,7 @@
 #   2. Takes a machine-wide lock for the local part only (rebase, gate, push), so the next ship can start while CI runs.
 #   3. Runs dev/codex/ship-branch.sh from the trusted checkout (../boogle-trusted, detached at origin/main), never from
 #      the branch being shipped; a missing or broken trusted checkout is exit 1.
+#      ship-branch uses the trusted rule-rebase tool for pinned railway output and version collisions.
 #   4. With --wait, polls up to 30 minutes for the commits on origin/main, starts CI once if none ran for the push, and
 #      reruns a cancelled CI run's failed jobs once (a job at its time limit on a slow runner).
 # Exit: 0 shipped (with --wait: on main; with --dry-run: checks passed), 1 cannot ship (no trusted checkout), 4 needs
@@ -23,7 +24,10 @@
 set -uo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 wt=$(cd "${1:?worktree path}" && pwd) || exit 1
+gitdir=$(git -C "$wt" rev-parse --absolute-git-dir) || exit 1
+log=$(mktemp "$gitdir/ship-queue.log.XXXXXXXX") || exit 1
 shift
+ship_queue() (
 wait=0 dry=0 reviewed='' known='' read='' mainknown=''
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -145,9 +149,9 @@ if ! { git -C "$trusted" fetch -q origin && git -C "$trusted" checkout -q --deta
   echo "ship-queue: could not move the trusted checkout $trusted to origin/main; nothing shipped."
   exit 1
 fi
-out=$(bash "$trusted/dev/codex/ship-branch.sh" "$wt" 2>&1)
+# Capture every line from the branch. Send its console tail directly to the caller so the outer tee logs it only once.
+BOOGLE_QUEUE_CAPTURES_SHIP=1 bash "$trusted/dev/codex/ship-branch.sh" "$wt" 2>&1 | tee -a "$log" | tail -6 >&3
 status=$?
-printf '%s\n' "$out" | tail -6
 unlock
 trap wtunlock EXIT
 [ "$status" = 0 ] || exit "$status"
@@ -156,7 +160,7 @@ trap wtunlock EXIT
 # Wait on the commit the ship pushed, not the worktree's HEAD: a worktree another session moved to main mid-ship read
 # as "on main" while nothing had merged (25 November, the honk step).
 sha=$(git -C "$wt" rev-parse HEAD)
-pushed=$(printf '%s\n' "$out" | sed -n 's/^ship: pushed .* to \(ship\/[^ ]*\)\.$/\1/p' | tail -1)
+pushed=$(sed -n 's/^ship: pushed .* to \(ship\/[^ ]*\)\.$/\1/p' "$log" | tail -1)
 if [ -n "$pushed" ]; then
   git -C "$wt" fetch -q origin "+refs/heads/$pushed:refs/remotes/origin/$pushed" 2>/dev/null || true
   remote=$(git -C "$wt" rev-parse -q --verify "refs/remotes/origin/$pushed" || true)
@@ -200,3 +204,11 @@ done
 echo "ship: not on main after 30 minutes. Runs for $sha:"
 gh run list --commit "$sha" -L 6 2>/dev/null
 exit 5
+)
+
+# Keep the preflight and wait messages live while saving them alongside the branch output.
+exec 3>&1
+ship_queue "$@" 2>&1 | tee -a "$log"
+status=$?
+if [ "$status" != 0 ]; then echo "full output: $log"; fi
+exit "$status"

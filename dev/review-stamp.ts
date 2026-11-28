@@ -16,6 +16,7 @@
 // refuses a --reviewed note that does not start with it.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { importClosure, isDocs, relativeLoads } from './ci/change-class.ts';
@@ -243,7 +244,17 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const diff = stamped.length ? git(['diff', '--no-color', '--no-ext-diff', '--binary', range, '--', ...stamped]) : '';
   // A diff of mode changes alone has no patch id; hash its text so a reviewed change never goes unstamped.
   const id = diff && (git(['patch-id', '--stable'], diff).trim() || createHash('sha1').update(diff).digest('hex'));
-  const stamp = id ? id.slice(0, 12) : '';
+  let stamp = id ? id.slice(0, 12) : '';
+  const receipt = git(['rev-parse', '--path-format=absolute', '--git-path', 'rule-rebase-review']).trim();
+  if (stamp && existsSync(receipt)) {
+    const saved = JSON.parse(readFileSync(receipt, 'utf8'));
+    if (
+      saved.head === git(['rev-parse', 'HEAD']).trim() &&
+      saved.base === git(['merge-base', base, 'HEAD']).trim() &&
+      /^[0-9a-f]{12}$/.test(saved.stamp)
+    )
+      stamp = saved.stamp;
+  }
 
   if (args.includes('--id')) {
     if (stamp) console.log(stamp);
