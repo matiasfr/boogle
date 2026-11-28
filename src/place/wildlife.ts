@@ -42,7 +42,7 @@ export function wings() {
   return geometry;
 }
 
-export function wildlifePool(kind: 'school' | 'flock' | 'swarm', count: number, color: string) {
+export function wildlifePool(kind: 'school' | 'flock' | 'swarm', count: number, color: string, animated = true) {
   const aquatic = kind === 'school',
     bird = kind === 'flock';
   const material = new THREE.MeshStandardNodeMaterial({
@@ -51,13 +51,14 @@ export function wildlifePool(kind: 'school' | 'flock' | 'swarm', count: number, 
     flatShading: true,
   });
   const beat = sin(time.mul(bird ? 7 : aquatic ? 13 : 22).add(float(instanceIndex).mul(1.7)));
-  patchNode(material, 'positionNode', (prev) =>
-    (prev ?? positionLocal).add(
-      aquatic
-        ? vec3(beat.mul(positionGeometry.z.min(0)).mul(0.28), 0, 0)
-        : vec3(0, beat.mul(positionGeometry.x.abs()).mul(bird ? 0.32 : 0.18), 0),
-    ),
-  );
+  if (animated)
+    patchNode(material, 'positionNode', (prev) =>
+      (prev ?? positionLocal).add(
+        aquatic
+          ? vec3(beat.mul(positionGeometry.z.min(0)).mul(0.28), 0, 0)
+          : vec3(0, beat.mul(positionGeometry.x.abs()).mul(bird ? 0.32 : 0.18), 0),
+      ),
+    );
   const geometry = aquatic ? new THREE.ConeGeometry(0.12, 0.56, 5).rotateX(Math.PI / 2) : wings();
   return createPool(geometry, material, count);
 }

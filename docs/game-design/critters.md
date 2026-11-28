@@ -16,6 +16,8 @@ At Split-rock Works, [Placeholder: Quarry Swifts] wheel above the rim when a tra
 
 On Ring Island, [Placeholder: Crossing Gulls] lift from shore rocks and the outer ends of finished bent caps, then bank alongside incoming trains. [Placeholder: Reef Dartfish] scatter from swimmers and ball splashes. [Placeholder: Clover Flutters] rise as players pass quickly across the meadow in daylight. Full Detail has up to 16, 36 and 28 instances respectively. Reduced Detail halves each population and removes its shadows. The groups mount within 495 m of the area centre and sleep beyond 530 m.
 
+At High Gorge, [Placeholder: Canyon Swallows] circle and dive through the split, flaring up near fast passes and trains emerging from the incline. [Placeholder: Split-Water Fish] dart away from swimmers, ball splashes and moving engines by the halt. Full Detail draws 18 and 36 respectively. Low Detail halves both populations and disables shadows. Reduced motion holds both groups still.
+
 Files: [critter-fish.ts](../../src/features/critter-fish.ts), [critter-gulls.ts](../../src/features/critter-gulls.ts),
 [critter-fireflies.ts](../../src/features/critter-fireflies.ts). Related research:
 [research/creature-ai-and-ecosystems.md](../research/creature-ai-and-ecosystems.md).
