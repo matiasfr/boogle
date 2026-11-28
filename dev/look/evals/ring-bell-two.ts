@@ -1,4 +1,4 @@
-// npm run look -- --rail-seed ring-bellhouse --players 2 --real --eval dev/look/evals/ring-bell-two.ts --until window.__bellSeen --cam 1402,14,-838 --look 1388,11,-846 --frames 2 --size 620x420 --name c5-two --wall 240
+// npm run look -- --rail-seed ring-bellhouse --players 2 --real --eval dev/look/evals/ring-bell-two.ts --until window.__bellSeen --cam 1409,15,-832 --look 1388,16,-846 --fov 65 --size 820x560 --wall 225 --frames 3 --seconds 0.7 --name v85-west-signal
 // The platform observer must see a pull from inside the cottage.
 const { me } = (await import('/src/player/player.ts' as string)) as typeof import('../../../src/player/player.ts');
 const { teleport } = (await import(
