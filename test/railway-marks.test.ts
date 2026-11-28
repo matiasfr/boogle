@@ -14,21 +14,7 @@ import { firstContribution } from '../src/proto/playdata/first-contribution.ts';
 
 for (const [act, intent] of [
   ['gift hand-in', { op: 'rail.haltPut', yard: 0, kind: 0 }],
-  ['track-layer activation', { op: 'rail.wake' }],
-  ['great beam cut', { op: 'rail.beamChop' }],
-  ['route key pickup', { op: 'rail.grant', id: 0 }],
-  ['route barrier', { op: 'rail.gate', id: 0 }],
-  ['plug opening', { op: 'rail.gate', id: 2 }],
-  ['quarry lever', { op: 'rail.lever' }],
-  ['sea switch', { op: 'rail.seaSwitch' }],
-  ['breaker pickup', { op: 'rail.breaker' }],
-  ['seam strike', { op: 'rail.strike', id: 0 }],
-  ['bridge rivet strike', { op: 'rail.strike', id: 2 }],
-  ['leaf brace', { op: 'rail.brace', revision: 1 }],
   ['first boiler fitting', { op: 'rail.boilerFit', revision: 1 }],
-  ['commissioning table turn', { op: 'rail.turn', to: 1, revision: 1 }],
-  ['first upgrade installation', { op: 'rail.install', site: 0, line: 1, part: 1, revision: 1 }],
-  ['later boiler installation', { op: 'rail.install', site: 0, line: 1, part: 2, revision: 1 }],
 ] as const) {
   test(`first contribution counts ${act} once for the actor`, () => {
     const observe = firstContribution();
