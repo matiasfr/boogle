@@ -1261,7 +1261,8 @@ export async function createRailwayTrains(
             tr.slot,
             riders,
             tr.riderCar,
-            on && tr.line === LINE2 && row.phase === TRAIN_PHASE.STAND ? row.at : -1,
+            // The crowd meets the coach at the halt on its running line.
+            on && trackLine(tr.slot) === LINE2 && row.phase === TRAIN_PHASE.STAND ? row.at : -1,
             tr.coachSteps,
             tr.coachStepSide,
             tr.seen && (tr.last?.to === row.at || tr.last?.arrived === row.arrived),
