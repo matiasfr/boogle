@@ -1,4 +1,5 @@
 import './touch.css';
+import { yieldDisc } from '../entities/frisbee/state.ts';
 import { isTouch } from '../constants.ts';
 import { clamp } from '../math.ts';
 import { canvas } from '../render/scene.ts';
@@ -376,6 +377,7 @@ export function initInput() {
       releaseAll();
       me.charging = false;
       releaseBall();
+      yieldDisc();
     }
     sendPresence();
   });

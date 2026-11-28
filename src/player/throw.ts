@@ -7,12 +7,11 @@ import * as THREE from 'three/webgpu';
 import { SEA } from '../constants.ts';
 import { waterField } from '../physics/water-field.ts';
 import { toyGround } from '../physics/toy-ground.ts';
-import { camera } from '../render/scene.ts';
 import { dynAttr, instancedSprite } from '../render/sprites.ts';
 import { readableUnlit } from '../render/readable-unlit.ts';
 import { stepFlight, stepBall } from '../physics/flight.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
-import { me, camForward, handPosition, throwFrom } from './state.ts';
+import { me, camForward, handPosition, throwFrom, followEye } from './state.ts';
 import { heldId } from './inventory.ts';
 import { AIM_DIST, chargeOf, launchVelocity, profileFor } from './throw-curve.ts';
 
@@ -27,8 +26,7 @@ export function cancelCharge() {
 export const chargeAmount = () => chargeOf(performance.now() - me.chargeStart);
 
 // The point the camera looks at, AIM_DIST ahead.
-export const aimPoint = (out = new THREE.Vector3()) =>
-  out.copy(camera.position).addScaledVector(camForward(), AIM_DIST);
+export const aimPoint = (out = new THREE.Vector3()) => out.copy(followEye).addScaledVector(camForward(), AIM_DIST);
 
 const aim = new THREE.Vector3();
 // What throwing `id` at charge c would do right now: { p: where it leaves your hand, v: its velocity, profile }.

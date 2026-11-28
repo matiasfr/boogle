@@ -1,9 +1,8 @@
 // Interaction prompts: one button (E, pad X, the touch action button) acts on the one thing in front of you, marked
 // with a glyph and a verb. Walking up to The Boogler with something in hand still says Talk; the gift is an answer in
 // the talk, with its icon; you stand still while you talk and Esc leaves, and a chapter
-// left halfway picks up where you stopped. Riding him puts the ball first, and a failed planting says why. The toss checks
-// (a tossed item's Pick up prompt, E mid-throw, a frisbee behind a log bundle) wait for replication R3 (owner, 9
-// November): the live game's server refuses gift.toss until then.
+// left halfway picks up where you stopped. Riding him puts the ball first, and a failed planting says why. A held ball winds up on Use and flies on release.
+
 import { TP, INV, lowResOnCi } from './lib/world.ts';
 import type { T } from './run.ts';
 

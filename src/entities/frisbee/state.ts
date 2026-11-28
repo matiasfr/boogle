@@ -28,6 +28,8 @@ const owner = createOwnerSync<DiscClaim>(disc, {
     disc.v.fromArray(b.v);
   },
   adoptOrphan() {
+    if (disc.p.distanceToSquared(disc.rack) > 0.01 && !disc.v.lengthSq()) disc.v.y = -0.1;
+    disc.held = false;
     owner.claim('sim');
   },
   onRelease() {
@@ -53,7 +55,19 @@ onRemotePresence((r, pr, time) => {
   const c = pr.frisbee as Partial<DiscClaim> | null;
   owner.hear(
     r.peer,
-    c && (c.h === 0 || c.h === 1) && Number.isSafeInteger(c.e) && c.e! >= 0 && c.e! < 2 ** 48 ? c : null,
+    c &&
+      (c.h === 0 || c.h === 1) &&
+      Number.isSafeInteger(c.e) &&
+      c.e! >= 0 &&
+      c.e! < 2 ** 48 &&
+      Array.isArray(c.p) &&
+      c.p.length === 3 &&
+      c.p.every((n) => Math.abs(n) < 16384) &&
+      Array.isArray(c.v) &&
+      c.v.length === 3 &&
+      c.v.every((n) => Math.abs(n) <= 256)
+      ? c
+      : null,
     time,
   );
 });
@@ -64,6 +78,7 @@ export function enableDisc(at: Vector3) {
   disc.v.set(0, 0, 0);
   disc.enabled = true;
 }
+export const yieldDisc = owner.release;
 export function disableDisc() {
   disc.enabled = false;
   owner.release();

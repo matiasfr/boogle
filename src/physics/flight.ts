@@ -11,7 +11,7 @@ import * as THREE from 'three';
 import { GRAVITY, BALL_DAMPING } from '../constants.ts';
 import { GROUP } from './physics.ts';
 import { raycastClosest, rayHit, type V3 } from './engine.ts';
-import { groundHeight } from '../island/terrain.ts';
+import { toyGround } from './toy-ground.ts';
 import { waterField } from './water-field.ts';
 
 export const STEP = 1 / 60;
@@ -66,8 +66,8 @@ const normal = new THREE.Vector3(),
 
 // Where something comes down if it is dropped at p: the first surface below it, or the ground.
 export function dropPoint(p: V3) {
-  const h = cast(p, { x: p.x, y: groundHeight(p.x, p.z) - 0.5, z: p.z });
-  return new THREE.Vector3(p.x, h ? h.hitPointWorld.y : groundHeight(p.x, p.z), p.z);
+  const h = cast(p, { x: p.x, y: toyGround.under(p.x, p.z) - 0.5, z: p.z });
+  return new THREE.Vector3(p.x, h ? h.hitPointWorld.y : toyGround.under(p.x, p.z), p.z);
 }
 
 export function flyPath(p0: THREE.Vector3, v0: THREE.Vector3, glide: boolean) {

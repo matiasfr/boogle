@@ -41,6 +41,7 @@ export function createBoathouse(owner: OwnedView, base: Vector3, yaw: number) {
   const rack = base.clone().add(new Vector3(0, 0.82, 0));
   const swept = new Line3(),
     closest = new Vector3();
+  const hand = new Vector3();
   const pickup = {
     id: 'town.disc',
     verb: 'Catch',
@@ -54,7 +55,7 @@ export function createBoathouse(owner: OwnedView, base: Vector3, yaw: number) {
   return {
     targets(): Interactable[] {
       if (!disc.enabled || disc.held || !me.entered || !me.body) return [];
-      const hand = handPosition();
+      handPosition(hand);
       if (hand.distanceTo(disc.p) < REACH) {
         pickup.verb = disc.v.lengthSq() > 1 ? 'Catch' : 'Grab';
         return [pickup];
@@ -67,8 +68,10 @@ export function createBoathouse(owner: OwnedView, base: Vector3, yaw: number) {
         else disableDisc();
         porch.visible = enabled;
       }
-      model.visible = enabled && !disc.held;
-      if (!enabled) return;
+      if (!enabled) {
+        model.visible = false;
+        return;
+      }
       swept.start.copy(disc.p);
       const moving = disc.v.lengthSq() > 1;
       updateDisc(now, dt);

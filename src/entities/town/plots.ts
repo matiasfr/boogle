@@ -481,31 +481,39 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
           p.percent = percent;
           p.target.verb = percent < 0 ? 'Hold to build' : `Hold ${percent}%`;
         }
+        const wood = Math.min(p.woodNeed, drawn((read?.wood ?? 0) - (p.previous?.wood ?? 0)));
+        const stone = Math.min(p.stoneNeed, drawn((read?.stone ?? 0) - (p.previous?.stone ?? 0)));
         if (p.choices.length) {
           for (const c of p.choices) {
             c.action.blocked = p.target.blocked;
             c.action.run = p.target.run ? c.begin : undefined;
             c.action.verb = holding === p.k && heldKind === c.kind ? p.target.verb : 'Hold to build';
             const allowed = validPlotKind(prices[p.k]!, c.kind, firstKind);
-            if (c.topper.root.visible !== (visible && allowed)) c.topper.setEnabled(visible && allowed);
+            const boardChanged = c.topper.root.visible !== (visible && allowed);
+            if (boardChanged) c.topper.setEnabled(visible && allowed);
             if (!allowed) continue;
             if (offered && near(p.at) && near(c.action.at) && (holding !== p.k || chosen === c))
               targets.push(...c.topper.targets());
             if (p.visible && bought >= 0 && p.bought < 0) splash(c.action.at.x, c.action.at.z, 0.2, c.action.at.y - 1);
             if (
               visible &&
-              (visible !== p.visible ||
+              (boardChanged ||
+                visible !== p.visible ||
                 offered !== p.offered ||
                 money !== p.money ||
                 price !== p.price ||
-                (!offered && Math.min(p.woodNeed, read?.wood ?? 0) !== p.wood))
+                (!offered && (wood !== p.wood || stone !== p.stone)))
             ) {
               const title = c.kind === 1 ? 'Seed Shed' : c.kind === 2 ? 'Horn Pavilion' : 'Frisbee Boathouse'; // Placeholder names and board copy.
               c.topper.relabel(
                 'label',
                 offered
                   ? [title, '+1 rider / minute', `Price ${price}`, `Box ${money}`]
-                  : [title, `Timber ${Math.min(p.woodNeed, read?.wood ?? 0)} / ${p.woodNeed}`],
+                  : [
+                      title,
+                      `Timber ${wood} / ${p.woodNeed}`,
+                      ...(p.stoneNeed ? [`Stone ${stone} / ${p.stoneNeed}`] : []),
+                    ],
               );
             }
           }
@@ -514,8 +522,6 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
           if (near(p.at)) for (const target of p.offeredTargets) targets.push(target);
         }
         p.bought = bought;
-        const wood = Math.min(p.woodNeed, drawn((read?.wood ?? 0) - (p.previous?.wood ?? 0)));
-        const stone = Math.min(p.stoneNeed, drawn((read?.stone ?? 0) - (p.previous?.stone ?? 0)));
         if (
           visible === p.visible &&
           offered === p.offered &&

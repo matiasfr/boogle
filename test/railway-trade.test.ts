@@ -1305,7 +1305,7 @@ test('S1: an above-cap saved box and a plot bought at its old price keep their b
       w.mut(Town, w.lookup(Town, 0)!)![goods] += n;
       w.mut(Yard, w.lookup(Yard, slot)!)!.made += n;
     }
-    Object.assign(w.mut(Plot, w.lookup(Plot, k)!)!, { at: PIER.t - TRADE.buildTicks, kind: k === 0 ? 1 : 0, paid });
+    Object.assign(w.mut(Plot, w.lookup(Plot, k)!)!, { at: PIER.t - TRADE.buildTicks, kind: [1, 0, 3][k], paid });
     const b = w.mut(Till, w.single(Till))!;
     b.spent += paid;
     b.landed += paid;

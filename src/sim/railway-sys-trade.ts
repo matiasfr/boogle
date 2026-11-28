@@ -19,6 +19,7 @@ import {
   deckHeld,
   plotBought,
   plotPrice,
+  plotSlot,
   plotsStaked,
   fareOf,
   lineYard,
@@ -198,7 +199,7 @@ export const buy = defineSystem(
     const kind = e.kind === undefined ? 0 : e.kind;
     if (
       !offer ||
-      !validPlotKind(offer, kind, w.get(Plot, w.lookup(Plot, 0)!)!.kind) ||
+      !validPlotKind(offer, kind, w.get(Plot, w.lookup(Plot, plotSlot(town, 0))!)!.kind) ||
       plotBought(w, e.id) ||
       !plotsStaked(w, town).includes(k)
     )
