@@ -4,7 +4,32 @@ import type { World } from '../src/ecs/index.ts';
 import type { RailAction } from '../src/sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../src/sim/railway-layout.ts';
 import { railEngineStart, railPhase } from '../src/sim/railway-queries-line1.ts';
+import { campHome, stepCampOffer } from '../src/entities/railway/camp-approach.ts';
+import { TRAILER } from '../src/entities/railway/cars.ts';
 import { account, apply, createRailway, hash, invariant, job, railSession, restore } from './helpers/rail.ts';
+
+test('Camp resident approaches visitors from every side without entering the parked flatbed', () => {
+  const x = T1.wake.x / 100,
+    z = T1.wake.z / 100;
+  const visitors = [{ x: x + 3, z: z - 4.2 }];
+  for (let side = 0; side < 32; side++) {
+    const angle = (side * 2 * Math.PI) / 32;
+    visitors.push({ x: x + 5.7 * Math.cos(angle), z: z + 5.7 * Math.sin(angle) });
+  }
+  const camp = { ...campHome };
+  for (const visitor of visitors) {
+    for (let frame = 0; frame < 360; frame++) {
+      stepCampOffer(camp, visitor, 1 / 60);
+      // Track runs east-west: hz is along the track. Allow the coat half a metre.
+      assert.ok(
+        Math.abs(camp.x - x) > TRAILER.hz + 0.5 || Math.abs(camp.z - z) > TRAILER.hx + 0.5,
+        `resident overlaps flatbed on frame ${frame} approaching ${JSON.stringify(visitor)}`,
+      );
+      assert.ok(Math.hypot(camp.x - x, camp.z - z) <= T1.wake.reach / 100);
+    }
+  }
+  assert.ok(Math.hypot(camp.x - campHome.x, camp.z - campHome.z) > 0.5, 'resident walks up');
+});
 
 function act(w: World, pid: string, op: string, fields: Partial<RailAction> = {}, tick = 100) {
   const a = account(w, pid)!;

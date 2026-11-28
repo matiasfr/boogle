@@ -2,6 +2,8 @@
 import * as THREE from 'three/webgpu';
 import { angleLerp } from '../../math.ts';
 import { makeAxeModel } from '../../render/axe-models.ts';
+import { remotes } from '../../netplay/net.ts';
+import { campHome, stepCampOffer } from './camp-approach.ts';
 import { conversation } from '../../player/conversation.ts';
 import { me } from '../../player/player.ts';
 import type { Interactable } from '../../player/hands.ts';
@@ -49,6 +51,7 @@ export const GREETER_LINES = {
 /** What the greeter reads of the railway: the world the views see, line one's phase this frame and whether an action
  * can be sent (the read facade's). */
 export type GreeterRead = {
+  pid: string;
   world: () => ReadWorld;
   phase: () => ReturnType<typeof railPhase>;
   ready: () => boolean;
@@ -108,7 +111,7 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
     ready: read.ready,
   });
   // Beside the existing wake reach, on the camp side of the parked machine; no collider or new shared state.
-  const camp = folk.addGreeter(T1.wake.x / 100 - 3, 0, T1.wake.z / 100 + 4.2);
+  const camp = folk.addGreeter(campHome.x, 0, campHome.z);
   camp.fy = land.H(camp.x, camp.z);
   const campAt = new THREE.Vector3(camp.x, camp.fy + 1.5, camp.z);
   const campCue = createSpeechCue(
@@ -118,11 +121,12 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
   );
   const axe = makeAxeModel('multi');
   owner.add(axe);
-  owner.cleanup(() =>
-    axe.traverse((part) => {
-      if (part instanceof THREE.Mesh) part.material.dispose();
-    }),
-  );
+  const materials: THREE.Material[] = [];
+  axe.traverse((part) => {
+    if (part instanceof THREE.Mesh) materials.push(part.material);
+  });
+  owner.cleanup(() => materials.forEach((material) => material.dispose()));
+  let opacity = 0;
   const hand = (out: THREE.Vector3) =>
     out.set(
       camp.x + 0.22 * Math.cos(camp.yaw) + 0.48 * Math.sin(camp.yaw),
@@ -145,29 +149,43 @@ export async function createTownGreeter(owner: OwnedView, read: GreeterRead) {
     update(dt: number) {
       handing = Math.max(0, handing - dt);
       sleeves.update(dt);
-      const p = me.body?.position;
       const needsAxe = read.ready() && rail(read.world()).awake < 0;
+      let p = me.body?.position;
+      if (needsAxe) {
+        // Measure from the fixed wake point on every tab. Measuring from the moving
+        // resident could make two tabs stick with different visitors indefinitely.
+        let distance = p ? Math.hypot(p.x - T1.wake.x / 100, p.z - T1.wake.z / 100) : Infinity;
+        let pid = read.pid;
+        for (const peer of remotes.values()) {
+          if (!peer.entered || !peer.pid || !peer.avatar) continue;
+          const at = peer.avatar.position;
+          const d = Math.hypot(at.x - T1.wake.x / 100, at.z - T1.wake.z / 100);
+          if (d < distance || (d === distance && peer.pid < pid)) {
+            p = at;
+            distance = d;
+            pid = peer.pid;
+          }
+        }
+      }
       camp.mood = needsAxe || handing > 0 ? 'give' : 'idle';
       if (p && Math.hypot(p.x - T1.wake.x / 100, p.z - T1.wake.z / 100) < 9) {
-        if (needsAxe) {
-          const dx = p.x - camp.x,
-            dz = p.z - camp.z;
-          const distance = Math.hypot(dx, dz);
-          const step = Math.min(Math.max(0, distance - 1.8), dt * 2);
-          const x = camp.x + (dx * step) / (distance || 1),
-            z = camp.z + (dz * step) / (distance || 1);
-          if (Math.hypot(x - T1.wake.x / 100, z - T1.wake.z / 100) <= T1.wake.reach / 100) {
-            if (step > 0.001) camp.mood = 'offer';
-            camp.x = x;
-            camp.z = z;
-            camp.fy = land.H(x, z);
-            campAt.set(x, camp.fy + 1.5, z);
-          }
+        if (needsAxe && stepCampOffer(camp, p, dt)) {
+          camp.mood = 'offer';
+          camp.fy = land.H(camp.x, camp.z);
+          campAt.set(camp.x, camp.fy + 1.5, camp.z);
         }
         camp.yaw = angleLerp(camp.yaw, Math.atan2(p.x - camp.x, p.z - camp.z), Math.min(1, dt * 5));
       }
-      axe.visible = camp.on && needsAxe;
-      if (axe.visible) {
+      const nextOpacity = needsAxe ? 1 : handing > 0 ? 0 : Math.max(0, opacity - dt / 0.25);
+      if (nextOpacity !== opacity) {
+        opacity = nextOpacity;
+        for (const material of materials) {
+          material.transparent = opacity < 1;
+          material.opacity = opacity;
+        }
+      }
+      axe.visible = camp.on && opacity > 0;
+      if (needsAxe) {
         hand(axe.position);
         axe.rotation.y = camp.yaw + Math.PI / 2;
       }

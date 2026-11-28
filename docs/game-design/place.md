@@ -160,7 +160,7 @@ The original opening terrain, village/camps, forge scaffold, signs and locals sh
 
 ## Production line 1 continuation (5 November 2026, slice 3 branch)
 
-**First five minutes.** The Camp resident comes forward beside the parked machine with the axe in his hand.
+**First five minutes.** The Camp resident holds out the axe and approaches the visitor nearest the parked machine, staying on the strip between the flatbed and the frame. Friends see the offered axe fade from his hand when someone takes it.
 His bubble asks for logs for the first frame. Press **Take axe** once. The room receives the starter multi-axe through the existing
 31-tick rule window; acceptance immediately starts the recipient's reveal, with the axe visible in the resident's
 outstretched hand for the anticipation beat before rising to the player. Its gathering glints start at that hand;
