@@ -249,6 +249,7 @@ export async function createTownView(read: () => TownLook | null) {
         gate: room('gate'),
         plot3: room('plot3'),
         plot1: room('plot1'),
+        plot4: room('plot4'),
       },
       indoors: { room: rooms.indoors.room?.id ?? null, inside: rooms.indoors.inside?.id ?? null },
       houseStage: house.stage(),

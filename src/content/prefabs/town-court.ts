@@ -5,6 +5,9 @@ const colliders: ColliderDef[] = [
   { shape: 'box', at: [0, 1.1, 0], half: [1.15, 0.05, 0.05] },
 ];
 export const prefabs = [
+  ...(['town.golf-cup', 'town.golf-tee', 'town.dunk'] as const).map((key) =>
+    definePrefab({ key, scope: 'owner', visual: { builder: key, params: {} }, colliders: [] }),
+  ),
   definePrefab({
     key: 'town.choice-board',
     scope: 'owner',

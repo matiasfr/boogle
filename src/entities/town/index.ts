@@ -38,7 +38,7 @@ if (productionRailway && railwayMirror) {
   const loaded = createTownView(createTownReader(railwayWorldRead).look).then((view) => {
     active = view;
     setTownView(view);
-    hangouts = [0, 2].map((k) => spawnHangout(k, view.plotDone));
+    hangouts = [0, 2, 3].map((k) => spawnHangout(k, view.plotDone));
     return spawn({
       kind: 'town',
       mesh: view.root,

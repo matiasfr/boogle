@@ -154,3 +154,4 @@ export function townChoice(k: number) {
   } as const;
 }
 export const TOWN_CHOICE = townChoice(0);
+export const GOLF_CUPS = [300, 355, 55].map((bearing) => slotPoint(bearing, 9));

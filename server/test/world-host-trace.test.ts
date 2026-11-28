@@ -89,6 +89,8 @@
 // v76 adds the gift and Thanks columns. Only the 205 checkpoints and 5,679 statuses change.
 // v80 third plot: the v77 control matched all 8,620 records. The new namespace changes 205 envelope namespaces
 // and checksums and 2,240 snapBytes readings. Every state hash, action, packet and other field remains exact.
+// v83 fourth plot: 205 checkpoints gain a Home plot and shift later entity ids. Only their envelopes and the
+// 5,679 derived snapBytes readings differ. All 8,620 records retain their order and all inputs and packets match.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';

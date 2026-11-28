@@ -2984,4 +2984,6 @@ are chopped like line 1's. Serves DESIGN.md **7. Telegraph everything** and **8.
 
 ## Town economy in the live game (17 November 2026, v58)
 
+The fourth priced plot is the walk-in cottage between the gate and the museum. Its porch holds a tee facing three flagged cups on the northern green, or a target paddle and a tipping bucket over a blue standing spot.
+
 Moved and extended as [Trade](trade.md). The heading stays here so existing K2 and plan links still resolve.

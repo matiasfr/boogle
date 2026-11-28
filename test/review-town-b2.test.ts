@@ -171,13 +171,51 @@ test('the toy shown during a hold matches the selected board', () => {
   view.update(read(), 0);
   const target = pickInteract(view.targets(), position.x, position.z, 0, 1);
   assert.equal(target?.id, 'town.plot.0.2');
-  assert.deepEqual(toyGhosts.map((g) => g.visible), [false, true, false, false, false]);
+  assert.deepEqual(
+    toyGhosts.map((g) => g.visible),
+    [false, true, false, false, false, false, false],
+  );
   target!.run!();
   view.update(read(), 0.5);
   assert.deepEqual(
     toyGhosts.map((g) => g.visible),
-    [false, true, false, false, false],
+    [false, true, false, false, false, false, false],
   );
+});
+
+test('each fourth-plot board buys its pictured activity through a full hold', () => {
+  for (const [side, kind] of [4, 5].entries()) {
+    const seed = buildSeedWorld('yard-built');
+    const town = seed.w.mut(Town, seed.w.lookup(Town, 0)!)!;
+    for (const [index, good, minimum] of [
+      [0, 'wood', 56],
+      [1, 'stone', 24],
+    ] as const) {
+      const extra = Math.max(0, minimum - town[good]);
+      town[good] += extra;
+      seed.w.mut(Yard, seed.w.lookup(Yard, index)!)!.made += extra;
+    }
+    const balance = seed.w.mut(Till, seed.w.single(Till))!;
+    balance.landed += 5000;
+    balance.boogles += 5000;
+    const room = railRoom(seed);
+    const player = room.join('alice', 'alice', 2);
+    room.ready();
+    const { view, read, position, toyGhosts } = plotsView(player.adapter);
+    const board = plan.townChoice(3).boards[side]!;
+    position.x = 1000 + board.x;
+    position.z = board.z;
+    view.update(read(), 0);
+    view.update(read(), 0);
+    const target = view.targets().find((t) => t.id === `town.plot.3.${kind}`);
+    assert.ok(target?.run);
+    target.run();
+    view.update(read(), 0.5);
+    assert.equal(toyGhosts[5 + side]!.visible, true);
+    view.update(read(), 0.51);
+    room.run(120);
+    assert.equal(plot(room.serverWorld(), 3).kind, kind);
+  }
 });
 
 test('review B2: a buy lost with the socket leaves the board pressable again once the plot is still unbought', () => {

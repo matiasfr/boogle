@@ -103,6 +103,8 @@ function paintBoard({ g, cw, ch }: Pick<SignBoard, 'g' | 'cw' | 'ch'>, lines: re
 /** `opened`: the plots whose building is a walk-in room (./rooms.ts builds it, on the same clock): its site, read here
  * for the ghost and the inspection. Their board, stakes, piles and ghost stay here; their shell and hulls are the room's. */
 export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Site> = new Map()) {
+  // Placeholder building names and board words, pending the owner's copy.
+  const choiceNames = ['', 'Seed Shed', 'Horn Pavilion', 'Frisbee Boathouse', 'Caddy Shed', 'Dunk Bakery'];
   const kit = loadLevelArtifact(level, definitions).placements;
   const prices = TRADE.plots[0];
   const slotsPerPlot = kit.reduce((n, p) => {
@@ -313,6 +315,15 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
               toy.box(x, params.y + 2.35, z, 3.2, 0.1, 1.4, building.yaw);
             } else if (kind === 3) {
               toy.box(toWorld(layout.stall.x), params.y + 0.8, layout.stall.z, 1.2, 0.16, 0.65, building.yaw);
+            } else if (kind === 4 || kind === 5) {
+              const { x, z } = layout.stall;
+              if (kind === 4) {
+                toy.box(toWorld(x), params.y + 0.05, z, 1.25, 0.1, 1.18, building.yaw);
+                toy.box(toWorld(x), params.y + 0.8, z, 0.08, 1.55, 0.08, building.yaw);
+              } else {
+                toy.box(toWorld(x), params.y + 2.64, z, 1, 0.63, 0.85, building.yaw);
+                toy.box(toWorld(x), params.y + 1.35, z, 1.38, 2.7, 0.12, building.yaw);
+              }
             } else
               for (const pad of layout.pads) {
                 toy.box(toWorld(pad.x), params.y + 0.06, pad.z, 1.1, 0.12, 1.1, building.yaw);
@@ -504,7 +515,7 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
                 price !== p.price ||
                 (!offered && (wood !== p.wood || stone !== p.stone)))
             ) {
-              const title = c.kind === 1 ? 'Seed Shed' : c.kind === 2 ? 'Horn Pavilion' : 'Frisbee Boathouse'; // Placeholder names and board copy.
+              const title = choiceNames[c.kind]!;
               c.topper.relabel(
                 'label',
                 offered

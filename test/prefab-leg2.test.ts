@@ -100,6 +100,9 @@ for (const area of ['bell', 'west'] as const)
     builders.set('town.ball-lever', () => new THREE.Group());
     builders.set('town.choice-board', () => new THREE.Group());
     builders.set('town.horn-pad', () => new THREE.Group());
+    builders.set('town.golf-cup', () => new THREE.Group());
+    builders.set('town.golf-tee', () => new THREE.Group());
+    builders.set('town.dunk', () => new THREE.Group());
     builders.set('railway.halt-parts', () => new THREE.Group());
     builders.set('railway.halt-ramp', () => new THREE.Group());
     builders.set('railway.halt-lever', () => new THREE.Group());

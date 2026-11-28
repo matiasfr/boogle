@@ -15507,6 +15507,33 @@
         "none": true
       }
     },
+    "town.dunk": {
+      "colliders": [],
+      "key": "town.dunk",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.dunk",
+        "params": {}
+      }
+    },
+    "town.golf-cup": {
+      "colliders": [],
+      "key": "town.golf-cup",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.golf-cup",
+        "params": {}
+      }
+    },
+    "town.golf-tee": {
+      "colliders": [],
+      "key": "town.golf-tee",
+      "scope": "owner",
+      "visual": {
+        "builder": "town.golf-tee",
+        "params": {}
+      }
+    },
     "town.green-kerb": {
       "colliders": [],
       "key": "town.green-kerb",
