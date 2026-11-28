@@ -24,6 +24,8 @@
 // on-screen objective line and this adds no HUD element. Until line 2 wears the longer boiler, the line names the
 // steel loop's step (STEEL_OBJECTIVES, from the Steel, Shed and Line rows); then the leg's.
 import * as THREE from 'three/webgpu';
+import { createCanopyTownPlots } from './canopy-town-plots.ts';
+import { createSignalAnswers } from '../town/signal-answers.ts';
 import { createGorgeTownPlots } from './gorge-town-plots.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import { createOwnedView, type OwnedView } from '../../render/owned-view.ts';
@@ -1052,22 +1054,28 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     );
   };
   const nearGorge = () => near(gorgeAt(0, 0), 700);
-  let plotView: ReturnType<typeof createGorgeTownPlots> | undefined;
-  let plotOwner: OwnedView | undefined;
-  owner.cleanup(() => plotOwner?.dispose());
-  owner.animate(({ dt }) => {
-    if (!routeAreas.get('gorge')?.mounted) {
-      plotOwner?.dispose();
-      plotOwner = plotView = undefined;
-      return;
-    }
-    if (!plotView) {
-      plotOwner = createOwnedView();
-      owner.root.add(plotOwner.root);
-      plotView = createGorgeTownPlots(plotOwner);
-    }
-    plotView.update(dt);
-  }, 12);
+  createSignalAnswers(owner);
+  function mountPlots(area: 'gorge' | 'canopy', create: typeof createGorgeTownPlots) {
+    let view: ReturnType<typeof create> | undefined;
+    let scope: OwnedView | undefined;
+    owner.cleanup(() => scope?.dispose());
+    owner.animate(({ dt }) => {
+      if (!routeAreas.get(area)?.mounted) {
+        scope?.dispose();
+        scope = view = undefined;
+        return;
+      }
+      if (!view) {
+        scope = createOwnedView();
+        owner.root.add(scope.root);
+        view = create(scope);
+      }
+      view.update(dt);
+    }, 12);
+    return () => view?.targets ?? [];
+  }
+  const gorgeTargets = mountPlots('gorge', createGorgeTownPlots);
+  const canopyTargets = mountPlots('canopy', createCanopyTownPlots);
 
   const concourse = { ...gorgeAt(-2, 2, GORGE_DECK - 0.25), w: 16.6, h: 0.5, d: 4, yaw: Math.atan2(0.8565, 0.5162) };
   const capShape = boxShape(concourse);
@@ -1432,7 +1440,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       if (!p || !r || !adapter.read.ready()) return [];
       const { wd } = r,
         mine = account(wd, adapter.read.pid),
-        out: Interactable[] = [...(plotView?.targets ?? [])];
+        out: Interactable[] = [...gorgeTargets(), ...canopyTargets()];
       const feeding = new Set<number>();
       for (const i of r.open) {
         const o = legs[i]!,

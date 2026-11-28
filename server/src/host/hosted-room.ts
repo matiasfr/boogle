@@ -19,7 +19,7 @@ import { SERVER_ID } from '../../../src/net/ids.ts';
 import { createStepMeter } from './step-meter.ts';
 import { createRoomWorldHost } from './room-world-host.ts';
 import { RING_HANGOUT, ringAt } from '../../../src/sim/railway-ring-layout.ts';
-import { GORGE_HORN } from '../../../src/sim/railway-route.ts';
+import { CANOPY_CHIME, GORGE_HORN } from '../../../src/sim/railway-route.ts';
 import { isRailwayRoom } from '../../../src/world/railway-namespace.ts';
 import { RAILWAY_CLIENT_MESSAGES } from '../../../src/world/railway-wire.ts';
 import { validatePing, honkShape, COSMETIC_BOUND } from '../../../src/sim/social.ts';
@@ -278,9 +278,14 @@ export function createHostedRoom({
     // The world channel is server-clock only. Never relay any client w:* payload.
     if (typeof t === 'string' && t.startsWith('w:')) return void c.dropped++;
     if (railway) {
-      if (t === 'bell' || t === 'echo') {
-        const slot = t === 'bell' ? 16 : 32;
-        const at = t === 'bell' ? { x: rope.x / 100, y: RING_HANGOUT.floor / 100 + 1, z: rope.z / 100 } : GORGE_HORN;
+      if (t === 'bell' || t === 'echo' || t === 'chime') {
+        const slot = t === 'bell' ? 16 : t === 'echo' ? 32 : 48;
+        const at =
+          t === 'bell'
+            ? { x: rope.x / 100, y: RING_HANGOUT.floor / 100 + 1, z: rope.z / 100 }
+            : t === 'echo'
+              ? GORGE_HORN
+              : CANOPY_CHIME;
         const p = (c.d as { p?: unknown } | null)?.p;
         if (
           (m.d as WireMsg).id !== slot ||

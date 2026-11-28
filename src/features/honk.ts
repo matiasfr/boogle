@@ -6,6 +6,7 @@
 // own), so there is no shared state. Sent as a reliable room message { t:'honk', v } (v: the shape; older tabs send
 // none, heard as 0), rate limited on receipt.
 import './honk.css';
+import { townHonks } from '../entities/town/signal-state.ts';
 import * as THREE from 'three';
 import { SpriteNodeMaterial } from 'three/webgpu';
 import { readableUnlit } from '../render/readable-unlit.ts';
@@ -276,6 +277,7 @@ spawn({ kind: 'honk', mesh: sparkles, lateUpdate: ({ dt }) => update(dt) });
 // who: 'me' or a remote's peer id; v: the honk's shape (HONK_SHAPES).
 const lastNote = new Map<string, number>(); // what each player honked last, for the chord gag
 function onHonk(who: string, now: number, v: number) {
+  for (const hear of townHonks) hear(who, now);
   const own = who === 'me';
   const r = own ? null : remotes.get(who);
   const colorIdx = own ? me.colorIdx : (r?.colorIdx ?? 0);

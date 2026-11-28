@@ -42,6 +42,8 @@ export const PLOT_KIND = {
   bell: 7,
   echo: 8,
   perch: 9,
+  net: 10,
+  chime: 11,
 } as const;
 export type TradePlot = {
   wood: number;
@@ -49,7 +51,7 @@ export type TradePlot = {
   base: number;
   riders: number;
   gives?: 'loader';
-  after?: 'ring' | 'gorge';
+  after?: 'ring' | 'gorge' | 'canopy';
   spare?: boolean;
   choices?: readonly number[];
 };
@@ -82,6 +84,7 @@ export const TRADE = {
     ],
     [{ wood: 0, stone: 0, base: 300, riders: 1, after: 'ring', choices: [PLOT_KIND.lookout, PLOT_KIND.bell] }],
     [{ wood: 0, stone: 0, base: 300, riders: 1, after: 'gorge', choices: [PLOT_KIND.echo, PLOT_KIND.perch] }],
+    [{ wood: 0, stone: 0, base: 300, riders: 1, after: 'canopy', choices: [PLOT_KIND.net, PLOT_KIND.chime] }],
   ] as const satisfies readonly (readonly TradePlot[])[],
   stakedAtOnce: 2,
   houseOrder: 2,
@@ -90,7 +93,7 @@ export const TRADE = {
   // starting buildings, 1 rider a minute a building each way).
   // The Village and line 2's current far end (the ruling of 12 November): Far Head, then the Pier, the Railhead, Ring
   // Island as the line grows.
-  routes: [{ town: 0, line: 1, a: 0, b: 'end', farTowns: [1, 2] }] as const satisfies readonly TradeRoute[],
+  routes: [{ town: 0, line: 1, a: 0, b: 'end', farTowns: [1, 2, 3] }] as const satisfies readonly TradeRoute[],
   ridersPerMin: 1,
   startBuildings: 2,
   /** Waiting riders that would stop a train at a middle route halt (decided: four or more). Unused in this slice:

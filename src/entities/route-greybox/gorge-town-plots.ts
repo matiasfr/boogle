@@ -1,5 +1,6 @@
 ﻿import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
+import { localTownPulls } from '../town/signal-state.ts';
 import { bell, canyonHorn } from '../../render/machine-sfx.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
 import { interactTarget, type Interactable } from '../../player/hands.ts';
@@ -155,6 +156,7 @@ export function createGorgeTownPlots(owner: OwnedView) {
       if (active !== 8 || !near(hornAt) || performance.now() - lastPull < 1500) return;
       lastPull = performance.now();
       echo('');
+      for (const hear of localTownPulls) hear(32);
       net.room?.send({ t: 'echo', id: 32 });
     },
   };

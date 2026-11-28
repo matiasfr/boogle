@@ -161,7 +161,9 @@ export function createRailwayWorldHost({
     hasSignalHouse(slot = 16) {
       const w = rules.railway.world();
       return (
-        plotBuilt(w, slot, sync.world.tick) && plot(w, slot).kind === (slot === 16 ? PLOT_KIND.bell : PLOT_KIND.echo)
+        (slot === 16 || slot === 32 || slot === 48) &&
+        plotBuilt(w, slot, sync.world.tick) &&
+        plot(w, slot).kind === (slot === 16 ? PLOT_KIND.bell : slot === 32 ? PLOT_KIND.echo : PLOT_KIND.chime)
       );
     },
     onSend(fn: (message: Msg) => void) {

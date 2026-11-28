@@ -89,6 +89,19 @@ export function clank(x: number, z: number): void {
 }
 
 // A train's stop bell (a passenger's request accepted): one struck note, its partials ringing out over a second.
+export function windChime(x: number, z: number, beat: number, soft = false) {
+  const a = at(x, z, soft ? 0.065 : 0.18, soft ? 700 : 400);
+  if (!a) return;
+  const frequency = [523.25, 587.33, 659.25, 783.99][beat]!;
+  for (const partial of [1, 2.76]) {
+    const o = a.ctx.createOscillator();
+    o.frequency.value = frequency * partial;
+    o.connect(env(a.ctx, a.out, a.t, a.g / partial, 0.008, 1.4 / partial));
+    o.start(a.t);
+    o.stop(a.t + 1.5);
+  }
+}
+
 export function bell(x: number, z: number, range = HEAR): void {
   const a = at(x, z, 0.16, range);
   if (!a) return;
