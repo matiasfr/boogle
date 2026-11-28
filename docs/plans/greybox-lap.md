@@ -374,7 +374,7 @@ The High Gorge coach-fit, tail-clearance and arrival audits use the pre-join sto
       - [x] Moved into step 2 after independent review: joined island map, five transferred platform levers, cave departure boards, Stack buffers and the rail-height crossing at the joint.
       - [x] The [joined island map](greybox-lap/joined-halt-map.png) shows all 15 halt positions. The [Port Quay board](greybox-lap/joined-port-quay-board.png) lists the 13 served halts. All four Port Quay and Saltpan handles accepted their signed calls through the mounted interaction.
       - [x] [High Gorge's two handles](greybox-lap/joined-gorge-handles.png) call toward Village and West landing. Wall head 5 is the other terminus that becomes a through stop. The mounted test pulls both directions at both places.
-      - [x] A Chromium reload with a saved `cave:3` ride reached [Port Quay's alternate landing](greybox-lap/joined-port-quay-reload.png). The search tries both Port Quay landings before any other halt. The existing scenery wait and Home fallback still apply.
+      - [x] A Chromium reload with a saved `cave:3` ride reached [Port Quay](greybox-lap/joined-port-quay-reload.png). The quay starts mounting behind the loading cover. The search tries both Port Quay landings before any other halt. The existing scenery wait and Home fallback still apply.
       - [x] [Through train at the plank crossing](greybox-lap/train-on-gorge-crossing.png) and [two frames of its passage](greybox-lap/train-through-gorge.png), captured from the arrived room. The trailing car crosses the walkway after the engine clears it.
       - [ ] Remaining step 4 views and proofs listed below.
 

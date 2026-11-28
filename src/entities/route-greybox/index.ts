@@ -8,7 +8,9 @@
 import { productionRailway } from '../../proto/flags.ts';
 import { background } from '../../async.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../../entity/entity.ts';
-import { camera } from '../../render/scene.ts';
+import { camera, rendererReady } from '../../render/scene.ts';
+import { physicsReady } from '../../physics/engine.ts';
+import { coverLifted } from '../../boot/cover-hold.ts';
 import { resident } from '../../render/lod-level.ts';
 import { me } from '../../player/player.ts';
 import { createOwnedView, type OwnedView } from '../../render/owned-view.ts';
@@ -24,7 +26,7 @@ import { wallAreas } from './massing-wall.ts';
 import { AREA_CENTRES, FREE_MORE, MOUNT_NEAR } from './leg2-layout.ts';
 import { drawGreyBoxes } from './boxes.ts';
 import type { Placement } from '../../prefab/types.ts';
-import { routeAreas, routeSceneryMounted } from './state.ts';
+import { returnArea, routeAreas, routeSceneryMounted } from './state.ts';
 
 defineKind('route-greybox', { update: 13 });
 defineKind('route-greybox-area', {});
@@ -148,14 +150,25 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
       mounted = null;
       residency.mounted = false;
     }
+    const p = returnArea.platform;
+    const incoming = !!p && Math.hypot(p.x - area.centre.x, p.z - area.centre.z) < MOUNT_NEAR;
+    function update() {
+      const want = wanted() || (incoming && !coverLifted());
+      if (want && !mounted && !building) background(mount(), `route greybox massing: ${area.id}`);
+      else if (!want && mounted) unmount();
+      else mounted?.update?.();
+    }
+    // Start the saved station's normal mount behind the cover, before the first frame at Home.
+    if (incoming)
+      background(
+        Promise.all([physicsReady, rendererReady]).then(() => {
+          if (!gone) update();
+        }),
+        'return scenery',
+      );
     return {
       id: area.id,
-      update() {
-        const want = wanted();
-        if (want && !mounted && !building) background(mount(), `route greybox massing: ${area.id}`);
-        else if (!want && mounted) unmount();
-        else mounted?.update?.();
-      },
+      update,
       describe: () =>
         mounted ? { resident: true, boxes: mounted.boxes, solids: mounted.solids } : { resident: false },
       unmount,

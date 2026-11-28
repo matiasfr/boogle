@@ -1069,6 +1069,7 @@ async function mountAt(position: THREE.Vector3) {
     me: { body: { position } },
     defineKind() {},
     routeAreas: new Map(),
+    returnArea: { platform: null },
     spawn: (entity: { update?: () => void; describe?: typeof describe }) => {
       if (entity.update) {
         update = entity.update;
