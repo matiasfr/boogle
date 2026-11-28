@@ -28,8 +28,8 @@ export function townAnswer() {
       greeting = fromHonk;
       due = now + delay;
     },
-    cancelGreeting() {
-      if (greeting) due = Infinity;
+    cancel(fromHonk = false) {
+      if (greeting === fromHonk) due = Infinity;
     },
     update(now: number, forGreeting = false) {
       if (now < due || greeting !== forGreeting) return false;

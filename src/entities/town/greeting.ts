@@ -17,7 +17,7 @@ export function townGreeting(
         answer.call(performance.now(), true);
     }),
   );
-  owner.cleanup(() => answer.cancelGreeting());
+  owner.cleanup(() => answer.cancel(true));
   return (now: number) => {
     if (built() && answer.update(now, true) && !conversation.open) reply();
   };

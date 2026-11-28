@@ -114,7 +114,7 @@ export function createRingPlot(owner: OwnedView, ground: IslandGround) {
     () => active === PLOT_KIND.bell,
     () => {
       rang = performance.now();
-      bell(rope.x, rope.z, 260, 0.07);
+      bell(rope.x, rope.z, 400, 0.07);
     },
   );
   const metal = new THREE.MeshStandardMaterial({ color: 0xe1ab46, metalness: 0.48, roughness: 0.39 });

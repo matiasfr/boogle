@@ -132,7 +132,7 @@ export function createGorgeTownPlots(owner: OwnedView) {
     () => active === 8,
     () => {
       echoed = performance.now();
-      canyonHorn(hornAt.x, hornAt.z, 2, false);
+      canyonHorn(hornAt.x, hornAt.z, 2, false, 400);
     },
   );
   function echo(from: string) {

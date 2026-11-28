@@ -29,7 +29,9 @@ export function createSignalAnswers(owner: OwnedView) {
     pulse.visible = false;
     owner.add(pulse);
     owner.cleanup(() => material.dispose());
-    return { ...site, answer: answerFor(site.slot), pulse, sounded: -Infinity };
+    const answer = answerFor(site.slot);
+    owner.cleanup(() => answer.cancel());
+    return { ...site, answer, pulse, sounded: -Infinity };
   });
   function receive(slot: number) {
     const read = railwayWorldRead();

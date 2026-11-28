@@ -91,7 +91,7 @@ export function spawnHangout(k: number, plotDone: (k: number) => boolean) {
     first,
     () => shown === PLOT_KIND.horns,
     () => {
-      chordSound(honkNotes(0, sharedSeconds(), 0), farGain(first.x, first.z, 260) * 0.08);
+      chordSound(honkNotes(0, sharedSeconds(), 0), farGain(first.x, first.z, 80 ** 2) * 0.08);
       splash(first.x + 1, first.z, 0.22, first.y + 2.2);
     },
   );

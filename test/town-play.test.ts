@@ -98,11 +98,13 @@ test('honk and pull share one pending reply and cooldown', () => {
   const answer = townAnswer();
   answer.call(0, true);
   answer.call(10);
-  assert.equal(answer.update(399), false);
+  assert.equal(answer.update(399, true), false);
   assert.equal(answer.update(400), false);
   assert.equal(answer.update(400, true), true);
   answer.call(800);
   assert.equal(answer.update(1600), false);
   answer.call(4000, true);
   assert.equal(answer.update(4400, true), true);
+  assert.equal(answer.update(8800), false);
+  assert.equal(answer.update(8800, true), false);
 });
