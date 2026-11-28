@@ -4,13 +4,13 @@
 // It floods the 2 m grid of src/place/terrain.ts at the player's walkable slope, plus what's solid to walk on (footbridges
 // and laid track). It doesn't know about props in the way, which only the play-through (the railway bot, dev/look/bots/railway.ts) tests.
 import { buildSeedWorld } from '../../src/sim/railway-seeds.ts';
-import { PROPS } from '../../src/place/home-station.ts';
+import { HALL_BOARD, PROPS } from '../../src/place/home-station.ts';
 import { act } from '../../src/sim/railway-seed-route.ts';
 import { account, qjob, rail, trees } from '../../src/sim/railway-rows.ts';
 import { line2Routes, LINE2_SEA } from '../../src/sim/railway-line2-layout.ts';
-import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
+import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import { WALKABLE_NY } from '../../src/constants.ts';
-import { DOCK_BOARD, SHORE_LANDING, SHORE_PATH } from '../../src/place/shore-layout.ts';
+import { CAMP_PAD, HALL_PAD } from '../../src/place/works-landing.ts';
 import { TWO_JUMPS } from '../level/mover.ts';
 import { CELL, H, NX, NZ, PATH_SAMPLES, at as cellAt, cellX, cellZ, heights } from '../../src/place/terrain.ts';
 import {
@@ -72,16 +72,21 @@ export function runPlaceLevelCheck() {
     entries.push({ kind: 'assertion', state: requiredState, passed, message });
   };
   const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
-  const landingX = ORIGIN.x + SHORE_LANDING.x;
-  const boardRadius = Math.hypot(1.66, 0.04);
-  const distance = Math.hypot(DOCK_BOARD.x - landingX, DOCK_BOARD.z - SHORE_LANDING.z);
-  assertion(
-    distance > boardRadius + 1 &&
-      distance <= 9 &&
-      Math.abs(H(DOCK_BOARD.x, DOCK_BOARD.z) - H(landingX, SHORE_LANDING.z)) < 0.1 &&
-      Math.abs(DOCK_BOARD.z - SHORE_PATH[0]![1]) > 1.5 + boardRadius,
-    'dock board: on the pad, clear of the shore path and the landing',
-  );
+  for (const [name, pad, target] of [
+    ['Camp', CAMP_PAD, { x: RAILWAY_T1.wake.x / 100, z: RAILWAY_T1.wake.z / 100 }],
+    ['hall', HALL_PAD, { x: ORIGIN.x + HALL_BOARD.x, z: HALL_BOARD.z }],
+  ] as const) {
+    const ground = H(pad.x, pad.z);
+    const height = H(target.x, target.z) + 1.5;
+    let clearance = Infinity;
+    for (let i = 0; i <= 100; i++) {
+      const t = i / 100;
+      const terrain = H(pad.x + (target.x - pad.x) * t, pad.z + (target.z - pad.z) * t);
+      clearance = Math.min(clearance, (ground + 1.6) * (1 - t) + height * t - terrain);
+    }
+    assertion(ground > 1 && clearance > 0, name + ' landing: dry ground ' + ground.toFixed(2) +
+      ' m, first landmark clears terrain by ' + clearance.toFixed(2) + ' m');
+  }
   // The player's slope limit, as a rise over one 2 m cell.
   const maxRise = CELL * Math.tan(Math.acos(WALKABLE_NY));
   const WATER = 0.2;
@@ -177,6 +182,7 @@ export function runPlaceLevelCheck() {
     `\nAt the start: only the paths and footbridges (the player's slope limit: rise ${maxRise.toFixed(2)} m a cell)`,
   );
   const start = flood([]);
+  check('Camp landing on the same walking network as the hall', start, CAMP_PAD.x - ORIGIN.x, CAMP_PAD.z);
   const N = LINES.north,
     E = LINES.east;
   check('the machine, the long way round', start, N.xs[191]!, N.zs[191]!);

@@ -1,5 +1,5 @@
 // npm run look -- --query proto=place --rail-seed works-open --eval dev/look/evals/railway-works-board.ts --warp-speed 5
-// Real inputs from the fresh landing. The dock board chooses the destination and bill.
+// Real inputs from the hall landing. The board chooses the destination and bill.
 const { makeBot } = (await import('/dev/look/bot.ts' as string)) as typeof import('../bot.ts');
 const { line2Rides, HALT } = (await import(
   '/dev/look/bots/railway-ride.ts' as string
@@ -20,13 +20,14 @@ const { interactTarget } = (await import(
 )) as typeof import('../../../src/player/hands.ts');
 const bot = makeBot();
 const { ride, rideFrom, hopTo, check, until, face } = line2Rides(bot);
-const read = () => inspectRailway()?.worksView?.dockBoard ?? [];
-await until(() => me.entered && me.body && read().length, 'dock board stands', 60000);
-await until(() => me.body && bot.dist(801, 10) < 6, 'fresh arrival stands on the dock', 60000);
+const { worksBoardRows } = await import('/src/entities/railway/works-board-state.ts' as string);
+const { HALL_BOARD } = await import('/src/place/home-station.ts' as string);
+const read = () => worksBoardRows({ x: 1000 + HALL_BOARD.x, z: HALL_BOARD.z }) as string[];
+await until(() => me.entered && me.body && read().length && bot.dist(903, 14) < 6, 'arrived at the hall board', 60000);
 const before = read();
 console.log('WORKS BOARD ' + JSON.stringify(before));
 const match = /Line (\d+) · (.+)$/.exec(before.at(-1)!);
-if (!match) throw new Error('Dock board did not name a train');
+if (!match) throw new Error('Hall board did not name a train');
 const line = Number(match[1]) - 1;
 const stops = RAIL_LINES[line]!.halts;
 const destination = stops.findIndex((h) => h.name === match[2]);
@@ -36,17 +37,7 @@ if (line === 1) {
   const { coverLifted } = (await import(
     '/src/boot/cover-hold.ts' as string
   )) as typeof import('../../../src/boot/cover-hold.ts');
-  await until(() => coverLifted() && me.coyote > 0 && railRead()?.ready(), 'ready to walk from the dock', 90000);
-  await bot.wait(800);
-  const { SHORE_PATH } = (await import(
-    '/src/place/shore-layout.ts' as string
-  )) as typeof import('../../../src/place/shore-layout.ts');
-  for (const [x, z] of SHORE_PATH.slice(1)) {
-    if (!(await bot.straight(1000 + x, z, 1.2, 7000))) {
-      console.log('DOCK PATH ' + JSON.stringify({ at: me.body?.position, to: [1000 + x, z] }));
-      await hopTo(1000 + x, z, 'shore path ' + x + ',' + z, 15000, 1.5);
-    }
-  }
+  await until(() => coverLifted() && me.coyote > 0 && railRead()?.ready(), 'ready to leave the hall', 90000);
   await ride(HALT.village2, destination);
 } else {
   const lever = rowLever(line, 0);

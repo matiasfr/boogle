@@ -82,7 +82,9 @@ export default {
        window.boogle.me.coyote > 0 && !window.boogle.me.swimming`,
       { timeout: 60000 },
     );
-    t.check('the fall completes and Buddy stands dry on the dock', landed >= 0);
+    const ridge = await g.eval(`const p = window.boogle.me.body.position; return Math.hypot(p.x-980,p.z+150) < 9;`);
+    t.check('the fall completes and Buddy stands dry beside the track layer', landed >= 0 && ridge === true);
+    await g.still('camp-touchdown');
     await g.waitFor(`!!localStorage.getItem('boogle.visit.${room}')`, { timeout: 20000 });
 
     // 2. Returning, nothing changed: straight in, no card, a welcome back that leaves on its own.

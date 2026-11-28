@@ -1,6 +1,10 @@
 # 6.14 Arrival
 
-## Round 4 shore arrival
+## Landing at the works
+
+On Jump in, the accepted final lay of line 1 selects the landing. While the line is unfinished, the trolley fall ends on the Camp ridge beside the track layer. Once it reaches Home, the fall ends in the square facing the hall's works board. A guest whose room state is still unknown lands at the hall. The destination stays fixed through the fall and the Act 1 crane. A returning guest resumes a safe saved spot or built halt before using the current landing. The cove, stakes and path remain open for visits. The contribution clock runs from the first grounded touchdown to that guest's first accepted contribution.
+
+## Round 4 shore arrival (historical)
 
 The bare URL (room `boogle`; a retired `?proto=place` address opens the same game) lands a newcomer's existing trolley/title fall on
 the west-shore clearing at local `(-199,10)`, facing inland. Its level 16 m clearing is 3 m high; a broad
@@ -47,7 +51,7 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
   swatches (one picked at random) and one big Jump in. Pressing Jump in straight away is fine. The loading screen covers it
   until the island can be drawn; Jump in reads "Loading island" until then. Pad A presses it. In the Home Screen app, a first
   visit there (the app's storage starts empty) also offers "Continue in room x · prototype y" under Jump in. The bare URL
-  uses this same opening, landing on the shore before the walk into the village.
+  uses this same opening, landing at the works.
   Other `?proto=` and `?play` pages, and automated browsers, get the plain card instead. `intro=1` lets a harness inspect
   a new player's opening; `intro=0` skips the fall. These debug flags are not kept by the Home Screen launch memory.
   The loading screen waits up to 45 seconds for Buddy to finish preparing, then permits a recoverable `load-deadline` capsule.
@@ -55,7 +59,7 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
   a successful automatic retry replaces it with Buddy ([player.md](player.md#avatar-colours-and-names)).
 - **After a world reset.** The first load after a `WORLD_NS` bump (this browser's `boogle.worldSeen` names an older
   world; [src/player/world-reset.ts](../../src/player/world-reset.ts)) is a first visit too: the fall, then the card,
-  pre-filled with the saved name and colour, landing on the shore. The reset forgets what it always has (room progress,
+  pre-filled with the saved name and colour, landing at the works. The reset forgets what it always has (room progress,
   wardrobe, reward claims, The Boogler) and keeps identity and preferences. A reload after that is a returning visit
   ([decisions](../decisions.md#controls), 9 November). An operator's reset of one room
   (`npm run server -- reset <room>`) does the same for that room only: the server names each room's world (`born` in

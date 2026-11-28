@@ -371,31 +371,3 @@ test('hall works sign has no legacy station post at the prefab position', async 
   assert.ok(faces.some((f) => f.piece.startsWith('Home/station/')));
   assert.equal(posts.length, 0);
 });
-
-test('dock inspection offers rows only after clearance shows the sign', () => {
-  let enable = () => {};
-  const board = { position: { x: 0, z: 0 }, visible: true };
-  const { createDockPost } = sourceModule<{ createDockPost(o: unknown): { rows(): string[] } }>(
-    fs.readFileSync('src/place/dock-post.ts', 'utf8'),
-    {
-      DOCK_BOARD: { x: 0, z: 0, yaw: 0 },
-      H: () => 0,
-      worksFace: () => board,
-      worksBoardRows: () => ['bill'],
-      instantiate: () => ({ solids: [], setEnabled() {} }),
-      addFoot() {},
-      me: {},
-      frameHasRemote() {},
-      liftOrWait(parts: { on(): void }[]) {
-        enable = parts[0]!.on;
-        return { retry() {} };
-      },
-    },
-  );
-  const dock = createDockPost({});
-  assert.equal(board.visible, false);
-  assert.deepEqual(dock.rows(), []);
-  enable();
-  assert.equal(board.visible, true);
-  assert.deepEqual(dock.rows(), ['bill']);
-});

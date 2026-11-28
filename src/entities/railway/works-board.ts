@@ -10,7 +10,7 @@ export function worksFace(
   owner: OwnedView,
   at: Place & { y: number },
   yaw: number,
-  post: boolean | 'dock' = false,
+  post = false,
   halts: readonly Halt[] = [],
 ) {
   const paintLabel = ({ g, cw, ch }: Pick<SignBoard, 'g' | 'cw' | 'ch'>, rows: readonly string[]) => {
@@ -57,7 +57,7 @@ export function worksFace(
       });
     });
   };
-  const key = post === 'dock' ? 'railway.dock-works-post' : post ? 'railway.works-post' : 'railway.works-face';
+  const key = post ? 'railway.works-post' : 'railway.works-face';
   const board = instantiate(
     key,
     {

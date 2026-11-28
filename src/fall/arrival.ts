@@ -4,7 +4,6 @@ import { groundHeight } from '../island/heights.ts';
 
 export const fallArrival = {
   active: false,
-  target: null as { x: number; z: number } | null,
-  yaw: null as number | null,
+  landing: null as (() => { x: number; z: number; yaw: number }) | null,
   ground: groundHeight,
 };

@@ -1,6 +1,6 @@
 ﻿# First fall at the works
 
-The owner answered question 1 on 28 November 2026 and accepted option A, including the hall fallback when state is unknown. See the [dated decision](../decisions-controls.md#d-2026-11-28-first-fall-lands-at-the-works) and [start-flow brief](../brainstorms/start-flow.md). The axe and boiler have their own build.
+The owner answered question 1 on 28 November 2026 and accepted option A, including the hall fallback when state is unknown. See the [dated decision](https://github.com/matiasfr/boogle/commit/4da4c528686168281938e018407f74170d9d0ea6) and [start-flow brief](../brainstorms/start-flow.md). The axe and boiler have their own build.
 
 ## Build order
 

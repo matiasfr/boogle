@@ -27,7 +27,7 @@ import { boiler, works as worksRow, type ReadWorld } from '../../sim/railway-row
 import { createWorksSignal } from './works-signal.ts';
 import { islandGround } from '../ring-island/state.ts';
 import { createWorksBoard } from './works-board-state.ts';
-import { createDockPost } from '../../place/dock-post.ts';
+
 
 // A funded section keeps its site while laying, even after the feed action disappears.
 const routeSections = new Set(
@@ -65,7 +65,7 @@ export async function createRailwayWorksLive(
   const routeGuides = createRouteGuides(owner, () => adapter.read.ready() && adapter.read.whole());
   const signal = createWorksSignal(owner, await islandGround());
   const updateBoard = createWorksBoard(owner);
-  const dock = createDockPost(owner);
+
   let publication: Parameters<typeof roomWorks>[0] | undefined;
   let current: ReturnType<typeof roomWorks> | undefined;
   function updateSignal(dt: number, restore = false) {
@@ -93,7 +93,7 @@ export async function createRailwayWorksLive(
     }
     if (!current) return;
     const work = current;
-    dock.retry();
+
     const forgeCalling =
       (work.site === 'boiler' && boiler(world).state === 'pedestal') ||
       (work.site === 'breaker' && worksRow(world).breaker === 1);
@@ -165,7 +165,7 @@ export async function createRailwayWorksLive(
       ...routeGuides.targets(),
     ],
     inspect: () => ({
-      dockBoard: dock.rows(),
+
       routeGuides: routeGuides.inspect(),
       ...works.inspect(),
       ...railhead.inspect(),

@@ -17,4 +17,3 @@ export const SHORE_PATH: Pt[] = [
 ];
 export const SHORE_WORKER = { x: -95, z: 12 };
 export const SHORE_HOP = { x: -165, z: 32, y: 14, height: 0.75, top: 1.2, bottom: 1.6 };
-export const DOCK_BOARD = { x: 807.6, z: 13.5, yaw: Math.atan2(-6.6, -3.5) } as const;
