@@ -8,6 +8,7 @@
 //   line2Aboard, line2Logs, line2Rails     line two's cargo and its conserved logs and rails
 //   railCounts(w, at?)                     every conserved total and the score
 import type { World } from '../ecs/index.ts';
+import { workAboard } from './railway-queries-gift.ts';
 import { RAILWAY_T1 as T1 } from './railway-layout.ts';
 import { LINE2_FORGE as FORGE, LINE2_STATIONS, RAILS } from './railway-line2-layout.ts';
 import { CART, CART_PHASE } from './railway-cart.ts';
@@ -37,6 +38,7 @@ import {
   aboard,
   beamId,
   cartId,
+  depotNeed,
   forgeId,
   jobId,
   kitJob,
@@ -126,21 +128,8 @@ export const line2Aboard = aboard;
 export function line2KitOwed(w: World) {
   const k = kitJob(w);
   if (k < 0) return { logs: 0, rails: 0 };
-  const j = w.get(QJob, qjobId(w, k))!,
-    [logs, rails] = LINE2_STATIONS[k]!.bill;
-  if (j.start >= 0) return { logs: 0, rails: 0 };
-  const rail = w.get(Rail, railId(w))!,
-    cart = w.get(Cart, cartId(w))!;
-  return {
-    logs: Math.max(
-      0,
-      Math.min(logs - j.stock - rail.depot - cart.logs - aboard(w, 'logs'), logs - rail[DEPOT_OUT[k]!]),
-    ),
-    rails: Math.max(
-      0,
-      Math.min(rails - j.railStock - rail.depotRails - cart.rails - aboard(w, 'rails'), rails - rail.shelfOut),
-    ),
-  };
+  const j = w.get(QJob, qjobId(w, k))!;
+  return j.start >= 0 ? { logs: 0, rails: 0 } : depotNeed(w, k, j);
 }
 /** The greybox route's logs or rails fed into its legs' frames and laid (spent) in their sections, and its kit off
  * line 2 (greybox-leg2.md, step 2): in a junction yard and aboard another line's trains (their `legKit` cargo). */
@@ -260,6 +249,7 @@ export function railCounts(w: World, at?: number) {
   };
   const line2Delivered = forge.used + qjobs.reduce((n, { job: j }) => n + j.delivered, 0);
   const beam = w.get(Beam, beamId(w))!.state;
+  const steel = w.get(Steel, steelId(w))!;
   return {
     source,
     carry,
@@ -269,8 +259,8 @@ export function railCounts(w: World, at?: number) {
     used,
     line2,
     rack: rail.rack,
-    // Logs the Village loads for the steel works' kit are made there, as a train-fed stretch's are (outLogs).
-    produced: rail.produced + rail.depotProduced + w.get(Steel, steelId(w))!.outLogs,
+    // Steel credits all logs sent. Harvested gifts, landed or still aboard, were counted at their source.
+    produced: rail.produced + rail.depotProduced + steel.outLogs - steel.giftDelivered - workAboard(w, 5),
     total: source + carry + loose + stock + allocation + used + line2 + rail.rack,
     delivered,
     score:

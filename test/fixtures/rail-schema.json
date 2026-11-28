@@ -51,6 +51,10 @@
      "int"
     ],
     [
+     "depotGiftDelivered",
+     "int"
+    ],
+    [
      "depotProduced",
      "int"
     ],
@@ -640,6 +644,10 @@
      "u8"
     ],
     [
+     "workThanks",
+     "u8"
+    ],
+    [
      "legLogs",
      "u8"
     ],
@@ -858,6 +866,14 @@
     ],
     [
      "gift",
+     "int"
+    ],
+    [
+     "workStop",
+     "int"
+    ],
+    [
+     "workLogs",
      "int"
     ],
     [
@@ -1296,6 +1312,10 @@
     ],
     [
      "outLogs",
+     "int"
+    ],
+    [
+     "giftDelivered",
      "int"
     ],
     [

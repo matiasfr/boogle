@@ -9,6 +9,7 @@
 //                   steel is home, and no train wearing more than its line's (R3); each line's install revision
 //                   and the garage table's copy (garage step 4) (throws on the first broken one)
 import type { World } from '../ecs/index.ts';
+import { workAboard } from './railway-queries-gift.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { STEEL } from './railway-ring-layout.ts';
 import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
@@ -40,6 +41,7 @@ export function checkSteel(w: World, tick: number) {
     !railInt(s.rack, STEEL.rackCap) ||
     !railInt(s.poured, STEEL.total) ||
     !railInt(s.outLogs) ||
+    !railInt(s.giftDelivered, s.outLogs - workAboard(w, 5)) ||
     !railInt(s.outRails) ||
     !railInt(lastCast) ||
     !railInt(bay, STEEL.total) ||
@@ -66,7 +68,16 @@ export function checkSteel(w: World, tick: number) {
     rackRails += l.rackRails;
     legRails += l.loadedRails;
   });
-  if (r0.depot + rackLogs + c.logs + aboard(w, 'logs') + s.yardLogs > r0.depotProduced + r0.giftOut + s.outLogs)
+  if (
+    r0.depot + rackLogs + c.logs + aboard(w, 'logs') + s.yardLogs >
+    r0.depotProduced +
+      r0.giftOut +
+      r0.depotGiftDelivered +
+      workAboard(w, 1) +
+      workAboard(w, 2) +
+      workAboard(w, 3) +
+      s.outLogs
+  )
     bad('steel sent logs');
   if (r0.depotRails + rackRails + c.rails + aboard(w, 'rails') + s.yardRails > r0.shelfOut + s.outRails + legRails)
     bad('steel sent rails');

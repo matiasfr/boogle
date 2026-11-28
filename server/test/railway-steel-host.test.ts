@@ -590,7 +590,7 @@ async function racked(r: Awaited<ReturnType<typeof host>>) {
 }
 
 test('route host: the frame feed keeps its leg; fed at the frame, refused away and for a malformed leg', async () => {
-  const seed = buildSeedWorld('ring-joined');
+  const seed = buildSeedWorld('steel-kit');
   chopTo(seed, 'b', 8);
   const r = await host('leg-stock', seed, { s: 'a', guest: 'b' });
   try {

@@ -13,7 +13,7 @@
 //                   reached (throws on the first broken one)
 import type { World } from '../ecs/index.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
-import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
+import { LINE2, RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, RAIL_YARDS } from './railway-route.ts';
 import { Account, LegYard, Rail, Train } from './railway-components.ts';
 import { giftInTransit, thanksStep } from './railway-queries-gift.ts';
@@ -79,6 +79,7 @@ export function checkRoute(w: World) {
   w.each([Account], (_id, a) => {
     if (
       !railInt(a.thanks, thanksMax) ||
+      (a.workThanks & ~46) !== 0 ||
       !railInt(a.legLogs, 255) ||
       !railInt(a.legRails, 255) ||
       !railInt(a.liftLeg, RAIL_LEGS.length - 1, -1) ||
@@ -105,6 +106,13 @@ export function checkRoute(w: World) {
   // works' kit and a leg's apart).
   w.each([Train], (_id, t) => {
     if (!railInt(t.gift, t.logs) || (t.gift && !t.legKit)) bad('train gift');
+    if (
+      !railInt(t.workLogs, t.logs) ||
+      ![0, 1, 2, 3, 5].includes(Math.abs(t.workStop)) ||
+      Boolean(t.workLogs) !== Boolean(t.workStop) ||
+      (t.workLogs && (t.legKit || RAIL_TRAINS[t.slot]!.line !== LINE2))
+    )
+      bad('work gift');
     if (!t.legKit) return;
     const served = SERVED_LEGS[RAIL_TRAINS[t.slot]!.line]!;
     if (t.logs + t.rails <= 0 || !served.some((k) => legKitMayLoad(w, k))) bad('leg kit mark');

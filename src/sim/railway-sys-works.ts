@@ -69,6 +69,7 @@ export const kiln = defineSystem(
       wm = w.mut(Works, id)!;
     am.carry -= logs;
     am.stone -= stone;
+    am.workThanks |= 1 << 1;
     wm.logs += logs;
     wm.stone += stone;
     if (wm.logs === WORKS.kilnLogs && wm.stone === WORKS.kilnStone) wm.lit = w.mut(WorksClock, id)!.lastCast = tick;

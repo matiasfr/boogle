@@ -246,6 +246,7 @@ export const deposit2 = defineSystem(
       jm.stock += n;
       jm.delivered += n;
     }
+    if (spec.kitStop) a.workThanks |= 1 << spec.kitStop;
     fundQ(w, k, tick, timing);
     return n;
   },
