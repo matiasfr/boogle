@@ -237,6 +237,19 @@ Areas passed over for card 20:
 - Original Island: the lighthouse rises above the palms and draws the eye past the pale platform.
 - Port Quay: the roundhouse and turntable identify the halt, though the tall ochre bank to their left still has a broad bare face.
 
+### Card 20, Port Quay’s sandstone bank
+
+From the yard, a single ochre face filled the left third of the view beside the finished roundhouse. Six courses of bevelled sandstone now follow the yard-facing curve from the apron to a broken rim. The upper courses taper back, so the face pieces sit slightly proud of the backing cliff. The face and cap use the existing cliff-kit batches in `src/entities/sickle-backdrop/view.ts`.
+
+The 1200 × 750 pair uses card 19’s yard camera at (137.6, 6.8, 942.25), looking toward (−754, 39, 615) at 62° FOV. The turntable and roundhouse doors remain clear across the yard. The moving-train seed timed out on the preceding cards and was skipped here. [Before, card 19’s yard still](greybox-look/card19-far.jpg) · [After](greybox-look/card20-bank.png)
+
+Areas passed over in the arrival survey:
+
+- Gorge split — the white stair marks the crossing against dark sandstone.
+- Causeway — the rails converge across open water toward the island.
+- Original Island — the palms and lighthouse already draw the eye beyond the landing.
+- White Wall — the upper beds and stepped waterline spurs already break up the near face.
+
 ## Design review (2026-11-27)
 
 | Call | Kind | Basis |
