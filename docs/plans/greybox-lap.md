@@ -365,11 +365,18 @@ The canonical one-, two- and three-player loops recorded 308, 34 and 33 idle sec
 
 The High Gorge coach-fit, tail-clearance and arrival audits use the pre-join stop list. The five lap halts open together on the sixth lay. The kit-halt queries in `railway-sys-route-kit.ts` map each shipment to its delivery platform using the running line while its stock and rack follow its origin.
 
-- [ ] **3. Seeds and jumps (S; "High-risk implementation": Codex gpt-6.2-astra medium).** `src/sim/railway-seed-legs.ts`:
+- [x] **3. Seeds and jumps (S; "High-risk implementation": Codex gpt-6.2-astra medium).** `src/sim/railway-seed-legs.ts`:
       `wall-closed` (the leg laid) now includes the join and is re-pinned; new `lap-ride` (the join plus enough running
       time for a through train to reach the Gorge from the Wall: the still's state); `SEED_STAGES` and its golden shard;
       `src/world/railway-jump.ts` a "The lap" row on line 2's Gorge platform (not "Ring joined", which is Ring Island's
       rivet). Verify: `test/railway-jump.test.ts`; each stage's invariant check; the whole server suite.
+      At v82 the sixth lay finishes at tick 33,376. At tick 34,942 the lap seed calls the first through train from
+      the Wall as it approaches within 95 m. It stops for boarding at High Gorge and continues toward Ring Island.
+      The Notch stages continue from the lay so their timings and hashes are preserved.
+      Follow-up for shared arrival: two players can enter at the identical north-platform position. The first
+      player moved off the deck with empty input on both `lap-ride` and the pre-join `gorge-reached` control.
+      With collision against the remote player's proxy disabled in a diagnostic run, both players reached
+      the same position and the first stayed grounded. It is a P2 in the [leftovers](../agents/orchestrator-leftovers.md#from-28-november); its two-player checks are on `review/greybox-lap-seeds`, not in the weekly scenarios.
 - [ ] **4. The remaining views (M to L; "Player-visible implementation": Codex gpt-6.2-astra medium).**
       - [x] Moved into step 2 after independent review: joined island map, five transferred platform levers, cave departure boards, Stack buffers and the rail-height crossing at the joint.
       - [x] The [joined island map](greybox-lap/joined-halt-map.png) shows all 15 halt positions. The [Port Quay board](greybox-lap/joined-port-quay-board.png) lists the 13 served halts. All four Port Quay and Saltpan handles accepted their signed calls through the mounted interaction.
