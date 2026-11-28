@@ -81,6 +81,12 @@ that writes the plan carries it out, so it can change the plan when a step turns
    repo, `server/test` included, and update every hit: some server tests read client source by path (`readFileSync` of
    `src/proto/playdata/record.ts`), and `ship-check` does not run `server/` for a client-only diff, so only CI finds
    them (the measure's first ship, #2697, 28 November).
+14. **One check at a time, and a ship's check goes first.** The machine runs up to eight jobs. Run one check, look or
+   build at a time and bound each with `timeout`. Before you start `node dev/ship-check.ts`, a look or a build, run
+   `ps -ef | grep -E 'ship-check|ship-branch' | grep -v grep`: if another job's check is running, wait (look again each
+   minute, ten minutes at most), then go ahead. Report a test that times out under load and passes alone as that, not
+   as a failure (28 November: a reviewed rule branch's pre-push check failed with all 20 CPUs busy, and it and the two
+   rule branches behind it waited about 40 minutes).
 
 Report: the plan as built and where it changed, files changed, check results, the paths of the stills you looked at
 with your one-line gut check, what is unverified, and "not tested on a device" where it applies.
