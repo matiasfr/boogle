@@ -76,6 +76,16 @@ test('the sixth lay calls the joined playthrough train from Wall head 5 toward t
   assert.ok(reqHas(line(w, LINE2).req, from, -1, service.length));
 });
 
+test('a player at High Gorge can call the outward joined service to Canopy Town', () => {
+  const s = buildSeedWorld('wall-closed');
+  const gorge = RAIL_HALTS.findIndex((h) => h.line === LINE2 && h.stop === gorgeStop);
+  const canopy = RAIL_HALTS.find((h) => h.line === LINE2 && h.name === 'Canopy Town')!;
+  const service = stopsOf(s.w, LINE2);
+  assert.ok(canopy.stop > gorgeStop);
+  assert.equal(service[canopy.stop], canopy.s);
+  assert.equal(act(s, 'a', 'rail.call', { id: gorge, dir: 1 }), 1);
+});
+
 test('the lap shows the crossing after a three-second arrival', () => {
   const s = buildSeedWorld('lap-ride');
   const gorge = through[gorgeStop]!;
