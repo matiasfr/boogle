@@ -47,6 +47,16 @@ export function mountQuayEdges(owner: OwnedView) {
       );
     }
   }
+  // Retain the raised yard along its east edge. The six-metre opening is the yard ramp.
+  for (const [start, end] of [
+    [-66, -40],
+    [-34, -7.8],
+  ] as const) {
+    const mid = (start + end) / 2;
+    box(22.05, 3.24, mid, 0.12, 0.4, end - start, '#694c35');
+    box(22.05, 3.67, mid, 0.12, 0.42, end - start, timber);
+    for (let z = start + 0.2; z < end; z += 5) box(22.14, 3.46, z, 0.18, 0.86, 0.32, '#594533');
+  }
   const cube = new THREE.BoxGeometry();
   const mesh = new THREE.InstancedMesh(cube, material('timber', { colour: '#ffffff' }), boxes.length);
   boxes.forEach(({ matrix, colour }, i) => {

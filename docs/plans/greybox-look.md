@@ -159,6 +159,12 @@ The `island-reached` pairs toggle one instance batch on consecutive renders of o
 
 The moving camera followed the outward player car from Bell at 1,156.34 m to the island approach at 1,846.66 m. Water remains visible through the bend and the island resolves into a single shoreline. The 17 sampled frames show no visible abutment pop or doubled silhouette. A second sequence sampled the occupied car through the last 19 m. Real-time cadence was unmeasured. [Crossing sequence](greybox-look/card8-crossing.jpg)
 
+### Card 9, Port Quay Roundhouse freight yard
+
+At the foot of the yard ramp the raised apron presents a straight grey face on either side of the entrance. Give those faces two courses of weathered timber with darker retaining posts. The break in the timber should lead the eye up the ramp toward the turntable. Use the existing freight-edge batch in `src/entities/route-greybox/quay-edges.ts`.
+
+Proof: paired 1200 × 750 desktop stills on `port-reached`, looking from the lower apron across the ramp toward the yard.
+
 ## Design review (2026-11-27)
 
 | Call | Kind | Basis |
