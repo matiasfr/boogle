@@ -117,7 +117,8 @@ export function createCanopyToys(
       motes.visible = active === 11 && ageMs < 3000;
       if (motes.visible) {
         const t = ageMs / 1000;
-        motes.position.set(-t * 2, 5 + t * 4, 0);
+        // Mother-2 stands at (7.3, 36.6) in the shell frame. Rise to its near face.
+        motes.position.set(t * 2, 5 + t * 4, t * 10);
         motes.scale.setScalar(1 + t);
         motes.rotation.y = t;
       }
