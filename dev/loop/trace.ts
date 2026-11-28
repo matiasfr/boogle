@@ -79,7 +79,7 @@ function firstContribution(s: Session) {
 function contributionTable(rows: ReturnType<typeof firstContribution>[]) {
   if (!rows.length) return [];
   return [
-    'session                          first contribution (s after standing up)',
+    'session                          first contribution (s after touchdown)',
     ...rows.map(({ session, seconds }) => `${session.padEnd(32)} ${seconds?.toFixed(1) ?? 'no contribution recorded'}`),
     '',
   ];

@@ -15,6 +15,7 @@ import {
   recordRosterSnapshot,
   ROSTER_SNAPSHOT_MS,
 } from '../../src/proto/mark.ts';
+import { firstContribution } from '../../src/proto/playdata/first-contribution.ts';
 
 test('a remote peer records renames and missed changes; floods keep other telemetry and the final roster', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
@@ -38,6 +39,7 @@ test('a remote peer records renames and missed changes; floods keep other teleme
     round: Math.round,
     MARKS_PER_WINDOW: Number(source.match(/const MARKS_PER_WINDOW = (\d+)/)![1]),
     onPlayMark,
+    firstContribution,
     onRosterSnapshot: (fn: Parameters<typeof onRosterSnapshot>[0]) => t.after(onRosterSnapshot(fn)),
     onTuneRecord: () => {},
   };

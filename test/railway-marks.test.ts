@@ -10,6 +10,39 @@ import { LINE2_STATIONS } from '../src/sim/railway-line2-layout.ts';
 import { beatsOf } from '../dev/playtest/beats.ts';
 import { parseSession } from '../dev/playtest/read.ts';
 import { summarize } from '../dev/playtest/summary.ts';
+import { firstContribution } from '../src/proto/playdata/first-contribution.ts';
+
+for (const [act, intent] of [
+  ['gift hand-in', { op: 'rail.haltPut', yard: 0, kind: 0 }],
+  ['first boiler fitting', { op: 'rail.boilerFit', revision: 1 }],
+] as const) {
+  test(`first contribution counts ${act} once for the actor`, () => {
+    const observe = firstContribution();
+    const [name, own] = railwayActionMarks(intent, 1, true)[0]!;
+    const [peerName, peer] = railwayActionMarks(intent, 1, false)[0]!;
+    assert.equal(observe(name, own, 100, undefined), undefined);
+    assert.equal(observe(name, own, 100, 200), undefined);
+    assert.equal(observe(name, { ...own, authority: 'local' }, 300, 200), undefined);
+    assert.equal(observe(peerName, peer, 400, 200), undefined);
+    assert.equal(observe(name, own, 500, 200), 300);
+    assert.equal(observe(name, own, 600, 200), undefined);
+  });
+}
+
+test('harvesting, transport and unattributed completion leave the contribution clock running', () => {
+  const observe = firstContribution();
+  for (const intent of [
+    { op: 'rail.chop', id: 0 },
+    { op: 'rail.mine', id: 0 },
+    { op: 'rail.call', id: 0, dir: 1 },
+    { op: 'rail.depotTake' },
+  ] as const) {
+    const [name, data] = railwayActionMarks(intent, 1, true)[0]!;
+    assert.equal(observe(name, data, 400, 200), undefined);
+  }
+  assert.equal(observe('stretch laid T1', { authority: 'server' }, 500, 200), undefined);
+  assert.equal(observe('deposit', { authority: 'server', mine: true }, 700, 200), 500);
+});
 
 test('accepted railway actions map amounts and material without identifying the actor', () => {
   assert.deepEqual(railwayActionMarks({ op: 'rail.deposit', station: 'Q4', n: 8, kind: 2 }, 3, false), [
@@ -149,3 +182,26 @@ test('CLI summary prints railway details and keeps refusals out of accepted beat
   assert.match(output, /Refusals by kind: sea switch refused: before Q4 x1/);
   assert.match(output, /Never .*pulled the sea switch/);
 });
+
+for (const intent of [
+  { op: 'rail.wake' },
+  { op: 'rail.beamChop' },
+  { op: 'rail.grant', id: 0 },
+  { op: 'rail.gate', id: 0 },
+  { op: 'rail.lever' },
+  { op: 'rail.seaSwitch' },
+  { op: 'rail.breaker' },
+  { op: 'rail.strike', id: 0 },
+  { op: 'rail.brace', revision: 1 },
+  { op: 'rail.turn', to: 1, revision: 1 },
+  { op: 'rail.install', site: 0, line: 1, part: 1, revision: 1 },
+  { op: 'rail.install', site: 0, line: 1, part: 2, revision: 1 },
+] as const) {
+  const [name, data] = railwayActionMarks(intent, 1, true)[0]!;
+  test(`an accepted ${name} before a hand-in leaves the checkpoint clock running`, () => {
+    const observe = firstContribution();
+    assert.equal(observe(name, data, 6000, 1000), undefined);
+    const [deposit, own] = railwayActionMarks({ op: 'rail.deposit', station: 'T1', kind: 0, n: 1 }, 1, true)[0]!;
+    assert.equal(observe(deposit, own, 236100, 1000), 235100);
+  });
+}

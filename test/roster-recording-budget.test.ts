@@ -7,6 +7,7 @@ import { stripTypeScriptTypes } from 'node:module';
 import { runInNewContext } from 'node:vm';
 import { createRailwayMirror } from '../src/world/railway-replicate.ts';
 import { onPlayMark, playMark, onRosterSnapshot, recordRosterSnapshot, ROSTER_SNAPSHOT_MS } from '../src/proto/mark.ts';
+import { firstContribution } from '../src/proto/playdata/first-contribution.ts';
 
 test('a full roster and late recorder retain every row even after the real mark budget is exhausted', (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
@@ -20,6 +21,7 @@ test('a full roster and late recorder retain every row even after the real mark 
     round: Math.round,
     MARKS_PER_WINDOW: budget,
     onPlayMark,
+    firstContribution,
     onRosterSnapshot: (fn: Parameters<typeof onRosterSnapshot>[0]) => t.after(onRosterSnapshot(fn)),
     push: (kind: string, fields: object) => events.push({ kind, ...fields }),
     dropped: 0,
