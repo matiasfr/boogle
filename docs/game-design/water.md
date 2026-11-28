@@ -1,5 +1,7 @@
 # 6.26b Water
 
+Below the Camp footbridge, narrow surface streaks follow the gorge northwest past the first low bank rock. Foam gathers on its upstream shoulder. Reduced motion holds the streaks and rim still. The lower sea-detail grid omits both.
+
 The sea as it is now is [The sea (10 November 2026)](#the-sea-10-november-2026). Sections dated before 10 November
 describe Ultra Water (FFT cascades, shore atlas, spray, contacts, underwater volume and lens), which was removed
 that day and is kept in the local tag `archive/water-ultra-2026-11-09`; read them as history.

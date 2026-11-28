@@ -3,7 +3,7 @@
 // fill, with two scrolling samples of our wave cell and a sparkle band chosen by texture footprint (so it survives DPR,
 // the water ceiling, the telescope and height). One opaque depth copy gives intersection foam and a soft waterline.
 import * as THREE from 'three/webgpu';
-import { SEA } from '../../constants.ts';
+import { reducedMotion, SEA } from '../../constants.ts';
 import { hemi, sun } from '../scene.ts';
 import { seaRipples, seaU } from './state.ts';
 import { TSL, type N } from './tsl.ts';
@@ -179,6 +179,7 @@ export function createOcean(options: OceanOptions): Ocean {
 
   const uPhases = uniform(new THREE.Vector4());
   const uGridScale = uniform(1);
+  const bendEnabled = uniform(1);
   const uSunE = uniform(new THREE.Color()); // sun colour × intensity / π: three's Lambert, as the sand is lit
   const uFill = uniform(new THREE.Color()); // hemisphere sky colour × intensity / π, for an upward normal
 
@@ -318,6 +319,20 @@ export function createOcean(options: OceanOptions): Ocean {
       .mul(smoothstep(0, 0.04, depthBelow));
     const edge = smoothstep(0, edgeFoam, sceneThick).oneMinus();
     const foam = max(lip, edge).mul(broken).toVar();
+    // Home's first footbridge. canyon.12 stands at local (-51.73, -90.08).
+    const bank = xz.sub(TSL.vec2(948.27, -90.08));
+    If(bendEnabled.greaterThan(0).and(dot(bank, bank).lessThan(225)), () => {
+      const along = dot(bank, TSL.vec2(-0.60, -0.80));
+      const across = dot(bank, TSL.vec2(0.80, -0.60));
+      const fade = smoothstep(7, 14, abs(along)).oneMinus();
+      const t = reducedMotion ? float(0) : TSL.time.mul(0.8);
+      const lane = across.add(1.9).add(sin(along.mul(0.24)).mul(0.36));
+      const thread = smoothstep(0.82, 1, cos(lane.mul(3.6))).mul(smoothstep(2.1, 4.1, abs(lane)).oneMinus());
+      const pulse = smoothstep(0.1, 0.92, cos(along.sub(t).mul(1.5).add(lane.mul(1.7))));
+      const rim = length(TSL.vec2(along.div(1.45), across.div(0.85)));
+      const collar = smoothstep(0.02, 0.28, abs(rim.sub(1))).oneMinus().mul(smoothstep(-0.15, 0.6, along.negate()));
+      foam.assign(max(foam, max(thread.mul(pulse).mul(fade).mul(0.31), collar.mul(0.82))));
+    });
     const foamLit = foamColor.mul(light);
     col.assign(mix(col, foamLit, foam));
 
@@ -353,6 +368,7 @@ export function createOcean(options: OceanOptions): Ocean {
     setDetail(next) {
       if (next === angular) return;
       angular = next;
+      bendEnabled.value = next >= 96 ? 1 : 0;
       rebuild();
     },
 

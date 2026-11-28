@@ -462,6 +462,7 @@ The owner confirmed start-flow calls 7 to 9 on 28 November: [archived calls](dec
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 28 Nov | Default: use canyon.12 below the Camp footbridge, with narrow northwest streaks at 0.8 m/s and foam on its upstream shoulder. | [Living world](plans/living-world.md#step-5-review) | Builder | The player crosses this channel on the first walk. | open |
 | 2026-11-28 | Default: Home cloud shade repeats every 112 m, drifts at 0.9 m/s, and multiplies linear RGB by 0.88, 0.90, 0.94 at full shade. | [Living world](plans/living-world.md) | Builder | A broad patch can cross a hillside while the work and tread stay legible. | open |
 | 2026-11-28 | Default: round stack puffs live three seconds within 90 m of the camera. The layer breathes every 0.65 s, the forge every 0.8 s and the kiln every 0.85 s. Lower Detail doubles the intervals. | [Living world](plans/living-world.md) | Builder | Space the breaths so the seated operator and the chimney mouth stay visible. | open |
 | 2026-11-28 | Default revised: keep the existing grass on low Detail and bend near blade tips most at the Camp ridge verge. | [Living world](plans/living-world.md) | Builder | The shared wave replaces two sines with one and reuses the existing meadow draw, geometry and samples. | open |

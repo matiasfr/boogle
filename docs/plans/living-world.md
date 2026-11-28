@@ -68,3 +68,15 @@ With the Dev sun below the horizon (`sky.time = 0.75`) and sky fill reduced to 0
 Only fresh and ordinary timber, landing dust and rail-conversion smoke were replayed for this comparison. The ambient stacks have step 3's looks. Rail-lay contacts, stone, leaves, the other dust and smoke callers, spray, air wisps, protected effects and glows beyond the teal reward motes were audited in source only in this pass.
 
 </details>
+
+## Step 5 review
+
+Decided (1). The first Camp walk introduces a living Home, following the beyond-rail decision of 28 November. The northwest gorge arm carries that walk over the water.
+
+Default (2). Use the first waterline slab downstream of the Camp footbridge, canyon.12. It is within sight of the crossing and near the orange school's channel. A few narrow streaks travel northwest at 0.8 m/s and foam gathers on the southeast shoulder. Reduced motion holds the cue still. Lower Detail omits it. New calls (0).
+
+Use the existing water draw and the renderer clock. Check a fixed downstream view over ten seconds and repeat the camera with reduced motion.
+
+Cost by construction is zero added draws, passes and texture samples. The water shader checks a 15 m radius around the rock. Inside it, two projected coordinates shape the travelling streaks and an elliptical distance shapes the fixed rim. The existing sea-detail switch disables that work on the low grid. There is no per-frame CPU update or allocation for the cue.
+
+From downstream looking back at the footbridge, pale streaks advance into the foreground and a white edge holds against the left-bank slabs. With reduced motion the streaks occupy the same places ten seconds apart. [Flow over ten seconds](living-world/bend-motion.jpg) · [Reduced motion](living-world/bend-still.jpg).
