@@ -36,6 +36,32 @@ export async function hoodRock(owner: OwnedView) {
   inset.scale.set(0.9, 0.54, 0.00001);
   inset.position.copy(at(12, 6.5, 3.1));
   owner.add(inset);
+  // Face the incoming chord at its mouth, with jambs outside the opening
+  // and three broad, broken blocks following the roof edge above it.
+  const entryYaw = Math.atan2(-6, 65);
+  const front = new THREE.Group();
+  front.rotation.y = entryYaw;
+  front.position.set(801 + 45 * Math.sin(entryYaw), 0, 10 + 45 * Math.cos(entryYaw));
+  const jambs = new THREE.InstancedMesh(face, kitMaterial(), 2);
+  const jamb = new THREE.Matrix4().makeRotationY(Math.PI).scale(new THREE.Vector3(0.7, 0.96, 0.58));
+  for (const [i, x] of [-8.7, 8.7].entries()) jambs.setMatrixAt(i, jamb.setPosition(x, -2, -1.2));
+  front.add(jambs);
+  // Use the exit return's flush treatment down the two inner walls.
+  const walls = new THREE.InstancedMesh(face, lining, 6);
+  for (const [side, sign] of [-1, 1].entries()) {
+    const course = new THREE.Matrix4()
+      .makeRotationY((-sign * Math.PI) / 2)
+      .scale(new THREE.Vector3(1.14, 0.96, 0.00001));
+    for (let bay = 0; bay < 3; bay++)
+      walls.setMatrixAt(3 * side + bay, course.setPosition(sign * 6.5, -2, (bay + 0.5) * 6.76));
+  }
+  front.add(walls);
+  const lintel = new THREE.InstancedMesh(pieces.get('rim_cap')!, kitMaterial(), 3);
+  const cap = new THREE.Matrix4().makeRotationY(Math.PI).scale(new THREE.Vector3(1.32, 0.85, 0.62));
+  for (const [i, x] of [-5.1, 0, 5.1].entries()) lintel.setMatrixAt(i, cap.setPosition(x, 11.8, -0.7));
+  front.add(lintel);
+  front.name = 'West sea cave entrance';
+  owner.add(front);
   return { update() {} };
 }
 
