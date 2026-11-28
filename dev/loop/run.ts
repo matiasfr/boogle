@@ -1,6 +1,6 @@
 // `npm run loop -- run [--players N] [--order <name>] [--json] [--bills <factor>]`: plays each order the loop graph
 // allows through the REAL rules (the host's install: railValid, railApply, railTick; dev/loop/host.ts) for 1 to 4 players and prints
-// the time each node is reached. Walking is straight-line at WALK_MPS (no terrain, no trains ridden); cart, train,
+// the time each node is reached. Walking is straight-line at WALK_MPS (no terrain); cart, train,
 // laying and kiln time come from the sim. A stall with nothing accepted is a softlock; an order the graph allows that
 // the rules refuse is a graph bug. Decided edges the graph says nothing enforces (and edges said to be the rules')
 // are probed: the dependent node is tried first on a copy of the world.
@@ -68,9 +68,10 @@ import {
   RING_STEEL_YARD,
   STEEL,
 } from '../../src/sim/railway-ring-layout.ts';
-import { LINE2 } from '../../src/sim/railway-lines.ts';
+import { LINE2, RAIL_LINES } from '../../src/sim/railway-lines.ts';
+import { stopKin, trainLegTicks } from '../../src/sim/railway-train.ts';
 import type { RailAction } from '../../src/sim/railway.ts';
-import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, legRack } from '../../src/sim/railway-route.ts';
+import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, legFrame, legRack } from '../../src/sim/railway-route.ts';
 import { gateLeg, legDone, legOpen, legRow, routeRow } from '../../src/sim/railway-queries-route.ts';
 import {
   DETOUR,
@@ -87,8 +88,10 @@ import {
 } from './graph.ts';
 import { createHost, type Host } from './host.ts';
 import { wholeRouteLines } from './standins.ts';
+import { wallService } from '../look/bots/railway-wall-service.ts';
 
-type Cmd = { walk: Point } | { act: string; fields?: Partial<RailAction> } | { wait: number };
+type Cmd =
+  { walk: Point } | { ride: Point; ticks: number } | { act: string; fields?: Partial<RailAction> } | { wait: number };
 type Policy = Generator<Cmd, void, number>;
 /** `waiting`: the player's last command was a `wait` (standing for a train, a lay, a regrowth or a friend). */
 type Player = {
@@ -890,7 +893,26 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run
     'plug-gate': routePolicy('plug-gate'),
     'deep-gate': routePolicy('deep-gate'),
     cloth: routePolicy('cloth'),
-    'notch-gate': routePolicy('notch-gate'),
+    'notch-gate': function* (pl) {
+      if (pl.i === 0 && !done['notch-gate']()) {
+        const { line, from, to } = wallService;
+        const village = line.halts[to]!;
+        const notch = RAIL_LEGS.find((leg) => leg.id === 'notch-tunnel')!;
+        const bay = RAIL_LINES[notch.line]!;
+        const canopy = notch.railheadHalt - 1;
+        // Model uninterrupted rides at the first fit. Boarding and request waits are outside this lower bound.
+        yield {
+          ride: village.platforms[0],
+          ticks: trainLegTicks(line.halts[from]!.s - village.s, 0, stopKin(line, to, 1)),
+        };
+        yield* walk(bay.halts[0]!.platforms[0]);
+        yield {
+          ride: legFrame(notch, 0),
+          ticks: trainLegTicks(bay.halts[canopy]!.s - bay.halts[0]!.s, 0, stopKin(bay, canopy, 0)),
+        };
+      }
+      yield* routePolicy('notch-gate')(pl);
+    },
     lantern: routePolicy('lantern'),
     'causeway-gate': routePolicy('causeway-gate'),
     arrive: routePolicy('arrive'),
@@ -917,6 +939,9 @@ function step(r: Run, pl: Player, t: Tally, log: string[]) {
       pl.walked += d / 100;
       t.walked += d / 100;
       pl.busy = g.h.tick() + Math.ceil((d / (WALK_MPS * 100)) * 10);
+    } else if ('ride' in cmd) {
+      pl.at = { ...cmd.ride };
+      pl.busy = g.h.tick() + cmd.ticks;
     } else if ('wait' in cmd) pl.busy = g.h.tick() + cmd.wait;
     else {
       const fields = { ...cmd.fields };
@@ -1256,8 +1281,8 @@ export function runLoop(args: string[]) {
     );
   const out: string[] = [
     `Loop run through the real rules (railway-server install: railValid, railApply, railTick). A lower bound: walking`,
-    `is straight-line at ${WALK_MPS} m/s with no terrain, trains are not ridden, presses take ${PRESS / 10} s, there`,
-    `are no regrowth or recovery pulses; cart, trains, laying and kiln time are the sim's. ${ms} ms.`,
+    `is straight-line at ${WALK_MPS} m/s with no terrain. The rides from Wall head 5 to the Village and then to Canopy`,
+    `use first-fit non-stop timings. Presses take ${PRESS / 10} s; cart, laying and kiln time are the sim's. ${ms} ms.`,
   ];
   if (broken) out.push(`BROKEN BILL (--break ${broken}): its log bill is a hundred times the catalog's.`);
   const probes = results.find((r) => r.probes)?.probes ?? [];

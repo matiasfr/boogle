@@ -48,13 +48,18 @@ for (const line of RAIL_LINES) {
 function routesTo(town: string, from = 'Home', visited: readonly string[] = []): Ride[][] {
   const options = (rides.get(from) ?? []).filter((ride) => !visited.includes(ride.line));
   const direct = options.filter((ride) => ride.to === town);
-  if (direct.length) return direct.map((ride) => [ride]);
-  return options.flatMap((ride) => routesTo(town, ride.to, [...visited, ride.line]).map((rest) => [ride, ...rest]));
+  return [
+    ...direct.map((ride) => [ride]),
+    ...options
+      .filter((ride) => ride.to !== town)
+      .flatMap((ride) => routesTo(town, ride.to, [...visited, ride.line]).map((rest) => [ride, ...rest])),
+  ];
 }
 
 function rowsFor(town: string): string[] {
   const routes = routesTo(town);
-  if (!routes.length) return [`| ${town} | no route | ${BOILER.map(() => '—').join(' | ')} | — |`];
+  if (!routes.length) return [`| ${town} | no route | ${BOILER.map(() => '—').join(' | ')} | — | Fail |`];
+  const shortest = Math.min(...routes.map((route) => route.reduce((sum, ride) => sum + ride.ticks[0]!, 0)));
   const fewestRides = Math.min(...routes.map((r) => r.length));
   const ways = new Map<string, { label: string; ticks: number[] }>();
   for (const route of routes.filter((r) => r.length === fewestRides)) {
@@ -69,8 +74,9 @@ function rowsFor(town: string): string[] {
   return best.map(({ label, ticks }, i) => {
     const minutes = ticks.map((t) => (t / ticksPerMinute).toFixed(2)).join(' | ');
     const way = best.length === 1 ? `${label} (one way only)` : label;
-    const flag = i === 0 && ticks[0]! > 4 * ticksPerMinute ? '**Over 4 min**' : '';
-    return `| ${town} | ${way} | ${minutes} | ${flag} |`;
+    const joined = i === 0 ? (shortest / ticksPerMinute).toFixed(2) : '';
+    const flag = i === 0 ? (shortest <= 4 * ticksPerMinute ? 'Pass' : '**Fail**') : '';
+    return `| ${town} | ${way} | ${minutes} | ${joined} | ${flag} |`;
   });
 }
 
@@ -83,10 +89,10 @@ const report = [
   '',
   'Times use the sim’s train profiles and all catalogued track and halts that can open. Depart from the Village or West landing at Home. Each ride runs non-stop on request and times exclude walks, waits and holds.',
   '',
-  'The table shows each direct way from Home. Where a town needs a transfer, it shows up to two departures with the fewest rides, changing at halts with the same town name. It picks the fastest route at the first fit for each departure and carries that route across the other fits. Fit 0 uses each line’s standard speed. The four-minute flag uses the shortest listed way before rounding.',
+  'The table shows each direct way on the joined catalog. Where a town needs a transfer, it shows up to two departures with the fewest rides, changing at halts with the same town name. It picks the fastest route at the first fit for each departure and carries that route across the other fits. Fit 0 uses each line’s standard speed. The joined-ring column shows the shortest first-fit time across all routes, including transfers. The four-minute rule uses that time before rounding.',
   '',
-  `| Town or hub | From Home via | ${columns.join(' | ')} | First-fit rule |`,
-  `| --- | --- | ${columns.map(() => '---:').join(' | ')} | --- |`,
+  `| Town or hub | From Home via | ${columns.join(' | ')} | Joined ring (min) | First-fit rule |`,
+  `| --- | --- | ${columns.map(() => '---:').join(' | ')} | ---: | --- |`,
   ...[...towns].sort().flatMap(rowsFor),
   '',
 ].join('\n');

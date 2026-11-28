@@ -89,7 +89,7 @@ const HOST_ONLY: Record<HostSection, number> = {
   'request stop': 11,
   leaf: 9,
   'carrier leaves': 31,
-  'leg rejoin': 141,
+  'leg rejoin': 176,
 };
 const skipped: HostSection[] = [];
 const hostMarks = new Map<HostSection, number>();
@@ -348,6 +348,7 @@ async function runSuite() {
     await railwayLegRejoin(ctx, 'canopy-mid');
     await railwayLegRejoin(ctx, 'cave-mid');
     await railwayLegRejoin(ctx, 'wall-mid');
+    await railwayLegRejoin(ctx, 'wall-deep');
     await railwayLegRejoin(ctx, 'island-reached');
     await railwayLegRejoin(ctx, 'cave-first-open');
   });

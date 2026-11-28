@@ -1,8 +1,11 @@
-import { LINE2, RAIL_HALTS } from '../../../src/sim/railway-lines.ts';
-import { gorgeStop } from '../../../src/sim/railway-lap.ts';
+import { LINE2, RAIL_LINES, WALL_LEG } from '../../../src/sim/railway-lines.ts';
+import { joinedCaveStop } from '../../../src/sim/railway-lap.ts';
+import { RAIL_LEGS } from '../../../src/sim/railway-route.ts';
 
-/** The ending bot transfers to the bay line at Canopy after the sixth Wall lay. */
+const wall = RAIL_LEGS[WALL_LEG]!;
+/** The first ride after the sixth lay stays on one train through High Gorge. */
 export const wallService = {
-  from: gorgeStop,
-  to: RAIL_HALTS.find((halt) => halt.line === LINE2 && halt.name === 'Canopy Town')!,
+  from: joinedCaveStop(wall.line, wall.railheadHalt + wall.sections.length - 2),
+  to: 0,
+  line: RAIL_LINES[LINE2]!,
 };

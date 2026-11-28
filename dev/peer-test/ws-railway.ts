@@ -6,6 +6,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { waitFor, ev, sleep } from './harness.ts';
 import { RAILWAY_PLAY_NS, railwayRoomId } from '../../src/world/railway-namespace.ts';
+import { railCadence } from '../../src/world/railway-predict.ts';
 import { DEFAULT_ROOM } from '../../src/constants.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../../src/sim/railway-layout.ts';
 import { LINE1_INITIAL } from '../../src/sim/railway-line-layout.ts';
@@ -1405,6 +1406,7 @@ const REJOIN_CASES = {
   'canopy-mid': { leg: 'bell-canopy', laid: 1 },
   'cave-mid': { leg: 'cave', laid: 1 },
   'wall-mid': { leg: 'wall', laid: 2 },
+  'wall-deep': { leg: 'wall', laid: 5 },
 } as const;
 type RejoinSeed = keyof typeof REJOIN_CASES;
 
@@ -1646,7 +1648,7 @@ async function legRejoin(c: Ctx, seed: RejoinSeed) {
   const partialFeed = seed === 'gorge-mid' || seed === 'incline-mid';
   const logPickup = RAILWAY_CAPACITY.logsPack;
   const replacement = seed === 'incline-mid' ? 4 : 0;
-  type Stage = 'seed' | 'racked' | 'carried' | 'partial' | 'settled';
+  type Stage = 'seed' | 'racked' | 'carried' | 'partial' | 'settled' | 'joined';
   const kitCount = (stage: Stage) =>
     aheadKits + (stage === 'seed' ? SEED_KITS : FOLLOWING_KITS) + Number(stage === 'partial' && replacement > 0);
   const expected = (stage: Stage, kitSlots: readonly number[]) => {
@@ -1657,10 +1659,10 @@ async function legRejoin(c: Ctx, seed: RejoinSeed) {
           : leg.sections[stage === 'seed' ? LAID : LAID + 1],
       loaded = billsTo(stage === 'seed' ? LAID + SEED_KITS : LAID + 1 + FOLLOWING_KITS),
       carried = stage === 'carried' || fed > 0 ? PICKUP : 0,
-      racked = stage === 'seed' ? { logs: 0, rails: 0 } : bill(LAID);
+      racked = stage === 'seed' || stage === 'joined' ? { logs: 0, rails: 0 } : bill(LAID);
     return {
       row: {
-        laid: LAID,
+        laid: LAID + Number(stage === 'joined'),
         logs: fed,
         rails: 0,
         start: -1,
@@ -1748,9 +1750,17 @@ async function legRejoin(c: Ctx, seed: RejoinSeed) {
         const a: { rails?: number; legRails?: number } | undefined = s.accounts.find((x) => x.pid === 'leg0');
         const own = views[i]!.rows;
         const theirs = own.account as { rails?: number; legRails?: number } | undefined;
+        const leg = s.legs?.[k];
+        const mirrorsLeg =
+          seed !== 'wall-deep' ||
+          (!!leg &&
+            Object.entries(want.row).every(([key, value]) => leg[key as keyof typeof leg] === value) &&
+            leg.rackLogs === want.rack.logs &&
+            leg.rackRails === want.rack.rails);
         return (
           s.ready &&
           s.hash === probes[0]!.hash &&
+          mirrorsLeg &&
           same({ rails: a?.rails, legRails: a?.legRails }, want.back) &&
           (group[i] !== A || same({ rails: theirs?.rails, legRails: theirs?.legRails }, want.back)) &&
           same(
@@ -1790,7 +1800,7 @@ async function legRejoin(c: Ctx, seed: RejoinSeed) {
     (await Promise.all([A, B].map(ready))).every((t) => t >= 0),
   );
   legCheck('the second tab joined: each sees the other', await meet(A, B));
-  await at('the seed', 'seed', [A, B]);
+  if (seed !== 'wall-deep') await at('the seed', 'seed', [A, B]);
   // A round trip brings the current kit to the rack. Any following kits wait aboard while the rack is full.
   await cycle();
   let kit = kitTrains(await at('a round trip later', 'racked', [A, B]));
@@ -1813,34 +1823,38 @@ async function legRejoin(c: Ctx, seed: RejoinSeed) {
   // up again.
   await cycle();
   const departure = partialFeed ? 'partial' : 'carried';
+  const edit = async (
+    at: { x: number; y: number; z: number },
+    intent: Omit<RailAction, 'epoch' | 'request'>,
+    accepted: number,
+    actor = B,
+  ) => {
+    const observer = actor === A ? B : A;
+    const before = (await adapter(observer)).effects.length;
+    if (seed === 'wall-deep') await sleep(railCadence(intent.op).ms);
+    const submitted = await ev(
+      actor.page,
+      ({ at, intent }) => {
+        window.T.railStand(at.x, at.y, at.z);
+        return window.T.railIntent(intent);
+      },
+      { at, intent },
+    );
+    let observed: number | undefined;
+    legCheck(
+      `${intent.op} accepts exactly ${accepted}`,
+      submitted &&
+        (await waitFor(async () => {
+          observed = (await adapter(observer)).effects
+            .slice(before)
+            .find((e) => e.op === intent.op && e.pid === (actor === A ? 'leg0' : 'leg1') && !e.predicted)?.accepted;
+          return observed !== undefined;
+        }, 10000)) >= 0 &&
+        observed === accepted,
+      `submitted ${submitted}, accepted ${observed}`,
+    );
+  };
   if (partialFeed) {
-    const edit = async (
-      at: { x: number; y: number; z: number },
-      intent: Omit<RailAction, 'epoch' | 'request'>,
-      accepted: number,
-    ) => {
-      const submitted = await ev(
-        B.page,
-        ({ at, intent }) => {
-          window.T.railStand(at.x, at.y, at.z);
-          return window.T.railIntent(intent);
-        },
-        { at, intent },
-      );
-      let observed: number | undefined;
-      legCheck(
-        `${intent.op} accepts exactly ${accepted} logs for the partial feed`,
-        submitted &&
-          (await waitFor(async () => {
-            observed = (await adapter(A)).effects.find(
-              (e) => e.op === intent.op && e.pid === 'leg1' && !e.predicted,
-            )?.accepted;
-            return observed !== undefined;
-          }, 10000)) >= 0 &&
-          observed === accepted,
-        `submitted ${submitted}, accepted ${observed}`,
-      );
-    };
     await edit(rack, { op: 'rail.depotTake', leg: k }, logPickup);
     // The incline's final kit fits on its rack. Drop four logs to have the Gorge supply route send another load.
     if (replacement)
@@ -1891,6 +1905,29 @@ async function legRejoin(c: Ctx, seed: RejoinSeed) {
   console.log(
     `  leg rejoin (${seed}): round trip ${roundTrip} ticks, pickup ${PICKUP}; ${JSON.stringify({ before, later })}`,
   );
+  if (seed === 'wall-deep') {
+    const { RAIL_GATES } = await import('../../src/sim/railway-route.ts');
+    const gate = leg.sections[LAID]!.gate!;
+    const frame = legFrame(leg, LAID);
+    await edit(RAIL_GATES[gate]!.at, { op: 'rail.gate', id: gate }, 1, A);
+    await edit(frame, { op: 'rail.legStock', leg: k }, PICKUP, A);
+    for (const [op, total, capacity] of [
+      ['rail.depotRailTake', bill(LAID).rails - PICKUP, PICKUP],
+      ['rail.depotTake', bill(LAID).logs, logPickup],
+    ] as const)
+      for (let remaining = total; remaining > 0; remaining -= capacity) {
+        const count = Math.min(remaining, capacity);
+        await edit(rack, { op, leg: k }, count, A);
+        await edit(frame, { op: 'rail.legStock', leg: k }, count, A);
+      }
+    await A.page.close();
+    legCheck('the carrier leaves during the sixth lay', (await waitFor(async () => !(await sees(B, A)), 10000)) >= 0);
+    await cycle();
+    await at('the sixth lay with the carrier away', 'joined', [B], []);
+    A = await c.web.open('L0', url('leg0'));
+    legCheck('the carrier rejoins the closed ring', await meet(A, B));
+    await at('after the carrier rejoins the closed ring', 'joined', [A, B], []);
+  }
   await Promise.all([A, B].map((p) => p.page.close()));
 }
 

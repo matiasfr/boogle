@@ -671,13 +671,13 @@ const ROUTE_NODES: readonly LoopNode[] = [
     legSection(
       WALL,
       k,
-      `Port Quay to High Gorge, section ${k + 1} of ${WALL.sections.length}`,
+      `Port Quay to High Gorge, section ${k + 1} of ${WALL.sections.length}${k === 5 ? ': the ring joins' : ''}`,
       k === 0
         ? [dec('canopy-3', 'rules', `${RULES_ROUTE} legStock: the Canopy line is also laid`)]
         : k === 5
           ? [dec('deep-gate', 'rules', `${RULES_ROUTE} legTick: a full frame lays once its barrier opens`, 'finish')]
           : [],
-      k === 5 ? ['gorge'] : [],
+      k === 5 ? ['gorge', 'lap'] : [],
     ),
   ),
   {
@@ -812,9 +812,7 @@ export const NODES: readonly LoopNode[] = [
     ops: ['rail.jump'],
     reached: { mark: 'second jump gained' },
     stops: ['jump'],
-    requires: [
-      dec('T3', 'rules', 'The completed third stretch opens the pillar pickup (27 November 2026).'),
-    ],
+    requires: [dec('T3', 'rules', 'The completed third stretch opens the pillar pickup (27 November 2026).')],
     cue: [onMain('world', 'the jump device on the first pillar', 'src/entities/railway/tools.ts:92,268-274')],
     optional: true,
   },
