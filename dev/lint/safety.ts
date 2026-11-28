@@ -179,6 +179,7 @@ export function lintSafety(
     const door = PREFAB_DOORS[kind].includes(file);
     if (!rules[rule] && !door) continue;
     const banned = new Set<string>(names);
+    const capBindings = new Set<string>();
     for (const [i, edge] of edges.entries()) {
       if (
         rules[rule] &&
@@ -189,12 +190,39 @@ export function lintSafety(
       else if (
         door &&
         !edge.erased &&
-        edge.reexport &&
         targets[i] &&
         isCapability(kind, targets[i]!) &&
         !pureHelperEdge(edge, targets[i]!)
-      )
-        report(edge.node, rule, `Do not re-export capability modules from a prefab door. ${prefabDoor}`);
+      ) {
+        if (edge.reexport)
+          report(edge.node, rule, `Do not re-export capability modules from a prefab door. ${prefabDoor}`);
+        else if (!isCapability(kind, file) && edge.node.type === 'ImportDeclaration') {
+          for (const s of edge.node.specifiers)
+            if (s.type !== 'ImportSpecifier' || s.importKind !== 'type') capBindings.add(s.local.name);
+        }
+      }
+    }
+    if (capBindings.size) {
+      const refsCapability = (expr: unknown): boolean => {
+        const n = expr as { type?: string; name?: string; object?: unknown; expression?: unknown } | null;
+        if (!n) return false;
+        if (n.type === 'Identifier') return !!n.name && capBindings.has(n.name);
+        if (n.type === 'MemberExpression') return refsCapability(n.object);
+        if (n.expression) return refsCapability(n.expression);
+        return false;
+      };
+      for (const stmt of parsed.program.body) {
+        if (stmt.type === 'ExportNamedDeclaration' && !stmt.source && stmt.exportKind !== 'type') {
+          for (const s of stmt.specifiers)
+            if (s.exportKind !== 'type' && s.local.type === 'Identifier' && capBindings.has(s.local.name))
+              report(stmt, rule, `Do not re-export capability bindings from a prefab door. ${prefabDoor}`);
+          if (stmt.declaration?.type === 'VariableDeclaration')
+            for (const d of stmt.declaration.declarations)
+              if (refsCapability(d.init))
+                report(d, rule, `Do not re-export capability bindings from a prefab door. ${prefabDoor}`);
+        } else if (stmt.type === 'ExportDefaultDeclaration' && refsCapability(stmt.declaration))
+          report(stmt, rule, `Do not re-export capability bindings from a prefab door. ${prefabDoor}`);
+      }
     }
     // Retain the legacy call-count ratchet as a supplement. Module access is the structural boundary.
     for (const node of rules[rule] ? calls : []) {

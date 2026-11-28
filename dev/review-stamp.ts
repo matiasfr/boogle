@@ -1,8 +1,8 @@
 // npm run review-stamp -- <worktree> [--id] [--files] [--no-fetch] [--base <ref>]
 // Which files of a branch need an independent review, and the fingerprint that review names (owner, 28 November,
 // docs/decisions-process.md#d-2026-11-28-faster-reviews and #d-2026-11-28-process-audit-six-fixes):
-// - Always `review`: files that can directly desync players or lose saves (`server/src/`, `src/net/`, and wire, sync,
-//   replication, namespace or rule-registration files under `src/world/`).
+// - Always `review`: files that can directly desync players or lose saves (`server/src/`, `src/net/`, `src/ecs/world.ts`,
+//   `src/ecs/schema.ts`, and wire, sync, replication, namespace or rule-registration files under `src/world/`).
 // - Conditionally `review`: `src/sim/`, `src/ecs/` and other `src/world/` source files when the branch also alters
 //   `WORLD_NS`, a golden/fixture, wire/save/server code, or a review-path test assertion; otherwise `read` (a pure
 //   query or refactor with goldens and WORLD_NS unchanged — the orchestrator reads it and ships with --orchestrator-read).
@@ -30,11 +30,13 @@ const alwaysReviewSource = (f: string) =>
   f.startsWith('server/src/') ||
   f === 'src/net' ||
   f.startsWith('src/net/') ||
+  f === 'src/ecs/world.ts' ||
+  f === 'src/ecs/schema.ts' ||
   f.startsWith('src/world/rules/') ||
   /^src\/world\/(?:namespace|railway-namespace|railway-wire|sync|server-ops|railway-server|game-world|.*replicate.*)\.ts$/.test(
     f,
   );
-const isGoldenOrFixture = (f: string) => f.startsWith('test/fixtures/');
+const isGoldenOrFixture = (f: string) => /(?:^|\/)test\/fixtures\//.test(f);
 // Tests and the harnesses that assert: unit tests and their helpers, the server tests, the net test.
 const isTest = (f: string) => /(?:^|\/)test\/|\.test\.ts$/.test(f) || f.startsWith('dev/peer-test/');
 
@@ -58,8 +60,9 @@ function assertsReviewCode(c: FileChange, root?: string): boolean {
 const SKIP_OPTION = /\{\s*(?:skip|todo)\s*:[^{}]*\}\s*,\s*/g;
 const SKIP_CALL = /^(?:t|test|it|describe)\.(?:skip|todo)\s*\(/;
 const unskipped = (line: string) => line.replace(SKIP_OPTION, '');
-// A numeric `{ timeout: N }, ` test option: adding, raising or removing one alone is `read`, not `review`.
+// A numeric `{ timeout: N }, ` test option (inline or on its own line): adding, raising or removing alone is `read`.
 const TIMEOUT_OPTION = /\{\s*timeout\s*:\s*[\d_]+\s*\}\s*,\s*/g;
+const TIMEOUT_ONLY_LINE = /^\{\s*timeout\s*:\s*[\d_]+\s*\},?$/;
 const withoutTimeout = (line: string) => line.replace(TIMEOUT_OPTION, '');
 const IGNORED: [RegExp, string][] = [
   [/^$/, 'blank'],
@@ -79,6 +82,7 @@ function changedLines(patch: string): { sign: '+' | '-'; line: string }[] {
 
 // What a test file's diff does beyond imports, comments, timeout options, removed skips and verbatim moves, or undefined.
 function assertionChange(c: FileChange, pool: Record<'+' | '-', Map<string, number>>, kinds: Set<string>) {
+  if (/^(?:Binary files |GIT binary patch$)/m.test(c.patch)) return 'binary fixture change';
   const left: { sign: '+' | '-'; line: string }[] = [];
   for (const { sign, line } of changedLines(c.patch)) {
     const other = sign === '+' ? '-' : '+';
@@ -101,7 +105,13 @@ function assertionChange(c: FileChange, pool: Record<'+' | '-', Map<string, numb
   }
   const added = left.find((l) => l.sign === '+' && (unskipped(l.line) !== l.line || SKIP_CALL.test(l.line)));
   if (added) return `adds a skip: ${added.line.slice(0, 80)}`;
-  // A numeric `{ timeout: N }` option added, changed or removed on a test line without changing anything else.
+  // A numeric `{ timeout: N }` option added, changed or removed (on its own line or inline on a test line).
+  for (let i = left.length - 1; i >= 0; i--) {
+    if (TIMEOUT_ONLY_LINE.test(left[i]!.line)) {
+      left.splice(i, 1);
+      kinds.add('timeout');
+    }
+  }
   for (const minus of left.filter((l) => l.sign === '-')) {
     const baseMinus = withoutTimeout(minus.line);
     const plus = left.find(

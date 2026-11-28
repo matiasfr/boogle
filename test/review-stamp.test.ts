@@ -30,6 +30,8 @@ test('desync/save-loss paths always need review; standalone sim/ecs/world refact
   for (const f of [
     'src/net/ws-wire.ts',
     'server/src/server.ts',
+    'src/ecs/world.ts',
+    'src/ecs/schema.ts',
     'src/world/sync.ts',
     'src/world/namespace.ts',
     'src/world/rules/roster.ts',
@@ -37,12 +39,23 @@ test('desync/save-loss paths always need review; standalone sim/ecs/world refact
     assert.deepEqual(verdict(change(f, ['a'], ['b'], '')), [
       `review ${f}: source or wire under a desync/save-loss review path`,
     ]);
-  for (const f of ['src/sim/railway-queries-works.ts', 'src/ecs/world.ts', 'src/world/railway-jump.ts'])
+  for (const f of ['src/sim/railway-queries-works.ts', 'src/ecs/index.ts', 'src/world/railway-jump.ts'])
     assert.deepEqual(verdict(change(f, ['a'], ['b'], '')), [`read ${f}: query or refactor under a review path`]);
   assert.deepEqual(
     verdict(change('src/sim/a.ts', ['a'], ['b'], ''), change('test/fixtures/railway-golden.json', ['1'], ['2'], '')),
     ['review src/sim/a.ts: source under a review path', 'review test/fixtures/railway-golden.json: assertion change'],
   );
+  const binaryTrace: FileChange = {
+    file: 'server/test/fixtures/world-host-trace.jsonl.gz',
+    patch:
+      'diff --git a/server/test/fixtures/world-host-trace.jsonl.gz b/server/test/fixtures/world-host-trace.jsonl.gz\n' +
+      'Binary files a/server/test/fixtures/world-host-trace.jsonl.gz and b/server/test/fixtures/world-host-trace.jsonl.gz differ',
+    text: '',
+  };
+  assert.deepEqual(verdict(change('src/sim/a.ts', ['a'], ['b'], ''), binaryTrace), [
+    'review src/sim/a.ts: source under a review path',
+    'review server/test/fixtures/world-host-trace.jsonl.gz: assertion change',
+  ]);
   assert.deepEqual(
     verdict(
       change('src/sim/a.ts', ['a'], ['b'], ''),
@@ -57,13 +70,15 @@ test('desync/save-loss paths always need review; standalone sim/ecs/world refact
   assert.deepEqual(verdict(change('src/sim/README.md', ['a'], ['b'], '')), []);
 });
 
-test('timeout-only test edits (with optional comments) are read, not review; mixed timeout + skip still requires review', () => {
+test('timeout-only test edits (inline or standalone line, with optional comments) are read, not review; mixed timeout + skip still requires review', () => {
   const added = change(
     'test/return-presence.test.ts',
     ["test('reloads cleanly', async () => {"],
     ['// slow under full-machine load', "test('reloads cleanly', { timeout: 20_000 }, async () => {"],
   );
   assert.deepEqual(verdict(added), ['read test/return-presence.test.ts: tests only: comment, timeout']);
+  const standalone = change('test/railway-install.test.ts', [], ['  { timeout: 1200000 },']);
+  assert.deepEqual(verdict(standalone), ['read test/railway-install.test.ts: tests only: timeout']);
   const raised = change(
     'server/test/host.test.ts',
     ["test('syncs', { timeout: 5000 }, async () => {"],
@@ -77,6 +92,12 @@ test('timeout-only test edits (with optional comments) are read, not review; mix
     ["test('runs', { timeout: 20_000, skip: true }, () => {"],
   );
   assert.equal(reviewVerdicts([mixed])[0]!.review, true);
+  const standaloneWithAssertion = change(
+    'test/railway-install.test.ts',
+    ['  assert.equal(ok, true);'],
+    ['  { timeout: 1200000 },', '  assert.equal(ok, false);'],
+  );
+  assert.equal(reviewVerdicts([standaloneWithAssertion])[0]!.review, true);
 });
 
 test('a changed assertion in a sim test needs review, and the rule names the line', () => {

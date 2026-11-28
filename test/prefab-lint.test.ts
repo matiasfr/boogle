@@ -125,6 +125,24 @@ test('doors and debt files may export new helpers/queries while still blocking r
       (d) => d.rule === 'boogle/colliders-from-records',
     ),
   );
+  for (const code of [
+    "import { createBody } from '../physics/engine.ts'; export { createBody as makeBody };",
+    "import { createBody } from '../physics/engine.ts'; export const makeBody = createBody;",
+  ])
+    assert.ok(
+      lintSafety(code, 'src/prefab/instantiate.ts').some((d) => d.rule === 'boogle/colliders-from-records'),
+      code,
+    );
+  for (const code of [
+    "export { registerSeat } from '../entities/railway/seat.ts';",
+    "import { registerSeat } from '../entities/railway/seat.ts'; export { registerSeat as attachSeat };",
+    "import { registerSeat } from '../entities/railway/seat.ts'; export const attachSeat = registerSeat;",
+    "import * as seats from '../entities/railway/seat.ts'; export const attachSeat = seats.registerSeat;",
+  ])
+    assert.ok(
+      lintSafety(code, 'src/prefab/instantiate.ts').some((d) => d.rule === 'boogle/seats-from-records'),
+      code,
+    );
   const debtBudget: PrefabDebt = {
     colliders: { 'src/legacy.ts': { count: 1, reason: '2026-11-13: Existing debt.' } },
     seats: {},
