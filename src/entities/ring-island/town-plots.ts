@@ -68,6 +68,7 @@ export function createRingPlot(owner: OwnedView, ground: IslandGround) {
   const scopeAt = hangoutPoint(0, 0, 6);
   const eye = scopeAt.clone().add(new THREE.Vector3(0, 2.57, 0));
   const direction = new THREE.Vector3();
+  let lastAimSecond = -1;
   const focus = () => {
     const read = railwayWorldRead();
     const works = read?.ready() ? roomWorks(read.world()) : null;
@@ -217,9 +218,11 @@ export function createRingPlot(owner: OwnedView, ground: IslandGround) {
         house.interior(inside);
       }
       if (towerOn) {
-        if (!scope.root.visible) {
+        const second = Math.floor(tick / 10);
+        if (!scope.root.visible || second !== lastAimSecond) {
           const dest = focus();
           scope.root.rotation.y = Math.atan2(dest.x - eye.x, dest.z - eye.z);
+          lastAimSecond = second;
         }
         if (!scope.root.visible) standWhenClear(scope.solids, () => scope.setEnabled(true));
         if (scope.root.visible && near(eye, 3.2) && !modal.open) targets.push(...scope.targets());

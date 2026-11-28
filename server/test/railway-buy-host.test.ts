@@ -271,6 +271,9 @@ for (const kind of [6, 7]) {
       assert.equal(f.h.hasBellhouse(), false, 'unfinished purchase');
       await f.step(TRADE.buildTicks);
       assert.equal(f.h.hasBellhouse(), kind === 7, 'completed purchase');
+      await f.restart();
+      assert.deepEqual(plot(f.w, 16), bought, 'completed building survives restart');
+      assert.equal(f.h.hasBellhouse(), kind === 7);
     } finally {
       await f.close();
     }
