@@ -1,4 +1,4 @@
-﻿# First fall at the works
+# First fall at the works
 
 The owner answered question 1 on 28 November 2026 and accepted option A, including the hall fallback when state is unknown. See the [dated decision](../decisions-controls.md#d-2026-11-28-first-fall-lands-at-the-works) and [start-flow brief](../brainstorms/start-flow.md). The axe and boiler have their own build.
 
@@ -51,7 +51,8 @@ The first phone still from (980,−150) placed the resident at the edge. The fir
 
 A real-time bot in a normal first-fall room recorded its first accepted deposit at world (996,−139), **22.4 s from touchdown**, session `mwzshdtp-xm74ngh3`. This is one bot run. The two-tab check saw both peers grounded at (987.51,−161.92) and (984.84,−160.63). The guest reloaded dry at (984.33,−161.64). A q5-stocked room produced the [hall-board view](start-landing/hall.png). Not tested on a device.
 
+The final [desktop fall](start-landing/camp-desktop.png) and [390 × 844 fall](start-landing/camp-phone.png) show the layer, yellow resident and Station 1 bill together. On the phone they span the width of the screen: the bill sits to the right of centre and part of the engine is cropped on the left. Turning the bill on the near end of the frame made its face visible beside the machine. In a shared room, the [guest](start-landing/guest.png) sees the shared axe flourish while the [host chops](start-landing/host.png). Both reported one peer. This reload placed the guest at the Camp fallback.
+
 ## Open questions
 
 1. Move the shore landing to Camp until Home connects, then to the hall? Recommended **yes**, answered **yes** on 28 November. All five answers in the brief stand. No outstanding direction question.
-
