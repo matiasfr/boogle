@@ -24,8 +24,9 @@ const point = (u: number, l: number, y: number) => {
 const yaw = Math.atan2(site.nx, site.nz);
 
 export function createCanopyTownPlots(owner: OwnedView) {
-  const footing = { point, yaw, floor: site.floor, deck: 4, flat: true };
-  const buildings = [10, 11].map(() => createHangoutBuilding(owner, { islandH: () => site.floor }, false, footing));
+  // The shell's box length is its local z axis, along the porch width.
+  const footing = { point, yaw: yaw + Math.PI / 2, floor: site.floor, deck: 4, flat: true };
+  const building = createHangoutBuilding(owner, { islandH: () => site.floor }, false, footing);
   const targets: Interactable[] = [];
   let held = 0,
     progress = 0,
@@ -158,23 +159,20 @@ export function createCanopyTownPlots(owner: OwnedView) {
       const preview = offered
         ? held || (targets.length ? boards.find((b) => b.action.id === focused?.id)?.kind : 10)
         : 0;
-      active = 0;
-      buildings.forEach((b, i) => {
-        b.preview(preview === 10 + i);
-        if (b.construction(row && row.at >= 0 && row.kind === 10 + i ? (tick - row.at) / TRADE.buildTicks : -1))
-          active = 10 + i;
-        const p = me.body?.position;
-        if (p) {
-          const dx = p.x - striker.x,
-            dz = p.z - striker.z;
-          b.interior(
-            Math.abs(dx * site.nz - dz * site.nx) < 2.1 &&
-              Math.abs(dx * site.nx + dz * site.nz) < 2.6 &&
-              p.y >= site.floor &&
-              p.y < site.floor + 3,
-          );
-        }
-      });
+      building.preview(!!preview);
+      active = row && row.at >= 0 && building.construction((tick - row.at) / TRADE.buildTicks) ? row.kind : 0;
+      if (!row || row.at < 0) building.construction(-1);
+      const p = me.body?.position;
+      if (p) {
+        const dx = p.x - striker.x,
+          dz = p.z - striker.z;
+        building.interior(
+          Math.abs(dx * site.nz - dz * site.nx) < 2.6 &&
+            Math.abs(dx * site.nx + dz * site.nz) < 2.1 &&
+            p.y >= site.floor &&
+            p.y < site.floor + 3,
+        );
+      }
       if (active === 11 && near(striker)) targets.push(pull);
       calls.update(performance.now(), (beat) => windChime(striker.x, striker.z, beat));
       toys.update(active, preview ?? 0, performance.now() - rang);

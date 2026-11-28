@@ -13,7 +13,7 @@ The level checker tests the stand-in town reserve against the compiled halt and 
 
 ## Widenings
 
-The 25 November delivery-staking recommendation in decisions-rewards extends its first-offer arrival exception to Canopy. Later offers still require freight. The 27 November High Gorge far-end decision retains its terminus and fare while the far queue gains Canopy demand. The Part 5 and Part 6 single-town signal toys gain a local sympathetic answer.
+Canopy Offer 1 extends the Ring and Gorge arrival exception to item 3 of the [25 November delivery-staking decision](../decisions-rewards.md#d-2026-11-25-recommendations-taken-pool). Later offers still require freight. Canopy's contribution follows the existing queue to the terminus and fare specified in the [27 November High Gorge far-end decision](../decisions-rail.md#d-2026-11-27-riders-far-end-stays-high-gorge). The Part 5 and Part 6 signal toys gain a local sympathetic answer.
 
 ## Design review (2026-11-28)
 
