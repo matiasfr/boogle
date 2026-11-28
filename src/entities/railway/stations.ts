@@ -318,7 +318,9 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
   // The bill: a painted board on two posts at the frame's far end, facing along the line, so it reads over the low
   // frame as you walk up beside the track past the depot rack (owner, 9 November: signs in the world before hovering
   // text). Both faces carry it.
-  const bill = signBoard(owner, { w: 2.2, h: 1.1, px: 512, foot: 1.5, posts: 'two' });
+  const campBill = spec0.id === 'T1';
+  const width = campBill ? 4.4 : 2.2;
+  const bill = signBoard(owner, { w: width, h: width / 2, px: 512, foot: campBill ? 0.25 : 1.5, posts: 'two' });
   const billEnd = FRAME_W / 2 + 0.8;
   // T3's full log pile hid the missing beam row. Keep the existing bill beside the pile,
   // on the source side, without moving the receiver, feeder or standing envelope.
@@ -326,10 +328,10 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
   let bx = x + Math.sin(yaw) * billEnd + lx * billOut,
     bz = z + Math.cos(yaw) * billEnd + lz * billOut,
     byaw = yaw;
-  // The Camp approach sees the near end of T1. Its far sign disappears behind the sleeping layer.
-  if (spec0.id === 'T1') {
-    bx = x - Math.sin(yaw) * billEnd;
-    bz = z - Math.cos(yaw) * billEnd;
+  // Put the first bill beside the approach, close enough to read from the landing pad.
+  if (campBill) {
+    bx = THREE.MathUtils.lerp(CAMP_PAD.x, x - Math.sin(yaw) * billEnd, 0.25) - 2.25;
+    bz = THREE.MathUtils.lerp(CAMP_PAD.z, z - Math.cos(yaw) * billEnd, 0.25);
     byaw = Math.atan2(CAMP_PAD.x - bx, CAMP_PAD.z - bz);
   }
   // The forge's bill stands beside its train-facing receiver, clear of the stock and the east wall.
@@ -338,7 +340,7 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
     bz = z - 2.4;
     byaw = Math.PI / 2;
   }
-  bill.mesh.position.set(bx, place.y ?? H(bx, bz), bz);
+  bill.mesh.position.set(bx, campBill ? H(bx, bz) : (place.y ?? H(bx, bz)), bz);
   bill.mesh.rotation.y = byaw;
   let painted = '';
 
@@ -471,7 +473,8 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
       const key = [big, small, ...marks.map((m) => `${m.kind}${+m.ready}`)].join('|');
       if (key === painted) return;
       painted = key;
-      paintMarked(bill, big, small, marks);
+      if (campBill && !marks.length) paintTwoLines(bill, big, small, { ...BILL_LOOK, smallScale: 0.36 });
+      else paintMarked(bill, big, small, marks);
       bill.painted();
     },
     /** Called every frame after drawStock with where the stretch is. A laid stretch's frame packs up (owner, 14

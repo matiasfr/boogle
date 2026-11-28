@@ -2,7 +2,7 @@
 
 ## Landing at the works
 
-On portrait screens the camera widens at Camp touchdown to show the sleeping track layer, yellow resident and Station 1 bill together. It returns to the walking field of view between four and seven seconds after touchdown.
+On portrait screens the camera widens at Camp touchdown to show the sleeping track layer, yellow resident and Station 1 bill together. The bill stands low beside the approach so a guest can read the log count from the pad. The camera returns to the walking field of view between four and seven seconds after touchdown.
 
 On Jump in, the accepted final lay of line 1 selects the landing. While the line is unfinished, the trolley fall ends on the Camp ridge beside the track layer. Once it reaches Home, the fall ends in the square facing the hall's works board. A guest whose room state is still unknown lands at the hall. The destination stays fixed through the fall and the Act 1 crane. A returning guest resumes a safe saved spot or built halt before using the current landing. The cove, stakes and path remain open for visits. The contribution clock runs from the first grounded touchdown to that guest's first accepted contribution.
 

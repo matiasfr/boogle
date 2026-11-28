@@ -88,7 +88,7 @@ export function paintTwoLines(
   s: Pick<SignBoard, 'g' | 'cw' | 'ch'>,
   big: string,
   small: string,
-  look: { ground: string; ink: string; color?: string; rim?: string },
+  look: { ground: string; ink: string; color?: string; rim?: string; smallScale?: number },
 ) {
   const { g, cw, ch } = s;
   g.clearRect(0, 0, cw, ch);
@@ -108,6 +108,6 @@ export function paintTwoLines(
   };
   if (small) {
     line(big, ch * 0.38, ch * 0.4, look.color ?? look.ink);
-    line(small, ch * 0.77, ch * 0.2, look.ink);
+    line(small, ch * 0.77, ch * (look.smallScale ?? 0.2), look.ink);
   } else line(big, ch / 2, ch * 0.5, look.color ?? look.ink);
 }
