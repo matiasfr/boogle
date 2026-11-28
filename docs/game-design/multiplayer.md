@@ -4,6 +4,8 @@
 
 The default URL opens round 4 in the shared `boogle` room, with co-op enabled, a **boogle** pause title and a bare invite link. A `?room=` in the address overrides it, including old `?room=proto-place-coop` invites. `?classic=1` opens the old island in `beach` (or the explicit room), retaining its saved world; classic invites keep `classic=1`. Headless tools retain the `beach` fallback. A retired `?proto=place` link opens the live game (M13e), and other `?proto=` links retain their own mode. No progress is migrated into `boogle`: the old room's save is simply unused there, not deleted. Installed-app recall still reopens the former room-only default in `boogle`. See [place.md](place.md) for entry flags, per-room progress and installed-app reopening.
 
+A deployed room admits pages built for its server revision and world. Friends can keep playing through a Pages-first rollout while the old room is live. During the handover they see a short notice and return automatically once the site and host agree. A same-world update keeps the save. A world bump shows the new-island notice and starts a fresh visit.
+
 Our server hosts every room ([src/net/ws-room.ts](../../src/net/ws-room.ts), [src/net/README.md](../../src/net/README.md),
 [server/README.md](../../server/README.md)). Each tab opens one WebSocket to it at `/room/<world room>`, where the
 world room is `rail-v44-<room>` for the production railway or `v44-<room>` for ordinary rooms (the world namespace,
