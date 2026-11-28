@@ -61,6 +61,8 @@ export type ShotShape = {
   back?: number;
   cutIn?: boolean;
   end?: { pos: THREE.Vector3; at: THREE.Vector3; to?: THREE.Vector3 };
+  /** A final held cut after the end cut has played for `after` seconds. */
+  last?: { after: number; pos: THREE.Vector3; at: THREE.Vector3 };
   titleS?: number;
   onCut?: () => void;
   onHome?: () => void;
@@ -77,6 +79,7 @@ type Shot = {
   cutIn: boolean;
   end: { pos: THREE.Vector3; at: THREE.Vector3; to: THREE.Vector3 | null } | null;
   titleS: number;
+  last?: ShotShape['last'];
   onCut: (() => void) | null;
   onHome: (() => void) | null;
   /** A crane (`crane()`): rises by `lift` over the live follow camera and back, easing in and out over `blend` seconds,
@@ -153,12 +156,17 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false) {
       else target.copy(shot.at);
       // The end cut sets the camera's position and its look together, on the one frame.
       if (shot.end && t >= shot.lead + shot.drift) {
+        const elapsed = t - shot.lead - shot.drift;
         position.copy(shot.end.pos);
         if (shot.end.to) {
-          const held = shot.seconds - shot.lead - shot.drift;
-          position.lerp(shot.end.to, held > 0 ? clamp((t - shot.lead - shot.drift) / held, 0, 1) : 0);
+          const held = shot.last?.after ?? shot.seconds - shot.lead - shot.drift;
+          position.lerp(shot.end.to, held > 0 ? clamp(elapsed / held, 0, 1) : 0);
         }
         target.copy(shot.end.at);
+        if (shot.last && elapsed >= shot.last.after) {
+          position.copy(shot.last.pos);
+          target.copy(shot.last.at);
+        }
       }
       aim.copy(look).addScaledVector(forward, 8).lerp(target, weight);
     }
@@ -245,6 +253,7 @@ export function createCameraPullOut(busy = () => false, behindBuddy = false) {
           ? { pos: shape.end.pos.clone(), at: shape.end.at.clone(), to: shape.end.to?.clone() ?? null }
           : null,
         titleS: shape.titleS ?? 0,
+        last: shape.last && { after: shape.last.after, pos: shape.last.pos.clone(), at: shape.last.at.clone() },
         onCut: shape.onCut ?? null,
         onHome: shape.onHome ?? null,
       };

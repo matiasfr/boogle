@@ -476,7 +476,7 @@ export function createRailwayBoiler(
       showing?.('dropped');
     }
     const held = b.state === 'held';
-    echoRoot.visible = held && !line2Trains(w) && !fit;
+    echoRoot.visible = cast && b.state !== 'fitted' && !fit;
     if (echoRoot.visible) {
       placeSeat();
       echoRoot.position.copy(seat);

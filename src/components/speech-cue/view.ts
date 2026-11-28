@@ -4,7 +4,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { camera, toScreen, view } from '../../render/scene.ts';
 
 /** One bubble, two contents. Forward `show` from the Talk target, then `update` after prompts and the camera. */
-export function createSpeechCue(owner: OwnedView, at: Vector3) {
+export function createSpeechCue(owner: OwnedView, at: Vector3, line?: string) {
   const el = document.createElement('div');
   el.className = 'speech-cue';
   el.hidden = true;
@@ -13,6 +13,12 @@ export function createSpeechCue(owner: OwnedView, at: Vector3) {
   const chip = document.createElement('span');
   chip.className = 'prompt-chip';
   inner.append(chip);
+  if (line) {
+    const words = document.createElement('span');
+    words.className = 'speech-line';
+    words.textContent = line;
+    inner.prepend(words);
+  }
   el.append(inner);
   (document.querySelector('.hud') ?? document.body).append(el);
   owner.cleanup(() => el.remove());
@@ -26,16 +32,17 @@ export function createSpeechCue(owner: OwnedView, at: Vector3) {
       prompt = html;
     },
     update(unread: boolean) {
-      const html = prompt || (unread ? '…' : '');
+      const html = prompt || (unread ? line || '…' : '');
       if (html !== shown) {
         shown = html;
         if (prompt) {
           markup.innerHTML = prompt;
           // Keep the bubble itself: only its glyph and label children change.
           chip.replaceChildren(...markup.content.firstElementChild!.childNodes);
-        } else chip.textContent = html;
+        } else chip.textContent = line ? '' : html;
+        chip.hidden = !!line && !prompt;
         el.classList.toggle('unread', !prompt);
-        el.setAttribute('aria-label', prompt ? 'Talk' : 'Something to say');
+        el.setAttribute('aria-label', line || (prompt ? 'Talk' : 'Something to say'));
       }
       toScreen(at, screen);
       el.hidden = !(
@@ -45,7 +52,7 @@ export function createSpeechCue(owner: OwnedView, at: Vector3) {
         screen.x < view.w &&
         screen.y > 0 &&
         screen.y < view.h &&
-        (prompt || camera.position.distanceToSquared(at) < 24 * 24)
+        (prompt || camera.position.distanceToSquared(at) < (line ? 9 * 9 : 24 * 24))
       );
       if (!el.hidden) el.style.transform = `translate(${screen.x.toFixed(1)}px, ${screen.y.toFixed(1)}px)`;
     },
