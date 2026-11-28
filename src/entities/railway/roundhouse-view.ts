@@ -230,6 +230,7 @@ export async function createRailwayRoundhouse(
     s = new THREE.Vector3(),
     e = new THREE.Euler(0, 0, 0, 'YXZ');
   const gold = new THREE.Color('#ffdc7a');
+  const steam = new THREE.Color('#ece8e0');
 
   /** The working bay's door frame in build order, bay-local: the two door piers on the set footings, then the lintel
    * over the door (the kit's sizes). When they stand, the rotunda's first stage stands with them: the bay's own shell
@@ -625,7 +626,8 @@ export async function createRailwayRoundhouse(
             vz: 0,
             life: 2,
             size: 0.3,
-            color: new THREE.Color('#ece8e0'),
+            daylight: true,
+            color: steam,
             alpha: 0.4,
             drag: 0.5,
             grow: [1, 3],

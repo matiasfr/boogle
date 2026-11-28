@@ -162,6 +162,7 @@ export function burst(at: THREE.Vector3, dust: number, chips: number) {
       life: 0.6 + Math.random() * 0.6,
       size: 0.45,
       alpha: 0.75,
+      daylight: true,
       color: DUST,
       drag: 3,
       grow: [0.6, 2.4],
@@ -180,6 +181,7 @@ export function burst(at: THREE.Vector3, dust: number, chips: number) {
       vz: Math.sin(a) * v,
       life: 0.7 + Math.random() * 0.5,
       size: 0.12,
+      daylight: true,
       color: WOOD,
       gravity: 22,
     });

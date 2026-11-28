@@ -530,6 +530,7 @@ export function shedTreeCrown(t: TreePose) {
       vz: Math.sin(a) * sp,
       life: 0.9 + Math.random() * 0.8,
       size: 0.18 + Math.random() * 0.16,
+      daylight: true,
       color: k % 2 ? leaf : leaf2,
       gravity: 4,
       drag: 1.4,

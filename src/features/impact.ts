@@ -46,6 +46,7 @@ function emitPuff(x: number, y: number, z: number, k: number) {
       vz: Math.sin(a) * sp,
       life: 0.5 + Math.random() * 0.35,
       size: 0.14 + Math.random() * 0.16 * (0.6 + k),
+      daylight: true,
       color: PUFF,
       gravity: 0.8,
       drag: 3,

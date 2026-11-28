@@ -62,6 +62,7 @@ function shedRust(m: Waker, n: number) {
         vz: (Math.random() - 0.5) * 2.6,
         life: 0.8 + Math.random() * 0.6,
         size: 0.08 + Math.random() * 0.1,
+        daylight: true,
         color: Math.random() < 0.5 ? rust : flake,
         gravity: 9,
         shrink: 0.3,
@@ -79,6 +80,7 @@ function shedRust(m: Waker, n: number) {
           grow: [1, 3],
           alpha: 0.55,
           fade: 0.6,
+          daylight: true,
           color: dustC,
           drag: 1.4,
         });
@@ -100,6 +102,7 @@ function cough(m: Waker, heavy: number) {
       grow: [1, 3],
       alpha: 0.7,
       fade: 0.5,
+      daylight: true,
       color: heavy < 0.6 ? soot : steam,
     });
 }
@@ -120,6 +123,7 @@ function steamBurst(m: Waker) {
       grow: [1, 4],
       alpha: 0.9,
       fade: 0.5,
+      daylight: true,
       color: steam,
       drag: 0.9,
     });
@@ -143,6 +147,7 @@ function steamBurst(m: Waker) {
         grow: [1, 3.4],
         alpha: 0.8,
         fade: 0.5,
+        daylight: true,
         color: steam,
         drag: 2.2,
       });
