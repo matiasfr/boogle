@@ -39,11 +39,28 @@ export function createCanopyToys(
   }
   for (let i = -5; i <= 5; i++) piece(net, new THREE.BoxGeometry(0.045, 0.06, 1.32), fibre, i * 0.21, 0.22, 3.18);
   for (let i = -3; i <= 3; i++) piece(net, new THREE.BoxGeometry(2.25, 0.05, 0.045), teal, 0, 0.24, 3.18 + i * 0.19);
+  // A lashing from each surrounding tree supports the ridge rope over the clearing.
+  const ridge = new THREE.CatmullRomCurve3(
+    [
+      rings.worldToLocal(new THREE.Vector3(-1050, 37, -300)),
+      new THREE.Vector3(6, 12, 3),
+      new THREE.Vector3(12, 11, 3),
+      new THREE.Vector3(18, 12, 3),
+      rings.worldToLocal(new THREE.Vector3(-960, 37, -240)),
+    ],
+    false,
+    'catmullrom',
+    0.12,
+  );
+  piece(rings, new THREE.TubeGeometry(ridge, 48, 0.055, 5, false), fibre, 0, 0, 0);
   for (let i = 0; i < 3; i++) {
     const hoop = new THREE.Group();
     hoop.position.set(6 + i * 6, 8 - i * 2, 3);
     hoop.rotation.y = Math.PI / 2;
     rings.add(hoop);
+    const top = i === 1 ? 11 : 12,
+      rim = hoop.position.y + 1.55;
+    piece(rings, new THREE.CylinderGeometry(0.04, 0.04, top - rim, 5), fibre, hoop.position.x, (top + rim) / 2, 3);
     piece(hoop, new THREE.TorusGeometry(1.55, 0.09, 8, 40), fibre, 0, 0, 0);
     for (let flag = 0; flag < 12; flag++) {
       const a = (flag * Math.PI) / 6;
