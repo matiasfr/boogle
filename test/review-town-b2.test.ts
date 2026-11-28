@@ -9,7 +9,7 @@ import { plot } from '../src/sim/railway-rows.ts';
 import { Plot, Till } from '../src/sim/railway-components.ts';
 import { loaderBuilt, plotPrice, plotsStaked } from '../src/sim/railway-queries-trade.ts';
 import * as yard from '../src/place/yard-shape.ts';
-import { TRADE } from '../src/sim/railway-trade-layout.ts';
+import { TRADE, validPlotKind } from '../src/sim/railway-trade-layout.ts';
 import { loadLevelArtifact } from '../src/prefab/validate.ts';
 import { definitions } from '../src/prefab/catalogue.ts';
 import level from '../content/built/levels/town-plot-stakes.json' with { type: 'json' };
@@ -40,6 +40,7 @@ function plotsView(adapter: RailwayAdapter) {
     level,
     definitions,
     TRADE,
+    validPlotKind,
     ...plan,
     HALL,
     Vector3,
@@ -138,12 +139,12 @@ test('the toy shown during a hold matches the selected board', () => {
   view.update(read(), 0);
   const target = pickInteract(view.targets(), position.x, position.z, 0, 1);
   assert.equal(target?.id, 'town.plot.0.2');
-  assert.deepEqual(toyGhosts.map((g) => g.visible), [false, true]);
+  assert.deepEqual(toyGhosts.map((g) => g.visible), [false, true, false, false, false]);
   target!.run!();
   view.update(read(), 0.5);
   assert.deepEqual(
     toyGhosts.map((g) => g.visible),
-    [false, true],
+    [false, true, false, false, false],
   );
 });
 

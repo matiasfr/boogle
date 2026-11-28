@@ -25,7 +25,7 @@ const buy = (w: World, tick: number, id: number, pid = 'a', pct = 50) => {
   return railApply(
     w,
     pid,
-    { op: 'rail.buy', id, kind: id === 0 ? 1 : undefined, epoch: a.epoch, request: a.request + 1 },
+    { op: 'rail.buy', id, kind: id === 0 ? 1 : id === 2 ? 3 : undefined, epoch: a.epoch, request: a.request + 1 },
     tick,
     undefined,
     pct,
@@ -65,6 +65,29 @@ test('review: all three plots, bought one by one, cost 150, 800 and 1,600; spent
   for (let t = READY.t + 1; t <= READY.t + TRADE.buildTicks + 600; t++) railTick(back, t);
   railwayCheck(back, READY.t + TRADE.buildTicks + 600);
   assert.equal(till(back).spent, 2550);
+});
+
+test('Offer 3 sells either the spare toy or the disc after either first choice', () => {
+  for (const first of [1, 2]) {
+    for (const choice of [3 - first, 3]) {
+      const w = copy(READY.w);
+      supply(w, 40, 16, 10000);
+      const offer = (id: number, kind: number) => {
+        const a = account(w, 'a')!;
+        return railApply(w, 'a', { op: 'rail.buy', id, kind, epoch: a.epoch, request: a.request + 1 }, READY.t).status;
+      };
+      assert.equal(buy(w, READY.t, 1), 'accepted');
+      assert.equal(offer(2, choice), 'rejected');
+      assert.equal(offer(0, first), 'accepted');
+      const before = till(w).boogles;
+      assert.equal(offer(2, first), 'rejected');
+      assert.equal(till(w).boogles, before);
+      assert.equal(offer(2, choice), 'accepted');
+      const back = copy(w);
+      assert.equal(plot(back, 2).kind, choice);
+      assert.equal(till(back).boogles, before - plot(back, 2).paid);
+    }
+  }
 });
 
 test('review: two players buying different plots in one tick with money for one spend once', () => {
