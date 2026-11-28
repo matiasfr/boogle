@@ -12,7 +12,7 @@ On Home, [Placeholder: Gorge Minnows] school in the gorge and west cove, [Placeh
 
 The [Home feature](../../src/features/critter-home.ts) mounts within 260 m and sleeps beyond 300 m. Full Detail draws up to 40, 12 and 38 instances respectively. Reduced Detail halves each population and disables their shadows.
 
-At Split-rock Works, [Placeholder: Quarry Swifts] wheel above the rim when a train passes, a runner approaches or a seam opens. [Placeholder: Seam Lizards] dart aside and hide when runners come within 4 m or trains pass. The two local pools hold 24 and 36 animals at full Detail, half on reduced Detail. They mount within 105 m of the works area centre and sleep beyond 125 m.
+At Split-rock Works, [Placeholder: Quarry Swifts] wheel above the rim when a train passes, a runner approaches or a seam opens. [Placeholder: Seam Lizards] dart aside and hide when runners come within 4 m or trains pass. When the lap joins, both react to trains from either original line. The two local pools hold 24 and 36 animals at full Detail, half on reduced Detail. They mount within 105 m of the works area centre and sleep beyond 125 m.
 
 On Ring Island, [Placeholder: Crossing Gulls] lift from shore rocks and the outer ends of finished bent caps, then bank alongside incoming trains. [Placeholder: Reef Dartfish] scatter from swimmers and ball splashes. [Placeholder: Clover Flutters] rise as players pass quickly across the meadow in daylight. Full Detail has up to 16, 36 and 28 instances respectively. Reduced Detail halves each population and removes its shadows. The groups mount within 495 m of the area centre and sleep beyond 530 m.
 

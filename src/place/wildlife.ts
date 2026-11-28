@@ -7,6 +7,19 @@ import { autoRung, graphicsInitial } from '../graphics-settings.ts';
 import { onStart } from '../loop.ts';
 import { me } from '../player/state.ts';
 import { resident } from '../render/lod-level.ts';
+import { lapSlots } from '../sim/railway-lap.ts';
+import { RAIL_TRAINS } from '../sim/railway-lines.ts';
+
+// Speeds are in m/s. Legacy thresholds in metres per frame are multiplied by 60 to preserve the 60 FPS response.
+export function sampledSpeed(distance: number, dt: number) {
+  return dt > 0 ? distance / dt : 0;
+}
+
+export function wildlifeEngineIds(line?: number) {
+  const slots = line === undefined ? RAIL_TRAINS.keys() : lapSlots(line, true);
+  const ids = Array.from(slots, (slot) => `railway:train${slot}-0`);
+  return line === undefined ? ['railway:T1:loco', ...ids] : ids;
+}
 
 export function reducedWildlife() {
   const rung = graphicsInitial('detail', ['auto', 'full', 'sea', 'shadows', 'lowest'], 'auto');

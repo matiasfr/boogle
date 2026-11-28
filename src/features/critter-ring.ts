@@ -7,14 +7,13 @@ import { ballMesh } from '../entities/ball/view.ts';
 import { remotes, type Remote } from '../netplay/net.ts';
 import { platformById } from '../physics/platforms.ts';
 import { me } from '../player/state.ts';
-import { reducedWildlife, wildlifePool, wildlifeZone } from '../place/wildlife.ts';
+import { reducedWildlife, sampledSpeed, wildlifeEngineIds, wildlifePool, wildlifeZone } from '../place/wildlife.ts';
 import { ringAnchor, ringCounts, type RingGroup } from '../place/ring-wildlife-sites.ts';
-import { lapSlots } from '../sim/railway-lap.ts';
 import { LINE2 } from '../sim/railway-lines.ts';
 import { createPool } from '../render/instances.ts';
 import { skyNow } from '../render/sky.ts';
 
-const engines = lapSlots(LINE2, true).map((slot) => 'railway:train' + slot + '-0');
+const engines = wildlifeEngineIds(LINE2);
 function population(kind: RingGroup, color: string) {
   const pool = wildlifePool(kind, ringCounts[kind], color);
   pool.mesh.name = 'critter-ring-' + kind;
@@ -92,7 +91,7 @@ function mount() {
       }
       remotes.forEach(remote);
       const ball = ballMesh.position;
-      if (ball.y < 0.6 && dt > 0 && (lastBallY - ball.y) / dt > 1.2) disturb(school, ball.x, ball.y, ball.z, 5);
+      if (ball.y < 0.6 && sampledSpeed(lastBallY - ball.y, dt) > 1.2) disturb(school, ball.x, ball.y, ball.z, 5);
       lastBallY = ball.y;
       for (const id of engines) {
         const train = platformById(id)?.body;

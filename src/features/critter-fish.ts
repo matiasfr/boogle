@@ -25,6 +25,7 @@ import { remotes } from '../netplay/net.ts';
 import { patchNode } from '../render/material-patch.ts';
 import { createPool } from '../render/instances.ts';
 import { whileNearClassicIsland } from '../island/classic-zone.ts';
+import { sampledSpeed } from '../place/wildlife.ts';
 
 const FISH = {
   count: 36,
@@ -111,7 +112,7 @@ whileNearClassicIsland(() =>
       scares.length = 0;
       const bp = ballMesh.position;
       const bs = waterField.surfaceAt(bp.x, bp.z);
-      if (bp.y < bs + 0.6 && lastBallY - bp.y > 0.02) scares.push(bp);
+      if (bp.y < bs + 0.6 && sampledSpeed(lastBallY - bp.y, dt) > 1.2) scares.push(bp);
       lastBallY = bp.y;
       if (me.swimming && me.body) scares.push(me.body.position);
       for (const r of remotes.values()) if (r.state === 2) scares.push(r.target);
