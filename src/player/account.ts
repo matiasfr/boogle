@@ -14,6 +14,7 @@ let visitStorage = false;
 let state: AccountState = 'offline';
 let problem: string | undefined;
 let standIn: string | undefined;
+let retryGuest = false;
 let switching = false;
 let beforeReload = () => {};
 
@@ -120,8 +121,8 @@ function resolved(token: string, value: unknown): Credential {
   };
 }
 
-export function prepareAccount(): Promise<void> {
-  return (preparing ??= prepare()
+export function prepareAccount(forJump = false): Promise<void> {
+  return (preparing ??= prepare(forJump)
     .catch(() => {
       // Even corrupt/blocked storage, a refused session, bad JSON or a timed-out response must reach main.
       problem ??= 'Sign-in is unavailable. Reload to retry.';
@@ -135,7 +136,29 @@ export function prepareAccount(): Promise<void> {
       }
     }));
 }
-async function prepare() {
+// During a jump or a storage-blocked visit, boot needs a verified PID before it
+// starts identity-keyed consumers. Keep the same token through a host replacement.
+async function registerGuest(token: string, waitForHost: boolean) {
+  let delay = 1000;
+  for (;;) {
+    try {
+      return await request('guest', token, 'POST');
+    } catch (error) {
+      const status = (error as { status?: number })?.status;
+      if (
+        !waitForHost ||
+        !import.meta.env.VITE_BOOGLE_SERVER ||
+        (status !== undefined && status < 500) ||
+        error instanceof SyntaxError
+      )
+        throw error;
+      await new Promise<void>((done) => setTimeout(done, delay));
+      delay = Math.min(delay * 2, 30000);
+    }
+  }
+}
+async function prepare(forJump: boolean) {
+  let memoryOnly = false;
   let saved: string | null = null;
   try {
     saved = sessionStorage.getItem(ACCOUNT_KEY);
@@ -165,12 +188,14 @@ async function prepare() {
     }
   } else {
     credential = newCredential();
-    save(credential); // Lost registration responses retry this token, never create a second person.
+    memoryOnly = !save(credential); // Lost registration responses retry the stored token.
   }
   try {
     const next = resolved(
       credential.token,
-      await request(credential.pid ? 'session' : 'guest', credential.token, credential.pid ? 'GET' : 'POST'),
+      credential.pid
+        ? await request('session', credential.token)
+        : await registerGuest(credential.token, memoryOnly || forJump),
     );
     if (credential.pid && credential.pid !== next.pid) throw new Error('The server returned a different identity.');
     credential = next;
@@ -178,12 +203,27 @@ async function prepare() {
     // Another tab may have signed in or out while this check was in flight: never write the former person back.
     if (!switching && holds(next.token)) save(credential);
   } catch (error) {
-    state = (error as { status?: number } | null)?.status === 401 ? 'revoked' : 'offline';
+    const status = (error as { status?: number } | null)?.status;
+    state = status === 401 ? 'revoked' : 'offline';
+    retryGuest = !credential.pid && (status === undefined || status >= 500);
     problem =
       state === 'revoked'
         ? 'Sign-in expired or was replaced. Your saved identity was kept.'
         : 'Sign-in is unavailable. Reload to retry.';
     throw error;
+  }
+}
+
+/** A stand-in's identity is already in use throughout the game. Register its original token,
+ * then re-enter through boot so every identity-keyed consumer sees the same verified guest. */
+export async function retryGuestRegistration() {
+  if (!retryGuest || switching || !credential) return;
+  const token = credential.token;
+  if (!holds(token)) return;
+  const next = resolved(token, await request('guest', token, 'POST'));
+  if (!switching && holds(token) && save(next)) {
+    retryGuest = false;
+    reload();
   }
 }
 

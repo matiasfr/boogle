@@ -255,7 +255,7 @@ export function createService(cfg: ServerConfig) {
   app.get('/healthz', (_req: Request, res: Response) => res.type('text/plain').send('ok'));
   // Read-only deployment identity; healthz stays plain text for Fly's existing health checks.
   app.get('/version', (_req: Request, res: Response) =>
-    res.set('Cache-Control', 'no-store').json({ build: cfg.build }),
+    res.set('Cache-Control', 'no-store').json({ build: cfg.build, world: roomNamespaces().world }),
   );
 
   // ---- snapshot storage (./store.ts) ----
@@ -442,6 +442,7 @@ export function createService(cfg: ServerConfig) {
   });
   // ---- playtest jump-ins (./jump.ts) ----
   const jumps = addJump(app, cfg, {
+    resolveSession: accounts.resolveSession,
     store,
     roomHost: () => roomHost,
     replaced: (id) => !!replacements.read(id),

@@ -32,8 +32,8 @@ async function get(url: URL, contentType: RegExp, timeoutMs = 5000) {
   assert.match(res.headers.get('content-type') || '', contentType, `${url}: content type`);
   return res;
 }
-type Version = { build: string; serverBuild: string; server: string };
-async function connect(server: string, room: string, build: string) {
+type Version = { build: string; serverBuild: string; server: string; world: string };
+async function connect(server: string, room: string, version: Version) {
   const id = randomBytes(8).toString('hex');
   const token = randomBytes(32).toString('hex');
   const guest = await fetch(new URL('/account/guest', server), {
@@ -43,7 +43,11 @@ async function connect(server: string, room: string, build: string) {
     signal: AbortSignal.timeout(5000),
   });
   assert.equal(guest.status, 200, 'smoke guest registration');
-  const ws = new WebSocket(roomUrl(server, room, { self: id, b: build }), WS_PROTOCOL, { origin: site.origin });
+  const ws = new WebSocket(
+    roomUrl(server, room, { self: id, b: version.build, serverBuild: version.serverBuild, world: version.world }),
+    WS_PROTOCOL,
+    { origin: site.origin },
+  );
   sockets.push(ws);
   ws.once('open', () => ws.send(encode({ t: 'auth', token })));
   const messages: WireMsg[] = [];
@@ -114,8 +118,8 @@ try {
   // A server restart (a deploy landing just after the identity check) drops sockets or stalls the relay. One retry on
   // fresh sockets covers that; a second failure is real and throws.
   async function roundTrip() {
-    const a = await connect(server, room, version.build);
-    const b = await connect(server, room, version.build);
+    const a = await connect(server, room, version);
+    const b = await connect(server, room, version);
     // A cosmetic action traverses the real room relay, then B acknowledges through that same relay.
     const send = (ws: import('ws').WebSocket) => ws.send(encode({ t: 'm', d: { t: 'honk', v: 0 } }));
     const honkFrom = (id: string) => (m: WireMsg) =>

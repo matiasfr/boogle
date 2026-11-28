@@ -17,6 +17,7 @@ import { DEFAULT_ROOM } from '../../src/constants.ts';
 import { qjob } from '../../test/helpers/rail.ts';
 import { LINE2_STATIONS } from '../../src/sim/railway-line2-layout.ts';
 import type { SeedStage } from '../../src/sim/railway-seeds.ts';
+import { fixtureToken, seedPrincipal } from './helpers/accounts.ts';
 
 const ns = RAILWAY_PLAY_NS;
 const shared = railwayRoomId(DEFAULT_ROOM);
@@ -25,12 +26,62 @@ async function start(overrides: Partial<ServerConfig> = {}, dataDir?: string) {
   dataDir ??= await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-jump-'));
   const svc = createService(loadConfig({ DATA_DIR: dataDir }, { log: () => {}, jumpBuild: 'any', ...overrides }));
   const base = `http://127.0.0.1:${await svc.listen(0)}`;
-  const jump = (body: unknown) =>
-    fetch(`${base}/jump`, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify(body) });
+  const jump = (body: unknown, token?: string) =>
+    fetch(`${base}/jump`, {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain', ...(token && { authorization: 'Bearer ' + token }) },
+      body: JSON.stringify(body),
+    });
   let stopped: Promise<void> | null = null;
   return { base, dataDir, svc, jump, stop: () => (stopped ??= svc.close()) };
 }
 const roomFiles = async (dir: string) => (await fs.readdir(dir)).filter((f) => f.startsWith('rail-')).sort();
+
+test('a jump whose reply was lost reuses one allocation across retries and a restart', async () => {
+  let s = await start({ jumpMaxPerAddressDay: 1 });
+  const request = { stage: 'start', ns, request: crypto.randomUUID() };
+  const token = fixtureToken('owner');
+  seedPrincipal(s.dataDir, 'owner', token);
+  try {
+    const first = await s.jump(request, token);
+    assert.equal(first.status, 200);
+    const expected = await first.json();
+    assert.deepEqual(await (await s.jump(request, token)).json(), expected);
+    assert.equal((await s.jump({ stage: 'start', ns })).status, 429);
+    await s.stop();
+    s = await start({}, s.dataDir);
+    assert.deepEqual(await (await s.jump(request, token)).json(), expected);
+    assert.equal((await fs.readdir(path.join(s.dataDir, 'jumps'))).length, 1);
+  } finally {
+    await s.stop();
+    await fs.rm(s.dataDir, { recursive: true });
+  }
+});
+
+for (const cause of ['foreign requester', 'expired key']) {
+  test(`jump replay refuses the ${cause}`, async (t) => {
+    const s = await start();
+    try {
+      const token = fixtureToken('owner'),
+        other = fixtureToken('other');
+      seedPrincipal(s.dataDir, 'owner', token);
+      seedPrincipal(s.dataDir, 'other', other);
+      const request = { stage: 'start', ns, request: crypto.randomUUID() };
+      assert.equal((await s.jump(request, token)).status, 200);
+      if (cause === 'expired key') {
+        t.mock.timers.enable({ apis: ['Date'], now: Date.now() });
+        t.mock.timers.tick(11 * 60_000);
+      }
+      const reply = await s.jump(request, cause === 'expired key' ? token : other);
+      assert.equal(reply.status, cause === 'expired key' ? 410 : 403);
+      assert.equal((await reply.json()).room, undefined);
+      assert.equal((await fs.readdir(path.join(s.dataDir, 'jumps'))).length, 1);
+    } finally {
+      await s.stop();
+      await fs.rm(s.dataDir, { recursive: true });
+    }
+  });
+}
 
 /** The shared room's save, written by a short real host run. */
 async function writeShared(dataDir: string) {

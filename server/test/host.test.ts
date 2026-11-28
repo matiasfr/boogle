@@ -7,7 +7,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createService, loadConfig } from './helpers/accounts.ts';
-import { worldRoomId } from '../../src/world/namespace.ts';
+import { WORLD_NS, worldRoomId } from '../../src/world/namespace.ts';
 import { plot, till } from '../../src/sim/railway-rows.ts';
 import { townPlotBoard } from '../../src/place/town-plan.ts';
 import { RAILWAY_PLAY_NS, railwayRoomId } from '../../src/world/railway-namespace.ts';
@@ -30,9 +30,16 @@ async function start(env: Record<string, string> = {}, dataDir?: string, reconne
 }
 
 // pid: the player (default one per self; '' leaves it out); key: its browser's secret (default one per pid).
-function connect(base: string, room: string, self: string, pid = self + 'pid', key = pid + 'key0000000000') {
+function connect(
+  base: string,
+  room: string,
+  self: string,
+  pid = self + 'pid',
+  key = pid + 'key0000000000',
+  release = '',
+) {
   const q = (pid ? `&pid=${pid}` : '') + (key ? `&key=${key}` : '');
-  const ws = new WebSocket(`${base}/room/${room}?self=${self}${q}&b=test`, ['boogle.1']);
+  const ws = new WebSocket(`${base}/room/${room}?self=${self}${q}&b=test${release}`, ['boogle.1']);
   const msgs: Msg[] = [];
   const waiters = new Set<() => void>();
   ws.onmessage = (e) => {
@@ -63,6 +70,22 @@ function connect(base: string, room: string, self: string, pid = self + 'pid', k
   };
   return c;
 }
+test('a deployed host refuses a legacy or mismatched release before loading the room', async () => {
+  const room = railwayRoomId('release-admission');
+  const { svc, base, dataDir } = await start({ SERVER_ROOMS: '*', BOOGLE_BUILD: 'release-b' });
+  try {
+    for (const release of ['', `&serverBuild=release-a&world=${WORLD_NS}`, '&serverBuild=release-b&world=previous']) {
+      const client = connect(base, room, 'reader', undefined, undefined, release);
+      assert.equal((await client.next(() => true)).t, 'update');
+      assert.equal(await client.closed, 1012);
+      assert.equal(svc.roomHost()!.room(room), undefined);
+    }
+  } finally {
+    await svc.close();
+    await fs.rm(dataDir, { recursive: true });
+  }
+});
+
 const is = (t: string) => (m: Msg) => m.t === t;
 const isWorld = (t: string) => (m: Msg) => m.t === 'm' && m.d?.t === t;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

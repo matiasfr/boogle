@@ -9,6 +9,8 @@ const digest = (secret: string) => createHash('sha256').update(secret).digest('h
 export type AccountIdentity = { pid: string; expiresAt: number; accountId?: string };
 type AccountErrorCode = 'invalid_request' | 'unauthenticated' | 'already_account' | 'session_bound' | 'unavailable';
 
+export const bearer = (req: Request) => /^Bearer ([a-f0-9]{64})$/i.exec(req.get('authorization') ?? '')?.[1];
+
 export class AccountError extends Error {
   status: number;
   code: AccountErrorCode;
@@ -134,7 +136,6 @@ export function addAccountRoutes(
     next();
   });
   router.use(express.json({ limit: '1kb' }));
-  const bearer = (req: Request) => /^Bearer ([a-f0-9]{64})$/i.exec(req.get('authorization') ?? '')?.[1];
   const body = (req: Request, keys: string[] = []): Record<string, unknown> => {
     const value: unknown = req.body ?? {};
     if (

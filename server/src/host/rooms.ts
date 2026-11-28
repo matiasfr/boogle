@@ -28,6 +28,7 @@ import { clientAddress, rememberAddress } from '../client-address.ts';
 const ROOM_ID_RE = /^[a-z0-9-]{1,32}$/;
 
 export type RoomHostCfg = HostCfg & {
+  build?: string;
   serverRooms: string[];
   roomIdleMs: number;
   maxHostedRooms: number;
@@ -232,6 +233,12 @@ export function createRoomHost(cfg: RoomHostCfg, store: Store, resolveSession: (
           params.has('key')
         )
           return refuseWs(ws, { t: 'bad' }, CLOSE.BAD);
+        if (
+          cfg.build &&
+          cfg.build !== 'dev' &&
+          (params.get('serverBuild') !== cfg.build || params.get('world') !== ns.world)
+        )
+          return refuseWs(ws, { t: 'update' }, CLOSE.RESTART);
         if (!hosts(id)) return refuseWs(ws, { t: 'peer' }, CLOSE.NOT_HOSTED);
         // A frozen tab or delayed route is not a revoked identity: a handshake timeout remains retryable.
         const timer = setTimeout(() => refuseWs(ws, { t: 'bye', why: 'auth_timeout' }, CLOSE.RESTART), AUTH_TIMEOUT_MS);

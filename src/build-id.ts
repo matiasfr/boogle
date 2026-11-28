@@ -10,3 +10,5 @@ export const BUILD_ID = globalThis.document?.querySelector<HTMLMetaElement>('met
 
 /** The short form players are told apart by: `build` on joining a room, presence `bv`, version.json comparisons. */
 export const BUILD = (BUILD_ID || 'dev').slice(0, 12);
+export const REQUIRED_SERVER =
+  globalThis.document?.querySelector<HTMLMetaElement>('meta[name="boogle-server-build"]')?.content ?? '';

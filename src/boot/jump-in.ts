@@ -5,6 +5,8 @@
 import { JUMP_ADDRESS_ERROR, JUMP_DAY_ERROR, jumpOf, type JumpReply } from '../world/railway-jump.ts';
 import { RAILWAY_PLAY_NS } from '../world/railway-namespace.ts';
 import { splashNote } from './splash.ts';
+import { accountStatus, prepareAccount, roomAuthentication } from '../player/account.ts';
+import { checkRelease, hostMatchesPage, roomRelease, releaseMismatch } from './release.ts';
 
 /** A refusal: the HTTP status (0: no answer) and the server's `error`, which tells its 429s apart. */
 type Refused = { status: number; error: string };
@@ -13,14 +15,31 @@ async function ask(stage: string): Promise<JumpReply | Refused> {
   const server = import.meta.env.VITE_BOOGLE_SERVER;
   try {
     if (!server) return { status: 0, error: '' };
-    const r = await fetch(new URL('/jump', server), {
+    // No request has been sent yet, so retrying this preflight cannot allocate a second room.
+    if (!(await hostMatchesPage().catch(() => false))) return { status: 409, error: 'world changed' };
+    const url = new URL('/jump', server);
+    if (roomRelease) url.searchParams.set('serverBuild', roomRelease.serverBuild);
+    // A lost reply may already have created the room. Keep one key on this history entry
+    // until the invite replaces it; a later intentional jump gets a fresh key.
+    const request = roomRelease ? (globalThis.history?.state?.jumpRequest ?? crypto.randomUUID()) : undefined;
+    if (request) {
+      await prepareAccount(true);
+      if (!accountStatus().pid || accountStatus().state === 'revoked') return { status: 401, error: 'unauthenticated' };
+    }
+    if (request) globalThis.history?.replaceState({ ...history.state, jumpRequest: request }, '');
+    const r = await fetch(url, {
       method: 'POST',
-      // text/plain JSON: no CORS preflight (the /report pattern)
-      body: JSON.stringify({ stage, ns: RAILWAY_PLAY_NS }),
+      ...(request && { headers: { Authorization: 'Bearer ' + roomAuthentication().token } }),
+      body: JSON.stringify({ stage, ns: RAILWAY_PLAY_NS, request }),
       signal: AbortSignal.timeout(90_000),
     });
     const body = (await r.json().catch(() => null)) as (JumpReply & { error?: unknown }) | null;
-    if (!r.ok) return { status: r.status, error: typeof body?.error === 'string' ? body.error : '' };
+    if (!r.ok) {
+      // An explicit Try again may create a new room after this replay was denied.
+      if (request && (r.status === 403 || r.status === 410))
+        globalThis.history?.replaceState({ ...history.state, jumpRequest: undefined }, '');
+      return { status: r.status, error: typeof body?.error === 'string' ? body.error : '' };
+    }
     return typeof body?.room === 'string' ? body : { status: 500, error: '' };
   } catch (error) {
     console.warn('[jump-in] could not reach the server:', error);
@@ -36,11 +55,24 @@ export async function jumpIn(stage: string) {
   const label = jumpOf(stage)?.label ?? stage;
   splashNote(`Setting up ${label}…`);
   const reply = await ask(stage);
-  if ('status' in reply) return stuck(reply, label);
+  if ('status' in reply) {
+    if (
+      (reply.status === 409 || reply.status === 0 || (reply.status === 503 && reply.error !== 'stage not built')) &&
+      roomRelease
+    ) {
+      releaseMismatch();
+      return new Promise<never>(() => {});
+    }
+    // Boot stops on a refusal. Keep watching releases even if this host lacks the requested seed.
+    void checkRelease();
+    return stuck(reply, label);
+  }
   const url = new URL(location.href);
   for (const key of ['from', 'room', 'fresh', 'coop']) url.searchParams.delete(key);
   url.searchParams.set('room', reply.room);
-  history.replaceState(history.state, '', url);
+  const state = { ...history.state };
+  delete state.jumpRequest;
+  history.replaceState(state, '', url);
   splashNote(null); // the ordinary loading steps from here
 }
 
