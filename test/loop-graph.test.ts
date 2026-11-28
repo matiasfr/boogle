@@ -335,6 +335,9 @@ test('the solver proposes the canonical order and each soft edge flipped', () =>
 
 test('the built route reaches the ending through the Notch and causeway', () => {
   for (const n of NODES) assert.equal(n.standIn, undefined, `${n.id} is built`);
+  const join = NODES.find((n) => n.id === 'wall-6')!;
+  assert.equal(join.label, 'Port Quay to High Gorge, section 6 of 6: the ring joins');
+  assert.deepEqual(join.stops, ['gorge', 'lap']);
   assert.deepEqual(
     NODES.find((n) => n.id === 'notch-gate')!.requires.map((e) => e.on),
     ['wall-6', 'cloth'],

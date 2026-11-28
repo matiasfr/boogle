@@ -25,7 +25,7 @@ import { interactTarget } from '../../../src/player/hands.ts';
 import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
 import { RING_HALT, ringAt } from '../../../src/sim/railway-ring-layout.ts';
 import { RING_CROSSING } from '../../../src/entities/ring-island/state.ts';
-import { RAIL_HALTS, WALL_LEG } from '../../../src/sim/railway-lines.ts';
+import { LINE2, RAIL_HALTS, WALL_LEG } from '../../../src/sim/railway-lines.ts';
 import { LINE_SLOTS } from '../../../src/sim/railway-trains.ts';
 import { ROW_PLATFORM, rowWorld } from '../../../src/entities/railway/row-path.ts';
 import bellLevel from '../../../content/built/levels/bell.json' with { type: 'json' };
@@ -311,7 +311,12 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   /** Build leg `slot` (a row line of its own) from where its open section's frame is reached: feed each section, ride
    * the train its lay asks for to the new head (stepping off at the next frame), and at the last lay ride on to its
    * destination halt and step off there. */
-  const buildRowLeg = async (slot: number, name: string, beforeFeed?: (section: number) => Promise<void>) => {
+  const buildRowLeg = async (
+    slot: number,
+    name: string,
+    beforeFeed?: (section: number) => Promise<void>,
+    afterLastLay?: () => Promise<void>,
+  ) => {
     const leg = RAIL_LEGS[slot]!,
       m = leg.sections.length,
       at = () => legRow(rw(), slot).laid;
@@ -325,6 +330,10 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
       await feedSection(slot, k, `${name} section ${k + 1}`);
       await checkpoint(`${name} section ${ORDINAL[k]} laid`);
       const last = at() >= m;
+      if (last && afterLastLay) {
+        await afterLastLay();
+        return;
+      }
       const stop = leg.railheadHalt + at() - 1;
       await rowRide(leg.line, leg.railheadHalt + k - 1, stop, name);
       // Off the car onto the platform: the next frame at a head, the outward platform at the lever's spot at the end
@@ -461,19 +470,12 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   const wallSlot = legOf('wall');
   const wall = RAIL_LEGS[wallSlot]!;
   const finishRoute = async () => {
-    check(near(gorge, 80), 'standing at High Gorge for the Wall line');
-    if (/[?&]railStop=wall(?:%20|\+)home(?:&|$)/.test(globalThis.location?.search ?? '')) {
-      await rideGorgeHome();
-      await checkpoint('wall home');
-      return;
-    }
+    await checkpoint('wall home');
     const notchSlot = legOf('notch-tunnel');
     const notch = RAIL_LEGS[notchSlot]!;
-    const { from, to } = wallService;
-    const outward = () => ringLevers().find((l) => l.halt === from && l.dir === 1 && l.stands);
-    await until(outward, 'the joined Gorge outward handle stands');
-    await rowRide(to.line, from, to.stop, 'White Wall', false, outward()!);
-    await stepOff(to.platforms[0], 'stepped off at the Wall line’s Canopy halt');
+    check(await bot.walk(westLanding.x / 100, westLanding.z / 100, 3), 'walked to the West landing for the bay line');
+    await rowRide(notch.line, 0, fromStop(notch), 'bay line', false);
+    await stepOff(legFrame(notch, 0), 'stepped off at the bay line’s Canopy halt');
     await checkpoint('Canopy transfer');
     const openGate = async (leg: RouteLeg, prompt: string, beat: string) => {
       const gate = leg.sections[0]!.gate!;
@@ -515,6 +517,7 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
     await checkpoint('ending card closed');
   };
   if (legDone(rw(), wallSlot)) {
+    await rideGorgeHome();
     await finishRoute();
     return;
   }
@@ -547,12 +550,26 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   const walkCaveRoot = async () =>
     check(await bot.walk(caveRoot.x, caveRoot.z, 1), 'walked round the West landing root to the cave apron');
   const startWall = async () => {
-    await rowRide(wall.line, 0, fromStop(wall), 'cave');
-    // Land beside the halt, clear of the rack between the train and the first frame.
-    await stepOff(rowSide(wall.row, wall.fromCm, (ROW_PLATFORM + 1) * 100, 0, 0), 'stepped off at Port Quay');
-    await buildRowLeg(wallSlot, 'White Wall', async (k) => {
-      if (wall.sections[k]!.gate === barrier && !(route().gates & (1 << barrier))) await openDeepSpan();
-    });
+    const laid = legRow(rw(), wallSlot).laid;
+    await rowRide(wall.line, 0, fromStop(wall) + laid, 'cave');
+    await stepOff(
+      laid ? legFrame(wall, laid) : rowSide(wall.row, wall.fromCm, (ROW_PLATFORM + 1) * 100, 0, 0),
+      laid ? 'stepped off at the current Wall head' : 'stepped off at Port Quay',
+    );
+    await buildRowLeg(
+      wallSlot,
+      'White Wall',
+      async (k) => {
+        if (wall.sections[k]!.gate === barrier && !(route().gates & (1 << barrier))) await openDeepSpan();
+      },
+      async () => {
+        const { from, to } = wallService;
+        // The joined homeward platform is the old cave line's outward platform.
+        const oldHead = wall.railheadHalt + wall.sections.length - 2;
+        await rowRide(LINE2, from, to, 'joined line', false, rowLever(wall.line, oldHead));
+        await checkpoint('lap ridden');
+      },
+    );
     check(
       await bot.until(
         () => inspectRailway()?.worksView?.legView?.objective === 'Open the Notch barrier at Canopy Town (placeholder)',

@@ -63,17 +63,27 @@ test('fast-forward from the lap to the next listed Wall stage keeps time moving 
   assert.ok(buildSeedWorld(SEED_STAGES[index + 1]!).t >= lapTick);
 });
 
-test('the wall-closed playthrough can board its requested Gorge to Canopy service', () => {
+test('the sixth lay calls the joined playthrough train from Wall head 5 toward the Village', () => {
   const closed = buildSeedWorld('wall-closed');
   const { w } = closed;
-  const { from, to } = wallService;
-  const service = stopsOf(w, to.line);
-  assert.equal(to.line, LINE2);
-  assert.equal(service[from], RAIL_LINES[LINE2]!.halts[gorgeStop]!.s);
-  assert.equal(service[to.stop], to.s);
-  assert.equal(to.name, 'Canopy Town');
-  const id = RAIL_HALTS.findIndex((h) => h.line === to.line && h.stop === from);
-  assert.equal(act(closed, 'a', 'rail.call', { id, dir: 1 }), 1);
+  const { from, to, line: catalog } = wallService;
+  const service = stopsOf(w, LINE2);
+  assert.equal(catalog.halts[from]!.name, 'Wall head 5');
+  assert.equal(catalog.halts[to]!.name, 'Village, line 2');
+  assert.equal(service[from], catalog.halts[from]!.s);
+  assert.equal(service[to], catalog.halts[to]!.s);
+  assert.ok(to < gorgeStop && gorgeStop < from);
+  assert.ok(reqHas(line(w, LINE2).req, from, -1, service.length));
+});
+
+test('a player at High Gorge can call the outward joined service to Canopy Town', () => {
+  const s = buildSeedWorld('wall-closed');
+  const gorge = RAIL_HALTS.findIndex((h) => h.line === LINE2 && h.stop === gorgeStop);
+  const canopy = RAIL_HALTS.find((h) => h.line === LINE2 && h.name === 'Canopy Town')!;
+  const service = stopsOf(s.w, LINE2);
+  assert.ok(canopy.stop > gorgeStop);
+  assert.equal(service[canopy.stop], canopy.s);
+  assert.equal(act(s, 'a', 'rail.call', { id: gorge, dir: 1 }), 1);
 });
 
 test('the lap shows the crossing after a three-second arrival', () => {

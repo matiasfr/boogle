@@ -49,6 +49,7 @@ export const RAIL_STOPS = {
   canopy: 'canopy home',
   port: 'port home',
   'deep-span': 'deep span open',
+  lap: 'lap ridden',
   wall: 'wall home',
   notch: 'Notch reached',
   original: 'meeting post pressed',
@@ -63,6 +64,7 @@ const LEG_STOPS: readonly RailStop[] = [
   'canopy',
   'port',
   'deep-span',
+  'lap',
   'wall',
   'notch',
   'original',
@@ -106,6 +108,7 @@ export const RAIL_FROM = {
   'canopy-reached': { railFrom: 'legs', after: 'bay', bot: 'railway-legs-bot.ts' },
   'port-reached': { railFrom: 'legs', after: 'port', bot: 'railway-legs-bot.ts' },
   // The Wall's final frame, reached through the jump room's landing.
+  'wall-mid': { railFrom: 'legs', after: 'port', bot: 'railway-legs-bot.ts' },
   'wall-deep': { railFrom: 'legs', after: 'port', bot: 'railway-legs-bot.ts' },
   'wall-closed': { railFrom: 'legs', after: 'wall', bot: 'railway-legs-bot.ts' },
 } as const satisfies Record<string, { railFrom: string; after: RailStop; bot: string }>;

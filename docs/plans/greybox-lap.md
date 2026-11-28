@@ -408,7 +408,7 @@ The High Gorge coach-fit, tail-clearance and arrival audits use the pre-join sto
       from the sea mouth, the first through train crossing the concourse, from the north platform across the planks, a
       Wall train's cab past the Gorge toward Ring Island, the halt board's map; a motion sheet of a train through the
       joint (no lateral jump); mesh and collider counts at the Gorge before and after.
-- [ ] **5. The bot and the loop (M; "Implementation from a brief or an approved plan": Codex gpt-6.2-sol medium).**
+- [x] **5. The bot and the loop (M; "Implementation from a brief or an approved plan": Codex gpt-6.2-sol medium).**
       Files: `dev/loop/graph.ts` (`wall-6`'s label "Port Quay to High Gorge, section 6 of 6: the ring joins"; its stops
       `['gorge', 'lap']`; no new node), `dev/loop/run.ts` (after `wall-6` a player rides on through rather than
       changing), `dev/look/bots/railway-legs.ts` (after the barrier and the last lay: stay aboard the next train from head
@@ -416,16 +416,22 @@ The High Gorge coach-fit, tail-clearance and arrival audits use the pre-join sto
       step 5 is on main (it edits the same files). Verify: `npm run loop -- node wall-6`; `npm run loop -- run`; `npm run
       playthrough -- --from wall-mid --to wall --long`; `test/loop-graph.test.ts`.
 
+      Default: after arriving at the Village, walk to the West landing for the bay train to Canopy Town and the
+      Notch barrier. The loop estimates both rides at the first fit, without boarding or request waits.
+      Canonical straight-line totals for one to three players were 123, 113 and 113 minutes.
+      The [joined-ring ride table](../reports/ride-minutes.md) puts all eight towns and hubs within four minutes.
+
 ### Checkpoint (the lap playable)
 
 After steps 1 to 5 are on main; named proofs, once:
 
 - [x] `npm run loop -- run` for one to three players: `idle s` at `wall-6` beside Checkpoint E's (308, 268, 252), and the
       whole route's minutes; the ride home from the Wall now has no change.
-- [ ] The bot segment `--from wall-mid --to wall --long`, and leg 6's segment from `wall-closed` (it waited on the Gorge
-      platform for a homeward train, #2518): both pass.
-- [ ] `npm run test:net` with `railwayLegRejoin` taking `wall` at `wall-deep`, the carrier leaving and rejoining across
-      the sixth lay: the rows exact at every checkpoint.
+- [x] The bot segment `--from wall-mid --to wall --long`, and leg 6's segment from `wall-closed` (it waited on the Gorge
+      platform for a homeward train, #2518): both pass through real inputs without recovery. The ending run passed under load.
+- [x] `npm run test:net` passed 446/446 checks, including `railwayLegRejoin` taking `wall` at `wall-deep`. The
+      carrier kept 16 rails across a restart, fed the last bill, left during the sixth lay and rejoined the closed
+      ring. The server and peers agreed on the exact rows at every checkpoint.
 - [x] The service fuzz's long run at the joined stage (pasted in step 2) and leg 5's re-run beside it.
 - [x] [Step 4 stills and motion together](greybox-lap/gorge-lap-overview.png).
 - [x] The boot probe. `npm run perf` is not needed (no new train, a few boxes); report the Gorge's counts from step 4.
