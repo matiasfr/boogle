@@ -12,16 +12,20 @@ function rebase(wt: string, target: string) {
     git(...args)
       .toString()
       .trim();
-  const branch = line('symbolic-ref', '--short', 'HEAD');
-  if (branch === 'main' || line('status', '--porcelain')) throw new Error('expected a clean job branch');
+  const branch = line('branch', '--show-current');
+  if (branch === 'main' || line('status', '--porcelain', '--untracked-files=no'))
+    throw new Error('expected a clean worktree outside the local main branch');
   const active = (dir: string) => existsSync(line('rev-parse', '--git-path', dir));
   if (active('rebase-merge') || active('rebase-apply')) throw new Error('rebase already active');
   const onto = line('rev-parse', '--verify', target + '^{commit}');
-  const script = (name: string) => fileURLToPath(new URL(name, import.meta.url));
   const stamp = () =>
-    execFileSync(process.execPath, [script('./review-stamp.ts'), '.', '--base', onto, '--no-fetch', '--id'], {
-      encoding: 'utf8',
-    }).trim();
+    execFileSync(
+      process.execPath,
+      [fileURLToPath(new URL('./review-stamp.ts', import.meta.url)), '.', '--base', onto, '--no-fetch', '--id'],
+      {
+        encoding: 'utf8',
+      },
+    ).trim();
   const original = line('rev-parse', 'HEAD');
   const start = line('merge-base', original, onto);
   const candidates = [namespace, ...pins.keys()];
@@ -41,16 +45,28 @@ function rebase(wt: string, target: string) {
       if (!active('rebase-merge')) throw new Error('git rebase failed');
       const files = git('diff', '--name-only', '--diff-filter=U', '-z').toString().split('\0').filter(Boolean);
       if (!files.length) {
-        if (!line('diff', '--cached', '--name-only')) process.exitCode = 3;
+        if (!line('diff', '--cached', '--name-only')) {
+          process.exitCode = 3;
+          throw new Error('EMPTY COMMIT at rebase: ' + line('log', '-1', '--format=%s', 'REBASE_HEAD'));
+        }
         throw new Error(
           'rebase stopped without resolvable conflicts at ' + line('log', '-1', '--format=%s', 'REBASE_HEAD'),
         );
       }
       if (files.every((f) => f.startsWith('docs/'))) {
         for (const file of files) {
-          if (spawnSync(process.execPath, [script('./codex/docs-union.ts'), file], { stdio: 'inherit' }).status !== 0) {
+          const union = spawnSync(
+            process.execPath,
+            [fileURLToPath(new URL('./codex/docs-union.ts', import.meta.url)), file],
+            { stdio: 'inherit' },
+          );
+          if (union.status !== 0) {
             process.exitCode = 4;
-            throw new Error('docs union could not resolve ' + file);
+            if (union.status === 5)
+              throw new Error(
+                "Nothing shipped, rebase aborted: redo this commit's edit to that row on fresh origin/main",
+              );
+            throw new Error('MARKERS LEFT in ' + file + ' after the docs union');
           }
           git('add', '--', file);
         }

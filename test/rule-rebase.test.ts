@@ -1,7 +1,65 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import test, { type TestContext } from 'node:test';
 import { gzipSync } from 'node:zlib';
 import { allocate, checkPin, host, namespace, ruleConflicts, verifyPin } from '../dev/rule-pins.ts';
+
+function scratch(t: TestContext) {
+  const cwd = mkdtempSync(join(tmpdir(), 'rule-rebase-'));
+  t.after(() => rmSync(cwd, { recursive: true, force: true }));
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
+  const git = (...args: string[]) => execFileSync('git', args, { cwd, env, encoding: 'utf8', stdio: 'pipe' }).trim();
+  const write = (name: string, value: string) => writeFileSync(join(cwd, name), value);
+  const commit = (subject: string) => {
+    git('add', '.');
+    git('commit', '-qm', subject);
+  };
+  git('init', '-q', '-b', 'target');
+  git('config', 'user.email', 'test@example.invalid');
+  git('config', 'user.name', 'Rebase test');
+  write('code', 'base');
+  commit('base');
+  const run = () =>
+    spawnSync(process.execPath, [resolve('dev/rule-rebase.ts'), cwd, 'target'], {
+      cwd,
+      env,
+      encoding: 'utf8',
+      timeout: 120_000,
+    });
+  return { cwd, git, write, commit, run };
+}
+
+for (const mode of ['detached docs', 'untracked file', 'detached code conflict']) {
+  test('rebasing a worktree with ' + mode, (t) => {
+    const { cwd, git, write, commit, run } = scratch(t);
+    write('code', 'incoming');
+    commit('incoming');
+    if (mode === 'untracked file') git('switch', '-qc', 'job', 'HEAD^');
+    else git('switch', '-q', '--detach', 'HEAD^');
+    const conflict = mode === 'detached code conflict';
+    mkdirSync(join(cwd, 'docs'));
+    const note = join('docs', 'job');
+    write(conflict ? 'code' : note, 'from job');
+    commit('job');
+    const original = git('rev-parse', 'HEAD');
+    if (mode === 'untracked file') write('scratch', 'keep me');
+    const result = run();
+    assert.equal(result.status, conflict ? 2 : 0, result.stderr);
+    assert.equal(git('branch', '--show-current'), mode === 'untracked file' ? 'job' : '');
+    if (conflict) {
+      assert.match(result.stderr, /CODE CONFLICT: code/);
+      assert.equal(git('rev-parse', 'HEAD'), original);
+      assert.equal(git('status', '--porcelain'), '');
+    } else {
+      assert.equal(git('rev-parse', 'HEAD^'), git('rev-parse', 'target'));
+      assert.equal(readFileSync(join(cwd, note), 'utf8'), 'from job');
+      if (mode === 'untracked file') assert.equal(readFileSync(join(cwd, 'scratch'), 'utf8'), 'keep me');
+    }
+  });
+}
 
 test('the entire conflict set must consist of known pins or the namespace', () => {
   assert.equal(ruleConflicts([host, namespace]), true);
