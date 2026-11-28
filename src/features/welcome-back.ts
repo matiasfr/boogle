@@ -6,6 +6,9 @@
 // (Designed for drop-in) and 9 (Leave something for the next visitor: you hear what the others did).
 import { rules, railwayMirror } from '../world/game-world.ts';
 import './welcome-back.css';
+import { publishWelcomeRows } from '../player/welcome-board.ts';
+import { workSite, worksThanks } from '../sim/railway-queries-gift.ts';
+import { roomWorks } from '../sim/railway-queries-room.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
 import { me } from '../player/player.ts';
 import { identity } from '../player/identity.ts';
@@ -13,8 +16,8 @@ import { getRoomId } from '../netplay/net.ts';
 import { worldStatus } from '../world/sync.ts';
 import { productionRailway } from '../proto/flags.ts';
 import { railwayWorldRead } from '../entities/railway/state.ts';
-import { railwayKnown, stretchesLaid, stretchesSince } from '../player/welcome-railway.ts';
-import { showCard, addWelcomeItem, rememberVisit, roomMemory, welcomeLines, nameList } from '../player/arrival.ts';
+import { railwayKnown, railwaySnapshot, railwayDiff } from '../player/welcome-railway.ts';
+import { showCard, addWelcomeItem, rememberVisit, roomMemory, welcomeLines } from '../player/arrival.ts';
 
 const WAIT_MS = 4000; // the longest the card waits for the room's state before it says just hello
 const SHOW_MS = 3500; // on screen, plus LINE_MS for each change it lists
@@ -22,44 +25,60 @@ const LINE_MS = 800;
 const SAVE_MS = 5000; // how often this visit is remembered while you play
 
 // ---------------------------------------------------------------- what a returning player hears about
-// Friends new to the room's roster. Zero values retain the local record's existing shape.
+const railway = () => railwayKnown(railwayWorldRead());
+const names = (pids: readonly string[]) =>
+  pids
+    .map((pid) => rules.roster.nameOf(rules.roster.indexOf(pid)))
+    .filter(Boolean)
+    .slice(0, 6);
 addWelcomeItem({
   key: 'friends',
-  save: () => {
-    if (railwayMirror && !railwayMirror.synced()) return undefined;
-    const { roster } = rules.roster;
-    const pts: Record<string, number> = {};
-    for (const pid of roster.pids) pts[pid] = 0;
-    return pts;
-  },
-  since: (then) => {
-    const was = then as Record<string, number>;
-    const { roster } = rules.roster;
-    const names: string[] = [];
-    roster.pids.forEach((pid, k) => {
-      if (pid === identity.pid) return;
-      if (!(pid in was)) names.push(rules.roster.nameOf(k) || 'Someone');
-    });
-    if (!names.length) return null;
-    return `${nameList(names)} ${names.length === 1 ? 'was' : 'were'} here`;
-  },
+  save: () =>
+    railwayMirror && !railwayMirror.synced()
+      ? undefined
+      : Object.fromEntries(rules.roster.roster.pids.map((pid) => [pid, 0])),
+  since: () => null,
 });
-// Stretches of track laid on both railway lines (undefined until its state is in, which keeps the last count).
-const railway = () => railwayKnown(railwayWorldRead());
+function summary() {
+  const w = railway();
+  if (!w) return null;
+  const snapshot = railwaySnapshot(w);
+  const diff = railwayDiff(snapshot, then?.items.laid);
+  const roster = rules.roster.roster.pids;
+  const friends = then?.items.friends;
+  const newcomers =
+    friends && typeof friends === 'object'
+      ? roster.filter((pid) => pid !== identity.pid && !Object.hasOwn(friends, pid))
+      : [];
+  const away = !!(diff.sections || diff.places.length || diff.built.length || newcomers.length);
+  const current = roomWorks(w);
+  const stop = workSite.findIndex((site) => site === current.site);
+  const helpers =
+    stop > 0 || current.ops.includes('rail.legStock')
+      ? names(worksThanks(w, Math.max(0, stop)).filter((pid) => rules.roster.indexOf(pid) >= 0))
+      : [];
+  const places = away ? diff.places : snapshot.places;
+  const sections = away ? diff.sections : snapshot.lines + snapshot.legs.reduce((n, v) => n + v, 0);
+  const built = away ? diff.built : Object.values(snapshot.plots);
+  // [placeholder: While you were away] [placeholder: Room log] [placeholder: Connected]
+  // [placeholder: Built] [placeholder: New friends] [placeholder: Helping now]
+  const row = (label: string, values: string[]) => label + ' \u00b7 ' + (values.join(', ') || '\u2014');
+  const rows = [
+    away ? 'While you were away' : 'Room log',
+    row('Connected', [String(sections), ...places.slice(-1)]),
+    row('Built', built.slice(-2)),
+    row('New friends', names(away ? newcomers : roster)),
+    row('Helping now', helpers),
+  ];
+  publishWelcomeRows(rows);
+  return { snapshot, lines: away ? rows.slice(1).filter((r) => !r.endsWith('\u2014')) : [] };
+}
 addWelcomeItem({
   key: 'laid',
-  save: () => {
-    const w = railway();
-    return w ? stretchesLaid(w) : undefined;
-  },
-  since: (then) => {
-    const w = railway();
-    const n = w ? stretchesSince(then, stretchesLaid(w)) : 0;
-    if (n <= 0) return null;
-    return n === 1 ? 'A new stretch of track was laid' : `${n} new stretches of track were laid`;
-  },
+  save: () => summary()?.snapshot,
+  absent: null,
+  since: () => summary()?.lines ?? null,
 });
-
 // ---------------------------------------------------------------- the card
 const room = getRoomId();
 const then = roomMemory(room); // before this visit remembers anything

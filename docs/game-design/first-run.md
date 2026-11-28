@@ -177,3 +177,5 @@ spaced, a thin rule, a slow fade with a slight drift, no panel, no input taken. 
 - **Memory:** each browser keeps the highest act shown in the room's visit memory and shows the current act once when it
   goes up. One procedural sting (`actSting`), silent within 10 s of a fanfare (Far Head's show plays one).
 - Acts 3 to 5 are not in the code: an act has a card only when its opening content is built.
+
+Home's south hall board compares this browser's previous room visit with the current railway, town plots and roster. The returning card carries the same changes after any Act line. On a first visit the board shows the current room log.
