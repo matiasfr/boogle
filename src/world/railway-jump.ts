@@ -88,7 +88,7 @@ const STACK_LAND = betweenRackAndFrame(0, 0);
 const GORGE_HALT = RAIL_LINES[1]!.halts.find((h) => h.name === 'High Gorge')!.platforms[0],
   // The halt's point is on the rails; the north platform (the down track's, lat +1.8 to +6.3: route-greybox/massing.ts)
   // lies 4 m to the north, along -C of the split's frame (-0.5162, 0.8565), and a train stands on the rails.
-  GORGE_LAND = near(GORGE_HALT, 0.5162 * 4.05, -0.8565 * 4.05, GORGE_HALT.y / 100 + 0.9, RAIL_GRANTS[0]!.at);
+  gorgeLand = (toward: Cm) => near(GORGE_HALT, 0.5162 * 4.05, -0.8565 * 4.05, GORGE_HALT.y / 100 + 0.9, toward);
 
 // B2: clear of the first board's post, 1.8 m toward the hall; the built landing is on the green,
 // east of the statue, facing the house. Surface/clearance checked in the live collision probe and both stills.
@@ -272,7 +272,7 @@ export const JUMPS: readonly Jump[] = [
     menu: false,
     label: 'High Gorge reached',
     line: 'The stack line is laid to High Gorge; the powered pick waits on the rim',
-    land: GORGE_LAND, // the Gorge halt's north platform, facing the pickup on the rim
+    land: gorgeLand(RAIL_GRANTS[0]!.at), // the Gorge halt's north platform, facing the pickup on the rim
   },
   // Greybox leg 2 (docs/plans/greybox-leg2.md, step 3): the room fast-forward's rows, tooling only. Labels and lines are
   // placeholders. No `land` yet: a jump land is a checked landing (src/place/return-spot.ts reads every one as checked
@@ -364,6 +364,13 @@ export const JUMPS: readonly Jump[] = [
     label: 'White Wall laid',
     line: 'The cave line reaches High Gorge',
     land: { x: -132.55, z: -1999.03, y: 3.9, yaw: -2.11 },
+  },
+  {
+    stage: 'lap-ride',
+    menu: false,
+    label: 'The lap',
+    line: 'A train from the Wall runs through High Gorge toward Ring Island',
+    land: gorgeLand(GORGE_HALT),
   },
   {
     stage: 'notch-open',

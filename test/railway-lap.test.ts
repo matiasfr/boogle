@@ -180,6 +180,30 @@ function aboutToJoin() {
   return saved;
 }
 
+test('the lap seeds capture the sixth lay and a through train crossing High Gorge from the Wall', () => {
+  const joining = aboutToJoin();
+  advance(joining, 2);
+  const closed = buildSeedWorld('wall-closed');
+  assert.equal(closed.t, joining.t);
+  assert.equal(closed.w.hash(), joining.w.hash());
+
+  const ride = buildSeedWorld('lap-ride');
+  assert.ok(ride.t > closed.t);
+  const gorge = through[gorgeStop]!;
+  assert.ok(
+    RAIL_TRAINS.some((_, k) => {
+      if (runningLine(ride.w, k) !== LINE2) return false;
+      const row = train(ride.w, k);
+      return (
+        row.phase === TRAIN_PHASE.RUN &&
+        row.dest < gorge &&
+        trainAlong(row, LINE2, ride.t - 1) > gorge &&
+        trainAlong(row, LINE2, ride.t) <= gorge
+      );
+    }),
+  );
+});
+
 function occupiedPoints(s: Seed) {
   const row = train(s.w, slot),
     running = runningLine(s.w, slot),

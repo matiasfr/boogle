@@ -85,6 +85,8 @@ Files: `src/debug/dev/room.ts`, `src/debug/dev/room-replace.ts`, `src/features/r
 Jump in rows stay until the owner has replaced a room himself ([plan](../plans/room-fast-forward.md), step 7).
 Replaced jump rooms leave the automatic expiry pool.
 
+The tooling jump `?from=lap-ride` opens **The lap** on Line 2's north platform at High Gorge. The seed catches a train from the Wall crossing the halt toward Ring Island.
+
 A playtest jump-in opens a fresh private room on the real server, seeded at a stage of the route, so a beat can be played without replaying everything before it ([plan](../archive/plans/playtest-jump-in.md)). The shared `boogle` world is never touched: the server refuses any room that isn't a new jump room, has a save or is loaded. Links work for anyone and land in a new room each time, for example https://boogle.club/?from=hook-taken (right after the hook, before Q3), https://boogle.club/?from=hook-earned (the quarry gate) and https://boogle.club/?from=start (from the beginning, a fresh private room with no fall). Pause → More → **Jump in** lists the same rows; it shows with Dev on, and inside any jump room, where its header reads "This room started at …" with a way back to the shared island.
 
 - **Rows** (`src/world/railway-jump.ts`, in route order): From the beginning, Just woke, Cart starts, Hook earned, Quarry gate, Sea switch, Boiler waiting, Glide earned, Trains running, Pier reached, Works open, Crossing built, Deck laid, Gap footed, Ring joined. Each names its stage, a one-line description and where you land.

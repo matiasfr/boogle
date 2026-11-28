@@ -373,9 +373,14 @@
    "after": 902670207
   },
   "wall-closed": {
-   "tick": 34276,
-   "stage": 2133563493,
-   "after": 328286953
+   "tick": 33376,
+   "stage": 2950070451,
+   "after": 1167023599
+  },
+  "lap-ride": {
+   "tick": 34989,
+   "stage": 1611993458,
+   "after": 3940336545
   },
   "notch-open": {
    "tick": 34673,

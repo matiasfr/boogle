@@ -178,6 +178,7 @@ test('the menu lists the rows it always did: the house and leg 1 stages are tool
     'wall-mid',
     'wall-deep',
     'wall-closed',
+    'lap-ride',
     'notch-open',
     'notch-reached',
     'causeway-open',
@@ -245,4 +246,11 @@ test('mid-build cave and Wall jumps land between the active rack and frame', asy
   }
   assert.deepEqual(jumpOf('wall-closed')!.land, { x: -132.55, z: -1999.03, y: 3.9, yaw: -2.11 });
   for (const name of ['cave-open', 'cave-first-reached', 'port-reached']) assert.equal(jumpOf(name)!.land, undefined);
+});
+
+test('The lap lands on the Line 2 platform at High Gorge', () => {
+  const lap = jumpOf('lap-ride')!;
+  assert.equal(lap.label, 'The lap');
+  const gorge = jumpOf('gorge-reached')!.land!;
+  assert.deepEqual([lap.land!.x, lap.land!.y, lap.land!.z], [gorge.x, gorge.y, gorge.z]);
 });

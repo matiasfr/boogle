@@ -20,6 +20,10 @@ import { railwayAtRing } from './railway-seed-ring.ts';
 import { account } from './railway-rows.ts';
 import { LOGS, roomOf } from './railway-queries.ts';
 import { RAILS } from './railway-line2-layout.ts';
+import { LINE2, RAIL_LINES } from './railway-lines.ts';
+import { gorgeStop } from './railway-lap.ts';
+import { railTrainsOf } from './railway-queries-trains.ts';
+import { trainAlong } from './railway-train.ts';
 import { legKitCarriers, legRow, routeRow } from './railway-queries-route.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS } from './railway-route.ts';
 
@@ -42,6 +46,7 @@ export const LEG_STAGES = [
   'wall-mid',
   'wall-deep',
   'wall-closed',
+  'lap-ride',
   'notch-open',
   'notch-reached',
   'causeway-open',
@@ -62,8 +67,11 @@ const STACK = RAIL_LEGS.findIndex((l) => l.id === 'stack'),
 
 // Share only a serialized source fixture through restore, never a mutable world between callers.
 const cache = new Map<LegStage, Seed>();
-const previousStage = (stage: LegStage) =>
-  stage === 'cave-first-open' ? 'bay-reached' : LEG_STAGES[LEG_STAGES.indexOf(stage) - 1];
+function previousStage(stage: LegStage) {
+  if (stage === 'cave-first-open') return 'bay-reached';
+  if (stage === 'notch-open') return 'wall-closed'; // The through ride is a side trip.
+  return LEG_STAGES[LEG_STAGES.indexOf(stage) - 1];
+}
 /** The railway at a leg stage, built on its predecessor (`ring-joined` for the first). */
 export function railwayAtLegs(stage: LegStage): Seed {
   let base = cache.get(stage);
@@ -219,8 +227,18 @@ function build(s: Seed, stage: LegStage): Seed {
     case 'wall-closed':
       need(act(s, 'a', 'rail.gate', { id: RAIL_GATES.findIndex((g) => g.id === 'deep-span') }) === 1, 'deep span open');
       laySection(s, WALL);
-      advance(s, 900);
       break;
+    case 'lap-ride': {
+      const gorge = RAIL_LINES[LINE2]!.halts[gorgeStop]!.s;
+      until(
+        s,
+        () =>
+          railTrainsOf(w, LINE2).some((r) => r.from > gorge && r.dest < gorge && trainAlong(r, LINE2, s.t) <= gorge),
+        8000,
+        'a through train from the Wall crosses High Gorge',
+      );
+      break;
+    }
     case 'notch-open':
       until(s, () => racked(s, 6), 8000, 'Notch kit delivered at Canopy');
       break;

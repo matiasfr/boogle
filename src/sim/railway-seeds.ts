@@ -126,6 +126,7 @@ export const SEED_STAGES = [
   'wall-mid',
   'wall-deep',
   'wall-closed',
+  'lap-ride',
   'notch-open',
   'notch-reached',
   'causeway-open',
