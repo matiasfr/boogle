@@ -1,5 +1,7 @@
 # Live deploy
 
+**Status (28 November 2026):** Steps 1–6 are on main (#2656). Step 7 retired the empty-server gate (#2657). The rollout order and baseline below are historical.
+
 ## Rollout order
 
 Ship steps 1–6 together on `codex/live-deploy` with the world-bump gate intact. A page open before this release may need one manual Reload. After this release has deployed and run on production, ship step 7 from `codex/live-deploy-gate`. See `d-2026-11-28-live-deploy-one-reload`.

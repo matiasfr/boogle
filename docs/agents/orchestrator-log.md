@@ -2,6 +2,8 @@
 
 Dated history from the [orchestrator state](orchestrator-state.md), newest section first: handovers, heartbeat runs and what each day shipped. Nothing here is read at the start of a run, and nothing here is authority. Moved word for word on 17 November 2026. Add an entry only for what git, the backlog and the decision log do not record.
 
+<a id="28-november-state-file-pruned-rules-1-84-archived"></a>
+
 ## 28 November: state file pruned (rules 1–84 archived)
 
 The owner, 28 November 2026 UTC, after asking "Is there anything for the current state worth fixing in process" and receiving six recommendations: "Execute all six with priority." ([entry](../decisions-process.md#d-2026-11-28-process-audit-six-fixes)). Below, moved word for word from the state file.

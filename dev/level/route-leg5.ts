@@ -97,11 +97,11 @@ export function checkLeg5() {
       return { ...p, x: p.x - lateral * Math.sin(angle), z: p.z + lateral * Math.cos(angle) };
     });
   }
+  const across = gorgeAt(0, 1),
+    origin = gorgeAt(0, 0);
   for (const lateral of [-2, 2]) {
     const inbound = offset(wall.slice(-20), lateral);
     const outbound = offset(ring.slice(-25).reverse(), lateral + 2);
-    const across = gorgeAt(0, 1),
-      origin = gorgeAt(0, 0);
     const dx = inbound.at(-1)!.x - outbound[0]!.x,
       dz = inbound.at(-1)!.z - outbound[0]!.z;
     const mismatch = Math.abs(dx * (across.x - origin.x) + dz * (across.z - origin.z));
