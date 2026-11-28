@@ -354,11 +354,15 @@ export function* bakeMeadowKeep(): Generator<void, Uint8Array> {
   for (let j = 0; j < H; j++) {
     for (let i = 0; i < W; i++) {
       const k = i + j * W;
-      const density = inRound(GRID.x0 + i * step, GRID.z0 + j * step) ? DENSITY.town : DENSITY.open;
+      const x = GRID.x0 + i * step,
+        z = GRID.z0 + j * step;
+      const density = inRound(x, z) ? DENSITY.town : DENSITY.open;
       out[k * 4] = Math.round(255 * Math.min(1, d[k]! / KEEP_REACH));
       out[k * 4 + 1] = Math.round(255 * density.cap);
       out[k * 4 + 2] = Math.round(255 * density.lift);
-      out[k * 4 + 3] = 255;
+      // In the spare channel, feather the stronger blade bend around the Camp ridge path's shoulder.
+      const ridgeDistanceSq = (x + 50) ** 2 + (z + 178) ** 2;
+      out[k * 4 + 3] = Math.round(255 * (1 - smoothstep(12 ** 2, 25 ** 2, ridgeDistanceSq)));
     }
     if (j % 90 === 89) yield;
   }

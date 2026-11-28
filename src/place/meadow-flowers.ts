@@ -33,7 +33,8 @@ import {
   vec3,
   vec4,
 } from 'three/tsl';
-import { isTouch } from '../constants.ts';
+import { isTouch, reducedMotion } from '../constants.ts';
+import { windAt } from '../render/wind.ts';
 import { mulberry32 } from '../math.ts';
 import type { OwnedView } from '../render/owned-view.ts';
 import { GRID, ORIGIN } from './layout.ts';
@@ -311,21 +312,23 @@ function standing(seed: N, r: Ring, thin: number) {
 
 /** The instance's corner, moved to where it stands: turned about its stem, scaled, and leant by a slow gust that
  * travels across the meadow (more the higher up the corner is). */
-function planted(seed: N, world: N, height: N, scale: N, sway: number) {
+function planted(seed: N, world: N, height: N, scale: N, sway: N, sharedWind = false) {
   const local: N = positionGeometry;
   const turn: N = seed.w.mul(Math.PI * 2);
   const turned: N = vec2(
     local.x.mul(cos(turn)).sub(local.z.mul(sin(turn))),
     local.x.mul(sin(turn)).add(local.z.mul(cos(turn))),
   );
-  const gust: N = sin(time.mul(0.9).add(world.x.mul(0.11)).add(world.y.mul(0.07)))
-    .mul(0.7)
-    .add(sin(time.mul(2.3).add(world.x.mul(0.53)).sub(world.y.mul(0.31))).mul(0.3));
-  const lean: N = local.y.max(0).mul(local.y.max(0)).mul(gust).mul(sway);
+  const gust: N = sharedWind
+    ? windAt(vec3(world.x, height, world.y))
+    : sin(time.mul(0.9).add(world.x.mul(0.11)).add(world.y.mul(0.07)))
+        .mul(0.7)
+        .add(sin(time.mul(2.3).add(world.x.mul(0.53)).sub(world.y.mul(0.31))).mul(0.3));
+  const lean: N = reducedMotion ? float(0) : local.y.max(0).mul(local.y.max(0)).mul(gust).mul(sway);
   return vec3(
     world.x.add(turned.x.add(lean).mul(scale)),
     height.add(local.y.mul(scale)),
-    world.y.add(turned.y.add(lean.mul(0.45)).mul(scale)),
+    world.y.add((sharedWind ? turned.y : turned.y.add(lean.mul(0.45))).mul(scale)),
   );
 }
 
@@ -375,7 +378,10 @@ function tuftMesh(r: Ring, tris: Tri[], share: number, salt: number) {
   const grown: N = smoothstep(0, 0.12, lush.sub(own));
   const scale: N = grown.mul(s.presence).mul(seed.w.mul(2.9).fract().mul(0.5).add(0.8));
   const m = material(2.5);
-  m.positionNode = planted(seed, s.world, s.height, scale, 0.16);
+  const near = r === NEAR;
+  // Only the Camp shoulder's verge gets the deeper bend. Presence already keeps roots off the tread.
+  const sway = near ? s.kept.a.mul(s.clearOfPath.oneMinus()).mul(0.9).add(0.16) : 0.16;
+  m.positionNode = planted(seed, s.world, s.height, scale, sway, near);
   // The ground's own green here (the tint's, or without it the plain lawn's mean: ground-material.ts), darker at the
   // root and lighter, a little yellower, at the tip.
   const green: N = MEADOW.tint ? varying(meadowGreen(s.sample)) : linear('#618f41').mul(vec3(0.89, 0.97, 0.8));

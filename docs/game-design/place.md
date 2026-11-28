@@ -341,6 +341,8 @@ recurrence/fun needs the owner's playtest. `?proto=place` keeps its own copy unt
 
 ## The meadow (14 November 2026)
 
+Near grass tips lean with Home's tree crowns. The bend is strongest at the Camp ridge verge, where the planted roots stay outside the path. Low Detail keeps the same tuft geometry. Reduced motion stills the blades and flowers.
+
 Home's lawn is a meadow by default (owner, 14 November: "I love the meadow. It'd be really nice if there was that kind of texture around the bugler statue and just widespread in the map in general"; [decision](../decisions-look.md#d-2026-11-14-the-meadow-is-the-default-ground)). Three layers, all Local view: no sim, world, net or saved state, no colliders, nothing a player uses. How it came about, and the reference it answers: [small-magic-look](../research/small-magic-look.md).
 
 - **Tint.** Everywhere grass is drawn, the lawn is a blend of four greens the game already had, in soft patches of 20 to 60 m. One texture tap a pixel in the ground material.
