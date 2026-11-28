@@ -9,11 +9,12 @@ import { platformById } from '../physics/platforms.ts';
 import { me } from '../player/state.ts';
 import { reducedWildlife, wildlifePool, wildlifeZone } from '../place/wildlife.ts';
 import { ringAnchor, ringCounts, type RingGroup } from '../place/ring-wildlife-sites.ts';
-import { LINE2, RAIL_TRAINS } from '../sim/railway-lines.ts';
+import { lapSlots } from '../sim/railway-lap.ts';
+import { LINE2 } from '../sim/railway-lines.ts';
 import { createPool } from '../render/instances.ts';
 import { skyNow } from '../render/sky.ts';
 
-const engines = RAIL_TRAINS.flatMap((t, i) => (t.line === LINE2 ? ['railway:train' + i + '-0'] : []));
+const engines = lapSlots(LINE2, true).map((slot) => 'railway:train' + slot + '-0');
 function population(kind: RingGroup, color: string) {
   const pool = wildlifePool(kind, ringCounts[kind], color);
   pool.mesh.name = 'critter-ring-' + kind;
@@ -91,7 +92,7 @@ function mount() {
       }
       remotes.forEach(remote);
       const ball = ballMesh.position;
-      if (ball.y < 0.6 && lastBallY - ball.y > 0.02) disturb(school, ball.x, ball.y, ball.z, 5);
+      if (ball.y < 0.6 && dt > 0 && (lastBallY - ball.y) / dt > 1.2) disturb(school, ball.x, ball.y, ball.z, 5);
       lastBallY = ball.y;
       for (const id of engines) {
         const train = platformById(id)?.body;
