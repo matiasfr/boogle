@@ -96,6 +96,14 @@ that writes the plan carries it out, so it can change the plan when a step turns
    one where the taker's carrier is already full. Put the list in your report (28 November: this class cost Lane B a
    fix round on three branches running, conversions, pre-leg steps 1 and 2, and pre-leg steps 3 and 4: each new taker
    drew timber another bill had reserved or credited the wrong giver).
+16. **A motion trigger is per second, and a train list covers the joined fleet.** A reaction that compares one
+   frame's movement to a fixed distance (`last - now > 0.02`) fires at 60 FPS and misses at 120: divide by `dt`
+   (guarding 0) and compare speeds in metres per second, or use the shared helper where one exists
+   (`src/place/wildlife.ts` for critters). A list of the trains that pass a place comes from `lapSlots(line, true)`
+   (`src/sim/railway-lap.ts`), not from `RAIL_TRAINS` filtered by line: once the lap joins the lines, other slots
+   serve the same track. Prove either with one test: the same motion at 60 and 120 FPS, or a joined-fleet slot
+   (28 November: the two defects were live across four critter features that shipped on a read, and were found by
+   the review of the fifth).
 
 Report: the plan as built and where it changed, files changed, check results, the paths of the stills you looked at
 with your one-line gut check, what is unverified, and "not tested on a device" where it applies.
