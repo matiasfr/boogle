@@ -1257,6 +1257,7 @@ test('two nearby horn players each get three wall echoes', () => {
     createGorgeTownPlots(owner: unknown): { update(dt: number): void };
   }>(fs.readFileSync('src/entities/route-greybox/gorge-town-plots.ts', 'utf8'), {
     THREE,
+    townGreeting: () => () => {},
     site: route.GORGE_HANGOUT,
     gorgeAt: route.gorgeAt,
     me: {},

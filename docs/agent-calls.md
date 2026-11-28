@@ -18,6 +18,13 @@ The owner confirmed start-flow calls 7 to 9 on 28 November: [archived calls](dec
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 28 Nov | Extend the four current towns locally. (New 7) | [Lane C Part 8](brainstorms/lane-c-part8.md) | Builder | Keep the existing world and its built plots. | open |
+| 28 Nov | Toy hits award no first contribution or fares. (New 8) | [Lane C Part 8](brainstorms/lane-c-part8.md) | Builder | Guests can play before or after helping. | open |
+| 28 Nov | Built signal hangouts answer a honk within 260 m after 0.4 s, sharing the four-second pull cooldown. (New 9) | [Lane C Part 8](brainstorms/lane-c-part8.md) | Builder | A passing train can greet a town without starting a chain. | open |
+| 28 Nov | A continuous disc sweep can strike goals, pads and the dunk paddle. (Default 10) | [Lane C Part 8](brainstorms/lane-c-part8.md) | Builder | Rack returns and ownership changes skip these targets. | open |
+| 28 Nov | A grounded player within 1.2 m of the tub hops at 5.5 m/s. Three different golf cups trigger a flourish and reset. (Default 11) | [Lane C Part 8](brainstorms/lane-c-part8.md) | Builder | Give each toy a local payoff. | open |
+| 28 Nov | Idle strollers within 16 m cheer for 1.4 s, once per three seconds per site. (Default 12) | [Lane C Part 8](brainstorms/lane-c-part8.md) | Builder | Workers keep their jobs. | open |
+| 28 Nov | Aim a cloth pennant along the Lookout telescope. (Default 13) | [Lane C Part 8](brainstorms/lane-c-part8.md) | Builder | Show the works direction from the deck. | open |
 | 28 Nov | Mirror the works board in Home's south bay. Default to Room log without a personal change and cap each people row at six names. Use replicated progress and this browser's visit memory (Build 1, defaults 6–7 and new call 10). | [Friends drop in](brainstorms/friends-drop-in.md) | Builder | Returning guests can see what changed on the walk into Home. | open |
 | 28 Nov | Canopy gets slot 48 and a Bounce Net or Wind Chime (New, calls 7–8) | [Canopy plan](plans/lane-c-part7.md) | Builder | Give the next hub an optional shared activity. | open |
 | 28 Nov | Stake on arrival for base 300 and add one far rider per minute. Built signal towns answer each other (New, calls 9–10) | [Canopy plan](plans/lane-c-part7.md) | Builder | Preserve High Gorge's fare and connect the hangouts. | open |

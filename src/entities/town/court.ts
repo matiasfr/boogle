@@ -1,8 +1,11 @@
 import * as THREE from 'three/webgpu';
+import { cheerAround } from '../../place/folk.ts';
+import { cheerSite } from './play.ts';
+import { discPath } from './disc-path.ts';
 import { TOWN_CENTRE, TOWN_COURT, TOWN_GROUND } from '../../place/town-plan.ts';
 import { ORIGIN } from '../../place/layout.ts';
 import { H, insidePlace, surfaceHeight } from '../../place/terrain.ts';
-import { crossedGoal } from './court-crossing.ts';
+import { crossedGoal, throughMouth } from './court-crossing.ts';
 import { definitions } from '../../prefab/catalogue.ts';
 import { instantiate, liftOrWait } from '../../prefab/instantiate.ts';
 import { loadLevelArtifact } from '../../prefab/validate.ts';
@@ -26,6 +29,8 @@ export function useHomeToyGround() {
 
 export function createCourt(owner: OwnedView) {
   const [a, b] = TOWN_COURT.goals;
+  const cheer = cheerSite(cheerAround);
+  const sweep = discPath(owner);
   const records = loadLevelArtifact(level, definitions).placements.map((p) => {
     const point = p.id === 'town.goal-a' ? a : p.id === 'town.goal-b' ? b : TOWN_COURT.lever;
     const x = ORIGIN.x + point.x,
@@ -72,7 +77,9 @@ export function createCourt(owner: OwnedView) {
       string: record.root.getObjectByName('bunting')!,
       last: -Infinity,
     }));
-  const current = new THREE.Vector3();
+  const current = new THREE.Vector3(),
+    start = new THREE.Vector3(),
+    end = new THREE.Vector3();
   let previousTime = NaN,
     previousEpoch = ball.e;
   const forget = () => {
@@ -84,17 +91,21 @@ export function createCourt(owner: OwnedView) {
     targets: lever.targets,
     update(now: number) {
       if (clearance.waiting.length) clearance.retry(me.body);
+      const path = sweep(now);
       for (const goal of goals) {
         goal.root.worldToLocal(current.copy(ball.pose.p));
         const previous = goal.previous;
         if (
-          previousEpoch === ball.e &&
           goal.root.visible &&
-          !ball.held &&
           now - goal.last >= 700 &&
-          crossedGoal(previous, current, Math.hypot(ball.pose.v.x, ball.pose.v.z), (now - previousTime) / 1000)
+          ((previousEpoch === ball.e &&
+            !ball.held &&
+            crossedGoal(previous, current, Math.hypot(ball.pose.v.x, ball.pose.v.z), (now - previousTime) / 1000)) ||
+            (path &&
+              throughMouth(goal.root.worldToLocal(start.copy(path.start)), goal.root.worldToLocal(end.copy(path.end)))))
         ) {
           goal.last = now;
+          cheer(now, goal.root.position.x, goal.root.position.z);
           bell(goal.root.position.x, goal.root.position.z);
         }
         const age = (now - goal.last) / 1000;

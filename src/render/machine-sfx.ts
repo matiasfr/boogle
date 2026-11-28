@@ -102,8 +102,8 @@ export function windChime(x: number, z: number, beat: number, soft = false) {
   }
 }
 
-export function bell(x: number, z: number, range = HEAR): void {
-  const a = at(x, z, 0.16, range);
+export function bell(x: number, z: number, range = HEAR, volume = 0.16): void {
+  const a = at(x, z, volume, range);
   if (!a) return;
   const { ctx, out, g, t } = a;
   for (const [mul, k, decay] of [

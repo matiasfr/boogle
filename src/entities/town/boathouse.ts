@@ -1,5 +1,7 @@
 import { BoxGeometry, CylinderGeometry, Group, Line3, Mesh, Vector3 } from 'three/webgpu';
 import { REACH } from '../../constants.ts';
+import { cheerAround } from '../../place/folk.ts';
+import { cheerSite } from './play.ts';
 import { material } from '../../render/materials.ts';
 import { clank } from '../../render/machine-sfx.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -11,6 +13,7 @@ import { enableDisc, disableDisc, disc, grabDisc, recallDisc, updateDisc } from 
 
 export function createBoathouse(owner: OwnedView, base: Vector3, yaw: number) {
   const porch = new Group();
+  const cheer = cheerSite(cheerAround);
   porch.position.copy(base);
   porch.rotation.y = yaw;
   const wood = material('paintedToy', { colour: '#976941' });
@@ -86,6 +89,7 @@ export function createBoathouse(owner: OwnedView, base: Vector3, yaw: number) {
           swept.closestPointToPoint(can.at, true, closest).distanceTo(can.at) < 0.39
         ) {
           can.last = now;
+          cheer(now, can.at.x, can.at.z);
           clank(can.at.x, can.at.z);
         }
         const age = (now - can.last) / 1000;

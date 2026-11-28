@@ -276,13 +276,20 @@ spawn({ kind: 'honk', mesh: sparkles, lateUpdate: ({ dt }) => update(dt) });
 // ---------------------------------------------------------------- honks
 // who: 'me' or a remote's peer id; v: the honk's shape (HONK_SHAPES).
 const lastNote = new Map<string, number>(); // what each player honked last, for the chord gag
-function onHonk(who: string, now: number, v: number) {
+type Honker = { x: number; y: number; z: number; local: boolean };
+const honkListeners = new Set<(at: Honker) => void>();
+export function onHonk(fn: (at: Honker) => void) {
+  honkListeners.add(fn);
+  return () => honkListeners.delete(fn);
+}
+function soundHonk(who: string, now: number, v: number) {
   for (const hear of townHonks) hear(who, now);
   const own = who === 'me';
   const r = own ? null : remotes.get(who);
   const colorIdx = own ? me.colorIdx : (r?.colorIdx ?? 0);
   const avatar = own ? me.avatar : r?.avatar;
   const pos = own ? me.body?.position : r?.target;
+  if (pos) for (const hear of honkListeners) hear({ x: pos.x, y: pos.y, z: pos.z, local: own });
   const vol = own ? 0.16 : 0.14 * (pos ? farGain(pos.x, pos.z, 500) : 0.3);
   const [f, f2] = honkNotes(colorIdx, sharedSeconds(), v);
   honkSound(f, vol, v, colorIdx, f2);
@@ -310,7 +317,7 @@ function honkNow() {
   } catch (e) {
     console.warn('[honk] send failed', e);
   }
-  onHonk('me', now, v);
+  soundHonk('me', now, v);
 }
 
 onRoomReady((room) =>
@@ -318,7 +325,7 @@ onRoomReady((room) =>
     if ((msg as { t?: unknown } | null)?.t !== 'honk' || typeof from !== 'string') return;
     const now = performance.now();
     if (!incoming.allow(from, now)) return;
-    onHonk(from, now, honkShape(msg));
+    soundHonk(from, now, honkShape(msg));
   }),
 );
 

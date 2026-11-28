@@ -32,7 +32,7 @@ changes and teleports invalidate delayed samples without changing presence data 
   with the ball demoted to a toy). Keepy-uppy streak was built and cut (PLAN Phase 2). The tab that owns the ball keeps
   sending presence even before it enters the island (`keepPresenceWhile` in [src/netplay/net.ts](../../src/netplay/net.ts)).
 
-Home's fourth plot adds a target for the original ball. A free ball passing into a golf cup flicks its flag and sounds a fanfare. At the bakery, the paddle tips a bucket over whoever stands beneath it. Each player sees the response from the ball's displayed flight. Use the court lever to bring the ball home.
+Home's fourth plot adds a target for the original ball. A free ball passing into a golf cup flicks its flag and sounds a fanfare. At the bakery, the paddle tips a bucket over whoever stands beneath it. Each player sees the response from the ball's displayed flight. Use the court lever to bring the ball home. The loose Boathouse disc also sounds the court goals and horn pads and tips the dunk paddle.
 
 ---
 

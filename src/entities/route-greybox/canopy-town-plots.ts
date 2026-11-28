@@ -1,4 +1,5 @@
 import * as THREE from 'three/webgpu';
+import { townGreeting } from '../town/greeting.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { localTownPulls, townHonks } from '../town/signal-state.ts';
 import { windChime } from '../../render/machine-sfx.ts';
@@ -78,6 +79,16 @@ export function createCanopyTownPlots(owner: OwnedView) {
   const calls = chimeCalls();
   const toys = createCanopyToys(owner, point, yaw);
   let rang = -Infinity;
+  const greet = townGreeting(
+    owner,
+    48,
+    striker,
+    () => active === 11,
+    () => {
+      rang = performance.now();
+      windChime(striker.x, striker.z, 1, true);
+    },
+  );
   function ring(from: string) {
     rang = performance.now();
     calls.pull(rang, from);
@@ -123,6 +134,7 @@ export function createCanopyTownPlots(owner: OwnedView) {
   return {
     targets,
     update(dt: number) {
+      greet(performance.now());
       const read = railwayWorldRead();
       const w = read?.ready() ? read.world() : null;
       const row = w?.get(Plot, w.lookup(Plot, 48) ?? -1);

@@ -143,6 +143,8 @@ the remaining away-host sack proof. Not tested on a device.
 
 At 56 delivered timber and 24 stone, slot 3 can join the two lowest eligible unbought offers. The two placeholder board titles are Caddy Shed and Dunk Bakery. Either costs base 800 under the existing price formula and adds one rider per minute once built. The choice works with either earlier hangout, including a room that bought the Loader Yard first. Playing with the ball earns no fare and gates no rail work.
 
+The Boathouse disc can ring either court goal, sound the horn pads, or tip the bakery paddle. The tub splashes a nearby grounded player into a small hop. Each distinct golf cup counts toward a local three-cup chord and confetti burst. The third clears the set. Nearby strolling little guys cheer goals, chords, splashes, sinks and can hits.
+
 ### Ring Island's first choice
 
 Joining the Ring crossing stakes slot 16 with zero freight. Either the Lookout Tower or the Signal Bellhouse costs base 300 (150 at default prices). Both board names and prompts are placeholders. After construction the building contributes one rider per minute to line 2's far queue. The shared till pays once and the room keeps its pick.

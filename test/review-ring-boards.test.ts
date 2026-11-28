@@ -56,6 +56,7 @@ function boardView(money: number) {
         },
       }),
       interactTarget: pick,
+      townGreeting: () => () => {},
       fixedTelescope: () => ({ stepBack() {} }),
       paintBoard() {},
       createHangoutBuilding: (_owner: unknown, _ground: unknown, tower: boolean) => ({
@@ -66,6 +67,7 @@ function boardView(money: number) {
       }),
       instantiate: (_key: string, _placement: unknown, opts: { handlers: Record<string, () => Interactable[]> }) => ({
         setEnabled() {},
+        root: new THREE.Group(),
         relabel() {},
         targets: () => opts.handlers['town.plot-buy']!(),
       }),

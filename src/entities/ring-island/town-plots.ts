@@ -1,4 +1,5 @@
 import * as THREE from 'three/webgpu';
+import { townGreeting } from '../town/greeting.ts';
 import { localTownPulls } from '../town/signal-state.ts';
 import type { FrameCtx } from '../../loop.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -91,8 +92,31 @@ export function createRingPlot(owner: OwnedView, ground: IslandGround) {
     { id: look.id, prefab: 'lookout.telescope', pos: [scopeAt.x, scopeAt.y, scopeAt.z], params: { aim: 0 } },
     { owner, handlers: { 'lookout.look': () => [look] } },
   );
+  const cloth = new THREE.BufferGeometry();
+  cloth.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0.36, 0, 0.07, 0.15, 0.95], 3));
+  const dye = new THREE.MeshBasicMaterial({ color: 0xdf6947, side: THREE.DoubleSide });
+  const flag = new THREE.Mesh(cloth, dye);
+  flag.position.set(-0.78, 2.5, 0);
+  const staff = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 2.86, 6), dye);
+  staff.position.set(flag.position.x, 1.43, 0);
+  scope.root.add(flag, staff);
+  owner.cleanup(() => {
+    staff.geometry.dispose();
+    cloth.dispose();
+    dye.dispose();
+  });
   scope.setEnabled(false);
   const rope = hangoutPoint(0, 0, 1.25);
+  const greet = townGreeting(
+    owner,
+    16,
+    rope,
+    () => active === PLOT_KIND.bell,
+    () => {
+      rang = performance.now();
+      bell(rope.x, rope.z, 260, 0.07);
+    },
+  );
   const metal = new THREE.MeshStandardMaterial({ color: 0xe1ab46, metalness: 0.48, roughness: 0.39 });
   const fibre = new THREE.MeshStandardMaterial({ color: 0xd1a375 });
   const signal = new THREE.MeshBasicMaterial({ color: 0xffdc58 });
@@ -162,6 +186,7 @@ export function createRingPlot(owner: OwnedView, ground: IslandGround) {
       if (active === PLOT_KIND.bell) ring();
     },
     update(ctx: FrameCtx) {
+      greet(performance.now());
       const read = railwayWorldRead();
       if (!read?.ready()) {
         release();
@@ -231,6 +256,7 @@ export function createRingPlot(owner: OwnedView, ground: IslandGround) {
         if (scope.root.visible && near(eye, 3.2) && !modal.open) targets.push(...scope.targets());
       } else modal.stepBack();
       if (!towerOn) scope.setEnabled(false);
+      flag.rotation.x = Math.sin(performance.now() * 0.004) * 0.08;
       pendulum.visible = houseOn;
       ropeRecord.setEnabled(houseOn);
       if (houseOn && near(rope, 3.2)) targets.push(...ropeRecord.targets());

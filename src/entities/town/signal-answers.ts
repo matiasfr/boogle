@@ -9,8 +9,7 @@ import { Plot } from '../../sim/railway-components.ts';
 import { plotBuilt } from '../../sim/railway-queries-trade.ts';
 import { PLOT_KIND } from '../../sim/railway-trade-layout.ts';
 import { railwayWorldRead } from '../railway/state.ts';
-import { localTownPulls } from './signal-state.ts';
-import { townAnswer } from './signal-timing.ts';
+import { localTownPulls, answerFor } from './signal-state.ts';
 
 export function createSignalAnswers(owner: OwnedView) {
   const rope = ringAt(RING_HANGOUT.u, RING_HANGOUT.lat);
@@ -30,7 +29,7 @@ export function createSignalAnswers(owner: OwnedView) {
     pulse.visible = false;
     owner.add(pulse);
     owner.cleanup(() => material.dispose());
-    return { ...site, answer: townAnswer(), pulse, sounded: -Infinity };
+    return { ...site, answer: answerFor(site.slot), pulse, sounded: -Infinity };
   });
   function receive(slot: number) {
     const read = railwayWorldRead();

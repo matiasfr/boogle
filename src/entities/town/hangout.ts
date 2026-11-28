@@ -1,4 +1,8 @@
 import { Vector3 } from 'three';
+import { townGreeting } from './greeting.ts';
+import { cheerAround } from '../../place/folk.ts';
+import { cheerSite } from './play.ts';
+import { discPath, enters } from './disc-path.ts';
 import { createBoathouse } from './boathouse.ts';
 import { createBallTargets } from './ball-targets.ts';
 import { BALL_R, PLAYER_R } from '../../constants.ts';
@@ -43,6 +47,8 @@ export function spawnHangout(k: number, plotDone: (k: number) => boolean) {
       update: ({ now }) => activity.update(completedKind(), now),
     });
   }
+  const cheer = cheerSite(cheerAround);
+  const sweep = discPath(owner);
   const { stall } = layout;
   const sx = toWorld(stall.x);
   const seeds = placeSeedStall(owner, {
@@ -65,10 +71,30 @@ export function spawnHangout(k: number, plotDone: (k: number) => boolean) {
       },
       { owner },
     );
-    return { record, x, y, z, last: -Infinity, occupants: new Set<string>(), next: new Set<string>() };
+    return {
+      record,
+      x,
+      y,
+      z,
+      centre: new Vector3(x, y + 0.16, z),
+      last: -Infinity,
+      occupants: new Set<string>(),
+      next: new Set<string>(),
+    };
   });
   const porch = k === 2 ? createBoathouse(owner, new Vector3(sx, H(sx, stall.z), stall.z), yaw) : null;
   let shown = 0;
+  const first = pads[0]!;
+  const greet = townGreeting(
+    owner,
+    0,
+    first,
+    () => shown === PLOT_KIND.horns,
+    () => {
+      chordSound(honkNotes(0, sharedSeconds(), 0), farGain(first.x, first.z, 260) * 0.08);
+      splash(first.x + 1, first.z, 0.22, first.y + 2.2);
+    },
+  );
   return spawn({
     kind: 'town-hangout',
     mesh: owner.root,
@@ -80,6 +106,7 @@ export function spawnHangout(k: number, plotDone: (k: number) => boolean) {
     }),
     targets: () => (shown === PLOT_KIND.disc ? (porch?.targets() ?? []) : seeds.targets()),
     update({ now, dt }) {
+      greet(now);
       const kind = completedKind();
       porch?.update(kind === PLOT_KIND.disc, now, dt);
       if (kind !== shown) {
@@ -92,9 +119,10 @@ export function spawnHangout(k: number, plotDone: (k: number) => boolean) {
         }
         shown = kind;
       }
+      const path = sweep(now);
       if (shown !== PLOT_KIND.horns) return;
       for (const [i, pad] of pads.entries()) {
-        let onset = false;
+        let onset = enters(path, pad.centre, 0.55);
         pad.next.clear();
         const visit = (key: string, p: { x: number; y: number; z: number }, radius: number) => {
           if (Math.hypot(p.x - pad.x, p.z - pad.z) <= 0.55 && Math.abs(p.y - radius - pad.y - 0.12) <= 0.4) {
@@ -115,11 +143,13 @@ export function spawnHangout(k: number, plotDone: (k: number) => boolean) {
           vol = farGain(pad.x, pad.z, 500) * 0.16;
         honkSound(honkNotes(i, seconds, 0)[0], vol);
         const chord = pads.every((p) => now - p.last <= 1000);
-        if (chord)
+        if (chord) {
+          cheer(now, pad.x, pad.z);
           chordSound(
             pads.map((_, j) => honkNotes(j, seconds, 0)[0]),
             vol,
           );
+        }
         splash(pad.x + 1, pad.z, chord ? 0.45 : 0.12, pad.y + 2.2);
       }
     },
