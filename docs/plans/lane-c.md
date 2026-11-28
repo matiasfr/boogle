@@ -129,6 +129,8 @@ Offer 2 is the Loader Yard. The next hangout is Offer 3, `plot1` at 220 degrees 
 
 The purchase tests cover each first choice paired with each legal third choice, the Loader Yard bought first, a stale offer and saved purchases. Two WebGPU tabs used the completed Boathouse in one railway room. The pitcher picked up the disc, the catcher took it in flight and sent it back, and the pitcher caught the return. The two inventory prompts and the ownership changes identify the same disc across the exchange. [Pickup](lane-c/disc-held.png), [catch](lane-c/disc-caught.png), [return](lane-c/disc-return.png).
 
+The catcher observed ownership epoch 4 with the free disc moving at 9.1 m/s and reloaded. On rejoin it received the same epoch at the later position, 4.4 m farther along z. The pitcher recalled the disc at the rack, picked it up and threw again. The catcher observed the moving throw before the pitcher's tab closed, then took ownership at epoch 7 with 9.2 m/s of velocity. These are pose samples from the clients. The reload still caught the terrain loading. The disconnect still shows the pink disc at the road edge and the empty rack. [Reload](lane-c/disc-reloaded.png), [disconnect](lane-c/disc-orphan.png).
+
 #### Design review (2026-11-27) for Part 3
 
 | Call | Kind | Basis |
