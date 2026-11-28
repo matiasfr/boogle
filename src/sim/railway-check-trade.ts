@@ -23,6 +23,7 @@ export function checkTrade(w: World, tick = RAILWAY_MAX_INT) {
       (r, slot) =>
         !r.wagon &&
         r.foot > 0 &&
+        // The original consist determines which flatbed can carry a footing.
         (RAIL_TRAINS[slot]!.line !== LINE2 ||
           !loaderOn(w, tick) ||
           r.foot > WORKS.loaderCap ||
@@ -57,6 +58,7 @@ export function checkTrade(w: World, tick = RAILWAY_MAX_INT) {
   // stay under the cap and its accrual under a whole rider.
   if (
     trains(w).some(
+      // The rider coach belongs to the original line's slots.
       (r, slot) => !railInt(r.riders, riderPlaces()) || (lineRoute(RAIL_TRAINS[slot]!.line) < 0 && r.riders !== 0),
     ) ||
     ts.some(

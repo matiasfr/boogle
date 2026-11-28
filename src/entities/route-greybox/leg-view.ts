@@ -37,8 +37,8 @@ import { playObjective } from '../../proto/mark.ts';
 import { worksFace } from '../railway/works-board.ts';
 import { roomWorks } from '../../sim/railway-queries-room.ts';
 import { WORKS_LINES, WORKS_COMPLETE, WORKS_VARIANTS } from '../railway/works-lines.ts';
-import { RAIL_LINES, legBuilt, trainPassesBy } from '../../sim/railway-lines.ts';
-import { LINE_SLOTS } from '../../sim/railway-trains.ts';
+import { LAP_S0, LINE2, WALL_LEG, RAIL_LINES, legBuilt, trainPassesBy } from '../../sim/railway-lines.ts';
+import { lapSlots } from '../../sim/railway-lap.ts';
 import { TRAIN_PHASE } from '../../sim/railway-train.ts';
 import { trainStops } from '../../sim/railway-queries-trains.ts';
 import { RING_S_HEAD } from '../../sim/railway-ring-layout.ts';
@@ -816,8 +816,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     }
     /** A train of this leg's line held at the block signal at `s` metres (standing at no halt, within 80 m of it). */
     const heldAt = (wd: ReadWorld, s: number) =>
-      LINE_SLOTS[sp.leg.line]!.some((slot) => {
-        const t = train(wd, slot);
+      trackRows(wd, sp.leg.line).some((t) => {
         return t.phase === TRAIN_PHASE.STAND && t.at < 0 && Math.abs(t.from / 100 - s) < 80;
       });
     /** Its crossovers' toes for turnout-blades.ts: laid while the deck as drawn reaches past them. */
@@ -982,6 +981,23 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       laid: Math.min(RAIL_LEGS[k]!.sections.length, row.laid),
     };
   }
+  function trackRows(w: ReadWorld, line: number) {
+    const joined = legDone(w, WALL_LEG);
+    const mirrored = joined && RAIL_LINES[line]!.joins?.line === LINE2;
+    // A physical cave turnout still reads cave coordinates after both fleets join.
+    return lapSlots(mirrored ? LINE2 : line, joined).map((slot) => {
+      const r = train(w, slot);
+      return mirrored
+        ? {
+            ...r,
+            track: 1 - r.track,
+            from: LAP_S0 - r.from,
+            dest: LAP_S0 - r.dest,
+            origin: r.origin ? LAP_S0 - r.origin : 0,
+          }
+        : r;
+    });
+  }
   function rows() {
     if (!adapter.read.whole()) return null;
     const wd = adapter.read.world(),
@@ -1044,7 +1060,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         sp.leg,
         r.per[i]!.laid,
         trainStops(r.wd, sp.leg.line).length - 1,
-        LINE_SLOTS[sp.leg.line]!.map((slot) => train(r.wd, slot)),
+        trackRows(r.wd, sp.leg.line),
         adapter.read.tick(),
       );
     });

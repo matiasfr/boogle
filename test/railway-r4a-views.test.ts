@@ -158,6 +158,6 @@ test('line 2 lateral: out on the original track, home on the offset one, and eac
   assert.ok(worstStep(island, 700, 1210) < 0.3, 'no jump over the island crossover');
   // The end's halt is the open stops' last, so the stops the lateral reads are the catalog's open ones: Ring Island the
   // sixth, then the greybox route's three stack heads and High Gorge (their laterals are step 4's).
-  assert.equal(RAIL_LINES[LINE2]!.halts.length, 10);
+  assert.equal(RAIL_LINES[LINE2]!.halts.length, 15);
   assert.equal(RAIL_LINES[LINE2]!.halts[5]!.name, 'Ring Island');
 });

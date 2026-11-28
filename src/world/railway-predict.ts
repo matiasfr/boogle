@@ -205,6 +205,7 @@ export function railPredict(w: World, pid: string, e: RailAction, tick: number):
   const cartId = w.single(Cart);
   const shelf = [rail0.depotRails, w.get(Forge, fid)!.rack, rail0.shelfOut, w.get(Cart, cartId)!.rails] as const;
   // The Q6 kit's rails aboard line 2's trains (any of them may carry it).
+  // Predict cargo only on the original line 2 kit cars.
   const kitIds = LINE_SLOTS[LINE2]!.map((k) => w.lookup(Train, k)!);
   const kitRails = kitIds.map((id) => w.get(Train, id)!.rails);
   // The Works' thresholds, held for the server like the forge's.

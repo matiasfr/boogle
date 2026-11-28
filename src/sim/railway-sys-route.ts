@@ -15,7 +15,8 @@
 import { defineSystem, type World } from '../ecs/index.ts';
 import { thank } from './railway-queries-gift.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, LEG_TUNE } from './railway-route.ts';
-import { RAIL_LINES } from './railway-lines.ts';
+import { gorgeStop, lapRequests, lapRow } from './railway-lap.ts';
+import { LINE2, WALL_LEG, RAIL_LINES } from './railway-lines.ts';
 import { TRAIN_PHASE, kitBills } from './railway-train.ts';
 import { LINE_SLOTS, endMoved } from './railway-trains.ts';
 import { reqAdd, reqDrop, reqOnly } from './railway-train.ts';
@@ -102,7 +103,10 @@ function lay(w: World, k: number, tick: number) {
   // up to it stops there once (endMoved), and the line's up-way ask there brings the first up train after the lay to
   // it, so whoever stands at the old head rides on to the new one.
   const io = trainMoveIO(w);
-  endMoved(io, leg.line, from, tick);
+  const joining = k === WALL_LEG && m.laid === n;
+  // Complete the cave lay on its old coordinates before moving rows and asks together.
+  const stops = joining ? RAIL_LINES[leg.line]!.halts.length : stopsOf(w, leg.line).length;
+  endMoved(joining ? { ...io, stops: () => RAIL_LINES[leg.line]!.halts.map((h) => h.s) } : io, leg.line, from, tick);
   // A train standing at an old head (a stub: its two tracks are one) runs on rather than home (call 88: "that train
   // runs on"): it had turned onto the down track on arriving at the end, and turns back up.
   const end = RAIL_LINES[leg.line]!.halts[from]!.end;
@@ -110,15 +114,14 @@ function lay(w: World, k: number, tick: number) {
     for (const slot of LINE_SLOTS[leg.line]!) {
       const r = io.row(slot);
       if ((end?.kind === 'stub' || slot === held) && r.phase === TRAIN_PHASE.STAND && r.at === from && r.track === 1) {
-        const req = reqOnly(r.req, stopsOf(w, leg.line).length, 1);
+        const req = reqOnly(r.req, stops, 1);
         // A Kit 6 rider can ask just before the lay, while the train is still standing at the stub.
         if (leg.id === 'wall' && m.laid === 5 && r.legKit && kitBills(r.boiler ?? 0) === 1 && req !== r.req) continue;
         // Give the builder a full boarding dwell; arrived still anchors the holds' caps.
         io.set(slot, { track: 0, origin: 0, depart: tick, req });
       }
     }
-  const lid = w.lookup(Line, leg.line)!,
-    stops = stopsOf(w, leg.line).length;
+  const lid = w.lookup(Line, leg.line)!;
   w.mut(Line, lid)!.req = reqAdd(w.get(Line, lid)!.req, from, 1, stops);
   // A head closing behind with this lay (`closesAt`): a train standing there stands at a signal, as at a moved stop,
   // and every ask there goes (no lever, no rider stop: the halt passes both ways from now).
@@ -132,6 +135,15 @@ function lay(w: World, k: number, tick: number) {
     }
     w.mut(Line, lid)!.req = reqDrop(reqDrop(w.get(Line, lid)!.req, j, 1, stops), j, -1, stops);
   });
+  if (joining) {
+    endMoved(io, LINE2, gorgeStop, tick);
+    for (const slot of LINE_SLOTS[leg.line]!) io.set(slot, lapRow(io.row(slot)));
+    const old = w.mut(Line, lid)!;
+    const through = w.mut(Line, w.lookup(Line, LINE2)!)!;
+    through.req = lapRequests(old.req, through.req);
+    through.left1 = old.left0;
+    Object.assign(old, { req: 0, left0: -1, left1: -1 });
+  }
 }
 /** The lay clock: a section laying since `start` is laid LEG_TUNE.layTicks later (about 30 s whatever its length;
  * ruling 1.3). Reads the tick against the row's `start`, so nothing is written until it lays. Then the stand-in stock

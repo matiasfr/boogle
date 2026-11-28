@@ -9,12 +9,11 @@ import { TRAIN } from '../../src/sim/railway-train.ts';
 import { OFFSET_HALTS, CROSSING_WIDTH, FORMATION } from '../../src/place/layout.ts';
 import { GATES } from '../../src/place/tech-layout.ts';
 import { LINE2_END_S } from '../../src/entities/railway/line2-path.ts';
-import { coachTrain } from './rider-coach.ts';
+import { coachTrain, gorgeStageHalts as halts } from './rider-coach.ts';
 
 export function checkCoachAudit() {
   const tail = TRAIN_EXTENT.behindCm / 100,
     nose = TRAIN_EXTENT.aheadCm / 100;
-  const halts = RAIL_LINES[LINE2]!.halts;
   const at = (name: string) => halts.find((h) => h.name === name)!;
   const problems: string[] = [];
   const rows: {
@@ -151,7 +150,9 @@ export function checkCoachAudit() {
   const signal = at('Ring Island').end!.signalCm / 100;
   row('Ring held tail/hinge', signal - tail - (RING_S_HEAD + RING_GAP.hinge) / 100, 20, 93.7, 'ring.ts');
   row('Ring held tail/last Railhead', signal - tail - RING_HEAD[7]!.s / 100, TRAIN.sepCm / 100, 120.7, 'ring.ts');
-  for (const [k, sig] of (RAIL_LINES[LINE2]!.signals ?? []).entries())
+  const gorge = at('High Gorge');
+  const stackSignals = RAIL_LINES[LINE2]!.signals!.filter((s) => s < gorge.s);
+  for (const [k, sig] of stackSignals.entries())
     row(
       `Stack signal ${k + 1} held tail/passed stop (report only)`,
       (sig - at(`Stack head ${k + 1}`).s) / 100 - tail,
@@ -159,8 +160,7 @@ export function checkCoachAudit() {
       -6.1,
       'audit: no clearance minimum; sepCm protects trains',
     );
-  const gorge = at('High Gorge'),
-    crossEnd = (gorge.end!.mergeCm + RING_END.cross.u1 - RING_END.cross.u0) / 100;
+  const crossEnd = (gorge.end!.mergeCm + RING_END.cross.u1 - RING_END.cross.u0) / 100;
   row('Gorge full tail/crossover', gorge.s / 100 - tail - crossEnd, 0.3, 0.3, 'route-rules; R2b.2 restores 0.30 m');
   row(
     'Gorge 12.40 m tail/crossover',

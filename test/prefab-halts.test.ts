@@ -22,7 +22,8 @@ import * as rowPath from '../src/entities/railway/row-path.ts';
 import * as haltMap from '../src/entities/railway/halt-map.ts';
 import * as leverPlace from '../src/entities/railway/lever-place.ts';
 import { STACK_WEST_LEVER } from '../src/entities/route-greybox/stack-halts.ts';
-import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
+import { runLine, gorgeStop } from '../src/sim/railway-lap.ts';
+import { lineSlots } from '../src/sim/railway-trains.ts';
 import { buildSeedWorld } from '../src/sim/railway-seeds.ts';
 import { laySection } from '../src/sim/railway-seed-legs.ts';
 import { Leg } from '../src/sim/railway-components.ts';
@@ -212,7 +213,9 @@ test('halt kit placements, colliders, lever plaques and ordered prompts match th
       railRow: rows.rail,
       trainRow: rows.train,
       worksRow: rows.works,
-      LINE_SLOTS,
+      lineSlots,
+      runLine,
+      gorgeStop,
       HEAD_OFFSET,
       PLAYER_R,
       SEA,

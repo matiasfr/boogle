@@ -84,7 +84,12 @@ test("every halt that can be its line's open end says how it turns trains back, 
       if (h.shut) return;
       // A halt before one a later job, a leg's section or a later leg opens (the greybox route's) can be the open end.
       const next = l.halts[k + 1];
-      const last = k === 0 || !next || next.opens >= 0 || !!next.leg || !!next.shut;
+      const last =
+        k === 0 ||
+        !next ||
+        (!next.leg && next.opens >= 0) ||
+        (!!next.leg && (next.leg.slot !== h.leg?.slot || next.leg.section !== h.leg?.section)) ||
+        !!next.shut;
       assert.equal(!!h.end, last, `${h.name}`);
       if (h.end) {
         assert.ok(h.end.kind !== 'loop', 'no loop before v27');

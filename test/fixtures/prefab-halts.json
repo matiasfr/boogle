@@ -354,6 +354,142 @@
       "stop": 9
     },
     {
+      "name": "Wall head 5",
+      "s": 402262,
+      "opens": 6,
+      "ring": true,
+      "leg": {
+        "slot": 5,
+        "section": 5
+      },
+      "platforms": [
+        {
+          "x": -31325,
+          "z": -158376,
+          "y": 490,
+          "reach": 1260
+        },
+        {
+          "x": -30243,
+          "z": -157958,
+          "y": 490,
+          "reach": 1260
+        }
+      ],
+      "line": 1,
+      "stop": 10
+    },
+    {
+      "name": "Canopy Town",
+      "s": 565341,
+      "opens": 6,
+      "ring": true,
+      "leg": {
+        "slot": 5,
+        "section": 5
+      },
+      "platforms": [
+        {
+          "x": -89484,
+          "z": -8953,
+          "y": 1390,
+          "reach": 1260
+        },
+        {
+          "x": -88326,
+          "z": -9011,
+          "y": 1390,
+          "reach": 1260
+        }
+      ],
+      "line": 1,
+      "stop": 11
+    },
+    {
+      "name": "Port Quay",
+      "s": 738461,
+      "opens": 6,
+      "ring": true,
+      "leg": {
+        "slot": 5,
+        "section": 5
+      },
+      "platforms": [
+        {
+          "x": 14173,
+          "z": 94632,
+          "y": 390,
+          "reach": 1260
+        },
+        {
+          "x": 13347,
+          "z": 93818,
+          "y": 390,
+          "reach": 1260
+        }
+      ],
+      "line": 1,
+      "stop": 12
+    },
+    {
+      "name": "Saltpan Halt",
+      "s": 786741,
+      "opens": 6,
+      "ring": true,
+      "leg": {
+        "slot": 5,
+        "section": 5
+      },
+      "platforms": [
+        {
+          "x": 54961,
+          "z": 70027,
+          "y": 390,
+          "reach": 1260
+        },
+        {
+          "x": 54095,
+          "z": 69255,
+          "y": 390,
+          "reach": 1260
+        }
+      ],
+      "line": 1,
+      "stop": 13
+    },
+    {
+      "name": "West landing",
+      "s": 858641,
+      "opens": 6,
+      "ring": true,
+      "leg": {
+        "slot": 5,
+        "section": 5
+      },
+      "platforms": [
+        {
+          "x": 79338,
+          "z": 2939,
+          "y": 490,
+          "reach": 1260
+        },
+        {
+          "x": 79338,
+          "z": 2939,
+          "y": 490,
+          "reach": 1260
+        }
+      ],
+      "end": {
+        "kind": "crossover",
+        "mergeCm": 855141,
+        "edgeCm": 855141,
+        "signalCm": 854321
+      },
+      "line": 1,
+      "stop": 14
+    },
+    {
       "name": "High Gorge",
       "s": 3600,
       "opens": -1,

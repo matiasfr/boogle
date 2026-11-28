@@ -8,16 +8,19 @@
 //                             stops does not work them out again for every train and every halt.
 import type { World } from '../ecs/index.ts';
 import { Line, Rail, Train } from './railway-components.ts';
-import { RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, haltPlatform } from './railway-lines.ts';
+import { RAIL_HALTS, RAIL_LINES, LINE2, WALL_LEG, haltPlatform } from './railway-lines.ts';
 import { TRAIN, TRAIN_PHASE, reqHas, trainCanBrake, trainWakeAt } from './railway-train.ts';
-import { LINE_SLOTS, atEnd, retainedEndBlock, trainPose, trainServes } from './railway-trains.ts';
+import { runLine, lapSlots, gorgeStop } from './railway-lap.ts';
+import { atEnd, retainedEndBlock, trainPose, trainServes } from './railway-trains.ts';
 import { railId, ringOpen, stopsOf, trainId } from './railway-queries.ts';
-import { haltHead } from './railway-queries-route.ts';
+import { haltHead, legDone } from './railway-queries-route.ts';
 
-export const railTrainsOf = (w: World, line: number) => LINE_SLOTS[line]!.map((k) => w.get(Train, trainId(w, k))!);
+export const railTrainsOf = (w: World, line: number) =>
+  lapSlots(line, legDone(w, WALL_LEG)).map((k) => w.get(Train, trainId(w, k))!);
 export const trainStops = stopsOf;
 
-const lineOf = (slot: number) => RAIL_TRAINS[slot]!.line;
+/** Track, service and lever asks use the slot's running line. */
+export const runningLine = (w: World, slot: number) => runLine(slot, legDone(w, WALL_LEG));
 const trainRow = (w: World, slot: number) => w.get(Train, trainId(w, slot))!;
 const lineReq = (w: World, line: number) => w.get(Line, w.lookup(Line, line)!)!.req;
 const trainsOn = (w: World) => w.get(Rail, railId(w))!.trains;
@@ -41,10 +44,10 @@ export function railTrainAsked(
   w: World,
   slot: number,
   tick: number,
-  stops: readonly number[] = trainStops(w, lineOf(slot)),
+  stops: readonly number[] = trainStops(w, runningLine(w, slot)),
 ) {
   const r = trainRow(w, slot),
-    line = lineOf(slot),
+    line = runningLine(w, slot),
     n = stops.length,
     dir = r.track ? -1 : 1;
   if (trainsOn(w) < 0 || (r.phase === TRAIN_PHASE.STAND && r.at >= 0)) return false;
@@ -62,7 +65,7 @@ export function railTrainAsked(
 export function railTrainHeld(w: World, slot: number, tick: number) {
   const r = trainRow(w, slot),
     at = trainsOn(w);
-  if (at < 0 || r.phase !== TRAIN_PHASE.STAND || tick < trainWakeAt(RAIL_TRAINS[slot]!.line, at) + TRAIN.wakeTicks)
+  if (at < 0 || r.phase !== TRAIN_PHASE.STAND || tick < trainWakeAt(runningLine(w, slot), at) + TRAIN.wakeTicks)
     return false;
   return r.at < 0 || tick >= r.depart + TRAIN.dwellTicks + 10;
 }
@@ -81,13 +84,18 @@ export function railPlatformEnd(
 ) {
   return (
     stop === stops.length - 1 ||
-    LINE_SLOTS[line]!.some((slot) => retainedEndBlock(trainRow(w, slot), line, Math.floor(tick))?.stop === stop)
+    lapSlots(line, legDone(w, WALL_LEG)).some(
+      (slot) => retainedEndBlock(trainRow(w, slot), line, Math.floor(tick))?.stop === stop,
+    )
   );
 }
 /** The accepted platform used by both the lever view and server reach validation. */
 export function railCallPlatform(w: World, halt: number, way: number, tick: number) {
   const h = RAIL_HALTS[halt]!;
-  return haltPlatform(h, way, haltHead(w, halt, ringOpen(w).head), railPlatformEnd(w, h.line, h.stop, tick));
+  const end = railPlatformEnd(w, h.line, h.stop, tick);
+  // A reflected departure occupies cave outward, the joined halt's second platform.
+  if (end && h.line === LINE2 && h.stop > gorgeStop) return h.platforms[1];
+  return haltPlatform(h, way, haltHead(w, halt, ringOpen(w).head), end);
 }
 
 /** During a retained departure, only its still-boardable train can answer the old-side lever. Once it leaves,
@@ -101,10 +109,10 @@ export function railCallReady(
   stops: readonly number[] = trainStops(w, line),
 ) {
   if (stop === stops.length - 1 || !railPlatformEnd(w, line, stop, tick, stops)) return true;
-  if (dir > 0) return false;
-  return LINE_SLOTS[line]!.some((slot) => {
+  return lapSlots(line, legDone(w, WALL_LEG)).some((slot) => {
     const r = trainRow(w, slot);
-    if (retainedEndBlock(r, line, Math.floor(tick))?.stop !== stop) return false;
+    const block = retainedEndBlock(r, line, Math.floor(tick));
+    if (block?.stop !== stop || dir !== -block.dir) return false;
     return (
       (r.phase === TRAIN_PHASE.STAND && r.at === stop && r.from === stops[stop]) ||
       (r.turn && r.to === stop && r.dest === stops[stop])

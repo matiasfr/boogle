@@ -7,7 +7,7 @@ import { FORMATION, LINKS, offsetLat } from '../../place/layout.ts';
 import { KIT, type Turnout } from '../../place/turnout.ts';
 import { LINE2, RAIL_TRAINS } from '../../sim/railway-lines.ts';
 import { line2Trains } from '../../sim/railway-queries-line2.ts';
-import { trainStops } from '../../sim/railway-queries-trains.ts';
+import { runningLine, trainStops } from '../../sim/railway-queries-trains.ts';
 import { train, type ReadWorld } from '../../sim/railway-rows.ts';
 import { TRAIN_PHASE, trainAlong } from '../../sim/railway-train.ts';
 import { cartAt } from './cart-tag.ts';
@@ -68,18 +68,20 @@ export function pointsTrains(w: ReadWorld, tick: number): PointsTrain[] {
   const stops2 = trainStops(w, LINE2),
     merge2 = endMergeM(stops2),
     on2 = line2Trains(w);
-  return RAIL_TRAINS.flatMap((spec, slot): PointsTrain[] => {
-    if (spec.line > LINE2 || (spec.line === LINE2 && !on2)) return [];
+  return RAIL_TRAINS.flatMap((_, slot): PointsTrain[] => {
+    // The points follow every train on their running line.
+    const line = runningLine(w, slot);
+    if (line > LINE2 || (line === LINE2 && !on2)) return [];
     const row = train(w, slot);
     if (row.phase === TRAIN_PHASE.SHED) return [];
-    const formation = FORMATION[LINKS[spec.line]!.id];
+    const formation = FORMATION[LINKS[line]!.id];
     return [
       {
-        line: spec.line,
-        s: trainAlong(row, spec.line, tick) / 100,
+        line: line,
+        s: trainAlong(row, line, tick) / 100,
         dir: row.phase === TRAIN_PHASE.STAND ? 0 : row.track ? -1 : 1,
         lat:
-          spec.line === LINE2
+          line === LINE2
             ? (s) => line2Lat(row, s, stops2, merge2)
             : (s) => (row.track ? (offsetLat(formation, s) ?? 0) : 0),
       },

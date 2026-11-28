@@ -60,7 +60,7 @@ export function haltMap(layout: Layout, stage: MapStage = { open: 3, head: 0 }):
   const Q: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
   const sea = stage.open >= 4;
   const leg = stage.open >= JOINED,
-    last = L2_HALTS.length - 1;
+    last = L2_HALTS.findIndex((h) => h.name === 'High Gorge');
   // Lines 1 and 2; the greybox route's other rows (every halt shut) are their own legs' to map.
   const lines = RAIL_LINES.slice(0, 2).map((def, k): MapLine => {
     // Line 2's halts in order: Village, Quarry, Far Head, Pier, Railhead (it moves with `head`), Ring Island; then,
@@ -69,7 +69,7 @@ export function haltMap(layout: Layout, stage: MapStage = { open: 3, head: 0 }):
       .map((h, i) => ({ h, i }))
       .filter(({ h }) => !h.shut)
       .filter(({ h, i }) => {
-        if (h.leg) return k === 1 && leg && (i < stage.open || i === last);
+        if (h.leg) return h.leg.slot === 0 && k === 1 && leg && (i < stage.open || i === last);
         return k === 0 ? !h.heads && !h.ring : h.ring ? sea : h.heads ? stage.open >= 5 : true;
       });
     const stops = picks.map(({ h, i }) => {
@@ -114,7 +114,7 @@ export function haltMap(layout: Layout, stage: MapStage = { open: 3, head: 0 }):
       path.push(...simplify(dense, 1.5).slice(1));
     }
     const end = stops[stops.length - 1]!.s;
-    const laid = k === 0 ? end : stops[leg ? stage.open - 1 : stage.open >= 5 ? 4 : sea ? 3 : 2]!.s;
+    const laid = k === 0 ? end : stops[leg ? Math.min(last, stage.open - 1) : stage.open >= 5 ? 4 : sea ? 3 : 2]!.s;
     // Names are tied to their stops only once the stack line is drawn: before the rivet every face places as it did.
     const ties = leg && k === 1 ? { ties: true as const } : {};
     return { color: LINE_MARK[k]!, path, laid, stops: stops.map((x) => ({ ...x, ...at(x.s) })), ...ties };
@@ -151,7 +151,7 @@ export function stackDisplays() {
     p = { x: 0, z: 0 },
     ahead = { x: 0, z: 0 };
   return L2_HALTS.flatMap((h, stop) => {
-    if (!h.leg) return [];
+    if (h.leg?.slot !== 0) return [];
     const s = h.s / 100 - (h.end?.kind === 'stub' ? 3 : 10);
     line2World(s, LAT, p);
     line2World(s + 1, LAT, ahead);

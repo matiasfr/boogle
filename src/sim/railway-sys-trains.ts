@@ -5,9 +5,19 @@
 import { defineSystem, type World } from '../ecs/index.ts';
 import { LINE2_KIT } from './railway-line2-layout.ts';
 import { CART_PHASE } from './railway-cart.ts';
-import { TRAIN, TRAIN_PHASE, reqAdd, reqHas, trainDir, trainPassesBy, type ServiceStop } from './railway-train.ts';
-import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
-import { LINE_SLOTS, atEnd, trainStepLine, type TrainIO, type TrainMoveIO } from './railway-trains.ts';
+import {
+  TRAIN,
+  TRAIN_PHASE,
+  trainStopsOf,
+  reqAdd,
+  reqHas,
+  trainDir,
+  trainPassesBy,
+  type ServiceStop,
+} from './railway-train.ts';
+import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, WALL_LEG, lapJoined } from './railway-lines.ts';
+import { runningLine } from './railway-queries-trains.ts';
+import { lineSlots, atEnd, trainStepLine, type TrainIO, type TrainMoveIO } from './railway-trains.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { railInt } from './railway.ts';
 import {
@@ -44,6 +54,8 @@ import {
   kitStop,
   lineId,
   q7Laid,
+  qCompleted,
+  ringOpen,
   qjobId,
   railId,
   ringJoined,
@@ -56,8 +68,9 @@ import {
 } from './railway-queries.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 import { freightArrives, freightLoads, ridersArrive, ridersBoard } from './railway-sys-trade.ts';
-import { deckHeld, footCap, footCarrier, freightStop } from './railway-queries-trade.ts';
-import type { TradePct } from './railway-trade-layout.ts';
+import { gorgeStop, lapSlots, runLine } from './railway-lap.ts';
+import { waitingFor, deckHeld, footCap, footCarrier, freightStop } from './railway-queries-trade.ts';
+import { lineRoute, type TradePct } from './railway-trade-layout.ts';
 import { boilerAdopt, steelArrives, steelLoads, steelService } from './railway-sys-steel.ts';
 import { legKitArrive, legKitLoad, legKitService, legRailheadHold } from './railway-sys-route-kit.ts';
 import { fleetOf } from './railway-train.ts';
@@ -103,7 +116,7 @@ export const call = defineSystem(
       return false;
     };
     if (e.train !== undefined) {
-      if (!railInt(e.train, RAIL_TRAINS.length - 1) || RAIL_TRAINS[e.train]!.line !== halt.line) return 0;
+      if (!railInt(e.train, RAIL_TRAINS.length - 1) || runningLine(w, e.train) !== halt.line) return 0;
       const r = w.get(Train, trainId(w, e.train))!;
       if (r.phase === TRAIN_PHASE.SHED) return 0;
       if (atEnd(halt.stop, stops) || trainDir(r) !== dir || reqHas(r.req, halt.stop, dir, n)) return 0;
@@ -115,7 +128,7 @@ export const call = defineSystem(
     // A request can predate the stand. Its first eligible platform call gets one boarding dwell even with the
     // digit pending. Further calls cannot move depart again; no per-request or per-player state is needed.
     let refreshed = false;
-    for (const slot of LINE_SLOTS[halt.line]!) if (wait(slot)) refreshed = true;
+    for (const slot of lineSlots(halt.line, stops)) if (wait(slot)) refreshed = true;
     if (reqHas(l.req, halt.stop, dir, n)) return refreshed ? 1 : 0;
     w.mut(Line, lineId(w, halt.line))!.req = reqAdd(l.req, halt.stop, dir, n);
     return 1;
@@ -159,9 +172,13 @@ function serviceOf(w: World, slot: number, r: Readonly<Row<typeof Train>>, tick:
   // at its rack, on any line with an open leg (legKitService).
   const route = legKitService(w, slot, r);
   const freight: ServiceStop = (k, dir) => freightStop(w, slot, r, k, dir) || route(k, dir);
+  // Only line 2's original coaches and freight cars need these service stops.
   if (RAIL_TRAINS[slot]!.line !== LINE2) return freight;
   return (k, dir) =>
     freight(k, dir) ||
+    (k === gorgeStop &&
+      legDone(w, WALL_LEG) &&
+      (dir > 0 ? r.riders > 0 : waitingFor(w, lineRoute(LINE2), k, dir) > 0)) ||
     (k === 0 && dir < 0 && kitOwed(w, r)) ||
     (k === kitStop(w) && r.logs + r.rails > 0) ||
     (k === 1 && dir > 0 && footCarrier(w, r, tick) && r.foot < footCap(r) && footOwed(w, aboard(w, 'foot')) > 0) ||
@@ -183,13 +200,20 @@ export function trainMoveIO(w: World): TrainMoveIO {
  * atomic inside this tick apply. */
 function trainIO(w: World, headPct: number, pct: TradePct, tick: number): TrainIO {
   const row = (slot: number) => w.get(Train, trainId(w, slot))!;
+  const laid = legsLaid(w);
+  // Every train in this tick reads the same completed jobs, ring and leg prefix.
+  const jobs = qCompleted(w),
+    ring = ringOpen(w);
+  const open = RAIL_LINES.map((_, line) => trainStopsOf(line, jobs, ring, laid));
+  const joined = lapJoined(laid);
+  // This predicate identifies the original coaches, kit and footing wagon.
   const line2 = (slot: number) => RAIL_TRAINS[slot]!.line === LINE2;
   return {
     row,
     set: (slot, patch) => void Object.assign(w.mut(Train, trainId(w, slot))!, patch),
     line: (line) => w.get(Line, lineId(w, line))!,
     setLine: (line, patch) => void Object.assign(w.mut(Line, lineId(w, line))!, patch),
-    stops: (line) => stopsOf(w, line),
+    stops: (line) => open[line]!,
     awake: w.get(Rail, railId(w))!.trains,
     headPct,
     service: (slot) => serviceOf(w, slot, row(slot), tick),
@@ -237,7 +261,7 @@ function trainIO(w: World, headPct: number, pct: TradePct, tick: number): TrainI
       }
       // Each line takes its fit standing at the Village, after any wagon rollout and coupling. A running leg
       // retains its own boiler row; the platform beat must not overlap the wagon's rollout.
-      if (r.at === 0) boilerAdopt(w, trainId(w, slot), RAIL_TRAINS[slot]!.line);
+      if (r.at === 0) boilerAdopt(w, trainId(w, slot), runLine(slot, joined));
       if (!line2(slot)) {
         if (legKitLoad(w, slot, tick) === 'hold' || legRailheadHold(w, slot, tick) === 'hold') return 'hold';
         // The cart's hold is line 1's alone (its trains meet the cart); the greybox route's lines never wait for it.
@@ -277,7 +301,8 @@ function trainIO(w: World, headPct: number, pct: TradePct, tick: number): TrainI
     // owes footings (design review, 9; ring-island-build1, R3).
     headExempt: (slot) => row(slot).wagon && footingsOwed(w, RAIL_TRAINS[slot]!.line),
     // The greybox route: the trains a line runs at its legs' stage (its fleet).
-    fleet: (line) => fleetOf(line, legsLaid(w), stopsOf(w, line)),
+    slots: (line) => lapSlots(line, joined),
+    fleet: (line) => fleetOf(line, laid, open[line]!),
   };
 }
 /** Line 1's index: the line whose trains meet the cart. */

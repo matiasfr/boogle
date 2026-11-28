@@ -15,14 +15,16 @@
 //   endMoved(io, line, last, tick) the line runs on past its old end `last` (Q6, Q7, the rivet)
 //   stopMoved(io, line, k, tick)  halt k's stop moved on (the railhead's next bent)
 //   trainSpacing(rows, ...)       the spacing invariants at a tick (tests sample it); lineSpacing for one line
-//   servingSlots(rows, line)      a line's trains in service (the greybox route's fleet rows wait in the shed)
+//   servingSlots(rows, line, stops)      a line's trains in service (the greybox route's fleet rows wait in the shed)
 //   fleetJoin(io, line, tick)     a shed train joins at the line's first halt once its stage runs one more (step 3)
 //
 // Every `line` is a LineRef: a catalog index, or a test's fixture line (./railway-lines.ts).
 import {
   RAIL_LINES,
-  BALANCE_MAX_TICKS,
   RAIL_TRAINS,
+  LAP_S0,
+  LINE2,
+  BALANCE_MAX_TICKS,
   TRAIN_EXTENT,
   balanceOk,
   circuitAhead,
@@ -57,26 +59,33 @@ import {
   type ServiceStop,
 } from './railway-train.ts';
 
+import { oldCaveEnd, lapStop, lapSlots, originSlots, gorgeStop } from './railway-lap.ts';
+
 /** A line's shared row (the `line` component): its halts' lever asks, and when a train last left each end. */
 export type RailLineRow = { req: number; left0: number; left1: number };
+
 /** The headway hold's default share of an even split, in percent (the room tunable railTrainHeadPct). */
 export const TRAIN_HEAD_PCT = 75;
 /** Train rows by slot. */
 export type Rows = (slot: number) => Readonly<RailTrain>;
 /** Each line's train slots, in slot order. */
-export const LINE_SLOTS: readonly (readonly number[])[] = RAIL_LINES.map((_l, line) =>
-  RAIL_TRAINS.flatMap((t, slot) => (t.line === line ? [slot] : [])),
-);
+export const LINE_SLOTS = originSlots;
 /** A line's train slots: LINE_SLOTS for a catalog line, 0 to `trains - 1` for a fixture line. */
-export function lineSlots(line: LineRef): readonly number[] {
+export function lineSlots(line: LineRef, stops?: readonly number[]): readonly number[] {
   const k = lineIndex(line);
-  return k >= 0 ? LINE_SLOTS[k]! : Array.from({ length: lineDef(line).trains }, (_v, j) => j);
+  return k >= 0
+    ? lapSlots(k, stops !== undefined && (lineDef(line).joins ? stops.length === 0 : stops.length > gorgeStop + 1))
+    : Array.from({ length: lineDef(line).trains }, (_v, j) => j);
 }
 /** A line's slots in service now, in slot order: its rows not in the shed (TRAIN_PHASE.SHED; the greybox route's fleet
  * rows, step 3). A line with no fleet has none in the shed, so this is lineSlots. Every rule that reads the other
  * trains of a line (the block rule, service, the holds, the spacing) reads these. */
-export function servingSlots(rows: Rows, line: LineRef): readonly number[] {
-  const all = lineSlots(line);
+export function servingSlots(
+  rows: Rows,
+  line: LineRef,
+  stops?: readonly number[],
+  all = lineSlots(line, stops),
+): readonly number[] {
   return lineDef(line).fleet ? all.filter((k) => rows(k).phase !== TRAIN_PHASE.SHED) : all;
 }
 
@@ -99,11 +108,31 @@ export function endBlocks(line: LineRef, stops: readonly number[]): readonly [En
     shift = s1 - halts[last]!.s;
   return [
     { from: s0, to: a.edgeCm, stop: 0, dir: -1, signal: Math.max(a.signalCm, s0 + TRAIN.sepCm) },
-    { from: b.edgeCm + shift, to: s1, stop: last, dir: 1, signal: Math.min(b.signalCm + shift, s1 - TRAIN.sepCm) },
+    {
+      from: b.edgeCm + shift,
+      to: s1,
+      stop: last,
+      dir: 1,
+      // Both facings wait clear of the West landing crossover.
+      signal:
+        Math.min(
+          lineIndex(line) === LINE2 && last > gorgeStop ? b.edgeCm - TRAIN_EXTENT.behindCm : b.signalCm,
+          s1 - shift - TRAIN.sepCm,
+        ) + shift,
+    },
   ];
 }
-/** Whether a train with its along at `s` reaches into block `b`. */
-const within = (b: EndBlock, s: number) => s - TRAIN_EXTENT.behindCm < b.to && s + TRAIN_EXTENT.aheadCm > b.from;
+/** The consist keeps its facing on the ground. Its front and rear exchange coordinate directions on the lap. */
+const reflectedExtent = { aheadCm: TRAIN_EXTENT.behindCm, behindCm: TRAIN_EXTENT.aheadCm };
+function extent(row: Readonly<RailTrain>, line: LineRef) {
+  return lineIndex(line) === LINE2 && row.slot !== undefined && RAIL_LINES[RAIL_TRAINS[row.slot]!.line]!.joins
+    ? reflectedExtent
+    : TRAIN_EXTENT;
+}
+function within(b: EndBlock, row: Readonly<RailTrain>, line: LineRef, lo: number, hi = lo) {
+  const { behindCm, aheadCm } = extent(row, line);
+  return lo - behindCm < b.to && hi + aheadCm > b.from;
+}
 /** Whether a halt is one of the open ends (its track turns there). */
 export const atEnd = (stop: number, stops: readonly number[]) => stop === 0 || stop === stops.length - 1;
 
@@ -134,7 +163,10 @@ export function trainPose(row: Readonly<RailTrain>, line: LineRef, stops: readon
 }
 /** Whether a train is in an end block or bound for it: standing or running inside it, or its leg ending in it. */
 function inBlock(row: Readonly<RailTrain>, line: LineRef, b: EndBlock, tick: number) {
-  return within(b, trainAlong(row, line, tick)) || (row.phase === TRAIN_PHASE.RUN && within(b, row.dest));
+  return (
+    within(b, row, line, trainAlong(row, line, tick)) ||
+    (row.phase === TRAIN_PHASE.RUN && within(b, row, line, row.dest))
+  );
 }
 /** An accepted old-end arrival/departure still owns its original block until its entire extent clears it.
  * `turn` protects an arrival already committed across the old points, before arrival sets `origin`. */
@@ -143,7 +175,18 @@ export function retainedEndBlock(row: Readonly<RailTrain>, line: LineRef, tick: 
   if (!origin || row.phase === TRAIN_PHASE.SHED) return null;
   const halts = lineDef(line).halts;
   const stop = halts.findIndex((h, k) => k > 0 && h.end && (h.s === origin || h.heads?.includes(origin)));
-  if (stop < 0) return null;
+  if (stop < 0) {
+    const mirrored = lineIndex(line) === LINE2 && oldCaveEnd(origin);
+    if (!mirrored) return null;
+    const b = {
+      from: origin,
+      to: LAP_S0 - mirrored.edgeCm,
+      stop: lapStop(origin),
+      dir: -1,
+      signal: Math.max(LAP_S0 - mirrored.signalCm, origin + TRAIN.sepCm),
+    };
+    return inBlock(row, line, b, tick) ? b : null;
+  }
   const h = halts[stop]!,
     shift = origin - h.s,
     end = h.end!;
@@ -159,7 +202,7 @@ export function retainedEndBlock(row: Readonly<RailTrain>, line: LineRef, tick: 
 /** Current ends plus any old points still occupied by their accepted arrival/departure. */
 function protectedBlocks(rows: Rows, line: LineRef, stops: readonly number[], tick: number): EndBlock[] {
   const blocks = [...endBlocks(line, stops)];
-  for (const slot of servingSlots(rows, line)) {
+  for (const slot of servingSlots(rows, line, stops)) {
     const b = retainedEndBlock(rows(slot), line, tick);
     if (b && !blocks.some((a) => a.from === b.from && a.to === b.to)) blocks.push(b);
   }
@@ -180,7 +223,7 @@ export function blockFree(
   const c = circuitLen(stops),
     me = trainPose(rows(slot), line, stops, tick);
   const leg = circuitAhead(me.c, circuitCm(stops, track, dest) % c, c);
-  const serving = servingSlots(rows, line);
+  const serving = servingSlots(rows, line, stops);
   for (const other of serving) {
     if (other === slot) continue;
     const gap = circuitAhead(me.c, trainPose(rows(other), line, stops, tick).c, c);
@@ -189,8 +232,7 @@ export function blockFree(
   for (const b of protectedBlocks(rows, line, stops, tick))
     // An old end is now in the middle: a leg can cross its whole block without ending inside it.
     if (
-      Math.min(me.s, dest) - TRAIN_EXTENT.behindCm < b.to &&
-      Math.max(me.s, dest) + TRAIN_EXTENT.aheadCm > b.from &&
+      within(b, rows(slot), line, Math.min(me.s, dest), Math.max(me.s, dest)) &&
       serving.some((k) => k !== slot && inBlock(rows(k), line, b, tick))
     )
       return false;
@@ -212,11 +254,11 @@ export function trainServes(
   // A former end still boards its committed arrival/departure on the original side. Once it has left,
   // no new lever ask may promise a future train on the other side until the old block clears.
   if (stop < stops.length - 1)
-    for (const slot of servingSlots(rows, line)) {
+    for (const slot of servingSlots(rows, line, stops)) {
       const r = rows(slot),
         b = retainedEndBlock(r, line, tick);
-      if (b?.stop === stop && b.to === stops[stop])
-        return dir === -1 && ((r.phase === TRAIN_PHASE.STAND && r.at === stop) || (r.turn && r.to === stop))
+      if (b?.stop === stop && (b.dir > 0 ? b.to : b.from) === stops[stop])
+        return dir === -b.dir && ((r.phase === TRAIN_PHASE.STAND && r.at === stop) || (r.turn && r.to === stop))
           ? slot
           : -1;
     }
@@ -226,7 +268,7 @@ export function trainServes(
     a = kin.brake ?? kin.accel;
   let best = -1,
     near = c;
-  for (const slot of servingSlots(rows, line)) {
+  for (const slot of servingSlots(rows, line, stops)) {
     const r = rows(slot),
       p = trainPose(r, line, stops, tick),
       d = circuitAhead(p.c, at, c);
@@ -256,7 +298,7 @@ export function trainReasons(
 
 /** The circuit gaps from train `slot` to the nearest serving train ahead and behind; null with no other train. */
 export function trainGaps(rows: Rows, line: LineRef, stops: readonly number[], slot: number, tick: number) {
-  const others = servingSlots(rows, line).filter((k) => k !== slot);
+  const others = servingSlots(rows, line, stops).filter((k) => k !== slot);
   if (!others.length) return null;
   const c = circuitLen(stops),
     me = trainPose(rows(slot), line, stops, tick).c;
@@ -338,6 +380,8 @@ export type TrainIO<L extends LineRef = number> = {
   /** The trains the line runs at its stage now (railway-train.ts, fleetOf; the greybox route, step 3). Absent (a test's
    * fixture IO): no train ever joins from the shed. */
   fleet?(line: L): number;
+  /** Slot ownership for the current stage. A stand-alone fixture uses its catalog's slots. */
+  slots?(line: L): readonly number[];
 };
 /** A running train's leg, judged again from its pose now: shortened for a reason it can still brake for, or
  * lengthened past a hold the train ahead has moved off. The pose stays continuous (`from` is where it is now). */
@@ -358,7 +402,7 @@ function replan<L extends LineRef>(io: TrainIO<L>, line: L, slot: number, tick: 
  * out (only a train the railhead's stop moved on from: a signal stands outside its block); -1 for none. */
 function endStanding(line: LineRef, stops: readonly number[], r: Readonly<RailTrain>) {
   const dir = r.track ? -1 : 1;
-  for (const b of endBlocks(line, stops)) if (b.dir === -dir && within(b, r.from)) return b.stop;
+  for (const b of endBlocks(line, stops)) if (b.dir === -dir && within(b, r, line, r.from)) return b.stop;
   return -1;
 }
 /** Release a platform hold for its assigned rider or a follower standing at its approach signal. */
@@ -387,7 +431,7 @@ export function platformHoldPressure(
     for (const cm of signals)
       if ((stops[from]! - cm) * approach > 0 && (signal === undefined || (cm - signal) * approach > 0)) signal = cm;
   }
-  for (const other of servingSlots(rows, line)) {
+  for (const other of servingSlots(rows, line, stops)) {
     const r = rows(other);
     if (other !== slot && r.phase === TRAIN_PHASE.STAND && r.at === -1 && r.from === signal && r.track === track)
       return true;
@@ -425,7 +469,7 @@ export function balancedHold<L extends LineRef>(
     r = io.row(slot);
   const middle = !atEnd(from, stops);
   const greybox = middle || greyboxSpacing(line, stops);
-  const fleet = servingSlots(io.row, line);
+  const fleet = servingSlots(io.row, line, stops);
   if (fleet.length < 2) return false;
   if (
     middle &&
@@ -461,9 +505,9 @@ export function balancedHold<L extends LineRef>(
  * dwell, the headway and the balanced hold then judge its leaving as any train's. */
 export function fleetJoin<L extends LineRef>(io: TrainIO<L>, line: L, tick: number) {
   if (!io.fleet || tick < trainWakeAt(line, io.awake) + TRAIN.wakeTicks) return;
-  const serving = servingSlots(io.row, line);
+  const serving = servingSlots(io.row, line, io.stops(line), io.slots?.(line));
   if (serving.length >= io.fleet(line)) return;
-  const slot = lineSlots(line).find((k) => io.row(k).phase === TRAIN_PHASE.SHED);
+  const slot = (io.slots?.(line) ?? lineSlots(line, io.stops(line))).find((k) => io.row(k).phase === TRAIN_PHASE.SHED);
   const stops = io.stops(line);
   if (slot === undefined || stops.length < 2) return;
   const c = circuitLen(stops),
@@ -490,9 +534,9 @@ export function fleetJoin<L extends LineRef>(io: TrainIO<L>, line: L, tick: numb
   });
 }
 export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: number) {
-  if (io.awake < 0) return;
+  if (io.awake < 0 || io.stops(line).length < 2) return;
   fleetJoin(io, line, tick);
-  const serving = servingSlots(io.row, line);
+  const serving = servingSlots(io.row, line, io.stops(line), io.slots?.(line));
   for (const slot of serving) {
     for (let guard = 0; guard < 16; guard++) {
       const r = io.row(slot),
@@ -509,7 +553,8 @@ export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: 
         // otherwise funding one tick earlier can send a whole kit back home instead of to the new head.
         const halt = r.to >= 0 ? lineDef(line).halts[r.to] : undefined;
         const runsOn = r.to > 0 && r.to < n - 1 && !!halt?.leg && halt.end?.kind === 'stub';
-        const turn = r.turn && !runsOn; // the row may be live: read it before the set clears it
+        const mirrorEnd = r.turn && lineIndex(line) === LINE2 && r.track === 1 ? oldCaveEnd(r.dest) : undefined;
+        const turn = r.turn && !runsOn && mirrorEnd?.kind !== 'stub'; // the row may be live: read it before the set clears it
         // A leg it could not replan off a halt that refuses its way (the homeward-only Pier, held short of a busy
         // railhead) ends at a stand with no halt, as at a signal: no platform, no dwell, no arrival.
         const at = !turn && r.to >= 0 && trainPassesBy(line, r.to, r.track ? -1 : 1, n) ? -1 : r.to;
@@ -526,7 +571,7 @@ export function trainStepLine<L extends LineRef>(io: TrainIO<L>, line: L, tick: 
           depart: arrival,
           arrived: arrival,
           turn: false,
-          origin: r.track === 0 && (r.to === n - 1 || turn) ? r.dest : at < 0 ? r.origin : 0,
+          origin: (r.track === 0 && r.to === n - 1) || turn ? r.dest : at < 0 ? r.origin : 0,
         });
         if (at >= 0) io.arrive(slot);
         // At an end (or the one it had crossed over at: `turn`) it turns back onto the other track; its riders' asks
@@ -592,7 +637,7 @@ export function endMoved<L extends LineRef>(io: TrainMoveIO<L>, line: L, last: n
   for (const slot of lineSlots(line)) {
     const r = io.row(slot) as Readonly<RailTrain> | undefined;
     if (!r || r.phase !== TRAIN_PHASE.RUN || r.track !== 0 || r.to !== last) continue;
-    if (trainAlong(r, line, tick) + TRAIN_EXTENT.aheadCm > edge) io.set(slot, { turn: true });
+    if (trainAlong(r, line, tick) + extent(r, line).aheadCm > edge) io.set(slot, { turn: true });
     else if (halt.only === undefined) io.set(slot, { req: reqAdd(r.req, last, 1, stops.length) });
   }
 }
@@ -645,6 +690,7 @@ export function trainRowBroken(
     !int(r.track, 1) ||
     !int(r.origin, st[last]!) ||
     (r.origin !== 0 &&
+      !(lineIndex(line) === LINE2 && r.track === 0 && oldCaveEnd(r.origin)) &&
       (r.track !== 1 ||
         !lineDef(line).halts.some(
           (h, k) => k > 0 && k <= last && h.end && (h.s === r.origin || h.heads?.includes(r.origin)),
@@ -666,6 +712,13 @@ export function trainRowBroken(
       ((r.at >= 0 && r.at === r.to) || r.from === r.dest || (r.dest - r.from) * dir < 0)) ||
     // Turning back at a halt that was an end: running up to it, a halt with an end that is no longer open.
     (r.turn &&
+      !(
+        lineIndex(line) === LINE2 &&
+        r.phase === TRAIN_PHASE.RUN &&
+        r.track === 1 &&
+        oldCaveEnd(r.dest) &&
+        r.to === lapStop(r.dest)
+      ) &&
       (r.phase !== TRAIN_PHASE.RUN ||
         r.track !== 0 ||
         r.to < 0 ||
@@ -690,7 +743,8 @@ export function lineBlocksBroken(trains: readonly Readonly<RailTrain>[], line: L
     (b) =>
       trains.filter(
         (r) =>
-          (r.phase === TRAIN_PHASE.STAND && within(b, r.from)) || (r.phase === TRAIN_PHASE.RUN && within(b, r.dest)),
+          (r.phase === TRAIN_PHASE.STAND && within(b, r, line, r.from)) ||
+          (r.phase === TRAIN_PHASE.RUN && within(b, r, line, r.dest)),
       ).length > 1,
   );
 }
@@ -699,7 +753,7 @@ export function lineBlocksBroken(trains: readonly Readonly<RailTrain>[], line: L
 export function lineSpacing(rows: Rows, line: LineRef, st: readonly number[], tick: number): string | null {
   // A line with no open end yet (the greybox route's shut rows) has no train in service and nothing to space.
   if (st.length < 2) return null;
-  const slots = servingSlots(rows, line),
+  const slots = servingSlots(rows, line, st),
     c = circuitLen(st),
     name = typeof line === 'number' ? line : line.id;
   if (slots.length > 1) {

@@ -14,6 +14,7 @@ import { HALTS, OFFSET_HALTS, ORIGIN } from '../../src/place/layout.ts';
 import { haltFrame } from '../../src/prefab/halt-deck.ts';
 import { line2At, line2Lat, LINE2_END_S } from '../../src/entities/railway/line2-path.ts';
 import { LINE2, RAIL_LINES, TRAIN_EXTENT } from '../../src/sim/railway-lines.ts';
+import { gorgeStop } from '../../src/sim/railway-lap.ts';
 import { RING_END, RING_HALT, RING_HEAD, ringAt } from '../../src/sim/railway-ring-layout.ts';
 import { TRAIN } from '../../src/sim/railway-train.ts';
 
@@ -25,7 +26,9 @@ const vehicles = consist.map((c) => ({
   front: c.spec.hz + (c.role === 'engine' ? ENGINE_LONG_AHEAD : 0),
   buffers: c.role === 'engine' ? ENGINE_BUFFERS : CAR_BUFFERS,
 }));
-const stops = RAIL_LINES[LINE2]!.halts.map((h) => h.s);
+// This audit measures the construction stages through the High Gorge terminal, before the Wall opens.
+export const gorgeStageHalts = RAIL_LINES[LINE2]!.halts.slice(0, gorgeStop + 1);
+const stops = gorgeStageHalts.map((h) => h.s);
 export function coachTrain(s: number, up: boolean, endStops: readonly number[] = stops) {
   const p = { x: 0, z: 0, ux: 0, uz: 1 };
   const at = (s: number, o: TrackPoint) => {
@@ -233,7 +236,7 @@ export function checkRiderCoach() {
   }
   if (gap < 0.5) problems.push(`Queue: ${gap} m at leading s ${leadingS}, minimum 0.5 m`);
   // This pre-existing 0.30 m minimum was pinned by fourth-car's Gorge review. Do not re-pin to a negative gap.
-  const gorge = RAIL_LINES[LINE2]!.halts.at(-1)!;
+  const gorge = gorgeStageHalts.at(-1)!;
   const crossEnd = gorge.end!.mergeCm + RING_END.cross.u1 - RING_END.cross.u0;
   const gorgeCrossover = { tailPastEnd: (gorge.s - TRAIN_EXTENT.behindCm - crossEnd) / 100, minimum: 0.3 };
   if (gorgeCrossover.tailPastEnd < gorgeCrossover.minimum)

@@ -14,7 +14,7 @@ import { TRAIN_PHASE, fleetOf, kitBills, trainIdle } from './railway-train.ts';
 import { LEG_KIT_MOST, SERVED_LEGS, legsLaid } from './railway-queries-route.ts';
 import { lines, rail, trains } from './railway-rows.ts';
 import { stopsOf } from './railway-queries.ts';
-import { railTrainsOf } from './railway-queries-trains.ts';
+import { railTrainsOf, runningLine } from './railway-queries-trains.ts';
 
 const bad = (what: string): never => {
   throw new Error(`railway: ${what}`);
@@ -52,7 +52,7 @@ export function checkTrains(w: World) {
       bad('shed train');
   });
   RAIL_LINES.forEach((l, line) => {
-    const serving = servingSlots((k) => rows[k]!, line),
+    const serving = servingSlots((k) => rows[k]!, line, stops(line)),
       all = railTrainsOf(w, line);
     if (
       serving.length > Math.max(l.trains, fleetOf(line, legs, stops(line))) ||
@@ -67,7 +67,15 @@ export function checkTrains(w: World) {
     const asleep =
       !awake &&
       !!(r.phase || r.at !== home || r.to !== home || r.track !== track || r.depart || r.req || r.logs || r.rails);
-    const broken = trainRowBroken(r, line, stops(line), cargoOf(line) * (r.legKit ? kitBills(r.boiler) : 1), asleep);
+    // Motion uses the running line. Cargo capacity belongs to the slot's original cars.
+    const running = runningLine(w, slot);
+    const broken = trainRowBroken(
+      r,
+      running,
+      stops(running),
+      cargoOf(line) * (r.legKit ? kitBills(r.boiler) : 1),
+      asleep,
+    );
     // Any message trainRowBroken returns is a refusal ('railway: train' or 'railway: rider ask' today), so a new one
     // can never pass the check unnoticed.
     if (broken) throw new Error(broken);

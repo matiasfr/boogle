@@ -26,7 +26,7 @@
 //   gateMayOpen(w, g)            its frame is current, its grant held and its barrier shut
 //   haltHead(w, halt)            the head a `heads` halt stands at now (the Railhead's ring head, a leg's sections)
 import type { World } from '../ecs/index.ts';
-import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, legBuilt } from './railway-lines.ts';
+import { WALL_LEG, LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, legBuilt } from './railway-lines.ts';
 import {
   LEG_TUNE,
   RAIL_GATES,
@@ -74,7 +74,9 @@ export const openLeg = (w: World, line: number) =>
 /** The section of leg k being fed or laid now, or -1 once it is complete. */
 export const legSection = (w: World, k: number) => (legDone(w, k) ? -1 : legRow(w, k).laid);
 /** The halt a line's legs load their kit at: its home halt (line 2's Village). */
-export const legKitHalt = (line: number) => RAIL_LINES[line]!.home;
+/** Cargo keeps its original depot. The West landing is the joined track's far halt. */
+export const legKitHalt = (line: number, w?: World) =>
+  RAIL_LINES[line]!.joins && w && legDone(w, WALL_LEG) ? RAIL_LINES[LINE2]!.halts.length - 1 : RAIL_LINES[line]!.home;
 /** The halt (an index on its line) leg k's rack stands at now: its first halt while nothing is laid, then the head of the
  * last section laid; -1 once complete. */
 export function legKitStop(w: World, k: number) {

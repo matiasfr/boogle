@@ -16,7 +16,8 @@ import { trainAlong, trainWakeAt, TRAIN_PHASE, reqHas, LINE_HALTS } from '../../
 import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, trainPassesBy } from '../../sim/railway-lines.ts';
 import { railCallReady, railPlatformEnd, railTrainHeld, trainStops } from '../../sim/railway-queries-trains.ts';
 import { line2Completed, line2Trains } from '../../sim/railway-queries-line2.ts';
-import { LINE_SLOTS } from '../../sim/railway-trains.ts';
+import { gorgeStop, runLine } from '../../sim/railway-lap.ts';
+import { lineSlots } from '../../sim/railway-trains.ts';
 import { ringHead, ringOpen } from '../../sim/railway-queries.ts';
 import {
   account,
@@ -85,14 +86,8 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   let mapStage = '';
   const rows = haltRows(layout);
   // One display a halt, the Pier's too; the Home island's two edges share one.
-  const boards = createIslandBoards(
-    owner,
-    mapLines,
-    haltDisplays(layout).length,
-    1.0,
-    0.8,
-    RAIL_TRAINS.map((t) => t.line),
-  );
+  const trainLines = RAIL_TRAINS.map((t) => t.line);
+  const boards = createIslandBoards(owner, mapLines, haltDisplays(layout).length, 1.0, 0.8, trainLines);
   const P: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
   const lateral = (l: number, out: { x: number; z: number }) => {
     out.x = P.x - P.uz * l + ORIGIN.x;
@@ -501,7 +496,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   );
   // A stack head's homeward lever stands on the east for a terminal or retained departure, then on the west
   // beside the homeward track. Its outward lever stays on the east. Closed heads lose both directions.
-  const stackStops = RAIL_LINES[LINE2]!.halts.map((h, stop) => ({ h, stop })).filter((x) => x.h.leg);
+  const stackStops = RAIL_LINES[LINE2]!.halts.map((h, stop) => ({ h, stop })).filter((x) => x.h.leg?.slot === 0);
   for (const { h, stop } of stackStops) {
     const stub = h.end?.kind === 'stub',
       u = (h.s - RING_S_HEAD) / 100 + (stub ? 0 : 4),
@@ -655,7 +650,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
   refreshStops();
   /** Whether any train of `line` has the property `fn` reads off its row (no list built). */
   const someTrain = (w: ReadWorld, line: number, fn: (r: ReturnType<typeof trainRow>) => boolean) =>
-    LINE_SLOTS[line]!.some((k) => fn(trainRow(w, k)));
+    lineSlots(line, stopsNow[line]).some((k) => fn(trainRow(w, k)));
   /** No train stands at this platform yet: its way is its halt's way in while that halt is the line's open end, or it
    * is the end's second platform (both ways stand at the first one there). */
   function chained(x: Spot) {
@@ -790,6 +785,10 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     const { open, head } = mapStageOf(w);
     if (mapStage !== `${open}:${head}`) {
       mapStage = `${open}:${head}`;
+      // Each board places its marker and arrival blink on the train's running line.
+      trainLines.forEach((_, slot) => {
+        trainLines[slot] = runLine(slot, open > gorgeStop + 1);
+      });
       const next = haltMap(layout, { open, head });
       mapLines.splice(0, mapLines.length, ...next.lines);
       boards.redraw(next.scale);
@@ -811,7 +810,7 @@ export async function createRailwayHalts(adapter: RailwayAdapter, owner: OwnedVi
     });
     boards.trains(
       // A fleet row in the shed (the greybox route) is on no board until it joins.
-      RAIL_TRAINS.map(({ line }, k) =>
+      trainLines.map((line, k) =>
         shown && tick >= trainWakeAt(line, railRow(w).trains) && trainRow(w, k).phase !== TRAIN_PHASE.SHED
           ? trainAlong(trainRow(w, k), line, clock) / 100
           : null,

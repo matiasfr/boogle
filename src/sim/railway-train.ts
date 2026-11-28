@@ -12,6 +12,8 @@ import {
   RAIL_LINES,
   RAIL_TRAINS,
   lineDef,
+  lapJoined,
+  lineRows,
   trainPassesBy,
   trainPlaces,
   type LineRef,
@@ -78,6 +80,7 @@ export const trainStopsOf = (
   ring: RingOpen = RING_SHUT,
   legs: LegsLaid = NO_LEGS,
 ): readonly number[] => {
+  if (lineDef(line).joins && lapJoined(legs)) return [];
   const done = laid === true ? Q6_LAID : laid === false ? 0 : laid;
   const out: number[] = [];
   lineDef(line).halts.forEach((h, k) => {
@@ -93,6 +96,11 @@ export const trainStopsOf = (
 /** The trains line `line` runs with `legs` laid: its fleet's at its leg's sections laid, else `trains`. */
 export function fleetOf(line: LineRef, legs: LegsLaid = NO_LEGS, stops: readonly number[] = trainStopsOf(line, 0)) {
   const l = lineDef(line);
+  if (lapJoined(legs)) {
+    if (l.joins) return 0;
+    if (l === RAIL_LINES[LINE2])
+      return lineRows(l) + lineRows(RAIL_LINES.find((other) => other.joins?.line === LINE2)!);
+  }
   const f = l.fleet?.findLast((f) => (legs[f.leg] ?? 0) > 0) ?? l.fleet?.[0];
   if (!f) return l.trains;
   return Math.max(
@@ -169,6 +177,8 @@ export const LINE_HALTS = RAIL_HALTS.map(({ name, line, stop, platforms: [p] }) 
   ...p,
 })) as readonly LineHalt[] as readonly [LineHalt, LineHalt, LineHalt, LineHalt, LineHalt, LineHalt, LineHalt, LineHalt];
 export type RailTrain = {
+  /** Replicated rows carry their slot. Pure mover fixtures can use the ordinary facing. */
+  slot?: number;
   phase: number;
   /** The stop it stands at, or last left; -1 a signal (no halt). */
   at: number;

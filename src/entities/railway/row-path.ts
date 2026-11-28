@@ -191,6 +191,6 @@ export function rowLat(line: number, row: RowLatRow, s: number, stops: readonly 
     start = rowStartCrossing(line);
   if (start && s <= start.s1) return swingAt(start, s);
   const left = row.origin ? halts.findIndex((h, k) => k > 0 && h.end && h.s === row.origin) : -1,
-    end = halts[left >= 0 ? left : Math.max(0, stops.length - 1)]?.end;
+    end = halts[left >= 0 ? left : stops.length - 1]?.end;
   return end ? swingAt(rowEndSwing(end), s) : -ROW_TRACK;
 }

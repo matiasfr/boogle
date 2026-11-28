@@ -23,7 +23,16 @@ import {
   createRailwayWorld,
 } from '../../src/sim/railway-components.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
-import { LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, TRAIN_EXTENT, legBuilt } from '../../src/sim/railway-lines.ts';
+import {
+  LAP_S0,
+  WALL_LEG,
+  LINE2,
+  RAIL_HALTS,
+  RAIL_LINES,
+  RAIL_TRAINS,
+  TRAIN_EXTENT,
+  legBuilt,
+} from '../../src/sim/railway-lines.ts';
 import {
   LEG_TUNE,
   RAIL_ARRIVAL,
@@ -67,7 +76,7 @@ import {
   legsLaid,
   routeRow,
 } from '../../src/sim/railway-queries-route.ts';
-import { freightStop } from '../../src/sim/railway-queries-trade.ts';
+import { fareOf, routeFar, freightStop } from '../../src/sim/railway-queries-trade.ts';
 import { kitOwed, steelNeed } from '../../src/sim/railway-queries.ts';
 import { TRADE } from '../../src/sim/railway-trade-layout.ts';
 import { RAIL_PREDICTED, railPredict } from '../../src/world/railway-predict.ts';
@@ -79,7 +88,71 @@ import { checkRoute } from '../../src/sim/railway-check-route.ts';
 import { railLegKitHolders, railLegKitRelease } from '../../src/sim/railway-sys-route-kit.ts';
 import { ROUTE_GATES, fuzzTicks, routeTicks } from './fuzz.ts';
 import { ringRivetSequence } from './railway-rivet-sequence.ts';
-import { legStagesOn } from '../../src/sim/railway-seed-legs.ts';
+import { legStagesOn, laySection } from '../../src/sim/railway-seed-legs.ts';
+import { gorgeStop } from '../../src/sim/railway-lap.ts';
+
+/** Registered only by the lap shard. Play the real final lay, then ask for trains on both halves. */
+export function lapServiceShard() {
+  void nodeTest('lap service across the sixth lay and after the fleet settles', { timeout: 480000 }, (t) => {
+    const deep = buildSeedWorld('wall-deep');
+    const ids = RAIL_HALTS.flatMap((h, id) => (h.line === LINE2 ? [id] : []));
+    for (const seed of ROUTE_GATES ? [0xc0ffee, 0x777, 0x5eed, 0xbadd] : [0xc0ffee]) {
+      const rand = mulberry32(seed);
+      let s = unaudited(deep);
+      advance(s, Math.floor(rand() * 900));
+      const gate = RAIL_GATES.findIndex((g) => g.id === 'deep-span');
+      assert.equal(act(s, 'a', 'rail.gate', { id: gate }), 1);
+      laySection(s, WALL_LEG, (world, ticks) => {
+        advance(world, ticks);
+        const leg = legRow(world.w, WALL_LEG);
+        if (leg.start >= 0 && world.t === leg.start + LEG_TUNE.layTicks - 1) world.w = restore(world.w);
+      });
+      assert.equal(invariant(s.w), null);
+      s = unaudited(s);
+      assert.equal(routeFar(s.w, 0), gorgeStop);
+      assert.equal(fareOf(s.w, 0), 34);
+      for (const mode of ['joining', 'settled']) {
+        if (mode === 'settled') advance(s, cycleTicks(LINE2, stopsOf(s.w, LINE2), 1));
+        const health = new ServiceHealth([LINE2], s.w);
+        let accepted = 0;
+        const step = () => {
+          railTick(s.w, ++s.t, 75);
+          assert.equal(
+            trainSpacing(
+              (j) => train(s.w, j),
+              (l) => stopsOf(s.w, l),
+              s.t,
+            ),
+            null,
+          );
+        };
+        for (let i = 0; i < routeTicks(); i++) {
+          if (rand() < 0.05) {
+            const id = ids[Math.floor(rand() * ids.length)]!;
+            const dir = rand() < 0.5 ? -1 : 1;
+            const actor = s.w.get(Account, s.w.lookup(Account, 'a')!)!;
+            if (
+              apply(s.w, 'a', { op: 'rail.call', id, dir, epoch: actor.epoch, request: actor.request + 1 }, s.t)
+                .accepted
+            ) {
+              health.ask(s.w, id, dir, s.t);
+              accepted++;
+            }
+          }
+          step();
+          health.tick(s.w, s.t);
+        }
+        health.drain(s.w, s.t, step);
+        assert.ok(accepted > 0);
+        assert.equal(invariant(s.w), null);
+        t.diagnostic(
+          `${seed.toString(16)} ${mode}: ${accepted} accepted, worst served ${health.worst.get(LINE2)} ticks`,
+        );
+        assert.deepEqual(health.failures, []);
+      }
+    }
+  });
+}
 
 // The case counter partitions registration only. Bodies, options, loop bounds and fixture setup below are unchanged.
 export function routeRulesShard(shard: number) {
@@ -168,7 +241,7 @@ export function routeRulesShard(shard: number) {
     );
     assert.equal(ROW_LINE.ring, LINE2);
     const line2 = RAIL_LINES[LINE2]!;
-    assert.deepEqual(line2.halts.map((h) => h.name).slice(5), [
+    assert.deepEqual(line2.halts.map((h) => h.name).slice(5, GORGE + 1), [
       'Ring Island',
       'Stack head 1',
       'Stack head 2',
@@ -193,16 +266,16 @@ export function routeRulesShard(shard: number) {
     assert.ok(gorge.s - TRAIN_EXTENT.behindCm - crossEnd >= 30, 'the tail at least 0.3 m clear of the crossover');
     assert.equal(line2.halts[RING]!.s, legStartS(LEG), 'R2b service mark; physical construction origin stays fixed');
     for (let k = 1; k < line2.halts.length; k++) assert.ok(line2.halts[k]!.s > line2.halts[k - 1]!.s);
-    assert.equal(line2.path.length / 2 - 1, Math.floor(legS(LEG, 325140) / 1000), 'the path runs past the buffers');
+    assert.equal(line2.path.length / 2 - 1, Math.floor(LAP_S0 / 1000), 'the path runs past the buffers');
     // Only the prefix through the last built leg can run.
     for (const id of ['ns', 'bay', 'cave'] as const) {
       const l = RAIL_LINES[ROW_LINE[id]]!;
       assert.equal(l.id, id);
       assert.equal(l.trains, 0, `${id}: no train at first`);
       const open = trainStopsOf(ROW_LINE[id], 7, { head: 7, joined: true }, [N, 2, 2, 3, 3, 6, 1, 1]);
-      assert.equal(open.length, { ns: 4, bay: 7, cave: 10 }[id], `${id}: open through its last built leg`);
+      assert.equal(open.length, { ns: 4, bay: 7, cave: 0 }[id], `${id}: open through its last built leg`);
       assert.ok(
-        l.halts.slice(open.length).every((h) => h.shut),
+        l.joins?.line === LINE2 || l.halts.slice(open.length).every((h) => h.shut),
         `${id}: its later halts shut`,
       );
     }
@@ -278,7 +351,10 @@ export function routeRulesShard(shard: number) {
   test('each reachable early stage runs one train per extension, then six on the greybox', () => {
     for (const { stops, trains } of lineStagesOf(LINE2)) {
       if (stops.length < 2) continue;
-      assert.equal(trains, stops.length <= 3 ? 1 : stops.length === 4 ? 2 : stops.length <= 6 ? 3 : 6);
+      assert.equal(
+        trains,
+        stops.length <= 3 ? 1 : stops.length === 4 ? 2 : stops.length <= 6 ? 3 : stops.length <= gorgeStop + 1 ? 6 : 11,
+      );
     }
   });
 
@@ -741,7 +817,8 @@ export function routeRulesShard(shard: number) {
       advance(s, 1);
       const r = legRow(s.w, STACK),
         l = r.loadedLogs + r.loadedRails;
-      if (l !== loads || r.rackLogs + r.rackRails > rackBefore || r.laid !== laid || (r.start !== start && r.start < 0)) events++;
+      if (l !== loads || r.rackLogs + r.rackRails > rackBefore || r.laid !== laid || (r.start !== start && r.start < 0))
+        events++;
       loads = l;
       const now = snap();
       if (now !== prev) changed++;
@@ -1018,7 +1095,7 @@ export function routeRulesShard(shard: number) {
   test("block signals: line 2 holds at the stack line's section ends, between its halts, never at one", () => {
     const l = RAIL_LINES[LINE2]!;
     assert.deepEqual(
-      l.signals,
+      l.signals!.filter((s) => s < l.halts[GORGE]!.s),
       LEG.sections.slice(0, -1).map((sec) => legS(LEG, sec.toCm)),
     );
     for (const sig of l.signals!) assert.ok(!l.halts.some((h) => h.s === sig || h.heads?.includes(sig)), 'at no halt');
@@ -1870,7 +1947,10 @@ export function routeRulesShard(shard: number) {
         health.tick(s.w, s.t);
       }
       health.drain(s.w, s.t, step);
-      assert.ok([3, 4].every((k) => legRow(s.w, k).laid > 0), 'both lines laid track');
+      assert.ok(
+        [3, 4].every((k) => legRow(s.w, k).laid > 0),
+        'both lines laid track',
+      );
       assert.ok(accepted.every((n) => n > 0) && lines.every((l) => health.worst.has(l)));
       assert.deepEqual(health.failures, []);
       assert.equal(invariant(s.w), null);
@@ -1881,7 +1961,8 @@ export function routeRulesShard(shard: number) {
     test(`${legId} service health at 75% headway on growing and settled track`, { timeout: 480000 }, (t) => {
       const k = RAIL_LEGS.findIndex((l) => l.id === legId),
         line = RAIL_LEGS[k]!.line;
-      const count = RAIL_LEGS[k]!.sections.length;
+      // The final Wall lay transfers calls to the lap shard's through fleet.
+      const count = RAIL_LEGS[k]!.sections.length - Number(legId === 'wall');
       const unlock = (s: Seed) => {
         if (legId === 'notch-tunnel' && !(routeRow(s.w).gates & (1 << 4)))
           assert.equal(act(s, 'a', 'rail.gate', { id: 4 }), 1);
@@ -1933,7 +2014,7 @@ export function routeRulesShard(shard: number) {
                 accepted++;
               }
             }
-            if (stage === 0 && i % 10 === 0 && legOpen(s.w, k)) {
+            if (stage === 0 && i % 10 === 0 && legRow(s.w, k).laid < count && legOpen(s.w, k)) {
               unlock(s);
               stock(s, k);
             }

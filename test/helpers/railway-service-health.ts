@@ -10,7 +10,7 @@ import { balancedHold, cycleTicks, platformHoldPressure, servingSlots, trainGaps
 // plus one boarding dwell per open intermediate platform on the trip.
 const MISSED_HEADWAYS = 2;
 function servingBoilers(w: World, line: number) {
-  return servingSlots(slot => train(w, slot), line).map(slot => train(w, slot).boiler);
+  return servingSlots(slot => train(w, slot), line, stopsOf(w, line)).map(slot => train(w, slot).boiler);
 }
 
 export function serviceBudget(w: World, line: number, boilers = servingBoilers(w, line)) {
@@ -37,7 +37,7 @@ export class ServiceHealth {
   constructor(lines: readonly number[], w: World) {
     this.lines = lines;
     // Seed trains are already in service at the start of observation. Only observed joins need to mature.
-    for (const l of lines) for (const j of servingSlots(i => train(w, i), l))
+    for (const l of lines) for (const j of servingSlots(i => train(w, i), l, stopsOf(w, l)))
       this.joined.set(j, -Infinity);
   }
   ask(w: World, id: number, dir: number, tick: number, safetyOnly = false) {
@@ -50,7 +50,7 @@ export class ServiceHealth {
     // A newly joined train contributes only after half a cycle on the open line.
     // Before even the first train matures, use one cycle as the single-service budget.
     const stops = stopsOf(w, h.line);
-    const slots = servingSlots(j => train(w, j), h.line);
+    const slots = servingSlots(j => train(w, j), h.line, stopsOf(w, h.line));
     const mature = slots.filter(j => 2 * (tick - this.joined.get(j)!) >= cycleTicks(h.line, stops, train(w,j).boiler));
     const boilers = mature.map(j => train(w, j).boiler);
     if (!boilers.length) boilers.push(slots.map(j => train(w,j).boiler).reduce((a,b) =>
@@ -60,13 +60,13 @@ export class ServiceHealth {
   }
   private there(w: World, id: number, dir: number) {
     const h = RAIL_HALTS[id]!;
-    return servingSlots(j => train(w, j), h.line).some(slot => {
+    return servingSlots(j => train(w, j), h.line, stopsOf(w, h.line)).some(slot => {
       const r = train(w, slot);
       return r.phase === TRAIN_PHASE.STAND && r.at === h.stop && trainDir(r) === dir;
     });
   }
   tick(w: World, tick: number) {
-    for (const l of this.lines) for (const j of servingSlots(i => train(w, i), l))
+    for (const l of this.lines) for (const j of servingSlots(i => train(w, i), l, stopsOf(w, l)))
       if (!this.joined.has(j)) this.joined.set(j, tick);
     for (const [key, p] of this.pending) {
       const h = RAIL_HALTS[p.id]!, stops = stopsOf(w, h.line);
@@ -91,7 +91,7 @@ export class ServiceHealth {
         const rows = (slot: number) => train(w, slot);
         const req = line(w, h.line).req;
         const pick = trainServes(rows, h.line, stops, h.stop, p.dir, tick);
-        const poses = servingSlots(rows, h.line).map(j => {
+        const poses = servingSlots(rows, h.line, stops).map(j => {
           const r = train(w, j);
           const gap = trainGaps(rows, h.line, stops, j, tick);
           let state = 'running';

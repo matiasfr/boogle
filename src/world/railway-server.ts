@@ -78,7 +78,7 @@ import { railResume, railSupplyPulse } from '../sim/railway-sys-away.ts';
 import { railSession, railSettle, remember } from '../sim/railway-sys-core.ts';
 import { RAIL_ARRIVAL, RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, legFrame, legRack, railPos } from '../sim/railway-route.ts';
 import { legOpen, legRow } from '../sim/railway-queries-route.ts';
-import { railCallPlatform, railCallReady, trainStops } from '../sim/railway-queries-trains.ts';
+import { railCallPlatform, railCallReady, runningLine, trainStops } from '../sim/railway-queries-trains.ts';
 import type { World } from '../ecs/index.ts';
 import { GLOBAL_CELL, cellOf, type Fields } from './replicate.ts';
 import { touchChanges, worldProjections } from './replicate-world.ts';
@@ -168,7 +168,7 @@ function nearTrain(w: World, slot: number, tick: number, actor: Actor) {
   const id = w.lookup(Train, slot);
   if (id === undefined) return false;
   const row = w.get(Train, id)!,
-    line = RAIL_TRAINS[slot]!.line;
+    line = runningLine(w, slot);
   if (row.phase === TRAIN_PHASE.SHED) return false;
   const p = railLinePoint(line, trainAlong(row, line, tick));
   const travel = Math.ceil(trainSpeed(row, line, tick)) * RIDER_LAG_TICKS;
@@ -246,7 +246,7 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
       if (e.train !== undefined)
         return (
           railInt(e.train, RAIL_TRAINS.length - 1) &&
-          RAIL_TRAINS[e.train]!.line === h.line &&
+          runningLine(w, e.train) === h.line &&
           nearTrain(w, e.train, tick, actor) &&
           actor.cadence(e.op)
         );

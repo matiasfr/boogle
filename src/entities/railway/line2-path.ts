@@ -15,9 +15,10 @@ import {
   railY,
   type LinePoint,
 } from '../../place/layout.ts';
-import { LINE2, RAIL_LINES } from '../../sim/railway-lines.ts';
+import { LAP_S0, LINE2, RAIL_LINES } from '../../sim/railway-lines.ts';
 import { RING_S_HEAD, ringAt, ringDeckY } from '../../sim/railway-ring-layout.ts';
-import { ROW_SHIFT } from '../../sim/railway-route.ts';
+import { ROW_LINE, ROW_SHIFT } from '../../sim/railway-route.ts';
+import { ROW_TRACK, rowAt as caveAt, rowY, rowLat } from './row-path.ts';
 import { WORLD_LINES } from '../../sim/railway-world-lines.ts';
 
 const LINE = LINKS[1]!.line;
@@ -140,6 +141,38 @@ const stackLocal = (s: number, out: LinePoint) => {
   return out;
 };
 const stackY = (s: number) => stackPoint(s, here).y;
+const CAVE_END = WORLD_LINES.find((l) => l.id === 'cave')!.lengthCm / 100;
+const CAVE_START = LAP_S0 / 100 - CAVE_END;
+const lapStart = stackLocal(LINE2_END_S, { x: 0, z: 0, ux: 0, uz: 1 });
+/** The lap's reference is the outward rail, two metres from the cave formation centre. */
+export function lapAt(s: number, out: LinePoint) {
+  if (s <= LINE2_END_S) return line2At(s, out, true);
+  caveAt(ROW_LINE.cave, Math.min(CAVE_END, LAP_S0 / 100 - s), out);
+  out.x += out.uz * ROW_TRACK - ORIGIN.x;
+  out.z -= out.ux * ROW_TRACK + ORIGIN.z;
+  out.ux *= -1;
+  out.uz *= -1;
+  if (s < CAVE_START) {
+    const t = (s - LINE2_END_S) / (CAVE_START - LINE2_END_S);
+    out.x = lapStart.x + t * (out.x - lapStart.x);
+    out.z = lapStart.z + t * (out.z - lapStart.z);
+  }
+  return out;
+}
+export function lapY(s: number) {
+  if (s <= LINE2_END_S) return line2Y(s);
+  const y = rowY(ROW_LINE.cave, Math.min(CAVE_END, LAP_S0 / 100 - s));
+  if (s >= CAVE_START) return y;
+  const start = line2Y(LINE2_END_S);
+  return start + ((y - start) * (s - LINE2_END_S)) / (CAVE_START - LINE2_END_S);
+}
+/** A mirrored car layout keeps its axles and seat facing the original row. */
+export function lapCarAt(s: number, out: LinePoint) {
+  lapAt(LAP_S0 / 100 - s, out);
+  out.ux *= -1;
+  out.uz *= -1;
+  return out;
+}
 /** Local coordinates (the layout's, without ORIGIN) and heading of `s` metres along line 2, past the pier head too.
  * `smooth`: the layout's smooth heading (lineSmoothAt), for a train on the up track. */
 export function line2At(s: number, out: LinePoint, smooth = false) {
@@ -209,6 +242,10 @@ export const endMergeM = (stops: readonly number[]) => {
  * With no retained origin, read today's open end. Outbound trains always follow the original track.
  */
 export function line2Lat(row: LatRow, s: number, stops: readonly number[], merge = endMergeM(stops), smooth = false) {
+  if (stops.at(-1)! > LAP_S0 / 2 && s >= LINE2_END_S) {
+    const old = { track: 1 - row.track, origin: row.origin ? LAP_S0 - row.origin : 0 };
+    return -ROW_TRACK - rowLat(ROW_LINE.cave, old, LAP_S0 / 100 - s, []);
+  }
   if (!row.track) return 0;
   const retained = departureHalt(row);
   const halt = retained < 0 ? stops.length - 1 : retained;

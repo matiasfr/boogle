@@ -146,7 +146,9 @@ export type SeaCrossover = {
 export function seaCrossovers(): SeaCrossover[] {
   const cross = FORMATION.quarry.crossover!,
     span = cross[1] - cross[0];
-  const ends = RAIL_LINES[LINE2]!.halts.filter((h) => h.end && h.end.mergeCm / 100 > RING_S);
+  const ends = RAIL_LINES[LINE2]!.halts.filter(
+    (h) => h.end && (!h.leg || h.leg.slot === 0) && h.end.mergeCm / 100 > RING_S,
+  );
   let stack = 0;
   return ends.map((h) => {
     const m = h.end!.mergeCm / 100,

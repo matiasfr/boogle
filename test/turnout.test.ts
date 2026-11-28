@@ -29,7 +29,9 @@ test("line 2's ends past the pier head each have a crossover on the trains' path
   // track at its second, and eases across between them as the crossover's own centre does (line2-path.ts line2Lat).
   const halts = RAIL_LINES[LINE2]!.halts,
     sea = seaCrossovers();
-  const ends = halts.flatMap((h, k) => (h.end && h.end.mergeCm / 100 > RING_S ? [k] : []));
+  const ends = halts
+    .slice(0, halts.findIndex((h) => h.name === 'High Gorge') + 1)
+    .flatMap((h, k) => (h.end && h.end.mergeCm / 100 > RING_S ? [k] : []));
   assert.equal(sea.length, ends.length);
   ends.forEach((k, i) => {
     const c = sea[i]!,
@@ -42,7 +44,10 @@ test("line 2's ends past the pier head each have a crossover on the trains' path
   });
   // The railhead's is listed at its first head, as railhead-shape.ts places it from the deck's end.
   const j10 = sea.find((c) => c.id === 'J10')!;
-  assert.deepEqual([j10.s0, j10.s1], crossoverSpan(headU(0)).map((u) => u + RING_S));
+  assert.deepEqual(
+    [j10.s0, j10.s1],
+    crossoverSpan(headU(0)).map((u) => u + RING_S),
+  );
 });
 
 test('every line end the layout draws has a junction', () => {
