@@ -17,6 +17,7 @@ The one record of who is running what, and what the eight-job limit is counted f
 | Lane C Part 3: the next plot and building, planned and built in one job ([lane-c](../plans/lane-c.md)) | Towns are the hangout | codex/lane-c-part3 | the orchestrator thread, Codex Astra high | 2026-11-28 | building on his throw answers (28 November, [entry](../decisions-controls.md#d-2026-11-28-ball-and-disc-throw)): the Frisbee Boathouse on Offer 3 and the ball's live throw; the next free `WORLD_NS`; one independent review |
 | Lane A: the works plume seen from the dock and each halt, at the 13 sites past its 200 m cap | Know where the work is | codex/works-plume-reach | the orchestrator thread, Codex Astra medium | 2026-11-28 | running: stills first, then the least view fix |
 | Fix: a grey box stops the first-spawn fall on login (owner, 28 November: "There's also a first spawn bug where the gray box prevents the falling animation conpleting on login") | The measure | codex/first-spawn-fall | the orchestrator thread, Codex Astra high | 2026-11-28 | running: reproduce on a fresh login, then the least fix with a regression check; stops for any `src/sim`, `src/world` or `server/` change |
+| Brainstorm: the starting flow and the spawn, streamlined (owner, 28 November, on his playtest) | The starting flow | claude/brainstorm-start-flow | the orchestrator thread, Claude Fable high (his pick of model) | 2026-11-28 | running: docs only, `docs/brainstorms/start-flow.md` |
 
 ## Where the work stands
 
