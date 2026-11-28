@@ -23,7 +23,8 @@ import { cam, camConstraints, me } from '../../player/player.ts';
 import { precompile } from '../../render/precompile.ts';
 import { camera } from '../../render/scene.ts';
 import { createOwnedView, type OwnedView } from '../../render/owned-view.ts';
-import { instantiate } from '../../prefab/instantiate.ts';
+import { instantiate, liftOrWait } from '../../prefab/instantiate.ts';
+import { frameOccupied, standWhenClear } from '../railway/frame-occupied.ts';
 import { loadLevelArtifact } from '../../prefab/validate.ts';
 import { definitions } from '../../prefab/catalogue.ts';
 import houseShell from '../../../content/built/levels/room-house.json' with { type: 'json' };
@@ -56,6 +57,7 @@ const shellLevels = {
   gate: gateShell,
   plot3: plot3Shell,
   plot1: plot3Shell,
+  plot4: gateShell,
 };
 /** s: a bought plot's build, buy to last piece, on the shared clock. */
 const PLOT_BUILD_S = TRADE.buildTicks / 10;
@@ -63,6 +65,7 @@ const PLOT_BUILD_S = TRADE.buildTicks / 10;
 const PACE: Partial<Record<RoomId, number>> = {
   museum: 1.6,
   plot1: (PLOT_BUILD_S - 0.3) / 9.1,
+  plot4: (PLOT_BUILD_S - 0.3) / 9.1,
   plot3: (PLOT_BUILD_S - 0.3) / 9.1,
 };
 
@@ -222,7 +225,7 @@ export function createRooms(
       ),
     }));
     const phase = (name: string) =>
-      records.filter(({ placement }) => placement.id.startsWith(`room-${id === 'plot1' ? 'plot3' : id}-${name}-`));
+      records.filter(({ placement }) => placement.id.startsWith(`${shellLevels[id].place}-${name}-`));
     const construction = records.flatMap(({ instance }) => instance.construction);
     if (!construction.length) throw new Error('rooms: missing shell construction');
     const hulls = (name: string): Hull[] =>
@@ -247,9 +250,23 @@ export function createRooms(
       hulls: hulls('hulls'),
       poles: hulls('poles'),
     };
+    const walls = phase('hulls').map((r) => r.instance);
+    const poles = phase('poles').map((r) => r.instance);
+    const clearance = () => {
+      const hullShapes = walls.flatMap((r) => r.solids);
+      const poleShapes = poles.flatMap((r) => r.solids);
+      const buildingShapes = [...hullShapes, ...poleShapes];
+      return {
+        canStand: (withPoles: boolean) => standWhenClear(withPoles ? buildingShapes : hullShapes, () => {}),
+        canStrike: () =>
+          liftOrWait([{ shapes: poleShapes, on() {} }], me.body, { lift: false, occupied: frameOccupied }).kind !==
+          'wait',
+      };
+    };
     const site = addSite(`room-${id}`, plan, PACE[id] ?? 1, {
-      hulls: phase('hulls').map((r) => r.instance),
-      poles: phase('poles').map((r) => r.instance),
+      hulls: walls,
+      poles,
+      ...(id === 'plot4' ? clearance() : {}),
     });
     const cos = Math.cos(p.yaw),
       sin = Math.sin(p.yaw);
@@ -445,6 +462,9 @@ export function createRooms(
         r.up = false;
         snapSite(r.site, false);
         setStake(r, true);
+      } else if (want && r.site.state === 'none') {
+        // A player held the new shell off. Resume at the accepted build time once clear.
+        raise(r);
       } else if (want && r.site.state === 'building' && (env.since?.(r.id) ?? 0) >= PLOT_BUILD_S)
         // The shared clock says it's built: a beat that's fallen behind it (a slow frame, a hidden tab) finishes now.
         snapSite(r.site, true);

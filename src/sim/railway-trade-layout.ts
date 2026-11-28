@@ -31,7 +31,7 @@ export type TradeYard = {
  * one integer). */
 export type TradeRoute = { town: number; line: number; a: number; b: number | 'end' };
 /** A plot's staking thresholds: the town's delivered timber and stone. */
-export const PLOT_KIND = { plain: 0, seeds: 1, horns: 2, disc: 3 } as const;
+export const PLOT_KIND = { plain: 0, seeds: 1, horns: 2, disc: 3, golf: 4, dunk: 5 } as const;
 export type TradePlot = {
   wood: number;
   stone: number;
@@ -53,7 +53,7 @@ export const TRADE = {
   freightCap: 8,
   // R2b (the freight-stops ruling, call 5): a whole trainload.
   loadStop: 8,
-  // R2: cargo stakes plots (call 1). The Village's first three; plots 4 to 8 stay unstaked until priced.
+  // R2: cargo stakes priced plots. Later slots remain unstaked.
   plots: [
     [
       { wood: 8, stone: 0, base: 300, riders: 1, choices: [PLOT_KIND.seeds, PLOT_KIND.horns] },
@@ -66,6 +66,7 @@ export const TRADE = {
         spare: true,
         choices: [PLOT_KIND.seeds, PLOT_KIND.horns, PLOT_KIND.disc],
       },
+      { wood: 56, stone: 24, base: 800, riders: 1, choices: [PLOT_KIND.golf, PLOT_KIND.dunk] },
     ],
   ] as const satisfies readonly (readonly TradePlot[])[],
   stakedAtOnce: 2,

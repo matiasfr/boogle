@@ -125,7 +125,7 @@ test('buy host: malformed ids and a player with no railway session cannot spend'
     balance.landed += 5000;
     const before = { ...till(f.w) };
     assert.equal(f.send({ id: 2 }).result?.status, 'rejected', 'even a funded board cannot sell an unstaked plot');
-    for (const id of [undefined, null, '0', {}, [], -1, 0.5, 3, 16, 999999])
+    for (const id of [undefined, null, '0', {}, [], -1, 0.5, 4, 16, 999999])
       assert.equal(f.send({ id, kind: 1 }).result?.status, 'rejected', String(id));
     f.connect('no-session');
     assert.equal(f.send({ id: 0, kind: 1 }, 'no-session').result?.status, 'snapshot-required');
@@ -138,7 +138,7 @@ test('buy host: malformed ids and a player with no railway session cannot spend'
     assert.equal(plot(f.w, 0).at, -1);
     assert.equal(RAIL_PREDICTED.has('rail.buy'), false);
     assert.deepEqual(intentOf({ op: 'rail.buy', id: 0 }), { op: 'rail.buy', id: 0 });
-    assert.equal(intentOf({ op: 'rail.buy', id: 3 }), null);
+    assert.equal(intentOf({ op: 'rail.buy', id: 4 }), null);
     const queued: Obj[] = [];
     const acts = railwayActs(
       (intent) => {
@@ -148,8 +148,12 @@ test('buy host: malformed ids and a player with no railway session cannot spend'
       () => f.w,
     );
     assert.equal(acts.buy(0), true);
-    assert.equal(acts.buy(3), false);
-    assert.deepEqual(queued, [{ op: 'rail.buy', id: 0 }]);
+    assert.equal(acts.buy(3, 5), true);
+    assert.equal(acts.buy(4), false);
+    assert.deepEqual(queued, [
+      { op: 'rail.buy', id: 0 },
+      { op: 'rail.buy', id: 3, kind: 5 },
+    ]);
   } finally {
     await f.close();
   }

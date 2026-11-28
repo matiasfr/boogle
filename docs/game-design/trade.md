@@ -138,3 +138,7 @@ the next plot's pile appearing. The motion sheet establishes the visible state c
 
 [K3 checkpoint](../reports/town-k3-checkpoint.md): rooftop gaps, drawn-roof offsets, provisional performance and
 the remaining away-host sack proof. Not tested on a device.
+
+### Home's fourth choice
+
+At 56 delivered timber and 24 stone, slot 3 can join the two lowest eligible unbought offers. The two placeholder board titles are Caddy Shed and Dunk Bakery. Either costs base 800 under the existing price formula and adds one rider per minute once built. The choice works with either earlier hangout, including a room that bought the Loader Yard first. Playing with the ball earns no fare and gates no rail work.

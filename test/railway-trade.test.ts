@@ -52,7 +52,7 @@ import { LINE2_STATIONS, Q7 } from '../src/sim/railway-line2-layout.ts';
 import { RAILWAY_MAX_INT } from '../src/sim/railway.ts';
 import { railResume } from '../src/sim/railway-sys-away.ts';
 import { RAIL_AWAY, railAwayCredit } from '../src/sim/railway-away.ts';
-import { TOWN_PLOTS } from '../src/place/town-plan.ts';
+import { TOWN_PLOTS, townPlotBoard } from '../src/place/town-plan.ts';
 import { TRADE, TRADE_PCT } from '../src/sim/railway-trade-layout.ts';
 import { LINE2, RAIL_HALTS, RAIL_TRAINS } from '../src/sim/railway-lines.ts';
 import { TRAIN_PHASE, trainAlong } from '../src/sim/railway-train.ts';
@@ -448,6 +448,14 @@ test('plotsStaked: the lowest unbought plots whose timber and stone are in, two 
     'yard first waits for the first hangout pick',
   );
   assert.deepEqual(plotsStakedOf(1, 99, 99), [], 'no other town has priced plots');
+  const yardFirst = (k: number) => k === 1;
+  assert.deepEqual(plotsStakedOf(0, 55, 24, yardFirst), [0]);
+  assert.deepEqual(plotsStakedOf(0, 56, 23, yardFirst), [0]);
+  assert.deepEqual(plotsStakedOf(0, 56, 24, yardFirst), [0, 3]);
+  assert.deepEqual(
+    plotsStakedOf(0, 56, 24, (k) => k < 2),
+    [2, 3],
+  );
   // On the world: freight-running has the first timber home, so plot 1 is staked.
   assert.deepEqual(plotsStaked(FREIGHT.w, 0), [0]);
   assert.deepEqual(plotsStaked(ON.w, 0), []);
@@ -1195,6 +1203,46 @@ test('only valid choices spend the first house price', () => {
   credit(w, 400);
   assert.equal(sendBuy(w, READY.t, 1, 'a', 50, 1).status, 'rejected');
   assert.equal(sendBuy(w, READY.t, 1).status, 'accepted');
+});
+
+test('Offer 4 after a yard-first buy spends once and restores either activity', () => {
+  for (const kind of [4, 5]) {
+    const w = copy(PIER.w);
+    for (const [goods, slot, goal] of [
+      ['wood', 0, 56],
+      ['stone', 1, 24],
+    ] as const) {
+      const delivered = Math.max(0, goal - town(w, 0)[goods]);
+      w.mut(Town, w.lookup(Town, 0)!)![goods] += delivered;
+      w.mut(Yard, yardId(w, slot))!.made += delivered;
+    }
+    credit(w, 2000);
+    assert.equal(sendBuy(w, PIER.t, 1).status, 'accepted');
+    const board = townPlotBoard(3);
+    const buyer = account(w, 'a')!;
+    const request = { op: 'rail.buy', id: 3, kind, epoch: buyer.epoch, request: buyer.request + 1 };
+    const actor: Actor = {
+      reach: (x, z, r) => x === Math.round((1000 + board.x) * 100) && z === Math.round(board.z * 100) && r === 320,
+      height: () => true,
+      cadence: () => true,
+    };
+    assert.equal(railValid(w, request, actor), true);
+    assert.equal(railValid(w, request, { ...actor, reach: () => false }), false);
+    assert.equal(boxCap(w, TRADE_PCT, PIER.t), Math.max(20 * tillRate(w, TRADE_PCT, PIER.t), 1200));
+    const before = tillRow(w).boogles;
+    for (const invalid of [undefined, 0, 1, 2, 3, 6])
+      assert.equal(sendBuy(w, PIER.t, 3, 'a', 50, invalid).status, 'rejected');
+    assert.equal(sendBuy(w, PIER.t, 3, 'a', 50, kind).status, 'accepted');
+    assert.equal(sendBuy(w, PIER.t, 3, 'b', 50, 9 - kind).status, 'rejected');
+    assert.deepEqual(plot(w, 3), { slot: 3, at: PIER.t, paid: 800, kind });
+    assert.equal(tillRow(w).boogles, before - 800);
+    const restored = createRailwayWorld();
+    restored.load(JSON.parse(JSON.stringify(w.snapshot())), (v) => railwayCheck(v, PIER.t));
+    assert.deepEqual(plot(restored, 3), plot(w, 3));
+    assert.equal(housesOf(restored, 0, PIER.t + TRADE.buildTicks), 1);
+    restored.mut(Plot, restored.lookup(Plot, 3)!)!.kind = 3;
+    assert.throws(() => railwayCheck(restored, PIER.t), /plot kind/);
+  }
 });
 
 test('B1: buying the second plot first doubles the first immediately; only staked unbought offers set the cap', () => {

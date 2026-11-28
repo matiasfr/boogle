@@ -3,7 +3,7 @@ import { definePrefab, type PrefabDef } from '../../prefab/types.ts';
 import { ROOMS } from '../../place/layout.ts';
 type Look = { wall: string; post: string; roof: string; rise: number; smoke: boolean; wallPalette?: string };
 const house: Look = { wall: '#e8dcc0', post: '#7f5630', roof: '#c9a86a', rise: 2.5, smoke: true, wallPalette: 'walls' };
-const looks: Record<Exclude<keyof typeof ROOMS, 'plot1'>, Look> = {
+const looks: Record<Exclude<keyof typeof ROOMS, 'plot1' | 'plot4'>, Look> = {
   house,
   shop: { wall: '#f0c98a', post: '#8a4a2c', roof: '#c4453a', rise: 2.6, smoke: false },
   museum: { wall: '#c8c3b4', post: '#b2ad9f', roof: '#4d5560', rise: 2.8, smoke: false, wallPalette: 'stone' },
