@@ -14,7 +14,7 @@ Use the existing home-kit legs and stock-first exclusions. Keep each material's 
 
 **Authority and wire.** Use the existing authenticated, reach-checked, predicted `rail.haltPut { yard, kind }` and its accepted quantity. The server owns deposits, train ticks, fills and checkpoints. Keep the forge's scheduled production separate from a saved cumulative conversion count on Rail. Save and replicate `Train.giftRails` as the subset of aboard rails reserved for direct delivery. Existing bins store the queue. Derive views from accepted rows, suppressing historical effects on initial snapshots. A refused or corrected prediction cannot cast a rail. No new controls or command.
 
-**World and deploy.** The build rebased onto v86 and takes v87 in src/world/namespace.ts. The saved bill identifier keeps a late train from pouring into the next frame. Existing live admission checks require matching world and build. The eventual ship runs the empty-production-room bump gate. The plan itself takes no version.
+**World and deploy.** The review fix rebased onto Lane C Part 6's v87 and takes v88 in src/world/namespace.ts. The saved bill identifier keeps returning cargo out of both the next frame's pour and its reservation. Existing live admission checks require matching world and build. The eventual ship runs the empty-production-room bump gate.
 
 ## Steps
 
