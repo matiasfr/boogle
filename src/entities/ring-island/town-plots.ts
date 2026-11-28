@@ -1,4 +1,5 @@
 import * as THREE from 'three/webgpu';
+import { localTownPulls } from '../town/signal-state.ts';
 import type { FrameCtx } from '../../loop.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { bell } from '../../render/machine-sfx.ts';
@@ -129,6 +130,7 @@ export function createRingPlot(owner: OwnedView, ground: IslandGround) {
       if (active !== PLOT_KIND.bell || !near(rope, 3.2) || now - lastPull < 1500) return;
       lastPull = now;
       ring();
+      for (const hear of localTownPulls) hear(16);
       net.room?.send({ t: 'bell', id: 16 });
     },
   };

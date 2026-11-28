@@ -93,6 +93,15 @@ registerBuilder('town.choice-board', (params) => {
     piece(root, new THREE.SphereGeometry(0.08, 10, 8), 0x724c2b, 0, 2.55, 0);
   } else if (params.kind === 9) {
     piece(root, new THREE.TorusGeometry(0.29, 0.07, 8, 20), 0xd6aa52, 0, 2.8, 0);
+  } else if (params.kind === 10) {
+    for (let i = -2; i <= 2; i++) {
+      piece(root, new THREE.BoxGeometry(0.05, 0.66, 0.06), 0xe8b774, i * 0.16, 2.85, 0);
+      piece(root, new THREE.BoxGeometry(0.72, 0.05, 0.06), 0x369f91, 0, 2.85 + i * 0.15, 0);
+    }
+  } else if (params.kind === 11) {
+    piece(root, new THREE.BoxGeometry(0.8, 0.08, 0.12), 0x805535, 0, 3.12, 0);
+    for (let i = -1; i <= 1; i++)
+      piece(root, new THREE.CylinderGeometry(0.065, 0.065, 0.42 + i * 0.1, 8), 0xe1bb65, i * 0.23, 2.85 - i * 0.05, 0);
   } else brassHorn(root, 2.79, 0);
   return root;
 });

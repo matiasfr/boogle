@@ -99,7 +99,13 @@ export function checkTrade(w: World, tick = RAILWAY_MAX_INT) {
       if (p.at < 0 ? p.kind !== 0 : !validPlotKind(threshold, p.kind, first.kind)) bad('plot kind');
       if ('after' in threshold && p.at >= 0) {
         const joined = aperture(w).joined;
-        if (joined < 0 || p.at < joined || (threshold.after === 'gorge' && !legDone(w, 0))) bad('plot before arrival');
+        if (
+          joined < 0 ||
+          p.at < joined ||
+          (threshold.after === 'gorge' && !legDone(w, 0)) ||
+          (threshold.after === 'canopy' && !legDone(w, 3))
+        )
+          bad('plot before arrival');
       }
       if (p.at >= 0 && (ts[town]!.wood < threshold.wood || ts[town]!.stone < threshold.stone)) bad('plot thresholds');
       paid += p.paid;

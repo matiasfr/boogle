@@ -440,6 +440,15 @@ export const gorgeAt = (a: number, c: number, y = 0) => ({
   y,
   z: -1988 + 0.5162 * a + 0.8565 * c,
 });
+// Canopy halt frame from leg3.ts. Local x runs across the porch and local z points toward the ramp.
+export const CANOPY_HANGOUT = { x: -1027.4595, z: -329.7772, floor: 12, nx: -0.746855, nz: 0.664987 };
+export function canopyHangoutAt(u: number, l: number, y: number) {
+  const s = CANOPY_HANGOUT;
+  return { x: s.x + u * s.nz + l * s.nx, y: s.floor + y, z: s.z - u * s.nx + l * s.nz };
+}
+export const CANOPY_BOARD = canopyHangoutAt(0, 4, 0);
+export const CANOPY_CHIME = canopyHangoutAt(0, 0, 1);
+
 export const GORGE_HANGOUT = { a: -11.5, c: -19.5, floor: 3.9 };
 export const GORGE_BOARD = gorgeAt(GORGE_HANGOUT.a + 4, GORGE_HANGOUT.c, GORGE_HANGOUT.floor);
 export const GORGE_HORN = gorgeAt(GORGE_HANGOUT.a, GORGE_HANGOUT.c, GORGE_HANGOUT.floor + 1);

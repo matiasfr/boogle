@@ -11,7 +11,7 @@ import { WORLD_NS, worldRoomId } from '../../src/world/namespace.ts';
 import { plot, till } from '../../src/sim/railway-rows.ts';
 import { townPlotBoard } from '../../src/place/town-plan.ts';
 import { RING_HANGOUT, ringAt } from '../../src/sim/railway-ring-layout.ts';
-import { GORGE_HORN } from '../../src/sim/railway-route.ts';
+import { CANOPY_CHIME, GORGE_HORN } from '../../src/sim/railway-route.ts';
 import { RAILWAY_PLAY_NS, railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { COSMETIC_BOUND } from '../../src/sim/social.ts';
 import type { RailwayWorldHost } from '../src/host/world-host.ts';
@@ -605,6 +605,7 @@ test('relay: messages reach the others with from; oversize and host-only types d
 for (const [event, slot] of [
   ['bell', 16],
   ['echo', 32],
+  ['chime', 48],
 ] as const)
   test(`${event} relays one nearby visible pull to the other client after construction`, async (t) => {
     const { svc, base } = await start({ SERVER_ROOMS: '*' });
@@ -616,9 +617,11 @@ for (const [event, slot] of [
       const world = svc.roomHost()!.room(room)!.world as RailwayWorldHost;
       const rope = ringAt(RING_HANGOUT.u, RING_HANGOUT.lat);
       const p =
-        slot === 32
-          ? [GORGE_HORN.x, GORGE_HORN.y, GORGE_HORN.z]
-          : [rope.x / 100, RING_HANGOUT.floor / 100 + 1, rope.z / 100];
+        slot === 48
+          ? [CANOPY_CHIME.x, CANOPY_CHIME.y, CANOPY_CHIME.z]
+          : slot === 32
+            ? [GORGE_HORN.x, GORGE_HORN.y, GORGE_HORN.z]
+            : [rope.x / 100, RING_HANGOUT.floor / 100 + 1, rope.z / 100];
       let seq = 0;
       const pose = (v: number, at: number[]) => a.send({ t: 'p', s: ++seq, d: { v, p: at } });
       const pull = (id: number = slot) => a.send({ t: 'm', d: { t: event, id } });

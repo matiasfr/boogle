@@ -150,3 +150,7 @@ Joining the Ring crossing stakes slot 16 with zero freight. Either the Lookout T
 ### High Gorge's first choice
 
 Finishing the Stack line stakes slot 32 beside the High Gorge gangway. The two placeholder boards offer Echo Horn House and Canyon Hook-Perch for 150 Boogles at the default tune. A one-second hold spends the shared price once. The house sends three echoes across the split. A friend sounding the horn within three seconds adds a chord. The perch has a four-metre launch deck, three hook rings and a cowbell raft beside the slipway. Either completed building adds one rider per minute to the same far queue as Ring Island.
+
+### Canopy Town's first choice
+
+Completing the Bell Rock–Canopy leg stakes slot 48 on the meadow off the homeward ramp. The room can hold either board for one second to spend 150 Boogles at default prices. The placeholder choices are Canopy Bounce Net, with a porch launch and three cloth hoops over a flat landing, and Treetop Wind Chime, with a four-note cascade and a chord when a friend honks within three seconds. Completion adds one rider per minute to line 2’s far queue at High Gorge. Each other built signal hangout answers a pull after 0.8 seconds and can answer once every four seconds.

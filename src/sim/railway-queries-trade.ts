@@ -46,11 +46,12 @@ export function plotsStakedOf(
   bought: (k: number) => boolean = () => false,
   joined = false,
   gorge = false,
+  canopy = false,
 ): number[] {
   const out: number[] = [];
   for (const [k, p] of (TRADE.plots[town] ?? []).entries()) {
     if (out.length >= TRADE.stakedAtOnce) break;
-    if ('after' in p && !(p.after === 'ring' ? joined : gorge)) continue;
+    if ('after' in p && !(p.after === 'ring' ? joined : p.after === 'gorge' ? gorge : canopy)) continue;
     if ('spare' in p && !bought(0)) continue;
     if (!bought(k) && wood >= p.wood && stone >= p.stone) out.push(k);
   }
@@ -62,7 +63,15 @@ export function plotsStaked(w: World, town: number): number[] {
   const id = w.lookup(Town, town),
     t = id === undefined ? undefined : w.get(Town, id);
   return t
-    ? plotsStakedOf(town, t.wood, t.stone, (k) => plotBought(w, plotSlot(town, k)), ringJoined(w), legDone(w, 0))
+    ? plotsStakedOf(
+        town,
+        t.wood,
+        t.stone,
+        (k) => plotBought(w, plotSlot(town, k)),
+        ringJoined(w),
+        legDone(w, 0),
+        legDone(w, 3),
+      )
     : [];
 }
 /** R2b, the full-load stop (the freight-stops ruling, calls 3 to 5): halt `k` going `dir` is a service stop for train
