@@ -40,6 +40,7 @@ import {
   clearDeck,
   clearRail,
   slideWorld,
+  startRail,
 } from './stage.ts';
 
 const CRUISE = 5, // m/s the cart is already doing behind the card
@@ -163,6 +164,8 @@ const standAt = new THREE.Vector3();
 let playerMask = -1;
 
 onEntered(() => {
+  startRail(travelled);
+  CAR_LAND.copy(TARGET).addScaledVector(RIGHT, 3.2).addScaledVector(FWD, 5.5);
   state = 'roll';
   cruiseTravel = travelled;
   rollPlace(0); // the render frame may arrive before the first fixed step after the press
@@ -470,7 +473,7 @@ const director = spawn({
             alpha: 0.5,
             color: STREAK,
           });
-      // The dock's rail bed stands above the soil. After the title, the player's footing marks touchdown.
+      // A raised surface can stand above the soil. After the title, footing marks touchdown.
       if (titleHit && (me.coyote > 0 || me.swimming)) land(now);
     } else if (state === 'down') {
       if (now - downSince > GET_UP_MS && pressing()) me.downUntil = now;

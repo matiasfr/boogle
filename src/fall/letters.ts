@@ -12,10 +12,10 @@ import { createBody, setMask, type Body, type Shape } from '../physics/engine.ts
 import { GROUP } from '../physics/physics.ts';
 import { emit } from '../render/particles.ts';
 import { addPart, mergeParts } from '../render/props.ts';
-import { FWD, RIGHT, TARGET, UP } from './stage.ts';
+import { FWD, RIGHT, TARGET, UP, onRailMove } from './stage.ts';
 
 /** How high it hangs: over 2 s of reading it clear of the cloud, and as long again falling with the letters. */
-export const TITLE_Y = TARGET.y + 55;
+export let TITLE_Y = TARGET.y + 55;
 
 const H = 3.8, // m tall
   W = 2.7, // m wide
@@ -135,6 +135,15 @@ const sign = new THREE.Group();
   letters.push({ mesh, shapes, rel: new THREE.Vector3(), ring, spin });
 });
 const signProp = spawn({ kind: 'fall-sign', mesh: sign });
+
+onRailMove((previous, rotation) => {
+  TITLE_Y = TARGET.y + 55;
+  for (const letter of letters) {
+    letter.mesh.position.sub(previous).applyQuaternion(rotation).add(TARGET);
+    letter.mesh.quaternion.premultiply(rotation);
+    letter.ring.applyQuaternion(rotation);
+  }
+});
 
 const DUST = new THREE.Color('#e8d6a6');
 const WOOD = new THREE.Color('#a97a48');

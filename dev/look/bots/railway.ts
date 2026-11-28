@@ -1369,10 +1369,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       mark(RAIL_STOPS['audio-loop']);
     }
     mark('T1 opening started');
-    for (let i = 0; i < PATH_SAMPLES[0]!.length; i += 3) {
-      const point = PATH_SAMPLES[0]![i]!;
-      await walk(point[0] + layout.ORIGIN.x, point[1]);
-    }
+
     const machine = read().machine;
     await walk(machine.x, machine.z, 3);
     if (coop && !second)

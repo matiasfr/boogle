@@ -151,6 +151,8 @@ export const HALL = (() => {
   };
 })();
 
+export const HALL_BOARD = axisPoint(HALL.a + HALL.d / 2 - 1, HALL.c - HALL.w / 2 + 2);
+
 // ---------------------------------------------------------------- the engine spur, the table and the stalls
 /** The ticket till in the north end wall's back bay, clear of the goods door (town-economy-visible A3). */
 export const TILL = { ...axisPoint(-11.4, ISLAND_C - 5.95), yaw: HALL.yaw };

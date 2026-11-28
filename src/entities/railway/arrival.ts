@@ -19,6 +19,7 @@ import {
 } from '../../place/return-spot.ts';
 import { routeAreasPending } from '../route-greybox/state.ts';
 import type { ReturnHalts } from './return-halts.ts';
+import { worksLanding } from '../../fall/works-pad.ts';
 import { boardToward } from './works-board-state.ts';
 import { returnKey, returnSettle, storedReturn, writeReturn } from '../../place/return-settle.ts';
 import { localStore } from '../../place/return-tuning.ts';
@@ -43,7 +44,7 @@ export async function createRailwayArrival(
 ) {
   const [
     { H: placeH, insidePlace: inPlace, PATH_SAMPLES },
-    { SPAWN, LANDING, toWorld, ORIGIN, VILLAGE },
+    { SPAWN, toWorld, ORIGIN, VILLAGE },
     { registerPlaceShore },
     ,
     ,
@@ -230,9 +231,10 @@ export async function createRailwayArrival(
   const atSpawn = () => {
     const body = me.body;
     if (!body) return;
-    teleport(body, toWorld(LANDING.x), H(toWorld(LANDING.x), LANDING.z) + PLAYER_R + 0.4, LANDING.z);
+    const pad = worksLanding();
+    teleport(body, pad.x, H(pad.x, pad.z) + PLAYER_R + 0.4, pad.z);
     body.velocity.set(0, 0, 0);
-    cam.yaw = me.yaw = LANDING.yaw;
+    cam.yaw = me.yaw = pad.yaw;
     cam.pitch = -0.14;
   };
   // Preserve Place's nearby-ground search and nearest existing path fallback, with only this view's laid deck.

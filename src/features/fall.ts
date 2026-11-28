@@ -18,12 +18,11 @@ const jumpRoom = JUMP_ROOM_RE.test(pageQuery().get('room') ?? '');
 if (intro !== '0' && fallsIn() && productionRailway && !jumpRoom && (!navigator.webdriver || intro === '1')) {
   fallArrival.active = true; // before the place's asynchronous loader can position the player
   const loaded = (async () => {
-    const [{ LANDING, toWorld }, { H }] = await Promise.all([
-      import('../place/layout.ts'),
+    const [{ worksLanding }, { H }] = await Promise.all([
+      import('../fall/works-pad.ts'),
       import('../place/terrain.ts'),
     ]);
-    fallArrival.target = { x: toWorld(LANDING.x), z: LANDING.z };
-    fallArrival.yaw = LANDING.yaw;
+    fallArrival.landing = worksLanding;
     fallArrival.ground = H;
     return import('../fall/index.ts');
   })();

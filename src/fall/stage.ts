@@ -12,14 +12,15 @@ import { addPart, mergeParts } from '../render/props.ts';
 export const HEIGHT = 150;
 
 // The whole shot lines up with the camera's starting direction: the line runs forward, the title reads left to right.
-export const YAW = fallArrival.yaw ?? cam.yaw;
+const previewPad = fallArrival.landing?.();
+export let YAW = previewPad?.yaw ?? cam.yaw;
 export const FWD = new THREE.Vector3(-Math.sin(YAW), 0, -Math.cos(YAW));
 export const RIGHT = new THREE.Vector3(Math.cos(YAW), 0, -Math.sin(YAW));
 export const UP = new THREE.Vector3(0, 1, 0);
 
 /** The spot under the title, on the ground: where you land. */
-export const TARGET = fallArrival.target
-  ? new THREE.Vector3(fallArrival.target.x, 0, fallArrival.target.z)
+export const TARGET = previewPad
+  ? new THREE.Vector3(previewPad.x, 0, previewPad.z)
   : new THREE.Vector3(SPAWN.x, 0, SPAWN.z).addScaledVector(FWD, -3);
 TARGET.y = fallArrival.ground(TARGET.x, TARGET.z);
 
@@ -29,7 +30,7 @@ const RAIL_END = TARGET.clone()
   .setY(TARGET.y + HEIGHT);
 export const ROLL_DIST = 8.5; // m the cart rolls before the rail runs out
 export const CAR_START = RAIL_END.clone().addScaledVector(FWD, -ROLL_DIST);
-export const DECK_Y = TARGET.y + HEIGHT - 32;
+export let DECK_Y = TARGET.y + HEIGHT - 32;
 export const STAND = { back: 0, up: 0.69 }; // where you stand on the cart's deck, from its middle at rail height
 
 const RAIL_BACK = 130; // m of rail behind the end: it fades into the fog
@@ -145,6 +146,36 @@ const deckProp = spawn({
     deck.mesh.dispose();
   },
 });
+type RailMove = (previous: THREE.Vector3, rotation: THREE.Quaternion) => void;
+let moveTitle: RailMove | undefined;
+export function onRailMove(move: RailMove) {
+  moveTitle = move;
+}
+
+/** Freeze the destination on Jump in, after the guest has had time to receive the room. */
+export function startRail(travelled: number) {
+  const pad = fallArrival.landing?.();
+  if (!pad || (pad.x === TARGET.x && pad.z === TARGET.z)) return;
+  const previous = TARGET.clone();
+  const rotation = new THREE.Quaternion().setFromAxisAngle(UP, pad.yaw - YAW);
+  YAW = pad.yaw;
+  TARGET.set(pad.x, fallArrival.ground(pad.x, pad.z), pad.z);
+  FWD.applyQuaternion(rotation);
+  RIGHT.applyQuaternion(rotation);
+  RAIL_END.copy(TARGET).addScaledVector(FWD, -LANDS_PAST).setY(TARGET.y + HEIGHT);
+  CAR_START.copy(RAIL_END).addScaledVector(FWD, -ROLL_DIST);
+  rail.position.copy(RAIL_END);
+  rail.rotation.y = car.group.rotation.y = YAW;
+  car.group.position.copy(CAR_START);
+  DECK_Y += TARGET.y - previous.y;
+  deck.puffs.forEach((puff, k) => {
+    puff.y += TARGET.y - previous.y;
+    placePuff(deck.mesh, k, puff);
+  });
+  slideWorld(travelled);
+  moveTitle?.(previous, rotation);
+}
+
 /** You've come out of the cloud: it would only hang over the island from here on. */
 export const clearDeck = () => despawn(deckProp);
 /** You've landed: nobody's going back up. */
