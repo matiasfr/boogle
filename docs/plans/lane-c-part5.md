@@ -59,6 +59,8 @@ Boards, models, telescope and rope motion are local views. A deliberate pull whi
 
 **Disposition.** Built west of STACK_KEEP. The default price is 150. Both accepted picks use slot 16 and add one rider per minute to the far queue after completion. The offer reuses the existing buy operation, prompt registration and build mark.
 
+**World version.** Lane B landed its High Gorge yard gifts as v84. Ring's town and plot take v85. The combined look-seed dispatcher serves both the incline gift and the two finished Ring buildings.
+
 **Replay comparison.** The additional Town and Plot rows change every world hash. All 85 seed stages retain their tick, all 541 operation steps retain their label and result, and the host trace retains 8,620 records.
 
 **Walkthrough.** From the outer ramp end the controller walked up the foundation ramp, into the room, back onto the porch and up the four stair flights. It reached the deck at body height 15.45 m, opened the telescope with Interact, stepped back and deployed the glider off the deck. These browser runs checked reachability. They did not measure travel time.
