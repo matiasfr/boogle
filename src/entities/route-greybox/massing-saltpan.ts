@@ -18,7 +18,13 @@ export function coastalArea(
     baseExtras: (owner: OwnedView) => leg2Extras(owner, value),
   };
 }
+const saltpan = coastalArea('saltpan', level);
+const deck = saltpan.build().filter((p) => p.id.startsWith('saltpan.platform-'));
+const surfaces = saltpan
+  .build()
+  .map((p) => (deck.includes(p) ? { ...p, params: { ...p.params, colour: '#796655' } } : p));
 export const saltpanArea = {
-  ...coastalArea('saltpan', level),
-  extras: async (owner: OwnedView) => (await import('./cave-shore.ts')).saltShore(owner),
+  ...saltpan,
+  build: () => surfaces,
+  extras: async (owner: OwnedView) => (await import('./cave-shore.ts')).saltShore(owner, deck),
 };

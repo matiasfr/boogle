@@ -183,6 +183,12 @@ From the south approach, the long pale slabs on either side of the track bed fil
 
 Bell’s dressing hook in `src/entities/route-greybox/massing-incline.ts` fits the boards to the two existing platform placements. Both 1200 × 750 desktop stills look from (−45, 6.5, −874) toward (−55, 5.7, −846). [Before](greybox-look/card12-platforms-before.png) · [After](greybox-look/card12-platforms-after.png)
 
+### Card 13, Saltpan’s boarding edges
+
+From coach height the two pale ramps filled the foreground, and the bend in the boarding platforms disappeared against the grey track bed. Weathered timber pigment now runs up both ramps and along the decks. Short salt-coloured coping stones trace each inside edge around the bend.
+
+`src/entities/route-greybox/massing-saltpan.ts` colours the existing surfaces. `src/entities/route-greybox/cave-shore.ts` fits the stones to each surface’s length and pitch. The 1200 × 750 desktop pair looks from (556.7, 5.93, 670.42) toward (545.76, 4.93, 703.67). [Before](greybox-look/card13-saltpan-before.png) · [After](greybox-look/card13-saltpan-after.png)
+
 ## Design review (2026-11-27)
 
 | Call | Kind | Basis |
