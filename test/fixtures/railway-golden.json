@@ -1,5 +1,5 @@
 {
- "worldNs": "v77",
+ "worldNs": "v81",
  "ticks": 1200,
  "stages": {
   "awake": {
@@ -7,15 +7,10 @@
    "stage": 2006237437,
    "after": 2006237437
   },
-  "t1-pack-first": {
+  "t1-laid": {
    "tick": 340,
-   "stage": 1042723467,
-   "after": 1042723467
-  },
-  "t1-jump-first": {
-   "tick": 340,
-   "stage": 2007834045,
-   "after": 2007834045
+   "stage": 762030230,
+   "after": 762030230
   },
   "forge-frame-last": {
    "tick": 1240,
