@@ -120,6 +120,23 @@ export const thanksStep = (w: World) => RAIL_LEGS.reduce((n, _leg, k) => n + leg
 export function thank(w: World, aid: number) {
   w.mut(Account, aid)!.thanks = thanksStep(w) + 1;
 }
+/** Rack gifts are drawn in permanent account order. A work car holds up to 32 logs and the room has
+ * 256 accounts: two hex digits per attributed log fit one saved string. Unattributed stock loads last. */
+export function takeGivers(w: World, count: number, take: (aid: number, index: number, n: number) => void) {
+  let index = 0;
+  w.each([Account], (aid, a) => {
+    const n = Math.min(count, a.queuedGift);
+    if (n) {
+      w.mut(Account, aid)!.queuedGift -= n;
+      take(aid, index, n);
+      count -= n;
+    }
+    index++;
+  });
+}
+export function giverList(manifest: string) {
+  return (manifest.match(/../g) ?? []).map((code) => Number.parseInt(code, 16));
+}
 export function workBillOpen(w: World, stop: number) {
   if (stop === 1) return w.get(Works, w.single(Works))!.lit < 0;
   if (stop === 5) return w.get(Steel, w.single(Steel))!.lit < 0 && !legDone(w, 0);
@@ -130,8 +147,21 @@ export function worksThanks(w: World, stop = 0) {
   if (stop && !workBillOpen(w, stop)) return [];
   const step = thanksStep(w) + 1;
   const pids: string[] = [];
+  const aboard = new Set<number>();
+  if (stop)
+    w.each([Train], (_id, t) => {
+      if (t.workStop === stop) for (const giver of giverList(t.workGivers)) aboard.add(giver);
+    });
+  const demand = stop ? workNeed(w, stop) : workDestination(w) ? 0 : giftQueued(w);
+  const first = stop && stop !== 1 ? workNeed(w, 1) : 0;
+  let queued = 0;
+  let index = 0;
   w.each([Account], (_id, a) => {
-    if (stop ? a.workThanks & (1 << stop) : a.thanks === step) pids.push(a.pid);
+    const end = queued + a.queuedGift;
+    const waiting = demand > 0 && end > queued && end > first && queued < first + demand;
+    if (waiting || aboard.has(index) || (stop ? a.workThanks & (1 << stop) : a.thanks === step)) pids.push(a.pid);
+    queued = end;
+    index++;
   });
   return pids;
 }

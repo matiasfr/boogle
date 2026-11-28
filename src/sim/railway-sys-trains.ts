@@ -67,7 +67,16 @@ import {
   worksId,
   type Row,
 } from './railway-queries.ts';
-import { QUARRY_YARD, rideableLogs, workDestination, workNeed, workQueued, workRoom } from './railway-queries-gift.ts';
+import {
+  QUARRY_YARD,
+  giverList,
+  rideableLogs,
+  takeGivers,
+  workDestination,
+  workNeed,
+  workQueued,
+  workRoom,
+} from './railway-queries-gift.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 import { freightArrives, freightLoads, ridersArrive, ridersBoard } from './railway-sys-trade.ts';
 import { lapSlots, runLine } from './railway-lap.ts';
@@ -248,6 +257,14 @@ function trainIO(w: World, headPct: number, pct: TradePct, tick: number, returnL
           rail.depot += n;
           rail.depotGiftDelivered += n;
         }
+        if (r.workGivers) {
+          const landed = new Set(giverList(r.workGivers.slice(0, n * 2)));
+          let index = 0;
+          w.each([Account], (aid) => {
+            if (landed.has(index++)) w.mut(Account, aid)!.workThanks |= 1 << r.workStop;
+          });
+          r.workGivers = '';
+        }
         r.workLogs -= n;
         if (r.workLogs) r.workStop = -r.workStop;
       } else if (r.workLogs && r.at === 0) {
@@ -257,6 +274,7 @@ function trainIO(w: World, headPct: number, pct: TradePct, tick: number, returnL
         if (stop === 5) w.mut(Steel, w.single(Steel))!.outLogs -= r.workLogs;
         if (stop === 2 || stop === 3) rail[DEPOT_OUT[stop + 3]!] -= r.workLogs;
         r.workLogs = 0;
+        r.workGivers = '';
       }
       if (!r.workLogs) r.workStop = 0;
       // A kit unloads at its job's halt (Q6's at Far Head, Q7's at the Pier: call 62).
@@ -316,6 +334,9 @@ function trainIO(w: World, headPct: number, pct: TradePct, tick: number, returnL
           const car = w.mut(Train, trainId(w, slot))!;
           car.workStop = stop;
           car.workLogs = n;
+          takeGivers(w, n, (_aid, index, count) => {
+            car.workGivers += index.toString(16).padStart(2, '0').repeat(count);
+          });
           car.logs += n;
           if (stop === 5) w.mut(Steel, w.single(Steel))!.outLogs += n;
           if (stop === 2 || stop === 3) rail[DEPOT_OUT[stop + 3]!] += n;

@@ -151,6 +151,7 @@ export const Train = defineComponent(
     gift: 'int',
     workStop: 'int',
     workLogs: 'int',
+    workGivers: 'str',
     legKit: 'bool',
   },
   { key: 'slot' },
@@ -297,6 +298,7 @@ export const Account = defineComponent(
     // Last thanked lay count plus one. Zero until the account contributes.
     thanks: 'u8',
     workThanks: 'u8',
+    queuedGift: 'int',
     legLogs: 'u8',
     legRails: 'u8',
   },

@@ -10,7 +10,7 @@ import { laySection } from '../src/sim/railway-seed-legs.ts';
 import { RAIL_LEGS } from '../src/sim/railway-route.ts';
 import type { Seed } from '../src/sim/railway-seed-route.ts';
 
-import { Leg, LegYard, Rail, Route, Train } from '../src/sim/railway-components.ts';
+import { Account, Leg, LegYard, Rail, Route, Train } from '../src/sim/railway-components.ts';
 import {
   legId,
   legKitCarriers,
@@ -268,6 +268,7 @@ for (const gift of [0, 8])
     m.legKit = true;
     const home = s.w.mut(Rail, s.w.single(Rail))!;
     home.rack -= gift;
+    s.w.mut(Account, s.w.lookup(Account, 'a')!)!.queuedGift -= gift;
     home.giftOut += gift;
     home.depotProduced += 8 - gift;
     s.w.mut(Leg, legId(s.w, 0))!.loadedLogs += 8;
@@ -454,6 +455,7 @@ test('the steel yard thanks the giver when a pickup changes demand before dispat
   }
   assert.equal(steel(s.w).giftDelivered, 8);
   assert.deepEqual(worksThanks(s.w, 5), ['a']);
+  assert.deepEqual(worksThanks(s.w), [], 'the Stack does not keep the steel giver');
 });
 
 test('surplus steel gifts stay available for pickup after returning Home', () => {
@@ -477,4 +479,8 @@ test('surplus steel gifts stay available for pickup after returning Home', () =>
   }
   assert.equal(legRow(s.w, 0).logs, 0, 'nobody gave the returned steel timber to the Stack');
   assert.equal(rail(s.w).rack, 8);
+  assert.equal(giftQueued(s.w), 0);
+  assert.equal(act(s, 'b', 'rail.rackTake', { kind: 0 }), 8);
+  assert.equal(rail(s.w).returnedLogs, 0);
+  railwayCheck(s.w);
 });

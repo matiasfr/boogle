@@ -19,7 +19,15 @@
 //   legKitLifted, legKitPut      the rack's units on backs: lifted off the rack (counted held), off a back (not)
 //   legKitRelease                a leaver's units no longer counted held (the host's leaver check)
 import { defineSystem, type World } from '../ecs/index.ts';
-import { GIFT_LEGS, giftAboard, giftLegs, giftPourRoom, rideableLogs } from './railway-queries-gift.ts';
+import {
+  GIFT_LEGS,
+  giftAboard,
+  giftLegs,
+  giftPourRoom,
+  rideableLogs,
+  takeGivers,
+  thank,
+} from './railway-queries-gift.ts';
 import { deckHeld } from './railway-queries-trade.ts';
 import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
 import { RAIL_LEGS, legRack } from './railway-route.ts';
@@ -238,6 +246,7 @@ function loadPour(w: World, slot: number, line: number) {
   m.logs += added;
   m.gift += gift;
   m.legKit = true;
+  takeGivers(w, gift, (aid) => thank(w, aid));
   rail.rack -= gift;
   rail.giftOut += gift;
   rail.depotProduced -= gift - added;

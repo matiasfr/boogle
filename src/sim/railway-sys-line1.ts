@@ -25,6 +25,7 @@ import {
   Tree,
   Works,
 } from './railway-components.ts';
+import { takeGivers } from './railway-queries-gift.ts';
 import { legKitPut, legKitRetaken } from './railway-sys-route-kit.ts';
 import {
   activeStation,
@@ -250,7 +251,9 @@ export const rackTake = defineSystem(
       return n;
     }
     const n = Math.min(rail.rack, room);
-    rail.returnedLogs -= Math.min(n, rail.returnedLogs);
+    const returned = Math.min(n, rail.returnedLogs);
+    if (n > returned) takeGivers(w, n - returned, () => {});
+    rail.returnedLogs -= returned;
     rail.rack -= n;
     a.carry += n;
     // The rack is the Village halt yard's log bin (docs/plans/halt-yard.md): leg kit left there and taken back counts
