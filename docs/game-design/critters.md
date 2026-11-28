@@ -14,6 +14,8 @@ The [Home feature](../../src/features/critter-home.ts) mounts within 260 m and s
 
 At Split-rock Works, [Placeholder: Quarry Swifts] wheel above the rim when a train passes, a runner approaches or a seam opens. [Placeholder: Seam Lizards] dart aside and hide when runners come within 4 m or trains pass. The two local pools hold 24 and 36 animals at full Detail, half on reduced Detail. They mount within 105 m of the works area centre and sleep beyond 125 m.
 
+On Ring Island, [Placeholder: Crossing Gulls] lift from shore rocks and the outer ends of finished bent caps, then bank alongside incoming trains. [Placeholder: Reef Dartfish] scatter from swimmers and ball splashes. [Placeholder: Clover Flutters] rise as players pass quickly across the meadow in daylight. Full Detail has up to 16, 36 and 28 instances respectively. Reduced Detail halves each population and removes its shadows. The groups mount within 495 m of the area centre and sleep beyond 530 m.
+
 Files: [critter-fish.ts](../../src/features/critter-fish.ts), [critter-gulls.ts](../../src/features/critter-gulls.ts),
 [critter-fireflies.ts](../../src/features/critter-fireflies.ts). Related research:
 [research/creature-ai-and-ecosystems.md](../research/creature-ai-and-ecosystems.md).

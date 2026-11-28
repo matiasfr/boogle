@@ -1,10 +1,9 @@
 import * as THREE from 'three/webgpu';
-import { float, instanceIndex, positionGeometry, positionLocal, sin, time, vec3 } from 'three/tsl';
 import { defineKind, spawn } from '../entity/entity.ts';
 import { ballMesh } from '../entities/ball/view.ts';
 import { railwayWorldRead } from '../entities/railway/state.ts';
 import { onGraphicsChange } from '../graphics-settings.ts';
-import { reducedWildlife, wildlifeZone, wings } from '../place/wildlife.ts';
+import { reducedWildlife, wildlifeZone, wildlifePool } from '../place/wildlife.ts';
 import { remotes, type Remote } from '../netplay/net.ts';
 import { platformById } from '../physics/platforms.ts';
 import { waterField } from '../physics/water-field.ts';
@@ -12,8 +11,6 @@ import { LINKS, ORIGIN, TOWN_BLOCKS, VILLAGE, railY, toWorld } from '../place/la
 import { H } from '../place/terrain.ts';
 import { CAMP_PAD } from '../place/works-landing.ts';
 import { me } from '../player/state.ts';
-import { createPool } from '../render/instances.ts';
-import { patchNode } from '../render/material-patch.ts';
 import { skyNow } from '../render/sky.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../sim/railway-layout.ts';
 import { rail, tree } from '../sim/railway-rows.ts';
@@ -127,23 +124,8 @@ function swim(p: Animal, index: number, clock: number, dt: number) {
   }
 }
 function population(kind: Species) {
-  const aquatic = kind === 'school',
-    bird = kind === 'flock';
-  const material = new THREE.MeshStandardNodeMaterial({
-    color: aquatic ? '#f67530' : bird ? '#f5f1de' : '#ffb633',
-    side: THREE.DoubleSide,
-    flatShading: true,
-  });
-  const beat = sin(time.mul(bird ? 7 : aquatic ? 13 : 22).add(float(instanceIndex).mul(1.7)));
-  patchNode(material, 'positionNode', (prev) =>
-    (prev ?? positionLocal).add(
-      aquatic
-        ? vec3(beat.mul(positionGeometry.z.min(0)).mul(0.28), 0, 0)
-        : vec3(0, beat.mul(positionGeometry.x.abs()).mul(bird ? 0.32 : 0.18), 0),
-    ),
-  );
-  const geometry = aquatic ? new THREE.ConeGeometry(0.12, 0.56, 5).rotateX(Math.PI / 2) : wings();
-  const pool = createPool(geometry, material, counts[kind]);
+  const color = kind === 'school' ? '#f67530' : kind === 'flock' ? '#f5f1de' : '#ffb633';
+  const pool = wildlifePool(kind, counts[kind], color);
   pool.mesh.name = 'critter-home-' + kind;
   return { kind, pool, animals: Array.from({ length: counts[kind] }, (_, i) => anchor(kind, i)) };
 }
