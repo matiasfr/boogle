@@ -67,6 +67,7 @@ that writes the plan carries it out, so it can change the plan when a step turns
    about two hours from built to its final check).
 10. **Owed proofs are yours.** A rebase, bot run, still or tick mark your branch still owes comes back to this same
    thread; you have the context a fresh agent would lack.
+    Use `npm run rule-rebase -- <worktree>` for a railway pin or world-version collision.
 11. **A test must be able to fail.** See a regression or proof test fail once on the code without your change (or with
    its subject broken) before you trust its pass. Assert exact values and compare with the source of truth (the server,
    the sim), not "more than zero" or "same as before", and run the real step in between. In a fix round, make the least

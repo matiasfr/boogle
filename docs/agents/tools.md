@@ -7,6 +7,7 @@ Start ownership discovery with `npm run map -- --kind <kind>` (bare `--kind` lis
 
 | You want to                                    | Use                                                                                                                                                                              |
 | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rebase a railway rule branch locally | `npm run rule-rebase -- <worktree>` uses the current origin/main and the same conflict resolver as the queue. |
 | See a beat of the run                          | `npm run look -- --at "<beat>"` (`--at list` names them); warm-ups are warped, so `--warm` costs little                                                                          |
 | Start at a stage of the route                  | `look --rail-seed <stage>` (stages and "Adding a stage": `src/sim/railway-seeds.ts`); a person: `?from=<stage>` ([Jump in](../game-design/dev-menu.md#jump-in)) |
 | Pacing, what never happened, on-screen text    | `npm run playthrough` (the production route; `--long` for the whole of it, `--to <beat>` for a segment); new beats go in `dev/look/bots/railway.ts` |

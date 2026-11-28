@@ -13,6 +13,7 @@
 #   2. Takes a machine-wide lock for the local part only (rebase, gate, push), so the next ship can start while CI runs.
 #   3. Runs dev/codex/ship-branch.sh from the trusted checkout (../boogle-trusted, detached at origin/main), never from
 #      the branch being shipped; a missing or broken trusted checkout is exit 1.
+#      ship-branch uses the trusted rule-rebase tool for pinned railway output and version collisions.
 #   4. With --wait, polls up to 30 minutes for the commits on origin/main, starts CI once if none ran for the push, and
 #      reruns a cancelled CI run's failed jobs once (a job at its time limit on a slow runner).
 # Exit: 0 shipped (with --wait: on main; with --dry-run: checks passed), 1 cannot ship (no trusted checkout), 4 needs

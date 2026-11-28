@@ -64,6 +64,7 @@
     "scenarios": "node dev/scenarios/run.ts",
     "ship": "bash scripts/ship.sh",
     "ship-branch": "bash dev/codex/ship-branch.sh",
+    "rule-rebase": "node dev/rule-rebase.ts",
     "ship-queue": "bash dev/ship-queue.sh",
     "review-stamp": "node dev/review-stamp.ts",
     "heartbeat": "bash dev/heartbeat.sh",
