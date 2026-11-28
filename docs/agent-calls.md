@@ -18,6 +18,8 @@ The owner confirmed start-flow calls 7 to 9 on 28 November: [archived calls](dec
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 28 Nov | Relay gifted logs through High Gorge to the incline head and Bell Rock (New) | [Yard legs](plans/lane-b-yard-legs.md) | Codex | Guests can advance the bill from Home | open |
+| 28 Nov | Pour at High Gorge when the first incline frame stands there (Default) | [Yard legs](plans/lane-b-yard-legs.md) | Codex | The branch has no service until that section lays | open |
 | 2026-11-28 | Default: stop the approaching resident 1.8 m from the player. Widen each lit pair of bridge lamps during its pulse. | [Start flow](brainstorms/start-flow.md), implementation of calls 8 and 9 | Builder | Leave the tool within reach and keep the moving light visible across the forge apron. | open |
 | 2026-11-27 | Default: one hidden jump-in, "Station 1 laid" (placeholder), opens after T1 with both rewards still at their original sites | [Station 1 removal](plans/station1-pick-removal.md#design-review-2026-11-27), step 2 | Planner | Keeps a direct link for the paid frame without adding a jump-menu choice | open |
 | 2026-11-27 | The sixth Wall lay closes the lap with the eleven existing slots. A cave train keeps its cars, facing and current speed until its first Village fit. | [Greybox lap](plans/greybox-lap.md#order-and-what-waits), calls 5 and 7–9 | Builder, approved plan | Keeps occupied cars and the kit already on board in place during the join. | open |
