@@ -63,6 +63,7 @@ export const yardTick = defineSystem(
  * R2b's full-load stop, the one stop freight adds: freightStop in ./railway-queries-trade.ts).
  * Called every tick it stands, so it also takes a crate made while it waits. */
 export function freightLoads(w: World, slot: number) {
+  // Freight stays with the yard served by the slot's original cars.
   const y = lineYard(RAIL_TRAINS[slot]!.line);
   if (y < 0) return;
   const r = w.get(Train, trainId(w, slot))!;
@@ -76,6 +77,7 @@ export function freightLoads(w: World, slot: number) {
 /** Train `slot` has just come to a stand at its yard's `home` halt: its freight lands in the yard's `town`, in its
  * goods' count (today both yards' town is the Village: timber at line 1's halt, stone at line 2's). */
 export function freightArrives(w: World, slot: number) {
+  // Freight stays with the yard served by the slot's original cars.
   const y = lineYard(RAIL_TRAINS[slot]!.line);
   if (y < 0) return;
   const r = w.get(Train, trainId(w, slot))!,
@@ -139,6 +141,7 @@ export const tradeTick = defineSystem(
  * `fareOf(route, farePct)`, charged once a rider a trip, here) land in the one strongbox up to its cap (`landed`), the
  * rest counted in `lost`. */
 export function ridersArrive(w: World, slot: number, pct: TradePct, tick: number) {
+  // Riders use the coach on an original passenger slot.
   const route = lineRoute(RAIL_TRAINS[slot]!.line);
   if (route < 0) return;
   const r = w.get(Train, trainId(w, slot))!;
@@ -159,6 +162,7 @@ export function ridersArrive(w: World, slot: number, pct: TradePct, tick: number
 /** Train `slot` standing at a route halt, leaving toward the other (an end's train has already turned): the riders
  * waiting there to ride its way board, up to its rider places; `boarded` grows by them. Called every tick it stands. */
 export function ridersBoard(w: World, slot: number) {
+  // Riders use the coach on an original passenger slot.
   const route = lineRoute(RAIL_TRAINS[slot]!.line);
   if (route < 0) return;
   const r = w.get(Train, trainId(w, slot))!;

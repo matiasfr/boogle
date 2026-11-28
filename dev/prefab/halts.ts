@@ -62,7 +62,7 @@ export function haltKitContent() {
       params: { row: h.row, up: true, piece: 'crossing' },
     });
   for (const [id, h] of RAIL_HALTS.entries())
-    if (h.line === 1 && h.leg)
+    if (h.line === 1 && h.leg?.slot === 0)
       entries.push({
         id: `halt-stack-map-${h.stop}`,
         prefab: 'railway.halt-parts',
@@ -77,9 +77,9 @@ export function haltKitContent() {
       colliders: [],
     });
   for (const [id, h] of RAIL_HALTS.entries()) {
-    if (h.line !== 1 || h.stop < 4 || (h.stop > 5 && !h.leg)) continue;
+    if (h.line !== 1 || h.stop < 4 || (h.stop > 5 && h.leg?.slot !== 0)) continue;
     const stub = h.end?.kind === 'stub';
-    for (const up of h.stop <= 5 || stub ? [false, true] : [false])
+    for (const up of [false, true])
       entries.push({
         id: `halt-ring-lever-${h.stop}-${up ? 'up' : 'down'}`,
         prefab: 'railway.halt-lever',
@@ -95,7 +95,7 @@ export function haltKitContent() {
       });
   }
   for (const [row, h] of RAIL_HALTS.entries()) {
-    if (h.line !== 1 || !h.leg || h.end?.kind !== 'stub') continue;
+    if (h.line !== 1 || h.leg?.slot !== 0 || h.end?.kind !== 'stub') continue;
     entries.push({
       id: `halt-ring-lever-${h.stop}-west`,
       prefab: 'railway.halt-lever',

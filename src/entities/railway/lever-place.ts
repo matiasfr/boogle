@@ -3,7 +3,8 @@
 // I deposit the footings"). Pure numbers, so test/halt-lever-place.test.ts can hold the clearances.
 import { RING_HEAD, RING_PLATFORM_LAT } from '../../sim/railway-ring-layout.ts';
 import { PIER_FRAME, PIER_RACK, SHED_STALL, WORKS_RACK } from '../../sim/railway-works-layout.ts';
-import type { RailPlatform } from '../../sim/railway-lines.ts';
+import { joinedCaveStop } from '../../sim/railway-lap.ts';
+import { LINE2, RAIL_HALTS, type RailPlatform } from '../../sim/railway-lines.ts';
 import { railCallPlatform } from '../../sim/railway-queries-trains.ts';
 import { ringHead } from '../../sim/railway-queries.ts';
 type World = Parameters<typeof ringHead>[0];
@@ -67,4 +68,16 @@ export function leverYield(carrying: boolean, x: number, z: number, head: number
   if (!carrying) return 0;
   const near = footingSites(head).some((s) => Math.hypot(x - s.x / 100, z - s.z / 100) <= s.reach / 100);
   return near ? -LEVER_YIELD : 0;
+}
+
+const joinedLeverIds = RAIL_HALTS.map((h) => {
+  const stop = joinedCaveStop(h.line, h.stop);
+  return stop < 0 ? -1 : RAIL_HALTS.findIndex((other) => other.line === LINE2 && other.stop === stop);
+});
+/** Accepted call target for an existing row-platform handle. */
+export function rowLeverCall(id: number, up: boolean, joined: boolean) {
+  if (!joined || joinedLeverIds[id]! < 0) return undefined;
+  const target = joinedLeverIds[id]!,
+    h = RAIL_HALTS[target]!;
+  return { id: target, line: h.line, stop: h.stop, dir: (up ? 1 : -1) as -1 | 1 };
 }

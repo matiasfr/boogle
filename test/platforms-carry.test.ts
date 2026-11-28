@@ -862,7 +862,8 @@ test('two failed extras loads keep the base resident, back off and release an in
     attempts = 0;
   let finish!: () => void;
   const areas = new Map();
-  const camera = { position: { x: 0, z: 0 } };
+  const camera = { position: { x: 500, z: 0 } };
+  let lifted = false;
   const quay = {
     id: 'quay',
     centre: { x: 0, z: 0 },
@@ -886,6 +887,9 @@ test('two failed extras loads keep the base resident, back off and release an in
       productionRailway: true,
       location: { search: '' },
       routeAreas: areas,
+      returnArea: { platform: { x: 0, z: 0 } },
+      coverLifted: () => lifted,
+      rendererReady: Promise.resolve(),
       performance: { now: () => now },
       precompile() {},
       routeSceneryMounted() {},
@@ -929,7 +933,11 @@ test('two failed extras loads keep the base resident, back off and release an in
     tick();
     await building;
   }
-  await frame(0);
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  await building;
+  assert.equal(areas.get('quay').mounted, true, 'the saved destination mounts before the first frame at Home');
+  camera.position.x = 0;
+  lifted = true;
   await frame(0);
   assert.equal(areas.get('quay').mounted, true, 'extras failure tore down the base');
   assert.equal(owners[0]!.alive, true);

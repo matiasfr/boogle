@@ -48,9 +48,11 @@ import {
 import { railTrainAsked, railTrainHeld, trainStops, railCallPlatform } from '../../sim/railway-queries-trains.ts';
 import { COACH_SEATS } from './coach-kit.ts';
 import { coachStepAmount, poseCoachSteps } from './coach-motion.ts';
-import { line2At, line2Lat, line2Y, endMergeM, departureHalt } from './line2-path.ts';
-import { isRowLine, rowAt, rowLat, rowY } from './row-path.ts';
-import { BOTTOM, type Car } from './car.ts';
+import { gorgeStop, runLine } from '../../sim/railway-lap.ts';
+import { line2Lat, endMergeM, departureHalt } from './line2-path.ts';
+import { isRowLine, rowLat } from './row-path.ts';
+import type { Car } from './car.ts';
+import { BOTTOM, carAlong, carPath, mirroredLat, poseOnPath } from './car-path.ts';
 import type { CarRole } from './cars.ts';
 import {
   KIT_FLATBED,
@@ -454,7 +456,7 @@ export async function createRailwayTrains(
         [false, true].map((steel) => {
           if (steel && !tr.steel) return null;
           const consist = consistOf({
-            line: tr.line,
+            line: tr.line, // Car roles belong to the original consist.
             wagon,
             steel: steel && tr.line === LINE2,
             strong: steel && tr.line !== LINE2,
@@ -483,6 +485,8 @@ export async function createRailwayTrains(
   let stopsAll: readonly (readonly number[])[] = [],
     stops2: readonly number[] = [],
     merge2 = 0;
+  // View reads of the track and its halts follow the accepted running line.
+  const trackLine = (slot: number) => runLine(slot, stops2.length > gorgeStop + 1);
   const readStops = (w: ReturnType<typeof adapter.read.world>) => {
     stopsAll = RAIL_LINES.map((_l, k) => trainStops(w, k));
     stops2 = stopsAll[LINE2]!;
@@ -500,46 +504,14 @@ export async function createRailwayTrains(
    * and either for a train that stood there (or was turning back there) as the line grew past it (`left`). */
   const crossing = (tr: (typeof trains)[number], row: Readonly<RailTrain>) =>
     row.track === 1 &&
-    tr.line === LINE2 &&
+    trackLine(tr.slot) === LINE2 &&
     (stops2.length - 1 === FAR_HEAD ||
       crossoverEnd(stops2) ||
       RAIL_LINES[LINE2]!.halts[departureHalt(row)]?.end?.kind === 'crossover');
   /** The path a car of `line` is posed on, unless it is the layout's own line (lines 1 and 2's start): line 2's goes
    * on past the layout's pier head (./line2-path.ts, local metres from ORIGIN); the greybox route's own lines are their
    * rows (./row-path.ts, world metres). */
-  type CarPath = { at: (s: number, out: LinePoint) => void; y: (s: number) => number; ox: number; oz: number };
-  const LINE2_PATH: CarPath = {
-    at: (s, out) => line2At(s, out, true),
-    y: line2Y,
-    ox: layout.ORIGIN.x,
-    oz: layout.ORIGIN.z,
-  };
-  const ROW_PATHS = new Map(
-    RAIL_LINES.flatMap((_l, k): [number, CarPath][] =>
-      isRowLine(k) ? [[k, { at: (s, out) => rowAt(k, s, out), y: (s) => rowY(k, s), ox: 0, oz: 0 }]] : [],
-    ),
-  );
-  const pathOf = (line: number) => (line === LINE2 ? LINE2_PATH : ROW_PATHS.get(line));
-  const a2: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 },
-    b2: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
-  /** Poses a car on `path`, each axle end set across by `lat` (as car.ts poseCarOnLine does on a layout line). */
-  function poseOnPath(c: Car, path: CarPath, s: number, lat: (s: number) => number) {
-    path.at(s + 1.1, a2);
-    path.at(s - 1.1, b2);
-    const la = lat(s + 1.1),
-      lb = lat(s - 1.1);
-    a2.x -= a2.uz * la;
-    a2.z += a2.ux * la;
-    b2.x -= b2.uz * lb;
-    b2.z += b2.ux * lb;
-    c.x = (a2.x + b2.x) / 2 + path.ox;
-    c.z = (a2.z + b2.z) / 2 + path.oz;
-    c.yaw = Math.atan2(a2.x - b2.x, a2.z - b2.z);
-    const ya = path.y(s + 1.1),
-      yb = path.y(s - 1.1);
-    c.y = (ya + yb) / 2 + BOTTOM + c.hy;
-    c.pitch = Math.atan2(ya - yb, 2.2);
-  }
+  const a2: LinePoint = { x: 0, z: 0, ux: 0, uz: 1 };
   // A train's vehicles and where each stands along its line, engine first (car-spacing.ts), reused each step.
   const vehicles: Vehicle[] = [],
     made: Vehicle[] = [],
@@ -609,15 +581,22 @@ export async function createRailwayTrains(
     const coupled = wagonTrain();
     const works = shown && on ? roomWorks(w) : null;
     trains.forEach((tr) => {
-      tr.pennant.visible = !!works && !works.done && works.halt?.line === tr.line;
+      // The pennant identifies trains serving the works' current line.
+      tr.pennant.visible = !!works && !works.done && works.halt?.line === trackLine(tr.slot);
       const row = trainRow(w, tr.slot),
-        path = pathOf(tr.line),
+        joined = stops2.length > gorgeStop + 1,
+        running = runLine(tr.slot, joined),
+        mirror = tr.line !== running,
+        // The deck and every seat follow the running path after the sixth lay.
+        path = carPath(tr.line, running, joined),
         // The layout's line, for a train on no path of its own (line 1).
         line = path ? null : layout.LINKS[tr.line]!.line;
       // Asleep, a row stands at its home; awake, wherever the room's clock puts it.
-      const along = trainAlong(row, tr.line, clock) / 100;
-      tr.speed = on ? Math.abs(trainAlong(row, tr.line, clock + 0.1) - trainAlong(row, tr.line, clock)) : 0;
-      const lat = (x: number) => latOf(tr, row, x);
+      const runningAlong = trainAlong(row, running, clock);
+      const along = carAlong(runningAlong, mirror);
+      tr.speed = on ? Math.abs(trainAlong(row, running, clock + 0.1) - runningAlong) : 0;
+      // A joined cave consist keeps its lateral on the same physical rail.
+      const lat = (x: number) => (mirror ? mirroredLat(row, x, stops2, merge2) : latOf(tr, row, x));
       // A fleet row in the shed (the greybox route) is not on the line until it joins.
       const hidden = !shown || (tr.line !== 0 && !secondVisible) || row.phase === TRAIN_PHASE.SHED;
       // The track the train is drawn on: its line, set across by `lat` (the up track). Each car stands its offset
@@ -653,7 +632,7 @@ export async function createRailwayTrains(
       if (tr.steel)
         put(tr.steel, offsetOf(layoutOf(tr, row.wagon, true).consist, tailRole(tr)) * tr.steel.mesh.scale.x);
       // On today's track the line's metres are the track's.
-      const spaced = lat(along + made[0]!.d) !== 0 || lat(along + made.at(-1)!.d) !== 0 || lat(along) !== 0;
+      const spaced = mirror || lat(along + made[0]!.d) !== 0 || lat(along + made.at(-1)!.d) !== 0 || lat(along) !== 0;
       trainPlaces(trackAt, along, made, standAt, spaced);
       tr.cars.forEach((c, n) => {
         pose(c, standAt[n]!);
@@ -1132,9 +1111,11 @@ export async function createRailwayTrains(
         // A request from aboard rings that train's bell for everyone in earshot; a lever's sounds at its halt. The
         // event names the train when it's yours; a friend's is found by who rides which.
         const line = LINE_HALTS[e.id]?.line;
-        const tr = e.train !== undefined ? trains[e.train] : trains.find((t) => t.line === line && riderOf(t, e.pid));
+        // Ring the accepted bell on the train serving that line.
+        const tr =
+          e.train !== undefined ? trains[e.train] : trains.find((t) => trackLine(t.slot) === line && riderOf(t, e.pid));
         const loco = tr?.carByRole('engine');
-        if (!tr || tr.line !== line || !loco || !riderOf(tr, e.pid)) return;
+        if (!tr || trackLine(tr.slot) !== line || !loco || !riderOf(tr, e.pid)) return;
         bell(loco.x, loco.z);
         return;
       }
@@ -1177,15 +1158,16 @@ export async function createRailwayTrains(
     /** The trains drawn on line `k` now, each as its ends along the line (m) some seconds from now by its accepted
      * row: the leg it is on, or where it stands (path-refuge.ts TrainAhead). */
     onLine: (k: number): TrainAhead[] =>
+      // Refuge traffic includes the cave-origin cars running on the lap.
       trains
-        .filter((tr) => tr.line === k && tr.out)
+        .filter((tr) => trackLine(tr.slot) === k && tr.out)
         .map((tr) => (sec: number) => {
-          const along = trainAlong(trainRow(adapter.read.world(), tr.slot), tr.line, clock + sec * 10) / 100;
+          const along = trainAlong(trainRow(adapter.read.world(), tr.slot), k, clock + sec * 10) / 100;
           const row = trainRow(adapter.read.world(), tr.slot);
           const { bounds } = layoutOf(tr, row.wagon, !!tr.steel && tr.carOn);
           return {
-            lo: along + bounds.lo,
-            hi: along + bounds.hi,
+            lo: along + (tr.line === k ? bounds.lo : -bounds.hi),
+            hi: along + (tr.line === k ? bounds.hi : -bounds.lo),
           };
         }),
     isTrain: (platform: Platform | null) =>
@@ -1202,7 +1184,8 @@ export async function createRailwayTrains(
       const on = aboard();
       const tr = on && trains.find((t) => carsOf(t).some((c) => c.platform === on));
       if (!tr) return [];
-      const k = tr.line;
+      // The bell cord requests a stop on the track beneath this car.
+      const k = trackLine(tr.slot);
       // The open stops, not their count: a count reads the railhead at its last head.
       const ask = trainRequestable(trainRow(w, tr.slot), k, trainStops(w, k), adapter.read.tickNow());
       if (!ask) return [];
@@ -1261,7 +1244,8 @@ export async function createRailwayTrains(
           const standing = on && row.phase === TRAIN_PHASE.STAND && row.at >= 0;
           tr.coachStepDown = Math.max(0, Math.min(0.25, tr.coachStepDown + (standing ? dt : -dt)));
           if (standing) {
-            const halt = RAIL_HALTS.findIndex((h) => h.line === tr.line && h.stop === row.at);
+            // The platform at this stand belongs to the running line.
+            const halt = RAIL_HALTS.findIndex((h) => h.line === trackLine(tr.slot) && h.stop === row.at);
             const platform = railCallPlatform(w, halt, row.track ? -1 : 1, tick);
             const coach = tr.carByRole('rider');
             tr.coachStepSide = Math.sign(
@@ -1277,7 +1261,8 @@ export async function createRailwayTrains(
             tr.slot,
             riders,
             tr.riderCar,
-            on && tr.line === LINE2 && row.phase === TRAIN_PHASE.STAND ? row.at : -1,
+            // The crowd meets the coach at the halt on its running line.
+            on && trackLine(tr.slot) === LINE2 && row.phase === TRAIN_PHASE.STAND ? row.at : -1,
             tr.coachSteps,
             tr.coachStepSide,
             tr.seen && (tr.last?.to === row.at || tr.last?.arrived === row.arrived),
@@ -1302,7 +1287,8 @@ export async function createRailwayTrains(
         }
         // Amber: on its way to a request stop it will make, its riders' or a lever's it serves (so a train running
         // through a lit lever is dark, and the one behind it lit). Red: held, standing for the block or the headway.
-        const lit = railTrainAsked(w, tr.slot, tick, stops[tr.line]);
+        // The lamp reads requests for the running stops.
+        const lit = railTrainAsked(w, tr.slot, tick, stops[trackLine(tr.slot)]);
         if (lit !== tr.lamp.on) {
           tr.lamp.on = lit;
           tr.lamp.material.color.set(lit ? LAMP.on : LAMP.off);
@@ -1369,7 +1355,8 @@ export async function createRailwayTrains(
         // A flatbed that uncouples with this tab's player on it: they are first set on the halt's platform, where
         // the train stands (it changes rows only standing at its depot), never left in the air.
         if (tr.carOn && !tailOn && tr.steel && ridesOn(aboard(), [tr.steel]) && me.body) {
-          const halt = RAIL_HALTS.findIndex((h) => h.line === tr.line && h.stop === row.at);
+          // The platform at this stand belongs to the running line.
+          const halt = RAIL_HALTS.findIndex((h) => h.line === trackLine(tr.slot) && h.stop === row.at);
           if (halt >= 0) {
             const p = railCallPlatform(w, halt, row.track ? -1 : 1, tick);
             teleport(me.body, p.x / 100, p.y / 100 + PLAYER_R + 0.05, p.z / 100);
@@ -1539,9 +1526,10 @@ export async function createRailwayTrains(
     loaderHook,
     inspect: () => ({
       trains: trains.map((tr) => ({
-        line: tr.line,
+        // Inspection reports the running line and its matching along coordinate.
+        line: trackLine(tr.slot),
         ...trainRow(adapter.read.world(), tr.slot),
-        along: trainAlong(trainRow(adapter.read.world(), tr.slot), tr.line, clock),
+        along: trainAlong(trainRow(adapter.read.world(), tr.slot), trackLine(tr.slot), clock),
         cars: carsOf(tr).map((c) => ({
           role:
             c === wagonCar

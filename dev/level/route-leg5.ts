@@ -80,10 +80,53 @@ export function checkLeg5() {
     `Wall over bay: ${crossings.map((h) => h.toFixed(2)).join(', ')} m`,
     crossings.length === 1 && crossings[0]! >= 7,
   );
-  const buffers = wall.at(-1)!,
-    concourse = gorgeAt(-4, 0);
-  const gap = Math.hypot(buffers.x - concourse.x, buffers.z - concourse.z);
-  check(`Gorge buffers to concourse ${gap.toFixed(2)} m`, Math.abs(gap - 4) < 0.02 && buffers.y === 3);
+  const tip = wall.at(-1)!;
+  const target = gorgeAt(-8, 2);
+  const error = Math.hypot(tip.x - target.x, tip.z - target.z);
+  check(`Wall end at a −8, c +2: error ${error.toFixed(3)} m`, error <= 0.05 && tip.y === 3);
+  const ring = network.find((t) => t.id === 'ring-centre')!.pts;
+  // Travel from the Wall into line 2. Offset each chord joint along its bisector.
+  function offset(points: Pt[], lateral: number) {
+    return points.map((p, i) => {
+      const prev = points[i - 1] ?? p,
+        next = points[i + 1] ?? p;
+      const heading = (a: Pt, b: Pt) => Math.atan2(b.z - a.z, b.x - a.x);
+      const h0 = i ? heading(prev, p) : heading(p, next);
+      const h1 = i + 1 < points.length ? heading(p, next) : h0;
+      const angle = (h0 + h1) / 2;
+      return { ...p, x: p.x - lateral * Math.sin(angle), z: p.z + lateral * Math.cos(angle) };
+    });
+  }
+  for (const lateral of [-2, 2]) {
+    const inbound = offset(wall.slice(-20), lateral);
+    const outbound = offset(ring.slice(-25).reverse(), lateral + 2);
+    const across = gorgeAt(0, 1),
+      origin = gorgeAt(0, 0);
+    const dx = inbound.at(-1)!.x - outbound[0]!.x,
+      dz = inbound.at(-1)!.z - outbound[0]!.z;
+    const mismatch = Math.abs(dx * (across.x - origin.x) + dz * (across.z - origin.z));
+    check(`Gorge track c ${lateral + 2} lateral mismatch ${mismatch.toFixed(3)} m`, mismatch <= 0.05);
+    let turn = 0,
+      radius = Infinity;
+    const joined = [...inbound, ...outbound];
+    for (let i = 1; i < joined.length - 1; i++) {
+      const a = joined[i - 1]!,
+        b = joined[i]!,
+        c = joined[i + 1]!;
+      const along = (b.x - origin.x) * 0.8565 + (b.z - origin.z) * 0.5162;
+      if (along < -140 || along > 40) continue;
+      const ux = b.x - a.x,
+        uz = b.z - a.z,
+        vx = c.x - b.x,
+        vz = c.z - b.z;
+      turn = Math.max(turn, (Math.abs(Math.atan2(ux * vz - uz * vx, ux * vx + uz * vz)) * 180) / Math.PI);
+      radius = Math.min(radius, circumradius(a, b, c));
+    }
+    check(
+      `Gorge track c ${lateral + 2}: turn ${turn.toFixed(3)} degrees, radius ${radius.toFixed(2)} m`,
+      turn <= 2 && radius >= 94,
+    );
+  }
   const points: XZ[] = [];
   for (let s = leg.fromCm; s <= row.lengthCm; s += 50) {
     const p = rowPoint(leg.row, s);
@@ -165,9 +208,19 @@ export function checkLeg5() {
   );
   check('six clear metres between the town pad and the north platform', clear);
   const { node, reach } = colliderFlood(colliders, gorgeAt(-35, 0), 115);
+  for (const c of [-1.5, 0, 2, 4, 5.5]) {
+    const y = heightAt(faces, gorgeAt(-2, c));
+    check(`joined Gorge crossing c ${c} has a plank top at 3.35 m`, y !== null && Math.abs(y - 3.35) < 0.01);
+  }
   const concourseWalk = reach(gorgeAt(-2, 2));
   const fromWater = reach(gorgeAt(-76, 6), true);
-  for (const c of [-5.8, 5.8]) {
+  for (const [c, edge, sign] of [
+    [-3.8, -1.8, -1],
+    [7.8, 5.8, 1],
+  ] as const) {
+    const inside = heightAt(faces, gorgeAt(-31, edge + sign * 0.05));
+    const outside = heightAt(faces, gorgeAt(-31, edge - sign * 0.05));
+    check(`Gorge platform edge c ${edge} within 0.05 m`, inside !== null && outside === null);
     const platform = node(gorgeAt(-31, c));
     check('Gorge platform c ' + c + ' connects to line 2 on foot', !!concourseWalk[platform]);
     check('Gorge platform c ' + c + ' reached from the water', !!fromWater[platform]);

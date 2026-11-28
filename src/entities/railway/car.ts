@@ -20,7 +20,8 @@ import { ORIGIN, TUNE, lineAt, lineSmoothAt, railY, type Line } from '../../plac
 import type { OwnedView } from '../../render/owned-view.ts';
 
 // ---------------------------------------------------------------- a car: a kinematic body following a planned pose
-export const BOTTOM = 0.4;
+import { BOTTOM } from './car-path.ts';
+export { BOTTOM };
 // The deck's edge holds you while you stand. The body is a sphere on a box and counts as standing up to CARRY.edge past the
 // box (src/physics/platforms.ts). With its centre past the box, though, the contact's normal leans outward, so a player who
 // stopped at the edge crept off at about 0.1 m/s, moving or not, until the deck let go of them over the river. Standing with

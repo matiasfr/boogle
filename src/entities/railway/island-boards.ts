@@ -246,13 +246,15 @@ export function createIslandBoards(
   for (let k = 0; k < squares.count; k++) squares.setMatrixAt(k, hide);
   for (let k = 0; k < gliders.count; k++) gliders.setMatrixAt(k, hide);
   const color = new THREE.Color();
-  trainLines.forEach((li, t) => {
-    // A train on a line the map does not draw (the greybox route's rows beyond line 2) has no marker.
-    if (!lines[li]) return;
-    color.set(lines[li]!.color);
-    for (let b = 0; b < count; b++) marks.setColorAt(b * T + t, color);
-  });
+  const colorTrains = () =>
+    trainLines.forEach((li, t) => {
+      // A train on a line the map does not draw (the greybox route's rows beyond line 2) has no marker.
+      if (!lines[li]) return;
+      color.set(lines[li]!.color);
+      for (let b = 0; b < count; b++) marks.setColorAt(b * T + t, color);
+    });
 
+  colorTrains();
   const cellOf = (b: number) => ({ x: (b % COLS) * CW, y: Math.floor(b / COLS) * CH });
   /** Fits and draws display `b`'s cell. */
   function drawCell(b: number) {
@@ -328,6 +330,9 @@ export function createIslandBoards(
     redraw(markScale = scale) {
       scale = markScale;
       S = mapSizes(CH, scale);
+      // A joined slot changes to its running line's colour on the map.
+      colorTrains();
+      if (marks.instanceColor) marks.instanceColor.needsUpdate = true;
       drawAll();
     },
     /** Display `b` shown or not. */
@@ -392,7 +397,7 @@ export function createIslandBoards(
         trainLines.forEach((li, t) => {
           const k = b * T + t,
             a = along[t];
-          if (!bd.on || a === null || a === undefined || !lines[li]) {
+          if (!bd.on || a === null || a === undefined || !lines[li] || a > lines[li]!.path.at(-1)!.s) {
             holds.setMatrixAt(k, hide);
             return marks.setMatrixAt(k, hide);
           }

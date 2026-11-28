@@ -22,7 +22,7 @@ import { names } from '../src/prefab/names.ts';
 import * as validation from '../src/prefab/validate.ts';
 
 function block(file: string, start: string, end: string, bindings: Record<string, unknown>) {
-  const source = fs.readFileSync(file, 'utf8');
+  const source = fs.readFileSync(file, 'utf8').replaceAll('\r\n', '\n');
   const a = source.indexOf(start),
     b = source.indexOf(end, a);
   assert.ok(a >= 0 && b > a, `source boundary in ${file}`);

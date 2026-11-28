@@ -2,7 +2,7 @@
 // visit"): whether a catalogue halt stands now, and the halt the train you are on is running to. Local reads only.
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
 import { RAIL_LINES, RAIL_TRAINS } from '../../sim/railway-lines.ts';
-import { trainStops } from '../../sim/railway-queries-trains.ts';
+import { runningLine, trainStops } from '../../sim/railway-queries-trains.ts';
 import { train as trainRow } from '../../sim/railway-rows.ts';
 
 export type ReturnHalts = {
@@ -32,9 +32,10 @@ export function createReturnHalts(world: RailwayAdapter['read']['world']): Retur
     },
     next(platform) {
       const slot = Number(/^railway:train(\d+)-/.exec(platform ?? '')?.[1] ?? NaN);
-      const line = RAIL_LINES[RAIL_TRAINS[slot]?.line ?? -1];
-      if (!line) return undefined;
+      if (!RAIL_TRAINS[slot]) return undefined;
       try {
+        // Return destinations use the running line's halt indices.
+        const line = RAIL_LINES[runningLine(world(), slot)]!;
         const to = trainRow(world(), slot).to;
         return to >= 0 && to < line.halts.length ? `${line.id}:${to}` : undefined;
       } catch {

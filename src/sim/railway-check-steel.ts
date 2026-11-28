@@ -18,6 +18,7 @@ import { Leg } from './railway-components.ts';
 import { cart, lines, rail, shed, steel, steelClock, trains } from './railway-rows.ts';
 import { aboard, ringJoined } from './railway-queries.ts';
 import { INSTALL_STEEL } from './railway-works-layout.ts';
+import { runningLine } from './railway-queries-trains.ts';
 import { legDone, tradeRepickReached, tradeOpen } from './railway-queries-route.ts';
 
 const bad = (what: string): never => {
@@ -100,7 +101,9 @@ export function checkSteel(w: World, tick: number) {
     bad('boiler fit');
   if (
     ts.some((r, slot) => {
-      const line = RAIL_TRAINS[slot]!.line;
+      const line = runningLine(w, slot);
+      // A cave slot keeps its standard cruise until its first Village stand.
+      if (line !== RAIL_TRAINS[slot]!.line && r.boiler === 1) return false;
       return !allowed(line, r.boiler) || (line <= LINE2 && r.boiler > ls[line]!.boiler);
     })
   )

@@ -3,16 +3,15 @@
 import assert from 'node:assert/strict';
 import { buildSeedWorld } from '../../src/sim/railway-seeds.ts';
 import { trains } from '../../src/sim/railway-rows.ts';
-import { LINE2, RAIL_LINES, RAIL_TRAINS, TRAIN_EXTENT } from '../../src/sim/railway-lines.ts';
+import { LINE2, RAIL_TRAINS, TRAIN_EXTENT } from '../../src/sim/railway-lines.ts';
 import { RING_END } from '../../src/sim/railway-ring-layout.ts';
 import { railTick } from '../../src/sim/railway-systems.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
 import { consistOf } from '../../src/entities/railway/cars.ts';
 import { line2At, line2Lat } from '../../src/entities/railway/line2-path.ts';
-import { coachTrain } from './rider-coach.ts';
+import { coachTrain, gorgeStageHalts as halts } from './rider-coach.ts';
 
 const state = buildSeedWorld('gorge-reached');
-const halts = RAIL_LINES[LINE2]!.halts;
 let slot = -1;
 for (let n = 0; n < 5000 && slot < 0; n++) {
   railTick(state.w, ++state.t);

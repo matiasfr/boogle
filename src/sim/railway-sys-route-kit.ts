@@ -76,7 +76,7 @@ export function legKitArrive(w: World, slot: number, tick: number) {
   const line = RAIL_TRAINS[slot]!.line,
     r = w.get(Train, trainOf(w, slot))!;
   if (!r.legKit || r.logs + r.rails <= 0) return;
-  if (r.at === legKitHalt(line)) return legKitHome(w, slot);
+  if (r.at === legKitHalt(line, w)) return legKitHome(w, slot);
   for (const k of legsServed(w, line)) {
     if (r.at !== legKitDrop(w, line, k)) continue;
     const car = w.get(Train, trainOf(w, slot))!;
@@ -241,7 +241,7 @@ function loadPour(w: World, slot: number, line: number) {
 export function legKitLoad(w: World, slot: number, tick: number): 'hold' | 'on' {
   const line = RAIL_TRAINS[slot]!.line,
     r = w.get(Train, trainOf(w, slot))!;
-  if (deckHeld(r) || r.at !== legKitHalt(line)) return 'on';
+  if (deckHeld(r) || r.at !== legKitHalt(line, w)) return 'on';
   if (!MINT_LEGS[line]!.length) return yardLoad(w, slot);
   // Steel first (call 64; owner, 12 November): the steel works' kit has the kit car and the forge's rails first. A leg's
   // kit loads only when the works wants none brought (steelNeed: its kit is fed, in the yard or aboard), and never onto

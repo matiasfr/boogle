@@ -105,6 +105,8 @@ export type RailLineDef = {
    * track, with no halt, between halts too far apart for the block rule to let a follower start (it needs the whole leg
    * clear of the train ahead). Each stands between two halts of the line, never at one. */
   signals?: readonly number[];
+  /** Its trains run on the receiving line once this leg is complete. */
+  joins?: { line: number; leg: number };
 };
 /** The longest balanced hold a line may ask for: 3 minutes, about one round trip of line 2 to the island (138.8 s
  * non-stop, about 220 s under heavy asks). */
@@ -155,7 +157,7 @@ const STACK = RAIL_LEGS[STACK_LEG]!;
 /** A moving railhead's stop stands 10 m short of the laid end, its stub merging 20 m short of the stop (RING_HEAD's). */
 const HEAD_MERGE_CM = 2000;
 /** Line 2's path on from s 1220 m (its index stays s / 1000) to the `ring` row's end, past the Gorge's buffers. */
-export const LINE2_ON: readonly number[] = (() => {
+const stackPath: readonly number[] = (() => {
   const out: number[] = [];
   for (let at = 122000; at <= legS(STACK, ringRow.fromCm + ringRow.lengthCm); at += 1000) {
     const p = rowPoint('ring', at + ROW_SHIFT.ring);
@@ -291,6 +293,49 @@ function appendLeg(
     signals: [...(base.signals ?? []), ...leg.sections.slice(0, -1).map((sec) => legS(leg, sec.toCm))],
   };
 }
+
+export const WALL_LEG = RAIL_LEGS.findIndex((leg) => leg.id === 'wall');
+const wall = RAIL_LEGS[WALL_LEG]!;
+const caveRow = WORLD_LINES.find((r) => r.id === 'cave')!;
+const caveLine = appendLeg(
+  appendLeg(rowLine('cave'), 'cave', 'Cave head', caveRow.stops[2]! - 2450, [0, 1, 2, 2]),
+  'wall',
+  'Wall head',
+  rowEndCm('cave'),
+  [2, 2, 3, 3, 4, 4, 5],
+);
+/** The two formation centres have different offsets. Measure the joint along its final tangent. */
+export const LAP_JOINT_START = legS(STACK, ringRow.fromCm + ringRow.lengthCm);
+const ringEnd = ringRow.pts.at(-1)!;
+const previous = ringRow.pts.at(-2)!;
+const caveEnd = caveRow.pts.at(-1)!;
+const dx = ringEnd[0] - previous[0],
+  dz = ringEnd[1] - previous[1];
+const joint = Math.round(
+  ((caveEnd[0] - ringEnd[0]) * dx + (caveEnd[1] - ringEnd[1]) * dz) / Math.sqrt(dx * dx + dz * dz),
+);
+export const LAP_S0 = LAP_JOINT_START + joint + caveRow.lengthCm;
+export const lapJoined = (legs: readonly number[]) => legs[WALL_LEG] === wall.sections.length;
+const lapHalts: RailHalt[] = caveLine.halts
+  .slice(0, -1)
+  .filter((h) => h.closesAt === undefined)
+  .reverse()
+  .map((h) => ({
+    name: h.name,
+    s: LAP_S0 - h.s,
+    opens: 6,
+    ring: true,
+    leg: { slot: WALL_LEG, section: wall.sections.length - 1 },
+    platforms: h === caveLine.halts[0] ? both(h.platforms[0]) : [h.platforms[1], h.platforms[0]],
+    ...(h === caveLine.halts[0] ? { end: railEnd('crossover', LAP_S0 - h.end!.mergeCm, 1) } : {}),
+  }));
+const lapPath: number[] = [];
+for (let s = (Math.floor(LAP_JOINT_START / 1000) + 1) * 1000; s <= LAP_S0; s += 1000) {
+  const p = rowPoint('cave', LAP_S0 - s);
+  lapPath.push(p.x, p.z);
+}
+
+export const LINE2_ON: readonly number[] = [...stackPath, ...lapPath];
 
 export const RAIL_LINES: readonly RailLineDef[] = [
   {
@@ -539,6 +584,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
       },
       // The greybox route (step 3): the stack railhead and High Gorge.
       ...STACK_HALTS,
+      ...lapHalts,
     ],
     home: 0,
     trains: 1,
@@ -561,7 +607,10 @@ export const RAIL_LINES: readonly RailLineDef[] = [
     ],
     // Block signals at the stack line's section ends but the last (10 m past each railhead stop), so a train follows
     // another up the 1.5 km from Ring Island block by block (re-measure ruling 1).
-    signals: STACK.sections.slice(0, -1).map((sec) => legS(STACK, sec.toCm)),
+    signals: [
+      ...STACK.sections.slice(0, -1).map((sec) => legS(STACK, sec.toCm)),
+      ...(caveLine.signals ?? []).map((s) => LAP_S0 - s).reverse(),
+    ],
   },
   // The incline ends at Bell Rock. The bay cut's crossover there serves until the line grows on to Canopy.
   appendLeg(
@@ -584,19 +633,7 @@ export const RAIL_LINES: readonly RailLineDef[] = [
     rowEndCm('bay'),
     [3, 3],
   ),
-  appendLeg(
-    appendLeg(
-      rowLine('cave'),
-      'cave',
-      'Cave head',
-      WORLD_LINES.find((l) => l.id === 'cave')!.stops[2]! - 2450,
-      [0, 1, 2, 2],
-    ),
-    'wall',
-    'Wall head',
-    rowEndCm('cave'),
-    [2, 2, 3, 3, 4, 4, 5],
-  ),
+  { ...caveLine, joins: { line: ROW_LINE.ring, leg: WALL_LEG } },
 ];
 
 /** Line 2's index: the line that carries cargo (the Q6 and Q7 kits, the footing wagon). */

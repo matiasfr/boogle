@@ -22,7 +22,8 @@ import * as rowPath from '../src/entities/railway/row-path.ts';
 import * as haltMap from '../src/entities/railway/halt-map.ts';
 import * as leverPlace from '../src/entities/railway/lever-place.ts';
 import { STACK_WEST_LEVER } from '../src/entities/route-greybox/stack-halts.ts';
-import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
+import { runLine, gorgeStop } from '../src/sim/railway-lap.ts';
+import { lineSlots } from '../src/sim/railway-trains.ts';
 import { buildSeedWorld } from '../src/sim/railway-seeds.ts';
 import { laySection } from '../src/sim/railway-seed-legs.ts';
 import { Leg } from '../src/sim/railway-components.ts';
@@ -212,7 +213,9 @@ test('halt kit placements, colliders, lever plaques and ordered prompts match th
       railRow: rows.rail,
       trainRow: rows.train,
       worksRow: rows.works,
-      LINE_SLOTS,
+      lineSlots,
+      runLine,
+      gorgeStop,
       HEAD_OFFSET,
       PLAYER_R,
       SEA,
@@ -329,7 +332,7 @@ test('halt kit placements, colliders, lever plaques and ordered prompts match th
   // Leg 4 adds the West landing's outward lever and both sides at its three later stops.
   // The Wall adds six stops beyond the quay, each served in both directions.
   // The two ending halts each gain an up and a down platform lever.
-  assert.equal(levers.length, 62);
+  assert.equal(levers.length, 63); // High Gorge gains the outward handle when the Wall joins.
   for (const [k, leg] of RAIL_LEGS.entries())
     if (catalog.legBuilt(k)) seed.w.mut(Leg, legId(seed.w, k))!.laid = leg.sections.length;
   halt.restore();
@@ -355,6 +358,30 @@ test('halt kit placements, colliders, lever plaques and ordered prompts match th
       if (wanted) assert.deepEqual(calls, [[haltId, dir]], `${h.name} ${side}`);
       else unservedCalls.push(...calls);
     }
+  }
+  seed = buildSeedWorld('arrived');
+  halt.restore();
+  const gorgeId = catalog.RAIL_HALTS.findIndex((h) => h.line === catalog.LINE2 && h.stop === gorgeStop);
+  const handles = halt.inspect().ringLevers.filter((p) => p.halt === gorgeStop && p.on);
+  assert.deepEqual(handles.map((p) => p.dir).sort(), [-1, 1], 'both High Gorge handles serve the joined room');
+  for (const p of handles) {
+    me.body = { position: new THREE.Vector3(p.x, p.y, p.z) };
+    const prompt = halt.targets().find((a) => a.id === `railway-request-${gorgeId}-${p.platform}`);
+    assert.ok(prompt?.run && !prompt.blocked, 'Gorge knob offers its signed call');
+    calls.length = 0;
+    prompt.run();
+    assert.deepEqual(calls, [[gorgeId, p.dir]]);
+  }
+  // The other former terminus is Wall head 5. Its original knobs now call opposite ways on Line 2.
+  const cave = catalog.RAIL_LINES.findIndex((l) => l.id === 'cave');
+  const wall = catalog.RAIL_HALTS.find((h) => h.line === cave && h.name === 'Wall head 5')!;
+  const wallId = catalog.RAIL_HALTS.findIndex((h) => h.line === catalog.LINE2 && h.name === wall.name);
+  for (const dir of [-1, 1] as const) {
+    const at = rowPath.rowWorld(cave, wall.s / 100, -dir * rowPath.ROW_PLATFORM, { x: 0, z: 0 });
+    me.body = { position: new THREE.Vector3(at.x, rowPath.rowY(cave, wall.s / 100) + 1.35, at.z) };
+    calls.length = 0;
+    for (const target of halt.targets()) target.run?.();
+    assert.deepEqual(calls, [[wallId, dir]], `Wall head 5 direction ${dir}`);
   }
   owner.dispose();
   assert.equal(active.size, 0);

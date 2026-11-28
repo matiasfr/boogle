@@ -24,6 +24,7 @@ const CW = MAP_CELL.w,
 /** Every stage of line 2's map, with how many names it shows: the placed labels are compared with the names haltMap
  * returns, so only this count sees a stop whose name haltMap itself drops. */
 const MAP_STAGES: readonly { at: string; stage: MapStage; names: number }[] = [
+  { at: 'lap joined', stage: { open: 15, head: 7 }, names: 16 },
   { at: 'Pier unlaid', stage: { open: 3, head: 0 }, names: 5 },
   { at: 'Pier laid', stage: { open: 4, head: 0 }, names: 6 },
   ...Array.from({ length: 8 }, (_, head) => ({ at: `railhead ${head}`, stage: { open: 5, head }, names: 7 })),

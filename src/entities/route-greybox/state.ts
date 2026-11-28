@@ -1,5 +1,7 @@
 // Local residency and completed-mount notifications; importing this never starts an entity or builds scenery.
 export const routeAreas = new Map<string, { x: number; z: number; mounted: boolean }>();
+/** The saved ride's platform can request its scenery while the loading cover is still up. */
+export const returnArea = { platform: null as { x: number; z: number } | null };
 const listeners = new Set<() => void>();
 export const routeAreasPending = (x: number, z: number) =>
   [...routeAreas.values()].some((area) => Math.hypot(x - area.x, z - area.z) < 400 && !area.mounted);

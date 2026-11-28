@@ -83,7 +83,7 @@ buffer point, positive north-east; `c` across it).
 | --- | --- | --- |
 | Arrives | From the north-east on a curve (about 240 m radius), its last chord 1.6° off the axis | From the south-west on a 128 m straight on the axis (a −136 to −8), after a 100 m turn round the south stack's tip |
 | Buffers | a 0, c 0.00 | a −8.0, c 0.05 |
-| Stop | s 3,230.40 m, a ≈ +20 | cave s 5,325.00 m, a −31 |
+| Stop | s 3,231.40 m before and after the slew; world (−86.41, −1976.84) m, a ≈ +20 | cave s 5,325.00 m, a −31 |
 | Tracks | c 0 (outward, its sim path) and c +4 (homeward, lat −4 m) | c −2 and c +2 (a centred formation, ±2 m) |
 | Platforms | c −1.8 to −6.3 and c +5.8 to +10.3, a 0 to +40 | c −3.8 to −7.8 and c +3.8 to +7.8, a −51 to −4 |
 | Between | the concourse, a −4 to 0, c −9.3 to +13.3, at 3.9 m, joining all four platforms and the stair's gangway | |
@@ -229,7 +229,7 @@ no saved bit.
 completes, in the same rule tick, after the lay's existing `endMoved` for the cave line).**
 
 1. `endMoved` for line 2's last stop (High Gorge stops being its end), as when Q6 extended line 2 past Far Head.
-2. Every cave slot's row is rewritten by `lapRow(row, tick)`: `from' = LAP_S0 − from`, `dest' = LAP_S0 − dest`,
+2. Every cave slot's row is rewritten by `lapRow(row)`: `from' = LAP_S0 − from`, `dest' = LAP_S0 − dest`,
    `track' = 1 − track`, `origin'` mapped the same way (0 stays 0), `at`/`to` mapped to the joined line's halt index or
    `-1` (a signal stand) when the cave halt has no joined halt (the Wall's Gorge stop, a closed head); `v0`, `depart`,
    `arrived`, `turn`, cargo and `req` digits remapped by `reqIndex` for the flipped direction. `boiler` 0 becomes row 1,
@@ -297,11 +297,12 @@ Each step leaves `node dev/ship-check.ts` green. **Steps 1 and 2 ship together a
 to 3 (src/sim, src/world) is an independent one before merge, by the row `npm run models` gives at the time. Rows as of
 26 November are named on each step.
 
-- [ ] **1. The Gorge approach slewed, and the Wall's Gorge platforms moved (M; "High-risk implementation": Codex
+- [x] **1. The Gorge approach slewed, and the Wall's Gorge platforms moved (M; "High-risk implementation": Codex
       gpt-6.2-astra medium, because it regenerates `src/sim/railway-world-lines.ts`).** Files: `dev/level/world-blockout.ts`
       (`ROUTES['wall-n']`'s last straight: its end points 2.00 m to the split's south, c +2, from the end of the Gorge
       turn, a −136, eased in by a −56; line 2's last chord eased onto the axis; the Wall's Gorge end and crossover stay in the
-      catalog for the load checks but are never drawn, since the Wall never ends there), regenerated `src/sim/railway-world-lines.ts`, `docs/world/world-blockout.html`,
+      catalog for the load checks. The end buffers and board are hidden; the crossover stays drawn for homebound
+      Wall trains until the join in step 2), regenerated `src/sim/railway-world-lines.ts`, `docs/world/world-blockout.html`,
       `docs/world/rail-map.html`; `src/content/levels/gorge.ts` (the Wall's platforms at c −5.8 to −1.8 and +5.8 to +9.8
       on explicit bounds (the authored-number check refuses `c + 2` sums), their posts and connectors; the sea ramp to c
       +7.8) and `content/built/levels/gorge.json`; `dev/level/route-leg5.ts` (replace "Gorge buffers to concourse 4.00 m"
@@ -309,15 +310,20 @@ to 3 (src/sim, src/world) is an independent one before merge, by the row `npm ru
       +40 no chord turn over 2° and no radius under 94 m; the platforms' edges at c −1.8 and +5.8 within 0.05 m; the
       existing floods at the moved platforms, c −3.8 and +7.8). Verify: `test/railway-route.test.ts`,
       `test/world-lines.test.ts` (no future span over 4%; the map rails); `npm run level-check`: route leg 5 all "ok",
-      the continuity report adds nothing. The Wall's sections keep their cuts (the slew lengthens section 6 by about 3 cm).
-- [ ] **2. One line in the rules, and the bump (L; "High-risk implementation": Codex gpt-6.2-astra **high** (tricky);
-      then the independent review row).** Files: new `src/sim/railway-lap.ts` (`WALL_LEG`, `lapJoined(legs)`,
-      `runLine(slot, joined)`, `lapSlots(line, joined)`, `lapRow(row, tick)`, `lapAsks(req)`, `LAP_S0`);
+      the continuity report adds nothing. The Wall's sections keep their cuts; the slew lengthens the catalog row by 1 cm.
+      [Platform view toward the Wall](greybox-lap/step1-gorge-approach.png). The two track pairs line up across
+      the concourse. Line 2 still has its buffers at this stage. At [Bay head 1](greybox-lap/step1-bay-turnout.png),
+      both rails of the turnout ease into the running tracks.
+- [x] **2. One line in the rules, and the bump (L; "High-risk implementation": Codex gpt-6.2-astra **high** (tricky);
+      then the independent review row).** Files: new `src/sim/railway-lap.ts` (using the catalog's `WALL_LEG`, `lapJoined(legs)` and `LAP_S0`,
+      `runLine(slot, joined)`, `lapSlots(line, joined)`, `lapRow(row)`, `lapRequests(req)`);
       `src/sim/railway-lines.ts` (`RailLineDef.joins`; `LAP_HALTS`; line 2's path run on; the fleet validator's
       exemption; the load checks); `src/sim/railway-train.ts` (`trainStopsOf` and `fleetOf` read `joins`;
       `lineStagesOf` adds the joined stage); `src/sim/railway-trains.ts` (`TrainIO.slots`; `servingSlots`, `fleetJoin`,
       `trainGaps`, `protectedBlocks`, `lineSpacing`, `trainSpacing` through it); `src/sim/railway-sys-route.ts` (the join
       at the wall's last lay, as [above](#the-line-model-one-line-the-cave-lines-trains-join-it-in-place));
+      in `leg-view.ts`, retire superseded turnouts when the joined route stops using them. Keep whichever turnout
+      each in-flight departure occupies until its last car clears the low toe, including departures from earlier heads;
       `railway-sys-trains.ts`, `railway-queries-trains.ts`, `railway-queries-trade.ts` (`routeFar` pinned at the Gorge
       once joined), `railway-queries-route.ts`, `railway-sys-trade.ts`, `railway-check-*.ts`, `src/world/railway-predict.ts`
       and `src/world/railway-server.ts`: every read of a slot's line sorted into running or origin by the table above,
@@ -334,15 +340,45 @@ to 3 (src/sim, src/world) is an independent one before merge, by the row `npm ru
       across it; the long run (`ROUTE_GATES=1`, seeds `c0ffee`, `777`, `5eed`, `badd`, 20,000 ticks a mode) pasted into
       this plan before the bump ships. `npm run loop -- run` (rule changes). Because the catalog and sim change: the whole
       server suite, `npm run test:net`, and the built-site boot probe.
+**Step 2 service proof, 27 November.** Each seed ran 20,000 ticks at 75% headway in each mode, followed by a drain of outstanding calls. Both save boundaries loaded. No service or spacing failure occurred.
+
+| Seed | Joining calls served | Longest wait, ticks | Settled calls served | Longest wait, ticks |
+| --- | ---: | ---: | ---: | ---: |
+| c0ffee | 386 | 2012 | 392 | 1408 |
+| 777 | 388 | 2104 | 396 | 1389 |
+| 5eed | 381 | 2253 | 402 | 1907 |
+| badd | 387 | 1858 | 406 | 1277 |
+
+Leg 5's four-seed rerun passed at 75% headway. Settled calls are summed over the five pre-join stages, and the wait is the largest across those stages.
+
+| Seed | Growing calls served | Longest wait, ticks | Settled calls served | Longest wait, ticks |
+| --- | ---: | ---: | ---: | ---: |
+| c0ffee | 147 | 2143 | 736 | 1890 |
+| 777 | 141 | 2177 | 727 | 2090 |
+| 5eed | 144 | 2123 | 739 | 2179 |
+| badd | 155 | 2014 | 742 | 2008 |
+
+After Lane C took v77, step 2 moved to v78. After the rider-stop correction the v78 default fuzz took 13.986 s against a 480 s budget. All 79 unaffected stage records match main. At wall-closed the train rows and asks transfer. Thereafter the unified fleet and its shared end blocks advance differently through notch-open, notch-reached, causeway-open, island-reached and arrived. All 85 stage ticks are preserved. NPC boarding and alighting use existing stands only. The reflected coordinate is exactly 860,641 cm. A cave car's facing swaps its 820 cm and 1,610 cm block extents on the joined coordinate. The retained and swept block tests check the exact centimetre of entry and release, and both facings can stop clear at the West signal.
+At West landing the largest deck, seat and platform steps during the sixth lay were 2.14e-14, 1.07e-14 and 1.78e-14 m.
+At Port Quay all three were below 2.55e-13 m. These are standing car poses from the same axle calculation as the client.
+The canonical one-, two- and three-player loops recorded 308, 34 and 33 idle seconds at wall-6, with whole routes of 121, 110 and 110 minutes.
+
+The High Gorge coach-fit, tail-clearance and arrival audits use the pre-join stop list. The five lap halts open together on the sixth lay. The kit-halt queries in `railway-sys-route-kit.ts` map each shipment to its delivery platform using the running line while its stock and rack follow its origin.
+
 - [ ] **3. Seeds and jumps (S; "High-risk implementation": Codex gpt-6.2-astra medium).** `src/sim/railway-seed-legs.ts`:
       `wall-closed` (the leg laid) now includes the join and is re-pinned; new `lap-ride` (the join plus enough running
       time for a through train to reach the Gorge from the Wall: the still's state); `SEED_STAGES` and its golden shard;
       `src/world/railway-jump.ts` a "The lap" row on line 2's Gorge platform (not "Ring joined", which is Ring Island's
       rivet). Verify: `test/railway-jump.test.ts`; each stage's invariant check; the whole server suite.
-- [ ] **4. The views (M to L; "Player-visible implementation": Codex gpt-6.2-astra medium, high for the train lateral).**
-      Files: `src/entities/railway/train-view.ts` (path and lateral by running line, cars by origin; past the joint a
-      line 2 train draws on the `cave` row's path at `LAP_S0 − s` with `rowLat` and the track flipped, the West landing's
-      start crossover mirrored); `src/entities/railway/line2-path.ts` (`line2Lat` past the Gorge hands to the row's);
+- [ ] **4. The remaining views (M to L; "Player-visible implementation": Codex gpt-6.2-astra medium).**
+      - [x] Moved into step 2 after independent review: joined island map, five transferred platform levers, cave departure boards, Stack buffers and the rail-height crossing at the joint.
+      - [x] The [joined island map](greybox-lap/joined-halt-map.png) shows all 15 halt positions. The [Port Quay board](greybox-lap/joined-port-quay-board.png) lists the 13 served halts. All four Port Quay and Saltpan handles accepted their signed calls through the mounted interaction.
+      - [x] [High Gorge's two handles](greybox-lap/joined-gorge-handles.png) call toward Village and West landing. Wall head 5 is the other terminus that becomes a through stop. The mounted test pulls both directions at both places.
+      - [x] A Chromium reload with a saved `cave:3` ride reached [Port Quay](greybox-lap/joined-port-quay-reload.png). The quay starts mounting behind the loading cover. The search tries both Port Quay landings before any other halt. The existing scenery wait and Home fallback still apply.
+      - [x] [Through train at the plank crossing](greybox-lap/train-on-gorge-crossing.png) and [two frames of its passage](greybox-lap/train-through-gorge.png), captured from the arrived room. The trailing car crosses the walkway after the engine clears it.
+      - [ ] Remaining step 4 views and proofs listed below.
+
+      Files:
       `src/content/levels/gorge.ts` and `leg-view.ts` (the concourse's middle becomes the plank crossing with its two
       ramps once joined, `liftOrWait` as every solid near a player; line 2's Gorge buffers, end board and crossover lifted
       once joined; section 6's lay drawn into line 2's rails; the end board's placeholder before);
@@ -365,18 +401,23 @@ to 3 (src/sim, src/world) is an independent one before merge, by the row `npm ru
 
 After steps 1 to 5 are on main; named proofs, once:
 
-- [ ] `npm run loop -- run` for one to three players: `idle s` at `wall-6` beside Checkpoint E's (308, 268, 252), and the
+- [x] `npm run loop -- run` for one to three players: `idle s` at `wall-6` beside Checkpoint E's (308, 268, 252), and the
       whole route's minutes; the ride home from the Wall now has no change.
 - [ ] The bot segment `--from wall-mid --to wall --long`, and leg 6's segment from `wall-closed` (it waited on the Gorge
       platform for a homeward train, #2518): both pass.
 - [ ] `npm run test:net` with `railwayLegRejoin` taking `wall` at `wall-deep`, the carrier leaving and rejoining across
       the sixth lay: the rows exact at every checkpoint.
-- [ ] The service fuzz's long run at the joined stage (pasted in step 2) and leg 5's re-run beside it.
+- [x] The service fuzz's long run at the joined stage (pasted in step 2) and leg 5's re-run beside it.
 - [ ] Stills and the motion sheet from step 4 on one sheet.
-- [ ] The boot probe. `npm run perf` is not needed (no new train, a few boxes); report the Gorge's counts from step 4.
+- [x] The boot probe. `npm run perf` is not needed (no new train, a few boxes); report the Gorge's counts from step 4.
 - [ ] A device line on the Mac, reported, not a gate.
 
 ### Order, and what waits
+
+Step 2 includes the running path, lateral and bell cord in the train view. A shared numeric car-pose calculation also drives the tick proof. Stop lookups, return destinations, route indicators and train markers follow the running line. The car order and orientation
+stay with the slot's original consist. The joined path samples the cave row in reverse, including the West landing
+start crossover. Prove the occupied deck, seat and platform poses at West landing and Port Quay tick by tick across
+the sixth lay. Ship these changes with steps 1 and 2. Independent review also brought the island map, cave boards, levers and joint crossing forward.
 
 | Step | Needs on main first | Why |
 | --- | --- | --- |
@@ -385,9 +426,7 @@ After steps 1 to 5 are on main; named proofs, once:
 | 4 | Step 3 | Stills come from `lap-ride` |
 | 5 | Step 4 and order choice step 5 | The bot rides what step 4 draws; order choice edits the same bot and loop files |
 
-**Between the bump and step 4** rooms that lay the Wall's last section run trains through the Gorge over the undrawn
-joint and the old concourse (a train drawn through a slab), as legs 3 to 5 ran over undrawn track until their views.
-Worth knowing before a playtest.
+The crossing, through rails and terminal clearance are part of step 2. The remaining step 4 proofs use the lap-ride seed.
 
 ## Level findings
 

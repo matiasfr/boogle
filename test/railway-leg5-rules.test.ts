@@ -46,10 +46,10 @@ test('cave trains relay six Wall kits through the prefix of open halts', () => {
     assert.equal(r.laid, laid);
     assert.deepEqual(
       stops,
-      RAIL_LINES[line]!.halts.slice(0, 4 + laid).map((h) => h.s),
+      (laid === 6 ? [] : RAIL_LINES[line]!.halts.slice(0, 4 + laid)).map((h) => h.s),
     );
-    assert.equal(fleetOf(line, legsLaid(w), stops), [2, 2, 3, 3, 4, 4, 5][laid]);
-    for (let head = 1; head <= Math.min(5, laid); head++)
+    assert.equal(fleetOf(line, legsLaid(w), stops), [2, 2, 3, 3, 4, 4, 0][laid]);
+    for (let head = 1; head <= (laid === 6 ? 0 : Math.min(5, laid)); head++)
       for (const dir of [-1, 1])
         assert.equal(trainPassesBy(line, head + 3, dir, stops.length), [1, 2, 4].includes(head) && laid >= head + 2);
     for (const [kind, loaded, depot, held] of [

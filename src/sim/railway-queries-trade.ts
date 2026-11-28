@@ -26,7 +26,9 @@ import { WORKS } from './railway-works-layout.ts';
 import type { RailTrain } from './railway-train.ts';
 import { Plot, Town, Train, Works, Yard } from './railway-components.ts';
 import { footingsOwed, kitOwed, stopsOf, wagonSlot, worksId, type Row } from './railway-queries.ts';
-import { legKitWaiting } from './railway-queries-route.ts';
+import { gorgeStop, runLine } from './railway-lap.ts';
+import { WALL_LEG } from './railway-lines.ts';
+import { legDone, legKitWaiting } from './railway-queries-route.ts';
 
 export const yardId = (w: World, slot: number) => w.lookup(Yard, slot)!;
 export const townId = (w: World, slot: number) => w.lookup(Town, slot)!;
@@ -65,11 +67,12 @@ export function plotsStaked(w: World, town: number): number[] {
  * end needs none: every train stands there. A train standing at the yard for any other reason loads all the same
  * (freightLoads). */
 export function freightStop(w: World, slot: number, r: Readonly<RailTrain>, k: number, dir: number) {
+  // The yard belongs to the original freight car. Its stop is on the running line.
   const line = RAIL_TRAINS[slot]!.line,
     y = lineYard(line);
   if (y < 0 || dir >= 0) return false;
   const yard: TradeYard = TRADE.yards[y]!;
-  if (k !== yard.stop || k === 0 || k >= stopsOf(w, line).length - 1) return false;
+  if (k !== yard.stop || k === 0 || k >= stopsOf(w, runLine(slot, legDone(w, WALL_LEG))).length - 1) return false;
   if (yard.after === 'pier' && w.get(Works, worksId(w))!.pierSet < WORKS.pier) return false;
   // Ruling D (greybox route, 12 November; amends call 4's kit exemption): no stop while a kit is owed or aboard and able
   // to unload at a halt open now; a leg kit waiting for its railhead (legKitWaiting) is no errand.
@@ -85,6 +88,7 @@ export function freightStop(w: World, slot: number, r: Readonly<RailTrain>, k: n
  * riders' far end follows line 2's end as Q6, Q7 and the rivet move it on; a query, no state). */
 export function routeFar(w: World, route: number) {
   const r: TradeRoute = TRADE.routes[route]!;
+  if (r.b === 'end' && r.line === LINE2 && legDone(w, WALL_LEG)) return gorgeStop;
   return r.b === 'end' ? stopsOf(w, r.line).length - 1 : r.b;
 }
 /** The route halt a train going `dir` carries its riders to: the far halt going up (+s), `a` going down. */
