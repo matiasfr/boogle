@@ -41,7 +41,7 @@ import { haltStands } from '../src/entities/railway/return-halts.ts';
 import { haltMap } from '../src/entities/railway/halt-map.ts';
 import * as layout from '../src/place/layout.ts';
 import { rowLeverCall } from '../src/entities/railway/lever-place.ts';
-import { returnCandidates, haltLandings } from '../src/place/return-spot.ts';
+import { createReturnSearch, returnCandidates, haltLandings } from '../src/place/return-spot.ts';
 import { lapServiceShard } from './helpers/railway-route-rules.ts';
 
 lapServiceShard();
@@ -350,6 +350,19 @@ test('a saved Port Quay ride keeps its destination after the sixth lay', () => {
   assert.equal(first(), 'cave:3');
   advance(s, 2);
   assert.equal(first(), 'line2:12');
+  const port = candidates.find((p) => p.halt === 'line2:12' && p.checked)!;
+  const search = createReturnSearch(saved, candidates, (p) =>
+    haltStands(p.line!, p.stop!, stopsOf(s.w, p.line!).length),
+  );
+  const probes = { settled: () => true, standable: () => true, near: () => null };
+  for (let i = 0; i < 80; i++) {
+    const result = search.step(i / 10, probes);
+    if (result.kind === 'hold') continue;
+    assert.equal(result.kind, 'land');
+    assert.deepEqual(result.from, port);
+    return;
+  }
+  assert.fail('return search did not land at Port Quay');
 });
 test('the arrived passenger coach passes the Gorge without a request', () => {
   const s = unaudited(buildSeedWorld('arrived'));

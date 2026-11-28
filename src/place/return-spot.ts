@@ -119,9 +119,8 @@ export function haltLandings(): ReturnCandidate[] {
 }
 /** The order a return tries: the spot (unless the last sighting was over 25 m from it), then the halt the train was
  * running to when the record knows it, then every other halt nearest first. Only halts that `stands` says are built
- * in this room now are listed, one landing per halt (its nearest) and one halt per physical landing (two catalogue
- * halts can share one: a future line's first halt at Gorge), so a slot is never spent on a halt that cannot work
- * or on the same spot twice. The search's time budget, not a count, bounds how many are tried. */
+ * in this room now are listed, all landings at the saved halt and the nearest at each other halt. Two catalogue
+ * halts can share a landing, so each physical spot is tried once. The search's time budget bounds the attempts. */
 export function returnCandidates(
   spot: ReturnSpot,
   halts: readonly ReturnCandidate[],
@@ -141,11 +140,13 @@ export function returnCandidates(
     const joined = joinedCaveStop(old?.line ?? -1, old?.stop ?? -1);
     if (joined >= 0) next = standing.find((p) => p.line === LINE2 && p.stop === joined);
   }
-  const order = (next ? [next, ...standing.filter((p) => p !== next)] : standing).filter((p) => {
+  const destination = next ? next.halt : undefined;
+  if (destination) standing.sort((a, b) => Number(b.halt === destination) - Number(a.halt === destination));
+  const order = standing.filter((p) => {
     const landing = `${p.x}:${p.y}:${p.z}`;
     if (seenLanding.has(landing) || (p.halt && seenHalt.has(p.halt))) return false;
     seenLanding.add(landing);
-    if (p.halt) seenHalt.add(p.halt);
+    if (p.halt && p.halt !== destination) seenHalt.add(p.halt);
     return true;
   });
   return !spot.ride || distance(spot) <= 25 ? [{ x: spot.x, y: spot.y, z: spot.z }, ...order] : order;
