@@ -106,16 +106,17 @@ export function quarryQueued(w: World) {
   const need = workNeed(w, 3);
   return need && Math.min(need, quarryMarked(w));
 }
-export function quarryRoom(w: World) {
-  const need = workNeed(w, 3);
-  return need && Math.max(0, need - quarryMarked(w));
+/** The share still available to a Village car after loads aboard and Quarry reservations. */
+export function homeWorkNeed(w: World, stop: number) {
+  const need = workNeed(w, stop);
+  return need && stop === 3 ? Math.max(0, need - quarryMarked(w)) : need;
 }
 export function workDestination(w: World) {
   // The kiln precedes Q6 on the board. Both can receive logs after the throat opens.
   if (workNeed(w, 1)) return 1;
   const k = kitJob(w);
   const stop = k < 0 ? 5 : LINE2_STATIONS[k]!.kitStop!;
-  const need = workNeed(w, stop);
+  const need = homeWorkNeed(w, stop);
   const batch = castBatch(w);
   if (batch.n && (batch.stone || !need || w.get(Shed, w.single(Shed))!.fitted < 0)) return CAST;
   return need ? stop : 0;
@@ -129,11 +130,11 @@ export function rideableLogs(w: World) {
 export function workQueued(w: World, stop: number, stock = stop === 1 ? rideableLogs(w) : donated(w)) {
   if (stop === CAST) return castBatch(w).n;
   const available = stop === 1 ? stock : Math.max(0, stock - workNeed(w, 1));
-  return Math.min(available, stop === 3 ? quarryRoom(w) : workNeed(w, stop));
+  return Math.min(available, homeWorkNeed(w, stop));
 }
 /** A new Quarry offer can claim only the share not already announced at either yard. */
 export function quarryOffer(w: World) {
-  const room = quarryRoom(w);
+  const room = homeWorkNeed(w, 3);
   return room && room - workQueued(w, 3);
 }
 export function railGiftRides(w: World) {
@@ -149,7 +150,7 @@ export function giftRides(w: World, stone = false) {
   if (rail.trains >= 0) {
     const kit = kitJob(w);
     const stop = kit < 0 ? 5 : LINE2_STATIONS[kit]!.kitStop!;
-    const demand = workNeed(w, 1) + (stop === 3 ? quarryRoom(w) : workNeed(w, stop));
+    const demand = workNeed(w, 1) + homeWorkNeed(w, stop);
     if (castRoom(w) > workAboard(w, CAST, false)) return true;
     if (demand) return donated(w) < demand;
   }
@@ -232,16 +233,7 @@ export function worksThanks(w: World, stop = 0) {
       if (t.workStop === stop) for (const giver of giverList(t.workGivers)) aboard.add(giver);
     });
   const batch = stop === CAST ? castBatch(w) : { n: 0, stone: false };
-  const demand =
-    stop === CAST
-      ? batch.n
-      : stop === 3
-        ? quarryRoom(w)
-        : stop
-          ? workNeed(w, stop)
-          : workDestination(w)
-            ? 0
-            : giftQueued(w);
+  const demand = stop === CAST ? batch.n : stop ? homeWorkNeed(w, stop) : workDestination(w) ? 0 : giftQueued(w);
   let local = stop === 3 ? quarryQueued(w) : 0;
   const first = stop && stop !== 1 ? workNeed(w, 1) : 0;
   let queued = 0;

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { act, advance, buildSeedWorld, chopTo, railSession, unaudited } from './helpers/rail.ts';
 import { account, boiler, cart, qjob, rail, rocks, steel, trains, works, worksClock } from '../src/sim/railway-rows.ts';
 import { CART_PHASE } from '../src/sim/railway-cart.ts';
-import { castBatch, workAboard, workNeed } from '../src/sim/railway-queries-gift.ts';
+import { CAST, castBatch, workAboard, workDestination, workNeed } from '../src/sim/railway-queries-gift.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
 import { giftAboard, giftPourRoom, giftQueued, giftRides, worksThanks } from '../src/sim/railway-queries-gift.ts';
 import { laySection } from '../src/sim/railway-seed-legs.ts';
@@ -192,6 +192,40 @@ test('Quarry timber reaches the Pier after restore with Home and cast stock kept
   assert.equal(qjob(s.w, 6).stock, n);
   assert.equal(rail(s.w).rack, home);
   assert.deepEqual(worksThanks(s.w, 3), ['b']);
+});
+
+test('a complete Quarry reservation leaves the Home car free to load a cast batch', () => {
+  const s = unaudited(buildSeedWorld('crossing-done'));
+  const atHome = () =>
+    LINE_SLOTS[LINE2]!.some((slot) => {
+      const r = train(s.w, slot);
+      return r.phase === TRAIN_PHASE.STAND && r.at === 0 && !r.logs && !r.workStop && !r.freight;
+    });
+  for (let i = 0; works(s.w).rack !== 6 || !atHome(); i++) {
+    assert.ok(i < 6000);
+    advance(s, 1);
+    railwayCheck(s.w);
+  }
+  railSession(s.w, 'c', 1);
+  chopTo(s, 'c', 12);
+  assert.equal(act(s, 'c', 'rail.deposit', { station: 'Q7', kind: 0, n: 12 }), 12);
+  railwayCheck(s.w);
+  chopTo(s, 'b', 8);
+  assert.ok(act(s, 'b', 'rail.haltPut', { yard: 2, kind: 0 }) >= 8);
+  railwayCheck(s.w);
+  railSession(s.w, 'd', 1);
+  assert.equal(act(s, 'd', 'rail.footTake', { rack: 0 }), 1);
+  railwayCheck(s.w);
+  give(s);
+  railwayCheck(s.w);
+  assert.deepEqual(castBatch(s.w), { n: 4, stone: false });
+  assert.equal(workDestination(s.w), CAST);
+  advance(s, 1);
+  railwayCheck(s.w);
+  assert.equal(workAboard(s.w, CAST), 4);
+  assert.equal(account(s.w, 'b')!.quarryGift + workAboard(s.w, 3), 8);
+  assert.deepEqual(worksThanks(s.w, 3).sort(), ['b', 'c']);
+  assert.deepEqual(worksThanks(s.w, CAST), ['a']);
 });
 
 test('the kiln car leaves queued Q6 timber for a second dispatch', () => {

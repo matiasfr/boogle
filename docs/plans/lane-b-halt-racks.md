@@ -37,4 +37,6 @@ The brief names two towns without catalogued yards. Step 1 limits the build to o
 
 The verified fixture replay preserves the 86 seed-stage ticks and the six streams of op labels and accepted results. The new saved account field changes hashes. The host still judges the existing yard reach and rail.haltPut shape.
 
+One contention witness initially selected stop 3 for a Home car while Quarry already covered all eight remaining Q7 logs and four Home logs could buy a cast. Home dispatch now chooses its stop from the same unreserved quantity it uses to load. The test observes four aboard for the cast, eight retained for the Pier, and a separate Thanks list for each.
+
 In the [two-player Pier capture](lane-b-halt-racks/pier-works.png), the player named Second lifts eight ordinary logs from the Quarry bin and presses Give to works there after the pickup flight. Their friend sees Thanks · Second and 0 queued, 8 aboard at the Pier. Its bill still reads 0/20 logs. Both clients observed one named contributor and the dispatch. The replay and host tests follow the same route to the pour. The co-op seed places ordinary stock in the bin before Q7 opens.

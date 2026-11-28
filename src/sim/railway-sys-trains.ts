@@ -79,12 +79,11 @@ import {
   workHalt,
   QUARRY_YARD,
   quarryQueued,
-  quarryRoom,
+  homeWorkNeed,
   giverList,
   rideableLogs,
   takeGivers,
   workDestination,
-  workNeed,
   workQueued,
   workRoom,
 } from './railway-queries-gift.ts';
@@ -375,7 +374,7 @@ function trainIO(
               ? Math.min(
                   stop === 1 ? rideableLogs(w) : donated(w),
                   stop === 1 ? LINE2_KIT.logs - r.logs : LINE2_KIT.logs,
-                  stop === 3 ? quarryRoom(w) : workNeed(w, stop),
+                  homeWorkNeed(w, stop),
                 )
               : 0;
         if (n > 0) {
