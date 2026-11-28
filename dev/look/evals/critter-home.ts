@@ -1,8 +1,9 @@
+// npm run look -- --eval dev/look/evals/critter-home.ts --query habitat=ring --rail-seed ring-joined --cam 1403,9,-867.5 --look 1387,9,-893 --size 1200x750 --name ring --warm 1 --frames 2
 /** Browser proof setup for dev/look/look.ts. Use --query habitat=ring with --rail-seed ring-joined for the exit. */
 import type { InstancedMesh } from 'three';
 const { railReady } = (await import(
   '/dev/look/rail-read.ts' as string
-)) as typeof import('../../../dev/look/rail-read.ts');
+)) as typeof import('../rail-read.ts');
 const { me } = (await import('/src/player/state.ts' as string)) as typeof import('../../../src/player/state.ts');
 const { teleport } = (await import(
   '/src/physics/engine.ts' as string
@@ -38,7 +39,7 @@ const expected = low ? [20, 6, 19] : [40, 12, 38];
 if (low) {
   const { setPlayerGraphics } = (await import(
     '/src/graphics-settings.ts' as string
-  )) as typeof import('../../graphics-settings.ts');
+  )) as typeof import('../../../src/graphics-settings.ts');
   await setPlayerGraphics('detail', 'lowest');
   const deadline = performance.now() + 10000;
   while ((scene.getObjectByName('critter-home-school') as InstancedMesh)?.count !== 20) {
