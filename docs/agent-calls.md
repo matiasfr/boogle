@@ -456,6 +456,7 @@ C5 ruling, 15 November: **counts everywhere; squares gone** — an [owner call](
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 2026-11-28 | Default: expose the first frame’s bill before wake and leave 3 m to the side when a guest occupies the landing | [start-landing](plans/start-landing.md) | Builder | Phone framing and two arrivals on one pad | open |
 | 2026-11-28 | Default: two pads aim at the wake spot and the hall board, whose face turns toward the square | [start-landing](plans/start-landing.md) | Builder | Terrain and the actual post position set the facing | open |
 | 2026-11-28 | Default: lock the pad at Jump in and reuse the phase after ordinary return candidates fail | [start-landing](plans/start-landing.md) | Builder | A guest can join during the last lay or resume a safe spot | open |
 | 2026-11-27 | Amended: only Lane B’s durable worksThanks supplies names for the board; omit Thanks until available | [lane-a-works](plans/lane-a-works.md#design-review-2026-11-27), call 12 | Orchestrator | The prediction callback can precede a refusal | open |

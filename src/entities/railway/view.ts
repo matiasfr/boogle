@@ -504,7 +504,6 @@ export async function createRailwayView(adapter: RailwayAdapter) {
       rebuild = null;
       wasReady = sessionReady;
       everReady ||= sessionReady;
-      const phase = phaseNow();
       const ignition = railEngineStart(world());
       if (ignition !== engineStart) {
         engineStart = ignition;
@@ -572,7 +571,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
         });
         const pickReady = index === 0 && line1PickReady(world());
         station.setTag(
-          index === active && !job.completion && phase !== 'asleep' && phase !== 'waking',
+          index === active && !job.completion,
           undefined,
           pickReady ? offeredParts : index === 0 && job.start < 0 ? promisedParts : undefined,
         );
