@@ -2,7 +2,7 @@
 // server leaves on the board. The plot view runs from its source with its render dependencies stubbed.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Vector3, Matrix4 } from 'three/webgpu';
+import { Vector3, Matrix4, Line3, Object3D } from 'three/webgpu';
 import { sourceFunction } from '../dev/level/source.ts';
 import { buildSeedWorld } from '../src/sim/railway-seeds.ts';
 import { plot } from '../src/sim/railway-rows.ts';
@@ -295,4 +295,68 @@ test('review B2: another plot refusal leaves this plot waiting; its own refusal 
   view.update(read(), 0);
   assert.equal(view.targets()[0]?.blocked, undefined);
   assert.ok(view.targets()[0]?.run);
+});
+
+function watchDunk(samples: number[], onSplash?: (x: number, z: number, strength: number, level: number) => void) {
+  const ball = { e: 1, held: false, pose: { p: new Vector3(), v: new Vector3(8, 0, 0) } };
+  const create = sourceFunction<(...args: unknown[]) => { update(kind: number, now: number): void }>(
+    'src/entities/town/ball-targets.ts',
+    'createBallTargets',
+    {
+      ball,
+      Vector3,
+      Line3,
+      GOLF_CUPS: [],
+      toWorld: (x: number) => x,
+      surfaceHeight: () => 0,
+      PLOT_KIND: { golf: 4, dunk: 5 },
+      document: { hidden: false },
+      clank() {},
+      splash: (...args: [number, number, number, number]) => {
+        hits++;
+        onSplash?.(...args);
+      },
+      instantiate() {
+        const root = new Object3D();
+        const bucket = new Object3D();
+        bucket.name = 'bucket';
+        root.add(bucket);
+        return { root, setEnabled() {} };
+      },
+    },
+  );
+  let hits = 0;
+  const activity = create({}, { x: 0, z: 0 }, 0);
+  for (const ms of samples) {
+    ball.pose.p.set(0.78 + (ms - 160) * 0.008, 1.5, 0.05);
+    activity.update(5, ms);
+  }
+  return hits;
+}
+
+test('a visible peer that stalls during a paddle crossing still sees the dunk', () => {
+  assert.equal(watchDunk([0, 50, 100, 150, 200, 250, 300, 350]), 1);
+  assert.equal(watchDunk([0, 300, 350]), 1);
+});
+
+test('bucket spray can descend to a volunteer on the marked pad', () => {
+  const drops: { floor: number }[] = [];
+  const splash = sourceFunction<(x: number, z: number, strength: number, level: number) => void>(
+    'src/render/splash.ts',
+    'splash',
+    {
+      waterField: { nearby: () => ({ body: 'land' }) },
+      reducedMotion: false,
+      readableIntensity: () => 1,
+      GRAVITY: 18,
+      FOAM: {},
+      emit: (p: { floor: number }) => drops.push(p),
+    },
+  );
+  assert.equal(watchDunk([0, 50, 100, 150, 200], splash), 1);
+  assert.ok(drops.length);
+  assert.ok(
+    drops.some((p) => p.floor < 2),
+    'the spray dies above a standing volunteer',
+  );
 });
