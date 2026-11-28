@@ -46,11 +46,16 @@ export function createWorksBoard(owner: OwnedView) {
     work = null;
     giftRows = [];
   });
-  return (next: RoomWorks, thanks: string[], cargo?: [number, number]) => {
+  return (next: RoomWorks, thanks: string[], cargo?: [number, number, number?]) => {
     const rows: string[] = [];
     if (thanks.length) rows.push(label.thanks + ' \u00b7 ' + thanks.join(', '));
-    if (cargo)
-      rows.push(label.way + ' \u00b7 ' + cargo[0] + ' ' + label.queued + '   ' + cargo[1] + ' ' + label.aboard);
+    if (cargo) {
+      const loads = [];
+      if (cargo[0] || cargo[1] || !cargo[2])
+        loads.push(cargo[0] + ' ' + label.queued + '   ' + cargo[1] + ' ' + label.aboard);
+      if (cargo[2]) loads.push(cargo[2] + (cargo[2] === 1 ? ' rail' : ' rails') + ' to frame');
+      rows.push(label.way + ' \u00b7 ' + loads.join('   '));
+    }
     const key = JSON.stringify([next, rows]);
     if (key === last) return;
     last = key;

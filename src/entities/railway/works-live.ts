@@ -96,15 +96,16 @@ export async function createRailwayWorksLive(
           : [];
       const queued = stop > 0 ? workQueued(world, stop) : 0;
       const aboard = stop > 0 ? workAboard(world, stop, false) : 0;
+      const rails = giftInTransit(world, 'giftRails');
       updateBoard(
         current,
         names,
         stop > 0
-          ? queued || aboard
-            ? [queued, aboard]
+          ? queued || aboard || rails
+            ? [queued, aboard, rails]
             : undefined
-          : routeSection && (giftRides(world) || giftInTransit(world))
-            ? [giftQueued(world), giftInTransit(world)]
+          : rails || (routeSection && (giftRides(world) || giftInTransit(world)))
+            ? [giftQueued(world), giftInTransit(world), rails]
             : undefined,
       );
       publication = world;

@@ -90,6 +90,7 @@ export const RAIL_FROM = {
   'steel-home': { railFrom: 'steel', after: 'steel-home', bot: 'railway-steel-bot.ts' },
   // Leg 1 (greybox route step 5): the stack line to High Gorge. `--from ring-joined --to gorge` runs it too.
   'gorge-open': { railFrom: 'legs', after: 'ring-joined', bot: 'railway-legs-bot.ts' },
+  'stack-rails': { railFrom: 'legs', after: 'ring-joined', bot: 'railway-legs-bot.ts' },
   'gorge-mid': { railFrom: 'legs', after: 'ring-joined', bot: 'railway-legs-bot.ts' },
   // Leg 2 (greybox-leg2.md, step 5): the pick, the barrier, the incline to Bell Rock, the seeds, the ride home and the bay
   // cut, from High Gorge reached (the seed starts at the Village).

@@ -221,6 +221,8 @@ All motion and sparkle are Local; accepted contacts still own harvest sounds, ch
 
 Village log gifts can also ride Line 2 to the open kiln, Q6, Q7 or the Ring Island steel works. The station board names contributors to the displayed bill and shows how much timber is queued or aboard. At the destination a player picks the logs up and feeds the frame by hand.
 
+Village rail gifts ride the kit train to an open leg frame. Once its log bill is full, the lit Home forge casts one rail per pair of gifted logs for the remaining rail seats. The train loads donated rails first. On arrival it feeds only the missing rails and takes spare gifts home to the Village rail bin.
+
 ## The place
 
 **Home's one station (13 November, home-flip X1/X2).** The terminus is the only Home. Two buffer roads share a
