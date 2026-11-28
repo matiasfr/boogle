@@ -213,6 +213,17 @@ On approach, limestone courses stopped at the front corners of the arch. The nea
 
 `src/entities/route-greybox/notch-shoulders.ts` fits the returns to the existing piers. Both 1200 × 750 stills look from (−1558, 13, −945) toward (−1620, 24, −1000) at 62° FOV. The before view hides the four added instances. The train seed timed out, so the pair shows the approach without a train. [Before](greybox-look/card17-notch-before.jpg) · [After](greybox-look/card17-notch-after.jpg)
 
+### Card 18, the White Wall’s south approach
+
+From the arriving train, a thin row of chalk beds ran along the water below a tall, smooth wall. Three spurs of different heights now rise from those beds on the first south islet. The existing chalk material keeps the spurs and the high face the same colour.
+
+Arrival survey for card 19:
+
+- Gorge split: the two sandstone walls already frame the train, with the white stair visible on the right.
+- Original Island: the red-and-white lighthouse rises clear of the palms. The pale platform leads straight toward it.
+
+`src/entities/route-greybox/wall-chalk.ts` fits the three spurs to the mapped shore in the existing rock batch. The 1200 × 750 pair looks from (−614.5, 5.5, 721) toward (−754, 39, 615) at 62° FOV. The near spur catches the light across its stepped face, and open water separates the islets ahead. The before view hides the three added instances. The train seed timed out, so these views show the approach without the train. [Before](greybox-look/card18-wall-before.jpg) · [After](greybox-look/card18-wall-after.jpg)
+
 ## Design review (2026-11-27)
 
 | Call | Kind | Basis |

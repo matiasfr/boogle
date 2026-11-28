@@ -27,11 +27,20 @@ export async function wallChalk(owner: OwnedView, islet: keyof typeof shores) {
     mix(beds, color('#c9c5bb').mul(vertexColor().r.mul(0.25).add(0.75)), 0.94),
   );
   owner.cleanup(() => chalk.dispose());
-  const faces = new THREE.InstancedMesh(kit.get('face_10')!, chalk, 9);
+  const shoreCount = 9;
+  const spurs =
+    islet === 'wall-s2'
+      ? [
+          { bay: 2, height: 4 },
+          { bay: 5, height: 5.5 },
+          { bay: 7, height: 3 },
+        ]
+      : [];
+  const faces = new THREE.InstancedMesh(kit.get('face_10')!, chalk, shoreCount + spurs.length);
   faces.name = 'White Wall chalk foot';
   const lip: number[] = [],
     grass: number[] = [];
-  for (let i = 0; i < faces.count; i++) {
+  for (let i = 0; i < shoreCount; i++) {
     const a = new THREE.Vector3().fromArray(prism.vertices, 3 * (first + i));
     const b = new THREE.Vector3().fromArray(prism.vertices, 3 * (first + i + 1));
     const dx = b.x - a.x,
@@ -48,6 +57,18 @@ export async function wallChalk(owner: OwnedView, islet: keyof typeof shores) {
       i,
       matrix.scale(new THREE.Vector3(length / 10, 1.45, 0.6)).setPosition(mid.x - dz * toe, -2, mid.z + dx * toe),
     );
+    // Narrow chalk spurs climb out of the continuous waterline beds.
+    const spur = spurs.findIndex(({ bay }) => bay === i);
+    if (spur >= 0) {
+      const projection = (3.2 * facing) / length;
+      faces.setMatrixAt(
+        shoreCount + spur,
+        new THREE.Matrix4()
+          .makeRotationY(yaw + (facing < 0 ? Math.PI : 0))
+          .scale(new THREE.Vector3(length / 15, spurs[spur]!.height, 2.1))
+          .setPosition(mid.x - dz * projection, -2, mid.z + dx * projection),
+      );
+    }
     // The backdrop cuts its 250 m long axis at -0.60 and +0.44 radii.
     // Leave breaks where either end crosses a riser.
     const height = (s: number) => (s < -150 ? 91.2 : s > 110 ? 108 : 120);
