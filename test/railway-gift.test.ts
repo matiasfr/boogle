@@ -8,7 +8,7 @@ import { laySection } from '../src/sim/railway-seed-legs.ts';
 import { RAIL_LEGS } from '../src/sim/railway-route.ts';
 import type { Seed } from '../src/sim/railway-seed-route.ts';
 
-import { Leg, Rail, Route, Train } from '../src/sim/railway-components.ts';
+import { Leg, LegYard, Rail, Route, Train } from '../src/sim/railway-components.ts';
 import {
   legId,
   legKitCarriers,
@@ -23,6 +23,42 @@ import { LINE2 } from '../src/sim/railway-lines.ts';
 import { LINE_SLOTS } from '../src/sim/railway-trains.ts';
 import { TRAIN_PHASE } from '../src/sim/railway-train.ts';
 import { train } from '../src/sim/railway-rows.ts';
+
+for (const [stage, k, expected] of [
+  ['incline-open', 1, 8],
+  ['incline-mid', 1, 8],
+  ['causeway-open', 7, 6],
+] as const) {
+  const base = unaudited(buildSeedWorld(stage));
+  test(stage + ' delivers a Home gift to the yard leg', () => {
+    const s = unaudited(base);
+    give(s);
+    assert.deepEqual(worksThanks(s.w), ['a']);
+    let yardMark = 0;
+    for (let ticks = 0; legRow(s.w, k).logs < expected; ticks++) {
+      assert.ok(ticks < 24000, 'gift reaches the frame');
+      advance(s, 1);
+      const yard = s.w.get(LegYard, s.w.lookup(LegYard, 0)!)!;
+      if (stage === 'causeway-open' && !yardMark && yard.gift === expected) {
+        const rejoined = unaudited(s);
+        assert.equal(rejoined.w.hash(), s.w.hash());
+        chopTo(rejoined, 'b', expected);
+        const before = rail(rejoined.w).rack;
+        assert.ok(act(rejoined, 'b', 'rail.legStock', { leg: k }) >= expected);
+        assert.equal(legRow(rejoined.w, k).logs, expected);
+        assert.equal(rail(rejoined.w).rack, before + expected);
+        assert.equal(rail(rejoined.w).giftOut, 0);
+        railwayCheck(rejoined.w);
+      }
+      yardMark = Math.max(yardMark, yard.gift);
+      railwayCheck(s.w);
+    }
+    assert.equal(yardMark, stage === 'incline-open' ? 0 : expected);
+    assert.equal(legRow(s.w, k).logs, expected);
+    assert.equal(rail(s.w).giftOut, 0);
+    assert.equal(rail(s.w).rack, 8 - expected);
+  });
+}
 
 function give(s: Seed) {
   chopTo(s, 'a', 8);

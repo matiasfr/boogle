@@ -373,9 +373,12 @@ export const Leg = defineComponent(
   { key: 'slot', defaults: { start: -1 } },
 );
 /** A junction yard by RAIL_YARDS slot (`LegYard`, kind `legYard`: slice 5's `Yard` is the town economy's crate yard):
- * the kit units its `fedBy` leg's trains have unloaded there for the legs that load there. Nothing feeds it until leg
- * 2's rules. */
-export const LegYard = defineComponent('legYard', { slot: 'int', logs: 'int', rails: 'int' }, { key: 'slot' });
+ * the kit units its feeder has unloaded for the branch. Gift marks the subset of logs destined for the frame. */
+export const LegYard = defineComponent(
+  'legYard',
+  { slot: 'int', logs: 'int', rails: 'int', gift: 'int' },
+  { key: 'slot' },
+);
 /** The route's one row: the grants taken (bit k: RAIL_GRANTS[k]), the gates opened (bit k: RAIL_GATES[k]) and the
  * tick the room arrived at the meeting marker (-1 never). */
 export const Route = defineComponent(

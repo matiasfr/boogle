@@ -20,6 +20,8 @@ import { MAX_PLAYERS } from '../../src/sim/roster.ts';
 import type { ServerPacket } from '../../src/world/replicate.ts';
 
 import { buildSeedWorld } from '../../src/sim/railway-seeds.ts';
+import { HALT_YARDS } from '../../src/sim/railway-yard-layout.ts';
+import { worksThanks } from '../../src/sim/railway-queries-gift.ts';
 import { Pile, Train, Town } from '../../src/sim/railway-components.ts';
 import { railTick } from '../../src/sim/railway-systems.ts';
 import { trains, town } from '../../src/sim/railway-rows.ts';
@@ -27,6 +29,29 @@ import { TRADE } from '../../src/sim/railway-trade-layout.ts';
 import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
 
 type Obj = Record<string, unknown>;
+
+test('a guest gives to the open incline through the host from the Village yard', async () => {
+  const f = await fixture(railwayRoomId('yard-leg-gift'));
+  try {
+    const seed = buildSeedWorld('incline-open');
+    while (f.host.sync.world.tick < seed.t) f.host.step(0.1);
+    await f.host.sync.whenDurable();
+    f.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())), railwayCheck);
+    f.host.rules.railway.touchAll();
+    const epoch = await f.open('b');
+    await f.harvest('b', 2, epoch);
+    const amount = f.host.rules.railway.account('bob')!.carry;
+    const yard = HALT_YARDS[0]!;
+    f.pose('b', yard.x, yard.z);
+    const given = await f.edit('b', { op: 'rail.haltPut', yard: 0, kind: 0 }, epoch);
+    assert.equal(given.status, 'accepted');
+    assert.equal(given.accepted, amount);
+    assert.deepEqual(worksThanks(f.world()), ['bob']);
+    assert.equal(f.host.rules.railway.account('bob')!.carry, 0);
+  } finally {
+    await f.close();
+  }
+});
 const START = 1800000000000;
 
 test('a live railway apply failure preserves the checkpoint through periodic save, pause and close', async (t) => {

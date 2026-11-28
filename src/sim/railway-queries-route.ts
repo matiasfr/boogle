@@ -301,11 +301,15 @@ export const legsServed = (w: World, line: number) =>
 /** Remaining log bill that an arriving gift on this line may fill, before reservations. */
 export function giftBill(w: World, line: number, k: number) {
   const leg = RAIL_LEGS[k]!;
-  if (leg.line !== line || leg.kit !== 'home' || !legOpen(w, k)) return 0;
+  if ((leg.line !== line && legMintLine(k) !== line) || !legOpen(w, k)) return 0;
   const row = legRow(w, k);
   if (row.start >= 0 || (!row.laid && STOCKED_LEGS.includes(k))) return 0;
   return leg.sections[row.laid]!.logs - row.logs;
 }
+/** The Gorge feeder meets the first incline frame before the branch has track. */
+export const giftAtFrame = (w: World, line: number, k: number) =>
+  RAIL_LEGS[k]!.line === line || legKitStop(w, k) === legKitHalt(RAIL_LEGS[k]!.line, w);
+
 /** Row `r` of `line` carries kit that open leg k may take at its drop now (legKitRoom). */
 export function legKitFits(w: World, line: number, k: number, r: Readonly<RailTrain>) {
   const { rack, yard } = legKitRoom(w, line, k);
