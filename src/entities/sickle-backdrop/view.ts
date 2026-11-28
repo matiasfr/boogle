@@ -189,6 +189,14 @@ export function createBackdrop() {
       const a = outline[i]!,
         b = outline[(i + 1) % outline.length]!,
         hole = land.id === BORE.land ? boreHole(a, b) : null;
+      // The north-east arc of the Port bank faces the roundhouse yard.
+      if (land.id === 'port-top' && a[0] > land.c![0] && a[1] < land.c![1]) {
+        const foot = 3;
+        // Bring the battered upper courses clear of the vertical backing face.
+        const outer = (p: XZ): XZ => [p[0] + (p[0] - land.c![0]) * 0.016, p[1] + (p[1] - land.c![1]) * 0.016];
+        course(outer(a), outer(b), 'face_10', 48, foot, (top - foot) / 14.4);
+        course(a, b, 'rim_cap', 36, top, 1.4);
+      }
       if (stack) {
         // The clip makes one long straight cut per stack. Dress those train-facing cuts and the
         // approaching south stack's eastern waterline. The other edges use the bedded backing face.
