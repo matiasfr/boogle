@@ -158,7 +158,8 @@
 // v80 (2026-11-28): save the third plot's spare toy or Boathouse choice and enforce the first-pick dependency.
 // v81 (2026-11-28): Station 1 funds track only. Jump requires the third lay and pack requires the first forge bill.
 // v82 (2026-11-28): the sixth Wall lay joins both fleets on Line 2 and shifts the halt IDs used by rail.call.
-export const WORLD_NS = 'v82';
+// v83 (2026-11-28): Home's fourth priced plot saves the room's golf or dunk choice.
+export const WORLD_NS = 'v83';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.
