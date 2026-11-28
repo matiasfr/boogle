@@ -1,5 +1,5 @@
 {
- "worldNs": "v81",
+ "worldNs": "v82",
  "ticks": 1200,
  "stages": {
   "awake": {
@@ -374,33 +374,33 @@
   },
   "wall-closed": {
    "tick": 34276,
-   "stage": 3757832139,
-   "after": 1295113811
+   "stage": 2133563493,
+   "after": 328286953
   },
   "notch-open": {
    "tick": 34673,
-   "stage": 821602792,
-   "after": 3090037127
+   "stage": 3030338126,
+   "after": 2585722979
   },
   "notch-reached": {
    "tick": 34973,
-   "stage": 1549875157,
-   "after": 4203356710
+   "stage": 3057173791,
+   "after": 2950857004
   },
   "causeway-open": {
    "tick": 36099,
-   "stage": 2907950024,
-   "after": 3736634092
+   "stage": 1999886220,
+   "after": 1259936736
   },
   "island-reached": {
    "tick": 37186,
-   "stage": 3501255558,
-   "after": 3281628946
+   "stage": 1151936840,
+   "after": 3225544242
   },
   "arrived": {
    "tick": 37186,
-   "stage": 344148813,
-   "after": 1466430457
+   "stage": 1632500303,
+   "after": 2317917977
   },
   "trade-ready": {
    "tick": 23017,
