@@ -189,6 +189,12 @@ From coach height the two pale ramps filled the foreground, and the bend in the 
 
 `src/entities/route-greybox/massing-saltpan.ts` colours the existing surfaces. `src/entities/route-greybox/cave-shore.ts` fits the stones to each surface’s length and pitch. The 1200 × 750 desktop pair looks from (556.7, 5.93, 670.42) toward (545.76, 4.93, 703.67). [Before](greybox-look/card13-saltpan-before.png) · [After](greybox-look/card13-saltpan-after.png)
 
+### Card 14, the West sea cave entrance
+
+From the West approach, a square frame of smooth slabs stood beside the layered sandstone shore. Two sandstone jambs and a broken course of rim stones now mark the mouth. The rock courses turn into the passage along its first two walls, framing the strip of daylight at the bend.
+
+`src/entities/route-greybox/cave-shore.ts` fits the cliff kit to the incoming chord. Both 1200 × 750 stills look from (798, 6.75, 37) toward (794, 7, 83). [Before](greybox-look/card14-cave-before.png) · [After](greybox-look/card14-cave-after.png)
+
 ## Design review (2026-11-27)
 
 | Call | Kind | Basis |
