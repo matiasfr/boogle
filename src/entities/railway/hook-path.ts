@@ -11,6 +11,8 @@ export type HookPad = {
 
 export type Point = { x: number; y: number; z: number };
 export type HookRing = { id: string; pad: HookPad; at: Point; land: Point };
+/** Optional targets owned by the resident Gorge hangout. */
+export const gorgeHookRings = new Set<HookRing>();
 export const HOOK_CLIMB = ['p2', 't0', 't1', 't2', 't3', 't4', 't5', 'summit'];
 /** The side trips to the secrets (place-retirement F2): the catwalk under the trestle, the tower's side slab, the
  * quarry's low rock, and the way back up from Far Head's sea stack to the trestle. Their rings come after the climb's. */

@@ -97,7 +97,7 @@ export async function createRailwayHookView(owner: OwnedView) {
       under.position.set(p.x + ox, p.top - thick - 0.04, p.z);
     }
   }
-  const ringMesh = add(new THREE.InstancedMesh(new THREE.TorusGeometry(0.55, 0.09, 8, 22), ringMat, rings.length + 2));
+  const ringMesh = add(new THREE.InstancedMesh(new THREE.TorusGeometry(0.55, 0.09, 8, 22), ringMat, rings.length + 5));
   const climbRings = rings.length;
   const posts = add(
     new THREE.InstancedMesh(new THREE.BoxGeometry(0.22, 1, 0.22), flatMod.flat('#917b5e', 0.9), climbRings),
@@ -361,6 +361,7 @@ export async function createRailwayHookView(owner: OwnedView) {
   return {
     rings,
     ringById,
+    setRing,
     setIslandRing,
     setSeaRing,
     update,

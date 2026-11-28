@@ -158,9 +158,11 @@ export function createRailwayWorldHost({
     replication,
     ops,
     stats: status.stats,
-    hasBellhouse() {
+    hasSignalHouse(slot = 16) {
       const w = rules.railway.world();
-      return plotBuilt(w, 16, sync.world.tick) && plot(w, 16).kind === PLOT_KIND.bell;
+      return (
+        plotBuilt(w, slot, sync.world.tick) && plot(w, slot).kind === (slot === 16 ? PLOT_KIND.bell : PLOT_KIND.echo)
+      );
     },
     onSend(fn: (message: Msg) => void) {
       sent.add(fn);

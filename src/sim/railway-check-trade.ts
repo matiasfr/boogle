@@ -6,6 +6,7 @@
 //                   R3: the riders' bounds and conservation (boarded = aboard + alighted, a town's route) and the
 //                   strongbox's (boogles = landed + poured − spent) (throws on the first broken one)
 import type { World } from '../ecs/index.ts';
+import { legDone } from './railway-queries-route.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { RIDER_UNIT, TRADE, validPlotKind, lineRoute } from './railway-trade-layout.ts';
 import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
@@ -76,9 +77,8 @@ export function checkTrade(w: World, tick = RAILWAY_MAX_INT) {
     bad('riders conservation');
   // Ring contributes to the existing route's far queue. Its own clock can run,
   // but no yard delivers there and no train has a second pair of queues.
-  const ring = ts[1]!;
-  if (ring.wood || ring.stone || ring.wait0 || ring.wait1 || ring.boarded || ring.alighted)
-    bad('unused Ring town fields');
+  if (ts.slice(1).some((t) => t.wood || t.stone || t.wait0 || t.wait1 || t.boarded || t.alighted))
+    bad('unused outer town fields');
   // R3: the one strongbox. Every field a whole number; what is in it is what landed and was poured, less what was spent.
   const b = till(w);
   // The sack's cap applies when it fills, never when a save loads: live rates may have fallen since it was earned.
@@ -99,7 +99,7 @@ export function checkTrade(w: World, tick = RAILWAY_MAX_INT) {
       if (p.at < 0 ? p.kind !== 0 : !validPlotKind(threshold, p.kind, first.kind)) bad('plot kind');
       if ('after' in threshold && p.at >= 0) {
         const joined = aperture(w).joined;
-        if (joined < 0 || p.at < joined) bad('plot before arrival');
+        if (joined < 0 || p.at < joined || (threshold.after === 'gorge' && !legDone(w, 0))) bad('plot before arrival');
       }
       if (p.at >= 0 && (ts[town]!.wood < threshold.wood || ts[town]!.stone < threshold.stone)) bad('plot thresholds');
       paid += p.paid;

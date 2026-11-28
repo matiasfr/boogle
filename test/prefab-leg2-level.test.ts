@@ -848,6 +848,8 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
   const view = await createLegView(
     { read: { whole: () => true, world: () => seed.w, tick: () => seed.t } },
     {
+      animate() {},
+      cleanup() {},
       removeBody(body: (typeof pieces)[number]) {
         const index = pieces.indexOf(body);
         if (index >= 0) pieces.splice(index, 1);

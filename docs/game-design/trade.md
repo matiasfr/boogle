@@ -146,3 +146,7 @@ At 56 delivered timber and 24 stone, slot 3 can join the two lowest eligible unb
 ### Ring Island's first choice
 
 Joining the Ring crossing stakes slot 16 with zero freight. Either the Lookout Tower or the Signal Bellhouse costs base 300 (150 at default prices). Both board names and prompts are placeholders. After construction the building contributes one rider per minute to line 2's far queue. The shared till pays once and the room keeps its pick.
+
+### High Gorge's first choice
+
+Finishing the Stack line stakes slot 32 beside the High Gorge gangway. The two placeholder boards offer Echo Horn House and Canyon Hook-Perch for 150 Boogles at the default tune. A one-second hold spends the shared price once. The house sends three echoes across the split. A friend sounding the horn within three seconds adds a chord. The perch has a four-metre launch deck, three hook rings and a cowbell raft beside the slipway. Either completed building adds one rider per minute to the same far queue as Ring Island.

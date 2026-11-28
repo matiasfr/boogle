@@ -162,7 +162,8 @@
 // v84 (2026-11-28): save gifted logs in the High Gorge relay yard.
 // v85 (2026-11-28): Ring Island's town, rider clock and saved lookout or bellhouse plot.
 // v86 (2026-11-28): save Village gift destinations, delivered credits and pre-leg contributors.
-export const WORLD_NS = 'v86';
+// v87 (2026-11-28): High Gorge town, plot and far rider clock.
+export const WORLD_NS = 'v87';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

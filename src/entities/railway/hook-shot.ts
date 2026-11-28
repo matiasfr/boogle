@@ -17,6 +17,7 @@ import { GROUP } from '../../physics/physics.ts';
 import { addPresenceField } from '../../netplay/net.ts';
 import {
   buildPull,
+  gorgeHookRings,
   cancelVelocity,
   createHookLatch,
   holdPick,
@@ -240,6 +241,8 @@ export async function createRailwayHook(adapter: RailwayAdapter, owner: OwnedVie
     update(dt: number, now: number) {
       const seaReady = line2Routes(line2Completed(adapter.read.world())).sea || rail(adapter.read.world()).sea;
       view.setSeaRing(seaReady, seenSea === null);
+      for (const r of [...view.rings]) if (r.id.startsWith('gorge-') && !gorgeHookRings.has(r)) view.setRing(r, false);
+      for (const r of gorgeHookRings) view.setRing(r, true);
       if (adapter.read.ready()) seenSea = seaReady;
       owned = latch(adapter.read.ready(), rail(adapter.read.world()).hook, dt);
       const summit = view.ringById.get('summit');

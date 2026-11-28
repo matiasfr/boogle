@@ -91,6 +91,8 @@ registerBuilder('town.choice-board', (params) => {
   } else if (params.kind === 7) {
     piece(root, new THREE.CylinderGeometry(0.14, 0.31, 0.4, 16), 0xd6aa52, 0, 2.8, 0);
     piece(root, new THREE.SphereGeometry(0.08, 10, 8), 0x724c2b, 0, 2.55, 0);
+  } else if (params.kind === 9) {
+    piece(root, new THREE.TorusGeometry(0.29, 0.07, 8, 20), 0xd6aa52, 0, 2.8, 0);
   } else brassHorn(root, 2.79, 0);
   return root;
 });

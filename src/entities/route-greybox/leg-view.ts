@@ -24,8 +24,9 @@
 // on-screen objective line and this adds no HUD element. Until line 2 wears the longer boiler, the line names the
 // steel loop's step (STEEL_OBJECTIVES, from the Steel, Shed and Line rows); then the leg's.
 import * as THREE from 'three/webgpu';
+import { createGorgeTownPlots } from './gorge-town-plots.ts';
 import type { RailwayAdapter } from '../../adapters/railway-session.ts';
-import type { OwnedView } from '../../render/owned-view.ts';
+import { createOwnedView, type OwnedView } from '../../render/owned-view.ts';
 import type { Body, Shape } from '../../physics/engine.ts';
 import type { Interactable } from '../../player/hands.ts';
 import type { LinePoint } from '../../place/layout.ts';
@@ -92,7 +93,7 @@ import { canopyGround } from './massing-canopy.ts';
 import { liftOrWait } from '../../prefab/instantiate.ts';
 import type { Clearing } from '../../place/clearance.ts';
 import { AREA_CENTRES, LEG2_TEXT } from './leg2-layout.ts';
-import { areaBoardVisibility, areaLabels } from './state.ts';
+import { areaBoardVisibility, areaLabels, routeAreas } from './state.ts';
 import type { GreyBox } from './boxes.ts';
 import { STACK_CROSSING, STACK_EAST, stackPieces, westStands } from './stack-halts.ts';
 
@@ -1051,6 +1052,22 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
     );
   };
   const nearGorge = () => near(gorgeAt(0, 0), 700);
+  let plotView: ReturnType<typeof createGorgeTownPlots> | undefined;
+  let plotOwner: OwnedView | undefined;
+  owner.cleanup(() => plotOwner?.dispose());
+  owner.animate(({ dt }) => {
+    if (!routeAreas.get('gorge')?.mounted) {
+      plotOwner?.dispose();
+      plotOwner = plotView = undefined;
+      return;
+    }
+    if (!plotView) {
+      plotOwner = createOwnedView();
+      owner.root.add(plotOwner.root);
+      plotView = createGorgeTownPlots(plotOwner);
+    }
+    plotView.update(dt);
+  }, 12);
 
   const concourse = { ...gorgeAt(-2, 2, GORGE_DECK - 0.25), w: 16.6, h: 0.5, d: 4, yaw: Math.atan2(0.8565, 0.5162) };
   const capShape = boxShape(concourse);
@@ -1300,10 +1317,11 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       ]);
     }
     const t = gorgeAt(TOWN_PAD.a1 - 1.2, (TOWN_PAD.c0 + TOWN_PAD.c1) / 2);
-    show(townBoard, t, GORGE_DECK, alongA.x, alongA.z, [
-      { t: 'HIGH GORGE TOWN', size: 0.3 },
-      { t: 'STAND-IN: 3 PLOTS STAKED', size: 0.2 },
-    ]);
+    if (!stackDone)
+      show(townBoard, t, GORGE_DECK, alongA.x, alongA.z, [
+        { t: 'HIGH GORGE TOWN', size: 0.3 },
+        { t: 'STAND-IN: 3 PLOTS STAKED', size: 0.2 },
+      ]);
   }
   /** A barrier on a frame `site`: two posts and a panel on the side away from the rails, lifted to a bar once open. */
   function barrier(site: Site, open: boolean) {
@@ -1414,7 +1432,7 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       if (!p || !r || !adapter.read.ready()) return [];
       const { wd } = r,
         mine = account(wd, adapter.read.pid),
-        out: Interactable[] = [];
+        out: Interactable[] = [...(plotView?.targets ?? [])];
       const feeding = new Set<number>();
       for (const i of r.open) {
         const o = legs[i]!,

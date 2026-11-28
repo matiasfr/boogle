@@ -12,7 +12,7 @@ import { defineSystem, type World } from '../ecs/index.ts';
 import { RAIL_TRAINS } from './railway-lines.ts';
 import { TRAIN_PHASE, trainDir } from './railway-train.ts';
 import { RIDER_UNIT, TRADE, validPlotKind, lineRoute, type TradePct } from './railway-trade-layout.ts';
-import { Aperture, Plot, Rail, Till, Town, TownClock, Train, Yard, YardClock } from './railway-components.ts';
+import { Aperture, Leg, Plot, Rail, Till, Town, TownClock, Train, Yard, YardClock } from './railway-components.ts';
 import { railId, trainId } from './railway-queries.ts';
 import {
   boxCap,
@@ -125,10 +125,14 @@ export const tradeTick = defineSystem(
         c.acc -= RIDER_UNIT;
         n++;
       }
-      const farClock = w.mut(TownClock, townId(w, r.farTown))!;
-      farClock.acc += housesOf(w, r.farTown, tick) * TRADE.ridersPerMin * riderPct;
-      const extra = Math.floor(farClock.acc / RIDER_UNIT);
-      farClock.acc -= extra * RIDER_UNIT;
+      let extra = 0;
+      for (const town of r.farTowns) {
+        const clock = w.mut(TownClock, townId(w, town))!;
+        clock.acc += housesOf(w, town, tick) * TRADE.ridersPerMin * riderPct;
+        const arrived = Math.floor(clock.acc / RIDER_UNIT);
+        clock.acc -= arrived * RIDER_UNIT;
+        extra += arrived;
+      }
       if (!n && !extra) return;
       // The replicated row changes only when a rider arrives at an end with room.
       const t = w.get(Town, id)!,
@@ -199,7 +203,7 @@ export const sack = defineSystem('rail.sack', { writes: [Till], phase: 'act', or
 /** Buy is authoritative and atomic; the shared request history handles retransmits. */
 export const buy = defineSystem(
   'rail.buy',
-  { reads: [Town, Aperture], writes: [Plot, Till], phase: 'act', order: 70 },
+  { reads: [Town, Aperture, Leg], writes: [Plot, Till], phase: 'act', order: 70 },
   (w, { e, tick, pricePct }: Act) => {
     if (typeof e.id !== 'number' || !Number.isInteger(e.id) || e.id < 0) return 0;
     const town = Math.floor(e.id / 16),

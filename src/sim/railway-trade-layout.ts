@@ -29,16 +29,27 @@ export type TradeYard = {
 /** R3: a town's passenger route on one line, between its halts `a` and `b` (stop indices, `a` < `b`; `b: 'end'` is the
  * line's current open end): riders wait at each end for the other, one destination a route (so a train's riders are
  * one integer). */
-export type TradeRoute = { town: number; farTown: number; line: number; a: number; b: number | 'end' };
+export type TradeRoute = { town: number; farTowns: readonly number[]; line: number; a: number; b: number | 'end' };
 /** A plot's staking thresholds: the town's delivered timber and stone. */
-export const PLOT_KIND = { plain: 0, seeds: 1, horns: 2, disc: 3, golf: 4, dunk: 5, lookout: 6, bell: 7 } as const;
+export const PLOT_KIND = {
+  plain: 0,
+  seeds: 1,
+  horns: 2,
+  disc: 3,
+  golf: 4,
+  dunk: 5,
+  lookout: 6,
+  bell: 7,
+  echo: 8,
+  perch: 9,
+} as const;
 export type TradePlot = {
   wood: number;
   stone: number;
   base: number;
   riders: number;
   gives?: 'loader';
-  after?: 'ring';
+  after?: 'ring' | 'gorge';
   spare?: boolean;
   choices?: readonly number[];
 };
@@ -70,6 +81,7 @@ export const TRADE = {
       { wood: 56, stone: 24, base: 800, riders: 1, choices: [PLOT_KIND.golf, PLOT_KIND.dunk] },
     ],
     [{ wood: 0, stone: 0, base: 300, riders: 1, after: 'ring', choices: [PLOT_KIND.lookout, PLOT_KIND.bell] }],
+    [{ wood: 0, stone: 0, base: 300, riders: 1, after: 'gorge', choices: [PLOT_KIND.echo, PLOT_KIND.perch] }],
   ] as const satisfies readonly (readonly TradePlot[])[],
   stakedAtOnce: 2,
   houseOrder: 2,
@@ -78,7 +90,7 @@ export const TRADE = {
   // starting buildings, 1 rider a minute a building each way).
   // The Village and line 2's current far end (the ruling of 12 November): Far Head, then the Pier, the Railhead, Ring
   // Island as the line grows.
-  routes: [{ town: 0, line: 1, a: 0, b: 'end', farTown: 1 }] as const satisfies readonly TradeRoute[],
+  routes: [{ town: 0, line: 1, a: 0, b: 'end', farTowns: [1, 2] }] as const satisfies readonly TradeRoute[],
   ridersPerMin: 1,
   startBuildings: 2,
   /** Waiting riders that would stop a train at a middle route halt (decided: four or more). Unused in this slice:

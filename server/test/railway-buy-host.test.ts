@@ -10,6 +10,7 @@ import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
 import { townPlotBoard } from '../../src/place/town-plan.ts';
 import { RING_HANGOUT, ringAt } from '../../src/sim/railway-ring-layout.ts';
 import { Till } from '../../src/sim/railway-components.ts';
+import { GORGE_BOARD } from '../../src/sim/railway-route.ts';
 import { WebSocket, createService, loadConfig } from './helpers/accounts.ts';
 import { setTune } from '../../src/sim/tune.ts';
 import { railwayRoomId, RAILWAY_PLAY_NS } from '../../src/world/railway-namespace.ts';
@@ -238,6 +239,25 @@ test('buy host: two players race different plots in one tick with money for one;
   }
 });
 
+for (const kind of [8, 9])
+  test('High Gorge r:edit persists kind ' + kind, async () => {
+    const f = await fixture('gorge-reached');
+    try {
+      const at = [GORGE_BOARD.x, GORGE_BOARD.y, GORGE_BOARD.z].map((n) => Math.round(n * 100));
+      const before = till(f.w).boogles;
+      assert.equal(f.send({ id: 32, kind }).result?.status, 'rejected');
+      assert.equal(f.send({ id: 32, kind }, 'alice', at).result?.status, 'accepted');
+      assert.equal(f.send({ id: 32, kind: 17 - kind }, 'bob', at).result?.status, 'rejected');
+      assert.equal(till(f.w).boogles, before - 150);
+      await f.step(TRADE.buildTicks);
+      await f.restart();
+      assert.equal(plot(f.w, 32).kind, kind);
+      assert.equal(f.h.hasSignalHouse(32), kind === 8);
+    } finally {
+      await f.close();
+    }
+  });
+
 for (const kind of [6, 7]) {
   test(`Ring plot: racing r:edits persist kind ${kind} and debit the shared till once`, async () => {
     const f = await fixture('ring-joined');
@@ -268,12 +288,12 @@ for (const kind of [6, 7]) {
       for (const mirror of f.mirrors.values()) assert.deepEqual(plot(mirror.world(), 16), bought);
       await f.restart();
       assert.deepEqual(plot(f.w, 16), bought);
-      assert.equal(f.h.hasBellhouse(), false, 'unfinished purchase');
+      assert.equal(f.h.hasSignalHouse(), false, 'unfinished purchase');
       await f.step(TRADE.buildTicks);
-      assert.equal(f.h.hasBellhouse(), kind === 7, 'completed purchase');
+      assert.equal(f.h.hasSignalHouse(), kind === 7, 'completed purchase');
       await f.restart();
       assert.deepEqual(plot(f.w, 16), bought, 'completed building survives restart');
-      assert.equal(f.h.hasBellhouse(), kind === 7);
+      assert.equal(f.h.hasSignalHouse(), kind === 7);
     } finally {
       await f.close();
     }
