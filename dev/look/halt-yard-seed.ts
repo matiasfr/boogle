@@ -1,7 +1,7 @@
 // q3-done with two newly abandoned log piles, aged by the same accepted whole-minute pulse as the host.
 // Leave both on the ground at age 21 so the host must choose their destinations when the proof room opens.
 import { buildSeedWorld } from '../../src/sim/railway-seeds.ts';
-import { act, advance } from '../../src/sim/railway-seed-route.ts';
+import { act, advance, leaveTimber } from '../../src/sim/railway-seed-route.ts';
 import { buildWorksStage, chopTo } from '../../src/sim/railway-seed-works.ts';
 import { legRow } from '../../src/sim/railway-queries-route.ts';
 import { giftAboard, workAboard } from '../../src/sim/railway-queries-gift.ts';
@@ -67,15 +67,21 @@ export function q6GiftSeed(phase: string) {
 export function pierGiftSeed(yard = 0) {
   const s = buildSeedWorld('crossing-done');
   chopTo(s, 'a', 8);
-  const extra = account(s.w, 'a')!.carry - 8;
-  if (extra)
-    need(act(s, 'a', 'rail.drop', { kind: 0, n: extra, x: 100000, y: 2000, z: 3000 }) === extra, 'spare logs put down');
-  need(act(s, 'a', 'rail.haltPut', { kind: 0, yard }) === 8, 'eight for Q7');
+  leaveTimber(s, 'a', yard, 8);
   for (let ticks = 0; workAboard(s.w, 3) !== 8; ticks++) {
     need(ticks < 6000, 'Pier cargo aboard');
     advance(s, 1);
   }
   return seedDoc(s, 'Robin');
+}
+
+/** Ordinary bin stock placed before Q7 opens, ready for a live guest to lift and give. */
+export function quarryGuestSeed() {
+  const s = buildSeedWorld('crossing-finishing');
+  chopTo(s, 'a', 8);
+  leaveTimber(s, 'a', 2, 8);
+  buildWorksStage(s, 'crossing-done');
+  return seedDoc(s);
 }
 
 export function yardRecoverySeed() {

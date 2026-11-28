@@ -29,7 +29,10 @@ import { teleport } from '../../../src/physics/engine.ts';
 import { INTERP_MS, PLAYER_R } from '../../../src/constants.ts';
 import { LINE1_JUMP_DEVICE } from '../../../src/sim/railway-line-layout.ts';
 import { makeBot } from '../bot.ts';
-import { play } from './railway.ts';
+import { giveQuarryTimber, play } from './railway.ts';
+import { QUARRY_YARD, workAboard, worksThanks } from '../../../src/sim/railway-queries-gift.ts';
+import { HALT_YARDS } from '../../../src/sim/railway-yard-layout.ts';
+import { H } from '../../../src/place/terrain.ts';
 // The seat module, as far-head-seated.ts loads it: one shared copy of the page's own chairs.
 const { seated, sitDown } = (await import(
   '/src/entities/railway/seat.ts' as string
@@ -368,5 +371,30 @@ async function find() {
 export function start() {
   if (started) return;
   started = true;
+  if (shot === 'quarry-gift') {
+    background(quarryGift(), 'Quarry gift co-op proof');
+    return;
+  }
   background(finder ? find() : friend(), `coop-unlock ${finder ? 'finder' : 'friend'} ${shot}`);
+}
+
+/** With --rail-seed quarry-guest, player two offers the logs and both peers see the same dispatch. */
+async function quarryGift() {
+  await until(landed, 'guest entered the railway');
+  if (finder) {
+    const yard = HALT_YARDS[QUARRY_YARD]!;
+    const x = yard.x / 100,
+      z = yard.z / 100;
+    teleport(me.body!, x, H(x, z) + PLAYER_R + 1.5, z);
+    await giveQuarryTimber(makeBot());
+  } else {
+    // The receiver watches the same station face used by the solo Pier proof.
+    await import('/dev/look/evals/halt-board.ts' as string);
+  }
+  await until(
+    () => workAboard(rw(), 3, false) === 8 && worksThanks(rw(), 3).length === 1,
+    'named Quarry gift aboard',
+    180000,
+  );
+  w.__coopShot = true;
 }

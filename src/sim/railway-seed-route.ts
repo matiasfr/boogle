@@ -28,6 +28,13 @@ export function act(s: Seed, pid: string, op: string, fields: Partial<RailAction
 export function advance(s: Seed, ticks: number) {
   for (let i = 0; i < ticks; i++) railTick(s.w, ++s.t);
 }
+/** Stage an exact load from a seeded back using the normal yard deposit. */
+export function leaveTimber(s: Seed, pid: string, yard: number, qty: number) {
+  const spare = account(s.w, pid)!.carry - qty;
+  if (spare > 0)
+    need(act(s, pid, 'rail.drop', { kind: 0, n: spare, x: 100000, y: 2000, z: 3000 }) === spare, 'spare logs put down');
+  need(act(s, pid, 'rail.haltPut', { kind: 0, yard }) === qty, 'timber left at its halt');
+}
 /** Both backs emptied onto piles beside the line; a pile holds 8, so a back of 16 rails (the yoke) takes two drops. */
 function clear(s: Seed) {
   for (const pid of ['a', 'b'])

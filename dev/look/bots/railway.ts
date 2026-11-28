@@ -41,6 +41,21 @@ const HOME_APRON = (() => {
 /** `?botTo=<stop>` ends the route after that beat: a segment, not a failure. */
 class RouteStop extends Error {}
 
+/** A guest staged at the Quarry rack lifts ordinary bin timber, then gives it at the same prompt. */
+export async function giveQuarryTimber(bot: Bot) {
+  const bin = () => (interactTarget()?.id === 'halt-yard-2-0' ? interactTarget() : null);
+  hookCheck(bot, await bot.until(() => bin()?.verb === 'Pick up', 12000, 'Quarry logs offered'), 'Quarry log pickup');
+  const at = bin()!.at;
+  bot.press();
+  hookCheck(bot, await bot.until(() => R.railBack().carry === 8, 10000, 'eight Quarry logs'), 'eight lifted');
+  hookCheck(bot, await bot.use(at.x, at.z, 'Quarry gift rack', /^Give to works$/), 'Quarry gift prompt');
+  hookCheck(
+    bot,
+    await bot.until(() => R.railBack().carry === 0, 10000, 'Quarry deposit settles'),
+    'Quarry gift deposited',
+  );
+}
+
 function hookCheck(bot: Bot, ok: unknown, label: string) {
   bot.check(label, ok);
   if (!ok) throw new Error(label);
