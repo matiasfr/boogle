@@ -5,6 +5,7 @@
 import {
   FIXED,
   GRAVITY,
+  HEAD_OFFSET,
   JUMP_SPEED,
   PLAYER_MASS,
   PLAYER_R,
@@ -16,7 +17,8 @@ import {
 } from '../../constants.ts';
 import { angleLerp } from '../../math.ts';
 import { groundHeight } from '../../island/heights.ts';
-import { forEachContact, getMask, raycastClosest, rayHit, teleport } from '../../physics/engine.ts';
+import { freeLanding } from '../../place/free-landing.ts';
+import { capsuleOverlaps, forEachContact, getMask, raycastClosest, rayHit, teleport } from '../../physics/engine.ts';
 import { catchFallThrough, GROUP, makePlayerBody } from '../../physics/physics.ts';
 import { carry, carryStep } from '../../physics/platforms.ts';
 import { waterField } from '../../physics/water-field.ts';
@@ -267,7 +269,16 @@ export function fallRespawn() {
 export function backToSpawn() {
   const b = me.body!;
   waterField.invalidate('player');
-  teleport(b, SPAWN.x, groundHeight(SPAWN.x, SPAWN.z) + 1.2, SPAWN.z);
+  const ground = groundHeight(SPAWN.x, SPAWN.z);
+  const spot =
+    freeLanding(SPAWN, (x, z) => {
+      const y = groundHeight(x, z);
+      return (
+        Math.abs(y - ground) <= 0.5 &&
+        !capsuleOverlaps({ x, y: y + PLAYER_R + 0.05, z }, PLAYER_R, HEAD_OFFSET, { of: b })
+      );
+    }) ?? SPAWN;
+  teleport(b, spot.x, groundHeight(spot.x, spot.z) + 1.2, spot.z);
   b.velocity.set(0, 0, 0);
 }
 

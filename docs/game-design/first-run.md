@@ -74,7 +74,7 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
   and on tab hiding; unchanged spots are written at least once a minute. Aboard, seated, swimming, falling or down,
   it retains the last standing spot and refreshes the time and current `ride` position; it never writes null. The
   first-visit fall and unready scenery do not save. A record is read only within `railway.returnMinutes` (Local,
-  default 30; 0 disables returns), with no migration from v0. Get unstuck records its checked surface. A recent
+  default 30; 0 disables returns), with no migration from v0. Get unstuck records its checked surface. Past the Ring Island gap it keeps the Pier as the destination, trying six positions 1.4 m around an occupied landing and accepting only supported ground. Fall respawn uses the same ring around its spawn. Both recoveries use their original point when no alternative is clear. A recent
   return tries the remembered spot, then free rings 1.4, 3 and 6 m beside it, then halts, then Home. Only halts that
   stand in this room now are tried (open stops of their line, from the accepted state, and not a stack head closed
   behind the railhead). The train's saved destination gets all its distinct landings first, including when the
