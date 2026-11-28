@@ -61,3 +61,47 @@ At 390 × 844 CSS pixels, the board's outlined pack and `logs 23/24` were readab
 Stills with 390-pixel content at native scale and side padding: [board at 23/24](forge-rewards-looks/phone-board.png), [pack reward card](forge-rewards-looks/phone-card.png).
 
 No P1 or P2 defects observed. Shared-machine recordings and sampled frames establish visible state changes. Motion cadence, audio, exact timing and the normal-motion co-op cut were unverified. **Not tested on a device.**
+
+## 2026-11-28 — Hauler carry, shared axe cut, and touch dismissal
+
+These seeded looks ran on Windows from `36c13af4e` through the shared bot queue. The successful captures used WebGPU,
+advanced completed game frames and reported no page, console or graphics errors.
+
+### Hauler carries the timber — Pass
+
+From `forge-frame-last`, Buddy deposited the last load at the receiver. The yellow-capped hauler approached the
+offcut on the ground, picked it up and carried it to the shelf. The bare pack frame was already on the shelf, as the
+plan specifies. The hauler worked beside it and the straps appeared. The mid-carry panel is cropped closer so the
+offcut is visible at his shoulder. [Hauler sequence](forge-rewards-looks/hauler-carry-2026-11-28.png)
+
+### Normal-motion co-op axe cut — Pass
+
+From `forge-lit-last`, one Buddy walked the load into the receiver. The other was on foot about 74 m from the plinth.
+Both had reduced motion off, both saw one live axe arrival, and both cameras showed the hot axe upright on the
+pedestal. The depositor's frames show sparks and the head changing from yellow through orange to red. Both
+cameras returned to their players. The distant peer recorded the roof show idle during the cut and unloading and
+carrying afterward. The sheet pairs frames from two runs of the same setup to show both players during and after
+the cut. Both used `--players 2 --warp-speed 2`, with the action at the harness's normal capture speed.
+[Both players' views](forge-rewards-looks/normal-coop-cut-2026-11-28.png)
+
+The first co-op attempt stopped before the deposit because the accelerated clocks fell behind under load. A
+quieter retry with setup moved out of the accelerated warm-up reached and captured the cut. A short follow-up
+captured the return. The successful co-op takes establish the visible sequence, with no timing verdict.
+
+### Tap dismisses the pack card at 390 px — Pass
+
+From `q1-done`, Buddy opened the offered pack at 390 × 844 CSS pixels in Chromium touch emulation. With the down
+arrow visible, the harness sent a trusted touch press at its center. The card stayed open through the press and
+closed on release. The raised pack disappeared, Buddy still wore the upgrade, and Jump was fully visible again.
+The arrow point hit the full-screen touch layer and the game's pointer handler accepted the tap there.
+[Before and after the tap](forge-rewards-looks/touch-dismiss-2026-11-28.png)
+
+### Findings and limits
+
+- **Existing P3 confirmed.** The reward banner still overlaps Jump before dismissal at 390 × 844.
+  [Banner placement](../../src/entities/railway/railway.css#L137) and [Jump placement](../../src/style.css#L225).
+- **Capture anomaly.** A transient row of hollow squares appears over the depositor's early cut frames. A shorter
+  row also appears in the hauler recording immediately after the deposit. The source and behavior outside these
+  Windows captures are unverified.
+- Exact timing, motion cadence, audio, cut skipping and the identity of the hardwood visible in the cut remain
+  unverified. **Not tested on a device.**
