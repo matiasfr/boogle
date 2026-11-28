@@ -37,7 +37,9 @@ Six Decided, three Default, four New. Growing towns and route-contract support t
 
 ## Built and measured
 
-World v88 adds Canopy's Town, TownClock and Plot rows. The existing far-town accumulator credits its completed building. The level check completed 29 reports and found the stand-in town reserve clear. Across all 85 replay stages the seed tick stayed the same. All operation results, 82 client trace lengths and 12 headway system sequences matched v87.
+World v90 adds Canopy's Town, TownClock and Plot rows on top of the v89 pre-leg rules. The existing far-town accumulator credits its completed building. The level check completed 29 reports and found the stand-in town reserve clear.
+
+All 86 replay stages retain their order and seed ticks from conversions (v88) and pre-leg (v89). At `stack-rails`, tick 13,164, the v90 world hash is 895628541 and becomes 1414097150 after 1,200 ticks. At both points, comparing the v89 and v90 component values found only the new town, its zeroed clock and the unbuilt plot. Neither a Canopy rider nor a gift transfer accounts for this hash change.
 
 From the homeward ramp the boards show both toppers and the 150-Boogle price. The porch net is outside the eaves and its three hoops hang on a rope between two mother trees. The chime frame rises above the other shell and its striker hangs in the doorway. The first glide overshot the opening. On the second approach the player opened the glider while descending and crossed 0.43 m from the centre of the first 1.55 m hoop.
 
