@@ -1,7 +1,10 @@
 import * as THREE from 'three/webgpu';
+import { PLAYER_R } from '../../constants.ts';
+import { inputState } from '../../player/input-state.ts';
 import { me } from '../../player/state.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { createGhostOutlines } from '../../render/ghost-outline.ts';
+import { railwayGlideOpen } from '../railway/glide.ts';
 
 export function createCanopyToys(
   owner: OwnedView,
@@ -123,12 +126,23 @@ export function createCanopyToys(
       netPlan.mesh.visible = preview === 10;
       chimePlan.mesh.visible = preview === 11;
       const body = me.body;
-      if (active === 10 && body && body.velocity.y <= 0 && body.position.y >= pad.y && body.position.y < pad.y + 0.75) {
+      if (
+        active === 10 &&
+        body &&
+        !inputState.held &&
+        !inputState.seated &&
+        !railwayGlideOpen() &&
+        body.velocity.y <= 0 &&
+        body.position.y >= pad.y &&
+        body.position.y < pad.y + 0.75
+      ) {
         const dx = body.position.x - pad.x,
-          dz = body.position.z - pad.z;
+          dz = body.position.z - pad.z,
+          forward = dx * Math.sin(yaw) + dz * Math.cos(yaw);
         if (
           Math.abs(dx * Math.cos(yaw) - dz * Math.sin(yaw)) < 1.1 &&
-          Math.abs(dx * Math.sin(yaw) + dz * Math.cos(yaw)) < 0.65
+          Math.abs(forward) < 0.65 &&
+          3.18 + forward > 2.3 + PLAYER_R // keep the rising body clear of the cabin eave
         ) {
           body.velocity.y = 20;
           me.coyote = 0;
