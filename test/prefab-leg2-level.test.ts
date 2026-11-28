@@ -1243,3 +1243,45 @@ for (const raw of [notch, original]) {
     }
   });
 }
+
+test('two nearby horn players each get three wall echoes', () => {
+  let now = 0;
+  const sounds: number[] = [];
+  let receive!: (message: unknown, from: string) => void;
+  const world = { lookup: () => 0, single: () => 0, get: () => ({ at: 0, kind: 8 }) };
+  const { createGorgeTownPlots } = sourceModule<{
+    createGorgeTownPlots(owner: unknown): { update(dt: number): void };
+  }>(fs.readFileSync('src/entities/route-greybox/gorge-town-plots.ts', 'utf8'), {
+    THREE,
+    site: route.GORGE_HANGOUT,
+    gorgeAt: route.gorgeAt,
+    me: {},
+    performance: { now: () => now },
+    createHangoutBuilding: (_owner: unknown, _ground: unknown, tower: boolean) => ({
+      preview() {},
+      construction: (fraction: number) => !tower && fraction >= 1,
+    }),
+    instantiate: () => ({ setEnabled() {} }),
+    paintBoard() {},
+    gorgeHookRings: new Set(),
+    createLimiter: () => ({ allow: () => true }),
+    onRoomReady: (ready: (room: unknown) => void) =>
+      ready({ onMessage: (handler: typeof receive) => (receive = handler) }),
+    railwayWorldRead: () => ({ ready: () => true, world: () => world, tick: () => 100, trade: () => ({}) }),
+    Plot: {},
+    Till: {},
+    TRADE: { buildTicks: 100 },
+    plotPrice: () => 150,
+    canyonHorn: (_x: number, _z: number, beat: number) => sounds.push(beat),
+  });
+  const view = createGorgeTownPlots({ add() {}, cleanup() {}, alive: true });
+  view.update(0);
+  for (now = 0; now <= 4000; now += 20) {
+    if (now === 0 || now === 1000) receive({ t: 'echo', id: 32 }, now === 0 ? 'alice' : 'bob');
+    view.update(0.02);
+  }
+  assert.deepEqual(
+    sounds.filter((beat) => beat > 0),
+    [1, 2, 1, 3, 2, 3],
+  );
+});
