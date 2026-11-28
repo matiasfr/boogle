@@ -36,6 +36,7 @@ import { worksBoardRows } from '../entities/railway/works-board-state.ts';
 import { carry } from '../physics/platforms.ts';
 import { forgetInRoom, leaveIsland, SPOT_KEY } from '../player/arrival.ts';
 import { getVolume, isMuted, setMuted, setVolume } from '../render/audio.ts';
+import { cameraDistancePercent, cameraRange, setCameraDistance } from '../player/camera-distance.ts';
 import { uiSound } from '../ui/ui-sound.ts';
 import { pausePages, pauseNavigation, pauseSections, startPage } from '../player/pause-pages.ts';
 import { devCursorFree } from '../player/dev-input.ts';
@@ -243,10 +244,10 @@ function muteButton() {
   return mute;
 }
 // Left and right on a pad move the slider.
-function nudgeVolume(dir: number) {
+function nudgeSlider(dir: number) {
   const slider = document.activeElement;
   if (!(slider instanceof HTMLInputElement) || slider.type !== 'range') return false;
-  slider.value = String(Number(slider.value) + dir * 0.1);
+  slider.value = String(Number(slider.value) + dir * Number(slider.dataset.padStep ?? 0.1));
   slider.dispatchEvent(new Event('input'));
   slider.dispatchEvent(new Event('change'));
   return true;
@@ -310,7 +311,16 @@ function renderMore() {
   }
   const sound = el('div', 'pause-sound');
   sound.append(el('span', '', 'Volume'), volumeSlider());
-  list.append(...freshButton(), sound);
+  const distance = el('label', 'pause-sound', 'Camera distance');
+  const slider = el('input', 'pause-volume');
+  slider.type = 'range';
+  slider.min = String(cameraRange.min);
+  slider.max = String(cameraRange.max);
+  slider.step = slider.dataset.padStep = String(cameraRange.step);
+  slider.value = String(cameraDistancePercent);
+  slider.addEventListener('input', () => setCameraDistance(Number(slider.value)));
+  distance.append(slider);
+  list.append(...freshButton(), sound, distance);
   for (const extra of pausePages)
     if (extra.id !== 'graphics' && extra.id !== 'account' && !extra.start)
       list.append(button(extra.label, () => (extra.open ? extra.open() : show(extra.id))));
@@ -555,7 +565,7 @@ function onPad(slot: string) {
   else if (slot === 'down') move(1);
   else if (slot === 'left' || slot === 'right') {
     const dir = slot === 'left' ? -1 : 1;
-    if (!cycleRow(dir) && !nudgeVolume(dir)) moveTab(dir);
+    if (!cycleRow(dir) && !nudgeSlider(dir)) moveTab(dir);
   } else if (slot === 'rb' && page === startId) show(OPTIONS);
   else if (slot === 'lb' || slot === 'rb') cycleCtx(slot === 'lb' ? -1 : 1);
   else if (slot === menuSlot('confirm')) document.activeElement?.closest<HTMLElement>('.pause button')?.click();

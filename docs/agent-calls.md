@@ -502,6 +502,7 @@ C5 ruling, 15 November: **counts everywhere; squares gone** — an [owner call](
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 2026-11-28 | Default: Camera distance (placeholder), 70–130% in 10-point steps | [Camera distance](plans/camera-distance.md) | Builder | Keeps Buddy readable and puts the original framing at the middle stop. | open |
 | 2026-11-28 | Default: name the gate prerequisite beside its action and count a pending single interaction as 0/1. | [A4](plans/lane-a-grammar.md) | Builder | A full key count still leaves an action for a joining player. Phone proof adjustment: reserve the rightmost 11% of the face where the hall upright obscured the kiln count. | open |
 | 2026-11-28 | Default: expose the first frame’s bill before wake and leave 3 m to the side when a guest occupies the landing | [start-landing](plans/start-landing.md) | Builder | Phone framing and two arrivals on one pad | open |
 | 2026-11-28 | Default: two pads aim at the wake spot and the hall board, whose face turns toward the square | [start-landing](plans/start-landing.md) | Builder | Terrain and the actual post position set the facing | open |

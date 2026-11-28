@@ -1,5 +1,7 @@
 # 6.13 Pause view and controls guide
 
+On More, Camera distance sits directly below Volume. Both are remembered in this browser. Move down from Volume on a pad and press left or right to change the follow distance. The middle stop is the original 5.2 m view.
+
 - **What.** A local overlay (the island keeps running) with Resume, Controls (the generated guide with Keyboard,
   Gamepad and Touch tabs, starting on your input kind; the Gamepad tab is a drawn controller with labelled callouts,
   see [controls.md](controls.md), with Show as a list for the old list), Room (who is here and an invite link; `?room=` is left out for

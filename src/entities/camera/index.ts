@@ -9,6 +9,7 @@ import { getMask } from '../../physics/engine.ts';
 import { groundProbe } from '../../physics/physics.ts';
 import { waterField } from '../../physics/water-field.ts';
 import { makeCameraArm } from '../../player/camera-arm.ts';
+import { followDistance } from '../../player/camera-distance.ts';
 import { cam, camConstraints, camForward, followEye, me } from '../../player/player.ts';
 import { camera, sky, sun } from '../../render/scene.ts';
 import { warmDraw } from '../../render/precompile.ts';
@@ -45,7 +46,7 @@ function updateCamera(elapsed: number) {
     const rx = Math.cos(cam.yaw),
       rz = -Math.sin(cam.yaw);
     camLook.set(ip.x + rx * 0.55, ip.y + 1.35, ip.z + rz * 0.55);
-    camPos.copy(camLook).addScaledVector(fwd, -cam.dist);
+    camPos.copy(camLook).addScaledVector(fwd, -followDistance(cam.dist));
     followEye.copy(camPos);
     if (!constrained(camLook, camPos)) {
       // Up over the ground first, so a slope lifts the camera instead of pulling it in; then the arm, out of whatever's
