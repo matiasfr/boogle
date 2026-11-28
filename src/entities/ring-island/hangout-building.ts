@@ -97,7 +97,8 @@ export function createHangoutBuilding(
     // Four parallel flights with a shared landing between each pair.
     for (let flight = 0; flight < 4; flight++) {
       const outward = flight % 2 === 0,
-        l = 2.15 - flight * 1.1;
+        // At Gorge, keep the outer flight inside the gap between the next plot’s corner stakes.
+        l = (site.flat ? 1.6 : 2.15) - flight * 1.1;
       for (let i = 0; i < 10; i++) {
         const u = 3.32 + (outward ? i : 9 - i) * 0.32;
         box(
