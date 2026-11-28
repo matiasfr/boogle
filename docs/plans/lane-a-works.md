@@ -266,6 +266,8 @@ Each A4 row's next step, as one backlog line: *"A4: every step reads as needs an
 
 The two sightlines run from the dock and Ring Island halt's down platform (1417.73, 10.5, -819.74). The kiln requires a 132 m column. The dock stills also include scenery above the sampled ground, so Q5 and Canopy section 2 use the 200 m ceiling. The following sites reach that ceiling from terrain alone: Q6, crossing, Q7, bents, brace, weights, rivet, steelworks, stack-1, stack-4, pick, incline-gate and incline-1. A capped signal can remain hidden from an eye. The station board continues to give the destination. Lane B landed during the rebase. Route boards now read its queued and aboard totals, and resolve the durable contributor IDs through the room roster after prediction settles.
 
+The [13-site reach check](lane-a-works/reach/README.md) records the follow-up at dock and served-platform eye height, including the moving Railhead and the Bell Rock board at the landing.
+
 **Initial dock sightline measurement at 62 m.** At `works-open`, the kiln plume tops out at world y 88.2 m including its 2 m foot offset. From the dock eye (801, 4.6, 10), the ray toward the plume's leaned tip crosses ground at (832.16, 16.97, 17.16). The tip needs to reach at least y 137.6 m to clear that ground, before allowing for scenery or a readable patch of steam. The WebGPU dock still shows the shore ridge and no visible plume. Level finding 2's angular size assumes a clear sightline. This measurement led to amended call 10.
 
 - **Room safety.** No "Don't" in docs/agents/room-safety.md applies: no command, apply, presence, transport or save change. A0 cannot refuse or allow anything.
