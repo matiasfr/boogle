@@ -171,6 +171,12 @@ From the foot of the Roundhouse ramp, a strip of packed earth runs between pocke
 
 `src/entities/route-greybox/massing-quay.ts` colours the existing apron, ramp, yard and crossing surfaces. `quay-edges.ts` holds the scatter. The desktop pair uses card 9’s arrival pose at 1200 × 750. [Before](greybox-look/card10-yard-before.jpg) · [After](greybox-look/card10-yard-after.jpg)
 
+### Card 11, Bell Rock’s lower cut
+
+From the arriving end of the lower east platform, the white stair crossed a single grey wall between the two rock shoulders. That wall filled the centre of the view on the way into the station. Five shallow faces from the Chunky Sunshine cliff kit now carry the sandstone courses around the west side of the cut. The white parapet still leads the eye to the upper landing, and both stall boards stand clear of the stone.
+
+The Bell view in `src/entities/route-greybox/massing-incline.ts` mounts the faces with the two shoulders and shares their rock material. The 1200 × 750 desktop pair looks from (−43, 6.5, −868) toward (−73, 10, −856). [Before](greybox-look/card11-bell-before.png) · [After](greybox-look/card11-bell-after.png)
+
 ## Design review (2026-11-27)
 
 | Call | Kind | Basis |
