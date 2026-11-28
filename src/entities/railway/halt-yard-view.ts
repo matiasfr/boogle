@@ -336,6 +336,7 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView,
 
   return {
     targets,
+    logBin: (yard: number) => bins[yard]![LOGS]!.stock.point(0),
     inspect: () => ({ haltYards: bays.map((b) => ({ k: b.k, shown: b.shown, solid: b.solid.bodies.length })) }),
   };
 }

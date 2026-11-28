@@ -9,6 +9,30 @@ import { LINE2 } from '../../sim/railway-lines.ts';
 import type { ReadWorld } from '../../sim/railway-rows.ts';
 import { TRAIN_PHASE, type RailTrain } from '../../sim/railway-train.ts';
 import { reducedMotion } from '../../constants.ts';
+import { RING_STEEL_YARD } from '../../sim/railway-ring-layout.ts';
+
+export function workGiftTrip(
+  owner: OwnedView,
+  row: RailTrain,
+  delta: number,
+  bundle: THREE.Group,
+  home: THREE.Vector3,
+  quarry: () => THREE.Vector3,
+  depot: (k: number, out: THREE.Vector3) => THREE.Vector3,
+) {
+  if (row.phase !== TRAIN_PHASE.STAND || reducedMotion || (delta > 0 && row.at !== 0)) return;
+  const deck = bundle.getWorldPosition(new THREE.Vector3());
+  const rack =
+    row.at === 0
+      ? home
+      : row.at === 1
+        ? quarry()
+        : row.at === 5
+          ? new THREE.Vector3(RING_STEEL_YARD.x / 100, RING_STEEL_YARD.y / 100 + 1, RING_STEEL_YARD.z / 100)
+          : depot(row.at + 3, new THREE.Vector3());
+  for (let i = 0; i < Math.abs(delta); i++)
+    send('log', delta > 0 ? rack : deck, delta > 0 ? deck : rack, { dur: 0.6, delay: i * 0.025, apex: 3 }, owner);
+}
 
 export function giftBundle(owner: OwnedView, lashMaterial: THREE.Material) {
   const bundle = new THREE.Group();

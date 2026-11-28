@@ -30,7 +30,7 @@ export async function buildRingMidDoc(set: number) {
 }
 
 /** A seed's world as the save the real host writes (as server/src/seeds/build.ts does for the catalog's stages). */
-export async function seedDoc(seed: Seed) {
+export async function seedDoc(seed: Seed, giver?: string) {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'boogle-seed-'));
   try {
     const roomId = railwayRoomId('seed');
@@ -39,6 +39,14 @@ export async function seedDoc(seed: Seed) {
     const host = createRailwayWorldHost({ roomId, store, tick: false, now: () => Date.now(), pidOf: () => 'a' });
     try {
       await host.whenReady();
+      if (giver) {
+        host.deliver({ t: 'r:open' }, 'guest');
+        host.deliver(
+          { t: 'r:edit', e: { op: 'who.set', epoch: 1, request: 1, n: giver, c: 1, at: [92000, 1815, 600], ms: 0 } },
+          'guest',
+        );
+        need(host.rules.roster.nameOf(host.rules.roster.indexOf('a')) === giver, 'proof giver in the accepted roster');
+      }
       while (host.sync.world.tick <= seed.t) host.step(0.1);
       await host.sync.whenDurable();
       host.rules.railway.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())), railwayCheck);
