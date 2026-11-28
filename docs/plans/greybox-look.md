@@ -250,6 +250,18 @@ Areas passed over in the arrival survey:
 - Original Island — the palms and lighthouse already draw the eye beyond the landing.
 - White Wall — the upper beds and stepped waterline spurs already break up the near face.
 
+### Card 21, Port Quay’s freight platforms
+
+From rider height, the pale blue-white slab under the freight sign filled the foreground before the eye reached the turntable. Cross-laid wharf boards now show their ends above a dark timber fascia. The freight stacks stand out against the boards and the roundhouse doors are clear across the yard.
+
+`src/entities/route-greybox/quay-edges.ts` fits the boards to both freight platforms in the existing timber batch. `src/entities/route-greybox/massing-quay.ts` colours the platform sides and approach ramps. The 1200 × 750 pair uses the same yard camera as card 20, from (137.6, 6.8, 942.25) toward (−754, 39, 615) at 62° FOV. The moving-train seed timed out on earlier cards, so these are fixed arrival views. [Before](greybox-look/card21-quay-before.jpg) · [After](greybox-look/card21-quay-after.jpg)
+
+Areas passed over in the arrival survey:
+
+- Bell Rock — the timber decks and the water between their supports already mark both boarding edges. The tall grey face beside the left platform is still bare.
+- Saltpan — pale coping traces the inside of each ramp around the bend. The flat green ground beyond the decks still reads as a single plane.
+- Port Quay bank foot — the straight pale verge is visible under the sandstone, but occupies a narrow strip behind the yard at this pose.
+
 ## Design review (2026-11-27)
 
 | Call | Kind | Basis |

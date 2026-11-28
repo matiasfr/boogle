@@ -10,6 +10,8 @@ const yard = quay.build().map((piece) => {
   if (id.startsWith('quay.apron') || id === 'quay.yard-ramp') colour = '#817566';
   else if (id.startsWith('quay.yard-')) colour = '#69635c';
   else if (id.startsWith('quay.foot-plank-')) colour = '#816144';
+  else if (id === 'quay.platform-0' || id === 'quay.platform-2' || id.startsWith('quay.platform-step-'))
+    colour = '#73604f';
   else return piece;
   return { ...piece, params: { ...piece.params, colour } };
 });
