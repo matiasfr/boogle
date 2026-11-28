@@ -495,7 +495,7 @@ From [What it is, measured](#what-it-is-measured). The probe ran on the planned 
 
 ## Open questions
 
-One for the owner. It doesn't wait: the build goes ahead on the recommendation, and the call is logged.
+One for the owner, answered 28 November 2026: line speed, as recommended ([entry](../decisions-rail.md#d-2026-11-28-cargo-trains-line-speed)).
 
 1. **"A steady, slow patrol loop": how slow?** His 26 November answer took the brief's wording. On line 2's shared
    double track, a cargo train slower than the line's fit holds every passenger train behind it until the next end, up
@@ -530,7 +530,7 @@ was taken.
 | 10 | The commission costs 2 steel, at either table, needing steel home | Default | Fits the pool of 12 beside the Big boiler's 6 and the trade fits; a real choice against the Big boiler (Grant: "no real decisions") |
 | 11 | It rolls out at Home onto line 2 at the Village after the wagon's roll-out time (19 s), whichever table took the install | Default | One Roundhouse holds the stalls today; reuses the wagon's beat |
 | 12 | The hand-over: line 2's passenger trains stop freight the tick its cargo train leaves the shed; line 1 stays "A" | Default | The brief's call 12; line 1's cargo train is parked |
-| 13 | It runs at the line's fit (boilerAdopt), not slower; "slow" is its look and sound | New | Finding 2; owner question 1 |
+| 13 | It runs at the line's fit (boilerAdopt), not slower; "slow" is its look and sound | Decided | Owner, 28 November ([entry](../decisions-rail.md#d-2026-11-28-cargo-trains-line-speed)); finding 2 |
 | 14 | A middle-halt cargo stop happens only when no train behind would brake (`G` about 564 m); ends need no test | New | Finding 3; meets "freight never slows the route" without track, so build 1 needs no siding |
 | 15 | Exempt from the headway and balanced holds; not counted in the passengers' headway, balance or service health | Default | Keeps passenger departures as today; measured in step 2 (f) |
 | 16 | Draws come only from the Quarry and Far Head bays, going out; never stone, the Village rack or the Camp | Default | Both bays face the outward track and line 2's bills lie outward; no line 2 bill after the steel takes stone |
