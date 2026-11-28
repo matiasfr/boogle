@@ -34,7 +34,7 @@ Six decided, four default, two new. Growing towns supports the permanent visible
 
 ## Built and checked
 
-World v86 adds one High Gorge Town, its clock and slot 32. The host prices the choice, checks the board position and records the winning edit. Each completed outer-town building accrues to the existing far queue. The horn relay checks construction, identity, fresh visible position, distance and cooldown. Gorge residency owns the building solids, boards and three optional hook targets.
+World v87 adds one High Gorge Town, its clock and slot 32 after the Village gift changes in v86. The host prices the choice, checks the board position and records the winning edit. Each completed outer-town building accrues to the existing far queue. The horn relay checks construction, identity, fresh visible position, distance and cooldown. Gorge residency owns the building solids, boards and three optional hook targets.
 
 The first camera-only capture showed water. Staging the player on the concourse mounted the Gorge and exposed both readable boards. The initial house still revealed coplanar stone and timber. The finished floor and porch stand 8 cm above the pad. The perch stair moved 55 cm sideways within the gap between the next plot markers.
 
@@ -43,3 +43,7 @@ The first camera-only capture showed water. Staging the player on the concourse 
 Level check completed 29 reports. Trade passed 59 tests. The full server run passed 425 with two skipped, using a 300-second per-test deadline after the ending host scenario timed out at 120 seconds under load. Network passed 411 of 411. Ship check passed 2,205 with one skipped; the subsequent stair-only ship check passed 859. All 85 seed ticks, operation results, 82 client trace lengths and 12 headway system sequences match the previous world. The boot-probe trigger covers new rail lines, trains and halts; this catalogue change adds a town plot.
 
 The audio mix, the two-player harmony heard in a live room, the full three-ring chain and the swim back to the slipway remain unverified. Not tested on a device.
+
+## Independent review follow-up
+
+Two players sounding the horn a second apart produced four wall echoes in the reviewer's regression test. Each call now keeps its own three-beat schedule. The same test hears six echoes in order and checks that the second player triggers the chord. The v87 fixtures preserve all 85 seed tick positions, six operation streams' outcomes, 82 trace lengths and 12 system sequences from v86.

@@ -1247,6 +1247,7 @@ for (const raw of [notch, original]) {
 test('two nearby horn players each get three wall echoes', () => {
   let now = 0;
   const sounds: number[] = [];
+  const chords: boolean[] = [];
   let receive!: (message: unknown, from: string) => void;
   const world = { lookup: () => 0, single: () => 0, get: () => ({ at: 0, kind: 8 }) };
   const { createGorgeTownPlots } = sourceModule<{
@@ -1272,7 +1273,10 @@ test('two nearby horn players each get three wall echoes', () => {
     Till: {},
     TRADE: { buildTicks: 100 },
     plotPrice: () => 150,
-    canyonHorn: (_x: number, _z: number, beat: number) => sounds.push(beat),
+    canyonHorn: (_x: number, _z: number, beat: number, harmony: boolean) => {
+      sounds.push(beat);
+      if (beat === 0) chords.push(harmony);
+    },
   });
   const view = createGorgeTownPlots({ add() {}, cleanup() {}, alive: true });
   view.update(0);
@@ -1284,4 +1288,5 @@ test('two nearby horn players each get three wall echoes', () => {
     sounds.filter((beat) => beat > 0),
     [1, 2, 1, 3, 2, 3],
   );
+  assert.deepEqual(chords, [false, true]);
 });
