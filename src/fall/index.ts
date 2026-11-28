@@ -472,6 +472,7 @@ const director = spawn({
             life: 0.7,
             size: 0.09,
             alpha: 0.5,
+            daylight: true,
             color: STREAK,
           });
       // A raised surface can stand above the soil. After the title, footing marks touchdown.

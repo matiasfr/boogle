@@ -126,6 +126,7 @@ onFrame(
         vz: carry.z * 0.3 + (Math.random() - 0.5) * 3,
         life: 0.7,
         size: 0.22,
+        daylight: true,
         color: spray,
         alpha: 0.85,
         gravity: 9,

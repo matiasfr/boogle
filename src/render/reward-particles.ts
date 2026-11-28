@@ -102,5 +102,5 @@ export function confettiBurst(x: number, y: number, z: number) {
 /** The ring of dust a box throws as it opens: bright with the confetti, not the grey-brown contact dust. A box
  * landing is an ordinary contact and keeps dustRing's own intensity. */
 export function rewardDust(x: number, y: number, z: number, n = 12, speed = 3.2, size = 0.45) {
-  dustRing(x, y, z, n, speed, size, readableIntensity() * 0.5);
+  dustRing(x, y, z, n, speed, size, readableIntensity() * 0.5, 1, 'display');
 }

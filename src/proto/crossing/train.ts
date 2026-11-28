@@ -169,6 +169,7 @@ onFrame(
         vz: uz * 0.2 + (Math.random() - 0.5) * 0.6,
         life: 3 + Math.random() * 2,
         size: 0.4,
+        daylight: true,
         color: smoke,
         alpha: 0.5,
         drag: 0.6,

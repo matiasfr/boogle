@@ -19,3 +19,33 @@ Step 2 reuses the spare keep-map channel for the Camp ridge bend and the tread m
 Step 3 uses the existing particle pool and sprite draw. Only live puff slots sample the wind during compute. Each resident stack uses its existing view update, with births within 90 m of the camera. Ambient intervals are 0.65 s for the awake layer, 0.8 s for the lit forge and 0.85 s for the lit kiln. Lower Detail doubles those intervals. The operator's chuff still follows the machine's movement. Puffs expand and fade over three seconds.
 
 The sun and sky fill light the cream pigment at birth so the puffs share the scene exposure. Two overlapping soft volumes give each puff one round outline. Births vary in diameter, orientation, rise and lateral velocity. [Working layer](living-world/working-stack-motion.jpg), [lit kiln](living-world/lit-kiln.jpg), [lit forge](living-world/lit-forge.jpg).
+
+## Lit particles (after step 3)
+
+Ordinary timber chips read almost black against the grass, landing dust darkened the timber behind it and the forge's rail-conversion exhaust drew charcoal against blue sky. Fresh-cut chips already read pale through exposure compensation. Physical effects now declare `daylight: true`. The pool multiplies all three colour keys by the stack puffs' sun and sky at birth, using reusable colours and the existing draw. Emissive and reward calls keep their authored RGB and intensity.
+
+The four matched views replay the production birth recipes at the Camp and forge. The chop stays pale, timber shows its three browns, the landing ring reads sandy and the conversion exhaust reads pale against the sky. The sheets exercise the view independently of the progression triggers. [Before](living-world/particles-before.jpg) · [After](living-world/particles-after.jpg).
+
+With the Dev sun below the horizon (`sky.time = 0.75`) and sky fill reduced to 0.45, the dust is dim ochre against the grass and the nearby teal reward motes stay bright. The game normally holds its summer lighting. [Night lighting check](living-world/particles-night.jpg).
+
+<details>
+<summary>Pool callers and their authored sRGB colours</summary>
+
+| Lighting | Effect | Colours |
+| --- | --- | --- |
+| Daylight | Landing, rail lay, construction, hauling, impacts and other shared contact rings | `#cdbb9a → #d8cbb1 → #e0d8c5` |
+| Daylight | Ordinary timber, fresh-cut wood and bark, stone, shed leaves | Timber `#e5b77c #bb793e #f2d2a0`; cut `#f0d7a4 #e3c48b #f6e2b8 #7a5430`; stone `#9caaa9`; leaves `#4f9c44 #3f8a3a` |
+| Daylight | Guest dust, skid/splat and title dust, sand impact, crate landing, sea gate, title splinters, fall streaks | `#e9dcc0`, `#e8d6a6`, `#f1dca8`, `#d8c49a`, `#d8cdb4`, `#a97a48`, `#ffffff` respectively |
+| Daylight | Wake rust, flake, dust, soot and steam | `#8a5a34 #6d4426 #cdb48c #7c7770 #f6f4ee` |
+| Daylight | Forge whistle, conversion exhaust, garage steam, roundhouse steam, Works ash and demolition dust | `#f6f4ee`, light-look `#d9d5cc` or `#5d5a55`, `#e9eef2`, `#ece8e0`, `#d9d4cb`, `#cfc6b3` |
+| Daylight | Water-entry foam, crossing prototype spray and loco smoke, glider wingtip wisps | sRGB (0.96, 0.99, 1), `#ffffff`, `#ece8e0`, `#f4efe4` |
+| Already daylight | Ambient track-machine, forge and kiln stacks | `#eee8dc`, now through the shared path |
+| Authored glow | Axe aura and second jump, find, great tree, boiler, breaker, roundhouse, Ring rivet | Axe `#fff4bd #ffd36b #c9b8ff`; find `#bfe9ff`; tree `#ffd76a`; boiler/breaker/roundhouse `#ffdc7a`; rivet `#ffd25a` |
+| Authored glow | Workshop fire, Works flame and embers, forge reward sparks, garage sparks, folk and dino sparks | Workshop `#ffe9a8 → #ff8a1c → #a8260a`; Works `#ff7a1c #ffb14a`; forge `#ffb347 #fff1c2`; garage `#ffd27a`; folk `#ffd98a`; dino `#fff4b8` |
+| Authored glow | Crossing, pier and Far Head fireworks and trails | `#ffcc63 #39e6c6 #ff7272 #b9a0ff`, trail `#ffe9b0` |
+| Authored celebration | Reward/chest sparkles and opening dust ring, ability motes and plinth, fanfare and box confetti | Gold `#ffd76a`, teal `#39e6c6`, ability tints `#428bff #ac72ff #ff9466` and ivory `#fff4dc`; ring uses the contact dust keys; confetti `#ff4f4f #ffcf33 #2f8cff #4fdc7a #ff7ad9 #ffffff` |
+| Protected, original path | Train kit steam and running smoke, curio paper and glints, workshop flue smoke | `#e9eef2 #ece8e0`, `#ded5c2 #ffe9a8`, `#5d5a55` |
+
+Only fresh and ordinary timber, landing dust and rail-conversion smoke were replayed for this comparison. The ambient stacks have step 3's looks. Rail-lay contacts, stone, leaves, the other dust and smoke callers, spray, air wisps, protected effects and glows beyond the teal reward motes were audited in source only in this pass.
+
+</details>

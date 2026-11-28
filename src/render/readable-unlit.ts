@@ -4,7 +4,7 @@ import { materialColor, materialEmissive, vec3, vec4 } from 'three/tsl';
 import { patchNode } from './material-patch.ts';
 import { exposureSettings, surfaceExposure } from './exposure.ts';
 
-/** CPU-fold into emitted RGB. Default particle intensity remains one (dust/smoke/already-HDR stars); splash foam takes this. */
+/** CPU-fold into emitted RGB for display-range ink and rewards. */
 export const readableIntensity = () => 1 / exposureSettings.centre;
 const compensated = new WeakSet<NodeMaterial>();
 

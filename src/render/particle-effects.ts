@@ -2,8 +2,7 @@
 import * as THREE from 'three/webgpu';
 import { reducedMotion } from '../constants.ts';
 import { emit, type Particle } from './particles.ts';
-import { readableIntensity } from './readable-unlit.ts';
-import { camera, hemi, sun } from './scene.ts';
+import { camera } from './scene.ts';
 
 /** Small typed authoring surface; visual-only, never saved or sent to another player. */
 const particleEffects = {
@@ -14,13 +13,12 @@ const particleEffects = {
 };
 const timber = [new THREE.Color('#e5b77c'), new THREE.Color('#bb793e'), new THREE.Color('#f2d2a0')];
 const stone = new THREE.Color('#9caaa9');
-const steamAlbedo = new THREE.Color('#eee8dc');
-const skyFill = new THREE.Color();
 const steam: Particle = {
   x: 0,
   y: 0,
   z: 0,
-  color: new THREE.Color(),
+  color: new THREE.Color('#eee8dc'),
+  daylight: true,
   shape: 'puff',
   size: 0.6,
   life: 3,
@@ -41,10 +39,6 @@ export function stackPuff(x: number, y: number, z: number, size: number) {
   steam.x = x;
   steam.y = y;
   steam.z = z;
-  // The sprite pool blends scene-linear radiance. Light this scattering volume at birth,
-  // as for the water's diffuse surface, before the shared exposure and tone mapping.
-  skyFill.copy(hemi.color).multiplyScalar(hemi.intensity / Math.PI);
-  steam.color.copy(sun.color).multiplyScalar(sun.intensity / Math.PI).add(skyFill).multiply(steamAlbedo);
   steam.size = size * (1.25 + Math.random() * 0.45);
   steam.rotation = Math.random() * Math.PI * 2;
   steam.vz = (Math.random() - 0.5) * 0.36;
@@ -62,6 +56,7 @@ const chip: Particle = {
   life: 1,
   size: 0.2,
   color: timber[0]!,
+  daylight: true,
   shape: 'chip',
   gravity: 12,
   drag: 0.7,
@@ -125,13 +120,11 @@ const freshWood = [
   new THREE.Color('#7a5430'),
 ];
 /**
- * A chop's chips, pale like the cut they came out of and as bright as authored (readable intensity, not the dimmer
- * default that suits dust). The first `settle` fly short and low towards `yaw` (out of the cut), land on `floor`, lie
- * still and fade over a few seconds; the rest fly and are gone as they land.
+ * A chop's chips take the same light as the cut. The first `settle` fly short and low towards `yaw`,
+ * land on `floor` and fade over a few seconds. The rest disappear on landing.
  */
 export function woodChips(x: number, y: number, z: number, n: number, floor: number, settle: number, yaw: number) {
   if (reducedMotion) return;
-  chip.intensity = readableIntensity();
   chips(x, y, z, n - settle, floor, undefined, false, 1, freshWood);
   chip.floor = floor + 0.025;
   for (let k = 0; k < settle; k++) {
@@ -151,10 +144,9 @@ export function woodChips(x: number, y: number, z: number, n: number, floor: num
   }
   chip.fade = 0.22;
   chip.settle = false;
-  chip.intensity = 1;
 }
 
-/** Low-alpha lobes, not a smoke wall. Dust keeps intensity one under the existing exposure policy. */
+/** Contact dust takes the scene light. Reward rings use their authored display-range ink. */
 export function dustRing(
   x: number,
   y: number,
@@ -164,11 +156,13 @@ export function dustRing(
   size = 0.3,
   intensity = 1,
   life = 1,
+  lighting: 'daylight' | 'display' = 'daylight',
 ) {
   if (reducedMotion) return;
   n = Math.min(40, n);
   puff.alpha = particleEffects.dustAlpha;
-  puff.intensity = intensity; // celebratory rings pass readableIntensity(); every other caller keeps one
+  puff.daylight = lighting === 'daylight';
+  puff.intensity = intensity;
   for (let k = 0; k < n; k++) {
     const a = (k / n) * Math.PI * 2 + Math.random() * 0.3;
     const sp = speed * (0.5 + Math.random() * 0.4);

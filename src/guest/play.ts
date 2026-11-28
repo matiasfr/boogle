@@ -154,6 +154,7 @@ function puffs(st: State) {
       vx: Math.cos(a) * sp,
       vy: 0.6,
       vz: Math.sin(a) * sp,
+      daylight: true,
       color: DUST,
       life: 0.6,
       size: 0.35,
