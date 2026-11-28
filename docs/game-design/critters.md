@@ -12,6 +12,8 @@ On Home, [Placeholder: Gorge Minnows] school in the gorge and west cove, [Placeh
 
 The [Home feature](../../src/features/critter-home.ts) mounts within 260 m and sleeps beyond 300 m. Full Detail draws up to 40, 12 and 38 instances respectively. Reduced Detail halves each population and disables their shadows.
 
+At Split-rock Works, [Placeholder: Quarry Swifts] wheel above the rim when a train passes, a runner approaches or a seam opens. [Placeholder: Seam Lizards] dart aside and hide when runners come within 4 m or trains pass. The two local pools hold 24 and 36 animals at full Detail, half on reduced Detail. They mount within 105 m of the works area centre and sleep beyond 125 m.
+
 Files: [critter-fish.ts](../../src/features/critter-fish.ts), [critter-gulls.ts](../../src/features/critter-gulls.ts),
 [critter-fireflies.ts](../../src/features/critter-fireflies.ts). Related research:
 [research/creature-ai-and-ecosystems.md](../research/creature-ai-and-ecosystems.md).
