@@ -1,4 +1,4 @@
-> **Status: plan, 27 November 2026.** Written by the planner against `origin/main` `f536288a3` (world v75), from the [Lane C brief](../brainstorms/lane-c-towns-hangout.md) and on its recommendations, for the [course change](course-change.md#lane-c-towns-are-the-hangout) ([decision](../decisions-core-loop.md#d-2026-11-27-course-change)). Part 1 landed in #2625. Part 2 landed in #2637 (world v77). Part 3 is planned below. Every building name, board word and line is a placeholder for the owner's words; none of The Boogler's copy is touched. The ball question and Part 3's disc question are separate owner calls.
+> **Status: plan, 27 November 2026.** Written by the planner against `origin/main` `f536288a3` (world v75), from the [Lane C brief](../brainstorms/lane-c-towns-hangout.md) and on its recommendations, for the [course change](course-change.md#lane-c-towns-are-the-hangout) ([decision](../decisions-core-loop.md#d-2026-11-27-course-change)). Part 1 landed in #2625. Part 2 landed in #2637 (world v77). Part 3 is planned below. Every building name, board word and line is a placeholder for the owner's words; none of The Boogler's copy is touched. Both live throw questions were answered on 28 November.
 
 # Lane C: the ball in town, and the first plot the room picks
 
@@ -132,12 +132,12 @@ Offer 2 is the Loader Yard. The next hangout is Offer 3, `plot1` at 220 degrees 
 | Put room choice at Home and keep the fixed Loader Yard | Decided | [Course change](../decisions-core-loop.md#d-2026-11-27-course-change) and [first town lesson](../decisions-rewards.md#d-2026-11-16-first-town-lesson-answers) |
 | Building names and board words are placeholders | Decided | [Owner's character and copy decision](../decisions-characters.md#d-2026-11-11-the-story-and-characters-are-the-owner-s) |
 | Offer 3 pairs the missed first toy with the shared frisbee. It becomes eligible after Offer 1. | New | Recommended. Friends can recover the first toy they passed up. Both purchases are hangouts with equal rider income. |
-| Enable live throwing specifically while holding the Boathouse disc | New | Recommended, requires an owner answer under the [9 November controls decision](../decisions-controls.md#d-2026-11-09-four-more-answers). |
+| Enable live throwing specifically while holding the Boathouse disc | New | Answered yes on 28 November, updating the [9 November controls decision](../decisions-controls.md#d-2026-11-09-four-more-answers). |
 | Face a shared disc rack and rattling cans toward the green, recall a free disc at the rack and keep the activity scoreless | Default | [Lane C brief](../brainstorms/lane-c-towns-hangout.md), Wave 2. The cans give a solo throw a destination and recall makes a missed catch recoverable. |
 
 **Findings incorporated.** The staking query can show two unbought offers. Buying the yard first can therefore expose Offer 3 before a spare toy exists. Step 9 makes that dependency explicit at the server and both boards. The brief's zero-server-ops observation applies to the disc's flight. Step 11 accounts separately for the changed plot catalogue and world namespace. From the court centre at radius 8 to the porch at radius 22 along the same bearing is 14 m, about 2.5 s on foot. The existing [dock still](lane-c/dock.png) shows the open road and the plot outline at the right of the approach. It does not establish the future rack's visibility or clearance. Step 11 checks both in the built scene. This toy changes neither movement abilities nor the railway route.
 
-**Owner question for this pass.** May a player throw the shared frisbee in the live railway room once the room builds its Boathouse? Recommend yes for this disc, with the co-op handoff and reload proofs above. The current production guard in `src/player/hands.ts` disables Throw, and the 9 November decision covers the action generally. The later town decision specifies where toys belong. It does not settle the control exception. The design-review skill calls for an owner decision where a recommendation would override recorded direction. Stop after the plan until answered. The existing beach-ball question remains separate (recommend yes, ball only under that question). Keep all building words provisional until the owner supplies them.
+**Owner question for this pass.** May a player throw the shared frisbee in the live railway room once the room builds its Boathouse? **Answered 28 November 2026.** The owner said “Yes and yes” to the ball and the built Boathouse disc. [Controls decision](../decisions-controls.md#d-2026-11-28-ball-and-disc-throw). Seeds keep Sprout. Building words remain placeholders.
 
 ## Level findings
 
@@ -162,9 +162,9 @@ The Round has no `level-check` coverage for props ("Excluded place props, room/s
 
 ## Open questions
 
-Only the first waits on the owner. The rest proceed on their recommendation and are logged.
+The first was answered on 28 November. The rest proceed on their recommendation and are logged.
 
-1. **May the beach ball be thrown in the live game?** It changes the [9 November answer](../decisions-controls.md#d-2026-11-09-four-more-answers), item 3 ("no Throw in the live game until replication R3"); R3 never brought island throwing, and the ball's own physics is Owner state that already throws on every other entry. **Recommended: yes, the ball only** (`canThrow` becomes `heldId() === 'ball'` on production; seeds keep Sprout; the two dropped nightly throw checks come back with it). **Waits on him.** Until then the court is for carrying, dropping and running the ball in, which part 1 is built for.
+1. **May the beach ball be thrown in the live game?** **Answered 28 November 2026.** The owner said “Yes and yes” to the ball and the built Boathouse disc. [Controls decision](../decisions-controls.md#d-2026-11-28-ball-and-disc-throw). Restore the two nightly throw checks.
 2. **The brief's Offer 1 pick, Seed Shed or Horn Pavilion, with the driver moving in either way.** Proceeds as recommended (the brief's question 1).
 3. **Mushrooms grow only within the Round on production.** Proceeds (level finding 4).
 4. **The unchosen toy on a later plot.** Not in this build: plot 1 (Offer 3) stays a plain house until a later plan gives it a `choices` row. Proceeds.

@@ -125,9 +125,15 @@ export default {
     await g.wait(0.2);
     t.check('Escape leaves the talk', await g.eval(`return document.querySelector('.bd').hidden;`));
 
-    // No toss checks until replication R3 (owner, 9 November, docs/decisions.md "Four more answers" (3)): the live
-    // game's server refuses gift.toss and the live game offers no throw, so a tossed item to pick up (and its name tag
-    // saying Throw), a wind-up at the stall and a dropped frisbee behind a log bundle come back with R3.
+    const toss = await g.eval(`${INV}
+      const { grabBall, ball } = await import('/src/entities/ball/state.ts');
+      grabBall(); I.take('ball');
+      const charging = H.useDown();
+      const interacted = H.interactDown();
+      H.interactUp(); H.useUp(); H.updateHands();
+      return { charging, interacted, held: I.heldId(), moving: Math.hypot(ball.body.velocity.x, ball.body.velocity.y, ball.body.velocity.z) > 0 };`);
+    t.check('Interact cannot take anything during a wind-up and release launches the ball',
+      toss.charging && !toss.interacted && !toss.held && toss.moving, JSON.stringify(toss));
 
     // A bag of seeds where nothing can grow: the click says why. The search starts at the beach cell west of the court
     // where the tossed frisbee used to land. Anything in hand turns you to the camera every frame

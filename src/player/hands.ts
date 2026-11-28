@@ -9,10 +9,10 @@
 //                            otherwise uses
 //   mainVerb()               what touchDown would do, for the button's label
 //   throwDown                the touch Toss button: winds up a throw of what you hold (release with releaseThrow)
-//   canThrow()               whether you hold anything (everything held can be thrown), never in the live game
+//   canThrow()               whether the held toy supports a throw
 //   interactTarget()         the one thing in front of you (see below), or null; the touch main button acts on it too
 //   useVerb()                what using the thing in your hand does ('Throw', 'Sprout'), null for empty hands or when
-//                            it does nothing (a throw in the live game)
+//                            the item has no use
 //   handsNote                { text, until }: why the last use did nothing, for src/features/held.ts to show
 //   emptyHands               { down, up }: what using empty hands does; the guest's punch sets it. down returns true if
 //                            it acted.
@@ -41,7 +41,7 @@
 // nudge toward where you look. Ties go to the provider registered first.
 //
 // Classic gift flights and landings were retired on 13 November. The ball keeps its own physics and can still be
-// thrown on nonproduction entries; the production railway continues to offer no throw. Holding seeds and giving
+// thrown on the railway. Holding seeds and giving
 // gifts to The Boogler remain local inventory interactions.
 import * as THREE from 'three';
 import { me, cam } from './state.ts';
@@ -52,7 +52,6 @@ import { heldId, take, emptyHand, drop, onHandChange, onLetGo } from './inventor
 import { sprout } from '../adapters/mushrooms.ts';
 import { pickInteract, NO_TARGETS, type InteractTarget } from '../sim/interact-pick.ts';
 import { currentFrame } from '../loop.ts';
-import { productionRailway } from '../proto/flags.ts';
 
 export { NO_TARGETS };
 
@@ -74,8 +73,7 @@ export type Interactable = InteractTarget & {
 };
 
 const USE_VERB: Record<string, string> = { seeds: 'Sprout' };
-const THROWS = !productionRailway;
-export const canThrow = () => THROWS && heldId() === 'ball';
+export const canThrow = () => heldId() === 'ball';
 const ballAt = new THREE.Vector3();
 
 // The ball is in your hand while ball ownership says so: thrown, stolen, respawned or dropped on a hidden tab, it leaves

@@ -6,7 +6,7 @@
 import * as THREE from 'three/webgpu';
 import { SEA } from '../constants.ts';
 import { waterField } from '../physics/water-field.ts';
-import { groundHeight } from '../island/terrain.ts';
+import { toyGround } from '../physics/toy-ground.ts';
 import { camera } from '../render/scene.ts';
 import { dynAttr, instancedSprite } from '../render/sprites.ts';
 import { readableUnlit } from '../render/readable-unlit.ts';
@@ -86,7 +86,7 @@ function updatePreview() {
       else stepFlight(p, v, glide, DT);
     }
     const surface = waterField.moving ? waterField.nearby(p).height : SEA;
-    if (p.y < groundHeight(p.x, p.z) || p.y < surface - 0.3) {
+    if (p.y < toyGround.under(p.x, p.z) || p.y < surface - 0.3) {
       n++;
       break;
     }
