@@ -31,3 +31,15 @@ The production level checker excludes station collision and distant works. Its c
 |Four-metre porch, three low rings and splash raft|Default|Brief call 12|
 
 Six decided, four default, two new. Growing towns supports the permanent visible choice. Route contract preserves the stair and work edges. The stakes run in reverse encounter order; step 3 replaces the nearest set. The offline measurements leave sightlines, the porch return and remote motion for live verification.
+
+## Built and checked
+
+World v86 adds one High Gorge Town, its clock and slot 32. The host prices the choice, checks the board position and records the winning edit. Each completed outer-town building accrues to the existing far queue. The horn relay checks construction, identity, fresh visible position, distance and cooldown. Gorge residency owns the building solids, boards and three optional hook targets.
+
+The first camera-only capture showed water. Staging the player on the concourse mounted the Gorge and exposed both readable boards. The initial house still revealed coplanar stone and timber. The finished floor and porch stand 8 cm above the pad. The perch stair moved 55 cm sideways within the gap between the next plot markers.
+
+[Concourse boards](lane-c-part6/boards.png) · [Echo Horn House](lane-c-part6/echo-horn-house.png) · [Canyon Hook-Perch](lane-c-part6/canyon-hook-perch.png). The local motion sheet is at `.look/gorge-perch-motion.png`. It shows the player leaving the deck, cable extended, then reaching the first ring. The final still checks the revised outer stair.
+
+Level check completed 29 reports. Trade passed 59 tests. The full server run passed 425 with two skipped, using a 300-second per-test deadline after the ending host scenario timed out at 120 seconds under load. Network passed 411 of 411. Ship check passed 2,205 with one skipped; the subsequent stair-only ship check passed 859. All 85 seed ticks, operation results, 82 client trace lengths and 12 headway system sequences match the previous world. The boot-probe trigger covers new rail lines, trains and halts; this catalogue change adds a town plot.
+
+The audio mix, the two-player harmony heard in a live room, the full three-ring chain and the swim back to the slipway remain unverified. Not tested on a device.
