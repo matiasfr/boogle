@@ -106,7 +106,10 @@ export default {
     await g.eval(`(await import('/src/boogler/dialogue.ts')).closeDialogue();`);
 
     // A bag of seeds: using it sprouts mushrooms ahead of you, spends the bag, and they end up solid.
-    await g.eval(`${INV} I.take('seeds'); ${TP(-30, 30)} ${AIM(0)}`);
+    await g.eval(`${INV}
+      const { toyGround } = await import('/src/physics/toy-ground.ts');
+      const { x, z } = toyGround.spawn;
+      I.take('seeds'); ${TP('x', 'z', 'toyGround.under(x,z) + 0.6')} ${AIM(0)}`);
     await g.wait(0.4);
     const sprouted = await g.eval(`${INV}
       const M = await import('/src/adapters/mushrooms.ts');
