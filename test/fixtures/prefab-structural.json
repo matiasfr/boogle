@@ -10,7 +10,7 @@
     "name": "review b: instantiate launders seat creation",
     "file": "src/prefab/instantiate.ts",
     "code": "export { registerSeat as make } from '../entities/railway/seat.ts';",
-    "rule": "boogle/prefab-public-surface",
+    "rule": "boogle/seats-from-records",
     "fail": true
   },
   {

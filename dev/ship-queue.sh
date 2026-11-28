@@ -67,9 +67,9 @@ if [ -n "$risky" ]; then
   echo "ship-queue: reviewed: $reviewed"
 elif [ -n "$verdicts" ]; then
   if [ -z "$read" ]; then
-    echo "ship-queue: tests on the review paths changed with no assertion change (rule per file):"
+    echo "ship-queue: review-path changes require orchestrator read (no independent review needed; rule per file):"
     echo "$verdicts" | sed 's/^read /  /'
-    echo "Read them yourself, then pass --orchestrator-read \"<what changed in them>\"."
+    echo "Read them yourself, then pass --orchestrator-read \"<what changed>\"."
     exit 4
   fi
   echo "ship-queue: orchestrator read: $read"

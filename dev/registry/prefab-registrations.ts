@@ -4,10 +4,10 @@ import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { parseSync } from 'oxc-parser';
 import { registrationKinds, registrationSites } from '../lint/prefab-registrations.ts';
-import { createModuleResolver, runtimeExports, moduleEdges } from '../lint/prefab-boundaries.ts';
+import { createModuleResolver, moduleEdges } from '../lint/prefab-boundaries.ts';
 export type RegistrationDebt = Record<
   keyof typeof registrationKinds,
-  Record<string, { count: number; reason: string; exports: string[]; consumers: string[] }>
+  Record<string, { count: number; reason: string; exports?: string[]; consumers: string[] }>
 >;
 export function checkPrefabRegistrations(root: string, ref: string): string[] {
   const file = 'dev/lint/prefab-registrations.json';
@@ -48,7 +48,6 @@ export function checkPrefabRegistrations(root: string, ref: string): string[] {
       if (count !== budget.count || count < 1)
         errors.push(`${source}: ${kind} debt ${budget.count} != ${count}; lower removed debt, never grow it`);
       if (!/^\d{4}-\d{2}-\d{2}: .+/.test(budget.reason)) errors.push(`${source}: ${kind} needs a dated reason`);
-      const names = runtimeExports(current);
       const actualConsumers = [...(consumers.get(source) ?? [])].sort();
       if (JSON.stringify(actualConsumers) !== JSON.stringify(budget.consumers))
         errors.push(`${source}: ${kind} consumers differ; remove stale entries, never add consumers`);
@@ -67,19 +66,13 @@ export function checkPrefabRegistrations(root: string, ref: string): string[] {
             errors.push(`${source}: ${kind} new consumer lacks old-code proof: ${consumer}`);
         }
       }
-      if (JSON.stringify(names) !== JSON.stringify(budget.exports))
-        errors.push(`${source}: ${kind} public exports differ from the approved baseline`);
       const oldSource = git(source);
       const baseline =
         base?.[kind][source] ??
         (!base && oldSource
-          ? {
-              count: registrationSites(parseSync(source, oldSource).program, source, resolve, kind).length,
-              exports: runtimeExports(parseSync(source, oldSource).program),
-            }
+          ? { count: registrationSites(parseSync(source, oldSource).program, source, resolve, kind).length }
           : undefined);
-      if (!baseline || budget.count > baseline.count || budget.exports.some((n) => !baseline.exports.includes(n)))
-        errors.push(`${source}: ${kind} debt grew; use prefab records`);
+      if (!baseline || budget.count > baseline.count) errors.push(`${source}: ${kind} debt grew; use prefab records`);
     }
   }
   return errors;

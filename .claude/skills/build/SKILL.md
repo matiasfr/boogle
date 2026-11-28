@@ -18,17 +18,22 @@ that writes the plan carries it out, so it can change the plan when a step turns
    a figure the plan got slightly off, two of its lines that contradict each other, a check that rejects a valid
    state. Fix it yourself, correct the plan's lines in your branch and list each fix in your report; stop only when
    the fix changes what a player sees or does, or a recorded decision (25 November: two builders stopped on such
-   slips in one hour, a ramp pitch of 8.84° against 8.89° and a rack bound that rejected a valid save; rule 75 in
-   docs/agents/orchestrator-state.md).
+   slips in one hour, a ramp pitch of 8.84° against 8.89° and a rack bound that rejected a valid save).
+   - **View-only scope widening:** a view-only builder that meets a file its brief did not list widens its scope within view files (`src/entities`, `src/content`, `src/render`, plug-in records) and lists every widening in its report instead of stopping.
+   - **Failing `Default` numbers:** when a plan's `Default` number fails the plan's own stated proof, change the number to meet the proof, log the changed `Default` in `docs/agent-calls.md`, and keep building.
+   - **Tests forced by an approved rule:** when a planned rule change necessarily breaks an existing test, update only what the rule forces and list it for review.
+   - **Still stop** at `src/sim`, `src/world`, `src/net`, `server/`, a `WORLD_NS`-pinned fixture, a `Decided` call, or a proof that cannot be met.
 3. **Design calls.** If your plan sets numbers, rules, rewards, pacing, placement or what a character says, and the
    brief carries no design review covering them, run the [design-review skill](../design-review/SKILL.md) on your plan
    before building.
 4. **Build in order.** Before writing a shot, script or workaround, check the tool table in docs/agents/tools.md,
    "Tools and skills". After each step run its check and `node dev/ship-check.ts` (changed lint, typecheck, the touched
    files' tests; the full `npm run check` belongs to the ship and checkpoints, owner-calls.md, "Build more, test
-   less"), and fix what fails. When a result shows the plan is wrong, revise the plan and say what changed and why in
-   the report. Stop and report instead when the fix would break a rule in AGENTS.md or docs/agents/ (sync kind, the
-   "Don't" list, lint boundaries, hotspot files), change direction or scope, or contradict a recorded decision.
+   less"), and fix what fails. Once a branch's tip is under independent review, run no second full suite (`ship-queue`
+   and CI run it; rerun a single timed-out test alone rather than repeating the whole suite). When a result shows the
+   plan is wrong, revise the plan and say what changed and why in the report. Stop and report instead when the fix
+   would break a rule in AGENTS.md or docs/agents/ (sync kind, the "Don't" list, lint boundaries, hotspot files), cross
+   step 2's stop walls, or contradict a recorded decision.
 5. **See it.** For anything a player can see or feel, follow docs/agents/verification.md, "See it before you ship":
    look at your own `/look` stills and motion sheets, gut-check them, and iterate before you finish. One proof look per
    change by default; phone-width, second-player, far-distance or before/after shots only when the change is about them
@@ -38,8 +43,9 @@ that writes the plan carries it out, so it can change the plan when a step turns
    or the capture commands. Skip a still only when the harness itself prompts or refuses, and quote its message.
 6. **Edit, don't rewrite:** `Edit`, or `npm run patch` for many edits at once. No throwaway patch scripts and no
    whole-file `Write` of a file that exists, unless most of it really changes.
-7. **Simplify.** When your code changes (not docs) are over ~3 files or ~150 lines, run `/simplify` on the diff
-   before the last check and commit (docs/agents/shipping.md); it changes no behaviour, so re-run the touched checks.
+7. **Simplify.** When your code changes (not docs) are over ~3 files or ~150 lines, run a single in-context `/simplify`
+   self-check on the diff before the last check and commit — no subagents (docs/agents/shipping.md; daily Tidy handles
+   cross-branch cleanup); it changes no behaviour, so re-run the touched checks.
 8. **Commit** in small commits (docs/agents/shipping.md). Ship with `npm run ship` only if your brief says to; otherwise
    leave the commits for the caller. A session working directly with the owner ships finished work and reports it; it
    does not ask "want me to ship it?" (owner, 19 November, docs/decisions-process.md, "finished work ships"). The

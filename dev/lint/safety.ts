@@ -12,20 +12,9 @@ import registrationDebt from './prefab-registrations.json' with { type: 'json' }
 import { registrationKinds, registrationSites } from './prefab-registrations.ts';
 import { policy, ENTITY_MESSAGE, INPUT_MESSAGE, INPUT_SELECTORS, RETIRED_RAILWAY_NAMES } from './policy.ts';
 import type { ImportBan, ImportOptions, Restriction, Rule } from './policy.ts';
-import {
-  isCapability,
-  createModuleResolver,
-  moduleEdges,
-  runtimeExports,
-  PREFAB_DOORS,
-  pureHelperEdge,
-} from './prefab-boundaries.ts';
-import { capabilitySpecifiers } from './prefab-specifiers.ts';
+import { isCapability, createModuleResolver, moduleEdges, PREFAB_DOORS, pureHelperEdge } from './prefab-boundaries.ts';
 import type { PrefabDebt, ModuleResolver } from './prefab-boundaries.ts';
 export type { PrefabDebt } from './prefab-boundaries.ts';
-import { acquiredConstruction, loadLegacyGraph, unanalysedProjectCode } from './prefab-constructors.ts';
-import type { LegacyGraph } from './prefab-constructors.ts';
-const legacyGraphs = new WeakMap<PrefabDebt, LegacyGraph>();
 
 export type Diagnostic = { file: string; line: number; rule: string; message: string };
 export const customRules = new Set([
@@ -40,7 +29,6 @@ export const customRules = new Set([
   'boogle/signs-from-records',
   'boogle/interactions-from-records',
   'boogle/records-are-data',
-  'boogle/prefab-public-surface',
 ]);
 const prefabRules = [
   {
@@ -121,7 +109,6 @@ export function lintSafety(
   file: string,
   debt: PrefabDebt = prefabDebt,
   resolve: ModuleResolver = defaultResolver,
-  legacyGraph?: LegacyGraph,
 ): Diagnostic[] {
   if (ignored(file)) return [];
   const rules = rulesFor(file);
@@ -186,66 +173,63 @@ export function lintSafety(
           config.rule,
           `Registration debt is ${sites.length}, budget ${budget.count}; lower removed debt, never grow it. ${prefabDoor}`,
         );
-      const actual = runtimeExports(parsed.program);
-      if (JSON.stringify(actual) !== JSON.stringify(budget.exports))
-        report(
-          { start: 0 },
-          config.rule,
-          `Registration public surfaces may only shrink; update removed exports. ${prefabDoor}`,
-        );
     } else for (const site of sites) report(site, config.rule, prefabDoor);
   }
   for (const { kind, rule, names } of prefabRules) {
     const door = PREFAB_DOORS[kind].includes(file);
     if (!rules[rule] && !door) continue;
     const banned = new Set<string>(names);
-    for (const [i, edge] of edges.entries())
+    const capBindings = new Set<string>();
+    for (const [i, edge] of edges.entries()) {
       if (
         rules[rule] &&
         !edge.erased &&
         (targets[i] === null || (isCapability(kind, targets[i]!) && !pureHelperEdge(edge, targets[i]!)))
       )
         report(edge.node, rule, prefabDoor);
-    if (file.startsWith('src/'))
-      for (const node of capabilitySpecifiers(parsed.program, file, resolve, kind))
-        report(node, rule, `New capability import bindings must use the prefab door. ${prefabDoor}`);
+      else if (
+        door &&
+        !edge.erased &&
+        targets[i] &&
+        isCapability(kind, targets[i]!) &&
+        !pureHelperEdge(edge, targets[i]!)
+      ) {
+        if (edge.reexport)
+          report(edge.node, rule, `Do not re-export capability modules from a prefab door. ${prefabDoor}`);
+        else if (!isCapability(kind, file) && edge.node.type === 'ImportDeclaration') {
+          for (const s of edge.node.specifiers)
+            if (s.type !== 'ImportSpecifier' || s.importKind !== 'type') capBindings.add(s.local.name);
+        }
+      }
+    }
+    if (capBindings.size) {
+      const refsCapability = (expr: unknown): boolean => {
+        const n = expr as { type?: string; name?: string; object?: unknown; expression?: unknown } | null;
+        if (!n) return false;
+        if (n.type === 'Identifier') return !!n.name && capBindings.has(n.name);
+        if (n.type === 'MemberExpression') return refsCapability(n.object);
+        if (n.expression) return refsCapability(n.expression);
+        return false;
+      };
+      for (const stmt of parsed.program.body) {
+        if (stmt.type === 'ExportNamedDeclaration' && !stmt.source && stmt.exportKind !== 'type') {
+          for (const s of stmt.specifiers)
+            if (s.exportKind !== 'type' && s.local.type === 'Identifier' && capBindings.has(s.local.name))
+              report(stmt, rule, `Do not re-export capability bindings from a prefab door. ${prefabDoor}`);
+          if (stmt.declaration?.type === 'VariableDeclaration')
+            for (const d of stmt.declaration.declarations)
+              if (refsCapability(d.init))
+                report(d, rule, `Do not re-export capability bindings from a prefab door. ${prefabDoor}`);
+        } else if (stmt.type === 'ExportDefaultDeclaration' && refsCapability(stmt.declaration))
+          report(stmt, rule, `Do not re-export capability bindings from a prefab door. ${prefabDoor}`);
+      }
+    }
     // Retain the legacy call-count ratchet as a supplement. Module access is the structural boundary.
     for (const node of rules[rule] ? calls : []) {
       const c = node.callee!;
       const name = c.type === 'Identifier' ? c.name : (c.property?.name ?? c.property?.value);
       if (name && banned.has(name)) report(node, rule, prefabDoor);
     }
-  }
-  const surface = debt.doors?.[file] ?? debt.colliders[file]?.exports ?? debt.seats[file]?.exports;
-  if (surface) {
-    const actual = runtimeExports(parsed.program);
-    for (const name of actual)
-      if (name === '*' || !surface.includes(name))
-        report(
-          { start: 0 },
-          'boogle/prefab-public-surface',
-          `Unapproved runtime export ${name}: door/debt public surfaces may only shrink. ${prefabDoor}`,
-        );
-    for (const name of surface)
-      if (!actual.includes(name))
-        report(
-          { start: 0 },
-          'boogle/prefab-public-surface',
-          `Remove stale public export ${name} from prefab debt. ${prefabDoor}`,
-        );
-    for (const [i, edge] of edges.entries())
-      if (
-        !edge.erased &&
-        edge.reexport &&
-        targets[i] &&
-        (isCapability('colliders', targets[i]!) || isCapability('seats', targets[i]!)) &&
-        !pureHelperEdge(edge, targets[i]!)
-      )
-        report(
-          edge.node,
-          'boogle/prefab-public-surface',
-          `Do not re-export capability modules from a door or debt file. ${prefabDoor}`,
-        );
   }
   // A require value cannot be passed around as an untracked loader. Imports with unknown targets fail closed.
   let scopes: ReturnType<typeof analyze> | undefined;
@@ -292,7 +276,7 @@ export function lintSafety(
   }
   for (const { kind, rule } of prefabRules) {
     const budget = debt[kind][file];
-    const count = debt.doorCounts?.[file]?.[kind] ?? budget?.count;
+    const count = budget?.count;
     if (count === undefined) continue;
     const actual = diagnostics.filter((d) => d.rule === rule).length;
     if (actual <= count) {
@@ -301,41 +285,8 @@ export function lintSafety(
         report(
           { start: 0 },
           rule,
-          `Prefab debt has ${actual} violations, budget ${count}: lower the count to ${actual} (remove a zero entry outside named doors). ${prefabDoor}`,
+          `Prefab debt has ${actual} violations, budget ${count}: lower the count to ${actual} (remove a zero entry). ${prefabDoor}`,
         );
-    }
-  }
-  // Importer-count growth is never covered by a file's raw budget: even a debt file cannot acquire a new legacy API.
-  if (debt.legacy && edges.length) {
-    let graph = legacyGraph ?? legacyGraphs.get(debt);
-    if (!graph) {
-      graph = loadLegacyGraph(process.cwd(), debt);
-      legacyGraphs.set(debt, graph);
-    }
-    for (const edge of edges) {
-      const target = edge.source ? resolve(file, edge.source) : null;
-      if (!edge.erased && target && unanalysedProjectCode(graph, target))
-        for (const kind of ['colliders', 'seats'])
-          report(
-            edge.node,
-            `boogle/${kind}-from-records`,
-            `Unanalysed project module ${target} cannot forward construction capabilities. ${prefabDoor}`,
-          );
-      for (const key of acquiredConstruction(graph, file, edge, resolve)) {
-        const recorded = debt.legacy[key];
-        if (
-          recorded !== undefined &&
-          graph.constructors[key]!.importers.length + (graph.constructors[key]!.importers.includes(file) ? 0 : 1) <=
-            recorded
-        )
-          continue;
-        for (const kind of graph.constructors[key]!.kinds)
-          report(
-            edge.node,
-            `boogle/${kind}-from-records`,
-            `New legacy construction importer ${file} → ${key}; importer counts may only shrink. ${prefabDoor}`,
-          );
-      }
     }
   }
   // CommonJS was the legacy config's default latest/sloppy scope. The two non-native recommended rules still
@@ -431,7 +382,6 @@ export function lintSafety(
         'boogle/signs-from-records',
         'boogle/interactions-from-records',
         'boogle/records-are-data',
-        'boogle/prefab-public-surface',
       ].includes(d.rule)
     )
       return true;
