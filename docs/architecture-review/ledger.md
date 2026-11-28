@@ -4,8 +4,8 @@ What the architecture reviewer ([skill](../../.claude/skills/architecture-review
 [source](../research/engine-architecture.md)) has found and what became of it, so a rejected finding doesn't come back.
 Entries are never deleted.
 
-**Last reviewed:** `3b7d14bc5` (27 November 2026). [Daily review](../reports/tidy-2026-11-27.md).
-Scenario 2 walked. Next scenario is 3. AR-2 remains open.
+**Last reviewed:** `d20ccd0cc` (28 November 2026). No new findings. AR-2 remains open.
+Scenario 3 surfaced a sensitivity point: the asset manifest checks file sizes at build time, while the shader and draw-call budgets need a measured scene. Those budgets were not assessed. Next scenario is 4.
 
 - **Fingerprint:** check, path and symbol, never a line number.
 - **Status:** `open`, `fixed`, `rejected`, `deferred` or `superseded`.
