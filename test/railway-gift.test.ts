@@ -751,3 +751,58 @@ test('the last Quarry cast has one reservation across carriers and returns raw t
   assert.equal(rail(s.w).rack, 8);
   assert.equal(rail(s.w).returnedLogs, 4);
 });
+
+test('a standing Stack carrier leaves timber promised to the steel board', () => {
+  const s = unaudited(buildSeedWorld('steel-kit'));
+  for (
+    let ticks = 0;
+    !LINE_SLOTS[LINE2]!.some((slot) => {
+      const t = train(s.w, slot);
+      return t.legKit && t.at === 0 && t.phase === TRAIN_PHASE.STAND;
+    });
+    ticks++
+  ) {
+    assert.ok(ticks < 6000, 'a Stack kit loads at Home');
+    advance(s, 1);
+  }
+  give(s);
+  assert.deepEqual(worksThanks(s.w, 5), ['a']);
+  advance(s, 1);
+  assert.equal(giftAboard(s.w, LINE2), 0, 'the steel-board donation must wait for a steel carrier');
+});
+
+test('the last cast already covered by timber does not solicit stone from a second guest', () => {
+  const s = unaudited(buildSeedWorld('works-lit'));
+  for (let ticks = 0; works(s.w).poured < 31; ticks++) {
+    assert.ok(ticks < 3000);
+    if (works(s.w).rack === 6) {
+      assert.equal(act(s, 'b', 'rail.footTake', { rack: 0 }), 1);
+      assert.equal(act(s, 'b', 'rail.drop', { kind: 3, n: 1, x: 0, y: 0, z: 0 }), 1);
+    }
+    advance(s, 1);
+  }
+  assert.equal(act(s, 'b', 'rail.footTake', { rack: 0 }), 1);
+  give(s);
+  assert.deepEqual(castBatch(s.w), { n: 4, stone: false });
+  assert.equal(giftRides(s.w, true), false);
+});
+
+test('exchanging a full Q6 car at Home does not deliver ordinary timber to Far Head', () => {
+  const s = beforeFirstKit();
+  for (
+    let ticks = 0;
+    !LINE_SLOTS[LINE2]!.some((slot) => {
+      const t = train(s.w, slot);
+      return t.at === 0 && t.phase === TRAIN_PHASE.STAND && t.logs === 32;
+    });
+    ticks++
+  ) {
+    assert.ok(ticks < 200);
+    advance(s, 1);
+  }
+  const before = rail(s.w).depot;
+  give(s);
+  advance(s, 1);
+  assert.equal(workAboard(s.w, 2), 8);
+  assert.equal(rail(s.w).depot, before, 'Far Head receives kit when its train arrives');
+});
