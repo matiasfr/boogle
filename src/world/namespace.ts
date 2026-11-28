@@ -165,7 +165,8 @@
 // v87 (2026-11-28): High Gorge town, plot and far rider clock.
 // v88 (2026-11-28): Village forge conversions and marked rail kit in transit.
 // v89 (2026-11-28): pre-leg bill pours and donated cast batches at Quarry.
-export const WORLD_NS = 'v89';
+// v90 (2026-11-28): Canopy town, plot and far rider clock.
+export const WORLD_NS = 'v90';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

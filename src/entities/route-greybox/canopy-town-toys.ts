@@ -1,6 +1,7 @@
 import * as THREE from 'three/webgpu';
 import { me } from '../../player/state.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
+import { createGhostOutlines } from '../../render/ghost-outline.ts';
 
 export function createCanopyToys(
   owner: OwnedView,
@@ -79,11 +80,28 @@ export function createCanopyToys(
   chime.add(motes);
   owner.add(net, chime, rings);
   owner.cleanup(() => materials.forEach((m) => m.dispose()));
+  const netPlan = createGhostOutlines(owner, 192);
+  const chimePlan = createGhostOutlines(owner, 512);
+  const outline = (plan: typeof netPlan, u: number, l: number, y: number, w: number, h: number, d: number) => {
+    const p = point(u, l, y);
+    plan.box(p.x, p.y, p.z, w, h, d, yaw);
+  };
+  outline(netPlan, 0, 3.18, 0.21, 2.4, 0.14, 1.45);
+  for (const side of [-1, 1]) outline(chimePlan, side * 1.65, 0, 4.7, 0.3, 3.5, 0.3);
+  outline(chimePlan, 0, 0, 6.4, 3.8, 0.22, 0.3);
+  for (let i = 0; i < 5; i++) {
+    const h = 1.25 + i * 0.22;
+    outline(chimePlan, (i - 2) * 0.61, 0, 5.85 - h / 2, 0.32, h, 0.32);
+  }
+  netPlan.commit();
+  chimePlan.commit();
   const pad = point(0, 3.18, 0.08);
   return {
     update(active: number, preview: number, ageMs: number) {
-      net.visible = rings.visible = active === 10 || preview === 10;
-      chime.visible = active === 11 || preview === 11;
+      net.visible = rings.visible = active === 10;
+      chime.visible = active === 11;
+      netPlan.mesh.visible = preview === 10;
+      chimePlan.mesh.visible = preview === 11;
       const body = me.body;
       if (active === 10 && body && body.velocity.y <= 0 && body.position.y >= pad.y && body.position.y < pad.y + 0.75) {
         const dx = body.position.x - pad.x,
