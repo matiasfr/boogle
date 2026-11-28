@@ -14,6 +14,7 @@ export const HEIGHT = 150;
 // The whole shot lines up with the camera's starting direction: the line runs forward, the title reads left to right.
 const previewPad = fallArrival.landing?.();
 export let YAW = previewPad?.yaw ?? cam.yaw;
+export let frameWorks = false;
 export const FWD = new THREE.Vector3(-Math.sin(YAW), 0, -Math.cos(YAW));
 export const RIGHT = new THREE.Vector3(Math.cos(YAW), 0, -Math.sin(YAW));
 export const UP = new THREE.Vector3(0, 1, 0);
@@ -155,6 +156,7 @@ export function onRailMove(move: RailMove) {
 /** Freeze the destination on Jump in, after the guest has had time to receive the room. */
 export function startRail(travelled: number) {
   const pad = fallArrival.landing?.();
+  frameWorks = pad?.frameWorks ?? false;
   if (!pad || (pad.x === TARGET.x && pad.z === TARGET.z)) return;
   const previous = TARGET.clone();
   const rotation = new THREE.Quaternion().setFromAxisAngle(UP, pad.yaw - YAW);

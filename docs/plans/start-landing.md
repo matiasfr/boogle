@@ -55,6 +55,8 @@ The final [desktop fall](start-landing/camp-desktop.png) and [390 × 844 fall](s
 
 - [x] [Frame-time reading on the Mac](../reports/mac-frame-readings.md) from the first dry standing view at Camp (reported, not a gate).
 
+The [390 × 844 standing view](start-landing/camp-standing-phone.png) and [desktop standing view](start-landing/camp-standing-desktop.png) put the layer, resident and Station 1 bill in the middle third. The portrait lens widens at Camp touchdown and eases back after stand-up. The wider phone view shows the whole engine, though the bill text is small at this distance.
+
 ## Open questions
 
 1. Move the shore landing to Camp until Home connects, then to the hall? Recommended **yes**, answered **yes** on 28 November. All five answers in the brief stand. No outstanding direction question.
