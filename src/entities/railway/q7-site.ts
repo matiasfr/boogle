@@ -9,6 +9,8 @@ export const depotPieceVisible = (active: number, piece: 'depot' | 'shelf') => !
 
 /** The deck's top over the rail line (planks 0.04 m proud, as the trestle's). */
 export const Q7_DECK_UP = 0.04;
+export const Q7_FRAME_S = 710;
+export const Q7_FRAME_Y = line2Y(Q7_FRAME_S) + Q7_DECK_UP;
 const SPOTS = {
   /** The log rack: 2.4 m along the line, its stack 4 wide. */
   rack: { s: 705.2, lat: 5.0 },
