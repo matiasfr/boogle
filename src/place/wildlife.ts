@@ -1,4 +1,7 @@
 import * as THREE from 'three/webgpu';
+import { float, instanceIndex, positionGeometry, positionLocal, sin, time, vec3 } from 'three/tsl';
+import { createPool } from '../render/instances.ts';
+import { patchNode } from '../render/material-patch.ts';
 import { despawn, spawn, type GameEntity } from '../entity/entity.ts';
 import { autoRung, graphicsInitial } from '../graphics-settings.ts';
 import { onStart } from '../loop.ts';
@@ -24,6 +27,26 @@ export function wings() {
   );
   geometry.computeVertexNormals();
   return geometry;
+}
+
+export function wildlifePool(kind: 'school' | 'flock' | 'swarm', count: number, color: string) {
+  const aquatic = kind === 'school',
+    bird = kind === 'flock';
+  const material = new THREE.MeshStandardNodeMaterial({
+    color,
+    side: THREE.DoubleSide,
+    flatShading: true,
+  });
+  const beat = sin(time.mul(bird ? 7 : aquatic ? 13 : 22).add(float(instanceIndex).mul(1.7)));
+  patchNode(material, 'positionNode', (prev) =>
+    (prev ?? positionLocal).add(
+      aquatic
+        ? vec3(beat.mul(positionGeometry.z.min(0)).mul(0.28), 0, 0)
+        : vec3(0, beat.mul(positionGeometry.x.abs()).mul(bird ? 0.32 : 0.18), 0),
+    ),
+  );
+  const geometry = aquatic ? new THREE.ConeGeometry(0.12, 0.56, 5).rotateX(Math.PI / 2) : wings();
+  return createPool(geometry, material, count);
 }
 
 export function wildlifeZone(
