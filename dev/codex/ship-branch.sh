@@ -6,6 +6,8 @@
 # isn't already on main), 4 conflict markers survived the docs union or one table row was edited on both sides (aborted:
 # redo the edit on fresh main), otherwise ship's own status. Queued is not merged; --wait reports ancestry on main.
 set -uo pipefail
+# The queue captures this whole command at its call site. A standalone ship keeps its own log.
+ship_branch() (
 here=$(cd "$(dirname "$0")" && pwd)
 cd "${1:?worktree path}" || exit 1
 wait=0
@@ -24,8 +26,8 @@ done
 node "$here/../look/install-check.ts" . >/dev/null 2>&1 || npm ci --silent >/dev/null 2>&1
 ship_args=(--silent ship --)
 if [ "$wait" = 1 ]; then ship_args+=(--wait); fi
-SHIP_NO_AI=1 npm run "${ship_args[@]}" 2>&1 | tail -8
-status=${PIPESTATUS[0]}
+SHIP_NO_AI=1 npm run "${ship_args[@]}"
+status=$?
 [ "$status" = 0 ] || exit "$status"
 if [ "$wait" = 0 ]; then
   echo 'ship-branch: queued; CI and merge still pending. Next branch can start now.'
@@ -50,4 +52,17 @@ for attempt in 1 2; do
 done
 echo "unshipped commits: $left"
 [ "$left" = 0 ] || exit "${status:-1}"
+exit "$status"
+)
+
+if [ "${BOOGLE_QUEUE_CAPTURES_SHIP:-0}" = 1 ]; then
+  ship_branch "$@"
+  exit $?
+fi
+gitdir=$(git -C "${1:?worktree path}" rev-parse --absolute-git-dir) || exit 1
+log=$(mktemp "$gitdir/ship-branch.log.XXXXXXXX") || exit 1
+ship_branch "$@" >"$log" 2>&1
+status=$?
+tail -8 "$log"
+if [ "$status" != 0 ]; then echo "full output: $log"; fi
 exit "$status"
