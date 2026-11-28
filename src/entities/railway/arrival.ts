@@ -117,7 +117,7 @@ export async function createRailwayArrival(
   let heldCandidate: ReturnPosition | null = null;
   const ordinaryVisit = isFirstVisit() || !!replacedStage;
   let presenceSince: number | null = null;
-  let friend: { x: number; z: number } | null = null;
+  let friend: ReturnType<typeof enteredPoses>[number] | null = null;
   let steam: ReturnPosition | null = null;
   if (!savedPose && ordinaryVisit) returnSettle.done();
   owner.cleanup(returnSettle.done);
@@ -216,7 +216,7 @@ export async function createRailwayArrival(
   const enteredPoses = () =>
     [...remotes.values()].flatMap((r) => {
       const p = r.entered && r.snaps.sample(performance.now() - INTERP_MS)?.b.p;
-      return p ? [{ x: p[0]!, y: p[1]!, z: p[2]! }] : [];
+      return p ? [{ peer: r.peer, x: p[0]!, y: p[1]!, z: p[2]! }] : [];
     });
   const taken = (x: number, y: number, z: number) =>
     [...remotes.values()].some((r) => {
@@ -368,7 +368,14 @@ export async function createRailwayArrival(
         savedPose = readSavedPose();
         presenceSince = performance.now();
         restorePending = true;
+        // The room has answered. Even a solo return must keep its pose private through the seed's ordinary landing.
+        if (!savedPose && !ordinaryVisit && !fell) returnSettle.claimPlacement();
       }
+      const chooseHalt = (poses: ReturnType<typeof enteredPoses>) => {
+        if (!poses.length || !ready || !halts.running()) return null;
+        const { standing, works } = halts.friends();
+        return friendDestination(poses, standing, { x: toWorld(HALL.x), z: HALL.z }, works);
+      };
       if (presenceSince !== null) {
         const poses = enteredPoses();
         const step = friendArrivalStep(
@@ -383,14 +390,12 @@ export async function createRailwayArrival(
         if (step === 'resume') {
           returning = createReturnSearch(savedPose, haltLandings(), (halt) => halts.stands(halt.line!, halt.stop!));
         } else if (step === 'choose') {
-          const { standing, works } = halts.friends();
-          const destination = friendDestination(poses, standing, { x: toWorld(HALL.x), z: HALL.z }, works);
-          if (destination && returnSettle.claimPlacement()) {
+          const destination = chooseHalt(poses);
+          if (destination) {
             friend = destination.friend;
             returning = searchLandings(destination.platforms);
           }
         }
-        if (!returning) returnSettle.done();
       }
       if (steam && coverLifted() && !touchdown) {
         puff(steam.x, steam.y + 0.7, steam.z, 7, 0.6, new THREE.Color(0xdee5e4));
@@ -400,6 +405,23 @@ export async function createRailwayArrival(
       }
       if (returning && body && !fallArrival.active) {
         if (coverLifted() && !veiled(heldCandidate !== null)) return; // on screen: black before the body moves
+        const visitors = friend ? enteredPoses() : null;
+        if (friend && visitors) {
+          const present = visitors.find((p) => p.peer === friend?.peer);
+          if (present) friend = present;
+          else {
+            const replacement = chooseHalt(visitors);
+            if (!replacement) {
+              friend = null;
+              returning = null;
+              heldCandidate = null;
+              atSpawn();
+              return; // Ordinary placement still owns the held pose if the seed has not arrived.
+            }
+            friend = replacement.friend;
+            if (returning.current()?.halt !== replacement.platforms[0]?.halt) returning.retarget(replacement.platforms);
+          }
+        }
         const candidate = returning.current();
         if (candidate) {
           if (heldCandidate !== candidate) {
@@ -411,7 +433,6 @@ export async function createRailwayArrival(
         }
         const haltOpen =
           !friend || (!!candidate && ready && halts.running() && halts.stands(candidate.line!, candidate.stop!));
-        const visitors = friend ? enteredPoses() : null;
         const available = (x: number, y: number, z: number) =>
           !taken(x, y, z) &&
           (!visitors ||
@@ -473,7 +494,7 @@ export async function createRailwayArrival(
           }
           atSpawn();
           if (canLand && landing) land(landing);
-          if (landingDeadline !== null) unveil();
+          unveil();
         }
         landingDeadline = null;
         landing = null; // once
