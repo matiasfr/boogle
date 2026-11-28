@@ -18,8 +18,11 @@ export async function bellCut(owner: OwnedView, placements: readonly Placement[]
   // The west return runs from (-72, -877) to (-76, -826). Keep the relief shallow beside the stair.
   const length = Math.hypot(4, 51);
   const widths = [11, 9, 12, 10, length - 42];
-  const wall = new THREE.InstancedMesh(rock.pieces.get('face_10')!, rock.material, widths.length);
-  wall.name = 'bell:west-cut-face';
+  // The opposite bank follows the straight mapped edge from (-34, -959) to (-46, -766).
+  const eastLength = Math.hypot(12, 193);
+  const eastCount = Math.ceil(eastLength / 14);
+  const wall = new THREE.InstancedMesh(rock.pieces.get('face_10')!, rock.material, widths.length + eastCount);
+  wall.name = 'bell:cut-faces';
   const pose = new THREE.Object3D();
   pose.rotation.y = Math.atan2(51, 4);
   let along = 0;
@@ -30,6 +33,14 @@ export async function bellCut(owner: OwnedView, placements: readonly Placement[]
     pose.updateMatrix();
     wall.setMatrixAt(i, pose.matrix);
     along += width;
+  }
+  pose.rotation.y = Math.atan2(-193, -12);
+  pose.scale.set(eastLength / (eastCount * 10), 1, 0.08);
+  for (let i = 0; i < eastCount; i++) {
+    const t = (i + 0.5) / eastCount;
+    pose.position.set(-34 - 12 * t - 0.24, -0.15, -959 + 193 * t);
+    pose.updateMatrix();
+    wall.setMatrixAt(widths.length + i, pose.matrix);
   }
   owner.add(wall);
   owner.root.name = 'bell:cut-dressing';

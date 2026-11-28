@@ -262,6 +262,17 @@ Areas passed over in the arrival survey:
 - Saltpan — pale coping traces the inside of each ramp around the bend. The flat green ground beyond the decks still reads as a single plane.
 - Port Quay bank foot — the straight pale verge is visible under the sandstone, but occupies a narrow strip behind the yard at this pose.
 
+### Card 22, Bell Rock’s lower east wall
+
+At the south end of the lower platform, the wall on the left filled the foreground with a single grey face. Fourteen shallow sandstone faces now follow the east bank. Their courses recede toward the station board, with the timber deck visible all the way to the sign and open water between the opposite piles.
+
+`src/entities/route-greybox/massing-incline.ts` fits the faces to the mapped bank in the existing cut’s cliff-kit batch. The 1200 × 750 pair looks from (−45, 6.5, −874) toward (−55, 5.7, −846) at 62° FOV. Earlier cards timed out on the moving-train seed, so this pair uses a fixed arrival camera. [Before](greybox-look/card22-before.jpg) · [After](greybox-look/card22-after.jpg)
+
+Areas passed over in the arrival survey:
+
+- Saltpan — the pale green flat stretches from the decks to the water. The coping still picks out the turn on both sides of the boarding lane. [Arrival](greybox-look/card22-saltpan.jpg)
+- Port Quay bank foot — a narrow pale verge separates the sandstone and the apron. The turntable and roundhouse doors hold the eye across the yard. [Arrival](greybox-look/card22-quay.jpg)
+
 ## Design review (2026-11-27)
 
 | Call | Kind | Basis |
