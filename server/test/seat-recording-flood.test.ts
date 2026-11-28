@@ -8,6 +8,7 @@ import { runInNewContext } from 'node:vm';
 import { fixture } from './helpers/rail-tune.ts';
 import { recordSeats } from '../../src/adapters/seat-recording.ts';
 import { onPlayMark, onSeatSnapshot, SEAT_SNAPSHOT_MS } from '../../src/proto/mark.ts';
+import { firstContribution } from '../../src/proto/playdata/first-contribution.ts';
 import { SEAT_SIT_MS } from '../../src/world/rules/seats.ts';
 import { RULE_STEPS } from '../../src/world/room-clock.ts';
 
@@ -28,6 +29,7 @@ test('a remote peer records sits, stands and missed changes; floods keep unrelat
     round: Math.round,
     MARKS_PER_WINDOW: Number(source.match(/const MARKS_PER_WINDOW = (\d+)/)![1]),
     onPlayMark,
+    firstContribution,
     onSeatSnapshot: (fn: Parameters<typeof onSeatSnapshot>[0]) => t.after(onSeatSnapshot(fn)),
   };
   runInNewContext(
