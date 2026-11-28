@@ -13,6 +13,7 @@ import { beamId, boilerHeld, boilerId, held, railId } from './railway-queries.ts
  * tunables (slice 5 R3: railFarePct, railRiderPct). */
 export type Tick = {
   tick: number;
+  timing?: () => LineTiming;
   headPct: number;
   farePct: number;
   riderPct: number;

@@ -109,7 +109,7 @@ export function checkLine2(w: World) {
     pier > r0.out6 ||
     !railInt(r0.giftOut, legLogs) ||
     !railInt(r0.depotGiftDelivered, r0.out5 + r0.out6 - far - pier) ||
-    depotOut.some((n, k) => !railInt(n, LINE2_STATIONS[k]!.bill[0]) || (n > 0 && !LINE2_STATIONS[k]!.depot)) ||
+    depotOut.some((n, k) => !railInt(n, LINE2_STATIONS[k]!.bill[0] * (LINE2_STATIONS[k]!.kitStop ? 2 : 1)) || (n > 0 && !LINE2_STATIONS[k]!.depot)) ||
     depotOut.reduce((a, b) => a + b, 0) + legLogs !== r0.depotProduced + r0.giftOut + depotGift
   )
     bad('depot output');

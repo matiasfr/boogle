@@ -9,7 +9,9 @@ import { LINE2 } from '../../sim/railway-lines.ts';
 import type { ReadWorld } from '../../sim/railway-rows.ts';
 import { TRAIN_PHASE, type RailTrain } from '../../sim/railway-train.ts';
 import { reducedMotion } from '../../constants.ts';
-import { RING_STEEL_YARD } from '../../sim/railway-ring-layout.ts';
+import { RING_STEEL_WORKS } from '../../sim/railway-ring-layout.ts';
+
+import { LINE2_STATIONS } from '../../sim/railway-line2-layout.ts';
 
 export function workGiftTrip(
   owner: OwnedView,
@@ -28,8 +30,13 @@ export function workGiftTrip(
       : row.at === 1
         ? quarry()
         : row.at === 5
-          ? new THREE.Vector3(RING_STEEL_YARD.x / 100, RING_STEEL_YARD.y / 100 + 1, RING_STEEL_YARD.z / 100)
+          ? new THREE.Vector3(RING_STEEL_WORKS.x / 100, RING_STEEL_WORKS.y / 100 + 1, RING_STEEL_WORKS.z / 100)
           : depot(row.at + 3, new THREE.Vector3());
+  if (row.at === 2 || row.at === 3) {
+    const frame = LINE2_STATIONS[row.at + 3]!;
+    rack.x = frame.x / 100;
+    rack.z = frame.z / 100;
+  }
   for (let i = 0; i < Math.abs(delta); i++)
     send('log', delta > 0 ? rack : deck, delta > 0 ? deck : rack, { dur: 0.6, delay: i * 0.025, apex: 3 }, owner);
 }

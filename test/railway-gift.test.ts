@@ -103,8 +103,8 @@ test('the kiln car leaves queued Q6 timber for a second dispatch', () => {
     advance(s, 1);
     railwayCheck(s.w);
   }
-  assert.equal(rail(s.w).depot, 8);
-  assert.equal(qjob(s.w, 5).stock, 24);
+  assert.equal(rail(s.w).depot, 0);
+  assert.equal(qjob(s.w, 5).stock, 32);
 });
 
 test('the first Q6 kit substitutes eight donated logs and survives a checkpoint before hand feeding', () => {
@@ -129,11 +129,11 @@ test('the first Q6 kit substitutes eight donated logs and survives a checkpoint 
   }
   assert.equal(restored.w.hash(), s.w.hash());
   assert.equal(rail(s.w).depotGiftDelivered, 8);
-  assert.equal(rail(s.w).depot, 32);
-  assert.equal(qjob(s.w, 5).stock, 0);
+  assert.equal(rail(s.w).depot, 24);
+  assert.equal(qjob(s.w, 5).stock, 8);
   assert.ok(act(s, 'b', 'rail.depotTake') >= 8);
   assert.equal(act(s, 'b', 'rail.deposit', { station: 'Q6', kind: 0, n: 8 }), 8);
-  assert.equal(qjob(s.w, 5).stock, 8);
+  assert.equal(qjob(s.w, 5).stock, 16);
   assert.deepEqual(worksThanks(s.w, 2), ['a', 'b']);
 });
 
@@ -152,7 +152,7 @@ for (const [stage, stop] of [
       railwayCheck(s.w);
     }
     // A second service sees the first car's reservation even when the last load exhausted demand.
-    assert.equal(workNeed(s.w, stop), 0);
+    assert.equal(workNeed(s.w, stop), stop === 5 ? 0 : 12);
     const delivered = unaudited(s);
     const qty = stop === 5 ? 8 : 20;
     for (let i = 0; workAboard(delivered.w, stop); i++) {
@@ -162,12 +162,12 @@ for (const [stage, stop] of [
     }
     if (stop === 5) {
       assert.equal(steel(delivered.w).giftDelivered, 8);
-      assert.equal(steel(delivered.w).yardLogs, 8);
-      assert.equal(steel(delivered.w).logs, 0);
+      assert.equal(steel(delivered.w).yardLogs, 0);
+      assert.equal(steel(delivered.w).logs, 8);
     } else {
       assert.equal(rail(delivered.w).depotGiftDelivered, 8);
-      assert.equal(rail(delivered.w).depot, 20);
-      assert.equal(qjob(delivered.w, 6).stock, 0);
+      assert.equal(rail(delivered.w).depot, 12);
+      assert.equal(qjob(delivered.w, 6).stock, 8);
     }
     let fed = 0;
     while (fed < qty) {
@@ -194,18 +194,32 @@ for (const [stage, stop] of [
   });
 }
 
-test('a stocked Q6 depot leaves a Village deposit available at Home', () => {
+test('a last gifted log funds stocked Q6 when the rails are complete', () => {
   const s = unaudited(buildSeedWorld('q6-stocked'));
-  assert.equal(rail(s.w).depot, 32);
-  assert.equal(giftRides(s.w), false);
+  for (const [kind, bill] of [[0, 31], [2, 32]] as const) {
+    for (let fed = 0; fed < bill;) {
+      act(s, 'b', kind ? 'rail.depotRailTake' : 'rail.depotTake');
+      const n = act(s, 'b', 'rail.deposit', { station: 'Q6', kind, n: Math.min(8, bill - fed) });
+      assert.ok(n > 0);
+      fed += n;
+    }
+  }
   give(s);
-  assert.equal(rail(s.w).rack, 8);
-  assert.equal(workAboard(s.w, 2), 0);
-  assert.deepEqual(worksThanks(s.w, 2), []);
-  assert.equal(act(s, 'b', 'rail.rackTake', { kind: 0 }), 8);
-  railwayCheck(s.w);
+  for (let i = 0; qjob(s.w, 5).start < 0; i++) {
+    assert.ok(i < 8000);
+    advance(s, 1);
+    railwayCheck(s.w);
+  }
+  assert.equal(qjob(s.w, 5).delivered, 32);
+  assert.equal(rail(s.w).depotGiftDelivered, 1);
+  assert.equal(rail(s.w).rack, 7);
 });
 
+function fillSteelLogs(s: Seed) {
+  if (steel(s.w).logs === 8) return;
+  chopTo(s, 'b', 8);
+  assert.ok(act(s, 'b', 'rail.steel') > 0);
+}
 function give(s: Seed) {
   chopTo(s, 'a', 8);
   const extra = account(s.w, 'a')!.carry - 8;
@@ -217,6 +231,7 @@ for (const [stage, name] of [
   ['wall-mid', 'wall'],
 ] as const) {
   const base = unaudited(buildSeedWorld(stage));
+  if (name === 'stack') fillSteelLogs(base);
   test(stage + ' replaces eight minted logs with eight from Home', () => {
     const s = unaudited(base);
     const control = unaudited(base);
@@ -285,6 +300,7 @@ for (const gift of [0, 8])
   });
 
 const finalSection = unaudited(buildSeedWorld('gorge-mid'));
+fillSteelLogs(finalSection);
 laySection(finalSection);
 for (let ticks = 0; legRow(finalSection.w, 0).rackLogs !== 20; ticks++) {
   assert.ok(ticks < 6000, 'last Stack kit racked');
@@ -330,6 +346,7 @@ test('spent gifts are not refunded from the final minted rack', () => {
 });
 test('mint loading respects the remaining single-log reservation', () => {
   const s = unaudited(buildSeedWorld('steel-kit'));
+  fillSteelLogs(s);
   const row = s.w.mut(Leg, legId(s.w, 0))!;
   const bill = RAIL_LEGS[0]!.sections[row.laid]!.logs;
   while (legRow(s.w, 0).logs < bill - 1) {
@@ -437,6 +454,7 @@ test('direct Village rails reach a branch frame before the forge consumes whole 
   assert.deepEqual([rail(s.w).rack, rail(s.w).convertedRails, haltYardStock(s.w, 0, 2)], [1, 0, 0]);
 });
 const saturated = unaudited(buildSeedWorld('gorge-open'));
+fillSteelLogs(saturated);
 advance(saturated, 2000);
 test('a full Stack carrier exchanges eight minted logs and pours them at the frame', () => {
   const s = unaudited(saturated);
@@ -532,7 +550,7 @@ test('the steel yard thanks the giver when a pickup changes demand before dispat
     advance(s, 1);
   }
   give(s);
-  assert.deepEqual(worksThanks(s.w), ['a']);
+  assert.deepEqual(worksThanks(s.w, 5), ['a']);
   assert.equal(act(s, 'b', 'rail.steelTake', { kind: 0 }), 8);
   for (let ticks = 0; !steel(s.w).giftDelivered; ticks++) {
     assert.ok(ticks < 6000);

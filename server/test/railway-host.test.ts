@@ -24,13 +24,15 @@ import { HALT_YARDS } from '../../src/sim/railway-yard-layout.ts';
 import { QUARRY_YARD, workAboard, worksThanks } from '../../src/sim/railway-queries-gift.ts';
 import { haltYardStock } from '../../src/sim/railway-queries-yard.ts';
 import { works } from '../../src/sim/railway-rows.ts';
-import { legRow } from '../../src/sim/railway-queries-route.ts';
 import { WORKS_KILN } from '../../src/sim/railway-works-layout.ts';
 import { Pile, Train, Town } from '../../src/sim/railway-components.ts';
 import { railTick } from '../../src/sim/railway-systems.ts';
 import { trains, town } from '../../src/sim/railway-rows.ts';
 import { TRADE } from '../../src/sim/railway-trade-layout.ts';
 import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
+
+import { legRow } from '../../src/sim/railway-queries-route.ts';
+import { qjob } from '../../src/sim/railway-rows.ts';
 
 type Obj = Record<string, unknown>;
 
@@ -86,6 +88,39 @@ test('the host carries a Village donation into the rails-only Stack bill', async
       assert.equal(legRow(mirror.confirmed(), 0).rails, expected);
       assert.equal(rail(mirror.confirmed()).convertedRails, expected);
     }
+    railwayCheck(f.world());
+  } finally {
+    await f.close();
+  }
+});
+test('a guest at Home advances a stocked Q6 bill through a carrier restart', async () => {
+  const f = await fixture(railwayRoomId('q6-gift'), 600000);
+  try {
+    const seed = buildSeedWorld('q6-stocked');
+    while (f.host.sync.world.tick < seed.t) f.host.step(0.1);
+    await f.host.sync.whenDurable();
+    f.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())), railwayCheck);
+    f.host.rules.railway.touchAll();
+    await f.open('a');
+    const epoch = await f.open('b');
+    await f.harvest('b', 8, epoch);
+    const n = f.host.rules.railway.account('bob')!.carry;
+    const put = { op: 'rail.haltPut', yard: 0, kind: 0 };
+    f.pose('b', HALT_YARDS[0]!.x, HALT_YARDS[0]!.z);
+    assert.equal((await f.edit('b', put, epoch)).accepted, n);
+    for (let i = 0; !workAboard(f.world(), 2); i++) {
+      assert.ok(i < 6000);
+      await f.step(1);
+    }
+    await f.restart();
+    assert.equal(workAboard(f.world(), 2), n);
+    assert.equal(qjob(f.world(), 5).stock, 0);
+    for (let i = 0; workAboard(f.world(), 2); i++) {
+      assert.ok(i < 6000);
+      await f.step(1);
+    }
+    assert.equal(qjob(f.world(), 5).stock, n);
+    assert.deepEqual(worksThanks(f.world(), 2), ['bob']);
     railwayCheck(f.world());
   } finally {
     await f.close();

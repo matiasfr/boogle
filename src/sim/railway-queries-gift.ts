@@ -1,6 +1,6 @@
 import type { World } from '../ecs/index.ts';
-import { Account, Cart, LegYard, QJob, Rail, Steel, Train, Works } from './railway-components.ts';
-import { depotNeed, kitJob, steelNeed, ringJoined, LINE2_SLOTS, trainId } from './railway-queries.ts';
+import { Account, LegYard, QJob, Rail, Steel, Train, Works } from './railway-components.ts';
+import { kitJob, ringJoined, LINE2_SLOTS, trainId } from './railway-queries.ts';
 import { LINE2_STATIONS } from './railway-line2-layout.ts';
 import { STEEL } from './railway-ring-layout.ts';
 import { WORKS } from './railway-works-layout.ts';
@@ -59,25 +59,15 @@ export function workRoom(w: World, stop: number) {
   }
   if (stop === 5) {
     const s = w.get(Steel, w.single(Steel))!;
-    return ringJoined(w) && s.lit < 0 && !legDone(w, 0) ? Math.max(0, STEEL.logs - s.logs - s.yardLogs) : 0;
+    return ringJoined(w) && s.lit < 0 && !legDone(w, 0) ? Math.max(0, STEEL.logs - s.logs) : 0;
   }
   const k = kitJob(w);
   if (k < 0 || LINE2_STATIONS[k]!.kitStop !== stop) return 0;
   const j = w.get(QJob, w.lookup(QJob, k)!)!;
-  return j.start < 0
-    ? Math.max(
-        0,
-        LINE2_STATIONS[k]!.bill[0] - j.stock - w.get(Rail, w.single(Rail))!.depot - w.get(Cart, w.single(Cart))!.logs,
-      )
-    : 0;
+  return j.start < 0 ? Math.max(0, LINE2_STATIONS[k]!.bill[0] - j.stock) : 0;
 }
 export function workNeed(w: World, stop: number) {
-  const room = workRoom(w, stop);
-  if (!room) return 0;
-  if (stop === 1) return Math.max(0, room - workAboard(w, stop, false));
-  if (stop === 5) return steelNeed(w).logs;
-  const k = kitJob(w);
-  return depotNeed(w, k, w.get(QJob, w.lookup(QJob, k)!)!).logs;
+  return Math.max(0, workRoom(w, stop) - workAboard(w, stop, false));
 }
 export function workDestination(w: World) {
   // The kiln precedes Q6 on the board. Both can receive logs after the throat opens.

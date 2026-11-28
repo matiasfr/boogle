@@ -413,7 +413,7 @@ export function install(
       farePct: rules.railTune.get('railFarePct'),
       riderPct: rules.railTune.get('railRiderPct'),
       pricePct: rules.railTune.get('railPricePct'),
-    });
+    }, timing);
     commit();
   }, 'railway');
   const touchAll = () => {

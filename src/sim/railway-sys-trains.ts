@@ -28,6 +28,8 @@ import {
   DEPOT_OUT,
   Forge,
   Line,
+  QJobRun,
+  SteelClock,
   QJob,
   Rail,
   Shed,
@@ -43,6 +45,9 @@ import {
   Route,
 } from './railway-components.ts';
 import {
+  gateDown,
+  LINE2_SLOTS,
+  timingOf,
   apertureId,
   aboard,
   cartId,
@@ -77,12 +82,14 @@ import {
   workQueued,
   workRoom,
 } from './railway-queries-gift.ts';
+import { LINE_TIMING } from './railway-line.ts';
+import type { LineTiming } from './railway-line-schedule.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 import { freightArrives, freightLoads, ridersArrive, ridersBoard } from './railway-sys-trade.ts';
 import { lapSlots, runLine } from './railway-lap.ts';
 import { deckHeld, footCap, footCarrier, freightStop } from './railway-queries-trade.ts';
 import { type TradePct } from './railway-trade-layout.ts';
-import { boilerAdopt, steelArrives, steelLoads, steelService } from './railway-sys-steel.ts';
+import { boilerAdopt, lightSteel, steelArrives, steelLoads, steelService } from './railway-sys-steel.ts';
 import { legKitArrive, legKitLoad, legKitService, legRailheadHold } from './railway-sys-route-kit.ts';
 import { fleetOf } from './railway-train.ts';
 import { legDone, legsLaid, routeRow, routeId } from './railway-queries-route.ts';
@@ -208,7 +215,7 @@ export function trainMoveIO(w: World): TrainMoveIO {
 /** The world's side of the trains' step (./railway-trains.ts): rows, stops, every line's yard freight (slice 5,
  * ./railway-sys-trade.ts), and line 2's cargo, wagon and the cart's hold on line 1. Transfers and phase changes are
  * atomic inside this tick apply. */
-function trainIO(w: World, headPct: number, pct: TradePct, tick: number, returnLogs: (n: number) => void): TrainIO {
+function trainIO(w: World, headPct: number, pct: TradePct, tick: number, timing: () => LineTiming, returnLogs: (n: number) => void): TrainIO {
   const row = (slot: number) => w.get(Train, trainId(w, slot))!;
   const laid = legsLaid(w);
   // Every train in this tick reads the same completed jobs, ring and leg prefix.
@@ -245,16 +252,20 @@ function trainIO(w: World, headPct: number, pct: TradePct, tick: number, returnL
       r.logs -= r.workLogs;
       if (r.workLogs && r.at === r.workStop) {
         // Ordinary kit on this car already has a place on its receiving rack.
-        const ordinary = r.workStop === 1 ? 0 : r.logs;
-        const n = Math.min(r.workLogs, Math.max(0, workRoom(w, r.workStop) - ordinary));
+        const n = Math.min(r.workLogs, workRoom(w, r.workStop));
         if (r.workStop === 1) w.mut(HaltYard, w.lookup(HaltYard, QUARRY_YARD)!)!.logs += n;
         else if (r.workStop === 5) {
           const steel = w.mut(Steel, w.single(Steel))!;
-          steel.yardLogs += n;
+          steel.logs += n;
+          lightSteel(w, tick);
           steel.giftDelivered += n;
         } else {
           const rail = w.mut(Rail, railId(w))!;
-          rail.depot += n;
+          const k = r.workStop + 3;
+          const job = w.mut(QJob, qjobId(w, k))!;
+          job.stock += n;
+          job.delivered += n;
+          if (n) fundQ(w, k, tick, timing());
           rail.depotGiftDelivered += n;
         }
         if (r.workGivers) {
@@ -328,7 +339,7 @@ function trainIO(w: World, headPct: number, pct: TradePct, tick: number, returnL
       ) {
         const stop = workDestination(w);
         const rail = w.mut(Rail, railId(w))!;
-        const n = stop ? Math.min(rideableLogs(w), LINE2_KIT.logs - r.logs, workNeed(w, stop)) : 0;
+        const n = stop ? Math.min(rideableLogs(w), stop === 1 ? LINE2_KIT.logs - r.logs : LINE2_KIT.logs, workNeed(w, stop)) : 0;
         if (n > 0) {
           rail.rack -= n;
           const car = w.mut(Train, trainId(w, slot))!;
@@ -337,7 +348,9 @@ function trainIO(w: World, headPct: number, pct: TradePct, tick: number, returnL
           takeGivers(w, n, (_aid, index, count) => {
             car.workGivers += index.toString(16).padStart(2, '0').repeat(count);
           });
-          car.logs += n;
+          const displaced = Math.max(0, car.logs + n - LINE2_KIT.logs);
+          rail.depot += displaced;
+          car.logs += n - displaced;
           if (stop === 5) w.mut(Steel, w.single(Steel))!.outLogs += n;
           if (stop === 2 || stop === 3) rail[DEPOT_OUT[stop + 3]!] += n;
         }
@@ -347,7 +360,7 @@ function trainIO(w: World, headPct: number, pct: TradePct, tick: number, returnL
         const need = depotNeed(w, kit, w.get(QJob, qjobId(w, kit))!);
         // Gifts for a different stop need another car. Mint only the Q kit that the queued timber cannot cover.
         const queued = w.get(Rail, railId(w))!.rack ? workQueued(w, LINE2_STATIONS[kit]!.kitStop!) : 0;
-        const n = Math.min(LINE2_KIT.logs - r.logs, need.logs - queued);
+        const n = Math.min(LINE2_KIT.logs - r.logs, Math.max(0, need.logs - queued));
         const rails = Math.min(LINE2_KIT.rails - r.rails, need.rails, w.get(Forge, forgeId(w))!.rack);
         if (n || rails) {
           const rail = w.mut(Rail, railId(w))!,
@@ -379,13 +392,40 @@ function trainIO(w: World, headPct: number, pct: TradePct, tick: number, returnL
     fleet: (line) => fleetOf(line, laid, open[line]!),
   };
 }
+export function fundQ(w: World, k: number, tick: number, timing: LineTiming) {
+  const spec = LINE2_STATIONS[k]!;
+  const id = qjobId(w, k);
+  const j = w.get(QJob, id)!;
+  if (j.start >= 0 || !gateDown(w, spec) || j.stock !== spec.bill[0] || j.railStock !== spec.bill[1]) return;
+  const jm = w.mut(QJob, id)!,
+    run = w.mut(QJobRun, id)!;
+  jm.stock = jm.railStock = 0;
+  run.allocation = spec.bill[0];
+  run.railAllocation = spec.bill[1];
+  jm.start = run.lastTick = tick;
+  // Rails still on the shelf or aboard the cart go back to the forge rack: they only ever wait for an unfunded
+  // stretch.
+  const rail = w.get(Rail, railId(w))!,
+    onCart = w.get(Cart, cartId(w))!.rails,
+    trainRails = aboard(w, 'rails');
+  if (spec.shelf && (rail.depotRails || rail.shelfOut || onCart || trainRails)) {
+    w.mut(Forge, forgeId(w))!.rack += rail.depotRails + onCart + trainRails;
+    Object.assign(w.mut(Rail, railId(w))!, { depotRails: 0, shelfOut: 0 });
+    if (onCart) w.mut(Cart, cartId(w))!.rails = 0;
+    for (const k of LINE2_SLOTS) if (w.get(Train, trainId(w, k))!.rails) w.mut(Train, trainId(w, k))!.rails = 0;
+  }
+  // Each stretch pins the room's timing when funded; Q2/Q3 lay faster, as in Place.
+  Object.assign(jm, timingOf(timing), {
+    cruiseCmPerTick: Math.max(1, Math.floor((timing.cruiseCmPerTick * spec.speed) / 100)),
+  });
+}
 /** Line 1's index: the line whose trains meet the cart. */
 const LINE1 = RAIL_LINES.findIndex((l) => l.id === 'line1');
-function trainStep(w: World, tick: number, headPct: number, pct: TradePct) {
+function trainStep(w: World, tick: number, headPct: number, pct: TradePct, timing = () => LINE_TIMING as LineTiming) {
   if (w.get(Rail, railId(w))!.trains < 0) return;
   // All slots finish their stands before returned timber becomes available for the next dispatch.
   let returned = 0;
-  const io = trainIO(w, headPct, pct, tick, (n) => {
+  const io = trainIO(w, headPct, pct, tick, timing, (n) => {
     returned += n;
   });
   for (let line = 0; line < RAIL_LINES.length; line++) trainStepLine(io, line, tick);
@@ -398,8 +438,9 @@ function trainStep(w: World, tick: number, headPct: number, pct: TradePct) {
 export const trainTick = defineSystem(
   'rail.trainTick',
   {
-    reads: [QJob, Cart, Plot],
+    reads: [Plot],
     writes: [
+      QJob, QJobRun, Cart, SteelClock,
       Train,
       Line,
       Rail,
@@ -420,6 +461,6 @@ export const trainTick = defineSystem(
     phase: 'tick',
     order: 3,
   },
-  (w, { tick, headPct, farePct, riderPct, pricePct }: Tick) =>
-    trainStep(w, tick, headPct, { farePct, riderPct, pricePct }),
+  (w, { tick, headPct, farePct, riderPct, pricePct, timing }: Tick) =>
+    trainStep(w, tick, headPct, { farePct, riderPct, pricePct }, timing),
 );
