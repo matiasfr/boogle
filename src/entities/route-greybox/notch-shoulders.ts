@@ -12,13 +12,21 @@ export async function notchShoulders(owner: OwnedView) {
   const limestone = kitMaterial().clone();
   limestone.colorNode = color('#bdb5a2').mul(vertexColor().r);
   owner.cleanup(() => limestone.dispose());
-  const shoulders = new THREE.InstancedMesh(face, limestone, 2);
+  const shoulders = new THREE.InstancedMesh(face, limestone, 6);
   shoulders.name = 'Notch limestone courses';
   // The backdrop piers have a 22 m frontage. Keep the courses inside their
   // jambs and compress their relief against the existing solid east faces.
   const matrix = new THREE.Matrix4().makeRotationY(Math.PI / 2).scale(new THREE.Vector3(3.35, 3.8, 0.025));
   for (const [i, z] of [-972, -1028].entries()) {
     shoulders.setMatrixAt(i, matrix.setPosition(-1606.93, 5.8, z));
+    // Wrap both returns of the 26 m deep pier. Shallow relief keeps the
+    // corners joined without putting a foothold in the lantern passage.
+    for (const [side, sign] of [-1, 1].entries()) {
+      const flank = new THREE.Matrix4()
+        .makeRotationY(sign < 0 ? Math.PI : 0)
+        .scale(new THREE.Vector3(4.25, 3.8, 0.075));
+      shoulders.setMatrixAt(2 + 2 * i + side, flank.setPosition(-1620, 5.8, z + sign * 11.23));
+    }
   }
   owner.add(shoulders);
 

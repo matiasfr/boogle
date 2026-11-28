@@ -207,6 +207,12 @@ On the return from Saltpan, two pale uprights and a straight roof edge framed th
 
 `src/entities/route-greybox/cave-shore.ts` fits the cliff-kit faces and rim stones to the seaward end of the hood. Both 1200 × 750 stills look from (778, 7, 106) toward (789, 8, 84). [Before](greybox-look/card16-strait-before.png) · [After](greybox-look/card16-strait-after.png). [Train rounding the bend](greybox-look/card16-strait-train.png)
 
+### Card 17, Lantern Notch’s pier returns
+
+On approach, limestone courses stopped at the front corners of the arch. The near pier showed a smooth outer wall and the far pier a smooth wall inside the opening. Four shallow cliff-kit faces carry the courses around those corners. Blue sky and the sea horizon remain visible through the slot.
+
+`src/entities/route-greybox/notch-shoulders.ts` fits the returns to the existing piers. Both 1200 × 750 stills look from (−1558, 13, −945) toward (−1620, 24, −1000) at 62° FOV. The before view hides the four added instances. The train seed timed out, so the pair shows the approach without a train. [Before](greybox-look/card17-notch-before.jpg) · [After](greybox-look/card17-notch-after.jpg)
+
 ## Design review (2026-11-27)
 
 | Call | Kind | Basis |
