@@ -87,6 +87,8 @@
 // v74 adds the leg racks and each account's lift leg. Of 8,620 records only 205 checkpoints and 5,679 statuses change.
 // v75 adds three Shed columns. The checkpoint namespace, hashes and sizes change; the sweep has no garage operands.
 // v76 adds the gift and Thanks columns. Only the 205 checkpoints and 5,679 statuses change.
+// v80 third plot: the v77 control matched all 8,620 records. The new namespace changes 205 envelope namespaces
+// and checksums and 2,240 snapBytes readings. Every state hash, action, packet and other field remains exact.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
