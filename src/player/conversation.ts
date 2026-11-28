@@ -36,6 +36,7 @@ import { devInputBlocked } from './dev-input.ts';
 import { modalOpen } from './modal.ts';
 import { inputState } from './input.ts';
 import { me, cam, camConstraints } from './player.ts';
+import { followDistance } from './camera-distance.ts';
 import { camera } from '../render/scene.ts';
 import { glyph, inputKind, padGlyph, keyGlyph } from './glyphs.ts';
 
@@ -77,7 +78,7 @@ function liftFor(box: HTMLElement) {
   return Math.atan(frac * Math.tan((camera.fov * Math.PI) / 360));
 }
 camConstraints.push((look) => {
-  if (shot.k > 0.001) look.y -= Math.tan(shot.lift * shot.k) * (cam.dist + 8); // the camera looks 8 m past `look`
+  if (shot.k > 0.001) look.y -= Math.tan(shot.lift * shot.k) * (followDistance(cam.dist) + 8);
   return false;
 });
 
