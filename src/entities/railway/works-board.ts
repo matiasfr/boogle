@@ -6,12 +6,14 @@ import { registerWorksFace, worksBoardRows } from './works-board-state.ts';
 import { stockGlyphs } from './stock-glyphs.ts';
 type Place = { x: number; z: number };
 type Halt = { line: number; stop: number };
+import { watchWelcomeRows } from '../../player/welcome-board.ts';
 export function worksFace(
   owner: OwnedView,
   at: Place & { y: number },
   yaw: number,
   post = false,
   halts: readonly Halt[] = [],
+  welcome = false,
 ) {
   const paintLabel = ({ g, cw, ch }: Pick<SignBoard, 'g' | 'cw' | 'ch'>, rows: readonly string[]) => {
     g.fillStyle = '#26383c';
@@ -77,6 +79,7 @@ export function worksFace(
     const rows = worksBoardRows(at);
     board.relabel('sign', rows.length ? rows : ['']);
   };
-  registerWorksFace(owner, at, halts, paint);
+  if (welcome) owner.cleanup(watchWelcomeRows((rows) => board.relabel('sign', rows)));
+  else registerWorksFace(owner, at, halts, paint);
   return board.root;
 }

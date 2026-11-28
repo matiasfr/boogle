@@ -6,6 +6,9 @@
 // (Designed for drop-in) and 9 (Leave something for the next visitor: you hear what the others did).
 import { rules, railwayMirror } from '../world/game-world.ts';
 import './welcome-back.css';
+import { publishWelcomeRows } from '../player/welcome-board.ts';
+import { workSite, worksThanks } from '../sim/railway-queries-gift.ts';
+import { roomWorks } from '../sim/railway-queries-room.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
 import { me } from '../player/player.ts';
 import { identity } from '../player/identity.ts';
@@ -13,7 +16,13 @@ import { getRoomId } from '../netplay/net.ts';
 import { worldStatus } from '../world/sync.ts';
 import { productionRailway } from '../proto/flags.ts';
 import { railwayWorldRead } from '../entities/railway/state.ts';
-import { railwayKnown, stretchesLaid, stretchesSince } from '../player/welcome-railway.ts';
+import {
+  railwayKnown,
+  railwaySnapshot,
+  railwayDiff,
+  stretchesLaid,
+  stretchesSince,
+} from '../player/welcome-railway.ts';
 import { showCard, addWelcomeItem, rememberVisit, roomMemory, welcomeLines, nameList } from '../player/arrival.ts';
 
 const WAIT_MS = 4000; // the longest the card waits for the room's state before it says just hello
@@ -22,41 +31,92 @@ const LINE_MS = 800;
 const SAVE_MS = 5000; // how often this visit is remembered while you play
 
 // ---------------------------------------------------------------- what a returning player hears about
-// Friends new to the room's roster. Zero values retain the local record's existing shape.
+const railway = () => railwayKnown(railwayWorldRead());
+const otherPlayers = () => rules.roster.roster.pids.filter((pid) => pid !== identity.pid);
+const playerNames = (pids: readonly string[]) =>
+  pids.map((pid) => rules.roster.nameOf(rules.roster.indexOf(pid)) || 'Someone');
+function newFriends(previous: unknown) {
+  return previous && typeof previous === 'object'
+    ? playerNames(otherPlayers().filter((pid) => !Object.hasOwn(previous, pid)))
+    : [];
+}
+function friendGreeting(previous: unknown) {
+  const names = newFriends(previous);
+  return names.length ? `${nameList(names)} ${names.length === 1 ? 'was' : 'were'} here` : null;
+}
 addWelcomeItem({
   key: 'friends',
-  save: () => {
-    if (railwayMirror && !railwayMirror.synced()) return undefined;
-    const { roster } = rules.roster;
-    const pts: Record<string, number> = {};
-    for (const pid of roster.pids) pts[pid] = 0;
-    return pts;
-  },
-  since: (then) => {
-    const was = then as Record<string, number>;
-    const { roster } = rules.roster;
-    const names: string[] = [];
-    roster.pids.forEach((pid, k) => {
-      if (pid === identity.pid) return;
-      if (!(pid in was)) names.push(rules.roster.nameOf(k) || 'Someone');
-    });
-    if (!names.length) return null;
-    return `${nameList(names)} ${names.length === 1 ? 'was' : 'were'} here`;
-  },
+  save: () =>
+    railwayMirror && !railwayMirror.synced()
+      ? undefined
+      : Object.fromEntries(rules.roster.roster.pids.map((pid) => [pid, 0])),
+  since: friendGreeting,
 });
-// Stretches of track laid on both railway lines (undefined until its state is in, which keeps the last count).
-const railway = () => railwayKnown(railwayWorldRead());
+
+type Railway = NonNullable<ReturnType<typeof railway>>;
+function arrivalSummary(w: Railway) {
+  const snapshot = railwaySnapshot(w);
+  const rich = then?.items.railway;
+  const laid = then?.items.laid;
+  // A cached client can advance its numeric count between visits by newer clients.
+  const baseline =
+    rich && typeof rich === 'object' && typeof laid === 'number' ? { ...rich, lines: laid } : (rich ?? laid);
+  const diff = railwayDiff(snapshot, baseline);
+  const newcomers = newFriends(then?.items.friends);
+  const away = !!(diff.sections || diff.places.length || diff.built.length || newcomers.length);
+  const current = roomWorks(w);
+  const stop = workSite.findIndex((site) => site === current.site);
+  const helpers =
+    stop > 0 || current.ops.includes('rail.legStock')
+      ? playerNames(worksThanks(w, Math.max(0, stop)).filter((pid) => rules.roster.indexOf(pid) >= 0))
+      : [];
+  const places = away ? diff.places : snapshot.places;
+  const sections = away ? diff.sections : snapshot.lines + snapshot.legs.reduce((n, v) => n + v, 0);
+  const built = away ? diff.built : Object.values(snapshot.plots);
+  // [placeholder: While you were away] [placeholder: Room log] [placeholder: Connected]
+  // [placeholder: Built] [placeholder: New friends] [placeholder: Helping now]
+  const row = (label: string, values: string[]) => label + ' \u00b7 ' + (values.join(', ') || '\u2014');
+  publishWelcomeRows([
+    away ? 'While you were away' : 'Room log',
+    row('Connected', [String(sections), ...places.slice(-1)]),
+    row('Built', built.slice(-2)),
+    row('New friends', (away ? newcomers : playerNames(otherPlayers())).slice(0, 6)),
+    row('Helping now', helpers.slice(0, 6)),
+  ]);
+  const lines = [];
+  if (diff.places.length) lines.push(row('Connected', diff.places.slice(-1)));
+  if (diff.built.length) lines.push(row('Built', diff.built.slice(-2)));
+  return { lines, diff };
+}
+let arrival: ReturnType<typeof arrivalSummary> | undefined;
+const onArrival = (w: Railway) => (arrival ??= arrivalSummary(w));
+
 addWelcomeItem({
   key: 'laid',
   save: () => {
     const w = railway();
-    return w ? stretchesLaid(w) : undefined;
+    if (!w) return undefined;
+    onArrival(w);
+    return stretchesLaid(w);
   },
-  since: (then) => {
+  since: (previous) => {
     const w = railway();
-    const n = w ? stretchesSince(then, stretchesLaid(w)) : 0;
-    if (n <= 0) return null;
+    if (!w) return null;
+    const n = then?.items.railway ? onArrival(w).diff.sections : stretchesSince(previous, stretchesLaid(w));
+    if (!n) return null;
     return n === 1 ? 'A new stretch of track was laid' : `${n} new stretches of track were laid`;
+  },
+});
+addWelcomeItem({
+  key: 'railway',
+  absent: null,
+  save: () => {
+    const w = railway();
+    return w ? railwaySnapshot(w) : undefined;
+  },
+  since: () => {
+    const w = railway();
+    return w ? onArrival(w).lines : null;
   },
 });
 
@@ -110,7 +170,8 @@ if (!shown) {
       const ready = known();
       if (ready || now - enteredAt > WAIT_MS) {
         shown = true;
-        show(ready ? welcomeLines(then) : []);
+        const friends = ready ? null : friendGreeting(then?.items.friends);
+        show(ready ? welcomeLines(then) : friends ? [friends] : []);
         despawn(waiting);
       }
     },

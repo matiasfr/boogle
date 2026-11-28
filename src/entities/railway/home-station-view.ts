@@ -76,6 +76,9 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
     const board = world(home.HALL_BOARD);
     const towardSquare = Math.atan2(layout.SPAWN.x - home.HALL_BOARD.x, layout.SPAWN.z - home.HALL_BOARD.z);
     worksFace(owner, { ...board, y: floor }, towardSquare, true);
+    const south = home.axisPoint(a + d / 2 - 1, c + w / 2 - 2);
+    const facing = Math.atan2(layout.SPAWN.x - south.x, layout.SPAWN.z - south.z);
+    worksFace(owner, { ...world(south), y: floor }, facing, true, [], true);
     add(box(mid.x, floor - 0.12, mid.z, w + 0.2, 0.24, d + 0.2, yaw), STONE, true);
     // The way in from the square: the slab's top is 0.12 m over the highest ground under the hall, so over the sand
     // at the north bays its front stands a third of a metre up, more than a walking step. Stone treads across the
