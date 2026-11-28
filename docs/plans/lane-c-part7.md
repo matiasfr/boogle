@@ -34,3 +34,15 @@ Canopy Offer 1 extends the Ring and Gorge arrival exception to item 3 of the [25
 | Four chime notes, 3 s harmony, 1.5 s pull cooldown and 0.8 s answer with 4 s throttle | Default | Existing signal cadence, audible space between answers |
 
 Six Decided, three Default, four New. Growing towns and route-contract support the room choice and loss-free meadow. A late arrival sees the same purchased building through the plot replica. The calculated arc and ground samples still need a controller and camera witness.
+
+## Built and measured
+
+World v88 adds Canopy's Town, TownClock and Plot rows. The existing far-town accumulator credits its completed building. The level check completed 29 reports and found the stand-in town reserve clear. Across all 85 replay stages the seed tick stayed the same. All operation results, 82 client trace lengths and 12 headway system sequences matched v87.
+
+From the homeward ramp the boards show both toppers and the 150-Boogle price. The porch net is outside the eaves and its three hoops hang on a rope between two mother trees. The chime frame rises above the other shell and its striker hangs in the doorway. The first glide overshot the opening. On the second approach the player opened the glider while descending and crossed 0.43 m from the centre of the first 1.55 m hoop.
+
+[Ramp boards](lane-c-part7/boards.png) · [Bounce Net](lane-c-part7/canopy-bounce-net.png) · [Wind Chime](lane-c-part7/treetop-wind-chime.png). The local motion sheet is `.look/canopy-hoop-pass-motion.png`.
+
+All 60 trade tests and three signal tests passed. The signal view test delivered a Canopy pull through the room listener and observed the completed Ring bellhouse answer after 800 ms. The unfinished Gorge horn stayed silent. The real host accepted both slot 48 kinds, charged the winner once and preserved the choice through restart. The network run passed 446 of 446 checks. Ship check passed 2,236 tests with one skipped. The catalog gains a plot in the existing town system. The boot-probe trigger for new rail lines, trains or halts did not apply.
+
+The full server suite passed 429 tests with two skipped. At a 390 px browser width both prices were visible from the ramp. Two browser peers used the striker and honk, and each scheduled all four chime notes and the two-note harmony. Perceived loudness, the distant answer from a moving train and all three hoops in a single flight remain unverified. Not tested on a device.
