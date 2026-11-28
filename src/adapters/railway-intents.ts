@@ -23,7 +23,7 @@ export type RailwayIntent =
   | { op: 'rail.chop'; id: number; yaw?: number; collapsed?: boolean }
   | { op: 'rail.mine'; id: number }
   | { op: 'rail.axe' | 'rail.beamChop' | 'rail.sack' }
-  | { op: 'rail.jump' | 'rail.pack'; station?: 'T1' }
+  | { op: 'rail.jump' | 'rail.pack' }
   | {
       op:
         | 'rail.forgeTake'
@@ -73,7 +73,7 @@ export function intentOf(e: Record<string, unknown>): RailwayIntent | null {
   if (e.op === 'rail.wake') return { op: e.op };
   if (e.op === 'rail.sack') return { op: e.op };
   if (e.op === 'rail.jump' || e.op === 'rail.pack')
-    return e.station === 'T1' ? { op: e.op, station: 'T1' } : e.station === undefined ? { op: e.op } : null;
+    return e.station === undefined ? { op: e.op } : null;
   const kind = e.kind === 1 ? 1 : e.kind === 2 ? 2 : 0;
   if (
     e.op === 'rail.breaker' ||
@@ -260,7 +260,7 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
       submit({ op: 'rail.buy', id: slot, ...(kind === undefined ? {} : { kind }) }),
     sack: () => submit({ op: 'rail.sack' }),
     openAxe: () => submit({ op: 'rail.axe' }),
-    claimJump: (station?: 'T1') => submit({ op: 'rail.jump', station }),
+    claimJump: () => submit({ op: 'rail.jump' }),
     /** False (rebound now) when the rule would refuse the stroke: before Station 3 opens or once the tree is down. */
     beamChop: () => railBeamChoppable(view()) && submit({ op: 'rail.beamChop' }),
     beamTake: (revision: number) => railInt(revision) && submit({ op: 'rail.beamTake', revision }),
@@ -297,7 +297,7 @@ export const railwayActs = (submit: (intent: RailwayIntent) => boolean, view: ()
     forgeTake: () => submit({ op: 'rail.forgeTake' }),
     depotTake: (leg?: number) => submit({ op: 'rail.depotTake', leg }),
     depotRailTake: (leg?: number) => submit({ op: 'rail.depotRailTake', leg }),
-    openPack: (station?: 'T1') => submit({ op: 'rail.pack', station }),
+    openPack: () => submit({ op: 'rail.pack' }),
     takeYoke: () => submit({ op: 'rail.yoke' }),
     takeBoiler: (revision: number) => railInt(revision) && submit({ op: 'rail.boilerTake', revision }),
     dropBoiler: (x: number, y: number, z: number, revision: number) =>

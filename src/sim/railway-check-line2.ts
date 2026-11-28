@@ -127,6 +127,7 @@ export function checkLine2(w: World) {
   if (r0.lever && done < 3) bad('lever before Q3');
   if (r0.hook && done < 2) bad('hook before Q2');
   // No glider threshold, and no sea-before-Q4 invariant: previously pulled gates remain open on load.
+  if (r0.pack && f.used < FORGE.bills[0]) bad('pack before the forge bill');
   if (r0.yoke && !line2YokeReady(w)) bad('yoke before the Q1 bill');
   // The shelf holds rails only for the active, unfunded `shelf` stretch, and never more than its rail bill.
   if (

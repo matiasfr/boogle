@@ -28,6 +28,11 @@ test('jump-in rows are unique, buildable and in route order', () => {
   assert.equal(new Set(JUMPS.map((j) => j.label)).size, JUMPS.length);
   assert.equal(JUMPS[0]!.stage, 'start');
   for (const j of JUMPS) assert.ok(j.stage === 'start' || seeds.includes(j.stage), j.stage);
+  assert.equal(jumpOf('t1-laid')?.menu, false);
+  for (const old of ['t1-pack-first', 't1-jump-first']) {
+    assert.equal(jumpOf(old), undefined);
+    assert.equal(seeds.includes(old), false);
+  }
   const order = OFFERED_STAGES.map((s) => seeds.indexOf(s));
   assert.deepEqual(
     order,
@@ -151,8 +156,7 @@ test('the menu lists the rows it always did: the house and leg 1 stages are tool
   assert.equal(MENU_JUMPS.at(-1)!.stage, 'boiler-long');
   // Greybox leg 2's four rows (docs/plans/greybox-leg2.md, step 3) are tooling too: the room fast-forward's list.
   const tooling = [
-    't1-pack-first',
-    't1-jump-first',
+    't1-laid',
     'house-ready',
     'house-built',
     'sack-waiting',
@@ -192,8 +196,7 @@ test('the menu lists the rows it always did: the house and leg 1 stages are tool
   for (const stage of tooling) {
     if (
       ![
-        't1-pack-first',
-        't1-jump-first',
+        't1-laid',
         'incline-open',
         'bell-reached',
         'bay-open',

@@ -54,11 +54,6 @@ export const aboard = (w: World, key: 'logs' | 'rails' | 'foot' | 'steel') =>
 export const wagonSlot = (w: World) => LINE2_SLOTS.find((k) => w.get(Train, trainId(w, k))!.wagon) ?? -1;
 export const jobId = (w: World, slot: number) => w.lookup(Job, slot)!;
 export const qjobId = (w: World, slot: number) => w.lookup(QJob, slot)!;
-/** The last log at T1 opens the stands. Taking either room grant closes both. */
-export function line1PickReady(w: World) {
-  const rail = w.get(Rail, railId(w))!;
-  return w.get(Job, jobId(w, 0))!.start >= 0 && !rail.pack && !rail.jump;
-}
 /** The line-one station taking materials now (railActiveStation). */
 export function activeStation(w: World) {
   return !w.get(Job, jobId(w, 0))!.completion ? 0 : !w.get(Job, jobId(w, 1))!.completion ? 1 : 2;

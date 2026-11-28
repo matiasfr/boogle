@@ -12,8 +12,8 @@ import { createStore } from '../src/store.ts';
 import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
-import { buildSeedWorld, logs, rail } from '../../test/helpers/rail.ts';
-import { LINE1_JUMP_DEVICE, LINE1_PICK_STANDS, LINE1_STATIONS } from '../../src/sim/railway-line-layout.ts';
+import { buildSeedWorld, rail } from '../../test/helpers/rail.ts';
+import { LINE1_JUMP_DEVICE, LINE1_STATIONS } from '../../src/sim/railway-line-layout.ts';
 import { railwayCheck } from '../../src/sim/railway-check.ts';
 
 const START = 1800000000000;
@@ -76,10 +76,11 @@ async function fixture() {
     sid: string,
     epoch: number,
     request = 1,
-    d: { x: number; y: number; z: number } = LINE1_PICK_STANDS.jump,
+    d: { x: number; y: number; z: number } = LINE1_JUMP_DEVICE,
+    station?: string,
   ) => {
     host.deliver(
-      { t: 'r:edit', e: { op: 'rail.jump', station: 'T1', epoch, request, at: [d.x, d.y, d.z], ms: now - START } },
+      { t: 'r:edit', e: { op: 'rail.jump', station, epoch, request, at: [d.x, d.y, d.z], ms: now - START } },
       sid,
     );
     await step(3);
@@ -121,8 +122,7 @@ async function fixture() {
 test("one player's double jump reaches every connected player at once, a reconnect and a late joiner, and survives a crash and a restart", async () => {
   const f = await fixture();
   try {
-    const seed = buildSeedWorld('awake');
-    logs(seed, 'a', 'T1', LINE1_STATIONS[0]!.bill[0]);
+    const seed = buildSeedWorld('forge-frame-last');
     await f.step(seed.t);
     f.host.rules.railway.world().load(seed.w.snapshot(), railwayCheck);
     f.host.rules.railway.touchAll();
@@ -132,8 +132,8 @@ test("one player's double jump reaches every connected player at once, a reconne
     assert.equal(f.jump('a'), false);
     assert.equal(f.jump('b'), false);
     const epoch = f.open('a');
-    assert.equal((await f.claimJump('a', epoch, 1, LINE1_JUMP_DEVICE))?.status, 'rejected');
-    assert.equal((await f.claimJump('a', epoch, 2, LINE1_PICK_STANDS.pack))?.status, 'rejected');
+    assert.equal((await f.claimJump('a', epoch, 1, LINE1_JUMP_DEVICE, 'T1'))?.status, 'rejected');
+    assert.equal((await f.claimJump('a', epoch, 2, { ...LINE1_STATIONS[0]!, y: 3000 }))?.status, 'rejected');
     const outcome = await f.claimJump('a', epoch, 3);
     assert.equal(outcome?.status, 'accepted');
     assert.equal(rail(f.host.rules.railway.world()).jump, true);

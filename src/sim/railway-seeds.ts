@@ -24,7 +24,7 @@ import {
   railwayAtQ2,
   railwayAtQ4,
   railwayAtForgeLast,
-  railwayAtFirstPick,
+  railwayAtT1Laid,
   railwayAtQ1Last,
   railwayAtQ5,
   railwayAtTrains,
@@ -46,8 +46,7 @@ export * from './railway-seed-route.ts';
  * WORKS_STAGES, RING_STAGES, STEEL_STAGES, LEG_STAGES and GARAGE_STAGES; test/railway-trade.test.ts that it holds TRADE_STAGES). */
 export const SEED_STAGES = [
   'awake',
-  't1-pack-first',
-  't1-jump-first',
+  't1-laid',
   // Look only (forge-made rewards, step 1): the forge one log short of its frame's bill, then of lighting.
   'forge-frame-last',
   'forge-lit-last',
@@ -155,8 +154,7 @@ export function buildSeedWorld(stage: SeedStage): Seed {
     return s;
   }
   if (stage === 'forge-frame-last') return railwayAtForgeLast('frame');
-  if (stage === 't1-pack-first') return railwayAtFirstPick('pack');
-  if (stage === 't1-jump-first') return railwayAtFirstPick('jump');
+  if (stage === 't1-laid') return railwayAtT1Laid();
   if (stage === 'forge-lit-last') return railwayAtForgeLast('lit');
   if (stage === 'q1-last') return railwayAtQ1Last();
   if (stage === 'hook-taken') return railwayAtHook();

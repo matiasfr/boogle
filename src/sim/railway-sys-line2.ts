@@ -55,7 +55,6 @@ import {
   gateDown,
   held,
   jobId,
-  line1PickReady,
   LINE2_SLOTS,
   qActive,
   q7Laid,
@@ -303,15 +302,13 @@ export const depotRailTake = defineSystem(
   { reads: [Boiler, Beam, Aperture, Pile, QJob], writes: [Rail, Account, Leg], phase: 'act', order: 25 },
   (w, act: Act) => takeFromRack(w, act, RAILS),
 );
-/** The room can take its pack from the T1 stand or from the forge's finished frame. */
+/** The room can take its pack from the forge's finished frame. */
 export const pack = defineSystem(
   'rail.pack',
-  { reads: [Job, Forge], writes: [Rail], phase: 'act', order: 26 },
+  { reads: [Forge], writes: [Rail], phase: 'act', order: 26 },
   (w, { e }: Act) => {
     if (w.get(Rail, railId(w))!.pack) return 0;
-    if (e.station === 'T1') {
-      if (!line1PickReady(w)) return 0;
-    } else if (e.station !== undefined || !line2PackReady(w)) return 0;
+    if (e.station !== undefined || !line2PackReady(w)) return 0;
     w.mut(Rail, railId(w))!.pack = true;
     return 1;
   },

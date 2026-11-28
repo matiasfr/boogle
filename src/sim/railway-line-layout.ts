@@ -51,11 +51,6 @@ export const lineBeamGround = (x: number, y: number, z: number) => {
   });
 };
 export const LINE1_JUMP_DEVICE = { x: 95240, y: 2638, z: -7044 } as const;
-/** The two walk-up stands beside T1's frame, in world centimetres. */
-export const LINE1_PICK_STANDS = {
-  pack: { x: 99162, y: 3001, z: -13789, reach: 300 },
-  jump: { x: 99962, y: 3001, z: -13789, reach: 300 },
-} as const;
 export const LINE1_HARDWOOD_IDS = [209, 232] as const;
 export const LINE1_HARDWOODS = [
   [209, 89882, -4677],

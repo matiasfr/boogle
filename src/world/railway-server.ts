@@ -15,7 +15,6 @@ import {
   LINE1_GREAT_TREE,
   LINE1_HARDWOODS,
   LINE1_JUMP_DEVICE,
-  LINE1_PICK_STANDS,
 } from '../sim/railway-line-layout.ts';
 import { lineTiming } from '../sim/railway-line.ts';
 import {
@@ -269,7 +268,6 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     case 'rail.beamDeposit':
       return e.station === 'T3' && railInt(e.revision) && near(LINE1_STATIONS[2]!.x, LINE1_STATIONS[2]!.z, T1.reach);
     case 'rail.jump':
-      if (e.station === 'T1') return at(LINE1_PICK_STANDS.jump);
       return (
         e.station === undefined &&
         actor.height(LINE1_JUMP_DEVICE.y, 220) &&
@@ -289,7 +287,6 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
       return !!spec && (e.op === 'rail.depotTake' ? spec.depot : spec.shelf) && near(spec.x, spec.z, depotReach(spec));
     }
     case 'rail.pack':
-      if (e.station === 'T1') return at(LINE1_PICK_STANDS.pack);
       return e.station === undefined && near(LINE2_PACK.x, LINE2_PACK.z, 340);
     case 'rail.yoke':
       return near(LINE2_YOKE.x, LINE2_YOKE.z, LINE2_YOKE.reach);

@@ -115,8 +115,8 @@ scenario('opening', w1, (step) => {
     () =>
       act(w1, 'a', op, f);
   const tree = () => RAILWAY_SOURCES[trees(w1.w).findIndex((n) => n.left > 0)]![0];
-  step('jump', a('rail.jump', { station: 'T1' }));
-  step('jump again', a('rail.jump', { station: 'T1' }));
+  step('early jump', a('rail.jump'));
+  step('early pack', a('rail.pack'));
   step('axe before the forge', a('rail.axe'));
   step('reject', a('rail.reject'));
   step('unknown op', a('rail.nonsense'));
@@ -153,6 +153,12 @@ scenario('opening', w1, (step) => {
   step('resume same marker', () => railResume(w1.w, 200, 1, w1.t));
   step('session epoch 2', () => railSession(w1.w, 'a', 2));
   step('session epoch skipped', () => railSession(w1.w, 'a', 9));
+});
+
+const pillar = from('forge-frame-last');
+scenario('pillar', pillar, (step) => {
+  step('jump after T3', () => act(pillar, 'a', 'rail.jump'));
+  step('jump already shared', () => act(pillar, 'b', 'rail.jump'));
 });
 
 // ---- the proper axe, once the forge is lit: from the forge one log short (every later stage already holds the axe),
