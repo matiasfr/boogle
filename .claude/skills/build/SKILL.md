@@ -77,6 +77,10 @@ that writes the plan carries it out, so it can change the plan when a step turns
    distance (the AREAS list in `src/entities/route-greybox/index.ts`) keeps the spawn: arrival probes the surface before
    the area is resident. Leave such a stage unlanded, as `canopy-reached` is, unless your step makes arrival wait for
    the area (leg 3 and twice in leg 6’s reviews, 25 November).
+13. **Moving code out of a file: search `server/` too.** `git grep` the old file's path and the moved name across the
+   repo, `server/test` included, and update every hit: some server tests read client source by path (`readFileSync` of
+   `src/proto/playdata/record.ts`), and `ship-check` does not run `server/` for a client-only diff, so only CI finds
+   them (the measure's first ship, #2697, 28 November).
 
 Report: the plan as built and where it changed, files changed, check results, the paths of the stills you looked at
 with your one-line gut check, what is unverified, and "not tested on a device" where it applies.
