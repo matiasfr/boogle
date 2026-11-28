@@ -78,6 +78,10 @@ export const UNFOLLOWED: Record<string, { reaches: readonly string[]; why: strin
     reaches: ['src/place/land.ts'],
     why: 'the hook only records which modules the imports already followed evaluate; land.ts is the one source it reads as text and never imports',
   },
+  'test/welcome-back-review.test.ts: registerHooks': {
+    reaches: [],
+    why: "the hook swaps welcome-back.ts's browser-only imports for inline stand-ins; the feature and what it imports are already followed through the plain import",
+  },
   'test/helpers/secrets-golden.ts: sourceModule': {
     reaches: ['src/entities/finds/secrets-view.ts'],
     why: 'builds the secrets view from its source, its lazy imports routed to stand-ins (the golden)',
