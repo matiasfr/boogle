@@ -1640,7 +1640,9 @@ the row at its kink, with steps down to the isle from each platform's home end a
 glider cloth's post reads "Take the glider cloth", refused with "The line to Canopy isn't laid yet" until the last lay.
 The Notch barrier stands at the first frame on the outward platform. The homeward board reads "LINE TO LANTERN
 NOTCH / LATER" until the Wall opens the job, then "UNDER CONSTRUCTION" until the lay. A 30 m square of ground on the homeward side, behind the mother trunk there, is kept clear for a
-stand-in town. Bell Rock's Canopy stall rises at the last lay. Bell Rock's bay halt, which leg 3 turns into a through
+town plot. On arrival, twin boards on the ramp side of the meadow offer the room a porch bounce net with three glide hoops or a wind chime that other built signal towns answer. [Canopy Town's first choice](trade.md#canopy-towns-first-choice)
+
+Bell Rock's Canopy stall rises at the last lay. Bell Rock's bay halt, which leg 3 turns into a through
 halt, gains a homeward lever on its homeward platform. Leg 3's objective texts ("Open the barrier to Canopy", "Build
 the line to Canopy Town", "Take the glider cloth", "Ride home: the next line isn't built yet") go to the play record
 only. All copy is placeholder. Not tested on a device.
