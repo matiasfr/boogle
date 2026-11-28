@@ -81,7 +81,13 @@ export function registerPlatform(p: Platform) {
 }
 /** The deck you stand on, or the one whose chair you sit in. */
 export const aboard = () => carry.on ?? carry.seat;
-export const platformById = (id: string) => platforms.find((p) => p.id === id) ?? null;
+export function platformById(id: string) {
+  for (let i = 0; i < platforms.length; i++) {
+    const platform = platforms[i]!;
+    if (platform.id === id) return platform;
+  }
+  return null;
+}
 
 // Attached riders still carry the previous step's vertical motion until carryStep applies the new deck speed.
 export const carryVerticalSpeed = (p: Platform) => (carry.on === p ? carry.y : p.body.velocity.y);
