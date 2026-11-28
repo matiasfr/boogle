@@ -10,7 +10,7 @@ export async function hoodRock(owner: OwnedView) {
   const pieces = await terrainKitGeometry();
   if (!owner.alive) return;
   const face = pieces.get('face_6')!;
-  const mesh = new THREE.InstancedMesh(face, kitMaterial(), 2);
+  const mesh = new THREE.InstancedMesh(face, kitMaterial(), 4);
   mesh.name = 'West hood shoulders';
   // Work back from the exit chord's daylight end. The faces flank the 13 m opening.
   const yaw = Math.atan2(-125, 225);
@@ -23,7 +23,15 @@ export async function hoodRock(owner: OwnedView) {
   const shoulder = new THREE.Matrix4().makeRotationY(yaw).scale(new THREE.Vector3(5.6 / 6, 0.84, 0.78));
   mesh.setMatrixAt(0, shoulder.setPosition(at(14.9, -9.5, -2)));
   mesh.setMatrixAt(1, shoulder.setPosition(at(14.9, 9.5, -1.7)));
+  const pier = new THREE.Matrix4().makeRotationY(yaw).scale(new THREE.Vector3(0.4, 0.98, 0.55));
+  for (const [i, x] of [-7.8, 7.8].entries()) mesh.setMatrixAt(2 + i, pier.setPosition(at(15.8, x, -2)));
   owner.add(mesh);
+  const exitLip = new THREE.InstancedMesh(pieces.get('rim_cap')!, kitMaterial(), 4);
+  exitLip.name = 'West sea cave seaward rim';
+  const rim = new THREE.Matrix4().makeRotationY(yaw).scale(new THREE.Vector3(1, 1.3, 0.65));
+  for (const [i, x] of [-6, -2, 2, 6].entries())
+    exitLip.setMatrixAt(i, rim.setPosition(at(15.4, x, i === 1 ? 11.65 : 11.8)));
+  owner.add(exitLip);
   // Print the courses onto the inner wall planes, keeping the 13 m opening clear.
   const lining = kitMaterial().clone();
   lining.polygonOffset = true;
