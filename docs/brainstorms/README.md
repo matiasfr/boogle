@@ -4,6 +4,7 @@ Briefs from the [brainstorm skill](../../.claude/skills/brainstorm/SKILL.md): an
 (play designer, systems architect, creative director), or three panelists with `--panel`, then synthesized into ranked suggestions
 and open questions. A brief with `Status: proposed` binds no one; once the owner answers its questions it becomes
 `approved` and is the build spec for its feature, like a plan. Parked one-liners stay in [ideas.md](../ideas.md).
+- [Start flow](start-flow.md) proposes a landing at the works, a one-press axe hand-off and a visible destination for the boiler haul.
 - [ring-and-economy.md](ring-and-economy.md): a co-op incremental around a ring with Home as the hub; hands first, machines later per tier, a shared wallet, a paused world with a soft away credit, an end-game tier, with an editable spreadsheet model (proposed, partly answered).
 - [jump-upgrades.md](jump-upgrades.md): earn the extra jump together and let it lower a shared ramp at a remembered balcony (approved, 6 November; later review is recorded in the brief).
 - [gate-puzzles.md](gate-puzzles.md): the machinery remembers your help; Split-rock splits a seam, Ring braces an aperture (approved, 6 November; built route and remaining work live in the linked plans).

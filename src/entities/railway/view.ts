@@ -48,7 +48,8 @@ import { onRouteSceneryMounted } from '../route-greybox/state.ts';
 import { onRingSceneryMounted, ringIslandNear } from '../ring-island/state.ts';
 
 const pickMarks = (ready: boolean) => (['pack', 'jump'] as const).map((kind) => ({ kind, ready }));
-const offeredParts = pickMarks(true), promisedParts = pickMarks(false);
+const offeredParts = pickMarks(true),
+  promisedParts = pickMarks(false);
 
 export async function createRailwayView(adapter: RailwayAdapter) {
   const owner = createOwnedView();
@@ -615,7 +616,8 @@ export async function createRailwayView(adapter: RailwayAdapter) {
         sounds.fanfare(true);
         whistle(machine.flatbed.x, machine.flatbed.z);
       }
-      path.update(opened(), reconstructed);
+      const boilerState = boilerRow(world()).state;
+      path.update(opened(), reconstructed, boilerState !== 'none' && boilerState !== 'fitted', tick() / 20);
       previousOpen = opened();
       unload -= dt;
       const p = me.body?.position,

@@ -39,7 +39,7 @@ export function farHeadShot() {
     at: alongFarHead(FAR_HEAD_S, 0, aimUp),
     leg,
     title,
-    seconds: leg + FORGE_CUT.seconds,
+    seconds: leg + FORGE_CUT.seconds + 2,
     back: FORGE_CUT.back,
     end: forgeCut(),
   };

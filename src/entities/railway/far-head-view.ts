@@ -10,6 +10,8 @@ import { readableIntensity, readableUnlit } from '../../render/readable-unlit.ts
 import { whistle } from '../../render/machine-sfx.ts';
 import type { ShotShape } from '../../render/camera-pull-out.ts';
 import { farHeadEnd, farHeadShot } from './far-head-show.ts';
+import { boilerShot } from './boiler-shot.ts';
+import { FORGE_CUT } from './forge-cut.ts';
 import { holdForgeCall, soundForgeCall } from './forge-call.ts';
 
 /** Seconds: the longest the show holds the forge's call (behind a reward card, then the shot), and when the call
@@ -112,11 +114,13 @@ export function createRailwayFarHead(
     barrage(farHead.x, farHead.y + 6, farHead.z, 10, 0.4, 36, 2.2);
     barrage(layout.VILLAGE.x + layout.ORIGIN.x, layout.VILLAGE.y, layout.VILLAGE.z, 5, 0.6, 26, 1.6);
     const { from, to, at, seconds, leg, title, back, end } = farHeadShot();
+    const saddle = boilerShot(land.H, false);
     holdForgeCall(CALL.hold);
     call = shot(v(from), v(to), v(at), seconds, leg, {
       back,
       titleS: title,
       end: { pos: v(end.pos), to: v(end.to), at: v(end.at) },
+      last: { after: FORGE_CUT.seconds, pos: v(saddle.from), at: v(saddle.at) },
       onCut: cue,
       // A skip before the cut, or the cut's end: the call has sounded by the time the camera is home.
       onHome: () => {

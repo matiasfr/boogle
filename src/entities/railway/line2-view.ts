@@ -1362,7 +1362,7 @@ export async function createRailwayLine2(
       glideDevice.update(dt);
       // The rack's board: the part that waits on the pedestal, while it waits.
       const partWaits =
-        boilerRow(w).state === 'pedestal' ? 'boiler' : worksPreview() && worksRow(w).breaker === 1 ? 'breaker' : null;
+        boilerRow(w).state === 'pedestal' ? 'train' : worksPreview() && worksRow(w).breaker === 1 ? 'breaker' : null;
       rackSign.board.visible = !!partWaits;
       if (partWaits) rackSign.show(partWaits);
       farHead.update(dt, farHeadLaid(w));

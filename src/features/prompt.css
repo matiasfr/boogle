@@ -54,6 +54,19 @@ body.touch .prompt-chip {
 .speech-cue {
   pointer-events: none;
 }
+.speech-line {
+  width: min(230px, 60vw);
+  padding: 8px 12px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  font: 400 16px/1.2 var(--font-display);
+  text-align: center;
+}
+.speech-cue .prompt-chip[hidden] {
+  display: none;
+}
 .speech-cue.unread .prompt-chip {
   padding-left: 14px;
   min-height: 24px;
