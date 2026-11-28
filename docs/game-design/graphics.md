@@ -1,5 +1,7 @@
 # 6.18 Graphics and devices
 
+- A broad cloud shadow drifts across Home’s meadow and gorge slopes in the ridge wind’s direction. The packed-earth tread remains visible through the shade. Low Detail keeps the field and reduced motion holds its pattern still.
+
 - The awake track machine, lit forge and lit Works kiln breathe round puffs. Each puff rises, spreads and drifts east with the same gust that bends the grass and crowns. Lower Detail halves the ambient birth rate. Reduced motion omits the stack puffs.
 
 - Home's tree crowns sway together as a slow breeze crosses the ridge. Trunks stay planted. Low Detail retains the sway and reduced motion keeps crowns still.
