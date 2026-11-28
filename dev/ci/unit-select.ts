@@ -109,6 +109,10 @@ export const UNFOLLOWED: Record<string, { reaches: readonly string[]; why: strin
     reaches: [],
     why: 'evaluates net.ts, return-settle.ts and the arrival reader from sources read by rooted literals the walk follows',
   },
+  'test/friend-arrival-review.test.ts: sourceModule': {
+    reaches: ['src/entities/railway/arrival.ts'],
+    why: 'executes the railway arrival update method from its source with the room and renderer supplied by the test',
+  },
   'dev/sim/hooks.ts: registerHooks': {
     reaches: [],
     why: 'expands import.meta.glob in the files it loads; the walk expands the same globs itself',
