@@ -88,6 +88,14 @@ that writes the plan carries it out, so it can change the plan when a step turns
    minute, ten minutes at most), then go ahead. Report a test that times out under load and passes alone as that, not
    as a failure (28 November: a reviewed rule branch's pre-push check failed with all 20 CPUs busy, and it and the two
    rule branches behind it waited about 40 minutes).
+15. **A new taker of a shared stock: test it against every other taker.** Before a rule change draws from a stock that
+   other bills, carriers or works already draw from or reserve (the Village rack's queued gifts, a yard, the forge rack,
+   a depot), list every existing taker and reservation (`git grep` the stock's field and its helpers, such as
+   `takeGivers`, `workQueued`, `giftPourRoom` and `castBatch` for the rack). For each pair that can want the same units
+   in one tick, write a test that says which gets them, that the other's reservation survives, and who is thanked; and
+   one where the taker's carrier is already full. Put the list in your report (28 November: this class cost Lane B a
+   fix round on three branches running, conversions, pre-leg steps 1 and 2, and pre-leg steps 3 and 4: each new taker
+   drew timber another bill had reserved or credited the wrong giver).
 
 Report: the plan as built and where it changed, files changed, check results, the paths of the stills you looked at
 with your one-line gut check, what is unverified, and "not tested on a device" where it applies.
