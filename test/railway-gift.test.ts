@@ -437,3 +437,21 @@ test('Home keeps the logs before the first gift leg opens', () => {
   assert.equal(giftQueued(closed.w), 0);
   assert.deepEqual(worksThanks(closed.w), []);
 });
+
+test('the steel yard thanks the giver when a pickup changes demand before dispatch', () => {
+  const s = unaudited(buildSeedWorld('ring-joined'));
+  for (let ticks = 0; steel(s.w).yardLogs < 8; ticks++) {
+    assert.ok(ticks < 6000);
+    advance(s, 1);
+  }
+  give(s);
+  assert.deepEqual(worksThanks(s.w), ['a']);
+  assert.equal(act(s, 'b', 'rail.steelTake', { kind: 0 }), 8);
+  for (let ticks = 0; !steel(s.w).giftDelivered; ticks++) {
+    assert.ok(ticks < 6000);
+    advance(s, 1);
+    railwayCheck(s.w);
+  }
+  assert.equal(steel(s.w).giftDelivered, 8);
+  assert.deepEqual(worksThanks(s.w, 5), ['a']);
+});
