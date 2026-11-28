@@ -574,9 +574,11 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       for (const { a, b, w } of plan.wings) deck.between(a, b, 0.12 * w, 0.14, RAIL, 0.1);
     }
     const bentFree = (s: number) => !sp.noBents.some(([a, b]) => s >= a && s <= b);
+    let gorgeJoined = false;
+    const crossoverShown = (id: string) => id !== 'J12.4' || !gorgeJoined;
     /** Into the shared deck batch: the deck to `end`, and (a row's) the turnouts the line uses at `laid`. */
     function drawDeck(end: number, laid: number, swings: readonly number[]) {
-      const down = crossings.filter((x) => end >= x.reach),
+      const down = crossings.filter((x) => end >= x.reach && crossoverShown(x.c.id)),
         cuts = down.flatMap((x) => x.plan.cuts);
       for (const x of down) crossover(x);
       for (let s0 = sp.from; s0 < end - 1e-6; s0 += SEG) {
@@ -829,7 +831,12 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
       });
     /** Its crossovers' toes for turnout-blades.ts: laid while the deck as drawn reaches past them. */
     const points: TrackPoint[] = crossings.flatMap((x) =>
-      x.plan.toes.map((p) => ({ ...p, from: 0, laid: () => deckEnd >= x.reach, retired: () => false })),
+      x.plan.toes.map((p) => ({
+        ...p,
+        from: 0,
+        laid: () => deckEnd >= x.reach && crossoverShown(x.c.id),
+        retired: () => false,
+      })),
     );
     return {
       sp,
@@ -850,7 +857,8 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
           : 0;
         return END[r.laid]! + Math.floor(grown / 2) * 2;
       },
-      drawDeck(end: number, laid: number, swings: readonly number[]) {
+      drawDeck(end: number, laid: number, swings: readonly number[], joined: boolean) {
+        gorgeJoined = joined;
         deckEnd = end;
         drawDeck(end, laid, swings);
       },
@@ -893,7 +901,8 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         // The end board, 1.5 m behind the buffers' faces, facing back down the line: the stack's blank until the
         // rivet, then the line's name; it travels with the head and is gone at the destination (answer i). A row's
         // stands from its first lay (the West landing's own board says the same before it).
-        if (laid < n && (!sp.row || laid > 0)) {
+        const gorgeTerminal = sp.leg.id === 'stack' && laid === n && !legDone(wd, WALL_LEG);
+        if (gorgeTerminal || (laid < n && (!sp.row || laid > 0))) {
           const s = !sp.row && laid === 0 ? END[0]! + 0.6 : END[laid]! - 0.3;
           geo.at(s, P);
           geo.world(s, mid, q);
@@ -903,12 +912,17 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
             geo.y(s),
             -P.ux,
             -P.uz,
-            joined
+            gorgeTerminal
               ? [
-                  { t: sp.name, size: 0.34 },
-                  { t: UNDER_WAY, size: 0.22 },
+                  { t: 'WHITE WALL LINE', size: 0.34 },
+                  { t: 'JOINS HERE', size: 0.28 },
                 ]
-              : [],
+              : joined
+                ? [
+                    { t: sp.name, size: 0.34 },
+                    { t: UNDER_WAY, size: 0.22 },
+                  ]
+                : [],
           );
         }
         // The block signals the line has passed (answer e): a post between the tracks 3 m beyond each section end,
@@ -1110,12 +1124,13 @@ export async function createLegView(adapter: RailwayAdapter, owner: OwnedView) {
         adapter.read.tick(),
       );
     });
-    const key = `${ends.join()}|${legs.map((l) => l.held()).join()}|${swings.map((s) => s.join(',')).join('|')}`;
+    const joined = !!r && legDone(r.wd, WALL_LEG);
+    const key = `${joined}|${ends.join()}|${legs.map((l) => l.held()).join()}|${swings.map((s) => s.join(',')).join('|')}`;
     if (key !== drawnDeck) {
       drawnDeck = key;
       deck.begin();
       legs.forEach((l, i) => {
-        if (ends[i]! >= 0) l.drawDeck(ends[i]!, r!.per[i]!.laid, swings[i]!);
+        if (ends[i]! >= 0) l.drawDeck(ends[i]!, r!.per[i]!.laid, swings[i]!, joined);
       });
       deck.commit();
     }

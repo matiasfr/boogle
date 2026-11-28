@@ -207,13 +207,27 @@ export function checkLeg5() {
     Array.from({ length: 61 }, (_, k) => -13.9 + k / 10).every((c) => heightAt(faces, gorgeAt(a, c)) === null),
   );
   check('six clear metres between the town pad and the north platform', clear);
-  const { node, reach } = colliderFlood(colliders, gorgeAt(-35, 0), 115);
+  const { node, reach } = colliderFlood(colliders, gorgeAt(-16, -5), 155);
   for (const c of [-1.5, 0, 2, 4, 5.5]) {
     const y = heightAt(faces, gorgeAt(-2, c));
     check(`joined Gorge crossing c ${c} has a plank top at 3.35 m`, y !== null && Math.abs(y - 3.35) < 0.01);
   }
   const concourseWalk = reach(gorgeAt(-2, 2));
   const fromWater = reach(gorgeAt(-76, 6), true);
+  for (const [name, point] of Object.entries({
+    'line 2 north platform': gorgeAt(20, -4),
+    'line 2 south platform': gorgeAt(20, 8),
+    'stair foot': gorgeAt(0, -41),
+    'incline barrier pad': gorgeAt(15, 13),
+    'town pad': gorgeAt(-8, -20),
+    crossing: gorgeAt(-2, 2),
+  })) {
+    check(`Gorge ${name} reachable on foot and from water`, !!concourseWalk[node(point)] && !!fromWater[node(point)]);
+  }
+  let highest = -Infinity;
+  for (let a = -60; a <= 0; a++)
+    for (let c = -1.5; c <= 5.5; c += 0.5) highest = Math.max(highest, heightAt(faces, gorgeAt(a, c)) ?? -Infinity);
+  check('joined Gorge track envelope stays at or below plank height', highest <= 3.36);
   for (const [c, edge, sign] of [
     [-3.8, -1.8, -1],
     [7.8, 5.8, 1],

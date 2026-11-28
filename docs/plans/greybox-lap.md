@@ -384,6 +384,11 @@ The High Gorge coach-fit, tail-clearance and arrival audits use the pre-join sto
       - [x] A Chromium reload with a saved `cave:3` ride reached [Port Quay](greybox-lap/joined-port-quay-reload.png). The quay starts mounting behind the loading cover. The search tries both Port Quay landings before any other halt. The existing scenery wait and Home fallback still apply.
       - [x] [Through train at the plank crossing](greybox-lap/train-on-gorge-crossing.png) and [two frames of its passage](greybox-lap/train-through-gorge.png), captured from the arrived room. The trailing car crosses the walkway after the engine clears it.
       - [ ] Remaining step 4 views and proofs listed below.
+      - [x] The completed Stack terminal displays the placeholder “WHITE WALL LINE JOINS HERE” until the join.
+        Its J12.4 crossover and both toes retire together, leaving the two through rails.
+      - [x] Gorge level checks cover platform and approach walks, water access and the joined track envelope.
+      - Capture setup: use `wall-deep` for section six arriving from the sea mouth, then `lap-ride` for the through
+        train, cab, north platform and halt map. The latter seed starts with the joint already laid.
 
       Files:
       `src/content/levels/gorge.ts` and `leg-view.ts` (the concourse's middle becomes the plank crossing with its two
