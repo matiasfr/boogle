@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { bindToySweep, clearToyRelease } from '../src/physics/toy-clearance.ts';
-import { chargeOf } from '../src/player/throw-curve.ts';
+import { chargeOf, launchVelocity, profileFor } from '../src/player/throw-curve.ts';
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { sourceFunction, sourceModule } from '../dev/level/source.ts';
-import { BALL_R, PLAYER_R, GRAVITY, ROOM_GROUP } from '../src/constants.ts';
+import { BALL_R, PLAYER_R, HEAD_OFFSET, GRAVITY, ROOM_GROUP } from '../src/constants.ts';
 import { me, handPosition, throwFrom } from '../src/player/state.ts';
 import { definitions } from '../src/prefab/catalogue.ts';
 
@@ -14,7 +14,7 @@ test('elapsed time cannot undercharge or overcharge a throw', () => {
   assert.equal(chargeOf(-20), 0);
 });
 
-test('the ball releases on the player side of the Boathouse back wall', () => {
+test('ball and disc stay held when the Boathouse wall leaves no release clear of the player', () => {
   const wall = definitions['town.room-plot3-hulls-0']!.colliders[0]!;
   assert.ok(wall.shape === 'box');
   const face = wall.at[2] + wall.half[2];
@@ -40,11 +40,47 @@ test('the ball releases on the player side of the Boathouse back wall', () => {
       'releasePoint',
       { handPosition, throwFrom, me, BALL_R, clearToyRelease },
     );
-    assert.ok(release('ball').z - BALL_R >= face, 'the released sphere crosses the solid wall');
-    assert.ok(release('frisbee').z - 0.275 >= face, 'the released disc crosses the solid wall');
-    position.z += 3;
-    assert.deepEqual(release('ball'), handPosition());
-    assert.deepEqual(release('frisbee'), throwFrom());
+    const launch = sourceFunction<typeof import('../src/player/throw.ts').launch>('src/player/throw.ts', 'launch', {
+      THREE,
+      me,
+      profileFor,
+      releasePoint: release,
+      aimPoint: () => new THREE.Vector3(0, 1, -20),
+      aim: new THREE.Vector3(),
+      launchVelocity,
+    });
+    for (const [id, radius] of [
+      ['ball', BALL_R],
+      ['frisbee', 0.275],
+    ] as const) {
+      const throws: THREE.Vector3[] = [];
+      const record = (p: THREE.Vector3) => throws.push(p);
+      const toss = sourceFunction<(c: number) => void>('src/player/hands.ts', 'throwHeld', {
+        me,
+        heldId: () => id,
+        canThrow: () => true,
+        launch,
+        throwBall: record,
+        releaseDisc: record,
+      });
+      for (let cm = 46; cm <= 150; cm++) {
+        position.z = face + cm / 100;
+        const hand = id === 'ball' ? handPosition() : throwFrom();
+        const clipped = hand.z - radius < face;
+        toss(0.5);
+        const p = throws.pop();
+        if (p) {
+          assert.ok(p.z - radius >= face, `${id} crossed the wall at ${cm} cm`);
+          assert.ok(p.distanceTo(position) >= PLAYER_R + radius, `${id} overlapped the lower collider at ${cm} cm`);
+          if (clipped) {
+            const head = position.clone().setY(position.y + HEAD_OFFSET);
+            assert.ok(p.distanceTo(head) >= PLAYER_R + radius, `${id} pulled back into the head at ${cm} cm`);
+          } else assert.deepEqual(p, hand);
+        }
+        if (cm === 46) assert.equal(p, undefined, 'keep the toy held one centimetre outside contact');
+        if (!clipped || (id === 'ball' && cm === 125)) assert.ok(p, 'release when there is space');
+      }
+    }
   } finally {
     bindToySweep(() => -1);
     Object.assign(me, previous);

@@ -27,9 +27,10 @@ const sync = {
   },
   act: (op: string, fields: Record<string, unknown>) => railwayCommands()?.act(op, fields) ?? null,
   tossBall(charge = 0.5) {
+    const shot = launch('ball', charge);
+    if (!shot) return;
     grabBall();
-    const { p, v } = launch('ball', charge);
-    throwBall(p, v);
+    throwBall(shot.p, shot.v);
   },
 };
 export type SyncHandle = typeof sync;

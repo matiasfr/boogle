@@ -90,7 +90,7 @@ onHandChange(() => {
 // A ball pushed out of your hand drops ahead through its own physics owner.
 const DROP = { forward: 2.2, up: 3.2 }; // m/s
 onLetGo((id) => {
-  const p = releasePoint(id);
+  const { p } = releasePoint(id);
   const v = new THREE.Vector3(-Math.sin(cam.yaw) * DROP.forward, DROP.up, -Math.cos(cam.yaw) * DROP.forward);
   if (id === 'ball') throwBall(p, v);
   if (id === 'frisbee') releaseDisc(p, v);
@@ -176,9 +176,10 @@ function windUp() {
 function throwHeld(c: number) {
   const id = heldId();
   if (!canThrow() || !me.body) return;
-  const { p, v } = launch(id, c);
-  if (id === 'ball') throwBall(p, v);
-  else releaseDisc(p, v);
+  const shot = launch(id, c);
+  if (!shot) return;
+  if (id === 'ball') throwBall(shot.p, shot.v);
+  else releaseDisc(shot.p, shot.v);
 }
 
 export const emptyHands: { down: () => boolean; up: () => void } = { down: () => false, up: () => {} };

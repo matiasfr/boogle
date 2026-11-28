@@ -30,17 +30,18 @@ export const chargeAmount = () => chargeOf(performance.now() - me.chargeStart);
 export const aimPoint = (out = new THREE.Vector3()) => out.copy(followEye).addScaledVector(camForward(), AIM_DIST);
 
 const aim = new THREE.Vector3();
-// What throwing `id` at charge c would do right now: { p: where it leaves your hand, v: its velocity, profile }.
 export function releasePoint(id: string | null) {
   const p = id === 'ball' ? handPosition() : throwFrom();
-  if (!me.body || (id !== 'ball' && id !== 'frisbee')) return p;
+  if (!me.body || (id !== 'ball' && id !== 'frisbee')) return { p, clear: true };
   const radius = id === 'ball' ? BALL_R : 0.275; // outer rim of the disc model
-  return clearToyRelease(me.body.position, p, radius);
+  const clear = clearToyRelease(me.body.position, p, radius);
+  return { p, clear };
 }
 
 export function launch(id: string | null, c: number) {
   const profile = profileFor(id);
-  const p = releasePoint(id);
+  const { p, clear } = releasePoint(id);
+  if (!clear) return null;
   const dir = aimPoint(aim).sub(p).normalize();
   const bodyV = me.body ? me.body.velocity : { x: 0, y: 0, z: 0 };
   const v = launchVelocity(profile, c, dir, bodyV);
@@ -74,9 +75,10 @@ const preview = instancedSprite(previewMat, previewAttr);
 
 const DT = 1 / 60;
 function updatePreview() {
-  preview.visible = me.charging;
-  if (!me.charging) return;
-  const { p, v, profile } = launch(heldId(), chargeAmount());
+  const shot = me.charging ? launch(heldId(), chargeAmount()) : null;
+  preview.visible = !!shot;
+  if (!shot) return;
+  const { p, v, profile } = shot;
   const glide = profile.flight === 'glide';
   const sub = glide ? 5 : 3; // flight steps per dot
   const arr = previewAttr.array as Float32Array;
