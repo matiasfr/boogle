@@ -18,10 +18,14 @@ async function ask(stage: string): Promise<JumpReply | Refused> {
     if (!(await hostMatchesPage().catch(() => false))) return { status: 409, error: 'world changed' };
     const url = new URL('/jump', server);
     if (roomRelease) url.searchParams.set('serverBuild', roomRelease.serverBuild);
+    // A lost reply may already have created the room. Keep one key on this history entry
+    // until the invite replaces it; a later intentional jump gets a fresh key.
+    const request = roomRelease ? (globalThis.history?.state?.jumpRequest ?? crypto.randomUUID()) : undefined;
+    if (request) globalThis.history?.replaceState({ ...history.state, jumpRequest: request }, '');
     const r = await fetch(url, {
       method: 'POST',
       // text/plain JSON: no CORS preflight (the /report pattern)
-      body: JSON.stringify({ stage, ns: RAILWAY_PLAY_NS }),
+      body: JSON.stringify({ stage, ns: RAILWAY_PLAY_NS, request }),
       signal: AbortSignal.timeout(90_000),
     });
     const body = (await r.json().catch(() => null)) as (JumpReply & { error?: unknown }) | null;
@@ -42,7 +46,10 @@ export async function jumpIn(stage: string) {
   splashNote(`Setting up ${label}…`);
   const reply = await ask(stage);
   if ('status' in reply) {
-    if (reply.status === 409 && roomRelease) {
+    if (
+      (reply.status === 409 || reply.status === 0 || (reply.status === 503 && reply.error !== 'stage not built')) &&
+      roomRelease
+    ) {
       releaseMismatch();
       return new Promise<never>(() => {});
     }
@@ -51,7 +58,9 @@ export async function jumpIn(stage: string) {
   const url = new URL(location.href);
   for (const key of ['from', 'room', 'fresh', 'coop']) url.searchParams.delete(key);
   url.searchParams.set('room', reply.room);
-  history.replaceState(history.state, '', url);
+  const state = { ...history.state };
+  delete state.jumpRequest;
+  history.replaceState(state, '', url);
   splashNote(null); // the ordinary loading steps from here
 }
 

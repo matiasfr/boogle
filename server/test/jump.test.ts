@@ -32,6 +32,25 @@ async function start(overrides: Partial<ServerConfig> = {}, dataDir?: string) {
 }
 const roomFiles = async (dir: string) => (await fs.readdir(dir)).filter((f) => f.startsWith('rail-')).sort();
 
+test('a jump whose reply was lost reuses one allocation across retries and a restart', async () => {
+  let s = await start({ jumpMaxPerAddressDay: 1 });
+  const request = { stage: 'start', ns, request: crypto.randomUUID() };
+  try {
+    const first = await s.jump(request);
+    assert.equal(first.status, 200);
+    const expected = await first.json();
+    assert.deepEqual(await (await s.jump(request)).json(), expected);
+    assert.equal((await s.jump({ stage: 'start', ns })).status, 429);
+    await s.stop();
+    s = await start({}, s.dataDir);
+    assert.deepEqual(await (await s.jump(request)).json(), expected);
+    assert.equal((await fs.readdir(path.join(s.dataDir, 'jumps'))).length, 1);
+  } finally {
+    await s.stop();
+    await fs.rm(s.dataDir, { recursive: true });
+  }
+});
+
 /** The shared room's save, written by a short real host run. */
 async function writeShared(dataDir: string) {
   const store = createStore({ dataDir, maxRooms: 10 });

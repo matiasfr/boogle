@@ -1,5 +1,9 @@
 ﻿# Live deploy
 
+## Rollout order
+
+Ship steps 1–6 together on `codex/live-deploy` with the world-bump gate intact. A page open before this release may need one manual Reload. After this release has deployed and run on production, ship step 7 from `codex/live-deploy-gate`. See `d-2026-11-28-live-deploy-one-reload`.
+
 ## What happens today
 
 Pages and Fly publish independently. Pages uses the newest first-parent code commit from dev/client-build.ts for VITE_BUILD. The manifest already pairs that client build with dev/server-build.ts's server source commit. Docs still publish under the same game identity. Fly rebuilds only for its source paths. The automerge workflow can dispatch the two jobs separately. A green health check only proves the process answers.

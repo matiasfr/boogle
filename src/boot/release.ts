@@ -1,5 +1,6 @@
 import { BUILD_ID, REQUIRED_SERVER } from '../build-id.ts';
 import { WORLD_NS } from '../world/namespace.ts';
+import { retryGuestRegistration } from '../player/account.ts';
 
 const enabled = !!BUILD_ID && !BUILD_ID.startsWith('dev') && !!REQUIRED_SERVER;
 const site = () => new URL(import.meta.env.BASE_URL + 'version.json', location.href);
@@ -11,6 +12,7 @@ const read = async (url: URL) => {
 };
 let timer: ReturnType<typeof setTimeout>;
 let checking = false;
+let navigating = false;
 let notice: HTMLDialogElement | undefined;
 let shown = 0;
 let stopInput = () => {};
@@ -30,14 +32,20 @@ function pause(wipe: boolean) {
 
 // If a CDN serves yesterday's HTML after publishing its new manifest, retry the navigation
 // at a bounded rate. A failed attempt must never permanently suppress the next one.
-async function reload(target: string, serverBuild: string) {
+async function reload(target: string, serverBuild: string, legacy: boolean) {
   // Pages can publish its manifest before the matching HTML reaches this edge. Check the
   // navigation URL before leaving the notice. This GET never executes a jump-in.
   const response = await fetch(location.href, { cache: 'reload', signal: AbortSignal.timeout(4000) });
   if (!response.ok) return;
   const shell = new DOMParser().parseFromString(await response.text(), 'text/html');
   const meta = (name: string) => shell.querySelector<HTMLMetaElement>(`meta[name="${name}"]`)?.content;
-  if (meta('boogle-build') !== target || meta('boogle-server-build') !== serverBuild || displaced()) return;
+  const shellHost = meta('boogle-server-build');
+  if (
+    meta('boogle-build') !== target ||
+    (shellHost !== serverBuild && !(legacy && shellHost === undefined)) ||
+    displaced()
+  )
+    return;
   const key = 'boogle-release-retry';
   try {
     const last = Number(sessionStorage.getItem(key + target));
@@ -46,11 +54,12 @@ async function reload(target: string, serverBuild: string) {
   } catch {
     /* storage can be disabled */
   }
+  navigating = true;
   location.reload();
 }
 
 export async function checkRelease() {
-  if (!enabled || checking || displaced()) return;
+  if (!enabled || checking || navigating || displaced()) return;
   clearTimeout(timer);
   checking = true;
   try {
@@ -59,11 +68,12 @@ export async function checkRelease() {
     const pageChanged = page.build !== BUILD_ID;
     const hostChanged = server.build !== REQUIRED_SERVER || server.world !== WORLD_NS;
     // Pages often lands minutes before Fly. The current room is still safe while its host matches.
-    const ready = page.serverBuild === server.build && page.world === server.world;
+    const legacy = page.world === undefined;
+    const ready = !!server.build && page.serverBuild === server.build && (legacy || page.world === server.world);
     if ((pageChanged && ready) || hostChanged || notice) {
       pause((!!page.world && page.world !== WORLD_NS) || (!!server.world && server.world !== WORLD_NS));
-      if (page.build && page.world && ready && Date.now() - shown >= 2000) await reload(page.build, server.build);
-    }
+      if (page.build && ready && Date.now() - shown >= 2000) await reload(page.build, server.build, legacy);
+    } else if (ready) await retryGuestRegistration();
   } catch {
     /* keep the current room through a transient status outage */
   } finally {
@@ -98,5 +108,8 @@ export function watchRelease(stop: () => void, elsewhere: () => boolean) {
   if (notice) stop();
   void checkRelease();
   document.addEventListener('visibilitychange', () => void checkRelease());
-  window.addEventListener('pageshow', () => void checkRelease());
+  window.addEventListener('pageshow', () => {
+    navigating = false;
+    void checkRelease();
+  });
 }

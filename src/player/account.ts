@@ -14,6 +14,8 @@ let visitStorage = false;
 let state: AccountState = 'offline';
 let problem: string | undefined;
 let standIn: string | undefined;
+let retryGuest = false;
+let memoryOnly = false;
 let switching = false;
 let beforeReload = () => {};
 
@@ -165,7 +167,7 @@ async function prepare() {
     }
   } else {
     credential = newCredential();
-    save(credential); // Lost registration responses retry this token, never create a second person.
+    memoryOnly = !save(credential); // Lost registration responses retry the stored token.
   }
   try {
     const next = resolved(
@@ -178,12 +180,31 @@ async function prepare() {
     // Another tab may have signed in or out while this check was in flight: never write the former person back.
     if (!switching && holds(next.token)) save(credential);
   } catch (error) {
-    state = (error as { status?: number } | null)?.status === 401 ? 'revoked' : 'offline';
+    const status = (error as { status?: number } | null)?.status;
+    state = status === 401 ? 'revoked' : 'offline';
+    retryGuest = !credential.pid && (status === undefined || status >= 500);
     problem =
       state === 'revoked'
         ? 'Sign-in expired or was replaced. Your saved identity was kept.'
         : 'Sign-in is unavailable. Reload to retry.';
     throw error;
+  }
+}
+
+/** A stand-in's identity is already in use throughout the game. Register its original token,
+ * then re-enter through boot so every identity-keyed consumer sees the same verified guest. */
+export async function retryGuestRegistration() {
+  if (!retryGuest || switching || !credential) return;
+  const token = credential.token;
+  if (!holds(token)) {
+    // Both stores may be unavailable. A healthy boot can still register an in-memory guest.
+    if (memoryOnly) reload();
+    return;
+  }
+  const next = resolved(token, await request('guest', token, 'POST'));
+  if (!switching && holds(token) && save(next)) {
+    retryGuest = false;
+    reload();
   }
 }
 
