@@ -18,7 +18,8 @@
 #      reruns a cancelled CI run's failed jobs once (a job at its time limit on a slow runner).
 # Exit: 0 shipped (with --wait: on main; with --dry-run: checks passed), 1 cannot ship (no trusted checkout), 4 needs
 # review, the stamp is stale or the orchestrator's read is missing, 5 not on main after the wait, 6 held by a red
-# nightly, 7 held by a red main, 8 with --wait: the ship's pull request conflicts with main (rerun to reship), 9 held
+# nightly, 7 held by a red main, 8 with --wait: the ship conflicts with main, seen while its CI runs or on its pull
+# request (rerun to reship), 9 held
 # by the world wipe (players are on), 10 another ship-queue is already shipping this worktree, otherwise ship-branch's
 # status.
 set -uo pipefail
@@ -181,6 +182,18 @@ for i in $(seq 1 90); do
     if [ -n "$branch" ] && pr=$(gh pr list --head "$branch" --state open --json number,mergeStateStatus \
       -q '.[0] | select(.mergeStateStatus == "DIRTY") | .number' 2>/dev/null) && [ -n "$pr" ]; then
       echo "ship: pull request #$pr conflicts with main; nothing merged. Rerun ship-queue to rebase and reship, then close #$pr."
+      exit 8
+    fi
+  fi
+  # The same conflict, before the pull request exists: a ship that another ship's landing has put in conflict opens as
+  # DIRTY only when its CI ends, so two branches each waited out a nine-minute run to learn it (28 November: #2738,
+  # #2754). Read the conflicted paths, not the exit status alone: an unknown commit also exits 1, with no paths.
+  if [ $((i % 3)) = 0 ]; then
+    clash=$(git -C "$wt" merge-tree --write-tree --name-only --no-messages origin/main "$sha" 2>/dev/null)
+    merged=$?
+    clash=$(printf '%s\n' "$clash" | sed 1d | tr '\n' ' ')
+    if [ "$merged" = 1 ] && [ -n "${clash// /}" ]; then
+      echo "ship: ${sha:0:9} now conflicts with main in ${clash}(another ship landed while this one was in CI); nothing will merge. Rerun ship-queue to rebase and reship, and close its pull request if one opens."
       exit 8
     fi
   fi
