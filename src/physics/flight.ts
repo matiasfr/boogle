@@ -8,10 +8,10 @@
 //
 // A glide (the frisbee) gets lift that grows with airspeed, heavy drag and a fade to the left as it slows.
 import * as THREE from 'three';
-import { GRAVITY, BALL_DAMPING } from '../constants.ts';
+import { GRAVITY, BALL_DAMPING, ROOM_GROUP } from '../constants.ts';
 import { GROUP } from './physics.ts';
 import { raycastClosest, rayHit, type V3 } from './engine.ts';
-import { groundHeight } from '../island/terrain.ts';
+import { toyGround } from './toy-ground.ts';
 import { waterField } from './water-field.ts';
 
 export const STEP = 1 / 60;
@@ -29,7 +29,7 @@ const BOUNCE = { plain: 0.3, glide: 0.12 }; // share of the speed into a surface
 const SLIDE = { plain: 0.55, glide: 0.8 }; // share of the speed along a surface kept on a bounce
 const REST_SPEED = 2;
 
-export function stepFlight(p: THREE.Vector3, v: THREE.Vector3, glide: boolean, dt = STEP) {
+export function stepFlight(p: THREE.Vector3, v: THREE.Vector3, glide: boolean, dt = STEP, collide = false) {
   v.y -= GRAVITY * dt;
   const sp = Math.hypot(v.x, v.y, v.z);
   if (glide) {
@@ -44,7 +44,14 @@ export function stepFlight(p: THREE.Vector3, v: THREE.Vector3, glide: boolean, d
   }
   const k = 1 - Math.min(0.5, (glide ? GLIDE.drag : DRAG) * sp * dt);
   v.multiplyScalar(k);
-  p.addScaledVector(v, dt);
+  if (!collide) {
+    p.addScaledVector(v, dt);
+    return;
+  }
+  discNext.copy(p).addScaledVector(v, dt);
+  const h = cast(p, discNext);
+  if (!h) p.copy(discNext);
+  else if (bounce(p, v, h, glide)) v.set(0, 0, 0);
 }
 
 // The beach ball flies on its own physics body; this is the same arc for the aim preview (gravity, then the body's
@@ -56,7 +63,7 @@ export function stepBall(p: THREE.Vector3, v: THREE.Vector3, dt = STEP) {
 }
 
 const hit = rayHit(),
-  RAY = { mask: GROUP.SCENERY, skipBackfaces: true };
+  RAY = { mask: GROUP.SCENERY | ROOM_GROUP, skipBackfaces: true };
 const cast = (a: V3, b: V3) => (raycastClosest(a, b, RAY, hit) ? hit : null);
 
 // A whole hypothetical flight is synchronous: nearby accepted heights or mean/pond fallback, never live query IDs.
@@ -64,10 +71,23 @@ const underwater = (p: V3) => waterField.nearby(p).height > p.y + 0.05;
 const normal = new THREE.Vector3(),
   vBefore = new THREE.Vector3();
 
+function bounce(p: THREE.Vector3, v: THREE.Vector3, h: typeof hit, glide: boolean) {
+  normal.set(h.hitNormalWorld.x, h.hitNormalWorld.y, h.hitNormalWorld.z);
+  p.set(h.hitPointWorld.x, h.hitPointWorld.y, h.hitPointWorld.z).addScaledVector(normal, 0.03);
+  const into = v.dot(normal);
+  if (into < 0) {
+    v.addScaledVector(normal, -into);
+    v.multiplyScalar(glide ? SLIDE.glide : SLIDE.plain);
+    v.addScaledVector(normal, -into * (glide ? BOUNCE.glide : BOUNCE.plain));
+  }
+  return normal.y > 0.6 && v.length() < REST_SPEED;
+}
+
+const discNext = new THREE.Vector3();
 // Where something comes down if it is dropped at p: the first surface below it, or the ground.
 export function dropPoint(p: V3) {
-  const h = cast(p, { x: p.x, y: groundHeight(p.x, p.z) - 0.5, z: p.z });
-  return new THREE.Vector3(p.x, h ? h.hitPointWorld.y : groundHeight(p.x, p.z), p.z);
+  const h = cast(p, { x: p.x, y: toyGround.under(p.x, p.z) - 0.5, z: p.z });
+  return new THREE.Vector3(p.x, h ? h.hitPointWorld.y : toyGround.under(p.x, p.z), p.z);
 }
 
 export function flyPath(p0: THREE.Vector3, v0: THREE.Vector3, glide: boolean) {
@@ -82,18 +102,11 @@ export function flyPath(p0: THREE.Vector3, v0: THREE.Vector3, glide: boolean) {
     stepFlight(next, v, glide);
     const h = cast(p, next);
     if (h) {
-      normal.set(h.hitNormalWorld.x, h.hitNormalWorld.y, h.hitNormalWorld.z);
-      p.set(h.hitPointWorld.x, h.hitPointWorld.y, h.hitPointWorld.z).addScaledVector(normal, 0.03);
       v.copy(vBefore);
-      const into = v.dot(normal);
-      if (into < 0) {
-        v.addScaledVector(normal, -into);
-        v.multiplyScalar(glide ? SLIDE.glide : SLIDE.plain);
-        v.addScaledVector(normal, -into * (glide ? BOUNCE.glide : BOUNCE.plain));
-      }
+      const settled = bounce(p, v, h, glide);
       bounces++;
       points.push(p.clone());
-      if ((normal.y > 0.6 && v.length() < REST_SPEED) || bounces >= MAX_BOUNCES) return land(points, p);
+      if (settled || bounces >= MAX_BOUNCES) return land(points, p);
       continue;
     }
     p.copy(next);

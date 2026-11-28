@@ -91,6 +91,8 @@ Sources: [till view and interaction](../../src/entities/railway/till-view.ts),
 
 ## Buying and building
 
+The third house opens onto the ring road. Its offer opens after the room chooses its first hangout and receives 40 timber and 16 stone. Its two boards offer the remaining first-plot toy and the Frisbee Boathouse (placeholder). At the Boathouse one visitor can skim the shared disc into the hanging cans. Friends can catch and return the disc, and the rack recalls it when free.
+
 The first 150-Boogles offer has two boards. Holding one for a second buys the room's choice. The first accepted purchase spends the price once and saves the choice on the plot. Both houses bring the retired driver and one rider per minute. The Seed Shed and Horn Pavilion names and board words are placeholders.
 
 When the box can afford a staked plot, a gold outline shows its house. Approach the board and hold Interact for one
@@ -102,7 +104,7 @@ landing until it has room. Historical `Plot.paid` values are preserved. The pile
 the house's floor, frame, walls and roof fall into place, and it stands after 100 ticks (10 seconds). The first
 house (trade plot 0, town slot `plot3`, board "Plot 1") goes up as a walk-in room on the `house` kit, its open
 doorway facing the quarry road and its board, with the indoor cutaway and camera of every room
-([first house](../brainstorms/first-house-resident.md), step 1); the yard and the third house keep their closed shells.
+([first house](../brainstorms/first-house-resident.md), step 1).
 Once it stands, a warm lamp shows in its front window on the room's +x side (a lit pane, no scene light, so it reads
 by day too, gone with the roof while you're inside; [first-house.ts](../../src/entities/town/first-house.ts)).
 The retired engine driver lives there ([decision](../decisions-characters.md#d-2026-11-19-first-house-resident)), a

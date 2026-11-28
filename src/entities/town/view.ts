@@ -195,7 +195,7 @@ export async function createTownView(read: () => TownLook | null) {
   return {
     root: owner.root,
     release: plots.release,
-    firstHouseDone: () => rooms.rooms.plot3.site.state === 'done',
+    plotDone: plots.done,
     /** The residents' Talk and the shop's stands and rail. Joined only when more than one has something in reach. */
     targets(hangoutTargets?: Interactable[]): Interactable[] {
       targets.length = 0;
@@ -248,6 +248,7 @@ export async function createTownView(read: () => TownLook | null) {
         museum: room('museum'),
         gate: room('gate'),
         plot3: room('plot3'),
+        plot1: room('plot1'),
       },
       indoors: { room: rooms.indoors.room?.id ?? null, inside: rooms.indoors.inside?.id ?? null },
       houseStage: house.stage(),

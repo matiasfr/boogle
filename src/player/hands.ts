@@ -9,10 +9,10 @@
 //                            otherwise uses
 //   mainVerb()               what touchDown would do, for the button's label
 //   throwDown                the touch Toss button: winds up a throw of what you hold (release with releaseThrow)
-//   canThrow()               whether you hold anything (everything held can be thrown), never in the live game
+//   canThrow()               whether the held toy supports a throw
 //   interactTarget()         the one thing in front of you (see below), or null; the touch main button acts on it too
 //   useVerb()                what using the thing in your hand does ('Throw', 'Sprout'), null for empty hands or when
-//                            it does nothing (a throw in the live game)
+//                            the item has no use
 //   handsNote                { text, until }: why the last use did nothing, for src/features/held.ts to show
 //   emptyHands               { down, up }: what using empty hands does; the guest's punch sets it. down returns true if
 //                            it acted.
@@ -41,18 +41,18 @@
 // nudge toward where you look. Ties go to the provider registered first.
 //
 // Classic gift flights and landings were retired on 13 November. The ball keeps its own physics and can still be
-// thrown on nonproduction entries; the production railway continues to offer no throw. Holding seeds and giving
+// thrown on the railway. Holding seeds and giving
 // gifts to The Boogler remain local inventory interactions.
 import * as THREE from 'three';
 import { me, cam } from './state.ts';
 import { startCharge, cancelCharge, chargeAmount, launch, releasePoint } from './throw.ts';
 import { ball, ballInReach, grabBall, throwBall } from '../entities/ball/state.ts';
+import { disc, releaseDisc } from '../entities/frisbee/state.ts';
 import { remoteHoldsBall } from '../entities/ball/state.ts';
 import { heldId, take, emptyHand, drop, onHandChange, onLetGo } from './inventory.ts';
 import { sprout } from '../adapters/mushrooms.ts';
 import { pickInteract, NO_TARGETS, type InteractTarget } from '../sim/interact-pick.ts';
 import { currentFrame } from '../loop.ts';
-import { productionRailway } from '../proto/flags.ts';
 
 export { NO_TARGETS };
 
@@ -74,8 +74,7 @@ export type Interactable = InteractTarget & {
 };
 
 const USE_VERB: Record<string, string> = { seeds: 'Sprout' };
-const THROWS = !productionRailway;
-export const canThrow = () => THROWS && heldId() === 'ball';
+export const canThrow = () => heldId() === 'ball' || (heldId() === 'frisbee' && disc.enabled && disc.mine && disc.held);
 const ballAt = new THREE.Vector3();
 
 // The ball is in your hand while ball ownership says so: thrown, stolen, respawned or dropped on a hidden tab, it leaves
@@ -91,9 +90,10 @@ onHandChange(() => {
 // A ball pushed out of your hand drops ahead through its own physics owner.
 const DROP = { forward: 2.2, up: 3.2 }; // m/s
 onLetGo((id) => {
-  const p = releasePoint(id);
+  const { p } = releasePoint(id);
   const v = new THREE.Vector3(-Math.sin(cam.yaw) * DROP.forward, DROP.up, -Math.cos(cam.yaw) * DROP.forward);
   if (id === 'ball') throwBall(p, v);
+  if (id === 'frisbee') releaseDisc(p, v);
 });
 
 // Grab first: every change of hand syncs the ball to ownership.
@@ -175,9 +175,11 @@ function windUp() {
 
 function throwHeld(c: number) {
   const id = heldId();
-  if (id !== 'ball' || !me.body) return;
-  const { p, v } = launch(id, c);
-  throwBall(p, v);
+  if (!canThrow() || !me.body) return;
+  const shot = launch(id, c);
+  if (!shot) return;
+  if (id === 'ball') throwBall(shot.p, shot.v);
+  else releaseDisc(shot.p, shot.v);
 }
 
 export const emptyHands: { down: () => boolean; up: () => void } = { down: () => false, up: () => {} };
@@ -233,4 +235,6 @@ export const mainVerb = () => (me.charging ? null : interactTarget())?.verb ?? u
 // Every frame, before what you hold is drawn.
 export function updateHands() {
   syncBall();
+  if (disc.enabled && !(disc.mine && disc.held)) drop('frisbee');
+  if (disc.mine && disc.held && heldId() !== 'frisbee') releaseDisc(disc.p, new THREE.Vector3(0, -1, 0));
 }

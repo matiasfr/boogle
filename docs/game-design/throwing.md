@@ -1,8 +1,8 @@
 # 6.7 Throwing and flight
 
-> **13 November 2026:** classic item flight/landing and shared pickup were retired with gifts. The production
-> railway still offers no throw. Only the ball can throw on nonproduction entries, through its independent physics
-> owner. The profiles and preview helpers remain; the item behavior described below is historical.
+> **28 November 2026.** The beach ball uses its Owner physics for live throws. The Boathouse supplies one shared frisbee. Grab or catch it with Interact, hold Use to aim and release to throw. The holder publishes its pose and velocity. Another visitor can catch it in flight. A remaining visitor takes over its glide when the owner leaves. Classic item flight and shared gift pickup below are historical.
+
+If a wall leaves too little room to release the ball or disc, the aim dots disappear and the toy stays in hand.
 
 - **What and how it plays.** Hold to charge (a meter and a dotted aim preview show), release to throw. One module
   (`throw.ts`) aims, charges, previews and launches everything you hold, the ball included; each kind has a profile of

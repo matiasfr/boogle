@@ -22,6 +22,11 @@ const forkOnly = args.includes('--cave-first-rejoin');
 if (forkOnly && controlUrl) throw new Error('--cave-first-rejoin needs the in-process room host');
 // Install before loading any harness dependencies: they can import src transitively, too.
 useWorkerSource(root);
+if (!controlUrl && !root && !forkOnly) {
+  const { discHandoff } = await import('./disc-handoff.ts');
+  discHandoff();
+  check('simultaneous disc catches agree, invalid claims lose and an out-of-bounds throw returns', true);
+}
 const { fixtureToken, seedPrincipal } = await import('../../server/test/helpers/accounts.ts');
 const { startWeb, waitFor, ev, snap, seesAll, sleep } = await import('./harness.ts');
 const { createService, loadConfig } = await import('../../server/src/server.ts');

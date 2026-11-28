@@ -4,15 +4,15 @@
 // throw feels the same). The charge state stays in me.charging / me.chargeStart (the HUD, impact and the input
 // code read or reset it), but only startCharge here starts one.
 import * as THREE from 'three/webgpu';
-import { SEA } from '../constants.ts';
+import { clearToyRelease } from '../physics/toy-clearance.ts';
+import { BALL_R, SEA } from '../constants.ts';
 import { waterField } from '../physics/water-field.ts';
-import { groundHeight } from '../island/terrain.ts';
-import { camera } from '../render/scene.ts';
+import { toyGround } from '../physics/toy-ground.ts';
 import { dynAttr, instancedSprite } from '../render/sprites.ts';
 import { readableUnlit } from '../render/readable-unlit.ts';
 import { stepFlight, stepBall } from '../physics/flight.ts';
 import { defineKind, spawn } from '../entity/entity.ts';
-import { me, camForward, handPosition, throwFrom } from './state.ts';
+import { me, camForward, handPosition, throwFrom, followEye } from './state.ts';
 import { heldId } from './inventory.ts';
 import { AIM_DIST, chargeOf, launchVelocity, profileFor } from './throw-curve.ts';
 
@@ -27,16 +27,21 @@ export function cancelCharge() {
 export const chargeAmount = () => chargeOf(performance.now() - me.chargeStart);
 
 // The point the camera looks at, AIM_DIST ahead.
-export const aimPoint = (out = new THREE.Vector3()) =>
-  out.copy(camera.position).addScaledVector(camForward(), AIM_DIST);
+export const aimPoint = (out = new THREE.Vector3()) => out.copy(followEye).addScaledVector(camForward(), AIM_DIST);
 
 const aim = new THREE.Vector3();
-// What throwing `id` at charge c would do right now: { p: where it leaves your hand, v: its velocity, profile }.
-export const releasePoint = (id: string | null) => (id === 'ball' ? handPosition() : throwFrom());
+export function releasePoint(id: string | null) {
+  const p = id === 'ball' ? handPosition() : throwFrom();
+  if (!me.body || (id !== 'ball' && id !== 'frisbee')) return { p, clear: true };
+  const radius = id === 'ball' ? BALL_R : 0.275; // outer rim of the disc model
+  const clear = clearToyRelease(me.body.position, p, radius);
+  return { p, clear };
+}
 
 export function launch(id: string | null, c: number) {
   const profile = profileFor(id);
-  const p = releasePoint(id);
+  const { p, clear } = releasePoint(id);
+  if (!clear) return null;
   const dir = aimPoint(aim).sub(p).normalize();
   const bodyV = me.body ? me.body.velocity : { x: 0, y: 0, z: 0 };
   const v = launchVelocity(profile, c, dir, bodyV);
@@ -70,9 +75,10 @@ const preview = instancedSprite(previewMat, previewAttr);
 
 const DT = 1 / 60;
 function updatePreview() {
-  preview.visible = me.charging;
-  if (!me.charging) return;
-  const { p, v, profile } = launch(heldId(), chargeAmount());
+  const shot = me.charging ? launch(heldId(), chargeAmount()) : null;
+  preview.visible = !!shot;
+  if (!shot) return;
+  const { p, v, profile } = shot;
   const glide = profile.flight === 'glide';
   const sub = glide ? 5 : 3; // flight steps per dot
   const arr = previewAttr.array as Float32Array;
@@ -86,7 +92,7 @@ function updatePreview() {
       else stepFlight(p, v, glide, DT);
     }
     const surface = waterField.moving ? waterField.nearby(p).height : SEA;
-    if (p.y < groundHeight(p.x, p.z) || p.y < surface - 0.3) {
+    if (p.y < toyGround.under(p.x, p.z) || p.y < surface - 0.3) {
       n++;
       break;
     }

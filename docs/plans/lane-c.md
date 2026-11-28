@@ -1,4 +1,4 @@
-> **Status: plan, 27 November 2026.** Written by the planner against `origin/main` `f536288a3` (world v75), from the [Lane C brief](../brainstorms/lane-c-towns-hangout.md) and on its recommendations, for the [course change](course-change.md#lane-c-towns-are-the-hangout) ([decision](../decisions-core-loop.md#d-2026-11-27-course-change)). Part 1 is implemented on the court branch. Part 2 is built on the pick branch and awaits independent review. Every building name, board word and line is a placeholder for the owner's words; none of The Boogler's copy is touched. One question waits on him ([open questions](#open-questions)); everything else proceeds.
+> **Status: plan, 27 November 2026.** Written by the planner against `origin/main` `f536288a3` (world v75), from the [Lane C brief](../brainstorms/lane-c-towns-hangout.md) and on its recommendations, for the [course change](course-change.md#lane-c-towns-are-the-hangout) ([decision](../decisions-core-loop.md#d-2026-11-27-course-change)). Part 1 landed in #2625. Part 2 landed in #2637 (world v77). Part 3 adds the third plot choice and the shared disc. Every building name, board word and line is a placeholder for the owner's words; none of The Boogler's copy is touched. Both live throw questions were answered on 28 November.
 
 # Lane C: the ball in town, and the first plot the room picks
 
@@ -109,12 +109,45 @@ Implementation corrections for Part 1:
     - **Horns:** the three pads and the wall horns. Each frame, each pad looks for a body newly over it: this tab's player (`me.body`), each remote avatar (`remotes`, `avatar.position`) and the ball (`ball.pose.p`), each within the pad's radius and 0.4 m of its top. A new arrival plays `honkSound` on that pad's tone of the current shared chord (`honkNotes`, so pads and honks agree), puffs steam from its horn and rests that pad 600 ms. All three sounding within 1 s plays `chordSound` and a bigger puff. Every tab hears it from the same poses; nothing is sent.
   - Verify, once for the pass: `npm run look -- --rail-seed house-ready` facing plot 3's boards, standing at board A then at board B (two stills: both toppers readable, the ghost swapped); `--eval` buys `kind 1`, takes a seed bag, sprouts on the green and walks the ball onto a cap (motion sheet); a second `--eval` from `house-ready` buys `kind 2`, steps on a pad and pushes the ball onto another (motion sheet). Measured: the driver stands in his front room with his railway after either buy; mushrooms stand at world x ≈ 880 on Place ground. Then one reload (the chosen toy is there and the boards are not) and one two-tab race (both hold at once, on different boards: exactly one accepts, the other spends nothing).
   - Captured the [seed board](lane-c/seed-board.png), [horn board](lane-c/horn-board.png), [seed sequence](lane-c/seed-motion.png) and [horn sequence](lane-c/horn-motion.png). The carry capture sprouted at world (884.4, 17.61, 32.1). An earlier cluster started at (882.6, 17.20, 26.5). After both builds the driver stood at (912.2, 33.6). Two simultaneous holds bought kind 1 at tick 8000, spent 150 once and left 18 in the box. Reload showed the seed stall with the pads and boards hidden. After positioning the ball, the seed run grabbed it and walked and jumped onto a cap. The horn run walked into the stationary ball and pushed it onto a second pad. Both pads registered arrivals. Audio playback and the three-pad chord remain unverified.
-- [ ] **8. Close the pass.** *Kind: dev.* Files: this plan's checklist; the town rows in `docs/game-design/`. **Review:** one independent review for steps 5 and 6 together (the review paths fire on `src/sim`, `src/world` and `server/src`; `npm run ship-queue` needs the stamp), and the orchestrator's read plus `/code-review` for steps 4 and 7. The bump ships through `dev/world-bump-gate.ts`.
+- [x] **8. Close the pass.** *Kind: dev.* Files: this plan's checklist; the town rows in `docs/game-design/`. **Review:** one independent review for steps 5 and 6 together (the review paths fire on `src/sim`, `src/world` and `server/src`; `npm run ship-queue` needs the stamp), and the orchestrator's read plus `/code-review` for steps 4 and 7. The bump ships through `dev/world-bump-gate.ts`.
 
   - [x] Builder reviewed and simplified the diff, refreshed generated data, and ran the full ship check, audited server suite and net suite.
-  - [ ] Independent review of the shared-state changes and orchestrator review of the view changes.
+  - [x] The [backlog](../backlog.md) records two P2 findings, fixes and an independent Astra re-check. The selected-board preview, purchase-anchor reach and prompt fixes landed in [#2637](https://github.com/matiasfr/boogle/pull/2637).
 
 The checkpoint's own proof (fresh players' seconds to first contribution, the owner watching a guest) belongs to the course change, not to this plan.
+
+
+### Part 3: a frisbee on the Round
+
+Offer 2 is the Loader Yard. The next hangout is Offer 3, `plot1` at 220 degrees between the dock street and the shop. Two friends can play catch across the ring road. A solo visitor can skim the disc into hanging cans on the porch and hear them rattle. The rack and cans face the green so a player approaching from the court sees what the disc is for. This pass adds one new building option to Home.
+
+- [x] **9. Offer the spare toy and the Boathouse.** Extend the existing plot catalogue and accepted buy rule. Derive the two valid kinds for Offer 3 from Offer 1's accepted kind in one query used by boards, purchase validation and checkpoint checks. If the room took seeds, show horns and the disc. If it took horns, show seeds and the disc. If the Loader Yard was bought first, wait to stake Offer 3 until Offer 1 is chosen. Preserve the existing 40 timber / 16 stone threshold, price formula, one rider per minute and 1 s hold. Test both purchase orders, a stale board, a simultaneous buy, restore and generated seeds. Reuse the chosen-board preview and the accepted construction clock.
+- [x] **10. Put play on the porch.** Extend the existing hangout mount to take a plot anchor, keeping each front door and road clear. The spare choice gets its existing playable stall or pads. The Boathouse gets a visible disc rack beside its door and hanging cans at the eaves. Carry the model and glide curve over from Place. A rack interaction returns a lost free disc. Allow a friend to take it in reach and send it back. A hit swings the cans and plays a local metallic rattle. Use swept disc positions so a fast skim registers between samples. Add no score or rewards.
+- [x] **11. Replicate the disc and prove the pass.** The accepted plot row owns the building. A single Owner-synced disc uses the ball's handoff/orphan pattern, a dedicated validated presence field, and the existing frisbee throw profile. Read Place ground when landing. Reject malformed poses and clear ownership on departure. Joining while a friend holds or flies the disc must produce one disc at its current pose. Test loss, recall, disconnect and racing claims. Capture and open two-tab stills of A sending to B and B returning the same disc, plus a reload during use. Check both alternatives at the porch, target feedback, doorway, touch prompts and the dock approach. Update the owning game-design sections, run the ship check, server and net suites and take the next free world namespace at rebase in its own last commit.
+
+#### Build evidence
+
+The purchase tests cover each first choice paired with each legal third choice, the Loader Yard bought first, a stale offer and saved purchases. Two WebGPU tabs used the completed Boathouse in one railway room. The pitcher picked up the disc, the catcher took it in flight and sent it back, and the pitcher caught the return. The two inventory prompts and the ownership changes identify the same disc across the exchange. [Pickup](lane-c/disc-held.png), [catch](lane-c/disc-caught.png), [return](lane-c/disc-return.png).
+
+The catcher observed ownership epoch 4 with the free disc moving at 9.1 m/s and reloaded. On rejoin it received the same epoch at the later position, 4.4 m farther along z. The pitcher recalled the disc at the rack, picked it up and threw again. The catcher observed the moving throw before the pitcher's tab closed, then took ownership at epoch 7 with 9.2 m/s of velocity. These are pose samples from the clients. The reload still caught the terrain loading. The disconnect still shows the pink disc at the road edge and the empty rack. [Reload](lane-c/disc-reloaded.png), [disconnect](lane-c/disc-orphan.png).
+
+A visitor walked through the Boathouse door with ordinary forward input. A controlled disc flight across the can row made the can pivot swing. From the dock the road passes the side wall. On the green side, the rack and all three cans sit beside the open door. Two restored room fixtures show the other choices in the same strip, the seed stall with Take, or three flush horn pads. [Porch](lane-c/disc-porch.png), [dock approach](lane-c/disc-dock.png), [seeds](lane-c/spare-seeds.png), [horns](lane-c/spare-horns.png).
+
+With touch emulation and the full HUD enabled, the held item read Frisbee and the main button read Throw. A touchscreen tap released the disc. The peer checks also exercised simultaneous claims, rejection of malformed disc poses, and automatic recall on loss. The browser network suite passed 410 checks. The solo target proof observed the swing. Audio playback and physical touch hardware were not independently verified. [Touch prompt](lane-c/disc-touch.png).
+
+#### Design review (2026-11-27) for Part 3
+
+| Call | Kind | Basis |
+| --- | --- | --- |
+| Put room choice at Home and keep the fixed Loader Yard | Decided | [Course change](../decisions-core-loop.md#d-2026-11-27-course-change) and [first town lesson](../decisions-rewards.md#d-2026-11-16-first-town-lesson-answers) |
+| Building names and board words are placeholders | Decided | [Owner's character and copy decision](../decisions-characters.md#d-2026-11-11-the-story-and-characters-are-the-owner-s) |
+| Offer 3 pairs the missed first toy with the shared frisbee. It becomes eligible after Offer 1. | New | Recommended. Friends can recover the first toy they passed up. Both purchases are hangouts with equal rider income. |
+| Enable live throwing specifically while holding the Boathouse disc | New | Answered yes on 28 November, updating the [9 November controls decision](../decisions-controls.md#d-2026-11-09-four-more-answers). |
+| Face a shared disc rack and rattling cans toward the green, recall a free disc at the rack and keep the activity scoreless | Default | [Lane C brief](../brainstorms/lane-c-towns-hangout.md), Wave 2. The cans give a solo throw a destination and recall makes a missed catch recoverable. |
+
+**Findings incorporated.** The staking query can show two unbought offers. Buying the yard first can therefore expose Offer 3 before a spare toy exists. Step 9 makes that dependency explicit at the server and both boards. The brief's zero-server-ops observation applies to the disc's flight. Step 11 accounts separately for the changed plot catalogue and world namespace. From the court centre at radius 8 to the porch at radius 22 along the same bearing is 14 m, about 2.5 s on foot. The existing [dock still](lane-c/dock.png) shows the open road and the plot outline at the right of the approach. It does not establish the future rack's visibility or clearance. Step 11 checks both in the built scene. This toy changes neither movement abilities nor the railway route.
+
+**Owner question for this pass.** May a player throw the shared frisbee in the live railway room once the room builds its Boathouse? **Answered 28 November 2026.** The owner said “Yes and yes” to the ball and the built Boathouse disc. [Controls decision](../decisions-controls.md#d-2026-11-28-ball-and-disc-throw). Seeds keep Sprout. Building words remain placeholders.
 
 ## Level findings
 
@@ -139,12 +172,12 @@ The Round has no `level-check` coverage for props ("Excluded place props, room/s
 
 ## Open questions
 
-Only the first waits on the owner. The rest proceed on their recommendation and are logged.
+The first was answered on 28 November. The rest proceed on their recommendation and are logged.
 
-1. **May the beach ball be thrown in the live game?** It changes the [9 November answer](../decisions-controls.md#d-2026-11-09-four-more-answers), item 3 ("no Throw in the live game until replication R3"); R3 never brought island throwing, and the ball's own physics is Owner state that already throws on every other entry. **Recommended: yes, the ball only** (`canThrow` becomes `heldId() === 'ball'` on production; seeds keep Sprout; the two dropped nightly throw checks come back with it). **Waits on him.** Until then the court is for carrying, dropping and running the ball in, which part 1 is built for.
+1. **May the beach ball be thrown in the live game?** **Answered 28 November 2026.** The owner said “Yes and yes” to the ball and the built Boathouse disc. [Controls decision](../decisions-controls.md#d-2026-11-28-ball-and-disc-throw). Restore the two nightly throw checks.
 2. **The brief's Offer 1 pick, Seed Shed or Horn Pavilion, with the driver moving in either way.** Proceeds as recommended (the brief's question 1).
 3. **Mushrooms grow only within the Round on production.** Proceeds (level finding 4).
-4. **The unchosen toy on a later plot.** Not in this build: plot 1 (Offer 3) stays a plain house until a later plan gives it a `choices` row. Proceeds.
+4. **The unchosen toy on a later plot.** Part 3 brings the spare toy back on plot 1 alongside the Frisbee Boathouse. Recommend keeping both at the same price and rider income.
 
 ## Design review (2026-11-27)
 

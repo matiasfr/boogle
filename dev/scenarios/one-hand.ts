@@ -1,5 +1,5 @@
 // One thing in your hands: a new player starts empty-handed; something new knocks the beach ball out of your hand; The
-// Boogler takes what you hold; a bag of seeds sprouts mushrooms. On a phone the live game offers no throw,
+// Boogler takes what you hold; a bag of seeds sprouts mushrooms. On a phone the held ball has a throw action,
 // and the name tag clears the HUD. Classic shared gifts were retired in server-owned-state step 5.
 import { TP, INV, lowResOnCi } from './lib/world.ts';
 import type { T } from './run.ts';
@@ -25,7 +25,7 @@ const LAYOUT = `${DOM}
 
 export default {
   island: true, // the classic island by the court (run.ts)
-  about: 'hold and give what you pick up; plant anywhere; the phone HUD offers no throw',
+  about: 'hold and give what you pick up; plant anywhere; the phone HUD offers a ball throw',
   timeout: 800000, // two software-rendered players in a row; the nightly runner took over 450 s, with checks timing out
   async run(t: T) {
     const g = await t.open({ name: 'holder', hud: 'play' });
@@ -106,7 +106,10 @@ export default {
     await g.eval(`(await import('/src/boogler/dialogue.ts')).closeDialogue();`);
 
     // A bag of seeds: using it sprouts mushrooms ahead of you, spends the bag, and they end up solid.
-    await g.eval(`${INV} I.take('seeds'); ${TP(-30, 30)} ${AIM(0)}`);
+    await g.eval(`${INV}
+      const { toyGround } = await import('/src/physics/toy-ground.ts');
+      const { x, z } = toyGround.spawn;
+      I.take('seeds'); ${TP('x', 'z', 'toyGround.under(x,z) + 0.6')} ${AIM(0)}`);
     await g.wait(0.4);
     const sprouted = await g.eval(`${INV}
       const M = await import('/src/adapters/mushrooms.ts');
@@ -125,16 +128,13 @@ export default {
     );
     t.check('on touch a new player has an empty name tag', one >= 0, `${one} ms`);
 
-    await thumb.eval(`${INV} ${TP(14, 24)}`);
-    await thumb.eval(`${INV} I.take('frisbee');`);
-    // The live game offers no throw until replication R3 (owner, 9 November): no Throw on the main button, no Toss.
-    const frisbee = await thumb.waitFor(when(`label() !== 'Throw' && !throws() && !shown('.tbtn.toss')`));
-    const away = await thumb.eval(`${INV} return H.interactTarget()?.id ?? null;`);
-    t.check(
-      'holding a frisbee in the live game: no Throw on the main button, and no Toss',
-      frisbee >= 0,
-      `${frisbee} ms; in reach: ${away}`,
-    );
+    await thumb.eval(`const { toyGround } = await import('/src/physics/toy-ground.ts');
+      const { x, z } = toyGround.spawn; ${TP('x', 'z', 'toyGround.under(x,z) + 0.6')}`);
+    await thumb.eval(`${INV}
+      const { grabBall } = await import('/src/entities/ball/state.ts');
+      grabBall(); I.take('ball');`);
+    const ready = await thumb.waitFor(when(`(label() === 'Throw' && throws()) || shown('.tbtn.toss')`));
+    t.check('touch offers Throw for the held beach ball', ready >= 0, `${ready} ms`);
 
     await thumb.wait(0.4);
     const portrait = await thumb.eval(LAYOUT);
@@ -155,5 +155,15 @@ export default {
       landscape.checked >= 4 && !landscape.hit.length,
       `${JSON.stringify(landscape)}; ${landscapeShot}`,
     );
+
+    const thrown = await thumb.eval(`${INV}
+      const { ball } = await import('/src/entities/ball/state.ts');
+      const from = ball.pose.p.toArray();
+      const pressed = H.throwDown(); H.releaseThrow(); H.updateHands();
+      return { from, pressed, free: !ball.held && I.heldId() === null };`);
+    t.check('touch winds up and releases the shared ball', thrown.pressed && thrown.free, JSON.stringify(thrown));
+    const moved = await thumb.waitFor(`(async()=>{const {ball}=await import('/src/entities/ball/state.ts');
+      return ball.mine && !ball.held && Math.hypot(ball.pose.p.x-${thrown.from[0]}, ball.pose.p.z-${thrown.from[2]}) > 2;})()`);
+    t.check('the released beach ball travels away from the hand', moved >= 0);
   },
 };

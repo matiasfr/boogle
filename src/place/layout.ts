@@ -705,7 +705,7 @@ export const TOWN: {
  * are the outside; docs/research/town-interiors.md, "How little room is enough?". */
 export type RoomId = 'house' | 'shop' | 'museum' | 'gate' | PlotRoomId;
 /** Rooms on the town's bought trade plots: trade plot 0 (town slot `plot3`, board "Plot 1") once it is bought and built. */
-export type PlotRoomId = 'plot3';
+export type PlotRoomId = 'plot3' | 'plot1';
 type RoomPlot = { x: number; z: number; yaw: number; w: number; d: number; high: number };
 /** The shells' slab top above their ground datum; door grading and the room view share it. */
 export const ROOM_FLOOR = 0.14;
@@ -721,6 +721,7 @@ export const ROOM_PLOTS: Record<Exclude<RoomId, PlotRoomId>, RoomPlot> = {
  * with its trade plot index (`TRADE.plots`). The slot keeps its blockout outline, its stakes and board
  * (src/entities/town/plots.ts). */
 export const PLOT_ROOMS: Record<PlotRoomId, RoomPlot & { plot: number }> = {
+  plot1: { ...townBuilding('plot1'), high: 3.7, plot: 2 },
   plot3: { ...townBuilding('plot3'), high: 3.7, plot: 0 },
 };
 /** Every room the town draws (src/entities/town/rooms.ts), and every door the ground grades to. */

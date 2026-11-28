@@ -11,6 +11,7 @@ export const PLAYER_R = 0.45;
 /** Walls and roofs of buildings you can walk into: solid to you (your mask has every bit), and the indoor camera leaves this
  * bit out of its arm, so the wall it's cut away doesn't push the lens into your back (docs/research/town-interiors.md). */
 export const ROOM_GROUP = 8;
+export const SCENERY_GROUP = 2;
 /** The caves' own colliders (src/physics/physics.ts GROUP.CAVE): only bodies underground touch them. */
 export const CAVE_GROUP = 4;
 export const PLAYER_MASS = 70;

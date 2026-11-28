@@ -1,8 +1,110 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chargeOf } from '../src/player/throw-curve.ts';
+import { bindToySweep, clearToyRelease } from '../src/physics/toy-clearance.ts';
+import { chargeOf, launchVelocity, profileFor } from '../src/player/throw-curve.ts';
+import { readFileSync } from 'node:fs';
+import * as THREE from 'three';
+import { sourceFunction, sourceModule } from '../dev/level/source.ts';
+import { BALL_R, PLAYER_R, HEAD_OFFSET, GRAVITY, ROOM_GROUP } from '../src/constants.ts';
+import { me, handPosition, throwFrom } from '../src/player/state.ts';
+import { definitions } from '../src/prefab/catalogue.ts';
 
 test('elapsed time cannot undercharge or overcharge a throw', () => {
   assert.equal(chargeOf(5000), 1);
   assert.equal(chargeOf(-20), 0);
+});
+
+test('ball and disc stay held when the Boathouse wall leaves no release clear of the player', () => {
+  const wall = definitions['town.room-plot3-hulls-0']!.colliders[0]!;
+  assert.ok(wall.shape === 'box');
+  const face = wall.at[2] + wall.half[2];
+  const previous = { body: me.body, yaw: me.yaw };
+  try {
+    me.yaw = 0;
+    const position = new THREE.Vector3(0, 0.6, face + PLAYER_R + 0.01);
+    me.body = {
+      position,
+      interpolatedPosition: position,
+      velocity: new THREE.Vector3(),
+      angularVelocity: new THREE.Vector3(),
+      force: new THREE.Vector3(),
+      quaternion: new THREE.Quaternion(),
+    };
+    bindToySweep((from, to, radius, options) => {
+      if (!(options.mask & ROOM_GROUP) || options.thin !== 'skip' || to.z - radius >= face) return -1;
+      const length = Math.hypot(to.x - from.x, to.y - from.y, to.z - from.z);
+      return (length * (from.z - radius - face)) / (from.z - to.z);
+    });
+    const release = sourceFunction<typeof import('../src/player/throw.ts').releasePoint>(
+      'src/player/throw.ts',
+      'releasePoint',
+      { handPosition, throwFrom, me, BALL_R, clearToyRelease },
+    );
+    const launch = sourceFunction<typeof import('../src/player/throw.ts').launch>('src/player/throw.ts', 'launch', {
+      THREE,
+      me,
+      profileFor,
+      releasePoint: release,
+      aimPoint: () => new THREE.Vector3(0, 1, -20),
+      aim: new THREE.Vector3(),
+      launchVelocity,
+    });
+    for (const [id, radius] of [
+      ['ball', BALL_R],
+      ['frisbee', 0.275],
+    ] as const) {
+      const throws: THREE.Vector3[] = [];
+      const record = (p: THREE.Vector3) => throws.push(p);
+      const toss = sourceFunction<(c: number) => void>('src/player/hands.ts', 'throwHeld', {
+        me,
+        heldId: () => id,
+        canThrow: () => true,
+        launch,
+        throwBall: record,
+        releaseDisc: record,
+      });
+      for (let cm = 46; cm <= 150; cm++) {
+        position.z = face + cm / 100;
+        const hand = id === 'ball' ? handPosition() : throwFrom();
+        const clipped = hand.z - radius < face;
+        toss(0.5);
+        const p = throws.pop();
+        if (p) {
+          assert.ok(p.z - radius >= face, `${id} crossed the wall at ${cm} cm`);
+          assert.ok(p.distanceTo(position) >= PLAYER_R + radius, `${id} overlapped the lower collider at ${cm} cm`);
+          if (clipped) {
+            const head = position.clone().setY(position.y + HEAD_OFFSET);
+            assert.ok(p.distanceTo(head) >= PLAYER_R + radius, `${id} pulled back into the head at ${cm} cm`);
+          } else assert.deepEqual(p, hand);
+        }
+        if (cm === 46) assert.equal(p, undefined, 'keep the toy held one centimetre outside contact');
+        if (!clipped || (id === 'ball' && cm === 125)) assert.ok(p, 'release when there is space');
+      }
+    }
+  } finally {
+    bindToySweep(() => -1);
+    Object.assign(me, previous);
+  }
+});
+
+test('a live disc tests the Boathouse wall before advancing through it', () => {
+  const wall = definitions['town.room-plot3-hulls-0']!.colliders[0]!;
+  assert.ok(wall.shape === 'box' && wall.group === 'room');
+  const face = wall.at[2] + wall.half[2];
+  const hit = { hitPointWorld: new THREE.Vector3(0, 1, face), hitNormalWorld: new THREE.Vector3(0, 0, 1) };
+  const flight = sourceModule<typeof import('../src/physics/flight.ts')>(
+    readFileSync(new URL('../src/physics/flight.ts', import.meta.url), 'utf8'),
+    {
+      THREE,
+      GRAVITY,
+      GROUP: { SCENERY: 2 },
+      ROOM_GROUP,
+      rayHit: () => hit,
+      raycastClosest: (a: THREE.Vector3, b: THREE.Vector3, options: { mask: number }) =>
+        (options.mask & ROOM_GROUP) !== 0 && a.z > face && b.z < face,
+    },
+  );
+  const p = new THREE.Vector3(0, 1, face + 0.1);
+  flight.stepFlight(p, new THREE.Vector3(0, 0, -15), true, 1 / 60, true);
+  assert.ok(p.z >= face, 'the disc crossed the back wall');
 });

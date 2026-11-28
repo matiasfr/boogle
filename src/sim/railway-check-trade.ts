@@ -87,7 +87,9 @@ export function checkTrade(w: World, tick = RAILWAY_MAX_INT) {
         (p.at === -1 && p.paid !== 0)
       )
         bad('plot bounds');
-      if (p.at < 0 ? p.kind !== 0 : !validPlotKind(threshold, p.kind)) bad('plot kind');
+      const first = plot(w, plotSlot(town, 0));
+      if ('spare' in threshold && p.at >= 0 && (first.at < 0 || first.at > p.at)) bad('plot order');
+      if (p.at < 0 ? p.kind !== 0 : !validPlotKind(threshold, p.kind, first.kind)) bad('plot kind');
       if (p.at >= 0 && (ts[town]!.wood < threshold.wood || ts[town]!.stone < threshold.stone)) bad('plot thresholds');
       paid += p.paid;
     }),

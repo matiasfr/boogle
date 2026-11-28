@@ -46,6 +46,7 @@ export function plotsStakedOf(
   const out: number[] = [];
   for (const [k, p] of (TRADE.plots[town] ?? []).entries()) {
     if (out.length >= TRADE.stakedAtOnce) break;
+    if ('spare' in p && !bought(0)) continue;
     if (!bought(k) && wood >= p.wood && stone >= p.stone) out.push(k);
   }
   return out;

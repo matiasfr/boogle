@@ -442,6 +442,11 @@ test('plotsStaked: the lowest unbought plots whose timber and stone are in, two 
     plotsStakedOf(0, 40, 16, (k) => k < 2),
     [2],
   );
+  assert.deepEqual(
+    plotsStakedOf(0, 40, 16, (k) => k === 1),
+    [0],
+    'yard first waits for the first hangout pick',
+  );
   assert.deepEqual(plotsStakedOf(1, 99, 99), [], 'no other town has priced plots');
   // On the world: freight-running has the first timber home, so plot 1 is staked.
   assert.deepEqual(plotsStaked(FREIGHT.w, 0), [0]);
@@ -1300,7 +1305,7 @@ test('S1: an above-cap saved box and a plot bought at its old price keep their b
       w.mut(Town, w.lookup(Town, 0)!)![goods] += n;
       w.mut(Yard, w.lookup(Yard, slot)!)!.made += n;
     }
-    Object.assign(w.mut(Plot, w.lookup(Plot, k)!)!, { at: PIER.t - TRADE.buildTicks, kind: k === 0 ? 1 : 0, paid });
+    Object.assign(w.mut(Plot, w.lookup(Plot, k)!)!, { at: PIER.t - TRADE.buildTicks, kind: [1, 0, 3][k], paid });
     const b = w.mut(Till, w.single(Till))!;
     b.spent += paid;
     b.landed += paid;

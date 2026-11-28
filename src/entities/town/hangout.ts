@@ -1,5 +1,7 @@
+import { Vector3 } from 'three';
+import { createBoathouse } from './boathouse.ts';
 import { BALL_R, PLAYER_R } from '../../constants.ts';
-import { TOWN_CHOICE, townBuilding } from '../../place/town-plan.ts';
+import { townChoice, TOWN_PLOTS, townBuilding } from '../../place/town-plan.ts';
 import { toWorld } from '../../place/layout.ts';
 import { H } from '../../place/terrain.ts';
 import { placeSeedStall } from '../../adapters/mushroom-stall.ts';
@@ -20,18 +22,19 @@ import { defineKind, spawn } from '../../entity/entity.ts';
 import { createOwnedView } from '../../render/owned-view.ts';
 
 defineKind('town-hangout', { update: 12 });
-export function spawnHangout(firstHouseDone: () => boolean) {
+export function spawnHangout(k: number, plotDone: (k: number) => boolean) {
   const owner = createOwnedView();
-  const yaw = townBuilding('plot3').yaw;
-  const { stall } = TOWN_CHOICE;
+  const yaw = townBuilding(TOWN_PLOTS.order[k]!).yaw;
+  const layout = townChoice(k);
+  const { stall } = layout;
   const sx = toWorld(stall.x);
   const seeds = placeSeedStall(owner, {
     prefab: 'mushrooms.stall',
-    id: 'town.seed-stall',
+    id: k === 0 ? 'town.seed-stall' : 'town.spare-seed-stall',
     pos: [sx, H(sx, stall.z), stall.z],
     rot: [yaw, 0, 0],
   });
-  const pads = TOWN_CHOICE.pads.map((point, i) => {
+  const pads = layout.pads.map((point, i) => {
     const x = toWorld(point.x),
       z = point.z,
       y = H(x, z);
@@ -39,7 +42,7 @@ export function spawnHangout(firstHouseDone: () => boolean) {
       'town.horn-pad',
       {
         prefab: 'town.horn-pad',
-        id: `town.horn-pad.${i}`,
+        id: k === 0 ? `town.horn-pad.${i}` : `town.spare-horn-pad.${i}`,
         pos: [x, y, z],
         rot: [yaw, 0, 0],
       },
@@ -47,6 +50,7 @@ export function spawnHangout(firstHouseDone: () => boolean) {
     );
     return { record, x, y, z, last: -Infinity, occupants: new Set<string>(), next: new Set<string>() };
   });
+  const porch = k === 2 ? createBoathouse(owner, new Vector3(sx, H(sx, stall.z), stall.z), yaw) : null;
   let shown = 0;
   return spawn({
     kind: 'town-hangout',
@@ -57,12 +61,13 @@ export function spawnHangout(firstHouseDone: () => boolean) {
       stall: seeds.root.visible,
       pads: pads.map((p) => ({ visible: p.record.root.visible, last: p.last })),
     }),
-    targets: seeds.targets,
-    update({ now }) {
-      const done = firstHouseDone();
+    targets: () => (shown === PLOT_KIND.disc ? (porch?.targets() ?? []) : seeds.targets()),
+    update({ now, dt }) {
+      const done = plotDone(k);
       const w = railwayWorldRead()?.world(),
-        id = w?.lookup(Plot, 0);
+        id = w?.lookup(Plot, k);
       const kind = done && id !== undefined ? (w?.get(Plot, id)?.kind ?? 0) : 0;
+      porch?.update(kind === PLOT_KIND.disc, now, dt);
       if (kind !== shown) {
         if (kind === PLOT_KIND.seeds && !standWhenClear(seeds.solids, () => seeds.setEnabled(true))) return;
         if (kind !== PLOT_KIND.seeds) seeds.setEnabled(false);

@@ -6,10 +6,10 @@ import { Vector3, Matrix4 } from 'three/webgpu';
 import { sourceFunction } from '../dev/level/source.ts';
 import { buildSeedWorld } from '../src/sim/railway-seeds.ts';
 import { plot } from '../src/sim/railway-rows.ts';
-import { Plot, Till } from '../src/sim/railway-components.ts';
+import { Plot, Till, Town, Yard } from '../src/sim/railway-components.ts';
 import { loaderBuilt, plotPrice, plotsStaked } from '../src/sim/railway-queries-trade.ts';
 import * as yard from '../src/place/yard-shape.ts';
-import { TRADE } from '../src/sim/railway-trade-layout.ts';
+import { TRADE, validPlotKind } from '../src/sim/railway-trade-layout.ts';
 import { loadLevelArtifact } from '../src/prefab/validate.ts';
 import { definitions } from '../src/prefab/catalogue.ts';
 import level from '../content/built/levels/town-plot-stakes.json' with { type: 'json' };
@@ -40,6 +40,7 @@ function plotsView(adapter: RailwayAdapter) {
     level,
     definitions,
     TRADE,
+    validPlotKind,
     ...plan,
     HALL,
     Vector3,
@@ -129,6 +130,38 @@ test('a choice board offers no buy hold outside the server purchase radius', () 
   assert.ok(!view.targets().some((target) => target.id === 'town.plot.0.1' && target.run));
 });
 
+test('lifting a thumb before one second cancels an affordable Boathouse purchase', () => {
+  const seed = buildSeedWorld('house-built');
+  const town = seed.w.mut(Town, seed.w.lookup(Town, 0)!)!;
+  for (const [index, material, minimum] of [
+    [0, 'wood', 40],
+    [1, 'stone', 16],
+  ] as const) {
+    const extra = Math.max(0, minimum - town[material]);
+    town[material] += extra;
+    seed.w.mut(Yard, seed.w.lookup(Yard, index)!)!.made += extra;
+  }
+  const till = seed.w.mut(Till, seed.w.single(Till))!;
+  till.boogles += 5000;
+  till.landed += 5000;
+  const room = railRoom(seed);
+  const c = room.join('alice', 'alice', 2);
+  room.ready();
+  const { view, read, position } = plotsView(c.adapter);
+  const board = plan.townChoice(2).boards[1]!;
+  position.x = board.x + 1000;
+  position.z = board.z;
+  view.update(read(), 0);
+  const target = view.targets().find((t) => t.id === 'town.plot.2.3');
+  assert.ok(target?.run);
+  target.run();
+  view.update(read(), 0.08);
+  // The touch button calls hands.interactUp(), which invokes the pressed target's release callback.
+  target.release?.();
+  for (let i = 0; i < 70; i++) view.update(read(), 1 / 60);
+  assert.notEqual(target.blocked, 'Waiting for town', 'an 80 ms tap queued a purchase');
+});
+
 test('the toy shown during a hold matches the selected board', () => {
   const room = railRoom(buildSeedWorld('house-ready'));
   const c = room.join('alice', 'alice', 2);
@@ -138,12 +171,12 @@ test('the toy shown during a hold matches the selected board', () => {
   view.update(read(), 0);
   const target = pickInteract(view.targets(), position.x, position.z, 0, 1);
   assert.equal(target?.id, 'town.plot.0.2');
-  assert.deepEqual(toyGhosts.map((g) => g.visible), [false, true]);
+  assert.deepEqual(toyGhosts.map((g) => g.visible), [false, true, false, false, false]);
   target!.run!();
   view.update(read(), 0.5);
   assert.deepEqual(
     toyGhosts.map((g) => g.visible),
-    [false, true],
+    [false, true, false, false, false],
   );
 });
 

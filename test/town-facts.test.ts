@@ -82,7 +82,9 @@ test('town flips only at the first house completion; stone needs the third price
     assert.ok(waited++ < 100000, 'third plot becomes affordable');
     advance(stone, 1);
   }
-  assert.equal(act(stone, 'a', 'rail.buy', { id: 2 }), 1);
+  assert.equal(act(stone, 'a', 'rail.buy', { id: 2, kind: 1 }), 0, 'first plot already supplies seeds');
+  assert.equal(act(stone, 'a', 'rail.buy', { id: 2, kind: 3 }), 1);
+  assert.equal(act(stone, 'b', 'rail.buy', { id: 2, kind: 2 }), 0, 'second buyer spends nothing');
   assert.equal(townHas(townRead(stone.w, stone.t + 99), 'stone'), false);
   assert.equal(townHas(townRead(stone.w, stone.t + 100), 'stone'), true);
 });

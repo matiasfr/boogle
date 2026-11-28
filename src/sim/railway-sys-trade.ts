@@ -19,6 +19,7 @@ import {
   deckHeld,
   plotBought,
   plotPrice,
+  plotSlot,
   plotsStaked,
   fareOf,
   lineYard,
@@ -196,7 +197,13 @@ export const buy = defineSystem(
       k = e.id % 16;
     const offer = TRADE.plots[town]?.[k];
     const kind = e.kind === undefined ? 0 : e.kind;
-    if (!offer || !validPlotKind(offer, kind) || plotBought(w, e.id) || !plotsStaked(w, town).includes(k)) return 0;
+    if (
+      !offer ||
+      !validPlotKind(offer, kind, w.get(Plot, w.lookup(Plot, plotSlot(town, 0))!)!.kind) ||
+      plotBought(w, e.id) ||
+      !plotsStaked(w, town).includes(k)
+    )
+      return 0;
     const price = plotPrice(w, town, k, pricePct),
       tid = w.single(Till);
     if (w.get(Till, tid)!.boogles < price) return 0;
