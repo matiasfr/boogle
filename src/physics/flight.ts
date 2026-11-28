@@ -64,6 +64,28 @@ const underwater = (p: V3) => waterField.nearby(p).height > p.y + 0.05;
 const normal = new THREE.Vector3(),
   vBefore = new THREE.Vector3();
 
+function bounce(p: THREE.Vector3, v: THREE.Vector3, h: typeof hit, glide: boolean) {
+  normal.set(h.hitNormalWorld.x, h.hitNormalWorld.y, h.hitNormalWorld.z);
+  p.set(h.hitPointWorld.x, h.hitPointWorld.y, h.hitPointWorld.z).addScaledVector(normal, 0.03);
+  const into = v.dot(normal);
+  if (into < 0) {
+    v.addScaledVector(normal, -into);
+    v.multiplyScalar(glide ? SLIDE.glide : SLIDE.plain);
+    v.addScaledVector(normal, -into * (glide ? BOUNCE.glide : BOUNCE.plain));
+  }
+  return normal.y > 0.6 && v.length() < REST_SPEED;
+}
+
+const discNext = new THREE.Vector3();
+/** Advance the shared disc along its glide and sweep the step against scenery. */
+export function stepDisc(p: THREE.Vector3, v: THREE.Vector3, dt: number) {
+  discNext.copy(p);
+  stepFlight(discNext, v, true, dt);
+  const h = cast(p, discNext);
+  if (!h) p.copy(discNext);
+  else if (bounce(p, v, h, true)) v.set(0, 0, 0);
+}
+
 // Where something comes down if it is dropped at p: the first surface below it, or the ground.
 export function dropPoint(p: V3) {
   const h = cast(p, { x: p.x, y: toyGround.under(p.x, p.z) - 0.5, z: p.z });
@@ -82,18 +104,11 @@ export function flyPath(p0: THREE.Vector3, v0: THREE.Vector3, glide: boolean) {
     stepFlight(next, v, glide);
     const h = cast(p, next);
     if (h) {
-      normal.set(h.hitNormalWorld.x, h.hitNormalWorld.y, h.hitNormalWorld.z);
-      p.set(h.hitPointWorld.x, h.hitPointWorld.y, h.hitPointWorld.z).addScaledVector(normal, 0.03);
       v.copy(vBefore);
-      const into = v.dot(normal);
-      if (into < 0) {
-        v.addScaledVector(normal, -into);
-        v.multiplyScalar(glide ? SLIDE.glide : SLIDE.plain);
-        v.addScaledVector(normal, -into * (glide ? BOUNCE.glide : BOUNCE.plain));
-      }
+      const settled = bounce(p, v, h, glide);
       bounces++;
       points.push(p.clone());
-      if ((normal.y > 0.6 && v.length() < REST_SPEED) || bounces >= MAX_BOUNCES) return land(points, p);
+      if (settled || bounces >= MAX_BOUNCES) return land(points, p);
       continue;
     }
     p.copy(next);

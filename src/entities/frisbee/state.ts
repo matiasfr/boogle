@@ -2,7 +2,7 @@
 // owner starts at the last sampled pose, including its velocity on disconnect.
 import { Vector3 } from 'three';
 import { REACH } from '../../constants.ts';
-import { stepFlight, STEP } from '../../physics/flight.ts';
+import { stepDisc, STEP } from '../../physics/flight.ts';
 import { toyGround } from '../../physics/toy-ground.ts';
 import { me, handPosition } from '../../player/state.ts';
 import { createOwnerSync, type OwnerClaim } from '../../netplay/owner-sync.ts';
@@ -114,7 +114,7 @@ export function updateDisc(now: number, dt: number) {
   }
   if (!disc.v.lengthSq()) return;
   for (let left = dt; left > 0; left -= STEP) {
-    stepFlight(disc.p, disc.v, true, Math.min(STEP, left));
+    stepDisc(disc.p, disc.v, Math.min(STEP, left));
     const { x, y, z } = disc.p;
     if (!toyGround.inside(x, z) || y < -1) {
       recallDisc();
