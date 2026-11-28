@@ -12,7 +12,12 @@ export function friendArrivalStep(first: boolean, recent: boolean, trains: boole
 }
 
 /** Filter before ranking: the friend working nearest the bill must themselves be within reach of an open halt. */
-export function friendDestination(friends: readonly XZ[], standing: readonly ReturnCandidate[], home: XZ, works: XZ) {
+export function friendDestination<T extends XZ>(
+  friends: readonly T[],
+  standing: readonly ReturnCandidate[],
+  home: XZ,
+  works: XZ,
+) {
   const visitors = friends
     .filter((p) => distance(p, home) > 150)
     .sort((a, b) => distance(a, works) - distance(b, works));

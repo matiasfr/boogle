@@ -176,6 +176,12 @@ export function searchLandings(list: readonly ReturnCandidate[]) {
     done = false;
   return {
     current: () => (done ? null : (list[k] ?? null)),
+    /** Another friend is at a different halt. Warm its scenery within the original search budget. */
+    retarget(platforms: readonly ReturnCandidate[]) {
+      list = platforms;
+      k = 0;
+      since = null;
+    },
     step(
       now: number,
       probes: {

@@ -56,7 +56,7 @@ export const returnSettle = {
     if (pending && !placing && now - asked > LIMIT_MS) pending = false;
     return pending;
   },
-  /** Once a friend's halt is chosen the bounded landing search owns release. Never move a published joiner. */
+  /** The room has answered. Arrival now owns release after either the friend's or the ordinary landing. */
   claimPlacement() {
     placing = this.pending();
     return placing;
