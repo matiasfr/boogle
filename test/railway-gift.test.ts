@@ -62,9 +62,8 @@ for (const [stage, k, expected] of [
   });
 }
 
-test('the first Q6 kit substitutes eight donated logs and survives a checkpoint before hand feeding', () => {
+function beforeFirstKit() {
   const s = unaudited(buildSeedWorld('boiler'));
-  chopTo(s, 'a', 8);
   for (let i = 0; cart(s.w).phase !== CART_PHASE.REST; i++) {
     assert.ok(i < 3000);
     advance(s, 1);
@@ -72,6 +71,42 @@ test('the first Q6 kit substitutes eight donated logs and survives a checkpoint 
   assert.equal(act(s, 'b', 'rail.boilerTake', { revision: boiler(s.w).revision }), 1);
   assert.equal(act(s, 'b', 'rail.boilerFit', { revision: boiler(s.w).revision }), 1);
   assert.equal(workNeed(s.w, 2), 32);
+  return s;
+}
+
+test('the kiln car leaves queued Q6 timber for a second dispatch', () => {
+  const s = beforeFirstKit();
+  for (let fed = 0; fed < 24;) {
+    chopTo(s, 'b', 8);
+    const n = act(s, 'b', 'rail.deposit', { station: 'Q6', n: Math.min(8, 24 - fed), kind: 0 });
+    assert.ok(n > 0);
+    fed += n;
+  }
+  assert.equal(act(s, 'b', 'rail.breaker'), 1);
+  assert.equal(act(s, 'b', 'rail.strike', { id: 0 }), 1);
+  assert.equal(act(s, 'b', 'rail.strike', { id: 1 }), 1);
+  give(s);
+  give(s);
+  give(s);
+  assert.equal(rail(s.w).rack, 24);
+  const minted = rail(s.w).depotProduced;
+  for (let i = 0; !workAboard(s.w, 1); i++) {
+    assert.ok(i < 200);
+    advance(s, 1);
+  }
+  assert.equal(workAboard(s.w, 1), 16);
+  assert.equal(rail(s.w).depotProduced, minted, 'eight Q6 logs are already queued');
+  for (let i = 0; rail(s.w).depotGiftDelivered !== 8; i++) {
+    assert.ok(i < 6000);
+    advance(s, 1);
+    railwayCheck(s.w);
+  }
+  assert.equal(rail(s.w).depot, 8);
+  assert.equal(qjob(s.w, 5).stock, 24);
+});
+
+test('the first Q6 kit substitutes eight donated logs and survives a checkpoint before hand feeding', () => {
+  const s = beforeFirstKit();
   give(s);
   assert.deepEqual(worksThanks(s.w, 2), ['a']);
   assert.deepEqual(worksThanks(s.w, 1), []);

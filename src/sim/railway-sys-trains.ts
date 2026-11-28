@@ -3,7 +3,7 @@
 // works' to Ring Island and its steel home: ./railway-sys-steel.ts), the footing wagon (the pier's twelve to the Pier,
 // then Ring Island's to the Railhead) and the cart's hold on line 1.
 import { defineSystem, type World } from '../ecs/index.ts';
-import { LINE2_KIT } from './railway-line2-layout.ts';
+import { LINE2_KIT, LINE2_STATIONS } from './railway-line2-layout.ts';
 import { CART_PHASE } from './railway-cart.ts';
 import {
   TRAIN,
@@ -67,7 +67,7 @@ import {
   worksId,
   type Row,
 } from './railway-queries.ts';
-import { QUARRY_YARD, workDestination, workNeed, workRoom } from './railway-queries-gift.ts';
+import { QUARRY_YARD, workDestination, workNeed, workQueued, workRoom } from './railway-queries-gift.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 import { freightArrives, freightLoads, ridersArrive, ridersBoard } from './railway-sys-trade.ts';
 import { lapSlots, runLine } from './railway-lap.ts';
@@ -324,7 +324,9 @@ function trainIO(w: World, headPct: number, pct: TradePct, tick: number, returnL
       const kit = kitJob(w);
       if (!deckHeld(r) && r.at === 0 && kit >= 0 && w.get(QJob, qjobId(w, kit))!.start < 0) {
         const need = depotNeed(w, kit, w.get(QJob, qjobId(w, kit))!);
-        const n = Math.min(LINE2_KIT.logs - r.logs, need.logs);
+        // Gifts for a different stop need another car. Mint only the Q kit that the queued timber cannot cover.
+        const queued = w.get(Rail, railId(w))!.rack ? workQueued(w, LINE2_STATIONS[kit]!.kitStop!) : 0;
+        const n = Math.min(LINE2_KIT.logs - r.logs, need.logs - queued);
         const rails = Math.min(LINE2_KIT.rails - r.rails, need.rails, w.get(Forge, forgeId(w))!.rack);
         if (n || rails) {
           const rail = w.mut(Rail, railId(w))!,

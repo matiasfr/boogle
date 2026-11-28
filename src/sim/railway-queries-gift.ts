@@ -90,7 +90,12 @@ export function giftRides(w: World) {
   }
   return GIFT_LEGS.some((k) => giftPourRoom(w, k) > 0);
 }
-export const giftQueued = (w: World) => (giftRides(w) ? w.get(Rail, w.single(Rail))!.rack : 0);
+export function giftQueued(w: World) {
+  const stop = workDestination(w);
+  if (stop) return workQueued(w, stop);
+  const room = GIFT_LEGS.reduce((sum, k) => sum + giftPourRoom(w, k), 0);
+  return Math.min(w.get(Rail, w.single(Rail))!.rack, room);
+}
 export function giftInTransit(w: World) {
   let total = giftAboard(w);
   w.each([LegYard], (_id, yard) => {
