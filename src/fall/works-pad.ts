@@ -1,4 +1,4 @@
-import { CAMP_PAD, HALL_PAD } from '../place/works-landing.ts';
+import { CAMP_PAD, HALL_PAD, facing } from '../place/works-landing.ts';
 import { job } from '../sim/railway-rows.ts';
 import { railwayMirror } from '../world/game-world.ts';
 import { remotes } from '../netplay/net.ts';
@@ -11,7 +11,7 @@ export function worksLanding() {
     const x = pad.x + side * Math.cos(pad.yaw);
     const z = pad.z - side * Math.sin(pad.yaw);
     if (visitors.every(peer => Math.hypot(peer.target.x - x, peer.target.z - z) > 2.5))
-      return { x, z, yaw: pad.yaw };
+      return side === 0 ? pad : facing(x, z, pad.focus);
   }
   return pad;
 }

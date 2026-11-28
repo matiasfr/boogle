@@ -1,6 +1,6 @@
 ﻿# First fall at the works
 
-The owner answered question 1 on 28 November 2026 and accepted option A, including the hall fallback when state is unknown. See the [dated decision](https://github.com/matiasfr/boogle/commit/4da4c528686168281938e018407f74170d9d0ea6) and [start-flow brief](../brainstorms/start-flow.md). The axe and boiler have their own build.
+The owner answered question 1 on 28 November 2026 and accepted option A, including the hall fallback when state is unknown. See the [dated decision](../decisions-controls.md#d-2026-11-28-first-fall-lands-at-the-works) and [start-flow brief](../brainstorms/start-flow.md). The axe and boiler have their own build.
 
 ## Build order
 
@@ -42,6 +42,14 @@ The hall centre is 7 m away, but the board stands inside its north bay and faces
 4 Decided, 3 Default, 0 New. The owner resolved the brainstorm's New call. The walk from the dock used 101 seconds of the two-minute budget before the axe. [Level design](../research/level-design.md) supports the three-second walk to the machine. [Route contract](../research/route-contract.md) keeps the work gate. [Progression flow](../research/progression-flow-layout.md) and [wordless onboarding](../research/wordless-onboarding.md) favour an obvious next goal and a route back. Finding for step 2: face the actual board toward the pad. Terrain clearance alone cannot establish a readable sign. No new player words. Sleeves' existing direction to follow the path to Camp remains applicable to someone who walks back to town before taking the axe.
 
 The first phone still from (980,−150) placed the resident at the edge. The first bill was also hidden during the asleep phase. Step 1 moved the pad around the same ridge and exposes the existing bill before the axe hand-off. A two-tab run ended with one guest in the water. The arrival now tries 3 m either side when a peer occupies the intended column.
+
+## As built
+
+1. `src/place/works-landing.ts` holds the two pads’ world coordinates and facing. `src/fall/works-pad.ts` reads the confirmed job at entry. The feature, stage, director and title use that single choice through touchdown. The earlier village `SPAWN` and shore terrain constants still serve the level tools.
+2. Railway arrival uses the same choice after the existing return search. The hall board position comes from `home-station.ts`. The station view turns the sign toward the square. Removing the dock post also removed its local prefab definitions, compiled entries, clearance-specific test and the dock-only inspection. The works-board bot now starts at the hall. At Camp, `view.ts` shows the active bill while the machine sleeps and `stations.ts` turns the first sign toward arrivals.
+3. The first route in the production bot walks straight to the machine. The arrival scenario now checks the actual Camp coordinates as well as standing dry. The trace and the contribution clock already use touchdown and the authenticated player's accepted work independently of place. The level audit checks dry ground, both terrain sight lines and connection to the existing walking network.
+
+A real-time bot in a normal first-fall room recorded its first accepted deposit at world (996,−139), **22.4 s from touchdown**, session `mwzshdtp-xm74ngh3`. This is one bot run. The two-tab check saw both peers grounded at (987.51,−161.92) and (984.84,−160.63). The guest reloaded dry at (984.33,−161.64). A q5-stocked room produced the [hall-board view](start-landing/hall.png). Not tested on a device.
 
 ## Open questions
 

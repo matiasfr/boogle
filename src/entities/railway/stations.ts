@@ -24,6 +24,7 @@ import { kitBatch, stationKit } from '../../place/look-kit.ts';
 import { GOODS, noStock, type Goods, type Station, type Stock } from '../../place/layout.ts';
 import { RAIL_SIZE, logStackMesh, setStackLog, stackSlot } from '../../place/pieces.ts';
 import { addFoot } from '../../place/sites.ts';
+import { CAMP_PAD } from '../../place/works-landing.ts';
 import {
   FRAME_D,
   FRAME_W,
@@ -325,6 +326,12 @@ export function buildStation(spec0: Station, place: FrameAt, owner: OwnedView) {
   let bx = x + Math.sin(yaw) * billEnd + lx * billOut,
     bz = z + Math.cos(yaw) * billEnd + lz * billOut,
     byaw = yaw;
+  // The Camp approach sees the near end of T1. Its far sign disappears behind the sleeping layer.
+  if (spec0.id === 'T1') {
+    bx = x - Math.sin(yaw) * billEnd;
+    bz = z - Math.cos(yaw) * billEnd;
+    byaw = Math.atan2(CAMP_PAD.x - bx, CAMP_PAD.z - bz);
+  }
   // The forge's bill stands beside its train-facing receiver, clear of the stock and the east wall.
   if (spec0.id === 'F1') {
     bx = x - 1.8;
