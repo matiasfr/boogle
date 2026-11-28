@@ -1134,6 +1134,13 @@ async function observeWorks(read: unknown, confirmed: Client['mirror']['confirme
       rules: { roster: { indexOf: (pid: string) => ['a', 'b'].indexOf(pid), nameOf: (i: number) => ['a', 'b'][i] } },
       islandGround: () => ({}),
       createDockPost: () => ({ retry() {} }),
+      createRouteGuides: () => ({
+        read: (w: ReturnType<typeof confirmed>, work: RoomWorks) => {
+          assert.equal(w, confirmed());
+          assert.equal(work.site, roomWorks(w).site);
+        },
+        update() {},
+      }),
       createWorksBoard: () => (work: RoomWorks, names: string[]) => {
         sites.push(work.site);
         thanks = names;

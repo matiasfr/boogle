@@ -634,6 +634,12 @@ home and High Gorge). Every new character is unnamed (role label only) with mark
 copy, uses `addLooker` with no collider, and settles into one relaxed idle remark with no `…` or wave once its phase
 is done. Local presentation over accepted `ReadWorld` rows; no sim, wire or save changes.
 
+At the five Wave 2 hubs, look for the gorge watch on the approach to the stair, the junction signalman on Bell Rock’s
+lower deck, the landing hand on West landing’s landward platform beside the apron, the canopy hand on Canopy Town’s
+cloth-side deck, and the quay hand on Port Quay’s Roundhouse-side platform. They offer Talk after their station’s
+phase begins. At the fork, the signalman can help with the Canopy barrier while the landing hand helps with the
+sea-cave plug. At Port Quay the hand directs a cave-first party back to Bell Rock before White Wall construction.
+
 **Walking-in composition, 4 November:** Station 3's existing bill sits on the source side of its pile so
 the unchanged `great beam 0/1` row stays visible. The receiver, feeder, machine and crossing fit are retained;
 the 14 November prow move replaces the old 53 m uphill haul with 35 m from beyond Station 3. The proper-axe

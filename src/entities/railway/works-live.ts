@@ -19,10 +19,11 @@ import { createRingFolk } from '../ring-folk/view.ts';
 import { createRingSteel } from '../ring-steel/view.ts';
 import { createLegView } from '../route-greybox/leg-view.ts';
 import { createStationGuides } from './station-guides.ts';
+import { createRouteGuides } from '../route-greybox/phase-guides.ts';
 import { giftQueued, giftAboard, giftRides, worksThanks } from '../../sim/railway-queries-gift.ts';
 import { railwayMirror, rules } from '../../world/game-world.ts';
 import { roomWorks, WORKS_STEPS } from '../../sim/railway-queries-room.ts';
-import { boiler, works as worksRow } from '../../sim/railway-rows.ts';
+import { boiler, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
 import { createWorksSignal } from './works-signal.ts';
 import { islandGround } from '../ring-island/state.ts';
 import { createWorksBoard } from './works-board-state.ts';
@@ -61,6 +62,7 @@ export async function createRailwayWorksLive(
   const meet = createRingMeet(adapter, owner, { ...deps, landed: leaf.landed });
   const folk = createRingFolk(adapter, owner);
   const guides = createStationGuides(adapter, owner);
+  const routeGuides = createRouteGuides(owner, () => adapter.read.ready() && adapter.read.whole());
   const signal = createWorksSignal(owner, await islandGround());
   const updateBoard = createWorksBoard(owner);
   const dock = createDockPost(owner);
@@ -71,6 +73,7 @@ export async function createRailwayWorksLive(
     const world = railwayMirror.confirmed();
     if (world !== publication || !current) {
       current = roomWorks(world);
+      routeGuides.read(world as ReadWorld, current);
       const routeSection = routeSections.has(current.site);
       const names = routeSection
         ? worksThanks(world)
@@ -125,11 +128,13 @@ export async function createRailwayWorksLive(
     update(dt: number) {
       updateSignal(dt);
       for (const view of views) view.update(dt);
+      routeGuides.update(dt);
     },
     lateUpdate() {
       footings.lateUpdate();
       folk.lateUpdate();
       guides.lateUpdate();
+      routeGuides.lateUpdate();
     },
     prePhysics: footings.prePhysics,
     accepted(e: RailwayAccepted) {
@@ -157,9 +162,11 @@ export async function createRailwayWorksLive(
       ...steel.targets(),
       ...install.targets(),
       ...leg.targets(),
+      ...routeGuides.targets(),
     ],
     inspect: () => ({
       dockBoard: dock.rows(),
+      routeGuides: routeGuides.inspect(),
       ...works.inspect(),
       ...railhead.inspect(),
       ...leaf.inspect(),
