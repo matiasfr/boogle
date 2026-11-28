@@ -25,7 +25,7 @@ const script = await build({
   ],
 });
 
-function page(read: (path: string) => Response) {
+function page(read: (path: string) => Response, search = '') {
   let now = 100000;
   let navigations = 0;
   let scheduled: (() => void) | undefined;
@@ -48,7 +48,7 @@ function page(read: (path: string) => Response) {
     crypto,
     console,
     fetch: async (url: URL | string) => read(new URL(url).pathname),
-    location: { href: 'https://site.example/?from=start', search: '?from=start', reload: () => navigations++ },
+    location: { href: 'https://site.example/' + search, search, reload: () => navigations++ },
     localStorage: storage,
     sessionStorage: storage,
     Date: { now: () => now },
@@ -105,6 +105,15 @@ for (const legacy of [false, true]) {
   });
 }
 
+test('a first-time guest can authenticate on the matching release', async () => {
+  const tab = page((path) => {
+    assert.equal(path, '/account/guest');
+    return Response.json({ pid: 'newguest', expiresAt: 123456789 });
+  });
+  await tab.client.prepareAccount();
+  assert.equal(tab.client.accountStatus().pid, 'newguest');
+  assert.equal(tab.client.roomAuthentication().t, 'auth');
+});
 test('a first-time guest recovers when registration overlaps host replacement', async () => {
   let offline = true;
   const tab = page((path) => {
@@ -134,7 +143,7 @@ test('a jump-in still follows a deploy when the old host disappears after prefli
     if (path === '/version.json')
       return Response.json({ build: 'next-page', serverBuild: 'next-host', world: WORLD_NS });
     return Response.json(['next-page', 'next-host']);
-  });
+  }, '?from=start');
   void tab.client.jumpIn('start');
   await new Promise<void>((done) => setImmediate(done));
   assert.equal(posts, 1, 'the old host passed the preflight');
