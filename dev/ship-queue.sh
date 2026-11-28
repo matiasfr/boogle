@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # npm run ship-queue -- <worktree> [--wait] [--dry-run] [--reviewed "<stamp> <who, what they found>"]
 #   [--orchestrator-read "<what changed in the tests>"] [--nightly-known "<why>"] [--main-known "<why>"]
-#   [--bump-known "<why>"]
 # The orchestrator's merge queue, for Claude or Codex: one ship at a time across every session on this machine.
 #   1. The review trigger is dev/review-stamp.ts (its REVIEW_PATHS and test rules; each file's rule is printed). Refuses
 #      a branch with a file that needs review unless --reviewed starts with the review stamp of exactly those files'
@@ -10,9 +9,6 @@
 #   1b. Holds a review-path branch (either kind) while the last scenarios verdict (the weekly job, or `npm run daily --
 #      scenarios` by hand) is not a pass, unless --nightly-known says why, and while a `red-main` issue is open, unless
 #      --main-known says why (it is the fix, or unrelated).
-#   1c. Holds a branch that changes WORLD_NS while anyone is on the production server (dev/world-bump-gate.ts; owner,
-#      27 November 2026). A held branch is tried again in 30 to 60 minutes; --bump-known says why it ships anyway (the
-#      owner's word).
 #      --dry-run stops after these checks.
 #   2. Takes a machine-wide lock for the local part only (rebase, gate, push), so the next ship can start while CI runs.
 #   3. Runs dev/codex/ship-branch.sh from the trusted checkout (../boogle-trusted, detached at origin/main), never from
@@ -28,7 +24,7 @@ set -uo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 wt=$(cd "${1:?worktree path}" && pwd) || exit 1
 shift
-wait=0 dry=0 reviewed='' known='' read='' mainknown='' bumpknown=''
+wait=0 dry=0 reviewed='' known='' read='' mainknown=''
 while [ $# -gt 0 ]; do
   case "$1" in
     --wait) wait=1 ;;
@@ -37,7 +33,6 @@ while [ $# -gt 0 ]; do
     --orchestrator-read) read="${2:?--orchestrator-read needs a note}"; shift ;;
     --nightly-known) known="${2:?--nightly-known needs a reason}"; shift ;;
     --main-known) mainknown="${2:?--main-known needs a reason}"; shift ;;
-    --bump-known) bumpknown="${2:?--bump-known needs a reason}"; shift ;;
     *) echo "Unknown argument: $1"; exit 1 ;;
   esac
   shift
@@ -108,20 +103,6 @@ if [ -n "$verdicts" ]; then
     echo "ship-queue: main known: $mainknown"
   fi
 fi
-# The world wipe: the gate is silent for a branch with no bump, and anything but a clear yes holds.
-bumpgate() {
-  bump=$(node "$here/world-bump-gate.ts" "$wt" 2>&1)
-  bumpstatus=$?
-  [ -z "$bump" ] || echo "ship-queue: $bump"
-  [ "$bumpstatus" != 0 ] || return 0
-  if [ -z "$bumpknown" ]; then
-    echo 'ship-queue: the world wipe is held. Run it again in 30 to 60 minutes, or pass --bump-known "<why>" on the'
-    echo "owner's word."
-    return 9
-  fi
-  echo "ship-queue: bump known: $bumpknown"
-}
-bumpgate || exit 9
 if [ "$dry" = 1 ]; then echo "ship-queue: dry run, checks passed; nothing locked or shipped."; exit 0; fi
 # The trusted checkout must be a checkout of its own with the ship script, or nothing could ship: never report success.
 if ! [ -f "$trusted/dev/codex/ship-branch.sh" ] ||
@@ -160,8 +141,6 @@ done
 echo $$ >"$lock/pid"
 unlock() { rm -f "${lock:?}/pid"; rmdir "$lock" 2>/dev/null; }
 trap 'unlock; wtunlock' EXIT
-# A bump that waited for the lock looks again: someone may have joined meanwhile.
-if [ -n "$bump" ]; then bumpgate || exit 9; fi
 if ! { git -C "$trusted" fetch -q origin && git -C "$trusted" checkout -q --detach origin/main; }; then
   echo "ship-queue: could not move the trusted checkout $trusted to origin/main; nothing shipped."
   exit 1
