@@ -15,7 +15,12 @@ export function mountQuayEdges(owner: OwnedView) {
     boxes.push({ matrix: matrix.setPosition(x, y, -z), colour });
   }
   const timber = '#7a5430';
+  const boardTones = ['#91775c', '#8b735b', '#947d65', '#8e7760', '#89725d'];
   for (const sign of [-1, 1]) {
+    // Cross-laid wharf boards span each four-metre deck between the approach ramp and buffers.
+    for (let i = 0; i < 80; i++) {
+      box(-19.75 + i * 0.5, 3.83, sign * 5.8, 0.484, 0.16, 4.02, boardTones[i % boardTones.length]!);
+    }
     box(0, 3.58, sign * 7.8, 40, 0.48, 0.14, timber);
     box(20, 3.58, sign * 5.8, 0.14, 0.48, 4, timber);
   }
