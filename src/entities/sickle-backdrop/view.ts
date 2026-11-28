@@ -1,6 +1,19 @@
-// One merged material, no shadow pass: silhouettes from the same map as the walkable planning greybox.
+// Horizon silhouettes from the same map as the walkable planning greybox.
 import * as THREE from 'three/webgpu';
-import { attribute, mix, normalGeometry, positionGeometry, vertexColor, vertexStage } from 'three/tsl';
+import {
+  attribute,
+  cameraPosition,
+  color,
+  mix,
+  mx_noise_float,
+  mx_worley_noise_vec2,
+  normalGeometry,
+  positionGeometry,
+  positionWorld,
+  smoothstep,
+  vertexColor,
+  vertexStage,
+} from 'three/tsl';
 import html from '../../../docs/world/map-prototypes.html?raw';
 import { clipHalf, layout, parseMapPage, type XZ } from '../../sickle/map-data.ts';
 import { rockLayers } from '../../place/ground-material.ts';
@@ -50,6 +63,7 @@ function boreHole(a: XZ, b: XZ): [number, number] | null {
 export function createBackdrop() {
   const map = layout(parseMapPage(html), 'sickle', 'A');
   const parts: THREE.BufferGeometry[] = [];
+  let saltFlat: THREE.Mesh | undefined;
   const sandstone = new Set<THREE.BufferGeometry>();
   const stackPieces = new Map<string, THREE.Matrix4[]>();
   const matrix = new THREE.Matrix4();
@@ -169,7 +183,20 @@ export function createBackdrop() {
       continue;
     }
     cap(outline, top);
-    add(geometry(), stack ? '#725940' : land.horizon ? '#7d8a84' : WALK);
+    if (land.id === 'salt-land') {
+      // Salt crystallises at the edges of shallow pans. The shore band covers the outer rim.
+      const p = positionWorld.xz;
+      const damp = mx_noise_float(p.mul(0.045));
+      const cells = mx_worley_noise_vec2(p.mul(0.31).add(damp.mul(0.42)));
+      const crust = smoothstep(0.015, 0.1, cells.y.sub(cells.x)).oneMinus();
+      const bed = mix(color('#998d82'), color('#c0b4a3'), smoothstep(-0.5, 0.45, damp));
+      const salt = new THREE.MeshStandardNodeMaterial({ roughness: 1, side: THREE.DoubleSide });
+      // Let single seams dissolve into the broad salt colour at a rider’s grazing angle.
+      const near = smoothstep(12, 42, cameraPosition.xz.distance(p)).oneMinus();
+      salt.colorNode = mix(bed, color('#d3c8b6'), crust.mul(near).mul(0.52));
+      saltFlat = new THREE.Mesh(geometry(), salt);
+      saltFlat.name = 'Saltpan crust';
+    } else add(geometry(), stack ? '#725940' : land.horizon ? '#7d8a84' : WALK);
     vertices.length = 0;
     // A few blades rooted in the north cap, leaving the pickup plinth and the way off the stair clear.
     if (land.id === 'stack-n') {
@@ -345,6 +372,7 @@ export function createBackdrop() {
   for (const part of parts) part.dispose();
   const horizon = new THREE.Mesh(geometry, material);
   horizon.name = 'Sickle Isles horizon';
+  if (saltFlat) horizon.add(saltFlat);
   freezeInPlace(horizon);
   void terrainKitGeometry()
     .then((pieces) => {
