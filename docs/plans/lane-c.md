@@ -167,7 +167,7 @@ The first was answered on 28 November. The rest proceed on their recommendation 
 1. **May the beach ball be thrown in the live game?** **Answered 28 November 2026.** The owner said “Yes and yes” to the ball and the built Boathouse disc. [Controls decision](../decisions-controls.md#d-2026-11-28-ball-and-disc-throw). Restore the two nightly throw checks.
 2. **The brief's Offer 1 pick, Seed Shed or Horn Pavilion, with the driver moving in either way.** Proceeds as recommended (the brief's question 1).
 3. **Mushrooms grow only within the Round on production.** Proceeds (level finding 4).
-4. **The unchosen toy on a later plot.** Not in this build: plot 1 (Offer 3) stays a plain house until a later plan gives it a `choices` row. Proceeds.
+4. **The unchosen toy on a later plot.** Part 3 brings the spare toy back on plot 1 alongside the Frisbee Boathouse. Recommend keeping both at the same price and rider income.
 
 ## Design review (2026-11-27)
 

@@ -62,10 +62,10 @@ onRemotePresence((r, pr, time) => {
       c.e! < 2 ** 48 &&
       Array.isArray(c.p) &&
       c.p.length === 3 &&
-      c.p.every((n) => Math.abs(n) < 16384) &&
+      c.p.every((n) => typeof n === 'number' && Math.abs(n) < 16384) &&
       Array.isArray(c.v) &&
       c.v.length === 3 &&
-      c.v.every((n) => Math.abs(n) <= 256)
+      c.v.every((n) => typeof n === 'number' && Math.abs(n) <= 256)
       ? c
       : null,
     time,
