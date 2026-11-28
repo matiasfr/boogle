@@ -26,7 +26,7 @@ import { RAIL_STOPS } from '../segments.ts';
 import { RAIL_STONE, WORKS_BREAKER } from '../../../src/sim/railway-works-layout.ts';
 import { splitRockToCrossing } from './railway-works.ts';
 export { splitRockToCrossing };
-import { LINE2_BOILER, LINE2_STATIONS, RAILS } from '../../../src/sim/railway-line2-layout.ts';
+import { LINE2_BOILER, LINE2_FORGE, LINE2_STATIONS, RAILS } from '../../../src/sim/railway-line2-layout.ts';
 import { ISLAND_C, axisPoint } from '../../../src/place/home-station.ts';
 import { YOKE_VERB } from '../../../src/entities/railway/reward-data.ts';
 import { toWorld } from '../../../src/place/layout.ts';
@@ -1030,6 +1030,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
   // put away the same way (and nothing else), so the next one can come up.
   let boxCardAt = 0,
     friendCards = -1;
+  const cardReady = () => !!document.querySelector('.place-got:not([hidden]) .place-got-hint:not(:empty)');
   setInterval(() => {
     const reward = inspectRailway()?.reward;
     const cards = reward?.arrival.cards ?? [];
@@ -1038,7 +1039,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       : friendCards >= 0 && cards.length > friendCards && `friend's ${cards.at(-1)} card`;
     if (!what || !reward?.showing) return void (boxCardAt = 0);
     boxCardAt ||= performance.now();
-    if (performance.now() - boxCardAt < 1600) return;
+    if (performance.now() - boxCardAt < 1600 || !cardReady()) return;
     boxCardAt = 0;
     if (!reward.stationBoxes.showing) friendCards = cards.length;
     bot.note(`put away the ${what}`);
@@ -1089,6 +1090,8 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         panelStock: R.railPanelStock(w),
         axe: R.rail(w).axe,
         jump: R.rail(w).jump,
+        pack: R.rail(w).pack,
+        forgeLogs: R.forge(w).used,
         beam: R.beam(w),
         rocks: R.rocks(w),
         head: state.head,
@@ -1126,6 +1129,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     await until(() => read().reward.showing, `${name} appears`);
     // &cardMs= holds a card up longer, for a capture of it.
     await bot.wait(Number(query.get('cardMs')) || 1600);
+    await until(cardReady, `${name} offers the dismiss prompt`);
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', bubbles: true }));
     await until(() => !read().reward.showing, `${name} dismissed with Interact`);
@@ -1334,17 +1338,23 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     ]);
     const line = layout.LINKS[0]!;
     const railAt = (s: number) => layout.lineAt(line.line, s, { x: 0, z: 0, ux: 0, uz: 1 });
+    // Give each walker a lane on the completed deck. At the pillar the friend waits for the finder to clear the lip.
+    const trackPoint = (s: number) => {
+      const p = railAt(s);
+      const lane = coop ? (second ? -1.1 : 1.1) : 0;
+      return { x: p.x + layout.ORIGIN.x + p.uz * lane, z: p.z - p.ux * lane };
+    };
     const walkTrack = async (from: number, to: number) => {
       const direction = Math.sign(to - from);
       for (let s = from; direction * (to - s) >= 0; s += direction * 3) {
-        const point = railAt(s);
-        require(await bot.straight(point.x + layout.ORIGIN.x, point.z, 0.5, 12000), `walked rail at ${s.toFixed(0)} m`);
+        const point = trackPoint(s);
+        require(await bot.straight(point.x, point.z, 0.5, 12000), `walked rail at ${s.toFixed(0)} m`);
         await until(() => me.coyote > 0 && !me.swimming, 'track supports the walker', 5000);
         require(Math.abs(me.body!.position.y - PLAYER_R - layout.railY(line.line, s)) <
           1, 'walker remains at track height');
       }
-      const end = railAt(to);
-      require(await bot.straight(end.x + layout.ORIGIN.x, end.z, 0.5, 12000), 'reached track endpoint');
+      const end = trackPoint(to);
+      require(await bot.straight(end.x, end.z, 0.5, 12000), 'reached track endpoint');
     };
     if (stopAt === RAIL_STOPS['audio-loop']) {
       // Action coverage for audio changes: walk a leg of the opening path, jump, land dry; three times.
@@ -1366,7 +1376,6 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       mark(RAIL_STOPS['audio-loop']);
     }
     mark('T1 opening started');
-
     const machine = read().machine;
     await walk(machine.x, machine.z, 3);
     if (coop && !second)
@@ -1841,19 +1850,27 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
       await bot.wait(1200);
       if (read().reward.showing || !coop) await dismiss('pack reveal');
       require(R.capacityOf(R.rw(), R.LOGS) === 16, 'every back holds 16 logs with the pack');
+      if (!legacy) require(R.forge(R.rw()).used === LINE2_FORGE.bills[0], 'opened the pack on the first forge bill');
       await checkpoint('pack');
     };
-    for (let load = 0; R.forge(R.rw()).used < 56; load++) {
+    for (let load = 0; R.forge(R.rw()).used < LINE2_FORGE.logs; load++) {
       require(load < 12, 'forge bills fill in bounded loads');
-      // A player opens the pack as soon as its chest appears, beside the forge they are filling.
-      if (!legacy && R.forge(R.rw()).used >= 24 && !R.rail(R.rw()).pack) {
-        require(R.forge(R.rw()).used === 24, 'pack made on the first forge bill');
-        await openPack();
+      const firstBill = !legacy && !R.rail(R.rw()).pack;
+      const target = firstBill ? LINE2_FORGE.bills[0] : LINE2_FORGE.logs;
+      const remaining = () => target - R.forge(R.rw()).used;
+      await fill(Math.min(R.capacityOf(R.rw(), R.LOGS), remaining()));
+      // A two-log chop can exceed an odd balance. Put the spare down before entering the auto-unload radius.
+      require(remaining() >= 0, 'forge bill still open before unloading');
+      while (R.railBack().carry > remaining()) {
+        const before = R.railBack().carry;
+        triggerAction('place-drop', 'down');
+        triggerAction('place-drop', 'up');
+        await until(() => R.railBack().carry < before && read().pending === 0, 'put down the spare forge log', 5000);
       }
-      await fill(Math.min(R.capacityOf(R.rw(), R.LOGS), 56 - R.forge(R.rw()).used));
       await walk(forge.x, forge.z, 2.4);
       await until(() => R.railBack().carry === 0 && read().pending === 0, 'forge frame unloads automatically', 20000);
-      mark(`forge load ${load + 1} (${R.forge(R.rw()).used}/56)`);
+      mark(`forge load ${load + 1} (${R.forge(R.rw()).used}/${LINE2_FORGE.logs})`);
+      if (firstBill && remaining() === 0) await openPack();
     }
     await until(() => R.forge(R.rw()).lit >= 0, 'forge lit by its second bill');
     await checkpoint('forge lit');

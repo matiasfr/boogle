@@ -89,11 +89,13 @@ test('Station 1 funds only the line; the pillar and forge grant their parts once
   assert.equal(send(s, 'a', 'rail.beamDeposit', { revision: beam(s.w).revision, station: 'T3' }), 1);
   assert.equal(send(s, 'b', 'rail.jump'), 0, 'funded, still laying');
   advance(s, 600);
+  assert.equal(send(s, 'a', 'rail.jump', { station: 'T1' }), 0);
   assert.equal(send(s, 'b', 'rail.jump'), 1);
   assert.equal(send(s, 'a', 'rail.jump'), 0);
   logs(s, 'a', 'F', 23);
   assert.equal(send(s, 'a', 'rail.pack'), 0);
   logs(s, 'a', 'F', 1);
+  assert.equal(send(s, 'b', 'rail.pack', { station: 'T1' }), 0);
   assert.equal(send(s, 'a', 'rail.pack'), 1);
   assert.equal(send(s, 'b', 'rail.pack'), 0);
   const saved = restore(s.w);

@@ -304,13 +304,13 @@ export function createRailwayAdapter({
       }
     const tick = Math.floor(p.tk / RULE_STEPS);
     // Read only accepted packets, before confirm removes the pending intents. Never use the predicted view here.
-    const pending = new Map(predictor.pending().map((q) => [q.id[1], q.action.intent]));
+    const pending = new Map(predictor.pending().map((q) => [q.id[1], q.action]));
     for (const [e, r, n] of p.ok ?? []) {
-      const intent = e === ep ? pending.get(r) : undefined;
+      const intent = e === ep ? pending.get(r)?.intent : undefined;
       if (intent) for (const [name, data] of railwayActionMarks(intent, n, true)) playMark(name, data);
     }
     for (const [e, r, reason] of p.rej ?? []) {
-      const intent = e === ep ? pending.get(r) : undefined;
+      const intent = e === ep ? pending.get(r)?.intent : undefined;
       if (intent) playMark('railway refused', { op: intent.op, reason, authority: 'server' });
     }
     if (consistent) for (const [name, data] of progressMarks(confirmed(), rebuilt)) playMark(name, data);
@@ -371,9 +371,9 @@ export function createRailwayAdapter({
       if (!was) {
         // Not predicted, so never shown: the server's accept arrives as an event of yours in this packet. Without
         // one, the request is settled and nothing came of it.
-        const intent = pending.get(r);
-        if (intent && !RAIL_PREDICTED.has(intent.op) && !events.some((e) => e.pid === pid && e.request === r))
-          refused.push({ intent, request: r, reason });
+        const action = pending.get(r);
+        if (action && !action.predict && !events.some((e) => e.pid === pid && e.request === r))
+          refused.push({ intent: action.intent, request: r, reason });
         continue;
       }
       shown.delete(r);
