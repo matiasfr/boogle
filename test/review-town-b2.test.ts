@@ -1,6 +1,7 @@
 // Independent review of town-economy-visible B2 (docs/plans/town-economy-visible.md): what a buy that never reaches the
 // server leaves on the board. The plot view runs from its source with its render dependencies stubbed.
 import test from 'node:test';
+import { continuous } from '../src/entities/town/play.ts';
 import assert from 'node:assert/strict';
 import { Vector3, Matrix4, Line3, Object3D } from 'three/webgpu';
 import { sourceFunction } from '../dev/level/source.ts';
@@ -316,6 +317,13 @@ function watchTarget(
       Vector3,
       Line3,
       GOLF_CUPS: [{ x: 0, z: 0 }],
+      cheerSite: () => () => {},
+      cheerAround() {},
+      continuous,
+      discPath: () => () => null,
+      enters: () => false,
+      cupStroll: () => () => false,
+      me: {},
       near: () => 1,
       fanfare: () => hits++,
       toWorld: (x: number) => x,

@@ -18,15 +18,21 @@ export function chimeCalls() {
   };
 }
 export function townAnswer() {
+  let greeting = false;
   let next = -Infinity,
     due = Infinity;
   return {
-    call(now: number) {
-      if (now + 800 < next || due !== Infinity) return;
-      due = now + 800;
+    call(now: number, fromHonk = false) {
+      const delay = fromHonk ? 400 : 800;
+      if (now + delay < next || due !== Infinity) return;
+      greeting = fromHonk;
+      due = now + delay;
     },
-    update(now: number) {
-      if (now < due) return false;
+    cancel(fromHonk = false) {
+      if (greeting === fromHonk) due = Infinity;
+    },
+    update(now: number, forGreeting = false) {
+      if (now < due || greeting !== forGreeting) return false;
       due = Infinity;
       next = now + 4000;
       return true;

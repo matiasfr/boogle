@@ -102,8 +102,8 @@ export function windChime(x: number, z: number, beat: number, soft = false) {
   }
 }
 
-export function bell(x: number, z: number, range = HEAR): void {
-  const a = at(x, z, 0.16, range);
+export function bell(x: number, z: number, range = HEAR, volume = 0.16): void {
+  const a = at(x, z, volume, range);
   if (!a) return;
   const { ctx, out, g, t } = a;
   for (const [mul, k, decay] of [
@@ -122,8 +122,8 @@ export function bell(x: number, z: number, range = HEAR): void {
 }
 
 // The brass horn returns a softer note on each canyon bounce.
-export function canyonHorn(x: number, z: number, echo: number, harmony: boolean): void {
-  const a = at(x, z, (0.18 * dbToGain(audioSettings.machineWhistleDb)) / (1 + echo), 180);
+export function canyonHorn(x: number, z: number, echo: number, harmony: boolean, range = 180): void {
+  const a = at(x, z, (0.18 * dbToGain(audioSettings.machineWhistleDb)) / (1 + echo), range);
   if (!a) return;
   for (const hz of harmony ? [196, 247, 294] : [196]) {
     const osc = a.ctx.createOscillator();

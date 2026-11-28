@@ -1123,7 +1123,9 @@ export function setPopulation(n: number) {
 }
 /** Everyone in sight of a smaller moment hops where they stand. */
 export function cheerAround(x: number, z: number, r: number, seconds = 5) {
-  for (const g of guys) if (g.on && Math.hypot(g.x - x, g.z - z) < r) g.cheer = seconds;
+  for (const g of guys)
+    if (g.on && g.job === 'stroll' && !g.chat && !g.site && !crew?.guys.includes(g) && Math.hypot(g.x - x, g.z - z) < r)
+      g.cheer = seconds;
 }
 export function setCamp(k: number, busy: boolean) {
   campBusy[k] = busy;

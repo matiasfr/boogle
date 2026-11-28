@@ -1,6 +1,7 @@
 ﻿import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { localTownPulls } from '../town/signal-state.ts';
+import { townGreeting } from '../town/greeting.ts';
 import { bell, canyonHorn } from '../../render/machine-sfx.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
 import { interactTarget, type Interactable } from '../../player/hands.ts';
@@ -124,6 +125,16 @@ export function createGorgeTownPlots(owner: OwnedView) {
   const calls = new Set<{ from: string; start: number; beat: number }>();
   let echoed = -Infinity,
     sounded = false;
+  const greet = townGreeting(
+    owner,
+    32,
+    hornAt,
+    () => active === 8,
+    () => {
+      echoed = performance.now();
+      canyonHorn(hornAt.x, hornAt.z, 2, false, 400);
+    },
+  );
   function echo(from: string) {
     const now = performance.now();
     const harmony = [...calls].some((call) => call.from !== from && now - call.start < 3000);
@@ -163,6 +174,7 @@ export function createGorgeTownPlots(owner: OwnedView) {
   return {
     targets,
     update(dt: number) {
+      greet(performance.now());
       const read = railwayWorldRead();
       const w = read?.ready() ? read.world() : null;
       const row = w?.get(Plot, w.lookup(Plot, 32) ?? -1);

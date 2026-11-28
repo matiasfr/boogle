@@ -56,7 +56,7 @@ test('Canopy pulls reach a completed Ring bellhouse and skip the unfinished Gorg
       ringAt,
       PLOT_KIND,
       createLimiter,
-      townAnswer,
+      answerFor: townAnswer,
       plotBuilt: (_: unknown, slot: number) => slot !== 32,
       Plot: {},
       localTownPulls: new Set(),
