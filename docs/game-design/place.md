@@ -1666,7 +1666,9 @@ six kits along the Wall. The line serves a second Canopy halt on the isle's east
 Once builders deposit stock at the fifth frame, a single-kit train carrying Kit 6 can wait at the fourth head
 and follow the lay forward. It uses the existing timeout and yields to riders and blocked followers.
 A rider who requests a homeward stop keeps that stop even if the fifth frame finishes before the train departs.
-At the fifth head the room's crystal seeds open the deep span. The last lay reaches High Gorge beside line 2.
+At the fifth head the room's crystal seeds open the deep span. The sixth lay enters High Gorge from the sea mouth
+and joins line 2. The buffers, end board and terminal crossover give way to straight track. A ramp from each
+platform leads to planks across both tracks. Riders can stay aboard from the Wall through High Gorge to Ring Island.
 At Port Quay a plank crossing connects the outward platform to the High Port ramp. At Canopy the Wall has two
 40 m platforms at 13.90 m. Each has a ramp down to the 12 m isle for the walk to the bay line's homeward deck.
 The overbridge footprint is reserved for section 4. [Leg 5 plan](../plans/greybox-leg5.md)

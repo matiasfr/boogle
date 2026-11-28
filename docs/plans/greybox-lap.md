@@ -377,13 +377,25 @@ The High Gorge coach-fit, tail-clearance and arrival audits use the pre-join sto
       player moved off the deck with empty input on both `lap-ride` and the pre-join `gorge-reached` control.
       With collision against the remote player's proxy disabled in a diagnostic run, both players reached
       the same position and the first stayed grounded. It is a P2 in the [leftovers](../agents/orchestrator-leftovers.md#from-28-november); its two-player checks are on `review/greybox-lap-seeds`, not in the weekly scenarios.
-- [ ] **4. The remaining views (M to L; "Player-visible implementation": Codex gpt-6.2-astra medium).**
+- [x] **4. The remaining views (M to L; "Player-visible implementation": Codex gpt-6.2-astra medium).**
       - [x] Moved into step 2 after independent review: joined island map, five transferred platform levers, cave departure boards, Stack buffers and the rail-height crossing at the joint.
       - [x] The [joined island map](greybox-lap/joined-halt-map.png) shows all 15 halt positions. The [Port Quay board](greybox-lap/joined-port-quay-board.png) lists the 13 served halts. All four Port Quay and Saltpan handles accepted their signed calls through the mounted interaction.
       - [x] [High Gorge's two handles](greybox-lap/joined-gorge-handles.png) call toward Village and West landing. Wall head 5 is the other terminus that becomes a through stop. The mounted test pulls both directions at both places.
       - [x] A Chromium reload with a saved `cave:3` ride reached [Port Quay](greybox-lap/joined-port-quay-reload.png). The quay starts mounting behind the loading cover. The search tries both Port Quay landings before any other halt. The existing scenery wait and Home fallback still apply.
       - [x] [Through train at the plank crossing](greybox-lap/train-on-gorge-crossing.png) and [two frames of its passage](greybox-lap/train-through-gorge.png), captured from the arrived room. The trailing car crosses the walkway after the engine clears it.
-      - [ ] Remaining step 4 views and proofs listed below.
+      - [x] The [five views](greybox-lap/gorge-lap-proof.png) show the rail entering the split, the first through train,
+        the north platform crossing, the view forward beside the Wall cab and the joined map. The
+        [motion sheet](greybox-lap/gorge-joint-motion.png) follows engine 13 and its cars on the same track across the planks.
+        From ticks 34977 to 34984, its lateral coordinate in the Gorge frame progresses from 3.997 to 4.058 m.
+      - [x] The completed Stack terminal displays the placeholder “WHITE WALL LINE JOINS HERE” until the join.
+        Its J12.4 crossover and both toes retire together, leaving the two through rails.
+      - [x] Gorge level checks cover platform and approach walks, water access and the joined track envelope.
+      - The `wall-deep` proof starts at head five. The accepted deep-span gate and rack deliveries started section six.
+        The sea-mouth frame shows the moving rail end in the last 25 ticks of the 300-tick lay.
+        The incoming train, cab, north platform and halt map use `lap-ride`, which starts with the joint already laid.
+      - The fixed Gorge camera counted 1,455 visible scene meshes before the join and 1,501 after.
+        Static collider shapes on bodies whose origins lie within 100 m of the Gorge numbered 111 and 120.
+        The resident Gorge scenery reported 144 boxes and 132 solids in both rooms.
 
       Files:
       `src/content/levels/gorge.ts` and `leg-view.ts` (the concourse's middle becomes the plank crossing with its two
@@ -415,7 +427,7 @@ After steps 1 to 5 are on main; named proofs, once:
 - [ ] `npm run test:net` with `railwayLegRejoin` taking `wall` at `wall-deep`, the carrier leaving and rejoining across
       the sixth lay: the rows exact at every checkpoint.
 - [x] The service fuzz's long run at the joined stage (pasted in step 2) and leg 5's re-run beside it.
-- [ ] Stills and the motion sheet from step 4 on one sheet.
+- [x] [Step 4 stills and motion together](greybox-lap/gorge-lap-overview.png).
 - [x] The boot probe. `npm run perf` is not needed (no new train, a few boxes); report the Gorge's counts from step 4.
 - [ ] A device line on the Mac, reported, not a gate.
 
@@ -430,10 +442,10 @@ the sixth lay. Ship these changes with steps 1 and 2. Independent review also br
 | --- | --- | --- |
 | 1 and 2 | Port Quay Roundhouse step 4 (its bump) and prefeed-gated frames' sim step, if either is building | Each takes a `WORLD_NS`; prefeed changes the deep-span frame's lay, the tick the join hangs on |
 | 3 | Step 2 | Seeds are built from the rules |
-| 4 | Step 3 | Stills come from `lap-ride` |
+| 4 | Step 3 | The through-train views use `lap-ride`; the last lay starts from `wall-deep` |
 | 5 | Step 4 and order choice step 5 | The bot rides what step 4 draws; order choice edits the same bot and loop files |
 
-The crossing, through rails and terminal clearance are part of step 2. The remaining step 4 proofs use the lap-ride seed.
+Step 2 built the crossing, through rails and buffer clearance. Step 4 completes the end board and retires the Gorge crossover.
 
 ## Level findings
 

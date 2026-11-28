@@ -207,23 +207,38 @@ export function checkLeg5() {
     Array.from({ length: 61 }, (_, k) => -13.9 + k / 10).every((c) => heightAt(faces, gorgeAt(a, c)) === null),
   );
   check('six clear metres between the town pad and the north platform', clear);
-  const { node, reach } = colliderFlood(colliders, gorgeAt(-35, 0), 115);
+  const { node, reach } = colliderFlood(colliders, gorgeAt(-16, -5), 155);
   for (const c of [-1.5, 0, 2, 4, 5.5]) {
     const y = heightAt(faces, gorgeAt(-2, c));
     check(`joined Gorge crossing c ${c} has a plank top at 3.35 m`, y !== null && Math.abs(y - 3.35) < 0.01);
   }
-  const concourseWalk = reach(gorgeAt(-2, 2));
+  const crossing = gorgeAt(-2, 2);
+  const concourseWalk = reach(crossing);
   const fromWater = reach(gorgeAt(-76, 6), true);
-  for (const [c, edge, sign] of [
-    [-3.8, -1.8, -1],
-    [7.8, 5.8, 1],
+  for (const [name, point] of Object.entries({
+    'line 2 north platform': gorgeAt(20, -4),
+    'line 2 south platform': gorgeAt(20, 8),
+    'Wall north platform': gorgeAt(-31, -3.8),
+    'Wall south platform': gorgeAt(-31, 7.8),
+    'stair foot': gorgeAt(0, -41),
+    'incline barrier pad': gorgeAt(15, 13),
+    'town pad': gorgeAt(-8, -20),
+    crossing,
+  })) {
+    check(`Gorge ${name} connects both ways on foot`, !!concourseWalk[node(point)] && !!reach(point)[node(crossing)]);
+    check(`Gorge ${name} reached from the water`, !!fromWater[node(point)]);
+  }
+  let highest = -Infinity;
+  for (let a = -60; a <= 0; a++)
+    for (let c = -1.5; c <= 5.5; c += 0.5) highest = Math.max(highest, heightAt(faces, gorgeAt(a, c)) ?? -Infinity);
+  check('joined Gorge track envelope stays at or below plank height', highest <= 3.36);
+  for (const [edge, sign] of [
+    [-1.8, -1],
+    [5.8, 1],
   ] as const) {
     const inside = heightAt(faces, gorgeAt(-31, edge + sign * 0.05));
     const outside = heightAt(faces, gorgeAt(-31, edge - sign * 0.05));
     check(`Gorge platform edge c ${edge} within 0.05 m`, inside !== null && outside === null);
-    const platform = node(gorgeAt(-31, c));
-    check('Gorge platform c ' + c + ' connects to line 2 on foot', !!concourseWalk[platform]);
-    check('Gorge platform c ' + c + ' reached from the water', !!fromWater[platform]);
   }
   return { level: 'route leg 5', entries, failures: entries.filter((e) => !e.passed).length };
 }
