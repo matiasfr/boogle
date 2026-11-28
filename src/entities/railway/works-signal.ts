@@ -2,6 +2,7 @@
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { material } from '../../render/materials.ts';
+import { camera } from '../../render/scene.ts';
 import { GOLD_ROPE } from '../../render/gold-rope.ts';
 import { H } from '../../place/terrain.ts';
 import type { IslandGround } from '../ring-island/ground.ts';
@@ -9,6 +10,22 @@ import { RING_HALT } from '../../sim/railway-ring-layout.ts';
 import { reducedMotion } from '../../constants.ts';
 import type { RoomWorks } from '../../sim/railway-queries-room.ts';
 import { PLUME, STEAM } from './forge-call.ts';
+import { Q7_FRAME_Y } from './q7-site.ts';
+
+const HEIGHT_CAP = 200;
+const RIDGE_RISE_PER_METRE = 0.9;
+// The spruce-topped bluff hides these nine columns from the dock at eye height.
+const behindDockRidge = new Set<RoomWorks['site']>([
+  'Q6',
+  'crossing',
+  'Q7',
+  'bents',
+  'brace',
+  'weights',
+  'rivet',
+  'steelworks',
+  'stack-1',
+]);
 
 // Use the dock landing and the halt's step-down platform. Heights below are eye elevations.
 const eyes = [
@@ -20,8 +37,15 @@ const eyes = [
   },
 ];
 function columnHeight(site: RoomWorks['site'], at: THREE.Vector3, island: IslandGround) {
+  // Looking across open water, the Bell Rock board at the landing covers this section's tip.
+  if (site === 'stack-4') return 400;
+  if (behindDockRidge.has(site)) {
+    // The first bent lines up with the tallest spruce as seen from the dock.
+    const slope = site === 'bents' ? 1.1 : RIDGE_RISE_PER_METRE;
+    return Math.ceil(slope * Math.hypot(at.x - eyes[0]!.x, at.z - eyes[0]!.z));
+  }
   // Dock-eye stills include a spruce above Q5's ridge and the West landing structure toward Canopy.
-  let height: number = site === 'Q5' || site === 'canopy-2' ? 200 : PLUME.height;
+  let height: number = site === 'Q5' || site === 'canopy-2' ? HEIGHT_CAP : PLUME.height;
   for (const eye of eyes) {
     const dx = at.x + PLUME.lean - eye.x,
       dz = at.z - eye.z;
@@ -32,7 +56,7 @@ function columnHeight(site: RoomWorks['site'], at: THREE.Vector3, island: Island
         z = eye.z + t * dz;
       const ground = Math.max(H(x, z), island.islandH(x, z));
       height = Math.max(height, eye.y + (ground - eye.y) / t + 20 - at.y - 2);
-      if (height >= 200) return 200;
+      if (height >= HEIGHT_CAP) return HEIGHT_CAP;
     }
   }
   return Math.ceil(height);
@@ -70,7 +94,14 @@ export function createWorksSignal(owner: OwnedView, island: IslandGround) {
     fading = false;
   let height = 0,
     oldHeight = 0;
-  function draw(at: THREE.Vector3, scale: number, rise: number) {
+  function draw(at: THREE.Vector3, scale: number, heightLimit: number, growth = 1) {
+    let rise = heightLimit;
+    if (heightLimit > HEIGHT_CAP) {
+      const distance = Math.hypot(camera.position.x - at.x, camera.position.z - at.z);
+      const dockDistance = Math.hypot(eyes[0]!.x - at.x, eyes[0]!.z - at.z);
+      rise = THREE.MathUtils.clamp(heightLimit * (distance / dockDistance), HEIGHT_CAP, heightLimit);
+    }
+    rise *= growth;
     for (let i = 0; i < PLUME.thick; i++) {
       const u = (clock / PLUME.rise + i / PLUME.thick) % 1;
       const up = 1 - (1 - u) ** 2;
@@ -88,7 +119,7 @@ export function createWorksSignal(owner: OwnedView, island: IslandGround) {
   }
   return (work: RoomWorks, forgeCalling: boolean, dt: number, restore = false) => {
     const { x, y, z } = work.at;
-    const ground = y ? y / 100 : H(x / 100, z / 100);
+    const ground = work.site === 'Q7' ? Q7_FRAME_Y : y ? y / 100 : H(x / 100, z / 100);
     if (
       site !== work.site ||
       restore ||
@@ -110,7 +141,7 @@ export function createWorksSignal(owner: OwnedView, island: IslandGround) {
     clock += dt * (reducedMotion ? 0.3 : 1);
     mesh.count = 0;
     if (fading && elapsed < 2 && flag.visible) draw(previous, 1 - elapsed / 2, oldHeight);
-    if (plume) draw(flag.position, elapsed / 2, height * (elapsed / 2));
+    if (plume) draw(flag.position, elapsed / 2, height, elapsed / 2);
     mesh.instanceMatrix.needsUpdate = true;
   };
 }

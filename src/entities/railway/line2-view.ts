@@ -58,7 +58,7 @@ import { railwayGlideOpen } from './glide.ts';
 import { FORGE_CUT, forgeCut, yawToForge } from './forge-cut.ts';
 import { FORGE_CALL_HEAR } from './forge-call.ts';
 import { RING_Q7_FRAME } from '../../sim/railway-ring-layout.ts';
-import { Q7_DECK_UP, depotPieceVisible, q7Spot } from './q7-site.ts';
+import { Q7_FRAME_S, Q7_FRAME_Y, depotPieceVisible, q7Spot } from './q7-site.ts';
 import { lineFeed, lineLayDistance, linePanelCount } from '../../sim/railway-line-schedule.ts';
 import { createRailwayPanelView, type PanelState } from './panel-view.ts';
 import { HOOK_REWARD } from './reward-data.ts';
@@ -165,8 +165,6 @@ export async function createRailwayLine2(
     return switchCamera.active();
   }
   const quarry = layout.LINKS[1]!;
-  /** Q7's frame is at s 710 on line 2's path (RING_Q7_FRAME's comment); its heading is the line's there. */
-  const RING_Q7_FRAME_S = 710;
   const P7 = { x: 0, z: 0, ux: 0, uz: 1 };
   const geometries: THREE.BufferGeometry[] = [];
   const materials: THREE.Material[] = [];
@@ -311,7 +309,7 @@ export async function createRailwayLine2(
    * nothing for it to stand on. It stays for the page's life. */
   function ensureQ7Frame() {
     if (frames.length > MACHINED || !pierLaid(line2Completed(adapter.read.world()))) return;
-    layout.lineAt(quarry.line, RING_Q7_FRAME_S, P7);
+    layout.lineAt(quarry.line, Q7_FRAME_S, P7);
     const out = { x: -P7.uz, z: P7.ux };
     frames.push(
       stations.buildStation(
@@ -322,7 +320,7 @@ export async function createRailwayLine2(
           yaw: Math.atan2(P7.ux, P7.uz),
           lx: out.x,
           lz: out.z,
-          y: layout.railY(quarry.line, RING_Q7_FRAME_S) + Q7_DECK_UP,
+          y: Q7_FRAME_Y,
         },
         owner,
       ),
