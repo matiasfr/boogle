@@ -43,9 +43,36 @@ export async function bellCut(owner: OwnedView, placements: readonly Placement[]
   mesh.position.y += h / 2 - 0.24;
   mesh.rotation.y = deck.rot![0];
   owner.add(mesh);
+  for (const p of placements) {
+    if (p.id === 'bell.lower-east' || p.id === 'bell.lower-west') boardPlatform(owner, p);
+  }
   geometry.dispose();
   owner.cleanup(() => material.dispose());
   return { update() {} };
+}
+
+/** One dark fascia and cross-laid boards fitted to the existing platform solid. */
+function boardPlatform(owner: OwnedView, platform: Placement) {
+  const [width, height, length] = platform.scale!;
+  const count = Math.ceil(length / 0.38);
+  const pitch = length / count;
+  const shades = ['#9a8267', '#907b64', '#96816a', '#a18b71', '#947d65'];
+  const geometry = new THREE.BoxGeometry();
+  const material = new THREE.MeshStandardNodeMaterial({ roughness: 0.95 });
+  const mesh = new THREE.InstancedMesh(geometry, material, count + 1);
+  mesh.position.fromArray(platform.pos);
+  mesh.rotation.y = platform.rot![0];
+  const matrix = new THREE.Matrix4();
+  mesh.setMatrixAt(0, matrix.makeScale(width + 0.02, height - 0.02, length + 0.02));
+  mesh.setColorAt(0, new THREE.Color('#665444'));
+  matrix.makeScale(width + 0.04, 0.14, pitch - 0.014);
+  for (let i = 0; i < count; i++) {
+    mesh.setMatrixAt(i + 1, matrix.setPosition(0, height / 2 - 0.06, (i + 0.5) * pitch - length / 2));
+    mesh.setColorAt(i + 1, new THREE.Color(shades[i % shades.length]!));
+  }
+  owner.add(mesh);
+  geometry.dispose();
+  owner.cleanup(() => material.dispose());
 }
 
 /** Shallow courses against the existing vertical cut, outside both mouth jambs. */

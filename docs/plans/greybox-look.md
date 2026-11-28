@@ -177,6 +177,12 @@ From the arriving end of the lower east platform, the white stair crossed a sing
 
 The Bell view in `src/entities/route-greybox/massing-incline.ts` mounts the faces with the two shoulders and shares their rock material. The 1200 × 750 desktop pair looks from (−43, 6.5, −868) toward (−73, 10, −856). [Before](greybox-look/card11-bell-before.png) · [After](greybox-look/card11-bell-after.png)
 
+### Card 12, Bell’s boarding platforms
+
+From the south approach, the long pale slabs on either side of the track bed filled the foreground. The east and west platforms now have cross-laid timber planks over dark fascias. Their ends show the thickness of the boards, and open water is visible between the piles beneath the opposite platform.
+
+Bell’s dressing hook in `src/entities/route-greybox/massing-incline.ts` fits the boards to the two existing platform placements. Both 1200 × 750 desktop stills look from (−45, 6.5, −874) toward (−55, 5.7, −846). [Before](greybox-look/card12-platforms-before.png) · [After](greybox-look/card12-platforms-after.png)
+
 ## Design review (2026-11-27)
 
 | Call | Kind | Basis |
