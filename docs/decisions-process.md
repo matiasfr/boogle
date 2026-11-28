@@ -4,6 +4,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 
 ## Current rules
 
+- 2026-11-28 · Live deploy's first rollout may ask a tab already open on the old page for one manual Reload; every later page recovers by itself ([entry](#d-2026-11-28-live-deploy-one-reload))
 - 2026-11-27 · Deploys, world wipes included, go out with players on and keep every connected player in sync; planned first, and the world-bump gate stays until the plan's last step ships ([entry](#d-2026-11-27-deploy-with-players-on))
 - 2026-11-27 · A world wipe ships any time nobody is playing, as many a day as are ready; with anyone on the server it is held and tried again in 30 to 60 minutes ([entry](#d-2026-11-27-world-wipes-any-time-nobody-plays))
 - 2026-11-27 · A docs-only merge reloads nobody (the build id names the newest code commit); world wipes are daily, and only with nobody on the server, checked again in 30 to 60 minutes otherwise ([entry](#d-2026-11-27-docs-merges-reload-nobody-daily-wipe)) _Replaced in part the same day: no daily limit, only the player check ([entry](#d-2026-11-27-world-wipes-any-time-nobody-plays))._
@@ -120,6 +121,8 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - undated · Mini-games get their own design pass later. ([entry](#d-undated-mini-games-get-their-own-design))
 
 ## Decided
+
+- <a id="d-2026-11-28-live-deploy-one-reload"></a>**2026-11-28, live deploy: one manual reload on the first rollout** (owner, 28 November 2026 UTC, in the orchestrator thread, answering [live-deploy](plans/live-deploy.md#owner-question)'s one question, asked with its recommendation: "Take your recommendation"). For the first rollout only, a tab already running the old page may need one manual Reload, limited to installing the client that recovers by itself; the client support ships first with the world-bump gate intact, and old connections are kept out of incompatible rooms. Every later supported page recovers on its own. Builds on [deploy with players on](#d-2026-11-27-deploy-with-players-on).
 
 - <a id="d-2026-11-27-deploy-with-players-on"></a>**2026-11-27, deploy with players on, and keep them in sync** (owner, 27 November 2026, in the orchestrator thread: "Let's fix the deploy gap. We should be able to deploy even if players are active and keep things in sync"). The gap: a world wipe is held while anyone is on the production server ([any time nobody plays](#d-2026-11-27-world-wipes-any-time-nobody-plays)), and the site and the server deploy separately, minutes apart. The goal: every deploy, a world wipe included, can go out while players are on, and every connected player ends on one build and one world with no stale tab, dead socket or silent desync. It touches the server, saves and the wire, so it is planned first (`docs/plans/live-deploy.md`) and then built, in one Codex Astra high job (`codex/live-deploy`, his call of the same evening). Until the plan's last step ships, the world-bump gate (`dev/world-bump-gate.ts`, exit 9) stays as decided; that step removes it. This changes, once built, the player check of the two 27 November wipe entries; a wipe is still a new save ([8 November](#d-2026-11-08-a-world-wipe-is-a-new)) unless the plan's recommendation he takes carries progress across.
 
