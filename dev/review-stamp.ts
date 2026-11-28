@@ -1,9 +1,13 @@
 // npm run review-stamp -- <worktree> [--id] [--files] [--no-fetch] [--base <ref>]
-// Which files of a branch need an independent review, and the fingerprint that review names. The trigger is the one list
-// below (owner-calls.md, "Build more, test less", rule (c), plus src/ecs): source and wire files under REVIEW_PATHS, and
-// a sim, net or server test whose assertions changed. A test, test helper or fixture whose diff only touches import
-// bindings (never which module), comments, a removed skip or lines moved verbatim between test files is the
-// orchestrator's to read instead. An added skip, a changed import module, or anything else is review.
+// Which files of a branch need an independent review, and the fingerprint that review names (owner, 28 November,
+// docs/decisions-process.md#d-2026-11-28-faster-reviews and #d-2026-11-28-process-audit-six-fixes):
+// - Always `review`: files that can directly desync players or lose saves (`server/src/`, `src/net/`, and wire, sync,
+//   replication, namespace or rule-registration files under `src/world/`).
+// - Conditionally `review`: `src/sim/`, `src/ecs/` and other `src/world/` source files when the branch also alters
+//   `WORLD_NS`, a golden/fixture, wire/save/server code, or a review-path test assertion; otherwise `read` (a pure
+//   query or refactor with goldens and WORLD_NS unchanged — the orchestrator reads it and ships with --orchestrator-read).
+// - Review-path tests: `read` when the diff only touches import bindings (same module), comments, `{ timeout }` options,
+//   a removed skip or lines moved verbatim between test files; `review` on any other assertion change or added skip.
 // The stamp: `git patch-id --stable` of the branch's diff from its merge base with origin/main, restricted to the files
 // the gate classed (`review` and `read`) when any needs review, first 12 hex. Line numbers are not part of a patch id, so rebasing onto main commits that touch other
 // files keeps it; any change to those files' diff (a fix pushed after the review) changes it. Prints each file with the
@@ -16,10 +20,21 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { importClosure, isDocs, relativeLoads } from './ci/change-class.ts';
 
-/** Lockstep, wire and server source: the one review list (dev/ship-queue.sh reads it through this file). */
+/** Lockstep, wire and server source: the one review list (dev/ci/unit-select.ts and dev/ship-queue.sh read it here). */
 export const REVIEW_PATHS = ['src/sim', 'src/net', 'src/world', 'src/ecs', 'server/src'] as const;
 
 const underReview = (f: string) => REVIEW_PATHS.some((p) => f === p || f.startsWith(`${p}/`));
+/** Files that can directly desync players or lose saves: always require an independent review. */
+const alwaysReviewSource = (f: string) =>
+  f === 'server/src' ||
+  f.startsWith('server/src/') ||
+  f === 'src/net' ||
+  f.startsWith('src/net/') ||
+  f.startsWith('src/world/rules/') ||
+  /^src\/world\/(?:namespace|railway-namespace|railway-wire|sync|server-ops|railway-server|game-world|.*replicate.*)\.ts$/.test(
+    f,
+  );
+const isGoldenOrFixture = (f: string) => f.startsWith('test/fixtures/');
 // Tests and the harnesses that assert: unit tests and their helpers, the server tests, the net test.
 const isTest = (f: string) => /(?:^|\/)test\/|\.test\.ts$/.test(f) || f.startsWith('dev/peer-test/');
 
@@ -43,6 +58,9 @@ function assertsReviewCode(c: FileChange, root?: string): boolean {
 const SKIP_OPTION = /\{\s*(?:skip|todo)\s*:[^{}]*\}\s*,\s*/g;
 const SKIP_CALL = /^(?:t|test|it|describe)\.(?:skip|todo)\s*\(/;
 const unskipped = (line: string) => line.replace(SKIP_OPTION, '');
+// A numeric `{ timeout: N }, ` test option: adding, raising or removing one alone is `read`, not `review`.
+const TIMEOUT_OPTION = /\{\s*timeout\s*:\s*[\d_]+\s*\}\s*,\s*/g;
+const withoutTimeout = (line: string) => line.replace(TIMEOUT_OPTION, '');
 const IGNORED: [RegExp, string][] = [
   [/^$/, 'blank'],
   [/^(?:\/\/|\/\*|\*)/, 'comment'],
@@ -59,7 +77,7 @@ function changedLines(patch: string): { sign: '+' | '-'; line: string }[] {
   return out;
 }
 
-// What a test file's diff does beyond imports, comments, removed skips and verbatim moves, or undefined if nothing.
+// What a test file's diff does beyond imports, comments, timeout options, removed skips and verbatim moves, or undefined.
 function assertionChange(c: FileChange, pool: Record<'+' | '-', Map<string, number>>, kinds: Set<string>) {
   const left: { sign: '+' | '-'; line: string }[] = [];
   for (const { sign, line } of changedLines(c.patch)) {
@@ -83,6 +101,21 @@ function assertionChange(c: FileChange, pool: Record<'+' | '-', Map<string, numb
   }
   const added = left.find((l) => l.sign === '+' && (unskipped(l.line) !== l.line || SKIP_CALL.test(l.line)));
   if (added) return `adds a skip: ${added.line.slice(0, 80)}`;
+  // A numeric `{ timeout: N }` option added, changed or removed on a test line without changing anything else.
+  for (const minus of left.filter((l) => l.sign === '-')) {
+    const baseMinus = withoutTimeout(minus.line);
+    const plus = left.find(
+      (l) =>
+        l.sign === '+' &&
+        withoutTimeout(l.line) === baseMinus &&
+        (baseMinus !== minus.line || withoutTimeout(l.line) !== l.line),
+    );
+    if (plus) {
+      left.splice(left.indexOf(minus), 1);
+      left.splice(left.indexOf(plus), 1);
+      kinds.add('timeout');
+    }
+  }
   // Imports: bindings may change, the modules they come from may not (a fake swapped in for the real server).
   const imports = left.filter((l) => IMPORT.test(l.line));
   const targets = (sign: string) =>
@@ -112,29 +145,53 @@ export function reviewVerdicts(changes: readonly FileChange[], root?: string): V
   for (const c of changes)
     if (isTest(c.file))
       for (const { sign, line } of changedLines(c.patch)) pool[sign].set(line, (pool[sign].get(line) ?? 0) + 1);
-  const out: Verdict[] = [];
+  const testVerdicts = new Map<FileChange, Verdict>();
+  let touchesRiskyCompanion = false;
   for (const c of changes) {
     if (isDocs(c.file)) continue;
     if (!isTest(c.file)) {
-      if (underReview(c.file)) out.push({ file: c.file, review: true, rule: 'source or wire under a review path' });
+      if (alwaysReviewSource(c.file)) touchesRiskyCompanion = true;
       continue;
     }
     if (!assertsReviewCode(c, root)) continue;
-    if (/^--- \/dev\/null$/m.test(c.patch)) {
-      out.push({ file: c.file, review: true, rule: 'a new test file (new assertions)' });
-      continue;
-    }
-    if (/^\+\+\+ \/dev\/null$/m.test(c.patch)) {
-      out.push({ file: c.file, review: true, rule: 'a deleted test file (assertions removed)' });
-      continue;
-    }
-    const kinds = new Set<string>();
-    const fired = assertionChange(c, pool, kinds);
-    out.push(
-      fired
+    let v: Verdict;
+    if (/^--- \/dev\/null$/m.test(c.patch))
+      v = { file: c.file, review: true, rule: 'a new test file (new assertions)' };
+    else if (/^\+\+\+ \/dev\/null$/m.test(c.patch))
+      v = { file: c.file, review: true, rule: 'a deleted test file (assertions removed)' };
+    else {
+      const kinds = new Set<string>();
+      const fired = assertionChange(c, pool, kinds);
+      v = fired
         ? { file: c.file, review: true, rule: `assertion change (first: ${fired})` }
-        : { file: c.file, review: false, rule: `tests only: ${[...kinds].sort().join(', ') || 'mode change'}` },
-    );
+        : { file: c.file, review: false, rule: `tests only: ${[...kinds].sort().join(', ') || 'mode change'}` };
+    }
+    testVerdicts.set(c, v);
+    if (v.review || isGoldenOrFixture(c.file)) touchesRiskyCompanion = true;
+  }
+  const out: Verdict[] = [];
+  for (const c of changes) {
+    if (isDocs(c.file)) continue;
+    if (isTest(c.file)) {
+      const v = testVerdicts.get(c);
+      if (v) out.push(v);
+      continue;
+    }
+    if (!underReview(c.file)) continue;
+    if (alwaysReviewSource(c.file))
+      out.push({ file: c.file, review: true, rule: 'source or wire under a desync/save-loss review path' });
+    else if (touchesRiskyCompanion)
+      out.push({
+        file: c.file,
+        review: true,
+        rule: 'source under a review path (paired with wire, save, golden or assertion change)',
+      });
+    else
+      out.push({
+        file: c.file,
+        review: false,
+        rule: 'query or refactor under a review path (goldens, WORLD_NS and wire/save paths unchanged)',
+      });
   }
   return out;
 }
@@ -188,8 +245,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       console.log(`review stamp ${stamp} (${stamped.length} file${stamped.length === 1 ? '' : 's'} since ${base}).`);
       console.log(`Ship with: npm run ship-queue -- ${wt} --reviewed "${stamp} <who, what they found>"`);
     } else if (verdicts.length) {
-      console.log('No review needed: tests only, no assertion change. The orchestrator reads them and ships with');
-      console.log(`  npm run ship-queue -- ${wt} --orchestrator-read "<what changed in them>"`);
+      console.log(
+        'No independent review needed (read-only / refactor / timeout-only). The orchestrator reads and ships with',
+      );
+      console.log(`  npm run ship-queue -- ${wt} --orchestrator-read "<what changed>"`);
     } else
       console.log(`Nothing under ${REVIEW_PATHS.join(', ')} or their tests since ${base}: no review stamp needed.`);
   }

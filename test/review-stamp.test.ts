@@ -26,15 +26,57 @@ const change = (file: string, minus: string[], plus: string[], text = SIM_TEST, 
 const verdict = (...changes: FileChange[]) =>
   reviewVerdicts(changes).map((v) => `${v.review ? 'review' : 'read'} ${v.file}: ${v.rule.split(' (')[0]}`);
 
-test('source under every review path needs review; server/ outside src and client code do not', () => {
-  const files = ['src/sim/a.ts', 'src/net/ws-wire.ts', 'src/world/b.ts', 'src/ecs/world.ts', 'server/src/server.ts'];
-  for (const f of files)
-    assert.deepEqual(verdict(change(f, ['a'], ['b'], '')), [`review ${f}: source or wire under a review path`]);
+test('desync/save-loss paths always need review; standalone sim/ecs/world refactors are read until paired with wire, save, golden or assertion changes', () => {
+  for (const f of [
+    'src/net/ws-wire.ts',
+    'server/src/server.ts',
+    'src/world/sync.ts',
+    'src/world/namespace.ts',
+    'src/world/rules/roster.ts',
+  ])
+    assert.deepEqual(verdict(change(f, ['a'], ['b'], '')), [
+      `review ${f}: source or wire under a desync/save-loss review path`,
+    ]);
+  for (const f of ['src/sim/railway-queries-works.ts', 'src/ecs/world.ts', 'src/world/railway-jump.ts'])
+    assert.deepEqual(verdict(change(f, ['a'], ['b'], '')), [`read ${f}: query or refactor under a review path`]);
+  assert.deepEqual(
+    verdict(change('src/sim/a.ts', ['a'], ['b'], ''), change('test/fixtures/railway-golden.json', ['1'], ['2'], '')),
+    ['review src/sim/a.ts: source under a review path', 'review test/fixtures/railway-golden.json: assertion change'],
+  );
+  assert.deepEqual(
+    verdict(
+      change('src/sim/a.ts', ['a'], ['b'], ''),
+      change('test/railway.test.ts', ['  assert.equal(x, 1);'], ['  assert.equal(x, 2);']),
+    ),
+    ['review src/sim/a.ts: source under a review path', 'review test/railway.test.ts: assertion change'],
+  );
   assert.deepEqual(
     verdict(change('server/Dockerfile', ['a'], ['b'], ''), change('src/features/x.ts', ['a'], ['b'], '')),
     [],
   );
   assert.deepEqual(verdict(change('src/sim/README.md', ['a'], ['b'], '')), []);
+});
+
+test('timeout-only test edits (with optional comments) are read, not review; mixed timeout + skip still requires review', () => {
+  const added = change(
+    'test/return-presence.test.ts',
+    ["test('reloads cleanly', async () => {"],
+    ['// slow under full-machine load', "test('reloads cleanly', { timeout: 20_000 }, async () => {"],
+  );
+  assert.deepEqual(verdict(added), ['read test/return-presence.test.ts: tests only: comment, timeout']);
+  const raised = change(
+    'server/test/host.test.ts',
+    ["test('syncs', { timeout: 5000 }, async () => {"],
+    ["test('syncs', { timeout: 30_000 }, async () => {"],
+    '',
+  );
+  assert.deepEqual(verdict(raised), ['read server/test/host.test.ts: tests only: timeout']);
+  const mixed = change(
+    'test/railway.test.ts',
+    ["test('runs', () => {"],
+    ["test('runs', { timeout: 20_000, skip: true }, () => {"],
+  );
+  assert.equal(reviewVerdicts([mixed])[0]!.review, true);
 });
 
 test('a changed assertion in a sim test needs review, and the rule names the line', () => {
@@ -120,18 +162,18 @@ test('the stamp covers read files beside reviewed ones', () => {
       },
     ).trim();
   try {
-    repo.write('src/sim/railway.ts', 'export const a = 1;\n');
+    repo.write('src/world/sync.ts', 'export const a = 1;\n');
     repo.write(
       'server/test/host.test.ts',
-      "import { a } from '../../src/sim/railway.ts';\ntest('a', () => {\n  assert.ok(a);\n});\n",
+      "import { a } from '../../src/world/sync.ts';\ntest('a', () => {\n  assert.ok(a);\n});\n",
     );
     repo.git('add', '-A');
     repo.git('commit', '-qm', 'base');
     repo.git('branch', 'base');
-    repo.write('src/sim/railway.ts', 'export const a = 2;\n');
+    repo.write('src/world/sync.ts', 'export const a = 2;\n');
     repo.write(
       'server/test/host.test.ts',
-      "import { a, b } from '../../src/sim/railway.ts';\ntest('a', () => {\n  assert.ok(a);\n});\n",
+      "import { a, b } from '../../src/world/sync.ts';\ntest('a', () => {\n  assert.ok(a);\n});\n",
     );
     repo.git('commit', '-qam', 'reviewed');
     const reviewed = cli('--id');
@@ -139,7 +181,7 @@ test('the stamp covers read files beside reviewed ones', () => {
     // Still only a `read` change to the test (an import binding and a comment), yet the stamp moves.
     repo.write(
       'server/test/host.test.ts',
-      "import { a, b, c } from '../../src/sim/railway.ts';\n// flaky\ntest('a', () => {\n  assert.ok(a);\n});\n",
+      "import { a, b, c } from '../../src/world/sync.ts';\n// flaky\ntest('a', () => {\n  assert.ok(a);\n});\n",
     );
     repo.git('commit', '-qam', 'after the review');
     assert.match(cli('--files'), /^read server\/test\/host\.test\.ts: tests only/m);
