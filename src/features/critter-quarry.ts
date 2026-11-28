@@ -6,11 +6,11 @@ import { onGraphicsChange } from '../graphics-settings.ts';
 import { remotes, type Remote } from '../netplay/net.ts';
 import { platformById } from '../physics/platforms.ts';
 import { H } from '../place/terrain.ts';
-import { reducedWildlife, wildlifeZone, wings } from '../place/wildlife.ts';
+import { reducedWildlife, wildlifeEngineIds, wildlifeZone, wings } from '../place/wildlife.ts';
 import { me } from '../player/state.ts';
 import { createPool } from '../render/instances.ts';
 import { patchNode } from '../render/material-patch.ts';
-import { LINE2, RAIL_HALTS, RAIL_TRAINS } from '../sim/railway-lines.ts';
+import { LINE2, RAIL_HALTS } from '../sim/railway-lines.ts';
 import { works } from '../sim/railway-rows.ts';
 
 // The gorge rim follows terrain. The quarry ledges follow the 40 m wall caps of Split-rock Works.
@@ -21,7 +21,7 @@ const sites = [
   { x: 1114, z: 102, cap: true, yaw: Math.atan2(2, 16) },
 ] as const;
 const halt = RAIL_HALTS.find((h) => h.line === LINE2 && h.name === 'Quarry')!.platforms[0];
-const engines = RAIL_TRAINS.flatMap((train, i) => (train.line === LINE2 ? ['railway:train' + i + '-0'] : []));
+const engines = wildlifeEngineIds(LINE2);
 
 // A low faceted back, four splayed feet and a long taper for the animated tail.
 function scuttleGeometry() {

@@ -12,6 +12,7 @@ import { ballMesh } from '../entities/ball/view.ts';
 import { me } from '../player/player.ts';
 import { remotes } from '../netplay/net.ts';
 import { whileNearClassicIsland } from '../island/classic-zone.ts';
+import { sampledSpeed } from '../place/wildlife.ts';
 
 const GULLS = {
   count: 7,
@@ -162,7 +163,7 @@ whileNearClassicIsland(() =>
       if (!on || dt <= 0) return;
       threats();
       const bp = ballMesh.position;
-      const ballLanding = lastBallY - bp.y > 0.03 && bp.y - groundHeight(bp.x, bp.z) < 0.7;
+      const ballLanding = sampledSpeed(lastBallY - bp.y, dt) > 1.8 && bp.y - groundHeight(bp.x, bp.z) < 0.7;
       lastBallY = bp.y;
       bodyPool.begin();
       wingPool.begin();

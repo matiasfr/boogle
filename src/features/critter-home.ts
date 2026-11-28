@@ -3,7 +3,7 @@ import { defineKind, spawn } from '../entity/entity.ts';
 import { ballMesh } from '../entities/ball/view.ts';
 import { railwayWorldRead } from '../entities/railway/state.ts';
 import { onGraphicsChange } from '../graphics-settings.ts';
-import { reducedWildlife, wildlifeZone, wildlifePool } from '../place/wildlife.ts';
+import { reducedWildlife, sampledSpeed, wildlifeEngineIds, wildlifePool, wildlifeZone } from '../place/wildlife.ts';
 import { remotes, type Remote } from '../netplay/net.ts';
 import { platformById } from '../physics/platforms.ts';
 import { waterField } from '../physics/water-field.ts';
@@ -14,7 +14,6 @@ import { me } from '../player/state.ts';
 import { skyNow } from '../render/sky.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../sim/railway-layout.ts';
 import { rail, tree } from '../sim/railway-rows.ts';
-import { RAIL_TRAINS } from '../sim/railway-lines.ts';
 
 type Species = 'school' | 'flock' | 'swarm';
 const sites: Record<Species, readonly (readonly [number, number])[]> = {
@@ -150,7 +149,7 @@ function mount() {
     work: -1,
     hit: false,
   })).filter((source) => roosts.some((p) => Math.hypot(source.x - p.x, source.z - p.z) < 6));
-  const engines = ['railway:T1:loco', ...RAIL_TRAINS.map((_, i) => 'railway:train' + i + '-0')].map((id) => ({
+  const engines = wildlifeEngineIds().map((id) => ({
     id,
     x: Infinity,
     z: Infinity,
@@ -207,7 +206,7 @@ function mount() {
         }
       }
       const bp = ballMesh.position,
-        ballMoving = Math.hypot(bp.x - lastBallX, bp.y - lastBallY, bp.z - lastBallZ) > 0.01;
+        ballMoving = sampledSpeed(Math.hypot(bp.x - lastBallX, bp.y - lastBallY, bp.z - lastBallZ), dt) > 0.6;
       lastBallX = bp.x;
       lastBallY = bp.y;
       lastBallZ = bp.z;

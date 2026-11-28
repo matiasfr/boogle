@@ -13,8 +13,13 @@ let mount: () => View;
 let trainId = '';
 const perch = ringAnchor('flock', 3);
 const ball = { x: 0, y: 0, z: 0 };
-stub('../src/entity/entity.ts', { defineKind() {}, spawn: (view: View) => view });
-stub('../src/graphics-settings.ts', { onGraphicsChange: () => () => {} });
+stub('../src/entity/entity.ts', { defineKind() {}, despawn() {}, spawn: (view: View) => view });
+stub('../src/graphics-settings.ts', {
+  onGraphicsChange: () => () => {},
+  autoRung: () => 0,
+  graphicsInitial: () => 'full',
+});
+stub('../src/loop.ts', { onStart() {} });
 stub('../src/entities/railway/railhead-state.ts', { railheadDrawn: { live: true, u: 260 } });
 stub('../src/entities/railway/glide.ts', { railwayGlideOpen: () => false });
 stub('../src/entities/ball/view.ts', { ballMesh: { position: ball } });
@@ -24,7 +29,10 @@ stub('../src/physics/platforms.ts', {
 });
 stub('../src/player/state.ts', { me: {} });
 stub('../src/render/sky.ts', { skyNow: { day: 1 } });
+const { sampledSpeed, wildlifeEngineIds } = await import('../src/place/wildlife.ts');
 stub('../src/place/wildlife.ts', {
+  sampledSpeed,
+  wildlifeEngineIds,
   reducedWildlife: () => false,
   wildlifePool: (_kind: string, count: number) => createPool(new BufferGeometry(), new MeshBasicMaterial(), count),
   wildlifeZone: (...args: [string, number, number, number, number, () => View]) => {
