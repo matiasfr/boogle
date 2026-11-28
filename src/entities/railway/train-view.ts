@@ -282,6 +282,18 @@ export async function createRailwayTrains(
     bundle.rotation.y = Math.PI / 2;
     bundle.position.set(0, carByRole('kit').spec.top, carByRole('kit').spec.hz - 0.45);
     meshByRole('kit').add(bundle);
+    const railBundle = new THREE.Group();
+    const iron = flat('#63798b', 0.65);
+    for (const offset of [-0.15, 0.15]) {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.2, 1.65), iron);
+      bar.position.set(offset, 0.16, 0);
+      owner.add(bar);
+      railBundle.add(bar);
+    }
+    railBundle.position.copy(bundle.position);
+    railBundle.position.z -= 1;
+    railBundle.visible = false;
+    meshByRole('kit').add(railBundle);
     const pennant = createPennant(owner);
     pennant.position.y = 3.3;
     pennant.scale.setScalar(0.45);
@@ -359,6 +371,7 @@ export async function createRailwayTrains(
       wears: 0,
       pennant,
       bundle,
+      railBundle,
       shudder: 0,
       /** The platform beat (docs/plans/garage-install-moment.md, G5): this view has drawn the train since the last
        * restore, and the seconds into its longer boiler going on, or -1. */
@@ -706,7 +719,9 @@ export async function createRailwayTrains(
   const BILL = 2 * LEG_KIT_MOST;
   const strongTail = (tr: typeof first) => !!tr.tailDeck && tr.carOn;
   const unitsOf = (row: RailTrain) =>
-    Number.isFinite(row.logs + row.rails) ? row.logs - (row.gift ?? 0) - (row.workLogs ?? 0) + row.rails : 0;
+    Number.isFinite(row.logs + row.rails)
+      ? row.logs - (row.gift ?? 0) - (row.workLogs ?? 0) + row.rails - (row.giftRails ?? 0)
+      : 0;
   const kitShown = (tr: typeof first, row: RailTrain) =>
     Math.ceil((strongTail(tr) ? Math.max(0, unitsOf(row) - BILL) : unitsOf(row)) / 8);
   const tailShown = (tr: typeof first, row: RailTrain) =>
@@ -963,6 +978,7 @@ export async function createRailwayTrains(
     trains.forEach((tr) => {
       const last = { ...trainRow(w, tr.slot) };
       tr.last = last;
+      tr.railBundle.visible = (last.giftRails ?? 0) > 0;
       tr.bundle.visible = last.gift + last.workLogs > 0;
       tr.count = -1;
       folk.folk.resetRiderShuffle(tr.slot, last.riders, tr.riderCar);
@@ -1417,6 +1433,7 @@ export async function createRailwayTrains(
             });
           }
         }
+        tr.railBundle.visible = row.giftRails > 0;
         tr.bundle.visible = row.gift + row.workLogs > 0;
         if (
           !skipGiftFlights &&
@@ -1436,6 +1453,8 @@ export async function createRailwayTrains(
         }
         const delta = !skipGiftFlights && tr.last ? row.gift - (tr.last.gift ?? 0) : 0;
         giftTrip(owner, w, tr.line, row, delta, tr.bundle, homeLogBin, legKitFlight);
+        const railDelta = !skipGiftFlights && tr.last ? row.giftRails - (tr.last.giftRails ?? 0) : 0;
+        if (railDelta < 0) giftTrip(owner, w, tr.line, row, railDelta, tr.railBundle, homeLogBin, legKitFlight, 'rail');
         // A leg's kit hops from the car to its rack (the greybox route's step 4 review, answer b: 8 m over the up
         // track at Ring Island, then onto each railhead's), drawn as the Q kits' unload is. The rows moved the units
         // on the tick the train stood; the rack's view draws each once its crate lands (legKitFlight). On any line
@@ -1447,7 +1466,7 @@ export async function createRailwayTrains(
             : -1;
         if (leg >= 0 && tr.last) {
           const logs = tr.last.logs - row.logs + delta,
-            rails = tr.last.rails - row.rails,
+            rails = tr.last.rails - row.rails + railDelta,
             keep = kitShown(tr, row),
             tailKeep = tailShown(tr, row),
             // The crates hop off the kit car first, then (a Strong train's) off its flatbed.

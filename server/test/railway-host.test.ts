@@ -24,6 +24,7 @@ import { HALT_YARDS } from '../../src/sim/railway-yard-layout.ts';
 import { QUARRY_YARD, workAboard, worksThanks } from '../../src/sim/railway-queries-gift.ts';
 import { haltYardStock } from '../../src/sim/railway-queries-yard.ts';
 import { works } from '../../src/sim/railway-rows.ts';
+import { legRow } from '../../src/sim/railway-queries-route.ts';
 import { WORKS_KILN } from '../../src/sim/railway-works-layout.ts';
 import { Pile, Train, Town } from '../../src/sim/railway-components.ts';
 import { railTick } from '../../src/sim/railway-systems.ts';
@@ -51,6 +52,41 @@ test('a guest gives to the open incline through the host from the Village yard',
     assert.equal(given.accepted, amount);
     assert.deepEqual(worksThanks(f.world()), ['bob']);
     assert.equal(f.host.rules.railway.account('bob')!.carry, 0);
+  } finally {
+    await f.close();
+  }
+});
+test('the host carries a Village donation into the rails-only Stack bill', async () => {
+  const f = await fixture(railwayRoomId('stack-gift'), 600000);
+  try {
+    const seed = buildSeedWorld('stack-rails');
+    while (f.host.sync.world.tick < seed.t) f.host.step(0.1);
+    await f.host.sync.whenDurable();
+    f.world().load(seed.w.snapshot(), railwayCheck);
+    f.host.rules.railway.touchAll();
+    await f.open('a');
+    const epoch = await f.open('b');
+    await f.harvest('b', 8, epoch);
+    const logs = f.host.rules.railway.account('bob')!.carry;
+    assert.ok(logs >= 8);
+    const put = { op: 'rail.haltPut', yard: 0, kind: 0 };
+    f.pose('b', WORKS_KILN.x, WORKS_KILN.z);
+    assert.equal((await f.edit('b', put, epoch)).status, 'rejected');
+    f.pose('b', HALT_YARDS[0]!.x, HALT_YARDS[0]!.z);
+    assert.equal((await f.edit('b', put, epoch)).accepted, logs);
+    f.send('b', put, epoch, f.requests.get('b'));
+    const expected = Math.floor(logs / 2);
+    for (let i = 0; legRow(f.world(), 0).rails !== expected; i++) {
+      assert.ok(i < 6000);
+      await f.step(1);
+    }
+    for (const sid of ['a', 'b']) {
+      const mirror = createRailwayMirror();
+      for (const { cid, p } of f.packets) if (cid === sid) mirror.mirror.apply(p, 0);
+      assert.equal(legRow(mirror.confirmed(), 0).rails, expected);
+      assert.equal(rail(mirror.confirmed()).convertedRails, expected);
+    }
+    railwayCheck(f.world());
   } finally {
     await f.close();
   }

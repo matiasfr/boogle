@@ -111,7 +111,8 @@ export function checkRoute(w: World) {
   // kit rides ahead (its leg before reached), with cargo aboard (steel first, call 64: the mark is what keeps the
   // works' kit and a leg's apart).
   w.each([Train], (_id, t) => {
-    if (!railInt(t.gift, t.logs) || (t.gift && !t.legKit)) bad('train gift');
+    if (!railInt(t.gift, t.logs) || !railInt(t.giftRails, t.rails) || ((t.gift || t.giftRails) && !t.legKit))
+      bad('train gift');
     if (
       !railInt(t.workLogs, t.logs) ||
       (t.workGivers &&
@@ -124,6 +125,11 @@ export function checkRoute(w: World) {
       (t.workLogs && (t.legKit || RAIL_TRAINS[t.slot]!.line !== LINE2))
     )
       bad('work gift');
+    if (!railInt(t.giftBill) || Boolean(t.giftBill) !== Boolean(t.giftRails)) bad('gift bill');
+    if (t.giftBill) {
+      const leg = RAIL_LEGS[(t.giftBill - 1) % RAIL_LEGS.length]!;
+      if (Math.floor((t.giftBill - 1) / RAIL_LEGS.length) >= leg.sections.length) bad('gift section');
+    }
     if (!t.legKit) return;
     const served = SERVED_LEGS[RAIL_TRAINS[t.slot]!.line]!;
     if (t.logs + t.rails <= 0 || !served.some((k) => legKitMayLoad(w, k))) bad('leg kit mark');
@@ -138,6 +144,7 @@ export function checkRoute(w: World) {
       !railInt(y.slot, RAIL_YARDS.length - 1) ||
       !railInt(y.logs, KIT_CAP) ||
       !railInt(y.gift, y.logs) ||
+      !railInt(y.giftRails, y.rails) ||
       !railInt(y.rails, KIT_CAP)
     )
       bad('yard bounds');
@@ -147,7 +154,7 @@ export function checkRoute(w: World) {
     const k = RAIL_LEGS.findIndex((l, j) => l.kit === y.slot && (legOpen(w, j) || legYardAhead(w, j)));
     if (k < 0) bad('yard without its open leg');
     const room = legHeldRoom(w, k);
-    if (y.logs - y.gift > room.logs || y.rails > room.rails) bad('yard over its leg');
+    if (y.logs - y.gift > room.logs || y.rails - y.giftRails > room.rails) bad('yard over its leg');
   });
   const route = routeRow(w);
   if (

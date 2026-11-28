@@ -298,13 +298,15 @@ export function legKitRoom(w: World, line: number, k: number) {
 /** The open legs whose kit `line`'s trains carry, in RAIL_LEGS order. */
 export const legsServed = (w: World, line: number) =>
   SERVED_LEGS[line]!.filter((k) => legOpen(w, k) || (legYardAhead(w, k) && line === legMintLine(k)));
-/** Remaining log bill that an arriving gift on this line may fill, before reservations. */
-export function giftBill(w: World, line: number, k: number) {
+// A marked rail stays bound to the frame it left Home for, even if that frame lays during transit.
+export const giftBillId = (w: World, k: number) => 1 + k + RAIL_LEGS.length * legRow(w, k).laid;
+/** Remaining bill that an arriving gift on this line may fill, before reservations. */
+export function giftBill(w: World, line: number, k: number, kind: keyof Kit = 'logs') {
   const leg = RAIL_LEGS[k]!;
   if ((leg.line !== line && legMintLine(k) !== line) || !legOpen(w, k)) return 0;
   const row = legRow(w, k);
   if (row.start >= 0 || (!row.laid && STOCKED_LEGS.includes(k))) return 0;
-  return leg.sections[row.laid]!.logs - row.logs;
+  return leg.sections[row.laid]![kind] - row[kind];
 }
 /** The Gorge feeder meets the first incline frame before the branch has track. */
 export const giftAtFrame = (w: World, line: number, k: number) =>
@@ -317,7 +319,8 @@ export function legKitFits(w: World, line: number, k: number, r: Readonly<RailTr
   return (
     (gift > 0 && giftBill(w, line, k) > 0) ||
     (r.logs > gift && rack.logs + yard.logs > 0) ||
-    (r.rails > 0 && rack.rails + yard.rails > 0)
+    ((r.giftRails ?? 0) > 0 && r.giftBill === giftBillId(w, k) && giftBill(w, line, k, 'rails') > 0) ||
+    (r.rails > (r.giftRails ?? 0) && rack.rails + yard.rails > 0)
   );
 }
 /** Leg k's kit may be loaded: the leg is reached, or the leg before it is (its kit rides ahead). The load check's bound

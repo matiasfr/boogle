@@ -11,7 +11,7 @@ import { SERVER_ID } from '../../src/net/ids.ts';
 import { buildRingMidDoc, ringMidStage, seedDoc } from './ring-mid-seed.ts';
 import { buildStackDoc, stackStage } from './stack-seed.ts';
 import { buildLayDoc, layStage } from './lay-seed.ts';
-import { inclineGiftSeed, pierGiftSeed, yardRecoverySeed } from './halt-yard-seed.ts';
+import { inclineGiftSeed, pierGiftSeed, stackGiftSeed, yardRecoverySeed } from './halt-yard-seed.ts';
 
 /** `maxRooms`: the store's room cap for this write; a data dir that already holds many rooms (the net suite's) needs more. */
 export async function writeRailSeed(dataDir: string, room: string, stage: string, maxRooms = 2) {
@@ -22,11 +22,13 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
   const recovery =
     stage === 'q3-yard-recovery'
       ? yardRecoverySeed
-      : stage === 'incline-gift'
-        ? inclineGiftSeed
-        : stage === 'pier-gift'
-          ? pierGiftSeed
-          : null;
+      : stage === 'stack-gift'
+        ? stackGiftSeed
+        : stage === 'incline-gift'
+          ? inclineGiftSeed
+          : stage === 'pier-gift'
+            ? pierGiftSeed
+            : null;
   if (kind === null && !recovery && mid === null && stack === null && lay === null && !isSeedStage(stage))
     throw new Error(`Unknown railway seed: ${stage}`);
   const doc =

@@ -55,6 +55,7 @@ export const Rail = defineComponent(
     depot: 'int',
     // Logs loaded from Home's rack, less those returned as surplus or poured directly into a frame.
     giftOut: 'int',
+    convertedRails: 'int',
     returnedLogs: 'int',
     depotGiftDelivered: 'int',
     depotProduced: 'int',
@@ -149,6 +150,8 @@ export const Train = defineComponent(
     // steel first, and a train never carries both). Set by the leg's load, cleared when the last unit is off.
     // The share of logs aboard that came from Home's rack.
     gift: 'int',
+    giftRails: 'int',
+    giftBill: 'int',
     workStop: 'int',
     workLogs: 'int',
     workGivers: 'str',
@@ -384,7 +387,7 @@ export const Leg = defineComponent(
  * the kit units its feeder has unloaded for the branch. Gift marks the subset of logs destined for the frame. */
 export const LegYard = defineComponent(
   'legYard',
-  { slot: 'int', logs: 'int', rails: 'int', gift: 'int' },
+  { slot: 'int', logs: 'int', rails: 'int', gift: 'int', giftRails: 'int' },
   { key: 'slot' },
 );
 /** The route's one row: the grants taken (bit k: RAIL_GRANTS[k]), the gates opened (bit k: RAIL_GATES[k]) and the

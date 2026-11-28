@@ -4,7 +4,7 @@ import { buildSeedWorld } from '../../src/sim/railway-seeds.ts';
 import { act, advance } from '../../src/sim/railway-seed-route.ts';
 import { chopTo } from '../../src/sim/railway-seed-works.ts';
 import { legRow } from '../../src/sim/railway-queries-route.ts';
-import { workAboard } from '../../src/sim/railway-queries-gift.ts';
+import { giftAboard, workAboard } from '../../src/sim/railway-queries-gift.ts';
 import { account, trees } from '../../src/sim/railway-rows.ts';
 import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
 import { railSupplyPulse } from '../../src/sim/railway-sys-away.ts';
@@ -24,6 +24,21 @@ export function inclineGiftSeed() {
   }
   need(invariant(seed.w) === null, 'incline gift seed');
   return seedDoc(seed);
+}
+
+export function stackGiftSeed() {
+  const s = buildSeedWorld('stack-rails');
+  chopTo(s, 'a', 8);
+  const extra = account(s.w, 'a')!.carry - 8;
+  if (extra)
+    need(act(s, 'a', 'rail.drop', { kind: 0, n: extra, x: 100000, y: 2000, z: 3000 }) === extra, 'eight logs retained');
+  need(act(s, 'a', 'rail.haltPut', { yard: 0, kind: 0 }) === 8, 'Village gift');
+  for (let ticks = 0; !giftAboard(s.w, undefined, 'giftRails'); ticks++) {
+    need(ticks < 6000, 'Stack gift dispatch');
+    advance(s, 1);
+  }
+  need(giftAboard(s.w, undefined, 'giftRails') === 4 && invariant(s.w) === null, 'four rails aboard');
+  return seedDoc(s);
 }
 
 export function pierGiftSeed() {

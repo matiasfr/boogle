@@ -106,6 +106,7 @@ export const SEED_STAGES = [
   'boiler-long',
   // The greybox route's leg 1 (./railway-seed-legs.ts): the stack line to High Gorge.
   'gorge-open',
+  'stack-rails',
   'gorge-mid',
   'gorge-reached',
   // Leg 2 (./railway-seed-legs.ts; docs/plans/greybox-leg2.md, step 3): the incline to Bell Rock, the bay cut home.

@@ -32,7 +32,7 @@ export function checkLine2(w: World) {
     r0 = rail(w);
   if ((f.used > 0 || f.lit >= 0) && !line2Open(w)) bad('forge before path');
   if (f.lit >= 0 !== (f.used === FORGE.logs)) bad('forge lit');
-  if (f.lit < 0 && (f.rack || f.poured || lastPour)) bad('unlit pour');
+  if (f.lit < 0 && (f.rack || f.poured || rail(w).convertedRails || lastPour)) bad('unlit pour');
   if (f.lit >= 0 && lastPour < f.lit) bad('pour clock');
   const jobs = line2Jobs(w);
   jobs.forEach(({ job: j, run }, k) => {
@@ -174,5 +174,5 @@ export function checkLine2(w: World) {
     bad('boiler');
   if (r0.trains >= 0 && (c.phase !== CART_PHASE.REST || cartAlong(c, r0.trains) !== 0 || c.logs || c.rails))
     bad('trains before cart rests');
-  if (line2Rails(w) !== f.poured) bad('rail conservation');
+  if (!railInt(r0.convertedRails) || line2Rails(w) !== f.poured + r0.convertedRails) bad('rail conservation');
 }

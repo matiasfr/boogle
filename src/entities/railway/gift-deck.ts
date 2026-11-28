@@ -62,6 +62,7 @@ export function giftTrip(
   bundle: THREE.Group,
   homeLogBin: THREE.Vector3,
   flights: readonly { poured: (() => boolean)[] }[],
+  kind: 'log' | 'rail' = 'log',
 ) {
   if (delta && row.phase === TRAIN_PHASE.STAND && !reducedMotion) {
     const deck = bundle.getWorldPosition(new THREE.Vector3());
@@ -78,7 +79,7 @@ export function giftTrip(
     }
     if (k !== undefined || (delta > 0 && line === LINE2 && row.at === legKitHalt(line))) {
       for (let i = 0; i < Math.abs(delta); i++) {
-        const active = send('log', from, to, { dur: 0.6, delay: i * 0.025, apex: 3 }, owner);
+        const active = send(kind, from, to, { dur: 0.6, delay: i * 0.025, apex: 3 }, owner);
         if (k !== undefined) flights[k]!.poured.push(active);
       }
     }

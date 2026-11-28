@@ -1,5 +1,5 @@
 {
- "worldNs": "v87",
+ "worldNs": "v88",
  "components": [
   {
    "kind": "rail",
@@ -48,6 +48,10 @@
     ],
     [
      "giftOut",
+     "int"
+    ],
+    [
+     "convertedRails",
      "int"
     ],
     [
@@ -877,6 +881,14 @@
      "int"
     ],
     [
+     "giftRails",
+     "int"
+    ],
+    [
+     "giftBill",
+     "int"
+    ],
+    [
      "workStop",
      "int"
     ],
@@ -1428,6 +1440,10 @@
     ],
     [
      "gift",
+     "int"
+    ],
+    [
+     "giftRails",
      "int"
     ]
    ]

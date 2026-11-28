@@ -5,13 +5,15 @@ import { account, boiler, cart, qjob, rail, steel, works } from '../src/sim/rail
 import { CART_PHASE } from '../src/sim/railway-cart.ts';
 import { workAboard, workNeed } from '../src/sim/railway-queries-gift.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
-import { giftAboard, giftQueued, giftRides, worksThanks } from '../src/sim/railway-queries-gift.ts';
+import { giftAboard, giftPourRoom, giftQueued, giftRides, worksThanks } from '../src/sim/railway-queries-gift.ts';
 import { laySection } from '../src/sim/railway-seed-legs.ts';
 import { RAIL_LEGS } from '../src/sim/railway-route.ts';
 import type { Seed } from '../src/sim/railway-seed-route.ts';
+import { haltYardStock } from '../src/sim/railway-queries-yard.ts';
 
 import { Account, Leg, LegYard, Rail, Route, Train } from '../src/sim/railway-components.ts';
 import {
+  giftBillId,
   legId,
   legKitCarriers,
   legKitDrop,
@@ -353,6 +355,87 @@ test('mint loading respects the remaining single-log reservation', () => {
   assert.equal(giftQueued(s.w), 0);
 });
 
+test('eight logs cast four marked rails that survive restart and pour at Stack', () => {
+  const s = unaudited(buildSeedWorld('stack-rails'));
+  give(s);
+  for (let i = 0; !rail(s.w).convertedRails; i++) {
+    assert.ok(i < 6000);
+    advance(s, 1);
+    railwayCheck(s.w);
+  }
+  assert.deepEqual([rail(s.w).rack, giftAboard(s.w, LINE2, 'giftRails'), rail(s.w).convertedRails], [0, 4, 4]);
+  const restored = unaudited(s);
+  for (let i = 0; !legRow(s.w, 0).rails; i++) {
+    assert.ok(i < 6000);
+    advance(s, 1);
+    advance(restored, 1);
+    railwayCheck(s.w);
+  }
+  assert.equal(s.w.hash(), restored.w.hash());
+  assert.deepEqual([legRow(s.w, 0).rails, giftAboard(s.w, LINE2, 'giftRails')], [4, 0]);
+});
+test('two full carriers reserve a one-rail shortage and return a racing hand feed', () => {
+  const s = unaudited(buildSeedWorld('stack-rails'));
+  advance(s, 2000);
+  const slots = LINE_SLOTS[LINE2]!.filter((slot) => train(s.w, slot).legKit);
+  assert.equal(slots.length, 2);
+  const row = s.w.mut(Leg, legId(s.w, 0))!;
+  row.rackRails -= 19;
+  row.rails += 19;
+  give(s);
+  const visit = (slot: number, at: number, action: () => void) => {
+    const car = s.w.mut(Train, s.w.lookup(Train, slot)!)!;
+    const before = car.at;
+    car.at = at;
+    action();
+    car.at = before;
+  };
+  for (const slot of slots) visit(slot, legKitHalt(LINE2), () => legKitLoad(s.w, slot, s.t));
+  assert.deepEqual(
+    slots.map((slot) => train(s.w, slot).giftRails),
+    [1, 0],
+  );
+  assert.equal(rail(s.w).rack, 6);
+  assert.equal(act(s, 'b', 'rail.depotRailTake', { leg: 0 }), 1);
+  assert.equal(act(s, 'b', 'rail.legStock', { leg: 0 }), 1);
+  // The next frame may open before arrival. It is not the frame this car loaded for.
+  for (let i = 0; !legRow(s.w, 0).laid; i++) {
+    assert.ok(i < 1000);
+    advance(s, 1);
+  }
+  for (const slot of slots) {
+    visit(slot, legKitDrop(s.w, LINE2, 0), () => legKitArrive(s.w, slot, s.t));
+    visit(slot, legKitHalt(LINE2), () => legKitArrive(s.w, slot, s.t));
+  }
+  assert.equal(legRow(s.w, 0).rails, 0);
+  assert.equal(haltYardStock(s.w, 0, 2), 1);
+  railwayCheck(s.w);
+});
+test('direct Village rails reach a branch frame before the forge consumes whole pairs', () => {
+  const s = unaudited(buildSeedWorld('incline-mid'));
+  const k = 1;
+  for (let i = 0; legRow(s.w, k).rackLogs < RAIL_LEGS[k]!.sections[legRow(s.w, k).laid]!.logs; i++) {
+    assert.ok(i < 6000);
+    advance(s, 1);
+  }
+  const row = s.w.mut(Leg, legId(s.w, k))!;
+  const logs = RAIL_LEGS[k]!.sections[row.laid]!.logs;
+  row.logs += logs;
+  row.rackLogs -= logs;
+  const rails = act(s, 'b', 'rail.depotRailTake', { leg: k });
+  assert.ok(rails > 0);
+  assert.equal(act(s, 'b', 'rail.haltPut', { yard: 0, kind: 2 }), rails);
+  chopTo(s, 'a', 1);
+  const extra = account(s.w, 'a')!.carry - 1;
+  if (extra) act(s, 'a', 'rail.drop', { kind: 0, n: extra, x: 100000, y: 2000, z: 3000 });
+  assert.equal(act(s, 'a', 'rail.haltPut', { yard: 0, kind: 0 }), 1);
+  for (let i = 0; legRow(s.w, k).rails !== rails; i++) {
+    assert.ok(i < 24000);
+    advance(s, 1);
+    railwayCheck(s.w);
+  }
+  assert.deepEqual([rail(s.w).rack, rail(s.w).convertedRails, haltYardStock(s.w, 0, 2)], [1, 0, 0]);
+});
 const saturated = unaudited(buildSeedWorld('gorge-open'));
 advance(saturated, 2000);
 test('a full Stack carrier exchanges eight minted logs and pours them at the frame', () => {
@@ -411,24 +494,27 @@ test('two carriers reserve one bill and respect a later hand-feed', () => {
 const wall = unaudited(buildSeedWorld('wall-deep'));
 test('a gift completing the Wall bill observes the barrier', () => {
   const k = RAIL_LEGS.findIndex((l) => l.id === 'wall');
-  for (const open of [false, true]) {
-    const s = unaudited(wall);
-    const row = s.w.mut(Leg, legId(s.w, k))!,
-      bill = RAIL_LEGS[k]!.sections[row.laid]!;
-    row.logs = bill.logs - 1;
-    row.rails = bill.rails;
-    if (open) s.w.mut(Route, routeId(s.w))!.gates |= 1 << bill.gate!;
-    const line = RAIL_LEGS[k]!.line,
-      slot = LINE_SLOTS[line]![0]!;
-    const car = s.w.mut(Train, s.w.lookup(Train, slot)!)!;
-    car.logs = car.gift = 1;
-    car.rails = 0;
-    car.legKit = true;
-    car.at = legKitDrop(s.w, line, k);
-    legKitArrive(s.w, slot, s.t);
-    assert.equal(legRow(s.w, k).logs, bill.logs);
-    assert.equal(legRow(s.w, k).start, open ? s.t : -1);
-  }
+  for (const open of [false, true])
+    for (const railGift of [false, true]) {
+      const s = unaudited(wall);
+      const row = s.w.mut(Leg, legId(s.w, k))!,
+        bill = RAIL_LEGS[k]!.sections[row.laid]!;
+      row.logs = bill.logs - (railGift ? 0 : 1);
+      row.rails = bill.rails - (railGift ? 1 : 0);
+      if (open) s.w.mut(Route, routeId(s.w))!.gates |= 1 << bill.gate!;
+      const line = RAIL_LEGS[k]!.line,
+        slot = LINE_SLOTS[line]![0]!;
+      const car = s.w.mut(Train, s.w.lookup(Train, slot)!)!;
+      car.logs = car.gift = railGift ? 0 : 1;
+      car.rails = car.giftRails = railGift ? 1 : 0;
+      car.giftBill = railGift ? giftBillId(s.w, k) : 0;
+      car.legKit = true;
+      car.at = legKitDrop(s.w, line, k);
+      legKitArrive(s.w, slot, s.t);
+      assert.equal(legRow(s.w, k).logs, bill.logs);
+      assert.equal(legRow(s.w, k).rails, bill.rails);
+      assert.equal(legRow(s.w, k).start, open ? s.t : -1);
+    }
 });
 const closed = unaudited(buildSeedWorld('leaf-raised'));
 test('Home keeps the logs before the first gift leg opens', () => {
@@ -483,4 +569,52 @@ test('surplus steel gifts stay available for pickup after returning Home', () =>
   assert.equal(act(s, 'b', 'rail.rackTake', { kind: 0 }), 8);
   assert.equal(rail(s.w).returnedLogs, 0);
   railwayCheck(s.w);
+});
+
+test(
+  'withdrawing all queued Village rails removes the donor from frame Thanks',
+  { todo: 'Queued rails need per-donor attribution before dispatch' },
+  () => {
+    const s = unaudited(buildSeedWorld('stack-rails'));
+    const before = worksThanks(s.w);
+    assert.ok(!before.includes('a'));
+    const n = act(s, 'a', 'rail.depotRailTake', { leg: 0 });
+    assert.ok(n > 0);
+    assert.equal(act(s, 'a', 'rail.haltPut', { yard: 0, kind: 2 }), n);
+    assert.ok(worksThanks(s.w).includes('a'));
+    assert.equal(act(s, 'a', 'rail.haltTake', { yard: 0, kind: 2 }), n);
+    assert.equal(haltYardStock(s.w, 0, 2), 0);
+    assert.deepEqual(worksThanks(s.w), before);
+  },
+);
+
+test('a rail-only frame already covered by Village rails does not solicit logs', () => {
+  const s = unaudited(buildSeedWorld('stack-rails'));
+  const bill = RAIL_LEGS[0]!.sections[0]!.rails;
+  while (haltYardStock(s.w, 0, 2) < bill) {
+    const n = act(s, 'a', 'rail.depotRailTake', { leg: 0 });
+    assert.ok(n > 0);
+    assert.equal(act(s, 'a', 'rail.haltPut', { yard: 0, kind: 2 }), n);
+  }
+  assert.equal(legRow(s.w, 0).rails, 0);
+  assert.equal(giftRides(s.w), false);
+});
+
+test('returning rails for the previous Stack frame leave the next frame available to another carrier', () => {
+  const s = unaudited(buildSeedWorld('stack-rails'));
+  give(s);
+  for (let ticks = 0; !giftAboard(s.w, LINE2, 'giftRails'); ticks++) {
+    assert.ok(ticks < 6000);
+    advance(s, 1);
+  }
+  while (legRow(s.w, 0).start < 0) {
+    assert.ok(act(s, 'b', 'rail.depotRailTake', { leg: 0 }) > 0);
+    assert.ok(act(s, 'b', 'rail.legStock', { leg: 0 }) > 0);
+  }
+  for (let ticks = 0; legRow(s.w, 0).laid === 0; ticks++) {
+    assert.ok(ticks < 1000);
+    advance(s, 1);
+  }
+  assert.equal(giftAboard(s.w, LINE2, 'giftRails'), 4);
+  assert.equal(giftPourRoom(s.w, 0, 'giftRails'), RAIL_LEGS[0]!.sections[1]!.rails);
 });

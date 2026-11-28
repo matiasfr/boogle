@@ -32,7 +32,7 @@ import { outOf } from '../../place/sites.ts';
 import { leaveLoad } from './back-down.ts';
 import { yardFlights, type YardSources, type Bin } from './halt-yard-flights.ts';
 import { createPennant } from './works-signal.ts';
-import { giftRides } from '../../sim/railway-queries-gift.ts';
+import { giftRides, railGiftRides } from '../../sim/railway-queries-gift.ts';
 import { yardRecoveries } from './halt-yard-recovery.ts';
 
 type Box = import('../../render/boxes.ts').Box;
@@ -212,7 +212,7 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView,
     if (!adapter.read.ready()) return;
     const w = adapter.read.world(),
       p = me.body?.position;
-    pennant.visible = giftRides(w);
+    pennant.visible = giftRides(w) || railGiftRides(w);
     recover(w);
     for (const pointer of pointers) {
       const shown = pointer.yard === 0 ? forge(w).used >= LINE2_FORGE.logs : haltYardOpen(w, pointer.yard);
@@ -321,7 +321,12 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView,
           target = {
             id,
             at,
-            verb: bay.k === 0 && kind === LOGS && mine![LOGS] > 0 && giftRides(w) ? 'Give to works' : 'Leave it here', // draft, for the owner (docs/plans/halt-yard.md, question 3)
+            verb:
+              bay.k === 0 &&
+              mine![kind] > 0 &&
+              ((kind === LOGS && giftRides(w)) || (kind === RAILS && railGiftRides(w)))
+                ? 'Give to works'
+                : 'Leave it here', // draft, for the owner (docs/plans/halt-yard.md, question 3)
             run: () => {
               leaveLoad(adapter, bay.k, kinds);
             },

@@ -81,6 +81,7 @@ const WORKS_AT: Record<SeedStage, WorksSite> = {
   'ring-joined': 'steelworks',
   'steel-kit': 'steelworks',
   'gorge-open': 'steelworks',
+  'stack-rails': 'steelworks',
   'gorge-mid': 'steelworks',
   'steel-lit': 'install',
   'steel-home': 'install',
@@ -116,15 +117,7 @@ const WORKS_AT: Record<SeedStage, WorksSite> = {
 };
 /** Every stage in exactly one shard (checked below); the trains and works stages share their cached bases. */
 export const SHARDS: readonly (readonly SeedStage[])[] = [
-  [
-    'awake',
-    't1-laid',
-    'forge-frame-last',
-    'forge-lit-last',
-    'q1-done',
-    'q2-stocked',
-    'q2-arriving',
-  ],
+  ['awake', 't1-laid', 'forge-frame-last', 'forge-lit-last', 'q1-done', 'q2-stocked', 'q2-arriving'],
   ['hook-taken', 'q3-stocked', 'q3-done'],
   ['q4-stocked', 'q4-arriving'],
   ['hook-earned', 'q4-done', 'q5-arriving'],
@@ -167,6 +160,7 @@ export const SHARDS: readonly (readonly SeedStage[])[] = [
     'steel-home',
     'boiler-long',
     'gorge-open',
+    'stack-rails',
     'gorge-mid',
     'gorge-reached',
     // Greybox leg 2 (docs/plans/greybox-leg2.md, step 3): built on gorge-reached, a second apiece.

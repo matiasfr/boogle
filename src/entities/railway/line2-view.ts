@@ -798,6 +798,7 @@ export async function createRailwayLine2(
   }
   // The forge's lighting is the server's to decide (a predicted deposit that fills it waits): its fanfare plays when the
   // mirror shows it lit, never on a rebuild.
+  let convertedShown = railRow(rd.world()).convertedRails;
   let litShown = forgeRow(rd.world()).lit;
   // Rails the mirror has poured that are still flying from the mouth to the rack (Local): the rack shows each as it lands.
   let pouredShown = forgeRow(rd.world()).poured,
@@ -818,6 +819,7 @@ export async function createRailwayLine2(
       active = line2Active(w),
       jobs = jobsOf(w);
     litShown = f.lit;
+    convertedShown = railRow(w).convertedRails;
     pouredShown = f.poured;
     pouring = 0;
     pourGeneration++;
@@ -1120,7 +1122,10 @@ export async function createRailwayLine2(
       wasWorking = working();
     },
     /** A resync (view.ts's soft rebuild): nothing that happened meanwhile plays its show. */
-    resynced: () => boiler.resync(),
+    resynced: () => {
+      convertedShown = railRow(rd.world()).convertedRails;
+      boiler.resync();
+    },
     update(dt: number) {
       switchCamera.update(dt);
       // The frame's rows: the world is read once, here, and so is the tick; nothing below holds a row across a call
@@ -1191,6 +1196,24 @@ export async function createRailwayLine2(
             drag: 0.2,
           });
       }
+      if (stock.convertedRails > convertedShown) {
+        emit({
+          x: chimneyTop.x,
+          y: chimneyTop.y,
+          z: chimneyTop.z,
+          vx: 0,
+          vy: 4,
+          vz: 0,
+          life: 1.5,
+          size: 2,
+          grow: [1, 3],
+          alpha: 0.9,
+          fade: 0.5,
+          color: smokeCol,
+          drag: 0.2,
+        });
+      }
+      convertedShown = stock.convertedRails;
       if (fg.poured < pouredShown) pouredShown = fg.poured;
       const fresh = fg.poured - pouredShown;
       pouredShown = fg.poured;
