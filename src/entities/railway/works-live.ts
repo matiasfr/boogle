@@ -83,7 +83,7 @@ export async function createRailwayWorksLive(
       current = roomWorks(world);
       routeGuides.read(world as ReadWorld, current);
       const routeSection = routeSections.has(current.site);
-      const stop = workSite.findIndex((site) => site === current!.site);
+      const stop = current.kind === 'footing' ? 4 : workSite.findIndex((site) => site === current!.site);
       const names =
         routeSection || stop > 0
           ? worksThanks(world, Math.max(0, stop))

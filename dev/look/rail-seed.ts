@@ -11,7 +11,7 @@ import { SERVER_ID } from '../../src/net/ids.ts';
 import { buildRingMidDoc, ringMidStage, seedDoc } from './ring-mid-seed.ts';
 import { buildStackDoc, stackStage } from './stack-seed.ts';
 import { buildLayDoc, layStage } from './lay-seed.ts';
-import { inclineGiftSeed, pierGiftSeed, stackGiftSeed, yardRecoverySeed } from './halt-yard-seed.ts';
+import { inclineGiftSeed, pierGiftSeed, q6GiftSeed, stackGiftSeed, yardRecoverySeed } from './halt-yard-seed.ts';
 
 /** `maxRooms`: the store's room cap for this write; a data dir that already holds many rooms (the net suite's) needs more. */
 export async function writeRailSeed(dataDir: string, room: string, stage: string, maxRooms = 2) {
@@ -19,8 +19,9 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
   const stack = stackStage(stage);
   const lay = layStage(stage);
   const kind = stage === 'ring-lookout' ? PLOT_KIND.lookout : stage === 'ring-bellhouse' ? PLOT_KIND.bell : null;
-  const recovery =
-    stage === 'q3-yard-recovery'
+  const recovery = ['q6-gift-queued', 'q6-gift-aboard', 'q6-gift-landed'].includes(stage)
+    ? () => q6GiftSeed(stage.slice(8))
+    : stage === 'q3-yard-recovery'
       ? yardRecoverySeed
       : stage === 'stack-gift'
         ? stackGiftSeed

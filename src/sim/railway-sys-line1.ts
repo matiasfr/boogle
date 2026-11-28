@@ -246,6 +246,13 @@ export const rackTake = defineSystem(
     const rail = w.mut(Rail, railId(w))!;
     if (e.kind === 1) {
       const n = Math.min(rail.stoneRack, room);
+      // Unattributed stone, including returned batches, stays available for pickup.
+      let donated = 0;
+      w.each([Account], (_id, row) => {
+        donated += row.queuedStone;
+      });
+      const picked = Math.max(0, n - (rail.stoneRack - donated));
+      if (picked) takeGivers(w, picked, () => {}, true);
       rail.stoneRack -= n;
       a.stone += n;
       return n;

@@ -124,7 +124,7 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     line2.depotSlot,
     shelf.railSlot,
   );
-  const trains = await createRailwayTrains(adapter, owner, line2.depotPlace, sources.villageBins[0]!, () =>
+  const trains = await createRailwayTrains(adapter, owner, line2.depotPlace, sources.villageBins, () =>
     haltYards.logBin(QUARRY_YARD),
   );
   const freight = createFreight(adapter, owner);

@@ -11,12 +11,12 @@ import {
   line2BoilerGround,
   RAILS,
 } from './railway-line2-layout.ts';
-import { layProgress, type LineTiming } from './railway-line-schedule.ts';
+import { layProgress } from './railway-line-schedule.ts';
 import { CART, CART_PHASE, CART_ROAD, cartEnd } from './railway-cart.ts';
 import { TRAIN, TRAIN_PHASE, TRAIN_STOPS, trainWakeAt } from './railway-train.ts';
 import { LINE2, RAIL_LINES, trainPlaces } from './railway-lines.ts';
 import { LINE_SLOTS, endMoved } from './railway-trains.ts';
-import { trainMoveIO } from './railway-sys-trains.ts';
+import { fundQ, trainMoveIO } from './railway-sys-trains.ts';
 import { legKitLifted } from './railway-sys-route-kit.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
@@ -43,7 +43,6 @@ import {
   Leg,
 } from './railway-components.ts';
 import {
-  aboard,
   boilerHeld,
   boilerId,
   carried,
@@ -52,10 +51,8 @@ import {
   cartWants,
   depotNeed,
   forgeId,
-  gateDown,
   held,
   jobId,
-  LINE2_SLOTS,
   qActive,
   q7Laid,
   qCompleted,
@@ -66,7 +63,6 @@ import {
   scheduleOf,
   shedId,
   stopsOf,
-  timingOf,
   trainId,
   trainOwed,
   worksId,
@@ -177,33 +173,6 @@ function line2Wake(w: World, tick: number) {
   });
 }
 // ---------------------------------------------------------------- line two's ops
-function fundQ(w: World, k: number, tick: number, timing: LineTiming) {
-  const spec = LINE2_STATIONS[k]!;
-  const id = qjobId(w, k);
-  const j = w.get(QJob, id)!;
-  if (j.start >= 0 || !gateDown(w, spec) || j.stock !== spec.bill[0] || j.railStock !== spec.bill[1]) return;
-  const jm = w.mut(QJob, id)!,
-    run = w.mut(QJobRun, id)!;
-  jm.stock = jm.railStock = 0;
-  run.allocation = spec.bill[0];
-  run.railAllocation = spec.bill[1];
-  jm.start = run.lastTick = tick;
-  // Rails still on the shelf or aboard the cart go back to the forge rack: they only ever wait for an unfunded
-  // stretch.
-  const rail = w.get(Rail, railId(w))!,
-    onCart = w.get(Cart, cartId(w))!.rails,
-    trainRails = aboard(w, 'rails');
-  if (spec.shelf && (rail.depotRails || rail.shelfOut || onCart || trainRails)) {
-    w.mut(Forge, forgeId(w))!.rack += rail.depotRails + onCart + trainRails;
-    Object.assign(w.mut(Rail, railId(w))!, { depotRails: 0, shelfOut: 0 });
-    if (onCart) w.mut(Cart, cartId(w))!.rails = 0;
-    for (const k of LINE2_SLOTS) if (w.get(Train, trainId(w, k))!.rails) w.mut(Train, trainId(w, k))!.rails = 0;
-  }
-  // Each stretch pins the room's timing when funded; Q2/Q3 lay faster, as in Place.
-  Object.assign(jm, timingOf(timing), {
-    cruiseCmPerTick: Math.max(1, Math.floor((timing.cruiseCmPerTick * spec.speed) / 100)),
-  });
-}
 export const deposit2 = defineSystem(
   'rail.deposit2',
   {

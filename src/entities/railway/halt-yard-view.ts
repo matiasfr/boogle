@@ -324,7 +324,8 @@ export async function createHaltYards(adapter: RailwayAdapter, owner: OwnedView,
             verb:
               bay.k === 0 &&
               mine![kind] > 0 &&
-              ((kind === LOGS && giftRides(w)) || (kind === RAILS && railGiftRides(w)))
+              (((kind === LOGS || kind === STONE) && giftRides(w, kind === STONE)) ||
+                (kind === RAILS && railGiftRides(w)))
                 ? 'Give to works'
                 : 'Leave it here', // draft, for the owner (docs/plans/halt-yard.md, question 3)
             run: () => {

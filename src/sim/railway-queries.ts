@@ -48,7 +48,7 @@ export const trainId = (w: World, slot: number) => w.lookup(Train, slot)!;
 export const lineId = (w: World, line: number) => w.lookup(Line, line)!;
 export const LINE2_SLOTS = LINE_SLOTS[LINE2]!;
 /** What line 2's trains carry between them (a train-fed job's kit or the steel works', footings, steel). */
-export const aboard = (w: World, key: 'logs' | 'rails' | 'foot' | 'steel') =>
+export const aboard = (w: World, key: 'logs' | 'rails' | 'foot' | 'steel' | 'workStone') =>
   LINE2_SLOTS.reduce((n, k) => n + w.get(Train, trainId(w, k))![key], 0);
 /** The slot the footing wagon is coupled to, or -1. */
 export const wagonSlot = (w: World) => LINE2_SLOTS.find((k) => w.get(Train, trainId(w, k))!.wagon) ?? -1;

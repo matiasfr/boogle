@@ -24,13 +24,17 @@ import { HALT_YARDS } from '../../src/sim/railway-yard-layout.ts';
 import { QUARRY_YARD, workAboard, worksThanks } from '../../src/sim/railway-queries-gift.ts';
 import { haltYardStock } from '../../src/sim/railway-queries-yard.ts';
 import { works } from '../../src/sim/railway-rows.ts';
-import { legRow } from '../../src/sim/railway-queries-route.ts';
-import { WORKS_KILN } from '../../src/sim/railway-works-layout.ts';
+import { WORKS_KILN, WORKS_RACK, SHED_STALL } from '../../src/sim/railway-works-layout.ts';
 import { Pile, Train, Town } from '../../src/sim/railway-components.ts';
 import { railTick } from '../../src/sim/railway-systems.ts';
 import { trains, town } from '../../src/sim/railway-rows.ts';
 import { TRADE } from '../../src/sim/railway-trade-layout.ts';
 import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
+
+import { legRow } from '../../src/sim/railway-queries-route.ts';
+import { qjob } from '../../src/sim/railway-rows.ts';
+import { RAIL_TRAINS, LINE2 } from '../../src/sim/railway-lines.ts';
+import { TRAIN_PHASE, trainArrives } from '../../src/sim/railway-train.ts';
 
 type Obj = Record<string, unknown>;
 
@@ -86,6 +90,100 @@ test('the host carries a Village donation into the rails-only Stack bill', async
       assert.equal(legRow(mirror.confirmed(), 0).rails, expected);
       assert.equal(rail(mirror.confirmed()).convertedRails, expected);
     }
+    railwayCheck(f.world());
+  } finally {
+    await f.close();
+  }
+});
+test('a guest at Home advances a stocked Q6 bill through a carrier restart', async () => {
+  const f = await fixture(railwayRoomId('q6-gift'), 600000);
+  try {
+    const seed = buildSeedWorld('q6-stocked');
+    while (f.host.sync.world.tick < seed.t) f.host.step(0.1);
+    await f.host.sync.whenDurable();
+    f.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())), railwayCheck);
+    f.host.rules.railway.touchAll();
+    await f.open('a');
+    const epoch = await f.open('b');
+    await f.harvest('b', 8, epoch);
+    const n = f.host.rules.railway.account('bob')!.carry;
+    const put = { op: 'rail.haltPut', yard: 0, kind: 0 };
+    f.pose('b', HALT_YARDS[0]!.x, HALT_YARDS[0]!.z);
+    assert.equal((await f.edit('b', put, epoch)).accepted, n);
+    for (let i = 0; !workAboard(f.world(), 2); i++) {
+      assert.ok(i < 6000);
+      await f.step(1);
+    }
+    await f.restart();
+    assert.equal(workAboard(f.world(), 2), n);
+    assert.equal(qjob(f.world(), 5).stock, 0);
+    for (let i = 0; workAboard(f.world(), 2); i++) {
+      assert.ok(i < 6000);
+      await f.step(1);
+    }
+    assert.equal(qjob(f.world(), 5).stock, n);
+    assert.deepEqual(worksThanks(f.world(), 2), ['bob']);
+    railwayCheck(f.world());
+  } finally {
+    await f.close();
+  }
+});
+test('a guest funds an early Quarry cast across restart and a normal footing pickup', async () => {
+  const f = await fixture(railwayRoomId('early-cast'), 600000);
+  try {
+    const seed = buildSeedWorld('works-lit');
+    while (f.host.sync.world.tick < seed.t) f.host.step(0.1);
+    await f.host.sync.whenDurable();
+    f.world().load(seed.w.snapshot(), railwayCheck);
+    f.host.rules.railway.touchAll();
+    const epoch = await f.open('a'),
+      giver = await f.open('b');
+    await f.harvest('b', 8, giver);
+    f.pose('b', HALT_YARDS[0]!.x, HALT_YARDS[0]!.z);
+    assert.ok((await f.edit('b', { op: 'rail.haltPut', yard: 0, kind: 0 }, giver)).accepted >= 4);
+    const atHome = () =>
+      trains(f.world()).some(
+        (t) => RAIL_TRAINS[t.slot]!.line === LINE2 && t.at === 0 && t.phase === TRAIN_PHASE.STAND && !t.logs,
+      );
+    for (let i = 0; !atHome(); i++) {
+      assert.ok(i < 6000);
+      await f.step(1);
+    }
+    f.pose('a', WORKS_RACK.x, WORKS_RACK.z, WORKS_RACK.y);
+    assert.equal((await f.edit('a', { op: 'rail.footTake', rack: 0 }, epoch)).accepted, 1);
+    for (let i = 0; !workAboard(f.world(), 4); i++) {
+      assert.ok(i < 6000);
+      await f.step(1);
+    }
+    f.pose('a', SHED_STALL.x, SHED_STALL.z, SHED_STALL.y);
+    assert.equal((await f.edit('a', { op: 'rail.footSet', site: 0 }, epoch)).accepted, 1);
+    await f.restart();
+    assert.equal(workAboard(f.world(), 4), 4);
+    const nextEpoch = await f.open('a');
+    f.requests.delete('a');
+    for (
+      let i = 0;
+      !trains(f.world()).some(
+        (t) =>
+          t.workStop === 4 &&
+          t.to === 1 &&
+          t.phase === TRAIN_PHASE.RUN &&
+          trainArrives(t, LINE2) - f.host.sync.world.tick === 1,
+      );
+      i++
+    ) {
+      assert.ok(i < 6000);
+      await f.step(1);
+    }
+    f.pose('a', WORKS_RACK.x, WORKS_RACK.z, WORKS_RACK.y);
+    assert.equal((await f.edit('a', { op: 'rail.footTake', rack: 0 }, nextEpoch)).accepted, 1);
+    for (let i = 0; !works(f.world()).castLogs; i++) {
+      assert.ok(i < 20);
+      await f.step(1);
+    }
+    assert.equal(works(f.world()).castLogs, 4);
+    assert.equal(works(f.world()).rack, 6);
+    assert.deepEqual(worksThanks(f.world(), 4), ['bob']);
     railwayCheck(f.world());
   } finally {
     await f.close();

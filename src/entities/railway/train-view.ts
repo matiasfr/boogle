@@ -121,7 +121,7 @@ export async function createRailwayTrains(
   adapter: RailwayAdapter,
   owner: OwnedView,
   depotPlace: (k: number, out: THREE.Vector3) => THREE.Vector3,
-  homeLogBin: THREE.Vector3,
+  homeBins: readonly THREE.Vector3[],
   quarryLogBin: () => THREE.Vector3,
 ) {
   const [layout, rail, look, kit, wagon, crates, load, pieces, sounds, engineKit, carKit, shape, folk, land, { flat }] =
@@ -278,7 +278,7 @@ export async function createRailwayTrains(
     stopLamp.position.set(0, shape.ENGINE_CAB.roofTop + 0.08, shape.ENGINE_CAB.zFront);
     owner.add(stopLamp);
     meshByRole('engine').add(stopLamp);
-    const bundle = giftBundle(owner, lashMaterial);
+    const { bundle, timber, stones } = giftBundle(owner, lashMaterial);
     bundle.rotation.y = Math.PI / 2;
     bundle.position.set(0, carByRole('kit').spec.top, carByRole('kit').spec.hz - 0.45);
     meshByRole('kit').add(bundle);
@@ -372,6 +372,8 @@ export async function createRailwayTrains(
       pennant,
       bundle,
       railBundle,
+      timber,
+      stones,
       shudder: 0,
       /** The platform beat (docs/plans/garage-install-moment.md, G5): this view has drawn the train since the last
        * restore, and the seconds into its longer boiler going on, or -1. */
@@ -979,7 +981,9 @@ export async function createRailwayTrains(
       const last = { ...trainRow(w, tr.slot) };
       tr.last = last;
       tr.railBundle.visible = (last.giftRails ?? 0) > 0;
-      tr.bundle.visible = last.gift + last.workLogs > 0;
+      tr.stones.visible = last.workStone > 0;
+      tr.timber.visible = !last.workStone;
+      tr.bundle.visible = last.gift + last.workLogs + last.workStone > 0;
       tr.count = -1;
       folk.folk.resetRiderShuffle(tr.slot, last.riders, tr.riderCar);
       // A restore or a late join shows the rows only: no beat, and the next frame's fit is not an edge.
@@ -1434,27 +1438,32 @@ export async function createRailwayTrains(
           }
         }
         tr.railBundle.visible = row.giftRails > 0;
-        tr.bundle.visible = row.gift + row.workLogs > 0;
+        tr.stones.visible = row.workStone > 0;
+        tr.timber.visible = !row.workStone;
+        tr.bundle.visible = row.gift + row.workLogs + row.workStone > 0;
         if (
           !skipGiftFlights &&
           tr.last &&
-          row.workLogs !== (tr.last.workLogs ?? 0) &&
-          (row.at === 0 || row.at === tr.last.workStop)
+          row.workLogs + row.workStone !== (tr.last.workLogs ?? 0) + (tr.last.workStone ?? 0) &&
+          (row.at === 0 || row.at === (tr.last.workStop === 4 ? 1 : tr.last.workStop))
         ) {
           workGiftTrip(
             owner,
             row,
-            row.workLogs - (tr.last.workLogs ?? 0),
+            row.workLogs + row.workStone - (tr.last.workLogs ?? 0) - (tr.last.workStone ?? 0),
+            !!(row.workStone || tr.last.workStone),
+            tr.last.workStop === 4,
             tr.bundle,
-            homeLogBin,
+            homeBins[row.workStone || tr.last.workStone ? 1 : 0]!,
             quarryLogBin,
             depotPlace,
           );
         }
         const delta = !skipGiftFlights && tr.last ? row.gift - (tr.last.gift ?? 0) : 0;
-        giftTrip(owner, w, tr.line, row, delta, tr.bundle, homeLogBin, legKitFlight);
+        giftTrip(owner, w, tr.line, row, delta, tr.bundle, homeBins[0]!, legKitFlight);
         const railDelta = !skipGiftFlights && tr.last ? row.giftRails - (tr.last.giftRails ?? 0) : 0;
-        if (railDelta < 0) giftTrip(owner, w, tr.line, row, railDelta, tr.railBundle, homeLogBin, legKitFlight, 'rail');
+        if (railDelta < 0)
+          giftTrip(owner, w, tr.line, row, railDelta, tr.railBundle, homeBins[0]!, legKitFlight, 'rail');
         // A leg's kit hops from the car to its rack (the greybox route's step 4 review, answer b: 8 m over the up
         // track at Ring Island, then onto each railhead's), drawn as the Q kits' unload is. The rows moved the units
         // on the tick the train stood; the rack's view draws each once its crate lands (legKitFlight). On any line

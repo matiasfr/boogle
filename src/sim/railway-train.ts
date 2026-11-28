@@ -221,6 +221,7 @@ export type RailTrain = {
   giftRails?: number;
   giftBill?: number;
   workLogs?: number;
+  workStone?: number;
   workStop?: number;
 };
 /** Train `slot` standing at its home, asleep (a fleet row: in the shed, TRAIN_PHASE.SHED). */

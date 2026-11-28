@@ -80,6 +80,12 @@ export const steelTake = defineSystem(
 );
 /** Logs and rails off your back into the works' bill (the kiln's shape): whichever feed fills it lights it. Any logs and
  * rails count, not only the yard's. */
+export function lightSteel(w: World, tick: number) {
+  const id = steelId(w);
+  const s = w.get(Steel, id)!;
+  if (s.lit < 0 && s.logs === STEEL.logs && s.rails === STEEL.rails)
+    w.mut(Steel, id)!.lit = w.mut(SteelClock, id)!.lastCast = tick;
+}
 export const steelFeed = defineSystem(
   'rail.steel',
   { reads: [Aperture], writes: [Steel, SteelClock, Account, Leg], phase: 'act', order: 55 },
@@ -98,7 +104,7 @@ export const steelFeed = defineSystem(
     am.workThanks |= 1 << RING_ISLAND;
     sm.logs += logs;
     sm.rails += rails;
-    if (sm.logs === STEEL.logs && sm.rails === STEEL.rails) sm.lit = w.mut(SteelClock, id)!.lastCast = tick;
+    lightSteel(w, tick);
     // A leg rack's units fed here are no longer held for its frame (the step 3 review's P2-2): owed again.
     legKitPut(w, aid, logs, rails);
     return logs + rails;

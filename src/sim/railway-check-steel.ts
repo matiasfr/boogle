@@ -73,6 +73,8 @@ export function checkSteel(w: World, tick: number) {
     r0.depotProduced +
       r0.giftOut +
       r0.depotGiftDelivered +
+      workAboard(w, 4) -
+      aboard(w, 'workStone') +
       workAboard(w, 1) +
       workAboard(w, 2) +
       workAboard(w, 3) +
