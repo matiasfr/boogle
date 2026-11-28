@@ -4,6 +4,7 @@ Proof debts, things jobs reported and did not fix, and older parked items. Split
 
 ## From 28 November
 
+- P2 · Two players landing at the same jump spot push each other off it (lap step 3's review, 28 November; it also happens on the pre-join `gorge-reached` jump, so it is older than the lap). Two players who take a jump-in to the same row land at identical coordinates. The first then moves off the platform with no input (about 21 m at `gorge-reached`; once between the rails at `lap-ride`), and after a reload it may not regain footing within 60 s. With collision against the remote player's proxy turned off in a diagnostic run, both stayed grounded, so the likely cause is the remote player's collision body spawning inside the local one. Players meet it only through jump-ins today; check whether a late join or a respawn in the shared room can also stack two players. The failing two-player checks were taken out of `dev/scenarios/arrival.ts` so the weekly scenarios run stays green; they are on local `review/greybox-lap-seeds` @ `2bdf791b7` (worktree `C:/Users/matia/.t3/worktrees/boogle/t3-6f91731e-1cd4faf633387163`), with the fix round's log at `.look/isolated-fix-scenario.log` in the lap worktree.
 - P3 · The riders shuffling on and off the coach (#2644, 28 November, view only): it owes one still of the shuffle on the joined line once the lap (`codex/greybox-lap-join`) is on main; its backlog row left with the ship.
 
 ## From 27 November

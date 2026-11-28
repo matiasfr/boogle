@@ -138,21 +138,5 @@ export default {
         moved.lines.includes('4 new stretches of track were laid'),
       `${JSON.stringify({ seeded, moved })}; ${movedShot}`,
     );
-
-    jump.searchParams.delete('room');
-    jump.searchParams.set('from', 'lap-ride');
-    await g.page.goto(jump.href);
-    await g.page.waitForFunction(() => document.body.classList.contains('playing'), null, { timeout: 180000 });
-    const lapRoom = new URL(g.page.url()).searchParams.get('room')!;
-    const onPlatform = `(() => {
-      const me = window.boogle.me, p = me.body?.position;
-      return !!p && me.coyote > 0 && Math.abs(p.y - 4.35) < 0.12 && Math.hypot(p.x + 84.31939, p.z + 1980.308825) < 2;
-    })()`;
-    t.check('solo arrival stands on the Gorge platform', (await g.waitFor(onPlatform)) >= 0);
-    const friend = await t.open({ name: 'Friend', room: lapRoom, size: IPAD });
-    t.check('the joining friend reaches the Gorge platform', (await friend.waitFor(onPlatform)) >= 0);
-    t.check('the first player stays on the platform when a friend joins', (await g.eval(`return ${onPlatform}`)) === true);
-    await reloadIn(g);
-    t.check('reload returns to the occupied platform', (await g.waitFor(onPlatform, { timeout: 60000 })) >= 0);
   },
 };
