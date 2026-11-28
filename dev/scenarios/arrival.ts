@@ -48,7 +48,9 @@ export default {
 
     // 1. A first visit: forget the name and load again. The card, with a friendly name filled in.
     await g.eval(`localStorage.clear();`);
-    await g.page.reload();
+    const firstLogin = new URL(g.page.url());
+    firstLogin.searchParams.set('intro', '1'); // Run the production trolley fall under WebDriver.
+    await g.page.goto(firstLogin.href);
     await g.page.waitForSelector('#enter:not([disabled])', { timeout: 180000 });
     await g.page.addStyleTag(NO_SPLASH);
     await g.wait(0.6);
@@ -63,6 +65,10 @@ export default {
     };
     const firstShot = await g.still('first-visit');
     t.check(
+      'the first visit starts on the trolley',
+      !!(await g.eval(`return document.body.classList.contains('fall-stage');`)),
+    );
+    t.check(
       'first visit: the card shows with a friendly name filled in, the colours and Jump in, and little else to read',
       first.lobby && first.name.length > 0 && first.swatches > 4 && !first.entered && first.words <= 6,
       `${JSON.stringify(first)}; ${firstShot}`,
@@ -71,6 +77,12 @@ export default {
     await g.waitFor(`window.boogle.me.entered`, { timeout: 10000 });
     const saved = await g.eval(`return localStorage.getItem('boogle.name');`);
     t.check('Jump in saves the name for next time', saved === first.name, String(saved));
+    const landed = await g.waitFor(
+      `!document.body.classList.contains('fall-air') && !window.boogle.me.down &&
+       window.boogle.me.coyote > 0 && !window.boogle.me.swimming`,
+      { timeout: 60000 },
+    );
+    t.check('the fall completes and Buddy stands dry on the dock', landed >= 0);
     await g.waitFor(`!!localStorage.getItem('boogle.visit.${room}')`, { timeout: 20000 });
 
     // 2. Returning, nothing changed: straight in, no card, a welcome back that leaves on its own.

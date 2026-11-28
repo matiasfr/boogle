@@ -470,8 +470,8 @@ const director = spawn({
             alpha: 0.5,
             color: STREAK,
           });
-      const nearGround = b.position.y <= fallArrival.ground(b.position.x, b.position.z) + PLAYER_R + 0.6;
-      if (nearGround && (me.coyote > 0 || me.swimming)) land(now);
+      // The dock's rail bed stands above the soil. After the title, the player's footing marks touchdown.
+      if (titleHit && (me.coyote > 0 || me.swimming)) land(now);
     } else if (state === 'down') {
       if (now - downSince > GET_UP_MS && pressing()) me.downUntil = now;
       if (!me.down) {

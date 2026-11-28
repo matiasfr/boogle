@@ -14,6 +14,7 @@ on the dock's grass or coastal cliffs. This is Local presentation only.
 The landing faces the first climbing leg of the shore path (yaw `-π/2 - 0.45`, start-area S3, 15 November), so its
 middle remains in the middle third at portrait phone width. That same heading turns the sky rail, title order,
 letter scatter and landing crane; the fall's choreography and timing are unchanged.
+Touchdown on the West landing's raised rail bed starts the same flop and recovery as touchdown on the shore.
 SPAWN stays at the village: returning players skip the fall, valid saved positions restore, and unsafe
 positions fall back there. Position saves include the ground height; moved ground, water, or an older
 save without that sample falls back to SPAWN. Get unstuck keeps its existing nearby-ground/path recovery.
