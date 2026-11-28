@@ -32,5 +32,8 @@ export function testEnv(mode: TestMode = 'local'): { env: NodeJS.ProcessEnv; fla
   const outside = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_')));
   const env = { ...outside, ...MODES[mode] };
   const preload = env.RAIL_AUDIT === '1' ? [] : ['--import', './test/helpers/rail-no-audit.ts'];
-  return { env, flags: [...preload, `--test-timeout=${mode === 'long' ? 600_000 : 5000}`] };
+  return {
+    env,
+    flags: [...preload, '--experimental-test-module-mocks', `--test-timeout=${mode === 'long' ? 600_000 : 5000}`],
+  };
 }
