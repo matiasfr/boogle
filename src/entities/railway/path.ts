@@ -84,18 +84,28 @@ export async function createRailwayPath(owner: OwnedView) {
   return {
     update(open: boolean, quiet = false, guide = false, seconds = 0) {
       row.visible = open;
-      if (open && (guide || chasing)) {
+      const pulse = open && guide && !reducedMotion;
+      if (pulse || chasing) {
         // The pairs are stored Camp to Home. Send the warm crest up the row in reverse.
         for (let k = 0; k < slots.length; k += 2) {
           const phase = (seconds * 3 + k / 2) % 9;
-          const intensity = guide && !reducedMotion ? 0.4 + 2.8 * Math.max(0, 1 - Math.min(phase, 9 - phase) / 2) : 1;
+          const crest = pulse ? Math.max(0, 1 - Math.min(phase, 9 - phase) / 2) : 0;
+          const intensity = pulse ? 0.3 + 2.8 * crest : 1;
           tint.setRGB(intensity, intensity, intensity);
-          lights.setColorAt(k, tint);
-          lights.setColorAt(k + 1, tint);
+          // The ordinary 26 cm lens is a dot from the forge. Widen the lit pair for that sightline.
+          o.scale.setScalar(1 + 3.8 * crest);
+          for (const index of [k, k + 1]) {
+            const at = slots[index]!;
+            o.position.set(at.x, at.y + 0.8, at.z);
+            o.updateMatrix();
+            lights.setMatrixAt(index, o.matrix);
+            lights.setColorAt(index, tint);
+          }
         }
+        lights.instanceMatrix.needsUpdate = true;
         lights.instanceColor!.needsUpdate = true;
       }
-      chasing = guide;
+      chasing = pulse;
       if (!open || placed) return;
       placed = true;
       // Join the grass beside the parked machine to the actual solid top (rail.ts TOP = 0.1).
