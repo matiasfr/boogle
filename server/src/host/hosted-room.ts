@@ -235,7 +235,7 @@ export function createHostedRoom({
   }
 
   function onMessage(c: Client, data: unknown) {
-    if (clients.get(c.id) !== c) return; // a replaced socket's frames still in flight
+    if (closing || clients.get(c.id) !== c) return; // input is sealed before the final checkpoint
     const text = String(data);
     const now = performance.now();
     c.seen = now;

@@ -260,10 +260,11 @@ export function addJump(
         const { stage, ns: pageNs, ...rest } = body as Record<string, unknown>;
         if (Object.keys(rest).length || typeof stage !== 'string' || typeof pageNs !== 'string')
           return res.status(400).json({ error: 'body must be { stage, ns }' });
+        if (pageNs !== RAILWAY_PLAY_NS || (cfg.build !== 'dev' && req.query.serverBuild !== cfg.build))
+          return res.status(409).json({ error: 'world changed', ns: RAILWAY_PLAY_NS });
         if (stage !== 'start' && !isSeedStage(stage)) return res.status(400).json({ error: 'unknown stage' });
         if (stage !== 'start' && cfg.jumpBuild === 'prebuilt' && !(await hasPrebuilt(stage)))
           return res.status(503).json({ error: 'stage not built' });
-        if (pageNs !== RAILWAY_PLAY_NS) return res.status(409).json({ error: 'world changed', ns: RAILWAY_PLAY_NS });
         await sweep();
         // From here to the reservation is synchronous: no await between the checks and taking the slot.
         const utc = new Date().toISOString().slice(0, 10);
