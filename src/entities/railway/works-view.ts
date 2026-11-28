@@ -12,8 +12,8 @@ import { remotes } from '../../netplay/net.ts';
 import { heldId } from '../../player/inventory.ts';
 import { chuff, clank, thump } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
-import { emit } from '../../render/particles.ts';
-import { dustRing } from '../../render/particle-effects.ts';
+import { ambientParticleBeat, emit } from '../../render/particles.ts';
+import { dustRing, stackPuff } from '../../render/particle-effects.ts';
 import { readableGlow, readableIntensity } from '../../render/readable-unlit.ts';
 import { createCameraPullOut } from '../../render/camera-pull-out.ts';
 import { playSharedMoment } from './shared-moment.ts';
@@ -454,10 +454,10 @@ export async function createRailwayWorks(
     landed = 0,
     litShown = false,
     flare = 0,
-    smoke = 0,
     fire = 0,
     poured = -1;
   const flights: { t: number }[] = [];
+  const chimneyBeat = ambientParticleBeat(0.85);
   const m = new THREE.Matrix4(),
     p = new THREE.Vector3(),
     pivot = new THREE.Matrix4(),
@@ -711,27 +711,7 @@ export async function createRailwayWorks(
   }
   function effects(dt: number) {
     if (worksRow(wd).lit < 0) return;
-    const chimney = { x: kiln.x + 1.5, y: 34.6, z: kiln.z - 1.5 };
-    smoke -= dt;
-    if (smoke <= 0) {
-      smoke = 0.45;
-      emit({
-        x: chimney.x,
-        y: chimney.y,
-        z: chimney.z,
-        vx: 0.5,
-        vy: 1.8 + Math.random() * 0.6,
-        vz: (Math.random() - 0.5) * 0.4,
-        life: 4.5,
-        size: 0.6,
-        color: ash,
-        alpha: 0.45,
-        drag: 0.3,
-        grow: [1, 4],
-        fade: 0.6,
-        shape: 'dust',
-      });
-    }
+    if (chimneyBeat(dt)) stackPuff(kiln.x + 1.5, 34.6, kiln.z - 1.5, 0.8);
     // The mouth breathes: a slow flicker on the glow, and flame licking up out of its top edge.
     glowMat.emissiveIntensity = 1.7 + Math.sin(performance.now() / 90) * 0.25 + Math.sin(performance.now() / 37) * 0.15;
     fire -= dt;

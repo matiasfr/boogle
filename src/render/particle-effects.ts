@@ -3,6 +3,7 @@ import * as THREE from 'three/webgpu';
 import { reducedMotion } from '../constants.ts';
 import { emit, type Particle } from './particles.ts';
 import { readableIntensity } from './readable-unlit.ts';
+import { camera } from './scene.ts';
 
 /** Small typed authoring surface; visual-only, never saved or sent to another player. */
 const particleEffects = {
@@ -13,6 +14,34 @@ const particleEffects = {
 };
 const timber = [new THREE.Color('#e5b77c'), new THREE.Color('#bb793e'), new THREE.Color('#f2d2a0')];
 const stone = new THREE.Color('#9caaa9');
+const steam: Particle = {
+  x: 0,
+  y: 0,
+  z: 0,
+  color: new THREE.Color('#eee8dc'),
+  shape: 'puff',
+  size: 0.6,
+  life: 3,
+  vy: 1.6,
+  drag: 0.18,
+  alpha: 0.7,
+  sizeCurve: [0.65, 1.65, 2.15],
+  alphaCurve: [0.85, 0.75, 0],
+};
+
+/** A round breath from an existing stack. The pool copies this record at birth. */
+export function stackPuff(x: number, y: number, z: number, size: number) {
+  if (
+    reducedMotion ||
+    (x - camera.position.x) ** 2 + (y - camera.position.y) ** 2 + (z - camera.position.z) ** 2 > 90 ** 2
+  )
+    return;
+  steam.x = x;
+  steam.y = y;
+  steam.z = z;
+  steam.size = size;
+  emit(steam);
+}
 const dust = new THREE.Color('#cdbb9a'),
   dustMid = new THREE.Color('#d8cbb1'),
   dustEnd = new THREE.Color('#e0d8c5');

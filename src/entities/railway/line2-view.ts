@@ -17,7 +17,8 @@ import { reducedMotion } from '../../constants.ts';
 import { legRackLift } from './leg-yard.ts';
 import { clank, thump, whistle } from '../../render/machine-sfx.ts';
 import { placeSound } from '../../render/place-sfx.ts';
-import { emit } from '../../render/particles.ts';
+import { ambientParticleBeat, emit } from '../../render/particles.ts';
+import { stackPuff } from '../../render/particle-effects.ts';
 import { commitPieces } from '../../render/haul-pieces.ts';
 import { readableGlow, readableUnlit } from '../../render/readable-unlit.ts';
 import {
@@ -222,7 +223,7 @@ export async function createRailwayLine2(
   let wallsBody: Body | null = null;
   const chimneyTop = new THREE.Vector3(plan.smoke!.x, plan.smoke!.y + 0.2, plan.smoke!.z);
   const smokeCol = new THREE.Color(look.LOOK.light ? '#d9d5cc' : '#5d5a55');
-  let smokeAcc = 0;
+  const chimneyBeat = ambientParticleBeat(0.8);
   const fire = furnaceMouthAtlas();
   const mouth = mesh(
     furnaceMouthBox(),
@@ -1176,26 +1177,7 @@ export async function createRailwayLine2(
       // its hold sees it and waits (independent review, 18 November: updated first, it left `idle` the same frame).
       finish.update(dt);
       rewards.update(dt);
-      if (fg.lit >= 0) {
-        // Lit: the chimney smokes and each poured rail flies out of the mouth onto the rack, as in the prototype.
-        smokeAcc += dt * 3;
-        for (; smokeAcc >= 1; smokeAcc--)
-          emit({
-            x: chimneyTop.x + (Math.random() - 0.5) * 0.4,
-            y: chimneyTop.y,
-            z: chimneyTop.z + (Math.random() - 0.5) * 0.4,
-            vx: 0.5,
-            vy: 3.2 + Math.random(),
-            vz: 0,
-            life: 5,
-            size: 1.1,
-            grow: [1, 3.4],
-            alpha: 0.75,
-            fade: 0.5,
-            color: smokeCol,
-            drag: 0.2,
-          });
-      }
+      if (fg.lit >= 0 && chimneyBeat(dt)) stackPuff(chimneyTop.x, chimneyTop.y, chimneyTop.z, 0.9);
       if (stock.convertedRails > convertedShown) {
         emit({
           x: chimneyTop.x,
