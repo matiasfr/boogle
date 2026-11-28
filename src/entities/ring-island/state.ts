@@ -8,10 +8,13 @@
 import { jumpOf, type JumpLand } from '../../world/railway-jump.ts';
 import { RING_GAP, RING_FORMATION, RING_HALT, ringAt } from '../../sim/railway-ring-layout.ts';
 import { createIslandGround, ringUL, type IslandGround } from './ground.ts';
+import type { Interactable } from '../../player/hands.ts';
 
 /** The leaf: degrees up from the deck (78 raised, 0 down), counterweight footings in its bracket (0..4), braced. */
 export const ringIslandPose = { leaf: 78, bracket: 0, braced: false };
 export const ringIslandNear = { mounted: false, keep: false };
+/** Consumed by the town's shared plot interaction provider; cleared on near-view unmount. */
+export const ringPlotTargets: Interactable[] = [];
 const mountListeners = new Set<() => void>();
 export function onRingSceneryMounted(fn: () => void) {
   mountListeners.add(fn);

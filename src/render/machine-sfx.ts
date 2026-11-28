@@ -89,8 +89,8 @@ export function clank(x: number, z: number): void {
 }
 
 // A train's stop bell (a passenger's request accepted): one struck note, its partials ringing out over a second.
-export function bell(x: number, z: number): void {
-  const a = at(x, z, 0.16);
+export function bell(x: number, z: number, range = HEAR): void {
+  const a = at(x, z, 0.16, range);
   if (!a) return;
   const { ctx, out, g, t } = a;
   for (const [mul, k, decay] of [

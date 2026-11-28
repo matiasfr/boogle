@@ -8,6 +8,7 @@ import { createStore } from '../src/store.ts';
 import { createRailwayWorldHost } from '../src/host/world-host.ts';
 import { createRailwayMirror } from '../../src/world/railway-replicate.ts';
 import { townPlotBoard } from '../../src/place/town-plan.ts';
+import { RING_HANGOUT, ringAt } from '../../src/sim/railway-ring-layout.ts';
 import { Till } from '../../src/sim/railway-components.ts';
 import { WebSocket, createService, loadConfig } from './helpers/accounts.ts';
 import { setTune } from '../../src/sim/tune.ts';
@@ -88,7 +89,7 @@ async function fixture(stage: SeedStage) {
     step,
     connect,
     mirrors,
-    send(fields: Obj, sid = 'alice') {
+    send(fields: Obj, sid = 'alice', at?: number[]) {
       const s = sessions.get(sid) ?? { epoch: 1, request: 0 };
       const board = townPlotBoard(fields.id === 1 || fields.id === 2 ? fields.id : 0);
       const e = {
@@ -96,7 +97,7 @@ async function fixture(stage: SeedStage) {
         ...fields,
         epoch: s.epoch,
         request: ++s.request,
-        at: [Math.round((board.x + 1000) * 100), 1800, Math.round(board.z * 100)],
+        at: at ?? [Math.round((board.x + 1000) * 100), 1800, Math.round(board.z * 100)],
         ms: 100,
       };
       h.deliver({ t: 'r:edit', e }, sid);
@@ -236,6 +237,48 @@ test('buy host: two players race different plots in one tick with money for one;
     await f.close();
   }
 });
+
+for (const kind of [6, 7]) {
+  test(`Ring plot: racing r:edits persist kind ${kind} and debit the shared till once`, async () => {
+    const f = await fixture('ring-joined');
+    try {
+      const board = (pick: number) => {
+        const p = ringAt(RING_HANGOUT.u + (pick === 6 ? -120 : 120), RING_HANGOUT.lat + 400);
+        return [p.x, RING_HANGOUT.floor, p.z];
+      };
+      const at = board(kind);
+      const before = { ...till(f.w) };
+      assert.equal(f.send({ id: 16, kind }).result?.status, 'rejected', 'Home board');
+      for (const invalid of [0, 1, 2, 3, 4, 5]) {
+        assert.equal(f.send({ id: 16, kind: invalid }, 'alice', at).result?.status, 'rejected');
+      }
+      setTune(f.h.rules.railTune.tune, 'railPricePct', 1000);
+      assert.equal(f.send({ id: 16, kind }, 'alice', at).result?.status, 'rejected', 'insufficient balance');
+      assert.deepEqual({ ...till(f.w) }, before);
+      setTune(f.h.rules.railTune.tune, 'railPricePct', 50);
+      assert.equal(f.send({ id: 16, kind }, 'alice', at).result?.status, 'accepted');
+      assert.equal(f.send({ id: 16, kind: 13 - kind }, 'bob', board(13 - kind)).result?.status, 'rejected');
+      const box = till(f.w);
+      const bought = { ...plot(f.w, 16) };
+      assert.deepEqual(
+        [bought.kind, bought.paid, box.boogles, box.spent],
+        [kind, 150, before.boogles - 150, before.spent + 150],
+      );
+      await f.step(1);
+      for (const mirror of f.mirrors.values()) assert.deepEqual(plot(mirror.world(), 16), bought);
+      await f.restart();
+      assert.deepEqual(plot(f.w, 16), bought);
+      assert.equal(f.h.hasBellhouse(), false, 'unfinished purchase');
+      await f.step(TRADE.buildTicks);
+      assert.equal(f.h.hasBellhouse(), kind === 7, 'completed purchase');
+      await f.restart();
+      assert.deepEqual(plot(f.w, 16), bought, 'completed building survives restart');
+      assert.equal(f.h.hasBellhouse(), kind === 7);
+    } finally {
+      await f.close();
+    }
+  });
+}
 
 type Msg = Record<string, any>;
 function message(ws: WebSocket, matches: (packet: Msg) => boolean) {

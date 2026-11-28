@@ -18,6 +18,7 @@ import { CLOSE, MAX_MSG, encode, decode, type WireMsg } from '../../../src/net/w
 import { SERVER_ID } from '../../../src/net/ids.ts';
 import { createStepMeter } from './step-meter.ts';
 import { createRoomWorldHost } from './room-world-host.ts';
+import { RING_HANGOUT, ringAt } from '../../../src/sim/railway-ring-layout.ts';
 import { isRailwayRoom } from '../../../src/world/railway-namespace.ts';
 import { RAILWAY_CLIENT_MESSAGES } from '../../../src/world/railway-wire.ts';
 import { validatePing, honkShape, COSMETIC_BOUND } from '../../../src/sim/social.ts';
@@ -114,6 +115,8 @@ export function createHostedRoom({
   const clients = new Map<string, Client>(); // ready clients by selfId
   const railway = isRailwayRoom(roomId);
   const poseAt = new Map<string, number>();
+  const lastBell = new Map<string, number>();
+  const rope = ringAt(RING_HANGOUT.u, RING_HANGOUT.lat);
   // The room's replicator (docs/plans/replication.md): a railway room's `railway` state defines its projections on it;
   // every client is subscribed on join (late join from change tick -1), and at the end of each 60 Hz step what changed
   // goes out, skipping sockets over HIGH_WATER (coalescing).
@@ -274,6 +277,24 @@ export function createHostedRoom({
     // The world channel is server-clock only. Never relay any client w:* payload.
     if (typeof t === 'string' && t.startsWith('w:')) return void c.dropped++;
     if (railway) {
+      if (t === 'bell') {
+        const p = (c.d as { p?: unknown } | null)?.p;
+        if (
+          (m.d as WireMsg).id !== 16 ||
+          !Array.isArray(p) ||
+          !p.slice(0, 3).every(Number.isFinite) ||
+          p.length < 3 ||
+          !visible(c) ||
+          Date.now() - (poseAt.get(c.id) ?? 0) > 2000 ||
+          Math.hypot(p[0] - rope.x / 100, p[1] - (RING_HANGOUT.floor / 100 + 1), p[2] - rope.z / 100) > 3.2 ||
+          now - (lastBell.get(c.id) ?? -Infinity) < 1500 ||
+          !world.hasBellhouse?.()
+        )
+          return void c.dropped++;
+        lastBell.set(c.id, now);
+        toAll(encode({ t: 'm', from: c.id, d: { t, id: 16 } }), c.id);
+        return;
+      }
       // Existing cosmetic one-offs remain peer messages. Strip unrelated fields; none enters the material host.
       if (t === 'ping' || t === 'honk' || t === 'mush') {
         const cosmetic = t === 'ping' ? validatePing(m.d) : t === 'mush' ? mushShape(m.d) : { v: honkShape(m.d) };
@@ -294,6 +315,7 @@ export function createHostedRoom({
     if (clients.get(c.id) !== c) return; // replaced by a newer socket
     clients.delete(c.id);
     poseAt.delete(c.id);
+    lastBell.delete(c.id);
     replication.removeClient(c.id);
     if (c.timer) clearTimeout(c.timer);
     for (const o of clients.values()) o.pending.delete(c.id);
@@ -311,6 +333,7 @@ export function createHostedRoom({
   function drop(c: Client, code: number) {
     clients.delete(c.id);
     poseAt.delete(c.id);
+    lastBell.delete(c.id);
     replication.removeClient(c.id);
     if (c.timer) clearTimeout(c.timer);
     for (const x of clients.values()) x.pending.delete(c.id);

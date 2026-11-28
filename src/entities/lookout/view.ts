@@ -40,51 +40,19 @@ const point = (key: 'lookout.telescope' | 'lookout.buoy', name: string): Vec3 =>
 
 export type LookoutView = Awaited<ReturnType<typeof createLookoutView>>;
 
-export async function createLookoutView() {
-  const owner = createOwnedView();
-  const [layout, terrain, sites] = await Promise.all([
-    import('../../place/layout.ts'),
-    import('../../place/terrain.ts'),
-    import('../../place/sites.ts'),
-  ]);
-  const { ORIGIN, FAR, LINES } = layout;
-  const ring = { x: FAR.x + ORIGIN.x, z: FAR.z + ORIGIN.z };
-  const placements = loadLevelArtifact(level, definitions).placements;
-
-  // ---------------------------------------------------------------- the telescope on the ridge's top
-  const scope = placements.find((p) => p.prefab === 'lookout.telescope');
-  if (!scope) throw new Error('lookout: no telescope placed');
-  const SX = scope.pos[0] + ORIGIN.x,
-    SZ = scope.pos[2],
-    SY = terrain.H(SX, SZ) + scope.pos[1];
-  const eyeAt = point('lookout.telescope', 'eye');
-  const eye = new THREE.Vector3(SX + eyeAt[0], SY + eyeAt[1], SZ + eyeAt[2]);
-  const aim = new THREE.Vector3().subVectors(telescopeTuning.target, eye);
-  const telescope = instantiate(
-    scope.prefab,
-    { ...scope, pos: [SX, SY, SZ], params: { aim: Math.atan2(aim.x, aim.z) } },
-    {
-      owner,
-      handlers: {
-        'lookout.look': () => {
-          const b = me.body;
-          if (!b || open) return NONE;
-          return Math.hypot(b.position.x - scopeAt.x, b.position.z - scopeAt.z) < 3.4 ? target : NONE;
-        },
-      },
-    },
-  );
-  telescope.setEnabled(true);
-  sites.addFoot(SX, SZ, 0, 0.8, 0.8, owner);
-  const scopeAt = telescope.attach('eyepiece').at;
-  // ---------------------------------------------------------------- the view through it
+export function fixedTelescope(
+  owner: ReturnType<typeof createOwnedView>,
+  eye: THREE.Vector3,
+  destination: () => THREE.Vector3,
+) {
+  const aim = new THREE.Vector3();
   let open = false,
     zoom = 1,
     previousFov = 60,
     previousFocus: HTMLElement | null = null;
   const forward = new THREE.Vector3();
   function constrain(look: THREE.Vector3, pos: THREE.Vector3) {
-    aim.subVectors(telescopeTuning.target, eye).normalize();
+    aim.subVectors(destination(), eye).normalize();
     pos.copy(eye).addScaledVector(aim, telescopeTuning.ahead);
     // The camera owner adds its ordinary eight-metre look offset after constraints.
     look.copy(pos).addScaledVector(aim, 100).addScaledVector(camForward(forward), -8);
@@ -164,7 +132,58 @@ export async function createLookoutView() {
     leave.focus();
   }
   owner.cleanup(stepBack);
-  const target: Interactable[] = [{ id: 'place-scope', verb: 'Look through it', at: scopeAt, run: lookThrough }];
+  return {
+    lookThrough,
+    stepBack,
+    get open() {
+      return open;
+    },
+    get zoom() {
+      return zoom;
+    },
+  };
+}
+
+export async function createLookoutView() {
+  const owner = createOwnedView();
+  const [layout, terrain, sites] = await Promise.all([
+    import('../../place/layout.ts'),
+    import('../../place/terrain.ts'),
+    import('../../place/sites.ts'),
+  ]);
+  const { ORIGIN, FAR, LINES } = layout;
+  const ring = { x: FAR.x + ORIGIN.x, z: FAR.z + ORIGIN.z };
+  const placements = loadLevelArtifact(level, definitions).placements;
+
+  // ---------------------------------------------------------------- the telescope on the ridge's top
+  const scope = placements.find((p) => p.prefab === 'lookout.telescope');
+  if (!scope) throw new Error('lookout: no telescope placed');
+  const SX = scope.pos[0] + ORIGIN.x,
+    SZ = scope.pos[2],
+    SY = terrain.H(SX, SZ) + scope.pos[1];
+  const eyeAt = point('lookout.telescope', 'eye');
+  const eye = new THREE.Vector3(SX + eyeAt[0], SY + eyeAt[1], SZ + eyeAt[2]);
+  const aim = new THREE.Vector3().subVectors(telescopeTuning.target, eye);
+  const telescope = instantiate(
+    scope.prefab,
+    { ...scope, pos: [SX, SY, SZ], params: { aim: Math.atan2(aim.x, aim.z) } },
+    {
+      owner,
+      handlers: {
+        'lookout.look': () => {
+          const b = me.body;
+          if (!b || modal.open) return NONE;
+          return Math.hypot(b.position.x - scopeAt.x, b.position.z - scopeAt.z) < 3.4 ? target : NONE;
+        },
+      },
+    },
+  );
+  telescope.setEnabled(true);
+  sites.addFoot(SX, SZ, 0, 0.8, 0.8, owner);
+  const scopeAt = telescope.attach('eyepiece').at;
+  // ---------------------------------------------------------------- the view through it
+  const modal = fixedTelescope(owner, eye, () => telescopeTuning.target);
+  const target: Interactable[] = [{ id: 'place-scope', verb: 'Look through it', at: scopeAt, run: modal.lookThrough }];
 
   // ---------------------------------------------------------------- the buoys
   // A line of orange buoys out from the end of the pier, bobbing, straight at Ring Island. Plain as a pointing finger.
@@ -246,8 +265,8 @@ export async function createLookoutView() {
       updateBuoys(ctx.now, ctx.dt);
     },
     inspect: () => ({
-      open,
-      zoom,
+      open: modal.open,
+      zoom: modal.zoom,
       buoys: buoyAt.length - lifted.filter(Boolean).length,
       lifted: lifted.filter(Boolean).length,
       scope: { x: SX, y: SY, z: SZ },

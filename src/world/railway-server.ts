@@ -6,16 +6,12 @@
 // The rules stay pure (state, action, tick): railApply and railTick are the same functions R1b's prediction runs.
 // Validation reads the facts the action carried (the actor's own position and action clock) through `Actor`.
 import { townPlotBoard, TOWN_BOARD } from '../place/town-plan.ts';
+import { RING_HANGOUT_BOARD } from '../sim/railway-ring-layout.ts';
 import { HALL, TILL } from '../place/home-station.ts';
 import { railInt, railYaw, railSource, RAILWAY_MAX_INT, type RailAction, type RailResult } from '../sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../sim/railway-layout.ts';
 import { MAX_KIND_CAPACITY } from '../sim/railway-queries.ts';
-import {
-  LINE1_STATIONS,
-  LINE1_GREAT_TREE,
-  LINE1_HARDWOODS,
-  LINE1_JUMP_DEVICE,
-} from '../sim/railway-line-layout.ts';
+import { LINE1_STATIONS, LINE1_GREAT_TREE, LINE1_HARDWOODS, LINE1_JUMP_DEVICE } from '../sim/railway-line-layout.ts';
 import { lineTiming } from '../sim/railway-line.ts';
 import {
   LINE2_FORGE,
@@ -301,6 +297,7 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
       return height(LINE2_GLIDE.y) && near(LINE2_GLIDE.x, LINE2_GLIDE.z, 320);
     case 'rail.buy': {
       if (!railInt(e.id) || !TRADE.plots[Math.floor(e.id / 16)]?.[e.id % 16]) return false;
+      if (e.id === 16) return actor.reach(RING_HANGOUT_BOARD.x, RING_HANGOUT_BOARD.z, TOWN_BOARD.reach * 100);
       const board = townPlotBoard(e.id % 16);
       // Place-local x + 1000 is the world's Home origin, as in the other railway anchors.
       return actor.reach(Math.round((board.x + 1000) * 100), Math.round(board.z * 100), TOWN_BOARD.reach * 100);

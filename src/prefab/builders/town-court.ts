@@ -86,6 +86,11 @@ registerBuilder('town.choice-board', (params) => {
     flag(topper);
   } else if (params.kind === 5) {
     piece(root, new THREE.CylinderGeometry(0.34, 0.23, 0.45), 0x3c8798, 0, 2.75, 0).rotation.z = -0.55;
+  } else if (params.kind === 6) {
+    piece(root, new THREE.CylinderGeometry(0.17, 0.1, 0.72, 12), 0xd6aa52, 0, 2.8, 0).rotation.z = -1.12;
+  } else if (params.kind === 7) {
+    piece(root, new THREE.CylinderGeometry(0.14, 0.31, 0.4, 16), 0xd6aa52, 0, 2.8, 0);
+    piece(root, new THREE.SphereGeometry(0.08, 10, 8), 0x724c2b, 0, 2.55, 0);
   } else brassHorn(root, 2.79, 0);
   return root;
 });

@@ -17,6 +17,8 @@ import { islandGround, ringIslandNear, ringSceneryMounted } from './state.ts';
 import type { RingIslandView } from './view.ts';
 import { setNearViewMounted } from '../ring-island-far/view.ts';
 import { showFarHills } from '../../place/far-hills.ts';
+import { onRoomReady } from '../../netplay/net.ts';
+import { createLimiter } from '../../sim/social.ts';
 
 /** Mount and unmount distances (m, horizontal, from the camera; design review call 13). */
 const MOUNT = { near: 500, far: 650 };
@@ -35,6 +37,20 @@ if (productionRailway && query.get('ring') !== 'greybox' && query.get('blockout'
     near: GameEntity | null = null,
     unregister: (() => void) | null = null,
     gone = false;
+  const limit = createLimiter(1, 1500);
+  onRoomReady((room) =>
+    room.onMessage((raw, from) => {
+      const msg = raw as { t?: unknown; id?: unknown } | null;
+      if (
+        near &&
+        msg?.t === 'bell' &&
+        msg.id === 16 &&
+        typeof from === 'string' &&
+        limit.allow(from, performance.now())
+      )
+        view?.hearBell();
+    }),
+  );
   // The shore registers before the scene's shaders, so the coast bakes both regions once, at load.
   const shore = islandGround().then((g) => {
     if (!gone) unregister = registerRingShore(g);

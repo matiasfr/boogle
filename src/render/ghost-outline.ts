@@ -66,7 +66,7 @@ export function createGhostOutlines(
     p = new THREE.Vector3(),
     q = new THREE.Quaternion(),
     s = new THREE.Vector3(),
-    up = new THREE.Vector3(0, 1, 0);
+    rotation = new THREE.Euler(0, 0, 0, 'YXZ');
   let n = 0;
   const ghosts = {
     mesh,
@@ -96,9 +96,14 @@ export function createGhostOutlines(
             }
       }
     },
-    /** The outline of a w × h × d box at (x, y, z), turned `yaw`. */
-    box(x: number, y: number, z: number, w: number, h: number, d: number, yaw = 0) {
-      ghosts.outline(frame.compose(p.set(x, y, z), q.setFromAxisAngle(up, yaw), s.set(1, 1, 1)), w, h, d);
+    /** The outline of a w × h × d box with the prefab's yaw and local pitch. */
+    box(x: number, y: number, z: number, w: number, h: number, d: number, yaw = 0, pitch = 0) {
+      ghosts.outline(
+        frame.compose(p.set(x, y, z), q.setFromEuler(rotation.set(pitch, yaw, 0)), s.set(1, 1, 1)),
+        w,
+        h,
+        d,
+      );
     },
     commit() {
       mesh.count = n;

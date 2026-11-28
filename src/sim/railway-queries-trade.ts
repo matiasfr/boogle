@@ -25,7 +25,7 @@ import { LINE2, RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { WORKS } from './railway-works-layout.ts';
 import type { RailTrain } from './railway-train.ts';
 import { Plot, Town, Train, Works, Yard } from './railway-components.ts';
-import { footingsOwed, kitOwed, stopsOf, wagonSlot, worksId, type Row } from './railway-queries.ts';
+import { footingsOwed, kitOwed, ringJoined, stopsOf, wagonSlot, worksId, type Row } from './railway-queries.ts';
 import { gorgeStop, runLine } from './railway-lap.ts';
 import { WALL_LEG } from './railway-lines.ts';
 import { legDone, legKitWaiting } from './railway-queries-route.ts';
@@ -44,10 +44,12 @@ export function plotsStakedOf(
   wood: number,
   stone: number,
   bought: (k: number) => boolean = () => false,
+  joined = false,
 ): number[] {
   const out: number[] = [];
   for (const [k, p] of (TRADE.plots[town] ?? []).entries()) {
     if (out.length >= TRADE.stakedAtOnce) break;
+    if ('after' in p && p.after === 'ring' && !joined) continue;
     if ('spare' in p && !bought(0)) continue;
     if (!bought(k) && wood >= p.wood && stone >= p.stone) out.push(k);
   }
@@ -58,7 +60,7 @@ export function plotsStakedOf(
 export function plotsStaked(w: World, town: number): number[] {
   const id = w.lookup(Town, town),
     t = id === undefined ? undefined : w.get(Town, id);
-  return t ? plotsStakedOf(town, t.wood, t.stone, (k) => plotBought(w, plotSlot(town, k))) : [];
+  return t ? plotsStakedOf(town, t.wood, t.stone, (k) => plotBought(w, plotSlot(town, k)), ringJoined(w)) : [];
 }
 /** R2b, the full-load stop (the freight-stops ruling, calls 3 to 5): halt `k` going `dir` is a service stop for train
  * `slot` (row `r`) when its line's yard stands at that middle halt, the train is heading home, the yard's `after` is
@@ -149,7 +151,8 @@ export const footCarrier = (w: World, r: Readonly<Row<typeof Train>>, tick: numb
 export function tillRate(w: World, pct: TradePct, tick: number = 0) {
   let hundredths = 0;
   TRADE.routes.forEach((r, k) => {
-    hundredths += townBuildings(w, r.town, tick) * TRADE.ridersPerMin * pct.riderPct * 2 * fareOf(w, k, pct.farePct);
+    const demand = 2 * townBuildings(w, r.town, tick) + housesOf(w, r.farTown, tick);
+    hundredths += demand * TRADE.ridersPerMin * pct.riderPct * fareOf(w, k, pct.farePct);
   });
   return Math.floor(hundredths / 100);
 }

@@ -6,6 +6,13 @@
 import { definePrefab } from '../../prefab/types.ts';
 
 export const prefabs = [
+  definePrefab({
+    key: 'ring.bell-rope',
+    scope: 'place',
+    visual: { none: true },
+    colliders: [],
+    interactions: [{ action: 'ring.pull-bell' }],
+  }),
   // A unit cube of the island's massing, solid; the placement's scale sizes it, its rotation lays it along the line.
   definePrefab({
     key: 'ring.box',

@@ -12,6 +12,7 @@ import { createTownView, type TownView } from './view.ts';
 import { setTownView } from './state.ts';
 import { spawnHangout } from './hangout.ts';
 import { useHomeToyGround } from './court.ts';
+import { ringPlotTargets } from '../ring-island/state.ts';
 
 // Late, after the debug camera (1000): the rooms draw what's near the camera that's about to render.
 defineKind('town', { update: 11, lateUpdate: 1001 });
@@ -30,6 +31,7 @@ registerInteractable(() => {
   if (!active) return NO_TARGETS;
   hangoutTargets.length = 0;
   for (const hangout of hangouts) hangoutTargets.push(...hangout.targets());
+  hangoutTargets.push(...ringPlotTargets);
   return active.targets(hangoutTargets);
 });
 

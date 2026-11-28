@@ -4,9 +4,11 @@ import { pathToFileURL } from 'node:url';
 import { createStore } from '../../server/src/store.ts';
 import { buildSeedDoc } from '../../server/src/seeds/build.ts';
 import { railwayRoomId } from '../../src/world/railway-namespace.ts';
-import { isSeedStage } from '../../src/sim/railway-seeds.ts';
+import { buildSeedWorld, isSeedStage } from '../../src/sim/railway-seeds.ts';
+import { act, advance } from '../../src/sim/railway-seed-route.ts';
+import { TRADE, PLOT_KIND } from '../../src/sim/railway-trade-layout.ts';
 import { SERVER_ID } from '../../src/net/ids.ts';
-import { buildRingMidDoc, ringMidStage } from './ring-mid-seed.ts';
+import { buildRingMidDoc, ringMidStage, seedDoc } from './ring-mid-seed.ts';
 import { buildStackDoc, stackStage } from './stack-seed.ts';
 import { buildLayDoc, layStage } from './lay-seed.ts';
 import { inclineGiftSeed, yardRecoverySeed } from './halt-yard-seed.ts';
@@ -17,17 +19,21 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
   const stack = stackStage(stage);
   const lay = layStage(stage);
   const recovery = stage === 'q3-yard-recovery' ? yardRecoverySeed : stage === 'incline-gift' ? inclineGiftSeed : null;
-  if (!recovery && mid === null && stack === null && lay === null && !isSeedStage(stage))
+  const kind = stage === 'ring-lookout' ? PLOT_KIND.lookout : stage === 'ring-bellhouse' ? PLOT_KIND.bell : null;
+  if (kind === null && !recovery && mid === null && stack === null && lay === null && !isSeedStage(stage))
     throw new Error(`Unknown railway seed: ${stage}`);
-  const doc = recovery
-    ? await recovery()
-    : lay !== null
-      ? await buildLayDoc(lay)
-      : stack !== null
-        ? await buildStackDoc(stack)
-        : mid !== null
-          ? await buildRingMidDoc(Number(mid))
-          : await buildSeedDoc(stage as never);
+  const doc =
+    kind !== null
+      ? await builtHangout(kind)
+      : recovery
+        ? await recovery()
+        : lay !== null
+          ? await buildLayDoc(lay)
+          : stack !== null
+            ? await buildStackDoc(stack)
+            : mid !== null
+              ? await buildRingMidDoc(Number(mid))
+              : await buildSeedDoc(stage as never);
   const store = createStore({ dataDir, maxRooms });
   await store.init();
   const result = await store.write(railwayRoomId(room), {
@@ -36,6 +42,13 @@ export async function writeRailSeed(dataDir: string, room: string, stage: string
     updatedAt: new Date().toISOString(),
   });
   if (result.status !== 200) throw new Error(`rail seed ${stage}: the store refused it (${result.status})`);
+}
+
+function builtHangout(kind: number) {
+  const seed = buildSeedWorld('ring-joined');
+  if (act(seed, 'a', 'rail.buy', { id: 16, kind }) !== 1) throw new Error('Ring plot was not purchased');
+  advance(seed, TRADE.buildTicks);
+  return seedDoc(seed);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
