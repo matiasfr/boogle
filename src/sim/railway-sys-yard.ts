@@ -29,6 +29,8 @@ import { balanceOf, railId, roomOf, STONE } from './railway-queries.ts';
 import { haltYardId, haltYardServes, nearestOpenYard, onRack, yardKey } from './railway-queries-yard.ts';
 import { credit, pickedUp, putDown } from './railway-sys-line1.ts';
 import type { Act } from './railway-sys-core.ts';
+import { railGiftRides, thank } from './railway-queries-gift.ts';
+import { RAILS } from './railway-line2-layout.ts';
 import { VILLAGE_YARD } from './railway-yard-layout.ts';
 
 /** n of `kind` into yard k: the Village's logs and stone onto the recovery rack, the rest onto its row. */
@@ -55,6 +57,7 @@ export const haltPut = defineSystem(
     if (e.yard === VILLAGE_YARD && kind === 0) {
       w.mut(Account, aid)!.queuedGift += n;
     }
+    if (e.yard === VILLAGE_YARD && kind === RAILS && railGiftRides(w)) thank(w, aid);
     stock(w, e.yard, kind!, n);
     credit(w.mut(Account, aid)!, kind!, -n);
     putDown(w, aid, kind!, n);

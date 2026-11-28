@@ -218,6 +218,8 @@ export type RailTrain = {
   legKit?: boolean;
   /** Logs aboard reserved for pouring into the open frame. */
   gift?: number;
+  giftRails?: number;
+  giftBill?: number;
   workLogs?: number;
   workStop?: number;
 };

@@ -6,7 +6,7 @@ import { STEEL } from './railway-ring-layout.ts';
 import { WORKS } from './railway-works-layout.ts';
 import { SEAM_THROAT } from './railway-works.ts';
 import { haltYardStock } from './railway-queries-yard.ts';
-import { HALT_YARDS } from './railway-yard-layout.ts';
+import { HALT_YARDS, VILLAGE_YARD } from './railway-yard-layout.ts';
 import { legBuilt, RAIL_TRAINS } from './railway-lines.ts';
 import { giftBill, legDone, legMintLine, legOpen, legRow, legYard, STOCKED_LEGS } from './railway-queries-route.ts';
 import { RAIL_LEGS } from './railway-route.ts';
@@ -20,12 +20,12 @@ export function giftLegs(w: World, line: number) {
       (!STOCKED_LEGS.includes(k) || legRow(w, k).laid > 0),
   );
 }
-export function giftPourRoom(w: World, k: number) {
+export function giftPourRoom(w: World, k: number, mark: 'gift' | 'giftRails' = 'gift') {
   const line = RAIL_LEGS[k]!.line;
-  const bill = giftBill(w, line, k);
+  const bill = giftBill(w, line, k, mark === 'gift' ? 'logs' : 'rails');
   if (!bill) return 0;
-  const relay = legMintLine(k) !== line ? giftAboard(w, legMintLine(k)) + legYard(w, k).gift : 0;
-  return Math.max(0, bill - giftAboard(w, line) - relay);
+  const relay = legMintLine(k) !== line ? giftAboard(w, legMintLine(k), mark) + legYard(w, k)[mark] : 0;
+  return Math.max(0, bill - giftAboard(w, line, mark) - relay);
 }
 // Destinations are the existing Line 2 stops. Zero is an unmarked car.
 export const QUARRY_YARD = HALT_YARDS.findIndex((y) => y.id === 'quarry');
@@ -86,6 +86,9 @@ export function workQueued(w: World, stop: number, stock = rideableLogs(w)) {
   const available = stop === 1 ? stock : Math.max(0, stock - workNeed(w, 1));
   return Math.min(available, workNeed(w, stop));
 }
+export function railGiftRides(w: World) {
+  return GIFT_LEGS.some((k) => giftPourRoom(w, k, 'giftRails') > 0);
+}
 export function giftRides(w: World) {
   const rail = w.get(Rail, w.single(Rail))!;
   if (rail.trains >= 0) {
@@ -93,25 +96,40 @@ export function giftRides(w: World) {
     const demand = workNeed(w, 1) + workNeed(w, kit < 0 ? 5 : LINE2_STATIONS[kit]!.kitStop!);
     if (demand) return rideableLogs(w) < demand;
   }
-  return GIFT_LEGS.some((k) => giftPourRoom(w, k) > 0);
+  return GIFT_LEGS.some(
+    (k) => giftPourRoom(w, k) > 0 || (!giftBill(w, RAIL_LEGS[k]!.line, k) && giftPourRoom(w, k, 'giftRails') > 0),
+  );
+}
+export function donatedLogs(w: World) {
+  let logs = 0;
+  w.each([Account], (_id, a) => {
+    logs += a.queuedGift;
+  });
+  return logs;
 }
 export function giftQueued(w: World) {
   const stop = workDestination(w);
   if (stop) return workQueued(w, stop);
   const room = GIFT_LEGS.reduce((sum, k) => sum + giftPourRoom(w, k), 0);
-  return Math.min(rideableLogs(w), room);
+  if (room) return Math.min(rideableLogs(w), room);
+  const rails = GIFT_LEGS.reduce(
+    (sum, k) => sum + (giftBill(w, RAIL_LEGS[k]!.line, k) ? 0 : giftPourRoom(w, k, 'giftRails')),
+    0,
+  );
+  const direct = haltYardStock(w, VILLAGE_YARD, 2);
+  return 2 * Math.min(Math.floor(donatedLogs(w) / 2), Math.max(0, rails - direct));
 }
-export function giftInTransit(w: World) {
-  let total = giftAboard(w);
+export function giftInTransit(w: World, mark: 'gift' | 'giftRails' = 'gift') {
+  let total = giftAboard(w, undefined, mark);
   w.each([LegYard], (_id, yard) => {
-    total += yard.gift;
+    total += yard[mark];
   });
   return total;
 }
-export function giftAboard(w: World, line?: number) {
+export function giftAboard(w: World, line?: number, mark: 'gift' | 'giftRails' = 'gift') {
   let n = 0;
   w.each([Train], (_id, t) => {
-    if (line === undefined || RAIL_TRAINS[t.slot]!.line === line) n += t.gift;
+    if (line === undefined || RAIL_TRAINS[t.slot]!.line === line) n += t[mark];
   });
   return n;
 }

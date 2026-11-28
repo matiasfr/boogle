@@ -204,7 +204,7 @@ export function railCounts(w: World, at?: number) {
   const source = sum(Tree) + sum(Hardwood);
   const carry = sumAccounts(w, 'carry');
   const loose = sumPiles(w, (k) => !k);
-  const line2 = line2Logs(w, at) + works.logs;
+  const line2 = line2Logs(w, at) + works.logs + rail.convertedRails * 2;
   const jobs = railJobs(w, at);
   const total = (f: (j: (typeof jobs)[number]) => number) => jobs.reduce((n, j) => n + f(j), 0);
   const stock = total((j) => j.job.stock),
@@ -243,7 +243,7 @@ export function railCounts(w: World, at?: number) {
     carry: sumAccounts(w, 'rails'),
     loose: sumPiles(w, (k) => k === RAILS),
     stations: qjobs.reduce((n, { job: j, run }) => n + j.railStock + run.railAllocation + run.railUsed, 0),
-    poured: forge.poured,
+    poured: forge.poured + rail.convertedRails,
     total: line2Rails(w, at),
     delivered: qjobs.reduce((n, { job: j }) => n + j.railDelivered, 0),
   };

@@ -29,6 +29,7 @@ import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS } from './railway-route.ts';
 
 export const LEG_STAGES = [
   'gorge-open',
+  'stack-rails',
   'gorge-mid',
   'gorge-reached',
   'incline-open',
@@ -69,6 +70,7 @@ const STACK = RAIL_LEGS.findIndex((l) => l.id === 'stack'),
 const cache = new Map<LegStage, Seed>();
 function previousStage(stage: LegStage) {
   if (stage === 'cave-first-open') return 'bay-reached';
+  if (stage === 'gorge-mid') return 'gorge-open';
   if (stage === 'notch-open') return 'wall-closed'; // The through ride is a side trip.
   return LEG_STAGES[LEG_STAGES.indexOf(stage) - 1];
 }
@@ -149,6 +151,12 @@ function build(s: Seed, stage: LegStage): Seed {
     case 'gorge-open':
       until(s, () => racked(s, STACK), 6000, 'the first kit on the rack');
       need(legRow(w, STACK).laid === 0 && legRow(w, STACK).logs + legRow(w, STACK).rails === 0, 'nothing fed');
+      break;
+    case 'stack-rails':
+      while (legRow(w, STACK).logs < RAIL_LEGS[STACK]!.sections[0]!.logs) {
+        need(act(s, 'b', 'rail.depotTake', { leg: STACK }) > 0, 'lift Stack timber');
+        need(act(s, 'b', 'rail.legStock', { leg: STACK }) > 0, 'feed Stack timber');
+      }
       break;
     case 'gorge-mid':
       while (legRow(w, STACK).laid < 2) laySection(s);
