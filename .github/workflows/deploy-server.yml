@@ -24,6 +24,10 @@ on:
       - 'package.json'
       - '.dockerignore'
       - '.github/workflows/deploy-server.yml'
+      - 'dev/server-build.ts'
+      - 'dev/ci/docs-path.ts'
+      - '!**/*.md'
+      - 'server/test/**/*.md'
   workflow_dispatch:
 
 permissions:

@@ -5,6 +5,7 @@
 import { JUMP_ADDRESS_ERROR, JUMP_DAY_ERROR, jumpOf, type JumpReply } from '../world/railway-jump.ts';
 import { RAILWAY_PLAY_NS } from '../world/railway-namespace.ts';
 import { splashNote } from './splash.ts';
+import { hostMatchesPage, roomRelease, releaseMismatch } from './release.ts';
 
 /** A refusal: the HTTP status (0: no answer) and the server's `error`, which tells its 429s apart. */
 type Refused = { status: number; error: string };
@@ -13,7 +14,11 @@ async function ask(stage: string): Promise<JumpReply | Refused> {
   const server = import.meta.env.VITE_BOOGLE_SERVER;
   try {
     if (!server) return { status: 0, error: '' };
-    const r = await fetch(new URL('/jump', server), {
+    // No request has been sent yet, so retrying this preflight cannot allocate a second room.
+    if (!(await hostMatchesPage().catch(() => false))) return { status: 409, error: 'world changed' };
+    const url = new URL('/jump', server);
+    if (roomRelease) url.searchParams.set('serverBuild', roomRelease.serverBuild);
+    const r = await fetch(url, {
       method: 'POST',
       // text/plain JSON: no CORS preflight (the /report pattern)
       body: JSON.stringify({ stage, ns: RAILWAY_PLAY_NS }),
@@ -36,7 +41,13 @@ export async function jumpIn(stage: string) {
   const label = jumpOf(stage)?.label ?? stage;
   splashNote(`Setting up ${label}…`);
   const reply = await ask(stage);
-  if ('status' in reply) return stuck(reply, label);
+  if ('status' in reply) {
+    if (reply.status === 409 && roomRelease) {
+      releaseMismatch();
+      return new Promise<never>(() => {});
+    }
+    return stuck(reply, label);
+  }
   const url = new URL(location.href);
   for (const key of ['from', 'room', 'fresh', 'coop']) url.searchParams.delete(key);
   url.searchParams.set('room', reply.room);

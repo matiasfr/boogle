@@ -38,10 +38,16 @@ export function decode(data: unknown): WireMsg | null {
 }
 /** The room's WebSocket URL on the server at `base` (http -> ws, https -> wss). */
 // Only public connection/build metadata belongs in a URL.
-export function roomUrl(base: string, roomId: string, who: { self: string; b: string }) {
+export function roomUrl(
+  base: string,
+  roomId: string,
+  who: { self: string; b: string; serverBuild?: string; world?: string },
+) {
   const u = new URL(`/room/${encodeURIComponent(roomId)}`, base);
   u.protocol = u.protocol === 'https:' ? 'wss:' : 'ws:';
   u.searchParams.set('self', who.self);
   u.searchParams.set('b', who.b);
+  if (who.serverBuild) u.searchParams.set('serverBuild', who.serverBuild);
+  if (who.world) u.searchParams.set('world', who.world);
   return u.href;
 }

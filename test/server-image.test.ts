@@ -147,6 +147,8 @@ test('automerge decides a server deploy from SERVER_IMAGE_PATHS, not a copy', ()
   assert.equal(touches('src/world/server-ops.ts\n'), true);
   assert.equal(touches('server/src/server.ts\n'), true);
   assert.equal(touches('src/features/x.ts\nsrc/network.ts\n'), false);
+  assert.equal(touches('server/README.md\nsrc/world/AGENTS.md\n'), false);
+  assert.equal(touches('server/test/fixtures/source.md\n'), true);
 });
 
 test('the server image resolves every package the server imports', () => {

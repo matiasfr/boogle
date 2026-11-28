@@ -25,7 +25,7 @@ for _ in $(seq 1 30); do
     fail "the server image exited while booting"
   fi
   if body=$(curl -fsS --max-time 2 http://127.0.0.1:9000/version 2>/dev/null); then
-    [ "$body" = "{\"build\":\"$want\"}" ] || fail "/version answered $body, expected build $want"
+    jq -e --arg build "$want" '.build == $build and (.world | type == "string")' <<< "$body" >/dev/null || fail "/version answered $body, expected build $want"
     health=$(curl -fsS --max-time 2 http://127.0.0.1:9000/healthz 2>&1) || health="no answer ($health)"
     [ "$health" = ok ] || fail "/healthz answered '$health', expected ok"
     echo "Booted: /version $body"

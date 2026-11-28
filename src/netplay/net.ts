@@ -1,4 +1,5 @@
 import { BUILD } from '../build-id.ts';
+import { roomRelease } from '../boot/release.ts';
 import { background } from '../async.ts';
 import { pageQuery, productionRailway } from '../proto/flags.ts';
 import { COLORS, DEFAULT_NAME, DEFAULT_ROOM, SEND_MS } from '../constants.ts';
@@ -378,6 +379,7 @@ export async function connectRoom(tuneKey?: string) {
       authenticate: () => roomAuthentication(tuneKey),
       debug,
       build: BUILD,
+      release: roomRelease,
     });
   } catch (e) {
     if (closing) return;

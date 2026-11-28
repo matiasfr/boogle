@@ -8,6 +8,7 @@ import { assetCatalogue } from './dev/assets/vite-plugin.ts';
 import { harnessImports } from './dev/look/import-map.ts';
 import { developmentPage } from './dev/development/vite-plugin.ts';
 import { serverBuild } from './dev/server-build.ts';
+import { WORLD_NS } from './src/world/namespace.ts';
 import { build as esbuild } from 'esbuild';
 import type { Service, createService as CreateService, loadConfig as LoadConfig } from './server/src/server.ts';
 
@@ -21,6 +22,7 @@ const resolve = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 const build = process.env.VITE_BUILD || `dev-${Date.now().toString(36)}`;
 
 // BOOGLE_SW=off builds the service worker's kill switch (src/boot/sw-worker.ts): it clears its caches and unregisters.
+const requiredServer = serverBuild();
 const swOff = process.env.BOOGLE_SW === 'off';
 // Lazy chunks the first frame waits for, precached with the page's static imports (docs/plans/loading.md).
 const GAME_MODULE = /\/src\/main\.ts$/;
@@ -136,14 +138,22 @@ export default defineConfig({
     {
       name: 'boogle-version',
       transformIndexHtml() {
-        return [{ tag: 'meta', attrs: { name: 'boogle-build', content: build }, injectTo: 'head-prepend' }];
+        return [
+          { name: 'boogle-build', content: build },
+          { name: 'boogle-server-build', content: requiredServer },
+        ].map((attrs) => ({ tag: 'meta', attrs, injectTo: 'head-prepend' as const }));
       },
       generateBundle() {
         this.emitFile({
           type: 'asset',
           fileName: 'version.json',
           source:
-            JSON.stringify({ build, serverBuild: serverBuild(), server: process.env.VITE_BOOGLE_SERVER || '' }) + '\n',
+            JSON.stringify({
+              build,
+              serverBuild: requiredServer,
+              world: WORLD_NS,
+              server: process.env.VITE_BOOGLE_SERVER || '',
+            }) + '\n',
         });
       },
     },

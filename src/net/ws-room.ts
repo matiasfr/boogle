@@ -23,6 +23,7 @@ export type WsRoomOptions = {
   server: string; // http(s) base of our server
   authenticate: () => RoomAuth; // the prepared device session; called again for each socket, never sent in its URL
   build?: string;
+  release?: { serverBuild: string; world: string; onMismatch(): void; checkHost(): Promise<boolean> };
   debug?: number;
   openTimeoutMs?: number;
 };
@@ -46,6 +47,7 @@ export async function createWsRoom(opts: WsRoomOptions) {
   const url = roomUrl(opts.server, roomId, {
     self: SELF_ID,
     b: opts.build ?? 'dev',
+    ...opts.release,
   });
   const log = (...a: unknown[]) => (opts.debug ?? 0) > 1 && console.log('[ws-room]', ...a);
   const table = createPeerTable(SELF_ID);
@@ -106,8 +108,14 @@ export async function createWsRoom(opts: WsRoomOptions) {
     let listed = false,
       graceful = false;
     heard = performance.now();
-    sock.onopen = () => {
-      if (ws !== sock || closed || stopped) return;
+    sock.onopen = async () => {
+      // A rollback can briefly put a legacy host behind this URL on any reconnect.
+      // Withhold authentication until its identity matches, even if it ignores the query.
+      if (opts.release && !(await opts.release.checkHost().catch(() => false))) {
+        sock.close();
+        return;
+      }
+      if (ws !== sock || closed || stopped || sock.readyState !== WebSocket.OPEN) return;
       try {
         const auth = readRoomAuth(opts.authenticate());
         if (!auth) throw new Error('invalid authentication');
@@ -123,6 +131,9 @@ export async function createWsRoom(opts: WsRoomOptions) {
       const m = decode(ev.data);
       if (!m) return;
       switch (m.t) {
+        case 'update':
+          opts.release?.onMismatch();
+          return refused(err('updating', 'the room is updating'));
         case 'welcome':
           if (typeof m.born === 'string' && m.born.length <= 16) born = m.born;
           if (!first) table.expectBack(GRACE_MS); // before the list: what it names is back
