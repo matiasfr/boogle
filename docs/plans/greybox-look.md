@@ -195,6 +195,12 @@ From the West approach, a square frame of smooth slabs stood beside the layered 
 
 `src/entities/route-greybox/cave-shore.ts` fits the cliff kit to the incoming chord. Both 1200 × 750 stills look from (798, 6.75, 37) toward (794, 7, 83). [Before](greybox-look/card14-cave-before.png) · [After](greybox-look/card14-cave-after.png)
 
+### Card 15, the West sea cave’s inner bend
+
+Halfway under the hood, the entrance stones gave way to a smooth wall with a small patch of sandstone at its far end. Two broad cliff-kit faces now line each side of the exit chord. The courses turn with the rails toward the daylight over the strait.
+
+`src/entities/route-greybox/cave-shore.ts` fits the faces flush to the existing walls. Both 1200 × 750 stills look from (796, 6.8, 66) toward (789, 8, 87). [Before](greybox-look/card15-bend-before.png) · [After](greybox-look/card15-bend-after.png)
+
 ## Design review (2026-11-27)
 
 | Call | Kind | Basis |

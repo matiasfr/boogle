@@ -24,18 +24,21 @@ export async function hoodRock(owner: OwnedView) {
   mesh.setMatrixAt(0, shoulder.setPosition(at(14.9, -9.5, -2)));
   mesh.setMatrixAt(1, shoulder.setPosition(at(14.9, 9.5, -1.7)));
   owner.add(mesh);
-  // Print the last course onto the existing inner wall plane. The depth bias
-  // resolves coplanar pixels while the entire 13 m opening stays clear.
+  // Print the courses onto the inner wall planes, keeping the 13 m opening clear.
   const lining = kitMaterial().clone();
   lining.polygonOffset = true;
   lining.polygonOffsetFactor = lining.polygonOffsetUnits = -2;
   owner.cleanup(() => lining.dispose());
-  const inset = new THREE.Mesh(face, lining);
-  inset.name = 'West hood return';
-  inset.rotation.y = yaw - Math.PI / 2;
-  inset.scale.set(0.9, 0.54, 0.00001);
-  inset.position.copy(at(12, 6.5, 3.1));
-  owner.add(inset);
+  const returns = new THREE.InstancedMesh(face, lining, 4);
+  returns.name = 'West hood return';
+  for (const [side, sign] of [-1, 1].entries()) {
+    const course = new THREE.Matrix4()
+      .makeRotationY(yaw - (sign * Math.PI) / 2)
+      .scale(new THREE.Vector3(7.35 / 6, 0.96, 0.00001));
+    for (let bay = 0; bay < 2; bay++)
+      returns.setMatrixAt(2 * side + bay, course.setPosition(at((bay + 0.5) * 7.35, sign * 6.5, -2)));
+  }
+  owner.add(returns);
   // Face the incoming chord at its mouth, with jambs outside the opening
   // and three broad, broken blocks following the roof edge above it.
   const entryYaw = Math.atan2(-6, 65);
