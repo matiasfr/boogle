@@ -5,7 +5,7 @@
 import { JUMP_ADDRESS_ERROR, JUMP_DAY_ERROR, jumpOf, type JumpReply } from '../world/railway-jump.ts';
 import { RAILWAY_PLAY_NS } from '../world/railway-namespace.ts';
 import { splashNote } from './splash.ts';
-import { hostMatchesPage, roomRelease, releaseMismatch } from './release.ts';
+import { checkRelease, hostMatchesPage, roomRelease, releaseMismatch } from './release.ts';
 
 /** A refusal: the HTTP status (0: no answer) and the server's `error`, which tells its 429s apart. */
 type Refused = { status: number; error: string };
@@ -53,6 +53,8 @@ export async function jumpIn(stage: string) {
       releaseMismatch();
       return new Promise<never>(() => {});
     }
+    // Boot stops on a refusal. Keep watching releases even if this host lacks the requested seed.
+    void checkRelease();
     return stuck(reply, label);
   }
   const url = new URL(location.href);

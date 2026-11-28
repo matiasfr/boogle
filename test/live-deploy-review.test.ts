@@ -5,10 +5,7 @@ import { build } from 'esbuild';
 import { WORLD_NS } from '../src/world/namespace.ts';
 
 const script = await build({
-  stdin: {
-    contents: `export * from './src/boot/release.ts'; export * from './src/player/account.ts'; export * from './src/boot/jump-in.ts';`,
-    resolveDir: process.cwd(),
-  },
+  entryPoints: ['test/fixtures/live-deploy-client.ts'],
   bundle: true,
   write: false,
   format: 'iife',
