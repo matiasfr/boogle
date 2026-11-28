@@ -20,6 +20,10 @@ The 27 November build signal moved implementation ahead of the lap join. Rebase 
 
 The platform leg uses the queued figure's actual spot and the existing `outOf` footprint clearance for its walk-away endpoint. Folk's `steer` also pulls the walker toward terrain height. The shuffle instead samples the elevated platform and the coach's hinged tread in world coordinates. Queue slots use the remaining replicated waiting count so an update to the train can run before the halt's redraw. A normal crossing takes three seconds after the step delay and seat stagger.
 
+Two WebGPU clients watched live arrivals at Home from seeded busy platforms. Both saw eight boarders walk. On the return capture six of eight riders started stepping off, then one seat filled during the stand. The reduced-motion client showed two seated, then three, with zero walkers throughout. Both counted three seated at departure. The upper row of the [still sequence](rider-shuffle/home-exchange.jpg) follows boarding and the lower row follows alighting. At this angle the crowd sometimes hides individual boots. The local real-time clips are `.look/rider-shuffle/boarding.webm` and `.look/rider-shuffle/shuffle-exit/exchange.webm`.
+
+A client reloaded during boarding and rejoined after departure with eight seated. A separate Home headway-hold fixture kept the same train at the same stop across a full page reload: arrival tick 5795 before and after, eight seated and zero walkers on the first ready read. The 32 seat, side and direction combinations reached the nearest tread and finished within four seconds in the path check. Device playback and timing under load are unverified.
+
 ## Design review (2026-11-27)
 
 | Call | Kind | Basis |
