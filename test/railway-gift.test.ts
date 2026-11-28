@@ -117,13 +117,22 @@ test('both yards compete for the last Q7 logs and preserve the other gifts for H
   railwayCheck(s.w);
   give(s);
   railwayCheck(s.w);
-  for (let i = 0; qjob(s.w, 6).stock !== 20; i++) {
-    assert.ok(i < 12000);
-    advance(s, 1);
-    railwayCheck(s.w);
+  for (const [seed, share] of [
+    [homeFirst, 4],
+    [s, Math.min(12, quarry)],
+  ] as const) {
+    const bin = haltYardStock(seed.w, 2, 0);
+    const delivered = rail(seed.w).depotGiftDelivered;
+    for (let i = 0; qjob(seed.w, 6).stock !== 20; i++) {
+      assert.ok(i < 12000);
+      advance(seed, 1);
+      railwayCheck(seed.w);
+    }
+    assert.equal(rail(seed.w).depotGiftDelivered - delivered, 12);
+    assert.equal(bin - haltYardStock(seed.w, 2, 0), share);
+    assert.equal(account(seed.w, 'b')!.quarryGift, 0);
+    assert.deepEqual(worksThanks(seed.w, 3).sort(), share === 12 ? ['b', 'c'] : ['a', 'b', 'c']);
   }
-  assert.ok(quarry >= 8);
-  assert.deepEqual(worksThanks(s.w, 3).sort(), quarry >= 12 ? ['b', 'c'] : ['a', 'b', 'c']);
 });
 
 test('Quarry timber reaches the Pier after restore with Home and cast stock kept separate', () => {
