@@ -571,18 +571,22 @@ test('surplus steel gifts stay available for pickup after returning Home', () =>
   railwayCheck(s.w);
 });
 
-test.todo('withdrawing all queued Village rails removes the donor from frame Thanks', () => {
-  const s = unaudited(buildSeedWorld('stack-rails'));
-  const before = worksThanks(s.w);
-  assert.ok(!before.includes('a'));
-  const n = act(s, 'a', 'rail.depotRailTake', { leg: 0 });
-  assert.ok(n > 0);
-  assert.equal(act(s, 'a', 'rail.haltPut', { yard: 0, kind: 2 }), n);
-  assert.ok(worksThanks(s.w).includes('a'));
-  assert.equal(act(s, 'a', 'rail.haltTake', { yard: 0, kind: 2 }), n);
-  assert.equal(haltYardStock(s.w, 0, 2), 0);
-  assert.deepEqual(worksThanks(s.w), before);
-});
+test(
+  'withdrawing all queued Village rails removes the donor from frame Thanks',
+  { todo: 'Queued rails need per-donor attribution before dispatch' },
+  () => {
+    const s = unaudited(buildSeedWorld('stack-rails'));
+    const before = worksThanks(s.w);
+    assert.ok(!before.includes('a'));
+    const n = act(s, 'a', 'rail.depotRailTake', { leg: 0 });
+    assert.ok(n > 0);
+    assert.equal(act(s, 'a', 'rail.haltPut', { yard: 0, kind: 2 }), n);
+    assert.ok(worksThanks(s.w).includes('a'));
+    assert.equal(act(s, 'a', 'rail.haltTake', { yard: 0, kind: 2 }), n);
+    assert.equal(haltYardStock(s.w, 0, 2), 0);
+    assert.deepEqual(worksThanks(s.w), before);
+  },
+);
 
 test('a rail-only frame already covered by Village rails does not solicit logs', () => {
   const s = unaudited(buildSeedWorld('stack-rails'));
