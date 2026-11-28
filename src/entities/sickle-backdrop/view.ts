@@ -134,6 +134,38 @@ export function createBackdrop() {
       }
       // The White Wall stays chalk: the kit's stepped courses, not its sandstone (his word, 25 November).
       add(geometry(), '#c9c5bb');
+      // Low-angle bedding planes exposed on the two southern approach cliffs.
+      if (land.id === 'wall-s2' || land.id === 'wall-s1') {
+        for (const [bed, tint] of [
+          [27, '#c1bdb2'],
+          [54, '#d2cfc3'],
+          [79, '#c8c4b8'],
+        ] as const) {
+          vertices.length = 0;
+          const edge = (p: XZ) => {
+            const s = along(p);
+            const crest = bed + s * 0.035 + 2.5 * Math.sin(s / 46 + bed);
+            const relief = Math.max(0, 1.8 + 2.7 * Math.sin(s / 61 + bed));
+            const dx = p[0] - land.c![0],
+              dz = p[1] - land.c![1];
+            const scale = relief / Math.hypot(dx, dz);
+            const lip: XZ = [p[0] + dx * scale, p[1] + dz * scale];
+            return { crest, relief, lip };
+          };
+          for (let i = 0; i < outline.length; i++) {
+            const p = outline[i]!,
+              q = outline[(i + 1) % outline.length]!;
+            const a = edge(p),
+              b = edge(q);
+            if (!a.relief && !b.relief) continue;
+            triangle(p, a.crest + a.relief, a.lip, a.crest, q, b.crest + b.relief);
+            triangle(q, b.crest + b.relief, a.lip, a.crest, b.lip, b.crest);
+            triangle(a.lip, a.crest, p, a.crest - 2 * a.relief, b.lip, b.crest);
+            triangle(b.lip, b.crest, p, a.crest - 2 * a.relief, q, b.crest - 2 * b.relief);
+          }
+          add(geometry(), tint);
+        }
+      }
       continue;
     }
     cap(outline, top);

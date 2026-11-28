@@ -224,6 +224,19 @@ Arrival survey for card 19:
 
 `src/entities/route-greybox/wall-chalk.ts` fits the three spurs to the mapped shore in the existing rock batch. The 1200 × 750 pair looks from (−614.5, 5.5, 721) toward (−754, 39, 615) at 62° FOV. The near spur catches the light across its stepped face, and open water separates the islets ahead. The before view hides the three added instances. The train seed timed out, so these views show the approach without the train. [Before](greybox-look/card18-wall-before.jpg) · [After](greybox-look/card18-wall-after.jpg)
 
+### Card 19, the White Wall’s high south faces
+
+Above the waterline spurs, one grey face filled the left side of the rider’s view. The next islet showed the same smooth sheet from top to bottom. Three pale chalk beds now dip along each southern islet, projecting where the rock catches the light and tapering back into the face. They follow the existing shoreline in `src/entities/sickle-backdrop/view.ts`, which draws these cliffs all the way from Port Quay.
+
+The 1200 × 750 pair looks from the outward track at (−614.5, 6.8, 721) toward (−754, 39, 615), at 62° FOV. The far still looks toward the same point from Port Quay (137.6, 6.8, 942.25). The beds are visible beyond the roundhouse yard. The train seed timed out on the previous two cards, so these are fixed rider-height views. [Before](greybox-look/card19-before.jpg) · [After](greybox-look/card19-after.jpg) · [From Port Quay](greybox-look/card19-far.jpg)
+
+Areas passed over for card 20:
+
+- Gorge split: the white diagonal stair already gives the rider a landmark against the dark wall.
+- Causeway: the open water and converging rails frame the island while crossing.
+- Original Island: the lighthouse rises above the palms and draws the eye past the pale platform.
+- Port Quay: the roundhouse and turntable identify the halt, though the tall ochre bank to their left still has a broad bare face.
+
 ## Design review (2026-11-27)
 
 | Call | Kind | Basis |
