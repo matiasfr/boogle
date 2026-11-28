@@ -455,3 +455,26 @@ test('the steel yard thanks the giver when a pickup changes demand before dispat
   assert.equal(steel(s.w).giftDelivered, 8);
   assert.deepEqual(worksThanks(s.w, 5), ['a']);
 });
+
+test('surplus steel gifts stay available for pickup after returning Home', () => {
+  const s = unaudited(buildSeedWorld('ring-joined'));
+  give(s);
+  assert.deepEqual(worksThanks(s.w, 5), ['a']);
+  for (let ticks = 0; workAboard(s.w, 5) !== 8; ticks++) {
+    assert.ok(ticks < 4000);
+    advance(s, 1);
+  }
+  chopTo(s, 'b', 8);
+  assert.equal(act(s, 'b', 'rail.steel'), 8);
+  for (let ticks = 0; workAboard(s.w, 5); ticks++) {
+    assert.ok(ticks < 6000);
+    advance(s, 1);
+  }
+  assert.equal(rail(s.w).rack, 8);
+  for (let ticks = 0; ticks < 6000 && legRow(s.w, 0).logs === 0; ticks++) {
+    advance(s, 1);
+    railwayCheck(s.w);
+  }
+  assert.equal(legRow(s.w, 0).logs, 0, 'nobody gave the returned steel timber to the Stack');
+  assert.equal(rail(s.w).rack, 8);
+});
