@@ -37,6 +37,11 @@ export function createRiders(adapter: RailwayAdapter, owner: OwnedView) {
       count: -1,
       stop: -1,
       platform: null as RailPlatform | null,
+      remaining() {
+        const w = adapter.read.world();
+        const row = w.get(Town, w.lookup(Town, route.town)!)!;
+        return end ? row.wait1 : row.wait0;
+      },
       tangent: { x: 0, z: 0, ux: 0, uz: 1 },
       at(k: number) {
         const { ux, uz } = crowd.tangent,
@@ -56,8 +61,8 @@ export function createRiders(adapter: RailwayAdapter, owner: OwnedView) {
   const hide = () => {
     for (let end = 0; end < crowds.length; end++) {
       const crowd = crowds[end]!;
-      if (crowd.count === 0) continue;
-      crowd.count = 0;
+      if (crowd.count < 0) continue;
+      crowd.count = -1;
       folk.setWaiting(end, 0, crowd.at);
       boards[end]!.setEnabled(false);
     }
@@ -99,7 +104,7 @@ export function createRiders(adapter: RailwayAdapter, owner: OwnedView) {
       const yaw = Math.atan2(-uz * facing, ux * facing);
       // Two rows of six face their track, with a small stagger. Leave the island's central lane and the
       // far platform's bench (5 m behind its centre), signal and lever clear.
-      folk.setWaiting(end, Math.min(12, n), crowd.at);
+      folk.setWaiting(end, Math.min(12, n), crowd.at, riding ? -1 : stop, crowd.remaining);
       const board = boards[end]!;
       board.setEnabled(n > 12);
       if (moved) {

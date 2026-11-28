@@ -7,6 +7,8 @@
 // (`feet`, ./sites.ts). The hop of the last round's villagers is their cheer. Local.
 import * as THREE from 'three/webgpu';
 import { angleLerp } from '../math.ts';
+import { reducedMotion } from '../constants.ts';
+import { riderWalk, poseRiderWalk, type RiderWalk } from '../entities/railway/rider-shuffle.ts';
 import { mulberry32 } from '../sim/rng.ts';
 import { RAIL_LINES, RAIL_TRAINS } from '../sim/railway-lines.ts';
 import { TRADE } from '../sim/railway-trade-layout.ts';
@@ -277,6 +279,11 @@ type RiderCar = {
   seats: readonly import('../entities/railway/coach-kit.ts').CoachSeat[];
 };
 const riderCars = new Map<number, RiderCar>();
+const walks = new Map<Guy, RiderWalk>();
+const leavingQueue = new Map<Guy, Guy>();
+const riderHistory = new Map<number, { count: number; tick: number }>();
+type QueuePoint = (k: number) => { x: number; y: number; z: number; yaw: number };
+const queues = new Map<number, { end: number; stop: number; remaining: () => number; at: QueuePoint }>();
 // One driver a train (`camp` its line, `seat` which of the line's trains), on whenever there's an engine's stool to sit
 // on (FolkEnv.driver).
 RAIL_LINES.forEach((l, line) => {
@@ -1202,11 +1209,79 @@ export const bolting = () =>
 /** Each train's replicated count, on its passenger deck. This never boards or charges anyone. */
 function setRiders(slot: number, count: number, car: RiderCar | null) {
   if (car) riderCars.set(slot, car);
-  else riderCars.delete(slot);
-  for (const g of riders) if (g.camp === slot) g.on = !!car && g.seat < count;
+  else {
+    riderCars.delete(slot);
+    riderHistory.delete(slot);
+  }
+  for (const g of riders)
+    if (g.camp === slot) {
+      walks.delete(g);
+      if (!car || g.seat >= count) g.tint = null;
+      g.on = !!car && g.seat < count;
+    }
+}
+function resetRiderShuffle(slot: number, count: number, car: RiderCar | null) {
+  riderHistory.delete(slot);
+  setRiders(slot, count, car);
+}
+function updateRiderShuffle(
+  slot: number,
+  count: number,
+  car: RiderCar,
+  stop: number,
+  steps: THREE.Object3D[],
+  side: number,
+  continuous: boolean,
+  tick: number,
+) {
+  const previous = riderHistory.get(slot);
+  if (previous?.count === count && !walks.size) {
+    previous.tick = tick;
+    return;
+  }
+  const queue = stop >= 0 && Array.from(queues.values()).find((entry) => entry.stop === stop);
+  car.mesh.getWorldPosition(wp);
+  const near = Math.hypot(wp.x - camera.position.x, wp.z - camera.position.z) < SLEEP;
+  const animate =
+    previous && continuous && queue && near && !reducedMotion && tick >= previous.tick && tick - previous.tick < 5;
+  if (!animate) {
+    if (!previous || previous.count !== count || walks.size) setRiders(slot, count, car);
+  } else if (previous.count !== count) {
+    const first = Math.min(previous.count, count),
+      last = Math.max(previous.count, count);
+    const boards = count > previous.count;
+    for (const g of riders) {
+      if (g.camp !== slot || g.seat < first || g.seat >= last) continue;
+      const order = g.seat - first;
+      const index = boards ? (queue.remaining() + order) % WAITING : order;
+      const { x, y, z, yaw } = queue.at(index);
+      const target = new THREE.Vector3(x, y, z);
+      if (!boards) {
+        target.x += Math.cos(yaw) * 1.3;
+        target.z -= Math.sin(yaw) * 1.3;
+        for (const footprint of feet) outOf(footprint, target, WALL);
+      }
+      const walk = riderWalk(car.mesh, car.seats[g.seat]!, steps, side, target, boards, 0.25 + order * 0.09);
+      if (walk) walks.set(g, walk);
+      else walks.delete(g);
+      if (walk && boards) {
+        const source = waiting[queue.end * WAITING + index]!;
+        g.tint = COLORS[source.k % COLORS.length]!;
+        leavingQueue.set(source, g);
+      }
+      g.on = !!walk || boards;
+    }
+  }
+  if (previous) {
+    previous.count = count;
+    previous.tick = tick;
+  }
+  riderHistory.set(slot, previous ?? { count, tick });
 }
 /** One bounded waiting crowd, posed by the halt view. No roaming or collision displacement off its platform. */
-function setWaiting(end: number, count: number, at: (k: number) => { x: number; y: number; z: number; yaw: number }) {
+function setWaiting(end: number, count: number, at: QueuePoint, stop = -1, remaining?: () => number) {
+  if (stop < 0 || !remaining) queues.delete(end);
+  else queues.set(end, { end, stop, remaining, at });
   for (const g of waiting) {
     if (g.camp !== end) continue;
     g.on = g.seat < count;
@@ -1257,6 +1332,10 @@ function resetFolk() {
   }
   for (const g of [...riders, ...waiting]) g.on = false;
   riderCars.clear();
+  queues.clear();
+  walks.clear();
+  leavingQueue.clear();
+  riderHistory.clear();
   setCommuters(false);
   setPushers(false);
   boarding.clear();
@@ -1417,6 +1496,11 @@ export function updateFolk(dt: number) {
   let looked = false;
   slot = 0;
   for (const g of guys) {
+    const boarder = g.job === 'waiting' && leavingQueue.get(g);
+    if (boarder) {
+      if (walks.has(boarder) && Math.hypot(boarder.x - g.x, boarder.z - g.z) < 0.5) continue;
+      leavingQueue.delete(g);
+    }
     if (!g.on) continue;
     const d2 = (g.x - cx) ** 2 + (g.z - cz) ** 2;
     const far = d2 > SLEEP * SLEEP;
@@ -1462,21 +1546,36 @@ export function updateFolk(dt: number) {
     } else if (g.job === 'rider') {
       const car = riderCars.get(g.camp);
       if (!car) continue;
-      const {
-        position: [x, y, z],
-        yaw,
-      } = car.seats[g.seat]!;
-      g.rideUp = y - car.top;
-      car.mesh.updateWorldMatrix(true, false);
-      // The ride pose subtracts .14 in draw(); the visible seated root stays at the exported .885 m landmark.
-      wp.set(x, y + 0.14, z).applyMatrix4(car.mesh.matrixWorld);
-      g.x = wp.x;
-      g.z = wp.z;
-      g.fy = wp.y;
-      car.mesh.getWorldQuaternion(g.rideRotation!);
-      g.rideRotation!.multiply(q.setFromEuler(e.set(0, yaw, 0)));
-      e.setFromQuaternion(g.rideRotation!, 'YXZ');
-      g.yaw = e.y;
+      const walk = walks.get(g);
+      if (walk) {
+        const { yaw, done } = poseRiderWalk(walk, dt, wp);
+        g.mood = 'walk';
+        g.x = wp.x;
+        g.z = wp.z;
+        g.fy = wp.y;
+        g.yaw = yaw;
+        g.rideRotation!.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
+        if (done) {
+          walks.delete(g);
+          g.on = walk.boards;
+        }
+      } else {
+        const {
+          position: [x, y, z],
+          yaw,
+        } = car.seats[g.seat]!;
+        g.rideUp = y - car.top;
+        car.mesh.updateWorldMatrix(true, false);
+        // The ride pose subtracts .14 in draw(); the visible seated root stays at the exported .885 m landmark.
+        wp.set(x, y + 0.14, z).applyMatrix4(car.mesh.matrixWorld);
+        g.x = wp.x;
+        g.z = wp.z;
+        g.fy = wp.y;
+        car.mesh.getWorldQuaternion(g.rideRotation!);
+        g.rideRotation!.multiply(q.setFromEuler(e.set(0, yaw, 0)));
+        e.setFromQuaternion(g.rideRotation!, 'YXZ');
+        g.yaw = e.y;
+      }
     } else if (g.job === 'driver') {
       const seat = e_?.driver?.(g.camp, g.seat);
       if (!seat) continue;
@@ -1524,6 +1623,8 @@ export const folk = {
   riders,
   waiting,
   setRiders,
+  resetRiderShuffle,
+  updateRiderShuffle,
   setWaiting,
   bolting,
   chats: 0, // exchanges and lines so far, for the evals

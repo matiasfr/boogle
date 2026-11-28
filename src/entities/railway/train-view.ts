@@ -334,7 +334,6 @@ export async function createRailwayTrains(
       coachSteps,
       coachStepDown: 0,
       coachStepSide: 0,
-      riderCount: -1,
       cars,
       steel,
       /** The steel car is coupled as drawn: the row wears the longer boiler and a live fit's puff has covered it. */
@@ -979,7 +978,7 @@ export async function createRailwayTrains(
       tr.last = last;
       tr.bundle.visible = last.gift > 0;
       tr.count = -1;
-      tr.riderCount = -1;
+      folk.folk.resetRiderShuffle(tr.slot, last.riders, tr.riderCar);
       // A restore or a late join shows the rows only: no beat, and the next frame's fit is not an edge.
       tr.seen = false;
       tr.beat = -1;
@@ -1273,10 +1272,17 @@ export async function createRailwayTrains(
         }
         const riders =
           on && Number.isFinite(row.riders) ? Math.max(0, Math.min(TRADE.riderPlaces, Math.floor(row.riders))) : 0;
-        if (riders !== tr.riderCount) {
-          tr.riderCount = riders;
-          folk.folk.setRiders(tr.slot, riders, tr.riderCar);
-        }
+        if (tr.riderCar)
+          folk.folk.updateRiderShuffle(
+            tr.slot,
+            riders,
+            tr.riderCar,
+            on && tr.line === LINE2 && row.phase === TRAIN_PHASE.STAND ? row.at : -1,
+            tr.coachSteps,
+            tr.coachStepSide,
+            tr.seen && (tr.last?.to === row.at || tr.last?.arrived === row.arrived),
+            tick,
+          );
         tr.board?.set(marks.get(tr.slot) ?? '');
         // Joined from the shed on a live tick: its cars grow in over JOIN_S (their bodies are whole at once).
         if (tr.seen && tr.last?.phase === TRAIN_PHASE.SHED && row.phase !== TRAIN_PHASE.SHED) {
