@@ -1,5 +1,6 @@
 import { Vector3 } from 'three';
 import { createBoathouse } from './boathouse.ts';
+import { createBallTargets } from './ball-targets.ts';
 import { BALL_R, PLAYER_R } from '../../constants.ts';
 import { townChoice, TOWN_PLOTS, townBuilding } from '../../place/town-plan.ts';
 import { toWorld } from '../../place/layout.ts';
@@ -26,6 +27,22 @@ export function spawnHangout(k: number, plotDone: (k: number) => boolean) {
   const owner = createOwnedView();
   const yaw = townBuilding(TOWN_PLOTS.order[k]!).yaw;
   const layout = townChoice(k);
+  function completedKind() {
+    const w = railwayWorldRead()?.world();
+    const id = w?.lookup(Plot, k);
+    return plotDone(k) && id !== undefined ? (w?.get(Plot, id)?.kind ?? 0) : 0;
+  }
+  if (k === 3) {
+    const activity = createBallTargets(owner, layout.stall, yaw);
+    return spawn({
+      kind: 'town-hangout',
+      mesh: owner.root,
+      dispose: owner.dispose,
+      describe: activity.describe,
+      targets: () => [],
+      update: ({ now }) => activity.update(completedKind(), now),
+    });
+  }
   const { stall } = layout;
   const sx = toWorld(stall.x);
   const seeds = placeSeedStall(owner, {
@@ -63,10 +80,7 @@ export function spawnHangout(k: number, plotDone: (k: number) => boolean) {
     }),
     targets: () => (shown === PLOT_KIND.disc ? (porch?.targets() ?? []) : seeds.targets()),
     update({ now, dt }) {
-      const done = plotDone(k);
-      const w = railwayWorldRead()?.world(),
-        id = w?.lookup(Plot, k);
-      const kind = done && id !== undefined ? (w?.get(Plot, id)?.kind ?? 0) : 0;
+      const kind = completedKind();
       porch?.update(kind === PLOT_KIND.disc, now, dt);
       if (kind !== shown) {
         if (kind === PLOT_KIND.seeds && !standWhenClear(seeds.solids, () => seeds.setEnabled(true))) return;

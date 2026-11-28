@@ -100,6 +100,17 @@ test('the core is real, unique and always selected, even for a tool nothing impo
   assert.deepEqual(p.full ? [] : p.tests, [...CORE_TESTS].sort());
 });
 
+test('a heavy alphabetically last file can start in the first wave of three workers', () => {
+  const files = [...'abcdefgh'];
+  const seconds = (file: string) => (file === 'e' || file === 'h' ? 8 : 4);
+  // Two equal-total bins can make h start at 4s, finishing at 12s. All eight fit in 8s.
+  for (const shard of unitShards(files, 2, seconds)) {
+    const finish = [0, 0, 0];
+    for (const file of shard) finish[finish.indexOf(Math.min(...finish))]! += seconds(file);
+    assert.ok(Math.max(...finish) <= 8);
+  }
+});
+
 test('the eight CI shards contain every discovered test file exactly once', () => {
   const discovered = fs
     .globSync('test/**/*.test.ts', { cwd: ROOT })

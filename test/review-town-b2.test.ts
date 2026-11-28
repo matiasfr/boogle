@@ -2,9 +2,9 @@
 // server leaves on the board. The plot view runs from its source with its render dependencies stubbed.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Vector3, Matrix4 } from 'three/webgpu';
+import { Vector3, Matrix4, Line3, Object3D } from 'three/webgpu';
 import { sourceFunction } from '../dev/level/source.ts';
-import { buildSeedWorld } from '../src/sim/railway-seeds.ts';
+import { act, advance, buildSeedWorld } from './helpers/rail.ts';
 import { plot } from '../src/sim/railway-rows.ts';
 import { Plot, Till, Town, Yard } from '../src/sim/railway-components.ts';
 import { loaderBuilt, plotPrice, plotsStaked } from '../src/sim/railway-queries-trade.ts';
@@ -171,13 +171,54 @@ test('the toy shown during a hold matches the selected board', () => {
   view.update(read(), 0);
   const target = pickInteract(view.targets(), position.x, position.z, 0, 1);
   assert.equal(target?.id, 'town.plot.0.2');
-  assert.deepEqual(toyGhosts.map((g) => g.visible), [false, true, false, false, false]);
+  assert.deepEqual(
+    toyGhosts.map((g) => g.visible),
+    [false, true, false, false, false, false, false],
+  );
   target!.run!();
   view.update(read(), 0.5);
   assert.deepEqual(
     toyGhosts.map((g) => g.visible),
-    [false, true, false, false, false],
+    [false, true, false, false, false, false, false],
   );
+});
+
+test('each fourth-plot board buys its pictured activity through a full hold', () => {
+  for (const [side, kind] of [4, 5].entries()) {
+    const seed = buildSeedWorld('house-built');
+    const town = seed.w.mut(Town, seed.w.lookup(Town, 0)!)!;
+    for (const [index, good, minimum] of [
+      [0, 'wood', 56],
+      [1, 'stone', 24],
+    ] as const) {
+      const extra = Math.max(0, minimum - town[good]);
+      town[good] += extra;
+      seed.w.mut(Yard, seed.w.lookup(Yard, index)!)!.made += extra;
+    }
+    const balance = seed.w.mut(Till, seed.w.single(Till))!;
+    balance.landed += 5000;
+    balance.boogles += 5000;
+    // Buy the yard with this fixture's funded till, then finish construction on the normal clock.
+    assert.equal(act(seed, 'a', 'rail.buy', { id: 1 }), 1);
+    advance(seed, TRADE.buildTicks);
+    const room = railRoom(seed);
+    const player = room.join('alice', 'alice', 2);
+    room.ready();
+    const { view, read, position, toyGhosts } = plotsView(player.adapter);
+    const board = plan.townChoice(3).boards[side]!;
+    position.x = 1000 + board.x;
+    position.z = board.z;
+    view.update(read(), 0);
+    view.update(read(), 0);
+    const target = view.targets().find((t) => t.id === `town.plot.3.${kind}`);
+    assert.ok(target?.run);
+    target.run();
+    view.update(read(), 0.5);
+    assert.equal(toyGhosts[5 + side]!.visible, true);
+    view.update(read(), 0.51);
+    room.run(120);
+    assert.equal(plot(room.serverWorld(), 3).kind, kind);
+  }
 });
 
 test('review B2: a buy lost with the socket leaves the board pressable again once the plot is still unbought', () => {
@@ -257,4 +298,101 @@ test('review B2: another plot refusal leaves this plot waiting; its own refusal 
   view.update(read(), 0);
   assert.equal(view.targets()[0]?.blocked, undefined);
   assert.ok(view.targets()[0]?.run);
+});
+
+function watchTarget(
+  samples: number[],
+  kind = 5,
+  interruption?: 'epoch' | 'recall' | 'held' | 'hidden',
+  onSplash?: (x: number, z: number, strength: number, level: number, launchY?: number) => void,
+) {
+  const ball = { e: 1, held: false, pose: { p: new Vector3(), v: new Vector3(8, 0, 0) } };
+  const doc = Object.assign(new EventTarget(), { hidden: false });
+  const create = sourceFunction<(...args: unknown[]) => { update(kind: number, now: number): void }>(
+    'src/entities/town/ball-targets.ts',
+    'createBallTargets',
+    {
+      ball,
+      Vector3,
+      Line3,
+      GOLF_CUPS: [{ x: 0, z: 0 }],
+      near: () => 1,
+      fanfare: () => hits++,
+      toWorld: (x: number) => x,
+      surfaceHeight: () => 0,
+      PLOT_KIND: { golf: 4, dunk: 5 },
+      document: doc,
+      clank() {},
+      splash: (...args: [number, number, number, number, number?]) => {
+        hits++;
+        onSplash?.(...args);
+      },
+      instantiate() {
+        const root = new Object3D();
+        const bucket = new Object3D();
+        bucket.name = 'bucket';
+        const flag = new Object3D();
+        flag.name = 'flag';
+        root.add(bucket, flag);
+        return { root, setEnabled() {} };
+      },
+    },
+  );
+  let hits = 0;
+  const activity = create({ cleanup() {} }, { x: 0, z: 0 }, 0);
+  for (const ms of samples) {
+    const dx = (ms - 160) * 0.008;
+    if (kind === 5) ball.pose.p.set(0.78 + dx, 1.5, 0.05);
+    else ball.pose.p.set(dx, 0.46, 0);
+    if (ms === 300) {
+      if (interruption === 'epoch') ball.e++;
+      if (interruption === 'held') ball.held = true;
+      if (interruption === 'recall') ball.pose.v.set(0, 0, 0);
+      if (interruption === 'hidden') doc.dispatchEvent(new Event('visibilitychange'));
+    }
+    activity.update(kind, ms);
+  }
+  return hits;
+}
+
+test('a visible peer that stalls during a paddle crossing still sees the dunk', () => {
+  assert.equal(watchTarget([0, 50, 100, 150, 200, 250, 300, 350]), 1);
+  assert.equal(watchTarget([0, 300, 350]), 1);
+});
+
+test('a visible peer that stalls during a golf cup crossing still sees the flag', () => {
+  assert.equal(watchTarget([0, 300, 350], 4), 1);
+});
+
+test('a discontinuity between samples cannot hit either ball target', () => {
+  for (const kind of [4, 5]) {
+    for (const interruption of ['epoch', 'recall', 'held', 'hidden'] as const)
+      assert.equal(watchTarget([0, 300], kind, interruption), 0);
+  }
+});
+
+test('bucket spray can descend to a volunteer on the marked pad', () => {
+  const drops: { floor: number; y: number; vy: number }[] = [];
+  const splash = sourceFunction<(x: number, z: number, strength: number, level: number) => void>(
+    'src/render/splash.ts',
+    'splash',
+    {
+      waterField: { nearby: () => ({ body: 'land' }) },
+      reducedMotion: false,
+      readableIntensity: () => 1,
+      GRAVITY: 18,
+      FOAM: {},
+      emit: (p: { floor: number; y: number; vy: number }) => drops.push(p),
+    },
+  );
+  assert.equal(watchTarget([0, 50, 100, 150, 200], 5, undefined, splash), 1);
+  assert.ok(drops.length);
+  assert.ok(
+    drops.every((p) => p.y >= 2.4 && p.vy < 0),
+    'spray falls from the bucket',
+  );
+  assert.ok(
+    drops.some((p) => p.floor < 2),
+    'the spray dies above a standing volunteer',
+  );
 });

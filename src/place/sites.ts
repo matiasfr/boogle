@@ -64,7 +64,12 @@ export function outOf(f: Foot, p: { x: number; z: number }, r: number) {
 // ---------------------------------------------------------------- building them, all in one mesh
 type Span = [from: number, to: number, seconds: number];
 type RecordBodies = { readonly bodies: readonly Body[]; setEnabled(on: boolean): void };
-type SiteRecords = { hulls: readonly RecordBodies[]; poles: readonly RecordBodies[] };
+type SiteRecords = {
+  hulls: readonly RecordBodies[];
+  poles: readonly RecordBodies[];
+  canStand?(withPoles: boolean): boolean;
+  canStrike?(): boolean;
+};
 export type Site = {
   plan: Plan;
   k0: number; // its scaffold starts here in the shared mesh
@@ -162,7 +167,7 @@ function solid(site: Site, on: boolean) {
   }
   if (site.bodies.length || !owned) return;
   // Clear an overlapping local player before any record enables its solids (including a join/reload snap).
-  pushOut(site);
+  if (!parts.canStand) pushOut(site);
   for (const part of parts.hulls) {
     part.setEnabled(true);
     site.bodies.push(...part.bodies);
@@ -233,6 +238,8 @@ export function buildSites(owner: OwnedView) {
 /** The pieces fall in order, starting after `delay` s. */
 export function startSite(site: Site, delay = 0, onDone?: () => void) {
   if (site.state !== 'none' || !set) return;
+  const canStand = records.get(site)!.canStand;
+  if (canStand && !canStand(true)) return;
   site.state = 'building';
   site.t = -delay;
   site.struck = 0;
@@ -250,6 +257,12 @@ export const liftPiece = (k: number, y: number) => set?.lift(k, y);
 /** There or not, with no show. */
 export function snapSite(site: Site, on: boolean) {
   if (!set) return;
+  const parts = records.get(site)!;
+  if (on && !site.bodies.length && parts.canStand && !parts.canStand(false)) {
+    snapSite(site, false);
+    return;
+  }
+  if (on && site.poleBodies.length && parts.canStrike && !parts.canStrike()) return;
   for (let k = site.k0; k < site.k1; k++) set.snap(k, on && (k >= site.pole1 || k === site.k0));
   site.state = on ? 'done' : 'none';
   site.onDone = null;
@@ -267,9 +280,17 @@ export function updateSites(dt: number) {
     if (site.state !== 'building') continue;
     site.t += dt;
     if (site.t >= 0) building.push(site);
-    if (site.t >= site.solidAt) solid(site, true);
+    const parts = records.get(site)!;
+    if (site.t >= site.solidAt) {
+      if (!site.bodies.length && parts.canStand && !parts.canStand(true)) {
+        snapSite(site, false);
+        continue;
+      }
+      solid(site, true);
+    }
     if (site.t < site.doneAt) continue;
     // The poles come down, top first, and the slab stays.
+    if (site.poleBodies.length && parts.canStrike && !parts.canStrike()) continue;
     polesOff(site);
     const want = Math.ceil((site.t - site.doneAt) * 40);
     for (let k = site.pole1 - 1 - site.struck; k > site.k0 && site.struck < want; k--) {
