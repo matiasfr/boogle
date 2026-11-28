@@ -196,3 +196,26 @@ test('CLI summary prints railway details and keeps refusals out of accepted beat
   assert.match(output, /Refusals by kind: sea switch refused: before Q4 x1/);
   assert.match(output, /Never .*pulled the sea switch/);
 });
+
+for (const intent of [
+  { op: 'rail.wake' },
+  { op: 'rail.beamChop' },
+  { op: 'rail.grant', id: 0 },
+  { op: 'rail.gate', id: 0 },
+  { op: 'rail.lever' },
+  { op: 'rail.seaSwitch' },
+  { op: 'rail.breaker' },
+  { op: 'rail.strike', id: 0 },
+  { op: 'rail.brace', revision: 1 },
+  { op: 'rail.turn', to: 1, revision: 1 },
+  { op: 'rail.install', site: 0, line: 1, part: 1, revision: 1 },
+  { op: 'rail.install', site: 0, line: 1, part: 2, revision: 1 },
+] as const) {
+  const [name, data] = railwayActionMarks(intent, 1, true)[0]!;
+  test(`an accepted ${name} before a hand-in leaves the checkpoint clock running`, () => {
+    const observe = firstContribution();
+    assert.equal(observe(name, data, 6000, 1000), undefined);
+    const [deposit, own] = railwayActionMarks({ op: 'rail.deposit', station: 'T1', kind: 0, n: 1 }, 1, true)[0]!;
+    assert.equal(observe(deposit, own, 236100, 1000), 235100);
+  });
+}
