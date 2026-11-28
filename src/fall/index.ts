@@ -39,6 +39,7 @@ import {
   carProp,
   clearDeck,
   clearRail,
+  frameWorks,
   slideWorld,
   startRail,
 } from './stage.ts';
@@ -496,7 +497,16 @@ const director = spawn({
       clearDeck();
     }
 
-    const wantFov = state === 'fall' && !reducedMotion ? FALL_FOV * clamp(-b.velocity.y / 15, 0, 1) : 0;
+    let wantFov = state === 'fall' && !reducedMotion ? FALL_FOV * clamp(-b.velocity.y / 15, 0, 1) : 0;
+    if (frameWorks && camera.aspect < 1 && (state === 'down' || state === 'done')) {
+      // Keep a landscape-width view of the works through stand-up. Ease back into the walking lens.
+      const base = camera.fov - fov;
+      const spread = THREE.MathUtils.lerp(1.8, 1, smoothstep(0.55, 1, camera.aspect));
+      const wide =
+        2 *
+        THREE.MathUtils.radToDeg(Math.atan((Math.tan(THREE.MathUtils.degToRad(base / 2)) * spread) / camera.aspect));
+      wantFov = (wide - base) * (1 - smoothstep(4, 7, (now - downSince) / 1000));
+    }
     const step = (wantFov - fov) * (1 - Math.exp(-dt * 5));
     if (Math.abs(step) > 0.01) {
       fov += step;

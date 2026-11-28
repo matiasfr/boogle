@@ -11,7 +11,7 @@ export function worksLanding() {
     const x = pad.x + side * Math.cos(pad.yaw);
     const z = pad.z - side * Math.sin(pad.yaw);
     if (visitors.every(peer => Math.hypot(peer.target.x - x, peer.target.z - z) > 2.5))
-      return side === 0 ? pad : facing(x, z, pad.focus);
+      return { ...(side === 0 ? pad : facing(x, z, pad.focus)), frameWorks: pad === CAMP_PAD };
   }
-  return pad;
+  return { ...pad, frameWorks: pad === CAMP_PAD };
 }
