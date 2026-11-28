@@ -137,6 +137,10 @@ export const UNFOLLOWED: Record<string, { reaches: readonly string[]; why: strin
     reaches: ['dev/peer-test/'],
     why: 'bundles dev/peer-test/<entry> for the net job; only core tests reach it, by naming it',
   },
+  'dev/peer-test/disc-handoff.ts: sourceModule': {
+    reaches: ['src/entities/frisbee/state.ts'],
+    why: 'the peer test runs the shared disc state with two independent hands and a bounded test ground',
+  },
   'dev/peer-test/worker-source.ts: registerHooks': {
     reaches: [],
     why: 'redirects src/ to a worker tree for the net job (change-class.test.ts lists it too); no unit test runs it',

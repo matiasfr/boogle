@@ -1,13 +1,12 @@
-﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { Vector3 } from 'three';
-import { sourceModule } from '../dev/level/source.ts';
-import { createOwnerSync } from '../src/netplay/owner-sync.ts';
-import { net } from '../src/netplay/net.ts';
+import { sourceModule } from '../level/source.ts';
+import { createOwnerSync } from '../../src/netplay/owner-sync.ts';
+import { net } from '../../src/netplay/net.ts';
 
-type DiscModule = typeof import('../src/entities/frisbee/state.ts');
-const source = readFileSync(new URL('../src/entities/frisbee/state.ts', import.meta.url), 'utf8');
+type DiscModule = typeof import('../../src/entities/frisbee/state.ts');
+const source = readFileSync(new URL('../../src/entities/frisbee/state.ts', import.meta.url), 'utf8');
 
 function walkingPlayer() {
   let publish!: () => unknown;
@@ -36,7 +35,7 @@ function walkingPlayer() {
   };
 }
 
-test('two simultaneous catches settle to one held disc, then a lost throw goes back on the rack', () => {
+export function discHandoff() {
   const a = walkingPlayer(),
     b = walkingPlayer();
   const savedPeer = net.myPeer;
@@ -65,9 +64,8 @@ test('two simultaneous catches settle to one held disc, then a lost throw goes b
   } finally {
     net.myPeer = savedPeer;
   }
-});
 
-test('a malformed remote disc cannot win a claim or enter the snapshot buffer', () => {
+  // Malformed higher claims cannot enter the snapshot buffer or take the disc.
   const player = walkingPlayer();
   player.enableDisc(new Vector3());
   assert.ok(player.grabDisc());
@@ -78,4 +76,4 @@ test('a malformed remote disc cannot win a claim or enter the snapshot buffer', 
     assert.equal(player.disc.mine, true);
     assert.equal(player.disc.e, 1);
   }
-});
+}
