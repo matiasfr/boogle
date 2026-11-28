@@ -51,6 +51,7 @@ import { bootMarks } from '../../boot/timeline.ts';
 import { roomReplaced, roomSeed } from '../../netplay/room-seed.ts';
 import { fallArrival } from '../../fall/arrival.ts';
 import { stepWaterEpisode, waterEpisode } from './water-episode.ts';
+import { firstContribution } from './first-contribution.ts';
 
 const SERVER = import.meta.env.VITE_BOOGLE_SERVER;
 const SEND_MS = 5000;
@@ -282,30 +283,13 @@ const here = (): Record<string, number> => {
 let marksLeft = MARKS_PER_WINDOW;
 let lastObjective = '';
 let lastObjectiveAt = 0;
-let stoodAt: number | undefined;
+let touchdownAt: number | undefined;
 let fellFromTrolley = false;
-let contributed = false;
-const contributionMarks = new Set([
-  'deposit',
-  'yard left',
-  'kiln filled',
-  'cradle rails',
-  'footing set',
-  'works fed',
-  'leg frame fed',
-]);
+const contribution = firstContribution();
 onPlayMark((name, data: PlayData | undefined, ms) => {
-  if (
-    !contributed &&
-    stoodAt !== undefined &&
-    ms >= stoodAt &&
-    data?.authority === 'server' &&
-    data.mine === true &&
-    contributionMarks.has(name)
-  ) {
-    contributed = true;
-    push('m', { n: 'first contribution', seconds: clock(ms - stoodAt), authority: 'server', ...here() }, ms);
-  }
+  const elapsed = contribution(name, data, ms, touchdownAt);
+  if (elapsed !== undefined)
+    push('m', { n: 'first contribution', seconds: clock(elapsed), authority: 'server', ...here() }, ms);
   if (name === 'objective') {
     // A countdown ticking in the line isn't a new objective every second: the same words wait a few seconds.
     const text = String(data?.text ?? '');
@@ -493,10 +477,10 @@ function sample(ms: number) {
 onFrame(
   () => {
     const ms = performance.now();
-    if (startedWithFall && stoodAt === undefined) {
+    if (startedWithFall && touchdownAt === undefined) {
       // The trolley sets coyote while rolling. Wait for the descent before counting ground contact.
       if (me.entered && me.body && me.coyote <= 0 && me.body.velocity.y < 0) fellFromTrolley = true;
-      if (!fallArrival.active || (fellFromTrolley && me.coyote > 0 && !me.swimming)) stoodAt = ms;
+      if (!fallArrival.active || (fellFromTrolley && me.coyote > 0 && !me.swimming)) touchdownAt = ms;
     }
     // The real interval: the frame's dt stops at 50 ms, which would hide the slowest devices.
     const frameS = lastFrame ? Math.min(1, (ms - lastFrame) / 1000) : 0;

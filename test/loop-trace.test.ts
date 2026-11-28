@@ -1,12 +1,35 @@
 // The loop trace reads a session's marks onto graph nodes: today's names, older builds' names, and per-node tallies.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, rmdirSync, unlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { parseSession } from '../dev/playtest/read.ts';
-import { humanRows, notTheLoop, predictedSegment, reachedTimes } from '../dev/loop/trace.ts';
+import { humanRows, notTheLoop, predictedSegment, reachedTimes, trace } from '../dev/loop/trace.ts';
 import type { NodeId } from '../dev/loop/graph.ts';
 
 const session = (ev: Record<string, unknown>[]) =>
   parseSession('fixture', JSON.stringify({ at: '2026-11-09T00:00:00.000Z', card: 'railway', n: 0, now: 100, ev }));
+
+test('trace reports the recorded time from touchdown', async (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'boogle-contribution-'));
+  const files = ['actor', 'peer'].map((id) => join(dir, `${id}.jsonl`));
+  t.after(() => {
+    for (const file of files) unlinkSync(file);
+    rmdirSync(dir);
+  });
+  for (const [i, file] of files.entries()) {
+    const ev: Record<string, unknown>[] = [{ t: 0, k: 'session', startedWithFall: true }];
+    if (i === 0) ev.push({ t: 42, k: 'm', n: 'first contribution', seconds: 12.5, authority: 'server' });
+    writeFileSync(file, JSON.stringify({ at: '2026-11-09T00:00:00.000Z', card: 'railway', n: 0, now: 100, ev }));
+  }
+  const log = t.mock.method(console, 'log', () => {});
+  await trace(['trace', ...files, '--offline']);
+  const report = log.mock.calls[0]?.arguments[0];
+  assert.match(report, /first contribution \(s after touchdown\)/);
+  assert.match(report, /^actor +12\.5$/m);
+  assert.match(report, /^peer +no contribution recorded$/m);
+});
 
 test('trace maps marks to nodes, older names included', () => {
   const at = reachedTimes(

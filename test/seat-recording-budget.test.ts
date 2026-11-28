@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import { runInNewContext } from 'node:vm';
 import { onPlayMark, playMark, onSeatSnapshot, recordSeatSnapshot, SEAT_SNAPSHOT_MS } from '../src/proto/mark.ts';
+import { firstContribution } from '../src/proto/playdata/first-contribution.ts';
 
 test('seat recovery snapshots survive the mark budget and coalesce floods at a fixed trailing edge', (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
@@ -17,6 +18,7 @@ test('seat recovery snapshots survive the mark budget and coalesce floods at a f
     round: Math.round,
     MARKS_PER_WINDOW: budget,
     onPlayMark,
+    firstContribution,
     onSeatSnapshot: (fn: Parameters<typeof onSeatSnapshot>[0]) => t.after(onSeatSnapshot(fn)),
     push: (kind: string, fields: object) => events.push({ kind, ...fields }),
     dropped: 0,
