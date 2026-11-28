@@ -109,8 +109,14 @@ export function createRouteGuides(owner: OwnedView, ready: () => boolean) {
         stage = routeGuideStage(area, w, work.site);
         const site = stage && points[stage];
         // A construction frame travels to the railhead. Point along the running line once its first section lays.
-        const currentSection = site?.endsWith('-1') && work.site.startsWith(site.slice(0, -1));
-        target = site ? (sites.get(currentSection ? work.site : site) ?? null) : null;
+        let aimSite = site;
+        if (site?.endsWith('-1')) {
+          const line = site.slice(0, -1);
+          aimSite = WORKS_STEPS.find(
+            (step) => step.kind === 'bill' && step.site.startsWith(line) && !step.done(w),
+          )?.site;
+        }
+        target = aimSite ? (sites.get(aimSite) ?? null) : null;
       },
       update(dt: number) {
         if (body) body.on = !!stage && !!routeAreas.get(area)?.mounted;

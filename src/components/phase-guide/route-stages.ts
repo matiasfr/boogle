@@ -53,7 +53,6 @@ export function routeGuideStage(area: RouteArea, w: ReadWorld, site: WorksSite):
       return site === 'causeway-1' ? 'causeway' : 'idle';
     case 'west':
       if (!done('incline-2')) return null;
-      if (site === 'seeds') return 'seeds';
       if (!done('bay-2')) return 'bay';
       if (!done('plug-gate')) return 'plug';
       return done('cave-3') ? 'idle' : 'cave';
@@ -67,7 +66,7 @@ export function routeGuideStage(area: RouteArea, w: ReadWorld, site: WorksSite):
       if (!done('cave-3')) return null;
       if (!done('canopy-3')) return 'otherBranch';
       if (done('wall-6')) return 'closed';
-      if (site === 'deep-gate') return 'deep';
-      return site === 'wall-6' ? 'lastSpan' : 'wall';
+      if (!done('wall-5')) return 'wall';
+      return done('deep-gate') ? 'lastSpan' : 'deep';
   }
 }

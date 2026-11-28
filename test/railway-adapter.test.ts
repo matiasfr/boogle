@@ -8,8 +8,11 @@ import { sourceModule } from '../dev/level/source.ts';
 import { WORKS_STEPS, roomWorks, type RoomWorks } from '../src/sim/railway-queries-room.ts';
 import * as giftReads from '../src/sim/railway-queries-gift.ts';
 import { advance, unaudited } from './helpers/rail.ts';
-import { RAIL_LEGS } from '../src/sim/railway-route.ts';
-import { laySection } from '../src/sim/railway-seed-legs.ts';
+import { RAIL_GATES, RAIL_LEGS } from '../src/sim/railway-route.ts';
+import { laySection, railwayAtLegs } from '../src/sim/railway-seed-legs.ts';
+import { act } from '../src/sim/railway-seed-route.ts';
+import { gorgeAt, GORGE_DECK } from '../src/entities/route-greybox/massing.ts';
+import { ROUTE_LINES, routeGuideStage } from '../src/components/phase-guide/route-stages.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRailwayAdapter } from '../src/adapters/railway-session.ts';
@@ -1183,4 +1186,90 @@ test('Canopy contributors remain on the board while their funded section lays', 
     },
   );
   assert.ok(checked);
+});
+
+test('West landing directs the cave crew to its plug while Bell Rock still holds the seeds', () => {
+  const s = unaudited(railwayAtLegs('bell-reached'));
+  const bay = RAIL_LEGS.findIndex((leg) => leg.id === 'bay-cut');
+  for (let i = 0; i < RAIL_LEGS[bay]!.sections.length; i++) laySection(s, bay);
+  const site = roomWorks(s.w).site;
+  assert.equal(site, 'seeds');
+  assert.equal(routeGuideStage('west', s.w as ReadWorld, site), 'plug');
+});
+
+test('Quay identifies the deep barrier while cloth is still waiting at Canopy', () => {
+  const s = unaudited(railwayAtLegs('canopy-reached'));
+  const cave = RAIL_LEGS.findIndex((leg) => leg.id === 'cave');
+  const wall = RAIL_LEGS.findIndex((leg) => leg.id === 'wall');
+  assert.equal(act(s, 'a', 'rail.gate', { id: RAIL_GATES.findIndex((gate) => gate.id === 'plug') }), 1);
+  for (let i = 0; i < RAIL_LEGS[cave]!.sections.length; i++) laySection(s, cave);
+  for (let i = 0; i < 5; i++) laySection(s, wall);
+  const site = roomWorks(s.w).site;
+  assert.equal(site, 'cloth');
+  assert.equal(routeGuideStage('quay', s.w as ReadWorld, site), 'deep');
+  assert.equal(act(s, 'a', 'rail.gate', { id: RAIL_GATES.findIndex((gate) => gate.id === 'deep-span') }), 1);
+  assert.equal(routeGuideStage('quay', s.w as ReadWorld, roomWorks(s.w).site), 'lastSpan');
+});
+
+function checkGuideAim(w: ReadWorld, area: string, objective: RoomWorks['site'], frame: RoomWorks['site']) {
+  const work = roomWorks(w);
+  assert.equal(work.site, objective);
+  const aims = new Map<string, () => unknown>();
+  const { createRouteGuides } = sourceModule<{
+    createRouteGuides(
+      owner: object,
+      ready: () => boolean,
+    ): { read(w: ReadWorld, work: ReturnType<typeof roomWorks>): void };
+  }>(
+    fs
+      .readFileSync('src/entities/route-greybox/phase-guides.ts', 'utf8')
+      .replace("import('../../place/folk.ts').then", 'Promise.resolve({}).then'),
+    {
+      WORKS_STEPS,
+      ROUTE_LINES,
+      gorgeAt,
+      GORGE_DECK,
+      routeGuideStage,
+      folkVoice: () => ({}),
+      createPhaseGuide: (_owner: object, opts: { id: string; aim: () => unknown }) => {
+        aims.set(opts.id, opts.aim);
+        return {};
+      },
+    },
+  );
+  createRouteGuides({ alive: false }, () => true).read(w, work);
+  const { at } = WORKS_STEPS.find((step) => step.site === frame)!;
+  assert.deepEqual(aims.get('railway-talk-' + area)!(), { x: at.x / 100, z: at.z / 100 });
+}
+
+test('Bell Rock points to the current Canopy railhead when the cave crew opens its plug', () => {
+  const s = railwayAtLegs('canopy-mid');
+  assert.equal(act(s, 'b', 'rail.gate', { id: RAIL_GATES.findIndex((gate) => gate.id === 'plug') }), 1);
+  checkGuideAim(s.w as ReadWorld, 'bell', 'cave-1', 'canopy-2');
+});
+
+test('West points to the moving bay and cave frames while Bell Rock still holds the seeds', () => {
+  const s = unaudited(railwayAtLegs('bell-reached'));
+  const bay = RAIL_LEGS.findIndex((leg) => leg.id === 'bay-cut');
+  laySection(s, bay);
+  checkGuideAim(s.w as ReadWorld, 'west', 'seeds', 'bay-2');
+  laySection(s, bay);
+  assert.equal(act(s, 'a', 'rail.gate', { id: RAIL_GATES.findIndex((gate) => gate.id === 'plug') }), 1);
+  laySection(
+    s,
+    RAIL_LEGS.findIndex((leg) => leg.id === 'cave'),
+  );
+  checkGuideAim(s.w as ReadWorld, 'west', 'seeds', 'cave-2');
+});
+
+test('Quay points to the moving Wall frame while the cloth waits at Canopy', () => {
+  const s = unaudited(railwayAtLegs('canopy-reached'));
+  assert.equal(act(s, 'a', 'rail.gate', { id: RAIL_GATES.findIndex((gate) => gate.id === 'plug') }), 1);
+  const cave = RAIL_LEGS.findIndex((leg) => leg.id === 'cave');
+  for (let i = 0; i < RAIL_LEGS[cave]!.sections.length; i++) laySection(s, cave);
+  laySection(
+    s,
+    RAIL_LEGS.findIndex((leg) => leg.id === 'wall'),
+  );
+  checkGuideAim(s.w as ReadWorld, 'quay', 'cloth', 'wall-2');
 });
