@@ -10,7 +10,7 @@ One topic of the owner's decision log: [decisions.md](decisions.md) routes every
 - 2026-11-16 · Keep the turn toward the forge; the pier's cut shows the breaker waiting, not being cast ([entry](#d-2026-11-16-batch2-pier-shot-shows-waiting-breaker))
 - 2026-11-16 · The 10 batch-2 bulk calls in this topic are confirmed as logged, subject to later explicit owner decisions ([entry](#d-2026-11-16-batch2-bulk-confirmed))
 
-- 2026-11-16 · An expired return starts at Home with Welcome back; cinematic skip is Interact, offered 0.8 s in, with its own highlighted glyph and the press swallowed ([entry](#d-2026-11-16-batch2-controls-confirmed))
+- 2026-11-16 · An expired return starts at Home with Welcome back; cinematic skip is Interact, offered 0.8 s in, with its own highlighted glyph and the press swallowed ([entry](#d-2026-11-16-batch2-controls-confirmed)). _The [28 November builder widening](agent-calls.md#core-loop-pacing-and-progression) also permits a friend's standing halt._
 - 2026-11-16 · Acts follow railway progress and each browser shows the current act once; Act 2 stays at Q5, while Acts 3 and 4 are placed when their opening shows are built ([entry](#d-2026-11-16-later-acts-await-opening-shows))
 
 One line per entry in force, in the log's order, linking to it. An italic note marks a part a later entry changed. Generated from the entries by `dev/decisions/split.ts` (10 November 2026), kept by hand since.
@@ -19,7 +19,7 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-11-15 · Q4's arrival gets a short shared camera shot of the sea gate's jamb as the control seats; the summit deck stays as it is, and a tall gold pennant on the jamb marks the gate from the summit ([entry](#d-2026-11-15-q4-gets-a-camera-shot))
 - 2026-11-14 · near a chair, Interact sits; seated, Interact requests an offered stop and Jump stands you up; try the built behaviour and revisit after the owner plays ([entry](#d-2026-11-14-sit-first-stop-when-seated))
 
-- 2026-11-14 · a recent reload returns you where you were; a long absence starts at Home ([entry](#d-2026-11-14-a-recent-reload-returns-you-where))
+- 2026-11-14 · a recent reload returns you where you were; a long absence starts at Home ([entry](#d-2026-11-14-a-recent-reload-returns-you-where)). _For the long-absence exception, see [returning visits](game-design/first-run.md) and the [logged widening](agent-calls.md#core-loop-pacing-and-progression)._
 
 - 2026-11-11 · the game has acts: a title and a short aerial move at the first landing, the next act at Far Head's show; "Act 1 · The beginning" is the only titled act, the rest show their number alone, with no line under it ([entry](#d-2026-11-11-the-game-has-acts))
 - 2026-11-10 · shared moments play for everyone ([entry](#d-2026-11-10-shared-moments-play-for-everyone))

@@ -114,7 +114,7 @@ One line per entry in force, in the log's order, linking to it. An italic note m
 - 2026-10-30 · `main` keeps deploying straight to boogle.club ([entry](#d-2026-10-30-main-keeps-deploying-straight-to-boogle))
 - 2026-11-02 · entities have methods: `update()` and friends on the entity, Unity's shape, over the research's timing rows per kind (entity-architecture.md). ([entry](#d-2026-11-02-entities-have-methods))
 - 2026-11-02 · no automatic rollback yet ([entry](#d-2026-11-02-no-automatic-rollback-yet))
-- 2026-11-02 · an invite doesn't land you next to your friend _(friends are reached by the ride, not fast travel ("the express and interchanges", 2026-11-10))_ ([entry](#d-2026-11-02-an-invite-doesn-t-land-you))
+- 2026-11-02 · an invite doesn't land you next to your friend _(friends are reached by the ride, not fast travel ("the express and interchanges", 2026-11-10))_ ([entry](#d-2026-11-02-an-invite-doesn-t-land-you)). _The [28 November builder widening](agent-calls.md#core-loop-pacing-and-progression) lets a returning visitor without a recent spot arrive at a friend's standing halt._
 - 2026-11-01 · migrate to game entities now, ahead of the slice _("still no ECS": reopened 2026-11-06, then "entity model: build E")_ ([entry](#d-2026-11-01-migrate-to-game-entities-now-ahead))
 - 2026-11-01 · start the asset pipeline now ([entry](#d-2026-11-01-start-the-asset-pipeline-now))
 - 2026-11-01 · don't over-index on the iPad ([entry](#d-2026-11-01-don-t-over-index-on-the))

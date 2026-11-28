@@ -90,8 +90,15 @@ stand-up-to-town and town-to-machine durations. The shore follows option A in
   scenery mounts and one physics step completes; it must pass the live standable-surface test, with a 2.5 s limit
   per candidate. Where the browser blocks storage nothing is read or saved and you arrive at Home. Checked catalogue
   halt landings are reused; other halts probe 3, 4.5, 6 and 8 m rings for the highest
-  surface between 0.5 m below and 1.5 m above the platform datum. Occupied points are skipped. Expired, disabled or
-  malformed records go Home; a room with no record uses its jump-in landing, else Home. Room replacement, Start fresh
+  surface between 0.5 m below and 1.5 m above the platform datum. Occupied points are skipped.
+  With no usable recent spot and trains running, a returning visitor waits up to 1.5 s for the first entered
+  friend's pose. A friend more than 150 m from Home's hall and within 250 m of a standing halt can meet them there.
+  Across eligible friends, the one nearest the room's current works wins. Their nearest standing halt gets its scenery
+  and physics first. A free spot on a dwelling train's passenger deck faces the friend. If the train leaves or its
+  deck is full, a checked platform spot faces the track. When the train is absent, a local puff and distant whistle
+  mark its departure. The joiner publishes their first pose after placement. An exhausted halt search takes the
+  ordinary works landing. Without an eligible friend, the usual landing applies (including a jump room's landing
+  when it has no stored record). First visits and recent reloads bypass the presence wait. Room replacement, Start fresh
   and world-version changes clear the room memory. Nobody sees the placement: with a recent record the loading screen
   stays up until the body stands where it will stay (at most 10 s more, `src/boot/cover-hold.ts`), and the tab
   publishes no pose until then, so a friend sees you appear in place, never at Home first. If the room answers later
