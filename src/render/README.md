@@ -48,8 +48,9 @@ One packed state buffer and three draw buffers use four update storage bindings;
 GPU buffers total 194,816 bytes; a nonempty queue uploads 45,056 bytes. Idle expiry skips compute/draw.
 `particleCounts()` reports estimated occupancy, caps, admitted/dropped/replaced births, draws and upload bytes.
 The update and scalar queue writer create no per-frame arrays; shared chip/dust recipes reuse birth records.
-Reduced motion suppresses these contact decorations. Dust and timber keep intensity one; the axe still uses
-`readableIntensity()` at spawn, with no double compensation.
+Reduced motion suppresses these contact decorations. Set `daylight: true` for physical pigment. At birth the
+game multiplies all three colour keys by the same linear sun-plus-sky irradiance divided by π. An omitted
+declaration keeps the authored RGB times intensity, as used by the axe's `readableIntensity()` glints.
 Reward celebrations (box sparkles, confetti, the opening dust ring, the reveal's sparkle) come from
 `reward-particles.ts`, which folds `readableIntensity()` in itself: a reward emitter takes no intensity argument. These counts are not device timing evidence.
 
@@ -69,7 +70,7 @@ Physical Place boards and the shop price atlas use rough lit materials, their sa
 received shadows, with no emissive floor or gain compensation. Camera-facing labels and rewards keep their policy.
 `readable-unlit.ts` divides scoped unlit ink's **linear RGB** by `surfaceExposure` from `exposure.ts`, preserving
 alpha and underwater fog. Scoped reward emitters fold the inverse of the same CPU setting into RGB
-once at spawn; living particles retain their spawn intensity until expiry. Smoke/dust keep intensity one.
+once at spawn; living particles retain their birth colours until expiry.
 The material helper ignores repeat calls on the same owned material. `readableGlow` is its lit counterpart: it divides
 only a display-range emission (`emissiveNode`, default `materialEmissive`) by the same gain, for glows rather than
 shaded-face fills. A new unlit or glowing material authored at display range opts into one of the two; the scoped

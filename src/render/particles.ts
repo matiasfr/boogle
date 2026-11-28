@@ -1,5 +1,6 @@
 // The game's existing cosmetic particle pool; the isolated asset stage uses the same implementation.
-import { renderer, scene } from './scene.ts';
+import { Color } from 'three/webgpu';
+import { hemi, renderer, scene, sun } from './scene.ts';
 import { onFrame } from '../loop.ts';
 import { warmUp, warmDraw } from './precompile.ts';
 import { createParticlePool, particleBeat } from './particle-pool.ts';
@@ -7,7 +8,12 @@ import { graphicsInitial, autoRung, onGraphicsChange, DETAIL_RUNGS } from '../gr
 import { reducedMotion } from '../constants.ts';
 export type { Particle } from './particle-pool.ts';
 
-const particles = createParticlePool(renderer);
+const daylight = new Color();
+const skyFill = new Color();
+const particles = createParticlePool(renderer, undefined, () => {
+  skyFill.copy(hemi.color).multiplyScalar(hemi.intensity / Math.PI);
+  return daylight.copy(sun.color).multiplyScalar(sun.intensity / Math.PI).add(skyFill);
+});
 scene.add(particles.object);
 warmUp(particles.prepare, { beforeScene: true });
 // Compile both per-particle looks on the actual HDR/MSAA target, even before the first emission.

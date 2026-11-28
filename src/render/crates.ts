@@ -262,6 +262,7 @@ function landDust(x: number, y: number, z: number) {
       vz: Math.sin(a) * sp,
       life: 0.5 + Math.random() * 0.3,
       size: 0.24,
+      daylight: true,
       color: dust,
       alpha: 0.8,
       drag: 3,

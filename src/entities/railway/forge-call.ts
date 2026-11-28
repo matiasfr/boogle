@@ -13,7 +13,6 @@ import { material } from '../../render/materials.ts';
 import { whistle } from '../../render/machine-sfx.ts';
 import { camera } from '../../render/scene.ts';
 import { emit } from '../../render/particles.ts';
-import { readableIntensity } from '../../render/readable-unlit.ts';
 import { me } from '../../player/player.ts';
 import { reducedMotion } from '../../constants.ts';
 
@@ -122,8 +121,7 @@ export function createForgeCall(
         alpha: 0.6,
         fade: 0.5,
         color: STEAM,
-        // Unlit particles are drawn before exposure: without this, white steam comes out soot grey.
-        intensity: readableIntensity(),
+        daylight: true,
         drag: 1.3,
         gravity: 0,
       });

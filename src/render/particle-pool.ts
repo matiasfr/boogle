@@ -44,6 +44,8 @@ export type Particle = {
   color: THREE.Color;
   alpha?: number;
   intensity?: number;
+  /** Treat the colour keys as pigment in the scene's sun and sky at birth. */
+  daylight?: boolean;
   gravity?: number;
   drag?: number;
   floor?: number | null;
@@ -100,7 +102,11 @@ export function particleBeat(seconds: number, intervalScale: () => number) {
 }
 
 /** No game lifecycle on import. Clocks are injected for the asset stage. */
-export function createParticlePool(renderer: THREE.WebGPURenderer, now = () => performance.now()) {
+export function createParticlePool(
+  renderer: THREE.WebGPURenderer,
+  now = () => performance.now(),
+  daylight?: () => THREE.Color,
+) {
   const MAX = 720,
     SPAWN = 256,
     NO_FLOOR = -1e9;
@@ -279,7 +285,8 @@ export function createParticlePool(renderer: THREE.WebGPURenderer, now = () => p
   object.visible = false;
   object.renderOrder = 5;
 
-  const rgb = { r: 0, g: 0, b: 0 },
+  const gain = new THREE.Color(),
+    rgb = { r: 0, g: 0, b: 0 },
     q = queue.value.array;
   let queued = 0,
     next = 0,
@@ -296,9 +303,9 @@ export function createParticlePool(renderer: THREE.WebGPURenderer, now = () => p
     q[o + 2] = c;
     q[o + 3] = d;
   }
-  function colorAt(o: number, color: THREE.Color, intensity: number, alpha: number) {
+  function colorAt(o: number, color: THREE.Color, alpha: number) {
     color.getRGB(rgb);
-    four(o, rgb.r * intensity, rgb.g * intensity, rgb.b * intensity, alpha);
+    four(o, rgb.r * gain.r, rgb.g * gain.g, rgb.b * gain.b, alpha);
   }
   function emit(p: Particle) {
     if (queued >= SPAWN) {
@@ -307,14 +314,15 @@ export function createParticlePool(renderer: THREE.WebGPURenderer, now = () => p
     }
     const o = queued++ * Q * 4,
       slot = next,
-      time = now(),
-      intensity = p.intensity ?? 1;
+      time = now();
+    gain.setScalar(p.intensity ?? 1);
+    if (p.daylight && daylight) gain.multiply(daylight());
     next = (next + 1) % MAX;
     if (deathAt[slot]! > time) replaced++;
     admitted++;
     four(o, p.x, p.y, p.z, p.life);
     four(o + 4, p.vx ?? 0, p.vy ?? 0, p.vz ?? 0, p.life);
-    colorAt(o + 8, p.colorCurve?.[0] ?? p.color, intensity, p.alpha ?? 1);
+    colorAt(o + 8, p.colorCurve?.[0] ?? p.color, p.alpha ?? 1);
     four(o + 12, p.size, p.grow?.[0] ?? 1, p.grow?.[1] ?? 1, p.shrink ?? 0);
     four(o + 16, p.fade ?? 0, p.gravity ?? 0, p.drag ?? 0, p.floor ?? NO_FLOOR);
     const shape =
@@ -332,8 +340,8 @@ export function createParticlePool(renderer: THREE.WebGPURenderer, now = () => p
     four(o + 20, shape, p.rotation ?? 0, p.spin ?? 0, 0);
     four(o + 24, p.sizeCurve?.[0] ?? 1, p.sizeCurve?.[1] ?? 1, p.sizeCurve?.[2] ?? 1, 0);
     four(o + 28, p.alphaCurve?.[0] ?? 1, p.alphaCurve?.[1] ?? 1, p.alphaCurve?.[2] ?? 1, 0);
-    colorAt(o + 32, p.colorCurve?.[1] ?? p.color, intensity, 0);
-    colorAt(o + 36, p.colorCurve?.[2] ?? p.color, intensity, p.settle ? -1 : (p.bounce ?? 0));
+    colorAt(o + 32, p.colorCurve?.[1] ?? p.color, 0);
+    colorAt(o + 36, p.colorCurve?.[2] ?? p.color, p.settle ? -1 : (p.bounce ?? 0));
     four(o + 40, slot, 0, 0, 0);
     deathAt[slot] = time + p.life * 1000;
     liveUntil = Math.max(liveUntil, deathAt[slot]);

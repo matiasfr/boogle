@@ -98,6 +98,7 @@ function puff(x: number, y: number, z: number, n: number, spread: number) {
       life: 0.35 + Math.random() * 0.3,
       size: 0.12,
       alpha: 0.8,
+      daylight: true,
       color: DUST,
       gravity: 6,
     });

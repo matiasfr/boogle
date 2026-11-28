@@ -1191,6 +1191,7 @@ export async function createRailwayLine2(
           grow: [1, 3],
           alpha: 0.9,
           fade: 0.5,
+          daylight: true,
           color: smokeCol,
           drag: 0.2,
         });

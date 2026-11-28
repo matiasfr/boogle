@@ -135,6 +135,7 @@ export async function createRailwayGlideView(owner: OwnedView) {
     vz: 0,
     life: WISP.life,
     size: WISP.size,
+    daylight: true,
     color: WISP_COLOR,
     alpha: WISP.alpha,
     drag: 0,
