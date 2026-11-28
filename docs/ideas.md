@@ -8,7 +8,6 @@ A parking lot for things to flesh out later. Not a task list: nothing here is pl
 - Special unlocks for finding all seven crystals (2026-11-09)
 
 ## Look
-- A living-world shader pass: one shared wind field, then tree sway and path-side grass, then round puffs from the track machine and chimneys, all Local; order and sources in [living-world-shaders](research/living-world-shaders.md). The owner, reviewing unused research: critters and living-world shaders "seem like things that'll be great to flesh out the game world and make it feel alive" (owner, 2026-11-11)
 - Revisit time of day and colour grading with the new sky and AgX: the game felt a bit dull and even the stars around the player's head looked very dark, maybe material properties and emissive values on things (owner, 2026-11-03)
 
 ## Island
@@ -31,7 +30,6 @@ A parking lot for things to flesh out later. Not a task list: nothing here is pl
 - How a host proves who they are: "per device or maybe a password or a simple code that I can use to sign in from anywhere?" (owner, 2026-11-10)
 
 ## Controls
-- Camera distance as a setting in the pause menu, beside the volume slider, instead of a dedicated control (owner, 2026-11-02)
 - Bring back a hotbar, only if a real gameplay element demands it (owner, 2026-11-02; cut in favour of one thing in your hands)
 
 ## HUD
@@ -46,8 +44,6 @@ A parking lot for things to flesh out later. Not a task list: nothing here is pl
 - Agent-driven exploratory playtesting, after [ramenvr/autopilot](https://github.com/ramenvr/autopilot) (Unreal/Unity/Godot only, no web support): an agent reads the source and writes a bot from a prompt, with legal options, facts, a plan with stall detection and an effect check per action. Borrow that structure on top of `dev/look/playthrough.ts` if the playthrough bot starts missing real bugs (softlocks, confusing routes). A real integration needs a browser plugin, a Python adapter and the hosted decision model Jev (pricing not found), so it's only worth a spike to test whether it finds a bug in the round that the playthrough bot misses; if tried, set `AUTOPILOT_SHARE=0` (2026-11-03)
 
 - **Post looks for a later rendering pass.** Toy-only outlines (dark, 2 px) read best, then haze for distance. Before reuse: cut the roughly 6 ms cost, reduce line crawl on hat seams and roofs, and explain the white shoreline marks using frozen-frame captures. Layers are on tag `archive/post-looks-round2`; see [round two](research/post-look-round2.md).
-
-- **A critters-and-life pass for the new environments** (owner, 6 November): fish and gulls now live on the classic island only; give the new world its own critters and life, reusing the fish (`src/features/critter-fish.ts`) and gull (`src/features/critter-gulls.ts`) code. (2026-11-06) Raised again on 11 November with the shader pass under Look; keep them many, cheap and reactive, with no ecosystem ([creature-ai-and-ecosystems](research/creature-ai-and-ecosystems.md)).
 
 ## World and story
 - The story frame: by connecting everywhere and building an economy for the simple little guys, the players are secretly doing The Boogler's work, for good (owner, 2026-11-06)
