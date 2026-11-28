@@ -1677,7 +1677,10 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     else await dismiss('optional jump reveal');
     mark('optional jump discovered');
     require(await bot.straight(ownSlot.x, ownSlot.z, 0.4, 6000), 'stood clear of the device for the jump');
-    await until(() => me.coyote > 0 && me.body!.velocity.y <= 0, 'grounded before jump demonstration');
+    await until(
+      () => me.coyote > 0 && !me.swimming && Math.abs(me.body!.velocity.y) < 0.5,
+      'grounded before jump demonstration',
+    );
     const jumpsBefore = read().reward.tools.jumps;
     pressJump();
     await until(() => me.coyote <= 0 && me.body!.velocity.y > 0, 'ordinary first jump leaves the pillar', 3000);
