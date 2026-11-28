@@ -12,7 +12,7 @@ import { defineSystem, type World } from '../ecs/index.ts';
 import { RAIL_TRAINS } from './railway-lines.ts';
 import { TRAIN_PHASE, trainDir } from './railway-train.ts';
 import { RIDER_UNIT, TRADE, validPlotKind, lineRoute, type TradePct } from './railway-trade-layout.ts';
-import { Plot, Rail, Till, Town, TownClock, Train, Yard, YardClock } from './railway-components.ts';
+import { Aperture, Plot, Rail, Till, Town, TownClock, Train, Yard, YardClock } from './railway-components.ts';
 import { railId, trainId } from './railway-queries.ts';
 import {
   boxCap,
@@ -25,6 +25,7 @@ import {
   lineYard,
   routeAhead,
   townBuildings,
+  housesOf,
   townId,
   riderPlaces,
   waitingFor,
@@ -124,11 +125,15 @@ export const tradeTick = defineSystem(
         c.acc -= RIDER_UNIT;
         n++;
       }
-      if (!n) return;
+      const farClock = w.mut(TownClock, townId(w, r.farTown))!;
+      farClock.acc += housesOf(w, r.farTown, tick) * TRADE.ridersPerMin * riderPct;
+      const extra = Math.floor(farClock.acc / RIDER_UNIT);
+      farClock.acc -= extra * RIDER_UNIT;
+      if (!n && !extra) return;
       // The replicated row changes only when a rider arrives at an end with room.
       const t = w.get(Town, id)!,
         wait0 = Math.min(TRADE.crowdCap, t.wait0 + n),
-        wait1 = Math.min(TRADE.crowdCap, t.wait1 + n);
+        wait1 = Math.min(TRADE.crowdCap, t.wait1 + n + extra);
       if (wait0 === t.wait0 && wait1 === t.wait1) return;
       const m = w.mut(Town, id)!;
       m.wait0 = wait0;
@@ -194,7 +199,7 @@ export const sack = defineSystem('rail.sack', { writes: [Till], phase: 'act', or
 /** Buy is authoritative and atomic; the shared request history handles retransmits. */
 export const buy = defineSystem(
   'rail.buy',
-  { reads: [Town], writes: [Plot, Till], phase: 'act', order: 70 },
+  { reads: [Town, Aperture], writes: [Plot, Till], phase: 'act', order: 70 },
   (w, { e, tick, pricePct }: Act) => {
     if (typeof e.id !== 'number' || !Number.isInteger(e.id) || e.id < 0) return 0;
     const town = Math.floor(e.id / 16),

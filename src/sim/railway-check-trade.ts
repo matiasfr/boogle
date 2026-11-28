@@ -10,7 +10,7 @@ import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { RIDER_UNIT, TRADE, validPlotKind, lineRoute } from './railway-trade-layout.ts';
 import { LINE2, RAIL_TRAINS } from './railway-lines.ts';
 import { WORKS } from './railway-works-layout.ts';
-import { plot, till, townClock, towns, trains, yardClock, yards } from './railway-rows.ts';
+import { aperture, plot, till, townClock, towns, trains, yardClock, yards } from './railway-rows.ts';
 import { plotSlot, freightAboard, ridersAboard, riderPlaces, loaderOn } from './railway-queries-trade.ts';
 
 const bad = (what: string): never => {
@@ -74,6 +74,11 @@ export function checkTrade(w: World, tick = RAILWAY_MAX_INT) {
   // Everyone who boarded is aboard their route's trains or has stepped off.
   if (TRADE.routes.some((rt, k) => ts[rt.town]!.boarded !== ridersAboard(w, k) + ts[rt.town]!.alighted))
     bad('riders conservation');
+  // Ring contributes to the existing route's far queue. Its own clock can run,
+  // but no yard delivers there and no train has a second pair of queues.
+  const ring = ts[1]!;
+  if (ring.wood || ring.stone || ring.wait0 || ring.wait1 || ring.boarded || ring.alighted)
+    bad('unused Ring town fields');
   // R3: the one strongbox. Every field a whole number; what is in it is what landed and was poured, less what was spent.
   const b = till(w);
   // The sack's cap applies when it fills, never when a save loads: live rates may have fallen since it was earned.
@@ -92,6 +97,10 @@ export function checkTrade(w: World, tick = RAILWAY_MAX_INT) {
       const first = plot(w, plotSlot(town, 0));
       if ('spare' in threshold && p.at >= 0 && (first.at < 0 || first.at > p.at)) bad('plot order');
       if (p.at < 0 ? p.kind !== 0 : !validPlotKind(threshold, p.kind, first.kind)) bad('plot kind');
+      if ('after' in threshold && p.at >= 0) {
+        const joined = aperture(w).joined;
+        if (joined < 0 || p.at < joined) bad('plot before arrival');
+      }
       if (p.at >= 0 && (ts[town]!.wood < threshold.wood || ts[town]!.stone < threshold.stone)) bad('plot thresholds');
       paid += p.paid;
     }),

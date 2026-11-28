@@ -160,7 +160,8 @@
 // v82 (2026-11-28): the sixth Wall lay joins both fleets on Line 2 and shifts the halt IDs used by rail.call.
 // v83 (2026-11-28): Home's fourth priced plot saves the room's golf or dunk choice.
 // v84 (2026-11-28): save gifted logs in the High Gorge relay yard.
-export const WORLD_NS = 'v84';
+// v85 (2026-11-28): Ring Island's town, rider clock and saved lookout or bellhouse plot.
+export const WORLD_NS = 'v85';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

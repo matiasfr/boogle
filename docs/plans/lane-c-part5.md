@@ -1,6 +1,6 @@
 # Lane C Part 5 — a hangout at Ring Island
 
-**Plan only, 28 November 2026.** The requested terrace overlaps the site the owner chose for the leaning station house. The recommendation below keeps both walk-in buildings. It changes the brief's specified location and needs an owner answer before implementation.
+**Proceeding, 28 November 2026.** The hangout moves west of the protected station terrace. The move proceeds as a New call and preserves the owner's station-house decision.
 
 ## At the halt
 
@@ -57,6 +57,6 @@ Boards, models, telescope and rope motion are local views. A deliberate pull whi
 
 **Counts.** 3 Decided, 1 Default, 3 New. Existing brief calls are logged with its source commit 1743279ec. The proposed relocation is logged separately. Step 1 now protects the station house and tests the walk-on foundation. The recommendation is a candidate for survey, pending visual and collision proof. No change to the station board's list or statue footing is needed.
 
-**Owner question.** May the plot move just west of STACK_KEEP so that both the hangout and the approved station house have their own ground? Recommend yes. This is the only change requested to the five answers in the brief.
+**Disposition.** Proceed west of STACK_KEEP. Survey the site and keep the waiting room, its view and the approach clear.
 
 **Placeholder copy.** Lookout Tower, Signal Bellhouse, both board titles, price and rider lines, purchase hold labels, telescope prompt and bell-rope prompt. No new dialogue.

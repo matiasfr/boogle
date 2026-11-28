@@ -21,6 +21,9 @@ export type RingRamp = { foot: XZ; flights: readonly RingFlight[]; landings: rea
 
 /** Line 2's track at the pier head, world cm (ruling 5's datum, the crossing's line: CROSSING_BENTS). */
 export const RING_ORIGIN = { x: 140200, z: -37200 } as const;
+
+/** West of the leaning station house. Ground room centred here, approach along its platform-facing side. */
+export const RING_HANGOUT = { u: 47300, lat: -2700, floor: 900 } as const;
 /** The heading's length per unit of -z: u and lat are true cm, as CROSSING_BENTS are (the greybox's `at` is not, and
  * drifts 17 cm by the halt). */
 const RING_UNIT = Math.sqrt(1 + 0.0272 * 0.0272);
@@ -31,6 +34,8 @@ export function ringAt(ucm: number, latcm = 0): XZ {
     z: Math.round(RING_ORIGIN.z + (0.0272 * latcm - ucm) / RING_UNIT),
   };
 }
+
+export const RING_HANGOUT_BOARD = ringAt(RING_HANGOUT.u, -2300);
 
 /** Line 2's s at the pier head (Q6's toCm): s = RING_S_HEAD + u. */
 export const RING_S_HEAD = 74200;

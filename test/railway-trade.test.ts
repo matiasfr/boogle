@@ -64,6 +64,7 @@ import { serverWorld } from './helpers/server-world.ts';
 import { HALL, TILL } from '../src/place/home-station.ts';
 import { railValid, type Actor } from '../src/world/railway-server.ts';
 import { intentOf, railwayActs } from '../src/adapters/railway-intents.ts';
+import { tradeTick } from '../src/sim/railway-sys-trade.ts';
 
 /** A plain (unaudited) copy of a world through JSON, as the server holds a save. */
 const copy = (w: World) => {
@@ -92,6 +93,23 @@ const LINE2_SLOTS = RAIL_TRAINS.flatMap((t, k) => (t.line === LINE2 ? [k] : []))
 /** Writes on a copy for the refusal tests (a hostile or corrupt save). */
 const yardId = (w: World, slot: number) => w.lookup(Yard, slot)!;
 const tillRow = (w: World) => w.get(Till, w.single(Till))!;
+
+test('Ring joins before staking; a completed Ring plot sends its extra rider to the far queue only', () => {
+  const before = { w: copy(LEAF.w), t: LEAF.t };
+  assert.deepEqual(plotsStaked(before.w, 1), []);
+  assert.equal(act(before, 'a', 'rail.buy', { id: 16, kind: 6 }), 0);
+  const seed = buildSeedWorld('ring-joined');
+  assert.deepEqual(plotsStaked(seed.w, 1), [0]);
+  assert.equal(act(seed, 'a', 'rail.buy', { id: 16, kind: 6 }), 1);
+  const at = seed.t + TRADE.buildTicks;
+  assert.equal(tillRate(seed.w, TRADE_PCT, at) - tillRate(seed.w, TRADE_PCT, at - 1), fareOf(seed.w, 0));
+  const queues = seed.w.mut(Town, seed.w.lookup(Town, 0)!)!;
+  queues.wait0 = queues.wait1 = 0;
+  for (let i = 0; i < 600; i++) seed.w.run(tradeTick, { tick: at + i, headPct: 100, ...TRADE_PCT });
+  assert.deepEqual([queues.wait0, queues.wait1], [2, 3]);
+  seed.w.mut(Plot, seed.w.lookup(Plot, 16)!)!.at = 0;
+  assert.throws(() => checkTrade(seed.w, at), /plot before arrival/);
+});
 
 test('a fresh railway starts with both yards full, nothing aboard or delivered, an empty strongbox and nobody waiting', () => {
   const w = createRailwayWorld();
