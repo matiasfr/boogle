@@ -1,4 +1,5 @@
-> **Status: proposed (2026-11-28).** Light brainstorm, one pass through three lenses (play designer, systems
+> **Status: approved (2026-11-28).** The owner took all five recommended answers the same day ("Commit even if it takes more changes. I trust your recommendations";
+> [decision](../decisions-controls.md#d-2026-11-28-first-fall-lands-at-the-works)); option A is the build. Light brainstorm, one pass through three lenses (play designer, systems
 > architect, creative director), against main `f2ef26d2c` (world v77). Docs only: nothing here is built. Measured
 > from the level data, the code and the recorded play sessions; no browser look was taken. Not tested on a device.
 
@@ -26,8 +27,9 @@
   while line 1 is being built, and in front of Home's hall board once the line reaches Home. The first log goes in
   about 30 to 45 s after touchdown. The town becomes what your first bridge reveals. The boiler keeps its haul, and
   the old train is made to ask for it. View and placement work only; no world reset is expected.
-- **One thing waits for him:** moving the first landing replaces his 4 November call that
-  [the shore is the first landing](../decisions-look.md#d-2026-11-04-the-shore-is-the-first-landing).
+- **Answered, 28 November:** moving the first landing replaces his 4 November call that
+  [the shore is the first landing](../decisions-look.md#d-2026-11-04-the-shore-is-the-first-landing); he took the
+  recommendation, with the four others.
 
 ## What he saw, named
 
@@ -93,7 +95,7 @@ also shows the empty saddles, and the bridge's lamps run toward the Camp while t
 
 **Serves** DESIGN.md 8 (Enjoyable alone and together: a guest advances the room within two minutes), 7 (Telegraph
 everything) and 11 (Show, don't tell: where the work is, is always shown). It bends no principle. It replaces one
-owner decision, the 4 November shore landing, which is question 1. Principle 1 (Toys before chores) was retired on
+owner decision, the 4 November shore landing, which was question 1. Principle 1 (Toys before chores) was retired on
 7 November and is not leaned on.
 
 ## Gut question
@@ -171,7 +173,8 @@ the act ends where the player fell. What changes is that the far end speaks firs
 - Dev and docs: the production bot's first beat (`dev/look/bots/railway.ts`), `dev/loop/graph.ts`, the `arrival`
   scenario, `first-run.md` and `place.md`.
 - **No `src/sim`, wire or save change, and no world reset expected**: no tree stands within the pad's 9 m circle
-  and no height moves. The builder confirms with `npm run level-check` and stops if either turns out false.
+  and no height moves. The builder confirms with `npm run level-check`; if either turns out false it takes the
+  change, a world reset included, and says so (owner, 28 November: "even if it takes more changes").
 - Build after `codex/first-spawn-fall` lands (the same fall files) and beside `codex/station1-pick-removal`
   (it rewrites `place.md`'s Station 1 sections).
 
@@ -301,11 +304,11 @@ Each is a `look` the builder opens and reads.
 | 3 | One signal at the room's works, a board at every station, no arrow or quest text over play | Decided ([course change](../decisions-core-loop.md#d-2026-11-27-course-change)); kept, and the boiler adds no second plume |
 | 4 | The forge's call rises from the chimney, never from the boiler | Decided (owner, 9 November, in [place](../game-design/place.md#guidance-after-removing-the-objective)); kept |
 | 5 | Signs in the world before hovering text | Decided ([owner call](../agents/owner-calls.md#world-signs)); the lamps, the outline and the board are objects |
-| 6 | The first landing moves from the shore to the works | **New, and it replaces a decision** ([4 November](../decisions-look.md#d-2026-11-04-the-shore-is-the-first-landing)): waits for him (question 1) |
-| 7 | A late joiner lands facing Home's hall board | Default (the course-change plan's A3 wording; [lane-a-works](../plans/lane-a-works.md#level-findings) kept the dock and added a dock board) |
-| 8 | Take axe is one press; the Talk card and "Bye" go; his draft line becomes his bubble | Default |
-| 9 | The boiler keeps its haul; the old train shows its outline from the cast, the show cuts to it, the lamps lead | Default |
-| 10 | Moving the old train to Home, or reversing line 1 | New; not built by this brief (questions 3 and 5) |
+| 6 | The first landing moves from the shore to the works | Decided ([28 November](../decisions-controls.md#d-2026-11-28-first-fall-lands-at-the-works)); it replaces the landing's place in the [4 November](../decisions-look.md#d-2026-11-04-the-shore-is-the-first-landing) entry |
+| 7 | A late joiner lands facing Home's hall board | Decided (28 November, answer 1); the course-change plan's A3 wording, where [lane-a-works](../plans/lane-a-works.md#level-findings) kept the dock and added a dock board |
+| 8 | Take axe is one press; the Talk card and "Bye" go; his draft line becomes his bubble | Decided (28 November, answer 4) |
+| 9 | The boiler keeps its haul; the old train shows its outline from the cast, the show cuts to it, the lamps lead | Decided (28 November, answer 3) |
+| 10 | Moving the old train to Home, or reversing line 1 | Not built: each waits on its trigger (28 November, answers 3 and 5) |
 
 **Level design.** The three firm rules of
 [progression-flow-layout](../research/progression-flow-layout.md#the-rules-as-lenses) hold under A: the next goal can
@@ -315,33 +318,34 @@ no still was taken from either pad, so the first frames are described from coord
 
 A town judged by what shows from spawn is ruled out by his 9 November call
 ([a well-designed town, not a view from spawn](../agents/owner-calls.md#spatial-town)). A does not rework the town
-to show more from a spot; it moves the spot to the works. Rows 7 to 9 are for the orchestrator to log in
-[agent-calls](../agent-calls.md); this job could write only this file.
+to show more from a spot; it moves the spot to the works. Rows 6 to 9 are his answers of 28 November, so none is
+logged as a call made without him.
 
 ## Open questions
 
-Each proceeds on its recommendation unless it says it waits.
+All five were answered by the owner on 28 November 2026, each with its recommendation: "Commit even if it takes more changes. I trust your recommendations"
+([decision](../decisions-controls.md#d-2026-11-28-first-fall-lands-at-the-works)). The questions stay as asked.
 
 1. **Does the first landing move from the dock to the works: the Camp's ridge while line 1 is being built, the
    hall board after?** Recommended: **yes.** It is the only option that meets the two-minute measure without a
    rules change. **Waits for him:** it replaces his 4 November shore landing. Until he answers, the one-press
    hand-off, the barrier prompt and the boiler's calling are built, and the landing is not moved.
-   Answer: ___
+   Answer: **the recommendation** (owner, 28 November 2026).
 2. **What does the dock keep?** Recommended: **the cove, the shore path and the West landing's stakes as they are;
    the dock board goes** once nobody lands there. The dock is where the Bell Rock and cave lines start, and it reads
    better as a place found later than as a first room.
-   Answer: ___
+   Answer: **the recommendation** (owner, 28 November 2026).
 3. **Does the old train stay at the Camp?** Recommended: **yes for this pass, made to ask for its boiler** (view
    only). If the haul still reads badly when he plays it, the next step is the village pushing the old train down
    the new line into Home's road when the first path opens, which puts the haul's two ends 5 to 13 m apart. **The
    move waits for him:** it is a rules change with a world reset.
-   Answer: ___
+   Answer: **the recommendation** (owner, 28 November 2026).
 4. **Is Take axe one press, with no Talk card first?** Recommended: **yes.** The resident's draft line is kept word
    for word as his bubble; his name, look and words stay the owner's.
-   Answer: ___
+   Answer: **the recommendation** (owner, 28 November 2026).
 5. **When is "the line starts at Home" (C) worth its cost?** Recommended: **park it with a trigger:** fresh
    sessions after A still show a median over 120 s, or guests at five minutes cannot say what the room is building.
-   Answer: ___
+   Answer: **the recommendation** (owner, 28 November 2026).
 
 ## Suspect or placeholder lines
 
