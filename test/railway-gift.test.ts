@@ -5,7 +5,7 @@ import { account, boiler, cart, qjob, rail, steel, works } from '../src/sim/rail
 import { CART_PHASE } from '../src/sim/railway-cart.ts';
 import { workAboard, workNeed } from '../src/sim/railway-queries-gift.ts';
 import { railwayCheck } from '../src/sim/railway-check.ts';
-import { giftAboard, giftQueued, giftRides, worksThanks } from '../src/sim/railway-queries-gift.ts';
+import { giftAboard, giftPourRoom, giftQueued, giftRides, worksThanks } from '../src/sim/railway-queries-gift.ts';
 import { laySection } from '../src/sim/railway-seed-legs.ts';
 import { RAIL_LEGS } from '../src/sim/railway-route.ts';
 import type { Seed } from '../src/sim/railway-seed-route.ts';
@@ -569,4 +569,48 @@ test('surplus steel gifts stay available for pickup after returning Home', () =>
   assert.equal(act(s, 'b', 'rail.rackTake', { kind: 0 }), 8);
   assert.equal(rail(s.w).returnedLogs, 0);
   railwayCheck(s.w);
+});
+
+test('withdrawing all queued Village rails removes the donor from frame Thanks', () => {
+  const s = unaudited(buildSeedWorld('stack-rails'));
+  const before = worksThanks(s.w);
+  assert.ok(!before.includes('a'));
+  const n = act(s, 'a', 'rail.depotRailTake', { leg: 0 });
+  assert.ok(n > 0);
+  assert.equal(act(s, 'a', 'rail.haltPut', { yard: 0, kind: 2 }), n);
+  assert.ok(worksThanks(s.w).includes('a'));
+  assert.equal(act(s, 'a', 'rail.haltTake', { yard: 0, kind: 2 }), n);
+  assert.equal(haltYardStock(s.w, 0, 2), 0);
+  assert.deepEqual(worksThanks(s.w), before);
+});
+
+test('a rail-only frame already covered by Village rails does not solicit logs', () => {
+  const s = unaudited(buildSeedWorld('stack-rails'));
+  const bill = RAIL_LEGS[0]!.sections[0]!.rails;
+  while (haltYardStock(s.w, 0, 2) < bill) {
+    const n = act(s, 'a', 'rail.depotRailTake', { leg: 0 });
+    assert.ok(n > 0);
+    assert.equal(act(s, 'a', 'rail.haltPut', { yard: 0, kind: 2 }), n);
+  }
+  assert.equal(legRow(s.w, 0).rails, 0);
+  assert.equal(giftRides(s.w), false);
+});
+
+test('returning rails for the previous Stack frame leave the next frame available to another carrier', () => {
+  const s = unaudited(buildSeedWorld('stack-rails'));
+  give(s);
+  for (let ticks = 0; !giftAboard(s.w, LINE2, 'giftRails'); ticks++) {
+    assert.ok(ticks < 6000);
+    advance(s, 1);
+  }
+  while (legRow(s.w, 0).start < 0) {
+    assert.ok(act(s, 'b', 'rail.depotRailTake', { leg: 0 }) > 0);
+    assert.ok(act(s, 'b', 'rail.legStock', { leg: 0 }) > 0);
+  }
+  for (let ticks = 0; legRow(s.w, 0).laid === 0; ticks++) {
+    assert.ok(ticks < 1000);
+    advance(s, 1);
+  }
+  assert.equal(giftAboard(s.w, LINE2, 'giftRails'), 4);
+  assert.equal(giftPourRoom(s.w, 0, 'giftRails'), RAIL_LEGS[0]!.sections[1]!.rails);
 });
