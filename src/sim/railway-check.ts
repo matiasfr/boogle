@@ -228,6 +228,7 @@ function checkRailway(w: World, tick: number) {
   if (
     !railInt(clock.supplyMarker, Number.MAX_SAFE_INTEGER) ||
     !railInt(r0.rack) ||
+    !railInt(r0.returnedLogs, r0.rack) ||
     !railInt(r0.produced, RAILWAY_MAX_INT - RAILWAY_SUPPLY - 30) ||
     r0.produced % 5 !== 0 ||
     ts.some((t) => !railInt(t.age, 35) || (t.left !== 0 ? t.age !== 0 && t.age !== 35 : t.age === 35))

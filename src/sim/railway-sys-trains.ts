@@ -67,7 +67,7 @@ import {
   worksId,
   type Row,
 } from './railway-queries.ts';
-import { QUARRY_YARD, workDestination, workNeed, workQueued, workRoom } from './railway-queries-gift.ts';
+import { QUARRY_YARD, rideableLogs, workDestination, workNeed, workQueued, workRoom } from './railway-queries-gift.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 import { freightArrives, freightLoads, ridersArrive, ridersBoard } from './railway-sys-trade.ts';
 import { lapSlots, runLine } from './railway-lap.ts';
@@ -179,7 +179,7 @@ function serviceOf(w: World, slot: number, r: Readonly<Row<typeof Train>>, tick:
   return (k, dir) =>
     freight(k, dir) ||
     (r.workLogs > 0 && (k === r.workStop || k === 0)) ||
-    (k === 0 && dir < 0 && w.get(Rail, railId(w))!.rack > 0 && workDestination(w) > 0) ||
+    (k === 0 && dir < 0 && rideableLogs(w) > 0 && workDestination(w) > 0) ||
     (k === 0 && dir < 0 && kitOwed(w, r)) ||
     (k === kitStop(w) && r.logs + r.rails > 0) ||
     (k === 1 && dir > 0 && footCarrier(w, r, tick) && r.foot < footCap(r) && footOwed(w, aboard(w, 'foot')) > 0) ||
@@ -310,7 +310,7 @@ function trainIO(w: World, headPct: number, pct: TradePct, tick: number, returnL
       ) {
         const stop = workDestination(w);
         const rail = w.mut(Rail, railId(w))!;
-        const n = stop ? Math.min(rail.rack, LINE2_KIT.logs - r.logs, workNeed(w, stop)) : 0;
+        const n = stop ? Math.min(rideableLogs(w), LINE2_KIT.logs - r.logs, workNeed(w, stop)) : 0;
         if (n > 0) {
           rail.rack -= n;
           const car = w.mut(Train, trainId(w, slot))!;
@@ -368,7 +368,11 @@ function trainStep(w: World, tick: number, headPct: number, pct: TradePct) {
     returned += n;
   });
   for (let line = 0; line < RAIL_LINES.length; line++) trainStepLine(io, line, tick);
-  if (returned) w.mut(Rail, railId(w))!.rack += returned;
+  if (returned) {
+    const rail = w.mut(Rail, railId(w))!;
+    rail.rack += returned;
+    rail.returnedLogs += returned;
+  }
 }
 export const trainTick = defineSystem(
   'rail.trainTick',

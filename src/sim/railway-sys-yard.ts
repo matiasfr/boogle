@@ -29,7 +29,7 @@ import { balanceOf, railId, roomOf, STONE } from './railway-queries.ts';
 import { haltYardId, haltYardServes, nearestOpenYard, onRack, yardKey } from './railway-queries-yard.ts';
 import { credit, pickedUp, putDown } from './railway-sys-line1.ts';
 import type { Act } from './railway-sys-core.ts';
-import { giftRides, thank, workDestination, workQueued } from './railway-queries-gift.ts';
+import { giftRides, rideableLogs, thank, workDestination, workQueued } from './railway-queries-gift.ts';
 import { VILLAGE_YARD } from './railway-yard-layout.ts';
 
 /** n of `kind` into yard k: the Village's logs and stone onto the recovery rack, the rest onto its row. */
@@ -56,7 +56,7 @@ export const haltPut = defineSystem(
     if (e.yard === VILLAGE_YARD && kind === 0) {
       const stop = workDestination(w);
       if (stop) {
-        const rack = w.get(Rail, railId(w))!.rack;
+        const rack = rideableLogs(w);
         for (const dest of [1, 2, 3, 5]) {
           if (workQueued(w, dest, rack + n) > workQueued(w, dest, rack)) w.mut(Account, aid)!.workThanks |= 1 << dest;
         }

@@ -250,6 +250,7 @@ export const rackTake = defineSystem(
       return n;
     }
     const n = Math.min(rail.rack, room);
+    rail.returnedLogs -= Math.min(n, rail.returnedLogs);
     rail.rack -= n;
     a.carry += n;
     // The rack is the Village halt yard's log bin (docs/plans/halt-yard.md): leg kit left there and taken back counts

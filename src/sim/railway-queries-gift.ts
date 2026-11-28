@@ -76,8 +76,13 @@ export function workDestination(w: World) {
   const stop = k < 0 ? 5 : LINE2_STATIONS[k]!.kitStop!;
   return workNeed(w, stop) ? stop : 0;
 }
+/** Surplus from a refused work delivery can only leave the rack in a player's hands. */
+export function rideableLogs(w: World) {
+  const rail = w.get(Rail, w.single(Rail))!;
+  return rail.rack - rail.returnedLogs;
+}
 /** The kiln has first claim on queued timber while its log bin still has room. */
-export function workQueued(w: World, stop: number, stock = w.get(Rail, w.single(Rail))!.rack) {
+export function workQueued(w: World, stop: number, stock = rideableLogs(w)) {
   const available = stop === 1 ? stock : Math.max(0, stock - workNeed(w, 1));
   return Math.min(available, workNeed(w, stop));
 }
@@ -86,7 +91,7 @@ export function giftRides(w: World) {
   if (rail.trains >= 0) {
     const kit = kitJob(w);
     const demand = workNeed(w, 1) + workNeed(w, kit < 0 ? 5 : LINE2_STATIONS[kit]!.kitStop!);
-    if (demand) return rail.rack < demand;
+    if (demand) return rideableLogs(w) < demand;
   }
   return GIFT_LEGS.some((k) => giftPourRoom(w, k) > 0);
 }
@@ -94,7 +99,7 @@ export function giftQueued(w: World) {
   const stop = workDestination(w);
   if (stop) return workQueued(w, stop);
   const room = GIFT_LEGS.reduce((sum, k) => sum + giftPourRoom(w, k), 0);
-  return Math.min(w.get(Rail, w.single(Rail))!.rack, room);
+  return Math.min(rideableLogs(w), room);
 }
 export function giftInTransit(w: World) {
   let total = giftAboard(w);
