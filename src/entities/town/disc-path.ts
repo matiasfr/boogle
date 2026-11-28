@@ -7,6 +7,7 @@ export function discPath(owner: OwnedView) {
   const path = new Line3();
   let mine = disc.mine,
     epoch = -1,
+    previousSpeed = 0,
     time = NaN;
   const reset = () => {
     time = NaN;
@@ -17,8 +18,13 @@ export function discPath(owner: OwnedView) {
     path.start.copy(path.end);
     path.end.copy(disc.p);
     const visible = !document.hidden && disc.enabled && !disc.held;
+    const speed = disc.v.length();
+    // Landing clears velocity after moving. The incoming speed bounds that final segment.
     const valid =
-      visible && mine === disc.mine && continuous(epoch, disc.e, path.distance(), disc.v.length(), (now - time) / 1000);
+      visible &&
+      mine === disc.mine &&
+      continuous(epoch, disc.e, path.distance(), speed || previousSpeed, (now - time) / 1000);
+    previousSpeed = speed;
     mine = disc.mine;
     epoch = disc.e;
     time = visible ? now : NaN;

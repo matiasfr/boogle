@@ -11,6 +11,8 @@ import { confetti, fanfare, near } from '../../render/fanfare.ts';
 import { chordSound } from '../../features/honk.ts';
 import { me } from '../../player/state.ts';
 import { inputState } from '../../player/input-state.ts';
+import { aboard } from '../../physics/platforms.ts';
+import { momentBusy } from '../../render/buddy-frame.ts';
 import { clank } from '../../render/machine-sfx.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { splash } from '../../render/splash.ts';
@@ -108,7 +110,10 @@ export function createBallTargets(owner: OwnedView, porch: XZ, yaw: number) {
             if (
               body &&
               me.coyote > 0 &&
+              !inputState.held &&
               !inputState.seated &&
+              !aboard() &&
+              !momentBusy() &&
               !me.swimming &&
               !me.down &&
               body.velocity.y <= 0.4 &&

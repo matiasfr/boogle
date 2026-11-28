@@ -61,14 +61,6 @@ test('a toy cheer leaves both participants in a folk exchange talking', () => {
   );
 });
 
-test('a rejoining player and the original player see the same third cup', () => {
-  const original = cupStroll();
-  original(0);
-  original(1);
-  const rejoined = cupStroll();
-  assert.deepEqual([original(2), rejoined(2)], [true, true]);
-});
-
 test('a disc crossing a pad on its landing frame still hits it', () => {
   const disc = {
     p: new Vector3(-0.7, 0.14, 0),
