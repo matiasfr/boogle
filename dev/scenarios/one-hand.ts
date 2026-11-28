@@ -128,7 +128,8 @@ export default {
     );
     t.check('on touch a new player has an empty name tag', one >= 0, `${one} ms`);
 
-    await thumb.eval(`${INV} ${TP(14, 24)}`);
+    await thumb.eval(`const { toyGround } = await import('/src/physics/toy-ground.ts');
+      const { x, z } = toyGround.spawn; ${TP('x', 'z', 'toyGround.under(x,z) + 0.6')}`);
     await thumb.eval(`${INV}
       const { grabBall } = await import('/src/entities/ball/state.ts');
       grabBall(); I.take('ball');`);
@@ -154,5 +155,15 @@ export default {
       landscape.checked >= 4 && !landscape.hit.length,
       `${JSON.stringify(landscape)}; ${landscapeShot}`,
     );
+
+    const thrown = await thumb.eval(`${INV}
+      const { ball } = await import('/src/entities/ball/state.ts');
+      const from = ball.pose.p.toArray();
+      const pressed = H.throwDown(); H.releaseThrow(); H.updateHands();
+      return { from, pressed, free: !ball.held && I.heldId() === null };`);
+    t.check('touch winds up and releases the shared ball', thrown.pressed && thrown.free, JSON.stringify(thrown));
+    const moved = await thumb.waitFor(`(async()=>{const {ball}=await import('/src/entities/ball/state.ts');
+      return ball.mine && !ball.held && Math.hypot(ball.pose.p.x-${thrown.from[0]}, ball.pose.p.z-${thrown.from[2]}) > 2;})()`);
+    t.check('the released beach ball travels away from the hand', moved >= 0);
   },
 };
