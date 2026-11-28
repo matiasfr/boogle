@@ -1,5 +1,6 @@
 import * as THREE from 'three/webgpu';
 import { compiled } from '../../prefab/catalogue.ts';
+import type { Placement } from '../../prefab/types.ts';
 import { kitMaterial } from '../../prefab/builders/terrain-kit.ts';
 import { material } from '../../render/materials.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
@@ -38,9 +39,31 @@ export async function hoodRock(owner: OwnedView) {
   return { update() {} };
 }
 
-export async function saltShore(owner: OwnedView) {
+function saltBoardingEdge(owner: OwnedView, deck: Placement) {
+  const [width, height, length] = deck.scale!;
+  const count = Math.floor(length / 1.25);
+  const pitch = length / count;
+  const geometry = new THREE.BoxGeometry();
+  const blocks = new THREE.InstancedMesh(geometry, material('stone', { colour: '#b8ab92' }), count);
+  blocks.name = deck.id + ':coping';
+  blocks.position.fromArray(deck.pos);
+  const [yaw, tilt] = deck.rot!;
+  blocks.rotation.set(tilt, yaw, 0, 'YXZ');
+  const side = deck.id.startsWith('saltpan.platform-0-') || deck.id.endsWith('step-0') ? -1 : 1;
+  const matrix = new THREE.Matrix4().makeScale(0.32, 0.16, pitch - 0.035);
+  for (let i = 0; i < count; i++)
+    blocks.setMatrixAt(
+      i,
+      matrix.setPosition(side * (width / 2 - 0.15), height / 2 - 0.055, (i + 0.5) * pitch - length / 2),
+    );
+  owner.add(blocks);
+  geometry.dispose();
+}
+
+export async function saltShore(owner: OwnedView, deck: readonly Placement[]) {
   const pieces = await terrainKitGeometry();
   if (!owner.alive) return;
+  for (const platform of deck) saltBoardingEdge(owner, platform);
   const prism = compiled.prefabs['greybox.salt-land']!.colliders[0]!;
   if (prism.shape !== 'trimesh') throw new Error('Saltpan needs its land outline');
   // landPrism stores the top ring, bottom ring and centre in world coordinates.
