@@ -1,10 +1,10 @@
 import * as THREE from 'three/webgpu';
 import { float, instanceIndex, positionGeometry, positionLocal, sin, time, vec3 } from 'three/tsl';
-import { defineKind, despawn, spawn, type GameEntity } from '../entity/entity.ts';
+import { defineKind, spawn } from '../entity/entity.ts';
 import { ballMesh } from '../entities/ball/view.ts';
 import { railwayWorldRead } from '../entities/railway/state.ts';
-import { autoRung, graphicsInitial, onGraphicsChange } from '../graphics-settings.ts';
-import { onStart } from '../loop.ts';
+import { onGraphicsChange } from '../graphics-settings.ts';
+import { reducedWildlife, wildlifeZone, wings } from '../place/wildlife.ts';
 import { remotes, type Remote } from '../netplay/net.ts';
 import { platformById } from '../physics/platforms.ts';
 import { waterField } from '../physics/water-field.ts';
@@ -13,7 +13,6 @@ import { H } from '../place/terrain.ts';
 import { CAMP_PAD } from '../place/works-landing.ts';
 import { me } from '../player/state.ts';
 import { createPool } from '../render/instances.ts';
-import { resident } from '../render/lod-level.ts';
 import { patchNode } from '../render/material-patch.ts';
 import { skyNow } from '../render/sky.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 } from '../sim/railway-layout.ts';
@@ -127,22 +126,6 @@ function swim(p: Animal, index: number, clock: number, dt: number) {
     p.pz = p.z;
   }
 }
-function wings() {
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute(
-    'position',
-    new THREE.Float32BufferAttribute(
-      [
-        0, 0.09, 0.34, -0.12, 0, -0.23, 0.12, 0, -0.23, 0, -0.07, 0.3, 0.12, 0, -0.23, -0.12, 0, -0.23, -0.08, 0.04,
-        0.12, -0.78, 0.16, -0.13, -0.14, 0.02, -0.23, 0.08, 0.04, 0.12, 0.14, 0.02, -0.23, 0.78, 0.16, -0.13,
-      ],
-      3,
-    ),
-  );
-  geometry.computeVertexNormals();
-  return geometry;
-}
-
 function population(kind: Species) {
   const aquatic = kind === 'school',
     bird = kind === 'flock';
@@ -173,8 +156,7 @@ function mount() {
   for (const group of groups) mesh.add(group.pool.mesh);
   let low = false;
   function detail() {
-    const rung = graphicsInitial('detail', ['auto', 'full', 'sea', 'shadows', 'lowest'], 'auto');
-    low = rung === 'auto' ? autoRung() > 0 : rung !== 'full';
+    low = reducedWildlife();
   }
   detail();
   const unsubscribe = onGraphicsChange(detail);
@@ -304,18 +286,4 @@ function mount() {
   });
 }
 
-onStart(() => {
-  let active: GameEntity | null = null;
-  spawn({
-    kind: 'home-wildlife-zone',
-    update() {
-      const p = me.body?.position;
-      const near = p && resident(Math.hypot(p.x - ORIGIN.x, p.z - ORIGIN.z), !!active, 260, 300);
-      if (near && !active) active = mount();
-      else if (!near && active) {
-        despawn(active);
-        active = null;
-      }
-    },
-  });
-});
+wildlifeZone('home-wildlife-zone', ORIGIN.x, ORIGIN.z, 260, 300, mount);
