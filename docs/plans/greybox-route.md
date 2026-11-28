@@ -743,13 +743,97 @@ before its design review.
 
 The whole route took **121 / 128 / 128 / 126 minutes**. The first three totals and area 9's **16 / 25 / 25**
 match Leg 6 Step 7. Area idle sums the loop's rounded per-node mean seconds. Idle includes waits for a train, lay
-or friend, holds, and time after finishing one's share. The loop also prints carries and walked metres. It models
-straight-line walking, presses and carries through the host's rules. Trains run in the simulation and the loop
-players walk instead of riding them.
+or friend, holds, and time after finishing one's share. The loop also prints carries and walked metres. That
+earlier run modelled straight-line walking, presses and carries through the host's rules.
 
-- [ ] The four-way split in design-review change 7 (hands, watching the lay, rides and waits). The loop has one
-  combined idle counter and tracks no rider time. Warped bot traces show activity and stationary spans, with
-  no complete four-way attribution by area or player count.
+- [x] The four-way split in design-review change 7 (hands, watching the lay, rides and waits).
+
+The split uses player-seconds summed across the crew, from the start of each node until it is reached or parked.
+Hands include the walking model and presses. Watching counts idle time during that node's active lay. Rides use
+the two first-fit train legs after `wall-6` for the lead player, with boarding and request delays outside the model.
+Waits cover the other idle time, including time after finishing a share. Watching plus waits is the legacy idle
+counter, which the CLI still prints as rounded mean seconds per player.
+
+Canonical straight-line loop. Each cell lists hands / watching the lay / rides / waits = total, in player-seconds.
+The largest category in each node is listed for 1 / 2 / 3 players. A dash indicates zero total time.
+
+| Loop node | 1 player | 2 players | 3 players | Largest (1 / 2 / 3) |
+| --- | --- | --- | --- | --- |
+| `wake` | 0.0 / 0.0 / 0.0 / 0.0 = 0.0 | 0.0 / 0.0 / 0.0 / 0.0 = 0.0 | 0.0 / 0.0 / 0.0 / 0.0 = 0.0 | — / — / — |
+| `T1` | 34.3 / 2.5 / 0.0 / 4.0 = 40.8 | 37.5 / 15.0 / 0.0 / 10.9 = 63.4 | 65.4 / 6.0 / 0.0 / 0.0 = 71.4 | hands / hands / hands |
+| `T2` | 74.4 / 2.0 / 0.0 / 7.5 = 83.9 | 74.2 / 14.2 / 0.0 / 24.0 = 112.4 | 78.2 / 24.6 / 0.0 / 15.4 = 118.2 | hands / hands / hands |
+| `beam` | 24.6 / 0.0 / 0.0 / 0.0 = 24.6 | 24.3 / 0.0 / 0.0 / 19.9 = 44.2 | 25.4 / 0.0 / 0.0 / 50.8 = 76.2 | hands / hands / waits |
+| `T3` | 106.1 / 2.0 / 0.0 / 6.0 = 114.1 | 91.7 / 24.1 / 0.0 / 12.6 = 128.4 | 90.9 / 46.4 / 0.0 / 27.1 = 164.4 | hands / hands / hands |
+| `jump` | 8.6 / 0.0 / 0.0 / 0.0 = 8.6 | 6.1 / 0.0 / 0.0 / 6.1 = 12.2 | 5.6 / 0.0 / 0.0 / 11.2 = 16.8 | hands / hands + waits / waits |
+| `forge` | 74.1 / 0.0 / 0.0 / 6.0 = 80.1 | 79.4 / 0.0 / 0.0 / 6.4 = 85.8 | 96.4 / 0.0 / 0.0 / 32.3 = 128.7 | hands / hands / hands |
+| `axe` | 3.5 / 0.0 / 0.0 / 0.0 = 3.5 | 3.5 / 0.0 / 0.0 / 3.5 = 7.0 | 3.5 / 0.0 / 0.0 / 7.0 = 10.5 | hands / hands + waits / waits |
+| `pack` | 0.0 / 0.0 / 0.0 / 0.0 = 0.0 | 0.0 / 0.0 / 0.0 / 0.0 = 0.0 | 0.0 / 0.0 / 0.0 / 0.0 = 0.0 | — / — / — |
+| `Q1` | 56.0 / 7.9 / 0.0 / 3.0 = 66.9 | 64.7 / 14.3 / 0.0 / 4.2 = 83.2 | 68.7 / 26.6 / 0.0 / 23.5 = 118.8 | hands / hands / hands |
+| `yoke` | 1.0 / 0.0 / 0.0 / 1.1 = 2.1 | 1.6 / 0.0 / 0.0 / 0.4 = 2.0 | 10.2 / 0.0 / 0.0 / 20.4 = 30.6 | waits / hands / waits |
+| `Q2` | 50.0 / 3.0 / 0.0 / 27.0 = 80.0 | 41.8 / 31.2 / 0.0 / 38.0 = 111.0 | 39.5 / 49.6 / 0.0 / 50.4 = 139.5 | hands / hands / waits |
+| `hook` | 9.5 / 0.0 / 0.0 / 0.0 = 9.5 | 5.9 / 0.0 / 0.0 / 6.3 = 12.2 | 5.9 / 0.0 / 0.0 / 12.4 = 18.3 | hands / waits / waits |
+| `Q3` | 21.2 / 2.0 / 0.0 / 28.0 = 51.2 | 40.8 / 25.6 / 0.0 / 67.0 = 133.4 | 44.8 / 39.5 / 0.0 / 114.0 = 198.3 | waits / waits / waits |
+| `lever` | 41.2 / 0.0 / 0.0 / 0.0 = 41.2 | 12.1 / 0.0 / 0.0 / 12.7 = 24.8 | 18.6 / 0.0 / 0.0 / 37.2 = 55.8 | hands / waits / waits |
+| `Q4` | 9.8 / 16.2 / 0.0 / 36.0 = 62.0 | 21.4 / 33.4 / 0.0 / 124.0 = 178.8 | 27.9 / 51.6 / 0.0 / 170.7 = 250.2 | waits / waits / waits |
+| `sea` | 20.0 / 0.0 / 0.0 / 0.8 = 20.8 | 20.0 / 0.0 / 0.0 / 20.4 = 40.4 | 19.7 / 0.0 / 0.0 / 39.4 = 59.1 | hands / waits / waits |
+| `Q5` | 22.0 / 32.3 / 0.0 / 74.0 = 128.3 | 41.5 / 64.9 / 0.0 / 132.0 = 238.4 | 57.4 / 102.1 / 0.0 / 200.2 = 359.7 | waits / waits / waits |
+| `glider` | 29.1 / 0.0 / 0.0 / 0.7 = 29.8 | 29.1 / 0.0 / 0.0 / 30.5 = 59.6 | 27.3 / 0.0 / 0.0 / 54.6 = 81.9 | hands / waits / waits |
+| `boiler` | 17.1 / 0.0 / 0.0 / 0.0 = 17.1 | 17.1 / 0.0 / 0.0 / 17.1 = 34.2 | 17.1 / 0.0 / 0.0 / 34.2 = 51.3 | hands / hands + waits / waits |
+| `trains` | 31.0 / 0.0 / 0.0 / 0.0 = 31.0 | 31.0 / 0.0 / 0.0 / 31.0 = 62.0 | 31.0 / 0.0 / 0.0 / 62.0 = 93.0 | hands / hands + waits / waits |
+| `Q6` | 78.9 / 26.7 / 0.0 / 12.0 = 117.6 | 124.1 / 53.5 / 0.0 / 41.0 = 218.6 | 169.3 / 84.5 / 0.0 / 69.3 = 323.1 | hands / hands / hands |
+| `pier` | 31.0 / 0.0 / 0.0 / 0.3 = 31.3 | 31.0 / 0.0 / 0.0 / 31.4 = 62.4 | 31.1 / 0.0 / 0.0 / 62.2 = 93.3 | hands / waits / waits |
+| `breaker` | 106.6 / 0.0 / 0.0 / 0.0 = 106.6 | 106.6 / 0.0 / 0.0 / 106.6 = 213.2 | 106.6 / 0.0 / 0.0 / 213.2 = 319.8 | hands / hands + waits / waits |
+| `slab` | 7.4 / 0.0 / 0.0 / 0.0 = 7.4 | 7.4 / 0.0 / 0.0 / 7.4 = 14.8 | 7.4 / 0.0 / 0.0 / 14.8 = 22.2 | hands / hands + waits / waits |
+| `throat` | 33.1 / 0.0 / 0.0 / 0.0 = 33.1 | 33.1 / 0.0 / 0.0 / 33.1 = 66.2 | 33.1 / 0.0 / 0.0 / 66.2 = 99.3 | hands / hands + waits / waits |
+| `kiln` | 21.5 / 0.0 / 0.0 / 0.0 = 21.5 | 81.7 / 0.0 / 0.0 / 64.5 = 146.2 | 147.9 / 0.0 / 0.0 / 73.5 = 221.4 | hands / hands / hands |
+| `stall` | 91.1 / 0.0 / 0.0 / 4.0 = 95.1 | 81.8 / 0.0 / 0.0 / 10.0 = 91.8 | 81.9 / 0.0 / 0.0 / 53.7 = 135.6 | hands / hands / hands |
+| `cradle` | 11.6 / 0.0 / 0.0 / 1.0 = 12.6 | 24.2 / 0.0 / 0.0 / 1.0 = 25.2 | 63.7 / 0.0 / 0.0 / 75.5 = 139.2 | hands / hands / waits |
+| `table` | 3.9 / 0.0 / 0.0 / 0.0 = 3.9 | 33.6 / 0.0 / 0.0 / 32.0 = 65.6 | 27.1 / 0.0 / 0.0 / 51.8 = 78.9 | hands / hands / waits |
+| `upgrade` | 2.3 / 0.0 / 0.0 / 49.2 = 51.5 | 2.3 / 0.0 / 0.0 / 54.9 = 57.2 | 2.3 / 0.0 / 0.0 / 63.4 = 65.7 | waits / waits / waits |
+| `crossing` | 151.3 / 0.0 / 0.0 / 44.0 = 195.3 | 258.6 / 0.0 / 0.0 / 96.0 = 354.6 | 365.9 / 0.0 / 0.0 / 130.0 = 495.9 | hands / hands / hands |
+| `Q7` | 16.8 / 17.6 / 0.0 / 55.0 = 89.4 | 23.0 / 35.2 / 0.0 / 142.0 = 200.2 | 27.8 / 55.0 / 0.0 / 238.5 = 321.3 | waits / waits / waits |
+| `bents` | 95.0 / 0.0 / 0.0 / 244.4 = 339.4 | 106.0 / 0.0 / 0.0 / 572.8 = 678.8 | 180.7 / 0.0 / 0.0 / 837.8 = 1018.5 | waits / waits / waits |
+| `brace` | 9.0 / 0.0 / 0.0 / 0.0 = 9.0 | 9.3 / 0.0 / 0.0 / 8.7 = 18.0 | 9.0 / 0.0 / 0.0 / 18.0 = 27.0 | hands / hands / waits |
+| `weights` | 29.1 / 0.0 / 0.0 / 8.0 = 37.1 | 27.4 / 0.0 / 0.0 / 14.8 = 42.2 | 31.6 / 0.0 / 0.0 / 10.4 = 42.0 | hands / hands / hands |
+| `rivet` | 1.5 / 0.0 / 0.0 / 0.0 = 1.5 | 1.5 / 0.0 / 0.0 / 1.5 = 3.0 | 5.8 / 0.0 / 0.0 / 10.7 = 16.5 | hands / hands + waits / waits |
+| `steelkit` | 33.6 / 0.0 / 0.0 / 32.9 = 66.5 | 33.6 / 0.0 / 0.0 / 146.0 = 179.6 | 33.6 / 0.0 / 0.0 / 244.8 = 278.4 | hands / waits / waits |
+| `steelworks` | 5.0 / 0.0 / 0.0 / 0.1 = 5.1 | 10.8 / 0.0 / 0.0 / 0.8 = 11.6 | 16.6 / 0.0 / 0.0 / 0.8 = 17.4 | hands / hands / hands |
+| `steelhome` | 109.7 / 0.0 / 0.0 / 0.0 = 109.7 | 140.0 / 0.0 / 0.0 / 84.2 = 224.2 | 170.6 / 0.0 / 0.0 / 165.7 = 336.3 | hands / hands / hands |
+| `install` | 64.3 / 0.0 / 0.0 / 0.0 = 64.3 | 61.9 / 0.0 / 0.0 / 61.9 = 123.8 | 61.9 / 0.0 / 0.0 / 123.8 = 185.7 | hands / hands + waits / waits |
+| `stack-1` | 182.5 / 29.7 / 0.0 / 4.0 = 216.2 | 184.2 / 59.7 / 0.0 / 161.3 = 405.2 | 185.9 / 89.7 / 0.0 / 332.2 = 607.8 | hands / hands / waits |
+| `stack-2` | 91.1 / 29.7 / 0.0 / 35.0 = 155.8 | 165.4 / 59.4 / 0.0 / 90.0 = 314.8 | 239.7 / 89.7 / 0.0 / 142.8 = 472.2 | hands / hands / hands |
+| `stack-3` | 101.8 / 29.7 / 0.0 / 4.0 = 135.5 | 186.8 / 59.4 / 0.0 / 4.0 = 250.2 | 271.8 / 89.7 / 0.0 / 13.8 = 375.3 | hands / hands / hands |
+| `stack-4` | 103.3 / 29.7 / 0.0 / 4.0 = 137.0 | 189.8 / 59.4 / 0.0 / 4.0 = 253.2 | 276.3 / 89.7 / 0.0 / 13.8 = 379.8 | hands / hands / hands |
+| `gorge` | 92.2 / 0.0 / 0.0 / 0.0 = 92.2 | 92.2 / 0.0 / 0.0 / 92.2 = 184.4 | 92.2 / 0.0 / 0.0 / 184.4 = 276.6 | hands / hands + waits / waits |
+| `pick` | 17.9 / 0.0 / 0.0 / 0.0 = 17.9 | 17.9 / 0.0 / 0.0 / 17.9 = 35.8 | 17.9 / 0.0 / 0.0 / 35.8 = 53.7 | hands / hands + waits / waits |
+| `incline-gate` | 19.3 / 0.0 / 0.0 / 0.0 = 19.3 | 38.6 / 0.0 / 0.0 / 0.0 = 38.6 | 57.9 / 0.0 / 0.0 / 0.0 = 57.9 | hands / hands / hands |
+| `incline-1` | 13.1 / 29.7 / 0.0 / 4.0 = 46.8 | 83.2 / 59.7 / 0.0 / 63.1 = 206.0 | 153.3 / 89.4 / 0.0 / 66.3 = 309.0 | lay / hands / hands |
+| `incline-2` | 112.4 / 29.7 / 0.0 / 4.0 = 146.1 | 208.0 / 59.4 / 0.0 / 4.0 = 271.4 | 303.6 / 89.7 / 0.0 / 13.8 = 407.1 | hands / hands / hands |
+| `seeds` | 100.8 / 0.0 / 0.0 / 0.0 = 100.8 | 100.8 / 0.0 / 0.0 / 100.8 = 201.6 | 100.8 / 0.0 / 0.0 / 201.6 = 302.4 | hands / hands + waits / waits |
+| `bay-1` | 228.1 / 29.7 / 0.0 / 4.0 = 261.8 | 519.2 / 59.7 / 0.0 / 68.3 = 647.2 | 810.3 / 89.4 / 0.0 / 71.1 = 970.8 | hands / hands / hands |
+| `bay-2` | 120.1 / 29.7 / 0.0 / 4.0 = 153.8 | 223.4 / 59.4 / 0.0 / 4.0 = 286.8 | 326.7 / 89.7 / 0.0 / 13.8 = 430.2 | hands / hands / hands |
+| `canopy-gate` | 109.2 / 0.0 / 0.0 / 0.0 = 109.2 | 218.4 / 0.0 / 0.0 / 0.0 = 218.4 | 327.6 / 0.0 / 0.0 / 0.0 = 327.6 | hands / hands / hands |
+| `canopy-1` | 18.7 / 29.7 / 0.0 / 4.0 = 52.4 | 15.0 / 59.7 / 0.0 / 7.7 = 82.4 | 11.3 / 89.7 / 0.0 / 10.6 = 111.6 | lay / lay / lay |
+| `canopy-2` | 103.9 / 29.7 / 0.0 / 20.0 = 153.6 | 191.0 / 59.4 / 0.0 / 4.0 = 254.4 | 278.1 / 89.7 / 0.0 / 13.8 = 381.6 | hands / hands / hands |
+| `canopy-3` | 84.7 / 29.7 / 0.0 / 8.0 = 122.4 | 152.6 / 59.4 / 0.0 / 4.0 = 216.0 | 220.5 / 89.7 / 0.0 / 13.8 = 324.0 | hands / hands / hands |
+| `cloth` | 51.2 / 0.0 / 0.0 / 0.0 = 51.2 | 51.2 / 0.0 / 0.0 / 51.2 = 102.4 | 51.2 / 0.0 / 0.0 / 102.4 = 153.6 | hands / hands + waits / waits |
+| `plug-gate` | 344.6 / 0.0 / 0.0 / 0.0 = 344.6 | 671.5 / 0.0 / 0.0 / 17.7 = 689.2 | 987.2 / 0.0 / 0.0 / 46.6 = 1033.8 | hands / hands / hands |
+| `cave-1` | 11.5 / 29.7 / 0.0 / 4.0 = 45.2 | 0.3 / 59.7 / 0.0 / 0.0 = 60.0 | 0.3 / 89.7 / 0.0 / 0.0 = 90.0 | lay / lay / lay |
+| `cave-2` | 77.4 / 29.7 / 0.0 / 4.0 = 111.1 | 138.0 / 59.4 / 0.0 / 4.0 = 201.4 | 198.6 / 89.7 / 0.0 / 13.8 = 302.1 | hands / hands / hands |
+| `cave-3` | 78.2 / 29.7 / 0.0 / 4.0 = 111.9 | 140.4 / 59.4 / 0.0 / 16.0 = 215.8 | 202.6 / 89.7 / 0.0 / 31.4 = 323.7 | hands / hands / hands |
+| `wall-1` | 100.0 / 29.7 / 0.0 / 4.0 = 133.7 | 183.2 / 59.4 / 0.0 / 4.0 = 246.6 | 266.4 / 89.7 / 0.0 / 13.8 = 369.9 | hands / hands / hands |
+| `wall-2` | 154.3 / 29.7 / 0.0 / 4.0 = 188.0 | 291.8 / 59.4 / 0.0 / 4.0 = 355.2 | 429.3 / 89.7 / 0.0 / 13.8 = 532.8 | hands / hands / hands |
+| `wall-3` | 90.4 / 29.7 / 0.0 / 65.0 = 185.1 | 164.0 / 59.4 / 0.0 / 6.0 = 229.4 | 237.6 / 89.7 / 0.0 / 16.8 = 344.1 | hands / hands / hands |
+| `wall-4` | 87.7 / 29.7 / 0.0 / 46.0 = 163.4 | 158.6 / 59.4 / 0.0 / 108.0 = 326.0 | 229.5 / 89.7 / 0.0 / 169.8 = 489.0 | hands / hands / hands |
+| `wall-5` | 179.6 / 29.7 / 0.0 / 4.0 = 213.3 | 342.4 / 59.4 / 0.0 / 4.0 = 405.8 | 505.2 / 89.7 / 0.0 / 13.8 = 608.7 | hands / hands / hands |
+| `deep-gate` | 121.0 / 0.0 / 0.0 / 0.0 = 121.0 | 242.0 / 0.0 / 0.0 / 0.0 = 242.0 | 363.0 / 0.0 / 0.0 / 0.0 = 363.0 | hands / hands / hands |
+| `wall-6` | 17.1 / 29.7 / 0.0 / 278.0 = 324.8 | 13.6 / 59.7 / 0.0 / 7.5 = 80.8 | 10.1 / 89.7 / 0.0 / 10.0 = 109.8 | waits / lay / lay |
+| `notch-gate` | 24.7 / 0.0 / 415.4 / 0.0 = 440.1 | 295.2 / 0.0 / 415.4 / 169.6 = 880.2 | 557.3 / 0.0 / 415.4 / 347.6 = 1320.3 | rides / rides / hands |
+| `notch-1` | 8.7 / 29.7 / 0.0 / 0.0 = 38.4 | 0.3 / 59.7 / 0.0 / 0.0 = 60.0 | 0.3 / 89.7 / 0.0 / 0.0 = 90.0 | lay / lay / lay |
+| `lantern` | 152.7 / 0.0 / 0.0 / 0.0 = 152.7 | 152.7 / 0.0 / 0.0 / 152.7 = 305.4 | 152.7 / 0.0 / 0.0 / 305.4 = 458.1 | hands / hands + waits / waits |
+| `causeway-gate` | 280.9 / 0.0 / 0.0 / 0.0 = 280.9 | 495.8 / 0.0 / 0.0 / 66.0 = 561.8 | 701.9 / 0.0 / 0.0 / 140.8 = 842.7 | hands / hands / hands |
+| `causeway-1` | 9.1 / 29.7 / 0.0 / 0.0 = 38.8 | 0.3 / 59.7 / 0.0 / 0.0 = 60.0 | 0.3 / 89.7 / 0.0 / 0.0 = 90.0 | lay / lay / lay |
+| `arrive` | 133.0 / 0.0 / 0.0 / 108.0 = 241.0 | 133.0 / 0.0 / 0.0 / 293.0 = 426.0 | 133.0 / 0.0 / 0.0 / 530.0 = 663.0 | hands / waits / waits |
 
 ### Browser route
 

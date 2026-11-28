@@ -93,7 +93,7 @@ import { wallService } from '../look/bots/railway-wall-service.ts';
 type Cmd =
   { walk: Point } | { ride: Point; ticks: number } | { act: string; fields?: Partial<RailAction> } | { wait: number };
 type Policy = Generator<Cmd, void, number>;
-/** `waiting`: the player's last command was a `wait` (standing for a train, a lay, a regrowth or a friend). */
+/** The last command's activity can carry into the next node until its busy time expires. */
 type Player = {
   pid: string;
   i: number;
@@ -101,7 +101,7 @@ type Player = {
   busy: number;
   walked: number;
   gen: Policy | null;
-  waiting?: boolean;
+  activity?: 'hands' | 'rides' | 'waits';
 };
 type Tally = {
   carries: number;
@@ -113,12 +113,18 @@ type Tally = {
   /** Ops pressed at all, accepted or not (the order probes). */
   tried?: Set<string>;
 };
-/** `idle`: player-ticks while the node was open with that player waiting or done with their share. */
+/** Activity totals are player-ticks, measured until the node is reached or parked. */
 export type NodeTime = {
   id: NodeId;
   tick: number;
   startTick: number;
   parked: boolean;
+  activeEndTick: number;
+  hands: number;
+  watching: number;
+  rides: number;
+  waits: number;
+  /** Legacy combined idle count. */
   idle: number;
   firstBillTick?: number;
 } & Tally;
@@ -932,7 +938,7 @@ function step(r: Run, pl: Player, t: Tally, log: string[]) {
     }
     const cmd = next.value;
     input = 0;
-    pl.waiting = 'wait' in cmd;
+    pl.activity = 'wait' in cmd ? 'waits' : 'ride' in cmd ? 'rides' : 'hands';
     if ('walk' in cmd) {
       const d = cm(pl.at, cmd.walk) * (r.current ? r.detour(r.current) : 1);
       pl.at = { ...cmd.walk };
@@ -1051,7 +1057,7 @@ export type Checkpoint = {
   index: number;
   snapshot: unknown;
   tick: number;
-  players: Pick<Player, 'at' | 'busy' | 'walked' | 'waiting'>[];
+  players: Pick<Player, 'at' | 'busy' | 'walked' | 'activity'>[];
   bringing: [string, number][];
   flags: Run['flags'];
   nodes: NodeTime[];
@@ -1064,8 +1070,20 @@ const playerState = (p: Checkpoint['players'][number]): Checkpoint['players'][nu
   at: { ...p.at },
   busy: p.busy,
   walked: p.walked,
-  waiting: p.waiting,
+  activity: p.activity,
 });
+
+/** Use the section's real lay clock to separate standing by a lay from other idle time. */
+function layInProgress(w: World, id: NodeId, section: (typeof ROUTE_SECTIONS)[number] | undefined) {
+  if (section) {
+    const row = legRow(w, section.leg);
+    return row.laid === section.section && row.start >= 0;
+  }
+  const line1 = LINE1_STATIONS.findIndex((s) => s.id === id);
+  const line2 = LINE2_STATIONS.findIndex((s) => s.id === id);
+  const row = line1 >= 0 ? job(w, line1) : line2 >= 0 ? qjob(w, line2) : undefined;
+  return row !== undefined && row.start >= 0 && !row.completion;
+}
 
 export function playOrder(
   order: readonly NodeId[],
@@ -1144,12 +1162,17 @@ export function playOrder(
       id,
       tick: -1,
       startTick: h.tick(),
+      activeEndTick: h.tick(),
       parked: false,
       carries: 0,
       walked: 0,
       refused: 0,
       actions: 0,
       accepted: 0,
+      hands: 0,
+      watching: 0,
+      rides: 0,
+      waits: 0,
       idle: 0,
     };
     result.nodes.push(t);
@@ -1158,6 +1181,7 @@ export function playOrder(
       continue;
     }
     if (opts.probes) probeBefore(id);
+    const section = ROUTE_SECTIONS.find((s) => s.id === id);
     for (const pl of g.players) pl.gen = r.policy[id](pl);
     for (;;) {
       const before = t.accepted;
@@ -1193,9 +1217,19 @@ export function playOrder(
         break;
       }
       const now = h.tick();
-      for (const pl of g.players) if (!pl.gen || (pl.waiting && pl.busy > now)) t.idle++;
+      const laying = layInProgress(g.w, id, section);
+      for (const pl of g.players) {
+        const activity = pl.gen && pl.busy > now ? pl.activity : undefined;
+        if (activity === 'hands' || activity === 'rides') t[activity]++;
+        else if (laying) t.watching++;
+        else t.waits++;
+      }
       h.advance();
     }
+    t.activeEndTick = h.tick();
+    t.idle = t.watching + t.waits;
+    if (t.hands + t.rides + t.idle !== (t.activeEndTick - t.startTick) * players)
+      throw new Error(`${id}: activity split does not sum to total player-ticks`);
     for (const pl of g.players) pl.gen = null;
     if (result.softlock) break;
   }
@@ -1313,10 +1347,15 @@ export function runLoop(args: string[]) {
       '',
       `${players} player${players > 1 ? 's' : ''}, ${shown} order: straight-line ${verdict(canon)}${cal ? `; calibrated ${verdict(cal)}` : ''}`,
     );
-    out.push('  node      reached    took     carries  walked m  refused  idle s   calibrated: reached  detour');
+    out.push(
+      '  node      reached    took     carries  walked m  refused  idle s     hands  watching the lay     rides     waits     total   calibrated: reached  detour',
+    );
     for (const t of canon.nodes) {
       // From the moment its turn came to the moment it was reached (a parked node finishes later).
       const took = t.tick < 0 ? '-' : clock(t.tick - t.startTick);
+      const split = [t.hands, t.watching, t.rides, t.waits, (t.activeEndTick - t.startTick) * players]
+        .map((ticks, i) => (ticks / 10).toFixed(1).padStart(i === 1 ? 18 : 9))
+        .join(' ');
       const c = cal?.nodes.find((x) => x.id === t.id);
       if (t.firstBillTick !== undefined)
         out.push(
@@ -1327,12 +1366,13 @@ export function runLoop(args: string[]) {
         ? `${(c && c.tick >= 0 ? clock(c.tick) : 'never').padStart(19)}  ${d ? `x${d.median.toFixed(2)} (n ${d.n})` : 'x1 (uncalibrated)'}`
         : '';
       out.push(
-        `  ${t.id.padEnd(9)} ${(t.tick < 0 ? 'never' : clock(t.tick)).padStart(8)}  ${took.padStart(7)}${t.parked ? ' (parked)' : '         '}${String(t.carries).padStart(4)} ${String(Math.round(t.walked)).padStart(9)} ${String(t.refused).padStart(8)} ${String(Math.round(t.idle / 10 / players)).padStart(7)}  ${calCol}`,
+        `  ${t.id.padEnd(9)} ${(t.tick < 0 ? 'never' : clock(t.tick)).padStart(8)}  ${took.padStart(7)}${t.parked ? ' (parked)' : '         '}${String(t.carries).padStart(4)} ${String(Math.round(t.walked)).padStart(9)} ${String(t.refused).padStart(8)} ${String(Math.round(t.idle / 10 / players)).padStart(7)} ${split}   ${calCol}`,
       );
     }
     out.push(
       '  idle s: seconds each player (mean) stood waiting (a train, a lay, a friend; holds count too) or had nothing',
       '  left to do while the node was open, until it was reached or parked.',
+      '  Split in player-seconds (summed across players, until reached or parked). Checked: the four categories sum to total.',
     );
     for (const r of results.filter((x) => x.players === players && x.order !== shown))
       out.push(`  order "${r.order}": ${verdict(r)}`);
