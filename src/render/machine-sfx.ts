@@ -108,6 +108,21 @@ export function bell(x: number, z: number, range = HEAR): void {
   }
 }
 
+// The brass horn returns a softer note on each canyon bounce.
+export function canyonHorn(x: number, z: number, echo: number, harmony: boolean): void {
+  const a = at(x, z, (0.18 * dbToGain(audioSettings.machineWhistleDb)) / (1 + echo), 180);
+  if (!a) return;
+  for (const hz of harmony ? [196, 247, 294] : [196]) {
+    const osc = a.ctx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(hz * 0.93, a.t);
+    osc.frequency.exponentialRampToValueAtTime(hz, a.t + 0.08);
+    osc.connect(env(a.ctx, a.out, a.t, a.g, 0.08, 0.52));
+    osc.start(a.t);
+    osc.stop(a.t + 0.65);
+  }
+}
+
 // A bell cord's pull on your own press: a soft creak and tick, before the server has answered.
 export function cordPull(x: number, z: number): void {
   const a = at(x, z, 0.1);

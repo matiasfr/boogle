@@ -17,7 +17,12 @@ export function hangoutPoint(u: number, lat: number, y: number) {
 
 /** Floor, shell and exterior stairs are made from the near island's solid box kit.
  * Offsets are in the Ring frame. The longer approach meets the slope at the ramp end. */
-export function createHangoutBuilding(owner: OwnedView, ground: IslandGround, tower: boolean) {
+export function createHangoutBuilding(
+  owner: OwnedView,
+  ground: Pick<IslandGround, 'islandH'>,
+  tower: boolean,
+  site = { point: hangoutPoint, floor, yaw, deck: 6, flat: false },
+) {
   const records: ReturnType<typeof instantiate>[] = [];
   const cutaway = new Set<number>();
   const ghost = createGhostOutlines(owner, 2048, 0.32, 0.14, 0.09);
@@ -36,14 +41,14 @@ export function createHangoutBuilding(owner: OwnedView, ground: IslandGround, to
     hides = false,
     pitch = 0,
   ) {
-    const p = hangoutPoint(u, l, y);
+    const p = site.point(u, l, y);
     const r = instantiate(
       'ring.box',
       {
         id: 'hangout.' + id,
         prefab: 'ring.box',
         pos: [p.x, p.y, p.z],
-        rot: [yaw, pitch, 0],
+        rot: [site.yaw, pitch, 0],
         scale: [width, height, length],
         params: { color },
       },
@@ -52,25 +57,29 @@ export function createHangoutBuilding(owner: OwnedView, ground: IslandGround, to
     r.setEnabled(false);
     records.push(r);
     if (hides) cutaway.add(records.length - 1);
-    ghost.box(p.x, p.y, p.z, width, height, length, yaw, pitch);
+    ghost.box(p.x, p.y, p.z, width, height, length, site.yaw, pitch);
   }
-  box('floor', 0, 0, -0.7, 5.4, 4.4, 1.4, timber);
-  box('porch', 0, 3.1, -0.15, 5.4, 1.8, 0.3, timber);
-  const toe = hangoutPoint(-8, 3.1, 0);
-  const rise = floor - ground.islandH(toe.x, toe.z);
+  // The Gorge pad already has a finished deck. Give its threshold a small
+  // step so the timber and the stone never share the same top face.
+  const threshold = site.flat ? 0.08 : 0;
+  box('floor', 0, 0, threshold - 0.7, 5.4, 4.4, 1.4, timber);
+  box('porch', 0, 3.1, threshold - 0.15, 5.4, 1.8, 0.3, timber);
+  const toe = site.point(-8, 3.1, 0);
+  const rise = site.floor - ground.islandH(toe.x, toe.z);
   const run = 5.3;
-  box(
-    'approach',
-    -2.7 - run / 2,
-    3.1,
-    -rise / 2 - 0.08,
-    Math.hypot(run, rise),
-    1.65,
-    0.16,
-    timber,
-    false,
-    Math.atan2(rise, run),
-  );
+  if (!site.flat)
+    box(
+      'approach',
+      -2.7 - run / 2,
+      3.1,
+      -rise / 2 - 0.08,
+      Math.hypot(run, rise),
+      1.65,
+      0.16,
+      timber,
+      false,
+      Math.atan2(rise, run),
+    );
   box('back', 0, -2.12, 1.45, 5.4, 0.16, 2.9, cream);
   for (const side of [-1, 1]) {
     box('end' + side, side * 2.62, 0, 1.45, 0.16, 4.4, 2.9, cream, true);
@@ -78,46 +87,61 @@ export function createHangoutBuilding(owner: OwnedView, ground: IslandGround, to
   }
   box('lintel', 0, 2.12, 2.65, 2.14, 0.16, 0.5, timber, true);
   box('roof', 0, 0, 2.98, 5.6, 4.6, 0.16, teal, true);
-  for (const u of [-2.2, 2.2])
-    for (const l of [-1.7, 1.7]) box('post' + u + l, u, l, 4.45, 0.22, 0.22, 2.9, timber, true);
+  if (tower || !site.flat) {
+    const height = site.deck - 3.1;
+    for (const u of [-2.2, 2.2])
+      for (const l of [-1.7, 1.7]) box('post' + u + l, u, l, 3 + height / 2, 0.22, 0.22, height, timber, true);
+  }
   if (tower) {
-    box('deck', 0, 0, 5.9, 5.6, 4.6, 0.2, teal, true);
+    box('deck', 0, 0, site.deck - 0.1, 5.6, 4.6, 0.2, teal, true);
     // Four parallel flights with a shared landing between each pair.
     for (let flight = 0; flight < 4; flight++) {
       const outward = flight % 2 === 0,
-        l = 2.15 - flight * 1.1;
+        // At Gorge, keep the outer flight inside the gap between the next plot’s corner stakes.
+        l = (site.flat ? 1.6 : 2.15) - flight * 1.1;
       for (let i = 0; i < 10; i++) {
         const u = 3.32 + (outward ? i : 9 - i) * 0.32;
-        box('step' + flight + '-' + i, u, l, flight * 1.5 + (i + 1) * 0.15 - 0.08, 0.34, 1.12, 0.16, timber);
+        box(
+          'step' + flight + '-' + i,
+          site.flat ? -u : u,
+          l,
+          ((flight + (i + 1) / 10) * site.deck) / 4 - 0.08,
+          0.34,
+          1.12,
+          0.16,
+          timber,
+        );
       }
       box(
         'landing' + flight,
-        outward ? 6.76 : 2.95,
+        (outward ? 6.76 : 2.95) * (site.flat ? -1 : 1),
         l - (flight === 3 ? 0 : 0.55),
-        (flight + 1) * 1.5 - 0.08,
+        ((flight + 1) * site.deck) / 4 - 0.08,
         outward ? 0.82 : 0.72,
         flight === 3 ? 1.12 : 2.22,
         0.16,
         teal,
       );
     }
-    box('foot', 2.95, 2.4, -0.1, 0.72, 1.7, 0.2, timber);
-  } else {
+    box('foot', site.flat ? -2.95 : 2.95, 2.4, -0.1, 0.72, 1.7, 0.2, timber);
+  } else if (!site.flat) {
     box('belfry', 0, 0, 5.93, 5.0, 3.9, 0.25, teal, true);
     box('beam', 0, 0, 5.55, 0.24, 3.6, 0.26, timber, true);
   }
+  // The perch's splash landing is in the same clearance-checked set as its porch.
+  if (site.flat && tower) box('raft', -6.5, 30.5, 0.15 - site.floor, 2.4, 3.2, 0.32, timber);
   ghost.commit();
   ghost.mesh.visible = false;
   const poles = [-2.85, 2.85].flatMap((u) =>
     [-2.45, 2.45].map((l) => {
-      const p = hangoutPoint(u, l, 2.0);
+      const p = site.point(u, l, 2.0);
       return instantiate(
         'ring.box',
         {
           id: 'ring.scaffold.' + u + '.' + l,
           prefab: 'ring.box',
           pos: [p.x, p.y, p.z],
-          rot: [yaw, 0, 0],
+          rot: [site.yaw, 0, 0],
           scale: [0.12, 4.0, 0.12],
           params: { color: '#c99d62' },
         },

@@ -139,7 +139,7 @@ function placements() {
       out.push(levelBox(a - 0.3, a + 0.3, c - 0.3, c + 0.3, -8, GORGE_DECK - 0.5, GREY_DARK, false));
   out.push(levelBox(T.a0 + 1.5, T.a0 + 8.5, T.c0 + 1.5, T.c0 + 7.5, GORGE_DECK, GORGE_DECK + 4.2, GREY_LIGHT));
   out.push(levelBox(T.a0 + 1.5, T.a0 + 7.5, T.c1 - 7, T.c1 - 1.5, GORGE_DECK, GORGE_DECK + 3.4, GREY_LIGHT));
-  for (let k = 0; k < 3; k++) {
+  for (let k = 0; k < 2; k++) {
     const a = T.a0 + 12,
       c = T.c0 + 2 + k * 8;
     for (const [da, dc] of [

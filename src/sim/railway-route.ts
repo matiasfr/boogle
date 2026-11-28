@@ -434,6 +434,16 @@ export const RAIL_PLACES: readonly { id: string; boundCm?: number; halts: readon
 
 export const ROUTE = { branchFirst: 'gorge', branches: 'both', ending: 'card', upgrades: 'one' } as const;
 
+/** High Gorge pad frame, in metres. +a points out of the doorway toward the gangway. */
+export const gorgeAt = (a: number, c: number, y = 0) => ({
+  x: -103 + 0.8565 * a - 0.5162 * c,
+  y,
+  z: -1988 + 0.5162 * a + 0.8565 * c,
+});
+export const GORGE_HANGOUT = { a: -11.5, c: -19.5, floor: 3.9 };
+export const GORGE_BOARD = gorgeAt(GORGE_HANGOUT.a + 4, GORGE_HANGOUT.c, GORGE_HANGOUT.floor);
+export const GORGE_HORN = gorgeAt(GORGE_HANGOUT.a, GORGE_HANGOUT.c, GORGE_HANGOUT.floor + 1);
+
 // ---------------------------------------------------------------- step 3: what the rules read (greybox-route.md)
 /** A row's centimetres against its sim line's `s`: the `ring` row counts on from the pier head at its `fromCm` (74300),
  * line 2 from RING_S_HEAD (74200), so the same place is 100 cm further along the row. Ring Island's physical

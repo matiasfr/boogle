@@ -9,7 +9,7 @@ export type RoomWorldHost = Pick<
   Ordinary,
   'sync' | 'onSend' | 'deliver' | 'step' | 'status' | 'close' | 'wake' | 'pause' | 'depart'
 > & {
-  hasBellhouse?: Railway['hasBellhouse'];
+  hasSignalHouse?: Railway['hasSignalHouse'];
   roomStatus: () => ReturnType<Ordinary['roomStatus']> & Partial<ReturnType<Railway['roomStatus']>>;
 };
 

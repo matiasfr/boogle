@@ -18,6 +18,9 @@ The owner confirmed start-flow calls 7 to 9 on 28 November: [archived calls](dec
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 28 Nov | High Gorge gets Offer 1 and a room pick between Echo Horn House and Canyon Hook-Perch (New, calls 7–8) | [High Gorge hangout](plans/lane-c-part6.md) | Builder | Give the next hub a local activity immediately after arrival. | open |
+| 28 Nov | Stake nearest the gangway, retire the sign and charge base 300; completed choices feed line 2's far queue (Default, calls 9–10) | [High Gorge hangout](plans/lane-c-part6.md) | Builder | Match the Ring price and preserve the two future plots. | open |
+| 28 Nov | Three echoes, a three-second harmony window, 1.5 s cooldown; a four-metre porch with three low rings and a splash raft (Default, calls 11–12) | [High Gorge hangout](plans/lane-c-part6.md) | Builder | Keep both toys optional and the rim stair meaningful. | open |
 | 28 Nov | Relay gifted logs through High Gorge to the incline head and Bell Rock (New) | [Yard legs](plans/lane-b-yard-legs.md) | Codex | Guests can advance the bill from Home | open |
 | 28 Nov | Pour at High Gorge when the first incline frame stands there (Default) | [Yard legs](plans/lane-b-yard-legs.md) | Codex | The branch has no service until that section lays | open |
 | 2026-11-28 | New. Put Ring Island Offer 1 at (473, −27) in the Ring frame, floor 9 m. | [Lane C Part 5](plans/lane-c-part5.md#level-findings) | Builder, design review | The west strip leaves the previously approved leaning station house, its window and the summit path clear. | open |

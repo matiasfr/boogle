@@ -94,6 +94,31 @@ const LINE2_SLOTS = RAIL_TRAINS.flatMap((t, k) => (t.line === LINE2 ? [k] : []))
 const yardId = (w: World, slot: number) => w.lookup(Yard, slot)!;
 const tillRow = (w: World) => w.get(Till, w.single(Till))!;
 
+test('Gorge arrival stakes slot 32 and each completed choice feeds only the far queue', () => {
+  const early = buildSeedWorld('ring-joined');
+  assert.deepEqual(plotsStaked(early.w, 2), []);
+  assert.equal(act(early, 'a', 'rail.buy', { id: 32, kind: 8 }), 0);
+  for (const kind of [8, 9]) {
+    const seed = buildSeedWorld('gorge-reached');
+    const before = tillRow(seed.w).boogles;
+    const actor: Actor = { reach: () => false, height: () => true, cadence: () => true };
+    assert.equal(railValid(seed.w, { op: 'rail.buy', id: 32, kind, epoch: 1, request: 1 }, actor), false);
+    assert.deepEqual(plotsStaked(seed.w, 2), [0]);
+    for (const invalid of [0, 1, 2, 3, 4, 5, 6, 7, 10])
+      assert.equal(act(seed, 'a', 'rail.buy', { id: 32, kind: invalid }), 0);
+    assert.equal(act(seed, 'a', 'rail.buy', { id: 32, kind }), 1);
+    assert.equal(act(seed, 'b', 'rail.buy', { id: 32, kind: 17 - kind }), 0);
+    assert.equal(tillRow(seed.w).boogles, before - 150);
+    assert.equal(copy(seed.w).get(Plot, seed.w.lookup(Plot, 32)!)!.kind, kind);
+    const at = seed.t + TRADE.buildTicks;
+    assert.equal(tillRate(seed.w, TRADE_PCT, at) - tillRate(seed.w, TRADE_PCT, at - 1), fareOf(seed.w, 0));
+    const queues = seed.w.mut(Town, seed.w.lookup(Town, 0)!)!;
+    queues.wait0 = queues.wait1 = 0;
+    for (let i = 0; i < 600; i++) seed.w.run(tradeTick, { tick: at + i, headPct: 100, ...TRADE_PCT });
+    assert.equal(queues.wait1 - queues.wait0, 1);
+  }
+});
+
 test('Ring joins before staking; a completed Ring plot sends its extra rider to the far queue only', () => {
   const before = { w: copy(LEAF.w), t: LEAF.t };
   assert.deepEqual(plotsStaked(before.w, 1), []);

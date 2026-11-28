@@ -11,6 +11,7 @@ import { WORLD_NS, worldRoomId } from '../../src/world/namespace.ts';
 import { plot, till } from '../../src/sim/railway-rows.ts';
 import { townPlotBoard } from '../../src/place/town-plan.ts';
 import { RING_HANGOUT, ringAt } from '../../src/sim/railway-ring-layout.ts';
+import { GORGE_HORN } from '../../src/sim/railway-route.ts';
 import { RAILWAY_PLAY_NS, railwayRoomId } from '../../src/world/railway-namespace.ts';
 import { COSMETIC_BOUND } from '../../src/sim/social.ts';
 import type { RailwayWorldHost } from '../src/host/world-host.ts';
@@ -601,43 +602,50 @@ test('relay: messages reach the others with from; oversize and host-only types d
   }
 });
 
-test('Ring bell relays one nearby visible pull to the other client after construction', async (t) => {
-  const { svc, base } = await start({ SERVER_ROOMS: '*' });
-  const room = railwayRoomId('bell');
-  try {
-    const a = connect(base, room, 'ringer'),
-      b = connect(base, room, 'listener');
-    await Promise.all([a.next(is('list')), b.next(is('list'))]);
-    const world = svc.roomHost()!.room(room)!.world as RailwayWorldHost;
-    const rope = ringAt(RING_HANGOUT.u, RING_HANGOUT.lat);
-    const p = [rope.x / 100, RING_HANGOUT.floor / 100 + 1, rope.z / 100];
-    let seq = 0;
-    const pose = (v: number, at: number[]) => a.send({ t: 'p', s: ++seq, d: { v, p: at } });
-    const pull = (id = 16) => a.send({ t: 'm', d: { t: 'bell', id } });
-    pose(1, p);
-    pull();
-    await settle([a], [b]);
-    assert.equal(b.msgs.filter(isWorld('bell')).length, 0);
-    t.mock.method(world, 'hasBellhouse', () => true);
-    pose(0, p);
-    pull();
-    pose(1, [0, 0, 0]);
-    pull();
-    pose(1, p);
-    pull(0);
-    await settle([a], [b]);
-    assert.equal(b.msgs.filter(isWorld('bell')).length, 0);
-    pull();
-    pull();
-    await settle([a], [b]);
-    assert.deepEqual(b.msgs.filter(isWorld('bell')), [{ t: 'm', from: 'ringer', d: { t: 'bell', id: 16 } }]);
-    assert.equal(a.msgs.filter(isWorld('bell')).length, 0);
-    a.ws.close();
-    b.ws.close();
-  } finally {
-    await svc.close({ save: false });
-  }
-});
+for (const [event, slot] of [
+  ['bell', 16],
+  ['echo', 32],
+] as const)
+  test(`${event} relays one nearby visible pull to the other client after construction`, async (t) => {
+    const { svc, base } = await start({ SERVER_ROOMS: '*' });
+    const room = railwayRoomId(event);
+    try {
+      const a = connect(base, room, 'ringer'),
+        b = connect(base, room, 'listener');
+      await Promise.all([a.next(is('list')), b.next(is('list'))]);
+      const world = svc.roomHost()!.room(room)!.world as RailwayWorldHost;
+      const rope = ringAt(RING_HANGOUT.u, RING_HANGOUT.lat);
+      const p =
+        slot === 32
+          ? [GORGE_HORN.x, GORGE_HORN.y, GORGE_HORN.z]
+          : [rope.x / 100, RING_HANGOUT.floor / 100 + 1, rope.z / 100];
+      let seq = 0;
+      const pose = (v: number, at: number[]) => a.send({ t: 'p', s: ++seq, d: { v, p: at } });
+      const pull = (id: number = slot) => a.send({ t: 'm', d: { t: event, id } });
+      pose(1, p);
+      pull();
+      await settle([a], [b]);
+      assert.equal(b.msgs.filter(isWorld(event)).length, 0);
+      t.mock.method(world, 'hasSignalHouse', (id: number) => id === slot);
+      pose(0, p);
+      pull();
+      pose(1, [0, 0, 0]);
+      pull();
+      pose(1, p);
+      pull(0);
+      await settle([a], [b]);
+      assert.equal(b.msgs.filter(isWorld(event)).length, 0);
+      pull();
+      pull();
+      await settle([a], [b]);
+      assert.deepEqual(b.msgs.filter(isWorld(event)), [{ t: 'm', from: 'ringer', d: { t: event, id: slot } }]);
+      assert.equal(a.msgs.filter(isWorld(event)).length, 0);
+      a.ws.close();
+      b.ws.close();
+    } finally {
+      await svc.close({ save: false });
+    }
+  });
 
 test('production railway relays bounded social cues without opening material or host-only paths', async () => {
   const { svc, base } = await start({ SERVER_ROOMS: '*' });
