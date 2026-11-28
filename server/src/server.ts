@@ -442,6 +442,7 @@ export function createService(cfg: ServerConfig) {
   });
   // ---- playtest jump-ins (./jump.ts) ----
   const jumps = addJump(app, cfg, {
+    resolveSession: accounts.resolveSession,
     store,
     roomHost: () => roomHost,
     replaced: (id) => !!replacements.read(id),

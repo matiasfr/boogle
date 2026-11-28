@@ -15,7 +15,6 @@ let state: AccountState = 'offline';
 let problem: string | undefined;
 let standIn: string | undefined;
 let retryGuest = false;
-let memoryOnly = false;
 let switching = false;
 let beforeReload = () => {};
 
@@ -122,8 +121,8 @@ function resolved(token: string, value: unknown): Credential {
   };
 }
 
-export function prepareAccount(): Promise<void> {
-  return (preparing ??= prepare()
+export function prepareAccount(forJump = false): Promise<void> {
+  return (preparing ??= prepare(forJump)
     .catch(() => {
       // Even corrupt/blocked storage, a refused session, bad JSON or a timed-out response must reach main.
       problem ??= 'Sign-in is unavailable. Reload to retry.';
@@ -137,7 +136,29 @@ export function prepareAccount(): Promise<void> {
       }
     }));
 }
-async function prepare() {
+// During a jump or a storage-blocked visit, boot needs a verified PID before it
+// starts identity-keyed consumers. Keep the same token through a host replacement.
+async function registerGuest(token: string, waitForHost: boolean) {
+  let delay = 1000;
+  for (;;) {
+    try {
+      return await request('guest', token, 'POST');
+    } catch (error) {
+      const status = (error as { status?: number })?.status;
+      if (
+        !waitForHost ||
+        !import.meta.env.VITE_BOOGLE_SERVER ||
+        (status !== undefined && status < 500) ||
+        error instanceof SyntaxError
+      )
+        throw error;
+      await new Promise<void>((done) => setTimeout(done, delay));
+      delay = Math.min(delay * 2, 30000);
+    }
+  }
+}
+async function prepare(forJump: boolean) {
+  let memoryOnly = false;
   let saved: string | null = null;
   try {
     saved = sessionStorage.getItem(ACCOUNT_KEY);
@@ -172,7 +193,9 @@ async function prepare() {
   try {
     const next = resolved(
       credential.token,
-      await request(credential.pid ? 'session' : 'guest', credential.token, credential.pid ? 'GET' : 'POST'),
+      credential.pid
+        ? await request('session', credential.token)
+        : await registerGuest(credential.token, memoryOnly || forJump),
     );
     if (credential.pid && credential.pid !== next.pid) throw new Error('The server returned a different identity.');
     credential = next;
@@ -196,11 +219,7 @@ async function prepare() {
 export async function retryGuestRegistration() {
   if (!retryGuest || switching || !credential) return;
   const token = credential.token;
-  if (!holds(token)) {
-    // Both stores may be unavailable. A healthy boot can still register an in-memory guest.
-    if (memoryOnly) reload();
-    return;
-  }
+  if (!holds(token)) return;
   const next = resolved(token, await request('guest', token, 'POST'));
   if (!switching && holds(token) && save(next)) {
     retryGuest = false;

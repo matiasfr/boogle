@@ -40,6 +40,7 @@ import {
 } from '../../src/world/railway-jump.ts';
 import { isSeedStage, type SeedStage } from '../../src/sim/railway-seeds.ts';
 import { clientAddress, MAX_CLIENT_ADDRESSES, rememberAddress } from './client-address.ts';
+import { AccountError, bearer, type AccountIdentity } from './accounts.ts';
 
 export type JumpConfig = {
   replaceFlyProxy?: boolean;
@@ -58,7 +59,8 @@ export type JumpConfig = {
   /** Test seam: builds a doc in place of the worker. */
   jumpBuildDoc?: (stage: SeedStage) => Promise<SeedDoc>;
 };
-type Sidecar = RoomSeed & { build: string; request?: string };
+type Sidecar = RoomSeed & { build: string; request?: string; requester?: string };
+const REPLAY_MS = 10 * 60_000;
 export type SeedResult = { status: 200 | 409 | 500 | 503 | 507; error?: string };
 
 const BUILD_TIMEOUT_MS = 60_000;
@@ -114,12 +116,14 @@ export function addJump(
   cfg: JumpConfig,
   {
     store,
+    resolveSession,
     roomHost,
     limit,
     replaced = () => false,
     reserved = () => false,
   }: {
     store: Store;
+    resolveSession: (token: unknown) => AccountIdentity;
     roomHost: () => RoomHost | null;
     limit: RequestHandler;
     replaced?: (id: string) => boolean;
@@ -269,11 +273,15 @@ export function addJump(
           (typeof request !== 'string' || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(request))
         )
           return res.status(400).json({ error: 'invalid jump request' });
+        const requester = request ? resolveSession(bearer(req)).pid : undefined;
         await sweep();
         if (request) {
           if (allocating.has(request)) return res.status(503).end();
           for (const [id, seed] of seeds) {
             if (seed.request !== request) continue;
+            if (seed.requester !== requester) return res.status(403).json({ error: 'jump request refused' });
+            if (!(Date.now() < Date.parse(seed.at) + REPLAY_MS))
+              return res.status(410).json({ error: 'jump request expired' });
             if (seed.stage !== stage) return res.status(400).json({ error: 'jump request stage changed' });
             return res.set('Cache-Control', 'no-store').json({ room: id.slice(RAILWAY_PLAY_NS.length + 1), stage });
           }
@@ -310,7 +318,7 @@ export function addJump(
             name = jumpRoomName(stage, suffix());
             const candidate = railwayRoomId(name);
             if (store.known(candidate) || seeds.has(candidate)) continue;
-            const sidecar: Sidecar = { stage, at: new Date().toISOString(), build: cfg.build, request };
+            const sidecar: Sidecar = { stage, at: new Date().toISOString(), build: cfg.build, request, requester };
             try {
               // The sidecar names the room: `wx` refuses a name another request just took.
               await fs.writeFile(sidecarFor(candidate), JSON.stringify(sidecar), { flag: 'wx' });
@@ -349,6 +357,7 @@ export function addJump(
           else pending.delete(who);
         }
       } catch (e) {
+        if (e instanceof AccountError) return res.status(e.status).json({ error: e.code });
         next(e);
       }
     },

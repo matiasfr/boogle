@@ -5,6 +5,7 @@
 import { JUMP_ADDRESS_ERROR, JUMP_DAY_ERROR, jumpOf, type JumpReply } from '../world/railway-jump.ts';
 import { RAILWAY_PLAY_NS } from '../world/railway-namespace.ts';
 import { splashNote } from './splash.ts';
+import { accountStatus, prepareAccount, roomAuthentication } from '../player/account.ts';
 import { checkRelease, hostMatchesPage, roomRelease, releaseMismatch } from './release.ts';
 
 /** A refusal: the HTTP status (0: no answer) and the server's `error`, which tells its 429s apart. */
@@ -21,15 +22,24 @@ async function ask(stage: string): Promise<JumpReply | Refused> {
     // A lost reply may already have created the room. Keep one key on this history entry
     // until the invite replaces it; a later intentional jump gets a fresh key.
     const request = roomRelease ? (globalThis.history?.state?.jumpRequest ?? crypto.randomUUID()) : undefined;
+    if (request) {
+      await prepareAccount(true);
+      if (!accountStatus().pid || accountStatus().state === 'revoked') return { status: 401, error: 'unauthenticated' };
+    }
     if (request) globalThis.history?.replaceState({ ...history.state, jumpRequest: request }, '');
     const r = await fetch(url, {
       method: 'POST',
-      // text/plain JSON: no CORS preflight (the /report pattern)
+      ...(request && { headers: { Authorization: 'Bearer ' + roomAuthentication().token } }),
       body: JSON.stringify({ stage, ns: RAILWAY_PLAY_NS, request }),
       signal: AbortSignal.timeout(90_000),
     });
     const body = (await r.json().catch(() => null)) as (JumpReply & { error?: unknown }) | null;
-    if (!r.ok) return { status: r.status, error: typeof body?.error === 'string' ? body.error : '' };
+    if (!r.ok) {
+      // An explicit Try again may create a new room after this replay was denied.
+      if (request && (r.status === 403 || r.status === 410))
+        globalThis.history?.replaceState({ ...history.state, jumpRequest: undefined }, '');
+      return { status: r.status, error: typeof body?.error === 'string' ? body.error : '' };
+    }
     return typeof body?.room === 'string' ? body : { status: 500, error: '' };
   } catch (error) {
     console.warn('[jump-in] could not reach the server:', error);
