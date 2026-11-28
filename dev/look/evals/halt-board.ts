@@ -1,8 +1,8 @@
 // npm run look -- --rail-seed stack-laid-2 --eval dev/look/evals/halt-board.ts --query 'board=3' \
 //   --until 'window.__boardReady && window.__trainOnLeg()' --name map-laid-2
 // One halt map display, face on (docs/plans/greybox-route.md, leg 1 step 4b): `board` is its index in
-// halt-map.ts's haltDisplays (0 Village, 1 Camp, 2 Village line 2, 3 Quarry, 4 Far Head, 5 Pier, then the stack line's
-// three heads and High Gorge: 6 to 9), `boarddist` the camera's distance from the face in metres (1.05). Stands your
+// halt-map.ts's haltDisplays (0 Village shared by both lines, 1 Camp, 2 Quarry, 3 Far Head, 4 Pier, then the stack
+// displays), `boarddist` the camera's distance from the face in metres (1.05). Stands your
 // body 1.4 m behind the camera (a staging teleport), so whatever is resident by distance is there.
 // `window.__trainOnLeg()` is whether a line 2 train is past Ring Island's platforms now. Prints the map's stage and
 // every line 2 train's metres along.
@@ -32,8 +32,10 @@ while (!me.body || !me.entered || !railRead()?.whole() || !faces()?.[index]) {
   await wait(100);
 }
 const face = faces()![index]!;
-const [x, y, z] = face.c,
+const [x, mapY, z] = face.c,
   [ox, oz] = face.out;
+// The works face is mounted below the 0.8 m halt map.
+const y = mapY - (query.has('worksFace') ? 0.4 + 0.94 : 0);
 const frame = () => {
   window.__debugCam!.set([x + ox * dist, y, z + oz * dist], [x, y, z], 50);
   teleport(me.body!, x + ox * (dist + 1.4), y - 0.3, z + oz * (dist + 1.4));

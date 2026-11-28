@@ -64,13 +64,13 @@ export function q6GiftSeed(phase: string) {
   return seedDoc(s, 'Robin');
 }
 
-export function pierGiftSeed() {
+export function pierGiftSeed(yard = 0) {
   const s = buildSeedWorld('crossing-done');
   chopTo(s, 'a', 8);
   const extra = account(s.w, 'a')!.carry - 8;
   if (extra)
     need(act(s, 'a', 'rail.drop', { kind: 0, n: extra, x: 100000, y: 2000, z: 3000 }) === extra, 'spare logs put down');
-  need(act(s, 'a', 'rail.haltPut', { kind: 0, yard: 0 }) === 8, 'eight for Q7');
+  need(act(s, 'a', 'rail.haltPut', { kind: 0, yard }) === 8, 'eight for Q7');
   for (let ticks = 0; workAboard(s.w, 3) !== 8; ticks++) {
     need(ticks < 6000, 'Pier cargo aboard');
     advance(s, 1);
