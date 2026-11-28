@@ -14,8 +14,11 @@ Split by topic on 10 November 2026 (see [decisions.md](decisions.md#recording-a-
 
 ## Core loop, pacing and progression
 
+The owner confirmed start-flow calls 7 to 9 on 28 November: [archived calls](decisions-archive.md#archive-core-loop-pacing-and-progression); [decision](decisions-controls.md#d-2026-11-28-first-fall-lands-at-the-works).
+
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 2026-11-28 | Default: stop the approaching resident 1.8 m from the player. Widen each lit pair of bridge lamps during its pulse. | [Start flow](brainstorms/start-flow.md), implementation of calls 8 and 9 | Builder | Leave the tool within reach and keep the moving light visible across the forge apron. | open |
 | 2026-11-27 | New: a full kit carrier swaps minted logs for gifts one for one at Home, up to the pour room, so a gift rides when both carriers are full | [Lane B](plans/lane-b.md#steps), step 3a | Orchestrator (heartbeat follow-up) | Keeps the cargo and carrier limits while allowing gifts to reach the frame | open |
 | 2026-11-27 | New: the room’s works names the breaker and the Works chain (breaker to cradle) before Q6, since a part on the forge’s pedestal is the works | [lane-a-works](plans/lane-a-works.md#design-review-2026-11-27), call 3 | Planner (design review) | The forge call already whistles for the breaker, so a signal at Q6 would contradict it; it keeps a guest’s next job on Home, 122 to 336 m from the dock | open |
 | 2026-11-27 | New: at the fork after the bay cut the works is the branch already begun; with neither begun, the cave line | [lane-a-works](plans/lane-a-works.md#design-review-2026-11-27), call 4 | Planner (design review) | Its first frame and stocked rack stand 15 m from the dock where a guest lands; the rules keep both branches open | open |

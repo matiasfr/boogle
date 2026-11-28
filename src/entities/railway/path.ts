@@ -2,6 +2,7 @@
 import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { readableUnlit } from '../../render/readable-unlit.ts';
+import { reducedMotion } from '../../constants.ts';
 
 /** The two planks of each walking approach: grass up to the track's solid top, outside the 2.8 m bed, then a short landing
  * that stops at the sleepers' ends (they reach 1.15 m from the centre; the rails sit at 0.5 m), never across the track.
@@ -60,6 +61,7 @@ export async function createRailwayPath(owner: OwnedView) {
   const posts = new THREE.InstancedMesh(postGeo, flat('#5c4530'), slots.length),
     lights = new THREE.InstancedMesh(lightGeo, glow, slots.length);
   posts.castShadow = true;
+  const tint = new THREE.Color();
   const o = new THREE.Object3D();
   slots.forEach((at, k) => {
     o.position.set(at.x, at.y, at.z);
@@ -68,6 +70,7 @@ export async function createRailwayPath(owner: OwnedView) {
     o.position.y = at.y + 0.8;
     o.updateMatrix();
     lights.setMatrixAt(k, o.matrix);
+    lights.setColorAt(k, tint);
   });
   row.add(posts, lights);
   owner.add(row);
@@ -77,9 +80,32 @@ export async function createRailwayPath(owner: OwnedView) {
     lightGeo.dispose();
   });
   let placed = false;
+  let chasing = false;
   return {
-    update(open: boolean, quiet = false) {
+    update(open: boolean, quiet = false, guide = false, seconds = 0) {
       row.visible = open;
+      const pulse = open && guide && !reducedMotion;
+      if (pulse || chasing) {
+        // The pairs are stored Camp to Home. Send the warm crest up the row in reverse.
+        for (let k = 0; k < slots.length; k += 2) {
+          const phase = (seconds * 3 + k / 2) % 9;
+          const crest = pulse ? Math.max(0, 1 - Math.min(phase, 9 - phase) / 2) : 0;
+          const intensity = pulse ? 0.3 + 2.8 * crest : 1;
+          tint.setRGB(intensity, intensity, intensity);
+          // The ordinary 26 cm lens is a dot from the forge. Widen the lit pair for that sightline.
+          o.scale.setScalar(1 + 3.8 * crest);
+          for (const index of [k, k + 1]) {
+            const at = slots[index]!;
+            o.position.set(at.x, at.y + 0.8, at.z);
+            o.updateMatrix();
+            lights.setMatrixAt(index, o.matrix);
+            lights.setColorAt(index, tint);
+          }
+        }
+        lights.instanceMatrix.needsUpdate = true;
+        lights.instanceColor!.needsUpdate = true;
+      }
+      chasing = pulse;
       if (!open || placed) return;
       placed = true;
       // Join the grass beside the parked machine to the actual solid top (rail.ts TOP = 0.1).

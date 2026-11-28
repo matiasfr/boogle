@@ -763,7 +763,7 @@ export const NODES: readonly LoopNode[] = [
     stops: ['wake'],
     requires: [],
     cue: [
-      onMain('world', 'Speech bubble over the camp resident; Talk, then Take axe', 'src/entities/railway/greeter.ts'),
+      onMain('world', 'The camp resident holds out the axe. Take axe in one press.', 'src/entities/railway/greeter.ts'),
     ],
   },
   lineStation('T1', [dec('wake', 'rules', `${RULES_QUERIES} ready(): awake + wakeTicks`)], ['t1-done']),

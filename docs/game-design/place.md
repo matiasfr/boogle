@@ -166,12 +166,11 @@ The original opening terrain, village/camps, forge scaffold, signs and locals sh
 
 ## Production line 1 continuation (5 November 2026, slice 3 branch)
 
-**First five minutes (15 November, D4; supersedes prior opening wake descriptions in this chapter).** Talk to the camp resident
-beside the parked machine and choose **Take axe**. The room receives the starter multi-axe through the existing
+**First five minutes.** The Camp resident holds out the axe and approaches the visitor nearest the parked machine, staying on the strip between the flatbed and the frame. Friends see the offered axe fade from his hand when someone takes it.
+His bubble asks for logs for the first frame. Press **Take axe** once. The room receives the starter multi-axe through the existing
 31-tick rule window; acceptance immediately starts the recipient's reveal, with the axe visible in the resident's
 outstretched hand for the anticipation beat before rising to the player. Its gathering glints start at that hand;
-partners keep their existing flourish. The resident stands roughly 4 m off the track centre, clear of the passing
-machine, with Talk offered only inside the existing server wake reach. The engine stays cold until Station 1's
+partners keep their existing flourish. The offer is available inside the existing server wake reach. The engine stays cold until Station 1's
 last log is accepted. Its existing 3.1-second fire, lamps and whistle reward funding the first frame, with a larger,
 slower body rock and upward kick readable from the frame (suppressed for reduced motion), while the frame feeds the
 machine. The two station hands walk and climb aboard over 2.6 seconds, easing their facing into the seated heading
@@ -575,6 +574,8 @@ heading and finding clear ground to the south. The same pose is reconstructed on
 12-stroke rule, one unique beam and Station 3's gate are unchanged.
 
 ### Guidance after removing the objective
+
+When Far Head casts the boiler, the forge whistle sounds over the pedestal shot. The camera then holds for two seconds on the old train at Camp. A dashed gold boiler stands in its saddles until the fit. At the pedestal, Station 6’s drawing shows the matching boiler on the train. The first bridge’s paired lamps brighten in sequence from Home toward Camp while the boiler waits or travels.
 
 **Boiler repair (5 November, solo design pass topic 2).** The old train exposes empty brass saddles matching the carried boiler's two bands. The boiler waits on a low pedestal at the forge apron; fitting seats the same part before the existing wake. This supersedes the earlier relationship weakness recorded below. Local presentation follows existing boiler/trains state; carrying, drop ownership and delivery stay with the cargo work.
 

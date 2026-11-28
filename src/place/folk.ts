@@ -107,7 +107,19 @@ type Job =
   | 'greeter'
   | 'looker';
 type Mood =
-  'idle' | 'walk' | 'run' | 'hammer' | 'carry' | 'wave' | 'cheer' | 'sit' | 'ride' | 'chat' | 'give' | 'point';
+  | 'idle'
+  | 'walk'
+  | 'run'
+  | 'hammer'
+  | 'carry'
+  | 'wave'
+  | 'cheer'
+  | 'sit'
+  | 'ride'
+  | 'chat'
+  | 'give'
+  | 'offer'
+  | 'point';
 type Guy = {
   /** A commuter not stepped since he was put out or slept far from the camera, and one stepped this frame but too
    * far to draw (path-refuge.ts commuterBand): only there is a woken one stood in his refuge. */
@@ -891,7 +903,7 @@ function pose(g: Guy) {
   let lift = 0,
     liftL = 0,
     liftR = 0;
-  const walking = g.mood === 'walk' || g.mood === 'run' || g.mood === 'carry';
+  const walking = g.mood === 'walk' || g.mood === 'run' || g.mood === 'carry' || g.mood === 'offer';
   if (walking) {
     // Stance travels backwards at root speed; only the returning foot lifts. One half-cycle is pi / stepsPerMetre m.
     const reach = Math.PI / (2 * WALK.stepsPerMetre);
@@ -948,6 +960,7 @@ function pose(g: Guy) {
       tilt = -0.04 * reach;
       break;
     }
+    case 'offer':
     case 'give':
       hr = [0.22, 0.65, 0.48];
       hl = [-0.2, 0.4, 0.18];
@@ -1521,7 +1534,7 @@ export function updateFolk(dt: number) {
       g.slept = true;
       continue;
     }
-    if (g.mood === 'walk' || g.mood === 'carry' || g.mood === 'run') {
+    if (g.mood === 'walk' || g.mood === 'carry' || g.mood === 'run' || g.mood === 'offer') {
       const moved = Math.min(0.5, Math.hypot(g.x - g.px, g.z - g.pz));
       g.t += moved * WALK.stepsPerMetre;
       g.stride += moved * WALK.stepsPerMetre;
