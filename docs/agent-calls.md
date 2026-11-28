@@ -286,6 +286,10 @@ The owner confirmed start-flow calls 7 to 9 on 28 November: [archived calls](dec
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 2026-11-28 | New: Home's forge casts one gifted rail per two logs for a rail-only bill. | [Conversions](plans/lane-b-conversions.md) | Builder | Lets a starter axe help after the log bill is full. | open |
+| 2026-11-28 | New: extend the log pour to rails given at Home and rails cast from gifted logs. Owner decision requested. | [Conversions](plans/lane-b-conversions.md) | Builder | A delivery would advance the rail bill with the guest still at Home. | open |
+| 2026-11-28 | Default: load donated rails first and return surplus gifts to the Village bin. | [Conversions](plans/lane-b-conversions.md) | Builder | Saves whole log pairs and keeps unused rails retrievable. | open |
+| 2026-11-28 | Default: reuse the gift prompt and show a puff at the forge on conversion. | [Conversions](plans/lane-b-conversions.md) | Builder | Shows the guest what their logs made. | open |
 | 2026-11-27 | New: Offer 4 pairs town golf with the dunk target on Home's fourth plot, independent of Offer 3 | [Lane C Part 4](plans/lane-c.md#part-4-golf-or-a-dunk-on-the-round) | Builder (design review) | Both choices use the ball every room already has | open |
 | 2026-11-27 | New: Tip a bucket over a volunteer standing on firm ground, with the same splash when playing alone | [Lane C Part 4](plans/lane-c.md#part-4-golf-or-a-dunk-on-the-round) | Builder (design review) | Two friends can swap roles without a seat claim or forced fall | open |
 | 2026-11-27 | Default: Stake at 56 timber and 24 stone, base 800, one rider/minute either way, ordinary ordering and hold | [Lane C Part 4](plans/lane-c.md#part-4-golf-or-a-dunk-on-the-round) | Builder (design review) | Adds two timber loads and one stone load at the existing price tier | open |
