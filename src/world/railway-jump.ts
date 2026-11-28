@@ -366,17 +366,17 @@ export const JUMPS: readonly Jump[] = [
     land: { x: -132.55, z: -1999.03, y: 3.9, yaw: -2.11 },
   },
   {
-    stage: 'lap-ride',
-    menu: false,
-    label: 'The lap',
-    line: 'A train from the Wall runs through High Gorge toward Ring Island',
-    land: gorgeLand(GORGE_HALT),
-  },
-  {
     stage: 'notch-open',
     menu: false,
     label: 'Notch open',
     line: 'Open the Notch barrier at Canopy Town (placeholder)',
+  },
+  {
+    stage: 'lap-ride',
+    menu: false,
+    label: 'The lap',
+    line: 'A train from the Wall runs through High Gorge toward Ring Island',
+    land: gorgeLand(rowSide('ring', RAIL_LEGS[0]!.sections.at(-1)!.toCm - 4000, 0, 0, 0)),
   },
   {
     stage: 'notch-reached',

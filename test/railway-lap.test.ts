@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { LAP_S0, LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, WALL_LEG } from '../src/sim/railway-lines.ts';
 import { lapRow, runLine, gorgeStop, lapRequests } from '../src/sim/railway-lap.ts';
-import { LEG_TUNE, RAIL_GATES, RAIL_LEGS, ROW_LINE } from '../src/sim/railway-route.ts';
+import { LEG_TUNE, RAIL_GATES, ROW_LINE } from '../src/sim/railway-route.ts';
+import { wallService } from '../dev/look/bots/railway-wall-service.ts';
 import {
   fleetOf,
   reqAdd,
@@ -56,18 +57,23 @@ const old = stops(cave, before),
   through = stops(LINE2, after);
 
 test('fast-forward from the lap to the next listed Wall stage keeps time moving forward', () => {
-  const next = SEED_STAGES[SEED_STAGES.indexOf('lap-ride') + 1]!;
-  assert.ok(buildSeedWorld(next).t >= buildSeedWorld('lap-ride').t, next);
+  const index = SEED_STAGES.indexOf('lap-ride');
+  const lapTick = buildSeedWorld('lap-ride').t;
+  assert.ok(buildSeedWorld(SEED_STAGES[index - 1]!).t <= lapTick);
+  assert.ok(buildSeedWorld(SEED_STAGES[index + 1]!).t >= lapTick);
 });
 
 test('the wall-closed playthrough can board its requested Gorge to Canopy service', () => {
-  const { w } = buildSeedWorld('wall-closed');
-  // The rowRide arguments used by finishRoute in dev/look/bots/railway-legs.ts.
-  const wall = RAIL_LEGS[WALL_LEG]!;
-  const departure = wall.railheadHalt + wall.sections.length - 1;
-  const destination = RAIL_HALTS.find((h) => h.line === wall.line && h.name === 'Canopy Town')!;
-  const service = stopsOf(w, wall.line);
-  assert.ok(service[departure] !== undefined && service[destination.stop] !== undefined);
+  const closed = buildSeedWorld('wall-closed');
+  const { w } = closed;
+  const { from, to } = wallService;
+  const service = stopsOf(w, to.line);
+  assert.equal(to.line, LINE2);
+  assert.equal(service[from], RAIL_LINES[LINE2]!.halts[gorgeStop]!.s);
+  assert.equal(service[to.stop], to.s);
+  assert.equal(to.name, 'Canopy Town');
+  const id = RAIL_HALTS.findIndex((h) => h.line === to.line && h.stop === from);
+  assert.equal(act(closed, 'a', 'rail.call', { id, dir: 1 }), 1);
 });
 
 test('the lap shows the crossing after a three-second arrival', () => {
@@ -75,12 +81,22 @@ test('the lap shows the crossing after a three-second arrival', () => {
   const gorge = through[gorgeStop]!;
   const crossing = RAIL_TRAINS.findIndex((_, k) => {
     const r = train(s.w, k);
-    return runningLine(s.w, k) === LINE2 && r.from > gorge && r.dest < gorge && trainAlong(r, LINE2, s.t) <= gorge;
+    const ahead = trainAlong(r, LINE2, s.t) - gorge;
+    return runningLine(s.w, k) === LINE2 && r.from > gorge && r.dest < gorge && ahead > 0 && ahead <= 10000;
   });
   assert.ok(crossing >= 0);
   advance(s, 30);
   const distance = Math.abs(trainAlong(train(s.w, crossing), LINE2, s.t) - gorge) / 100;
   assert.ok(distance <= 40, `engine is ${distance} m from the halt after three seconds`);
+  let stood = false;
+  for (let ticks = 0; ticks < 300; ticks++) {
+    const row = train(s.w, crossing);
+    stood ||= row.phase === TRAIN_PHASE.STAND && row.at === gorgeStop;
+    if (trainAlong(row, LINE2, s.t) < gorge) break;
+    advance(s, 1);
+  }
+  assert.ok(stood, 'the platform call gives the player a boarding stop');
+  assert.ok(trainAlong(train(s.w, crossing), LINE2, s.t) < gorge, 'the same train continues toward Ring Island');
 });
 
 test('the sixth lay extends the open prefix and transfers the fleet', () => {
@@ -209,28 +225,14 @@ function aboutToJoin() {
   return saved;
 }
 
-test('the lap seeds capture the sixth lay and a through train crossing High Gorge from the Wall', () => {
+test('the Wall seed captures the sixth lay before the through ride', () => {
   const joining = aboutToJoin();
   advance(joining, 2);
   const closed = buildSeedWorld('wall-closed');
   assert.equal(closed.t, joining.t);
   assert.equal(closed.w.hash(), joining.w.hash());
 
-  const ride = buildSeedWorld('lap-ride');
-  assert.ok(ride.t > closed.t);
-  const gorge = through[gorgeStop]!;
-  assert.ok(
-    RAIL_TRAINS.some((_, k) => {
-      if (runningLine(ride.w, k) !== LINE2) return false;
-      const row = train(ride.w, k);
-      return (
-        row.phase === TRAIN_PHASE.RUN &&
-        row.dest < gorge &&
-        trainAlong(row, LINE2, ride.t - 1) > gorge &&
-        trainAlong(row, LINE2, ride.t) <= gorge
-      );
-    }),
-  );
+  assert.ok(buildSeedWorld('lap-ride').t > closed.t);
 });
 
 function occupiedPoints(s: Seed) {

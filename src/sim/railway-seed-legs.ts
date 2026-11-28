@@ -20,7 +20,7 @@ import { railwayAtRing } from './railway-seed-ring.ts';
 import { account } from './railway-rows.ts';
 import { LOGS, roomOf } from './railway-queries.ts';
 import { RAILS } from './railway-line2-layout.ts';
-import { LINE2, RAIL_LINES } from './railway-lines.ts';
+import { LINE2, RAIL_HALTS, RAIL_LINES } from './railway-lines.ts';
 import { gorgeStop } from './railway-lap.ts';
 import { railTrainsOf } from './railway-queries-trains.ts';
 import { trainAlong } from './railway-train.ts';
@@ -233,10 +233,15 @@ function build(s: Seed, stage: LegStage): Seed {
       until(
         s,
         () =>
-          railTrainsOf(w, LINE2).some((r) => r.from > gorge && r.dest < gorge && trainAlong(r, LINE2, s.t) <= gorge),
+          railTrainsOf(w, LINE2).some(
+            (r) => r.from > gorge && r.dest < gorge && trainAlong(r, LINE2, s.t) <= gorge + 9500,
+          ),
         8000,
-        'a through train from the Wall crosses High Gorge',
+        'a through train from the Wall is within 95 m of High Gorge',
       );
+      // Call the train while it can brake so the arriving player has its ordinary boarding stop.
+      const id = RAIL_HALTS.findIndex((h) => h.line === LINE2 && h.stop === gorgeStop);
+      need(act(s, 'a', 'rail.call', { id, dir: -1 }) === 1, 'the Gorge calls the incoming Wall train');
       break;
     }
     case 'notch-open':

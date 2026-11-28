@@ -25,7 +25,7 @@ import { interactTarget } from '../../../src/player/hands.ts';
 import { pressJump, releaseJump } from '../../../src/entities/player/state.ts';
 import { RING_HALT, ringAt } from '../../../src/sim/railway-ring-layout.ts';
 import { RING_CROSSING } from '../../../src/entities/ring-island/state.ts';
-import { RAIL_HALTS } from '../../../src/sim/railway-lines.ts';
+import { RAIL_HALTS, WALL_LEG } from '../../../src/sim/railway-lines.ts';
 import { LINE_SLOTS } from '../../../src/sim/railway-trains.ts';
 import { ROW_PLATFORM, rowWorld } from '../../../src/entities/railway/row-path.ts';
 import bellLevel from '../../../content/built/levels/bell.json' with { type: 'json' };
@@ -44,6 +44,8 @@ import {
   type RouteLeg,
 } from '../../../src/sim/railway-route.ts';
 import { HALT, line2Rides } from './railway-ride.ts';
+import { lapSlots } from '../../../src/sim/railway-lap.ts';
+import { wallService } from './railway-wall-service.ts';
 import type { Fit } from './railway-fit.ts';
 
 export type LegRoute = { bot: Bot; checkpoint: (name: string) => Promise<void> };
@@ -201,7 +203,8 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
             tick: railAt(),
             line,
             want,
-            trains: LINE_SLOTS[line]!.map((slot) => trains(rw())[slot]!)
+            trains: lapSlots(line, legDone(rw(), WALL_LEG))
+              .map((slot) => trains(rw())[slot]!)
               .filter((t) => t.phase !== 2)
               .map((t) => [t.phase, t.at, t.to, t.track, t.depart, t.req]),
           })}`,
@@ -335,20 +338,27 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   /** Ride a row line's train from stop `from` to stop `to`: wait at the departure's lever for a train standing that
    * way (the lay's ask brings one; pull the lever when none comes), board it by a real jump, ask each stop it offers
    * aboard, and ride until it stands at `to`. The caller steps off. */
-  const rowRide = async (line: number, from: number, to: number, name: string, askEach = true) => {
+  const rowRide = async (
+    line: number,
+    from: number,
+    to: number,
+    name: string,
+    askEach = true,
+    lever = rowLever(line, from),
+  ) => {
     const dir = to > from ? 1 : -1;
     const destination = RAIL_HALTS.find((h) => h.line === line && h.stop === to)!;
+    const slots = lapSlots(line, legDone(rw(), WALL_LEG));
     const standing = () =>
-      LINE_SLOTS[line]!.find((slot) => {
+      slots.find((slot) => {
         const r = trains(rw())[slot]!;
         return r.phase === 0 && r.at === from && (r.track ? -1 : 1) === dir;
       }) ?? -1;
     /** A train of the line going our way that already carries the rider (stepped onto on the way to the lever). */
     const carrying = () => {
-      const t = view().trains.find((v) => LINE_SLOTS[line]!.includes(v.slot) && v.cars.some((car) => car.riding));
+      const t = view().trains.find((v) => slots.includes(v.slot) && v.cars.some((car) => car.riding));
       return t && (trains(rw())[t.slot]!.track ? -1 : 1) === dir ? t.slot : -1;
     };
-    const lever = rowLever(line, from);
     const watch = watchTrains(line, from);
     try {
       const walked = await bot.walk(lever.x, lever.z, 1.2);
@@ -451,7 +461,6 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
   const wallSlot = legOf('wall');
   const wall = RAIL_LEGS[wallSlot]!;
   const finishRoute = async () => {
-    const wallEnd = wall.railheadHalt + wall.sections.length - 1;
     check(near(gorge, 80), 'standing at High Gorge for the Wall line');
     if (/[?&]railStop=wall(?:%20|\+)home(?:&|$)/.test(globalThis.location?.search ?? '')) {
       await rideGorgeHome();
@@ -460,10 +469,11 @@ export async function legRoute({ bot, checkpoint }: LegRoute) {
     }
     const notchSlot = legOf('notch-tunnel');
     const notch = RAIL_LEGS[notchSlot]!;
-    const canopyHalt = RAIL_HALTS.find((h) => h.line === wall.line && h.name === 'Canopy Town')!;
-    await rowRide(wall.line, wallEnd, canopyHalt.stop, 'White Wall', false);
-    const transfer = rowWorld(wall.line, canopyHalt.s / 100, -ROW_PLATFORM, { x: 0, z: 0 });
-    await stepOff({ x: transfer.x * 100, z: transfer.z * 100 }, 'stepped off at the Wall line’s Canopy halt');
+    const { from, to } = wallService;
+    const outward = () => ringLevers().find((l) => l.halt === from && l.dir === 1 && l.stands);
+    await until(outward, 'the joined Gorge outward handle stands');
+    await rowRide(to.line, from, to.stop, 'White Wall', false, outward()!);
+    await stepOff(to.platforms[0], 'stepped off at the Wall line’s Canopy halt');
     await checkpoint('Canopy transfer');
     const openGate = async (leg: RouteLeg, prompt: string, beat: string) => {
       const gate = leg.sections[0]!.gate!;
