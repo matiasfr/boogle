@@ -50,6 +50,16 @@ Start ownership discovery with `npm run map -- --kind <kind>` (bare `--kind` lis
   from one checkout, give each a separate `--out` or distinct `--name`. See [checks and segments](test-details/bot-segments.md).
 - `look` has a hard wall: `--wall <seconds>` (default 1200, 20 minutes) limits the whole run once it holds the bot slot, warm-up, `--until` wait and capture, for one player or two. When it fires the verdict is `timeout` (never a pass) naming the phase and the pages that never met `--until`, the browsers close, it exits 4 and the queue slot is released. A long `--until` run needs a longer `--wall`. In a two-player look every page must meet `--until`, so every page's eval sets the flag (see `railway-boiler-haul.ts`). `dev/look/wall.ts`, `test/look-wall.test.ts`.
 
+### Jobs on the Mac (Music Man)
+
+- Use `~/Developer/boogle-agents`, a standalone clone detached at `origin/main`, and `~/Developer/boogle-agents-wt/<topic>` for the job. Never use the owner's `~/Developer/boogle` checkout.
+- In the delegate brief, set `topic=your-topic`, then run `git -C ~/Developer/boogle-agents fetch origin` and `git -C ~/Developer/boogle-agents worktree add -b "codex/$topic" "../boogle-agents-wt/$topic" origin/main`.
+- Run `cd "$HOME/Developer/boogle-agents-wt/$topic"`, then `. "$HOME/.nvm/nvm.sh" && nvm use` for Node 26. Run `npm ci` if either lockfile changed since install or either `node_modules` is missing. Reuse dependencies only in that same worktree while both lockfiles match the last install.
+- Work and commit there. Run `git push origin "codex/$topic"` for that branch only and report `git branch --show-current` and `git rev-parse HEAD`.
+- On HOTBOX, `git fetch origin codex/<topic>`, check `FETCH_HEAD` against the reported tip, and put that commit in a HOTBOX worktree for `npm run ship-queue -- <worktree> --wait` from the trusted checkout.
+- After the orchestrator confirms the merge, run `git -C ~/Developer/boogle-agents worktree remove "$HOME/Developer/boogle-agents-wt/$topic"`.
+- Measured on 28 November 2026 with Node 26.13.0 from `887306137` on Music Man: `npm ci` 2.80 s, `node dev/ship-check.ts` 12.14 s and `npm run build` 2.81 s. All passed.
+
 ### First look-development loop
 
 The [look-dev research](../research/lookdev-loop.md)'s first build keeps Current/Neutral, gain `0.12`,
