@@ -236,4 +236,3 @@ export async function createHomeStation(adapter: RailwayAdapter, owner: OwnedVie
   update();
   return { update, targets: till.targets };
 }
-

@@ -47,4 +47,3 @@ test('a bought plot is remembered by slot and shows its chosen building once', (
   assert.deepEqual(railwayDiff(now, early).built, ['Seed Shed']);
   assert.deepEqual(railwayDiff(now, now).built, []);
 });
-

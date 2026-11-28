@@ -18,6 +18,7 @@ The owner confirmed start-flow calls 7 to 9 on 28 November: [archived calls](dec
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 28 Nov | Mirror the works board in Home's south bay. Default to Room log without a personal change and cap each people row at six names. Use replicated progress and this browser's visit memory (Build 1, defaults 6–7 and new call 10). | [Friends drop in](brainstorms/friends-drop-in.md) | Builder | Returning guests can see what changed on the walk into Home. | open |
 | 28 Nov | High Gorge gets Offer 1 and a room pick between Echo Horn House and Canyon Hook-Perch (New, calls 7–8) | [High Gorge hangout](plans/lane-c-part6.md) | Builder | Give the next hub a local activity immediately after arrival. | open |
 | 28 Nov | Stake nearest the gangway, retire the sign and charge base 300; completed choices feed line 2's far queue (Default, calls 9–10) | [High Gorge hangout](plans/lane-c-part6.md) | Builder | Match the Ring price and preserve the two future plots. | open |
 | 28 Nov | Three echoes, a three-second harmony window, 1.5 s cooldown; a four-metre porch with three low rings and a splash raft (Default, calls 11–12) | [High Gorge hangout](plans/lane-c-part6.md) | Builder | Keep both toys optional and the rim stair meaningful. | open |
