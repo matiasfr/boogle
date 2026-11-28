@@ -2,6 +2,10 @@
 
 Proof debts, things jobs reported and did not fix, and older parked items. Split from the [orchestrator state](orchestrator-state.md) on 17 November 2026, word for word, so that file stays short. Read it before picking a small job; add a leftover here the day a job reports it, ranked, and delete it when it lands.
 
+## From 28 November
+
+- P3 · The riders shuffling on and off the coach (#2644, 28 November, view only): it owes one still of the shuffle on the joined line once the lap (`codex/greybox-lap-join`) is on main; its backlog row left with the ship.
+
 ## From 27 November
 
 - **P1, placeholder text that players read** (found by the 27 November tidy's docs audit): the station guides (#2601) show 31 lines reading "[placeholder — owner's line: …]" on the kiln hand's and the roundhouse hand's talk cards, all in `src/components/phase-guide/stages.ts`. Rule 6 of the [27 November flow decision](../decisions-core-loop.md#d-2026-11-27-course-change) says drafted words ship as words, never as a debug string. The fix is a story job (`npm run models`: Neon): draft each line in the speaker's character and mark it for his edit; nothing of The Boogler's.
