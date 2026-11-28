@@ -4,6 +4,7 @@ Proof debts, things jobs reported and did not fix, and older parked items. Split
 
 ## From 28 November
 
+- P3 · Tooling: `npm run review-stamp` marks any new test file `review`, so a view-only branch that adds a test for its own feature (critters at Ring Island, `test/ring-wildlife-sites.test.ts`, 28 November) needs an independent review while the same branch without the test would ship on a read. That pushes builders away from writing tests; the stamp could mark a new test file `read` when no source it imports is on a review path.
 - P3 · Look: the particle pool draws unlit colour, and the output pass's exposure gain then darkens it, so pale effects draw as dark blobs (found on living world step 3, 28 November: the track machine's old smoke and the kiln's ash drew dark on main too). Step 3 lights its stack puffs from the sun and sky at birth; the pool's other pale effects (dust rings, chips, the forge's pour burst) have not been checked the same way.
 - P3 · Tooling: `npm run rule-rebase` has regenerated colliding pins only on a detached copy; Part 7 landed through it with no collision (#2741). `codex/lane-b-halt-racks` (v91) is the first real branch whose pins will collide; if the tool refuses it, that is a tooling fix, not a hand rebase to repeat.
 - P3 · Tooling: a ship PR that conflicts with main only in an append-only log (`docs/agent-calls.md`, Part 7's #2738, 28 November) stops the ship until someone rebases by hand; the queue could resolve a both-sides-appended conflict in that file itself, or the log could take one file per entry.
