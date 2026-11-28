@@ -1381,7 +1381,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         'friend completes opening walk',
       );
     if (!second) {
-      // Approach inside both the resident's Talk radius and the unchanged server wake reach.
+      // Approach inside both the resident's hand-off radius and the server wake reach.
       await walk(machine.x - 3, machine.z + 2.8, 0.7);
       await until(() => interactTarget()?.id === 'railway-take-axe', 'camp resident offers Take axe');
       interact();

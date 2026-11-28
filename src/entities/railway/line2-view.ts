@@ -281,6 +281,10 @@ export async function createRailwayLine2(
     rackSign.board.rotation.y = Math.atan2(dx, dz);
   }
   rackSign.board.visible = false;
+  const rackSignAt = rackSign.board.position.clone();
+  const boilerSignAt = new THREE.Vector3(LINE2_BOILER.x / 100 + 2.4, 0, LINE2_BOILER.z / 100 - 2);
+  boilerSignAt.y = land.H(boilerSignAt.x, boilerSignAt.z);
+  const rackSignYaw = rackSign.board.rotation.y;
   const m4 = new THREE.Matrix4();
   const tmp = new THREE.Vector3();
   let drawnRack = -1;
@@ -1361,10 +1365,19 @@ export async function createRailwayLine2(
       seaGate.update(dt, stock.sea);
       glideDevice.update(dt);
       // The rack's board: the part that waits on the pedestal, while it waits.
+      const boilerState = boilerRow(w).state;
       const partWaits =
-        boilerRow(w).state === 'pedestal' ? 'train' : worksPreview() && worksRow(w).breaker === 1 ? 'breaker' : null;
+        boilerState !== 'none' && boilerState !== 'fitted'
+          ? 'train'
+          : worksPreview() && worksRow(w).breaker === 1
+            ? 'breaker'
+            : null;
       rackSign.board.visible = !!partWaits;
-      if (partWaits) rackSign.show(partWaits);
+      if (partWaits) {
+        rackSign.show(partWaits);
+        rackSign.board.position.copy(partWaits === 'train' ? boilerSignAt : rackSignAt);
+        rackSign.board.rotation.y = partWaits === 'train' ? Math.atan2(-2.4, 2) : rackSignYaw;
+      }
       farHead.update(dt, farHeadLaid(w));
       boiler.update(dt);
       pier.update(dt, jobs[5]!.job.completion === 1);
