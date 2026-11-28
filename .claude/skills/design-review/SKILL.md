@@ -31,7 +31,9 @@ you can't cite a source for as Default or New, never Decided. Skip a doc below o
    - **New:** a call that changes how the game plays, bends a DESIGN.md principle, or affects the roughly six-hour,
      one-to-three-player target. Give your recommendation; the build proceeds on it (owner, 9 November: defaults and
      recommendations without the owner's input are fine as long as they're logged). Only direction, unapproved scope,
-     or something irreversible or outward-facing waits for the owner.
+     or something irreversible or outward-facing waits for the owner. A call that widens or narrows a recorded rule
+     proceeds too: cite the entry it changes and mark it "widens", so it reaches his daily list
+     ([decision](../../../docs/decisions-process.md#d-2026-11-28-widenings-proceed-and-are-logged)).
 5. Look for what the plan misses as design: the moment the player first meets the thing, how they learn it without
    being told, the co-op version (helping, splitting up, a friend arriving late), the solo version, and what the
    playtest data (`node dev/playtest/cli.ts`) says about similar moments.

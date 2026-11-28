@@ -9,7 +9,8 @@ should change (more Codex, less Fable, a new model), the owner says so and the t
 different models at the same time"). The owner's words for each change are in
 [owner-calls](owner-calls.md#owners-standing-calls), "Models and effort"; this page holds only the rules in force.
 
-- **Usage limits.** An agent can't read the usage meters. At a Codex or Claude limit, pause and tell the owner; don't
+- **Usage limits.** An agent can't read the usage meters. At a Codex or Claude limit, pause and tell the owner (at a Codex limit he activates a banked reset,
+  [28 November](../decisions-process.md#d-2026-11-28-mac-builds-banked-resets)); don't
   move the work to another provider unasked. When the owner says a provider is running low, the rows that use it are
   edited, not worked around.
 - **Agent frontmatter.** The `planner` and `Explore` frontmatter must match `agents` in
