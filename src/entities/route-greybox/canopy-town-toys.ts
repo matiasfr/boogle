@@ -89,14 +89,17 @@ export function createCanopyToys(
   piece(chime, new THREE.CylinderGeometry(0.035, 0.035, 2.15, 8), fibre, 0, 1.86, 0);
   piece(chime, new THREE.SphereGeometry(0.17, 12, 8), brass, 0, 0.82, 0);
   const motes = new THREE.Group();
+  const leafLight = [0xffdb78, 0x8de4b1].map(
+    (color) => new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.8 }),
+  );
   for (let i = 0; i < 12; i++) {
     const a = (i * Math.PI) / 6;
-    const leaf = piece(motes, new THREE.OctahedronGeometry(0.19), i % 2 ? brass : teal, Math.cos(a), 0, Math.sin(a));
+    const leaf = piece(motes, new THREE.OctahedronGeometry(0.19), leafLight[i % 2], Math.cos(a), 0, Math.sin(a));
     leaf.scale.set(0.6, 1.6, 0.5);
   }
   chime.add(motes);
   owner.add(net, chime, rings);
-  owner.cleanup(() => materials.forEach((m) => m.dispose()));
+  owner.cleanup(() => [...materials, ...leafLight].forEach((m) => m.dispose()));
   const netPlan = createGhostOutlines(owner, 192);
   const chimePlan = createGhostOutlines(owner, 512);
   const outline = (plan: typeof netPlan, u: number, l: number, y: number, w: number, h: number, d: number) => {
