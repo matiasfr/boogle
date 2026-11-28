@@ -741,7 +741,7 @@ three bay trains). The independent review covers steps 1 to 5 as one batch.
 - [x] the reconnect proof at `canopy-mid` (as the net suite's `leg rejoin` case; see below)
 - [x] steps 5 and 6's stills on one sheet
 - [x] `npm run perf` at Canopy (counts)
-- [ ] one frame-time reading at Canopy on the Mac (not a gate; no Mac on HOTBOX)
+- [x] one [frame-time reading at Canopy on the Mac](../reports/mac-frame-readings.md) (reported, not a gate)
 
 **As built, 24 November (HOTBOX, on bce1a9efc).** Three tools changed so the proofs could run as worded. `npm run loop
 -- run` prints an `idle s` column: each player's mean seconds standing on a `wait` (a train, a lay, a friend; the
@@ -805,8 +805,7 @@ proof is the net suite's `leg rejoin` case (`dev/peer-test/ws-railway.ts` `railw
   Rock's upper level: the bay row onto the upper level from above; a bay train (red engine, yellow kit car) standing at
   the curved upper platform, caught by waiting until a bay train stands at stop 2; and frame 1 with the Canopy barrier,
   rack 1 and the lever from the platform. Step 6's seven are the committed ones.
-- **Unproven:** the frame-time reading at Canopy on the Mac; a carrier away past the grace through a restart. Not
-  tested on a device.
+- **Unproven:** a carrier away past the grace through a restart. The [Mac frame-time reading](../reports/mac-frame-readings.md) is recorded separately. Not tested on a phone.
 - **Known limit of the rejoin proof:** the tabs' mirrors of the leg row and the rack are compared only with each
   other's hash, never with the server (and with one tab, while the carrier is away, not at all). Closing it needs the
   leg row and the rack in `ws-page.ts`'s probes, or each tab's hash checked against the server's at the same step.

@@ -448,9 +448,7 @@ After steps 1 to 6 are on main. **Named proofs, run once on HOTBOX with the tool
       HOTBOX frame time with `-- --view port --hardware --seconds 10`, its load noted.
 - [ ] **The boot probe** on the built site of main after step 6 (rule 61).
 - [ ] **The service fuzz's long run** (step 2) pasted, if any rule changed after it.
-- [ ] **A device line:** one frame-time reading at Port Quay on the Mac, **reported, not a gate**. There is no Mac in
-      the loop while its schedules are paused: the checkpoint closes on HOTBOX's reading and the Mac reading is taken
-      when the owner next opens the Mac (as Checkpoint C).
+- [x] **A device line.** The [Mac frame-time reading at Port Quay](../reports/mac-frame-readings.md) is reported and does not gate the checkpoint.
 
 The independent review covers steps 1 to 3 as one batch, steps 4 and 5 as another.
 
