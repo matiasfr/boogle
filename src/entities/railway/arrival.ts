@@ -1,5 +1,6 @@
 // The existing Place opening and camera bounds, owned by the T1 scene rather than its mutable prototype run.
 import type * as THREE from 'three/webgpu';
+import { freeLanding } from '../../place/free-landing.ts';
 import { PLAYER_R } from '../../constants.ts';
 import { me, cam, camConstraints } from '../../player/player.ts';
 import { hideControls } from '../../player/controls.ts';
@@ -186,12 +187,6 @@ export async function createRailwayArrival(
   void roomSeed().then((seed) => {
     landing = jumpOf(seed?.stage ?? replacedStage)?.land ?? null;
   });
-  // The surface must be where the catalog says (a sphere swept down meets it within 0.5 m), else the usual spawn. A
-  // friend already standing there moves you to a spot on a 1.4 m ring around it, so nobody lands on someone's head.
-  const RING = [0, 1, 2, 3, 4, 5].map((k) => ({
-    x: 1.4 * Math.sin((k * Math.PI) / 3),
-    z: 1.4 * Math.cos((k * Math.PI) / 3),
-  }));
   // Thin shapes count too: ring pads such as the summit deck are tiled in pieces under 1.6 m across. A ray down the
   // spot's centre must meet the surface as well, so a ring spot past a deck's edge (where the sphere's side still
   // touches it) is refused; a ray that starts inside a shape (an overhang over the spot) meets it at once and fails.
@@ -202,12 +197,11 @@ export async function createRailwayArrival(
       const p = r.entered ? r.avatar?.position : undefined;
       return !!p && Math.hypot(p.x - x, p.z - z) < 1.2 && Math.abs(p.y - y) < 3;
     });
+  const landingSpot = (to: RecoveryPoint) => freeLanding(to, (x, z) => !taken(x, to.y, z) && surfaceAt(x, to.y, z));
   const land = (to: JumpLand) => {
     const body = me.body;
     if (!body) return;
-    const spot = [{ x: 0, z: 0 }, ...RING]
-      .map((d) => ({ x: to.x + d.x, z: to.z + d.z }))
-      .find((p) => !taken(p.x, to.y, p.z) && surfaceAt(p.x, to.y, p.z));
+    const spot = landingSpot(to);
     if (!spot) {
       console.warn(`[jump-in] no free surface at the landing (${to.x}, ${to.y}, ${to.z}); keeping the spawn`);
       return;
@@ -254,10 +248,11 @@ export async function createRailwayArrival(
     };
     const home = ring.ringUnstuck(island, body.position.x, body.position.z);
     if (home) {
-      teleport(body, home.x, home.y + PLAYER_R + 0.4, home.z);
+      const spot = landingSpot(home) ?? home;
+      teleport(body, spot.x, home.y + PLAYER_R + 0.4, spot.z);
       body.velocity.set(0, 0, 0);
       if (home.yaw !== undefined) cam.yaw = me.yaw = home.yaw;
-      remember(home.x, home.y, home.z);
+      remember(spot.x, home.y, spot.z);
       return;
     }
     for (let radius = 2; radius <= 40; radius += 2) {

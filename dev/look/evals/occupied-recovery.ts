@@ -1,5 +1,5 @@
+// npm run look -- --players 2 --warp-speed 2 --rail-seed crossing-done --eval dev/look/evals/occupied-recovery.ts
 // Two peers choose Get unstuck beyond the Ring Island gap. Stage only the approach.
-// Run with look --players 2 --warp-speed 2 --rail-seed crossing-done --eval dev/look/evals/occupied-recovery.ts
 const { me } = await import('/src/player/player.ts' as string);
 const { teleport } = await import('/src/physics/engine.ts' as string);
 const { remotes } = await import('/src/netplay/net.ts' as string);
@@ -23,6 +23,9 @@ teleport(me.body, beyond.x / 100, 10, beyond.z / 100);
 getRailwayUnstuck();
 const landed = me.body.position;
 console.log('COOP recovery placement', JSON.stringify({ second, x: landed.x, y: landed.y, z: landed.z }));
+if (Math.hypot(landed.x - pier.x, landed.z - pier.z) > 1.41 || Math.abs(landed.y - pier.y) > 1) {
+  throw new Error('Get unstuck missed the Pier recovery point');
+}
 if (
   second &&
   [...remotes.values()].some(
