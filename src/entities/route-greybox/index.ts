@@ -9,7 +9,6 @@ import { productionRailway } from '../../proto/flags.ts';
 import { background } from '../../async.ts';
 import { defineKind, despawn, spawn, type GameEntity } from '../../entity/entity.ts';
 import { camera, rendererReady } from '../../render/scene.ts';
-import { physicsReady } from '../../physics/engine.ts';
 import { coverLifted } from '../../boot/cover-hold.ts';
 import { resident } from '../../render/lod-level.ts';
 import { me } from '../../player/player.ts';
@@ -161,7 +160,7 @@ if (productionRailway && new URLSearchParams(location.search).get('blockout') !=
     // Start the saved station's normal mount behind the cover, before the first frame at Home.
     if (incoming)
       background(
-        Promise.all([physicsReady, rendererReady]).then(() => {
+        rendererReady.then(() => {
           if (!gone) update();
         }),
         'return scenery',

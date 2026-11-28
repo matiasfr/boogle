@@ -889,7 +889,6 @@ test('two failed extras loads keep the base resident, back off and release an in
       routeAreas: areas,
       returnArea: { platform: { x: 0, z: 0 } },
       coverLifted: () => lifted,
-      physicsReady: Promise.resolve(),
       rendererReady: Promise.resolve(),
       performance: { now: () => now },
       precompile() {},
