@@ -7,14 +7,31 @@ import { terrainKitGeometry } from '../terrain-kit/geometry.ts';
 import { gorgeAt } from './massing.ts';
 import type { Placement } from '../../prefab/types.ts';
 
-/** A timber facing along the deck edge under the walking surface. */
+/** Rock lining around the lower cut and a timber facing under the upper deck. */
 export async function bellCut(owner: OwnedView, placements: readonly Placement[]) {
   // Recessed ends of the cut face inward across the lower deck. Both lie outside the working floor.
-  await rockShoulders(owner, [
+  const rock = await rockShoulders(owner, [
     [-64.5, -876.8, 0, 2.65, 4.64],
     [-68.5, -825.7, Math.PI - 0.067, 2.65, 4.64],
   ]);
-  if (!owner.alive) return;
+  if (!owner.alive || !rock) return;
+  // The west return runs from (-72, -877) to (-76, -826). Keep the relief shallow beside the stair.
+  const length = Math.hypot(4, 51);
+  const widths = [11, 9, 12, 10, length - 42];
+  const wall = new THREE.InstancedMesh(rock.pieces.get('face_10')!, rock.material, widths.length);
+  wall.name = 'bell:west-cut-face';
+  const pose = new THREE.Object3D();
+  pose.rotation.y = Math.atan2(51, 4);
+  let along = 0;
+  for (const [i, width] of widths.entries()) {
+    const t = (along + width / 2) / length;
+    pose.position.set(-72 - 4 * t + 0.18, -0.15, -877 + 51 * t);
+    pose.scale.set(width / 10, 1, 0.08);
+    pose.updateMatrix();
+    wall.setMatrixAt(i, pose.matrix);
+    along += width;
+  }
+  owner.add(wall);
   owner.root.name = 'bell:cut-dressing';
   const deck = placements.find((p) => p.id === 'bell.upper-deck')!;
   const [w, h, d] = deck.scale!;
@@ -54,6 +71,7 @@ async function rockShoulders(
     faces.setMatrixAt(i, transform.matrix);
   }
   owner.add(faces);
+  return { pieces, material };
 }
 
 export async function inclineShoulders(owner: OwnedView) {
