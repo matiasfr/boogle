@@ -117,7 +117,7 @@ The plan requires repeating the long service fuzz after a rule change. Comparing
 seed-helper changes. The service rules and fuzz were unchanged, so the existing 20,000-tick results in the plan apply.
 See `.look/checkpoint-d/service-rule-diff.log`.
 
-The Mac frame-time reading remains pending. Not tested on a device.
+The [Mac frame-time reading](mac-frame-readings.md) is recorded separately. Not tested on a phone.
 
 ## Branch checks
 

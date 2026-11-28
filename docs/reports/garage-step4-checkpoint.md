@@ -48,7 +48,7 @@ device.** Raw logs and clips are under `.look/step4-checkpoint/` (local).
 | 3 | Network suite | `npm run test:net` | **Pass**, 292/292 checks, namespace v67 |
 | 4 | Perf at the Roundhouse | `npm run perf -- --view roundhouse` and `-- --view roundhouse --hardware` | Reported (not a gate) |
 | 5 | Loop run, 1 to 3 players | `npm run loop -- run` | **Pass**, exit 0 |
-| 6 | Frame time on the Mac at the Roundhouse | — | **Not measured** (no Mac in the loop) |
+| 6 | Frame time on the Mac at the Roundhouse | [Mac hardware run](mac-frame-readings.md) | Reported (not a gate) |
 
 ## 1. Two peers at the post (`--real`)
 
@@ -123,7 +123,7 @@ plays no fit.
 
 ## 6. Frame time on the Mac
 
-Not measured: no Mac in the loop. No HOTBOX figure stands in for it.
+- [x] [Mac frame-time reading](mac-frame-readings.md) at `trade-fitted` (reported, not a gate).
 
 ## The early Install (garage step 4's finding): did not reproduce at real speed
 
@@ -161,4 +161,4 @@ tick. Not fixed here; the fix is a separate reviewed job.
 - Player 2's table copy and player 2's view of the held train are read from state, not seen in a still.
 - The same Strong train from its departure to a leg 3 railhead: the railhead is a separate seed (`trade-held`).
 - The server's refusal of an install during a swap: the UI never sends one.
-- The Mac frame time; any real device.
+- Phone frame time.

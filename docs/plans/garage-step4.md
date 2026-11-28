@@ -404,7 +404,7 @@ The two-peer look passed at real speed: the bring, both screens on the bay line,
 table's busy" on the chips), Strong fitted, and a 4-car Strong train left the West landing at its next stand, not
 mid-run, on both pages. The railhead part is a separate `trade-held` look on two peers (a held Strong train, 5 crates
 on its flatbed). `test:net` passed 292/292 and `loop -- run` passed. Perf at the Roundhouse is reported (568 draw calls,
-GPU 4.26 ms on HOTBOX). The Mac reading was not measured. **The trade table fails its own test:** fitted by
+GPU 4.26 ms on HOTBOX). The [Mac reading](../reports/mac-frame-readings.md) is recorded separately. **The trade table fails its own test:** fitted by
 accepted ops on `trade-ready` (`bay-mid` cannot pay for a fit), Strong averages 2726.0 ticks solo, 15.5 s off
 Checkpoint G's `bay-mid` row, because the stage moved. Strong saves 19.7 s solo over Quick, so not under 15 s. The
 early Install did not reproduce at real speed. Its cause is the screen's hold on `tickNow` against the server's tick

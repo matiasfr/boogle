@@ -123,6 +123,10 @@ The census tests each instance's bounding sphere against the camera. Among meshe
 the main camera can still contribute a visible shadow, so the shadow ablation measures a ceiling only.
 
 
+## Mac follow-up
+
+- [x] [Port Quay frame-time reading at the same pose on the Mac](mac-frame-readings.md). The report records callback cadence, the CPU/GPU split and the culling verdict.
+
 ## Candidate work and measured ceilings
 
 The second exclusive diagnostic passed at 2.55 → 3.03 busy logical CPUs. It used two eight-second controls around
@@ -144,5 +148,5 @@ frames with a real 60 Hz cadence, bisect off-camera batches first, with the trai
 callback median, p95, max and compositor presentation, then price any proposed subset before briefing it.
 
 Raw verdicts, timing JSON, group and parent detail, CPU samples and the Chromium trace are in `.look/port-profile/`
-in the measurement worktree. Cross-platform timing, visible-shadow effects and physical display timestamps remain
-unverified. not tested on a device
+in the measurement worktree. Matched culling savings on the Mac, visible-shadow effects and physical display timestamps remain
+unverified. not tested on a phone

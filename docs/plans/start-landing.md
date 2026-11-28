@@ -53,6 +53,8 @@ A real-time bot in a normal first-fall room recorded its first accepted deposit 
 
 The final [desktop fall](start-landing/camp-desktop.png) and [390 × 844 fall](start-landing/camp-phone.png) show the layer, yellow resident and Station 1 bill together. On the phone they span the width of the screen: the bill sits to the right of centre and part of the engine is cropped on the left. Turning the bill on the near end of the frame made its face visible beside the machine. In a shared room, the [guest](start-landing/guest.png) sees the shared axe flourish while the [host chops](start-landing/host.png). Both reported one peer. This reload placed the guest at the Camp fallback.
 
+- [x] [Frame-time reading on the Mac](../reports/mac-frame-readings.md) from the first dry standing view at Camp (reported, not a gate).
+
 ## Open questions
 
 1. Move the shore landing to Camp until Home connects, then to the hall? Recommended **yes**, answered **yes** on 28 November. All five answers in the brief stand. No outstanding direction question.
