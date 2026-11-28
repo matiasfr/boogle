@@ -52,7 +52,7 @@ export function createHangoutBuilding(owner: OwnedView, ground: IslandGround, to
     r.setEnabled(false);
     records.push(r);
     if (hides) cutaway.add(records.length - 1);
-    ghost.box(p.x, p.y, p.z, width, height, length, yaw);
+    ghost.box(p.x, p.y, p.z, width, height, length, yaw, pitch);
   }
   box('floor', 0, 0, -0.7, 5.4, 4.4, 1.4, timber);
   box('porch', 0, 3.1, -0.15, 5.4, 1.8, 0.3, timber);

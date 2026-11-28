@@ -4,7 +4,7 @@ import type { OwnedView } from '../../render/owned-view.ts';
 import { bell } from '../../render/machine-sfx.ts';
 import { instantiate } from '../../prefab/instantiate.ts';
 import { me } from '../../player/state.ts';
-import type { Interactable } from '../../player/hands.ts';
+import { interactTarget, type Interactable } from '../../player/hands.ts';
 import { ringPlotTargets as targets } from './state.ts';
 import { Plot, Till } from '../../sim/railway-components.ts';
 import { plotsStaked, plotPrice } from '../../sim/railway-queries-trade.ts';
@@ -63,7 +63,7 @@ export function createRingPlot(owner: OwnedView, ground: IslandGround) {
       { owner, texts: { offer: [name] }, paintLabel: paintBoard, handlers: { 'town.plot-buy': () => [action] } },
     );
     record.setEnabled(false);
-    return { action, record, kind, name };
+    return { action, begin: action.run, record, kind, name };
   });
   const scopeAt = hangoutPoint(0, 0, 6);
   const eye = scopeAt.clone().add(new THREE.Vector3(0, 2.57, 0));
@@ -179,16 +179,14 @@ export function createRingPlot(owner: OwnedView, ground: IslandGround) {
         price = plotPrice(w, 1, 0, read.trade().pricePct ?? 50);
       const label = price + '/' + money;
       const body = me.body;
-      let nearest = boards[0]!;
       for (const b of boards) {
         b.record.setEnabled(offered);
         if (!offered) continue;
         if (label !== lastLabel)
           b.record.relabel('label', [b.name, '+1 rider / minute', 'Price ' + price, 'Box ' + money]);
         b.action.blocked = money < price ? 'Need ' + (price - money) + ' more Boogles' : undefined;
+        b.action.run = money < price ? undefined : b.begin;
         b.action.verb = held === b.kind ? 'Hold ' + Math.floor(100 * progress) + '%' : 'Hold to build';
-        if (body && b.action.at.distanceToSquared(body.position) < nearest.action.at.distanceToSquared(body.position))
-          nearest = b;
         if (near(b.action.at, 3.2) && near(boardAt, 3.2)) targets.push(...b.record.targets());
       }
       lastLabel = offered ? label : '';
@@ -201,7 +199,10 @@ export function createRingPlot(owner: OwnedView, ground: IslandGround) {
         }
       }
       const fraction = row.at >= 0 ? (tick - row.at) / TRADE.buildTicks : -1;
-      const preview = offered ? held || nearest.kind : 0;
+      // From the approach, show the default blueprint. At the boards, follow the Interact prompt.
+      const focused = targets.length ? interactTarget() : null;
+      const choice = targets.length ? boards.find((b) => b.action.id === focused?.id)?.kind : PLOT_KIND.lookout;
+      const preview = offered ? held || choice : 0;
       tower.preview(preview === PLOT_KIND.lookout);
       house.preview(preview === PLOT_KIND.bell);
       const towerOn = tower.construction(row.kind === PLOT_KIND.lookout ? fraction : -1);
