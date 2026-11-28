@@ -31,16 +31,18 @@ export type TradeYard = {
  * one integer). */
 export type TradeRoute = { town: number; line: number; a: number; b: number | 'end' };
 /** A plot's staking thresholds: the town's delivered timber and stone. */
-export const PLOT_KIND = { plain: 0, seeds: 1, horns: 2 } as const;
+export const PLOT_KIND = { plain: 0, seeds: 1, horns: 2, disc: 3 } as const;
 export type TradePlot = {
   wood: number;
   stone: number;
   base: number;
   riders: number;
   gives?: 'loader';
+  spare?: boolean;
   choices?: readonly number[];
 };
-export function validPlotKind(plot: TradePlot, kind: unknown): kind is number {
+export function validPlotKind(plot: TradePlot, kind: unknown, firstKind: number): kind is number {
+  if (plot.spare && (!firstKind || firstKind === kind)) return false;
   return plot.choices ? typeof kind === 'number' && plot.choices.includes(kind) : kind === PLOT_KIND.plain;
 }
 export const TRADE = {
@@ -56,7 +58,14 @@ export const TRADE = {
     [
       { wood: 8, stone: 0, base: 300, riders: 1, choices: [PLOT_KIND.seeds, PLOT_KIND.horns] },
       { wood: 24, stone: 0, base: 800, riders: 0, gives: 'loader' },
-      { wood: 40, stone: 16, base: 800, riders: 1 },
+      {
+        wood: 40,
+        stone: 16,
+        base: 800,
+        riders: 1,
+        spare: true,
+        choices: [PLOT_KIND.seeds, PLOT_KIND.horns, PLOT_KIND.disc],
+      },
     ],
   ] as const satisfies readonly (readonly TradePlot[])[],
   stakedAtOnce: 2,

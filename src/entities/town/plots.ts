@@ -10,7 +10,7 @@ import { TOWN_CENTRE, TOWN_PLOTS, TOWN_SLOTS, townBuilding, townLocal } from '..
 import { HALL } from '../../place/home-station.ts';
 import { toWorld } from '../../place/layout.ts';
 import { H } from '../../place/terrain.ts';
-import { TRADE } from '../../sim/railway-trade-layout.ts';
+import { TRADE, validPlotKind } from '../../sim/railway-trade-layout.ts';
 import type { TownLook } from './town-read.ts';
 import { addSite, startSite, snapSite, type Site } from '../../place/sites.ts';
 import { createGhostOutlines } from '../../render/ghost-outline.ts';
@@ -21,7 +21,7 @@ import { loaderBuilt, plotPrice } from '../../sim/railway-queries-trade.ts';
 import { JIB_SOLIDS, LOADER_PAINT, YARD, footingHulls, shedEnvelope, type YardBox } from '../../place/yard-shape.ts';
 import { knock } from '../../render/fanfare.ts';
 import { splash } from '../../render/splash.ts';
-import { TOWN_CHOICE, TOWN_BOARD, townPlotBoard } from '../../place/town-plan.ts';
+import { townChoice, TOWN_BOARD, townPlotBoard } from '../../place/town-plan.ts';
 import { me } from '../../player/state.ts';
 import { interactTarget, type Interactable } from '../../player/hands.ts';
 
@@ -280,10 +280,11 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
     const previous = prices[k - 1];
     const woodNeed = need.wood - (previous?.wood ?? 0),
       stoneNeed = need.stone - (previous?.stone ?? 0);
+    const layout = townChoice(k);
     const choices =
       'choices' in need
         ? need.choices.map((kind, i) => {
-            const point = TOWN_CHOICE.boards[i]!;
+            const point = layout.boards[k === 2 ? Number(kind === 3) : i]!;
             const position = new Vector3(toWorld(point.x), at.y - 0.85, point.z);
             const action: Interactable = { id: `town.plot.${k}.${kind}`, verb: 'Hold to build', at: position };
             const begin = () => start(kind);
@@ -299,19 +300,21 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
               },
               {
                 owner,
-                texts: { plot: ['Plot 1'] },
+                texts: { plot: [`Plot ${k + 1}`] },
                 paintLabel: paintBoard,
                 handlers: { 'town.plot-buy': () => [action] },
               },
             );
             const toy = createGhostOutlines(owner, 128, 0.32, 0.14, 0.09);
             if (kind === 1) {
-              const x = toWorld(TOWN_CHOICE.stall.x),
-                z = TOWN_CHOICE.stall.z;
+              const x = toWorld(layout.stall.x),
+                z = layout.stall.z;
               toy.box(x, params.y + 0.5, z, 2.8, 1, 0.9, building.yaw);
               toy.box(x, params.y + 2.35, z, 3.2, 0.1, 1.4, building.yaw);
+            } else if (kind === 3) {
+              toy.box(toWorld(layout.stall.x), params.y + 0.8, layout.stall.z, 1.2, 0.16, 0.65, building.yaw);
             } else
-              for (const pad of TOWN_CHOICE.pads) {
+              for (const pad of layout.pads) {
                 toy.box(toWorld(pad.x), params.y + 0.06, pad.z, 1.1, 0.12, 1.1, building.yaw);
                 toy.box(toWorld(pad.x) + 1, params.y + 2.2, pad.z, 0.55, 0.5, 0.5, building.yaw);
               }
@@ -385,6 +388,7 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
   return {
     release,
     /** An opened plot's seconds since its accepted buy, as of the last `update`; undefined while it stands unbought. */
+    done: (k: number) => plots[k]?.site.state === 'done',
     since: (k: number) => plots[k]?.since,
     targets: () => targets,
     inspect: () =>
@@ -419,6 +423,7 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
         pricePct = facade?.trade().pricePct ?? 100;
       }
 
+      const firstKind = w?.get(Plot, w.lookup(Plot, 0) ?? -1)?.kind ?? 0;
       const staked = read?.staked;
       let next = -1;
       for (let k = 0; k < prices.length; k++)
@@ -481,7 +486,9 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
             c.action.blocked = p.target.blocked;
             c.action.run = p.target.run ? c.begin : undefined;
             c.action.verb = holding === p.k && heldKind === c.kind ? p.target.verb : 'Hold to build';
-            if (visible !== p.visible) c.topper.setEnabled(visible);
+            const allowed = validPlotKind(prices[p.k]!, c.kind, firstKind);
+            if (c.topper.root.visible !== (visible && allowed)) c.topper.setEnabled(visible && allowed);
+            if (!allowed) continue;
             if (offered && near(p.at) && near(c.action.at) && (holding !== p.k || chosen === c))
               targets.push(...c.topper.targets());
             if (p.visible && bought >= 0 && p.bought < 0) splash(c.action.at.x, c.action.at.z, 0.2, c.action.at.y - 1);
@@ -493,7 +500,7 @@ export function createTownPlots(owner: OwnedView, opened: ReadonlyMap<number, Si
                 price !== p.price ||
                 (!offered && Math.min(p.woodNeed, read?.wood ?? 0) !== p.wood))
             ) {
-              const title = c.kind === 1 ? 'Seed Shed' : 'Horn Pavilion'; // Placeholder names and board copy.
+              const title = c.kind === 1 ? 'Seed Shed' : c.kind === 2 ? 'Horn Pavilion' : 'Frisbee Boathouse'; // Placeholder names and board copy.
               c.topper.relabel(
                 'label',
                 offered

@@ -87,7 +87,8 @@ export function checkTrade(w: World, tick = RAILWAY_MAX_INT) {
         (p.at === -1 && p.paid !== 0)
       )
         bad('plot bounds');
-      if (p.at < 0 ? p.kind !== 0 : !validPlotKind(threshold, p.kind)) bad('plot kind');
+      if (p.at < 0 ? p.kind !== 0 : !validPlotKind(threshold, p.kind, plot(w, plotSlot(town, 0)).kind))
+        bad('plot kind');
       if (p.at >= 0 && (ts[town]!.wood < threshold.wood || ts[town]!.stone < threshold.stone)) bad('plot thresholds');
       paid += p.paid;
     }),

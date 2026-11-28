@@ -442,6 +442,11 @@ test('plotsStaked: the lowest unbought plots whose timber and stone are in, two 
     plotsStakedOf(0, 40, 16, (k) => k < 2),
     [2],
   );
+  assert.deepEqual(
+    plotsStakedOf(0, 40, 16, (k) => k === 1),
+    [0],
+    'yard first waits for the first hangout pick',
+  );
   assert.deepEqual(plotsStakedOf(1, 99, 99), [], 'no other town has priced plots');
   // On the world: freight-running has the first timber home, so plot 1 is staked.
   assert.deepEqual(plotsStaked(FREIGHT.w, 0), [0]);

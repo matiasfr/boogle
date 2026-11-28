@@ -132,8 +132,11 @@ export default {
       const interacted = H.interactDown();
       H.interactUp(); H.useUp(); H.updateHands();
       return { charging, interacted, held: I.heldId(), moving: Math.hypot(ball.body.velocity.x, ball.body.velocity.y, ball.body.velocity.z) > 0 };`);
-    t.check('Interact cannot take anything during a wind-up and release launches the ball',
-      toss.charging && !toss.interacted && !toss.held && toss.moving, JSON.stringify(toss));
+    t.check(
+      'Interact cannot take anything during a wind-up and release launches the ball',
+      toss.charging && !toss.interacted && !toss.held && toss.moving,
+      JSON.stringify(toss),
+    );
 
     // A bag of seeds where nothing can grow: the click says why. The search starts at the beach cell west of the court
     // where the tossed frisbee used to land. Anything in hand turns you to the camera every frame

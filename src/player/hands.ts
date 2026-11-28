@@ -47,6 +47,7 @@ import * as THREE from 'three';
 import { me, cam } from './state.ts';
 import { startCharge, cancelCharge, chargeAmount, launch, releasePoint } from './throw.ts';
 import { ball, ballInReach, grabBall, throwBall } from '../entities/ball/state.ts';
+import { disc, releaseDisc } from '../entities/frisbee/state.ts';
 import { remoteHoldsBall } from '../entities/ball/state.ts';
 import { heldId, take, emptyHand, drop, onHandChange, onLetGo } from './inventory.ts';
 import { sprout } from '../adapters/mushrooms.ts';
@@ -73,7 +74,7 @@ export type Interactable = InteractTarget & {
 };
 
 const USE_VERB: Record<string, string> = { seeds: 'Sprout' };
-export const canThrow = () => heldId() === 'ball';
+export const canThrow = () => heldId() === 'ball' || (heldId() === 'frisbee' && disc.enabled && disc.mine && disc.held);
 const ballAt = new THREE.Vector3();
 
 // The ball is in your hand while ball ownership says so: thrown, stolen, respawned or dropped on a hidden tab, it leaves
@@ -92,6 +93,7 @@ onLetGo((id) => {
   const p = releasePoint(id);
   const v = new THREE.Vector3(-Math.sin(cam.yaw) * DROP.forward, DROP.up, -Math.cos(cam.yaw) * DROP.forward);
   if (id === 'ball') throwBall(p, v);
+  if (id === 'frisbee') releaseDisc(p, v);
 });
 
 // Grab first: every change of hand syncs the ball to ownership.
@@ -173,9 +175,10 @@ function windUp() {
 
 function throwHeld(c: number) {
   const id = heldId();
-  if (id !== 'ball' || !me.body) return;
+  if (!canThrow() || !me.body) return;
   const { p, v } = launch(id, c);
-  throwBall(p, v);
+  if (id === 'ball') throwBall(p, v);
+  else releaseDisc(p, v);
 }
 
 export const emptyHands: { down: () => boolean; up: () => void } = { down: () => false, up: () => {} };
@@ -231,4 +234,6 @@ export const mainVerb = () => (me.charging ? null : interactTarget())?.verb ?? u
 // Every frame, before what you hold is drawn.
 export function updateHands() {
   syncBall();
+  if (disc.enabled && !(disc.mine && disc.held)) drop('frisbee');
+  if (disc.mine && disc.held && heldId() !== 'frisbee') releaseDisc(disc.p, new THREE.Vector3(0, -1, 0));
 }

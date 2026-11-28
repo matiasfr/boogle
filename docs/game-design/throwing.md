@@ -1,6 +1,6 @@
 # 6.7 Throwing and flight
 
-> **28 November 2026.** The beach ball uses its Owner physics for live throws. Classic item flight and shared gift pickup below are historical.
+> **28 November 2026.** The beach ball uses its Owner physics for live throws. The Boathouse supplies one shared frisbee. Grab or catch it with Interact, hold Use to aim and release to throw. The holder publishes its pose and velocity. Another visitor can catch it in flight. A remaining visitor takes over its glide when the owner leaves. Classic item flight and shared gift pickup below are historical.
 
 - **What and how it plays.** Hold to charge (a meter and a dotted aim preview show), release to throw. One module
   (`throw.ts`) aims, charges, previews and launches everything you hold, the ball included; each kind has a profile of

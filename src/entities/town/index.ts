@@ -15,7 +15,7 @@ import { useHomeToyGround } from './court.ts';
 
 // Late, after the debug camera (1000): the rooms draw what's near the camera that's about to render.
 defineKind('town', { update: 11, lateUpdate: 1001 });
-let hangout: ReturnType<typeof spawnHangout> | null = null;
+let hangouts: ReturnType<typeof spawnHangout>[] = [];
 let active: TownView | null = null;
 onStart(() =>
   wrapAction('interact', {
@@ -25,14 +25,14 @@ onStart(() =>
     },
   }),
 );
-registerInteractable(() => active?.targets(hangout?.targets()) ?? NO_TARGETS);
+registerInteractable(() => active?.targets(hangouts.flatMap((h) => h.targets())) ?? NO_TARGETS);
 
 if (productionRailway && railwayMirror) {
   useHomeToyGround();
   const loaded = createTownView(createTownReader(railwayWorldRead).look).then((view) => {
     active = view;
     setTownView(view);
-    hangout = spawnHangout(view.firstHouseDone);
+    hangouts = [0, 2].map((k) => spawnHangout(k, view.plotDone));
     return spawn({
       kind: 'town',
       mesh: view.root,
@@ -44,8 +44,8 @@ if (productionRailway && railwayMirror) {
       },
       describe: view.inspect,
       dispose() {
-        if (hangout) despawn(hangout);
-        hangout = null;
+        for (const h of hangouts) despawn(h);
+        hangouts = [];
         active = null;
         setTownView(null);
         view.dispose();

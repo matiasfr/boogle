@@ -32,6 +32,8 @@ registerBuilder('town.choice-board', (params) => {
     piece(root, new THREE.CylinderGeometry(0.12, 0.15, 0.34, 10), 0xffedcd, 0, 2.61, 0);
     piece(root, new THREE.SphereGeometry(0.36, 16, 8, 0, 2 * Math.PI, 0, Math.PI / 2), 0xdb4537, 0, 2.74, 0);
     for (const x of [-0.14, 0.14]) piece(root, new THREE.SphereGeometry(0.07, 8, 6), 0xffedcd, x, 2.93, 0.22);
+  } else if (params.kind === 3) {
+    piece(root, new THREE.CylinderGeometry(0.37, 0.34, 0.07, 24), 0xff4fa3, 0, 2.76, 0).rotation.x = 0.9;
   } else brassHorn(root, 2.79, 0);
   return root;
 });

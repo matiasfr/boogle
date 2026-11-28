@@ -49,11 +49,22 @@ import {
   type Site,
 } from '../../place/sites.ts';
 
-const shellLevels = { house: houseShell, shop: shopShell, museum: museumShell, gate: gateShell, plot3: plot3Shell };
+const shellLevels = {
+  house: houseShell,
+  shop: shopShell,
+  museum: museumShell,
+  gate: gateShell,
+  plot3: plot3Shell,
+  plot1: plot3Shell,
+};
 /** s: a bought plot's build, buy to last piece, on the shared clock. */
 const PLOT_BUILD_S = TRADE.buildTicks / 10;
 /** A bought plot's room builds at a plot's pace (./plots.ts): sites.ts `doneAt` is 9.1 paces plus 0.3 s. */
-const PACE: Partial<Record<RoomId, number>> = { museum: 1.6, plot3: (PLOT_BUILD_S - 0.3) / 9.1 };
+const PACE: Partial<Record<RoomId, number>> = {
+  museum: 1.6,
+  plot1: (PLOT_BUILD_S - 0.3) / 9.1,
+  plot3: (PLOT_BUILD_S - 0.3) / 9.1,
+};
 
 export const ROOM_CAM = {
   enter: 0.75, // m outside the door where the show starts, and past which it can end
@@ -210,7 +221,8 @@ export function createRooms(
         { owner: shellOwner, still: true }, // shells only toggle (sites.ts); shellOwner's root is placed above
       ),
     }));
-    const phase = (name: string) => records.filter(({ placement }) => placement.id.startsWith(`room-${id}-${name}-`));
+    const phase = (name: string) =>
+      records.filter(({ placement }) => placement.id.startsWith(`room-${id === 'plot1' ? 'plot3' : id}-${name}-`));
     const construction = records.flatMap(({ instance }) => instance.construction);
     if (!construction.length) throw new Error('rooms: missing shell construction');
     const hulls = (name: string): Hull[] =>
