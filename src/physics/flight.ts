@@ -29,7 +29,7 @@ const BOUNCE = { plain: 0.3, glide: 0.12 }; // share of the speed into a surface
 const SLIDE = { plain: 0.55, glide: 0.8 }; // share of the speed along a surface kept on a bounce
 const REST_SPEED = 2;
 
-export function stepFlight(p: THREE.Vector3, v: THREE.Vector3, glide: boolean, dt = STEP) {
+export function stepFlight(p: THREE.Vector3, v: THREE.Vector3, glide: boolean, dt = STEP, collide = false) {
   v.y -= GRAVITY * dt;
   const sp = Math.hypot(v.x, v.y, v.z);
   if (glide) {
@@ -44,7 +44,14 @@ export function stepFlight(p: THREE.Vector3, v: THREE.Vector3, glide: boolean, d
   }
   const k = 1 - Math.min(0.5, (glide ? GLIDE.drag : DRAG) * sp * dt);
   v.multiplyScalar(k);
-  p.addScaledVector(v, dt);
+  if (!collide) {
+    p.addScaledVector(v, dt);
+    return;
+  }
+  discNext.copy(p).addScaledVector(v, dt);
+  const h = cast(p, discNext);
+  if (!h) p.copy(discNext);
+  else if (bounce(p, v, h, glide)) v.set(0, 0, 0);
 }
 
 // The beach ball flies on its own physics body; this is the same arc for the aim preview (gravity, then the body's
@@ -77,15 +84,6 @@ function bounce(p: THREE.Vector3, v: THREE.Vector3, h: typeof hit, glide: boolea
 }
 
 const discNext = new THREE.Vector3();
-/** Advance the shared disc along its glide and sweep the step against scenery. */
-export function stepDisc(p: THREE.Vector3, v: THREE.Vector3, dt: number) {
-  discNext.copy(p);
-  stepFlight(discNext, v, true, dt);
-  const h = cast(p, discNext);
-  if (!h) p.copy(discNext);
-  else if (bounce(p, v, h, true)) v.set(0, 0, 0);
-}
-
 // Where something comes down if it is dropped at p: the first surface below it, or the ground.
 export function dropPoint(p: V3) {
   const h = cast(p, { x: p.x, y: toyGround.under(p.x, p.z) - 0.5, z: p.z });

@@ -1279,6 +1279,13 @@ _Archived 14 November 2026; the owner accepts the listed [Round blockout](decisi
 
 ## Archive: Rewards, co-op and town roles
 
+### 28 November 2026
+
+| Date | Call | Where | By | Why this pick | Status when archived |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-27 | New: Allow live Throw for the shared Boathouse disc (owner question) (plan only) | [Lane C Part 3](plans/lane-c.md#part-3-a-frisbee-on-the-round) | Builder (design review) | The owner answered "Yes and yes" on 28 November | confirmed ([decision](decisions-controls.md#d-2026-11-28-ball-and-disc-throw)) |
+
+
 ### The first house's resident, 19 November 2026
 
 Ruled in [the first house's resident](decisions-characters.md#d-2026-11-19-first-house-resident) (owner, 19 November 2026); moved word for word from [agent-calls](agent-calls.md).
