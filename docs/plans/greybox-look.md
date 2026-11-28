@@ -273,6 +273,14 @@ Areas passed over in the arrival survey:
 - Saltpan — the pale green flat stretches from the decks to the water. The coping still picks out the turn on both sides of the boarding lane. [Arrival](greybox-look/card22-saltpan.jpg)
 - Port Quay bank foot — a narrow pale verge separates the sandstone and the apron. The turntable and roundhouse doors hold the eye across the yard. [Arrival](greybox-look/card22-quay.jpg)
 
+### Card 23, Saltpan’s dry salt crust
+
+From the arriving end of the decks, a single pale-green plane stretched from the coping to the water. Looking out from the east deck, the shore band was the only break in that colour. Pale salt seams now divide the near ground into irregular plates. As the seams recede, broad grey-beige patches carry the eye out to the low shore band. The dark timber and light coping still pick out the boarding bend.
+
+`src/entities/sickle-backdrop/view.ts` shades the existing mapped top of Saltpan. The 1200 × 750 arrival pair looks from (556.7, 5.93, 670.42) toward (545.76, 4.93, 703.67) at 62° FOV. The deck view looks from (555, 6.5, 691) toward (595, 3, 733). The moving-train seed timed out on earlier cards and was skipped here. [Before](greybox-look/card23-before.jpg) · [After](greybox-look/card23-after.jpg) · [From the deck](greybox-look/card23-deck.jpg)
+
+Area passed over: Port Quay’s bank foot remains a narrow pale verge behind the freight apron in [card 22’s yard survey](greybox-look/card22-quay.jpg).
+
 ## Design review (2026-11-27)
 
 | Call | Kind | Basis |
