@@ -53,3 +53,20 @@ Findings: indefinite quiet-time waiting strands an active player, so step 4 boun
 **Answered 27 November 2026.** The owner said “Take your recommendation”. A legacy tab may need one manual Reload to install recovery. Ship client support first with the wipe gate intact. Subsequent supported pages recover automatically.
 
 **Must wait for the owner. May the first rollout require one manual reload for a continuously visible tab already running the old page?** Recommend yes, limited to installing the recovery-capable client. Ship the client support first with the wipe gate intact; keep legacy connections out of incompatible rooms. Every subsequent supported page should recover automatically. The existing visible page only offers a button, its jump-in refusal waits for a click, and a service worker can be disabled. No later server message on the current protocol can safely force all of those pages to navigate and preserve same-world progress. A one-time exception changes the requested guarantee for actual players; the implementation must not silently assume it.
+## Local handover proof
+
+Two isolated Chromium profiles entered the same room through production Vite bundles. Each bundle used its own full release identity, and the third compiled a real namespace bump. Service workers were enabled. Each replacement service reopened the same test volume. The harness inspected both mounted railway mirrors and the authority, submitted ordinary railway requests on tab A's room socket, and read the saved account stock directly from the final checkpoint. Periodic saves were set to ten minutes to exercise shutdown's final write.
+
+| Cutover | Both pages and room | Accepted work and disk |
+| --- | --- | --- |
+| A, v77 | Build e1ea031b6073, birth 51a9e242c223, both saw zero logs | A woke the machine and chopped one log (request 3). |
+| A to B, Pages first | Both automatically loaded 6962aa27cefe, v77, same birth. While only Pages was new, a visibility check left A connected and playable. | Final checkpoint 405 held exactly one log. B restored the accepted A request. Both replicas and the authority read one. B's next chop raised it to two. |
+| B to C, host first | Both automatically loaded e6197b1054fd, v78, birth 700fabe4aa88. A new jump-in tab that opened during skew recovered into its allocated room. | Final v77 checkpoint 439 held both logs. Both v78 replicas and the authority started at zero, then agreed on exactly one after a new wake and chop. |
+
+During the wipe, both a legacy handshake and one explicitly naming v77 were refused before a v78 room loaded. The modal named the new island on the loading screen. [Wipe heads-up](live-deploy/wipe.png)
+
+Negative controls: disabling the admission comparison in an isolated fixture yielded welcome where the test required update. Running the same two-tab proof with final checkpointing disabled left zero logs where disk had to hold one. Both checks passed with the production paths enabled.
+
+A site-only update and a rollback returned the player to active play with the same room birth. A temporary manifest outage and stale HTML kept the page from navigating prematurely. A displaced tab stayed displaced. A docs edit inside the server image paths, followed by a client-only edit, retained the original server source stamp. Both workflows and the ship classifier use the same prose boundary.
+
+Implementation refinements: retained the existing host checkpoint drain, added an explicit input seal, and checked host identity before sending socket authentication on reconnect as well as at admission. A Pages-first release lets the existing room continue until Fly is ready. A namespace change uses the usual first-visit card. This was a local graceful service replacement; Fly rollout, a forced process kill, storage failure during a Fly deployment and physical devices were outside the browser proof.
