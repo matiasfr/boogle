@@ -139,7 +139,7 @@ if (q.has('recover')) {
         await wait(650);
       }
       await trim(0, need);
-      if (!stock(2)) {
+      if (!stock(2) && !R.railBack().rails) {
         await move(view.forgeRack.x, view.forgeRack.z);
         await confirm(() => adapter.forgeTake(), 'forge take');
         await trim(2, 4);
@@ -147,7 +147,20 @@ if (q.has('recover')) {
       }
       await move(x - 1.5, z - 1.5);
       aim();
-      await until(() => interactTarget()?.verb === 'Leave it here', 'yard prompt');
+      if (!q.has('setdown')) {
+        const logPrompt = () =>
+          interactTarget()?.note === R.railBack().carry + ' logs' && interactTarget()?.verb === 'Leave it here';
+        for (const [dx, dz] of [
+          [1.5, 0],
+          [-1.5, 0],
+          [0, 1.5],
+          [0, -1.5],
+        ] as const) {
+          if (logPrompt()) break;
+          await move(x + dx, z + dz);
+        }
+        await until(logPrompt, 'log bin deposit prompt');
+      }
     }
     async function press() {
       const before = stock(0),
@@ -158,7 +171,11 @@ if (q.has('recover')) {
         )) as typeof import('../../../src/entities/railway/back-down.ts');
         if (!setDown(adapter)) throw new Error('Set-down refused inside the yard');
       } else interactTarget()!.run?.();
-      await until(() => settled() && stock(0) === before + load.carry && R.railBack().rails === 0, 'deposit confirmed');
+      await until(
+        () =>
+          settled() && stock(0) === before + load.carry && R.railBack().rails === (q.has('setdown') ? 0 : load.rails),
+        'deposit confirmed',
+      );
       console.log('YARD landed', JSON.stringify({ yard, logs: stock(0), rails: stock(2), back: R.railBack() }));
       await wait(850);
     }
@@ -172,7 +189,7 @@ if (q.has('recover')) {
     };
     if (!q.has('flight')) await ready.__yardAction();
   } else {
-    await until(() => stock(0) === 10 && stock(2) === 4, 'second tab stock');
+    await until(() => stock(0) === 10 && stock(2) === (q.has('setdown') ? 4 : 0), 'second tab stock');
     console.log('YARD peer', JSON.stringify({ logs: stock(0), rails: stock(2) }));
   }
 }

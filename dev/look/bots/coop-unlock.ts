@@ -388,6 +388,10 @@ async function quarryGift() {
     teleport(me.body!, x, H(x, z) + PLAYER_R + 1.5, z);
     await giveQuarryTimber(makeBot(), shot === 'quarry-stone');
     if (shot === 'quarry-stone') {
+      const frame = () => window.__debugCam?.set([x - 4, H(x, z) + 3, z - 5], [x, H(x, z) + 1, z], 52);
+      frame();
+      setInterval(frame, 50);
+      console.log('QUARRY stone bin offers Leave it here for 2 stone; depositing kept all eight logs');
       w.__coopShot = true;
       return;
     }
