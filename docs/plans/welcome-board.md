@@ -12,4 +12,4 @@ The existing return and unranked Thanks decisions cover the card and names. The 
 
 The house-built seed shows Far Head and the Seed Shed. Both boards fit from the hall pad on desktop and in the phone overview. The overview lettering is small. Turning toward the south bay from the same pad makes all five rows readable at 390 px. The outer upright overlaps the board's right edge.
 
-For the return, Fern entered and left, then Moss reloaded with an earlier room snapshot. The Act 2 card and the south sign both showed eight stretches, Far Head, Seed Shed and Fern. The four stills are in the welcome-board directory beside this plan.
+For the return, Fern entered and left, then Moss reloaded with an earlier room snapshot. The board freezes its five rows at arrival while later saves remember live progress. The card keeps its Act line first, followed by the friend and stretch greetings and short Connected and Built lines. The numeric laid item and roster map remain readable by older clients; the railway item holds route and plot details. The four stills are in the welcome-board directory beside this plan.

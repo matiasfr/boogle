@@ -29,7 +29,7 @@ const stubs: Record<string, string> = {
   'flags.ts': 'export const productionRailway=false',
   'state.ts': 'export const railwayWorldRead=f.read',
   'arrival.ts':
-    'export const addWelcomeItem=f.add, roomMemory=()=>f.memory, showCard=()=>false, rememberVisit=()=>{}, welcomeLines=()=>[]',
+    'export const addWelcomeItem=f.add, roomMemory=()=>f.memory, showCard=()=>false, rememberVisit=()=>{}, welcomeLines=()=>[], nameList=names=>names.join(" and ")',
 };
 const hook = registerHooks({
   resolve(specifier, context, next) {
@@ -63,6 +63,12 @@ test('progress made during this visit is never labelled while you were away', ()
   items.get('laid')!.save();
   assert.equal(rows.at(-1)?.[0], 'Room log');
 });
+test('a solo room log leaves the player out of the names row', () => {
+  pids.splice(1);
+  world = buildSeedWorld('awake').w;
+  items.get('laid')!.save();
+  assert.equal(rows.at(-1)?.[3], 'New friends \u00b7 \u2014');
+});
 test('a cached client can still compare its numeric laid item after a new client saves', () => {
   world = buildSeedWorld('awake').w;
   const saved = items.get('laid')!.save();
@@ -80,5 +86,5 @@ test('a friend-only return preserves the card greeting without reporting a track
 test('a legacy track baseline still yields the original track sentence on the card', () => {
   world = buildSeedWorld('q1-done').w;
   const lines = items.get('laid')!.since(0);
-  assert.ok(Array.isArray(lines) && lines.includes('4 new stretches of track were laid'));
+  assert.equal(lines, '4 new stretches of track were laid');
 });

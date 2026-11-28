@@ -2,7 +2,7 @@
 // visit and the stretches it names at the next, on two accepted-op seed worlds.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Leg, Plot } from '../src/sim/railway-components.ts';
+import { Leg, Plot, Route } from '../src/sim/railway-components.ts';
 import type { ReadWorld } from '../src/sim/railway-rows.ts';
 import { railwayDiff, railwaySnapshot, stretchesLaid, stretchesSince } from '../src/player/welcome-railway.ts';
 import { buildSeedWorld } from './helpers/rail.ts';
@@ -46,4 +46,10 @@ test('a bought plot is remembered by slot and shows its chosen building once', (
   const now = snapshot(w);
   assert.deepEqual(railwayDiff(now, early).built, ['Seed Shed']);
   assert.deepEqual(railwayDiff(now, now).built, []);
+});
+
+test('arrival names the Original Island halt as the catalog does', () => {
+  const { w } = buildSeedWorld('awake');
+  w.mut(Route, w.single(Route))!.arrived = 1;
+  assert.equal(snapshot(w).places.at(-1), 'Original Island');
 });

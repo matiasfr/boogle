@@ -55,7 +55,7 @@ export function railwaySnapshot(w: ReadWorld) {
     const halt = WORLD_LINES.find((line) => line.id === spec.row)?.halts[spec.destRowHalt];
     if (halt) places.push(halt.name);
   });
-  if (routeRow(w).arrived >= 0) places.push('The Original Island');
+  if (routeRow(w).arrived >= 0) places.push('Original Island');
   const plots: Record<string, string> = {};
   w.each([Plot], (_id, p) => {
     if (p.at >= 0) plots[p.slot] = choices[p.kind] || `Plot ${(p.slot % 16) + 1}`;

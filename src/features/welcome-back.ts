@@ -16,8 +16,14 @@ import { getRoomId } from '../netplay/net.ts';
 import { worldStatus } from '../world/sync.ts';
 import { productionRailway } from '../proto/flags.ts';
 import { railwayWorldRead } from '../entities/railway/state.ts';
-import { railwayKnown, railwaySnapshot, railwayDiff } from '../player/welcome-railway.ts';
-import { showCard, addWelcomeItem, rememberVisit, roomMemory, welcomeLines } from '../player/arrival.ts';
+import {
+  railwayKnown,
+  railwaySnapshot,
+  railwayDiff,
+  stretchesLaid,
+  stretchesSince,
+} from '../player/welcome-railway.ts';
+import { showCard, addWelcomeItem, rememberVisit, roomMemory, welcomeLines, nameList } from '../player/arrival.ts';
 
 const WAIT_MS = 4000; // the longest the card waits for the room's state before it says just hello
 const SHOW_MS = 3500; // on screen, plus LINE_MS for each change it lists
@@ -26,36 +32,43 @@ const SAVE_MS = 5000; // how often this visit is remembered while you play
 
 // ---------------------------------------------------------------- what a returning player hears about
 const railway = () => railwayKnown(railwayWorldRead());
-const names = (pids: readonly string[]) =>
-  pids
-    .map((pid) => rules.roster.nameOf(rules.roster.indexOf(pid)))
-    .filter(Boolean)
-    .slice(0, 6);
+const otherPlayers = () => rules.roster.roster.pids.filter((pid) => pid !== identity.pid);
+const playerNames = (pids: readonly string[]) =>
+  pids.map((pid) => rules.roster.nameOf(rules.roster.indexOf(pid)) || 'Someone');
+function newFriends(previous: unknown) {
+  return previous && typeof previous === 'object'
+    ? playerNames(otherPlayers().filter((pid) => !Object.hasOwn(previous, pid)))
+    : [];
+}
+function friendGreeting(previous: unknown) {
+  const names = newFriends(previous);
+  return names.length ? `${nameList(names)} ${names.length === 1 ? 'was' : 'were'} here` : null;
+}
 addWelcomeItem({
   key: 'friends',
   save: () =>
     railwayMirror && !railwayMirror.synced()
       ? undefined
       : Object.fromEntries(rules.roster.roster.pids.map((pid) => [pid, 0])),
-  since: () => null,
+  since: friendGreeting,
 });
-function summary() {
-  const w = railway();
-  if (!w) return null;
+
+type Railway = NonNullable<ReturnType<typeof railway>>;
+function arrivalSummary(w: Railway) {
   const snapshot = railwaySnapshot(w);
-  const diff = railwayDiff(snapshot, then?.items.laid);
-  const roster = rules.roster.roster.pids;
-  const friends = then?.items.friends;
-  const newcomers =
-    friends && typeof friends === 'object'
-      ? roster.filter((pid) => pid !== identity.pid && !Object.hasOwn(friends, pid))
-      : [];
+  const rich = then?.items.railway;
+  const laid = then?.items.laid;
+  // A cached client can advance its numeric count between visits by newer clients.
+  const baseline =
+    rich && typeof rich === 'object' && typeof laid === 'number' ? { ...rich, lines: laid } : (rich ?? laid);
+  const diff = railwayDiff(snapshot, baseline);
+  const newcomers = newFriends(then?.items.friends);
   const away = !!(diff.sections || diff.places.length || diff.built.length || newcomers.length);
   const current = roomWorks(w);
   const stop = workSite.findIndex((site) => site === current.site);
   const helpers =
     stop > 0 || current.ops.includes('rail.legStock')
-      ? names(worksThanks(w, Math.max(0, stop)).filter((pid) => rules.roster.indexOf(pid) >= 0))
+      ? playerNames(worksThanks(w, Math.max(0, stop)).filter((pid) => rules.roster.indexOf(pid) >= 0))
       : [];
   const places = away ? diff.places : snapshot.places;
   const sections = away ? diff.sections : snapshot.lines + snapshot.legs.reduce((n, v) => n + v, 0);
@@ -63,22 +76,50 @@ function summary() {
   // [placeholder: While you were away] [placeholder: Room log] [placeholder: Connected]
   // [placeholder: Built] [placeholder: New friends] [placeholder: Helping now]
   const row = (label: string, values: string[]) => label + ' \u00b7 ' + (values.join(', ') || '\u2014');
-  const rows = [
+  publishWelcomeRows([
     away ? 'While you were away' : 'Room log',
     row('Connected', [String(sections), ...places.slice(-1)]),
     row('Built', built.slice(-2)),
-    row('New friends', names(away ? newcomers : roster)),
-    row('Helping now', helpers),
-  ];
-  publishWelcomeRows(rows);
-  return { snapshot, lines: away ? rows.slice(1).filter((r) => !r.endsWith('\u2014')) : [] };
+    row('New friends', (away ? newcomers : playerNames(otherPlayers())).slice(0, 6)),
+    row('Helping now', helpers.slice(0, 6)),
+  ]);
+  const lines = [];
+  if (diff.places.length) lines.push(row('Connected', diff.places.slice(-1)));
+  if (diff.built.length) lines.push(row('Built', diff.built.slice(-2)));
+  return { lines, diff };
 }
+let arrival: ReturnType<typeof arrivalSummary> | undefined;
+const onArrival = (w: Railway) => (arrival ??= arrivalSummary(w));
+
 addWelcomeItem({
   key: 'laid',
-  save: () => summary()?.snapshot,
-  absent: null,
-  since: () => summary()?.lines ?? null,
+  save: () => {
+    const w = railway();
+    if (!w) return undefined;
+    onArrival(w);
+    return stretchesLaid(w);
+  },
+  since: (previous) => {
+    const w = railway();
+    if (!w) return null;
+    const n = then?.items.railway ? onArrival(w).diff.sections : stretchesSince(previous, stretchesLaid(w));
+    if (!n) return null;
+    return n === 1 ? 'A new stretch of track was laid' : `${n} new stretches of track were laid`;
+  },
 });
+addWelcomeItem({
+  key: 'railway',
+  absent: null,
+  save: () => {
+    const w = railway();
+    return w ? railwaySnapshot(w) : undefined;
+  },
+  since: () => {
+    const w = railway();
+    return w ? onArrival(w).lines : null;
+  },
+});
+
 // ---------------------------------------------------------------- the card
 const room = getRoomId();
 const then = roomMemory(room); // before this visit remembers anything
@@ -129,7 +170,8 @@ if (!shown) {
       const ready = known();
       if (ready || now - enteredAt > WAIT_MS) {
         shown = true;
-        show(ready ? welcomeLines(then) : []);
+        const friends = ready ? null : friendGreeting(then?.items.friends);
+        show(ready ? welcomeLines(then) : friends ? [friends] : []);
         despawn(waiting);
       }
     },
