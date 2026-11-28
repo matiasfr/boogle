@@ -448,6 +448,7 @@ The owner confirmed start-flow calls 7 to 9 on 28 November: [archived calls](dec
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
+| 2026-11-28 | Default revised: keep the existing grass on low Detail and bend near blade tips most at the Camp ridge verge. | [Living world](plans/living-world.md) | Builder | The shared wave replaces two sines with one and reuses the existing meadow draw, geometry and samples. | open |
 | 2026-11-28 | Default: crown tips travel up to 0.24 m each way over a four-second cycle. | [Living world](plans/living-world.md) | Builder | Neighbouring trees share a slow gust while the trunks hold still. | open |
 | 2026-11-28 | Default: first grass on the Camp path verge. | [Living world](plans/living-world.md) | Builder | The walk puts blades and crowns in one view. | open |
 | 2026-11-28 | Default: low Detail keeps crown motion, skips grass and thins puffs. Reduced motion stills foliage and skips ambient puffs. | [Living world](plans/living-world.md) | Builder | Keep the cheap silhouette and reduce optional movement. | open |
