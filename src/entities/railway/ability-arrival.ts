@@ -174,7 +174,6 @@ export function createAbilityArrival(
    * missing them until then, so the fresh-start forgetting below leaves it alone; it is dropped instead when the state
    * stops having begun for the reset grace (a fresh start mid-wake), counted in seconds here. */
   const owed: string[] = [];
-  const ownStandCards = new Set<string>();
   /** Moments a show on this page has queued (Local, in memory): their flourish waits while it is, and a reload forgets
    * it, so a show that never reached the screen leaves the late flourish. */
   const showing = new Set<string>();
@@ -303,11 +302,6 @@ export function createAbilityArrival(
     if (event.accepted <= 0) return;
     const ability = ABILITIES.find((a) => a.op === event.op);
     if (!ability) return;
-    if ((event.op === 'rail.jump' || event.op === 'rail.pack') && event.station === 'T1') {
-      if (event.pid === adapter.read.pid) ownStandCards.add(ability.key);
-      owe(ability.key);
-      return;
-    }
     if (event.pid === adapter.read.pid) {
       // The finder has the card and the place itself; the plinth gives them the crowd, not a second card.
       seen.add(ability.key);
@@ -413,7 +407,7 @@ export function createAbilityArrival(
         const ability = ABILITIES.find((a) => a.key === due)!;
         playMark('moment played', {
           moment: `${due} card`,
-          mine: ownStandCards.delete(due),
+          mine: false,
           shot: false,
           authority: 'local',
           edge: ability.atState ? 'state' : 'server',

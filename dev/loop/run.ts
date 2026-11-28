@@ -10,7 +10,6 @@ import {
   LINE1_ROCKS,
   LINE1_GREAT_TREE,
   LINE1_JUMP_DEVICE,
-  LINE1_PICK_STANDS,
   LINE1_HARDWOODS,
 } from '../../src/sim/railway-line-layout.ts';
 import {
@@ -359,7 +358,7 @@ function* beam(g: Game, pl: Player): Policy {
   yield* walk(L1('T3'));
   yield* press('rail.beamDeposit', { revision: beamOf(g.w).revision, station: 'T3' });
 }
-function* forge(g: Game, pl: Player, takePack: boolean): Policy {
+function* forge(g: Game, pl: Player): Policy {
   yield* waitFor(g, () => !!job(g.w, 2).completion);
   const used = () => forgeOf(g.w).used;
   const bring = (target: number) =>
@@ -372,11 +371,9 @@ function* forge(g: Game, pl: Player, takePack: boolean): Policy {
       LINE2_FORGE,
       (n) => ({ op: 'rail.deposit', station: 'F', kind: 0, n }),
     );
-  if (takePack) {
-    yield* bring(LINE2_FORGE.bills[0]);
-    yield* device(g, pl, LINE2_PACK, 'rail.pack', () => used() >= LINE2_FORGE.bills[0]);
-    yield* waitFor(g, () => rail(g.w).pack);
-  }
+  yield* bring(LINE2_FORGE.bills[0]);
+  yield* device(g, pl, LINE2_PACK, 'rail.pack', () => used() >= LINE2_FORGE.bills[0]);
+  yield* waitFor(g, () => rail(g.w).pack);
   yield* bring(LINE2_FORGE.logs);
 }
 function* device(
@@ -658,7 +655,7 @@ type Run = {
   current: NodeId | null;
   detour: (id: NodeId) => number;
 };
-function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set(), pick?: 'pack' | 'jump'): Run {
+function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set()): Run {
   const players: Player[] = Array.from({ length: n }, (_v, i) => ({
     pid: `p${i + 1}`,
     i,
@@ -762,26 +759,16 @@ function setup(h: Host, n: number, byHand: ReadonlySet<NodeId> = new Set(), pick
     arrive: pressed('arrive'),
   };
   const ready = (id: NodeId) => () => node(id).requires.every((e) => e.scope === 'finish' || done[e.on]());
-  function* takeStand(pl: Player, part: 'pack' | 'jump'): Policy {
-    if (pl.i !== 0) return;
-    yield* walk(LINE1_PICK_STANDS[part]);
-    yield { wait: 10 }; // one-second Take
-    yield* press(`rail.${part}`, { station: 'T1' });
-  }
   const policy: Record<NodeId, (pl: Player) => Policy> = {
     wake: (pl) => device(g, pl, T1.wake, 'rail.wake', () => true),
     T1: (pl) => lineOne(g, pl, 'T1'),
     T2: (pl) => lineOne(g, pl, 'T2'),
     beam: (pl) => beam(g, pl),
     T3: (pl) => lineOne(g, pl, 'T3'),
-    jump: (pl) =>
-      pick === 'jump' ? takeStand(pl, 'jump') : device(g, pl, LINE1_JUMP_DEVICE, 'rail.jump', ready('jump')),
-    forge: (pl) => forge(g, pl, pick === 'jump'),
+    jump: (pl) => device(g, pl, LINE1_JUMP_DEVICE, 'rail.jump', ready('jump')),
+    forge: (pl) => forge(g, pl),
     axe: (pl) => device(g, pl, LINE2_AXE, 'rail.axe', ready('axe')),
-    pack: (pl) =>
-      pick === 'pack'
-        ? takeStand(pl, 'pack')
-        : device(g, pl, LINE2_PACK, 'rail.pack', () => forgeOf(w()).used >= LINE2_FORGE.bills[0]),
+    pack: (pl) => device(g, pl, LINE2_PACK, 'rail.pack', () => forgeOf(w()).used >= LINE2_FORGE.bills[0]),
     Q1: (pl) => quarry(g, pl, 0),
     yoke: (pl) => device(g, pl, LINE2_YOKE, 'rail.yoke', () => line2YokeReady(w())),
     Q2: (pl) => quarry(g, pl, 1, byHand.has('Q2')),
@@ -1075,8 +1062,7 @@ export function playOrder(
   const pids = Array.from({ length: players }, (_v, i) => `p${i + 1}`);
   const h = opts.from ? createHost(pids, { snapshot: opts.from.snapshot, tick: opts.from.tick }) : createHost(pids);
   opts.mutate?.(h);
-  const afterT1 = order[order.indexOf('T1') + 1];
-  const r = setup(h, players, opts.byHand, afterT1 === 'jump' || afterT1 === 'pack' ? afterT1 : undefined);
+  const r = setup(h, players, opts.byHand);
   if (opts.detour) r.detour = (id) => detourOf(id)?.median ?? 1;
   const { g, done } = r;
   const result: RunResult = { order: name, players, nodes: [], ticks: 0 };

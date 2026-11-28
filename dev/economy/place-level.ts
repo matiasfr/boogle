@@ -407,17 +407,17 @@ export function runPlaceLevelCheck() {
     }
   }
   assertion(railConflicts === 0, `recovery slab/rail corridor conflicts: ${railConflicts}`);
-  section('station-one-pick', '\nStation 1 pick: early movement and work gates');
-  for (const stage of ['t1-pack-first', 't1-jump-first'] as const) {
+  section('station-one-laid', '\nStation 1 laid: movement and work gates');
+  {
+    const stage = 't1-laid';
     const seed = buildSeedWorld(stage);
     const { jump, pack } = rail(seed.w);
-    assertion(jump === (stage === 't1-jump-first') && pack !== jump, `${stage}: only the selected part is held`);
+    assertion(!jump && !pack, 'Station 1 grants neither part');
     assertion(act(seed, 'a', 'rail.lever') === 0 && !rail(seed.w).lever, `${stage}: quarry lever refused`);
     for (const laidTo of [150, 116]) {
       const tracks: [Line, number, number][] = [[N, laidTo, 191]];
       const pads = padsReachable(flood(tracks), { jump, hook: false, glide: false }, tracks);
-      const expected = jump ? ['alcove', 'apron', 'lookout'] : [];
-      assertion([...pads].sort().join() === expected.join(), `${stage} to ${laidTo}: reached [${[...pads]}]`);
+      assertion(pads.size === 0, `${stage} to ${laidTo}: reached [${[...pads]}]`);
     }
   }
   {

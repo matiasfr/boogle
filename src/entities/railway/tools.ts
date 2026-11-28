@@ -21,10 +21,9 @@ import { AXE_AT, PACK_HEAD_Y, axeHeadAt, axeLeans, yokeAt, yokeAvailable } from 
 import { airJumpApexForce } from '../player/apex-float.ts';
 import { linePanels } from '../../sim/railway-line-layout.ts';
 import { LINE2_PACK } from '../../sim/railway-line2-layout.ts';
-import { account, forge, rail, type ReadWorld } from '../../sim/railway-rows.ts';
+import { account, forge, job, rail, type ReadWorld } from '../../sim/railway-rows.ts';
 import { railPanelCount } from '../../sim/railway-queries-line1.ts';
 import { line2PackReady } from '../../sim/railway-queries-line2.ts';
-import { createOrderPick } from './order-pick.ts';
 
 /** Stock units line one has closed after each count of laid rail pairs. */
 const UNITS_LAID = [0];
@@ -148,14 +147,6 @@ export async function createRailwayTools(
   core.position.copy(ring.position);
   shaft.position.copy(deviceAt).y += 36.4;
   ring.rotation.x = Math.PI / 2;
-  const standDrum = drum.clone();
-  standDrum.position.set(0, 0, 0);
-  const standRing = ring.clone();
-  standRing.position.set(0, 1.15, 0);
-  standDrum.add(standRing);
-  const standPack = new THREE.Mesh(packPrize, material);
-  standPack.scale.setScalar(2.4);
-  const pick = createOrderPick(adapter, owner, { pack: standPack, jump: standDrum });
   const jumpTarget = deviceAt.clone().add(new THREE.Vector3(0, 2.2, 0));
   const jumpPrize = shapes.merged([
     ['t', -0.3, 0, 0, 0.32, 0.32, 0.32, '#39e6c6'],
@@ -179,7 +170,6 @@ export async function createRailwayTools(
   const mine = (event: { pid: string }) => event.pid === adapter.read.pid;
   const offAccepted = adapter.onAccepted((event) => {
     if (event.accepted <= 0) return;
-    if ((event.op === 'rail.pack' || event.op === 'rail.jump') && event.station === 'T1') return;
     if (event.op === 'rail.axe') {
       // The opener's card; a friend's comes from ability-arrival.ts.
       if (!mine(event)) return;
@@ -231,6 +221,10 @@ export async function createRailwayTools(
     const w = adapter.read.world();
     return adapter.read.ready() && !rail(w).axe && forge(w).lit >= 0;
   };
+  const jumpAvailable = () => {
+    const w = adapter.read.world();
+    return adapter.read.ready() && !!job(w, 2).completion && !rail(w).jump;
+  };
   const packAvailable = () => {
     const w = adapter.read.world();
     return adapter.read.ready() && line2PackReady(w) && !rail(w).pack;
@@ -266,11 +260,9 @@ export async function createRailwayTools(
      * from the device or chest, or the camp resident's handoff. */
     cardFor(key: string): Got | null {
       if (key === 'yoke') return yokeCard();
-      if (key === 'jump')
-        return { key, ...JUMP_REWARD, model: new THREE.Mesh(jumpPrize, material), done: () => pick.cardDone(key) };
+      if (key === 'jump') return { key, ...JUMP_REWARD, model: new THREE.Mesh(jumpPrize, material) };
       if (key === 'axe') return { key, ...AXE_REWARD, model: properModel.clone(true) };
-      if (key === 'pack')
-        return { key, ...PACK_REWARD, model: new THREE.Mesh(packPrize, material), done: () => pick.cardDone(key) };
+      if (key === 'pack') return { key, ...PACK_REWARD, model: new THREE.Mesh(packPrize, material) };
       if (key === 'multi-axe')
         return {
           key: MULTI_AXE_REWARD.key,
@@ -300,7 +292,7 @@ export async function createRailwayTools(
         x: deviceAt.x,
         y: deviceAt.y,
         z: deviceAt.z,
-        available: adapter.read.ready() && !rail(adapter.read.world()).jump,
+        available: jumpAvailable(),
       },
       axeReveals,
       jumpReveals,
@@ -311,7 +303,7 @@ export async function createRailwayTools(
     targets(): Interactable[] {
       const p = me.body?.position;
       if (!adapter.read.ready() || !p) return [];
-      const targets: Interactable[] = pick.targets();
+      const targets: Interactable[] = [];
       if (axeAvailable() && inReach(AXE_AT))
         targets.push({
           id: 'railway-axe-chest',
@@ -329,7 +321,7 @@ export async function createRailwayTools(
           run: () => void adapter.openPack(),
         });
       if (
-        !rail(adapter.read.world()).jump &&
+        jumpAvailable() &&
         Math.hypot(p.x - deviceAt.x, p.z - deviceAt.z) <= 3 &&
         Math.abs(p.y - deviceAt.y) <= 2.2
       )
@@ -342,7 +334,6 @@ export async function createRailwayTools(
       return targets;
     },
     update(dt: number, now: number) {
-      pick.update(dt);
       const w = adapter.read.world();
       // The sloping route sends the low laying gantry through this crossing. Join it only
       // after accepted construction and the local machine envelope have both passed.

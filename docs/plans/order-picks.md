@@ -1,4 +1,4 @@
-> **Status, 25 November 2026.** The owner answered the six questions. The first-line pick, sticky trade rules and garage screen shipped in #2390, #2393 and #2407. Both pick orders reached the lit forge in #2416. [C3 measurements](../reports/order-picks-measures.md) are recorded. The cave line's trade belongs to its garage step.
+> **Status, 25 November 2026.** The owner answered the six questions. The first-line pick, sticky trade rules and garage screen shipped in #2390, #2393 and #2407. Both pick orders reached the lit forge in #2416. [C3 measurements](../reports/order-picks-measures.md) are recorded. The cave line's trade belongs to its garage step. The [27 November decision](../decisions-core-loop.md#d-2026-11-27-station-1-pick-removed) supersedes Part A.
 >
 > [Owner answers](../decisions-core-loop.md#d-2026-11-25-order-picks-answers).
 

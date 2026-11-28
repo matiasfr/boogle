@@ -12,7 +12,6 @@ import { carry } from '../../../src/physics/platforms.ts';
 import { playMark } from '../../../src/proto/mark.ts';
 import {
   LINE1_STATIONS,
-  LINE1_PICK_STANDS,
   LINE1_GREAT_TREE,
   LINE1_INITIAL,
   LINE1_RAIL_PAIRS,
@@ -959,10 +958,8 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
   const second = coop && player === '2';
   // &botOrder=legacy keeps the later pack take and cart ride to Q4; both routes use the approved fly-first order.
   // The default plays in a player's order (Home flow finding 4):
-  // the pack at Station 1, the glider on the first climb, and the sea switch at its gate after Q4.
+  // the pack at the forge, the glider on the first climb, and the sea switch at its gate after Q4.
   const legacy = query.get('botOrder') === 'legacy';
-  const jumpFirst = query.get('botOrder') === 'jump-first';
-  const pick = jumpFirst ? 'jump' : 'pack';
   const botTo = query.get('botTo');
   if (botTo !== null && !(botTo in RAIL_STOPS)) throw new Error(`Unknown botTo ${botTo}`);
   // `pier` is the whole route: its closing totals still run.
@@ -1391,42 +1388,18 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     if (second) await friendCard('multi-axe', 'multi-axe');
     else await dismiss('multi-axe reveal');
     mark('T1 multi-axe dismissed');
-    const firstFrame = LINE1_STATIONS[0]!;
-    await walk(firstFrame.x / 100 + (second ? 2 : -2), firstFrame.z / 100 + 5);
-    face(firstFrame.x / 100, firstFrame.z / 100);
-    await checkpoint('T1 pick board');
     if (second) await until(() => job(0).delivered === 16, 'friend supplied sixteen logs');
     await logs(0, coop ? (second ? 1 : 2) : 3);
     await until(() => job(0).start >= 0, 'funded T1 begins');
     mark('T1 funded');
-    if (!legacy) {
-      const firstPick = LINE1_PICK_STANDS[pick];
-      // The friend watches the take from the frame, clear of the stand and the player's hold.
-      if (!second) await walk(firstPick.x / 100, firstPick.z / 100 + 2, 0.6);
-      face(firstPick.x / 100, firstPick.z / 100);
-      if (!second) {
-        await until(() => interactTarget()?.id === `railway-pick-${pick}`, `Station 1 offers the ${pick}`);
-        await checkpoint('T1 stands');
-        triggerAction('interact', 'down');
-        try {
-          await until(() => R.rail(R.rw())[pick], `held Take gives the room its ${pick}`);
-        } finally {
-          triggerAction('interact', 'up');
-        }
-      }
-      await until(() => read().reward.arrival.cards.includes(pick), `Station 1 ${pick} card`);
-      await checkpoint('T1 pick card');
-      await dismiss(`Station 1 ${pick}`);
-      require(R.capacityOf(R.rw(), R.LOGS) === (jumpFirst ? 8 : 16), 'log capacity follows the Station 1 pick');
-      await checkpoint(pick);
-      await checkpoint('T1 carry-off');
-    }
+    require(!R.rail(R.rw()).jump && R.capacityOf(R.rw(), R.LOGS) === 8, 'T1 funds only the track');
     await ride(0);
     await until(() => job(0).completion === 1, 'T1 laid once', LAYING_MS);
     panels(1);
     require(job(0).used === 24 && job(0).allocation === 0, 'T1 contains exactly 24 logs');
     mark('T1 laid');
-    // Stand on the middle of the laid stretch, clear of the layer parked at its new head.
+    // Stand on the laid stretch, clear of the layer parked at its new head.
+    const firstFrame = LINE1_STATIONS[0]!;
     const track = railAt((firstFrame.fromCm + firstFrame.toCm) / 200);
     await walk(track.x + layout.ORIGIN.x, track.z, 0.8);
     await until(() => me.coyote > 0 && !me.swimming, 'standing on laid T1');
@@ -1619,7 +1592,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     require(counts.stone &&
       counts.stone.total === RAIL_STONE + counts.stone.produced, 'counted stone conserves initial supply and renewal');
     await checkpoint('T3 laid');
-    require(R.rail(R.rw()).jump === jumpFirst, 'walk starts with the chosen jump state');
+    require(!R.rail(R.rw()).jump, 'walk home does not need optional jump');
     const access = railAt(116);
     await walk(access.x + layout.ORIGIN.x, access.z, 0.8);
     await walkTrack(116, 191);
@@ -1643,7 +1616,7 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     };
     await walkBypass(bypass.slice(1));
     await checkpoint('path walked home');
-    require(R.rail(R.rw()).jump === jumpFirst, 'walk home preserves the chosen jump state');
+    require(!R.rail(R.rw()).jump, 'walk home completed before jump discovery');
     await walkBypass([...bypass].reverse().slice(1));
     require(Math.abs(me.body!.position.y - PLAYER_R - layout.railY(line.line, 30)) <
       1, 'village stub rejoins the new deck');
@@ -1681,21 +1654,19 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     ), 'walked from completed rail to first-pillar lip');
     require(await bot.straight(ownSlot.x, ownSlot.z, 0.4, 6000), 'walked the lip onto the first pillar');
     await until(() => me.coyote > 0 && !me.swimming, 'first pillar supports the player');
-    if (!second) require(R.rail(R.rw()).jump === jumpFirst, 'pillar reached with the chosen jump state');
+    if (!second) require(!R.rail(R.rw()).jump, 'first pillar reached before optional jump discovery');
     mark('first pillar reached');
     if (coop && !second)
       await until(() => friendAt(friendSlot), 'friend reaches the first pillar before shared discovery');
-    if (!jumpFirst && !second) {
+    if (!second) {
       const device = read().reward.jumpDevice;
       require(await bot.use(device.x, device.z, 'take the first jump device', /^Take it$/), 'jump device offered');
     }
     await until(() => R.rail(R.rw()).jump, 'shared optional jump accepted');
     // The finder gets the card on the press; a friend online gets their own once free.
-    if (!jumpFirst) {
-      if (second) await friendCard('jump', 'jump');
-      else await dismiss('optional jump reveal');
-      mark('optional jump discovered');
-    }
+    if (second) await friendCard('jump', 'jump');
+    else await dismiss('optional jump reveal');
+    mark('optional jump discovered');
     require(await bot.straight(ownSlot.x, ownSlot.z, 0.4, 6000), 'stood clear of the device for the jump');
     await until(() => me.coyote > 0 && me.body!.velocity.y <= 0, 'grounded before jump demonstration');
     const jumpsBefore = read().reward.tools.jumps;
@@ -1769,6 +1740,11 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
         require(R.capacityOf(R.rw(), R.LOGS) === 16, "the friend's back holds 16 logs");
         await checkpoint('pack');
       };
+      if (!legacy) await friendPack();
+      if (stopAt === 'forge lit') {
+        await until(() => R.forge(R.rw()).lit >= 0, 'leader lights the forge', 1800000);
+        await checkpoint('forge lit');
+      }
       if (friendTakesYoke) await openYoke();
       else {
         await until(() => R.rail(R.rw()).yoke, 'leader takes the rail yoke', 1800000);
@@ -1870,7 +1846,10 @@ export async function play({ stopBeforeReward = false, solo = false } = {}) {
     for (let load = 0; R.forge(R.rw()).used < 56; load++) {
       require(load < 12, 'forge bills fill in bounded loads');
       // A player opens the pack as soon as its chest appears, beside the forge they are filling.
-      if (!legacy && R.forge(R.rw()).used >= 24 && !R.rail(R.rw()).pack) await openPack();
+      if (!legacy && R.forge(R.rw()).used >= 24 && !R.rail(R.rw()).pack) {
+        require(R.forge(R.rw()).used === 24, 'pack made on the first forge bill');
+        await openPack();
+      }
       await fill(Math.min(R.capacityOf(R.rw(), R.LOGS), 56 - R.forge(R.rw()).used));
       await walk(forge.x, forge.z, 2.4);
       await until(() => R.railBack().carry === 0 && read().pending === 0, 'forge frame unloads automatically', 20000);
