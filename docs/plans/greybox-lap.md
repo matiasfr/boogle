@@ -373,6 +373,7 @@ The High Gorge coach-fit, tail-clearance and arrival audits use the pre-join sto
 - [ ] **4. The remaining views (M to L; "Player-visible implementation": Codex gpt-6.2-astra medium).**
       - [x] Moved into step 2 after independent review: joined island map, five transferred platform levers, cave departure boards, Stack buffers and the rail-height crossing at the joint.
       - [x] The [joined island map](greybox-lap/joined-halt-map.png) shows all 15 halt positions. The [Port Quay board](greybox-lap/joined-port-quay-board.png) lists the 13 served halts. All four Port Quay and Saltpan handles accepted their signed calls through the mounted interaction.
+      - [x] [Through train at the plank crossing](greybox-lap/train-on-gorge-crossing.png) and [two frames of its passage](greybox-lap/train-through-gorge.png), captured from the arrived room. The trailing car crosses the walkway after the engine clears it.
       - [ ] Remaining step 4 views and proofs listed below.
 
       Files:
