@@ -163,7 +163,7 @@ The moving camera followed the outward player car from Bell at 1,156.34 m to the
 
 At the foot of the yard ramp the raised apron presents a straight grey face on either side of the entrance. Give those faces two courses of weathered timber with darker retaining posts. The break in the timber should lead the eye up the ramp toward the turntable. Use the existing freight-edge batch in `src/entities/route-greybox/quay-edges.ts`.
 
-Proof: paired 1200 × 750 desktop stills on `port-reached`, looking from the lower apron across the ramp toward the yard.
+From the lower apron (87.3, 4.8, 939.2), the grey edge blends into the deck in the first still. The darker boards pick out the opening in the second, with the locomotive visible above it. Both 1200 × 750 desktop stills use the same live yard and fixed camera. The before view hides the 16 new instances. [Before](greybox-look/card9-yard-before.jpg) · [After](greybox-look/card9-yard-after.jpg)
 
 ## Design review (2026-11-27)
 
