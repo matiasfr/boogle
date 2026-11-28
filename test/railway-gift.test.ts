@@ -767,6 +767,16 @@ test('a standing Stack carrier leaves timber promised to the steel board', () =>
   }
   give(s);
   assert.deepEqual(worksThanks(s.w, 5), ['a']);
+  const mixed = unaudited(s);
+  chopTo(mixed, 'b', 8);
+  const extra = account(mixed.w, 'b')!.carry - 8;
+  if (extra) act(mixed, 'b', 'rail.drop', { kind: 0, n: extra, x: 100000, y: 2000, z: 3000 });
+  assert.equal(act(mixed, 'b', 'rail.haltPut', { yard: 0, kind: 0 }), 8);
+  advance(mixed, 1);
+  assert.equal(giftAboard(mixed.w, LINE2), 8);
+  assert.equal(account(mixed.w, 'a')!.queuedGift, 8);
+  assert.deepEqual(worksThanks(mixed.w, 5), ['a']);
+  railwayCheck(mixed.w);
   advance(s, 1);
   assert.equal(giftAboard(s.w, LINE2), 0, 'the steel-board donation must wait for a steel carrier');
 });
@@ -800,9 +810,19 @@ test('exchanging a full Q6 car at Home does not deliver ordinary timber to Far H
     assert.ok(ticks < 200);
     advance(s, 1);
   }
-  const before = rail(s.w).depot;
+  const { depot, depotProduced, out5 } = rail(s.w);
   give(s);
   advance(s, 1);
   assert.equal(workAboard(s.w, 2), 8);
-  assert.equal(rail(s.w).depot, before, 'Far Head receives kit when its train arrives');
+  assert.equal(rail(s.w).depot, depot, 'Far Head receives kit when its train arrives');
+  assert.equal(rail(s.w).depotProduced, depotProduced - 8);
+  assert.equal(rail(s.w).out5, out5);
+  railwayCheck(s.w);
+  while (workAboard(s.w, 2)) {
+    assert.ok(s.t < 20000);
+    advance(s, 1);
+  }
+  assert.equal(rail(s.w).depot, depot + 24);
+  assert.equal(qjob(s.w, 5).stock, 8);
+  railwayCheck(s.w);
 });

@@ -386,10 +386,13 @@ function trainIO(
             batch.stone,
           );
           const displaced = Math.max(0, car.logs + n - LINE2_KIT.logs);
-          rail.depot += displaced;
+          // Cancel displaced kit at its mint before departure, as for a full leg carrier.
           car.logs += (batch.stone ? 0 : n) - displaced;
-          if (stop === 5) w.mut(Steel, w.single(Steel))!.outLogs += n;
-          if (stop === 2 || stop === 3) rail[DEPOT_OUT[stop + 3]!] += n;
+          if (stop === 5) w.mut(Steel, w.single(Steel))!.outLogs += n - displaced;
+          if (stop === 2 || stop === 3) {
+            rail[DEPOT_OUT[stop + 3]!] += n - displaced;
+            rail.depotProduced -= displaced;
+          }
         }
       }
       const kit = kitJob(w);

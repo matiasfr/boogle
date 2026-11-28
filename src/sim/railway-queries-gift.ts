@@ -119,7 +119,11 @@ export function railGiftRides(w: World) {
   return GIFT_LEGS.some((k) => giftPourRoom(w, k, 'giftRails') > 0);
 }
 export function giftRides(w: World, stone = false) {
-  if (stone) return castRoom(w) > workAboard(w, CAST, false);
+  if (stone) {
+    const room = castRoom(w) - workAboard(w, CAST, false);
+    const logBatches = Math.floor(donated(w) / 4);
+    return room > 4 * logBatches + donated(w, true);
+  }
   const rail = w.get(Rail, w.single(Rail))!;
   if (rail.trains >= 0) {
     const kit = kitJob(w);
@@ -171,11 +175,14 @@ export function takeGivers(
   count: number,
   take: (aid: number, index: number, n: number) => void,
   stone = false,
+  reserved = 0,
 ) {
   const key = stone ? 'queuedStone' : 'queuedGift';
   let index = 0;
   w.each([Account], (aid, a) => {
-    const n = Math.min(count, a[key]);
+    const keep = Math.min(reserved, a[key]);
+    reserved -= keep;
+    const n = Math.min(count, a[key] - keep);
     if (n) {
       w.mut(Account, aid)![key] -= n;
       take(aid, index, n);
