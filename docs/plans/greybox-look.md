@@ -165,6 +165,12 @@ At the foot of the yard ramp the raised apron presents a straight grey face on e
 
 From the lower apron (87.3, 4.8, 939.2), the grey edge blends into the deck in the first still. The darker boards pick out the opening in the second, with the locomotive visible above it. Both 1200 × 750 desktop stills use the same live yard and fixed camera. The before view hides the 16 new instances. [Before](greybox-look/card9-yard-before.jpg) · [After](greybox-look/card9-yard-after.jpg)
 
+### Card 10, Port Quay freight apron
+
+From the foot of the Roundhouse ramp, a strip of packed earth runs between pockets of loose cinder and through the timber retaining wall. The raised yard takes a darker cinder colour around the turntable. The crossing beside the tracks uses the existing individual planks in weathered timber brown.
+
+`src/entities/route-greybox/massing-quay.ts` colours the existing apron, ramp, yard and crossing surfaces. `quay-edges.ts` holds the scatter. The desktop pair uses card 9’s arrival pose at 1200 × 750. [Before](greybox-look/card10-yard-before.jpg) · [After](greybox-look/card10-yard-after.jpg)
+
 ## Design review (2026-11-27)
 
 | Call | Kind | Basis |

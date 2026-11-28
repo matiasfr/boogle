@@ -1,5 +1,6 @@
 import * as THREE from 'three/webgpu';
 import { material } from '../../render/materials.ts';
+import { mulberry32 } from '../../sim/rng.ts';
 import type { OwnedView } from '../../render/owned-view.ts';
 
 export function mountQuayEdges(owner: OwnedView) {
@@ -9,8 +10,9 @@ export function mountQuayEdges(owner: OwnedView) {
   root.position.set(137.6, 0, 942.25);
   root.rotation.y = Math.atan2(-17.75, -17.6);
   const boxes: { matrix: THREE.Matrix4; colour: string }[] = [];
-  function box(x: number, y: number, z: number, w: number, h: number, d: number, colour: string) {
-    boxes.push({ matrix: new THREE.Matrix4().makeScale(w, h, d).setPosition(x, y, -z), colour });
+  function box(x: number, y: number, z: number, w: number, h: number, d: number, colour: string, yaw = 0) {
+    const matrix = new THREE.Matrix4().makeRotationY(yaw).scale(new THREE.Vector3(w, h, d));
+    boxes.push({ matrix: matrix.setPosition(x, y, -z), colour });
   }
   const timber = '#7a5430';
   for (const sign of [-1, 1]) {
@@ -56,6 +58,27 @@ export function mountQuayEdges(owner: OwnedView) {
     box(22.05, 3.24, mid, 0.12, 0.4, end - start, '#694c35');
     box(22.05, 3.67, mid, 0.12, 0.42, end - start, timber);
     for (let z = start + 0.2; z < end; z += 5) box(22.14, 3.46, z, 0.18, 0.86, 0.32, '#594533');
+  }
+  // Broken cinders collect along the margins of the cart approach, outside the worn wheel paths.
+  const random = mulberry32(1749);
+  for (const side of [-1, 1]) {
+    for (let cluster = 0; cluster < 24; cluster++) {
+      const x = 25.8 + random() * 8;
+      const z = -37 + side * (1.9 + random() * 4);
+      for (let chip = 0; chip < 5; chip++) {
+        const width = 0.04 + random() * 0.1;
+        box(
+          x + random() - 0.5,
+          3.027,
+          z + random() - 0.5,
+          width,
+          0.018,
+          width * 0.65,
+          random() < 0.6 ? '#696158' : '#908578',
+          random() * Math.PI,
+        );
+      }
+    }
   }
   const cube = new THREE.BoxGeometry();
   const mesh = new THREE.InstancedMesh(cube, material('timber', { colour: '#ffffff' }), boxes.length);
