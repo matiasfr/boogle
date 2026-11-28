@@ -1,5 +1,5 @@
 // Drafted for the owner's edit; none is The Boogler's.
-import type { WorksSite } from '../../sim/railway-queries-room.ts';
+import type { RoomWorks, WorksKind, WorksSite } from '../../sim/railway-queries-room.ts';
 
 export const WORKS_LINES = {
   wake: { name: "The camp's track layer", objective: 'Wake the track layer at camp.' }, // draft:
@@ -155,4 +155,25 @@ export const WORKS_ACTIONS = {
   plug: 'Pull the plug', // draft:
   brace: 'Knock the pawl', // draft:
   arrive: 'Meet at the post', // draft:
-} as const; // draft:
+} satisfies Record<WorksKind, string>;
+
+const gateKeys: Partial<Record<WorksSite, WorksSite>> = {
+  sea: 'hook',
+  'incline-gate': 'pick',
+  'plug-gate': 'pick',
+  'canopy-gate': 'seeds',
+  'deep-gate': 'seeds',
+  'notch-gate': 'cloth',
+  'causeway-gate': 'lantern',
+};
+
+export function worksNeeds({ kind, site, needs }: RoomWorks): string {
+  const action = WORKS_ACTIONS[kind];
+  if (!needs.length) return '☞ ' + action + ' 0/1';
+  const key = gateKeys[site];
+  if (key) return '⚿ ' + WORKS_LINES[key].name + ' ' + needs[0]!.have + '/1 · ' + action;
+  const bill = needs.map((n) => n.what + ' ' + n.have + '/' + n.of).join('   ');
+  if (site === 'install') return bill + ' · Install at the table'; // draft:
+  if (kind === 'arrive') return bill + ' · ' + action;
+  return bill;
+}
