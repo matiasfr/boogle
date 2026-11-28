@@ -46,4 +46,6 @@ Short rail trips use triangular acceleration; longer trips use rest-to-rest trap
 
 At Canopy the homeward deck holds the cloth and the Notch board. Bell Rock's lower east platform holds the causeway work sites. Two platforms on the Notch reef lead down to the arch. The causeway halt stands on posts off the classic island's north beach, with ramps down to the sand.
 
+Before the High Gorge legs, the same Village rack sends logs to Far Head for Q6, the Pier for Q7, the island steel yard or the Quarry bin for the kiln. The kiln has first claim while it needs timber. Players carry each delivery from its rack into the bill. A load the frame can no longer use returns to the Village.
+
 Logs given at the Village ride line 2 to High Gorge. When the first incline frame is there, its train pours into the log bill on arrival. For the second incline section and the causeway at Bell Rock, the logs wait in the Gorge yard for a north–south kit car. A friend can feed the frame while the bundle travels. The train pours only what the bill still needs, and a full section waits for its barrier to open.

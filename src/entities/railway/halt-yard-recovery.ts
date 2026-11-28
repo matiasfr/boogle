@@ -28,6 +28,13 @@ export function yardRecoveries(adapter: RailwayAdapter, owner: OwnedView, bins: 
       deposits.clear();
     }),
   );
+  owner.cleanup(
+    adapter.onCorrected(() => {
+      last = null;
+      taken.clear();
+      deposits.clear();
+    }),
+  );
   return (w: ReadWorld) => {
     if (adapter.read.pending() || w === last) return;
     const before = last;

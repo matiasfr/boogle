@@ -10,7 +10,7 @@ import { instantiate } from '../../prefab/instantiate.ts';
 import { FIXED, PLAYER_R, reducedMotion } from '../../constants.ts';
 import { camera } from '../../render/scene.ts';
 type CabFace = import('./engine-kit.ts').CabFace;
-import { giftBundle, giftTrip } from './gift-deck.ts';
+import { giftBundle, giftTrip, workGiftTrip } from './gift-deck.ts';
 import { createPennant } from './works-signal.ts';
 import { roomWorks } from '../../sim/railway-queries-room.ts';
 type LinePoint = import('../../place/layout.ts').LinePoint;
@@ -122,6 +122,7 @@ export async function createRailwayTrains(
   owner: OwnedView,
   depotPlace: (k: number, out: THREE.Vector3) => THREE.Vector3,
   homeLogBin: THREE.Vector3,
+  quarryLogBin: () => THREE.Vector3,
 ) {
   const [layout, rail, look, kit, wagon, crates, load, pieces, sounds, engineKit, carKit, shape, folk, land, { flat }] =
     await Promise.all([
@@ -705,7 +706,7 @@ export async function createRailwayTrains(
   const BILL = 2 * LEG_KIT_MOST;
   const strongTail = (tr: typeof first) => !!tr.tailDeck && tr.carOn;
   const unitsOf = (row: RailTrain) =>
-    Number.isFinite(row.logs + row.rails) ? row.logs - (row.gift ?? 0) + row.rails : 0;
+    Number.isFinite(row.logs + row.rails) ? row.logs - (row.gift ?? 0) - (row.workLogs ?? 0) + row.rails : 0;
   const kitShown = (tr: typeof first, row: RailTrain) =>
     Math.ceil((strongTail(tr) ? Math.max(0, unitsOf(row) - BILL) : unitsOf(row)) / 8);
   const tailShown = (tr: typeof first, row: RailTrain) =>
@@ -931,7 +932,14 @@ export async function createRailwayTrains(
         });
     }
   }
+  let skipGiftFlights = true;
+  owner.cleanup(
+    adapter.onCorrected(() => {
+      skipGiftFlights = true;
+    }),
+  );
   function restore() {
+    skipGiftFlights = true;
     const w = adapter.read.world(),
       on = line2Trains(w);
     clock = adapter.read.tickNow();
@@ -955,7 +963,7 @@ export async function createRailwayTrains(
     trains.forEach((tr) => {
       const last = { ...trainRow(w, tr.slot) };
       tr.last = last;
-      tr.bundle.visible = last.gift > 0;
+      tr.bundle.visible = last.gift + last.workLogs > 0;
       tr.count = -1;
       folk.folk.resetRiderShuffle(tr.slot, last.riders, tr.riderCar);
       // A restore or a late join shows the rows only: no beat, and the next frame's fit is not an edge.
@@ -1385,10 +1393,10 @@ export async function createRailwayTrains(
           row.phase === TRAIN_PHASE.STAND &&
           row.at === kit.kitStop &&
           (tr.last.phase !== TRAIN_PHASE.STAND || tr.last.at !== kit.kitStop) &&
-          tr.last.logs + tr.last.rails > 0
+          tr.last.logs - (tr.last.workLogs ?? 0) + tr.last.rails > 0
         ) {
           unloading = true;
-          flyingLogs = tr.last.logs;
+          flyingLogs = tr.last.logs - (tr.last.workLogs ?? 0);
           flyingRails = tr.last.rails;
           const count = crates.deckCount(tr.deck, 'fill'),
             logs = flyingLogs,
@@ -1409,8 +1417,24 @@ export async function createRailwayTrains(
             });
           }
         }
-        tr.bundle.visible = row.gift > 0;
-        const delta = tr.last ? row.gift - (tr.last.gift ?? 0) : 0;
+        tr.bundle.visible = row.gift + row.workLogs > 0;
+        if (
+          !skipGiftFlights &&
+          tr.last &&
+          row.workLogs !== (tr.last.workLogs ?? 0) &&
+          (row.at === 0 || row.at === tr.last.workStop)
+        ) {
+          workGiftTrip(
+            owner,
+            row,
+            row.workLogs - (tr.last.workLogs ?? 0),
+            tr.bundle,
+            homeLogBin,
+            quarryLogBin,
+            depotPlace,
+          );
+        }
+        const delta = !skipGiftFlights && tr.last ? row.gift - (tr.last.gift ?? 0) : 0;
         giftTrip(owner, w, tr.line, row, delta, tr.bundle, homeLogBin, legKitFlight);
         // A leg's kit hops from the car to its rack (the greybox route's step 4 review, answer b: 8 m over the up
         // track at Ring Island, then onto each railhead's), drawn as the Q kits' unload is. The rows moved the units
@@ -1514,6 +1538,7 @@ export async function createRailwayTrains(
             });
         }
       });
+      skipGiftFlights = false;
       crates.updateCrates(dt);
       stepFootFlights(dt);
     },

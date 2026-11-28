@@ -20,7 +20,16 @@ import { createRingSteel } from '../ring-steel/view.ts';
 import { createLegView } from '../route-greybox/leg-view.ts';
 import { createStationGuides } from './station-guides.ts';
 import { createRouteGuides } from '../route-greybox/phase-guides.ts';
-import { giftQueued, giftInTransit, giftRides, worksThanks } from '../../sim/railway-queries-gift.ts';
+import {
+  giftQueued,
+  giftInTransit,
+  giftRides,
+  worksThanks,
+  workSite,
+  workQueued,
+  workAboard,
+} from '../../sim/railway-queries-gift.ts';
+
 import { railwayMirror, rules } from '../../world/game-world.ts';
 import { roomWorks, WORKS_STEPS } from '../../sim/railway-queries-room.ts';
 import { boiler, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
@@ -74,21 +83,29 @@ export async function createRailwayWorksLive(
       current = roomWorks(world);
       routeGuides.read(world as ReadWorld, current);
       const routeSection = routeSections.has(current.site);
-      const names = routeSection
-        ? worksThanks(world)
-            .map((pid) => {
-              const ordinal = rules.roster.indexOf(pid);
-              return ordinal < 0 ? undefined : rules.roster.nameOf(ordinal);
-            })
-            .filter((name): name is string => !!name)
-            .slice(0, 6)
-        : [];
+      const stop = workSite.findIndex((site) => site === current!.site);
+      const names =
+        routeSection || stop > 0
+          ? worksThanks(world, Math.max(0, stop))
+              .map((pid) => {
+                const ordinal = rules.roster.indexOf(pid);
+                return ordinal < 0 ? undefined : rules.roster.nameOf(ordinal);
+              })
+              .filter((name): name is string => !!name)
+              .slice(0, 6)
+          : [];
+      const queued = stop > 0 ? workQueued(world, stop) : 0;
+      const aboard = stop > 0 ? workAboard(world, stop, false) : 0;
       updateBoard(
         current,
         names,
-        routeSection && (giftRides(world) || giftInTransit(world))
-          ? [giftQueued(world), giftInTransit(world)]
-          : undefined,
+        stop > 0
+          ? queued || aboard
+            ? [queued, aboard]
+            : undefined
+          : routeSection && (giftRides(world) || giftInTransit(world))
+            ? [giftQueued(world), giftInTransit(world)]
+            : undefined,
       );
       publication = world;
     }

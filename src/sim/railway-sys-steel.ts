@@ -95,6 +95,7 @@ export const steelFeed = defineSystem(
       sm = w.mut(Steel, id)!;
     am.carry -= logs;
     am.rails -= rails;
+    am.workThanks |= 1 << RING_ISLAND;
     sm.logs += logs;
     sm.rails += rails;
     if (sm.logs === STEEL.logs && sm.rails === STEEL.rails) sm.lit = w.mut(SteelClock, id)!.lastCast = tick;

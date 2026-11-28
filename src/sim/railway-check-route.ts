@@ -13,10 +13,10 @@
 //                   reached (throws on the first broken one)
 import type { World } from '../ecs/index.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
-import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
+import { LINE2, RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, RAIL_YARDS } from './railway-route.ts';
 import { Account, LegYard, Rail, Train } from './railway-components.ts';
-import { giftInTransit, thanksStep } from './railway-queries-gift.ts';
+import { giftInTransit, giverList, rideableLogs, thanksStep } from './railway-queries-gift.ts';
 import {
   SERVED_LEGS,
   STOCKED_LEGS,
@@ -76,9 +76,15 @@ export function checkRoute(w: World) {
   if (giftOut !== giftInTransit(w)) bad('gift output');
   const thanksMax = thanksStep(w) + 1;
   const lifts = RAIL_LEGS.map(() => ({ logs: 0, rails: 0 }));
+  let queued = 0;
+  let accounts = 0;
   w.each([Account], (_id, a) => {
+    queued += a.queuedGift;
+    accounts++;
     if (
+      !railInt(a.queuedGift) ||
       !railInt(a.thanks, thanksMax) ||
+      (a.workThanks & ~46) !== 0 ||
       !railInt(a.legLogs, 255) ||
       !railInt(a.legRails, 255) ||
       !railInt(a.liftLeg, RAIL_LEGS.length - 1, -1) ||
@@ -90,6 +96,7 @@ export function checkRoute(w: World) {
       lifts[a.liftLeg]!.rails += a.legRails;
     }
   });
+  if (queued > rideableLogs(w)) bad('queued gift attribution');
   RAIL_LEGS.forEach((leg, k) => {
     const row = legRow(w, k);
     if (row.heldLogs !== lifts[k]!.logs || row.heldRails !== lifts[k]!.rails) bad('leg held');
@@ -105,6 +112,18 @@ export function checkRoute(w: World) {
   // works' kit and a leg's apart).
   w.each([Train], (_id, t) => {
     if (!railInt(t.gift, t.logs) || (t.gift && !t.legKit)) bad('train gift');
+    if (
+      !railInt(t.workLogs, t.logs) ||
+      (t.workGivers &&
+        (t.workStop <= 0 ||
+          t.workGivers.length > t.workLogs * 2 ||
+          !/^(?:[0-9a-f]{2})+$/.test(t.workGivers) ||
+          giverList(t.workGivers).some((index) => index >= accounts))) ||
+      ![0, 1, 2, 3, 5].includes(Math.abs(t.workStop)) ||
+      Boolean(t.workLogs) !== Boolean(t.workStop) ||
+      (t.workLogs && (t.legKit || RAIL_TRAINS[t.slot]!.line !== LINE2))
+    )
+      bad('work gift');
     if (!t.legKit) return;
     const served = SERVED_LEGS[RAIL_TRAINS[t.slot]!.line]!;
     if (t.logs + t.rails <= 0 || !served.some((k) => legKitMayLoad(w, k))) bad('leg kit mark');

@@ -1,5 +1,5 @@
 {
- "worldNs": "v85",
+ "worldNs": "v86",
  "components": [
   {
    "kind": "rail",
@@ -48,6 +48,14 @@
     ],
     [
      "giftOut",
+     "int"
+    ],
+    [
+     "returnedLogs",
+     "int"
+    ],
+    [
+     "depotGiftDelivered",
      "int"
     ],
     [
@@ -640,6 +648,14 @@
      "u8"
     ],
     [
+     "workThanks",
+     "u8"
+    ],
+    [
+     "queuedGift",
+     "int"
+    ],
+    [
      "legLogs",
      "u8"
     ],
@@ -859,6 +875,18 @@
     [
      "gift",
      "int"
+    ],
+    [
+     "workStop",
+     "int"
+    ],
+    [
+     "workLogs",
+     "int"
+    ],
+    [
+     "workGivers",
+     "str"
     ],
     [
      "legKit",
@@ -1296,6 +1324,10 @@
     ],
     [
      "outLogs",
+     "int"
+    ],
+    [
+     "giftDelivered",
      "int"
     ],
     [

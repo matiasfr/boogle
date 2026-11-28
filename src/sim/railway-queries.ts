@@ -170,9 +170,13 @@ export function depotNeed(w: World, k: number, j: Readonly<{ stock: number; rail
   const spec = LINE2_STATIONS[k]!,
     rail = w.get(Rail, railId(w))!,
     cart = w.get(Cart, cartId(w))!;
+  const aboardLogs = LINE2_SLOTS.reduce((total, slot) => {
+    const t = w.get(Train, trainId(w, slot))!;
+    return total + t.logs - (t.workStop === spec.kitStop ? 0 : t.workLogs);
+  }, 0);
   const logs = Math.max(
     0,
-    Math.min(spec.bill[0] - j.stock - rail.depot - cart.logs - aboard(w, 'logs'), spec.bill[0] - rail[DEPOT_OUT[k]!]),
+    Math.min(spec.bill[0] - j.stock - rail.depot - cart.logs - aboardLogs, spec.bill[0] - rail[DEPOT_OUT[k]!]),
   );
   const rails = spec.shelf
     ? Math.max(
@@ -332,7 +336,7 @@ export const ringJoined = (w: World) => w.get(Aperture, apertureId(w))!.joined >
 const steelAboard = (w: World, key: 'logs' | 'rails') =>
   LINE2_SLOTS.reduce((n, k) => {
     const t = w.get(Train, trainId(w, k))!;
-    return n + (t.legKit ? 0 : t[key]);
+    return n + (t.legKit ? 0 : t[key] - (key === 'logs' && t.workStop !== 5 ? t.workLogs : 0));
   }, 0);
 /** What the steel works' kit still needs brought (design review, finding 2: nothing may be lost from the bill): its bill
  * less what is fed, in the yard and aboard line 2's trains. Logs and rails on a back or a pile are ordinary cargo and not

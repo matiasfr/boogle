@@ -4,6 +4,7 @@
 //   checkLine2(w)    the forge and its pour clock; Q1 to Q7's bounds, order, funding and laying; the depot, the cart,
 //                    the lever, hook, glider and pack; the shelf; the boiler; rail conservation (throws on the first)
 import type { World } from '../ecs/index.ts';
+import { workAboard } from './railway-queries-gift.ts';
 import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { railPos } from './railway-route.ts';
 import { LINE2_FORGE as FORGE, LINE2_STATIONS, Q6 } from './railway-line2-layout.ts';
@@ -100,15 +101,24 @@ export function checkLine2(w: World) {
     legLogs += l.loadedLogs;
     legRails += l.loadedRails;
   });
+  const far = workAboard(w, 2),
+    pier = workAboard(w, 3);
+  const depotGift = r0.depotGiftDelivered + far + pier;
   if (
+    far > r0.out5 ||
+    pier > r0.out6 ||
     !railInt(r0.giftOut, legLogs) ||
+    !railInt(r0.depotGiftDelivered, r0.out5 + r0.out6 - far - pier) ||
     depotOut.some((n, k) => !railInt(n, LINE2_STATIONS[k]!.bill[0]) || (n > 0 && !LINE2_STATIONS[k]!.depot)) ||
-    depotOut.reduce((a, b) => a + b, 0) + legLogs !== r0.depotProduced + r0.giftOut
+    depotOut.reduce((a, b) => a + b, 0) + legLogs !== r0.depotProduced + r0.giftOut + depotGift
   )
     bad('depot output');
   const c = cart(w);
   // Logs aboard are a stretch's kit or, after the rivet, the steel works' (made at the Village: outLogs).
-  if (r0.depot + rackLogs + c.logs + line2Aboard(w, 'logs') > r0.depotProduced + r0.giftOut + steel(w).outLogs)
+  if (
+    r0.depot + rackLogs + c.logs + line2Aboard(w, 'logs') >
+    r0.depotProduced + r0.giftOut + depotGift + workAboard(w, 1) + steel(w).outLogs
+  )
     bad('depot stock');
   // The cart's road ends at Q6's rack (the farthest it is ever sent; Q6 and Q7 are fed by train).
   const road = CART_ROAD.rackCm(Q6);

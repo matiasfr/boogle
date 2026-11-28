@@ -4,6 +4,7 @@ import { buildSeedWorld } from '../../src/sim/railway-seeds.ts';
 import { act, advance } from '../../src/sim/railway-seed-route.ts';
 import { chopTo } from '../../src/sim/railway-seed-works.ts';
 import { legRow } from '../../src/sim/railway-queries-route.ts';
+import { workAboard } from '../../src/sim/railway-queries-gift.ts';
 import { account, trees } from '../../src/sim/railway-rows.ts';
 import { RAILWAY_SOURCES } from '../../src/sim/railway-layout.ts';
 import { railSupplyPulse } from '../../src/sim/railway-sys-away.ts';
@@ -23,6 +24,20 @@ export function inclineGiftSeed() {
   }
   need(invariant(seed.w) === null, 'incline gift seed');
   return seedDoc(seed);
+}
+
+export function pierGiftSeed() {
+  const s = buildSeedWorld('crossing-done');
+  chopTo(s, 'a', 8);
+  const extra = account(s.w, 'a')!.carry - 8;
+  if (extra)
+    need(act(s, 'a', 'rail.drop', { kind: 0, n: extra, x: 100000, y: 2000, z: 3000 }) === extra, 'spare logs put down');
+  need(act(s, 'a', 'rail.haltPut', { kind: 0, yard: 0 }) === 8, 'eight for Q7');
+  for (let ticks = 0; workAboard(s.w, 3) !== 8; ticks++) {
+    need(ticks < 6000, 'Pier cargo aboard');
+    advance(s, 1);
+  }
+  return seedDoc(s, 'Robin');
 }
 
 export function yardRecoverySeed() {

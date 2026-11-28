@@ -21,7 +21,10 @@ import type { ServerPacket } from '../../src/world/replicate.ts';
 
 import { buildSeedWorld } from '../../src/sim/railway-seeds.ts';
 import { HALT_YARDS } from '../../src/sim/railway-yard-layout.ts';
-import { worksThanks } from '../../src/sim/railway-queries-gift.ts';
+import { QUARRY_YARD, workAboard, worksThanks } from '../../src/sim/railway-queries-gift.ts';
+import { haltYardStock } from '../../src/sim/railway-queries-yard.ts';
+import { works } from '../../src/sim/railway-rows.ts';
+import { WORKS_KILN } from '../../src/sim/railway-works-layout.ts';
 import { Pile, Train, Town } from '../../src/sim/railway-components.ts';
 import { railTick } from '../../src/sim/railway-systems.ts';
 import { trains, town } from '../../src/sim/railway-rows.ts';
@@ -48,6 +51,58 @@ test('a guest gives to the open incline through the host from the Village yard',
     assert.equal(given.accepted, amount);
     assert.deepEqual(worksThanks(f.world()), ['bob']);
     assert.equal(f.host.rules.railway.account('bob')!.carry, 0);
+  } finally {
+    await f.close();
+  }
+});
+test('a guest sends kiln timber through both mirrors and a carrier restart', async () => {
+  const f = await fixture(railwayRoomId('kiln-gift'), 600000);
+  try {
+    const seed = buildSeedWorld('works-open');
+    while (f.host.sync.world.tick < seed.t) f.host.step(0.1);
+    await f.host.sync.whenDurable();
+    f.world().load(JSON.parse(JSON.stringify(seed.w.snapshot())), railwayCheck);
+    f.host.rules.railway.touchAll();
+    await f.open('a');
+    const epoch = await f.open('b');
+    await f.harvest('b', 8, epoch);
+    const n = f.host.rules.railway.account('bob')!.carry;
+    const put = { op: 'rail.haltPut', yard: 0, kind: 0 };
+    f.pose('b', WORKS_KILN.x, WORKS_KILN.z);
+    assert.equal((await f.edit('b', put, epoch)).status, 'rejected');
+    f.pose('b', HALT_YARDS[0]!.x, HALT_YARDS[0]!.z);
+    assert.equal((await f.edit('b', put, epoch)).accepted, n);
+    f.send('b', put, epoch, f.requests.get('b'));
+    for (let i = 0; !workAboard(f.world(), 1); i++) {
+      assert.ok(i < 3000);
+      await f.step(1);
+    }
+    assert.equal(workAboard(f.world(), 1), n);
+    for (const sid of ['a', 'b']) {
+      const mirror = createRailwayMirror();
+      for (const { cid, p } of f.packets) if (cid === sid) mirror.mirror.apply(p, 0);
+      assert.equal(workAboard(mirror.confirmed(), 1), n);
+      assert.deepEqual(worksThanks(mirror.confirmed(), 1), ['bob']);
+    }
+    f.host.depart('b');
+    f.host.replication.removeClient('b');
+    await f.restart();
+    assert.equal(workAboard(f.world(), 1), n);
+    for (let i = 0; workAboard(f.world(), 1); i++) {
+      assert.ok(i < 3000);
+      await f.step(1);
+    }
+    assert.equal(haltYardStock(f.world(), QUARRY_YARD, 0), n);
+    assert.equal(works(f.world()).logs, 0);
+    const receiver = await f.open('a');
+    const bin = HALT_YARDS[QUARRY_YARD]!;
+    f.pose('a', bin.x, bin.z);
+    assert.equal((await f.edit('a', { op: 'rail.haltTake', yard: QUARRY_YARD, kind: 0 }, receiver)).accepted, n);
+    f.pose('a', WORKS_KILN.x, WORKS_KILN.z, WORKS_KILN.y);
+    assert.equal((await f.edit('a', { op: 'rail.kiln' }, receiver)).accepted, n);
+    assert.equal(works(f.world()).logs, n);
+    assert.deepEqual(worksThanks(f.world(), 1).sort(), ['alice', 'bob']);
+    railwayCheck(f.world());
   } finally {
     await f.close();
   }
@@ -125,7 +180,7 @@ async function fixture(roomId = railwayRoomId('host'), saveMs = 2000) {
   const store = createStore({ dataDir: dir, maxRooms: 10 });
   await store.init();
   let now = START;
-  const poses = new Map<string, { x: number; z: number }>();
+  const poses = new Map<string, { x: number; y: number; z: number }>();
   const pids = new Map([
     ['a', 'alice'],
     ['b', 'bob'],
@@ -162,11 +217,11 @@ async function fixture(roomId = railwayRoomId('host'), saveMs = 2000) {
     }
     await host.sync.whenDurable();
   };
-  const pose = (sid: string, x: number, z: number) => poses.set(sid, { x, z });
+  const pose = (sid: string, x: number, z: number, y = 0) => poses.set(sid, { x, y, z });
   // What a client action carries: where its actor stands (cm) and its action clock (ms). No pose, no position.
   const act = (sid: string) => {
     const p = poses.get(sid);
-    return p ? { at: [p.x, 0, p.z], ms: now - START } : {};
+    return p ? { at: [p.x, p.y, p.z], ms: now - START } : {};
   };
   const open = async (sid: string) => {
     host.deliver({ t: 'r:open' }, sid);

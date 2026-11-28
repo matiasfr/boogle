@@ -55,6 +55,8 @@ export const Rail = defineComponent(
     depot: 'int',
     // Logs loaded from Home's rack, less those returned as surplus or poured directly into a frame.
     giftOut: 'int',
+    returnedLogs: 'int',
+    depotGiftDelivered: 'int',
     depotProduced: 'int',
     lever: 'bool',
     sea: 'bool',
@@ -147,6 +149,9 @@ export const Train = defineComponent(
     // steel first, and a train never carries both). Set by the leg's load, cleared when the last unit is off.
     // The share of logs aboard that came from Home's rack.
     gift: 'int',
+    workStop: 'int',
+    workLogs: 'int',
+    workGivers: 'str',
     legKit: 'bool',
   },
   { key: 'slot' },
@@ -183,6 +188,7 @@ export const Steel = defineComponent(
     rack: 'int',
     poured: 'int',
     outLogs: 'int',
+    giftDelivered: 'int',
     outRails: 'int',
   },
   { requires: [SteelClock], defaults: { lit: -1 } },
@@ -291,6 +297,8 @@ export const Account = defineComponent(
     liftLeg: 'int',
     // Last thanked lay count plus one. Zero until the account contributes.
     thanks: 'u8',
+    workThanks: 'u8',
+    queuedGift: 'int',
     legLogs: 'u8',
     legRails: 'u8',
   },

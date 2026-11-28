@@ -218,6 +218,8 @@ export type RailTrain = {
   legKit?: boolean;
   /** Logs aboard reserved for pouring into the open frame. */
   gift?: number;
+  workLogs?: number;
+  workStop?: number;
 };
 /** Train `slot` standing at its home, asleep (a fleet row: in the shed, TRAIN_PHASE.SHED). */
 export function trainIdle(slot: number): RailTrain {

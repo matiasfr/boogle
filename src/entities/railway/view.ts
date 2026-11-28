@@ -36,6 +36,7 @@ import { createRailwayLine2 } from './line2-view.ts';
 import { createRailwayShelf } from './shelf-view.ts';
 import { createRailwayCart } from './cart-view.ts';
 import { createRailwayTrains } from './train-view.ts';
+import { QUARRY_YARD } from '../../sim/railway-queries-gift.ts';
 import { createFreight } from './freight-view.ts';
 import { createRailwayHalts } from './halts-view.ts';
 import { createTurnoutBlades } from './turnout-blades.ts';
@@ -123,7 +124,9 @@ export async function createRailwayView(adapter: RailwayAdapter) {
     line2.depotSlot,
     shelf.railSlot,
   );
-  const trains = await createRailwayTrains(adapter, owner, line2.depotPlace, sources.villageBins[0]!);
+  const trains = await createRailwayTrains(adapter, owner, line2.depotPlace, sources.villageBins[0]!, () =>
+    haltYards.logBin(QUARRY_YARD),
+  );
   const freight = createFreight(adapter, owner);
   line2.boilerSeat(trains.boilerSeat);
   trains.holdBoiler(line2.boilerFlying);

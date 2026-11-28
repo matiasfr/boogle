@@ -16,6 +16,9 @@ import {
   Job,
   Leg,
   LegYard,
+  Forge,
+  Cart,
+  Steel,
   Pile,
   QJob,
   Rail,
@@ -26,7 +29,6 @@ import { balanceOf, railId, roomOf, STONE } from './railway-queries.ts';
 import { haltYardId, haltYardServes, nearestOpenYard, onRack, yardKey } from './railway-queries-yard.ts';
 import { credit, pickedUp, putDown } from './railway-sys-line1.ts';
 import type { Act } from './railway-sys-core.ts';
-import { giftRides, thank } from './railway-queries-gift.ts';
 import { VILLAGE_YARD } from './railway-yard-layout.ts';
 
 /** n of `kind` into yard k: the Village's logs and stone onto the recovery rack, the rest onto its row. */
@@ -40,7 +42,7 @@ function stock(w: World, k: number, kind: number, n: number) {
 export const haltPut = defineSystem(
   'rail.haltPut',
   {
-    reads: [Aperture, Job, QJob, Pile, Train, LegYard],
+    reads: [Aperture, Job, QJob, Pile, Train, LegYard, Steel, Works, Cart, Forge],
     writes: [HaltYard, Rail, Account, Leg],
     phase: 'act',
     order: 80,
@@ -50,10 +52,13 @@ export const haltPut = defineSystem(
     if (!haltYardServes(w, 'put', e.yard, kind)) return 0;
     const n = balanceOf(w.get(Account, aid)!, kind!);
     if (n <= 0) return 0;
+    if (e.yard === VILLAGE_YARD && kind === 0) {
+      w.mut(Account, aid)!.queuedGift += n;
+    }
     stock(w, e.yard, kind!, n);
     credit(w.mut(Account, aid)!, kind!, -n);
     putDown(w, aid, kind!, n);
-    if (e.yard === VILLAGE_YARD && kind === 0 && giftRides(w)) thank(w, aid);
+
     return n;
   },
 );

@@ -3,7 +3,7 @@
 // works' to Ring Island and its steel home: ./railway-sys-steel.ts), the footing wagon (the pier's twelve to the Pier,
 // then Ring Island's to the Railhead) and the cart's hold on line 1.
 import { defineSystem, type World } from '../ecs/index.ts';
-import { LINE2_KIT } from './railway-line2-layout.ts';
+import { LINE2_KIT, LINE2_STATIONS } from './railway-line2-layout.ts';
 import { CART_PHASE } from './railway-cart.ts';
 import {
   TRAIN,
@@ -21,6 +21,7 @@ import { lineSlots, atEnd, trainStepLine, type TrainIO, type TrainMoveIO } from 
 import { WORKS } from './railway-works-layout.ts';
 import { railInt } from './railway.ts';
 import {
+  HaltYard,
   Account,
   Aperture,
   Cart,
@@ -66,6 +67,16 @@ import {
   worksId,
   type Row,
 } from './railway-queries.ts';
+import {
+  QUARRY_YARD,
+  giverList,
+  rideableLogs,
+  takeGivers,
+  workDestination,
+  workNeed,
+  workQueued,
+  workRoom,
+} from './railway-queries-gift.ts';
 import type { Act, Tick } from './railway-sys-core.ts';
 import { freightArrives, freightLoads, ridersArrive, ridersBoard } from './railway-sys-trade.ts';
 import { lapSlots, runLine } from './railway-lap.ts';
@@ -176,6 +187,8 @@ function serviceOf(w: World, slot: number, r: Readonly<Row<typeof Train>>, tick:
   if (RAIL_TRAINS[slot]!.line !== LINE2) return freight;
   return (k, dir) =>
     freight(k, dir) ||
+    (r.workLogs > 0 && (k === r.workStop || k === 0)) ||
+    (k === 0 && dir < 0 && rideableLogs(w) > 0 && workDestination(w) > 0) ||
     (k === 0 && dir < 0 && kitOwed(w, r)) ||
     (k === kitStop(w) && r.logs + r.rails > 0) ||
     (k === 1 && dir > 0 && footCarrier(w, r, tick) && r.foot < footCap(r) && footOwed(w, aboard(w, 'foot')) > 0) ||
@@ -195,7 +208,7 @@ export function trainMoveIO(w: World): TrainMoveIO {
 /** The world's side of the trains' step (./railway-trains.ts): rows, stops, every line's yard freight (slice 5,
  * ./railway-sys-trade.ts), and line 2's cargo, wagon and the cart's hold on line 1. Transfers and phase changes are
  * atomic inside this tick apply. */
-function trainIO(w: World, headPct: number, pct: TradePct, tick: number): TrainIO {
+function trainIO(w: World, headPct: number, pct: TradePct, tick: number, returnLogs: (n: number) => void): TrainIO {
   const row = (slot: number) => w.get(Train, trainId(w, slot))!;
   const laid = legsLaid(w);
   // Every train in this tick reads the same completed jobs, ring and leg prefix.
@@ -228,6 +241,42 @@ function trainIO(w: World, headPct: number, pct: TradePct, tick: number): TrainI
       legKitArrive(w, slot, tick);
       if (!line2(slot)) return;
       const r = w.mut(Train, trainId(w, slot))!;
+      // Set reserved logs aside while ordinary kit unloads. A stale mark rides home on the same car.
+      r.logs -= r.workLogs;
+      if (r.workLogs && r.at === r.workStop) {
+        // Ordinary kit on this car already has a place on its receiving rack.
+        const ordinary = r.workStop === 1 ? 0 : r.logs;
+        const n = Math.min(r.workLogs, Math.max(0, workRoom(w, r.workStop) - ordinary));
+        if (r.workStop === 1) w.mut(HaltYard, w.lookup(HaltYard, QUARRY_YARD)!)!.logs += n;
+        else if (r.workStop === 5) {
+          const steel = w.mut(Steel, w.single(Steel))!;
+          steel.yardLogs += n;
+          steel.giftDelivered += n;
+        } else {
+          const rail = w.mut(Rail, railId(w))!;
+          rail.depot += n;
+          rail.depotGiftDelivered += n;
+        }
+        if (r.workGivers) {
+          const landed = new Set(giverList(r.workGivers.slice(0, n * 2)));
+          let index = 0;
+          w.each([Account], (aid) => {
+            if (landed.has(index++)) w.mut(Account, aid)!.workThanks |= 1 << r.workStop;
+          });
+          r.workGivers = '';
+        }
+        r.workLogs -= n;
+        if (r.workLogs) r.workStop = -r.workStop;
+      } else if (r.workLogs && r.at === 0) {
+        const rail = w.mut(Rail, railId(w))!;
+        returnLogs(r.workLogs);
+        const stop = Math.abs(r.workStop);
+        if (stop === 5) w.mut(Steel, w.single(Steel))!.outLogs -= r.workLogs;
+        if (stop === 2 || stop === 3) rail[DEPOT_OUT[stop + 3]!] -= r.workLogs;
+        r.workLogs = 0;
+        r.workGivers = '';
+      }
+      if (!r.workLogs) r.workStop = 0;
       // A kit unloads at its job's halt (Q6's at Far Head, Q7's at the Pier: call 62).
       if (r.at === kitStop(w) && (r.logs || r.rails)) {
         const rail = w.mut(Rail, railId(w))!;
@@ -235,8 +284,9 @@ function trainIO(w: World, headPct: number, pct: TradePct, tick: number): TrainI
         rail.depotRails += r.rails;
         r.logs = r.rails = 0;
       }
-      footingsArrive(w, r, tick);
+      if (!r.workLogs || r.wagon) footingsArrive(w, r, tick);
       steelArrives(w, r);
+      r.logs += r.workLogs;
     },
     standing(slot, tick) {
       // A train standing at its line's yard heading home loads, whatever it stopped for (slice 5; R2b's full-load stop
@@ -267,10 +317,37 @@ function trainIO(w: World, headPct: number, pct: TradePct, tick: number): TrainI
       }
       // The active train-fed job's kit (its bill, up to the kit car's LINE2_KIT) loads onto whichever line 2 train
       // stands at the village while it is owed.
+      if (
+        r.at === 0 &&
+        !r.legKit &&
+        !r.workLogs &&
+        !r.freight &&
+        !r.steel &&
+        !deckHeld(r) &&
+        w.get(Rail, railId(w))!.rack
+      ) {
+        const stop = workDestination(w);
+        const rail = w.mut(Rail, railId(w))!;
+        const n = stop ? Math.min(rideableLogs(w), LINE2_KIT.logs - r.logs, workNeed(w, stop)) : 0;
+        if (n > 0) {
+          rail.rack -= n;
+          const car = w.mut(Train, trainId(w, slot))!;
+          car.workStop = stop;
+          car.workLogs = n;
+          takeGivers(w, n, (_aid, index, count) => {
+            car.workGivers += index.toString(16).padStart(2, '0').repeat(count);
+          });
+          car.logs += n;
+          if (stop === 5) w.mut(Steel, w.single(Steel))!.outLogs += n;
+          if (stop === 2 || stop === 3) rail[DEPOT_OUT[stop + 3]!] += n;
+        }
+      }
       const kit = kitJob(w);
       if (!deckHeld(r) && r.at === 0 && kit >= 0 && w.get(QJob, qjobId(w, kit))!.start < 0) {
         const need = depotNeed(w, kit, w.get(QJob, qjobId(w, kit))!);
-        const n = Math.min(LINE2_KIT.logs - r.logs, need.logs);
+        // Gifts for a different stop need another car. Mint only the Q kit that the queued timber cannot cover.
+        const queued = w.get(Rail, railId(w))!.rack ? workQueued(w, LINE2_STATIONS[kit]!.kitStop!) : 0;
+        const n = Math.min(LINE2_KIT.logs - r.logs, need.logs - queued);
         const rails = Math.min(LINE2_KIT.rails - r.rails, need.rails, w.get(Forge, forgeId(w))!.rack);
         if (n || rails) {
           const rail = w.mut(Rail, railId(w))!,
@@ -292,7 +369,7 @@ function trainIO(w: World, headPct: number, pct: TradePct, tick: number): TrainI
       // After the rivet the kit car is the steel works' (ring-island-build2, R2): its kit's need loads here.
       if (r.at === 0 && kit < 0 && ringJoined(w)) steelLoads(w, trainId(w, slot));
       // The greybox route: the open leg's kit loads at the kit halt (never alongside a Q job's: legs open after Q7).
-      return legKitLoad(w, slot, tick);
+      return row(slot).workLogs ? 'on' : legKitLoad(w, slot, tick);
     },
     // The footing wagon's train is never held for headway (nor by the balanced hold) while the pier or the ring still
     // owes footings (design review, 9; ring-island-build1, R3).
@@ -306,14 +383,40 @@ function trainIO(w: World, headPct: number, pct: TradePct, tick: number): TrainI
 const LINE1 = RAIL_LINES.findIndex((l) => l.id === 'line1');
 function trainStep(w: World, tick: number, headPct: number, pct: TradePct) {
   if (w.get(Rail, railId(w))!.trains < 0) return;
-  const io = trainIO(w, headPct, pct, tick);
+  // All slots finish their stands before returned timber becomes available for the next dispatch.
+  let returned = 0;
+  const io = trainIO(w, headPct, pct, tick, (n) => {
+    returned += n;
+  });
   for (let line = 0; line < RAIL_LINES.length; line++) trainStepLine(io, line, tick);
+  if (returned) {
+    const rail = w.mut(Rail, railId(w))!;
+    rail.rack += returned;
+    rail.returnedLogs += returned;
+  }
 }
 export const trainTick = defineSystem(
   'rail.trainTick',
   {
     reads: [QJob, Cart, Plot],
-    writes: [Train, Line, Rail, Forge, Works, Aperture, Yard, Town, Till, Steel, Shed, Leg, LegYard, Route, Account],
+    writes: [
+      Train,
+      Line,
+      Rail,
+      Forge,
+      Works,
+      Aperture,
+      Yard,
+      Town,
+      Till,
+      Steel,
+      Shed,
+      Leg,
+      LegYard,
+      Route,
+      Account,
+      HaltYard,
+    ],
     phase: 'tick',
     order: 3,
   },
