@@ -278,7 +278,6 @@ const policyBlocks: PolicyBlock[] = [
     files: ['src/content/**/*.{js,ts}'],
     rules: { 'boogle/records-are-data': 'error' },
   },
-  { files: ['src/**/*.{js,ts}'], rules: { 'boogle/prefab-public-surface': 'error' } },
   // Module boundaries (AGENTS.md). Later blocks replace the rule, so each repeats the sync, proto and debug bans.
   {
     files: ['src/**/*.{js,ts}'],

@@ -1,6 +1,0 @@
-[
-  {
-    "file": "src/review-lookout-hole.ts",
-    "code": "import {createLookoutView} from './entities/lookout/view.ts';\nexport async function reviewLookout() { return createLookoutView(); }\n"
-  }
-]

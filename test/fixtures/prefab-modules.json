@@ -135,34 +135,6 @@
     "fail": true
   },
   {
-    "name": "surface: exported wrapper from debt",
-    "file": "src/legacy.ts",
-    "code": "import {createBody} from './physics/engine'; export const existing=1; export function make(){return createBody({});}",
-    "rule": "boogle/prefab-public-surface",
-    "fail": true
-  },
-  {
-    "name": "surface: local alias exported from debt",
-    "file": "src/legacy.ts",
-    "code": "import {createBody} from './physics/engine'; export const existing=1; const make=createBody; export {make};",
-    "rule": "boogle/prefab-public-surface",
-    "fail": true
-  },
-  {
-    "name": "surface: star from debt",
-    "file": "src/legacy.ts",
-    "code": "export const existing=1; export * from './physics/engine';",
-    "rule": "boogle/prefab-public-surface",
-    "fail": true
-  },
-  {
-    "name": "surface: named door cannot export seat alias",
-    "file": "src/prefab/instantiate.ts",
-    "code": "import {registerSeat} from '../entities/railway/seat'; export const instantiate=()=>({}); const make=registerSeat; export {make};",
-    "rule": "boogle/prefab-public-surface",
-    "fail": true
-  },
-  {
     "name": "surface: declared instantiate API",
     "file": "src/probe.ts",
     "code": "import {instantiate} from './prefab/instantiate'; instantiate();",

@@ -1,19 +1,15 @@
-// Module identities and frozen public surfaces, rather than syntax or binding-name guesses.
+// Module identities for the prefab collider/seat doors, resolved via Oxc resolver.
 import fs from 'node:fs';
 import path from 'node:path';
 import { ResolverFactory } from 'oxc-resolver';
 import type { Node, Program } from 'oxc-parser';
 import { walk, literal } from '../scan/parse.ts';
 
-export type PrefabBudget = { count: number; reason: string; exports?: string[] };
+export type PrefabBudget = { count: number; reason: string };
 export type PrefabDebt = {
   version?: number;
   colliders: Record<string, PrefabBudget>;
   seats: Record<string, PrefabBudget>;
-  doors?: Record<string, string[]>;
-  legacy?: Record<string, number>;
-  forwards?: Record<string, string[]>;
-  doorCounts?: Record<string, Partial<Record<'colliders' | 'seats', number>>>;
 };
 const CAPABILITIES = {
   colliders: [
@@ -160,32 +156,4 @@ export function moduleEdges(program: Program): ModuleEdge[] {
       });
   });
   return edges;
-}
-
-/** Runtime names only. Unbounded star exports are never a declared public surface. */
-export function runtimeExports(program: Program): string[] {
-  const names = new Set<string>();
-  const binding = (node: Node) => {
-    if (node.type === 'Identifier') names.add(node.name);
-    else if (node.type === 'ObjectPattern')
-      for (const p of node.properties) binding(p.type === 'RestElement' ? p.argument : p.value);
-    else if (node.type === 'ArrayPattern') {
-      for (const e of node.elements) if (e) binding(e);
-    } else if (node.type === 'AssignmentPattern') binding(node.left);
-    else if (node.type === 'RestElement') binding(node.argument);
-  };
-  for (const node of program.body) {
-    if (node.type === 'ExportAllDeclaration' && node.exportKind !== 'type') names.add('*');
-    if (node.type === 'ExportDefaultDeclaration') names.add('default');
-    if (node.type !== 'ExportNamedDeclaration' || node.exportKind === 'type') continue;
-    for (const s of node.specifiers)
-      if (s.exportKind !== 'type') names.add(s.exported.type === 'Identifier' ? s.exported.name : s.exported.value);
-    const d = node.declaration;
-    if (!d || ('declare' in d && d.declare)) continue;
-    if (d.type === 'VariableDeclaration') for (const v of d.declarations) binding(v.id);
-    else if (d.type === 'FunctionDeclaration' || d.type === 'ClassDeclaration') {
-      if (d.id) names.add(d.id.name);
-    }
-  }
-  return [...names].sort();
 }

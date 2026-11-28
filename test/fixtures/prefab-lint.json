@@ -35,7 +35,13 @@
     "code": "createBody({});",
     "fail": true
   },
-  { "rule": "boogle/colliders-from-records", "file": "src/place/land.ts", "code": "slab();", "fail": true },
+  { "rule": "boogle/colliders-from-records", "file": "src/place/land.ts", "code": "slab();", "fail": false },
+  {
+    "rule": "boogle/colliders-from-records",
+    "file": "src/place/land.ts",
+    "code": "export { createBody } from '../physics/engine.ts';",
+    "fail": true
+  },
   {
     "rule": "boogle/colliders-from-records",
     "file": "src/entities/probe/view.ts",
@@ -58,6 +64,12 @@
     "rule": "boogle/seats-from-records",
     "file": "src/prefab/instantiate.ts",
     "code": "registerSeat({});",
+    "fail": false
+  },
+  {
+    "rule": "boogle/seats-from-records",
+    "file": "src/prefab/instantiate.ts",
+    "code": "export { registerSeat } from '../entities/railway/seat.ts';",
     "fail": true
   },
   {

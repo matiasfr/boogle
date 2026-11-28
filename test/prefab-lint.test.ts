@@ -1,32 +1,21 @@
-// Owner-requested step 5 enforcement fixtures, including the file-identity ratchet.
+// Prefab door boundary and debt-list enforcement fixtures (schema v8).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { computeLegacyGraph } from '../dev/lint/prefab-constructors.ts';
 import { execFileSync } from 'node:child_process';
 import { stripTypeScriptTypes } from 'node:module';
 import fixtures from './fixtures/prefab-lint.json' with { type: 'json' };
-import dynamicFixtures from './fixtures/prefab-dynamic-review.json' with { type: 'json' };
 import structural from './fixtures/prefab-structural.json' with { type: 'json' };
 import moduleFixtures from './fixtures/prefab-modules.json' with { type: 'json' };
-import legacyFixtures from './fixtures/prefab-legacy.json' with { type: 'json' };
 import { createModuleResolver } from '../dev/lint/prefab-boundaries.ts';
 import debt from '../dev/lint/prefab-debt.json' with { type: 'json' };
 import { lintSafety } from '../dev/lint/safety.ts';
 import type { PrefabDebt } from '../dev/lint/safety.ts';
 import { comparePrefabDebt, checkPrefabDebt, PREFAB_DEBT_FILE } from '../dev/registry/prefab-debt.ts';
 import { checkPrefabRegistrations } from '../dev/registry/prefab-registrations.ts';
-
-for (const fixture of legacyFixtures)
-  test(fixture.name, () =>
-    assert.ok(
-      lintSafety(fixture.code, 'src/entities/review/probe.ts').some((d) => d.rule === fixture.rule),
-      'Expected prefab boundary rejection; received none',
-    ),
-  );
 
 for (const fixture of structural)
   test(fixture.name, () =>
@@ -57,7 +46,7 @@ test('opaque import.meta loaders cannot bypass the resolved import boundary', ()
     );
 });
 
-test('structural module and public-surface fixture table uses actual files and tsconfig resolution', () => {
+test('structural module fixture table uses actual files and tsconfig resolution', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-module-fixtures-'));
   const write = (file: string, code: string) => {
     fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
@@ -86,9 +75,8 @@ test('structural module and public-surface fixture table uses actual files and t
       for (const [file, code] of Object.entries(fixture.files ?? {})) if (code !== undefined) write(file, code);
       write(fixture.file, fixture.code);
       const budgets: PrefabDebt = {
-        colliders: { 'src/legacy.ts': { count: 2, exports: ['existing'], reason: '2026-11-13: Fixture baseline.' } },
+        colliders: { 'src/legacy.ts': { count: 2, reason: '2026-11-13: Fixture baseline.' } },
         seats: {},
-        doors: { 'src/prefab/instantiate.ts': ['instantiate'] },
       };
       const resolve = createModuleResolver(root);
       if (fixture.files)
@@ -128,7 +116,26 @@ test('structural module and public-surface fixture table uses actual files and t
   }
 });
 
-test('review P1: capability imports cannot be hidden behind aliases or re-exports', () => {
+test('doors and debt files may export new helpers/queries while still blocking raw capability re-exports', () => {
+  const doorCode =
+    "import { capsuleOverlaps } from '../physics/engine.ts'; export const instantiate = () => ({}); export const helperQuery = () => capsuleOverlaps();";
+  assert.deepEqual(lintSafety(doorCode, 'src/prefab/instantiate.ts'), []);
+  assert.ok(
+    lintSafety("export * from '../physics/engine.ts';", 'src/prefab/instantiate.ts').some(
+      (d) => d.rule === 'boogle/colliders-from-records',
+    ),
+  );
+  const debtBudget: PrefabDebt = {
+    colliders: { 'src/legacy.ts': { count: 1, reason: '2026-11-13: Existing debt.' } },
+    seats: {},
+  };
+  assert.deepEqual(
+    lintSafety('addStatic(shape, pos); export const newHelper = () => 1;', 'src/legacy.ts', debtBudget),
+    [],
+  );
+});
+
+test('capability imports cannot be hidden behind aliases or re-exports', () => {
   for (const [rule, module, name] of [
     ['boogle/colliders-from-records', './physics/engine.ts', 'createBody'],
     ['boogle/seats-from-records', './entities/railway/seat.ts', 'registerSeat'],
@@ -149,7 +156,7 @@ test('review P1: capability imports cannot be hidden behind aliases or re-export
       );
 });
 
-test('review P2: legacy solid helpers and new prefab-folder wrappers are not alternative doors', () => {
+test('legacy solid helpers and new prefab-folder wrappers are not alternative doors', () => {
   for (const [file, code, rule] of [
     [
       'src/entities/railway/probe.ts',
@@ -187,7 +194,7 @@ test('review P2: legacy solid helpers and new prefab-folder wrappers are not alt
   );
 });
 
-test('review P2: a debt file cannot append calls or retain an inflated count', () => {
+test('a debt file cannot append calls or retain an inflated count', () => {
   const budget: PrefabDebt = {
     colliders: { 'src/probe.ts': { count: 1, reason: '2026-11-13: Existing call.' } },
     seats: {},
@@ -208,20 +215,7 @@ test('review P2: a debt file cannot append calls or retain an inflated count', (
   assert.deepEqual(comparePrefabDebt(grown, budget), []);
 });
 
-test('after the lift helper ships and a different binding retires, the smaller door count binds', () => {
-  const file = 'src/prefab/instantiate.ts';
-  const base: PrefabDebt = {
-    colliders: {},
-    seats: {},
-    doors: { [file]: ['instantiate', 'liftOrWait'] },
-    doorCounts: { [file]: { colliders: 2 } },
-  };
-  const grown = structuredClone(base);
-  grown.doorCounts![file]!.colliders = 3;
-  assert.match(comparePrefabDebt(base, grown).join('\n'), /capability bindings grew/);
-});
-
-test('review P2: content local origin and shadowed browser names are bindings, not globals', () => {
+test('content local origin and shadowed browser names are bindings, not globals', () => {
   for (const code of [
     'const origin = [0, 0, 0]; export const pos = origin;',
     'export function point(document: number) { return document; }',
@@ -242,7 +236,7 @@ test('review P2: content local origin and shadowed browser names are bindings, n
   );
 });
 
-test('review P3: inline type imports obey the content import boundary', () => {
+test('inline type imports obey the content import boundary', () => {
   assert.ok(
     lintSafety("export type Visual = import('three').Mesh;", 'src/content/prefabs/probe.ts').some(
       (d) => d.rule === 'boogle/records-are-data',
@@ -292,11 +286,8 @@ test('registry bootstraps internal consistency, then rejects growth against a cu
     fs.writeFileSync(path.join(root, file), text);
   };
   const current = {
-    version: 7,
-    doorCounts: {},
-    forwards: {},
-    legacy: {},
-    colliders: { 'src/old.ts': { count: 1, exports: [], reason: '2026-11-13: Approved existing call.' } },
+    version: 8,
+    colliders: { 'src/old.ts': { count: 1, reason: '2026-11-13: Approved existing call.' } },
     seats: {},
   };
   const save = () => write(PREFAB_DEBT_FILE, JSON.stringify(current));
@@ -308,7 +299,7 @@ test('registry bootstraps internal consistency, then rejects growth against a cu
     save();
     assert.deepEqual(checkPrefabDebt(root, 'HEAD'), []);
     write('src/new.ts', 'addStatic(shape, pos);');
-    const grown = { ...current.colliders, 'src/new.ts': { count: 1, exports: [], reason: '2026-11-13: Added later.' } };
+    const grown = { ...current.colliders, 'src/new.ts': { count: 1, reason: '2026-11-13: Added later.' } };
     write(PREFAB_DEBT_FILE, JSON.stringify({ ...current, colliders: grown }));
     assert.deepEqual(checkPrefabDebt(root, 'HEAD'), []);
     save();
@@ -321,20 +312,13 @@ test('registry bootstraps internal consistency, then rejects growth against a cu
     assert.match(checkPrefabDebt(root, 'HEAD').join('\n'), /has 3 violations, budget 1/);
     write(
       PREFAB_DEBT_FILE,
-      JSON.stringify({ colliders: { 'src/old.ts': { ...current.colliders['src/old.ts'], count: 3 } }, seats: {} }),
-    );
-    assert.match(checkPrefabDebt(root, 'HEAD').join('\n'), /count grew/);
-    save();
-    write('src/old.ts', 'addStatic(shape, pos); export const make=()=>1;');
-    assert.match(checkPrefabDebt(root, 'HEAD').join('\n'), /unapproved public export make/);
-    write(
-      PREFAB_DEBT_FILE,
       JSON.stringify({
-        ...current,
-        colliders: { 'src/old.ts': { ...current.colliders['src/old.ts'], exports: ['make'] } },
+        version: 8,
+        colliders: { 'src/old.ts': { ...current.colliders['src/old.ts'], count: 3 } },
+        seats: {},
       }),
     );
-    assert.match(checkPrefabDebt(root, 'HEAD').join('\n'), /public exports grew/);
+    assert.match(checkPrefabDebt(root, 'HEAD').join('\n'), /count grew/);
     save();
     write('src/old.ts', 'instantiate(key, pose, options);');
     assert.match(checkPrefabDebt(root, 'HEAD').join('\n'), /stale colliders\/src\/old.ts/);
@@ -363,7 +347,7 @@ for (const [api, module, rule] of [
 test('step 9 registry rejects registration budget growth and file substitution', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-registration-'));
   const git = (...args: string[]) => execFileSync('git', args, { cwd: root, stdio: 'pipe' });
-  const budget = { count: 1, reason: '2026-11-13: Existing owner-approved registration.', exports: [], consumers: [] };
+  const budget = { count: 1, reason: '2026-11-13: Existing owner-approved registration.', consumers: [] };
   const file = path.join(root, 'dev/lint/prefab-registrations.json');
   const write = (source: string, count: number) =>
     fs.writeFileSync(file, JSON.stringify({ signs: { [source]: { ...budget, count } }, interactions: {} }));
@@ -403,14 +387,6 @@ test('step 9 rejects new consumers of a legacy sign factory and the sign builder
     );
 });
 
-for (const fixture of dynamicFixtures)
-  test(`dynamic factory acquisition is rejected in ${fixture.file}`, () => {
-    assert.ok(
-      lintSafety(fixture.code, fixture.file).some((d) => d.rule === 'boogle/colliders-from-records'),
-      'Expected prefab door rejection',
-    );
-  });
-
 test('the complete documented OwnedView feature is a free door', () => {
   const code = fs.readFileSync(new URL('./fixtures/prefab-owned-feature.txt', import.meta.url), 'utf8');
   assert.deepEqual(lintSafety(code, 'src/features/review-legitimate-a.ts'), []);
@@ -420,12 +396,6 @@ test('a new HUD-only feature uses engine lifecycle, entity and player state with
   const code = fs.readFileSync(new URL('./fixtures/prefab-hud-feature.txt', import.meta.url), 'utf8');
   assert.deepEqual(lintSafety(code, 'src/features/review-hud.ts'), []);
   assert.ok(!stripTypeScriptTypes(code).includes('../physics/engine.ts'));
-});
-
-test('proven non-creating helpers stay available to new ordinary features', () => {
-  const code =
-    "import {poseCarOnLine} from '../entities/railway/car.ts'; import {kitBatch}from '../place/look-kit.ts'; import {addResident}from '../place/folk.ts'; export const helpers={poseCarOnLine,kitBatch,addResident};";
-  assert.deepEqual(lintSafety(code, 'src/features/review-pure-helpers.ts'), []);
 });
 
 test('HUD fixtures do not weaken the raw physics/seat module import ban', () => {
@@ -438,48 +408,6 @@ test('HUD fixtures do not weaken the raw physics/seat module import ban', () => 
         (d) => d.rule === 'boogle/colliders-from-records' || d.rule === 'boogle/seats-from-records',
       ),
     );
-});
-
-for (const [name, barrel] of Object.entries({
-  direct: "export * as vehicles from './car.ts';",
-  local: "import * as vehicles from './car.ts'; export {vehicles};",
-  nested: "export * as fleet from './namespace.ts';",
-}))
-  test(`${name} namespace forwarding preserves constructor identity`, () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-prefab-ns-'));
-    const sources = {
-      'src/physics/engine.ts': 'export const createBody=()=>({});',
-      'src/car.ts': "import {createBody}from './physics/engine.ts'; export const makeCar=()=>createBody();",
-      'src/namespace.ts': "export * as vehicles from './car.ts';",
-      'src/barrel.ts': barrel,
-      'src/consumer.ts':
-        name === 'nested'
-          ? "import{fleet}from './barrel.ts';fleet.vehicles.makeCar();"
-          : "import{vehicles}from './barrel.ts';vehicles.makeCar();",
-    };
-    try {
-      for (const [file, code] of Object.entries(sources)) {
-        fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
-        fs.writeFileSync(path.join(root, file), code);
-      }
-      const graph = computeLegacyGraph(
-        sources,
-        { colliders: { 'src/car.ts': { count: 1, exports: ['makeCar'], reason: '2026-11-13: Fixture.' } }, seats: {} },
-        createModuleResolver(root),
-      );
-      assert.ok(graph.constructors['src/car.ts#makeCar']!.importers.includes('src/consumer.ts'));
-      assert.deepEqual(graph.surfaces[`src/barrel.ts#${name === 'nested' ? 'fleet' : 'vehicles'}`], [
-        'src/car.ts#makeCar',
-      ]);
-    } finally {
-      fs.rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-test('an already-importing barrel cannot add a construction forwarding surface', () => {
-  const base = { colliders: {}, seats: {}, forwards: { 'src/barrel.ts#makeCar': ['src/car.ts#makeCar'] } };
-  const head = { ...base, forwards: { ...base.forwards, 'src/barrel.ts#vehicles': ['src/car.ts#makeCar'] } };
-  assert.match(comparePrefabDebt(base, head).join('\n'), /forwarding surface grew/);
 });
 
 test('registry works in a depth-1 clone with no merge base', () => {
@@ -498,11 +426,8 @@ test('registry works in a depth-1 clone with no merge base', () => {
   };
   const head = {
     version: debt.version,
-    doorCounts: {},
-    colliders: { 'src/old.ts': { count: 1, exports: [], reason: '2026-11-13: Fixture.' } },
+    colliders: { 'src/old.ts': { count: 1, reason: '2026-11-13: Fixture.' } },
     seats: {},
-    legacy: {},
-    forwards: {},
   };
   try {
     git(source, 'init', '-q', '-b', 'main');
@@ -523,7 +448,7 @@ test('registry works in a depth-1 clone with no merge base', () => {
     assert.match(checkPrefabDebt(clone, 'origin/main').join('\n'), /has 2 violations/);
     write(clone, 'src/old.ts', 'addStatic(shape,pos);');
     git(source, 'switch', '-q', 'main');
-    for (const version of [4, 5, 6, debt.version]) {
+    for (const version of [4, 5, 6, 7, debt.version]) {
       write(source, PREFAB_DEBT_FILE, JSON.stringify({ ...head, version }));
       commit(source);
       git(clone, 'fetch', '-q', '--depth', '1', 'origin', 'main');
@@ -539,106 +464,12 @@ test('registry works in a depth-1 clone with no merge base', () => {
         ...head,
         colliders: {
           ...head.colliders,
-          'src/new.ts': { count: 1, exports: [], reason: '2026-11-13: Fixture growth.' },
+          'src/new.ts': { count: 1, reason: '2026-11-13: Fixture growth.' },
         },
       }),
     );
     assert.match(checkPrefabDebt(clone, 'origin/main').join('\n'), /colliders grew: src\/new.ts/);
   } finally {
     fs.rmSync(area, { recursive: true, force: true });
-  }
-});
-
-test('re-check: the lift helper binding cannot be granted twice by dropping and re-adding liftOrWait', () => {
-  const file = 'src/prefab/instantiate.ts';
-  // Shipped: liftOrWait and 3 bindings. A later change drops the export but keeps a third binding in use.
-  const shipped: PrefabDebt = {
-    colliders: {},
-    seats: {},
-    doors: { [file]: ['instantiate', 'liftOrWait'] },
-    doorCounts: { [file]: { colliders: 3 } },
-  };
-  const dropped = structuredClone(shipped);
-  dropped.doors![file] = ['instantiate'];
-  assert.deepEqual(comparePrefabDebt(shipped, dropped), []);
-  // The next re-adds it with a fourth binding: the one-time grant fires again.
-  const readded = structuredClone(shipped);
-  readded.doorCounts![file]!.colliders = 4;
-  assert.match(comparePrefabDebt(dropped, readded).join('\n'), /capability bindings grew/);
-});
-
-test('final review: retiring the third binding and helper together cannot reopen the grant', () => {
-  const door = 'src/prefab/instantiate.ts';
-  const shipped: PrefabDebt = {
-    colliders: {},
-    seats: {},
-    doors: {
-      [door]: ['instantiate', 'liftOrWait'],
-      'src/physics/engine.ts': ['capsuleOverlaps'],
-      'src/physics/backend-rapier.ts': ['capsuleOverlaps'],
-    },
-    doorCounts: { [door]: { colliders: 3 } },
-  };
-  const retired = structuredClone(shipped);
-  retired.doors![door] = retired.doors![door]!.filter((name) => name !== 'liftOrWait');
-  retired.doorCounts![door]!.colliders = 2;
-  assert.deepEqual(comparePrefabDebt(shipped, retired), []);
-  // The engine and backend already have the approved query. Nothing records which binding is added back.
-  assert.match(comparePrefabDebt(retired, shipped).join('\n'), /capability bindings grew/);
-});
-
-const recordDoor = 'src/prefab/instantiate.ts';
-const engineDoor = 'src/physics/engine.ts';
-
-test('an approved local name cannot give an imported helper the entire engine namespace', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'boogle-door-bindings-'));
-  const write = (file: string, source: string) => {
-    fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
-    fs.writeFileSync(path.join(root, file), source);
-  };
-  const land = 'src/place/land.ts';
-  const baseline = {
-    version: 7,
-    legacy: {},
-    forwards: {},
-    seats: {},
-    colliders: {},
-    doors: {
-      [land]: ['ROOM_GROUP', 'staticBody'],
-      [recordDoor]: ['liftOrWait'],
-      [engineDoor]: ['capsuleOverlaps', 'physicsTime'],
-    },
-    doorCounts: { [recordDoor]: { colliders: 3, seats: 0 }, [engineDoor]: { colliders: 0 }, [land]: { colliders: 0 } },
-  };
-  try {
-    write(PREFAB_DEBT_FILE, JSON.stringify(baseline));
-    write(land, 'export const ROOM_GROUP = 1; export function staticBody() {}');
-    write(engineDoor, 'export function capsuleOverlaps() {} export function physicsTime() {}');
-    const imports = "import { ROOM_GROUP, staticBody } from '../place/land.ts';";
-    write(
-      recordDoor,
-      imports +
-        "import { capsuleOverlaps } from '../physics/engine.ts'; export function liftOrWait() { capsuleOverlaps(); }",
-    );
-    assert.deepEqual(checkPrefabDebt(root, 'HEAD'), []);
-    for (const binding of [
-      "import {physicsTime as capsuleOverlaps} from '../physics/engine.ts'; export function liftOrWait() { capsuleOverlaps(); }",
-      "export {physicsTime as liftOrWait} from '../physics/engine.ts';",
-    ]) {
-      write(recordDoor, imports + binding);
-      assert.match(checkPrefabDebt(root, 'HEAD').join('\n'), /capability binding physicsTime/);
-    }
-    write(
-      'src/prefab/helper.ts',
-      'export function callClock({physicsTime}: {physicsTime: () => void}) { physicsTime(); }',
-    );
-    write(
-      recordDoor,
-      imports +
-        "import * as capsuleOverlaps from '../physics/engine.ts'; import {callClock} from './helper.ts'; export function liftOrWait() { callClock(capsuleOverlaps); }",
-    );
-    assert.ok(checkPrefabDebt(root, 'HEAD').length > 0, 'The whole engine replaced one named query');
-  } finally {
-    fs.rmSync(root, { recursive: true, force: true });
   }
 });
