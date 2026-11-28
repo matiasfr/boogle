@@ -5,7 +5,7 @@ import { allocate, checkPin, host, namespace, ruleConflicts, verifyPin } from '.
 
 test('the entire conflict set must consist of known pins or the namespace', () => {
   assert.equal(ruleConflicts([host, namespace]), true);
-  for (const files of [[], [host, 'docs/notes.md'], ['test/fixtures/something.json']])
+  for (const files of [[], [host, 'src/world/rule.ts'], ['test/fixtures/something.json']])
     assert.equal(ruleConflicts(files), false);
 });
 

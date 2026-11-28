@@ -57,6 +57,11 @@ function rebase(wt: string, target: string) {
       } else {
         if (!ruleConflicts(files)) throw new Error('CODE CONFLICT: ' + files.join(', '));
         const refs = ['REBASE_HEAD^', 'HEAD', 'REBASE_HEAD'];
+        for (const ref of refs) {
+          const entries = line('ls-tree', ref, '--', ...candidates).split('\n');
+          if (entries.length !== candidates.length || entries.some((e) => !e.startsWith('100644 blob ')))
+            throw new Error('automatic pin resolution requires existing regular files on all three sides');
+        }
         const inputs = (f: string) => refs.map((ref) => git('show', ref + ':' + f));
         const [base, main, job] = inputs(namespace).map((b) => b.toString()) as [string, string, string];
         const source = allocate(base, main, job);
@@ -118,11 +123,16 @@ function rebase(wt: string, target: string) {
       );
       return execFileSync('git', ['patch-id', '--stable'], { input: patch, encoding: 'utf8' });
     };
-    if (remaining(start, original) === remaining(onto, 'HEAD')) {
+    try {
+      if (remaining(start, original) !== remaining(onto, 'HEAD'))
+        throw new Error('the rebase changed a patch outside the verified pins and namespace');
       writeFileSync(
         line('rev-parse', '--git-path', 'rule-rebase-review'),
         JSON.stringify({ base: onto, head: line('rev-parse', 'HEAD'), stamp: reviewed }),
       );
+    } catch (error) {
+      git('reset', '--keep', original);
+      throw error;
     }
   }
 }

@@ -5,3 +5,26 @@
 3. Run the owning recorders. Compare base, incoming, reviewed and generated values recursively, including ordered keys and array positions. Require the ordinary three-way result for observable values. Allow a fresh combined digest only at known hash slots changed by both sides. Treat host packets and checkpoint documents conservatively, refusing ambiguous overlapping payload changes. Normalize the allocated namespace only in its recorded slots.
 4. Preserve the pre-rebase review using a worktree-local receipt bound to the resulting diff and its base. Keep fixtures in the normal stamp so subsequent hand edits invalidate the receipt.
 5. Test classification, allocation, refusal and stamp binding. Use throwaway local rule branches to compare a tool rebase with a direct build, then run the local ship check.
+
+## As built
+
+| Pin | Recorder |
+| --- | --- |
+| railway-golden.json | `GOLDEN=1` on every railway-golden shard, serially because they update one file |
+| railway-ops-golden.json | `GOLDEN=1` on railway-ops.test.ts |
+| railway-m12-trace.json | `M12_RECORD=1` on railway-m12.test.ts |
+| railway-tick-order-heads.json | `TICK_ORDER_HEADS=1` on railway-tick-order.test.ts |
+| rail-schema.json | `GOLDEN=1` on railway-schema.test.ts |
+| world-host-trace.jsonl.gz | `HOST_TRACE_RECORD=1` on the server's world-host-trace.test.ts |
+
+The decision's stamp suggestion needed one adjustment. A patch ID includes fixtures and the namespace history. Dropping those paths would also excuse a later hand edit. The resolver saves the old ID in the worktree's Git metadata only after verifying the regenerated data and comparing the remaining non-doc patches. The receipt applies to one resulting commit and merge base. A fresh clone computes the ordinary stamp.
+
+The resolver also checks pins changed by both sides that Git merged cleanly, including identical version headers. The host trace must retain its record count. The comparison verifies the checksum of each full checkpoint envelope and checks snapshot byte counts against the serialized envelopes before comparing the payloads. Ambiguous array edits, simultaneous incompatible key order changes and non-increment namespace edits go back to the builder.
+
+## Local proof
+
+In a standalone clone under `.look/`, two branches independently advanced v87 to v88 and tightened the accepted ranges for railway regrowth and glide sink. Each recorded the host, schema and stage fixtures using the production tests. Both runs passed 270 tests. A separate overlapping source edit returned exit 2 and restored its original clean tip.
+
+Replaying the glide branch onto the regrowth branch allocated v89. The resulting Git tree and the independent direct-build tree were both `e2f4087331c581c51ebd220dc8b10adf69c31e7e`. All 270 affected tests passed on that tree with recording disabled. The review ID stayed `aaed9afd88a3`. Successive committed edits to the golden, the rule and the schema assertion returned `9cd697664c9b`, `7ca8a953672b` and `bd6e035562b6`.
+
+A second run changed the incoming regrowth default as well as its range. Git reported conflicts in both the compressed host trace and the namespace. The resolver ran only the host recorder. The resulting v89 tree again matched a direct build (`c71c3beefdac84b7228a968d428c3249ccaba4f8`). In a separate schema collision, the genuine recorder disagreed with both reviewed component kinds. The tool identified `/components/0/kind`, returned 2 and restored the original clean tip.
