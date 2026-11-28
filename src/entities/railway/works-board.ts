@@ -18,19 +18,21 @@ export function worksFace(
     g.fillRect(0, 0, cw, ch);
     g.textBaseline = 'middle';
     const step = ch / Math.max(4, rows.length);
+    // The hall upright overlaps the right edge from the square.
+    const right = cw * 0.89;
     rows.forEach((row, i) => {
       g.fillStyle = i === 0 ? '#ffd778' : '#fff8dd';
       g.font = (i === 0 ? 'bold ' : '') + Math.floor(step * 0.65) + 'px system-ui';
       const y = step * (i + 0.5);
-      const needs = i === 1 ? [...row.matchAll(/(\w+) (\d+\/\d+)/g)] : [];
+      const needs = i === 1 && /^[^·]+· (?:\w+ \d+\/\d+\s*)+$/.test(row) ? [...row.matchAll(/(\w+) (\d+\/\d+)/g)] : [];
       if (!needs.length) {
-        g.fillText(row, 12, y, cw - 24);
+        g.fillText(row, 12, y, right - 12);
         return;
       }
       const title = row.slice(0, row.indexOf('\u00b7') + 1);
       g.fillText(title, 12, y);
       const start = 18 + g.measureText(title).width;
-      const width = (cw - start - 6) / needs.length;
+      const width = (right - start) / needs.length;
       const glyph = stockGlyphs(g);
       needs.forEach(([, kind, amount], k) => {
         const x = start + k * width,

@@ -1,4 +1,4 @@
-﻿# Lane A4 · One grammar
+# Lane A4 · One grammar
 
 1. Audit the accepted works ladder against the Home route and leg objectives.
 2. Share the Needs line between station faces and Pause. Keep the site's accepted gift and the independent cargo and Thanks rows.
@@ -9,7 +9,7 @@ The board shows one current site. In the table, material names stand for their i
 | Kind | Sites | Needs | Gives |
 | --- | --- | --- | --- |
 | Wake | Camp | Wake track layer ×1 | Axe |
-| Bill | T1, T2, forge, Q1–Q7, stack, incline, bay, cave, canopy, wall, notch, causeway, steelworks | T1 logs 24, T2 logs 32 and stone 8. Quarry logs/rails 32/6, 24/12, 16/12, 16/16, 24/24, 32/32, 20/20. Forge logs, route logs and rails per frame. Steelworks logs 8 and rails 12 | Next site, axe at forge, or named halt |
+| Bill | T1, T2, forge, Q1–Q7, stack, incline, bay, cave, canopy, wall, notch, causeway, steelworks | T1 logs 24, T2 logs 32 and stone 8. Quarry logs/rails 32/6, 24/12, 16/12, 16/16, 24/24, 32/32, 20/20. Forge logs 56. Route sections each take 20 logs and 20 rails, except Notch and causeway at 6 of each. Steelworks logs 8 and rails 12 | Next site, axe at forge, or named halt |
 | Great beam | T3 | Logs 32 and beam 1 | Forge |
 | Boiler | Boiler pedestal, old train | Carry boiler ×1, then boiler fitted /1 | Old train, then trains on both lines |
 | Part | Breaker | Carry breaker ×1 | Stall slab |
@@ -36,3 +36,5 @@ The steel delivery, pier show, step-offs and final ride stay folded into the nex
 | Show the named prerequisite together with the outstanding action. Use a single interaction mark and 0/1 for action-only sites | Default | A full key or train count currently hides what the player can do. Reuse the site names and draft action verbs in both views. |
 
 All 17 kinds fit. The review changes the board line for gates, the plug, installation and arrival. Solo players and joining helpers see the same accepted counts. No cut or owner question.
+
+The first phone-width still showed the hall upright covering the end of the kiln bill. The adjusted Default keeps the rightmost 11% of the face clear for the post.

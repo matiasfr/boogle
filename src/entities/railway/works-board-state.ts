@@ -2,7 +2,7 @@
 import type { OwnedView } from '../../render/owned-view.ts';
 import type { RoomWorks } from '../../sim/railway-queries-room.ts';
 import { RAIL_LINES } from '../../sim/railway-lines.ts';
-import { WORKS_ACTIONS, WORKS_COMPLETE, WORKS_GIFTS, WORKS_LABELS as label, WORKS_LINES } from './works-lines.ts';
+import { worksNeeds, WORKS_COMPLETE, WORKS_GIFTS, WORKS_LABELS as label, WORKS_LINES } from './works-lines.ts';
 
 type Place = { x: number; z: number };
 type Halt = { line: number; stop: number };
@@ -20,7 +20,7 @@ export function boardToward(line: number, stop: number, from: Place) {
 export function worksBoardRows(at: Place): string[] {
   if (!work) return [];
   if (work.done) return [WORKS_COMPLETE];
-  const { site, needs, gives, halt } = work;
+  const { site, gives, halt } = work;
   const gift =
     gives.what === 'halt'
       ? haltName(gives)
@@ -33,9 +33,7 @@ export function worksBoardRows(at: Place): string[] {
       : label.line + ' ' + (halt.line + 1) + ' · ' + haltName(halt);
   return [
     label.work + ' · ' + WORKS_LINES[site].name,
-    label.needs +
-      ' · ' +
-      (needs.map((n) => n.what + ' ' + n.have + '/' + n.of).join('   ') || WORKS_ACTIONS[work.kind]),
+    label.needs + ' · ' + worksNeeds(work),
     label.gives + ' · ' + gift,
     ...giftRows,
     label.train + ' · ' + train,
