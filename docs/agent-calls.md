@@ -14,7 +14,7 @@ Split by topic on 10 November 2026 (see [decisions.md](decisions.md#recording-a-
 
 ## Core loop, pacing and progression
 
-The owner confirmed start-flow calls 7?9 on 28 November. [Archived calls](decisions-archive.md#archive-core-loop-pacing-and-progression) ? [Decision](decisions-controls.md#d-2026-11-28-first-fall-lands-at-the-works).
+The owner confirmed start-flow calls 7 to 9 on 28 November: [archived calls](decisions-archive.md#archive-core-loop-pacing-and-progression); [decision](decisions-controls.md#d-2026-11-28-first-fall-lands-at-the-works).
 
 | Date | Call | Where | By | Why this pick | Status |
 | --- | --- | --- | --- | --- | --- |
