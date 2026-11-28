@@ -813,13 +813,7 @@ export const NODES: readonly LoopNode[] = [
     reached: { mark: 'second jump gained' },
     stops: ['jump'],
     requires: [
-      {
-        on: 'T3',
-        status: 'decided',
-        by: 'world',
-        source:
-          'The pillar route requires T3. The jump-first order takes the drum at T1 instead (order-picks, 25 November).',
-      },
+      dec('T3', 'rules', 'The completed third stretch opens the pillar pickup (27 November 2026).'),
     ],
     cue: [onMain('world', 'the jump device on the first pillar', 'src/entities/railway/tools.ts:92,268-274')],
     optional: true,
@@ -1516,11 +1510,6 @@ export function proposeOrders(): { name: string; order: NodeId[]; flipped?: { fr
   const orders: { name: string; order: NodeId[]; flipped?: { from: NodeId; on: NodeId } }[] = [
     { name: 'canonical', order: topo()! },
   ];
-  for (const part of ['pack', 'jump'] as const) {
-    const order = orders[0]!.order.filter((id) => id !== part) as NodeId[];
-    order.splice(order.indexOf('T1') + 1, 0, part);
-    orders.push({ name: `${part}-first`, order });
-  }
   const caveFirst = [...orders[0]!.order];
   const caveBranch = caveFirst.splice(caveFirst.indexOf('plug-gate'), CAVE.sections.length + 1);
   caveFirst.splice(caveFirst.indexOf('bay-2') + 1, 0, ...caveBranch);

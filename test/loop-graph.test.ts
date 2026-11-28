@@ -326,7 +326,11 @@ test('the hand-kept beat lists agree with the graph', () => {
 test('the solver proposes the canonical order and each soft edge flipped', () => {
   const orders = proposeOrders();
   assert.equal(orders[0]!.order.length, NODES.length);
-  for (const o of orders) assert.equal(new Set(o.order).size, NODES.length, o.name);
+  for (const o of orders) {
+    assert.equal(new Set(o.order).size, NODES.length, o.name);
+    assert.ok(o.order.indexOf('T3') < o.order.indexOf('jump'), o.name);
+    assert.ok(o.order.indexOf('T3') < o.order.indexOf('pack'), o.name);
+  }
 });
 
 test('the built route reaches the ending through the Notch and causeway', () => {

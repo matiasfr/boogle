@@ -6,14 +6,6 @@ import { definePrefab } from '../../prefab/types.ts';
 import { PLAYER_R } from '../../constants.ts';
 
 export const prefabs = [
-  definePrefab({
-    key: 'railway.pick-stand',
-    scope: 'owner',
-    visual: { builder: 'railway.yoke-block', params: {} },
-    colliders: [{ shape: 'box', at: [0, 0.35, 0], half: [1, 0.35, 0.6] }],
-    attach: { pickup: { kind: 'point', at: [0, 1.25, 0] } },
-    interactions: [{ action: 'railway.take-part', at: 'pickup' }],
-  }),
   // The engine (assets/src/engine.py), baked per node by src/entities/railway/engine-kit.ts; its collider is the car's.
   definePrefab({ key: 'railway.engine', visual: { asset: 'engine' }, colliders: [], scope: 'owner' }),
   // The knifeboard fittings on the flatbed (assets/src/passenger-car.py, src/entities/railway/car-kit.ts).

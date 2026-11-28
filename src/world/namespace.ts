@@ -156,7 +156,8 @@
 // v76 (2026-11-27): saved kit gift counts and each account's last thanked section.
 // v77 (2026-11-27): save the first house's choice and carry its kind in rail.buy.
 // v80 (2026-11-28): save the third plot's spare toy or Boathouse choice and enforce the first-pick dependency.
-export const WORLD_NS = 'v80';
+// v81 (2026-11-28): Station 1 funds track only. Jump requires the third lay and pack requires the first forge bill.
+export const WORLD_NS = 'v81';
 
 // The id a room's world lives under. The server takes [a-z0-9-]{1,32}: a room name too long to fit keeps
 // its start plus a short hash of the whole name, so two long names practically never share a world.

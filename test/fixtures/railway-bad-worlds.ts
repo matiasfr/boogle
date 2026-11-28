@@ -8,7 +8,6 @@
 // its own check here (Ring Island's are in test/railway-check-ring.test.ts).
 import type { AnyComponent, RowOf, World } from '../../src/ecs/index.ts';
 import type { SeedStage } from '../../src/sim/railway-seeds.ts';
-import { logs } from '../../src/sim/railway-seed-route.ts';
 import {
   Account,
   Beam,
@@ -303,19 +302,16 @@ export const BAD_WORLDS: readonly BadWorld[] = [
   { site: 'line2 lever', message: 'railway: lever before Q3', stage: Q, break: (w) => set(w, Rail, { lever: true }) },
   { site: 'line2 hook', message: 'railway: hook before Q2', stage: A, break: (w) => set(w, Rail, { hook: true }) },
   {
-    site: 'line1 part before funding',
-    message: 'railway: part before Station 1 funding',
+    site: 'line2 early pack',
+    message: 'railway: pack before the forge bill',
     stage: A,
     break: (w) => set(w, Rail, { pack: true }),
   },
   {
-    site: 'line1 second stand',
-    message: 'railway: both parts before Station 3',
+    site: 'line1 early jump',
+    message: 'railway: jump before Station 3',
     stage: A,
-    break: (w) => {
-      logs({ w, t: 40 }, 'a', 'T1', 24);
-      set(w, Rail, { jump: true, pack: true });
-    },
+    break: (w) => set(w, Rail, { jump: true }),
   },
   {
     site: 'line2 yoke',

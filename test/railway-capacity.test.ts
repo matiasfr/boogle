@@ -17,7 +17,6 @@ import { advance, logs, type Seed } from '../src/sim/railway-seed-route.ts';
 import { chopTo } from '../src/sim/railway-seed-works.ts';
 import { railPredict } from '../src/world/railway-predict.ts';
 import { accepted } from '../src/adapters/railway-effects.ts';
-import { railRoom } from './helpers/rail-room.ts';
 import {
   account,
   apply,
@@ -72,82 +71,36 @@ function advanceToStation3(s: Seed): Seed {
   return s;
 }
 
-test('both players see only the accepted Station 1 pick when their holds race', () => {
-  for (const winner of ['pack', 'jump'] as const) {
-    const seed = buildSeedWorld('awake');
-    logs(seed, 'a', 'T1', LINE1_STATIONS[0]!.bill[0]);
-    const room = railRoom(seed);
-    const clients = [room.join('a', 'a', 4), room.join('b', 'b', 4)] as const;
-    room.ready();
-    const receipts = clients.map(({ adapter }) => {
-      const heard: string[] = [];
-      adapter.onAccepted((e) => {
-        if (e.op === 'rail.pack' || e.op === 'rail.jump') heard.push([e.op, e.station, e.pid].join('/'));
-      });
-      return heard;
-    });
-    const [a, b] = clients;
-    assert.ok(winner === 'pack' ? a.adapter.openPack('T1') : a.adapter.claimJump('T1'));
-    assert.ok(winner === 'pack' ? b.adapter.claimJump('T1') : b.adapter.openPack('T1'));
-    assert.deepEqual(receipts, [[], []], 'neither player predicts a card');
-    room.run(30);
-    for (const heard of receipts) assert.deepEqual(heard, ['rail.' + winner + '/T1/a']);
+test('Station 1 funds only the line; the pillar and forge grant their parts once', () => {
+  const s = buildSeedWorld('awake');
+  railSession(s.w, 'b', 1);
+  logs(s, 'a', 'T1', 24);
+  for (const op of ['rail.pack', 'rail.jump']) {
+    assert.equal(send(s, 'a', op, { station: 'T1' }), 0);
+    assert.equal(send(s, 'b', op), 0);
   }
-});
-
-test('a losing Station 1 pack hold receives its refusal', () => {
-  const seed = buildSeedWorld('awake');
-  logs(seed, 'a', 'T1', LINE1_STATIONS[0]!.bill[0]);
-  const room = railRoom(seed);
-  const winner = room.join('a', 'a', 4);
-  const loser = room.join('b', 'b', 4);
-  room.ready();
-  const refused: string[] = [];
-  loser.adapter.onRefused(({ intent }) => refused.push(intent.op));
-  assert.ok(winner.adapter.claimJump('T1'));
-  assert.ok(loser.adapter.openPack('T1'));
-  room.run(30);
-  assert.equal(rail(room.serverWorld()).jump, true);
-  assert.equal(loser.adapter.read.pending(), 0);
-  assert.deepEqual(refused, ['rail.pack']);
-});
-
-test('Station 1 gives the room one pick and the other part keeps its original gate after a reload', () => {
-  for (const first of ['pack', 'jump'] as const) {
-    const other = first === 'pack' ? 'jump' : 'pack';
-    const s = buildSeedWorld('awake');
-    railSession(s.w, 'b', 1);
-    const stand = { station: 'T1' };
-    assert.equal(send(s, 'a', 'rail.' + first, stand), 0);
-    logs(s, 'a', 'T1', LINE1_STATIONS[0]!.bill[0]);
-    assert.equal(send(s, 'a', 'rail.' + first, stand), 1, 'the last log opens both stands');
-    assert.equal(send(s, 'b', 'rail.' + other, stand), 0, 'second peer, same tick');
-    assert.equal(send(s, 'b', 'rail.' + first, stand), 0, 'no duplicate');
-    s.w = unaudited(s).w; // A fresh world loaded through the real checkpoint validator.
-    railSession(s.w, 'b', 2);
-    assert.equal(rail(s.w)[first], true);
-    assert.equal(rail(s.w)[other], false);
-    assert.equal(send(s, 'b', 'rail.' + other, stand), 0, 'the rejoining peer cannot change the pick');
-    advanceToStation3(s);
-    logs(s, 'a', 'T3', LINE1_STATIONS[2]!.bill[0]);
-    assert.equal(send(s, 'b', 'rail.' + other), 0, 'still early at the original site');
-    for (let i = 0; i < 12; i++) send(s, 'a', 'rail.beamChop');
-    assert.equal(send(s, 'a', 'rail.beamTake', { revision: beam(s.w).revision }), 1);
-    assert.equal(send(s, 'a', 'rail.beamDeposit', { revision: beam(s.w).revision, station: 'T3' }), 1);
-    advance(s, 600);
-    if (other === 'pack') {
-      logs(s, 'a', 'F', 23);
-      assert.equal(send(s, 'b', 'rail.pack'), 0, 'one log short at the forge');
-      logs(s, 'a', 'F', 1);
-    }
-    assert.equal(send(s, 'b', 'rail.' + other, stand), 0, 'still the wrong site');
-    assert.equal(send(s, 'b', 'rail.' + other), 1, 'the remaining part at its original site');
-    assert.equal(send(s, 'a', 'rail.' + other), 0);
-    assert.equal(send(s, 'a', 'rail.' + first), 0);
-    const saved = restore(s.w);
-    assert.equal(rail(saved).jump, true);
-    assert.equal(capacityOf(saved, LOGS), 16);
-  }
+  s.w = unaudited(s).w;
+  assert.equal(capacityOf(s.w, LOGS), 8);
+  assert.equal(rail(s.w).jump, false);
+  advanceToStation3(s);
+  logs(s, 'a', 'T3', 32);
+  for (let i = 0; i < 12; i++) send(s, 'a', 'rail.beamChop');
+  assert.equal(send(s, 'a', 'rail.beamTake', { revision: beam(s.w).revision }), 1);
+  assert.equal(send(s, 'a', 'rail.beamDeposit', { revision: beam(s.w).revision, station: 'T3' }), 1);
+  assert.equal(send(s, 'b', 'rail.jump'), 0, 'funded, still laying');
+  advance(s, 600);
+  assert.equal(send(s, 'a', 'rail.jump', { station: 'T1' }), 0);
+  assert.equal(send(s, 'b', 'rail.jump'), 1);
+  assert.equal(send(s, 'a', 'rail.jump'), 0);
+  logs(s, 'a', 'F', 23);
+  assert.equal(send(s, 'a', 'rail.pack'), 0);
+  logs(s, 'a', 'F', 1);
+  assert.equal(send(s, 'b', 'rail.pack', { station: 'T1' }), 0);
+  assert.equal(send(s, 'a', 'rail.pack'), 1);
+  assert.equal(send(s, 'b', 'rail.pack'), 0);
+  const saved = restore(s.w);
+  assert.equal(rail(saved).jump, true);
+  assert.equal(capacityOf(saved, LOGS), 16);
 });
 
 test('capacities: logs, stone and rails start at 8, each its own row; a full kind refuses only that kind', () => {

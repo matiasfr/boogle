@@ -1236,7 +1236,7 @@ export async function createRailwayLine2(
       // and the axe on the walls'. Once lit it shows only what still waits, and goes when both are claimed.
       const marks: RewardMark[] = [];
       if (fg.lit < 0 && fg.used < F1) {
-        if (!stock.pack) marks.push({ kind: 'pack', ready: false });
+        marks.push({ kind: 'pack', ready: false });
       } else {
         if (!stock.pack) marks.push({ kind: 'pack', ready: true });
         if (!stock.axe) marks.push({ kind: 'axe', ready: fg.lit >= 0 });

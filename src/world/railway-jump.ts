@@ -101,8 +101,7 @@ const HOUSE_BUILT: JumpLand = { x: 890, y: 17.2, z: 22, yaw: -2.076 };
 export const JUMPS: readonly Jump[] = [
   { stage: 'start', label: 'From the beginning', line: 'A fresh world, nothing built' },
   { stage: 'awake', label: 'Just woke', line: "The track layer is awake; T1's logs are next" },
-  { stage: 't1-pack-first', menu: false, label: 'Pack first', line: 'Station 1 is laid with the pack taken' },
-  { stage: 't1-jump-first', menu: false, label: 'Jump first', line: 'Station 1 is laid with the jump taken' },
+  { stage: 't1-laid', menu: false, label: 'Station 1 laid', line: 'Station 2 takes logs and stone (placeholder)' },
   {
     stage: 'q1-done',
     label: 'Cart starts',

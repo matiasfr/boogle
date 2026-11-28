@@ -14,7 +14,6 @@ import { seedDoc } from './ring-mid-seed.ts';
 
 export const layStage = (stage: string) =>
   stage === 't1-last-log' ||
-  stage === 't1-pack-taken' ||
   stage === 'forge-open' ||
   stage === 'q5-held' ||
   stage === 'q4-held' ||
@@ -23,11 +22,9 @@ export const layStage = (stage: string) =>
     ? stage
     : null;
 export function buildLayDoc(stage = 'q5-held') {
-  if (stage === 't1-last-log' || stage === 't1-pack-taken') {
+  if (stage === 't1-last-log') {
     const seed = buildSeedWorld('awake');
-    const last = stage === 't1-last-log';
-    logs(seed, 'a', 'T1', LINE1_STATIONS[0]!.bill[0] - Number(last));
-    if (!last) need(act(seed, 'a', 'rail.pack', { station: 'T1' }) === 1, 'T1 pack taken');
+    logs(seed, 'a', 'T1', LINE1_STATIONS[0]!.bill[0] - 1);
     return seedDoc(seed);
   }
   if (stage === 'forge-open') return buildForgeDoc();

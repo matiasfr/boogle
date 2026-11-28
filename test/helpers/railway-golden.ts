@@ -29,8 +29,7 @@ const TICKS = 1200;
 // Lane A's pinned seed table. Keep this independent of the query's predicates.
 const WORKS_AT: Record<SeedStage, WorksSite> = {
   awake: 'T1',
-  't1-pack-first': 'T2',
-  't1-jump-first': 'T2',
+  't1-laid': 'T2',
   'forge-frame-last': 'forge',
   'forge-lit-last': 'forge',
   'q1-last': 'Q1',
@@ -118,8 +117,7 @@ const WORKS_AT: Record<SeedStage, WorksSite> = {
 export const SHARDS: readonly (readonly SeedStage[])[] = [
   [
     'awake',
-    't1-pack-first',
-    't1-jump-first',
+    't1-laid',
     'forge-frame-last',
     'forge-lit-last',
     'q1-done',

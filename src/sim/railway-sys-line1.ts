@@ -38,7 +38,6 @@ import {
   held,
   hitYield,
   jobId,
-  line1PickReady,
   LOGS,
   railId,
   ready,
@@ -358,9 +357,7 @@ export const jump = defineSystem(
   { reads: [Job], writes: [Rail], phase: 'act', order: 13 },
   (w, { e }: Act) => {
     if (w.get(Rail, railId(w))!.jump) return 0;
-    if (e.station === 'T1') {
-      if (!line1PickReady(w)) return 0;
-    } else if (e.station !== undefined || !w.get(Job, jobId(w, 2))!.completion) return 0;
+    if (e.station !== undefined || !w.get(Job, jobId(w, 2))!.completion) return 0;
     w.mut(Rail, railId(w))!.jump = true;
     return 1;
   },
