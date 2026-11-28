@@ -56,7 +56,7 @@ Start ownership discovery with `npm run map -- --kind <kind>` (bare `--kind` lis
 - In the delegate brief, set `topic=your-topic`, then run `git -C ~/Developer/boogle-agents fetch origin` and `git -C ~/Developer/boogle-agents worktree add -b "codex/$topic" "../boogle-agents-wt/$topic" origin/main`.
 - Run `cd "$HOME/Developer/boogle-agents-wt/$topic"`, then `. "$HOME/.nvm/nvm.sh" && nvm use` for Node 26. Run `npm ci` if either lockfile changed since install or either `node_modules` is missing. Reuse dependencies only in that same worktree while both lockfiles match the last install.
 - Work and commit there. Run `git push origin "codex/$topic"` for that branch only and report `git branch --show-current` and `git rev-parse HEAD`.
-- On HOTBOX, `git fetch origin codex/<topic>`, check `FETCH_HEAD` against the reported tip, and put that commit in a HOTBOX worktree for `npm run ship-queue -- <worktree> --wait` from the trusted checkout.
+- On HOTBOX, `git fetch origin codex/<topic>`, then make the worktree from the reported commit by its SHA (`git worktree add -b codex/<topic> ../boogle-mac-<topic> <sha>`), never from `FETCH_HEAD`, which another job's fetch moves (28 November: the first Mac branch came up on an old commit that way). Ship it with `npm run ship-queue -- <worktree> --wait` from the trusted checkout.
 - After the orchestrator confirms the merge, run `git -C ~/Developer/boogle-agents worktree remove "$HOME/Developer/boogle-agents-wt/$topic"`.
 - Measured on 28 November 2026 with Node 26.13.0 from `887306137` on Music Man: `npm ci` 2.80 s, `node dev/ship-check.ts` 12.14 s and `npm run build` 2.81 s. All passed.
 
