@@ -1921,7 +1921,9 @@ async function legRejoin(c: Ctx, seed: RejoinSeed) {
         await edit(frame, { op: 'rail.legStock', leg: k }, count, A);
       }
     await A.page.close();
-    legCheck('the carrier leaves during the sixth lay', (await waitFor(async () => !(await sees(B, A)), 10000)) >= 0);
+    const departed = (await waitFor(async () => !(await sees(B, A)), 10000)) >= 0;
+    const away = await state();
+    legCheck('the carrier leaves during the sixth lay', departed && away.row.laid === LAID && away.row.start >= 0);
     await cycle();
     await at('the sixth lay with the carrier away', 'joined', [B], []);
     A = await c.web.open('L0', url('leg0'));
