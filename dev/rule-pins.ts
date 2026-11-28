@@ -98,7 +98,12 @@ export function checkPin(
     )
       return;
   }
-  throw new Error(name + ' has an unexplained change at ' + (path || '/'));
+  let detail = '';
+  if (name === 'railway-golden.json' && /^\/stages\/[^/]+(?:\/(tick|stage|after))?$/.test(path)) {
+    const show = (v: Json | undefined) => JSON.stringify(v) ?? '<absent>';
+    detail = ` (base ${show(base)}, target ${show(main)}, branch ${show(branch)}, recorded ${show(got)})`;
+  }
+  throw new Error(name + ' has an unexplained change at ' + (path || '/') + detail);
 }
 
 export function verifyPin(file: string, buffers: Buffer[], versions: number[]) {
