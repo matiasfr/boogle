@@ -759,6 +759,9 @@ async function reachedView(s = 1300, lat = 0, canopyLaid = 3, stackLayAt?: THREE
       ...(await import('../src/sim/railway-queries-room.ts')),
       ...(await import('../src/entities/railway/works-lines.ts')),
       worksFace: () => new THREE.Group(),
+      createSignalAnswers() {},
+      createGorgeTownPlots: () => ({ targets: [], update() {} }),
+      createCanopyTownPlots: () => ({ targets: [], update() {} }),
       ...gorgeLayout,
       ...junctions,
       ...path,
@@ -1289,4 +1292,47 @@ test('two nearby horn players each get three wall echoes', () => {
     [1, 2, 1, 3, 2, 3],
   );
   assert.deepEqual(chords, [false, true]);
+});
+
+function canopyNetStep(porchOffset: number, mode: 'walking' | 'seated' | 'held' | 'gliding') {
+  const point = (u: number, l: number, y: number) => {
+    const p = route.canopyHangoutAt(u, l, y);
+    return new THREE.Vector3(p.x, p.y, p.z);
+  };
+  const yaw = Math.atan2(route.CANOPY_HANGOUT.nx, route.CANOPY_HANGOUT.nz);
+  const me = {
+    entered: true,
+    coyote: mode === 'gliding' ? 0 : 0.1,
+    body: { position: point(0, porchOffset, mode === 'gliding' ? 0.78 : 0.08 + PLAYER_R), velocity: { y: -1 } },
+  };
+  const { createCanopyToys } = sourceModule<{
+    createCanopyToys(
+      owner: unknown,
+      at: typeof point,
+      yaw: number,
+    ): { update(kind: number, preview: number, age: number): void };
+  }>(fs.readFileSync('src/entities/route-greybox/canopy-town-toys.ts', 'utf8'), {
+    THREE,
+    PLAYER_R,
+    me,
+    inputState: { seated: mode === 'seated', held: mode === 'held' },
+    railwayGlideOpen: () => mode === 'gliding',
+    createGhostOutlines: () => ({ mesh: {}, box() {}, commit() {} }),
+  });
+  createCanopyToys({ add() {}, cleanup() {} }, point, yaw).update(10, 0, Infinity);
+  return me.body.velocity.y;
+}
+
+for (const mode of ['held', 'gliding', 'seated'] as const)
+  test('Canopy net respects movement ownership while ' + mode, () => {
+    assert.equal(canopyNetStep(3.18, 'walking'), 20);
+    assert.equal(canopyNetStep(3.18, mode), -1);
+  });
+
+test('Canopy net launches only where Buddy clears the cabin eave', () => {
+  // Walk sideways onto the net, parallel to the roof edge, with no outward velocity.
+  const porchOffset = 2.6;
+  const roofHalfDepth = 4.6 / 2; // hangout-building's solid roof
+  assert.ok(porchOffset - roofHalfDepth < PLAYER_R);
+  assert.ok(canopyNetStep(porchOffset, 'walking') <= 0, 'vertical launch intersects the solid roof');
 });

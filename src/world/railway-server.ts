@@ -7,7 +7,7 @@
 // Validation reads the facts the action carried (the actor's own position and action clock) through `Actor`.
 import { townPlotBoard, TOWN_BOARD } from '../place/town-plan.ts';
 import { RING_HANGOUT_BOARD } from '../sim/railway-ring-layout.ts';
-import { GORGE_BOARD } from '../sim/railway-route.ts';
+import { CANOPY_BOARD, GORGE_BOARD } from '../sim/railway-route.ts';
 import { HALL, TILL } from '../place/home-station.ts';
 import { railInt, railYaw, railSource, RAILWAY_MAX_INT, type RailAction, type RailResult } from '../sim/railway.ts';
 import { RAILWAY_SOURCES, RAILWAY_T1 as T1 } from '../sim/railway-layout.ts';
@@ -299,11 +299,13 @@ export function railValid(w: World, e: RailAction, actor: Actor, tick = 0): bool
     case 'rail.buy': {
       if (!railInt(e.id) || !TRADE.plots[Math.floor(e.id / 16)]?.[e.id % 16]) return false;
       if (e.id === 16) return actor.reach(RING_HANGOUT_BOARD.x, RING_HANGOUT_BOARD.z, TOWN_BOARD.reach * 100);
-      if (e.id === 32)
+      if (e.id === 32 || e.id === 48) {
+        const board = e.id === 32 ? GORGE_BOARD : CANOPY_BOARD;
         return (
-          height(GORGE_BOARD.y * 100) &&
-          actor.reach(Math.round(GORGE_BOARD.x * 100), Math.round(GORGE_BOARD.z * 100), TOWN_BOARD.reach * 100)
+          height(board.y * 100) &&
+          actor.reach(Math.round(board.x * 100), Math.round(board.z * 100), TOWN_BOARD.reach * 100)
         );
+      }
       const board = townPlotBoard(e.id % 16);
       // Place-local x + 1000 is the world's Home origin, as in the other railway anchors.
       return actor.reach(Math.round((board.x + 1000) * 100), Math.round(board.z * 100), TOWN_BOARD.reach * 100);
