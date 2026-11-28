@@ -103,3 +103,11 @@ test('Canopy pulls reach a completed Ring bellhouse and skip the unfinished Gorg
   frame();
   assert.equal(sounds.length, 2);
 });
+
+test('a late animation frame leaves four seconds between audible town answers', () => {
+  const a = townAnswer();
+  a.call(0);
+  assert.equal(a.update(3900), true);
+  a.call(4000);
+  assert.equal(a.update(4800), false, 'only 900 ms since the last audible answer');
+});
