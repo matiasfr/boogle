@@ -36,8 +36,10 @@ mark the outer door bays, with four separate folding steps. Only the actual plat
 standing (.25 s); it folds up over the same .25 s as movement starts. Steps have no collider. Players can stand on the unchanged flat roof collider but cannot enter; the
 visual roof falls .12 m below that plane at its eaves. Eight exported seat landmarks preserve the blockout's
 seating positions and alternating-side count order. Seating follows the coach's rendered pose; count changes happen
-while the train stands at the route's Home or current far-end platform. This remains count-driven visibility,
-without a door-walking animation. [R3 model and evidence](../research/rider-coach-r3.md). [R4 checkpoint and capture limits](../research/rider-coach-r4.md).
+while the train stands at the route's Home or current far-end platform. A visible gain sends little guys from
+the waiting row over the lowered step and into their seats. A loss sends them back through the nearest
+platform-side door and away along the platform. The train can leave during a shuffle. Its departure, a reload,
+reduced motion and a distant camera all settle the coach to its current count. [Rider shuffle](../plans/rider-shuffle.md).
 The timber train has no rider route and no coach; the garage's works copy also excludes it.
 The Cars tile reads both numbers from data: "4 seats, 8 riders", with Seats 4 and Riders 8. Its description is the
 placeholder "The knifeboard car seats 4 players; the riders' coach behind it seats 8." The coach does not consume a

@@ -2,7 +2,9 @@
 
 At a busy line 2 halt, a little guy rises from the bench, turns into the aisle, walks through the nearest platform-side doorway and steps down. They walk away past the queue. In the other direction a waiting figure leaves its place, climbs the lowered step, turns down the aisle and sits at its assigned window. The moving feet explain the change from either player's viewpoint. Principle 11, Show, don't tell.
 
-## Build after the lap join reaches main
+## Build
+
+The 27 November build signal moved implementation ahead of the lap join. Rebase after the join lands and repeat a stop still on the joined line.
 
 1. Read the rebased train pose and queue code again. Today railway-sys-trains calls ridersArrive on arrival and ridersBoard while standing. railway-trains can turn and invoke both in one tick. Drive only the observed net difference in Train.riders across a continuous live arrival or stand. Equal counts show no exchange. Use the last occupied seat slots for departures and the next vacant slots for boarders. First observation, restore, skipped stop history or a discontinuous snapshot establishes the current seats and queue immediately, including a full coach. A continuously observed multi-seat delta can walk as a group.
 2. Put the walk in src/entities/railway/rider-shuffle.ts. Copy actual queue positions from riders-view.ts's crowd.at (it returns a reused point). Match the existing platform and selected coachStepSide, then pick the nearest hinge along that side for each seat in COACH_SEATS. Pass through the aisle, threshold, lowered tread and platform edge in order. Resolve coach landmarks through the rider car's rock matrix and platform positions in world space. Use folk.ts's existing steer for the platform leg. Reserve each moving figure once across the queue, walk and seat poses in the existing folk pool, including when both railway views update in the opposite order. Restore or disposal releases reservations.
@@ -13,6 +15,10 @@ At a busy line 2 halt, a little guy rises from the bench, turns into the aisle, 
        folk.folk.resetRiderShuffle();
 
 5. Verify the new helper against arrival, unchanged count, partial/full exchange, interrupted walk, late join, reload, far camera and reduced motion. Check exact final seat and waiting counts against both rows. Update docs/game-design/trade.md with observed behavior. At a busy Home halt with two clients, frame the queue, step and windows clear of the canopy post. Capture one still sequence across real count decreases and increases (use consecutive visits if necessary): before, threshold, foot on tread, after. Make one real-time clip of the exchange through departure. Verify the second viewer's doorway side and final counts. Use `--warp-speed 2` for two-player warp looks and normal playback for the clip. Check feet, duplicate figures and any rider left behind. R4 showed seat counts and folding steps but its post and bench obscured foot contact. These captures address that gap for NPCs. Device playback, player boarding and performance under load need separate evidence.
+
+## Implementation notes
+
+The platform leg uses the queued figure's actual spot and the existing `outOf` footprint clearance for its walk-away endpoint. Folk's `steer` also pulls the walker toward terrain height. The shuffle instead samples the elevated platform and the coach's hinged tread in world coordinates. Queue slots use the remaining replicated waiting count so an update to the train can run before the halt's redraw. A normal crossing takes three seconds after the step delay and seat stagger.
 
 ## Design review (2026-11-27)
 
