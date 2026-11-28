@@ -1,9 +1,12 @@
 import type { Node } from 'three/webgpu';
-import { positionGeometry, positionLocal, referenceAttribute, sin, time, vec3 } from 'three/tsl';
+import { positionGeometry, positionLocal, referenceAttribute, sin, time, vec2, vec3 } from 'three/tsl';
 
 // Home's instance matrices place vertices in island coordinates before positionNode runs.
 // A crest travels east across neighbouring crowns in roughly four seconds per wavelength.
-export const windAt = (point: Node<'vec3'>) => sin(time.mul(1.57).sub(point.x.mul(0.18)).sub(point.z.mul(0.07)));
+const waveX = 0.18;
+const waveZ = 0.07;
+export const windDirection = vec2(waveX, waveZ).normalize();
+export const windAt = (point: Node<'vec3'>) => sin(time.mul(1.57).sub(point.x.mul(waveX)).sub(point.z.mul(waveZ)));
 
 export function crownPosition(point: typeof positionLocal) {
   const weight = positionGeometry.y.add(0.8).clamp(0, 1);

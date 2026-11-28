@@ -13,10 +13,14 @@ import {
   sin,
   smoothstep,
   texture,
+  time,
+  vec2,
   vec3,
   vertexColor,
 } from 'three/tsl';
 import { patchNode } from '../render/material-patch.ts';
+import { reducedMotion } from '../constants.ts';
+import { windDirection } from '../render/wind.ts';
 import { paletteNode } from '../render/material-palette.ts';
 import { MATERIAL_PALETTES } from '../render/material-palette-tuning.ts';
 import { groundMaterial, selectiveColour } from './look.ts';
@@ -115,6 +119,10 @@ export function homeGroundMaterial(lawnLayer?: LawnLayer) {
   const broad: N = smoothstep(0.54, 0.6, soil.add(wander.mul(0.03))).oneMinus();
   const rock: N = smoothstep(0.3, 0.42, steep.add(ragged)).max(broad);
   const rockColour: N = beddedRock(p).mul(smoothstep(0, 0.45, foot).mul(0.2).add(0.8));
+  // The cove data tile already holds a smooth periodic field in blue.
+  const drift = reducedMotion ? vec2(0, 0) : windDirection.mul(time.mul(0.9));
+  const mask = texture(coveTextures().data, p.xz.sub(drift).div(112)).b;
+  const cloudTint = mix(vec3(1), vec3(0.88, 0.9, 0.94), smoothstep(0.41, 0.7, mask));
   // A dry lip only at the rim.
   const lip: N = smoothstep(0.02, 0.12, steep)
     .mul(rock.oneMinus())
@@ -123,7 +131,7 @@ export function homeGroundMaterial(lawnLayer?: LawnLayer) {
     let c: N = mix(ground, ground.mul(vec3(1.12, 1.04, 0.8)), lip.mul(0.5));
     c = mix(c, c.mul(0.72), wet);
     c = mix(c, rockColour, rock);
-    return c;
+    return c.mul(cloudTint);
   });
   // Rock takes its drawn facets (a crisp rim); everything you can walk on keeps the smooth normals.
   patchNode(m, 'normalNode', () => mix(normalViewGeometry, normalFlat, rock).normalize());
