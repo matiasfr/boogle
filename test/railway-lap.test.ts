@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { LAP_S0, LINE2, RAIL_HALTS, RAIL_LINES, RAIL_TRAINS, WALL_LEG } from '../src/sim/railway-lines.ts';
 import { lapRow, runLine, gorgeStop, lapRequests } from '../src/sim/railway-lap.ts';
-import { LEG_TUNE, RAIL_GATES, ROW_LINE } from '../src/sim/railway-route.ts';
+import { LEG_TUNE, RAIL_GATES, RAIL_LEGS, ROW_LINE } from '../src/sim/railway-route.ts';
 import {
   fleetOf,
   reqAdd,
@@ -43,6 +43,7 @@ import * as layout from '../src/place/layout.ts';
 import { rowLeverCall } from '../src/entities/railway/lever-place.ts';
 import { createReturnSearch, returnCandidates, haltLandings } from '../src/place/return-spot.ts';
 import { lapServiceShard } from './helpers/railway-route-rules.ts';
+import { SEED_STAGES } from '../src/sim/railway-seeds.ts';
 
 lapServiceShard();
 
@@ -53,6 +54,21 @@ const before = [4, 2, 2, 3, 3, 5],
 const stops = (line: number, legs: number[]) => trainStopsOf(line, 7, { head: 6, joined: true }, legs);
 const old = stops(cave, before),
   through = stops(LINE2, after);
+
+test('fast-forward from the lap to the next listed Wall stage keeps time moving forward', () => {
+  const next = SEED_STAGES[SEED_STAGES.indexOf('lap-ride') + 1]!;
+  assert.ok(buildSeedWorld(next).t >= buildSeedWorld('lap-ride').t, next);
+});
+
+test('the wall-closed playthrough can board its requested Gorge to Canopy service', () => {
+  const { w } = buildSeedWorld('wall-closed');
+  // The rowRide arguments used by finishRoute in dev/look/bots/railway-legs.ts.
+  const wall = RAIL_LEGS[WALL_LEG]!;
+  const departure = wall.railheadHalt + wall.sections.length - 1;
+  const destination = RAIL_HALTS.find((h) => h.line === wall.line && h.name === 'Canopy Town')!;
+  const service = stopsOf(w, wall.line);
+  assert.ok(service[departure] !== undefined && service[destination.stop] !== undefined);
+});
 
 test('the sixth lay extends the open prefix and transfers the fleet', () => {
   assert.equal(old.length, 9);
