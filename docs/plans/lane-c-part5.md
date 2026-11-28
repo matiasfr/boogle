@@ -67,4 +67,10 @@ Boards, models, telescope and rope motion are local views. A deliberate pull whi
 
 **Purchase and signal evidence.** A browser held Interact at the lookout board and received kind 6 with one 150-Boogle debit. The host tests race both picks, restore during construction, advance through completion and restore again. A player inside the bellhouse pulled the rope with Interact. A second browser profile on the platform received the signal. Both observed the rising ring. [Lookout](lane-c-part5/lookout.png), [bellhouse](lane-c-part5/bellhouse.png), [390 px boards](lane-c-part5/boards-phone.png), [signal on the observer's tab](lane-c-part5/bell-signal.png).
 
+**v85 checks.** Ship check passed 2,202 tests with one skipped. The network suite passed all 411 checks. The full server suite passed 422 tests with two skipped on repeat. The first run reached its 120-second deadline in the ending-route host test. The repeat allowed 300 seconds per test. The headless route finished with one, two, three and four players.
+
 **Placeholder copy.** Lookout Tower, Signal Bellhouse, both board titles, price and rider lines, purchase hold labels, telescope prompt and bell-rope prompt. No new dialogue.
+
+## Risks and remaining checks
+
+Moving the future station roof, window or trail can close off the approach. The layout test uses the station's source solids, the window-to-shard ray and the production trail. Construction uses the same occupied-shape checks as the railway frames. A player standing on a scaffold as it retires and a second player inside a rising wall still need a live two-player walkthrough. The signal was verified visually across tabs. Bell loudness and physical-device controls remain unverified.
