@@ -1,5 +1,5 @@
 {
- "worldNs": "v77",
+ "worldNs": "v84",
  "components": [
   {
    "kind": "rail",
@@ -1392,6 +1392,10 @@
     ],
     [
      "rails",
+     "int"
+    ],
+    [
+     "gift",
      "int"
     ]
    ]

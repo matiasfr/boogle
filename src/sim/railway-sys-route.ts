@@ -56,7 +56,7 @@ const bit = (k: number) => 1 << k;
  * last unit starts laying if the barrier is open or absent. Returns the units taken. */
 export const legStock = defineSystem(
   'rail.legStock',
-  { reads: [Aperture, Route, Boiler], writes: [Leg, Account], phase: 'act', order: 60 },
+  { reads: [Aperture, Route, Boiler], writes: [Leg, Account, LegYard, Rail], phase: 'act', order: 60 },
   (w, { a: aid, e, tick }: Act) => {
     if (!railInt(e.leg, RAIL_LEGS.length - 1) || !legOpen(w, e.leg)) return 0;
     const k = e.leg,

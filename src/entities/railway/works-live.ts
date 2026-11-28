@@ -20,14 +20,13 @@ import { createRingSteel } from '../ring-steel/view.ts';
 import { createLegView } from '../route-greybox/leg-view.ts';
 import { createStationGuides } from './station-guides.ts';
 import { createRouteGuides } from '../route-greybox/phase-guides.ts';
-import { giftQueued, giftAboard, giftRides, worksThanks } from '../../sim/railway-queries-gift.ts';
+import { giftQueued, giftInTransit, giftRides, worksThanks } from '../../sim/railway-queries-gift.ts';
 import { railwayMirror, rules } from '../../world/game-world.ts';
 import { roomWorks, WORKS_STEPS } from '../../sim/railway-queries-room.ts';
 import { boiler, works as worksRow, type ReadWorld } from '../../sim/railway-rows.ts';
 import { createWorksSignal } from './works-signal.ts';
 import { islandGround } from '../ring-island/state.ts';
 import { createWorksBoard } from './works-board-state.ts';
-
 
 // A funded section keeps its site while laying, even after the feed action disappears.
 const routeSections = new Set(
@@ -87,7 +86,9 @@ export async function createRailwayWorksLive(
       updateBoard(
         current,
         names,
-        routeSection && giftRides(world) ? [giftQueued(world), giftAboard(world)] : undefined,
+        routeSection && (giftRides(world) || giftInTransit(world))
+          ? [giftQueued(world), giftInTransit(world)]
+          : undefined,
       );
       publication = world;
     }
@@ -165,7 +166,6 @@ export async function createRailwayWorksLive(
       ...routeGuides.targets(),
     ],
     inspect: () => ({
-
       routeGuides: routeGuides.inspect(),
       ...works.inspect(),
       ...railhead.inspect(),

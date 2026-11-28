@@ -16,7 +16,7 @@ import { RAILWAY_MAX_INT, railInt } from './railway.ts';
 import { RAIL_LINES, RAIL_TRAINS } from './railway-lines.ts';
 import { RAIL_GATES, RAIL_GRANTS, RAIL_LEGS, RAIL_YARDS } from './railway-route.ts';
 import { Account, LegYard, Rail, Train } from './railway-components.ts';
-import { giftAboard, thanksStep } from './railway-queries-gift.ts';
+import { giftInTransit, thanksStep } from './railway-queries-gift.ts';
 import {
   SERVED_LEGS,
   STOCKED_LEGS,
@@ -73,7 +73,7 @@ export function checkRoute(w: World) {
     if ((r.loadedLogs || r.loadedRails) && !legKitMayLoad(w, k)) bad('leg kit before its leg');
   });
   const giftOut = w.get(Rail, w.single(Rail))!.giftOut;
-  if (giftOut < giftAboard(w)) bad('gift output');
+  if (giftOut !== giftInTransit(w)) bad('gift output');
   const thanksMax = thanksStep(w) + 1;
   const lifts = RAIL_LEGS.map(() => ({ logs: 0, rails: 0 }));
   w.each([Account], (_id, a) => {
@@ -115,7 +115,12 @@ export function checkRoute(w: World) {
     if (legKitCarriers(w, line) > legKitTrains(w, line)) bad('leg kit carriers');
   });
   w.each([LegYard], (_id, y) => {
-    if (!railInt(y.slot, RAIL_YARDS.length - 1) || !railInt(y.logs, KIT_CAP) || !railInt(y.rails, KIT_CAP))
+    if (
+      !railInt(y.slot, RAIL_YARDS.length - 1) ||
+      !railInt(y.logs, KIT_CAP) ||
+      !railInt(y.gift, y.logs) ||
+      !railInt(y.rails, KIT_CAP)
+    )
       bad('yard bounds');
     // A junction yard holds units only while a leg that loads there is open, never more than its remaining sections'
     // bills less what is fed (greybox-leg2.md, step 2: on the lay that completes it, the yard goes home).
@@ -123,7 +128,7 @@ export function checkRoute(w: World) {
     const k = RAIL_LEGS.findIndex((l, j) => l.kit === y.slot && (legOpen(w, j) || legYardAhead(w, j)));
     if (k < 0) bad('yard without its open leg');
     const room = legHeldRoom(w, k);
-    if (y.logs > room.logs || y.rails > room.rails) bad('yard over its leg');
+    if (y.logs - y.gift > room.logs || y.rails > room.rails) bad('yard over its leg');
   });
   const route = routeRow(w);
   if (

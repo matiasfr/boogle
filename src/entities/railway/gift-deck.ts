@@ -3,13 +3,12 @@ import * as THREE from 'three/webgpu';
 import type { OwnedView } from '../../render/owned-view.ts';
 import { commitPieces } from '../../render/haul-pieces.ts';
 import { logStackMesh, setStackLog, stackSlot, send } from '../../place/pieces.ts';
-import { legKitHalt, legKitDrop, legRow, legsServed } from '../../sim/railway-queries-route.ts';
+import { giftAtFrame, legKitHalt, legKitDrop, legRow, legsServed } from '../../sim/railway-queries-route.ts';
 import { RAIL_LEGS, legFrame } from '../../sim/railway-route.ts';
 import { LINE2 } from '../../sim/railway-lines.ts';
 import type { ReadWorld } from '../../sim/railway-rows.ts';
 import { TRAIN_PHASE, type RailTrain } from '../../sim/railway-train.ts';
 import { reducedMotion } from '../../constants.ts';
-
 
 export function giftBundle(owner: OwnedView, lashMaterial: THREE.Material) {
   const bundle = new THREE.Group();
@@ -46,7 +45,7 @@ export function giftTrip(
       to = deck;
     const k =
       delta < 0
-        ? legsServed(w, line).find((i) => RAIL_LEGS[i]!.line === line && legKitDrop(w, line, i) === row.at)
+        ? legsServed(w, line).find((i) => giftAtFrame(w, line, i) && legKitDrop(w, line, i) === row.at)
         : undefined;
     if (k !== undefined) {
       const frame = legFrame(RAIL_LEGS[k]!, legRow(w, k).laid);

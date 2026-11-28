@@ -30,6 +30,7 @@ import { line as lineRow, train } from './railway-rows.ts';
 import { TRAIN, TRAIN_PHASE, kitBills, type RailTrain, type ServiceStop } from './railway-train.ts';
 import { Account, Aperture, Forge, Leg, LegYard, Pile, Rail, Train } from './railway-components.ts';
 import {
+  giftAtFrame,
   giftBill,
   routeRow,
   heldKit,
@@ -48,6 +49,7 @@ import {
   legKitSurplus,
   legKitTrains,
   legMintChain,
+  legMintLine,
   legOpen,
   legOpenYard,
   legRackNeed,
@@ -82,19 +84,26 @@ export function legKitArrive(w: World, slot: number, tick: number) {
     const car = w.get(Train, trainOf(w, slot))!;
     const pour = car.gift && Math.min(car.gift, giftBill(w, line, k));
     if (pour) {
-      legFill(w, k, pour, 0, tick);
+      const atFrame = giftAtFrame(w, line, k);
       const m = w.mut(Train, trainOf(w, slot))!;
       m.gift -= pour;
       m.logs -= pour;
-      // These logs are spent in the frame. Retire both sides of the kit-output witness together.
-      w.mut(Rail, w.single(Rail))!.giftOut -= pour;
-      // A carrier can ride across a lay. Older completed legs on this line have no rack left to return.
-      const credits = GIFT_LEGS.filter(
-        (i) => RAIL_LEGS[i]!.line === line && (i === k || legRow(w, i).laid === RAIL_LEGS[i]!.sections.length),
-      );
-      retireLoaded(w, credits, pour, 0);
       if (!m.logs && !m.rails) m.legKit = false;
-      trimLegHeld(w);
+      if (!atFrame) {
+        const yard = w.mut(LegYard, legYardId(w, k))!;
+        yard.gift += pour;
+        yard.logs += pour;
+      } else {
+        legFill(w, k, pour, 0, tick);
+        // These logs are spent in the frame. Retire both sides of the kit-output witness together.
+        w.mut(Rail, w.single(Rail))!.giftOut -= pour;
+        // A carrier can ride across a lay. Older completed legs on this line have no rack left to return.
+        const credits = GIFT_LEGS.filter(
+          (i) => i === k || (legMintLine(i) === legMintLine(k) && legRow(w, i).laid === RAIL_LEGS[i]!.sections.length),
+        );
+        retireLoaded(w, credits, pour, 0);
+        trimLegHeld(w);
+      }
     }
     const { rack } = legKitRoom(w, line, k);
     move(w, slot, rack, (logs, rails) => {
@@ -126,9 +135,9 @@ function move(w: World, slot: number, room: Kit, put: (logs: number, rails: numb
 }
 /** Return surplus gifts to Home's rack and rails to the forge. Only minted logs are unmade. Take all returned units
  * out of the legs' loaded counts, latest first. A completed rack or yard can return only gifts already off the trains. */
-function kitHome(w: World, legs: readonly number[], logs: number, rails: number, trainGift?: number) {
+function kitHome(w: World, legs: readonly number[], logs: number, rails: number, gift = 0) {
   const rail = w.mut(Rail, w.single(Rail))!;
-  const gift = Math.min(logs, trainGift ?? rail.giftOut - giftAboard(w));
+  // Every source carries its exact gift mark.
   rail.rack += gift;
   rail.giftOut -= gift;
   rail.depotProduced -= logs - gift;
@@ -177,9 +186,9 @@ export function legYardHome(w: World, k: number) {
   if (RAIL_LEGS[k]!.kit === 'home') return;
   const y = legYard(w, k);
   if (!y.logs && !y.rails) return;
-  kitHome(w, [k], y.logs, y.rails);
+  kitHome(w, [k], y.logs, y.rails, y.gift);
   const m = w.mut(LegYard, legYardId(w, k))!;
-  m.logs = m.rails = 0;
+  m.logs = m.rails = m.gift = 0;
 }
 /** The stand-in (greybox-leg2.md, "the bay cut's first kit is stocked", open question 2): an open leg minted at its
  * own line's home with nothing laid, on a line with no track yet (no train can bring its first kit), has its rack
@@ -303,14 +312,20 @@ function yardLoad(w: World, slot: number): 'on' {
   const cap = legKitCap(w, k, kitBills(r.boiler)),
     owe = legYardOwed(w, k),
     y = legYard(w, k),
-    logs = Math.max(0, Math.min(cap.logs - r.logs, owe.logs, y.logs)),
+    gift = Math.max(0, Math.min(y.gift, giftBill(w, line, k) - giftAboard(w, line), cap.logs - r.gift)),
+    added = Math.min(gift, Math.max(0, cap.logs - r.logs)),
+    logs = Math.max(0, Math.min(cap.logs - r.logs - added, owe.logs - added, y.logs - y.gift)),
     rails = Math.max(0, Math.min(cap.rails - r.rails, owe.rails, y.rails));
-  if (!logs && !rails) return 'on';
+  if (!logs && !rails && !gift) return 'on';
   const ym = w.mut(LegYard, legYardId(w, k))!,
     m = w.mut(Train, trainOf(w, slot))!;
-  ym.logs -= logs;
+  ym.gift -= gift;
+  ym.logs -= logs + gift;
+  // A full carrier exchanges minted logs for marked ones. Retire the displaced kit.
+  if (gift > added) kitHome(w, [k], gift - added, 0);
+  m.gift += gift;
   ym.rails -= rails;
-  m.logs += logs;
+  m.logs += logs + added;
   m.rails += rails;
   m.legKit = true;
   return 'on';
@@ -341,6 +356,17 @@ export function legFill(w: World, k: number, logs: number, rails: number, tick: 
   const sec = RAIL_LEGS[k]!.sections[m.laid]!;
   m.logs += logs;
   m.rails += rails;
+  if (logs && RAIL_LEGS[k]!.kit !== 'home') {
+    const yard = legYard(w, k);
+    const excessGift = Math.max(0, yard.gift - (sec.logs - m.logs));
+    const excessKit = Math.max(0, yard.logs - yard.gift - legHeldRoom(w, k).logs);
+    if (excessGift || excessKit) {
+      const y = w.mut(LegYard, legYardId(w, k))!;
+      y.logs -= excessGift + excessKit;
+      y.gift -= excessGift;
+      kitHome(w, [k], excessGift + excessKit, 0, excessGift);
+    }
+  }
   if (m.logs === sec.logs && m.rails === sec.rails && (sec.gate === undefined || routeRow(w).gates & (1 << sec.gate)))
     m.start = tick;
 }
