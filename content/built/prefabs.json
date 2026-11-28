@@ -12879,6 +12879,19 @@
         "params": {}
       }
     },
+    "ring.bell-rope": {
+      "colliders": [],
+      "interactions": [
+        {
+          "action": "ring.pull-bell"
+        }
+      ],
+      "key": "ring.bell-rope",
+      "scope": "place",
+      "visual": {
+        "none": true
+      }
+    },
     "ring.board-face": {
       "attach": {
         "face": {

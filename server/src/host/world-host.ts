@@ -1,6 +1,9 @@
 // Compose one authoritative railway room. Each host service owns its transient state;
 // the callbacks below are its explicit cross-service contracts. Registration and startup order are intentional.
 import type { WorldHostOptions } from './ordinary-host.ts';
+import { plot } from '../../../src/sim/railway-rows.ts';
+import { plotBuilt } from '../../../src/sim/railway-queries-trade.ts';
+import { PLOT_KIND } from '../../../src/sim/railway-trade-layout.ts';
 export { createWorldHost } from './ordinary-host.ts';
 export type { WorldHost, WorldHostOptions } from './ordinary-host.ts';
 import { createSync } from '../../../src/world/sync.ts';
@@ -155,6 +158,10 @@ export function createRailwayWorldHost({
     replication,
     ops,
     stats: status.stats,
+    hasBellhouse() {
+      const w = rules.railway.world();
+      return plotBuilt(w, 16, sync.world.tick) && plot(w, 16).kind === PLOT_KIND.bell;
+    },
     onSend(fn: (message: Msg) => void) {
       sent.add(fn);
       return () => sent.delete(fn);

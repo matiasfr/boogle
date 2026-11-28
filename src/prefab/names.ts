@@ -11,6 +11,7 @@ export interface InteractionNames {
   'railway.take-yoke': true;
   'town.shop-stock': true;
   'town.plot-buy': true;
+  'ring.pull-bell': true;
   'town.shop-rail': true;
   'lookout.look': true;
   'mushrooms.take-seeds': true;
@@ -111,6 +112,7 @@ export const names: NameRegistry = {
     'seat.sit',
     'town.shop-stock',
     'town.plot-buy',
+    'ring.pull-bell',
     'town.shop-rail',
     'lookout.look',
     'mushrooms.take-seeds',
